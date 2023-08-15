@@ -27,7 +27,6 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.UserInfoEntity;
 
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Map;
@@ -36,6 +35,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
