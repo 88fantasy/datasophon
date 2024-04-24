@@ -421,7 +421,7 @@ public class ProcessUtils {
             Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
             FileOperateCommand fileOperateCommand = new FileOperateCommand();
             fileOperateCommand.setLines(list);
-            fileOperateCommand.setPath(Constants.INSTALL_PATH + "/hadoop-3.3.3/etc/hadoop/" + type);
+            fileOperateCommand.setPath(Constants.INSTALL_PATH + "/hadoop-3.3.6/etc/hadoop/" + type);
             Future<Object> future = Patterns.ask(actorSelection, fileOperateCommand, timeout);
             ExecResult fileOperateResult = (ExecResult) Await.result(future, timeout.duration());
             if (Objects.nonNull(fileOperateResult) && fileOperateResult.getExecResult()) {
@@ -429,7 +429,7 @@ public class ProcessUtils {
                 // 刷新白名单
                 ExecuteCmdCommand command = new ExecuteCmdCommand();
                 ArrayList<String> commands = new ArrayList<>();
-                commands.add(Constants.INSTALL_PATH + "/hadoop-3.3.3/bin/hdfs");
+                commands.add(Constants.INSTALL_PATH + "/hadoop-3.3.6/bin/hdfs");
                 commands.add("dfsadmin");
                 commands.add("-refreshNodes");
                 command.setCommands(commands);
@@ -540,12 +540,29 @@ public class ProcessUtils {
      * @Description: 生成configFileMap
      */
     public static void generateConfigFileMap(Map<Generators, List<ServiceConfig>> configFileMap,
-                                             ClusterServiceRoleGroupConfig config) {
+                                             ClusterServiceRoleGroupConfig config,Integer clusterId) {
         Map<JSONObject, JSONArray> map = JSONObject.parseObject(config.getConfigFileJson(), Map.class);
         for (JSONObject fileJson : map.keySet()) {
             Generators generators = fileJson.toJavaObject(Generators.class);
             List<ServiceConfig> serviceConfigs = map.get(fileJson).toJavaList(ServiceConfig.class);
+            //replace variable
+            replaceVariable(serviceConfigs,clusterId);
             configFileMap.put(generators, serviceConfigs);
+        }
+    }
+
+    private static void replaceVariable(List<ServiceConfig> serviceConfigs,Integer clusterId) {
+        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        for (ServiceConfig serviceConfig : serviceConfigs) {
+            if(Constants.INPUT.equals(serviceConfig.getType())){
+                String name = PlaceholderUtils.replacePlaceholders(serviceConfig.getName(), globalVariables,
+                        Constants.REGEX_VARIABLE);
+                serviceConfig.setName(name);
+
+                String value = PlaceholderUtils.replacePlaceholders((String) serviceConfig.getValue(), globalVariables,
+                        Constants.REGEX_VARIABLE);
+                serviceConfig.setValue(value);
+            }
         }
     }
 
