@@ -54,6 +54,9 @@ public class ServiceRoleStrategyContext {
         map.put("KyuubiServer", new KyuubiServerHandlerStrategy("KYUUBI", "KyuubiServer"));
         //flink
         map.put("FlinkClient", new FlinkHandlerStrategy("FLINK", "FlinkClient"));
+
+        //uscheduler
+        map.put("MasterServer2", new DSMasterHandlerStrategy("USCHEDULER", "MasterServer2"));
     }
 
     public static ServiceRoleStrategy getServiceRoleHandler(String type) {

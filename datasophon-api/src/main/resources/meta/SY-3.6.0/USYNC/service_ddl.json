@@ -1,0 +1,27 @@
+{
+  "name": "USYNC",
+  "label": "USync",
+  "description": "数衍采集工具",
+  "version": "3.2.3",
+  "sortNum": 70,
+  "dependencies": [],
+  "packageName": "usync-3.2.3.tar.gz",
+  "decompressPackageName": "usync-3.2.3",
+  "roles": [
+    {
+      "name": "USyncClient",
+      "label": "USyncClient",
+      "roleType": "client",
+      "cardinality": "1+",
+      "logFile": "logs/usync-client.log"
+    }
+  ],
+  "configWriter": {
+    "generators": [
+
+    ]
+  },
+  "parameters": [
+
+  ]
+}
