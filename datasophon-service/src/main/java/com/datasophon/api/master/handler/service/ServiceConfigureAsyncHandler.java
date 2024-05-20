@@ -17,29 +17,31 @@
 
 package com.datasophon.api.master.handler.service;
 
-import akka.actor.ActorSelection;
-import akka.dispatch.OnComplete;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
+
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import akka.actor.ActorSelection;
+import akka.dispatch.OnComplete;
+import akka.pattern.Patterns;
+import akka.util.Timeout;
+
 public class ServiceConfigureAsyncHandler extends ServiceHandler {
-
+    
     private final OnComplete<Object> function;
-
+    
     public ServiceConfigureAsyncHandler(OnComplete<Object> function) {
         this.function = function;
     }
-
+    
     @Override
     public ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) {
         ExecResult execResult = new ExecResult();
@@ -57,7 +59,7 @@ public class ServiceConfigureAsyncHandler extends ServiceHandler {
         generateServiceConfigCommand.setServiceRoleName(serviceRoleInfo.getName());
         ActorSelection configActor = ActorUtils.actorSystem.actorSelection(
                 "akka.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/configureServiceActor");
-
+        
         Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
         final Future<Object> configureFuture = Patterns.ask(configActor, generateServiceConfigCommand, timeout);
         configureFuture.onComplete(new OnComplete<Object>() {

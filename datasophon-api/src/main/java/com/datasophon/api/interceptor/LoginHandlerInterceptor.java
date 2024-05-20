@@ -21,29 +21,31 @@ import com.datasophon.api.security.Authenticator;
 import com.datasophon.common.Constants;
 import com.datasophon.dao.entity.UserInfoEntity;
 import com.datasophon.dao.mapper.UserInfoMapper;
+
 import org.apache.commons.lang3.StringUtils;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 /**
  * login interceptor, must login first
  */
 public class LoginHandlerInterceptor implements HandlerInterceptor {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(LoginHandlerInterceptor.class);
-
+    
     @Autowired
     private UserInfoMapper userMapper;
-
+    
     @Autowired
     private Authenticator authenticator;
-
+    
     /**
      * Intercept the execution of a handler. Called after HandlerMapping determined
      *
@@ -77,5 +79,5 @@ public class LoginHandlerInterceptor implements HandlerInterceptor {
         request.setAttribute(Constants.SESSION_USER, user);
         return true;
     }
-
+    
 }
