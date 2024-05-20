@@ -17,8 +17,6 @@
 
 package com.datasophon.api.controller;
 
-import static com.datasophon.api.enums.Status.IP_IS_EMPTY;
-
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.security.Authenticator;
 import com.datasophon.api.service.SessionService;
@@ -26,20 +24,19 @@ import com.datasophon.api.utils.HttpUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.UserInfoEntity;
-
 import org.apache.commons.lang.StringUtils;
-
-import java.util.Map;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.http.HttpStatus;
+import org.springframework.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
+
+import static com.datasophon.api.enums.Status.IP_IS_EMPTY;
 
 @RestController
 @RequestMapping("")
@@ -88,7 +85,7 @@ public class LoginController {
             return result;
         }
 
-        response.setStatus(HttpStatus.SC_OK);
+        response.setStatus(HttpStatus.OK.value());
         Map<String, String> cookieMap = (Map<String, String>) result.getData();
         for (Map.Entry<String, String> cookieEntry : cookieMap.entrySet()) {
             Cookie cookie = new Cookie(cookieEntry.getKey(), cookieEntry.getValue());

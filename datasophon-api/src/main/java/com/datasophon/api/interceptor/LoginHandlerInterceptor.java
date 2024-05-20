@@ -21,17 +21,15 @@ import com.datasophon.api.security.Authenticator;
 import com.datasophon.common.Constants;
 import com.datasophon.dao.entity.UserInfoEntity;
 import com.datasophon.dao.mapper.UserInfoMapper;
-
 import org.apache.commons.lang.StringUtils;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.servlet.HandlerInterceptor;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * login interceptor, must login first
@@ -48,9 +46,10 @@ public class LoginHandlerInterceptor implements HandlerInterceptor {
 
     /**
      * Intercept the execution of a handler. Called after HandlerMapping determined
-     * @param request   current HTTP request
-     * @param response  current HTTP response
-     * @param handler   chosen handler to execute, for type and/or instance evaluation
+     *
+     * @param request  current HTTP request
+     * @param response current HTTP response
+     * @param handler  chosen handler to execute, for type and/or instance evaluation
      * @return boolean true or false
      */
     @Override
@@ -62,14 +61,14 @@ public class LoginHandlerInterceptor implements HandlerInterceptor {
             user = authenticator.getAuthUser(request);
             // if user is null
             if (user == null) {
-                response.setStatus(HttpStatus.SC_UNAUTHORIZED);
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
                 logger.info("user does not exist");
                 return false;
             }
         } else {
             user = userMapper.queryUserByToken(token);
             if (user == null) {
-                response.setStatus(HttpStatus.SC_UNAUTHORIZED);
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
                 logger.info("user token has expired");
                 return false;
             }
