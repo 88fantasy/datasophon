@@ -25,7 +25,7 @@ import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.*;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.SimpleServiceConfig;
-import com.datasophon.common.utils.PlaceholderUtils;
+import com.datasophon.common.utils.CollectionUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.*;
 import com.datasophon.dao.enums.NeedRestart;
@@ -33,8 +33,10 @@ import com.datasophon.dao.enums.ServiceRoleState;
 import com.datasophon.dao.enums.ServiceState;
 import com.datasophon.dao.mapper.ClusterServiceInstanceMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -46,9 +48,12 @@ import java.util.stream.Collectors;
 @Transactional
 public class ClusterServiceInstanceServiceImpl
         extends
-            ServiceImpl<ClusterServiceInstanceMapper, ClusterServiceInstanceEntity>
+        ServiceImpl<ClusterServiceInstanceMapper, ClusterServiceInstanceEntity>
         implements
-            ClusterServiceInstanceService {
+        ClusterServiceInstanceService {
+
+    @Value("${server.servlet.context-path}")
+    private String contextPath;
 
     @Autowired
     private ClusterServiceInstanceMapper serviceInstanceMapper;
@@ -77,6 +82,9 @@ public class ClusterServiceInstanceServiceImpl
     @Autowired
     private ClusterServiceRoleInstanceWebuisService webuisService;
 
+    @Autowired
+    private ClusterVariableService variableService;
+
     @Override
     public ClusterServiceInstanceEntity getServiceInstanceByClusterIdAndServiceName(Integer clusterId,
                                                                                     String serviceName) {
@@ -101,10 +109,10 @@ public class ClusterServiceInstanceServiceImpl
             // 查询dashboard
             ClusterServiceDashboard dashboard = dashboardService.getOne(new QueryWrapper<ClusterServiceDashboard>()
                     .eq(Constants.SERVICE_NAME, serviceInstance.getServiceName()));
-            if (Objects.nonNull(dashboard)) {
-                String dashboardUrl = PlaceholderUtils.replacePlaceholders(dashboard.getDashboardUrl(), globalVariables,
-                        Constants.REGEX_VARIABLE);
-                serviceInstance.setDashboardUrl(dashboardUrl);
+            if (Objects.nonNull(dashboard) && StringUtils.hasText(dashboard.getDashboardUrl())) {
+//                String dashboardUrl = PlaceholderUtils.replacePlaceholders(dashboard.getDashboardUrl(), globalVariables,
+//                        Constants.REGEX_VARIABLE);
+                serviceInstance.setDashboardUrl(dashboardService.getDashboardUrl(clusterId, dashboard));
             }
             // 查询告警数量
             int alertNum = alertHistoryService.count(new QueryWrapper<ClusterAlertHistory>()
@@ -243,6 +251,15 @@ public class ClusterServiceInstanceServiceImpl
 
         // del service instance
         this.removeById(serviceInstanceId);
+        // del variable
+        roleGroups.forEach(roleGroup -> {
+            List<ClusterVariable> variables = variableService.getVariables(roleGroup.getClusterId(), roleGroup.getServiceName());
+            if (CollectionUtils.isNotEmpty(variables)) {
+                Map<String, String> variablesMap = GlobalVariables.get(roleGroup.getClusterId());
+                variables.forEach(var -> variablesMap.remove(var.getVariableName()));
+                variableService.removeByIds(variables.stream().map(ClusterVariable::getId).collect(Collectors.toList()));
+            }
+        });
         return Result.success();
     }
 
@@ -256,6 +273,6 @@ public class ClusterServiceInstanceServiceImpl
     public boolean hasRunningRoleInstance(Integer serviceInstanceId) {
         List<ClusterServiceRoleInstanceEntity> list =
                 roleInstanceService.getRunningServiceRoleInstanceListByServiceId(serviceInstanceId);
-      return !list.isEmpty();
+        return !list.isEmpty();
     }
 }
