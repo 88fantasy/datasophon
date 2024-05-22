@@ -37,10 +37,10 @@ export REGISTRY_ZOOKEEPER_CONNECT_STRING=${r"${REGISTRY_ZOOKEEPER_CONNECT_STRING
 # Tasks related configurations, need to change the configuration if you use the related tasks.
 export HADOOP_HOME=${r"${HADOOP_HOME"}:-/opt/datasophon/hadoop}
 export HADOOP_CONF_DIR=${r"${HADOOP_CONF_DIR"}:-/opt/datasophon/hadoop/etc/hadoop}
-export SPARK_HOME1=${r"${SPARK_HOME1"}:-/opt/soft/spark1}
-export SPARK_HOME2=${r"${SPARK_HOME2"}:-/opt/soft/spark2}
-export PYTHON_HOME=${r"${PYTHON_HOME"}:-/opt/soft/python}
-export HIVE_HOME=${r"${HIVE_HOME"}:-/opt/datasophon/hive-3.1.0}
+export SPARK_HOME1=${r"${SPARK_HOME1"}:-/opt/datasophon/spark1}
+export SPARK_HOME2=${r"${SPARK_HOME2"}:-/opt/datasophon/spark2}
+export PYTHON_HOME=${r"${PYTHON_HOME"}:-/usr/bin/python2.7}
+export HIVE_HOME=${r"${HIVE_HOME"}:-/opt/datasophon/hive}
 export FLINK_HOME=${r"${FLINK_HOME"}:-/opt/datasophon/flink-1.15.2}
 export DATAX_HOME=${r"${DATAX_HOME"}:-/opt/datasophon/usync}
 export DATASOURCEX_HOME=${r"${USCHEDULER_HOME"}:-/opt/datasophon/uscheduler/executor/datasourcex}
