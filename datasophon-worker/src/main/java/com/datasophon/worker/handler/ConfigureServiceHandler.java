@@ -156,7 +156,7 @@ public class ConfigureServiceHandler {
                             }
                         }
                     }
-                    if("Grafana".equals(serviceRoleName)) {
+                    if ("Grafana".equals(serviceRoleName)) {
                         ServiceConfig clusterIdConfig = new ServiceConfig();
                         clusterIdConfig.setName("clusterId");
                         clusterIdConfig.setValue(String.valueOf(clusterId));

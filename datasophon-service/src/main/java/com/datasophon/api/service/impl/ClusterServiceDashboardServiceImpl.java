@@ -17,8 +17,8 @@
 
 package com.datasophon.api.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import static com.datasophon.common.Constants.GRAFANA_PATH;
+
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.ClusterServiceDashboardService;
 import com.datasophon.common.Constants;
@@ -26,32 +26,34 @@ import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceDashboard;
 import com.datasophon.dao.mapper.ClusterServiceDashboardMapper;
+
+import java.util.Map;
+import java.util.Objects;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.Map;
-import java.util.Objects;
-
-import static com.datasophon.common.Constants.GRAFANA_PATH;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
 @Service("clusterServiceDashboardService")
 public class ClusterServiceDashboardServiceImpl
         extends
-        ServiceImpl<ClusterServiceDashboardMapper, ClusterServiceDashboard>
+            ServiceImpl<ClusterServiceDashboardMapper, ClusterServiceDashboard>
         implements
-        ClusterServiceDashboardService {
-
+            ClusterServiceDashboardService {
+    
     @Value("${datasophon.proxy-grafana.enable:false}")
     private boolean proxy;
-
+    
     @Value("${server.servlet.context-path}")
     private String contextPath;
-
+    
     @Autowired
     ClusterServiceDashboardService dashboardService;
-
+    
     @Override
     public Result getDashboardUrl(Integer clusterId) {
         ClusterServiceDashboard dashboard = dashboardService
@@ -62,13 +64,13 @@ public class ClusterServiceDashboardServiceImpl
             return Result.error("缺少集群总览");
         }
     }
-
+    
     @Override
     public String getGrafanaHost(Integer clusterId) {
         Map<String, String> globalVariables = GlobalVariables.get(clusterId);
         return globalVariables.get("${grafanaHost}") + ":3000";
     }
-
+    
     @Override
     public String getDashboardUrl(Integer clusterId, ClusterServiceDashboard dashboard) {
         String url = dashboard.getDashboardUrl();
