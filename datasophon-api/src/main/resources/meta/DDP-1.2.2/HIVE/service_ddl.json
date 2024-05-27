@@ -641,7 +641,7 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [{"HIVE_AUX_JARS_PATH":"${INSTALL_PATH}/hive-3.1.0/auxlibs"}],
+      "value": [{"HIVE_AUX_JARS_PATH":"${INSTALL_PATH}/hive/auxlibs"}],
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": ""
