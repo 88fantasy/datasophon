@@ -89,6 +89,7 @@ public enum Status {
     ODD_NUMBER_ARE_REQUIRED_FOR_DORISFE(10040, "The Number of DorisFE must be an odd number.", "DorisFE个数必须是奇数"),
     NO_SERVICE_ROLE_SELECTED(10041, "No service role selected", "未选择需要安装的服务实例"),
     TWO_KYUUBISERVERS_NEED_TO_BE_DEPLOYED(10042, "two kyuubiServer deployments are required", "KyuubiServer需要两个节点"),
+    THREE_ETCD_NEED_TO_BE_DEPLOYED(10043, "three etcd deployments are required", "Etcd需要三个节点"),
     ;
     
     private final int code;

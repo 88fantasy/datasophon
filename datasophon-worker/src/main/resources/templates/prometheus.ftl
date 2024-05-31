@@ -179,4 +179,9 @@ scrape_configs:
     - files:
       - configs/kyuubiserver.json
 
+  - job_name: 'etcd'
+    file_sd_configs:
+    - files:
+      - configs/etcd.json
+
 

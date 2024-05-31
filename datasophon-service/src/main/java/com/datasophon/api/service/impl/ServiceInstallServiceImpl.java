@@ -758,6 +758,9 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         if ("KyuubiServer".equals(serviceRole) && hosts.size() != 2) {
             throw new ServiceException(Status.TWO_KYUUBISERVERS_NEED_TO_BE_DEPLOYED.getMsg());
         }
+        if ("Etcd".equals(serviceRole) && hosts.size() != 3) {
+            throw new ServiceException(Status.THREE_ETCD_NEED_TO_BE_DEPLOYED.getMsg());
+        }
     }
     
     private List<ServiceConfig> listServiceConfigByServiceInstance(

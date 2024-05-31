@@ -62,6 +62,7 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("HBASE", new HBaseHandlerStrategy());
         strategyMap.put("FLINK", new FlinkHandlerStrategy());
         strategyMap.put("KYUUBI", new KyuubiServerHandlerStrategy());
+        strategyMap.put("Etcd", new EtcdHandlerStrategy());
         
         // serviceNameMap
         serviceNameMap.put("NameNode", "HDFS");
@@ -96,6 +97,7 @@ public class ServiceRoleStrategyContext {
         serviceNameMap.put("KAFKA", "KAFKA");
         serviceNameMap.put("HBASE", "HBASE");
         serviceNameMap.put("KYUUBI", "KYUUBI");
+        serviceNameMap.put("Etcd", "ETCD");
         
     }
     

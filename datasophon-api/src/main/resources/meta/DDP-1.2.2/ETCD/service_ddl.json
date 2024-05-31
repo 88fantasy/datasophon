@@ -1,0 +1,189 @@
+{
+  "name": "ETCD",
+  "label": "Etcd",
+  "description": "高可用的分布式键值存储系统",
+  "version": "3.5.13",
+  "sortNum": 90,
+  "dependencies":[],
+  "packageName": "etcd-v3.5.13-linux-amd64.tar.gz",
+  "decompressPackageName": "etcd-v3.5.13-linux-amd64",
+  "roles": [
+    {
+      "name": "Etcd",
+      "label": "Etcd",
+      "roleType": "master",
+      "cardinality": "3",
+      "logFile": "logs/etcd.out",
+      "jmxPort": 2379,
+      "resourceStrategies":[{
+        "type": "download",
+        "from": "script/control.sh",
+        "to": "control.sh",
+        "md5": "920ca0c530468c5875411614e819880a"
+      }],
+      "startRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": [
+          "start"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "control.sh",
+        "args": [
+          "stop"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": [
+          "status"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": [
+          "restart"
+        ]
+      }
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "conf.yml",
+        "configFormat": "custom",
+        "outputDirectory": "",
+        "templateName": "properties3.ftl",
+        "includeParams": [
+          "initial-cluster-token",
+          "initial-cluster",
+          "data-dir",
+          "wal-dir",
+          "listen-peer-urls",
+          "listen-client-urls",
+          "initial-advertise-peer-urls",
+          "advertise-client-urls",
+          "custom.etcd.conf.yaml"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "name": "name",
+      "label": "节点名称",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value": "${host}",
+      "configurableInWizard": false,
+      "hidden": true,
+      "defaultValue": "${host}"
+    },
+    {
+      "name": "initial-cluster-token",
+      "label": "集群名称",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "etcd-cluster"
+    },
+    {
+      "name": "data-dir",
+      "label": "数据目录路径",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "/data/etcd/data"
+    },
+    {
+      "name": "wal-dir",
+      "label": "wal目录的路径",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "/data/etcd/wal"
+    },
+    {
+      "name": "listen-peer-urls",
+      "label": "监听伙伴通讯的URL列表",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value": "http://${ip}:2380",
+      "configurableInWizard": false,
+      "hidden": false,
+      "defaultValue": "http://${ip}:2380"
+    },
+    {
+      "name": "listen-client-urls",
+      "label": "监听客户端通讯的URL列表",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value": "http://${ip}:2379,http://127.0.0.1:2379",
+      "configurableInWizard": false,
+      "hidden": false,
+      "defaultValue": "http://${ip}:2379,http://127.0.0.1:2379"
+    },
+    {
+      "name": "initial-advertise-peer-urls",
+      "label": "集群的URL列表",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value": "http://${ip}:2380",
+      "configurableInWizard": false,
+      "hidden": false,
+      "defaultValue": "http://${ip}:2380"
+    },
+    {
+      "name": "advertise-client-urls",
+      "label": "成员的客户端URL",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value": "http://${ip}:2379",
+      "configurableInWizard": false,
+      "hidden": false,
+      "defaultValue": "http://${ip}:2379"
+    },
+    {
+      "name": "initial-cluster",
+      "label": "初始化集群配置",
+      "description": "",
+      "configType": "ha",
+      "required": true,
+      "type": "input",
+      "value": "${etcd-node-list}",
+      "configurableInWizard": false,
+      "hidden": false,
+      "defaultValue": "${etcd-node-list}"
+    },
+    {
+      "name": "custom.etcd.conf.yaml",
+      "label": "自定义配置.yaml",
+      "description": "自定义配置",
+      "configType": "custom",
+      "required": false,
+      "type": "multipleWithKey",
+      "value": [],
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    }
+  ]
+}
