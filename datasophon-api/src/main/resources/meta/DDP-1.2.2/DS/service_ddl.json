@@ -85,6 +85,10 @@
         "source": "/opt/datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
         "target": "master-server/libs/mysql-connector-java-8.0.28.jar"
       },{
+        "type": "link",
+        "source": "/opt/datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+        "target": "tools/libs/mysql-connector-java-8.0.28.jar"
+      },{
         "type": "append_line",
         "source": "bin/dolphinscheduler-daemon.sh",
         "line": 132,
