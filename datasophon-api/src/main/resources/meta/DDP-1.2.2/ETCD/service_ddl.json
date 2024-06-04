@@ -59,6 +59,7 @@
         "outputDirectory": "",
         "templateName": "properties3.ftl",
         "includeParams": [
+          "name",
           "initial-cluster-token",
           "initial-cluster",
           "data-dir",
