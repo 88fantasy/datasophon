@@ -9,8 +9,8 @@
   "decompressPackageName": "uscheduler3-3.0.2-3.4.0",
   "roles": [
     {
-      "name": "ApiServer2",
-      "label": "ApiServer2",
+      "name": "UApiServer",
+      "label": "UApiServer",
       "roleType": "master",
       "cardinality": "1",
       "logFile": "api-server/logs/dolphinscheduler-api.log",
@@ -60,8 +60,8 @@
       }
     },
     {
-      "name": "MasterServer2",
-      "label": "MasterServer2",
+      "name": "UMasterServer",
+      "label": "UMasterServer",
       "roleType": "master",
       "cardinality": "1+",
       "logFile": "master-server/logs/dolphinscheduler-master.log",
@@ -106,8 +106,8 @@
       }
     },
     {
-      "name": "WorkerServer2",
-      "label": "WorkerServer2",
+      "name": "UWorkerServer",
+      "label": "UWorkerServer",
       "roleType": "worker",
       "cardinality": "1+",
       "logFile": "worker-server/logs/dolphinscheduler-worker.log",
@@ -152,8 +152,8 @@
       }
     },
     {
-      "name": "AlertServer2",
-      "label": "AlertServer2",
+      "name": "UAlertServer",
+      "label": "UAlertServer",
       "roleType": "master",
       "cardinality": "1",
       "logFile": "alert-server/logs/dolphinscheduler-alert.log",
