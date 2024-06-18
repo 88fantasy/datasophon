@@ -2,11 +2,11 @@
   "name": "ELASTICSEARCH",
   "label": "ElasticSearch",
   "description": "高性能搜索引擎",
-  "version": "7.16.2",
+  "version": "7.17.4",
   "sortNum": 11,
   "dependencies": [],
-  "packageName": "elasticsearch-7.16.2.tar.gz",
-  "decompressPackageName": "elasticsearch-7.16.2",
+  "packageName": "elasticsearch-7.17.4.tar.gz",
+  "decompressPackageName": "elasticsearch-7.17.4",
   "roles": [
     {
       "name": "ElasticSearch",

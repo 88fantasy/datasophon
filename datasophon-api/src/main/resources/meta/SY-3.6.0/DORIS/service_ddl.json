@@ -2,11 +2,11 @@
   "name": "DORIS",
   "label": "Doris",
   "description": "简单易用、高性能和统一的分析数据库",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "sortNum": 20,
   "dependencies":[],
-  "packageName": "apache-doris-2.1.2-bin-x64.tar.gz",
-  "decompressPackageName": "apache-doris-2.1.2-bin-x64",
+  "packageName": "apache-doris-2.1.3-bin-x64.tar.gz",
+  "decompressPackageName": "apache-doris-2.1.3-bin-x64",
   "roles": [
     {
       "name": "DorisFE",
@@ -94,7 +94,7 @@
         "type": "replace",
         "source": "be/bin/start_be.sh",
         "regex":"\/bin\/limit3",
-        "replacement": "/usr/bin/ulimit"
+        "replacement": "ulimit"
       }],
       "startRunner": {
         "timeout": "600",
@@ -368,3 +368,4 @@
     }
   ]
 }
+

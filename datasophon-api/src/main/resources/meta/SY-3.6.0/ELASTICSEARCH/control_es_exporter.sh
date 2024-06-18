@@ -49,7 +49,7 @@ start(){
     fi
   fi
   echo starting $command, logging to $log
-  exec_command="$SH_DIR/elasticsearch_exporter --es.all --es.indices --es.cluster_settings --es.indices_settings --es.shards --es.snapshots --es.timeout=10s --web.listen-address=":9114" --web.telemetry-path="/metrics" --es.uri http://$HOSTNAME:9200"
+  exec_command="$SH_DIR/elasticsearch_exporter --es.all --es.indices --collector.clustersettings --es.indices_settings --es.shards --collector.snapshots --es.timeout=10s --web.listen-address=":9114" --web.telemetry-path="/metrics" --es.uri http://$HOSTNAME:9200"
   echo "nohup $exec_command > $log 2>&1 &"
   nohup $exec_command > $log 2>&1 &
   echo $! > $pid
