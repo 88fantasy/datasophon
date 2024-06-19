@@ -54,5 +54,8 @@ export DC_DRIVER_ASSEMBLY=$EXECUTOR/datasource-driver.jar
 export SQL_EXECUTOR=$EXECUTOR/sql-executor.jar
 export METADATA_EXECUTOR=$EXECUTOR/metadata-executor.jar
 export SPARK_EXPLORATION_JAR=$EXECUTOR/exploration-executor.jar
+export SPARK_SECURITY_JAR=$EXECUTOR/security-executor.jar
+export SPARK_COMPARE_JAR=$EXECUTOR/compare-executor.jar
+export USTREAM_EXECUTOR_JAR=$EXECUTOR/ustream-executor.jar
 
 export PATH=$HADOOP_HOME/bin:$SPARK_HOME3/bin:$PYTHON_HOME/bin:$JAVA_HOME/bin:$HIVE_HOME/bin:$FLINK_HOME/bin:$DATAX_HOME/bin:$PATH
