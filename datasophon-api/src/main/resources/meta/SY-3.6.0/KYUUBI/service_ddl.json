@@ -237,10 +237,10 @@
       "description": "启用spark辅助shuffle服务",
       "required": true,
       "type": "switch",
-      "value": true,
+      "value": false,
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": true
+      "defaultValue": false
     },
     {
       "name": "spark.shuffle.service.port",
@@ -259,10 +259,10 @@
       "description": "启用spark动态资源分配",
       "required": true,
       "type": "switch",
-      "value": true,
+      "value": false,
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": true
+      "defaultValue": false
     },
     {
       "name": "spark.dynamicAllocation.initialExecutors",

@@ -228,7 +228,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "com.mysql.jdbc.Driver"
+      "defaultValue": "com.mysql.cj.jdbc.Driver"
     },
     {
       "name": "javax.jdo.option.ConnectionUserName",

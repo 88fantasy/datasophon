@@ -368,9 +368,9 @@
 			"name": "resource.aws.s3.bucket.name",
 			"label": "resource.aws.s3.bucket.name",
 			"description": "",
-			"required": false,
+			"required": true,
 			"type": "input",
-			"value": "",
+			"value": "dolphinscheduler",
 			"configurableInWizard": true,
 			"hidden": false,
 			"defaultValue": "dolphinscheduler"
@@ -378,9 +378,9 @@
       "name": "resource.aws.s3.endpoint",
       "label": "resource.aws.s3.endpoint",
       "description": "",
-      "required": false,
+      "required": true,
       "type": "input",
-      "value": "",
+      "value": "http://minio-node-1:6943",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "http://minio-node-1:6943"
