@@ -100,11 +100,11 @@ if [ "${ios}" == "centos7" ]; then
   fi
 fi
 
-MYSQL_FOLDER_NAME=mysql-community-8.0.28.el8.x86_64
+MYSQL_FOLDER_NAME=mysql
 MYSQL_TAR_NAME=mysql-community-8.0.28.el8.x86_64.tar.gz
 
 echo "mysql start install mysql-community-8.0.28-1.el8.x86_64........."
-tar -zxvf ${PACKAGES_PATH}/${MYSQL_TAR_NAME} -C ${PACKAGES_PATH}
+#tar -zxvf ${PACKAGES_PATH}/${MYSQL_TAR_NAME} -C ${PACKAGES_PATH}
 rpm -ivh ${PACKAGES_PATH}/${MYSQL_FOLDER_NAME}/mysql-community-common-8.0.28-1.el8.x86_64.rpm
 rpm -ivh ${PACKAGES_PATH}/${MYSQL_FOLDER_NAME}/mysql-community-client-plugins-8.0.28-1.el8.x86_64.rpm
 rpm -ivh ${PACKAGES_PATH}/${MYSQL_FOLDER_NAME}/mysql-community-libs-8.0.28-1.el8.x86_64.rpm

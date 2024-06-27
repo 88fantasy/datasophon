@@ -13,7 +13,7 @@
       "label": "KyuubiServer",
       "roleType": "master",
       "runAs": {
-        "user": "kyuubi",
+        "user": "hive",
         "group": "hadoop"
       },
       "cardinality": "1+",

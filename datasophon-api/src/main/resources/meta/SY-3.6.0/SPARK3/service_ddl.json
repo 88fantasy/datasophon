@@ -12,6 +12,10 @@
       "name": "SparkClient3",
       "label": "SparkClient3",
       "roleType": "client",
+      "runAs": {
+        "user": "hive",
+        "group": "hadoop"
+      },
       "cardinality": "1+",
       "logFile": "logs/hadoop-${user}-datanode-${host}.log"
     }
@@ -83,7 +87,7 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [{"SPARK_CLASSPATH":"${INSTALL_PATH}/spark-3.4.2-bin-hadoop3/carbonlib/*"}],
+      "value": [{"SPARK_CLASSPATH":"${INSTALL_PATH}/spark3/carbonlib/*"},{"HIVE_HOME":"${INSTALL_PATH}/hive"}],
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": ""
