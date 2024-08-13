@@ -78,7 +78,7 @@
         "configType": "map",
         "required": true,
         "type": "input",
-        "value": "",
+        "value": "${clusterId}",
         "configurableInWizard": false,
         "hidden": true,
         "defaultValue": "${clusterId}"
