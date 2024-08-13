@@ -66,10 +66,22 @@
        "templateName": "grafana.ftl",
        "conditionalOnProperty": "datasophon.proxy-grafana.enable",
        "includeParams": [
-
+          "clusterId"
        ]
     }]
   },
   "parameters": [
-  ]
+      {
+        "name": "clusterId",
+        "label": "集群ID",
+        "description": "集群ID",
+        "configType": "map",
+        "required": true,
+        "type": "input",
+        "value": "",
+        "configurableInWizard": false,
+        "hidden": true,
+        "defaultValue": "${clusterId}"
+      }
+    ]
 }
