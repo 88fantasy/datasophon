@@ -1,0 +1,34 @@
+global:
+  offline: true
+  os: CentOS7
+  nmapServer:
+    ip: 172.31.51.160
+    port: 22
+    password: datasophon@123!@#
+  ntpServer: 172.31.51.160
+  mysql:
+    enable: false   # Install Mysql
+    password: datasophon123      # Set the MYSQL database root password
+    host:
+      ip: 172.31.51.160
+      port: 22
+      password: datasophon@123!@#
+
+  logDir: ./logs
+
+nodes:
+  - ip: 172.31.51.160
+    user: root
+    password: dataSophon@123!@#
+    port: 22
+    hostname: dataSophon01
+  - ip: 172.31.51.161
+    user: root
+    password: dataSophon@123!@#
+    port: 22
+    hostname: dataSophon02
+  - ip: 172.31.51.162
+    user: root
+    password: dataSophon@123!@#
+    port: 22
+    hostname: dataSophon03

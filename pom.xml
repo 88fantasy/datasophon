@@ -34,6 +34,7 @@
         <module>datasophon-ui</module>
         <module>datasophon-service</module>
         <module>datasophon-domain</module>
+        <module>datasophon-cli</module>
     </modules>
 
     <properties>
