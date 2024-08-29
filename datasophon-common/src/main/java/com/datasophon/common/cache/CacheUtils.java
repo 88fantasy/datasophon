@@ -28,19 +28,18 @@ import cn.hutool.cache.CacheUtil;
  */
 public class CacheUtils {
     
-    private static Logger logger = LoggerFactory.getLogger(CacheUtils.class);
-    private static Cache<String, Object> cache = CacheUtil.newLRUCache(4096);
+    private static final Logger logger = LoggerFactory.getLogger(CacheUtils.class);
+    private static final Cache<String, Object> cache = CacheUtil.newLRUCache(4096);
     
     public static Object get(String key) {
-        Object data = cache.get(key);
-        return data;
+        return cache.get(key);
     }
     
     public static void put(String key, Object value) {
         cache.put(key, value);
     }
     
-    public static boolean constainsKey(String key) {
+    public static boolean containsKey(String key) {
         return cache.containsKey(key);
     }
     

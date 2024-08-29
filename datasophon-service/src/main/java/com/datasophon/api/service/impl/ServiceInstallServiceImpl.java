@@ -295,7 +295,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
                         + Constants.UNDERLINE
                         + Constants.SERVICE_ROLE_HOST_MAPPING;
         HashMap<String, List<String>> map = new HashMap<>();
-        if (CacheUtils.constainsKey(hostMapKey)) {
+        if (CacheUtils.containsKey(hostMapKey)) {
             map = (HashMap<String, List<String>>) CacheUtils.get(hostMapKey);
         }
         

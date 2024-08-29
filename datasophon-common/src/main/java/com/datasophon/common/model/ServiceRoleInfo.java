@@ -60,6 +60,8 @@ public class ServiceRoleInfo implements Serializable, Comparable<ServiceRoleInfo
     
     private String packageName;
     
+    private Map<String, ArchInfo> archInfoMap;
+    
     private String decompressPackageName;
     
     private Map<Generators, List<ServiceConfig>> configFileMap;

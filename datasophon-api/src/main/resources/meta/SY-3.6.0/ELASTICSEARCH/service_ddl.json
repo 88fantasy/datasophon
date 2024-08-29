@@ -7,6 +7,14 @@
   "dependencies": [],
   "packageName": "elasticsearch-7.17.4.tar.gz",
   "decompressPackageName": "elasticsearch-7.17.4",
+  "arch":{
+      "x86_64": {
+        "packageName": "elasticsearch-7.17.4-x86_64.tar.gz",
+      },
+      "aarch64": {
+        "packageName": "elasticsearch-7.17.4-arm_64.tar.gz",
+      },
+    },
   "roles": [
     {
       "name": "ElasticSearch",
@@ -15,7 +23,7 @@
       "cardinality": "1+",
       "logFile": "logs/ddp_es.log",
       "runAs": {
-        "user": "elastic",
+          "user": "elastic",
         "group": "elastic"
       },
       "sortNum": 1,
@@ -283,7 +291,7 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [],
+      "value": [{"ingest.geoip.downloader.enabled":"false"}],
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": ""

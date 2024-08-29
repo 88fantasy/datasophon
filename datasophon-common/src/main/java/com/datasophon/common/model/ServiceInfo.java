@@ -18,6 +18,7 @@
 package com.datasophon.common.model;
 
 import java.util.List;
+import java.util.Map;
 
 import lombok.Data;
 
@@ -43,6 +44,8 @@ public class ServiceInfo {
     private String packageName;
     
     private String decompressPackageName;
+    
+    private Map<String, ArchInfo> arch;
     
     private ExternalLink externalLink;
     

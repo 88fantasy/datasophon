@@ -80,7 +80,7 @@ public class WorkerStartActor extends UntypedActor {
             ClusterHostDO hostEntity = clusterHostService.getClusterHostByHostname(hostname);
             ClusterInfoEntity cluster = clusterInfoService.getById(clusterId);
             logger.info("Host install set to 100%");
-            if (CacheUtils.constainsKey(cluster.getClusterCode() + Constants.HOST_MAP)) {
+            if (CacheUtils.containsKey(cluster.getClusterCode() + Constants.HOST_MAP)) {
                 HashMap<String, HostInfo> map =
                         (HashMap<String, HostInfo>) CacheUtils.get(cluster.getClusterCode() + Constants.HOST_MAP);
                 HostInfo hostInfo = map.get(hostname);
