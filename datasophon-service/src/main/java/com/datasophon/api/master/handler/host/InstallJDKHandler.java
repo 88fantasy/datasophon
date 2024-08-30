@@ -20,6 +20,7 @@ package com.datasophon.api.master.handler.host;
 import com.datasophon.api.utils.MessageResolverUtils;
 import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.Constants;
+import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.model.HostInfo;
 
 import org.apache.commons.lang3.StringUtils;
@@ -35,13 +36,13 @@ public class InstallJDKHandler implements DispatcherWorkerHandler {
     @Override
     public boolean handle(ClientSession session, HostInfo hostInfo) {
         hostInfo.setProgress(60);
-        String arch = MinaUtils.execCmdWithResult(session, "arch");
+        ArchType arch = MinaUtils.getArch(session);
         String testResult = MinaUtils.execCmdWithResult(session, "test -d /usr/local/jdk1.8.0_333");
         boolean exists = true;
         if (StringUtils.isNotBlank(testResult) && "failed".equals(testResult)) {
             exists = false;
         }
-        if ("x86_64".equals(arch)) {
+        if (ArchType.X86 == arch) {
             if (!exists) {
                 hostInfo.setMessage(MessageResolverUtils.getMessage("start.install.jdk"));
                 MinaUtils.uploadFile(session, "/usr/local",
@@ -49,7 +50,7 @@ public class InstallJDKHandler implements DispatcherWorkerHandler {
                 MinaUtils.execCmdWithResult(session, "tar -zxvf /usr/local/jdk-8u333-linux-x64.tar.gz -C /usr/local/");
             }
         }
-        if ("aarch64".equals(arch)) {
+        if (ArchType.ARM == arch) {
             if (!exists) {
                 hostInfo.setMessage(MessageResolverUtils.getMessage("start.install.jdk"));
                 MinaUtils.uploadFile(session, "/usr/local",

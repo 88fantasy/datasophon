@@ -206,21 +206,35 @@ public class InstallServiceHandler {
     private boolean decompressPkg(String packageName, String decompressPackageName, String destDir) {
         boolean decompressResult = true;
         if (!FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName)) {
-            return decompressTarGz(destDir + packageName, Constants.INSTALL_PATH);
+            String sourceFile = destDir + packageName;
+            logger.info("Start to decompress {}", sourceFile);
+            String suffix = FileUtil.getSuffix(sourceFile);
+            String prefix = packageName.substring(0, packageName.length() - suffix.length() - 1);
+            ArrayList<String> command = new ArrayList<>();
+            
+            if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
+                command.add("tar");
+                command.add("-zxvf");
+                command.add(sourceFile);
+                command.add("-C");
+                command.add(Constants.INSTALL_PATH);
+            } else if ("zip".equals(suffix)) {
+                command.add("unzip");
+                command.add("-d");
+                command.add(Constants.INSTALL_PATH);
+                command.add(sourceFile);
+            }
+            ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
+            boolean success = execResult.getExecResult();
+            if (success && !FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName)) {
+                // 自动重命名
+                if (FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + prefix)) {
+                    FileUtil.move(new File(Constants.INSTALL_PATH + Constants.SLASH + prefix), new File(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName), false);
+                }
+            }
+            return success;
         }
         return decompressResult;
-    }
-    
-    public boolean decompressTarGz(String sourceTarGzFile, String targetDir) {
-        logger.info("Start to use tar -zxvf to decompress {}", sourceTarGzFile);
-        ArrayList<String> command = new ArrayList<>();
-        command.add("tar");
-        command.add("-zxvf");
-        command.add(sourceTarGzFile);
-        command.add("-C");
-        command.add(targetDir);
-        ExecResult execResult = ShellUtils.execWithStatus(targetDir, command, 120, logger);
-        return execResult.getExecResult();
     }
     
     private void changeHadoopInstallPathPerm(String decompressPackageName) {

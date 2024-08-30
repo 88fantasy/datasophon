@@ -61,25 +61,6 @@ public class HiveServer2HandlerStrategy extends AbstractHandlerStrategy implemen
                 }
             }
         }
-        logger.info("command is slave : {}", command.isSlave());
-        if (command.getCommandType().equals(CommandType.INSTALL_SERVICE) && !command.isSlave()) {
-            // init hive database
-            logger.info("start to init hive schema");
-            ArrayList<String> commands = new ArrayList<>();
-            commands.add("bin/schematool");
-            commands.add("-dbType");
-            commands.add("mysql");
-            commands.add("-initSchema");
-            ExecResult execResult = ShellUtils.execWithStatus(
-                    Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName(), commands, 60L,
-                    logger);
-            if (execResult.getExecResult()) {
-                logger.info("init hive schema success");
-            } else {
-                logger.info("init hive schema failed");
-                return execResult;
-            }
-        }
         if (command.getEnableKerberos()) {
             logger.info("start to get hive keytab file");
             String hostname = CacheUtils.getString(Constants.HOSTNAME);
