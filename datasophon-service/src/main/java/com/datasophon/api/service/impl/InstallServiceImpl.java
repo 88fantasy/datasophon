@@ -126,8 +126,8 @@ public class InstallServiceImpl implements InstallService {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
         HashMap<String, HostInfo> map = new HashMap<>();
-        if (CacheUtils.constainsKey(clusterCode + Constants.HOST_MAP)
-                && CacheUtils.constainsKey(clusterCode + Constants.HOST_MD5)
+        if (CacheUtils.containsKey(clusterCode + Constants.HOST_MAP)
+                && CacheUtils.containsKey(clusterCode + Constants.HOST_MD5)
                 && md5.equals(CacheUtils.getString(clusterCode + Constants.HOST_MD5))) {
             logger.info("get host list from cache");
             map = (HashMap<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
@@ -297,7 +297,7 @@ public class InstallServiceImpl implements InstallService {
                 hostInfo.setProgress(Constants.ONE_HUNDRRD);
                 hostInfo.setMessage(MessageResolverUtils.getMessage("distribution.success"));
                 hostInfo.setInstallState(InstallState.SUCCESS);
-            } else if (!CacheUtils.constainsKey(
+            } else if (!CacheUtils.containsKey(
                     distributeAgentKey + Constants.UNDERLINE + hostInfo.getHostname())) {
                 logger.info("start to dispatcher host agent to {}", hostInfo.getHostname());
                 ActorRef hostActor =

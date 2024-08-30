@@ -76,6 +76,7 @@ public class WorkerApplicationServer {
         String cpuArchitecture = ShellUtils.getCpuArchitecture();
         
         CacheUtils.put(Constants.HOSTNAME, hostname);
+        CacheUtils.put(Constants.CPU_ARCH, cpuArchitecture);
         // init actor
         ActorSystem system = initActor(hostname);
         ActorUtils.setActorSystem(system);
@@ -84,7 +85,7 @@ public class WorkerApplicationServer {
         
         startNodeExporter(workDir, cpuArchitecture);
         
-        Map<String, String> userMap = new HashMap(16);
+        Map<String, String> userMap = new HashMap<>(16);
         initUserMap(userMap);
         
         createDefaultUser(userMap);

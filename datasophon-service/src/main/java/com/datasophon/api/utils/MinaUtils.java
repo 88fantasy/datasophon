@@ -20,6 +20,7 @@
 package com.datasophon.api.utils;
 
 import com.datasophon.common.Constants;
+import com.datasophon.common.enums.ArchType;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
@@ -39,7 +40,9 @@ import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -49,7 +52,9 @@ public class MinaUtils {
     
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(MinaUtils.class);
     
-    /** 打开远程会话 */
+    /**
+     * 打开远程会话
+     */
     public static ClientSession openConnection(String sshHost, Integer sshPort, String sshUser) {
         SshClient sshClient = SshClient.setUpDefaultClient();
         sshClient.start();
@@ -70,7 +75,9 @@ public class MinaUtils {
         return session;
     }
     
-    /** 关闭远程会话 */
+    /**
+     * 关闭远程会话
+     */
     public static void closeConnection(ClientSession session) {
         try {
             session.close();
@@ -79,7 +86,9 @@ public class MinaUtils {
         }
     }
     
-    /** 获取密钥对 */
+    /**
+     * 获取密钥对
+     */
     static KeyPair getKeyPairFromString(String pk) {
         final KeyPairGenerator rsa;
         try {
@@ -149,9 +158,9 @@ public class MinaUtils {
     /**
      * 上传文件,相同路径ui覆盖
      *
-     * @param session 连接
+     * @param session    连接
      * @param remotePath 远程目录地址
-     * @param inputFile 文件 File
+     * @param inputFile  文件 File
      */
     public static boolean uploadFile(ClientSession session, String remotePath, String inputFile) {
         File uploadFile = new File(inputFile);
@@ -197,6 +206,12 @@ public class MinaUtils {
             throw new RuntimeException(e);
         }
         return false;
+    }
+    
+    public static ArchType getArch(ClientSession session) {
+        String arch = MinaUtils.execCmdWithResult(session, "arch");
+        Optional<ArchType> optional = Arrays.stream(ArchType.values()).filter(type -> type.getArch().equals(arch)).findAny();
+        return optional.orElse(ArchType.OTHER);
     }
     
     public static void main(String[] args) throws IOException, InterruptedException {

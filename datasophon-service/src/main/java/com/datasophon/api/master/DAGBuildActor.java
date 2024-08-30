@@ -17,6 +17,7 @@
 
 package com.datasophon.api.master;
 
+import com.datasophon.api.load.LoadServiceMeta;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.ClusterServiceCommandService;
@@ -31,6 +32,7 @@ import com.datasophon.common.command.SubmitActiveTaskNodeCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.ServiceExecuteState;
 import com.datasophon.common.enums.ServiceRoleType;
+import com.datasophon.common.model.ArchInfo;
 import com.datasophon.common.model.DAGGraph;
 import com.datasophon.common.model.ServiceNode;
 import com.datasophon.common.model.ServiceRoleInfo;
@@ -53,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
 
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
@@ -107,13 +110,16 @@ public class DAGBuildActor extends UntypedActor {
                                 frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(
                                         clusterInfo.getClusterFrame(), hostCommand.getServiceRoleName());
                         
-                        ServiceRoleInfo serviceRoleInfo = JSONObject
-                                .parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
+                        String arch = serviceEntity.getArch();
+                        Map<String, ArchInfo> stringArchInfoMap = StringUtils.isNotEmpty(arch) ? JSONObject.parseObject(arch, new TypeReference<Map<String, ArchInfo>>() {
+                        }) : LoadServiceMeta.getArchInfo(serviceEntity.getPackageName(), serviceEntity.getDecompressPackageName());
+                        ServiceRoleInfo serviceRoleInfo = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
                         serviceRoleInfo.setHostname(hostCommand.getHostname());
                         serviceRoleInfo.setHostCommandId(hostCommand.getHostCommandId());
                         serviceRoleInfo.setClusterId(clusterInfo.getId());
                         serviceRoleInfo.setParentName(command.getServiceName());
                         serviceRoleInfo.setPackageName(serviceEntity.getPackageName());
+                        serviceRoleInfo.setArchInfoMap(stringArchInfoMap);
                         serviceRoleInfo.setDecompressPackageName(serviceEntity.getDecompressPackageName());
                         serviceRoleInfo.setCommandType(commandType);
                         serviceRoleInfo.setServiceInstanceId(command.getServiceInstanceId());

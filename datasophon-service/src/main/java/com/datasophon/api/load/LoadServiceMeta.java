@@ -33,6 +33,8 @@ import com.datasophon.api.utils.CommonUtils;
 import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
+import com.datasophon.common.enums.ArchType;
+import com.datasophon.common.model.ArchInfo;
 import com.datasophon.common.model.ConfigWriter;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
@@ -56,6 +58,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -159,26 +162,30 @@ public class LoadServiceMeta implements ApplicationRunner {
                                 final String serviceName,
                                 final String serviceDdl) {
         ServiceInfo serviceInfo = JSONObject.parseObject(serviceDdl, ServiceInfo.class);
+        String packageName = serviceInfo.getPackageName();
+        String decompressPackageName = serviceInfo.getDecompressPackageName();
+        // 新增架构判断, 兼容旧版本
+        Map<String, ArchInfo> arch = serviceInfo.getArch();
+        if (CollUtil.isEmpty(arch)) {
+            serviceInfo.setArch(getArchInfo(packageName, decompressPackageName));
+        }
+        
         String serviceInfoMd5 = SecureUtil.md5(serviceDdl);
         
         // save service config
         List<ServiceConfig> allParameters = serviceInfo.getParameters();
-        Map<String, ServiceConfig> map =
-                allParameters.stream()
-                        .collect(
-                                Collectors.toMap(
-                                        ServiceConfig::getName,
-                                        serviceConfig -> serviceConfig,
-                                        (v1, v2) -> v1));
+        Map<String, ServiceConfig> map = allParameters.stream().collect(
+                Collectors.toMap(
+                        ServiceConfig::getName,
+                        serviceConfig -> serviceConfig,
+                        (v1, v2) -> v1));
         Map<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
         
         buildConfigFileMap(serviceInfo, map, configFileMap);
         
-        PackageUtils.putServicePackageName(
-                frameCode, serviceName, serviceInfo.getDecompressPackageName());
+        PackageUtils.putServicePackageName(frameCode, serviceName, decompressPackageName);
         
-        putServiceHomeToVariable(frameCode,
-                clusters, serviceName, serviceInfo.getDecompressPackageName());
+        putServiceHomeToVariable(frameCode, clusters, serviceName, serviceInfo.getDecompressPackageName());
         // save service and service config
         FrameServiceEntity serviceEntity =
                 saveFrameService(
@@ -448,6 +455,7 @@ public class LoadServiceMeta implements ApplicationRunner {
         serviceEntity.setServiceDesc(serviceInfo.getDescription());
         serviceEntity.setServiceVersion(serviceInfo.getVersion());
         serviceEntity.setPackageName(serviceInfo.getPackageName());
+        serviceEntity.setArch(JSON.toJSONString(serviceInfo.getArch()));
         serviceEntity.setDependencies(StringUtils.join(serviceInfo.getDependencies(), ","));
         serviceEntity.setFrameCode(frameCode);
         serviceEntity.setServiceConfig(JSON.toJSONString(serviceInfo.getParameters()));
@@ -457,5 +465,17 @@ public class LoadServiceMeta implements ApplicationRunner {
         serviceEntity.setConfigFileJson(JSONObject.toJSONString(configFileMap));
         serviceEntity.setConfigFileJsonMd5(SecureUtil.md5(serviceEntity.getConfigFileJson()));
         serviceEntity.setSortNum(serviceInfo.getSortNum());
+    }
+    
+    public static Map<String, ArchInfo> getArchInfo(String packageName, String decompressPackageName) {
+        Map<String, ArchInfo> arch = new ConcurrentHashMap<>();
+        ArchInfo x86 = new ArchInfo();
+        x86.setPackageName(packageName);
+        arch.put(ArchType.X86.getArch(), x86);
+        
+        ArchInfo arm = new ArchInfo();
+        arm.setPackageName(decompressPackageName + "-arm.tar.gz");
+        arch.put(ArchType.ARM.getArch(), arm);
+        return arch;
     }
 }

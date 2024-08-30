@@ -266,7 +266,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "jdbc:mysql://${apiHost}:3306/dolphinscheduler?useUnicode=true&characterEncoding=UTF-8&useSSL=false"
+			"defaultValue": "jdbc:mysql://${apiHost}:3306/dolphinscheduler?useUnicode=true&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&useSSL=false"
 		},
 		{
 			"name": "username",

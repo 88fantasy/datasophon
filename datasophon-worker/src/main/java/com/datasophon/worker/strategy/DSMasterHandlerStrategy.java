@@ -58,16 +58,19 @@ public class DSMasterHandlerStrategy extends AbstractHandlerStrategy implements 
                 List<String> lines = FileReader.create(envFile).readLines();
                 Optional<String> optionalUrl =
                         lines.stream().filter(line -> line.contains("SPRING_DATASOURCE_URL")).findFirst();
-                Optional<String> optionaUsername =
+                Optional<String> optionalUsername =
                         lines.stream().filter(line -> line.contains("SPRING_DATASOURCE_USERNAME")).findFirst();
                 Optional<String> optionalPassword =
                         lines.stream().filter(line -> line.contains("SPRING_DATASOURCE_PASSWORD")).findFirst();
                 
-                if (optionalUrl.isPresent() && optionaUsername.isPresent() && optionalPassword.isPresent()) {
+                if (optionalUrl.isPresent() && optionalUsername.isPresent() && optionalPassword.isPresent()) {
+                    String url = getValue(optionalUrl.get());
+                    String username = getValue(optionalUsername.get());
+                    String password = getValue(optionalPassword.get());
+                    logger.info("database info is using  {}  on {} ", username, url);
                     Connection con = null;
                     try {
-                        con = DbUtil.use(new SimpleDataSource(getValue(optionalUrl.get()),
-                                getValue(optionaUsername.get()), getValue(optionalPassword.get()))).getConnection();
+                        con = DbUtil.use(new SimpleDataSource(url, username, password)).getConnection();
                         List<String> entityList = SqlExecutor.query(con, "SHOW TABLES", new RsHandler<List<String>>() {
                             
                             @Override
@@ -83,8 +86,8 @@ public class DSMasterHandlerStrategy extends AbstractHandlerStrategy implements 
                                 || s.equals("t_ds_version") || s.equals("t_escheduler_queue"))) {
                             ready = false;
                         }
-                    } catch (SQLException sqle) {
-                        logger.error(sqle.getMessage(), sqle);
+                    } catch (Exception e) {
+                        logger.error(e.getMessage(), e);
                     } finally {
                         DbUtil.close(con);
                     }

@@ -23,6 +23,7 @@ import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.InstallServiceRoleCommand;
+import com.datasophon.common.model.ArchInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterHostDO;
@@ -33,6 +34,7 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
 import java.nio.charset.Charset;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -47,8 +49,10 @@ import cn.hutool.core.io.FileUtil;
 public class ServiceInstallHandler extends ServiceHandler {
     
     private static final Logger logger = LoggerFactory.getLogger(ServiceInstallHandler.class);
+    
     @Override
     public ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception {
+        ExecResult execResult = new ExecResult();
         ClusterServiceRoleInstanceService roleInstanceService =
                 SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
         ClusterHostService clusterHostService = SpringTool.getApplicationContext().getBean(ClusterHostService.class);
@@ -56,7 +60,6 @@ public class ServiceInstallHandler extends ServiceHandler {
                 serviceRoleInfo.getHostname(), serviceRoleInfo.getClusterId());
         ClusterHostDO hostEntity = clusterHostService.getClusterHostByHostname(serviceRoleInfo.getHostname());
         if (Objects.nonNull(serviceRole)) {
-            ExecResult execResult = new ExecResult();
             execResult.setExecResult(true);
             execResult.setExecOut("already installed");
             return execResult;
@@ -71,20 +74,23 @@ public class ServiceInstallHandler extends ServiceHandler {
         installServiceRoleCommand.setServiceRoleType(serviceRoleInfo.getRoleType());
         installServiceRoleCommand.setResourceStrategies(serviceRoleInfo.getResourceStrategies());
         
-        String md5;
-        if ("aarch64".equals(hostEntity.getCpuArchitecture()) && FileUtil.exist(Constants.MASTER_MANAGE_PACKAGE_PATH
-                + Constants.SLASH + serviceRoleInfo.getDecompressPackageName() + "-arm.tar.gz")) {
-            installServiceRoleCommand.setPackageName(serviceRoleInfo.getDecompressPackageName() + "-arm.tar.gz");
-            logger.info("find arm package {}", installServiceRoleCommand.getPackageName());
-            md5 = FileUtil.readString(Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH
-                    + serviceRoleInfo.getDecompressPackageName() + "-arm.tar.gz.md5", Charset.defaultCharset());
+        String arch = hostEntity.getCpuArchitecture();
+        Map<String, ArchInfo> archInfoMap = serviceRoleInfo.getArchInfoMap();
+        if (archInfoMap.containsKey(arch)) {
+            String packageName = archInfoMap.get(arch).getPackageName();
+            String packageFilePath = Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + packageName;
+            String md5FilePath = packageFilePath + ".md5";
+            if (FileUtil.exist(packageFilePath) && FileUtil.exist(md5FilePath)) {
+                installServiceRoleCommand.setPackageName(packageName);
+                installServiceRoleCommand.setPackageMd5(FileUtil.readString(md5FilePath, Charset.defaultCharset()));
+            } else {
+                execResult.setExecOut("file or md5 not exist !");
+                return execResult;
+            }
         } else {
-            installServiceRoleCommand.setPackageName(serviceRoleInfo.getPackageName());
-            md5 = FileUtil.readString(
-                    Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + serviceRoleInfo.getPackageName() + ".md5",
-                    Charset.defaultCharset());
+            execResult.setExecOut("arch [" + arch + "] is undefined !");
+            return execResult;
         }
-        installServiceRoleCommand.setPackageMd5(md5);
         
         ActorSelection actorSelection = ActorUtils.actorSystem.actorSelection(
                 "akka.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/installServiceActor");

@@ -59,6 +59,8 @@ public class FrameServiceEntity implements Serializable {
     
     private String packageName;
     
+    private String arch;
+    
     private String dependencies;
     
     private String serviceJson;

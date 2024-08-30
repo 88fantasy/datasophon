@@ -80,7 +80,7 @@ public class FrameServiceRoleServiceImpl extends ServiceImpl<FrameServiceRoleMap
             if (Objects.nonNull(roleInstanceList) && roleInstanceList.size() > 0) {
                 List<String> hosts = roleInstanceList.stream().map(e -> e.getHostname()).collect(Collectors.toList());
                 role.setHosts(hosts);
-            } else if (CacheUtils.constainsKey(key)) {
+            } else if (CacheUtils.containsKey(key)) {
                 Map<String, List<String>> map = (Map<String, List<String>>) CacheUtils.get(key);
                 if (map.containsKey(role.getServiceRoleName())) {
                     role.setHosts(map.get(role.getServiceRoleName()));
@@ -125,7 +125,7 @@ public class FrameServiceRoleServiceImpl extends ServiceImpl<FrameServiceRoleMap
             if (Objects.nonNull(roleInstanceList) && roleInstanceList.size() > 0) {
                 hosts = roleInstanceList.stream().map(e -> e.getHostname()).collect(Collectors.toList());
                 
-            } else if (CacheUtils.constainsKey(key)) {
+            } else if (CacheUtils.containsKey(key)) {
                 Map<String, List<String>> map = (Map<String, List<String>>) CacheUtils.get(key);
                 if (map.containsKey(role.getServiceRoleName())) {
                     hosts = map.get(role.getServiceRoleName());
