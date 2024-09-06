@@ -48,11 +48,11 @@ public class HistoryServerHandlerStrategy extends AbstractHandlerStrategy implem
         String hadoopHome = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             // create tmp
-            ShellUtils.exceShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir -p /user/yarn/yarn-logs");
-            ShellUtils.exceShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir /tmp");
-            ShellUtils.exceShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chmod 777 /tmp");
+            ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir -p /user/yarn/yarn-logs");
+            ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir /tmp");
+            ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chmod 777 /tmp");
             ShellUtils
-                    .exceShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chown yarn:hadoop /user/yarn/yarn-logs");
+                    .execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chown yarn:hadoop /user/yarn/yarn-logs");
         }
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
                 command.getDecompressPackageName(), command.getRunAs());

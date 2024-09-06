@@ -45,12 +45,12 @@ public class KerberosActor extends UntypedActor {
                 String addprinc =
                         "kadmin -padmin/admin -wadmin -q \"addprinc -randkey " + command.getPrincipal() + "\"";
                 logger.info("add principal : {}", addprinc);
-                ShellUtils.exceShell(addprinc);
+                ShellUtils.execShell(addprinc);
                 String keytabCmd = "kadmin -padmin/admin -wadmin -q \"xst -k " + keytabFilePath + " "
                         + command.getPrincipal() + "\"";
                 
                 logger.info("generate keytab file cmd :{}", keytabCmd);
-                ShellUtils.exceShell(keytabCmd);
+                ShellUtils.execShell(keytabCmd);
             }
             execResult.setExecResult(true);
             getSender().tell(execResult, getSelf());

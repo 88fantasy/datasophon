@@ -101,7 +101,7 @@ public class OlapUtils {
                         + hostname
                         + ":9010\"';";
         // logger.info("sqlCommand is {}", sqlCommand);
-        return ShellUtils.exceShell(sqlCommand);
+        return ShellUtils.execShell(sqlCommand);
     }
     
     public static ExecResult addObserverBySqlClient(String feMaster,
@@ -114,7 +114,7 @@ public class OlapUtils {
                         + hostname
                         + ":9010\"';";
         // logger.info("sqlCommand is {}", sqlCommand);
-        return ShellUtils.exceShell(sqlCommand);
+        return ShellUtils.execShell(sqlCommand);
     }
     
     public static ExecResult addBackendBySqlClient(String feMaster,
@@ -127,7 +127,7 @@ public class OlapUtils {
                         + hostname
                         + ":9050\"';";
         // logger.info("sqlCommand is {}", sqlCommand);
-        return ShellUtils.exceShell(sqlCommand);
+        return ShellUtils.execShell(sqlCommand);
     }
     
     private static Connection getConnection(String feMaster) throws ClassNotFoundException, SQLException {

@@ -55,7 +55,7 @@
         <mybatis.spring.version>2.0.1</mybatis.spring.version>
         <mybatis-plus-join>1.2.0</mybatis-plus-join>
         <mysql.connector.version>8.0.28</mysql.connector.version>
-        <org.apache.sshd.version>2.9.2</org.apache.sshd.version>
+        <org.apache.sshd.version>2.9.3</org.apache.sshd.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring.boot.version>2.6.1</spring.boot.version>
@@ -71,7 +71,7 @@
         <commons-compress.version>1.21</commons-compress.version>
         <jackson-annotations.version>2.13.0</jackson-annotations.version>
         <ant.version>1.10.12</ant.version>
-        <jsch.version>0.2.7</jsch.version>
+        <jsch.version>0.2.19</jsch.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <eddsa.version>0.3.0</eddsa.version>
         <mockito-core.version>2.23.4</mockito-core.version>

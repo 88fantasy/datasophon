@@ -103,13 +103,13 @@ public class ClusterKerberosServiceImpl implements ClusterKerberosService {
         String kadminPrincipal = globalVariables.get("${kadminPrincipal}");
         String kadminPassword = globalVariables.get("${kadminPassword}");
         String listPrinc = "kadmin -p" + kadminPrincipal + " -w" + kadminPassword + " -q \"listprincs\"";
-        ExecResult execResult = ShellUtils.exceShell(listPrinc);
+        ExecResult execResult = ShellUtils.execShell(listPrinc);
         String execOut = execResult.getExecOut();
         if (!execOut.contains(principal)) {
             String addprinc = "kadmin -p" + kadminPrincipal + " -w" + kadminPassword + " -q \"addprinc -randkey "
                     + principal + "\"";
             logger.info("add principal cmd is : {}", addprinc);
-            ShellUtils.exceShell(addprinc);
+            ShellUtils.execShell(addprinc);
         }
         if (!FileUtil.exist(keytabFilePath)) {
             FileUtil.mkParentDirs(keytabFilePath);
@@ -118,7 +118,7 @@ public class ClusterKerberosServiceImpl implements ClusterKerberosService {
                 "kadmin -p" + kadminPrincipal + " -w" + kadminPassword + " -q \"xst -k " + keytabFilePath + " "
                         + principal + "\"";
         logger.info("generate keytab file cmd is : {}", keytabCmd);
-        ShellUtils.exceShell(keytabCmd);
+        ShellUtils.execShell(keytabCmd);
         
     }
 }

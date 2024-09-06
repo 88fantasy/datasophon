@@ -1,9 +1,10 @@
-package com.datasophon.cli.init;
+package com.datasophon.cli.create;
 
 import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.GlobalConfig;
 import com.datasophon.cli.base.OS;
 
+import com.datasophon.common.enums.ArchType;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -16,13 +17,16 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.core.util.StrUtil;
 
-@CommandLine.Command(name = "config")
-public class CliInitConfig implements Runnable {
+@CommandLine.Command(name = "config", description = "create config file")
+public class CreateConfig implements Runnable {
     
     private static final String DEFAULT_FILE = "cluster-sample.yml";
-    
+
     @CommandLine.Option(names = {"--with-os"}, description = "操作系统")
     OS os = OS.CentOS7;
+
+    @CommandLine.Option(names = {"--with-arch"}, description = "Cpu架构")
+    ArchType archType = ArchType.X86;
     
     @CommandLine.Option(names = {"--with-mysql"}, description = "安装Mysql", negatable = true)
     boolean installMysql;
@@ -34,7 +38,7 @@ public class CliInitConfig implements Runnable {
     boolean override;
     
     @CommandLine.Parameters(arity = "0..1", paramLabel = "<path>", description = "路径")
-    private String path;
+    private String path = "cluster-sample.yml";
     
     @Override
     public void run() {
@@ -47,6 +51,7 @@ public class CliInitConfig implements Runnable {
         ClusterConfig clusterConfig = yaml.loadAs(content, ClusterConfig.class);
         GlobalConfig global = clusterConfig.getGlobal();
         global.setOs(os);
+        global.setArch(archType);
         GlobalConfig.MysqlConfig mysql = global.getMysql();
         mysql.setEnable(installMysql);
         if (StrUtil.isNotEmpty(mysqlPassword)) {

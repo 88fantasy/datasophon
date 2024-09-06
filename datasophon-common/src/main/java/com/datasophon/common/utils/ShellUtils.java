@@ -57,9 +57,9 @@ public class ShellUtils {
      * @param pathOrCommand 脚本路径或者命令
      * @return
      */
-    public static ExecResult exceShell(String pathOrCommand) {
+    public static ExecResult execShell(String pathOrCommand) {
         ExecResult result = new ExecResult();
-        StringBuffer stringBuffer = new StringBuffer();
+        StringBuilder stringBuffer = new StringBuilder();
         try {
             // 执行脚本
             Process ps = Runtime.getRuntime().exec(new String[]{"sh", "-c", pathOrCommand});
@@ -95,7 +95,7 @@ public class ShellUtils {
     public static String getCpuArchitecture() {
         try {
             Process ps = Runtime.getRuntime().exec("arch");
-            StringBuffer stringBuffer = new StringBuffer();
+            StringBuilder stringBuffer = new StringBuilder();
             int exitValue = ps.waitFor();
             if (0 == exitValue) {
                 // 只能接收脚本echo打印的数据，并且是echo打印的最后一次数据

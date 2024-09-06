@@ -21,13 +21,13 @@ package com.datasophon.api.utils;
 
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
-
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.sftp.client.SftpClientFactory;
 import org.apache.sshd.sftp.client.fs.SftpFileSystem;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -40,18 +40,14 @@ import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.LoggerFactory;
-
 public class MinaUtils {
-    
+
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(MinaUtils.class);
-    
+
     /**
      * 打开远程会话
      */
@@ -74,7 +70,7 @@ public class MinaUtils {
         LOG.info(sshHost + " 连接成功");
         return session;
     }
-    
+
     /**
      * 关闭远程会话
      */
@@ -85,7 +81,7 @@ public class MinaUtils {
             throw new RuntimeException(e);
         }
     }
-    
+
     /**
      * 获取密钥对
      */
@@ -103,7 +99,7 @@ public class MinaUtils {
             throw new RuntimeException(e);
         }
     }
-    
+
     /**
      * 同步执行,需要获取执行完的结果
      *
@@ -154,7 +150,7 @@ public class MinaUtils {
         LOG.info("exe cmd return : {}", out);
         return out.toString().trim();
     }
-    
+
     /**
      * 上传文件,相同路径ui覆盖
      *
@@ -186,7 +182,7 @@ public class MinaUtils {
             throw new RuntimeException(e);
         }
     }
-    
+
     /**
      * 创建目录
      *
@@ -207,13 +203,12 @@ public class MinaUtils {
         }
         return false;
     }
-    
+
     public static ArchType getArch(ClientSession session) {
         String arch = MinaUtils.execCmdWithResult(session, "arch");
-        Optional<ArchType> optional = Arrays.stream(ArchType.values()).filter(type -> type.getArch().equals(arch)).findAny();
-        return optional.orElse(ArchType.OTHER);
+        return ArchType.of(arch);
     }
-    
+
     public static void main(String[] args) throws IOException, InterruptedException {
         ClientSession session = MinaUtils.openConnection("localhost", 22, "liuxin");
         for (int i = 0; i < Constants.TEN; i++) {

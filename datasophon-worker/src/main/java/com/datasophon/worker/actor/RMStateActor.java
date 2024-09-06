@@ -12,7 +12,7 @@ public class RMStateActor extends UntypedActor {
     public void onReceive(Object msg) throws Throwable {
         if (msg instanceof ExecuteCmdCommand) {
             ExecuteCmdCommand command = (ExecuteCmdCommand) msg;
-            ExecResult execResult = ShellUtils.exceShell(command.getCommandLine());
+            ExecResult execResult = ShellUtils.execShell(command.getCommandLine());
             getSender().tell(execResult, getSelf());
         } else {
             unhandled(msg);

@@ -73,7 +73,7 @@ public class InstallServiceActor extends UntypedActor {
                 String appLinkHome =
                         Constants.INSTALL_PATH + Constants.SLASH + StringUtils.lowerCase(command.getServiceName());
                 if (!new File(appLinkHome).exists()) {
-                    ShellUtils.exceShell("ln -s " + appHome + " " + appLinkHome);
+                    ShellUtils.execShell("ln -s " + appHome + " " + appLinkHome);
                     logger.info("Create symbolic dir: {}", appLinkHome);
                 }
             }

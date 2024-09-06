@@ -132,18 +132,18 @@ public class InstallServiceHandler {
                 }
                 
                 if (Objects.nonNull(command.getRunAs())) {
-                    ExecResult chownResult = ShellUtils.exceShell(
+                    ExecResult chownResult = ShellUtils.execShell(
                             " chown -R " + command.getRunAs().getUser() + ":" + command.getRunAs().getGroup() + " "
                                     + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
                     logger.info("chown {} {}", decompressPackageName, chownResult.getExecResult() ? "success" : "fail");
                 }
                 ExecResult chmodResult = ShellUtils
-                        .exceShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                        .execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
                 logger.info("chmod {} {}", decompressPackageName, chmodResult.getExecResult() ? "success" : "fail");
                 if (decompressPackageName.contains(Constants.PROMETHEUS)) {
                     String alertPath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName
                             + Constants.SLASH + "alert_rules";
-                    ShellUtils.exceShell("sed -i \"s/clusterIdValue/" + PropertyUtils.getString("clusterId")
+                    ShellUtils.execShell("sed -i \"s/clusterIdValue/" + PropertyUtils.getString("clusterId")
                             + "/g\" `grep clusterIdValue -rl " + alertPath + "`");
                 }
                 if (decompressPackageName.contains(HADOOP)) {
@@ -238,20 +238,20 @@ public class InstallServiceHandler {
     }
     
     private void changeHadoopInstallPathPerm(String decompressPackageName) {
-        ShellUtils.exceShell(
+        ShellUtils.execShell(
                 " chown -R  root:hadoop " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-        ShellUtils.exceShell(" chmod 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-        ShellUtils.exceShell(
+        ShellUtils.execShell(" chmod 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+        ShellUtils.execShell(
                 " chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/etc");
-        ShellUtils.exceShell(" chmod 6050 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName
+        ShellUtils.execShell(" chmod 6050 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName
                 + "/bin/container-executor");
-        ShellUtils.exceShell(" chmod 400 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName
+        ShellUtils.execShell(" chmod 400 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName
                 + "/etc/hadoop/container-executor.cfg");
-        ShellUtils.exceShell(" chown -R yarn:hadoop " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName
+        ShellUtils.execShell(" chown -R yarn:hadoop " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName
                 + "/logs/userlogs");
-        ShellUtils.exceShell(
+        ShellUtils.execShell(
                 " chmod 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/logs/userlogs");
-        ShellUtils.exceShell(" ln -s " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + " "
+        ShellUtils.execShell(" ln -s " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + " "
                 + Constants.INSTALL_PATH + Constants.SLASH + "hadoop");
     }
 }

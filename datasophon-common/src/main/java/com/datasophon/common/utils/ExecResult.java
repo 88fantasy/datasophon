@@ -17,37 +17,24 @@
 
 package com.datasophon.common.utils;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.io.Serializable;
 
+@Setter
 public class ExecResult implements Serializable {
     
     private boolean execResult = false;
     
+    @Getter
     private String execOut;
     
+    @Getter
     private String execErrOut;
-    
-    public String getExecErrOut() {
-        return execErrOut;
-    }
-    
-    public void setExecErrOut(String execErrOut) {
-        this.execErrOut = execErrOut;
-    }
-    
+
     public boolean getExecResult() {
         return execResult;
     }
-    
-    public void setExecResult(boolean execResult) {
-        this.execResult = execResult;
-    }
-    
-    public String getExecOut() {
-        return execOut;
-    }
-    
-    public void setExecOut(String execOut) {
-        this.execOut = execOut;
-    }
+
 }

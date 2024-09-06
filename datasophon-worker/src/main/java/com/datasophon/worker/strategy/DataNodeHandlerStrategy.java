@@ -50,11 +50,11 @@ public class DataNodeHandlerStrategy extends AbstractHandlerStrategy implements 
             String hadoopConfDir =
                     Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName() + "/etc/hadoop/";
             if (!FileUtil.exist(hadoopConfDir + "ssl-server.xml")) {
-                ShellUtils.exceShell(
+                ShellUtils.execShell(
                         "cp " + hadoopConfDir + "ssl-server.xml.template " + hadoopConfDir + "ssl-server.xml");
             }
             if (!FileUtil.exist(hadoopConfDir + "ssl-client.xml")) {
-                ShellUtils.exceShell(
+                ShellUtils.execShell(
                         "cp " + hadoopConfDir + "ssl-client.xml.template " + hadoopConfDir + "ssl-client.xml");
             }
             if (!FileUtil.exist("/etc/security/keytab/keystore")) {

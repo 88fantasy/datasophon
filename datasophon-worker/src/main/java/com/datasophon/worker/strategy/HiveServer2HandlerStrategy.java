@@ -71,21 +71,21 @@ public class HiveServer2HandlerStrategy extends AbstractHandlerStrategy implemen
         }
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             String hadoopHome = PropertyUtils.getString("HADOOP_HOME");
-            ShellUtils.exceShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir -p /user/hive/warehouse");
-            ShellUtils.exceShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir -p /tmp/hive");
-            ShellUtils.exceShell(
+            ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir -p /user/hive/warehouse");
+            ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir -p /tmp/hive");
+            ShellUtils.execShell(
                     "sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir -p /tmp/hadoop-yarn/staging/history/done");
-            ShellUtils.exceShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chown -R hdfs:hadoop /tmp");
-            ShellUtils.exceShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chmod -R 775 /tmp");
+            ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chown -R hdfs:hadoop /tmp");
+            ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chmod -R 775 /tmp");
             ShellUtils
-                    .exceShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chown hive:hadoop /user/hive/warehouse");
-            ShellUtils.exceShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chown hive:hadoop /tmp/hive");
-            ShellUtils.exceShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chmod 777 /tmp/hive");
+                    .execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chown hive:hadoop /user/hive/warehouse");
+            ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chown hive:hadoop /tmp/hive");
+            ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chmod 777 /tmp/hive");
             
             // 存在 tez 则创建软连接
             final String tezHomePath = Constants.INSTALL_PATH + Constants.SLASH + "tez";
             if (FileUtil.exist(tezHomePath)) {
-                ShellUtils.exceShell("ln -s " + tezHomePath + "/conf/tez-site.xml " + workPath + "/conf/tez-site.xml");
+                ShellUtils.execShell("ln -s " + tezHomePath + "/conf/tez-site.xml " + workPath + "/conf/tez-site.xml");
             }
         }
         

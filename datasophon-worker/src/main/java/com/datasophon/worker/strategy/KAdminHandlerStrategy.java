@@ -40,7 +40,7 @@ public class KAdminHandlerStrategy extends AbstractHandlerStrategy implements Se
                     command.getDecompressPackageName(), command.getRunAs());
             if (startResult.getExecResult()) {
                 // create admin
-                ShellUtils.exceShell("kadmin.local -q \"addprinc  -pw admin admin/admin\"");
+                ShellUtils.execShell("kadmin.local -q \"addprinc  -pw admin admin/admin\"");
             }
         } else {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),

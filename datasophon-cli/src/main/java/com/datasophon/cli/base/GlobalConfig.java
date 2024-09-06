@@ -1,5 +1,7 @@
 package com.datasophon.cli.base;
 
+import com.datasophon.common.enums.ArchType;
+import com.datasophon.common.model.Host;
 import lombok.Data;
 
 @Data
@@ -8,6 +10,8 @@ public class GlobalConfig {
     private boolean offline;
     
     private OS os;
+
+    private ArchType arch;
     
     private Host nmapServer;
     
