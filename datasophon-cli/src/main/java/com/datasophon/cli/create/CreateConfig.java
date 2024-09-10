@@ -2,9 +2,9 @@ package com.datasophon.cli.create;
 
 import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.GlobalConfig;
-import com.datasophon.cli.base.OS;
-
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.enums.ArchType;
+
 import picocli.CommandLine;
 
 import java.io.File;
@@ -21,10 +21,10 @@ import cn.hutool.core.util.StrUtil;
 public class CreateConfig implements Runnable {
     
     private static final String DEFAULT_FILE = "cluster-sample.yml";
-
+    
     @CommandLine.Option(names = {"--with-os"}, description = "操作系统")
-    OS os = OS.CentOS7;
-
+    OsType os = OsType.CentOS7;
+    
     @CommandLine.Option(names = {"--with-arch"}, description = "Cpu架构")
     ArchType archType = ArchType.X86;
     

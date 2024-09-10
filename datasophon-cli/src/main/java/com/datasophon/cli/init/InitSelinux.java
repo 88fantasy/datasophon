@@ -1,23 +1,21 @@
 package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
-import com.datasophon.cli.base.JschExecutor;
-import com.datasophon.cli.base.LocalExecutor;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.common.utils.ExecResult;
-import com.jcraft.jsch.Session;
-import lombok.extern.slf4j.Slf4j;
+
 import picocli.CommandLine;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @CommandLine.Command(name = "selinux", description = "stop selinux")
 public class InitSelinux extends InitBase implements InitNodeHandler {
-
+    
     @Override
     public String name() {
         return "关闭安全策略";
     }
-
+    
     public boolean doRun(Executor executor) {
         ExecResult exec = executor.execShell("getenforce");
         if (exec.getExecResult()) {
@@ -42,5 +40,5 @@ public class InitSelinux extends InitBase implements InitNodeHandler {
             return false;
         }
     }
-
+    
 }

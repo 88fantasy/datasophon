@@ -5,7 +5,7 @@ package com.datasophon.cli.base;
  * @date 2024/9/2 下午4:14
  **/
 public final class CliConstants {
-
-    public static String CHECK_PREFIX = "rpm -qa | grep ";
-
+    
+    public static final String CHECK_PREFIX = "rpm -qa | grep ";
+    
 }

@@ -1,9 +1,7 @@
 package com.datasophon.cli.util;
 
-
-import cn.hutool.core.util.RuntimeUtil;
 import com.datasophon.cli.base.CliConstants;
-import com.datasophon.cli.base.OS;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
@@ -12,9 +10,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public final class CliUtil {
+import cn.hutool.core.util.RuntimeUtil;
 
-    public static boolean checkAndInstall(String component, OS os, String dir, Map<String, Map<OS, String>> packages) {
+public final class CliUtil {
+    
+    public static boolean checkAndInstall(String component, OsType os, String dir, Map<String, Map<OsType, String>> packages) {
         System.out.printf("checking %s...%n", component);
         String checkStr = CliConstants.CHECK_PREFIX + component;
         List<String> checkResult = RuntimeUtil.execForLines(checkStr);

@@ -1,9 +1,9 @@
 package com.datasophon.common.enums;
 
-import lombok.Getter;
-
 import java.util.Arrays;
 import java.util.Optional;
+
+import lombok.Getter;
 
 @Getter
 public enum ArchType {
@@ -18,7 +18,7 @@ public enum ArchType {
     ArchType(String arch) {
         this.arch = arch;
     }
-
+    
     public static ArchType of(String arch) {
         Optional<ArchType> optional = Arrays.stream(ArchType.values()).filter(type -> type.getArch().equals(arch)).findAny();
         return optional.orElse(ArchType.OTHER);

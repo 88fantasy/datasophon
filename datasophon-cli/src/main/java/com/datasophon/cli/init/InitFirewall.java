@@ -3,18 +3,19 @@ package com.datasophon.cli.init;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.common.utils.ExecResult;
-import lombok.extern.slf4j.Slf4j;
+
 import picocli.CommandLine;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @CommandLine.Command(name = "firewall", description = "init firewall")
 public class InitFirewall extends InitBase implements InitNodeHandler {
-
+    
     @Override
     public String name() {
         return "防火墙策略";
     }
-
+    
     public boolean doRun(Executor executor) {
         ExecResult exec = executor.execShell("firewall-cmd --state");
         if (exec.getExecResult()) {

@@ -17,6 +17,7 @@
 
 package com.datasophon.common.utils;
 
+import cn.hutool.core.util.RuntimeUtil;
 import com.datasophon.common.Constants;
 
 import java.io.BufferedInputStream;
@@ -26,11 +27,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
+import com.datasophon.common.enums.OsType;
+import com.jcraft.jsch.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -280,5 +286,26 @@ public class ShellUtils {
         command.add(user + ":" + group);
         command.add(path);
         execWithStatus(Constants.INSTALL_PATH, command, 60, logger);
+    }
+
+    public static OsType getOs() {
+        List<String> strings = RuntimeUtil.execForLines("hostnamectl");
+        Optional<String> optionalOs = strings.stream().filter(s -> s.startsWith("Operating System:")).findAny();
+        if (optionalOs.isPresent()) {
+            String osString = optionalOs.get().substring(17);
+            Optional<OsType> optionalOsType = Arrays.stream(OsType.values()).filter(os -> Pattern.matches(os.getOsRegex(), osString)).findAny();
+            return optionalOsType.orElse(OsType.Other);
+        }
+        return OsType.Other;
+    }
+
+    public static OsType getOsFromLines(List<String> lines) {
+        Optional<String> optionalOs = lines.stream().filter(s -> s.startsWith("Operating System:")).findAny();
+        if (optionalOs.isPresent()) {
+            String osString = optionalOs.get().substring(17);
+            Optional<OsType> optionalOsType = Arrays.stream(OsType.values()).filter(os -> Pattern.matches(os.getOsRegex(), osString)).findAny();
+            return optionalOsType.orElse(OsType.Other);
+        }
+        return OsType.Other;
     }
 }

@@ -1,21 +1,25 @@
 package com.datasophon.common.utils;
 
-
 import cn.hutool.core.io.IoUtil;
 import com.datasophon.common.enums.ArchType;
+import com.datasophon.common.enums.OsType;
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -29,14 +33,14 @@ public class JschUtils {
         JSch jSch = new JSch();
         Session session;
         try {
-            //创建连接
+            // 创建连接
             log.info("正在连接服务器{}@{}", userName, ip);
             session = jSch.getSession(userName, ip, port);
             session.setPassword(password);
-            //是否使用密钥登录，一般默认为no
+            // 是否使用密钥登录，一般默认为no
             session.setConfig("StrictHostKeyChecking", "no");
             session.setConfig("PreferredAuthentications", "password");
-            //启用连接
+            // 启用连接
             session.connect(3000);
         } catch (JSchException e) {
             log.error(String.format("服务器%s@%s连接失败:%s", userName, ip, e.getMessage()), e);
@@ -60,13 +64,13 @@ public class JschUtils {
         InputStream in = null;
         ChannelExec channel = null;
         try {
-            //创建执行通道
+            // 创建执行通道
             channel = (ChannelExec) session.openChannel("exec");
-            //设置命令
+            // 设置命令
             channel.setCommand(command);
-            //连接通道
+            // 连接通道
             channel.connect();
-            //读取通道的输出
+            // 读取通道的输出
             return IoUtil.readLines(in, Charset.defaultCharset(), new ArrayList<>());
         } catch (JSchException e) {
             throw e;
@@ -82,13 +86,13 @@ public class JschUtils {
         InputStream in = null;
         Channel channel = null;
         try {
-            //创建执行通道
+            // 创建执行通道
             channel = session.openChannel("exec");
-            //设置命令
+            // 设置命令
             ((ChannelExec) channel).setCommand(command);
-            //连接通道
+            // 连接通道
             channel.connect();
-            //读取通道的输出
+            // 读取通道的输出
             in = channel.getInputStream();
             return IoUtil.read(in, Charset.defaultCharset());
         } finally {
@@ -110,7 +114,7 @@ public class JschUtils {
         OutputStream os = null;
         ChannelShell channel = null;
         try {
-            //创建执行通道
+            // 创建执行通道
             channel = (ChannelShell) session.openChannel("shell");
             channel.connect(connectTimeout * 1000);
             is = channel.getInputStream();
@@ -124,7 +128,7 @@ public class JschUtils {
                 // FIXME 由于读取执行结果是阻塞的，必须等待指令执行一段时间，具体多少不好斟酌
                 TimeUnit.SECONDS.sleep(cmdWaitSeconds);
 
-                //读取通道的输出
+                // 读取通道的输出
                 String rs = IoUtil.read(is, Charset.defaultCharset());
                 result.put(cmd, rs);
             }
@@ -149,9 +153,9 @@ public class JschUtils {
         OutputStream os = null;
         ChannelShell channel = null;
         try {
-            //创建执行通道
+            // 创建执行通道
             channel = (ChannelShell) session.openChannel("shell");
-            channel.connect(connectTimeout);
+            channel.connect(connectTimeout * 1000);
             is = channel.getInputStream();
             os = channel.getOutputStream();
 
@@ -163,7 +167,7 @@ public class JschUtils {
                 // FIXME 由于读取执行结果是阻塞的，必须等待指令执行一段时间，具体多少不好斟酌
                 TimeUnit.SECONDS.sleep(cmdWaitSeconds);
 
-                //读取通道的输出
+                // 读取通道的输出
                 ArrayList<String> readLines = IoUtil.readLines(is, Charset.defaultCharset(), new ArrayList<>());
                 result.put(cmd, readLines);
             }
@@ -171,6 +175,43 @@ public class JschUtils {
         } finally {
             IoUtil.close(os);
             IoUtil.close(is);
+            if (channel != null && channel.isConnected()) {
+                channel.disconnect();
+            }
+        }
+    }
+
+    public static List<String> getFileLines(Session session, String path, int connectTimeout) throws Exception {
+        String fileString = getFileString(session, path, connectTimeout);
+        return Arrays.asList(fileString.split("\n"));
+    }
+
+    public static String getFileString(Session session, String path, int connectTimeout) throws Exception {
+        ChannelSftp channel = null;
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            // 创建执行通道
+            channel = (ChannelSftp) session.openChannel("sftp");
+            channel.connect(connectTimeout * 1000);
+            channel.get(path, baos);
+            return baos.toString();
+        } finally {
+
+            if (channel != null && channel.isConnected()) {
+                channel.disconnect();
+            }
+        }
+    }
+
+    public static void writeLines(Session session, List<String> lines, String path, int connectTimeout) throws Exception {
+        ChannelSftp channel = null;
+        try {
+            ByteArrayInputStream bais = new ByteArrayInputStream(String.join("\n", lines).getBytes());
+            // 创建执行通道
+            channel = (ChannelSftp) session.openChannel("sftp");
+            channel.connect(connectTimeout * 1000);
+            channel.put(bais, path);
+        } finally {
             if (channel != null && channel.isConnected()) {
                 channel.disconnect();
             }
@@ -187,4 +228,18 @@ public class JschUtils {
 
     }
 
+    public static OsType getOs(Session session) {
+        try {
+            List<String> lines = execForLines(session, "hostnamectl");
+            return ShellUtils.getOsFromLines(lines);
+        } catch (JSchException | IOException e) {
+            return OsType.Other;
+        }
+    }
+
+//    public static void main(String[] args) throws Exception {
+//        Session jSchSession = JschUtils.getJSchSession("192.168.2.122", 22, "root", "M2MwNTA3MjkwNjdhOG!b_");
+//        String fileString = JschUtils.getFileString(jSchSession, "/etc/systemd/system.conf", 30);
+//        System.out.println(fileString);
+//    }
 }

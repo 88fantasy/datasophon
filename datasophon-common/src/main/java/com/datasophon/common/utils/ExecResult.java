@@ -17,10 +17,10 @@
 
 package com.datasophon.common.utils;
 
+import java.io.Serializable;
+
 import lombok.Getter;
 import lombok.Setter;
-
-import java.io.Serializable;
 
 @Setter
 public class ExecResult implements Serializable {
@@ -32,9 +32,9 @@ public class ExecResult implements Serializable {
     
     @Getter
     private String execErrOut;
-
+    
     public boolean getExecResult() {
         return execResult;
     }
-
+    
 }

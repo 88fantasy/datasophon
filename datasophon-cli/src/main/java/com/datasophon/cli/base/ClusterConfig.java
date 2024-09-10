@@ -1,8 +1,9 @@
 package com.datasophon.cli.base;
 
+import com.datasophon.common.model.Host;
+
 import java.util.Collection;
 
-import com.datasophon.common.model.Host;
 import lombok.Data;
 
 @Data
