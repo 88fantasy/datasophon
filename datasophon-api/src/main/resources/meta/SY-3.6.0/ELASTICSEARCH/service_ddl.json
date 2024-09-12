@@ -23,7 +23,7 @@
       "cardinality": "1+",
       "logFile": "logs/ddp_es.log",
       "runAs": {
-          "user": "elastic",
+        "user": "elastic",
         "group": "elastic"
       },
       "sortNum": 1,
