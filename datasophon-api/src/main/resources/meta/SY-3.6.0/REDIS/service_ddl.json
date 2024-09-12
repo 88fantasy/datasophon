@@ -1,0 +1,163 @@
+{
+  "name": "REDIS",
+  "label": "Redis",
+  "description": "开源的高性能键值对存储系统",
+  "version": "6.2.14",
+  "sortNum": 91,
+  "dependencies": [],
+  "packageName": "redis-6.2.14.tar.gz",
+  "decompressPackageName": "redis-6.2.14",
+  "roles": [
+    {
+      "name": "RedisMaster",
+      "label": "RedisMaster",
+      "roleType": "master",
+      "cardinality": "1",
+      "runAs": {},
+      "logFile": "logs/master.log",
+      "resourceStrategies":[{
+        "type": "download",
+        "from": "script/control_redis.sh",
+        "to": "control_redis.sh",
+        "md5": "8b25b0fffa6034c219a68ec988daa0b8"
+      }],
+      "startRunner": {
+        "timeout": "60",
+        "program": "control_redis.sh",
+        "args": [
+          "start",
+          "master"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "control_redis.sh",
+        "args": [
+          "stop",
+          "master"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control_redis.sh",
+        "args": [
+          "status",
+          "master"
+        ]
+      }
+    },
+    {
+      "name": "RedisExporter",
+      "label": "RedisExporter",
+      "roleType": "worker",
+      "cardinality": "1",
+      "logFile": "redis-exporter/logs/redis_exporter-${host}.out",
+      "jmxPort": 9121,
+      "sortNum": 2,
+      "resourceStrategies":[{
+        "type": "download",
+        "from": "script/control_redis.sh",
+        "to": "control_redis.sh",
+        "md5": "8b25b0fffa6034c219a68ec988daa0b8"
+      }],
+      "startRunner": {
+        "timeout": "60",
+        "program": "control_redis.sh",
+        "args": [
+          "start",
+          "exporter"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "control_redis.sh",
+        "args": [
+          "stop",
+          "exporter"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control_redis.sh",
+        "args": [
+          "status",
+          "exporter"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "control_redis.sh",
+        "args": [
+          "restart",
+          "exporter"
+        ]
+      }
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "master.conf",
+        "configFormat": "custom",
+        "outputDirectory": "conf",
+        "templateName": "redis-master.ftl",
+        "includeParams": [
+          "redisMasterPort",
+          "dataDir",
+          "requirePass",
+          "custom.master.conf"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "name": "redisMasterPort",
+      "label": "master节点端口号",
+      "description": "",
+      "configType": "map",
+      "required": true,
+      "type": "input",
+      "value": "6379",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "6379"
+    },
+    {
+      "name": "dataDir",
+      "label": "数据存储目录",
+      "description": "数据持久化存储目录",
+      "configType": "map",
+      "required": true,
+      "type": "input",
+      "value": "/data/redis",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "/data/redis"
+    },
+    {
+      "name": "requirePass",
+      "label": "连接密码",
+      "description": "连接密码",
+      "configType": "map",
+      "required": true,
+      "type": "input",
+      "value": "fX0GzFyWOK4LR^9K",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "fX0GzFyWOK4LR^9K"
+    },
+    {
+      "name": "custom.master.conf",
+      "label": "自定义master配置",
+      "description": "自定义master配置",
+      "configType": "custom",
+      "required": false,
+      "type": "multipleWithKey",
+      "value": [],
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    }
+  ]
+}
