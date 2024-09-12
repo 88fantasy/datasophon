@@ -184,4 +184,9 @@ scrape_configs:
     - files:
       - configs/etcd.json
 
+  - job_name: 'ustream'
+    file_sd_configs:
+    - files:
+      - configs/ustreamserver.json
+
 

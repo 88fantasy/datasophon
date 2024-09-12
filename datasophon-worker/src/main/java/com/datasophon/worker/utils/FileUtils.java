@@ -17,10 +17,15 @@
 
 package com.datasophon.worker.utils;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class FileUtils {
     
@@ -57,6 +62,19 @@ public class FileUtils {
             rf.readFully(tempbytes);
             return new String(tempbytes, charset);
         }
+    }
+    
+    public static List<String> loadFileSQL(String path) throws Exception {
+        File sqlFile = new File(path);
+        List<String> sqlList = new ArrayList<>();
+        if (sqlFile.exists()) {
+            String sqlContent = org.apache.commons.io.FileUtils.readFileToString(sqlFile, StandardCharsets.UTF_8);
+            sqlList = Arrays.asList(sqlContent.split(";"));
+            sqlList = sqlList.stream().filter(line -> !line.trim().isEmpty() && !line.trim().startsWith("--")).collect(Collectors.toList());
+        } else {
+            throw new Exception("path不存在");
+        }
+        return sqlList;
     }
     
 }
