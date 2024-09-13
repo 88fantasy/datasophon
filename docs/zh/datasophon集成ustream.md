@@ -70,6 +70,11 @@ sh /opt/apps/datasophon-manager-1.2.0/bin/datasophon-api.sh restart api
 ```
 
 ### 4、安装服务
+配置host
+```shell
+xx.xx.xx.xx flinkHistoryserver mysql-node-1
+```
+
 初始化数据库
 ```sql
 CREATE DATABASE ustream DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;

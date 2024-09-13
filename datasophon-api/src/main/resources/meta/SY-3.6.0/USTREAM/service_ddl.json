@@ -2,11 +2,11 @@
 	"name": "USTREAM",
 	"label": "Ustream",
 	"description": "数衍实时组件",
-	"version": "3.2.3",
+	"version": "3.4.0",
 	"sortNum": 78,
 	"dependencies": ["FLINK"],
-	"packageName": "ustream-3.2.3-SNAPSHOT-bin.tar.gz",
-	"decompressPackageName": "ustream-3.2.3-SNAPSHOT",
+	"packageName": "ustream-3.4.0-bin.tar.gz",
+	"decompressPackageName": "ustream-3.4.0",
 	"roles": [{
 			"name": "UstreamServer",
 			"label": "UstreamServer",
@@ -106,7 +106,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "/opt/datasophon/ustream"
+			"defaultValue": "${USTREAM_HOME}"
 		},
 		{
 			"name": "ustreamExecutorPath",
@@ -118,7 +118,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "/opt/datasophon/ustream/lib/ustream-executor.jar"
+			"defaultValue": "${USTREAM_HOME}/lib/ustream-executor.jar"
 		},
 		{
 			"name": "flinkHomePath",
@@ -130,7 +130,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "/opt/datasophon/flink"
+			"defaultValue": "${FLINK_HOME}"
 		},
 		{
 			"name": "flinkHistoryRestAddress",
@@ -142,7 +142,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "http://ip:8082"
+			"defaultValue": "http://flinkHistoryserver:${historyserver.web.port}"
 		},
 		{
 			"name": "yarnRmHttpAddress",
@@ -154,7 +154,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "http://ip:8088"
+			"defaultValue": "${yarn.resourcemanager.webapp.address.rm1}"
 		},
 		{
 			"name": "s3Endpoint",
@@ -166,7 +166,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "http://ip:6943"
+			"defaultValue": "http://minio-node-1:9000"
 		},
 		{
 			"name": "s3AccessKey",
@@ -178,7 +178,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "admin"
+			"defaultValue": "fileadmin"
 		},
 		{
 			"name": "s3Secretkey",
@@ -190,7 +190,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "admin"
+			"defaultValue": "fileadmin"
 		},
 		{
 			"name": "s3Bucket",
@@ -226,7 +226,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "jdbc:mysql://ip:33066/ustream?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2b8&autoReconnect=true&failOverReadOnly=false&allowPublicKeyRetrieval=true"
+			"defaultValue": "jdbc:mysql://mysql-node-1:3306/ustream?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2b8&autoReconnect=true&failOverReadOnly=false&allowPublicKeyRetrieval=true"
 		},
 		{
 			"name": "dbUser",
@@ -250,7 +250,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "ustream"
+			"defaultValue": "BALB4g6hNsWJAw94E3mFJA"
 		},
 		{
 			"name": "redisHost",
@@ -262,7 +262,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "xx.xx.xx.xx"
+			"defaultValue": "redis-node-1"
 		},
 		{
 			"name": "redisPort",
@@ -274,7 +274,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "7501"
+			"defaultValue": "${redisMasterPort}"
 		},
 		{
 			"name": "redisUsername",
@@ -298,7 +298,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "admin"
+			"defaultValue": "${requirePass}"
 		},
 		{
 			"name": "encryptorPassword",
