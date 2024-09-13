@@ -31,7 +31,7 @@
         <module>datasophon-infrastructure</module>
         <module>datasophon-common</module>
         <module>datasophon-worker</module>
-        <module>datasophon-ui</module>
+        <!--<module>datasophon-ui</module>-->
         <module>datasophon-service</module>
         <module>datasophon-domain</module>
     </modules>
@@ -78,6 +78,7 @@
         <spotless.scalafmt.version>3.4.3</spotless.scalafmt.version>
         <spotless.ratchetFrom>origin/dev</spotless.ratchetFrom>
         <mockito-junit-jupiter.version>4.5.1</mockito-junit-jupiter.version>
+        <snakeyaml.version>1.29</snakeyaml.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -212,6 +213,11 @@
                 <groupId>net.i2p.crypto</groupId>
                 <artifactId>eddsa</artifactId>
                 <version>${eddsa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>${snakeyaml.version}</version>
             </dependency>
 
             <!-- test -->

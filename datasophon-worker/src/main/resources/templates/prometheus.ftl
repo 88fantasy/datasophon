@@ -183,6 +183,12 @@ scrape_configs:
     file_sd_configs:
     - files:
       - configs/etcd.json
+
+  - job_name: 'ustream'
+    file_sd_configs:
+    - files:
+      - configs/ustreamserver.json
+
   - job_name: 'redis'
     file_sd_configs:
     - files:

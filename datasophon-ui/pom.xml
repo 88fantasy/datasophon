@@ -35,82 +35,82 @@
     </properties>
 
     <build>
-<!--        <plugins>-->
-<!--            <plugin>-->
-<!--                <groupId>org.apache.maven.plugins</groupId>-->
-<!--                <artifactId>maven-clean-plugin</artifactId>-->
-<!--                <version>3.0.0</version>-->
-<!--                <configuration>-->
-<!--                    &lt;!&ndash;<skip>true</skip>&ndash;&gt;-->
-<!--                    <failOnError>false</failOnError>-->
-<!--                    &lt;!&ndash;当配置true时,只清理filesets里的文件,构建目录中得文件不被清理.默认是flase.&ndash;&gt;-->
-<!--                    <excludeDefaultDirectories>false</excludeDefaultDirectories>-->
-<!--                    <filesets>-->
-<!--                        <fileset>-->
-<!--                            &lt;!&ndash;要清理的目录位置&ndash;&gt;-->
-<!--                            <directory>${basedir}/dist</directory>-->
-<!--                            &lt;!&ndash;是否跟随符号链接 (symbolic links)&ndash;&gt;-->
-<!--                            <followSymlinks>false</followSymlinks>-->
-<!--                            &lt;!&ndash;默认有些文件是不会被清理的,比如.svn文件,如果设置成false,则全部按照自定义的来处理&ndash;&gt;-->
-<!--                            <useDefaultExcludes>true</useDefaultExcludes>-->
-<!--                            &lt;!&ndash;对这些文件进行清理&ndash;&gt;-->
-<!--                        </fileset>-->
-<!--                    </filesets>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <!--<skip>true</skip>-->
+                    <failOnError>false</failOnError>
+                    <!--当配置true时,只清理filesets里的文件,构建目录中得文件不被清理.默认是flase.-->
+                    <excludeDefaultDirectories>false</excludeDefaultDirectories>
+                    <filesets>
+                        <fileset>
+                            <!--要清理的目录位置-->
+                            <directory>${basedir}/dist</directory>
+                            <!--是否跟随符号链接 (symbolic links)-->
+                            <followSymlinks>false</followSymlinks>
+                            <!--默认有些文件是不会被清理的,比如.svn文件,如果设置成false,则全部按照自定义的来处理-->
+                            <useDefaultExcludes>true</useDefaultExcludes>
+                            <!--对这些文件进行清理-->
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
 
-<!--            <plugin>-->
-<!--                <groupId>com.github.eirslett</groupId>-->
-<!--                <artifactId>frontend-maven-plugin</artifactId>-->
-<!--                <version>1.10.3</version>-->
-<!--                <configuration>-->
-<!--                    <nodeVersion>${build.node.version}</nodeVersion>-->
-<!--                    <npmVersion>${build.npm.version}</npmVersion>-->
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.10.3</version>
+                <configuration>
+                    <nodeVersion>${build.node.version}</nodeVersion>
+                    <npmVersion>${build.npm.version}</npmVersion>
 
-<!--                    <nodeDownloadRoot>https://npmmirror.com/mirrors/node/</nodeDownloadRoot>-->
-<!--                    <npmDownloadRoot>https://registry.npmmirror.com/npm/-/</npmDownloadRoot>-->
-<!--                </configuration>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <id>install node and npm</id>-->
-<!--                        <goals>-->
-<!--                            <goal>install-node-and-npm</goal>-->
-<!--                        </goals>-->
-<!--                        <phase>generate-resources</phase>-->
-<!--                    </execution>-->
-<!--                    <execution>-->
-<!--                        <id>npm install</id>-->
-<!--                        <goals>-->
-<!--                            <goal>npm</goal>-->
-<!--                        </goals>-->
-<!--                        <phase>generate-resources</phase>-->
-<!--                        <configuration>-->
-<!--                            <arguments>install &#45;&#45;registry=https://registry.npmmirror.com &#45;&#45;sass-binary-site=https://npmmirror.com/mirrors/node-sass</arguments>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                    <execution>-->
-<!--                        <id>npm run build</id>-->
-<!--                        <goals>-->
-<!--                            <goal>npm</goal>-->
-<!--                        </goals>-->
-<!--                        <phase>package</phase>-->
-<!--                        <configuration>-->
-<!--                            <arguments>run build</arguments>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                    <execution>-->
-<!--                        <id>npm run deploy</id>-->
-<!--                        <goals>-->
-<!--                            <goal>npm</goal>-->
-<!--                        </goals>-->
-<!--                        <phase>install</phase>-->
-<!--                        <configuration>-->
-<!--                            <arguments>run deploy</arguments>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--            </plugin>-->
-<!--        </plugins>-->
+                    <nodeDownloadRoot>https://npmmirror.com/mirrors/node/</nodeDownloadRoot>
+                    <npmDownloadRoot>https://registry.npmmirror.com/npm/-/</npmDownloadRoot>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install node and npm</id>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                    </execution>
+                    <execution>
+                        <id>npm install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <arguments>install --registry=https://registry.npmmirror.com --sass-binary-site=https://npmmirror.com/mirrors/node-sass</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm run build</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm run deploy</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>install</phase>
+                        <configuration>
+                            <arguments>run deploy</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
     <profiles>
         <profile>

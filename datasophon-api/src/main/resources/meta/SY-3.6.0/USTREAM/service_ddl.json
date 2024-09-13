@@ -1,0 +1,316 @@
+{
+	"name": "USTREAM",
+	"label": "Ustream",
+	"description": "数衍实时组件",
+	"version": "3.4.0",
+	"sortNum": 78,
+	"dependencies": ["FLINK"],
+	"packageName": "ustream-3.4.0-bin.tar.gz",
+	"decompressPackageName": "ustream-3.4.0",
+	"roles": [{
+			"name": "UstreamServer",
+			"label": "UstreamServer",
+			"roleType": "master",
+			"runAs": {
+				"user": "hive",
+				"group": "hadoop"
+			},
+			"cardinality": "1",
+			"logFile": "logs/ustream.log",
+			"jmxPort": 9112,
+			"startRunner": {
+				"timeout": "60",
+				"program": "bin/ustream-daemon.sh",
+				"args": ["start", "server"]
+			},
+			"stopRunner": {
+				"timeout": "600",
+				"program": "bin/ustream-daemon.sh",
+				"args": ["stop", "server"]
+			},
+			"statusRunner": {
+				"timeout": "60",
+				"program": "bin/ustream-daemon.sh",
+				"args": ["status", "server"]
+			},
+			"restartRunner": {
+				"timeout": "60",
+				"program": "bin/ustream-daemon.sh",
+				"args": ["restart", "server"]
+			}
+		}
+	],
+	"configWriter": {
+		"generators": [{
+				"filename": "application.yaml",
+				"configFormat": "custom",
+				"outputDirectory": "conf/",
+				"templateName": "ustream-yaml.ftl",
+				"includeParams": [
+					"loginUsername",
+					"loginPassword",
+					"ustreamHomePath",
+					"ustreamExecutorPath",
+					"flinkHomePath",
+					"flinkHistoryRestAddress",
+					"yarnRmHttpAddress",
+					"s3Endpoint",
+					"s3AccessKey",
+					"s3Secretkey",
+					"s3Bucket",
+					"s3BasePath",
+					"dbUrl",
+					"dbUser",
+					"dbPassword",
+					"redisHost",
+					"redisPort",
+					"redisUsername",
+					"redisPassword",
+					"encryptorPassword"
+				]
+			}
+		]
+	},
+	"parameters": [
+		{
+			"name": "loginUsername",
+			"label": "登录用户",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "admin"
+		},
+		{
+			"name": "loginPassword",
+			"label": "登录密码",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "y@iyTr18UID"
+		},
+		{
+			"name": "ustreamHomePath",
+			"label": "ustreamServer目录",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "${USTREAM_HOME}"
+		},
+		{
+			"name": "ustreamExecutorPath",
+			"label": "ustream执行器路径",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "${USTREAM_HOME}/lib/ustream-executor.jar"
+		},
+		{
+			"name": "flinkHomePath",
+			"label": "flink目录",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "${FLINK_HOME}"
+		},
+		{
+			"name": "flinkHistoryRestAddress",
+			"label": "flink.history地址",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "http://flinkHistoryserver:${historyserver.web.port}"
+		},
+		{
+			"name": "yarnRmHttpAddress",
+			"label": "yarn.rm地址",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "${yarn.resourcemanager.webapp.address.rm1}"
+		},
+		{
+			"name": "s3Endpoint",
+			"label": "s3登录地址",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "http://minio-node-1:9000"
+		},
+		{
+			"name": "s3AccessKey",
+			"label": "s3登录账号",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "fileadmin"
+		},
+		{
+			"name": "s3Secretkey",
+			"label": "S3登录密码",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "fileadmin"
+		},
+		{
+			"name": "s3Bucket",
+			"label": "s3存储bucket",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "public"
+		},
+		{
+			"name": "s3BasePath",
+			"label": "s3存储前缀路径",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "/capacity/basic/ustream"
+		},
+		{
+			"name": "dbUrl",
+			"label": "数据源URL",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "jdbc:mysql://mysql-node-1:3306/ustream?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2b8&autoReconnect=true&failOverReadOnly=false&allowPublicKeyRetrieval=true"
+		},
+		{
+			"name": "dbUser",
+			"label": "数据源连接用户",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "ustream"
+		},
+		{
+			"name": "dbPassword",
+			"label": "数据源连接密码",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "BALB4g6hNsWJAw94E3mFJA"
+		},
+		{
+			"name": "redisHost",
+			"label": "redis.host",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "redis-node-1"
+		},
+		{
+			"name": "redisPort",
+			"label": "redis.port",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "${redisMasterPort}"
+		},
+		{
+			"name": "redisUsername",
+			"label": "redis账号",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "admin"
+		},
+		{
+			"name": "redisPassword",
+			"label": "redis密码",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "${requirePass}"
+		},
+		{
+			"name": "encryptorPassword",
+			"label": "配置文件加密密钥",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "YG&143ghd"
+		}
+	]
+}

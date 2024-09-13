@@ -55,12 +55,12 @@ public class ServiceRoleStrategyContext {
         map.put("KyuubiServer", new KyuubiServerHandlerStrategy("KYUUBI", "KyuubiServer"));
         // flink
         map.put("FlinkClient", new FlinkHandlerStrategy("FLINK", "FlinkClient"));
-        
         // uscheduler
         map.put("UMasterServer", new DSMasterHandlerStrategy("USCHEDULER", "UMasterServer"));
-        
         // DolphinScheduler
         map.put("MasterServer", new DSMasterHandlerStrategy("DS", "MasterServer"));
+        // ustream
+        map.put("UstreamServer", new UstreamMasterHandlerStrategy("USTREAM", "UstreamServer"));
     }
     
     public static ServiceRoleStrategy getServiceRoleHandler(String type) {
