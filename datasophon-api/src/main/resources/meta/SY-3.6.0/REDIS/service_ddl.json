@@ -118,13 +118,13 @@
       "configType": "map",
       "required": true,
       "type": "input",
-      "value": "6379",
+      "value": "7501",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "6379"
+      "defaultValue": "7501"
     },
     {
-      "name": "dataDir",
+      "name": "redisDataDir",
       "label": "数据存储目录",
       "description": "数据持久化存储目录",
       "configType": "map",
@@ -136,7 +136,7 @@
       "defaultValue": "/data/redis"
     },
     {
-      "name": "requirePass",
+      "name": "redisPass",
       "label": "连接密码",
       "description": "连接密码",
       "configType": "map",
@@ -146,6 +146,47 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "fX0GzFyWOK4LR^9K"
+    },
+    {
+      "name": "redisDatabases",
+      "label": "数据库数量",
+      "description": "设定数据库库的数量",
+      "configType": "map",
+      "required": true,
+      "type": "slider",
+      "minValue": 0,
+      "maxValue": 32,
+      "value": "16",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "16"
+    },
+    {
+      "name": "redisMaxMemory",
+      "label": "最大内存(bytes)",
+      "description": "最大内存限制(按字节)",
+      "configType": "map",
+      "required": true,
+      "type": "slider",
+      "minValue": 0,
+      "maxValue": 4294967296,
+      "value": "2147483648",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "2147483648"
+    },
+    {
+      "name": "redisMaxMemoryPolicy",
+      "label": "内存过期策略",
+      "description": "内存过期策略",
+      "configType": "map",
+      "required": true,
+      "type": "select",
+      "value": "volatile-random",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "volatile-random",
+      "selectValue" : ["volatile-lru", "allkeys-lru", "volatile-random", "allkeys-random", "volatile-ttl", "noeviction"]
     },
     {
       "name": "custom.master.conf",

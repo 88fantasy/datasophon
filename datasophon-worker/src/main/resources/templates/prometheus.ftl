@@ -183,5 +183,8 @@ scrape_configs:
     file_sd_configs:
     - files:
       - configs/etcd.json
-
+  - job_name: 'redis'
+    file_sd_configs:
+    - files:
+      - configs/redis.json
 
