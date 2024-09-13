@@ -189,4 +189,8 @@ scrape_configs:
     - files:
       - configs/ustreamserver.json
 
+  - job_name: 'redis'
+    file_sd_configs:
+    - files:
+      - configs/redis.json
 
