@@ -1,0 +1,295 @@
+{
+	"name": "AMORO",
+	"label": "Amoro",
+	"description": "iceberg优化器",
+	"version": "0.6.1",
+	"sortNum": 92,
+	"dependencies": ["FLINK","YARN"],
+	"packageName": "amoro-0.6.1.tar.gz",
+	"decompressPackageName": "amoro-0.6.1",
+	"roles": [{
+			"name": "AmoroServer",
+			"label": "AmoroServer",
+			"roleType": "master",
+			"cardinality": "1",
+			"logFile": "logs/ams-info.log",
+			"startRunner": {
+				"timeout": "60",
+				"program": "bin/ams.sh",
+				"args": ["start"]
+			},
+			"stopRunner": {
+				"timeout": "60",
+				"program": "bin/ams.sh",
+				"args": ["stop"]
+			},
+			"statusRunner": {
+				"timeout": "60",
+				"program": "bin/ams.sh",
+				"args": ["status"]
+			},
+			"restartRunner": {
+				"timeout": "60",
+				"program": "bin/ams.sh",
+				"args": ["restart"]
+			},
+			"externalLink": {
+				"name": "Amoro UI",
+				"label": "Amoro UI",
+				"url": "http://${host}:${amoroHttpPort}"
+			}
+		}
+	],
+	"configWriter": {
+		"generators": [{
+				"filename": "config.yaml",
+				"configFormat": "custom",
+				"outputDirectory": "conf/",
+				"templateName": "amoro-config-yaml.ftl",
+				"includeParams": [
+						"amoroUsername",
+						"amoroPassword",
+						"amoroHttpPort",
+						"amoroDbUrl",
+						"amoroDbUsername",
+						"amoroDbPassword",
+						"amoroHaEnabled",
+						"amoroHaZookeeperAddress",
+						"javaHome",
+						"amoroHadoopUsername",
+						"amoroTerminalBackend",
+						"amoroTerminalJdbcUrl",
+						"amoroTerminalJdbcUser",
+						"amoroTerminalJdbcPassword",
+						"custom.terminal"
+					]
+				},
+				{
+					"filename": "jvm.properties",
+					"configFormat": "properties",
+					"outputDirectory": "conf/",
+					"includeParams": [
+						"xms",
+						"xmx",
+						"jmx.remote.port"
+					]
+				}
+		]
+	},
+	"parameters": [
+		{
+			"name": "amoroUsername",
+			"label": "登录用户",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "admin"
+		},
+		{
+			"name": "amoroPassword",
+			"label": "登录密码",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "ydafa@dfdaOP"
+		},
+		{
+			"name": "amoroHttpPort",
+			"label": "amoro登录端口",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "1630"
+		},
+		{
+			"name": "amoroDbUrl",
+			"label": "数据源URL",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "jdbc:mysql://mysql-node-1:3306/amoro?useUnicode=true&characterEncoding=UTF8&autoReconnect=true&useAffectedRows=true&useSSL=false"
+		},
+		{
+			"name": "amoroDbUsername",
+			"label": "数据源用户",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "root"
+		},
+		{
+			"name": "amoroDbPassword",
+			"label": "数据源密码",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "datasophon"
+		},
+		{
+			"name": "amoroHaEnabled",
+			"label": "高可用开关",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "true"
+		},
+		{
+			"name": "amoroHaZookeeperAddress",
+			"label": "高可用zk地址",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "${zkUrls}"
+		},
+		{
+			"name": "javaHome",
+			"label": "java目录",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "/usr/local/jdk1.8.0_333"
+		},
+		{
+			"name": "amoroHadoopUsername",
+			"label": "提交yarn用户",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "hive"
+		},
+		{
+			"name": "amoroTerminalBackend",
+			"label": "命令行后端",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "kyuubi"
+		},
+		{
+			"name": "amoroTerminalJdbcUrl",
+			"label": "命令行Jdbc",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "jdbc:hive2://kyuubiServer:10009"
+		},
+		{
+			"name": "amoroTerminalJdbcUser",
+			"label": "命令行连接用户",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "hive"
+		},
+		{
+			"name": "amoroTerminalJdbcPassword",
+			"label": "命令行连接密码",
+			"description": "",
+			"configType": "map",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "hive"
+		},
+		{
+			"name": "custom.terminal",
+			"label": "自定义配置命令行",
+			"description": "自定义配置",
+			"configType": "custom",
+			"required": false,
+			"type": "multipleWithKey",
+			"value": [],
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": []
+		},
+		{
+			"name": "xms",
+			"label": "堆内存初始值大小",
+			"description": "",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "8196"
+		},
+		{
+			"name": "xmx",
+			"label": "堆内存最大值大小",
+			"description": "",
+			"required": true,
+			"type": "input",
+			"value": "",
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": "8196"
+		},
+		{
+			"name": "custom.jvm.properties",
+			"label": "自定义配置jvm.properties",
+			"description": "自定义配置",
+			"configType": "custom",
+			"required": false,
+			"type": "multipleWithKey",
+			"value": [],
+			"configurableInWizard": true,
+			"hidden": false,
+			"defaultValue": ""
+		}
+	]
+}
