@@ -194,3 +194,8 @@ scrape_configs:
     - files:
       - configs/redis.json
 
+  - job_name: 'amoro'
+  file_sd_configs:
+  - files:
+  - configs/amoro.json
+
