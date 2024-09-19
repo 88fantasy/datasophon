@@ -135,7 +135,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "root"
+			"defaultValue": "amoro"
 		},
 		{
 			"name": "amoroDbPassword",
@@ -147,7 +147,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "datasophon"
+			"defaultValue": "BALB4g6hNsWJAw94E3mFJA"
 		},
 		{
 			"name": "amoroHaEnabled",
