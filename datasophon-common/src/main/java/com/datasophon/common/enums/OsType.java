@@ -1,6 +1,5 @@
 package com.datasophon.common.enums;
 
-
 import lombok.Getter;
 
 @Getter
@@ -11,9 +10,9 @@ public enum OsType {
     Other("")
     
     ;
-
+    
     private final String osRegex;
-
+    
     OsType(String osRegex) {
         this.osRegex = osRegex;
     }

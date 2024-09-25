@@ -4,21 +4,22 @@ import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.JschUtils;
-import com.jcraft.jsch.Session;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
+
+import com.jcraft.jsch.Session;
+
 @Slf4j
 public class JschExecutor implements Executor {
-
+    
     private final Session session;
-
+    
     public JschExecutor(Session session) {
         this.session = session;
     }
-
-
+    
     @Override
     public ExecResult execShell(String cmd) {
         ExecResult execResult = new ExecResult();
@@ -33,7 +34,7 @@ public class JschExecutor implements Executor {
         }
         return execResult;
     }
-
+    
     @Override
     public List<String> getFileLines(String path) {
         try {
@@ -43,17 +44,17 @@ public class JschExecutor implements Executor {
             throw new RuntimeException(e);
         }
     }
-
+    
     @Override
     public void writeLines(List<String> lines, String path) {
-
+        
     }
-
+    
     @Override
     public ArchType getArch() {
         return JschUtils.getArch(session);
     }
-
+    
     @Override
     public OsType getOs() {
         return JschUtils.getOs(session);

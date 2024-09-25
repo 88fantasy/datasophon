@@ -17,8 +17,8 @@
 
 package com.datasophon.common.utils;
 
-import cn.hutool.core.util.RuntimeUtil;
 import com.datasophon.common.Constants;
+import com.datasophon.common.enums.OsType;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -35,10 +35,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import com.datasophon.common.enums.OsType;
-import com.jcraft.jsch.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import cn.hutool.core.util.RuntimeUtil;
 
 public class ShellUtils {
     
@@ -287,7 +287,7 @@ public class ShellUtils {
         command.add(path);
         execWithStatus(Constants.INSTALL_PATH, command, 60, logger);
     }
-
+    
     public static OsType getOs() {
         List<String> strings = RuntimeUtil.execForLines("hostnamectl");
         Optional<String> optionalOs = strings.stream().filter(s -> s.startsWith("Operating System:")).findAny();
@@ -298,7 +298,7 @@ public class ShellUtils {
         }
         return OsType.Other;
     }
-
+    
     public static OsType getOsFromLines(List<String> lines) {
         Optional<String> optionalOs = lines.stream().filter(s -> s.startsWith("Operating System:")).findAny();
         if (optionalOs.isPresent()) {

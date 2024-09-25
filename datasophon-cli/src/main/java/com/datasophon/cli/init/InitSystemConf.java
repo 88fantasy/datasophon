@@ -4,21 +4,23 @@ import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
-import lombok.extern.slf4j.Slf4j;
+
 import picocli.CommandLine;
 
 import java.util.Arrays;
 import java.util.List;
 
-@Slf4j
-@CommandLine.Command(name = "swap", description = "init swap")
-public class InitSystemConf extends InitBase implements InitNodeHandler {
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
+@CommandLine.Command(name = "sys", description = "init sys")
+public class InitSystemConf extends InitBase implements InitNodeHandler {
+    
     @Override
     public String name() {
         return "设置操作系统配置";
     }
-
+    
     public boolean doRun(Executor executor) {
         List<String> systemConf = executor.getFileLines("/etc/systemd/system.conf");
         systemConf.removeIf(s -> s.contains("DefaultLimitNOFILE"));
@@ -26,7 +28,7 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
         systemConf.add("DefaultLimitNOFILE=1024000");
         systemConf.add("DefaultLimitNPROC=1024000");
         executor.writeLines(systemConf, "/etc/systemd/system.conf");
-
+        
         List<String> limitsConf = executor.getFileLines("/etc/security/limits.conf");
         limitsConf.removeIf(s -> s.contains("soft    fsize"));
         limitsConf.removeIf(s -> s.contains("hard    fsize"));
@@ -38,7 +40,7 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
         limitsConf.removeIf(s -> s.contains("hard    nofile"));
         limitsConf.removeIf(s -> s.contains("soft    nproc"));
         limitsConf.removeIf(s -> s.contains("hard    nproc"));
-
+        
         limitsConf.add("*            soft    fsize           unlimited");
         limitsConf.add("*            hard    fsize           unlimited");
         limitsConf.add("*            soft    cpu             unlimited");
@@ -49,20 +51,17 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
         limitsConf.add("*            hard    nofile          1048576");
         limitsConf.add("*            soft    nproc           unlimited");
         limitsConf.add("*            hard    nproc           unlimited");
-
+        
         executor.writeLines(limitsConf, "/etc/security/limits.conf");
-
-
+        
         OsType os = executor.getOs();
         if (OsType.CentOS7 == os) {
             List<String> limits = Arrays.asList(
                     "*          soft    nproc     unlimited",
-                    "root       soft    nproc     unlimited"
-            );
+                    "root       soft    nproc     unlimited");
             executor.writeLines(limits, "/etc/security/limits.conf");
         }
-
-
+        
         List<String> sysctlConf = executor.getFileLines("/etc/sysctl.conf");
         sysctlConf.removeIf(s -> s.contains("kernel.pid_max"));
         sysctlConf.add("kernel.pid_max=1000000");
