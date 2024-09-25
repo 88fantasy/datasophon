@@ -4,7 +4,8 @@ import picocli.CommandLine;
 
 @CommandLine.Command(name = "create", subcommands = {
         CreateConfig.class,
-        CreateCluster.class
+        CreateCluster.class,
+        CreateHttpd.class
 })
 public class Create implements Runnable {
     

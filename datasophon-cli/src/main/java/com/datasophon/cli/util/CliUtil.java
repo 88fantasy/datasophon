@@ -1,11 +1,17 @@
 package com.datasophon.cli.util;
 
 import com.datasophon.cli.base.CliConstants;
-import com.datasophon.common.enums.OsType;
 import com.datasophon.common.Constants;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
 
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.Writer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -39,4 +45,19 @@ public final class CliUtil {
         System.out.printf("%s done...%n", component);
         return true;
     }
+    
+    /**
+     * 根据配置模板与变量值，生成配置文件
+     */
+    public static void generateConfigFile(String templateDir, String templateFile, Map<String, Object> data, String outFile) throws Exception {
+        Configuration cfg = new Configuration(Configuration.VERSION_2_3_30);
+        cfg.setDirectoryForTemplateLoading(new File(templateDir));
+        Template template = cfg.getTemplate(templateFile);
+        
+        File outputFile = new File(outFile);
+        try (Writer out = new FileWriter(outputFile)) {
+            template.process(data, out);
+        }
+    }
+    
 }
