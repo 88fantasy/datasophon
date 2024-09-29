@@ -3,7 +3,6 @@ package com.datasophon.common.utils;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +25,7 @@ import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpException;
 
 import cn.hutool.core.io.IoUtil;
 
@@ -199,26 +199,40 @@ public class JschUtils {
             channel.get(path, baos);
             return baos.toString();
         } finally {
-            
             if (channel != null && channel.isConnected()) {
                 channel.disconnect();
             }
         }
     }
     
-    public static void writeLines(Session session, List<String> lines, String path, int connectTimeout) throws Exception {
+    public static ExecResult sendInputStream(Session session, InputStream is, String path, int connectTimeout, boolean override) {
         ChannelSftp channel = null;
+        ExecResult result = new ExecResult();
         try {
-            ByteArrayInputStream bais = new ByteArrayInputStream(String.join("\n", lines).getBytes());
             // 创建执行通道
             channel = (ChannelSftp) session.openChannel("sftp");
             channel.connect(connectTimeout * 1000);
-            channel.put(bais, path);
+            if (!override) {
+                try {
+                    channel.lstat(path);
+                    // 文件存在
+                    result.setExecResult(true);
+                    return result;
+                } catch (SftpException exception) {
+                    
+                }
+            }
+            channel.put(is, path);
+            result.setExecResult(true);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            result.setExecErrOut(e.getMessage());
         } finally {
             if (channel != null && channel.isConnected()) {
-                channel.disconnect();
+                channel.exit();
             }
         }
+        return result;
     }
     
     public static ArchType getArch(Session session) {

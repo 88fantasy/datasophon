@@ -1,46 +1,77 @@
 package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.ClusterConfig;
+import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.base.GlobalConfig;
+import com.datasophon.cli.registry.Registry;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
+import com.datasophon.common.model.Host;
+import com.datasophon.common.utils.ExecResult;
 
 import picocli.CommandLine;
 
 import java.io.File;
+import java.util.ServiceLoader;
 
-import org.yaml.snakeyaml.Yaml;
+import lombok.extern.slf4j.Slf4j;
+import cn.hutool.core.util.ServiceLoaderUtil;
 
-import cn.hutool.core.io.resource.ResourceUtil;
-
+@Slf4j
 @CommandLine.Command(name = "registry", description = "init artifact store")
-public class InitRegistry implements Runnable {
-    
-    private static final String DEFAULT_FILE = "cluster-sample.yml";
+public class InitRegistry extends InitBase {
     
     @CommandLine.Option(names = {"--with-os"}, description = "操作系统")
-    OsType os = OsType.CentOS7;
+    OsType os = OsType.Auto;
     
     @CommandLine.Option(names = {"--with-arch"}, description = "Cpu架构")
     ArchType archType = ArchType.X86;
     
-    @CommandLine.Option(names = {"-f", "--file"}, description = "制品库文件")
-    String artifactPackage = "packages.tar.gz";
-    
-    @CommandLine.Option(arity = "1", names = {"-c", "--config"}, description = "配置文件")
-    String configFile;
+    @CommandLine.Option(arity = "1", names = {"-f", "--file"}, description = "制品库安装文件")
+    String registryFilePath;
     
     @Override
-    public void run() {
-        File artifactPackageFile = new File(artifactPackage);
-        if (!artifactPackageFile.exists()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "file not found, please check " + artifactPackage);
+    public boolean doRun(Executor executor) {
+        
+        File registryFile = new File(registryFilePath);
+        if (!registryFile.exists()) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "file not found, please check " + registryFilePath);
         }
-        Yaml yaml = new Yaml();
-        String content = ResourceUtil.getResourceObj(DEFAULT_FILE).readUtf8Str();
-        ClusterConfig clusterConfig = yaml.loadAs(content, ClusterConfig.class);
+        ClusterConfig clusterConfig = getConfig();
         GlobalConfig global = clusterConfig.getGlobal();
-        global.setOs(os);
-        GlobalConfig.MysqlConfig mysql = global.getMysql();
+        GlobalConfig.RegistryConfig registryConfig = global.getRegistry();
+        if (registryConfig.getEnable()) {
+            Host host = registryConfig.getHost();
+            
+            ServiceLoader<Registry> registries = ServiceLoaderUtil.load(Registry.class);
+            for (Registry registry : registries) {
+                if (registry.type().equals(registryConfig.getType())) {
+                    registry.setConfig(registryConfig.getConfig());
+                    ExecResult status = registry.status(executor, host);
+                    if (status.getExecResult()) {
+                        log.info("registry is already exist");
+                        break;
+                    }
+                    
+                    ExecResult install = registry.install(registryFile, executor, host);
+                    if (install.getExecResult()) {
+                        log.info("registry install succeed");
+                        ExecResult start = registry.start(executor, host);
+                        if (start.getExecResult()) {
+                            log.info("registry is started");
+                        }
+                    }
+                    
+                    break;
+                }
+            }
+            
+        }
+        return true;
+    }
+    
+    @Override
+    public String name() {
+        return "安装制品库";
     }
 }

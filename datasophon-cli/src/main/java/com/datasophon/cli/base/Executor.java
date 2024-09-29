@@ -7,13 +7,51 @@ import com.datasophon.common.utils.ExecResult;
 import java.util.List;
 
 public interface Executor {
+    /**
+     * 执行shell命令
+     * @param cmd shell命令
+     * @return ExecResult
+     */
     ExecResult execShell(String cmd);
     
-    List<String> getFileLines(String path);
+    /**
+     * 判断文件是否存在
+     * @param path 文件路径
+     * @return ExecResult
+     */
+    ExecResult exists(String path);
     
-    void writeLines(List<String> lines, String path);
+    /**
+     * 发送文件
+     * @param src 源文件路径
+     * @param dest 目标文件路径
+     * @return ExecResult
+     */
+    ExecResult sendFile(String src, String dest);
     
+    /**
+     * 读取文件内容
+     * @param path 文件路径
+     * @return 文件内容列表
+     */
+    ExecResult getFileString(String path);
+    
+    /**
+     * 写入文件内容
+     * @param lines 文件内容列表
+     * @param path 文件路径
+     */
+    ExecResult writeLines(List<String> lines, String path);
+    
+    /**
+     * 获取当前系统架构
+     * @return ArchType
+     */
     ArchType getArch();
     
+    /**
+     * 获取当前操作系统类型
+     * @return OsType
+     */
     OsType getOs();
 }

@@ -5,6 +5,9 @@ import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.JschUtils;
 
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
@@ -36,18 +39,38 @@ public class JschExecutor implements Executor {
     }
     
     @Override
-    public List<String> getFileLines(String path) {
-        try {
-            return JschUtils.getFileLines(session, path, 5);
-        } catch (Exception e) {
+    public ExecResult exists(String path) {
+        return null;
+    }
+    
+    @Override
+    public ExecResult sendFile(String src, String dest) {
+        try (FileInputStream fis = new FileInputStream(src)) {
+            return JschUtils.sendInputStream(session, fis, dest, 5, false);
+        } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
     }
     
     @Override
-    public void writeLines(List<String> lines, String path) {
-        
+    public ExecResult getFileString(String path) {
+        ExecResult execResult = new ExecResult();
+        try {
+            String string = JschUtils.getFileString(session, path, 5);
+            execResult.setExecOut(string);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            execResult.setExecErrOut(e.getMessage());
+            
+        }
+        return execResult;
+    }
+    
+    @Override
+    public ExecResult writeLines(List<String> lines, String path) {
+        ByteArrayInputStream bais = new ByteArrayInputStream(String.join("\n", lines).getBytes());
+        return JschUtils.sendInputStream(session, bais, path, 5, true);
     }
     
     @Override

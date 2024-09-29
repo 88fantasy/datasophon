@@ -8,10 +8,14 @@ import picocli.CommandLine;
         InitSwap.class,
         InitOsUser.class,
         InitSystemConf.class,
-        InitHostname.class,
-        InitHugePage.class,
-        InitLibrary.class,
-        InitOsSafeConf.class
+        InitHttpd.class,
+        InitYumPackage.class,
+        InitYumConf.class,
+        InitNtpServer.class,
+        InitMysql.class,
+        InitMysqlAccount.class,
+        InitSystemConf.class,
+        InitRegistry.class
 })
 public class Init implements Runnable {
     
