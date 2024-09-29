@@ -1,6 +1,5 @@
 package com.datasophon.cli.init;
 
-import cn.hutool.core.util.ServiceLoaderUtil;
 import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.base.GlobalConfig;
@@ -9,29 +8,31 @@ import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.model.Host;
 import com.datasophon.common.utils.ExecResult;
-import lombok.extern.slf4j.Slf4j;
+
 import picocli.CommandLine;
 
 import java.io.File;
 import java.util.ServiceLoader;
 
+import lombok.extern.slf4j.Slf4j;
+import cn.hutool.core.util.ServiceLoaderUtil;
+
 @Slf4j
 @CommandLine.Command(name = "registry", description = "init artifact store")
 public class InitRegistry extends InitBase {
-
+    
     @CommandLine.Option(names = {"--with-os"}, description = "操作系统")
     OsType os = OsType.Auto;
-
+    
     @CommandLine.Option(names = {"--with-arch"}, description = "Cpu架构")
     ArchType archType = ArchType.X86;
-
+    
     @CommandLine.Option(arity = "1", names = {"-f", "--file"}, description = "制品库安装文件")
     String registryFilePath;
-
-
+    
     @Override
     public boolean doRun(Executor executor) {
-
+        
         File registryFile = new File(registryFilePath);
         if (!registryFile.exists()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "file not found, please check " + registryFilePath);
@@ -41,7 +42,7 @@ public class InitRegistry extends InitBase {
         GlobalConfig.RegistryConfig registryConfig = global.getRegistry();
         if (registryConfig.getEnable()) {
             Host host = registryConfig.getHost();
-
+            
             ServiceLoader<Registry> registries = ServiceLoaderUtil.load(Registry.class);
             for (Registry registry : registries) {
                 if (registry.type().equals(registryConfig.getType())) {
@@ -51,7 +52,7 @@ public class InitRegistry extends InitBase {
                         log.info("registry is already exist");
                         break;
                     }
-
+                    
                     ExecResult install = registry.install(registryFile, executor, host);
                     if (install.getExecResult()) {
                         log.info("registry install succeed");
@@ -60,16 +61,15 @@ public class InitRegistry extends InitBase {
                             log.info("registry is started");
                         }
                     }
-
+                    
                     break;
                 }
             }
-
-
+            
         }
         return true;
     }
-
+    
     @Override
     public String name() {
         return "安装制品库";

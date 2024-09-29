@@ -31,7 +31,7 @@ public class InitSwap extends InitBase implements InitNodeHandler {
             return false;
         }
         ExecResult sysctlResult = executor.getFileString("/etc/sysctl.conf");
-        if(sysctlResult.getExecResult()) {
+        if (sysctlResult.getExecResult()) {
             List<String> sysctlLines = Arrays.stream(sysctlResult.getExecOut().split("\n")).collect(Collectors.toList());
             if (sysctlLines.stream().noneMatch(s -> s.startsWith("vm.swappiness"))) {
                 sysctlLines.add("vm.swappiness=0");

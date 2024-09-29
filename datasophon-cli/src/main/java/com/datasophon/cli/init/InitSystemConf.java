@@ -16,12 +16,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @CommandLine.Command(name = "system-conf", description = "init system config")
 public class InitSystemConf extends InitBase implements InitNodeHandler {
-
+    
     @Override
     public String name() {
         return "设置操作系统配置";
     }
-
+    
     public boolean doRun(Executor executor) {
         ExecResult systemConfResult = executor.getFileString("/etc/systemd/system.conf");
         if (systemConfResult.getExecResult()) {
@@ -32,7 +32,7 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
             systemConf.add("DefaultLimitNPROC=1024000");
             executor.writeLines(systemConf, "/etc/systemd/system.conf");
         }
-
+        
         ExecResult limitsConfResult = executor.getFileString("/etc/security/limits.conf");
         if (limitsConfResult.getExecResult()) {
             List<String> limitsConf = Arrays.stream(limitsConfResult.getExecOut().split("\n")).collect(Collectors.toList());
@@ -46,7 +46,7 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
             limitsConf.removeIf(s -> s.contains("hard    nofile"));
             limitsConf.removeIf(s -> s.contains("soft    nproc"));
             limitsConf.removeIf(s -> s.contains("hard    nproc"));
-
+            
             limitsConf.add("*            soft    fsize           unlimited");
             limitsConf.add("*            hard    fsize           unlimited");
             limitsConf.add("*            soft    cpu             unlimited");
@@ -57,11 +57,10 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
             limitsConf.add("*            hard    nofile          1048576");
             limitsConf.add("*            soft    nproc           unlimited");
             limitsConf.add("*            hard    nproc           unlimited");
-
+            
             executor.writeLines(limitsConf, "/etc/security/limits.conf");
         }
-
-
+        
         OsType os = executor.getOs();
         if (OsType.CentOS7 == os) {
             List<String> limits = Arrays.asList(
@@ -69,8 +68,7 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
                     "root       soft    nproc     unlimited");
             executor.writeLines(limits, "/etc/security/limits.conf");
         }
-
-
+        
         ExecResult sysctlConfResult = executor.getFileString("/etc/sysctl.conf");
         if (sysctlConfResult.getExecResult()) {
             List<String> sysctlConf = Arrays.stream(sysctlConfResult.getExecOut().split("\n")).collect(Collectors.toList());

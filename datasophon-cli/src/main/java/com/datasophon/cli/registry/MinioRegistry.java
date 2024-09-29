@@ -1,51 +1,48 @@
 package com.datasophon.cli.registry;
 
-
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.StrUtil;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.common.model.Host;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.FileUtils;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
-import java.nio.charset.Charset;
+
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import cn.hutool.core.util.StrUtil;
 
 @Slf4j
 public class MinioRegistry implements Registry {
-
+    
     // minio 下载目录 https://dl.min.io/server/minio/release/linux-amd64/minio
     private static final String TAR_PATH = "/opt/datasophon/minio.tar.gz";
-
+    
     private static final String MINIO_PATH = "/opt/datasophon/minio";
-
-
+    
     @Override
     public String type() {
         return "minio";
     }
-
+    
     @Override
     public void setConfig(Object config) {
         log.info(config.toString());
     }
-
+    
     @Override
     public ExecResult install(File file, Executor executor, Host host) {
         ExecResult installResult = new ExecResult();
         ExecResult exists = executor.exists(MINIO_PATH);
         if (!exists.getExecResult()) {
             ExecResult sendResult = executor.sendFile(file.getAbsolutePath(), TAR_PATH);
-            if(!sendResult.getExecResult()) {
+            if (!sendResult.getExecResult()) {
                 installResult.setExecErrOut("传输失败");
                 return installResult;
             }
             ExecResult checkWorkerMd5Result = executor.execShell("md5sum " + TAR_PATH + " | awk '{print $1}'");
-            if(checkWorkerMd5Result.getExecResult()) {
+            if (checkWorkerMd5Result.getExecResult()) {
                 String md5 = FileUtils.md5(file);
-                if(!md5.equals(checkWorkerMd5Result.getExecOut())) {
+                if (!md5.equals(checkWorkerMd5Result.getExecOut())) {
                     installResult.setExecErrOut("文件校验失败,请重新传输");
                     return installResult;
                 }
@@ -54,27 +51,27 @@ public class MinioRegistry implements Registry {
         }
         return installResult;
     }
-
+    
     @Override
     public ExecResult start(Executor executor, Host host) {
         return null;
     }
-
+    
     @Override
     public ExecResult stop(Executor executor, Host host) {
         return null;
     }
-
+    
     @Override
     public ExecResult status(Executor executor, Host host) {
         ExecResult execResult = executor.execShell("ps -ef | grep 'minio server' | grep -v grep | awk '{print $2}'");
-        if(execResult.getExecResult() && StrUtil.isNotEmpty(execResult.getExecOut())) {
+        if (execResult.getExecResult() && StrUtil.isNotEmpty(execResult.getExecOut())) {
             return execResult;
         }
         execResult.setExecResult(false);
         return execResult;
     }
-
+    
     @Data
     public static class MinioConfig {
         private int api;
@@ -82,6 +79,6 @@ public class MinioRegistry implements Registry {
         private String user;
         private String password;
         private String volumes;
-
+        
     }
 }

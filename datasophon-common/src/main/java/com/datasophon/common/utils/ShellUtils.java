@@ -126,6 +126,7 @@ public class ShellUtils {
         Process process = null;
         ExecResult result = new ExecResult();
         try {
+            logger.info("command:{}", String.join(" ", command));
             processBuilder.directory(new File(workPath));
             processBuilder.command(command);
             processBuilder.redirectErrorStream(true);

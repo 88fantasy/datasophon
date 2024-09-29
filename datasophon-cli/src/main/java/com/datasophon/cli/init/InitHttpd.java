@@ -1,4 +1,4 @@
-package com.datasophon.cli.create;
+package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.GlobalConfig;
@@ -24,8 +24,8 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ObjectUtil;
 
 @Slf4j
-@CommandLine.Command(name = "httpd", description = "create httpd")
-public class CreateHttpd implements Runnable {
+@CommandLine.Command(name = "httpd", description = "init httpd")
+public class InitHttpd implements Runnable {
     
     @CommandLine.Option(arity = "1", names = {"-c", "--config"}, description = "配置文件", required = true)
     String configFilePath;
@@ -93,10 +93,15 @@ public class CreateHttpd implements Runnable {
             confData.put("httpdRootPath", httpdRootPath);
             confData.put("httpdListenPort", httpdListenPort);
             try {
+                cmd = String.format("mkdir -p %s", httpdRootPath);
+                System.out.println(cmd);
+                ShellUtils.execWithStatus("/", Arrays.asList(cmd.split("\\s+")), 60);
+                
                 cmd = "mv /etc/httpd/conf/httpd.conf.ftl /etc/httpd/conf/httpd.conf.ftl.bak";
                 System.out.println(cmd);
                 ShellUtils.execWithStatus("/", Arrays.asList(cmd.split("\\s+")), 60);
-                CliUtil.generateConfigFile(templateDir, httpdConf, confData, "/etc/httpd/conf/httpd.conf.ftl");
+                
+                CliUtil.generateConfigFile(templateDir, httpdConf, confData, "/etc/httpd/conf/httpd.conf");
             } catch (Exception e) {
                 log.error("/etc/httpd/conf/httpd.conf.ftl overwrite failed.", e);
             }

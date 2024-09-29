@@ -14,7 +14,7 @@ public class GlobalConfig {
     private OsType os;
     
     private ArchType arch;
-
+    
     private RegistryConfig registry;
     
     private Host nmapServer;
@@ -24,16 +24,16 @@ public class GlobalConfig {
     private MysqlConfig mysql;
     
     private String logDir;
-
+    
     @Data
     public static class RegistryConfig {
-
+        
         private Boolean enable;
-
+        
         private String type;
-
+        
         private Object config;
-
+        
         private Host host;
     }
     
