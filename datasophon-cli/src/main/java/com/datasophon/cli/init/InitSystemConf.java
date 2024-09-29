@@ -22,6 +22,7 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
         return "设置操作系统配置";
     }
     
+    @Override
     public boolean doRun(Executor executor) {
         ExecResult systemConfResult = executor.getFileString("/etc/systemd/system.conf");
         if (systemConfResult.getExecResult()) {
