@@ -15,7 +15,12 @@ import picocli.CommandLine;
         InitMysql.class,
         InitMysqlAccount.class,
         InitSystemConf.class,
-        InitRegistry.class
+        InitRegistry.class,
+        InitHostname.class,
+        InitHugePage.class,
+        InitLibrary.class,
+        InitOsSafeConf.class,
+        InitSsh.class
 })
 public class Init implements Runnable {
     
