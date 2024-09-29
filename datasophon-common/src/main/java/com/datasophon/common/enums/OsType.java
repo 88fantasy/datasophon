@@ -7,7 +7,8 @@ public enum OsType {
     CentOS7(""),
     CentOS8(""),
     OpenEuler(""),
-    Other("")
+    Other(""),
+    Auto("")
     
     ;
     

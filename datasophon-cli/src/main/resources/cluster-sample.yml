@@ -1,6 +1,21 @@
 global:
   offline: true
   os: CentOS7
+  registry:
+    enable: true  # install minio
+    type: minio
+    config:
+      api: 9000
+      console: 9001
+      user: cuminio
+      password: u4Gkp19TRcKKlTCLNA1pyA==
+      volumes: /data/minio
+    host:
+      ip: 172.31.51.160
+      user: root
+      password: dataSophon@123!@#
+      port: 22
+
   nmapServer:
     ip: 172.31.51.160
     port: 22
