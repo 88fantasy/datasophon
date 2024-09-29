@@ -2,11 +2,11 @@ package com.datasophon.cli.create;
 
 import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.GlobalConfig;
-import com.datasophon.common.enums.OsType;
 import com.datasophon.cli.handler.InitNodeHandlerChain;
 import com.datasophon.cli.init.InitFirewall;
 import com.datasophon.cli.init.InitSelinux;
 import com.datasophon.common.enums.ArchType;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ShellUtils;
 
 import picocli.CommandLine;

@@ -7,7 +7,11 @@ import picocli.CommandLine;
         InitSelinux.class,
         InitSwap.class,
         InitOsUser.class,
-        InitSystemConf.class
+        InitSystemConf.class,
+        InitHostname.class,
+        InitHugePage.class,
+        InitLibrary.class,
+        InitOsSafeConf.class
 })
 public class Init implements Runnable {
     

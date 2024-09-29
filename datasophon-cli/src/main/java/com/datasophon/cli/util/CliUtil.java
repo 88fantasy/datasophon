@@ -1,8 +1,8 @@
 package com.datasophon.cli.util;
 
 import com.datasophon.cli.base.CliConstants;
-import com.datasophon.common.enums.OsType;
 import com.datasophon.common.Constants;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
 

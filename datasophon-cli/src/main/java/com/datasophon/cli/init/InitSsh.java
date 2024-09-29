@@ -1,8 +1,8 @@
 package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.ClusterConfig;
-import com.datasophon.common.enums.OsType;
 import com.datasophon.cli.util.CliUtil;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.model.Host;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
