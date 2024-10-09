@@ -2,7 +2,7 @@ package com.datasophon.cli.base;
 
 import com.datasophon.common.model.Host;
 
-import java.util.Collection;
+import java.util.List;
 
 import lombok.Data;
 
@@ -11,6 +11,6 @@ public class ClusterConfig {
     
     private GlobalConfig global;
     
-    private Collection<Host> nodes;
+    private List<Host> nodes;
     
 }

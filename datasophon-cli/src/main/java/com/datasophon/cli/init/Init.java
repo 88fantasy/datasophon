@@ -13,14 +13,14 @@ import picocli.CommandLine;
         InitYumConf.class,
         InitNtpServer.class,
         InitMysql.class,
-        InitMysqlAccount.class,
-        InitSystemConf.class,
+        InitMysqlAppDb.class,
         InitRegistry.class,
         InitHostname.class,
         InitHugePage.class,
         InitLibrary.class,
         InitOsSafeConf.class,
-        InitSsh.class
+        InitSsh.class,
+        InitNmap.class
 })
 public class Init implements Runnable {
     

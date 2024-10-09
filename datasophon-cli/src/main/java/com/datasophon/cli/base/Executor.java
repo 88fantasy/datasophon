@@ -30,6 +30,21 @@ public interface Executor {
     ExecResult sendFile(String src, String dest);
     
     /**
+     * 发送目录
+     * @param srcDir 源目录路径
+     * @param destDir 目标目录路径
+     * @return
+     */
+    ExecResult sendDir(String srcDir, String destDir);
+    
+    /**
+     * 创建目录
+     * @param destDir 目标目录路径
+     * @return
+     */
+    ExecResult createDir(String destDir);
+    
+    /**
      * 读取文件内容
      * @param path 文件路径
      * @return 文件内容列表

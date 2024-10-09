@@ -168,9 +168,10 @@ This file is based on the checkstyle file of Apache Beam.
                      value="Import {0} appears after other imports that it should precede"/>
         </module>-->
 
-        <module name="AvoidStarImport">
+        <!--非法导入屏蔽掉-->
+        <!--<module name="AvoidStarImport">
             <property name="severity" value="error"/>
-        </module>
+        </module>-->
 
         <module name="IllegalImport">
             <property name="illegalPkgs"

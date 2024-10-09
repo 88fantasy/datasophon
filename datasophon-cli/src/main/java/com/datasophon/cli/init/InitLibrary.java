@@ -26,7 +26,6 @@ public class InitLibrary extends InitBase {
         installLibxsltDevel();
         installPsmisc();
         installPerlJson();
-        installNmap();
         initJavaPolicy();
         initTmpPid();
         installXdgUtils();
@@ -83,21 +82,6 @@ public class InitLibrary extends InitBase {
             }
         }
         log.info("install perl-JSON finished.");
-    }
-    
-    private void installNmap() {
-        log.info("install nmap.");
-        ExecResult nmapExec = executor.execShell("rpm -qa | grep nmap");
-        if (!nmapExec.getExecResult()) {
-            log.info("nmap not installed");
-            executor.execShell("yum install nmap -y");
-            nmapExec = executor.execShell("rpm -qa | grep nmap");
-            if (!"0".equals(nmapExec.getExecOut())) {
-                log.info("nmap install failed.");
-                System.exit(1);
-            }
-        }
-        log.info("install nmap finished.");
     }
     
     private void initJavaPolicy() {

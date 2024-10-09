@@ -4,6 +4,8 @@ import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.model.Host;
 
+import java.util.List;
+
 import lombok.Data;
 
 @Data
@@ -19,9 +21,11 @@ public class GlobalConfig {
     
     private Host nmapServer;
     
-    private String ntpServer;
-    
     private MysqlConfig mysql;
+    
+    private HttpdServer httpdServer;
+    
+    private NtpServer ntpServer;
     
     private String logDir;
     
@@ -44,6 +48,41 @@ public class GlobalConfig {
         
         private String password;
         
+        private String tarName;
+        
+        private List<MysqlAppDb> appDbs;
+        
+        private Host host;
+    }
+    
+    @Data
+    public static class MysqlAppDb {
+        private String account;
+        
+        private String password;
+        
+        private String dbName;
+    }
+    
+    @Data
+    public static class HttpdServer {
+        private Host host;
+        
+        private String pkgPath;
+        
+        private String rootPath;
+        
+        private String templateDir;
+        
+        private String reposTarFilePath;
+        
+        private String listenPort;
+        
+        private boolean force;
+    }
+    
+    @Data
+    public static class NtpServer {
         private Host host;
     }
 }

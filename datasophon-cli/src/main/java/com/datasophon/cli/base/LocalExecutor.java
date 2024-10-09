@@ -38,6 +38,16 @@ public class LocalExecutor implements Executor {
     }
     
     @Override
+    public ExecResult sendDir(String srcDir, String destDir) {
+        return null;
+    }
+    
+    @Override
+    public ExecResult createDir(String destDir) {
+        return null;
+    }
+    
+    @Override
     public ExecResult getFileString(String path) {
         ExecResult execResult = new ExecResult();
         try {

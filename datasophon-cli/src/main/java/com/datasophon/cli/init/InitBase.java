@@ -11,12 +11,17 @@ import picocli.CommandLine;
 import java.io.File;
 import java.nio.charset.Charset;
 
+import lombok.Data;
+import lombok.experimental.Accessors;
+
 import org.yaml.snakeyaml.Yaml;
 
 import com.jcraft.jsch.Session;
 
 import cn.hutool.core.io.FileUtil;
 
+@Data
+@Accessors(chain = true)
 public abstract class InitBase implements Runnable, InitNodeHandler {
     
     @CommandLine.Option(arity = "1", names = {"-c", "--config"}, description = "配置文件")

@@ -25,6 +25,7 @@ public class JschExecutor implements Executor {
     
     @Override
     public ExecResult execShell(String cmd) {
+        log.info("command:{}", cmd);
         ExecResult execResult = new ExecResult();
         try {
             String result = JschUtils.shellForStr(session, cmd, 5, 3);
@@ -51,6 +52,16 @@ public class JschExecutor implements Executor {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
+    }
+    
+    @Override
+    public ExecResult sendDir(String srcDir, String destDir) {
+        return JschUtils.sendDir(session, srcDir, destDir, 5);
+    }
+    
+    @Override
+    public ExecResult createDir(String destDir) {
+        return JschUtils.createDir(session, destDir, 5);
     }
     
     @Override

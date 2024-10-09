@@ -20,14 +20,47 @@ global:
     ip: 172.31.51.160
     port: 22
     password: datasophon@123!@#
-  ntpServer: 172.31.51.160
   mysql:
     enable: false   # Install Mysql
     password: datasophon123      # Set the MYSQL database root password
+    tarName:  mysql-community-8.0.28.el8.x86_64.tar.gz
+    appDbs:
+      - account: datasphon
+        password: datasphon
+        dbName: datasphon
+      - account: hive
+        password: hive
+        dbName: hive
+      - account: dolphinscheduler
+        password: dolphinscheduler
+        dbName: dolphinscheduler
+      - account: ustream
+        password: ustream
+        dbName: ustream
+      - account: amoro
+        password: amoro
+        dbName: amoro
     host:
       ip: 172.31.51.160
       port: 22
       password: datasophon@123!@#
+
+  httpdServer:
+    host:
+      ip: 172.31.51.160
+      port: 22
+      password: datasophon@123!@#
+    pkgPath: /data/unit-scripts/httpd-install/httpd-pkg
+    rootPath: /data/unimedical/.data/httpd-root
+    reposTarFilePath: /data/scripts-set/unit-scripts/offline-repos-install/offline-repos.tar.gz
+    listenPort: 4080
+    force: true
+
+    ntpServer:
+      host:
+        ip: 172.31.51.160
+        port: 22
+        password: datasophon@123!@#
 
   logDir: ./logs
 

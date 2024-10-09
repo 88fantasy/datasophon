@@ -4,12 +4,16 @@ import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.Executor;
 
 import picocli.CommandLine;
+import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * 初始化hostname
  */
 @Slf4j
+@Accessors(chain = true)
+@Data
 @CommandLine.Command(name = "hostname", description = "init hostname")
 public class InitHostname extends InitBase {
     

@@ -15,6 +15,8 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
+import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 import org.yaml.snakeyaml.Yaml;
@@ -23,6 +25,8 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ObjectUtil;
 
 @Slf4j
+@Accessors(chain = true)
+@Data
 @CommandLine.Command(name = "yumconf", description = "init yumConf")
 public class InitYumConf extends InitBase implements InitNodeHandler {
     

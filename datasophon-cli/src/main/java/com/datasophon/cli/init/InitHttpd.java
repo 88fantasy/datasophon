@@ -1,7 +1,9 @@
 package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.ClusterConfig;
+import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.base.GlobalConfig;
+import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
@@ -12,10 +14,11 @@ import picocli.CommandLine;
 
 import java.io.File;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 import org.yaml.snakeyaml.Yaml;
@@ -24,11 +27,10 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ObjectUtil;
 
 @Slf4j
+@Accessors(chain = true)
+@Data
 @CommandLine.Command(name = "httpd", description = "init httpd")
-public class InitHttpd implements Runnable {
-    
-    @CommandLine.Option(arity = "1", names = {"-c", "--config"}, description = "配置文件", required = true)
-    String configFilePath;
+public class InitHttpd extends InitBase implements InitNodeHandler {
     
     @CommandLine.Option(names = {"-p", "--httpdPkgPath"}, description = "安装包路径", required = true)
     String httpdPkgPath;
@@ -49,7 +51,12 @@ public class InitHttpd implements Runnable {
     boolean force;
     
     @Override
-    public void run() {
+    public String name() {
+        return "httpd服务";
+    }
+    
+    @Override
+    public boolean doRun(Executor executor) {
         File configFile = new File(configFilePath);
         if (!configFile.exists() || configFile.isDirectory()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + configFilePath);
@@ -70,15 +77,13 @@ public class InitHttpd implements Runnable {
         // httpd安装
         boolean isInit = false;
         String cmd = "httpd -v";
-        System.out.println(cmd);
-        ExecResult vResult = ShellUtils.execWithStatus("/", Arrays.asList(cmd.split("\\s+")), 60);
+        ExecResult vResult = executor.execShell(cmd);
         if (vResult.getExecResult()) {
             log.info("httpd have already installed");
         } else {
             String repoPath = String.format("%s/%s/%s", httpdPkgPath, global.getArch(), global.getOs());
             cmd = String.format("rpm -ivh %s/*.rpm", repoPath);
-            System.out.println(cmd);
-            ExecResult httpdResult = ShellUtils.execWithStatus("/", Arrays.asList(cmd.split("\\s+")), 60);
+            ExecResult httpdResult = executor.execShell(cmd);
             if (httpdResult.getExecResult()) {
                 log.info("httpd install sucess.");
                 isInit = true;
@@ -94,12 +99,10 @@ public class InitHttpd implements Runnable {
             confData.put("httpdListenPort", httpdListenPort);
             try {
                 cmd = String.format("mkdir -p %s", httpdRootPath);
-                System.out.println(cmd);
-                ShellUtils.execWithStatus("/", Arrays.asList(cmd.split("\\s+")), 60);
+                executor.execShell(cmd);
                 
                 cmd = "mv /etc/httpd/conf/httpd.conf.ftl /etc/httpd/conf/httpd.conf.ftl.bak";
-                System.out.println(cmd);
-                ShellUtils.execWithStatus("/", Arrays.asList(cmd.split("\\s+")), 60);
+                executor.execShell(cmd);
                 
                 CliUtil.generateConfigFile(templateDir, httpdConf, confData, "/etc/httpd/conf/httpd.conf");
             } catch (Exception e) {
@@ -110,12 +113,12 @@ public class InitHttpd implements Runnable {
         
         // httpd restart
         cmd = String.format("systemctl restart httpd");
-        System.out.println(cmd);
-        ExecResult reResult = ShellUtils.execWithStatus("/", Arrays.asList(cmd.split("\\s+")), 60);
+        ExecResult reResult = executor.execShell(cmd);
         if (reResult.getExecResult()) {
             log.info("restart httpd sucess");
         } else {
             log.info("restart httpd failed");
         }
+        return true;
     }
 }

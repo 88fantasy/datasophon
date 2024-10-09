@@ -1,21 +1,22 @@
 package com.datasophon.cli.init;
 
+import com.datasophon.cli.base.Executor;
+import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.ShellUtils;
 
 import picocli.CommandLine;
 
 import java.io.File;
-import java.util.Arrays;
 
+import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@Accessors(chain = true)
+@Data
 @CommandLine.Command(name = "yumpackage", description = "init YumPackage")
-public class InitYumPackage implements Runnable {
-    
-    @CommandLine.Option(arity = "1", names = {"-c", "--config"}, description = "配置文件", required = true)
-    String configFilePath;
+public class InitYumPackage extends InitBase implements InitNodeHandler {
     
     @CommandLine.Option(names = {"-rp", "--httpdRootPath"}, description = "httpd根路径")
     String httpdRootPath;
@@ -24,7 +25,12 @@ public class InitYumPackage implements Runnable {
     String reposTarFilePath;
     
     @Override
-    public void run() {
+    public String name() {
+        return "yum安装包解压";
+    }
+    
+    @Override
+    public boolean doRun(Executor executor) {
         File configFile = new File(configFilePath);
         if (!configFile.exists() || configFile.isDirectory()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + configFilePath);
@@ -36,12 +42,12 @@ public class InitYumPackage implements Runnable {
             throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + reposTarFilePath);
         }
         String cmd = String.format("tar -zxf %s -C %s", reposTarFilePath, httpdRootPath);
-        System.out.println(cmd);
-        ExecResult result = ShellUtils.execWithStatus("/", Arrays.asList(cmd.split("\\s+")), 60);
+        ExecResult result = executor.execShell(cmd);
         if (result.getExecResult()) {
             log.info("init sucess.");
         } else {
             log.info("init failed.");
         }
+        return true;
     }
 }
