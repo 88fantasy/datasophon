@@ -28,7 +28,7 @@ public class CreateCluster implements Runnable {
     @CommandLine.Option(names = {"-p", "datasophonPath"}, description = "datasophon绝对路径", required = true)
     String datasophonPath;
     
-    @CommandLine.Option(names = {"-a", "action"}, description = "执行动作", required = true)
+    @CommandLine.Option(names = {"-a", "action"}, description = "执行动作:initALL/initSingleNode", required = true)
     String action;
     
     private String initPath;
@@ -82,123 +82,119 @@ public class CreateCluster implements Runnable {
         
         if (action.equals("initALL")) {
             initALL(clusterConfig);
+        } else if (action.equals("initSingleNode")) {
+            initSingleNode(clusterConfig);
+        } else {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "action not found : " + action);
         }
     }
-    
+
     /**
      * 初始化所有节点
      */
     public void initALL(ClusterConfig config) {
-        List<Host> allNodes = config.getNodes();
-        if (CollUtil.isEmpty(allNodes)) {
+        List<Host> nodes = config.getNodes();
+        if (CollUtil.isEmpty(nodes)) {
             return;
         }
         log.info("安全配置");
-        allNodesExec(allNodes, new InitOsSafeConf());
+        initOsSafeConf(config, nodes);
+
+        log.info("分发资源包");
+        initBinPackage(config, nodes);
         
         log.info("创建hadoop用户和组");
-        allNodesExec(allNodes, new InitOsUser());
-        
+        initOsUser(config, nodes);
+
         log.info("关闭防火墙");
-        allNodesExec(allNodes, new InitFirewall());
+        initFirewall(config, nodes);
         
         log.info("关闭selinux");
-        allNodesExec(allNodes, new InitSelinux());
-        
+        initSelinux(config, nodes);
+
         log.info("关闭Swap");
-        allNodesExec(allNodes, new InitSwap());
+        initSwap(config, nodes);
         
         log.info("httpd安装");
-        InitHttpd initHttpd = new InitHttpd();
-        GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
-        initHttpd.setConfigFilePath(initConfigYamlPath);
-        initHttpd.setHttpdPkgPath(httpdServer.getPkgPath())
-                .setHttpdRootPath(httpdServer.getRootPath())
-                .setHttpdListenPort(httpdServer.getListenPort())
-                .setTemplateDir(httpdServer.getTemplateDir())
-                .setHttpdConf("httpd.conf.ftl")
-                .setForce(true);
-        singleNodesExec(httpdServer.getHost(), initHttpd);
+        initHttpd(config);
         
         log.info("yum安装包解压");
-        InitYumPackage initYumPackage = new InitYumPackage();
-        initYumPackage.setConfigFilePath(initConfigYamlPath);
-        initYumPackage.setHttpdRootPath(httpdServer.getRootPath())
-                .setReposTarFilePath(httpdServer.getReposTarFilePath());
-        singleNodesExec(httpdServer.getHost(), initHttpd);
+        initYumPackage(config);
         
         log.info("离线yum仓库配置");
-        InitYumConf initYumConf = new InitYumConf();
-        initYumConf.setConfigFilePath(initConfigYamlPath);
-        initYumConf.setHttpdServerIp(httpdServer.getHost().getIp())
-                .setHttpdListenPort(httpdServer.getListenPort());
-        allNodesExec(allNodes, initYumConf);
+        initYumConf(config, nodes);
         
         log.info("优化系统配置");
-        allNodesExec(allNodes, new InitSystemConf());
+        initSystemConf(config, nodes);
         
         log.info("配置all hostname");
-        config.getNodes().forEach(node -> {
-            InitHostname initHostname = new InitHostname();
-            initHostname.setHostname(node.getHostname());
-            singleNodesExec(node, initHostname);
-        });
+        initHostname(config, nodes);
         
         log.info("nmap安装");
-        singleNodesExec(config.getGlobal().getNmapServer(), new InitNmap());
+        initNmap(config);
         
         log.info("配置ntpServer");
-        InitNtpServer initNtpServer = new InitNtpServer();
-        GlobalConfig.NtpServer ntpServer = config.getGlobal().getNtpServer();
-        initNtpServer.setConfigFilePath(initConfigYamlPath);
-        singleNodesExec(ntpServer.getHost(), initNtpServer);
+        initNtpServer(config);
         
         log.info("配置ntpSlave");
-        InitNtpSlave initNtpSlave = new InitNtpSlave();
-        initNtpSlave.setConfigFilePath(initConfigYamlPath);
-        slavesNodesExec(ntpServer.getHost(), allNodes, initNtpSlave);
+        initNtpSlave(config, nodes);
         
         log.info("初始化依赖库");
-        allNodesExec(allNodes, new InitLibrary());
+        initLibrary(config, nodes);
         
         log.info("安装mysql");
-        InitMysql initMysql = new InitMysql();
-        GlobalConfig.MysqlConfig mysqlConfig = config.getGlobal().getMysql();
-        initMysql.setConfigFilePath(initConfigYamlPath);
-        initMysql.setEnable(mysqlConfig.getEnable())
-                .setPassword(mysqlConfig.getPassword())
-                .setPackagePath(packagesPath)
-                .setMysqlTarName(mysqlConfig.getTarName());
-        singleNodesExec(mysqlConfig.getHost(), initMysql);
+        initMysql(config);
         
         log.info("初始化mysql数据库和账号密码");
-        mysqlConfig.getAppDbs().forEach(x -> {
-            InitMysqlAppDb initMysqlAppDb = new InitMysqlAppDb();
-            initMysqlAppDb.setConfigFilePath(initConfigYamlPath);
-            initMysqlAppDb.setRootPassword(mysqlConfig.getPassword())
-                    .setAccount(x.getAccount())
-                    .setPassword(x.getPassword())
-                    .setDbName(x.getDbName());
-            singleNodesExec(mysqlConfig.getHost(), initMysqlAppDb);
-        });
+        initMysqlAppDb(config);
         
         log.info("关闭透明大页");
-        allNodesExec(allNodes, new InitHugePage());
+        initHugePage(config, nodes);
     }
     
     /**
      * 初始化单节点
      */
-    public void initSingleNode() {
-        
-    }
-    
-    public void secretFreeAllLogin() {
-        
-    }
-    
-    public void checkcloseAllSwap() {
-        
+    public void initSingleNode(ClusterConfig config) {
+        List<Host> nodes = config.getAddNodes();
+        if (CollUtil.isEmpty(nodes)) {
+            return;
+        }
+        log.info("安全配置");
+        initOsSafeConf(config, nodes);
+
+        log.info("分发资源包");
+        initBinPackage(config, nodes);
+
+        log.info("创建hadoop用户和组");
+        initOsUser(config, nodes);
+
+        log.info("关闭防火墙");
+        initFirewall(config, nodes);
+
+        log.info("关闭selinux");
+        initSelinux(config, nodes);
+
+        log.info("关闭Swap");
+        initSwap(config, nodes);
+
+        log.info("离线yum仓库配置");
+        initYumConf(config, nodes);
+
+        log.info("优化系统配置");
+        initSystemConf(config, nodes);
+
+        log.info("配置all hostname");
+        initHostname(config, nodes);
+
+        log.info("配置ntpSlave");
+        initNtpSlave(config, nodes);
+
+        log.info("初始化依赖库");
+        initLibrary(config, nodes);
+
+        log.info("关闭透明大页");
+        initHugePage(config, nodes);
     }
     
     public void testFun() {
@@ -235,5 +231,126 @@ public class CreateCluster implements Runnable {
             workerNodeHandlerChain.handle();
         });
     }
-    
+
+    private void initOsSafeConf(ClusterConfig config, List<Host> nodes){
+        allNodesExec(nodes, new InitOsSafeConf());
+    }
+
+    private void initBinPackage(ClusterConfig config, List<Host> nodes){
+        InitBinPackage initBinPackage = new InitBinPackage();
+        initBinPackage.setInitPath(initPath)
+                .setDatasophonPath(datasophonPath);
+        nodes.forEach( node -> {
+            singleNodesExec(node, initBinPackage);
+        });
+    }
+
+    private void initOsUser(ClusterConfig config, List<Host> nodes) {
+        allNodesExec(nodes, new InitOsUser());
+    }
+
+    private void initFirewall(ClusterConfig config, List<Host> nodes) {
+        allNodesExec(nodes, new InitFirewall());
+    }
+
+    private void initSelinux(ClusterConfig config, List<Host> nodes) {
+        allNodesExec(nodes, new InitSelinux());
+    }
+
+    private void initSwap (ClusterConfig config, List<Host> nodes) {
+        allNodesExec(nodes, new InitSwap());
+    }
+
+    private void initHttpd(ClusterConfig config) {
+        InitHttpd initHttpd = new InitHttpd();
+        GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
+        initHttpd.setConfigFilePath(initConfigYamlPath);
+        initHttpd.setHttpdPkgPath(httpdServer.getPkgPath())
+                .setHttpdRootPath(httpdServer.getRootPath())
+                .setHttpdListenPort(httpdServer.getListenPort())
+                .setTemplateDir(httpdServer.getTemplateDir())
+                .setHttpdConf("httpd.conf.ftl")
+                .setForce(true);
+        singleNodesExec(httpdServer.getHost(), initHttpd);
+    }
+
+    private void initYumPackage(ClusterConfig config) {
+        GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
+        InitYumPackage initYumPackage = new InitYumPackage();
+        initYumPackage.setConfigFilePath(initConfigYamlPath);
+        initYumPackage.setHttpdRootPath(httpdServer.getRootPath())
+                .setReposTarFilePath(httpdServer.getReposTarFilePath());
+        singleNodesExec(httpdServer.getHost(), initYumPackage);
+    }
+
+    private void initYumConf(ClusterConfig config, List<Host> nodes) {
+        GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
+        InitYumConf initYumConf = new InitYumConf();
+        initYumConf.setConfigFilePath(initConfigYamlPath);
+        initYumConf.setHttpdServerIp(httpdServer.getHost().getIp())
+                .setHttpdListenPort(httpdServer.getListenPort());
+        allNodesExec(nodes, initYumConf);
+    }
+
+    private void initSystemConf(ClusterConfig config, List<Host> nodes) {
+        allNodesExec(nodes, new InitSystemConf());
+    }
+
+    private void initHostname(ClusterConfig config, List<Host> nodes) {
+        nodes.forEach(node -> {
+            InitHostname initHostname = new InitHostname();
+            initHostname.setHostname(node.getHostname());
+            singleNodesExec(node, initHostname);
+        });
+    }
+
+    private void initNmap(ClusterConfig config){
+        singleNodesExec(config.getGlobal().getNmapServer(), new InitNmap());
+    }
+
+    private void initNtpServer(ClusterConfig config){
+        InitNtpServer initNtpServer = new InitNtpServer();
+        GlobalConfig.NtpServer ntpServer = config.getGlobal().getNtpServer();
+        initNtpServer.setConfigFilePath(initConfigYamlPath);
+        singleNodesExec(ntpServer.getHost(), initNtpServer);
+    }
+
+    private void initNtpSlave(ClusterConfig config, List<Host> nodes){
+        GlobalConfig.NtpServer ntpServer = config.getGlobal().getNtpServer();
+        InitNtpSlave initNtpSlave = new InitNtpSlave();
+        initNtpSlave.setConfigFilePath(initConfigYamlPath);
+        slavesNodesExec(ntpServer.getHost(), nodes, initNtpSlave);
+    }
+
+    private void initLibrary(ClusterConfig config, List<Host> nodes){
+        allNodesExec(nodes, new InitLibrary());
+    }
+
+    private void initMysql(ClusterConfig config){
+        InitMysql initMysql = new InitMysql();
+        GlobalConfig.MysqlConfig mysqlConfig = config.getGlobal().getMysql();
+        initMysql.setConfigFilePath(initConfigYamlPath);
+        initMysql.setEnable(mysqlConfig.getEnable())
+                .setPassword(mysqlConfig.getPassword())
+                .setPackagePath(packagesPath)
+                .setMysqlTarName(mysqlConfig.getTarName());
+        singleNodesExec(mysqlConfig.getHost(), initMysql);
+    }
+
+    private void initMysqlAppDb(ClusterConfig config){
+        GlobalConfig.MysqlConfig mysqlConfig = config.getGlobal().getMysql();
+        mysqlConfig.getAppDbs().forEach(x -> {
+            InitMysqlAppDb initMysqlAppDb = new InitMysqlAppDb();
+            initMysqlAppDb.setConfigFilePath(initConfigYamlPath);
+            initMysqlAppDb.setRootPassword(mysqlConfig.getPassword())
+                    .setAccount(x.getAccount())
+                    .setPassword(x.getPassword())
+                    .setDbName(x.getDbName());
+            singleNodesExec(mysqlConfig.getHost(), initMysqlAppDb);
+        });
+    }
+
+    private void initHugePage(ClusterConfig config, List<Host> nodes){
+        allNodesExec(nodes, new InitHugePage());
+    }
 }

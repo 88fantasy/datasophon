@@ -20,7 +20,8 @@ import picocli.CommandLine;
         InitLibrary.class,
         InitOsSafeConf.class,
         InitSsh.class,
-        InitNmap.class
+        InitNmap.class,
+        InitBinPackage.class
 })
 public class Init implements Runnable {
     

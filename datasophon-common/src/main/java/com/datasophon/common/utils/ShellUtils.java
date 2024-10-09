@@ -17,15 +17,13 @@
 
 package com.datasophon.common.utils;
 
+import cn.hutool.core.util.RuntimeUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.OsType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,11 +32,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import cn.hutool.core.util.RuntimeUtil;
 
 public class ShellUtils {
     

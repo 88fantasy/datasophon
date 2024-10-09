@@ -80,3 +80,11 @@ nodes:
     password: dataSophon@123!@#
     port: 22
     hostname: dataSophon03
+
+addNodes:
+  - ip: 172.31.51.163
+    user: root
+    password: dataSophon@123!@#
+    port: 22
+    hostname: dataSophon01
+
