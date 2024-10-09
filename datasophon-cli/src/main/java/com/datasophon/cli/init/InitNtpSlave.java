@@ -24,7 +24,8 @@ public class InitNtpSlave extends InitBase implements InitNodeHandler {
     public String name() {
         return "ntp slave配置";
     }
-    
+
+    @Override
     public boolean doRun(Executor executor) {
         String cmd = "rpm -qa | grep chrony-";
         System.out.println(cmd);
