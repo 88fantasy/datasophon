@@ -129,6 +129,9 @@ public class CreateCluster implements Runnable {
         
         log.info("配置all hostname");
         initHostname(config, nodes);
+
+        log.info("配置all hosts");
+        initAllHost(config, nodes);
         
         log.info("nmap安装");
         initNmap(config);
@@ -156,6 +159,7 @@ public class CreateCluster implements Runnable {
      * 初始化单节点
      */
     public void initSingleNode(ClusterConfig config) {
+        List<Host> initNodes = config.getNodes();
         List<Host> nodes = config.getAddNodes();
         if (CollUtil.isEmpty(nodes)) {
             return;
@@ -186,6 +190,10 @@ public class CreateCluster implements Runnable {
 
         log.info("配置all hostname");
         initHostname(config, nodes);
+
+        log.info("配置all hosts");
+        initAllHost(config, initNodes);
+        initAllHost(config, nodes);
 
         log.info("配置ntpSlave");
         initNtpSlave(config, nodes);
@@ -301,6 +309,13 @@ public class CreateCluster implements Runnable {
             InitHostname initHostname = new InitHostname();
             initHostname.setHostname(node.getHostname());
             singleNodesExec(node, initHostname);
+        });
+    }
+
+    private void initAllHost(ClusterConfig config, List<Host> nodes) {
+        nodes.forEach(node -> {
+            InitAllHost initAllHost = new InitAllHost();
+            singleNodesExec(node, initAllHost);
         });
     }
 

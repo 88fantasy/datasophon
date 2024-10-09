@@ -21,7 +21,8 @@ import picocli.CommandLine;
         InitOsSafeConf.class,
         InitSsh.class,
         InitNmap.class,
-        InitBinPackage.class
+        InitBinPackage.class,
+        InitAllHost.class
 })
 public class Init implements Runnable {
     
