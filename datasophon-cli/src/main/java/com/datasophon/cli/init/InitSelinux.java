@@ -15,7 +15,8 @@ public class InitSelinux extends InitBase implements InitNodeHandler {
     public String name() {
         return "关闭安全策略";
     }
-    
+
+    @Override
     public boolean doRun(Executor executor) {
         ExecResult exec = executor.execShell("getenforce");
         if (exec.getExecResult()) {

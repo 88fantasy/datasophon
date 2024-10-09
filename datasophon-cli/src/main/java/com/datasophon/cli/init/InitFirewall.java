@@ -15,7 +15,8 @@ public class InitFirewall extends InitBase implements InitNodeHandler {
     public String name() {
         return "防火墙策略";
     }
-    
+
+    @Override
     public boolean doRun(Executor executor) {
         ExecResult exec = executor.execShell("firewall-cmd --state");
         if (exec.getExecResult()) {

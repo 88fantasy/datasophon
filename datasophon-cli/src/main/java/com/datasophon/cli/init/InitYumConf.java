@@ -40,7 +40,8 @@ public class InitYumConf extends InitBase implements InitNodeHandler {
     public String name() {
         return "离线yum仓库配置";
     }
-    
+
+    @Override
     public boolean doRun(Executor executor) {
         File configFile = new File(configFilePath);
         if (!configFile.exists() || configFile.isDirectory()) {
