@@ -28,7 +28,11 @@ public class JschExecutor implements Executor {
         log.info("command:{}", cmd);
         ExecResult execResult = new ExecResult();
         try {
-            String result = JschUtils.shellForStr(session, cmd, 5, 3);
+            String result = JschUtils.execForStr(session, cmd);
+            // 去除尾部的换行符
+            if (result.length() > 0 && result.charAt(result.length() - 1) == '\n') {
+                result = result.substring(0, result.length() - 1);
+            }
             execResult.setExecOut(result);
             execResult.setExecResult(true);
         } catch (Exception e) {

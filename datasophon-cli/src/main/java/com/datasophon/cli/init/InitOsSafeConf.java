@@ -619,7 +619,7 @@ public class InitOsSafeConf extends InitBase {
      */
     private void backupConf() {
         if (StringUtils.isEmpty(confFullPath)) {
-            log.error("**backup source file: failed, because conf file path not asign, abort!");
+            log.error("**backup source file: failed, because conf file path not assign, abort!");
             System.exit(-1);
         } else {
             String confFileName = confFullPath.substring(confFullPath.lastIndexOf("/") + 1);
@@ -642,6 +642,7 @@ public class InitOsSafeConf extends InitBase {
                 log.error("backup {}: failed, please check!", backupFile);
                 System.exit(1);
             }
+            log.info("backup {}: success!", backupFile);
         }
     }
     
@@ -651,6 +652,7 @@ public class InitOsSafeConf extends InitBase {
     private void delExistConf() {
         insertRow = 0;
         if (StringUtils.isNotBlank(keyword)) {
+            log.info("**delete exist conf: ");
             while (true) {
                 ExecResult exec = executor.execShell(String.format("grep -E -n \"^%s\" %s | awk -F \":\" '{print $1}' | xargs echo | awk '{print $1}'", keyword, confFullPath));
                 String row = exec.getExecOut();

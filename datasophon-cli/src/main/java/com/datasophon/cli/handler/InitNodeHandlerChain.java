@@ -2,12 +2,14 @@ package com.datasophon.cli.handler;
 
 import com.datasophon.common.model.Host;
 import com.datasophon.common.utils.JschUtils;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import lombok.extern.slf4j.Slf4j;
+
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 
 @Slf4j
 public class InitNodeHandlerChain {

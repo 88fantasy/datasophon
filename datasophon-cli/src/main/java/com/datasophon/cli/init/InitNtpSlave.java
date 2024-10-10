@@ -3,13 +3,15 @@ package com.datasophon.cli.init;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.common.utils.ExecResult;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.slf4j.Slf4j;
+
 import picocli.CommandLine;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import lombok.Data;
+import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Accessors(chain = true)

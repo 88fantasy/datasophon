@@ -1,6 +1,5 @@
 package com.datasophon.cli.init;
 
-import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.Executor;
 
 import picocli.CommandLine;
@@ -32,7 +31,7 @@ public class InitHostname extends InitBase {
         executor.execShell("echo NOZEROCONF=yes >>/etc/sysconfig/network");
         executor.execShell(String.format("hostnamectl set-hostname %s", hostname));
         executor.execShell(String.format("hostnamectl set-hostname --static %s", hostname));
-
+        
         String host = executor.execShell("hostname").getExecOut();
         if (!host.equals(hostname)) {
             log.error("init hostname failed.");
