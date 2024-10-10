@@ -27,7 +27,6 @@
         and maintenance of the big data cloud native platform, helping you quickly build a stable, efficient, elastic
         and scalable big data cloud native platform.</description>
     <modules>
-        <module>datasophon-api</module>
         <module>datasophon-infrastructure</module>
         <module>datasophon-common</module>
         <module>datasophon-worker</module>
@@ -35,6 +34,7 @@
         <module>datasophon-service</module>
         <module>datasophon-domain</module>
         <module>datasophon-cli</module>
+        <module>datasophon-api</module>
     </modules>
 
     <properties>

@@ -6,7 +6,7 @@ import lombok.Getter;
 public enum OsType {
     CentOS7(""),
     CentOS8(""),
-    OpenEuler(""),
+    OpenEuler22(""),
     Other(""),
     Auto("")
     

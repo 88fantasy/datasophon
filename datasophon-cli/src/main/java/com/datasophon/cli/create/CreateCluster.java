@@ -88,7 +88,7 @@ public class CreateCluster implements Runnable {
             throw new CommandLine.ExecutionException(new CommandLine(this), "action not found : " + action);
         }
     }
-
+    
     /**
      * 初始化所有节点
      */
@@ -99,19 +99,19 @@ public class CreateCluster implements Runnable {
         }
         log.info("安全配置");
         initOsSafeConf(config, nodes);
-
+        
         log.info("分发资源包");
         initBinPackage(config, nodes);
         
         log.info("创建hadoop用户和组");
         initOsUser(config, nodes);
-
+        
         log.info("关闭防火墙");
         initFirewall(config, nodes);
         
         log.info("关闭selinux");
         initSelinux(config, nodes);
-
+        
         log.info("关闭Swap");
         initSwap(config, nodes);
         
@@ -129,7 +129,7 @@ public class CreateCluster implements Runnable {
         
         log.info("配置all hostname");
         initHostname(config, nodes);
-
+        
         log.info("配置all hosts");
         initAllHost(config, nodes);
         
@@ -166,41 +166,41 @@ public class CreateCluster implements Runnable {
         }
         log.info("安全配置");
         initOsSafeConf(config, nodes);
-
+        
         log.info("分发资源包");
         initBinPackage(config, nodes);
-
+        
         log.info("创建hadoop用户和组");
         initOsUser(config, nodes);
-
+        
         log.info("关闭防火墙");
         initFirewall(config, nodes);
-
+        
         log.info("关闭selinux");
         initSelinux(config, nodes);
-
+        
         log.info("关闭Swap");
         initSwap(config, nodes);
-
+        
         log.info("离线yum仓库配置");
         initYumConf(config, nodes);
-
+        
         log.info("优化系统配置");
         initSystemConf(config, nodes);
-
+        
         log.info("配置all hostname");
         initHostname(config, nodes);
-
+        
         log.info("配置all hosts");
         initAllHost(config, initNodes);
         initAllHost(config, nodes);
-
+        
         log.info("配置ntpSlave");
         initNtpSlave(config, nodes);
-
+        
         log.info("初始化依赖库");
         initLibrary(config, nodes);
-
+        
         log.info("关闭透明大页");
         initHugePage(config, nodes);
     }
@@ -239,36 +239,36 @@ public class CreateCluster implements Runnable {
             workerNodeHandlerChain.handle();
         });
     }
-
-    private void initOsSafeConf(ClusterConfig config, List<Host> nodes){
+    
+    private void initOsSafeConf(ClusterConfig config, List<Host> nodes) {
         allNodesExec(nodes, new InitOsSafeConf());
     }
-
-    private void initBinPackage(ClusterConfig config, List<Host> nodes){
+    
+    private void initBinPackage(ClusterConfig config, List<Host> nodes) {
         InitBinPackage initBinPackage = new InitBinPackage();
         initBinPackage.setInitPath(initPath)
                 .setDatasophonPath(datasophonPath);
-        nodes.forEach( node -> {
+        nodes.forEach(node -> {
             singleNodesExec(node, initBinPackage);
         });
     }
-
+    
     private void initOsUser(ClusterConfig config, List<Host> nodes) {
         allNodesExec(nodes, new InitOsUser());
     }
-
+    
     private void initFirewall(ClusterConfig config, List<Host> nodes) {
         allNodesExec(nodes, new InitFirewall());
     }
-
+    
     private void initSelinux(ClusterConfig config, List<Host> nodes) {
         allNodesExec(nodes, new InitSelinux());
     }
-
-    private void initSwap (ClusterConfig config, List<Host> nodes) {
+    
+    private void initSwap(ClusterConfig config, List<Host> nodes) {
         allNodesExec(nodes, new InitSwap());
     }
-
+    
     private void initHttpd(ClusterConfig config) {
         InitHttpd initHttpd = new InitHttpd();
         GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
@@ -281,7 +281,7 @@ public class CreateCluster implements Runnable {
                 .setForce(true);
         singleNodesExec(httpdServer.getHost(), initHttpd);
     }
-
+    
     private void initYumPackage(ClusterConfig config) {
         GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
         InitYumPackage initYumPackage = new InitYumPackage();
@@ -290,7 +290,7 @@ public class CreateCluster implements Runnable {
                 .setReposTarFilePath(httpdServer.getReposTarFilePath());
         singleNodesExec(httpdServer.getHost(), initYumPackage);
     }
-
+    
     private void initYumConf(ClusterConfig config, List<Host> nodes) {
         GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
         InitYumConf initYumConf = new InitYumConf();
@@ -299,11 +299,11 @@ public class CreateCluster implements Runnable {
                 .setHttpdListenPort(httpdServer.getListenPort());
         allNodesExec(nodes, initYumConf);
     }
-
+    
     private void initSystemConf(ClusterConfig config, List<Host> nodes) {
         allNodesExec(nodes, new InitSystemConf());
     }
-
+    
     private void initHostname(ClusterConfig config, List<Host> nodes) {
         nodes.forEach(node -> {
             InitHostname initHostname = new InitHostname();
@@ -311,37 +311,37 @@ public class CreateCluster implements Runnable {
             singleNodesExec(node, initHostname);
         });
     }
-
+    
     private void initAllHost(ClusterConfig config, List<Host> nodes) {
         nodes.forEach(node -> {
             InitAllHost initAllHost = new InitAllHost();
             singleNodesExec(node, initAllHost);
         });
     }
-
-    private void initNmap(ClusterConfig config){
+    
+    private void initNmap(ClusterConfig config) {
         singleNodesExec(config.getGlobal().getNmapServer(), new InitNmap());
     }
-
-    private void initNtpServer(ClusterConfig config){
+    
+    private void initNtpServer(ClusterConfig config) {
         InitNtpServer initNtpServer = new InitNtpServer();
         GlobalConfig.NtpServer ntpServer = config.getGlobal().getNtpServer();
         initNtpServer.setConfigFilePath(initConfigYamlPath);
         singleNodesExec(ntpServer.getHost(), initNtpServer);
     }
-
-    private void initNtpSlave(ClusterConfig config, List<Host> nodes){
+    
+    private void initNtpSlave(ClusterConfig config, List<Host> nodes) {
         GlobalConfig.NtpServer ntpServer = config.getGlobal().getNtpServer();
         InitNtpSlave initNtpSlave = new InitNtpSlave();
         initNtpSlave.setConfigFilePath(initConfigYamlPath);
         slavesNodesExec(ntpServer.getHost(), nodes, initNtpSlave);
     }
-
-    private void initLibrary(ClusterConfig config, List<Host> nodes){
+    
+    private void initLibrary(ClusterConfig config, List<Host> nodes) {
         allNodesExec(nodes, new InitLibrary());
     }
-
-    private void initMysql(ClusterConfig config){
+    
+    private void initMysql(ClusterConfig config) {
         InitMysql initMysql = new InitMysql();
         GlobalConfig.MysqlConfig mysqlConfig = config.getGlobal().getMysql();
         initMysql.setConfigFilePath(initConfigYamlPath);
@@ -351,8 +351,8 @@ public class CreateCluster implements Runnable {
                 .setMysqlTarName(mysqlConfig.getTarName());
         singleNodesExec(mysqlConfig.getHost(), initMysql);
     }
-
-    private void initMysqlAppDb(ClusterConfig config){
+    
+    private void initMysqlAppDb(ClusterConfig config) {
         GlobalConfig.MysqlConfig mysqlConfig = config.getGlobal().getMysql();
         mysqlConfig.getAppDbs().forEach(x -> {
             InitMysqlAppDb initMysqlAppDb = new InitMysqlAppDb();
@@ -364,8 +364,8 @@ public class CreateCluster implements Runnable {
             singleNodesExec(mysqlConfig.getHost(), initMysqlAppDb);
         });
     }
-
-    private void initHugePage(ClusterConfig config, List<Host> nodes){
+    
+    private void initHugePage(ClusterConfig config, List<Host> nodes) {
         allNodesExec(nodes, new InitHugePage());
     }
 }

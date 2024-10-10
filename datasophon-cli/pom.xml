@@ -57,6 +57,7 @@
     </dependencies>
 
     <build>
+        <finalName>datasophon-cli</finalName>
         <plugins>
             <!-- 指定maven编译的jdk -->
             <plugin>

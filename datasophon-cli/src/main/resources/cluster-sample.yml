@@ -1,6 +1,7 @@
 global:
   offline: true
   os: CentOS7
+  arch: X86
   registry:
     enable: true  # install minio
     type: minio
@@ -11,15 +12,16 @@ global:
       password: u4Gkp19TRcKKlTCLNA1pyA==
       volumes: /data/minio
     host:
-      ip: 172.31.51.160
+      ip: 192.168.2.146
       user: root
-      password: dataSophon@123!@#
+      password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
       port: 22
 
   nmapServer:
-    ip: 172.31.51.160
+    ip: 192.168.2.146
     port: 22
-    password: datasophon@123!@#
+    password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+
   mysql:
     enable: false   # Install Mysql
     password: datasophon123      # Set the MYSQL database root password
@@ -41,50 +43,45 @@ global:
         password: amoro
         dbName: amoro
     host:
-      ip: 172.31.51.160
+      ip: 192.168.2.146
       port: 22
-      password: datasophon@123!@#
+      password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
 
   httpdServer:
     host:
-      ip: 172.31.51.160
+      ip: 192.168.2.146
       port: 22
-      password: datasophon@123!@#
-    pkgPath: /data/unit-scripts/httpd-install/httpd-pkg
-    rootPath: /data/unimedical/.data/httpd-root
-    reposTarFilePath: /data/scripts-set/unit-scripts/offline-repos-install/offline-repos.tar.gz
+      password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+    pkgPath: /opt/datasophon/DDP/packages/httpd-pkg
+    rootPath: /opt/datasophon/DDP/packages/httpd-root
+    reposTarFilePath: /opt/datasophon/DDP/packages/offline-repos.tar.gz
     listenPort: 4080
     force: true
 
-    ntpServer:
-      host:
-        ip: 172.31.51.160
-        port: 22
-        password: datasophon@123!@#
+  ntpServer:
+    host:
+      ip: 192.168.2.146
+      port: 22
+      password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
 
   logDir: ./logs
 
 nodes:
-  - ip: 172.31.51.160
+  - ip: 192.168.2.146
     user: root
-    password: dataSophon@123!@#
+    password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
     port: 22
-    hostname: dataSophon01
-  - ip: 172.31.51.161
+    hostname: dd1
+  - ip: 192.168.2.175
     user: root
-    password: dataSophon@123!@#
+    password: YTiZ#WY3MzFkQ5D2Y4Mw?o_
     port: 22
-    hostname: dataSophon02
-  - ip: 172.31.51.162
+    hostname: dd2
+  - ip: 192.168.2.160
     user: root
-    password: dataSophon@123!@#
+    password: Mj<U#LYpNjNz(M4NjQ0?Ygo_
     port: 22
-    hostname: dataSophon03
+    hostname: dd3
 
 addNodes:
-  - ip: 172.31.51.163
-    user: root
-    password: dataSophon@123!@#
-    port: 22
-    hostname: dataSophon01
 

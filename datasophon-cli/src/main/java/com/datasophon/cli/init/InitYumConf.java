@@ -1,5 +1,7 @@
 package com.datasophon.cli.init;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.base.GlobalConfig;
@@ -7,22 +9,16 @@ import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ShellUtils;
-
+import lombok.Data;
+import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
+import org.yaml.snakeyaml.Yaml;
 import picocli.CommandLine;
 
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.slf4j.Slf4j;
-
-import org.yaml.snakeyaml.Yaml;
-
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.ObjectUtil;
 
 @Slf4j
 @Accessors(chain = true)
@@ -40,7 +36,7 @@ public class InitYumConf extends InitBase implements InitNodeHandler {
     public String name() {
         return "离线yum仓库配置";
     }
-
+    
     @Override
     public boolean doRun(Executor executor) {
         File configFile = new File(configFilePath);
@@ -59,8 +55,8 @@ public class InitYumConf extends InitBase implements InitNodeHandler {
             String cpuArchitecture = ShellUtils.getCpuArchitecture();
             global.setArch(ArchType.of(cpuArchitecture));
         }
-        String localRepoUrl = String.format("http://%s:%s/offline-repos/%s/centos-7",
-                httpdServerIp, httpdListenPort, global.getArch(), global.getOs());
+        String localRepoUrl = String.format("http://%s:%s/offline-repos/%s/%s",
+                httpdServerIp, httpdListenPort, global.getArch().name(), global.getOs().name());
         
         String cmd = "mv /etc/yum.repos.d /etc/yum.repos.d.$(date +%Y%m%d.%H%M%S)";
         System.out.println(cmd);

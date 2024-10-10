@@ -19,7 +19,7 @@ public class InitNmap extends InitBase implements InitNodeHandler {
     public String name() {
         return "nmap安装";
     }
-
+    
     @Override
     public boolean doRun(Executor executor) {
         log.info("install nmap.");

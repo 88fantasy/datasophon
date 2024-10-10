@@ -1,5 +1,8 @@
 package com.datasophon.cli.init;
 
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.map.MapUtil;
 import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.enums.OsType;
@@ -37,7 +40,7 @@ public class InitSsh implements Runnable {
     private Map<String, Map<OsType, String>> packages = MapUtil.builder("pssh",
             MapUtil.builder(OsType.CentOS7, "pssh-2.3.1-5.el7.noarch.rpm")
                     .put(OsType.CentOS8, "pssh-2.3.1-29.el8.noarch.rpm")
-                    .put(OsType.OpenEuler, "pssh-2.3.4-1.el9.noarch.rpm").build())
+                    .put(OsType.OpenEuler22, "pssh-2.3.4-1.el9.noarch.rpm").build())
             .put("tcl",
                     MapUtil.builder(OsType.CentOS7, "tcl-8.5.13-8.el7.x86_64.rpm")
                             // .put(OsType.CentOS8, "pssh-2.3.1-29.el8.noarch.rpm")
