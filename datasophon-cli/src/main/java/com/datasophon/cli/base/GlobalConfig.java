@@ -68,13 +68,11 @@ public class GlobalConfig {
     public static class HttpdServer {
         private Host host;
         
-        private String pkgPath;
+        private String pkgTarName;
         
-        private String rootPath;
+        private String rootPathName;
         
-        private String templateDir;
-        
-        private String reposTarFilePath;
+        private String reposTarName;
         
         private String listenPort;
         

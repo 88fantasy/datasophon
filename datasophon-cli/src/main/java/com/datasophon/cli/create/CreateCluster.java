@@ -41,6 +41,8 @@ public class CreateCluster implements Runnable {
     
     private String initConfigPath;
     
+    private String initConfigTemplatePath;
+    
     private String initSbinPath;
     
     private String packagesPath;
@@ -62,6 +64,7 @@ public class CreateCluster implements Runnable {
         initPath = String.format("%s/datasophon-init", datasophonPath);
         initBinPath = String.format("%s/bin", initPath);
         initConfigPath = String.format("%s/config", initPath);
+        initConfigTemplatePath = String.format("%s/config/templates", initPath);
         initSbinPath = String.format("%s/sbin", initPath);
         packagesPath = String.format("%s/packages", initPath);
         initConfigYamlPath = String.format("%s/cluster-sample.yml", initConfigPath);
@@ -276,11 +279,12 @@ public class CreateCluster implements Runnable {
     private void initHttpd(ClusterConfig config) {
         InitHttpd initHttpd = new InitHttpd();
         GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
+        
         initHttpd.setConfigFilePath(initConfigYamlPath);
-        initHttpd.setHttpdPkgPath(httpdServer.getPkgPath())
-                .setHttpdRootPath(httpdServer.getRootPath())
+        initHttpd.setPackagePath(packagesPath)
+                .setRootPathName(httpdServer.getRootPathName())
                 .setHttpdListenPort(httpdServer.getListenPort())
-                .setTemplateDir(httpdServer.getTemplateDir())
+                .setTemplateDir(initConfigTemplatePath)
                 .setHttpdConf("httpd.conf.ftl")
                 .setForce(true);
         singleNodesExec(httpdServer.getHost(), initHttpd);
@@ -290,8 +294,9 @@ public class CreateCluster implements Runnable {
         GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
         InitYumPackage initYumPackage = new InitYumPackage();
         initYumPackage.setConfigFilePath(initConfigYamlPath);
-        initYumPackage.setHttpdRootPath(httpdServer.getRootPath())
-                .setReposTarFilePath(httpdServer.getReposTarFilePath());
+        initYumPackage.setPackagePath(packagesPath)
+                .setRootPathName(httpdServer.getRootPathName())
+                .setReposTarFilePath(httpdServer.getReposTarName());
         singleNodesExec(httpdServer.getHost(), initYumPackage);
     }
     

@@ -110,7 +110,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         
         // 安装mysql
         String folder = "mysql";
-        executor.execShell(String.format("tar -zxvf %s/%s -C %s", packagePath, mysqlTarName, folder));
+        executor.execShell(String.format("tar -zxvf %s/%s -C %s", packagePath, mysqlTarName, packagePath));
         executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-common-8.0.28-1.el8.x86_64.rpm", packagePath, folder));
         executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-client-plugins-8.0.28-1.el8.x86_64.rpm", packagePath, folder));
         executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-libs-8.0.28-1.el8.x86_64.rpm", packagePath, folder));

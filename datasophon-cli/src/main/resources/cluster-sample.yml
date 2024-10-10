@@ -52,9 +52,8 @@ global:
       ip: 192.168.2.146
       port: 22
       password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
-    pkgPath: /opt/datasophon/DDP/packages/httpd-pkg
-    rootPath: /opt/datasophon/DDP/packages/httpd-root
-    reposTarFilePath: /opt/datasophon/DDP/packages/offline-repos.tar.gz
+    pkgTarName: httpd-pkg.tar.gz
+    reposTarName: offline-repos.tar.gz
     listenPort: 4080
     force: true
 

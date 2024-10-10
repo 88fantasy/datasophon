@@ -32,11 +32,14 @@ import cn.hutool.core.util.ObjectUtil;
 @CommandLine.Command(name = "httpd", description = "init httpd")
 public class InitHttpd extends InitBase implements InitNodeHandler {
     
-    @CommandLine.Option(names = {"-p", "--httpdPkgPath"}, description = "安装包路径", required = true)
-    String httpdPkgPath;
+    @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
+    String packagePath;
     
-    @CommandLine.Option(names = {"-rp", "--httpdRootPath"}, description = "httpd根路径", defaultValue = "/data/unimedical/.data/httpd-root")
-    String httpdRootPath;
+    @CommandLine.Option(names = {"-p", "--pkgTarName"}, description = "安装包名称", required = true)
+    String pkgTarName;
+    
+    @CommandLine.Option(names = {"-rp", "--rootPathName"}, description = "httpd跟目录名称", defaultValue = "httpd-root")
+    String rootPathName;
     
     @CommandLine.Option(names = {"-port", "--httpdListenPort"}, description = "服务监听端口", defaultValue = "4080")
     String httpdListenPort;
@@ -81,9 +84,11 @@ public class InitHttpd extends InitBase implements InitNodeHandler {
         if (vResult.getExecResult()) {
             log.info("httpd have already installed");
         } else {
-            String repoPath = String.format("%s/%s/%s", httpdPkgPath, global.getArch().name(), global.getOs().name());
-            cmd = String.format("rpm -ivh %s/*.rpm", repoPath);
-            ExecResult httpdResult = executor.execShell(cmd);
+            String pkgFolder = "httpd-pkg";
+            String repoPath = String.format("%s/%s/%s/%s", packagePath, pkgFolder, global.getArch().name(), global.getOs().name());
+            
+            executor.execShell(String.format("tar -zxvf %s/%s -C %s", packagePath, pkgTarName, packagePath));
+            ExecResult httpdResult = executor.execShell(String.format("rpm -ivh %s/*.rpm", repoPath));
             if (httpdResult.getExecResult()) {
                 log.info("httpd install sucess.");
                 isInit = true;
@@ -95,6 +100,7 @@ public class InitHttpd extends InitBase implements InitNodeHandler {
         // 覆盖配置
         if (isInit || force) {
             Map<String, Object> confData = new HashMap<>();
+            String httpdRootPath = String.format("%s/%s", packagePath, rootPathName);
             confData.put("httpdRootPath", httpdRootPath);
             confData.put("httpdListenPort", httpdListenPort);
             try {
