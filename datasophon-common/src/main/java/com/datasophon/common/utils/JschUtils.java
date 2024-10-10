@@ -3,11 +3,7 @@ package com.datasophon.common.utils;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -127,10 +123,8 @@ public class JschUtils {
                 os.write(cmd.getBytes()); // 输入命令
                 os.write('\n'); // 输入换行执行
                 os.flush();
-                
                 // FIXME 由于读取执行结果是阻塞的，必须等待指令执行一段时间，具体多少不好斟酌
                 TimeUnit.SECONDS.sleep(cmdWaitSeconds);
-                
                 // 读取通道的输出
                 String rs = IoUtil.read(is, Charset.defaultCharset());
                 result.put(cmd, rs);

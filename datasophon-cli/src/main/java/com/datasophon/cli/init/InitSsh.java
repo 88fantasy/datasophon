@@ -1,8 +1,5 @@
 package com.datasophon.cli.init;
 
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.map.MapUtil;
 import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.enums.OsType;

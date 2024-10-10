@@ -1,7 +1,5 @@
 package com.datasophon.cli.init;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.ObjectUtil;
 import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.base.GlobalConfig;
@@ -11,16 +9,22 @@ import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.slf4j.Slf4j;
-import org.yaml.snakeyaml.Yaml;
+
 import picocli.CommandLine;
 
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+
+import lombok.Data;
+import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
+
+import org.yaml.snakeyaml.Yaml;
+
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.ObjectUtil;
 
 @Slf4j
 @Accessors(chain = true)
