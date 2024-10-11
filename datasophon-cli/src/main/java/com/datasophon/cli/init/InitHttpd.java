@@ -5,6 +5,7 @@ import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.base.GlobalConfig;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.cli.util.CliUtil;
+import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
@@ -48,7 +49,7 @@ public class InitHttpd extends InitBase implements InitNodeHandler {
     @CommandLine.Option(names = {"-h", "--httpConf"}, description = "httpCon模板名", required = true)
     String httpdConf;
     
-    @CommandLine.Option(names = {"-f", "--force"}, description = "强制配置")
+    @CommandLine.Option(names = {"-f", "--force"}, description = "强制配置", defaultValue = "true")
     boolean force;
     
     @Override
@@ -80,10 +81,10 @@ public class InitHttpd extends InitBase implements InitNodeHandler {
         ExecResult vResult = executor.execShell("httpd -v");
         log.info("vResult msg:{}, is:{}", vResult.getExecOut(), vResult.getExecResult());
         if (StringUtils.isBlank(vResult.getExecOut())) {
-
             String pkgFolder = "httpd-pkg";
             String repoPath = String.format("%s/%s/%s/%s", packagePath, pkgFolder, global.getArch().name(), global.getOs().name());
-            executor.execShell(String.format("tar -zxvf %s/%s -C %s", packagePath, pkgTarName, packagePath));
+            executor.createDir(Constants.INSTALL_PATH);
+            executor.execShell(String.format("tar -zxvf %s/%s -C %s", packagePath, pkgTarName, Constants.INSTALL_PATH));
             ExecResult httpdResult = executor.execShell(String.format("rpm -ivh %s/*.rpm", repoPath));
             if (httpdResult.getExecResult()) {
                 log.info("httpd install sucess.");
@@ -98,7 +99,7 @@ public class InitHttpd extends InitBase implements InitNodeHandler {
         // 覆盖配置
         if (isInit || force) {
             Map<String, Object> confData = new HashMap<>();
-            String httpdRootPath = String.format("%s/httpd-root", packagePath);
+            String httpdRootPath = String.format("%s/httpd-root", Constants.INSTALL_PATH);
             confData.put("httpdRootPath", httpdRootPath);
             confData.put("httpdListenPort", httpdListenPort);
             try {

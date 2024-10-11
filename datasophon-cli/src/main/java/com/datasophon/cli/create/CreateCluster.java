@@ -5,6 +5,7 @@ import com.datasophon.cli.base.GlobalConfig;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.cli.handler.InitNodeHandlerChain;
 import com.datasophon.cli.init.*;
+import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.model.Host;
@@ -34,6 +35,9 @@ public class CreateCluster implements Runnable {
     
     @CommandLine.Option(names = {"-a", "action"}, description = "执行动作:initALL/initSingleNode", required = true)
     String action;
+
+    @CommandLine.Option(names = {"-i", "isInitBinPackage"}, description = "分发安资源包", defaultValue = "true")
+    String isInitBinPackage;
     
     private String initPath;
     
@@ -61,6 +65,12 @@ public class CreateCluster implements Runnable {
         if (!path.exists()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "path not found : " + datasophonPath);
         }
+        File installPath = new File(Constants.INSTALL_PATH);
+        if (!installPath.exists()) {
+            ShellUtils.execShell(String.format("mkdir -p %s", Constants.INSTALL_PATH));
+        }
+       log.info("分发资源包:{}", isInitBinPackage);
+
         initPath = String.format("%s/datasophon-init", datasophonPath);
         initBinPath = String.format("%s/bin", initPath);
         initConfigPath = String.format("%s/config", initPath);
@@ -106,9 +116,11 @@ public class CreateCluster implements Runnable {
         }
         log.info("安全配置");
         initOsSafeConf(config, nodes);
-        
-        log.info("分发资源包");
-        initBinPackage(config, nodes);
+
+        if(isInitBinPackage.equals("true")) {
+            log.info("分发资源包");
+            initBinPackage(config, nodes);
+        }
         
         log.info("创建hadoop用户和组");
         initOsUser(config, nodes);
@@ -173,9 +185,11 @@ public class CreateCluster implements Runnable {
         }
         log.info("安全配置");
         initOsSafeConf(config, nodes);
-        
-        log.info("分发资源包");
-        initBinPackage(config, nodes);
+
+        if(isInitBinPackage.equals("true")) {
+            log.info("分发资源包");
+            initBinPackage(config, nodes);
+        }
         
         log.info("创建hadoop用户和组");
         initOsUser(config, nodes);

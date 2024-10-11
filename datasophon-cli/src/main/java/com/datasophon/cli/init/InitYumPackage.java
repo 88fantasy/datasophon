@@ -2,6 +2,7 @@ package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.handler.InitNodeHandler;
+import com.datasophon.common.Constants;
 import com.datasophon.common.utils.ExecResult;
 
 import picocli.CommandLine;
@@ -41,7 +42,8 @@ public class InitYumPackage extends InitBase implements InitNodeHandler {
         if (!new File(reposTarFilePath).exists()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + reposTarFilePath);
         }
-        String cmd = String.format("tar -zxf %s -C %s/httpd-root", reposTarFilePath, packagePath);
+        executor.createDir(Constants.INSTALL_PATH);
+        String cmd = String.format("tar -zxf %s -C %s/httpd-root", reposTarFilePath, Constants.INSTALL_PATH);
         ExecResult result = executor.execShell(cmd);
         if (result.getExecResult()) {
             log.info("init sucess.");
