@@ -298,13 +298,27 @@ public class ShellUtils {
         }
         return OsType.Other;
     }
-    
+
     public static OsType getOsFromLines(List<String> lines) {
-        Optional<String> optionalOs = lines.stream().filter(s -> s.startsWith("Operating System:")).findAny();
-        if (optionalOs.isPresent()) {
-            String osString = optionalOs.get().substring(17);
-            Optional<OsType> optionalOsType = Arrays.stream(OsType.values()).filter(os -> Pattern.matches(os.getOsRegex(), osString)).findAny();
-            return optionalOsType.orElse(OsType.Other);
+        Optional<String> optionalOsName = lines.stream().filter(s -> s.startsWith("ID=")).findAny();
+        Optional<String> optionalOsVersionID = lines.stream().filter(s -> s.startsWith("VERSION_ID=")).findAny();
+        Optional<String> optionalOsVersion = lines.stream().filter(s -> s.startsWith("VERSION=")).findAny();
+        if (optionalOsName.isPresent()) {
+            String osName = optionalOsName.get().replace("\"", "").split("=")[1];
+            String osVersion = "";
+            if (optionalOsVersionID.isPresent()) {
+                // VERSION_ID="7"
+                osVersion = optionalOsVersionID.get().replace("\"", "").split("=")[1];
+            } else if (optionalOsVersion.isPresent()) {
+                // ERSION="7 (Core)"
+                osVersion = optionalOsVersion.get().replaceAll("\"", "").split("=")[1].split("\\(")[0].trim();
+                if (osName.equals("openEuler") && osVersion.startsWith("22.")) {
+                    osVersion = "22";
+                }
+            }
+            String osDetail = String.format("%s-%s",osName, osVersion);
+            logger.info("osName:{}, osVersion:{}", osName, osVersion);
+            return OsType.of(osDetail);
         }
         return OsType.Other;
     }

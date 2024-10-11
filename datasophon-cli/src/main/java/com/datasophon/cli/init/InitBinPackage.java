@@ -20,9 +20,6 @@ public class InitBinPackage extends InitBase {
     @CommandLine.Option(names = {"-i", "--initPath"}, description = "initPath", required = true)
     private String initPath;
     
-    @CommandLine.Option(names = {"-d", "--datasophonPath"}, description = "datasophonPath", required = true)
-    private String datasophonPath;
-    
     @Override
     public String name() {
         return "分发datasophon-init资源包";
@@ -31,18 +28,21 @@ public class InitBinPackage extends InitBase {
     public boolean doRun(Executor executor) {
         File initPathF = new File(initPath);
         if (!initPathF.exists() || !initPathF.isDirectory()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + initPath);
+            throw new CommandLine.ExecutionException(new CommandLine(this), "local dir not found : " + initPath);
         }
-        File datasophonPathF = new File(datasophonPath);
-        if (!datasophonPathF.exists()) {
-            executor.createDir(datasophonPath);
+        ExecResult createResult = executor.createDir(initPath);
+        if (!createResult.getExecResult()) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "dist createDir fail : " + initPath);
         }
-        ExecResult execResult = executor.sendDir(initPath, datasophonPath);
+        log.info("分发资源包路径:{} start", initPath);
+        long ts = System.currentTimeMillis();
+        ExecResult execResult = executor.sendDir(initPath, initPath, true);
+        log.info("分发资源包路径:{} end,耗时:{}s", initPath, (System.currentTimeMillis() - ts) / 1000000);
         if (execResult.getExecResult()) {
-            log.info("{} to {} distribution sucess.", initPath, datasophonPath);
+            log.info("{} distribution sucess.", initPath);
             return true;
         } else {
-            log.info("{} to {} distribution fail.", initPath, datasophonPath);
+            log.info("{} distribution fail.", initPath);
             return false;
         }
     }

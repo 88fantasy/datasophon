@@ -10,6 +10,7 @@ import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
 
+import org.apache.commons.lang3.StringUtils;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -37,9 +38,6 @@ public class InitHttpd extends InitBase implements InitNodeHandler {
     
     @CommandLine.Option(names = {"-p", "--pkgTarName"}, description = "安装包名称", required = true)
     String pkgTarName;
-    
-    @CommandLine.Option(names = {"-rp", "--rootPathName"}, description = "httpd跟目录名称", defaultValue = "httpd-root")
-    String rootPathName;
     
     @CommandLine.Option(names = {"-port", "--httpdListenPort"}, description = "服务监听端口", defaultValue = "4080")
     String httpdListenPort;
@@ -79,14 +77,12 @@ public class InitHttpd extends InitBase implements InitNodeHandler {
         
         // httpd安装
         boolean isInit = false;
-        String cmd = "httpd -v";
-        ExecResult vResult = executor.execShell(cmd);
-        if (vResult.getExecResult()) {
-            log.info("httpd have already installed");
-        } else {
+        ExecResult vResult = executor.execShell("httpd -v");
+        log.info("vResult msg:{}, is:{}", vResult.getExecOut(), vResult.getExecResult());
+        if (StringUtils.isBlank(vResult.getExecOut())) {
+
             String pkgFolder = "httpd-pkg";
             String repoPath = String.format("%s/%s/%s/%s", packagePath, pkgFolder, global.getArch().name(), global.getOs().name());
-            
             executor.execShell(String.format("tar -zxvf %s/%s -C %s", packagePath, pkgTarName, packagePath));
             ExecResult httpdResult = executor.execShell(String.format("rpm -ivh %s/*.rpm", repoPath));
             if (httpdResult.getExecResult()) {
@@ -95,21 +91,19 @@ public class InitHttpd extends InitBase implements InitNodeHandler {
             } else {
                 log.info("httpd install failed.");
             }
+        } else {
+            log.info("httpd have already installed");
         }
         
         // 覆盖配置
         if (isInit || force) {
             Map<String, Object> confData = new HashMap<>();
-            String httpdRootPath = String.format("%s/%s", packagePath, rootPathName);
+            String httpdRootPath = String.format("%s/httpd-root", packagePath);
             confData.put("httpdRootPath", httpdRootPath);
             confData.put("httpdListenPort", httpdListenPort);
             try {
-                cmd = String.format("mkdir -p %s", httpdRootPath);
-                executor.execShell(cmd);
-                
-                cmd = "mv /etc/httpd/conf/httpd.conf.ftl /etc/httpd/conf/httpd.conf.ftl.bak";
-                executor.execShell(cmd);
-                
+                executor.execShell(String.format("mkdir -p %s", httpdRootPath));
+                executor.execShell("mv /etc/httpd/conf/httpd.conf /etc/httpd/conf/httpd.conf.bak");
                 CliUtil.generateConfigFile(templateDir, httpdConf, confData, "/etc/httpd/conf/httpd.conf");
             } catch (Exception e) {
                 log.error("/etc/httpd/conf/httpd.conf.ftl overwrite failed.", e);
@@ -118,8 +112,7 @@ public class InitHttpd extends InitBase implements InitNodeHandler {
         }
         
         // httpd restart
-        cmd = String.format("systemctl restart httpd");
-        ExecResult reResult = executor.execShell(cmd);
+        ExecResult reResult = executor.execShell("systemctl restart httpd");
         if (reResult.getExecResult()) {
             log.info("restart httpd sucess");
         } else {

@@ -21,9 +21,6 @@ public class InitYumPackage extends InitBase implements InitNodeHandler {
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
     
-    @CommandLine.Option(names = {"-rp", "--rootPathName"}, description = "httpd跟目录名称", defaultValue = "httpd-root")
-    String rootPathName;
-    
     @CommandLine.Option(names = {"-f", "--reposTarFilePath"}, description = "repos离线压缩包", required = true)
     String reposTarFilePath;
     
@@ -44,7 +41,7 @@ public class InitYumPackage extends InitBase implements InitNodeHandler {
         if (!new File(reposTarFilePath).exists()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + reposTarFilePath);
         }
-        String cmd = String.format("tar -zxf %s -C %s/%s", reposTarFilePath, packagePath, rootPathName);
+        String cmd = String.format("tar -zxf %s -C %s/httpd-root", reposTarFilePath, packagePath);
         ExecResult result = executor.execShell(cmd);
         if (result.getExecResult()) {
             log.info("init sucess.");

@@ -71,6 +71,7 @@ nodes:
     password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
     port: 22
     hostname: dd1
+    isLocalhost: true
   - ip: 192.168.2.175
     user: root
     password: YTiZ#WY3MzFkQ5D2Y4Mw?o_

@@ -45,7 +45,7 @@ public class JschExecutor implements Executor {
     
     @Override
     public ExecResult exists(String path) {
-        return null;
+        return JschUtils.exists(session, path, 5);
     }
     
     @Override
@@ -59,8 +59,8 @@ public class JschExecutor implements Executor {
     }
     
     @Override
-    public ExecResult sendDir(String srcDir, String destDir) {
-        return JschUtils.sendDir(session, srcDir, destDir, 5);
+    public ExecResult sendDir(String srcDir, String destDir, boolean isVisual) {
+        return JschUtils.sendDir(session, srcDir, destDir, 5, isVisual);
     }
     
     @Override

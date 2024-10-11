@@ -14,5 +14,7 @@ public class Host {
     private String password;
     
     private String hostname;
+
+    private Boolean isLocalhost = false;
     
 }

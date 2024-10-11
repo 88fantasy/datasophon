@@ -253,11 +253,10 @@ public class CreateCluster implements Runnable {
     
     private void initBinPackage(ClusterConfig config, List<Host> nodes) {
         InitBinPackage initBinPackage = new InitBinPackage();
-        initBinPackage.setInitPath(initPath)
-                .setDatasophonPath(datasophonPath);
-        nodes.forEach(node -> {
-            singleNodesExec(node, initBinPackage);
-        });
+        initBinPackage.setInitPath(initPath);
+        List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
+        allNodesExec(workerNodes, initBinPackage);
+
     }
     
     private void initOsUser(ClusterConfig config, List<Host> nodes) {
@@ -282,7 +281,7 @@ public class CreateCluster implements Runnable {
         
         initHttpd.setConfigFilePath(initConfigYamlPath);
         initHttpd.setPackagePath(packagesPath)
-                .setRootPathName(httpdServer.getRootPathName())
+                .setPkgTarName(httpdServer.getPkgTarName())
                 .setHttpdListenPort(httpdServer.getListenPort())
                 .setTemplateDir(initConfigTemplatePath)
                 .setHttpdConf("httpd.conf.ftl")
@@ -295,8 +294,7 @@ public class CreateCluster implements Runnable {
         InitYumPackage initYumPackage = new InitYumPackage();
         initYumPackage.setConfigFilePath(initConfigYamlPath);
         initYumPackage.setPackagePath(packagesPath)
-                .setRootPathName(httpdServer.getRootPathName())
-                .setReposTarFilePath(httpdServer.getReposTarName());
+                .setReposTarFilePath(String.format("%s/%s", packagesPath, httpdServer.getReposTarName()));
         singleNodesExec(httpdServer.getHost(), initYumPackage);
     }
     
@@ -324,6 +322,7 @@ public class CreateCluster implements Runnable {
     private void initAllHost(ClusterConfig config, List<Host> nodes) {
         nodes.forEach(node -> {
             InitAllHost initAllHost = new InitAllHost();
+            initAllHost.setConfigFilePath(initConfigYamlPath);
             singleNodesExec(node, initAllHost);
         });
     }

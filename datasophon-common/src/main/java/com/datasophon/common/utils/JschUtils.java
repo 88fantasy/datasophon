@@ -13,16 +13,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import com.jcraft.jsch.*;
 import lombok.extern.slf4j.Slf4j;
-
-import com.jcraft.jsch.Channel;
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.ChannelShell;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-import com.jcraft.jsch.SftpException;
 
 import cn.hutool.core.io.IoUtil;
 
@@ -71,6 +63,7 @@ public class JschUtils {
             // 连接通道
             channel.connect();
             // 读取通道的输出
+            in = channel.getInputStream();
             return IoUtil.readLines(in, Charset.defaultCharset(), new ArrayList<>());
         } catch (JSchException e) {
             throw e;
@@ -229,20 +222,25 @@ public class JschUtils {
         return result;
     }
     
-    public static ExecResult sendDir(Session session, String localDirPath, String remoteDirPath, int connectTimeout) {
+    public static ExecResult sendDir(Session session, String localDirPath, String remoteDirPath, int connectTimeout,boolean isVisual) {
         ExecResult result = new ExecResult();
+        ChannelSftp channel = null;
         try {
-            ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
+            channel = (ChannelSftp) session.openChannel("sftp");
             channel.connect(connectTimeout * 1000);
-            result = sendDirChannel(channel, localDirPath, remoteDirPath);
+            result = sendDirChannel(channel, localDirPath, remoteDirPath, isVisual);
+            result.setExecResult(true);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            result.setExecResult(false);
             result.setExecErrOut(e.getMessage());
+        }  finally {
+            if (channel != null && channel.isConnected()) {
+                channel.disconnect();
+            }
         }
         return result;
     }
-    private static ExecResult sendDirChannel(ChannelSftp channel, String localDirPath, String remoteDirPath) {
+    private static ExecResult sendDirChannel(ChannelSftp channel, String localDirPath, String remoteDirPath, boolean isVisual) {
         ExecResult result = new ExecResult();
         try {
             File dir = new File(localDirPath);
@@ -260,16 +258,63 @@ public class JschUtils {
                                     channel.ls(newRemotePath);
                                 }
                             }
-                            sendDirChannel(channel, file.getAbsolutePath(), newRemotePath);
+                            sendDirChannel(channel, file.getAbsolutePath(), newRemotePath, isVisual);
                         } else {
+                            if (isVisual) {
+                                log.info("transmit file:{}", file.getAbsolutePath());
+                            }
                             channel.put(file.getAbsolutePath(), remoteDirPath + "/" + file.getName());
                         }
                     }
                 }
             }
+            result.setExecResult(true);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            result.setExecResult(false);
+            result.setExecErrOut(e.getMessage());
+        }
+        return result;
+    }
+
+    public static ExecResult exists(Session session, String path, int connectTimeout) {
+        ExecResult result = new ExecResult();
+        ChannelSftp channel = null;
+        try {
+            channel = (ChannelSftp) session.openChannel("sftp");
+            channel.connect(connectTimeout * 1000);
+            channel.ls(path);
+            result.setExecResult(true);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            result.setExecErrOut(e.getMessage());
+        }  finally {
+            if (channel != null && channel.isConnected()) {
+                channel.disconnect();
+            }
+        }
+        return result;
+    }
+
+    public static ExecResult createDir(Session session, String dirPath, int connectTimeout) {
+        ChannelSftp channel = null;
+        ExecResult result = new ExecResult();
+        try {
+            channel = (ChannelSftp) session.openChannel("sftp");
+            channel.connect(connectTimeout * 1000);
+            String[] dirs = dirPath.split("/");
+            String currentDir = "";
+            for (String dir : dirs) {
+                if (dir.isEmpty()) {
+                    continue;
+                }
+                currentDir += "/" + dir;
+                if (!isDirExist(channel,currentDir)) {
+                    channel.mkdir(currentDir);
+                }
+            }
+            result.setExecResult(true);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
             result.setExecErrOut(e.getMessage());
         } finally {
             if (channel != null && channel.isConnected()) {
@@ -278,36 +323,14 @@ public class JschUtils {
         }
         return result;
     }
-    
-    public static ExecResult createDir(Session session, String remotePath, int connectTimeout) {
-        ChannelSftp channel = null;
-        ExecResult result = new ExecResult();
+
+    private static boolean isDirExist(ChannelSftp channelSftp, String dir) {
         try {
-            channel = (ChannelSftp) session.openChannel("sftp");
-            channel.connect(connectTimeout * 1000);
-            channel.ls(remotePath);
-        } catch (SftpException ex) {
-            if (ex.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
-                try {
-                    channel.mkdir(remotePath);
-                    channel.cd(remotePath);
-                } catch (Exception e) {
-                    log.error(e.getMessage(), e);
-                    result.setExecResult(false);
-                    result.setExecErrOut(e.getMessage());
-                }
-                
-            }
+            SftpATTRS attrs = channelSftp.lstat(dir);
+            return attrs.isDir();
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            result.setExecResult(false);
-            result.setExecErrOut(e.getMessage());
-        } finally {
-            if (channel != null && channel.isConnected()) {
-                channel.disconnect();
-            }
+            return false;
         }
-        return result;
     }
     
     public static ArchType getArch(Session session) {
@@ -321,7 +344,7 @@ public class JschUtils {
     
     public static OsType getOs(Session session) {
         try {
-            List<String> lines = execForLines(session, "hostnamectl");
+            List<String> lines = execForLines(session, "cat /etc/os-release");
             return ShellUtils.getOsFromLines(lines);
         } catch (JSchException | IOException e) {
             return OsType.Other;

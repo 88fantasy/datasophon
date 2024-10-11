@@ -33,9 +33,9 @@ public interface Executor {
      * 发送目录
      * @param srcDir 源目录路径
      * @param destDir 目标目录路径
-     * @return
+     * @return 是否打印过程
      */
-    ExecResult sendDir(String srcDir, String destDir);
+    ExecResult sendDir(String srcDir, String destDir, boolean isVisual);
     
     /**
      * 创建目录

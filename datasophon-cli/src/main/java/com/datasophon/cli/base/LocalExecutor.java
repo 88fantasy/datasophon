@@ -38,7 +38,7 @@ public class LocalExecutor implements Executor {
     }
     
     @Override
-    public ExecResult sendDir(String srcDir, String destDir) {
+    public ExecResult sendDir(String srcDir, String destDir, boolean isVisual) {
         return null;
     }
     
