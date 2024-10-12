@@ -28,7 +28,7 @@ public class InitNmap extends InitBase implements InitNodeHandler {
             log.info("nmap not installed");
             executor.execShell("yum install nmap -y");
             nmapExec = executor.execShell("rpm -qa | grep nmap");
-            if (!"0".equals(nmapExec.getExecOut())) {
+            if (!nmapExec.getExecResult()) {
                 log.info("nmap install failed.");
                 System.exit(1);
             }

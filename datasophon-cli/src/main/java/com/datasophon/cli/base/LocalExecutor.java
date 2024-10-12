@@ -44,7 +44,7 @@ public class LocalExecutor implements Executor {
     
     @Override
     public ExecResult createDir(String destDir) {
-        return null;
+        return ShellUtils.execShell(String.format("mkdir %s", destDir));
     }
     
     @Override

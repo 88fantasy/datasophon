@@ -46,7 +46,7 @@ public class InitLibrary extends InitBase {
             log.info("libxslt-devel not installed");
             executor.execShell("yum install libxslt-devel -y");
             libExec = executor.execShell("rpm -qa | grep libxslt-devel");
-            if (!"0".equals(libExec.getExecOut())) {
+            if (!libExec.getExecResult()) {
                 log.info("libxslt-devel install failed.");
                 System.exit(1);
             }
@@ -61,7 +61,7 @@ public class InitLibrary extends InitBase {
             log.info("psmisc not installed");
             executor.execShell("yum install psmisc -y");
             psmiscExec = executor.execShell("rpm -qa | grep psmisc");
-            if (!"0".equals(psmiscExec.getExecOut())) {
+            if (!psmiscExec.getExecResult()) {
                 log.info("psmisc install failed.");
                 System.exit(1);
             }
@@ -76,7 +76,7 @@ public class InitLibrary extends InitBase {
             log.info("perl-JSON not installed");
             executor.execShell("yum install perl-JSON -y");
             perlExec = executor.execShell("rpm -qa | grep perl-JSON");
-            if (!"0".equals(perlExec.getExecOut())) {
+            if (!perlExec.getExecResult()) {
                 log.info("perl-JSON install failed.");
                 System.exit(1);
             }

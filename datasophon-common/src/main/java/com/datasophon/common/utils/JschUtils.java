@@ -75,9 +75,10 @@ public class JschUtils {
         }
     }
     
-    public static String execForStr(Session session, String command) throws JSchException, IOException {
+    public static ExecResult execForStr(Session session, String command) throws JSchException, IOException {
         InputStream in = null;
         Channel channel = null;
+        ExecResult result = new ExecResult();
         try {
             // 创建执行通道
             channel = session.openChannel("exec");
@@ -87,13 +88,33 @@ public class JschUtils {
             channel.connect();
             // 读取通道的输出
             in = channel.getInputStream();
-            return IoUtil.read(in, Charset.defaultCharset());
+            String execOut = IoUtil.read(in, Charset.defaultCharset());
+            // 去除尾部的换行符
+            if (execOut.length() > 0 && execOut.charAt(execOut.length() - 1) == '\n') {
+                execOut = execOut.substring(0, execOut.length() - 1);
+            }
+            // 这里阻塞等待执行完成
+            while (!channel.isClosed()) {
+                Thread.sleep(500);
+            }
+            int exitValue = channel.getExitStatus();
+            if (0 == exitValue) {
+                log.info("{} command exec out is :{}, exitValue:{}", command, execOut, exitValue);
+                result.setExecResult(true);
+                result.setExecOut(execOut);
+            } else {
+                result.setExecOut(execOut);
+                log.warn("{} command exec out is :{}, exitValue:{}", command, execOut, exitValue);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         } finally {
             IoUtil.close(in);
             if (channel != null && channel.isConnected()) {
                 channel.disconnect();
             }
         }
+        return result;
     }
     public static String shellForStr(Session session, String command, int connectTimeout, int cmdWaitSeconds) throws Exception {
         Map<String, String> map = shellForStr(session, Collections.singletonList(command), connectTimeout, cmdWaitSeconds);
@@ -284,8 +305,9 @@ public class JschUtils {
             channel.connect(connectTimeout * 1000);
             channel.ls(path);
             result.setExecResult(true);
+            log.info("path exists :{}", path);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            log.warn(path, e.getMessage());
             result.setExecErrOut(e.getMessage());
         }  finally {
             if (channel != null && channel.isConnected()) {
@@ -335,7 +357,7 @@ public class JschUtils {
     
     public static ArchType getArch(Session session) {
         try {
-            return ArchType.of(execForStr(session, "arch"));
+            return ArchType.of(execForStr(session, "arch").getExecOut());
         } catch (JSchException | IOException e) {
             return ArchType.OTHER;
         }

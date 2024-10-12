@@ -120,8 +120,9 @@ public class InitOsSafeConf extends InitBase {
         for (String command : commands) {
             log.info(command);
             String filePath = command.split(" ")[2];
-            if (new File(filePath).exists()) {
-                ExecResult exec = executor.execShell(command + "&>/dev/null");
+            ExecResult exec = executor.exists(filePath);
+            if (exec.getExecResult()) {
+                exec = executor.execShell(command + "&>/dev/null");
                 if (exec.getExecResult()) {
                     log.info("successful, pass!");
                 } else {
@@ -404,15 +405,7 @@ public class InitOsSafeConf extends InitBase {
                 log.info("**mode from config file is disabled, change to permissive now: ");
                 // 处理实际状态是disabled,但是配置文件是enforcing的情况
                 executor.execShell("sed -i 's/SELINUX=enforcing/SELINUX=permissive/g' /etc/selinux/config");
-                exec = executor.execShell("sed -i 's/SELINUX=disabled/SELINUX=permissive/g' /etc/selinux/config");
-                if (exec.getExecResult()) {
-                    log.info("success!");
-                    log.info("**please reboot the system to change status!");
-                } else {
-                    log.error("failed, please check!");
-                    System.exit(1);
-                }
-                
+                executor.execShell("sed -i 's/SELINUX=disabled/SELINUX=permissive/g' /etc/selinux/config");
             } else {
                 log.error("*status of current is {}, maybe error, please check manually!", currentStatus);
             }
@@ -454,8 +447,9 @@ public class InitOsSafeConf extends InitBase {
         String skip = null;
         String fileContent;
         log.info("**create {}: ", confFullPath);
-        if (new File(confFullPath).isFile()) {
-            ExecResult exec = executor.execShell(String.format("cat %s", confFullPath));
+        ExecResult exec = executor.exists(confFullPath);
+        if (exec.getExecResult()) {
+            exec = executor.execShell(String.format("cat %s", confFullPath));
             fileContent = exec.getExecOut();
             if (StringUtils.isNotBlank(fileContent)) {
                 backupConf();
@@ -573,7 +567,7 @@ public class InitOsSafeConf extends InitBase {
         if (StringUtils.isEmpty(keyword) || StringUtils.isEmpty(confStr) || StringUtils.isEmpty(confFullPath)) {
             log.error("!!!keyword conf_str conf_full_path backup_signal can not be null, abort, please check!");
             System.exit(1);
-        } else if (!new File(confFullPath).isFile()) {
+        } else if (!executor.exists(confFullPath).getExecResult()) {
             log.error("!!!conf file {} not found, abort, please check!", confFullPath);
             System.exit(1);
         } else if (StringUtils.isNotBlank(backupSignal)) {
@@ -628,15 +622,14 @@ public class InitOsSafeConf extends InitBase {
             
             sourceFile = confFilePath + confFileName;
             backupFile = confBackupPath + "/" + confFileName + ".bak-" + DATE_TIME;
-            
-            if (!new File(confBackupPath).isDirectory()) {
-                boolean result = new File(confBackupPath).mkdirs();
-                if (!result) {
+            if (!executor.exists(confBackupPath).getExecResult()) {
+                ExecResult exec = executor.createDir(confBackupPath);
+                if (!exec.getExecResult()) {
                     log.error("create dir {} failed, abort, please check!", confBackupPath);
                     System.exit(1);
                 }
             }
-            
+
             ExecResult exec = executor.execShell(String.format("cp %s %s &>/dev/null", sourceFile, backupFile));
             if (!exec.getExecResult()) {
                 log.error("backup {}: failed, please check!", backupFile);
@@ -666,7 +659,7 @@ public class InitOsSafeConf extends InitBase {
             
             ExecResult exec = executor.execShell(String.format("grep -E -i \"^%s\" %s | wc -l", keyword, confFullPath));
             String count = exec.getExecOut();
-            if (exec.getExecResult() && Integer.parseInt(count) > 0) {
+            if (exec.getExecResult() && StringUtils.isNotBlank(count) && Integer.parseInt(count) > 0) {
                 res = 1;
                 neEcho = 0;
                 resJudge();
@@ -703,7 +696,7 @@ public class InitOsSafeConf extends InitBase {
         log.info("**restore backup conf: ");
         boolean restore = false;
         if (StringUtils.isNotBlank(sourceFile) && StringUtils.isNotBlank(backupFile)) {
-            if (new File(sourceFile).isFile()) {
+            if (executor.exists(sourceFile).getExecResult()) {
                 ExecResult exec = executor.execShell(String.format("mv %s %s &>/dev/null", sourceFile, backupFile));
                 if (exec.getExecResult()) {
                     restore = true;
