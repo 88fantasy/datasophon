@@ -1,32 +1,19 @@
 package com.datasophon.cli.init;
 
-import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.base.GlobalConfig;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.Constants;
-import com.datasophon.common.enums.ArchType;
-import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.ShellUtils;
-
-import org.apache.commons.lang3.StringUtils;
-import picocli.CommandLine;
-
-import java.io.File;
-import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.Map;
-
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import picocli.CommandLine;
 
-import org.yaml.snakeyaml.Yaml;
-
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.ObjectUtil;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Accessors(chain = true)
@@ -59,23 +46,8 @@ public class InitHttpd extends InitBase implements InitNodeHandler {
     
     @Override
     public boolean doRun(Executor executor) {
-        File configFile = new File(configFilePath);
-        if (!configFile.exists() || configFile.isDirectory()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + configFilePath);
-        }
-        
-        Yaml yaml = new Yaml();
-        String content = FileUtil.readString(configFile, Charset.defaultCharset());
-        ClusterConfig clusterConfig = yaml.loadAs(content, ClusterConfig.class);
-        GlobalConfig global = clusterConfig.getGlobal();
-        if (ObjectUtil.isNull(global.getOs())) {
-            global.setOs(OsType.CentOS7);
-        }
-        if (ObjectUtil.isNull(global.getArch())) {
-            String cpuArchitecture = ShellUtils.getCpuArchitecture();
-            global.setArch(ArchType.of(cpuArchitecture));
-        }
-        
+        GlobalConfig global = getConfig().getGlobal();
+
         // httpd安装
         boolean isInit = false;
         ExecResult vResult = executor.execShell("httpd -v");

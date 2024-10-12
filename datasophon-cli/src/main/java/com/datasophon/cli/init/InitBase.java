@@ -1,11 +1,12 @@
 package com.datasophon.cli.init;
 
-import com.datasophon.cli.base.ClusterConfig;
-import com.datasophon.cli.base.Executor;
-import com.datasophon.cli.base.JschExecutor;
-import com.datasophon.cli.base.LocalExecutor;
+import cn.hutool.core.util.ObjectUtil;
+import com.datasophon.cli.base.*;
 import com.datasophon.cli.handler.InitNodeHandler;
 
+import com.datasophon.common.enums.ArchType;
+import com.datasophon.common.enums.OsType;
+import com.datasophon.common.utils.ShellUtils;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -34,7 +35,16 @@ public abstract class InitBase implements Runnable, InitNodeHandler {
         }
         Yaml yaml = new Yaml();
         String content = FileUtil.readString(configFile, Charset.defaultCharset());
-        return yaml.loadAs(content, ClusterConfig.class);
+        ClusterConfig clusterConfig = yaml.loadAs(content, ClusterConfig.class);
+        GlobalConfig global = clusterConfig.getGlobal();
+        if (ObjectUtil.isNull(global.getOs())) {
+            global.setOs(OsType.CentOS7);
+        }
+        if (ObjectUtil.isNull(global.getArch())) {
+            String cpuArchitecture = ShellUtils.getCpuArchitecture();
+            global.setArch(ArchType.of(cpuArchitecture));
+        }
+        return clusterConfig;
     }
     
     @Override

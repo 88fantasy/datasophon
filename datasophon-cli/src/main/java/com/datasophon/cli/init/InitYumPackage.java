@@ -4,14 +4,10 @@ import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.ExecResult;
-
-import picocli.CommandLine;
-
-import java.io.File;
-
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import picocli.CommandLine;
 
 @Slf4j
 @Accessors(chain = true)
@@ -32,19 +28,16 @@ public class InitYumPackage extends InitBase implements InitNodeHandler {
     
     @Override
     public boolean doRun(Executor executor) {
-        File configFile = new File(configFilePath);
-        if (!configFile.exists() || configFile.isDirectory()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + configFilePath);
-        }
-        if (!new File(packagePath).exists()) {
+        if(!executor.exists(packagePath).getExecResult()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + packagePath);
         }
-        if (!new File(reposTarFilePath).exists()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + reposTarFilePath);
+        if(!executor.exists(reposTarFilePath).getExecResult()) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + reposTarFilePath);
         }
-        executor.createDir(Constants.INSTALL_PATH);
-        String cmd = String.format("tar -zxf %s -C %s/httpd-root", reposTarFilePath, Constants.INSTALL_PATH);
-        ExecResult result = executor.execShell(cmd);
+        if(!executor.exists(reposTarFilePath).getExecResult()) {
+            executor.createDir(Constants.INSTALL_PATH);
+        }
+        ExecResult result = executor.execShell(String.format("tar -zxf %s -C %s/httpd-root", reposTarFilePath, Constants.INSTALL_PATH));
         if (result.getExecResult()) {
             log.info("init sucess.");
         } else {
