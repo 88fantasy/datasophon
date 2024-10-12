@@ -195,7 +195,12 @@ scrape_configs:
       - configs/redis.json
 
   - job_name: 'amoro'
-  file_sd_configs:
-  - files:
-  - configs/amoro.json
+    file_sd_configs:
+    - files:
+      - configs/amoro.json
+
+  - job_name: 'nacos'
+    file_sd_configs:
+    - files:
+      - configs/nacos.json
 

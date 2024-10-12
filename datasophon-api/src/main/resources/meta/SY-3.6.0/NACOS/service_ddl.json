@@ -1,0 +1,126 @@
+{
+  "name": "NACOS",
+  "label": "Nacos",
+  "description": "服务注册发现、服务配置管理",
+  "version": "2.4.2.1",
+  "sortNum": 80,
+  "dependencies": [],
+  "packageName": "nacos-server-2.4.2.1.tar.gz",
+  "decompressPackageName": "nacos-server-2.4.2.1",
+  "roles": [{
+    "name": "NacosServer",
+    "label": "NacosServer",
+    "roleType": "master",
+    "cardinality": "1",
+    "runAs": {},
+    "logFile": "logs/start-standalone.out",
+    "resourceStrategies":[{
+      "type": "download",
+      "from": "script/control_nacos.sh",
+      "to": "control_nacos.sh",
+      "md5": "329234635425d1d9dacd5481f0571f61"
+    }],
+    "startRunner": {
+      "timeout": "60",
+      "program": "control_nacos.sh",
+      "args": [
+        "start",
+        "standalone"
+      ]
+    },
+    "stopRunner": {
+      "timeout": "600",
+      "program": "control_nacos.sh",
+      "args": [
+        "stop",
+        "standalone"
+      ]
+    },
+    "statusRunner": {
+      "timeout": "60",
+      "program": "control_nacos.sh",
+      "args": [
+        "status",
+        "standalone"
+      ]
+    },
+    "externalLink": {
+      "name": "Nacos UI",
+      "label": "Nacos UI",
+      "url": "http://${host}:8848"
+    }
+  }],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "application.properties",
+        "configFormat": "properties",
+        "outputDirectory": "conf",
+        "includeParams": [
+          "db.num",
+          "db.url.0",
+          "db.user",
+          "db.password",
+          "nacos.inetutils.ip-address"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "name": "db.num",
+      "label": "数据库数目",
+      "description": "数据库数目",
+      "required": true,
+      "type": "input",
+      "value": "1",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "1"
+    },
+    {
+      "name": "db.url.0",
+      "label": "第一个数据库的URL",
+      "description": "第一个数据库的URL",
+      "required": false,
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    },
+    {
+      "name": "db.user",
+      "label": "数据库用户名",
+      "description": "数据库用户名",
+      "required": false,
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    },
+    {
+      "name": "db.password",
+      "label": "数据库密码",
+      "description": "数据库密码",
+      "required": false,
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    },
+    {
+      "name": "nacos.inetutils.ip-address",
+      "label": "IP地址",
+      "description": "IP地址",
+      "required": false,
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    }
+  ]
+}
