@@ -27,7 +27,7 @@ public interface Executor {
      * @param dest 目标文件路径
      * @return ExecResult
      */
-    ExecResult sendFile(String src, String dest);
+    ExecResult sendFile(String src, String dest, boolean override);
     
     /**
      * 发送目录

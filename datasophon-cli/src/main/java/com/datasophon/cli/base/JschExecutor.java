@@ -43,9 +43,9 @@ public class JschExecutor implements Executor {
     }
     
     @Override
-    public ExecResult sendFile(String src, String dest) {
+    public ExecResult sendFile(String src, String dest, boolean override) {
         try (FileInputStream fis = new FileInputStream(src)) {
-            return JschUtils.sendInputStream(session, fis, dest, 5, false);
+            return JschUtils.sendInputStream(session, fis, dest, 5, override);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);

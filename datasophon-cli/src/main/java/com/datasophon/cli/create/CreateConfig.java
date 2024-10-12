@@ -50,8 +50,8 @@ public class CreateConfig implements Runnable {
         String content = ResourceUtil.getResourceObj(DEFAULT_FILE).readUtf8Str();
         ClusterConfig clusterConfig = yaml.loadAs(content, ClusterConfig.class);
         GlobalConfig global = clusterConfig.getGlobal();
-        global.setOs(os);
-        global.setArch(archType);
+        //global.setOs(os);
+        //global.setArch(archType);
         GlobalConfig.MysqlConfig mysql = global.getMysql();
         mysql.setEnable(installMysql);
         if (StrUtil.isNotEmpty(mysqlPassword)) {

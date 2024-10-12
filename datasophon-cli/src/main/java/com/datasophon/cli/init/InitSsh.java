@@ -83,7 +83,8 @@ public class InitSsh implements Runnable {
     }
     
     private void doPass(Host host) {
-        OsType os = config.getGlobal().getOs();
+        //OsType os = config.getGlobal().getOs();
+        OsType os = null;
         
         // 默认都带 openssh 不检查
         List<String> components = Arrays.asList("pssh", "tcl", "expect");

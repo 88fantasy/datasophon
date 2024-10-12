@@ -3,15 +3,13 @@ package com.datasophon.cli.init;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.common.utils.ExecResult;
-
+import lombok.Data;
+import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import lombok.Data;
-import lombok.experimental.Accessors;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Accessors(chain = true)
@@ -26,17 +24,13 @@ public class InitNtpServer extends InitBase implements InitNodeHandler {
     
     @Override
     public boolean doRun(Executor executor) {
-        String cmd = "rpm -qa | grep chrony-";
-        ExecResult reResult = executor.execShell(cmd);
+        ExecResult reResult = executor.execShell("rpm -qa | grep chrony-");
         if (reResult.getExecResult()) {
             log.info("ntp-chrony exists");
         } else {
-            cmd = "yum -y install chrony";
-            executor.execShell(cmd);
+            executor.execShell("yum -y install chrony");
         }
-        
-        cmd = "mv /etc/chrony.conf /etc/chrony.conf.$(date +%Y%m%d.%H%M%S)";
-        executor.execShell(cmd);
+        executor.execShell("mv /etc/chrony.conf /etc/chrony.conf.$(date +%Y%m%d.%H%M%S)");
         
         String chronyConfPath = "/etc/chrony.conf";
         List<String> conf = new ArrayList<>();
@@ -51,12 +45,9 @@ public class InitNtpServer extends InitBase implements InitNodeHandler {
         conf.add("logdir /var/log/chrony");
         executor.writeLines(conf, chronyConfPath);
         log.info("/etc/chrony.conf overwrite sucess.");
-        
-        cmd = "systemctl enable chronyd";
-        executor.execShell(cmd);
-        
-        cmd = "systemctl restart chronyd";
-        executor.execShell(cmd);
+
+        executor.execShell("systemctl enable chronyd");
+        executor.execShell("systemctl restart chronyd");
         
         log.info("init ntpserver sucess.");
         return true;

@@ -1,40 +1,24 @@
 package com.datasophon.cli.init;
 
-import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.Executor;
-import com.datasophon.cli.base.GlobalConfig;
 import com.datasophon.cli.handler.InitNodeHandler;
+import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.ShellUtils;
-
-import org.apache.commons.lang3.StringUtils;
-
-import picocli.CommandLine;
-
-import java.io.File;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import picocli.CommandLine;
 
-import org.yaml.snakeyaml.Yaml;
-
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.ObjectUtil;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Accessors(chain = true)
 @Data
 @CommandLine.Command(name = "mysql", description = "init mysql")
 public class InitMysql extends InitBase implements InitNodeHandler {
-    
-    @CommandLine.Option(names = {"-e", "--enable"}, description = "是否安装")
-    boolean enable;
     
     @CommandLine.Option(names = {"-p", "--password"}, description = "密码", required = true)
     String password;
@@ -52,30 +36,9 @@ public class InitMysql extends InitBase implements InitNodeHandler {
     
     @Override
     public boolean doRun(Executor executor) {
-        File configFile = new File(configFilePath);
-        if (!configFile.exists() || configFile.isDirectory()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + configFilePath);
-        }
-        
-        Yaml yaml = new Yaml();
-        String content = FileUtil.readString(configFile, Charset.defaultCharset());
-        ClusterConfig clusterConfig = yaml.loadAs(content, ClusterConfig.class);
-        GlobalConfig global = clusterConfig.getGlobal();
-        if (ObjectUtil.isNull(global.getOs())) {
-            global.setOs(OsType.CentOS7);
-        }
-        if (ObjectUtil.isNull(global.getArch())) {
-            String cpuArchitecture = ShellUtils.getCpuArchitecture();
-            global.setArch(ArchType.of(cpuArchitecture));
-        }
-        if (StringUtils.isBlank(global.getMysql().getPassword())) {
-            throw new RuntimeException("mysql password is needed");
-        }
-        
-        if (!enable) {
-            return false;
-        }
-        
+        ArchType archType = executor.getArch();
+        OsType osType = executor.getOs();
+
         // 卸载mariadb
         ExecResult mariadbResult = executor.execShell("rpm -qa | grep mariadb");
         if (mariadbResult.getExecResult()) {
@@ -104,20 +67,20 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         mysqlLib(executor, "openssl-devel", "rpm -qa | grep openssl-devel", "yum -y install openssl-devel");
         mysqlLib(executor, "ncurses-devel", "rpm -qa | grep ncurses-devel", "yum -y install ncurses-devel");
         mysqlLib(executor, "mysql-devel", "rpm -qa | grep mysql-devel", "yum -y install mysql-devel");
-        if (global.getOs() == OsType.CentOS7) {
+        if (osType == OsType.CentOS7) {
             mysqlLib(executor, "libaio", "rpm -qa | grep libaio", "yum -y install libaio");
         }
         
         // 安装mysql
         String folder = "mysql";
-        executor.execShell(String.format("tar -zxvf %s/%s -C %s", packagePath, mysqlTarName, packagePath));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-common-8.0.28-1.el8.x86_64.rpm", packagePath, folder));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-client-plugins-8.0.28-1.el8.x86_64.rpm", packagePath, folder));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-libs-8.0.28-1.el8.x86_64.rpm", packagePath, folder));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-devel-8.0.28-1.el8.x86_64.rpm", packagePath, folder));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-client-8.0.28-1.el8.x86_64.rpm", packagePath, folder));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-icu-data-files-8.0.28-1.el8.x86_64.rpm", packagePath, folder));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-server-8.0.28-1.el8.x86_64.rpm", packagePath, folder));
+        executor.execShell(String.format("tar -zxvf %s/%s -C %s", packagePath, mysqlTarName, Constants.INSTALL_PATH));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-common-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-client-plugins-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-libs-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-devel-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-client-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-icu-data-files-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-server-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
         executor.execShell("mysqld --initialize --user=mysql");
         executor.execShell("systemctl start mysqld");
         executor.execShell("systemctl enable mysqld");

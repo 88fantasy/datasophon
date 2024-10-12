@@ -13,10 +13,6 @@ public class GlobalConfig {
     
     private boolean offline;
     
-    private OsType os;
-    
-    private ArchType arch;
-    
     private RegistryConfig registry;
     
     private Host nmapServer;

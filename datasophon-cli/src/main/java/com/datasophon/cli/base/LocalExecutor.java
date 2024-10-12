@@ -26,10 +26,10 @@ public class LocalExecutor implements Executor {
     }
     
     @Override
-    public ExecResult sendFile(String src, String dest) {
+    public ExecResult sendFile(String src, String dest, boolean override) {
         ExecResult execResult = new ExecResult();
         try {
-            FileUtil.copy(src, dest, true);
+            FileUtil.copy(src, dest, override);
             execResult.setExecResult(true);
         } catch (IORuntimeException exception) {
             execResult.setExecErrOut(exception.getMessage());

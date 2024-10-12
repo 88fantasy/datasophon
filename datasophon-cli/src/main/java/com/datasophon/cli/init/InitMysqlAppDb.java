@@ -1,22 +1,11 @@
 package com.datasophon.cli.init;
 
-import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.Executor;
-import com.datasophon.cli.base.GlobalConfig;
 import com.datasophon.common.utils.ExecResult;
-
-import picocli.CommandLine;
-
-import java.io.File;
-import java.nio.charset.Charset;
-
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-
-import org.yaml.snakeyaml.Yaml;
-
-import cn.hutool.core.io.FileUtil;
+import picocli.CommandLine;
 
 @Slf4j
 @Accessors(chain = true)
@@ -43,16 +32,6 @@ public class InitMysqlAppDb extends InitBase {
     
     @Override
     public boolean doRun(Executor executor) {
-        File configFile = new File(configFilePath);
-        if (!configFile.exists() || configFile.isDirectory()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + configFilePath);
-        }
-        
-        Yaml yaml = new Yaml();
-        String content = FileUtil.readString(configFile, Charset.defaultCharset());
-        ClusterConfig clusterConfig = yaml.loadAs(content, ClusterConfig.class);
-        GlobalConfig global = clusterConfig.getGlobal();
-        
         ExecResult statusResult = executor.execShell("systemctl status mysqld | grep running | wc -l");
         if (statusResult.getExecOut().equals("1")) {
             initCommonAccount(executor, rootPassword, account, password, dbName);
