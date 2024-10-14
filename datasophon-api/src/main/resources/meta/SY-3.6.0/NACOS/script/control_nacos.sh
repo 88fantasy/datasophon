@@ -16,7 +16,7 @@
 #  limitations under the License.
 #
 
-usage="Usage: control_nacos.sh (start|stop|restart|status) <command>"
+usage="Usage: control_nacos.sh (start|stop|restart) <command>"
 
 # if no args specified, show usage
 if [ $# -le 1 ]; then
@@ -33,33 +33,23 @@ export PID_DIR=$NACOS_DIR/pid
 export HOSTNAME=`hostname`
 
 pid=$PID_DIR/$command.pid
-log=$LOG_DIR/$startStop-$command.out
+log=$LOG_DIR/$command.out
 
 if [ ! -d "$LOG_DIR" ]; then
   mkdir $LOG_DIR
 fi
 
 start(){
-	[ -w "$PID_DIR" ] ||  mkdir -p "$PID_DIR"
-  if [ -f $pid ]; then
-    if kill -0 `cat $pid` > /dev/null 2>&1; then
-      echo $command running as process `cat $pid`.  Stop it first.
-      exit 1
-    fi
-  fi
-  echo starting nacos $command, logging to $log
+  [ -w "$PID_DIR" ] ||  mkdir -p "$PID_DIR"
   exec_command="$NACOS_DIR/bin/startup.sh -m $command"
+  echo starting nacos $command, logging to $log
   nohup $exec_command > $log 2>&1 &
   echo $! > $pid
 }
 stop(){
-	if [ -f $pid ]; then
-    exec_shutdown_command="$NACOS_DIR/bin/shutdown.sh"
-    $exec_shutdown_command
-    rm -f $pid
-  else
-    echo no nacos $command to stop
-  fi
+	exec_shutdown_command="$NACOS_DIR/bin/shutdown.sh"
+  $exec_shutdown_command
+  rm -f $pid
 }
 restart(){
 	stop
@@ -83,15 +73,13 @@ status(){
 	fi
 }
 
-
-
 case $startStop in
   (start)
     start;;
   (stop)
     stop;;
   (status)
-	  status;;
+  	status;;
   (restart)
 	  restart;;
   (*)

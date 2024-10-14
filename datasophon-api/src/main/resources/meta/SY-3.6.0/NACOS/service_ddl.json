@@ -13,12 +13,12 @@
     "roleType": "master",
     "cardinality": "1",
     "runAs": {},
-    "logFile": "logs/start-standalone.out",
+    "logFile": "logs/start.out",
     "resourceStrategies":[{
       "type": "download",
       "from": "script/control_nacos.sh",
       "to": "control_nacos.sh",
-      "md5": "329234635425d1d9dacd5481f0571f61"
+      "md5": "275bbe4f297d6953d1b7ff8b2c8e1483"
     }],
     "startRunner": {
       "timeout": "60",
@@ -47,7 +47,7 @@
     "externalLink": {
       "name": "Nacos UI",
       "label": "Nacos UI",
-      "url": "http://${host}:8848"
+      "url": "http://${host}:8848/nacos/"
     }
   }],
   "configWriter": {
