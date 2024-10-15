@@ -40,16 +40,17 @@ if [ ! -d "$LOG_DIR" ]; then
 fi
 
 start(){
-  [ -w "$PID_DIR" ] ||  mkdir -p "$PID_DIR"
   exec_command="$NACOS_DIR/bin/startup.sh -m $command"
   echo starting nacos $command, logging to $log
   nohup $exec_command > $log 2>&1 &
-  echo $! > $pid
+  PID=`ps -ef | grep '[n]acos.nacos' | awk '{print $2}'`
+  echo "nacos is starting..... pid is ${PID} "
 }
 stop(){
+  PID=`ps -ef | grep '[n]acos.nacos' | awk '{print $2}'`
+  echo stop nacos $command $PID
 	exec_shutdown_command="$NACOS_DIR/bin/shutdown.sh"
   $exec_shutdown_command
-  rm -f $pid
 }
 restart(){
 	stop
@@ -57,20 +58,17 @@ restart(){
 	start
 }
 status(){
-  if [ -f $pid ]; then
-    ARGET_PID=`cat $pid`
-    kill -0 $ARGET_PID
-    if [ $? -eq 0 ]
-    then
-      echo "Nacos $command is  running "
-    else
-      echo "Nacos $command  is not running"
-      exit 1
-    fi
-  else
-    echo "Nacos $command  pid file is not exists"
-    exit 1
-	fi
+  echo "start check $command status"
+  pid=`ps -ef | grep '[n]acos.nacos' | awk '{print $2}'`
+  echo "pid is : $pid"
+  kill -0 $pid
+  if [ $? -eq 0 ]
+  	then
+  		echo "nacos $command is  running "
+  	else
+  		echo "nacos $command  is not running"
+  		exit 1
+  	fi
 }
 
 case $startStop in
