@@ -24,7 +24,7 @@ global:
   mysql:
     enable: false   # Install Mysql
     password: datasophon123      # Set the MYSQL database root password
-    tarName:  mysql-community-8.0.28.el8.x86_64.tar.gz
+    tarName:  mysql-8.0.28-1.el7.x86_64.rpm-bundle.tar
     appDbs:
       - account: datasphon
         password: datasphon

@@ -48,49 +48,40 @@ public class InitHttpd extends InitBase implements InitNodeHandler {
         ArchType archType = executor.getArch();
         OsType osType = executor.getOs();
         // httpd安装
+        String pkgFolder = "httpd-pkg";
+        executor.createDir(Constants.INSTALL_PATH);
+        executor.execShell(String.format("tar -zxvf %s/%s -C %s", packagePath, pkgTarName, Constants.INSTALL_PATH));
+        String repoPath = String.format("%s/%s/%s/%s", Constants.INSTALL_PATH, pkgFolder, archType.name(), osType.name());
+        executor.execShell(String.format("rpm -ivh %s/*.rpm", repoPath));
+
         ExecResult vResult = executor.execShell("httpd -v");
-        log.info("vResult msg:{}, is:{}", vResult.getExecOut(), vResult.getExecResult());
-        if (StringUtils.isBlank(vResult.getExecOut())) {
-            String pkgFolder = "httpd-pkg";
-            String repoPath = String.format("%s/%s/%s/%s", packagePath, pkgFolder, archType.name(), osType.name());
-            executor.createDir(Constants.INSTALL_PATH);
-            executor.execShell(String.format("tar -zxvf %s/%s -C %s", packagePath, pkgTarName, Constants.INSTALL_PATH));
-            ExecResult httpdResult = executor.execShell(String.format("rpm -ivh %s/*.rpm", repoPath));
-            if (httpdResult.getExecResult()) {
-                log.info("httpd install sucess.");
-            } else {
-                log.info("httpd install failed.");
+        if (!vResult.getExecOut().equals("127")) {
+            Map<String, Object> confData = new HashMap<>();
+            String httpdRootPath = String.format("%s/httpd-root", Constants.INSTALL_PATH);
+            confData.put("httpdRootPath", httpdRootPath);
+            confData.put("httpdListenPort", httpdListenPort);
+            try {
+                executor.execShell(String.format("mkdir -p %s", httpdRootPath));
+                // 替换 httpd.conf
+                String tmpPath = String.format("%s.tmp", templateFile);
+                String distPath = "/etc/httpd/conf/httpd.conf";
+                CliUtil.generateConfigFile(templateDir, templateFile, confData, tmpPath);
+                executor.execShell("mv /etc/httpd/conf/httpd.conf /etc/httpd/conf/httpd.conf.bak");
+                executor.sendFile(tmpPath, distPath, true);
+                ShellUtils.execShell(String.format("rm -rf %s", tmpPath));
+            } catch (Exception e) {
+                log.error("/etc/httpd/conf/httpd.conf.ftl overwrite failed.", e);
             }
+            log.info("/etc/httpd/conf/httpd.conf.ftl overwrite sucess");
+
+            // httpd restart
+            executor.execShell("systemctl restart httpd");
+            log.info("httpd install sucess.");
+
         } else {
-            log.info("httpd have already installed");
+            log.info("httpd install failed.");
         }
-        
-        // 覆盖配置
-        Map<String, Object> confData = new HashMap<>();
-        String httpdRootPath = String.format("%s/httpd-root", Constants.INSTALL_PATH);
-        confData.put("httpdRootPath", httpdRootPath);
-        confData.put("httpdListenPort", httpdListenPort);
-        try {
-            executor.execShell(String.format("mkdir -p %s", httpdRootPath));
-            // 替换 httpd.conf
-            String tmpPath = String.format("%s.tmp", templateFile);
-            String distPath = "/etc/httpd/conf/httpd.conf";
-            CliUtil.generateConfigFile(templateDir, templateFile, confData, tmpPath);
-            executor.execShell("mv /etc/httpd/conf/httpd.conf /etc/httpd/conf/httpd.conf.bak");
-            executor.sendFile(tmpPath, distPath, true);
-            ShellUtils.execShell(String.format("rm -rf %s", tmpPath));
-        } catch (Exception e) {
-            log.error("/etc/httpd/conf/httpd.conf.ftl overwrite failed.", e);
-        }
-        log.info("/etc/httpd/conf/httpd.conf.ftl overwrite sucess");
-        
-        // httpd restart
-        ExecResult reResult = executor.execShell("systemctl restart httpd");
-        if (reResult.getExecResult()) {
-            log.info("restart httpd sucess");
-        } else {
-            log.info("restart httpd failed");
-        }
+
         return true;
     }
 }

@@ -59,6 +59,7 @@ public class ShellUtils {
      * @return
      */
     public static ExecResult execShell(String pathOrCommand) {
+        logger.info("command:{}", pathOrCommand);
         ExecResult result = new ExecResult();
         StringBuilder stringBuffer = new StringBuilder();
         try {
@@ -81,7 +82,7 @@ public class ShellUtils {
             String execOut = stringBuffer.toString();
             int exitValue = ps.waitFor();
             if (0 == exitValue) {
-                logger.info("{} command exec out is : {}{}", pathOrCommand, System.lineSeparator(), execOut);
+                logger.info("{} command exec out is : {}{},exitValue:{}", pathOrCommand, System.lineSeparator(), execOut, exitValue);
                 result.setExecResult(true);
                 result.setExecOut(execOut);
             } else {

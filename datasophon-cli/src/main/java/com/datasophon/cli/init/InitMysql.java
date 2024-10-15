@@ -36,8 +36,11 @@ public class InitMysql extends InitBase implements InitNodeHandler {
     
     @Override
     public boolean doRun(Executor executor) {
-        ArchType archType = executor.getArch();
         OsType osType = executor.getOs();
+        String mysqlTarPath = String.format("%s/%s", packagePath, mysqlTarName);
+        if(!executor.exists(mysqlTarPath).getExecResult()) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + packagePath);
+        }
 
         // 卸载mariadb
         ExecResult mariadbResult = executor.execShell("rpm -qa | grep mariadb");
@@ -73,31 +76,32 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         
         // 安装mysql
         String folder = "mysql";
-        executor.execShell(String.format("tar -zxvf %s/%s -C %s", packagePath, mysqlTarName, Constants.INSTALL_PATH));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-common-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-client-plugins-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-libs-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-devel-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-client-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-icu-data-files-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
-        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-server-8.0.28-1.el8.x86_64.rpm", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("mkdir -p %s/%s", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("tar -xvf %s/%s -C %s/%s", packagePath, mysqlTarName, Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-common-8.*", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-client-plugins-8.*", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-libs-8.*", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-devel-8.*", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-client-8.*", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-icu-data-files-8.*", Constants.INSTALL_PATH, folder));
+        executor.execShell(String.format("rpm -ivh %s/%s/mysql-community-server-8.*", Constants.INSTALL_PATH, folder));
         executor.execShell("mysqld --initialize --user=mysql");
         executor.execShell("systemctl start mysqld");
         executor.execShell("systemctl enable mysqld");
         executor.execShell("sleep 2");
         
         log.info("set password to {}", password);
-        ExecResult statusResult = executor.execShell("systemctl status mysqld | grep running | wc -l");
-        if (statusResult.getExecOut().equals("1")) {
+        ExecResult statusResult = executor.execShell("systemctl status mysqld");
+        if (statusResult.getExecResult()) {
             log.info("mysql在运行");
             String tmpPasswd = executor.execShell("grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'").getExecOut();
             log.info("临时密码:{}", tmpPasswd);
-            executor.execShell(String.format("/usr/bin/mysqladmin -uroot -p''%s'' password ''%s''", tmpPasswd, password));
-            executor.execShell(String.format("mysql -uroot -p''%s'' -e \"update mysql.user set host='%%' where user ='root';\"", password));
-            executor.execShell(String.format("mysql -uroot -p''%s'' -e \"FLUSH PRIVILEGES;\"", password));
-            executor.execShell(String.format("mysql -uroot -p''%s'' -e \"ALTER USER 'root'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;\"", password, password));
-            executor.execShell(String.format("mysql -uroot -p''%s'' -e \"ALTER USER 'root'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';\"", password, password));
-            executor.execShell(String.format("mysql -uroot -p''%s'' -e \"FLUSH PRIVILEGES;\"", password));
+            executor.execShell(String.format("/usr/bin/mysqladmin -uroot -p'%s' password '%s'", tmpPasswd, password));
+            executor.execShell(String.format("mysql -uroot -p'%s' -e \"update mysql.user set host='%%' where user ='root';\"", password));
+            executor.execShell(String.format("mysql -uroot -p'%s' -e \"FLUSH PRIVILEGES;\"", password));
+            executor.execShell(String.format("mysql -uroot -p'%s' -e \"ALTER USER 'root'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;\"", password, password));
+            executor.execShell(String.format("mysql -uroot -p'%s' -e \"ALTER USER 'root'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';\"", password, password));
+            executor.execShell(String.format("mysql -uroot -p'%s' -e \"FLUSH PRIVILEGES;\"", password));
             
             List<String> myconf = new ArrayList<>();
             myconf.add(" [mysqld] ");
@@ -112,8 +116,11 @@ public class InitMysql extends InitBase implements InitNodeHandler {
             executor.execShell("systemctl restart mysqld");
             executor.execShell("systemctl enable mysqld");
             log.info("mysql install sucess.");
+            return true;
+        } else {
+            log.info("mysql install fail.");
+            return false;
         }
-        return true;
     }
     
     public void mysqlLib(Executor executor, String name, String checkCmd, String installCmd) {
