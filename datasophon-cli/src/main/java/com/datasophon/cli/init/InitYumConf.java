@@ -35,6 +35,7 @@ public class InitYumConf extends InitBase implements InitNodeHandler {
         OsType osType = executor.getOs();
         String localRepoUrl = String.format("http://%s:%s/offline-repos/%s/%s", httpdServerIp, httpdListenPort, archType.name(), osType.name());
 
+
         executor.execShell("mv /etc/yum.repos.d /etc/yum.repos.d.$(date +%Y%m%d.%H%M%S)");
         executor.execShell("mkdir /etc/yum.repos.d");
         
@@ -46,6 +47,10 @@ public class InitYumConf extends InitBase implements InitNodeHandler {
         conf.add("enabled=1");
         conf.add("gpgcheck=0");
         executor.writeLines(conf, localBaseRepoPath);
+
+        executor.execShell("yum clean all");
+        executor.execShell("yum makecache");
+
         log.info("baseurl:{}", localRepoUrl);
         log.info("/etc/yum.repos.d/local_base.repo init sucess.");
         return true;

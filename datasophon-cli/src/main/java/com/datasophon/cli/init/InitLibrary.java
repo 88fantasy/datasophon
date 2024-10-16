@@ -32,7 +32,6 @@ public class InitLibrary extends InitBase {
         installGcc();
         installOpenssl();
         installLibtool();
-        enableNtp();
         initChmodDev();
         initCleanBuff();
         sourceProfile();

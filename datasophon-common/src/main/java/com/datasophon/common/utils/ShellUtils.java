@@ -87,7 +87,7 @@ public class ShellUtils {
                 result.setExecOut(execOut);
             } else {
                 result.setExecOut("call shell failed. error code is :" + exitValue);
-                logger.error("{} command exec out is : {}{}", pathOrCommand, System.lineSeparator(), execOut);
+                logger.error("{} command exec out is : {}{},exitValue:{}", pathOrCommand, System.lineSeparator(), execOut, exitValue);
             }
             
         } catch (Exception e) {

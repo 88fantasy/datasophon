@@ -28,7 +28,7 @@ public class CreateCluster implements Runnable {
     String action;
 
     @CommandLine.Option(names = {"-s", "skipInitBinPackage"}, description = "是否跳过分发安资源包(-s则跳过)")
-    Boolean skipInitBinPackage;
+    boolean skipInitBinPackage = false;
     
     private String initPath;
     
@@ -331,6 +331,7 @@ public class CreateCluster implements Runnable {
         GlobalConfig.NtpServer ntpServer = config.getGlobal().getNtpServer();
         InitNtpSlave initNtpSlave = new InitNtpSlave();
         initNtpSlave.setConfigFilePath(initConfigYamlPath);
+        initNtpSlave.setNtpServerIp(ntpServer.getHost().getIp());
         slavesNodesExec(ntpServer.getHost(), nodes, initNtpSlave);
     }
     

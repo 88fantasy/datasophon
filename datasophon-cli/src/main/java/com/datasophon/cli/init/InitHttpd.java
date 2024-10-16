@@ -11,7 +11,6 @@ import com.datasophon.common.utils.ShellUtils;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import picocli.CommandLine;
 
 import java.util.HashMap;
@@ -48,10 +47,9 @@ public class InitHttpd extends InitBase implements InitNodeHandler {
         ArchType archType = executor.getArch();
         OsType osType = executor.getOs();
         // httpd安装
-        String pkgFolder = "httpd-pkg";
         executor.createDir(Constants.INSTALL_PATH);
         executor.execShell(String.format("tar -zxvf %s/%s -C %s", packagePath, pkgTarName, Constants.INSTALL_PATH));
-        String repoPath = String.format("%s/%s/%s/%s", Constants.INSTALL_PATH, pkgFolder, archType.name(), osType.name());
+        String repoPath = String.format("%s/httpd-pkg/%s/%s", Constants.INSTALL_PATH, archType.name(), osType.name());
         executor.execShell(String.format("rpm -ivh %s/*.rpm", repoPath));
 
         ExecResult vResult = executor.execShell("httpd -v");
@@ -68,11 +66,12 @@ public class InitHttpd extends InitBase implements InitNodeHandler {
                 CliUtil.generateConfigFile(templateDir, templateFile, confData, tmpPath);
                 executor.execShell("mv /etc/httpd/conf/httpd.conf /etc/httpd/conf/httpd.conf.bak");
                 executor.sendFile(tmpPath, distPath, true);
-                ShellUtils.execShell(String.format("rm -rf %s", tmpPath));
+                ShellUtils.execShell(String.format("rm -f %s", tmpPath));
             } catch (Exception e) {
                 log.error("/etc/httpd/conf/httpd.conf.ftl overwrite failed.", e);
             }
             log.info("/etc/httpd/conf/httpd.conf.ftl overwrite sucess");
+            executor.execShell(String.format("rm -rf %s/httpd-pkg", Constants.INSTALL_PATH));
 
             // httpd restart
             executor.execShell("systemctl restart httpd");

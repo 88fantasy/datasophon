@@ -24,11 +24,11 @@ public class InitNtpServer extends InitBase implements InitNodeHandler {
     
     @Override
     public boolean doRun(Executor executor) {
+        executor.execShell("yum -y install chrony");
         ExecResult reResult = executor.execShell("rpm -qa | grep chrony-");
-        if (reResult.getExecResult()) {
-            log.info("ntp-chrony exists");
-        } else {
-            executor.execShell("yum -y install chrony");
+        if (!reResult.getExecResult()) {
+            log.info("install chrony  fail.");
+            return false;
         }
         executor.execShell("mv /etc/chrony.conf /etc/chrony.conf.$(date +%Y%m%d.%H%M%S)");
         
@@ -48,6 +48,7 @@ public class InitNtpServer extends InitBase implements InitNodeHandler {
 
         executor.execShell("systemctl enable chronyd");
         executor.execShell("systemctl restart chronyd");
+        executor.execShell("chronyc sources");
         
         log.info("init ntpserver sucess.");
         return true;
