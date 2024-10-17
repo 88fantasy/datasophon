@@ -64,6 +64,15 @@
             "authEnabled",
             "tokenSecretKey"
         ]
+      },
+      {
+        "filename": "nacos-user-mgmt.properties",
+        "configFormat": "properties",
+        "outputDirectory": "conf",
+        "includeParams": [
+            "username",
+            "password"
+        ]
       }
     ]
   },
@@ -139,6 +148,30 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "a73d81760ee6fe6a0c2482e0b79a409ce810ec969b6cf5e27bb81d822449b9ea"
+    },
+    {
+      "name": "username",
+      "label": "用户名",
+      "description": "登录用户名",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "nacos",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "nacos"
+    },
+    {
+      "name": "password",
+      "label": "密码",
+      "description": "登录密码",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "nacos",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "nacos"
     }
   ]
 }

@@ -43,8 +43,6 @@ start(){
   exec_command="$NACOS_DIR/bin/startup.sh -m $command"
   echo starting nacos $command, logging to $log
   nohup $exec_command > $log 2>&1 &
-  PID=`ps -ef | grep '[n]acos.nacos' | awk '{print $2}'`
-  echo "nacos is starting..... pid is ${PID} "
 }
 stop(){
   PID=`ps -ef | grep '[n]acos.nacos' | awk '{print $2}'`
