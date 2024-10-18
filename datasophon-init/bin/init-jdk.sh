@@ -26,7 +26,7 @@ echo "PACKAGES_PATH: ${PACKAGES_PATH}"
 JDK_FOLDER_PATH=/usr/java
 source /etc/profile
 mkdir -p /usr/java
-JDK_PATH_NAME="jdk1.8.0_333"
+JDK_PATH_NAME="jdk1.8.0"
 JDK_VERSION="1.8"
 BASH_PROFILE_PATH="/root/.bash_profile"
 BASHRC_PATH="/root/.bashrc"
@@ -60,8 +60,8 @@ else
   JRE_HOME="${JDK_FOLDER_PATH}/${JDK_PATH_NAME}/jre"
   JAVA_SOURCE_ENV="source /etc/profile"
   echo "export JAVA_HOME=$JAVA_HOME" >>/etc/profile
-  echo "export JRE_HOME=$JRE_HOME" >>/etc/profile
-  echo "export CLASSPATH=.:\$JRE_HOME/lib/rt.jar:\$JAVA_HOME/lib/dt.jar:\$JAVA_HOME/lib/tools.jar" >>/etc/profile
+  #echo "export JRE_HOME=$JRE_HOME" >>/etc/profile
+  #echo "export CLASSPATH=.:\$JRE_HOME/lib/rt.jar:\$JAVA_HOME/lib/dt.jar:\$JAVA_HOME/lib/tools.jar" >>/etc/profile
   echo "export PATH=\$PATH:\$JAVA_HOME/bin" >>/etc/profile
   echo ${JAVA_SOURCE_ENV} >>~/.bash_profile
   echo ${JAVA_SOURCE_ENV} >>~/.bashrc

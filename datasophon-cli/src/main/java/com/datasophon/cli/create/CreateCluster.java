@@ -121,6 +121,9 @@ public class CreateCluster implements Runnable {
             log.info("分发资源包");
             initBinPackage(config, nodes);
         }
+
+        log.info("安装jdk");
+        initJdk(config, nodes);
         
         log.info("创建hadoop用户和组");
         initOsUser(config, nodes);
@@ -190,6 +193,9 @@ public class CreateCluster implements Runnable {
             log.info("分发资源包");
             initBinPackage(config, nodes);
         }
+
+        log.info("安装jdk");
+        initJdk(config, nodes);
         
         log.info("创建hadoop用户和组");
         initOsUser(config, nodes);
@@ -271,6 +277,13 @@ public class CreateCluster implements Runnable {
         List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
         allNodesExec(workerNodes, initBinPackage);
 
+    }
+
+    private void initJdk(ClusterConfig config, List<Host> nodes) {
+        InitJdk initJdk = new InitJdk();
+        initJdk.setPackagePath(packagesPath);
+        List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
+        allNodesExec(workerNodes, initJdk);
     }
     
     private void initOsUser(ClusterConfig config, List<Host> nodes) {

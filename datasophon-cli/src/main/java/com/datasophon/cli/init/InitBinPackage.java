@@ -24,7 +24,8 @@ public class InitBinPackage extends InitBase {
     public String name() {
         return "分发datasophon-init资源包";
     }
-    
+
+    @Override
     public boolean doRun(Executor executor) {
         File initPathF = new File(initPath);
         if (!initPathF.exists() || !initPathF.isDirectory()) {

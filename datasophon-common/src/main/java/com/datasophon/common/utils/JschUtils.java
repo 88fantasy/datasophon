@@ -33,7 +33,7 @@ public class JschUtils {
             session.setConfig("StrictHostKeyChecking", "no");
             session.setConfig("PreferredAuthentications", "password");
             // 启用连接
-            session.connect(3000);
+            session.connect(10000);
         } catch (JSchException e) {
             log.error(String.format("服务器%s@%s连接失败:%s", userName, ip, e.getMessage()), e);
             throw e;
