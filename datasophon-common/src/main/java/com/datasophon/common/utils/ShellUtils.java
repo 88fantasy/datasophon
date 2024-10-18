@@ -97,31 +97,6 @@ public class ShellUtils {
         return result;
     }
     
-    // 获取cpu架构 arm或x86
-    public static String getCpuArchitecture() {
-        try {
-            Process ps = Runtime.getRuntime().exec("arch");
-            StringBuilder stringBuffer = new StringBuilder();
-            int exitValue = ps.waitFor();
-            if (0 == exitValue) {
-                // 只能接收脚本echo打印的数据，并且是echo打印的最后一次数据
-                BufferedInputStream in = new BufferedInputStream(ps.getInputStream());
-                BufferedReader br = new BufferedReader(new InputStreamReader(in));
-                String line;
-                while ((line = br.readLine()) != null) {
-                    logger.info("脚本返回的数据如下： " + line);
-                    stringBuffer.append(line);
-                }
-                in.close();
-                br.close();
-                return stringBuffer.toString();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-    
     public static ExecResult execWithStatus(String workPath, List<String> command, long timeout) {
         Process process = null;
         ExecResult result = new ExecResult();
@@ -287,40 +262,5 @@ public class ShellUtils {
         command.add(user + ":" + group);
         command.add(path);
         execWithStatus(Constants.INSTALL_PATH, command, 60, logger);
-    }
-    
-    public static OsType getOs() {
-        List<String> strings = RuntimeUtil.execForLines("hostnamectl");
-        Optional<String> optionalOs = strings.stream().filter(s -> s.startsWith("Operating System:")).findAny();
-        if (optionalOs.isPresent()) {
-            String osString = optionalOs.get().substring(17);
-            Optional<OsType> optionalOsType = Arrays.stream(OsType.values()).filter(os -> Pattern.matches(os.getOsRegex(), osString)).findAny();
-            return optionalOsType.orElse(OsType.Other);
-        }
-        return OsType.Other;
-    }
-
-    public static OsType getOsFromLines(List<String> lines) {
-        Optional<String> optionalOsName = lines.stream().filter(s -> s.startsWith("ID=")).findAny();
-        Optional<String> optionalOsVersionID = lines.stream().filter(s -> s.startsWith("VERSION_ID=")).findAny();
-        Optional<String> optionalOsVersion = lines.stream().filter(s -> s.startsWith("VERSION=")).findAny();
-        if (optionalOsName.isPresent()) {
-            String osName = optionalOsName.get().replace("\"", "").split("=")[1];
-            String osVersion = "";
-            if (optionalOsVersionID.isPresent()) {
-                // VERSION_ID="7"
-                osVersion = optionalOsVersionID.get().replace("\"", "").split("=")[1];
-            } else if (optionalOsVersion.isPresent()) {
-                // ERSION="7 (Core)"
-                osVersion = optionalOsVersion.get().replaceAll("\"", "").split("=")[1].split("\\(")[0].trim();
-                if (osName.equals("openEuler") && osVersion.startsWith("22.")) {
-                    osVersion = "22";
-                }
-            }
-            String osDetail = String.format("%s-%s",osName, osVersion);
-            logger.info("osName:{}, osVersion:{}", osName, osVersion);
-            return OsType.of(osDetail);
-        }
-        return OsType.Other;
     }
 }

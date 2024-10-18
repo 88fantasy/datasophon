@@ -7,22 +7,28 @@ import java.util.Optional;
 
 @Getter
 public enum OsType {
-    CentOS7("centos-7"),
-    CentOS8("centos-7"),
-    OpenEuler22("openEuler-22"),
-    Other(""),
-    Auto("")
+    CENTOS_7("centos-7"),
+
+    CENTOS_8("centos-8"),
+
+    OPENEULER_22_03_LTS_SP4("openEuler-22.03-LTS-SP4"),
+
+    OPENEULER_22_03_LTS_SP1("openEuler-22.03-LTS-SP1"),
+
+    OTHER("other"),
+
+    AUTO("auto")
     
     ;
     
-    private final String osRegex;
+    private final String desc;
     
-    OsType(String osRegex) {
-        this.osRegex = osRegex;
+    OsType(String desc) {
+        this.desc = desc;
     }
 
-    public static OsType of(String osRegex) {
-        Optional<OsType> optional = Arrays.stream(OsType.values()).filter(type -> type.getOsRegex().equals(osRegex)).findAny();
-        return optional.orElse(OsType.Other);
+    public static OsType of(String desc) {
+        Optional<OsType> optional = Arrays.stream(OsType.values()).filter(type -> type.getDesc().equals(desc)).findAny();
+        return optional.orElse(OsType.OTHER);
     }
 }
