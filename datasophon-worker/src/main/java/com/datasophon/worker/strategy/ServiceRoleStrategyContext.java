@@ -61,6 +61,8 @@ public class ServiceRoleStrategyContext {
         map.put("MasterServer", new DSMasterHandlerStrategy("DS", "MasterServer"));
         // ustream
         map.put("UstreamServer", new UstreamMasterHandlerStrategy("USTREAM", "UstreamServer"));
+        // bigdata
+        map.put("BigDataServer", new BigDataMasterHandlerStrategy("BIGDATA", "BigDataServer"));
     }
     
     public static ServiceRoleStrategy getServiceRoleHandler(String type) {

@@ -1,0 +1,238 @@
+{
+  "name": "BIGDATA",
+  "label": "BigData",
+  "description": "数衍工作台",
+  "version": "3.6.1",
+  "sortNum": 79,
+  "dependencies":[],
+  "packageName": "bigdata-3.6.1.tar.gz",
+  "decompressPackageName": "bigdata-3.6.1",
+  "roles": [
+    {
+      "name": "BigData",
+      "label": "BigData",
+      "roleType": "master",
+      "cardinality": "1",
+      "logFile": "nohup.out logs/chinaunicom-medical-mgmt-bigdata-server.log",
+      "startRunner": {
+        "timeout": "60",
+        "program": "bin/bigdata-server.sh",
+        "args": [
+          "start"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "bin/bigdata-server.sh",
+        "args": [
+          "stop"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "bin/bigdata-server.sh",
+        "args": [
+          "status"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "bin/bigdata-server.sh",
+        "args": [
+          "restart"
+        ]
+      },
+      "externalLink": {
+        "name": "BigData UI",
+        "label": "BigData UI",
+        "url": "${bigdataServer}"
+      }
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "bootstrap.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "",
+        "templateName": "bigdata-master.ftl",
+        "includeParams": [
+          "jasyptEncryptorPassword",
+          "bigdataServerAddress",
+          "appProfile",
+          "appNacosGroup",
+          "appNacosHost",
+          "appNacosPort",
+          "appNacosUsername",
+          "appNacosPassword",
+          "appVersion",
+          "datasourceConfig"
+        ]
+      },
+      {
+        "filename": "common-vars.yml",
+        "configFormat": "properties",
+        "outputDirectory": "conf",
+        "includeParams": [
+          "nacosCommonVarsConf"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "name": "datasourceConfig",
+      "label": "bigdata数据库配置",
+      "description": "bigdata数据库配置",
+      "required": true,
+      "configType": "custom",
+      "type": "multipleWithKey",
+      "value": [
+        {"mysqlBigdataUrl":"jdbc:mysql://192.168.2.122:3306/chinaunicom_medical_mgmt_bigdata_ds?&allowMultiQueries=true&characterEncoding=utf-8"},
+        {"mysqlBigdataUsername":"root"},
+        {"mysqlBigdataPassword":"datasophon"}
+      ],
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    },
+    {
+      "name": "bigdataServer",
+      "label": "bigdata首页",
+      "description": "bigdata首页",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://192.168.2.122:7500/bigdata/workbench-view#/login",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://192.168.2.122:7500/bigdata/workbench-view#/login"
+    },
+    {
+      "name": "jasyptEncryptorPassword",
+      "label": "jasypt加密密钥",
+      "description": "jasypt加密密钥",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "h56)1h~l@Y5j_Y0BFqb6!(obX5wplr^_",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "h56)1h~l@Y5j_Y0BFqb6!(obX5wplr^_"
+    },
+    {
+      "name": "bigdataServerAddress",
+      "label": "任务调度地址",
+      "description": "任务调度地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://192.168.2.122:7500/bigdata",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://192.168.2.122:7500/bigdata"
+    },
+    {
+      "name": "appProfile",
+      "label": "nacos所属命名空间",
+      "description": "nacos所属命名空间",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "dev122",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "dev122"
+    },
+    {
+      "name": "appNacosGroup",
+      "label": "nacos所属分组",
+      "description": "nacos所属分组",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "capacity",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "capacity"
+    },
+    {
+      "name": "appNacosHost",
+      "label": "nacos的host",
+      "description": "nacos的host",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "192.168.2.130",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "192.168.2.130"
+    },
+    {
+      "name": "appNacosPort",
+      "label": "nacos的port",
+      "description": "nacos的port",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "8848",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "8848"
+    },
+    {
+      "name": "appNacosUsername",
+      "label": "nacos的账号",
+      "description": "nacos的账号",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "nacos",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "nacos"
+    },
+    {
+      "name": "appNacosPassword",
+      "label": "nacos的密码",
+      "description": "nacos的密码",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "nacos",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "nacos"
+    },
+    {
+      "name": "appVersion",
+      "label": "bigdata版本",
+      "description": "bigdata版本",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "3.6.1"
+    },
+    {
+      "name": "nacosCommonVarsConf",
+      "label": "自定义nacos配置",
+      "description": "自定义nacos配置",
+      "configType": "custom",
+      "required": false,
+      "type": "multipleWithKey",
+      "value": [
+        {"bigdata.etcd.url":"http://etcd-node-1:22379"},
+        {"bigdata.prometheus.url":"http://prometheus-node-1:9090/"},
+        {"bigdata.grafana.url":"http://grafana-node-1:31228/gw/bigdata/grafana"},
+        {"bigdata.aiMapping.aiTermMappingUrl":"http://10.81.17.102:36901"},
+        {"bigdata.aiMapping.aiFieldMappingUrl":"http://10.81.17.102:36902"}
+      ],
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    }
+  ]
+}
