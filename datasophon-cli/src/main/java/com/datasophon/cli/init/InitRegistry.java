@@ -22,10 +22,10 @@ import cn.hutool.core.util.ServiceLoaderUtil;
 public class InitRegistry extends InitBase {
     
     @CommandLine.Option(names = {"--with-os"}, description = "操作系统")
-    OsType os = OsType.Auto;
+    OsType os = OsType.AUTO;
     
     @CommandLine.Option(names = {"--with-arch"}, description = "Cpu架构")
-    ArchType archType = ArchType.X86;
+    ArchType archType = ArchType.X86_64;
     
     @CommandLine.Option(arity = "1", names = {"-f", "--file"}, description = "制品库安装文件")
     String registryFilePath;

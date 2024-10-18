@@ -123,6 +123,9 @@ public final class Constants {
     public static final String RACK = "rack";
     public static final String SERVICE_STATE = "service_state";
     public static final String EQUAL_SIGN = "=";
+
+    public static final String OS_ARCH_CMD = "arch";
+    public static final String OS_VERSION_CMD = "cat /etc/os-release";
     
     private Constants() {
         throw new IllegalStateException("Constants Exception");

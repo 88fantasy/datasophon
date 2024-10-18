@@ -23,10 +23,10 @@ public class CreateConfig implements Runnable {
     private static final String DEFAULT_FILE = "cluster-sample.yml";
     
     @CommandLine.Option(names = {"--with-os"}, description = "操作系统")
-    OsType os = OsType.CentOS7;
+    OsType os = OsType.CENTOS_7;
     
     @CommandLine.Option(names = {"--with-arch"}, description = "Cpu架构")
-    ArchType archType = ArchType.X86;
+    ArchType archType = ArchType.X86_64;
     
     @CommandLine.Option(names = {"--with-mysql"}, description = "安装Mysql", negatable = true)
     boolean installMysql;

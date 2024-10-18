@@ -19,7 +19,7 @@ public class GlobalConfig {
     
     private MysqlConfig mysql;
     
-    private HttpdServer httpdServer;
+    private YumServer yumServer;
     
     private NtpServer ntpServer;
     
@@ -41,10 +41,8 @@ public class GlobalConfig {
     public static class MysqlConfig {
         
         private Boolean enable;
-        
+
         private String password;
-        
-        private String tarName;
         
         private List<MysqlAppDb> appDbs;
         
@@ -61,18 +59,12 @@ public class GlobalConfig {
     }
     
     @Data
-    public static class HttpdServer {
+    public static class YumServer {
         private Host host;
-        
-        private String pkgTarName;
-        
-        private String rootPathName;
         
         private String reposTarName;
         
         private String listenPort;
-        
-        private boolean force;
     }
     
     @Data

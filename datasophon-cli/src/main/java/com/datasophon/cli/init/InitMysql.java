@@ -22,12 +22,6 @@ public class InitMysql extends InitBase implements InitNodeHandler {
     @CommandLine.Option(names = {"-p", "--password"}, description = "密码", required = true)
     String password;
     
-    @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
-    String packagePath;
-    
-    @CommandLine.Option(names = {"-f", "--file"}, description = "安装包文件", required = true)
-    String mysqlTarName;
-    
     @Override
     public String name() {
         return "安装mysql";
@@ -36,10 +30,6 @@ public class InitMysql extends InitBase implements InitNodeHandler {
     @Override
     public boolean doRun(Executor executor) {
         OsType osType = executor.getOs();
-        String mysqlTarPath = String.format("%s/%s", packagePath, mysqlTarName);
-        if(!executor.exists(mysqlTarPath).getExecResult()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + packagePath);
-        }
 
         // 卸载mariadb
         ExecResult mariadbResult = executor.execShell("rpm -qa | grep mariadb");
@@ -55,7 +45,6 @@ public class InitMysql extends InitBase implements InitNodeHandler {
             log.info("开始卸载已存在的 mysql...............");
             executor.execShell("systemctl stop mysqld");
             executor.execShell("rpm -qa | grep mysql | xargs rpm -e");
-            //executor.execShell(String.format("rm -rf %s/mysql", Constants.INSTALL_PATH));
             executor.execShell("rm -rf /var/lib/mysql");
             executor.execShell("rm -rf /usr/sbin/mysqld");
             executor.execShell("rm -rf /usr/local/mysql");
@@ -69,24 +58,16 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         mysqlLib(executor, "bzip2-devel", "rpm -qa | grep bzip2-devel", "yum -y install bzip2-devel");
         mysqlLib(executor, "openssl-devel", "rpm -qa | grep openssl-devel", "yum -y install openssl-devel");
         mysqlLib(executor, "ncurses-devel", "rpm -qa | grep ncurses-devel", "yum -y install ncurses-devel");
-        if (osType == OsType.CentOS7) {
+        if (osType == OsType.CENTOS_7) {
             mysqlLib(executor, "libaio", "rpm -qa | grep libaio", "yum -y install libaio");
         }
         
         // 安装mysql
-        executor.execShell(String.format("mkdir -p %s/mysqlTmp", Constants.INSTALL_PATH));
-        executor.execShell(String.format("tar -xvf %s/%s -C %s/mysqlTmp", packagePath, mysqlTarName, Constants.INSTALL_PATH));
-        executor.execShell(String.format("rpm -ivh %s/mysqlTmp/mysql-community-common-8.*", Constants.INSTALL_PATH));
-        executor.execShell(String.format("rpm -ivh %s/mysqlTmp/mysql-community-client-plugins-8.*", Constants.INSTALL_PATH));
-        executor.execShell(String.format("rpm -ivh %s/mysqlTmp/mysql-community-libs-8.*", Constants.INSTALL_PATH));
-        executor.execShell(String.format("rpm -ivh %s/mysqlTmp/mysql-community-client-8.*", Constants.INSTALL_PATH));
-        executor.execShell(String.format("rpm -ivh %s/mysqlTmp/mysql-community-icu-data-files-8.*", Constants.INSTALL_PATH));
-        executor.execShell(String.format("rpm -ivh %s/mysqlTmp/mysql-community-server-8.*", Constants.INSTALL_PATH));
+        executor.execShell("yum -y install mysql-community-server");
         executor.execShell("mysqld --initialize --user=mysql");
         executor.execShell("systemctl start mysqld");
         executor.execShell("systemctl enable mysqld");
         executor.execShell("sleep 2");
-        executor.execShell(String.format("rm -rf %s/mysqlTmp", Constants.INSTALL_PATH));
         
         log.info("set password to {}", password);
         ExecResult statusResult = executor.execShell("systemctl status mysqld");
@@ -110,7 +91,6 @@ public class InitMysql extends InitBase implements InitNodeHandler {
             myconf.add("explicit_defaults_for_timestamp=true");
             myconf.add("max_connections=3600");
             myconf.add("max_connections=3600");
-            //myconf.add(String.format("datadir=%s/mysql", Constants.INSTALL_PATH));
             executor.writeLines(myconf, "/etc/my.cnf");
             log.info("/etc/my.cnf overwrite sucess.");
             

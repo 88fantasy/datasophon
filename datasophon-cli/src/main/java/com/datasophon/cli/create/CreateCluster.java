@@ -110,13 +110,10 @@ public class CreateCluster implements Runnable {
         log.info("关闭Swap");
         initSwap(config, nodes);
         
-        log.info("httpd安装");
-        initHttpd(config);
+        log.info("yum离线服务配置");
+        initYumServer(config);
         
-        log.info("yum安装包解压");
-        initYumPackage(config);
-        
-        log.info("离线yum仓库配置");
+        log.info("yum离线仓库配置");
         initYumConf(config, nodes);
         
         log.info("优化系统配置");
@@ -265,34 +262,24 @@ public class CreateCluster implements Runnable {
         allNodesExec(nodes, new InitSwap());
     }
     
-    private void initHttpd(ClusterConfig config) {
-        InitHttpd initHttpd = new InitHttpd();
-        GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
-        
-        initHttpd.setConfigFilePath(initConfigYamlPath);
-        initHttpd.setPackagePath(packagesPath)
-                .setPkgTarName(httpdServer.getPkgTarName())
-                .setHttpdListenPort(httpdServer.getListenPort())
-                .setTemplateDir(initConfigTemplatePath)
-                .setTemplateFile("httpd.conf.ftl");
-        singleNodesExec(httpdServer.getHost(), initHttpd);
-    }
-    
-    private void initYumPackage(ClusterConfig config) {
-        GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
-        InitYumPackage initYumPackage = new InitYumPackage();
-        initYumPackage.setConfigFilePath(initConfigYamlPath);
-        initYumPackage.setPackagePath(packagesPath)
-                .setReposTarFilePath(String.format("%s/%s", packagesPath, httpdServer.getReposTarName()));
-        singleNodesExec(httpdServer.getHost(), initYumPackage);
+    private void initYumServer(ClusterConfig config) {
+        GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
+        InitYumServer initYumServer = new InitYumServer();
+        initYumServer.setConfigFilePath(initConfigYamlPath);
+        initYumServer.setPackagePath(packagesPath)
+                .setReposTarName(yumServer.getReposTarName())
+                .setServerIp(yumServer.getHost().getIp())
+                .setServerPort(yumServer.getListenPort())
+                .setTemplateDir(initConfigTemplatePath);
+        singleNodesExec(yumServer.getHost(), initYumServer);
     }
     
     private void initYumConf(ClusterConfig config, List<Host> nodes) {
-        GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
+        GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
         InitYumConf initYumConf = new InitYumConf();
         initYumConf.setConfigFilePath(initConfigYamlPath);
-        initYumConf.setHttpdServerIp(httpdServer.getHost().getIp())
-                .setHttpdListenPort(httpdServer.getListenPort());
+        initYumConf.setServerIp(yumServer.getHost().getIp())
+                .setServerPort(yumServer.getListenPort());
         allNodesExec(nodes, initYumConf);
     }
     
@@ -343,9 +330,7 @@ public class CreateCluster implements Runnable {
         InitMysql initMysql = new InitMysql();
         GlobalConfig.MysqlConfig mysqlConfig = config.getGlobal().getMysql();
         initMysql.setConfigFilePath(initConfigYamlPath);
-        initMysql.setPassword(mysqlConfig.getPassword())
-                .setPackagePath(packagesPath)
-                .setMysqlTarName(mysqlConfig.getTarName());
+        initMysql.setPassword(mysqlConfig.getPassword());
         singleNodesExec(mysqlConfig.getHost(), initMysql);
     }
     

@@ -63,7 +63,7 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
         }
         
         OsType os = executor.getOs();
-        if (OsType.CentOS7 == os) {
+        if (OsType.CENTOS_7 == os) {
             List<String> limits = Arrays.asList(
                     "*          soft    nproc     unlimited",
                     "root       soft    nproc     unlimited");
