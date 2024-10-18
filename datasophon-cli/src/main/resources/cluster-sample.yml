@@ -1,5 +1,6 @@
 global:
   offline: true
+  sshAuthType: publickey
   registry:
     enable: true  # install minio
     type: minio

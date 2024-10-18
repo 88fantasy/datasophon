@@ -34,7 +34,7 @@ public class InitJdk extends InitBase {
         String bashrcPath="/root/.bashrc";
         String etcProfilePath="/etc/profile";
         String jdkTarName = "jdk-8u333-linux-x64.tar.gz";
-        if (ArchType.ARM.equals(executor.getArch())) {
+        if (ArchType.AARCH64.equals(executor.getArch())) {
             jdkTarName = "jdk-8u431-linux-aarch64.tar.gz";
             jdkPathName = "jdk1.8.0_431";
         }

@@ -1,5 +1,6 @@
 package com.datasophon.cli.handler;
 
+import com.datasophon.common.enums.SSHAuthType;
 import com.datasophon.common.model.Host;
 import com.datasophon.common.utils.JschUtils;
 
@@ -15,6 +16,8 @@ import com.jcraft.jsch.Session;
 public class InitNodeHandlerChain {
     
     private final Host host;
+
+    private final SSHAuthType sshAuthType = SSHAuthType.PUBLICKEY;
     
     private final List<InitNodeHandler> handlers = new ArrayList<>();
     
@@ -40,7 +43,7 @@ public class InitNodeHandlerChain {
         
         Session session = null;
         try {
-            session = JschUtils.getJSchSession(host.getIp(), host.getPort(), host.getUser(), host.getPassword());
+            session = JschUtils.getJSchSession(sshAuthType, host.getIp(), host.getPort(), host.getUser(), host.getPassword());
             for (InitNodeHandler handler : handlers) {
                 String name = handler.name();
                 log.info("执行处理器开始[{}]", name);

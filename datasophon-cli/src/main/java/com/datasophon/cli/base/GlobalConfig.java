@@ -1,17 +1,17 @@
 package com.datasophon.cli.base;
 
-import com.datasophon.common.enums.ArchType;
-import com.datasophon.common.enums.OsType;
+import com.datasophon.common.enums.SSHAuthType;
 import com.datasophon.common.model.Host;
+import lombok.Data;
 
 import java.util.List;
-
-import lombok.Data;
 
 @Data
 public class GlobalConfig {
     
     private boolean offline;
+
+    private SSHAuthType sshAuthType;
     
     private RegistryConfig registry;
     

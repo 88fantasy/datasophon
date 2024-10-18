@@ -1,38 +1,37 @@
 package com.datasophon.common.utils;
 
-import com.datasophon.common.enums.ArchType;
-import com.datasophon.common.enums.OsType;
-
-import java.io.*;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-
+import cn.hutool.core.io.IoUtil;
+import com.datasophon.common.enums.SSHAuthType;
 import com.jcraft.jsch.*;
 import lombok.extern.slf4j.Slf4j;
 
-import cn.hutool.core.io.IoUtil;
-import org.apache.commons.lang3.StringUtils;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class JschUtils {
     
-    public static Session getJSchSession(String ip, int port, String userName, String password) throws JSchException {
+    public static Session getJSchSession(SSHAuthType sshAuthType, String ip, int port, String userName, String password) throws JSchException {
         JSch jSch = new JSch();
         Session session;
         try {
             // 创建连接
             log.info("正在连接服务器{}@{}", userName, ip);
             session = jSch.getSession(userName, ip, port);
-            session.setPassword(password);
+            if (sshAuthType == SSHAuthType.PASSWORD) {
+                session.setPassword(password);
+            } else {
+                jSch.addIdentity(String.format("/%s/.ssh/id_rsa", userName));
+            }
             // 是否使用密钥登录，一般默认为no
             session.setConfig("StrictHostKeyChecking", "no");
-            session.setConfig("PreferredAuthentications", "password");
+            session.setConfig("PreferredAuthentications", "publickey,gssapi-with-mic,keyboard-interactive,password");
             // 启用连接
             session.connect(10000);
         } catch (JSchException e) {
