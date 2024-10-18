@@ -1,0 +1,114 @@
+{
+  "name": "MINIO",
+  "label": "Minio",
+  "description": "S3对象存储",
+  "version": "8.4.3",
+  "sortNum": 22,
+  "dependencies": [],
+  "packageName": "minio-8.4.3.tar.gz",
+  "decompressPackageName": "minio-8.4.3",
+  "roles": [
+    {
+      "name": "MinioServer",
+      "label": "MinioServer",
+      "roleType": "master",
+      "cardinality": "1",
+      "sortNum": 1,
+      "logFile": "minio.log",
+      "jmxPort": 9000,
+      "resourceStrategies":[{
+        "type": "download",
+        "from": "script/control.sh",
+        "to": "control.sh",
+        "md5": "6c85b70572b51c403ca7d666862769b4"
+      }],
+      "startRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": ["start"]
+      },
+      "stopRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": ["stop"]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": ["status"]
+      },
+      "externalLink": {
+        "name": "minio Ui",
+        "label": "minio Ui",
+        "url": "http://${host}:${consolePort}"
+      }
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "minio_env.sh",
+        "configFormat": "custom",
+        "outputDirectory": "conf",
+        "templateName": "minio_env.ftl",
+        "includeParams": [
+          "minioAccessKey",
+          "minioSecretKey",
+          "minioDataPaths",
+          "minioConsolePort"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "name": "minioAccessKey",
+      "label": "用户名",
+      "description": "用户名，长度最小是5个字符",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "cuminio"
+    },
+    {
+      "name": "minioSecretKey",
+      "label": "密码",
+      "description": "密码不能设置过于简单，不然minio会启动失败，长度最小是8个字符",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "u4Gkp19TRcKKlTCLNA1pyA=="
+    },
+    {
+      "name": "minioDataPaths",
+      "label": "集群文件目录",
+      "description": "集群配置文件目录",
+      "configType": "map",
+      "required": true,
+      "separator": " ",
+      "type": "input",
+      "value": "/data/minio/data",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "/data/minio/data"
+    },
+    {
+      "name": "minioConsolePort",
+      "label": "UI访问端口",
+      "description": "UI访问端口",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "9001",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "9001"
+    }
+  ]
+}

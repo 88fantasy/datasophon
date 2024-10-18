@@ -41,9 +41,9 @@ public class ServiceConfig implements Serializable {
     
     private Object defaultValue;
     
-    private Integer minValue;
+    private Long minValue;
     
-    private Integer maxValue;
+    private Long maxValue;
     
     private String unit;
     
