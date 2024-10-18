@@ -35,16 +35,16 @@ public class InitSsh implements Runnable {
     private ClusterConfig config;
     
     private Map<String, Map<OsType, String>> packages = MapUtil.builder("pssh",
-            MapUtil.builder(OsType.CentOS7, "pssh-2.3.1-5.el7.noarch.rpm")
-                    .put(OsType.CentOS8, "pssh-2.3.1-29.el8.noarch.rpm")
-                    .put(OsType.OpenEuler22, "pssh-2.3.4-1.el9.noarch.rpm").build())
+            MapUtil.builder(OsType.CENTOS_7, "pssh-2.3.1-5.el7.noarch.rpm")
+                    .put(OsType.CENTOS_8, "pssh-2.3.1-29.el8.noarch.rpm")
+                    .put(OsType.OPENEULER_22_03_LTS_SP1, "pssh-2.3.4-1.el9.noarch.rpm").build())
             .put("tcl",
-                    MapUtil.builder(OsType.CentOS7, "tcl-8.5.13-8.el7.x86_64.rpm")
+                    MapUtil.builder(OsType.CENTOS_7, "tcl-8.5.13-8.el7.x86_64.rpm")
                             // .put(OsType.CentOS8, "pssh-2.3.1-29.el8.noarch.rpm")
                             // .put(OsType.OpenEuler, "pssh-2.3.4-1.el9.noarch.rpm")
                             .build())
             .put("expect",
-                    MapUtil.builder(OsType.CentOS7, "expect-5.45-14.el7_1.x86_64.rpm")
+                    MapUtil.builder(OsType.CENTOS_7, "expect-5.45-14.el7_1.x86_64.rpm")
                             // .put(OsType.CentOS8, "pssh-2.3.1-29.el8.noarch.rpm")
                             // .put(OsType.OpenEuler, "pssh-2.3.4-1.el9.noarch.rpm")
                             .build())
@@ -83,7 +83,8 @@ public class InitSsh implements Runnable {
     }
     
     private void doPass(Host host) {
-        OsType os = config.getGlobal().getOs();
+        //OsType os = config.getGlobal().getOs();
+        OsType os = null;
         
         // 默认都带 openssh 不检查
         List<String> components = Arrays.asList("pssh", "tcl", "expect");

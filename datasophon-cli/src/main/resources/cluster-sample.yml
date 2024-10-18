@@ -1,7 +1,5 @@
 global:
   offline: true
-  os: CentOS7
-  arch: X86
   registry:
     enable: true  # install minio
     type: minio
@@ -18,6 +16,7 @@ global:
       port: 22
 
   nmapServer:
+    user: root
     ip: 192.168.2.146
     port: 22
     password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
@@ -25,11 +24,10 @@ global:
   mysql:
     enable: false   # Install Mysql
     password: datasophon123      # Set the MYSQL database root password
-    tarName:  mysql-community-8.0.28.el8.x86_64.tar.gz
     appDbs:
-      - account: datasphon
-        password: datasphon
-        dbName: datasphon
+      - account: datasophon
+        password: datasophon
+        dbName: datasophon
       - account: hive
         password: hive
         dbName: hive
@@ -42,23 +40,27 @@ global:
       - account: amoro
         password: amoro
         dbName: amoro
+      - account: nacos
+        password: nacos
+        dbName: nacos
     host:
+      user: root
       ip: 192.168.2.146
       port: 22
       password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
 
-  httpdServer:
+  yumServer:
     host:
+      user: root
       ip: 192.168.2.146
       port: 22
       password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
-    pkgTarName: httpd-pkg.tar.gz
     reposTarName: offline-repos.tar.gz
     listenPort: 4080
-    force: true
 
   ntpServer:
     host:
+      user: root
       ip: 192.168.2.146
       port: 22
       password: MjRm>Tk#ZjU3N)z6Mc5Mgo_

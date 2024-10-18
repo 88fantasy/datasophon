@@ -38,7 +38,7 @@ public class InitBinPackage extends InitBase {
         log.info("分发资源包路径:{} start", initPath);
         long ts = System.currentTimeMillis();
         ExecResult execResult = executor.sendDir(initPath, initPath, true);
-        log.info("分发资源包路径:{} end,耗时:{}s", initPath, (System.currentTimeMillis() - ts) / 1000000);
+        log.info("分发资源包路径:{} end,耗时:{}s", initPath, (System.currentTimeMillis() - ts) / 1000.0);
         if (execResult.getExecResult()) {
             log.info("{} distribution sucess.", initPath);
             return true;

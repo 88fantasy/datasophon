@@ -1,7 +1,12 @@
 package com.datasophon.cli.util;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.ObjectUtil;
 import com.datasophon.cli.base.CliConstants;
+import com.datasophon.cli.base.ClusterConfig;
+import com.datasophon.cli.base.GlobalConfig;
 import com.datasophon.common.Constants;
+import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
@@ -12,11 +17,14 @@ import freemarker.template.Template;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.Writer;
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import cn.hutool.core.util.RuntimeUtil;
+import org.yaml.snakeyaml.Yaml;
+import picocli.CommandLine;
 
 public final class CliUtil {
     
@@ -58,6 +66,16 @@ public final class CliUtil {
         try (Writer out = new FileWriter(outputFile)) {
             template.process(data, out);
         }
+    }
+
+    public static ClusterConfig getConfig(String configFilePath) {
+        File configFile = new File(configFilePath);
+        if (!configFile.exists()) {
+            throw new RuntimeException("config file not found, please check " + configFilePath);
+        }
+        Yaml yaml = new Yaml();
+        String content = FileUtil.readString(configFile, Charset.defaultCharset());
+        return yaml.loadAs(content, ClusterConfig.class);
     }
     
 }

@@ -17,6 +17,7 @@ import com.jcraft.jsch.*;
 import lombok.extern.slf4j.Slf4j;
 
 import cn.hutool.core.io.IoUtil;
+import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 public class JschUtils {
@@ -52,30 +53,7 @@ public class JschUtils {
         }
     }
     
-    public static List<String> execForLines(Session session, String command) throws JSchException, IOException {
-        InputStream in = null;
-        ChannelExec channel = null;
-        try {
-            // 创建执行通道
-            channel = (ChannelExec) session.openChannel("exec");
-            // 设置命令
-            channel.setCommand(command);
-            // 连接通道
-            channel.connect();
-            // 读取通道的输出
-            in = channel.getInputStream();
-            return IoUtil.readLines(in, Charset.defaultCharset(), new ArrayList<>());
-        } catch (JSchException e) {
-            throw e;
-        } finally {
-            IoUtil.close(in);
-            if (channel != null && channel.isConnected()) {
-                channel.disconnect();
-            }
-        }
-    }
-    
-    public static ExecResult execForStr(Session session, String command) throws JSchException, IOException {
+    public static ExecResult execForStr(Session session, String command){
         InputStream in = null;
         Channel channel = null;
         ExecResult result = new ExecResult();
@@ -106,7 +84,7 @@ public class JschUtils {
                 result.setExecOut(execOut);
                 log.warn("{} command exec out is :{}, exitValue:{}", command, execOut, exitValue);
             }
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
             IoUtil.close(in);
@@ -352,24 +330,6 @@ public class JschUtils {
             return attrs.isDir();
         } catch (Exception e) {
             return false;
-        }
-    }
-    
-    public static ArchType getArch(Session session) {
-        try {
-            return ArchType.of(execForStr(session, "arch").getExecOut());
-        } catch (JSchException | IOException e) {
-            return ArchType.OTHER;
-        }
-        
-    }
-    
-    public static OsType getOs(Session session) {
-        try {
-            List<String> lines = execForLines(session, "cat /etc/os-release");
-            return ShellUtils.getOsFromLines(lines);
-        } catch (JSchException | IOException e) {
-            return OsType.Other;
         }
     }
     

@@ -1,18 +1,18 @@
 package com.datasophon.cli.base;
 
+import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.JschUtils;
+import com.datasophon.common.utils.OsUtils;
+import com.jcraft.jsch.Session;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
-
-import lombok.extern.slf4j.Slf4j;
-
-import com.jcraft.jsch.Session;
 
 @Slf4j
 public class JschExecutor implements Executor {
@@ -43,9 +43,9 @@ public class JschExecutor implements Executor {
     }
     
     @Override
-    public ExecResult sendFile(String src, String dest) {
+    public ExecResult sendFile(String src, String dest, boolean override) {
         try (FileInputStream fis = new FileInputStream(src)) {
-            return JschUtils.sendInputStream(session, fis, dest, 5, false);
+            return JschUtils.sendInputStream(session, fis, dest, 5, override);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);
@@ -84,11 +84,13 @@ public class JschExecutor implements Executor {
     
     @Override
     public ArchType getArch() {
-        return JschUtils.getArch(session);
+        String result = JschUtils.execForStr(session, Constants.OS_ARCH_CMD).getExecOut();
+        return OsUtils.getArch(result);
     }
     
     @Override
     public OsType getOs() {
-        return JschUtils.getOs(session);
+        String result = JschUtils.execForStr(session, Constants.OS_VERSION_CMD).getExecOut();
+        return OsUtils.getOs(result);
     }
 }

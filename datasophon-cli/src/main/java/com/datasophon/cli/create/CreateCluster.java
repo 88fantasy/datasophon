@@ -1,30 +1,21 @@
 package com.datasophon.cli.create;
 
+import cn.hutool.core.collection.CollUtil;
 import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.GlobalConfig;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.cli.handler.InitNodeHandlerChain;
 import com.datasophon.cli.init.*;
+import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.Constants;
-import com.datasophon.common.enums.ArchType;
-import com.datasophon.common.enums.OsType;
 import com.datasophon.common.model.Host;
 import com.datasophon.common.utils.ShellUtils;
-
+import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
 
 import java.io.File;
-import java.nio.charset.Charset;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import lombok.extern.slf4j.Slf4j;
-
-import org.yaml.snakeyaml.Yaml;
-
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.ObjectUtil;
 
 @Slf4j
 @CommandLine.Command(name = "cluster", description = "create cluster")
@@ -36,8 +27,8 @@ public class CreateCluster implements Runnable {
     @CommandLine.Option(names = {"-a", "action"}, description = "执行动作:initALL/initSingleNode", required = true)
     String action;
 
-    @CommandLine.Option(names = {"-i", "isInitBinPackage"}, description = "分发安资源包", defaultValue = "true")
-    String isInitBinPackage;
+    @CommandLine.Option(names = {"-s", "skipInitBinPackage"}, description = "是否跳过分发安资源包(-s则跳过)")
+    boolean skipInitBinPackage = false;
     
     private String initPath;
     
@@ -69,7 +60,7 @@ public class CreateCluster implements Runnable {
         if (!installPath.exists()) {
             ShellUtils.execShell(String.format("mkdir -p %s", Constants.INSTALL_PATH));
         }
-       log.info("分发资源包:{}", isInitBinPackage);
+       log.info("是否跳过分发资源包:{}", skipInitBinPackage);
 
         initPath = String.format("%s/datasophon-init", datasophonPath);
         initBinPath = String.format("%s/bin", initPath);
@@ -79,24 +70,9 @@ public class CreateCluster implements Runnable {
         packagesPath = String.format("%s/packages", initPath);
         initConfigYamlPath = String.format("%s/cluster-sample.yml", initConfigPath);
         log.info("\nDATASOPHON_PATH:{},\nINIT_PATH:{},\nINIT_CONFIG_YAML_PATH:{}", datasophonPath, initPath, initConfigYamlPath);
-        
-        File configFile = new File(initConfigYamlPath);
-        if (!configFile.exists() || configFile.isDirectory()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + initConfigYamlPath);
-        }
-        Yaml yaml = new Yaml();
-        String content = FileUtil.readString(configFile, Charset.defaultCharset());
-        ClusterConfig clusterConfig = yaml.loadAs(content, ClusterConfig.class);
-        GlobalConfig global = clusterConfig.getGlobal();
-        if (ObjectUtil.isNull(global.getOs())) {
-            // todo 获取当前操作系统
-            global.setOs(OsType.CentOS7);
-        }
-        if (ObjectUtil.isNull(global.getArch())) {
-            String cpuArchitecture = ShellUtils.getCpuArchitecture();
-            global.setArch(ArchType.of(cpuArchitecture));
-        }
-        
+
+        ClusterConfig clusterConfig = CliUtil.getConfig(initConfigYamlPath);
+
         if (action.equals("initALL")) {
             initALL(clusterConfig);
         } else if (action.equals("initSingleNode")) {
@@ -117,7 +93,7 @@ public class CreateCluster implements Runnable {
         log.info("安全配置");
         initOsSafeConf(config, nodes);
 
-        if(isInitBinPackage.equals("true")) {
+        if(!skipInitBinPackage) {
             log.info("分发资源包");
             initBinPackage(config, nodes);
         }
@@ -137,13 +113,10 @@ public class CreateCluster implements Runnable {
         log.info("关闭Swap");
         initSwap(config, nodes);
         
-        log.info("httpd安装");
-        initHttpd(config);
+        log.info("yum离线服务配置");
+        initYumServer(config);
         
-        log.info("yum安装包解压");
-        initYumPackage(config);
-        
-        log.info("离线yum仓库配置");
+        log.info("yum离线仓库配置");
         initYumConf(config, nodes);
         
         log.info("优化系统配置");
@@ -189,7 +162,7 @@ public class CreateCluster implements Runnable {
         log.info("安全配置");
         initOsSafeConf(config, nodes);
 
-        if(isInitBinPackage.equals("true")) {
+        if(!skipInitBinPackage) {
             log.info("分发资源包");
             initBinPackage(config, nodes);
         }
@@ -302,35 +275,24 @@ public class CreateCluster implements Runnable {
         allNodesExec(nodes, new InitSwap());
     }
     
-    private void initHttpd(ClusterConfig config) {
-        InitHttpd initHttpd = new InitHttpd();
-        GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
-        
-        initHttpd.setConfigFilePath(initConfigYamlPath);
-        initHttpd.setPackagePath(packagesPath)
-                .setPkgTarName(httpdServer.getPkgTarName())
-                .setHttpdListenPort(httpdServer.getListenPort())
-                .setTemplateDir(initConfigTemplatePath)
-                .setHttpdConf("httpd.conf.ftl")
-                .setForce(true);
-        singleNodesExec(httpdServer.getHost(), initHttpd);
-    }
-    
-    private void initYumPackage(ClusterConfig config) {
-        GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
-        InitYumPackage initYumPackage = new InitYumPackage();
-        initYumPackage.setConfigFilePath(initConfigYamlPath);
-        initYumPackage.setPackagePath(packagesPath)
-                .setReposTarFilePath(String.format("%s/%s", packagesPath, httpdServer.getReposTarName()));
-        singleNodesExec(httpdServer.getHost(), initYumPackage);
+    private void initYumServer(ClusterConfig config) {
+        GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
+        InitYumServer initYumServer = new InitYumServer();
+        initYumServer.setConfigFilePath(initConfigYamlPath);
+        initYumServer.setPackagePath(packagesPath)
+                .setReposTarName(yumServer.getReposTarName())
+                .setServerIp(yumServer.getHost().getIp())
+                .setServerPort(yumServer.getListenPort())
+                .setTemplateDir(initConfigTemplatePath);
+        singleNodesExec(yumServer.getHost(), initYumServer);
     }
     
     private void initYumConf(ClusterConfig config, List<Host> nodes) {
-        GlobalConfig.HttpdServer httpdServer = config.getGlobal().getHttpdServer();
+        GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
         InitYumConf initYumConf = new InitYumConf();
         initYumConf.setConfigFilePath(initConfigYamlPath);
-        initYumConf.setHttpdServerIp(httpdServer.getHost().getIp())
-                .setHttpdListenPort(httpdServer.getListenPort());
+        initYumConf.setServerIp(yumServer.getHost().getIp())
+                .setServerPort(yumServer.getListenPort());
         allNodesExec(nodes, initYumConf);
     }
     
@@ -369,6 +331,7 @@ public class CreateCluster implements Runnable {
         GlobalConfig.NtpServer ntpServer = config.getGlobal().getNtpServer();
         InitNtpSlave initNtpSlave = new InitNtpSlave();
         initNtpSlave.setConfigFilePath(initConfigYamlPath);
+        initNtpSlave.setNtpServerIp(ntpServer.getHost().getIp());
         slavesNodesExec(ntpServer.getHost(), nodes, initNtpSlave);
     }
     
@@ -380,10 +343,7 @@ public class CreateCluster implements Runnable {
         InitMysql initMysql = new InitMysql();
         GlobalConfig.MysqlConfig mysqlConfig = config.getGlobal().getMysql();
         initMysql.setConfigFilePath(initConfigYamlPath);
-        initMysql.setEnable(mysqlConfig.getEnable())
-                .setPassword(mysqlConfig.getPassword())
-                .setPackagePath(packagesPath)
-                .setMysqlTarName(mysqlConfig.getTarName());
+        initMysql.setPassword(mysqlConfig.getPassword());
         singleNodesExec(mysqlConfig.getHost(), initMysql);
     }
     

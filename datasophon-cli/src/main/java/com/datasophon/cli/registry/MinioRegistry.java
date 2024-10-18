@@ -34,7 +34,7 @@ public class MinioRegistry implements Registry {
         ExecResult installResult = new ExecResult();
         ExecResult exists = executor.exists(MINIO_PATH);
         if (!exists.getExecResult()) {
-            ExecResult sendResult = executor.sendFile(file.getAbsolutePath(), TAR_PATH);
+            ExecResult sendResult = executor.sendFile(file.getAbsolutePath(), TAR_PATH, true);
             if (!sendResult.getExecResult()) {
                 installResult.setExecErrOut("传输失败");
                 return installResult;

@@ -1,15 +1,16 @@
 package com.datasophon.cli.base;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IORuntimeException;
+import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.OsUtils;
 import com.datasophon.common.utils.ShellUtils;
 
 import java.nio.charset.Charset;
 import java.util.List;
-
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IORuntimeException;
 
 public class LocalExecutor implements Executor {
     
@@ -26,10 +27,10 @@ public class LocalExecutor implements Executor {
     }
     
     @Override
-    public ExecResult sendFile(String src, String dest) {
+    public ExecResult sendFile(String src, String dest, boolean override) {
         ExecResult execResult = new ExecResult();
         try {
-            FileUtil.copy(src, dest, true);
+            FileUtil.copy(src, dest, override);
             execResult.setExecResult(true);
         } catch (IORuntimeException exception) {
             execResult.setExecErrOut(exception.getMessage());
@@ -74,12 +75,13 @@ public class LocalExecutor implements Executor {
     
     @Override
     public ArchType getArch() {
-        String cpuArchitecture = ShellUtils.getCpuArchitecture();
-        return ArchType.of(cpuArchitecture);
+        String result = ShellUtils.execShell(Constants.OS_ARCH_CMD).getExecOut();
+        return OsUtils.getArch(result);
     }
     
     @Override
     public OsType getOs() {
-        return ShellUtils.getOs();
+        String result = ShellUtils.execShell(Constants.OS_VERSION_CMD).getExecOut();
+        return OsUtils.getOs(result);
     }
 }
