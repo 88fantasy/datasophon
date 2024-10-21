@@ -5,15 +5,15 @@
   "version": "3.6.1",
   "sortNum": 79,
   "dependencies":[],
-  "packageName": "bigdata-3.6.1.tar.gz",
-  "decompressPackageName": "bigdata-3.6.1",
+  "packageName": "bigdata-server.tar.gz",
+  "decompressPackageName": "bigdata-server",
   "roles": [
     {
       "name": "BigData",
       "label": "BigData",
       "roleType": "master",
       "cardinality": "1",
-      "logFile": "nohup.out",
+      "logFile": "logs/chinaunicom-medical-mgmt-bigdata-server.log",
       "startRunner": {
         "timeout": "60",
         "program": "bin/bigdata-server.sh",
@@ -45,7 +45,7 @@
       "externalLink": {
         "name": "BigData UI",
         "label": "BigData UI",
-        "url": "http://${host}:${consolePort}/bigdata/workbench-view#/login"
+        "url": "${bigdataServerAddress}/workbench-view#/login"
       }
     }
   ],
