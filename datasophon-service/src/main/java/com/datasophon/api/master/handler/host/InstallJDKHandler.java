@@ -42,7 +42,7 @@ public class InstallJDKHandler implements DispatcherWorkerHandler {
         if (StringUtils.isNotBlank(testResult) && "failed".equals(testResult)) {
             exists = false;
         }
-        if (ArchType.X86 == arch) {
+        if (ArchType.X86_64 == arch) {
             if (!exists) {
                 hostInfo.setMessage(MessageResolverUtils.getMessage("start.install.jdk"));
                 MinaUtils.uploadFile(session, "/usr/local",
@@ -50,7 +50,7 @@ public class InstallJDKHandler implements DispatcherWorkerHandler {
                 MinaUtils.execCmdWithResult(session, "tar -zxvf /usr/local/jdk-8u333-linux-x64.tar.gz -C /usr/local/");
             }
         }
-        if (ArchType.ARM == arch) {
+        if (ArchType.AARCH64 == arch) {
             if (!exists) {
                 hostInfo.setMessage(MessageResolverUtils.getMessage("start.install.jdk"));
                 MinaUtils.uploadFile(session, "/usr/local",

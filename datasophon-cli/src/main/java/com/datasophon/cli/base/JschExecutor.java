@@ -68,6 +68,7 @@ public class JschExecutor implements Executor {
         try {
             String string = JschUtils.getFileString(session, path, 5);
             execResult.setExecOut(string);
+            execResult.setExecResult(true);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             execResult.setExecErrOut(e.getMessage());

@@ -26,6 +26,7 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
     public boolean doRun(Executor executor) {
         ExecResult systemConfResult = executor.getFileString("/etc/systemd/system.conf");
         if (systemConfResult.getExecResult()) {
+            log.info("write conf to system.conf");
             List<String> systemConf = Arrays.stream(systemConfResult.getExecOut().split("\n")).collect(Collectors.toList());
             systemConf.removeIf(s -> s.contains("DefaultLimitNOFILE"));
             systemConf.removeIf(s -> s.contains("DefaultLimitNPROC"));
@@ -36,6 +37,7 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
         
         ExecResult limitsConfResult = executor.getFileString("/etc/security/limits.conf");
         if (limitsConfResult.getExecResult()) {
+            log.info("write conf to limits.conf");
             List<String> limitsConf = Arrays.stream(limitsConfResult.getExecOut().split("\n")).collect(Collectors.toList());
             limitsConf.removeIf(s -> s.contains("soft    fsize"));
             limitsConf.removeIf(s -> s.contains("hard    fsize"));
@@ -72,6 +74,7 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
         
         ExecResult sysctlConfResult = executor.getFileString("/etc/sysctl.conf");
         if (sysctlConfResult.getExecResult()) {
+            log.info("write conf to sysctl.conf");
             List<String> sysctlConf = Arrays.stream(sysctlConfResult.getExecOut().split("\n")).collect(Collectors.toList());
             sysctlConf.removeIf(s -> s.contains("kernel.pid_max"));
             sysctlConf.add("kernel.pid_max=1000000");

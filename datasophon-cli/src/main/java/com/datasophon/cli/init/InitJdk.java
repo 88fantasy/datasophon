@@ -47,11 +47,12 @@ public class InitJdk extends InitBase {
             log.info("JDK not installed, start to install");
             executor.execShell("sed -i '/export JAVA_HOME/d' /etc/profile");
             executor.execShell("sed -i '/export CLASSPATH/d' /etc/profile");
+            executor.execShell("sed -i '/export PATH=$PATH:$JAVA_HOME/d' /etc/profile");
             executor.execShell("sed -i '/source \\/etc\\/profile/d' /root/.bash_profile");
             executor.execShell("sed -i '/source \\/etc\\/profile/d' /root/.bashrc");
             log.info("Prepare to Install JDK...");
             executor.execShell(String.format("mkdir -p %s", jdkFolderPath));
-            executor.execShell(String.format("tar -zxvf %s/%s -C ${JDK_FOLDER_PATH}", packagePath, jdkTarName));
+            executor.execShell(String.format("tar -zxvf %s/%s -C %s", packagePath, jdkTarName, jdkFolderPath));
             String javaHome = jdkFolderPath + "/" + jdkPathName;
             String javaSourceEnv="source /etc/profile";
             executor.execShell(String.format("echo 'export JAVA_HOME=%s' >>/etc/profile", javaHome));

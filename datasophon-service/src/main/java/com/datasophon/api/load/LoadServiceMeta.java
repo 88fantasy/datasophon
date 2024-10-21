@@ -471,11 +471,11 @@ public class LoadServiceMeta implements ApplicationRunner {
         Map<String, ArchInfo> arch = new ConcurrentHashMap<>();
         ArchInfo x86 = new ArchInfo();
         x86.setPackageName(packageName);
-        arch.put(ArchType.X86.getArch(), x86);
+        arch.put(ArchType.X86_64.getArch(), x86);
         
         ArchInfo arm = new ArchInfo();
         arm.setPackageName(decompressPackageName + "-arm.tar.gz");
-        arch.put(ArchType.ARM.getArch(), arm);
+        arch.put(ArchType.AARCH64.getArch(), arm);
         return arch;
     }
 }
