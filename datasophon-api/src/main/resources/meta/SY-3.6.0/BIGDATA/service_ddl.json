@@ -13,31 +13,31 @@
       "label": "BigData",
       "roleType": "master",
       "cardinality": "1",
-      "logFile": "logs/chinaunicom-medical-mgmt-bigdata-server.log",
+      "logFile": "bigdata/logs/chinaunicom-medical-mgmt-bigdata-server.log",
       "startRunner": {
         "timeout": "60",
-        "program": "bin/bigdata-server.sh",
+        "program": "bigdata/bin/bigdata-server.sh",
         "args": [
           "start"
         ]
       },
       "stopRunner": {
         "timeout": "60",
-        "program": "bin/bigdata-server.sh",
+        "program": "bigdata/bin/bigdata-server.sh",
         "args": [
           "stop"
         ]
       },
       "statusRunner": {
         "timeout": "60",
-        "program": "bin/bigdata-server.sh",
+        "program": "bigdata/bin/bigdata-server.sh",
         "args": [
           "status"
         ]
       },
       "restartRunner": {
         "timeout": "60",
-        "program": "bin/bigdata-server.sh",
+        "program": "bigdata/bin/bigdata-server.sh",
         "args": [
           "restart"
         ]
@@ -47,12 +47,47 @@
         "label": "BigData UI",
         "url": "${bigdataServerAddress}/workbench-view#/login"
       }
+    },
+    {
+      "name": "hsbServer",
+      "label": "hsbServer",
+      "roleType": "worker",
+      "cardinality": "0+",
+      "logFile": "hsb/logs/chinaunicom-medical-mgmt-hsb-server.log",
+      "startRunner": {
+        "timeout": "60",
+        "program": "hsb/bin/hsb-server.sh",
+        "args": [
+          "start"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "60",
+        "program": "hsb/bin/hsb-server.sh",
+        "args": [
+          "stop"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "hsb/bin/hsb-server.sh",
+        "args": [
+          "status"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "hsb/bin/hsb-server.sh",
+        "args": [
+          "restart"
+        ]
+      }
     }
   ],
   "configWriter": {
     "generators": [
       {
-        "filename": "conf/bootstrap.yaml",
+        "filename": "bigdata/conf/bootstrap.yaml",
         "configFormat": "custom",
         "outputDirectory": "",
         "templateName": "bigdata-master.ftl",
@@ -73,8 +108,24 @@
         ]
       },
       {
+        "filename": "hsb/conf/bootstrap.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "",
+        "templateName": "hsb-master.ftl",
+        "includeParams": [
+          "bigdataJasyptEncryptorPassword",
+          "bigdataAppProfile",
+          "bigdataAppNacosGroup",
+          "bigdataAppNacosHost",
+          "bigdataAppNacosPort",
+          "bigdataAppNacosUsername",
+          "bigdataAppNacosPassword",
+          "hsbAppName"
+        ]
+      },
+      {
         "filename": "common-vars.yml",
-        "configFormat": "properties",
+        "configFormat": "nacos_config",
         "outputDirectory": "conf",
         "includeParams": [
           "bigdataNacosCommonVarsConf"
@@ -238,6 +289,18 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "datasophon"
+    },
+    {
+      "name": "hsbAppName",
+      "label": "hsb服务名称",
+      "description": "hsb服务名称",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "hsb",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "hsb"
     },
     {
       "name": "bigdataNacosCommonVarsConf",

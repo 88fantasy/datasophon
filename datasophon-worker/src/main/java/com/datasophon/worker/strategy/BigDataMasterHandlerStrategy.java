@@ -17,12 +17,6 @@
 
 package com.datasophon.worker.strategy;
 
-import cn.hutool.db.DbUtil;
-import cn.hutool.db.ds.simple.SimpleDataSource;
-import cn.hutool.db.handler.RsHandler;
-import cn.hutool.db.sql.SqlExecutor;
-import cn.hutool.setting.yaml.YamlUtil;
-import com.alibaba.fastjson.JSONObject;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
@@ -35,6 +29,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.alibaba.fastjson.JSONObject;
+
+import cn.hutool.db.DbUtil;
+import cn.hutool.db.ds.simple.SimpleDataSource;
+import cn.hutool.db.handler.RsHandler;
+import cn.hutool.db.sql.SqlExecutor;
+import cn.hutool.setting.yaml.YamlUtil;
 
 public class BigDataMasterHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
     
@@ -49,8 +51,8 @@ public class BigDataMasterHandlerStrategy extends AbstractHandlerStrategy implem
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             // 判断数据库是否已经初始化
             boolean ready = true;
-            String applicaitonPath = workPath + Constants.SLASH + "conf/bootstrap.yaml";
-            String sqlPath = workPath + Constants.SLASH + "init/chinaunicom_medical_mgmt_bigdata__baseline.sql";
+            String applicaitonPath = workPath + Constants.SLASH + "bigdata/conf/bootstrap.yaml";
+            String sqlPath = workPath + Constants.SLASH + "init/bigdata/chinaunicom_medical_mgmt_bigdata__baseline.sql";
             logger.info("check if bigdata database is ready");
             logger.info("applicationPath:{}, sqlPath:{}", applicaitonPath, sqlPath);
             File applicationFile = new File(applicaitonPath);
