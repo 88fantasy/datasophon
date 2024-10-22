@@ -199,6 +199,11 @@ scrape_configs:
     - files:
       - configs/amoro.json
 
+  - job_name: 'nacos'
+    file_sd_configs:
+    - files:
+      - configs/nacos.json
+
   - job_name: 'bigdata'
     file_sd_configs:
     - files:
