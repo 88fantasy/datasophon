@@ -46,8 +46,12 @@ touch nacos-server-master.ftl
     - configs/nacos.json
 ```
 
-### 4、nacos初始化代码
-待完成
+### 4、nacos数据库表初始化代码
+添加类`NacosMasterHandlerStrategy`
+设置`ServiceRoleStrategyContext` 增加 
+```shell
+map.put("NacosServer", new NacosMasterHandlerStrategy("NACOS", "NacosServer"));
+```
 
 ### 5、重启
 
