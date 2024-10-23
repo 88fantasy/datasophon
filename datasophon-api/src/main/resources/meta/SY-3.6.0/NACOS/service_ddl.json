@@ -46,7 +46,7 @@
     "externalLink": {
       "name": "Nacos UI",
       "label": "Nacos UI",
-      "url": "http://${host}:${serverPort}/nacos/"
+      "url": "http://${host}:${nacosServerPort}/nacos/"
     }
   }],
   "configWriter": {
@@ -57,12 +57,12 @@
         "outputDirectory": "conf",
         "templateName": "nacos-server-master.ftl",
         "includeParams": [
-            "serverPort",
-            "dbUrl",
-            "dbUser",
-            "dbPwd",
-            "authEnabled",
-            "tokenSecretKey"
+            "nacosServerPort",
+            "nacosDbUrl",
+            "nacosDbUser",
+            "nacosDbPwd",
+            "nacosAuthEnabled",
+            "nacosTokenSecretKey"
         ]
       },
       {
@@ -70,15 +70,15 @@
         "configFormat": "properties",
         "outputDirectory": "conf",
         "includeParams": [
-            "username",
-            "password"
+            "nacosUsername",
+            "nacosPassword"
         ]
       }
     ]
   },
   "parameters": [
     {
-      "name": "serverPort",
+      "name": "nacosServerPort",
       "label": "端口",
       "description": "端口",
       "required": true,
@@ -90,7 +90,7 @@
       "defaultValue": "8848"
     },
     {
-      "name": "dbUrl",
+      "name": "nacosDbUrl",
       "label": "第一个数据库的URL",
       "description": "第一个数据库的URL",
       "required": true,
@@ -102,7 +102,7 @@
       "defaultValue": "jdbc:mysql://mysql-node-1:3306/nacos?useUnicode=true&characterEncoding=UTF8&autoReconnect=true&useAffectedRows=true&useSSL=false"
     },
     {
-      "name": "dbUser",
+      "name": "nacosDbUser",
       "label": "数据库用户名",
       "description": "数据库用户名",
       "required": true,
@@ -114,7 +114,7 @@
       "defaultValue": "root"
     },
     {
-      "name": "dbPwd",
+      "name": "nacosDbPwd",
       "label": "数据库密码",
       "description": "数据库密码",
       "required": true,
@@ -126,7 +126,7 @@
       "defaultValue": "datasophon"
     },
     {
-      "name": "authEnabled",
+      "name": "nacosAuthEnabled",
       "label": "是否启用认证",
       "description": "是否启用认证",
       "required": true,
@@ -138,7 +138,7 @@
       "defaultValue": true
     },
     {
-      "name": "tokenSecretKey",
+      "name": "nacosTokenSecretKey",
       "label": "密钥",
       "description": "密钥",
       "required": true,
@@ -150,7 +150,7 @@
       "defaultValue": "a73d81760ee6fe6a0c2482e0b79a409ce810ec969b6cf5e27bb81d822449b9ea"
     },
     {
-      "name": "username",
+      "name": "nacosUsername",
       "label": "用户名",
       "description": "登录用户名",
       "required": true,
@@ -162,7 +162,7 @@
       "defaultValue": "nacos"
     },
     {
-      "name": "password",
+      "name": "nacosPassword",
       "label": "密码",
       "description": "登录密码",
       "required": true,

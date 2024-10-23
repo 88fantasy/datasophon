@@ -4,7 +4,7 @@
   "description": "数衍工作台",
   "version": "3.6.1",
   "sortNum": 79,
-  "dependencies":[],
+  "dependencies":["NACOS"],
   "packageName": "bigdata-server.tar.gz",
   "decompressPackageName": "bigdata-server",
   "roles": [
@@ -125,8 +125,9 @@
       },
       {
         "filename": "common-vars.yml",
-        "configFormat": "nacos_config",
-        "outputDirectory": "conf",
+        "configFormat": "custom",
+        "outputDirectory": "${nacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${bigdataAppProfile}/${bigdataAppNacosGroup}",
+        "type": "nacos",
         "includeParams": [
           "bigdataNacosCommonVarsConf"
         ]
@@ -189,10 +190,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "192.168.2.130",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "192.168.2.130"
+      "defaultValue": "${nacosHost}"
     },
     {
       "name": "bigdataAppNacosPort",
@@ -201,10 +202,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "8848",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "8848"
+      "defaultValue": "${nacosServerPort}"
     },
     {
       "name": "bigdataAppNacosUsername",
@@ -213,10 +214,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "nacos",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "nacos"
+      "defaultValue": "${nacosUsername}"
     },
     {
       "name": "bigdataAppNacosPassword",
@@ -225,10 +226,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "nacos",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "nacos"
+      "defaultValue": "${nacosPassword}"
     },
     {
       "name": "bigdataAppVersion",

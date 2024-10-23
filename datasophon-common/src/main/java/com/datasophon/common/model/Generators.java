@@ -37,6 +37,8 @@ public class Generators implements Serializable {
     
     private String conditionalOnProperty;
     
+    private String type;
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) {
