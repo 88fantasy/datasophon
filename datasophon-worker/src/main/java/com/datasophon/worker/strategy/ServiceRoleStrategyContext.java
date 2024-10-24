@@ -61,7 +61,7 @@ public class ServiceRoleStrategyContext {
         map.put("MasterServer", new DSMasterHandlerStrategy("DS", "MasterServer"));
         // ustream
         map.put("UstreamServer", new UstreamMasterHandlerStrategy("USTREAM", "UstreamServer"));
-        //nacos
+        // nacos
         map.put("NacosServer", new NacosMasterHandlerStrategy("NACOS", "NacosServer"));
     }
     

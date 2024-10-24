@@ -1,9 +1,5 @@
 package com.datasophon.worker.strategy;
 
-import cn.hutool.db.DbUtil;
-import cn.hutool.db.ds.simple.SimpleDataSource;
-import cn.hutool.db.handler.RsHandler;
-import cn.hutool.db.sql.SqlExecutor;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
@@ -20,12 +16,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-public class NacosMasterHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy{
+import cn.hutool.db.DbUtil;
+import cn.hutool.db.ds.simple.SimpleDataSource;
+import cn.hutool.db.handler.RsHandler;
+import cn.hutool.db.sql.SqlExecutor;
 
+public class NacosMasterHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
+    
     public NacosMasterHandlerStrategy(String serviceName, String serviceRoleName) {
         super(serviceName, serviceRoleName);
     }
-
+    
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) throws SQLException, ClassNotFoundException {
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
@@ -60,7 +61,7 @@ public class NacosMasterHandlerStrategy extends AbstractHandlerStrategy implemen
             try {
                 con = DbUtil.use(new SimpleDataSource(url, user, password)).getConnection();
                 List<String> entityList = SqlExecutor.query(con, "SHOW TABLES", new RsHandler<List<String>>() {
-
+                    
                     @Override
                     public List<String> handle(ResultSet rs) throws SQLException {
                         final List<String> result = new ArrayList<>();
@@ -71,7 +72,7 @@ public class NacosMasterHandlerStrategy extends AbstractHandlerStrategy implemen
                     }
                 });
                 if (entityList.stream().noneMatch(s -> s.equals("config_info"))) {
-                    //匹配一个表名，如果没有匹配到，说明数据库没有初始化
+                    // 匹配一个表名，如果没有匹配到，说明数据库没有初始化
                     ready = false;
                 }
                 if (!ready) {
