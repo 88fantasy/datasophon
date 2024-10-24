@@ -17,12 +17,6 @@
 
 package com.datasophon.worker.strategy;
 
-import cn.hutool.db.DbUtil;
-import cn.hutool.db.ds.simple.SimpleDataSource;
-import cn.hutool.db.handler.RsHandler;
-import cn.hutool.db.sql.SqlExecutor;
-import cn.hutool.setting.yaml.YamlUtil;
-import com.alibaba.fastjson.JSONObject;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
@@ -35,6 +29,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.alibaba.fastjson.JSONObject;
+
+import cn.hutool.db.DbUtil;
+import cn.hutool.db.ds.simple.SimpleDataSource;
+import cn.hutool.db.handler.RsHandler;
+import cn.hutool.db.sql.SqlExecutor;
+import cn.hutool.setting.yaml.YamlUtil;
 
 public class UstreamMasterHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
     

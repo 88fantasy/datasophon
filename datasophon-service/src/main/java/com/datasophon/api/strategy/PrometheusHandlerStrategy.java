@@ -17,6 +17,7 @@
 
 package com.datasophon.api.strategy;
 
+import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceInfoMap;
 import com.datasophon.api.load.ServiceRoleMap;
 import com.datasophon.api.master.ActorUtils;
@@ -27,6 +28,7 @@ import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.HostUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.AlertLevel;
@@ -48,7 +50,11 @@ public class PrometheusHandlerStrategy implements ServiceRoleStrategy {
     
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        
+        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        if (hosts.size() == 1) {
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${prometheusHost}",
+                    HostUtils.getIp(hosts.get(0)));
+        }
     }
     
     @Override
