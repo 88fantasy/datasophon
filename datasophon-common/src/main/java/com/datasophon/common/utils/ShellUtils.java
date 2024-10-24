@@ -18,22 +18,17 @@
 package com.datasophon.common.utils;
 
 import com.datasophon.common.Constants;
-import com.datasophon.common.enums.OsType;
-
-import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cn.hutool.core.util.RuntimeUtil;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class ShellUtils {
     
@@ -90,6 +85,56 @@ public class ShellUtils {
                 logger.error("{} command exec out is : {}{},exitValue:{}", pathOrCommand, System.lineSeparator(), execOut, exitValue);
             }
             
+        } catch (Exception e) {
+            result.setExecOut(e.getMessage());
+            logger.error(e.getMessage(), e);
+        }
+        return result;
+    }
+
+    public static ExecResult shellForExp(String command, Map<String, String> expects){
+        logger.info("command:{}", command);
+        ExecResult result = new ExecResult();
+        StringBuilder stringBuffer = new StringBuilder();
+        try {
+            // 执行脚本
+            Process ps = Runtime.getRuntime().exec(new String[]{"sh", "-c", command});
+            // 只能接收脚本echo打印的数据，并且是echo打印的最后一次数据
+            OutputStream os = ps.getOutputStream();
+            BufferedInputStream in = new BufferedInputStream(ps.getInputStream());
+            BufferedReader br = new BufferedReader(new InputStreamReader(in));
+            String line;
+            while ((line = br.readLine()) != null) {
+                stringBuffer.append(line);
+                stringBuffer.append(System.lineSeparator());
+                if (Objects.nonNull(expects)) {
+                    for(Map.Entry<String, String> entry : expects.entrySet()) {
+                        if(line.contains(entry.getKey())) {
+                            os.write(entry.getValue().getBytes());
+                            os.write('\n'); //输入换行执行
+                            os.flush();
+                            break;
+                        }
+                    }
+                }
+            }
+            // 去除尾部的换行符
+            if (stringBuffer.length() > 0 && stringBuffer.charAt(stringBuffer.length() - 1) == '\n') {
+                stringBuffer.setLength(stringBuffer.length() - 1);
+            }
+            in.close();
+            br.close();
+            os.close();
+            String execOut = stringBuffer.toString();
+            int exitValue = ps.waitFor();
+            if (0 == exitValue) {
+                logger.info("{} command exec out is : {}{},exitValue:{}", command, System.lineSeparator(), execOut, exitValue);
+                result.setExecResult(true);
+                result.setExecOut(execOut);
+            } else {
+                result.setExecOut("call shell failed. error code is :" + exitValue);
+                logger.error("{} command exec out is : {}{},exitValue:{}", command, System.lineSeparator(), execOut, exitValue);
+            }
         } catch (Exception e) {
             result.setExecOut(e.getMessage());
             logger.error(e.getMessage(), e);

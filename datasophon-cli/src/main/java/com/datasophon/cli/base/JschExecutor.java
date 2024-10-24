@@ -13,6 +13,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public class JschExecutor implements Executor {
@@ -36,7 +37,22 @@ public class JschExecutor implements Executor {
         }
         return execResult;
     }
-    
+
+    // TODO交互式输入，尚未完善
+    @Override
+    public ExecResult execShellExp(String cmd, Map<String, String> expects) {
+        log.info("command:{}", cmd);
+        ExecResult execResult = new ExecResult();
+        try {
+            return JschUtils.shellForExp(session, cmd, expects);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            execResult.setExecOut(e.getMessage());
+            execResult.setExecErrOut(e.getMessage());
+        }
+        return execResult;
+    }
+
     @Override
     public ExecResult exists(String path) {
         return JschUtils.exists(session, path, 5);

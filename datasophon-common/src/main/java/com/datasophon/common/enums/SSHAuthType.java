@@ -4,5 +4,7 @@ public enum SSHAuthType {
 
     PUBLICKEY,
 
-    PASSWORD
+    PASSWORD,
+
+    AUTO
 }

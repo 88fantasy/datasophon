@@ -179,7 +179,7 @@
         <fileSet>
             <directory>${basedir}/../datasophon-cli/target</directory>
             <includes>
-                <include>datasophon-cli.jar</include>
+                <include>datasophon-cli-cli.jar</include>
             </includes>
             <outputDirectory>datasophon-init/sbin</outputDirectory>
         </fileSet>
@@ -211,9 +211,9 @@
             <lineEnding>unix</lineEnding>
         </fileSet>
         <fileSet>
-            <directory>${basedir}/../datasophon-init/bin/</directory>
+            <directory>${basedir}/../datasophon-cli/src/main/resources/bin</directory>
             <includes>
-                <include>init-jdk.sh</include>
+                <include>**</include>
             </includes>
             <outputDirectory>datasophon-init/bin/</outputDirectory>
             <fileMode>0755</fileMode>

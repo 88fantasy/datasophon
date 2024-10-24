@@ -11,6 +11,7 @@ import com.datasophon.common.utils.ShellUtils;
 
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.Map;
 
 public class LocalExecutor implements Executor {
     
@@ -18,7 +19,13 @@ public class LocalExecutor implements Executor {
     public ExecResult execShell(String cmd) {
         return ShellUtils.execShell(cmd);
     }
-    
+
+    // TODO交互式输入，尚未完善
+    @Override
+    public ExecResult execShellExp(String cmd, Map<String, String> expects) {
+        return null;
+    }
+
     @Override
     public ExecResult exists(String path) {
         ExecResult execResult = new ExecResult();

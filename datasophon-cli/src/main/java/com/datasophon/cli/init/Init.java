@@ -18,7 +18,6 @@ import picocli.CommandLine;
         InitHugePage.class,
         InitLibrary.class,
         InitOsSafeConf.class,
-        InitSsh.class,
         InitNmap.class,
         InitBinPackage.class,
         InitAllHost.class,

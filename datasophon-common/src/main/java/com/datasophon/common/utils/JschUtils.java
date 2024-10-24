@@ -5,10 +5,7 @@ import com.datasophon.common.enums.SSHAuthType;
 import com.jcraft.jsch.*;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,10 +21,22 @@ public class JschUtils {
             // 创建连接
             log.info("正在连接服务器{}@{}", userName, ip);
             session = jSch.getSession(userName, ip, port);
+            String publicKey = String.format("/%s/.ssh/id_rsa", userName);
+            if(!userName.equals("root")) {
+                publicKey = String.format("/home/%s/.ssh/id_rsa", userName);
+            }
             if (sshAuthType == SSHAuthType.PASSWORD) {
                 session.setPassword(password);
+            } else if(sshAuthType == SSHAuthType.PUBLICKEY) {
+                jSch.addIdentity(publicKey);
+            } else if(sshAuthType == SSHAuthType.AUTO) {
+                if(new File(publicKey).exists()) {
+                    jSch.addIdentity(publicKey);
+                } else {
+                    session.setPassword(password);
+                }
             } else {
-                jSch.addIdentity(String.format("/%s/.ssh/id_rsa", userName));
+                jSch.addIdentity(publicKey);
             }
             // 是否使用密钥登录，一般默认为no
             session.setConfig("StrictHostKeyChecking", "no");
@@ -93,12 +102,60 @@ public class JschUtils {
         }
         return result;
     }
-    public static String shellForStr(Session session, String command, int connectTimeout, int cmdWaitSeconds) throws Exception {
-        Map<String, String> map = shellForStr(session, Collections.singletonList(command), connectTimeout, cmdWaitSeconds);
-        return map.get(command);
+    public static ExecResult shellForExp(Session session, String command, Map<String, String> expects){
+        InputStream is = null;
+        BufferedReader bufReader = null;
+        OutputStream os = null;
+        ChannelShell channel = null;
+        ExecResult result = new ExecResult();
+        StringBuilder execOut = new StringBuilder();
+        try {
+            // 创建执行通道
+            channel = (ChannelShell) session.openChannel("shell");
+            is = channel.getInputStream();
+            os = channel.getOutputStream();
+
+            os.write(command.getBytes()); //输入命令
+            os.write('\n'); //输入换行执行
+            os.flush();
+            // FIXME 由于读取执行结果是阻塞的，必须等待指令执行一段时间，具体多少不好斟酌
+            TimeUnit.SECONDS.sleep(500);
+
+            // 读取通道的输出
+            bufReader = new BufferedReader(new InputStreamReader(is));
+            String line = "";
+            while (Objects.nonNull((line = bufReader.readLine()))){
+                execOut.append(line);
+                if (Objects.nonNull(expects)) {
+                    for(Map.Entry<String, String> entry : expects.entrySet()) {
+                        if(line.contains(entry.getKey())) {
+                            os.write(entry.getValue().getBytes());
+                            os.write('\n'); //输入换行执行
+                            os.flush();
+                            break;
+                        }
+                    }
+                }
+            }
+            os.write("exit".getBytes()); //退出命令
+            os.write('\n'); //输入换行执行
+            os.flush();
+            result.setExecResult(true);
+            result.setExecOut(execOut.toString());
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        } finally {
+            IoUtil.close(os);
+            IoUtil.close(bufReader);
+            IoUtil.close(is);
+            if (channel != null && channel.isConnected()) {
+                channel.disconnect();
+            }
+        }
+        return result;
     }
     
-    public static Map<String, String> shellForStr(Session session, List<String> commands, int connectTimeout, int cmdWaitSeconds) throws Exception {
+    public static Map<String, String> shellForStr(Session session, List<String> commands) throws Exception {
         Map<String, String> result = new ConcurrentHashMap<>();
         InputStream is = null;
         OutputStream os = null;
@@ -106,7 +163,6 @@ public class JschUtils {
         try {
             // 创建执行通道
             channel = (ChannelShell) session.openChannel("shell");
-            channel.connect(connectTimeout * 1000);
             is = channel.getInputStream();
             os = channel.getOutputStream();
             
@@ -115,7 +171,7 @@ public class JschUtils {
                 os.write('\n'); // 输入换行执行
                 os.flush();
                 // FIXME 由于读取执行结果是阻塞的，必须等待指令执行一段时间，具体多少不好斟酌
-                TimeUnit.SECONDS.sleep(cmdWaitSeconds);
+                TimeUnit.SECONDS.sleep(500);
                 // 读取通道的输出
                 String rs = IoUtil.read(is, Charset.defaultCharset());
                 result.put(cmd, rs);

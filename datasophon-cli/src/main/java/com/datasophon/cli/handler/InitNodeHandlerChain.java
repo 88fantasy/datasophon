@@ -17,21 +17,24 @@ public class InitNodeHandlerChain {
     
     private final Host host;
 
-    private final SSHAuthType sshAuthType = SSHAuthType.PUBLICKEY;
+    private final SSHAuthType sshAuthType;
     
     private final List<InitNodeHandler> handlers = new ArrayList<>();
-    
-    public InitNodeHandlerChain(Host host) {
+
+    public InitNodeHandlerChain(Host host, SSHAuthType sshAuthType) {
         this.host = host;
+        this.sshAuthType = sshAuthType;
     }
-    
-    public InitNodeHandlerChain(Host host, List<InitNodeHandler> handlers) {
+
+    public InitNodeHandlerChain(Host host, SSHAuthType sshAuthType, List<InitNodeHandler> handlers) {
         this.host = host;
+        this.sshAuthType = sshAuthType;
         this.handlers.addAll(handlers);
     }
     
-    public InitNodeHandlerChain(Host host, InitNodeHandler handler) {
+    public InitNodeHandlerChain(Host host, SSHAuthType sshAuthType, InitNodeHandler handler) {
         this.host = host;
+        this.sshAuthType = sshAuthType;
         this.handlers.add(handler);
     }
     

@@ -8,6 +8,7 @@ import com.datasophon.cli.handler.InitNodeHandlerChain;
 import com.datasophon.cli.init.*;
 import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.Constants;
+import com.datasophon.common.enums.SSHAuthType;
 import com.datasophon.common.model.Host;
 import com.datasophon.common.utils.ShellUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,7 @@ public class CreateCluster implements Runnable {
     @CommandLine.Option(names = {"-p", "datasophonPath"}, description = "datasophon绝对路径", required = true)
     String datasophonPath;
     
-    @CommandLine.Option(names = {"-a", "action"}, description = "执行动作:initALL/initSingleNode", required = true)
+    @CommandLine.Option(names = {"-a", "action"}, description = "执行动作", required = true)
     String action;
 
     @CommandLine.Option(names = {"-s", "skipInitBinPackage"}, description = "是否跳过分发安资源包(-s则跳过)")
@@ -43,6 +44,8 @@ public class CreateCluster implements Runnable {
     private String packagesPath;
     
     private String initConfigYamlPath;
+
+    private SSHAuthType sshAuthType;
     
     @Override
     public void run() {
@@ -72,13 +75,16 @@ public class CreateCluster implements Runnable {
         log.info("\nDATASOPHON_PATH:{},\nINIT_PATH:{},\nINIT_CONFIG_YAML_PATH:{}", datasophonPath, initPath, initConfigYamlPath);
 
         ClusterConfig clusterConfig = CliUtil.getConfig(initConfigYamlPath);
+        sshAuthType = clusterConfig.getGlobal().getSshAuthType();
 
         if (action.equals("initALL")) {
             initALL(clusterConfig);
-        } else if (action.equals("initSingleNode")) {
+        } else if(action.equals("initSingleNode")) {
             initSingleNode(clusterConfig);
-        } else {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "action not found : " + action);
+        }
+        else {
+            throw new CommandLine.ExecutionException(new CommandLine(this),
+                    "action[initALL/initSingleNode] not found: " + action);
         }
     }
     
@@ -205,16 +211,12 @@ public class CreateCluster implements Runnable {
         initHugePage(config, nodes);
     }
     
-    public void testFun() {
-        
-    }
-    
     /**
      * 多节点执行
      */
     private void allNodesExec(List<Host> allNodes, InitNodeHandler initNodeHandler) {
         allNodes.forEach(host -> {
-            InitNodeHandlerChain nodeHandlerChain = new InitNodeHandlerChain(host, initNodeHandler);
+            InitNodeHandlerChain nodeHandlerChain = new InitNodeHandlerChain(host, sshAuthType, initNodeHandler);
             nodeHandlerChain.handle();
         });
     }
@@ -223,7 +225,7 @@ public class CreateCluster implements Runnable {
      * 单节点执行
      */
     private void singleNodesExec(Host node, InitNodeHandler initNodeHandler) {
-        InitNodeHandlerChain nodeHandlerChain = new InitNodeHandlerChain(node, initNodeHandler);
+        InitNodeHandlerChain nodeHandlerChain = new InitNodeHandlerChain(node, sshAuthType, initNodeHandler);
         nodeHandlerChain.handle();
     }
     
@@ -235,7 +237,7 @@ public class CreateCluster implements Runnable {
                 .collect(Collectors.toList());
         
         slaveNodes.forEach(node -> {
-            InitNodeHandlerChain workerNodeHandlerChain = new InitNodeHandlerChain(node, slaveHandler);
+            InitNodeHandlerChain workerNodeHandlerChain = new InitNodeHandlerChain(node, sshAuthType, slaveHandler);
             workerNodeHandlerChain.handle();
         });
     }

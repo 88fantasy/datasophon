@@ -5,6 +5,7 @@ import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 
 import java.util.List;
+import java.util.Map;
 
 public interface Executor {
     /**
@@ -13,6 +14,14 @@ public interface Executor {
      * @return ExecResult
      */
     ExecResult execShell(String cmd);
+
+    /**
+     * 执行交互shell命令
+     * @param cmd shell命令
+     * @param expects 匹配输入命令
+     * @return ExecResult
+     */
+    ExecResult execShellExp(String cmd, Map<String, String> expects);
     
     /**
      * 判断文件是否存在
