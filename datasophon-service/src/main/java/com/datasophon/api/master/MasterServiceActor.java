@@ -26,6 +26,7 @@ import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SpringTool;
+import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ExecuteServiceRoleCommand;
 import com.datasophon.common.enums.CommandType;
@@ -35,6 +36,7 @@ import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.NeedRestart;
@@ -111,6 +113,12 @@ public class MasterServiceActor extends UntypedActor {
                     needReConfig = true;
                 }
                 logger.info("enable ranger plugin is {}", enableRangerPlugin);
+                Map<String, String> globalVariables = GlobalVariables.get(serviceRoleInfo.getClusterId());
+                for (Generators generators : configFileMap.keySet()) {
+                    String outputDirectory = generators.getOutputDirectory();
+                    generators.setOutputDirectory(PlaceholderUtils.replacePlaceholders(outputDirectory, globalVariables,
+                            Constants.REGEX_VARIABLE));
+                }
                 serviceRoleInfo.setConfigFileMap(configFileMap);
                 serviceRoleInfo.setEnableRangerPlugin(enableRangerPlugin);
                 switch (executeServiceRoleCommand.getCommandType()) {

@@ -17,14 +17,14 @@
 #*************** Spring Boot Related Configurations ***************#
 server.servlet.contextPath=/nacos
 server.error.include-message=ALWAYS
-server.port=${serverPort}
+server.port=${nacosServerPort}
 
 spring.datasource.platform=mysql
 
 db.num=1
-db.url.0=${dbUrl}
-db.user=${dbUser}
-db.password=${dbPwd}
+db.url.0=${nacosDbUrl}
+db.user=${nacosDbUser}
+db.password=${nacosDbPwd}
 
 ### Connection pool configuration: hikariCP
 db.pool.config.connectionTimeout=30000
@@ -64,7 +64,7 @@ nacos.security.ignore.urls=/,/error,/**/*.css,/**/*.js,/**/*.html,/**/*.map,/**/
 
 ### The auth system to use, currently only 'nacos' and 'ldap' is supported:
 nacos.core.auth.system.type=nacos
-nacos.core.auth.enabled=${authEnabled}
+nacos.core.auth.enabled=${nacosAuthEnabled}
 
 ### Turn on/off caching of auth information. By turning on this switch, the update of auth information would have a 15 seconds delay.
 nacos.core.auth.caching.enabled=true
@@ -81,7 +81,7 @@ nacos.core.auth.server.identity.value=jtys_security
 ### The token expiration in seconds:
 nacos.core.auth.plugin.nacos.token.cache.enable=false
 nacos.core.auth.plugin.nacos.token.expire.seconds=18000
-nacos.core.auth.plugin.nacos.token.secret.key=${tokenSecretKey}
+nacos.core.auth.plugin.nacos.token.secret.key=${nacosTokenSecretKey}
 
 #*************** Istio Related Configurations ***************#
 ### If turn on the MCP server:
