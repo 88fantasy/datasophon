@@ -4,10 +4,13 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.IOUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 
-import java.io.*;
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -15,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import cn.hutool.crypto.digest.BCrypt;
 import cn.hutool.db.DbUtil;
 import cn.hutool.db.ds.simple.SimpleDataSource;
 import cn.hutool.db.handler.RsHandler;
@@ -38,71 +42,91 @@ public class NacosMasterHandlerStrategy extends AbstractHandlerStrategy implemen
             String sqlPath = workPath + Constants.SLASH + "conf/nacos-mysql.sql";
             logger.info("check if nacos database is ready");
             logger.info("applicaitonPath:{}, sqlPath:{}", applicaitonPath, sqlPath);
-            InputStream fis = null;
-            InputStream pis = null;
-            Properties properties = new Properties();
-            Properties pwdProperties = new Properties();
-            try {
-                fis = this.getClass().getClassLoader().getResourceAsStream(applicaitonPath);
-                properties.load(fis);
-
-                pis = this.getClass().getClassLoader().getResourceAsStream(pwdApplicationPath);
-                pwdProperties.load(pis);
-
-                // 设置自定义的用户名和密码
-                properties.setProperty("nacos.auth.username", pwdProperties.getProperty("nacosUsername"));
-                properties.setProperty("nacos.auth.password", pwdProperties.getProperty("nacosPassword"));
-
-                // 如果需要保存这些改动，可以考虑写回文件
-                try (OutputStream out = new FileOutputStream(applicaitonPath)) {
-                    properties.store(out, null);
+            File applicaitonFile = new File(applicaitonPath);
+            File pwdApplicationFile = new File(pwdApplicationPath);
+            boolean isPasswordFileExists = pwdApplicationFile.exists();
+            logger.info("isApplicationFileExists:{}, isPasswordFileExists:{}", applicaitonFile.exists(), isPasswordFileExists);
+            if (applicaitonFile.exists()) {
+                Properties properties = new Properties();
+                try (FileInputStream fis = new FileInputStream(applicaitonFile)) {
+                    properties.load(fis);
+                } catch (IOException e) {
+                    logger.error(e.getMessage(), e);
                 }
-            } catch (IOException e) {
-                logger.error(e.getMessage(), e);
-                if (pis != null) {
-                    IOUtils.closeQuietly(pis);
-                }
-                if (fis != null) {
-                    IOUtils.closeQuietly(fis);
-                }
-                System.exit(1);
-            } finally {
-                IOUtils.closeQuietly(pis);
-                IOUtils.closeQuietly(fis);
-            }
-            // 连接数据库 判断是否已经初始化数据库
-            String url = properties.getProperty("db.url.0");
-            String user = properties.getProperty("db.user");
-            String password = properties.getProperty("db.password");
-            logger.info("database info is using  {}  on {} ", user, url);
-            Connection con = null;
-            try {
-                con = DbUtil.use(new SimpleDataSource(url, user, password)).getConnection();
-                List<String> entityList = SqlExecutor.query(con, "SHOW TABLES", new RsHandler<List<String>>() {
-                    
-                    @Override
-                    public List<String> handle(ResultSet rs) throws SQLException {
-                        final List<String> result = new ArrayList<>();
-                        while (rs.next()) {
-                            result.add(rs.getString(1));
-                        }
-                        return result;
-                    }
-                });
-                if (entityList.stream().noneMatch(s -> s.equals("config_info"))) {
-                    // 匹配一个表名，如果没有匹配到，说明数据库没有初始化
-                    ready = false;
-                }
-                if (!ready) {
-                    List<String> sqlList = com.datasophon.worker.utils.FileUtils.loadFileSQL(sqlPath);
+                // 连接数据库 判断是否已经初始化数据库
+                String url = properties.getProperty("db.url.0");
+                String user = properties.getProperty("db.user");
+                String password = properties.getProperty("db.password");
+                logger.info("database info is using  {}  on {} ", user, url);
+                Connection con = null;
+                try {
                     con = DbUtil.use(new SimpleDataSource(url, user, password)).getConnection();
-                    SqlExecutor.executeBatch(con, sqlList);
-                    logger.info("nacos初始化数据库成功");
+                    List<String> entityList = SqlExecutor.query(con, "SHOW TABLES", new RsHandler<List<String>>() {
+                        
+                        @Override
+                        public List<String> handle(ResultSet rs) throws SQLException {
+                            final List<String> result = new ArrayList<>();
+                            while (rs.next()) {
+                                result.add(rs.getString(1));
+                            }
+                            return result;
+                        }
+                    });
+                    if (entityList.stream().noneMatch(s -> s.equals("config_info"))) {
+                        // 匹配一个表名，如果没有匹配到，说明数据库没有初始化
+                        ready = false;
+                    }
+                    if (!ready) {
+                        List<String> sqlList = com.datasophon.worker.utils.FileUtils.loadFileSQL(sqlPath);
+                        con = DbUtil.use(new SimpleDataSource(url, user, password)).getConnection();
+                        SqlExecutor.executeBatch(con, sqlList);
+                        logger.info("initialize nacos database success");
+                    }
+                    
+                    if (isPasswordFileExists) {
+                        // 密码文件存在，说明需要修改密码
+                        logger.info("nacos-user-mgmt.properties found in {}, modify password", pwdApplicationPath);
+                        // 读取密码文件
+                        Properties pwdProperties = new Properties();
+                        try (FileInputStream fis = new FileInputStream(pwdApplicationPath)) {
+                            pwdProperties.load(fis);
+                        } catch (IOException e) {
+                            logger.error(e.getMessage(), e);
+                        }
+                        String username = StringUtils.isEmpty(pwdProperties.getProperty("nacosUsername")) ? "nacos" : pwdProperties.getProperty("nacosUsername");
+                        String nacosPassword = StringUtils.isEmpty(pwdProperties.getProperty("nacosPassword")) ? "nacos" : pwdProperties.getProperty("nacosPassword");
+                        
+                        String encoderPwd = BCrypt.hashpw(nacosPassword, BCrypt.gensalt());
+                        // 查询用户表是否存在数据
+                        List<String> userList = SqlExecutor.query(con, "SELECT * FROM users where username = '" + username + "'", new RsHandler<List<String>>() {
+                            
+                            @Override
+                            public List<String> handle(ResultSet rs) throws SQLException {
+                                final List<String> result = new ArrayList<>();
+                                while (rs.next()) {
+                                    result.add(rs.getString(1));
+                                }
+                                return result;
+                            }
+                        });
+                        if (userList.isEmpty()) {
+                            // 创建用户
+                            SqlExecutor.execute(con, "INSERT INTO users (username, password, enabled) VALUES ('" + username + "', '" + encoderPwd + "',TRUE )");
+                            logger.info("create nacos users success");
+                        } else {
+                            // 修改密码
+                            SqlExecutor.execute(con, "UPDATE users SET password = '" + encoderPwd + "' WHERE username = '" + username + "'");
+                            logger.info("update nacos users success");
+                        }
+                    }
+                } catch (Exception e) {
+                    logger.error(e.getMessage(), e);
+                } finally {
+                    DbUtil.close(con);
                 }
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-            } finally {
-                DbUtil.close(con);
+                
+            } else {
+                logger.error("applicaiton.properties not found in {}", workPath);
             }
         }
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
