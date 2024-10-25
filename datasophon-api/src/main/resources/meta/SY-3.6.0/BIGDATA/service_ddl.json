@@ -142,6 +142,8 @@
           "bigdataApiSixAllowOrigins",
           "bigdataApiSixHttpLoggerEndpoint",
           "bigdataOutsideAccessUrl",
+          "bigdataRedisHost",
+          "bigdataRedisPort",
           "bigdataRedisPassword",
           "bigdataRedisDatabase",
           "bigdataMinioAccessKey",
@@ -480,16 +482,40 @@
       "defaultValue": "http://192.168.2.122:19000"
     },
     {
+      "name": "bigdataRedisHost",
+      "label": "redis的地址",
+      "description": "redis的地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${redisHost}"
+    },
+    {
+      "name": "bigdataRedisPort",
+      "label": "redis的端口",
+      "description": "redis的端口",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${redisMasterPort}"
+    },
+    {
       "name": "bigdataRedisPassword",
       "label": "redis的密码",
       "description": "redis的密码",
-      "required": false,
+      "required": true,
       "configType": "map",
       "type": "input",
-      "value": "ENC(+BAvWuBv4huQqdiuca7vi7fCCchRqvHA5FkVRRqgFFg=)",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "ENC(+BAvWuBv4huQqdiuca7vi7fCCchRqvHA5FkVRRqgFFg=)"
+      "defaultValue": "${redisPass}"
     },
     {
       "name": "bigdataRedisDatabase",
