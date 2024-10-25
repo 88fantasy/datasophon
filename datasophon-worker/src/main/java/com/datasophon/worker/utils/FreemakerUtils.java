@@ -185,8 +185,13 @@ public class FreemakerUtils {
                     params.put(PropertyKeyConst.ENDPOINT_PORT, properties.get(PropertyKeyConst.ENDPOINT_PORT).toString());
                     params.put(PropertyKeyConst.USERNAME, properties.get(PropertyKeyConst.USERNAME).toString());
                     params.put(PropertyKeyConst.PASSWORD, properties.get(PropertyKeyConst.PASSWORD).toString());
-                    nacosRestTemplate.postForm(url + namespacesUrl, header, params, String.class);
+                    HttpRestResult<Object> postForm = nacosRestTemplate.postForm(url + namespacesUrl, header, params, String.class);
+                    if (postForm.getCode() != 200){
+                        logger.error("创建命名空间失败");
+                    }
                 }
+            } else {
+                logger.error("检查命名空间失败");
             }
         } catch (Exception e) {
             logger.error("检查命名空间失败:", e);
