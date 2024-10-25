@@ -7,8 +7,7 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.IOUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -35,21 +34,40 @@ public class NacosMasterHandlerStrategy extends AbstractHandlerStrategy implemen
             // 判断数据库是否已经初始化
             boolean ready = true;
             String applicaitonPath = workPath + Constants.SLASH + "conf/application.properties";
+            String pwdApplicationPath = workPath + Constants.SLASH + "conf/nacos-user-mgmt.properties";
             String sqlPath = workPath + Constants.SLASH + "conf/nacos-mysql.sql";
             logger.info("check if nacos database is ready");
             logger.info("applicaitonPath:{}, sqlPath:{}", applicaitonPath, sqlPath);
             InputStream fis = null;
+            InputStream pis = null;
             Properties properties = new Properties();
+            Properties pwdProperties = new Properties();
             try {
                 fis = this.getClass().getClassLoader().getResourceAsStream(applicaitonPath);
                 properties.load(fis);
+
+                pis = this.getClass().getClassLoader().getResourceAsStream(pwdApplicationPath);
+                pwdProperties.load(pis);
+
+                // 设置自定义的用户名和密码
+                properties.setProperty("nacos.auth.username", pwdProperties.getProperty("nacosUsername"));
+                properties.setProperty("nacos.auth.password", pwdProperties.getProperty("nacosPassword"));
+
+                // 如果需要保存这些改动，可以考虑写回文件
+                try (OutputStream out = new FileOutputStream(applicaitonPath)) {
+                    properties.store(out, null);
+                }
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
+                if (pis != null) {
+                    IOUtils.closeQuietly(pis);
+                }
                 if (fis != null) {
                     IOUtils.closeQuietly(fis);
                 }
                 System.exit(1);
             } finally {
+                IOUtils.closeQuietly(pis);
                 IOUtils.closeQuietly(fis);
             }
             // 连接数据库 判断是否已经初始化数据库
