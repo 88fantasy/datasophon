@@ -130,6 +130,7 @@
         "outputDirectory": "${nacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${bigdataAppProfile}/${bigdataAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
+          "bigdataServerPort",
           "bigdataEtcdUrl",
           "bigdataPrometheusUrl",
           "bigdataGrafanaUrl",
@@ -150,6 +151,7 @@
           "bigdataMinioSecretKey",
           "bigdataMinioHost",
           "bigdataEsNodes",
+          "bigdataEsPort",
           "bigdataEsUserName",
           "bigdataEsPassword",
           "bigdataWorkbenchSystemUrl",
@@ -204,6 +206,18 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "dev122"
+    },
+    {
+      "name": "bigdataServerPort",
+      "label": "bigdata应用服务端口",
+      "description": "bigdata应用服务端口",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "7500",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "7500"
     },
     {
       "name": "bigdataAppNacosGroup",
@@ -576,6 +590,18 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${initMasterNodes}"
+    },
+    {
+      "name": "bigdataEsPort",
+      "label": "es的端口",
+      "description": "es的端口",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${http.port}"
     },
     {
       "name": "bigdataEsUserName",

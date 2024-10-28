@@ -80,15 +80,15 @@ spring:
     host: ${bigdataRedisHost}
     port: ${bigdataRedisPort}
     database: ${bigdataRedisDatabase}
-    password: ${bigdataRedisPassword!}
-    redisson:
-      config: |
-        singleServerConfig:
-          address: "redis://${bigdataRedisHost}:${bigdataRedisPort}"
-          password: "${bigdataRedisPassword!}"
-          database: 0
-        codec: !<org.redisson.codec.JsonJacksonCodec> {}
-        transportMode: "NIO"
+    #password: ${bigdataRedisPassword!}
+    #redisson:
+    #  config: |
+    #    singleServerConfig:
+    #      address: "redis://${bigdataRedisHost}:${bigdataRedisPort}"
+    #      password: "${bigdataRedisPassword!}"
+    #      database: 0
+    #    codec: !<org.redisson.codec.JsonJacksonCodec> {}
+    #    transportMode: "NIO"
 
   ##spring datasource config
   datasource:
@@ -142,6 +142,7 @@ sso:
 
 ## tomcat config
 server:
+  port: ${bigdataServerPort}
   tomcat:
     accept-count: 1024
 
@@ -351,7 +352,7 @@ hsb:
 
 easy-es:
   enable: true
-  address: ${bigdataEsNodes}:27920
+  address: ${bigdataEsNodes}:${bigdataEsPort}
   username: ${bigdataEsUserName!}
   password: ${bigdataEsPassword!}
   global-config:
