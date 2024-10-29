@@ -21,7 +21,8 @@ import picocli.CommandLine;
         InitNmap.class,
         InitBinPackage.class,
         InitAllHost.class,
-        InitJdk.class
+        InitJdk.class,
+        InitTar.class
 })
 public class Init implements Runnable {
     

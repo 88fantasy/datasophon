@@ -26,12 +26,18 @@ echo "PACKAGES_PATH: ${PACKAGES_PATH}"
 JDK_FOLDER_PATH=/usr/java
 source /etc/profile
 mkdir -p /usr/java
-JDK_PATH_NAME="jdk1.8.0"
+JDK_PATH_NAME="jdk1.8.0_333"
 JDK_VERSION="1.8"
 BASH_PROFILE_PATH="/root/.bash_profile"
 BASHRC_PATH="/root/.bashrc"
 ETC_PROFILE_PATH="/etc/profile"
 JDK_TAR_NAME="jdk-8u333-linux-x64.tar.gz"
+arch=$(arch)
+echo arch:$arch
+if [ $arch = "aarch64" ]; then
+  JDK_TAR_NAME="jdk-8u431-linux-aarch64.tar.gz"
+  JDK_PATH_NAME="jdk1.8.0_431"
+fi
 
 jdkAvailable=$(java -version 2>&1 | awk 'NR==1{gsub(/"/,"");print $3}')
 result=$(echo $jdkAvailable | grep $JDK_VERSION)
@@ -56,6 +62,10 @@ else
   sleep 2s
   mkdir -p ${JDK_FOLDER_PATH}
   tar -zxvf ${PACKAGES_PATH}/${JDK_TAR_NAME} -C ${JDK_FOLDER_PATH}
+  if [ $? -ne 0 ]; then
+    echo "JDK install failed"
+    exit 1
+  fi
   JAVA_HOME="${JDK_FOLDER_PATH}/${JDK_PATH_NAME}"
   JRE_HOME="${JDK_FOLDER_PATH}/${JDK_PATH_NAME}/jre"
   JAVA_SOURCE_ENV="source /etc/profile"
