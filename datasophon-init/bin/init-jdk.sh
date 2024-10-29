@@ -35,8 +35,7 @@ JDK_TAR_NAME="jdk-8u333-linux-x64.tar.gz"
 arch=$(arch)
 echo arch:$arch
 if [ $arch = "aarch64" ]; then
-  JDK_TAR_NAME="jdk-8u431-linux-aarch64.tar.gz"
-  JDK_PATH_NAME="jdk1.8.0_431"
+  JDK_TAR_NAME="jdk-8u333-linux-aarch64.tar.gz"
 fi
 
 jdkAvailable=$(java -version 2>&1 | awk 'NR==1{gsub(/"/,"");print $3}')
