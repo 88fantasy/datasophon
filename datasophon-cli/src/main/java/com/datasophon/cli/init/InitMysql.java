@@ -96,12 +96,12 @@ public class InitMysql extends InitBase implements InitNodeHandler {
             
             executor.execShell("systemctl restart mysqld");
             executor.execShell("systemctl enable mysqld");
-            log.info("mysql install sucess.");
-            return true;
+            log.info("mysql install success.");
         } else {
-            log.info("mysql install fail.");
-            return false;
+            log.error("mysql install fail.");
+            System.exit(1);
         }
+        return true;
     }
     
     public void mysqlLib(Executor executor, String name, String checkCmd, String installCmd) {
