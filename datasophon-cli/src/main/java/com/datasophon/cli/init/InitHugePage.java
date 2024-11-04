@@ -1,6 +1,7 @@
 package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 
 import picocli.CommandLine;
@@ -20,12 +21,21 @@ public class InitHugePage extends InitBase {
     @Override
     public boolean doRun(Executor executor) {
         log.info("start to close transparent_hugepage.");
+        OsType osType = executor.getOs();
+        String rcLocalPath = "/etc/rc.d/rc.local";
+        if(OsType.isUnbuntu(osType)){
+            rcLocalPath = "/etc/rc.local";
+        }
+        if(!executor.exists(rcLocalPath).getExecResult()){
+            throw new RuntimeException("file not found:" + rcLocalPath);
+        }
         executor.execShell("echo never > /sys/kernel/mm/transparent_hugepage/enabled");
         executor.execShell("echo never > /sys/kernel/mm/transparent_hugepage/defrag");
-        ExecResult exec = executor.execShell("egrep 'echo never > /sys/kernel/mm/transparent_hugepage/defrag' /etc/rc.d/rc.local >&/dev/null");
+
+        ExecResult exec = executor.execShell(String.format("egrep 'echo never > /sys/kernel/mm/transparent_hugepage/defrag' %s >&/dev/null", rcLocalPath));
         if (!exec.getExecResult()) {
-            executor.execShell("echo 'echo never > /sys/kernel/mm/transparent_hugepage/defrag' >>/etc/rc.d/rc.local");
-            executor.execShell("echo 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' >>/etc/rc.d/rc.local");
+            executor.execShell(String.format("echo 'echo never > /sys/kernel/mm/transparent_hugepage/defrag' >>%s", rcLocalPath));
+            executor.execShell(String.format("echo 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' >>%s", rcLocalPath));
         }
         log.info("transparent_hugepage is closed.");
         log.info("init close transparent hugepage finished.");

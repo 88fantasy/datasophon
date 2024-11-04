@@ -2,6 +2,7 @@ package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.handler.InitNodeHandler;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -27,15 +28,27 @@ public class InitNtpSlave extends InitBase implements InitNodeHandler {
     
     @Override
     public boolean doRun(Executor executor) {
-        executor.execShell("yum -y install chrony");
-        ExecResult reResult = executor.execShell("rpm -qa | grep chrony-");
+        OsType osType = executor.getOs();
+        String checkCmd = "rpm -qa | grep chrony";
+        String installCmd = "yum -y install chrony";
+        String chronyConfPath = "/etc/chrony.conf";
+        String mvchronyConfCmd = "mv /etc/chrony.conf /etc/chrony.conf.$(date +%Y%m%d.%H%M%S)";
+        String enableCmd = "systemctl enable chronyd";
+        if(OsType.isUnbuntu(osType)) {
+            checkCmd = "dpkg --list|grep chrony";
+            installCmd = "DEBIAN_FRONTEND=noninteractive apt install chrony -y";
+            chronyConfPath = "/etc/chrony/chrony.conf";
+            mvchronyConfCmd = "mv /etc/chrony/chrony.conf /etc/chrony/chrony.conf.$(date +%Y%m%d.%H%M%S)";
+            enableCmd = "systemctl enable chrony";
+        }
+        executor.execShell(installCmd);
+        ExecResult reResult = executor.execShell(checkCmd);
         if (!reResult.getExecResult()) {
             log.info("install chrony  fail.");
             return false;
         }
-        executor.execShell("mv /etc/chrony.conf /etc/chrony.conf.$(date +%Y%m%d.%H%M%S)");
-        
-        String chronyConfPath = "/etc/chrony.conf";
+        executor.execShell(mvchronyConfCmd);
+
         List<String> conf = new ArrayList<>();
         conf.add(String.format("server %s iburst", ntpServerIp));
         conf.add("driftfile /var/lib/chrony/drift");
@@ -49,8 +62,13 @@ public class InitNtpSlave extends InitBase implements InitNodeHandler {
         executor.writeLines(conf, chronyConfPath);
         log.info("/etc/chrony.conf overwrite sucess.");
 
-        executor.execShell("systemctl enable chronyd");
-        executor.execShell("systemctl restart chronyd");
+        executor.execShell(enableCmd);
+        if (OsType.isUnbuntu(osType)){
+            executor.execShell("systemctl restart chronyd");
+            executor.execShell("systemctl restart chrony");
+        } else {
+            executor.execShell("systemctl restart chronyd");
+        }
         executor.execShell("chronyc sources");
 
         log.info("init ntpSlave sucess.");

@@ -84,6 +84,30 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
         if (!load.getExecResult()) {
             return false;
         }
+
+        //rc-local服务配置
+        if(OsType.isUnbuntu(os)){
+            if(!executor.exists("/etc/rc.local").getExecResult()){
+                executor.execShell("touch /etc/rc.local");
+                executor.execShell(" chmod 777 /etc/rc.local");
+                executor.execShell("echo '#!/bin/bash' > /etc/rc.local");
+            }
+            ExecResult rcResult = executor.execShell("systemctl is-enabled rc-local.service");
+            if(rcResult.getExecOut().equals("static")) {
+                executor.execShell(String.format("echo '\n\n[Install]' >> %s", "/lib/systemd/system/rc-local.service"));
+                executor.execShell(String.format("echo 'WantedBy=multi-user.target' >> %s", "/lib/systemd/system/rc-local.service"));
+            }
+            rcResult = executor.execShell("systemctl is-enabled rc-local.service");
+            if(rcResult.getExecOut().equals("disabled")){
+                executor.execShell("systemctl enable rc-local.service");
+            }
+            executor.execShell("systemctl start rc-local.service");
+            ExecResult statusResult = executor.execShell("systemctl status rc-local.service");
+            if(!statusResult.getExecResult()){
+                return false;
+            }
+        }
+
         log.info("system is configured.");
         return true;
     }

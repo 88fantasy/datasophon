@@ -1,6 +1,7 @@
 package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 
 import picocli.CommandLine;
@@ -22,29 +23,49 @@ public class InitLibrary extends InitBase {
     @Override
     public boolean doRun(Executor executor) {
         this.executor = executor;
-        
-        installLibxsltDevel();
-        installPsmisc();
-        installPerlJson();
-        initJavaPolicy();
-        initTmpPid();
-        installXdgUtils();
-        installGcc();
-        installOpenssl();
-        installLibtool();
-        initChmodDev();
-        initCleanBuff();
-        sourceProfile();
+        OsType osType = executor.getOs();
+        if(OsType.isCentos(osType)) {
+            installLibxsltDevel();
+            installPsmisc();
+            installPerlJson();
+            initJavaPolicy();
+            initTmpPid();
+            installXdgUtils();
+            installGcc();
+            installOpenssl();
+            installLibtool();
+            initChmodDev();
+            initCleanBuff();
+            sourceProfile();
+        } else if(OsType.isUnbuntu(osType)){
+            executor.execShell("dpkg --configure -a");
+            installPsmisc();
+            initJavaPolicy();
+            initTmpPid();
+            installLibtool();
+            initChmodDev();
+            initCleanBuff();
+            sourceProfile();
+            libpamCracklib();
+            policycoreutils();
+        }
         return true;
     }
     
     private void installLibxsltDevel() {
         log.info("install libxslt-devel");
-        ExecResult libExec = executor.execShell("rpm -qa | grep libxslt-devel");
+        OsType osType = executor.getOs();
+        String checkCmd = "rpm -qa | grep libxslt-devel";
+        String installCmd = "yum install libxslt-devel -y";
+        if(OsType.isUnbuntu(osType)) {
+            checkCmd = "dpkg --list|grep libxslt-devel";
+            installCmd = "DEBIAN_FRONTEND=noninteractive apt install libxslt-devel -y";
+        }
+        ExecResult libExec = executor.execShell(checkCmd);
         if (!libExec.getExecResult()) {
             log.info("libxslt-devel not installed");
-            executor.execShell("yum install libxslt-devel -y");
-            libExec = executor.execShell("rpm -qa | grep libxslt-devel");
+            executor.execShell(installCmd);
+            libExec = executor.execShell(checkCmd);
             if (!libExec.getExecResult()) {
                 log.info("libxslt-devel install failed.");
                 System.exit(1);
@@ -55,11 +76,18 @@ public class InitLibrary extends InitBase {
     
     private void installPsmisc() {
         log.info("install psmisc");
-        ExecResult psmiscExec = executor.execShell("rpm -qa | grep psmisc");
+        OsType osType = executor.getOs();
+        String checkCmd = "rpm -qa | grep psmisc";
+        String installCmd = "yum install psmisc -y";
+        if(OsType.isUnbuntu(osType)) {
+            checkCmd = "dpkg --list|grep psmisc";
+            installCmd = "DEBIAN_FRONTEND=noninteractive apt install psmisc -y";
+        }
+        ExecResult psmiscExec = executor.execShell(checkCmd);
         if (!psmiscExec.getExecResult()) {
             log.info("psmisc not installed");
-            executor.execShell("yum install psmisc -y");
-            psmiscExec = executor.execShell("rpm -qa | grep psmisc");
+            executor.execShell(installCmd);
+            psmiscExec = executor.execShell(checkCmd);
             if (!psmiscExec.getExecResult()) {
                 log.info("psmisc install failed.");
                 System.exit(1);
@@ -70,11 +98,18 @@ public class InitLibrary extends InitBase {
     
     private void installPerlJson() {
         log.info("install perl-JSON");
-        ExecResult perlExec = executor.execShell("rpm -qa | grep perl-JSON");
+        OsType osType = executor.getOs();
+        String checkCmd = "rpm -qa | grep perl-JSON";
+        String installCmd = "yum install perl-JSON -y";
+        if(OsType.isUnbuntu(osType)) {
+            checkCmd = "dpkg --list|grep perl-JSON";
+            installCmd = "apt install perl-JSON -y";
+        }
+        ExecResult perlExec = executor.execShell(checkCmd);
         if (!perlExec.getExecResult()) {
             log.info("perl-JSON not installed");
-            executor.execShell("yum install perl-JSON -y");
-            perlExec = executor.execShell("rpm -qa | grep perl-JSON");
+            executor.execShell(installCmd);
+            perlExec = executor.execShell(checkCmd);
             if (!perlExec.getExecResult()) {
                 log.info("perl-JSON install failed.");
                 System.exit(1);
@@ -106,12 +141,19 @@ public class InitLibrary extends InitBase {
     
     private void installXdgUtils() {
         log.info("install xdg-utils.");
-        ExecResult xdgExec = executor.execShell("rpm -qa | grep xdg-utils");
+        OsType osType = executor.getOs();
+        String checkCmd = "rpm -qa | grep xdg-utils";
+        String installCmd = "yum install xdg-utils -y";
+        if(OsType.isUnbuntu(osType)) {
+            checkCmd = "dpkg --list|grep xdg-utils";
+            installCmd = "DEBIAN_FRONTEND=noninteractive apt install xdg-utils -y";
+        }
+        ExecResult xdgExec = executor.execShell(checkCmd);
         if (xdgExec.getExecResult()) {
             log.info("xdg-utils already installed");
         } else {
-            executor.execShell("yum install xdg-utils -y");
-            xdgExec = executor.execShell("rpm -qa | grep xdg-utils");
+            executor.execShell(installCmd);
+            xdgExec = executor.execShell(checkCmd);
             if (xdgExec.getExecResult()) {
                 log.info("xdg-utils install successfully.");
             } else {
@@ -124,12 +166,19 @@ public class InitLibrary extends InitBase {
     
     private void installGcc() {
         log.info("install gcc-c++.");
-        ExecResult gccExec = executor.execShell("rpm -qa | grep gcc-c++");
+        OsType osType = executor.getOs();
+        String checkCmd = "rpm -qa | grep gcc-c++";
+        String installCmd = "yum install gcc-c++ -y";
+        if(OsType.isUnbuntu(osType)) {
+            checkCmd = "dpkg --list|grep gcc-c++";
+            installCmd = "apt install gcc-c++ -y";
+        }
+        ExecResult gccExec = executor.execShell(checkCmd);
         if (gccExec.getExecResult()) {
             log.info("gcc-c++ already installed");
         } else {
-            executor.execShell("yum install gcc-c++ -y");
-            gccExec = executor.execShell("rpm -qa | grep gcc-c++");
+            executor.execShell(installCmd);
+            gccExec = executor.execShell(checkCmd);
             if (gccExec.getExecResult()) {
                 log.info("gcc-c++ install successfully.");
             } else {
@@ -142,12 +191,19 @@ public class InitLibrary extends InitBase {
     
     private void installOpenssl() {
         log.info("install openssl-devel.");
-        ExecResult opensslExec = executor.execShell("rpm -qa | grep openssl-devel");
+        OsType osType = executor.getOs();
+        String checkCmd = "rpm -qa | grep openssl-devel";
+        String installCmd = "yum install openssl-devel -y";
+        if(OsType.isUnbuntu(osType)) {
+            checkCmd = "dpkg --list|grep openssl-devel";
+            installCmd = "DEBIAN_FRONTEND=noninteractive apt install openssl-devel -y";
+        }
+        ExecResult opensslExec = executor.execShell(checkCmd);
         if (opensslExec.getExecResult()) {
             log.info("openssl-devel already installed");
         } else {
-            executor.execShell("yum install openssl-devel -y");
-            opensslExec = executor.execShell("rpm -qa | grep openssl-devel");
+            executor.execShell(installCmd);
+            opensslExec = executor.execShell(checkCmd);
             if (opensslExec.getExecResult()) {
                 log.info("openssl-devel install successfully.");
             } else {
@@ -160,12 +216,19 @@ public class InitLibrary extends InitBase {
     
     private void installLibtool() {
         log.info("install libtool.");
-        ExecResult libtoolExec = executor.execShell("rpm -qa | grep libtool");
+        OsType osType = executor.getOs();
+        String checkCmd = "rpm -qa | grep libtool";
+        String installCmd = "yum install libtool -y";
+        if(OsType.isUnbuntu(osType)) {
+            checkCmd = "dpkg --list|grep libtool";
+            installCmd = "DEBIAN_FRONTEND=noninteractive apt install libtool -y";
+        }
+        ExecResult libtoolExec = executor.execShell(checkCmd);
         if (libtoolExec.getExecResult()) {
             log.info("libtool already installed");
         } else {
-            executor.execShell("yum install libtool -y");
-            libtoolExec = executor.execShell("rpm -qa | grep libtool");
+            executor.execShell(installCmd);
+            libtoolExec = executor.execShell(checkCmd);
             if (libtoolExec.getExecResult()) {
                 log.info("libtool install successfully.");
             } else {
@@ -209,6 +272,56 @@ public class InitLibrary extends InitBase {
         executor.execShell("source /etc/profile");
         executor.execShell("source /root/.bash_profile");
         executor.execShell("echo $(java -version)");
+    }
+
+    private void libpamCracklib() {
+        log.info("install libpam-cracklib.");
+        OsType osType = executor.getOs();
+        String checkCmd = "rpm -qa | grep libpam-cracklib";
+        String installCmd = "yum install libpam-cracklib -y";
+        if(OsType.isUnbuntu(osType)) {
+            checkCmd = "dpkg --list|grep libpam-cracklib";
+            installCmd = "DEBIAN_FRONTEND=noninteractive apt install libpam-cracklib -y";
+        }
+        ExecResult result = executor.execShell(checkCmd);
+        if (result.getExecResult()) {
+            log.info("libpam-cracklib already installed");
+        } else {
+            executor.execShell(installCmd);
+            result = executor.execShell(checkCmd);
+            if (result.getExecResult()) {
+                log.info("libpam-cracklib install successfully.");
+            } else {
+                log.error("libpam-cracklib install failed.");
+                System.exit(1);
+            }
+        }
+        log.info("install libpam-cracklib finished.");
+    }
+
+    private void policycoreutils() {
+        log.info("install policycoreutils.");
+        OsType osType = executor.getOs();
+        String checkCmd = "rpm -qa | grep policycoreutils";
+        String installCmd = "yum install policycoreutils -y";
+        if(OsType.isUnbuntu(osType)) {
+            checkCmd = "dpkg --list|grep policycoreutils";
+            installCmd = "DEBIAN_FRONTEND=noninteractive apt install policycoreutils -y";
+        }
+        ExecResult result = executor.execShell(checkCmd);
+        if (result.getExecResult()) {
+            log.info("policycoreutils already installed");
+        } else {
+            executor.execShell(installCmd);
+            result = executor.execShell(checkCmd);
+            if (result.getExecResult()) {
+                log.info("policycoreutils install successfully.");
+            } else {
+                log.error("policycoreutils install failed.");
+                System.exit(1);
+            }
+        }
+        log.info("install policycoreutils finished.");
     }
     
 }

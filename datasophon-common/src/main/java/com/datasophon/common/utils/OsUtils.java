@@ -24,8 +24,7 @@ public class OsUtils {
         Optional<String> optionalOsVersionID = lines.stream().filter(s -> s.startsWith("VERSION_ID=")).findAny();
         Optional<String> optionalOsVersion = lines.stream().filter(s -> s.startsWith("VERSION=")).findAny();
         Optional<String> prettyName = lines.stream().filter(s -> s.startsWith("PRETTY_NAME=")).findAny();
-        logger.info("[source] os:{}, versionId:{}, version:{}", optionalOsName.get(), optionalOsVersionID.get(), optionalOsVersion.get());
-        String osName = optionalOsName.get();
+        String osName = "";
         String osVersion = "";
         String osDetail = "";
         OsType osType = OsType.OTHER;
@@ -37,7 +36,12 @@ public class OsUtils {
                     osDetail = prettyName.get().replaceAll("\"", "").split("=")[1].replaceAll("\\(", "")
                             .replaceAll("\\)", "").replaceAll(" ", "-");
                 }
+            } else if ("Ubuntu".equalsIgnoreCase(osName)) {
+                if(prettyName.isPresent()){
+                    osDetail = prettyName.get().replaceAll("\"", "").split("=")[1].replaceAll(" ", "-");
+                }
             } else {
+                logger.info("other");
                 if (optionalOsVersionID.isPresent()) {
                     // VERSION_ID="7"
                     osVersion = optionalOsVersionID.get().replace("\"", "").split("=")[1];
@@ -47,7 +51,6 @@ public class OsUtils {
                 }
                 osDetail = String.format("%s-%s",osName, osVersion);
             }
-
             osType = OsType.of(osDetail);
         }
         logger.info("[dist] os:{}, version:{}, osDetail:{}, osType:{}", osName, osVersion, osDetail, osType.getDesc());

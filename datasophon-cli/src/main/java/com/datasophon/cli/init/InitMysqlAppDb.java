@@ -1,6 +1,7 @@
 package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -32,11 +33,16 @@ public class InitMysqlAppDb extends InitBase {
     
     @Override
     public boolean doRun(Executor executor) {
-        ExecResult statusResult = executor.execShell("systemctl status mysqld | grep running | wc -l");
+        OsType osType = executor.getOs();
+        String mysqlService = "mysqld";
+        if(OsType.isUnbuntu(osType)){
+            mysqlService = "mysql";
+        }
+        ExecResult statusResult = executor.execShell(String.format("systemctl status %s | grep running | wc -l", mysqlService));
         if (statusResult.getExecOut().equals("1")) {
             initCommonAccount(executor, rootPassword, account, password, dbName);
         } else {
-            executor.execShell("systemctl restart mysqld");
+            executor.execShell(String.format("systemctl restart %s", mysqlService));
         }
         return true;
     }

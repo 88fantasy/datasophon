@@ -15,6 +15,8 @@ public enum OsType {
 
     OPENEULER_22_03_LTS_SP1("openEuler-22.03-LTS-SP1"),
 
+    UBUNTU_22_04_1_LTS("Ubuntu-22.04.1-LTS"),
+
     OTHER("other"),
 
     AUTO("auto")
@@ -31,4 +33,16 @@ public enum OsType {
         Optional<OsType> optional = Arrays.stream(OsType.values()).filter(type -> type.getDesc().equals(desc)).findAny();
         return optional.orElse(OsType.OTHER);
     }
+
+    public static boolean isUnbuntu(OsType osType){
+        String desc = osType.getDesc();
+        return desc.startsWith("Ubuntu");
+    }
+    public static boolean isCentos(OsType osType){
+        String desc = osType.getDesc();
+        return desc.startsWith("centos") || desc.startsWith("openEuler");
+    }
+
+
+
 }

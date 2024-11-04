@@ -1,6 +1,7 @@
 package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 
 import org.apache.commons.lang3.StringUtils;
@@ -52,6 +53,7 @@ public class InitOsSafeConf extends InitBase {
     @Override
     public boolean doRun(Executor executor) {
         this.executor = executor;
+        OsType osType = executor.getOs();
         log.info("============================");
         log.info(">>>>> 基线安全配置开始 <<<<<");
         log.info("============================");
@@ -59,10 +61,14 @@ public class InitOsSafeConf extends InitBase {
         setHistoryRecordCount();
         setKeyFilePermission();
         disabledSuToRoot();
-        setPasswdComplexity();
-        setPasswordLifespan();
-        setPasswdLockStrategy();
-        setPasswdRepeatTimes();
+        if(OsType.isCentos(osType)){
+            setPasswdComplexity();
+            setPasswordLifespan();
+            setPasswdLockStrategy();
+            setPasswdRepeatTimes();
+        } else if(OsType.isUnbuntu(osType)){
+            // TODO /etc/pam.d/common-password
+        }
         lockNoUseAccount();
         disableShellOfNoUseAccount();
         setHostsAccessControl();

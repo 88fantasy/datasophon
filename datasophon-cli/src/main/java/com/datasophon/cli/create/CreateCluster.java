@@ -30,6 +30,9 @@ public class CreateCluster implements Runnable {
 
     @CommandLine.Option(names = {"-s", "skipInitBinPackage"}, description = "是否跳过分发安资源包(-s则跳过)")
     boolean skipInitBinPackage = false;
+
+    @CommandLine.Option(names = {"-f", "--mysqlInstallForce"}, description = "mysql存在是否覆盖安装")
+    boolean mysqlInstallForce = false;
     
     private String initPath;
     
@@ -96,8 +99,6 @@ public class CreateCluster implements Runnable {
         if (CollUtil.isEmpty(nodes)) {
             return;
         }
-        log.info("安全配置");
-        initOsSafeConf(config, nodes);
 
         if(!skipInitBinPackage) {
             log.info("分发资源包");
@@ -119,11 +120,17 @@ public class CreateCluster implements Runnable {
         log.info("关闭Swap");
         initSwap(config, nodes);
         
-        log.info("yum离线服务配置");
-        initYumServer(config);
-        
-        log.info("yum离线仓库配置");
-        initYumConf(config, nodes);
+        log.info("yum/apt离线源服务配置");
+        initOfflineServer(config);
+
+        log.info("yum/apt离线源节点配置");
+        initOfflineNodes(config, nodes);
+
+        log.info("初始化依赖库");
+        initLibrary(config, nodes);
+
+        log.info("安全配置");
+        initOsSafeConf(config, nodes);
         
         log.info("优化系统配置");
         initSystemConf(config, nodes);
@@ -142,9 +149,6 @@ public class CreateCluster implements Runnable {
         
         log.info("配置ntpSlave");
         initNtpSlave(config, nodes);
-        
-        log.info("初始化依赖库");
-        initLibrary(config, nodes);
         
         log.info("安装mysql");
         initMysql(config);
@@ -188,8 +192,11 @@ public class CreateCluster implements Runnable {
         log.info("关闭Swap");
         initSwap(config, nodes);
         
-        log.info("离线yum仓库配置");
-        initYumConf(config, nodes);
+        log.info("离线yum/apt仓库配置");
+        initOfflineNodes(config, nodes);
+
+        log.info("初始化依赖库");
+        initLibrary(config, nodes);
         
         log.info("优化系统配置");
         initSystemConf(config, nodes);
@@ -203,9 +210,6 @@ public class CreateCluster implements Runnable {
         
         log.info("配置ntpSlave");
         initNtpSlave(config, nodes);
-        
-        log.info("初始化依赖库");
-        initLibrary(config, nodes);
         
         log.info("关闭透明大页");
         initHugePage(config, nodes);
@@ -277,21 +281,20 @@ public class CreateCluster implements Runnable {
         allNodesExec(nodes, new InitSwap());
     }
     
-    private void initYumServer(ClusterConfig config) {
+    private void initOfflineServer(ClusterConfig config) {
         GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
-        InitYumServer initYumServer = new InitYumServer();
+        InitOfflineServer initYumServer = new InitOfflineServer();
         initYumServer.setConfigFilePath(initConfigYamlPath);
         initYumServer.setPackagePath(packagesPath)
                 .setReposTarName(yumServer.getReposTarName())
                 .setServerIp(yumServer.getHost().getIp())
-                .setServerPort(yumServer.getListenPort())
-                .setTemplateDir(initConfigTemplatePath);
+                .setServerPort(yumServer.getListenPort());
         singleNodesExec(yumServer.getHost(), initYumServer);
     }
     
-    private void initYumConf(ClusterConfig config, List<Host> nodes) {
+    private void initOfflineNodes(ClusterConfig config, List<Host> nodes) {
         GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
-        InitYumConf initYumConf = new InitYumConf();
+        InitOfflineSlave initYumConf = new InitOfflineSlave();
         initYumConf.setConfigFilePath(initConfigYamlPath);
         initYumConf.setServerIp(yumServer.getHost().getIp())
                 .setServerPort(yumServer.getListenPort());
@@ -345,7 +348,8 @@ public class CreateCluster implements Runnable {
         InitMysql initMysql = new InitMysql();
         GlobalConfig.MysqlConfig mysqlConfig = config.getGlobal().getMysql();
         initMysql.setConfigFilePath(initConfigYamlPath);
-        initMysql.setPassword(mysqlConfig.getPassword());
+        initMysql.setPassword(mysqlConfig.getPassword())
+            .setForce(mysqlInstallForce);
         singleNodesExec(mysqlConfig.getHost(), initMysql);
     }
     

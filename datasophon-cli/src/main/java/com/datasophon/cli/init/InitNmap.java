@@ -2,6 +2,7 @@ package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.handler.InitNodeHandler;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 
 import picocli.CommandLine;
@@ -22,12 +23,19 @@ public class InitNmap extends InitBase implements InitNodeHandler {
     
     @Override
     public boolean doRun(Executor executor) {
+        OsType osType = executor.getOs();
         log.info("install nmap.");
-        ExecResult nmapExec = executor.execShell("rpm -qa | grep nmap");
+        String checkCmd = "rpm -qa | grep nmap";
+        String installCmd = "yum install nmap -y";
+        if(OsType.isUnbuntu(osType)) {
+            checkCmd = "dpkg --list|grep nmap";
+            installCmd = "DEBIAN_FRONTEND=noninteractive apt install nmap -y";
+        }
+        ExecResult nmapExec = executor.execShell(checkCmd);
         if (!nmapExec.getExecResult()) {
             log.info("nmap not installed");
-            executor.execShell("yum install nmap -y");
-            nmapExec = executor.execShell("rpm -qa | grep nmap");
+            executor.execShell(installCmd);
+            nmapExec = executor.execShell(checkCmd);
             if (!nmapExec.getExecResult()) {
                 log.info("nmap install failed.");
                 System.exit(1);

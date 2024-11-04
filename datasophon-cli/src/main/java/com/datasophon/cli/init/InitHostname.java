@@ -27,8 +27,12 @@ public class InitHostname extends InitBase {
     @Override
     public boolean doRun(Executor executor) {
         executor.execShell(String.format("echo %s >/etc/hostname", hostname));
-        executor.execShell(String.format("echo HOSTNAME=%s >/etc/sysconfig/network", hostname));
-        executor.execShell("echo NOZEROCONF=yes >>/etc/sysconfig/network");
+        if(executor.exists("/etc/sysconfig/network").getExecResult()){
+            executor.execShell(String.format("echo HOSTNAME=%s >/etc/sysconfig/network", hostname));
+            executor.execShell("echo NOZEROCONF=yes >>/etc/sysconfig/network");
+        } else {
+            log.warn("/etc/sysconfig/network file not exist");
+        }
         executor.execShell(String.format("hostnamectl set-hostname %s", hostname));
         executor.execShell(String.format("hostnamectl set-hostname --static %s", hostname));
         
