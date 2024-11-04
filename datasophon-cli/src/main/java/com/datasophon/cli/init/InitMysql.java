@@ -72,7 +72,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
                 return true;
             } else {
                 log.info("mysql install fail.");
-                return false;
+                System.exit(1);
             }
         } else {
             // 卸载mariadb
@@ -131,9 +131,10 @@ public class InitMysql extends InitBase implements InitNodeHandler {
                 return true;
             } else {
                 log.info("mysql install fail.");
-                return false;
+                System.exit(1);
             }
         }
+        return true;
     }
     
     private void mysqlLib(Executor executor, String name, String checkCmd, String installCmd) {
