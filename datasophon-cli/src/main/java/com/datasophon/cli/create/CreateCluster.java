@@ -105,6 +105,9 @@ public class CreateCluster implements Runnable {
             initBinPackage(config, nodes);
         }
 
+        log.info("安装tar");
+        initTar(config, nodes);
+
         log.info("安装jdk");
         initJdk(config, nodes);
         
@@ -176,6 +179,9 @@ public class CreateCluster implements Runnable {
             log.info("分发资源包");
             initBinPackage(config, nodes);
         }
+
+        log.info("安装tar");
+        initTar(config, nodes);
 
         log.info("安装jdk");
         initJdk(config, nodes);
@@ -256,6 +262,13 @@ public class CreateCluster implements Runnable {
         List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
         allNodesExec(workerNodes, initBinPackage);
 
+    }
+
+    private void initTar(ClusterConfig config, List<Host> nodes) {
+        InitTar initTar = new InitTar();
+        initTar.setPackagePath(packagesPath);
+        List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
+        allNodesExec(workerNodes, initTar);
     }
 
     private void initJdk(ClusterConfig config, List<Host> nodes) {

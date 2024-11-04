@@ -35,8 +35,7 @@ public class InitJdk extends InitBase {
         String etcProfilePath="/etc/profile";
         String jdkTarName = "jdk-8u333-linux-x64.tar.gz";
         if (ArchType.AARCH64.equals(executor.getArch())) {
-            jdkTarName = "jdk-8u431-linux-aarch64.tar.gz";
-            jdkPathName = "jdk1.8.0_431";
+            jdkTarName = "jdk-8u333-linux-aarch64.tar.gz";
         }
         ExecResult exec = executor.execShell("java -version 2>&1 | awk 'NR==1{gsub(/\"/,\"\");print $3}'");
         String jdkAvailable = exec.getExecOut();

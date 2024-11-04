@@ -15,6 +15,8 @@ public enum OsType {
 
     OPENEULER_22_03_LTS_SP1("openEuler-22.03-LTS-SP1"),
 
+    OPENEULER_22_03_LTS_SP3("openEuler-22.03-LTS-SP3"),
+
     UBUNTU_22_04_1_LTS("Ubuntu-22.04.1-LTS"),
 
     OTHER("other"),
