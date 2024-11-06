@@ -36,13 +36,7 @@ public class CreateCluster implements Runnable {
     
     private String initPath;
     
-    private String initBinPath;
-    
     private String initConfigPath;
-    
-    private String initConfigTemplatePath;
-    
-    private String initSbinPath;
     
     private String packagesPath;
     
@@ -69,10 +63,7 @@ public class CreateCluster implements Runnable {
        log.info("是否跳过分发资源包:{}", skipInitBinPackage);
 
         initPath = String.format("%s/datasophon-init", datasophonPath);
-        initBinPath = String.format("%s/bin", initPath);
         initConfigPath = String.format("%s/config", initPath);
-        initConfigTemplatePath = String.format("%s/config/templates", initPath);
-        initSbinPath = String.format("%s/sbin", initPath);
         packagesPath = String.format("%s/packages", initPath);
         initConfigYamlPath = String.format("%s/cluster-sample.yml", initConfigPath);
         log.info("\nDATASOPHON_PATH:{},\nINIT_PATH:{},\nINIT_CONFIG_YAML_PATH:{}", datasophonPath, initPath, initConfigYamlPath);
@@ -104,6 +95,12 @@ public class CreateCluster implements Runnable {
             log.info("分发资源包");
             initBinPackage(config, nodes);
         }
+
+        log.info("shell bash设置");
+        initBash(config, nodes);
+
+        log.info("安装tar");
+        initTar(config, nodes);
 
         log.info("安装tar");
         initTar(config, nodes);
@@ -172,13 +169,14 @@ public class CreateCluster implements Runnable {
         if (CollUtil.isEmpty(nodes)) {
             return;
         }
-        log.info("安全配置");
-        initOsSafeConf(config, nodes);
 
         if(!skipInitBinPackage) {
             log.info("分发资源包");
             initBinPackage(config, nodes);
         }
+
+        log.info("shell bash设置");
+        initBash(config, nodes);
 
         log.info("安装tar");
         initTar(config, nodes);
@@ -203,6 +201,9 @@ public class CreateCluster implements Runnable {
 
         log.info("初始化依赖库");
         initLibrary(config, nodes);
+
+        log.info("安全配置");
+        initOsSafeConf(config, nodes);
         
         log.info("优化系统配置");
         initSystemConf(config, nodes);
@@ -262,6 +263,10 @@ public class CreateCluster implements Runnable {
         List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
         allNodesExec(workerNodes, initBinPackage);
 
+    }
+
+    private void initBash(ClusterConfig config, List<Host> nodes) {
+        allNodesExec(nodes, new InitBash());
     }
 
     private void initTar(ClusterConfig config, List<Host> nodes) {

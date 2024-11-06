@@ -22,7 +22,8 @@ import picocli.CommandLine;
         InitBinPackage.class,
         InitAllHost.class,
         InitJdk.class,
-        InitTar.class
+        InitTar.class,
+        InitBash.class
 })
 public class Init implements Runnable {
     

@@ -1,8 +1,10 @@
 package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
+import com.datasophon.common.Constants;
 import com.datasophon.common.utils.ExecResult;
 
+import com.datasophon.common.utils.ShellUtils;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -31,10 +33,16 @@ public class InitBinPackage extends InitBase {
         if (!initPathF.exists() || !initPathF.isDirectory()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "local dir not found : " + initPath);
         }
+        File installPackagePathF = new File(Constants.MASTER_MANAGE_PACKAGE_PATH);
+        if(!installPackagePathF.exists()) {
+            ShellUtils.execShell(String.format("ln -s %s %s", initPath, Constants.MASTER_MANAGE_PACKAGE_PATH));
+        }
+
         ExecResult createResult = executor.createDir(initPath);
         if (!createResult.getExecResult()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "dist createDir fail : " + initPath);
         }
+
         log.info("分发资源包路径:{} start", initPath);
         long ts = System.currentTimeMillis();
         ExecResult execResult = executor.sendDir(initPath, initPath, true);

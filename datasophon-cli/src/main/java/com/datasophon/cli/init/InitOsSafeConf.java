@@ -61,14 +61,21 @@ public class InitOsSafeConf extends InitBase {
         setHistoryRecordCount();
         setKeyFilePermission();
         disabledSuToRoot();
-        if(OsType.isCentos(osType)){
-            setPasswdComplexity();
-            setPasswordLifespan();
-            setPasswdLockStrategy();
-            setPasswdRepeatTimes();
-        } else if(OsType.isUnbuntu(osType)){
-            // TODO /etc/pam.d/common-password
+
+        //密码策略
+        String passwdConfFullPath = "/etc/pam.d/system-auth";
+        String passwdConfLoginPath = "/etc/pam.d/system-auth";
+        String passwdComplexityKeyword = "password    requisite     pam_cracklib.so";
+        if(OsType.isUnbuntu(osType)){
+            passwdConfFullPath = "/etc/pam.d/common-password";
+            passwdConfLoginPath = "/etc/pam.d/login";
+            passwdComplexityKeyword = "password       requisite                       pam_cracklib.so";
         }
+        setPasswdComplexity(passwdConfFullPath, passwdComplexityKeyword);
+        setPasswordLifespan();
+        setPasswdLockStrategy(passwdConfLoginPath);
+        setPasswdRepeatTimes(passwdConfFullPath);
+
         lockNoUseAccount();
         disableShellOfNoUseAccount();
         setHostsAccessControl();
@@ -157,11 +164,11 @@ public class InitOsSafeConf extends InitBase {
     /**
      * 设置密码复杂度
      */
-    private void setPasswdComplexity() {
+    private void setPasswdComplexity(String passwdConfFullPath, String passwdKeyword) {
         log.info("===== 设置账号密码复杂度要求 =====");
-        keyword = "password    requisite     pam_cracklib.so";
+        keyword = passwdKeyword;
         confStr = "password    requisite     pam_cracklib.so retry=3 minlen=8 dcredit=-1 ucredit=-1 lcredit=-1 ocredit=-1";
-        confFullPath = "/etc/pam.d/system-auth";
+        confFullPath = passwdConfFullPath;
         backupSignal = "0";
         failedSignal = "abort";
         editConf();
@@ -197,18 +204,18 @@ public class InitOsSafeConf extends InitBase {
     /**
      * 设置账号密码错误锁定策略
      */
-    private void setPasswdLockStrategy() {
+    private void setPasswdLockStrategy(String passwdConfFullPath) {
         log.info("===== 设置账号密码错误锁定策略 =====");
         keyword = "auth        required      pam_tally2.so";
         confStr = "auth        required      pam_tally2.so deny=5 onerr=fail no_magic_root unlock_time=180";
-        confFullPath = "/etc/pam.d/system-auth";
+        confFullPath = passwdConfFullPath;
         backupSignal = "0";
         failedSignal = "abort";
         editConf();
         
         keyword = "account        required      pam_tally2.so";
         confStr = "account        required      pam_tally2.so";
-        confFullPath = "/etc/pam.d/system-auth";
+        confFullPath = passwdConfFullPath;
         backupSignal = "0";
         failedSignal = "abort";
         editConf();
@@ -217,11 +224,11 @@ public class InitOsSafeConf extends InitBase {
     /**
      * 设置相同密码最大重复使用次数
      */
-    private void setPasswdRepeatTimes() {
+    private void setPasswdRepeatTimes(String passwdConfFullPath) {
         log.info("===== 设置口令复用次数限制 =====");
         keyword = "password    sufficient    pam_unix.so sha512 shadow nullok try_first_pass use_authtok";
         confStr = "password    sufficient    pam_unix.so sha512 shadow nullok try_first_pass use_authtok remember=5";
-        confFullPath = "/etc/pam.d/system-auth";
+        confFullPath = passwdConfFullPath;
         backupSignal = "0";
         failedSignal = "abort";
         editConf();

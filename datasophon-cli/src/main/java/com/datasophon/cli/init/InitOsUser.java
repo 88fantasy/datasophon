@@ -29,7 +29,7 @@ public class InitOsUser extends InitBase {
         
         ExecResult userExec = executor.execShell(String.format("egrep \"^%s\" /etc/passwd >&/dev/null", USER));
         if (!userExec.getExecResult()) {
-            ExecResult userAddExec = executor.execShell(String.format("useradd -g %s %s", USER, USER));
+            ExecResult userAddExec = executor.execShell(String.format("useradd --shell /bin/bash -g %s %s", USER, USER));
             if (userAddExec.getExecResult()) {
                 log.info("Successfully added USER: {} PASSWD: {}", USER, USER);
             } else {
