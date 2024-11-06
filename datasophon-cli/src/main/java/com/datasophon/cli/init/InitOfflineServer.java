@@ -98,9 +98,9 @@ public class InitOfflineServer extends InitBase implements InitNodeHandler {
             ExecResult vResult = executor.execShell("httpd -v");
             if (!vResult.getExecOut().equals("127")) {
                 String httpdConfPath = "/etc/httpd/conf/httpd.conf";
-                executor.execShell(String.format("sed -i 's/^DocumentRoot \"/var/www/html\"/DocumentRoot \"'%s'\"/g' %s", httpRootPath, httpdConfPath));
-                executor.execShell(String.format("sed -i 's/^<Directory \"/var/www/html\">/<Directory \"'%s'\">/g' %s", httpRootPath, httpdConfPath));
-                executor.execShell(String.format("sed -i 's/^Listen 80/Listen '%s'/g' %s", serverPort, httpdConfPath));
+                executor.execShell(String.format("sed -i 's|^DocumentRoot \"/var/www/html\"|DocumentRoot \"%s\"|g' %s", httpRootPath, httpdConfPath));
+                executor.execShell(String.format("sed -i 's|^<Directory \"/var/www/html\">|<Directory \"%s\">|g' %s", httpRootPath, httpdConfPath));
+                executor.execShell(String.format("sed -i 's|^Listen 80|Listen '%s'|g' %s", serverPort, httpdConfPath));
             }
             ExecResult result = executor.execShell("systemctl restart httpd");
             if (!result.getExecResult()) {
