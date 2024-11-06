@@ -22,7 +22,7 @@ public class JschUtils {
             log.info("正在连接服务器{}@{}", userName, ip);
             session = jSch.getSession(userName, ip, port);
             String publicKey = String.format("/%s/.ssh/id_rsa", userName);
-            if(!userName.equals("root")) {
+            if(!"root".equals(userName)) {
                 publicKey = String.format("/home/%s/.ssh/id_rsa", userName);
             }
             if (sshAuthType == SSHAuthType.PASSWORD) {
