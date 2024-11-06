@@ -40,6 +40,11 @@ if [ ! -d "$LOG_DIR" ]; then
   mkdir $LOG_DIR
 fi
 
+DATA_DIR=$(awk -F " " '/^dir / {print $2}' $REDIS_DIR/conf/master.conf)
+if [ ! -d "DATA_DIR" ]; then
+  mkdir -p $DATA_DIR
+fi
+
 start_redis(){
 	[ -w "$PID_DIR" ] ||  mkdir -p "$PID_DIR"
   if [ -f $pid ]; then
