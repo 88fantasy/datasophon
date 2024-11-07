@@ -26,7 +26,7 @@ public class InitJdk extends InitBase {
 
     @Override
     public boolean doRun(Executor executor) {
-        String jdkFolderPath = "/usr/java";
+        String jdkFolderPath = "/usr/local";
         executor.execShell("source /etc/profile");
         String jdkPathName = "jdk1.8.0_333";
         String jdkVersion = "1.8";

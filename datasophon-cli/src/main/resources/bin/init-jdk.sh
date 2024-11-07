@@ -23,9 +23,9 @@ INIT_SBIN_PATH=${INIT_PATH}/sbin
 echo "INIT_SBIN_PATH: ${INIT_SBIN_PATH}"
 PACKAGES_PATH=${INIT_PATH}/packages
 echo "PACKAGES_PATH: ${PACKAGES_PATH}"
-JDK_FOLDER_PATH=/usr/java
+JDK_FOLDER_PATH=/usr/local
 source /etc/profile
-mkdir -p /usr/java
+mkdir -p ${JDK_FOLDER_PATH}
 JDK_PATH_NAME="jdk1.8.0_333"
 JDK_VERSION="1.8"
 BASH_PROFILE_PATH="/root/.bash_profile"
