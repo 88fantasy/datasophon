@@ -38,11 +38,9 @@ public class InitLibrary extends InitBase {
             initCleanBuff();
             sourceProfile();
         } else if(OsType.isUnbuntu(osType)){
-            executor.execShell("dpkg --configure -a");
             installPsmisc();
             initJavaPolicy();
             initTmpPid();
-            installLibtool();
             initChmodDev();
             initCleanBuff();
             sourceProfile();

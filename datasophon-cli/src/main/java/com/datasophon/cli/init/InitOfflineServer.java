@@ -62,6 +62,8 @@ public class InitOfflineServer extends InitBase implements InitNodeHandler {
             throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + repoOsPath);
         }
         if(OsType.isUnbuntu(osType)) {
+            executor.execShell("dpkg --configure -a");
+
             String defaultConfPath = "/etc/apache2/sites-available/000-default.conf";
             String apache2ConfPath = "/etc/apache2/apache2.conf";
             String portsConfPath = "/etc/apache2/ports.conf";
@@ -73,7 +75,10 @@ public class InitOfflineServer extends InitBase implements InitNodeHandler {
             if (!aptResult.getExecResult()) {
                 throw new RuntimeException("apt update fail");
             }
-            executor.execShell("apt -y install apache2");
+            ExecResult iResult = executor.execShell("apt -y install apache2");
+            if(!iResult.getExecResult()){
+                throw new RuntimeException("apt -y install apache2 fail");
+            }
             ExecResult aResult = executor.execShell("apache2 -v");
             if (aResult.getExecResult()) {
                 executor.execShell(String.format("sed -i 's|DocumentRoot /var/www/html|DocumentRoot %s|g' %s", httpRootPath, defaultConfPath));
@@ -94,7 +99,10 @@ public class InitOfflineServer extends InitBase implements InitNodeHandler {
             if (!fileResult.getExecResult()) {
                 throw new RuntimeException("file yum make cache fail");
             }
-            executor.execShell("yum install -y httpd");
+            ExecResult iResult = executor.execShell("yum install -y httpd");
+            if(!iResult.getExecResult()){
+                throw new RuntimeException("yum install -y httpd fail");
+            }
             ExecResult vResult = executor.execShell("httpd -v");
             if (!vResult.getExecOut().equals("127")) {
                 String httpdConfPath = "/etc/httpd/conf/httpd.conf";

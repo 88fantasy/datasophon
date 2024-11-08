@@ -102,9 +102,6 @@ public class CreateCluster implements Runnable {
         log.info("安装tar");
         initTar(config, nodes);
 
-        log.info("安装tar");
-        initTar(config, nodes);
-
         log.info("安装jdk");
         initJdk(config, nodes);
         
