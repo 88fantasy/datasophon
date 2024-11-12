@@ -1,0 +1,651 @@
+{
+  "name": "BIGDATA",
+  "label": "BigData",
+  "description": "数衍工作台",
+  "version": "3.6.1",
+  "sortNum": 79,
+  "dependencies":["NACOS"],
+  "packageName": "bigdata-server.tar.gz",
+  "decompressPackageName": "bigdata-server",
+  "roles": [
+    {
+      "name": "BigData",
+      "label": "BigData",
+      "roleType": "master",
+      "cardinality": "1",
+      "logFile": "bigdata/logs/chinaunicom-medical-mgmt-bigdata-server.log",
+      "startRunner": {
+        "timeout": "60",
+        "program": "bigdata/bin/bigdata-server.sh",
+        "args": [
+          "start"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "60",
+        "program": "bigdata/bin/bigdata-server.sh",
+        "args": [
+          "stop"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "bigdata/bin/bigdata-server.sh",
+        "args": [
+          "status"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "bigdata/bin/bigdata-server.sh",
+        "args": [
+          "restart"
+        ]
+      },
+      "externalLink": {
+        "name": "BigData UI",
+        "label": "BigData UI",
+        "url": "${bigdataServerAddress}/workbench-view#/login"
+      }
+    },
+    {
+      "name": "hsbServer",
+      "label": "hsbServer",
+      "roleType": "worker",
+      "cardinality": "0+",
+      "logFile": "hsb/logs/chinaunicom-medical-mgmt-hsb-server.log",
+      "startRunner": {
+        "timeout": "60",
+        "program": "hsb/bin/hsb-server.sh",
+        "args": [
+          "start"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "60",
+        "program": "hsb/bin/hsb-server.sh",
+        "args": [
+          "stop"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "hsb/bin/hsb-server.sh",
+        "args": [
+          "status"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "hsb/bin/hsb-server.sh",
+        "args": [
+          "restart"
+        ]
+      }
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "bigdata/conf/bootstrap.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "",
+        "templateName": "bigdata-master.ftl",
+        "includeParams": [
+          "bigdataJasyptEncryptorPassword",
+          "bigdataServerAddress",
+          "bigdataAppProfile",
+          "bigdataAppNacosGroup",
+          "bigdataAppNacosHost",
+          "bigdataAppNacosPort",
+          "bigdataAppNacosUsername",
+          "bigdataAppNacosPassword",
+          "bigdataAppVersion",
+          "bigdataAppName",
+          "bigdataMysqlBigdataUrl",
+          "bigdataMysqlBigdataUsername",
+          "bigdataMysqlBigdataPassword"
+        ]
+      },
+      {
+        "filename": "hsb/conf/bootstrap.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "",
+        "templateName": "hsb-master.ftl",
+        "includeParams": [
+          "bigdataJasyptEncryptorPassword",
+          "bigdataAppProfile",
+          "bigdataAppNacosGroup",
+          "bigdataAppNacosHost",
+          "bigdataAppNacosPort",
+          "bigdataAppNacosUsername",
+          "bigdataAppNacosPassword",
+          "hsbAppName"
+        ]
+      },
+      {
+        "filename": "common-vars.yml",
+        "configFormat": "custom",
+        "templateName": "common-vars.ftl",
+        "outputDirectory": "${nacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${bigdataAppProfile}/${bigdataAppNacosGroup}",
+        "type": "nacos",
+        "includeParams": [
+          "bigdataEtcdUrl",
+          "bigdataPrometheusUrl",
+          "bigdataGrafanaUrl",
+          "bigdataAiMappingAiTermMappingUrl",
+          "bigdataAiMappingAiFieldMappingUrl",
+          "bigdataUstreamYarnRmAddress",
+          "bigdataUstreamAgentYarnRmAddress",
+          "bigdataUstreamFlinkHistoryRestAddress",
+          "bigdataApiSixBaseUrl",
+          "bigdataApiSixAllowOrigins",
+          "bigdataApiSixHttpLoggerEndpoint",
+          "bigdataOutsideAccessUrl",
+          "bigdataRedisPassword",
+          "bigdataRedisDatabase",
+          "bigdataMinioAccessKey",
+          "bigdataMinioSecretKey",
+          "bigdataMinioHost",
+          "bigdataEsNodes",
+          "bigdataEsUserName",
+          "bigdataEsPassword",
+          "bigdataWorkbenchSystemUrl",
+          "bigdataWorkbenchSystemAppkey",
+          "bigdataWorkbenchSystemType",
+          "bigdataXApiKey",
+          "bigdataKafkaPassword",
+          "bigdataHsbNode",
+          "bigdataAppVersion",
+          "bigdataServerAddress",
+          "bigdataAppName",
+          "bigdataMysqlBigdataUrl",
+          "bigdataMysqlBigdataUsername",
+          "bigdataMysqlBigdataPassword"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "name": "bigdataJasyptEncryptorPassword",
+      "label": "jasypt加密密钥",
+      "description": "jasypt加密密钥",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "h56)1h~l@Y5j_Y0BFqb6!(obX5wplr^_",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "h56)1h~l@Y5j_Y0BFqb6!(obX5wplr^_"
+    },
+    {
+      "name": "bigdataServerAddress",
+      "label": "任务调度地址",
+      "description": "任务调度地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://192.168.2.122:7500/bigdata",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://192.168.2.122:7500/bigdata"
+    },
+    {
+      "name": "bigdataAppProfile",
+      "label": "nacos所属命名空间",
+      "description": "nacos所属命名空间",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "dev122",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "dev122"
+    },
+    {
+      "name": "bigdataAppNacosGroup",
+      "label": "nacos所属分组",
+      "description": "nacos所属分组",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "capacity",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "capacity"
+    },
+    {
+      "name": "bigdataAppNacosHost",
+      "label": "nacos的host",
+      "description": "nacos的host",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${nacosHost}"
+    },
+    {
+      "name": "bigdataAppNacosPort",
+      "label": "nacos的port",
+      "description": "nacos的port",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${nacosServerPort}"
+    },
+    {
+      "name": "bigdataAppNacosUsername",
+      "label": "nacos的账号",
+      "description": "nacos的账号",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${nacosUsername}"
+    },
+    {
+      "name": "bigdataAppNacosPassword",
+      "label": "nacos的密码",
+      "description": "nacos的密码",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${nacosPassword}"
+    },
+    {
+      "name": "bigdataAppVersion",
+      "label": "bigdata版本",
+      "description": "bigdata版本",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "v3.6.1",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "v3.6.1"
+    },
+    {
+      "name": "bigdataAppName",
+      "label": "bigdata服务名称",
+      "description": "bigdata服务名称",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "bigdata",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "bigdata"
+    },
+    {
+      "name": "bigdataMysqlBigdataUrl",
+      "label": "bigdata数据库url",
+      "description": "bigdata数据库url",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "jdbc:mysql://192.168.2.122:3306/chinaunicom_medical_mgmt_bigdata_ds?&allowMultiQueries=true&characterEncoding=utf-8",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "jdbc:mysql://192.168.2.122:3306/chinaunicom_medical_mgmt_bigdata_ds?&allowMultiQueries=true&characterEncoding=utf-8"
+    },
+    {
+      "name": "bigdataMysqlBigdataUsername",
+      "label": "bigdata数据库账号",
+      "description": "bigdata数据库账号",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "root",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "root"
+    },
+    {
+      "name": "bigdataMysqlBigdataPassword",
+      "label": "bigdata数据库密码",
+      "description": "bigdata数据库密码",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "datasophon",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "datasophon"
+    },
+    {
+      "name": "hsbAppName",
+      "label": "hsb服务名称",
+      "description": "hsb服务名称",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "hsb",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "hsb"
+    },
+    {
+      "name": "bigdataEtcdUrl",
+      "label": "配置etcd服务地址",
+      "description": "配置etcd服务地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${advertise-client-urls}"
+    },
+    {
+      "name": "bigdataPrometheusUrl",
+      "label": "配置prometheus访问地址",
+      "description": "配置prometheus访问地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://${prometheusHost}:9090"
+    },
+    {
+      "name": "bigdataGrafanaUrl",
+      "label": "配置grafana访问地址",
+      "description": "配置grafana访问地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://${grafanaHost}:31228/gw/bigdata/grafana"
+    },
+    {
+      "name": "bigdataAiMappingAiTermMappingUrl",
+      "label": "AI术语配置地址",
+      "description": "AI术语配置地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://10.81.17.102:36901",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://10.81.17.102:36901"
+    },
+    {
+      "name": "bigdataAiMappingAiFieldMappingUrl",
+      "label": "AI配置",
+      "description": "AI配置",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://10.81.17.102:36902",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://10.81.17.102:36902"
+    },
+    {
+      "name": "bigdataUstreamYarnRmAddress",
+      "label": "ustream的yarn配置",
+      "description": "ustream的yarn配置",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://yarnRm:8088/",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://yarnRm:8088/"
+    },
+    {
+      "name": "bigdataUstreamAgentYarnRmAddress",
+      "label": "ustream的agent-yarn配置",
+      "description": "ustream的agent-yarn配置",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://yarnRm:8088/",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://yarnRm:8088/"
+    },
+    {
+      "name": "bigdataUstreamFlinkHistoryRestAddress",
+      "label": "ustream的flink配置",
+      "description": "ustream的flink配置",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://flinkHistory:8082/",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://flinkHistory:8082/"
+    },
+    {
+      "name": "bigdataApiSixBaseUrl",
+      "label": "配置apisix访问地址",
+      "description": "配置apisix访问地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://apisix-node-1:29080",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://apisix-node-1:29080/"
+    },
+    {
+      "name": "bigdataApiSixAllowOrigins",
+      "label": "配置apisix allowOrigins",
+      "description": "配置apisix allowOrigins",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://localhost:8080",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://localhost:8080"
+    },
+    {
+      "name": "bigdataApiSixHttpLoggerEndpoint",
+      "label": "配置bigdata访问/hsb/v1/logger/info接口地址",
+      "description": "配置bigdata访问/hsb/v1/logger/info接口地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://bigdata:7500/bigdata/hsb/v1/logger/info",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://bigdata:7500/bigdata/hsb/v1/logger/info"
+    },
+    {
+      "name": "bigdataOutsideAccessUrl",
+      "label": "前置服务地址",
+      "description": "前置服务地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://192.168.2.122:19000",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://192.168.2.122:19000"
+    },
+    {
+      "name": "bigdataRedisPassword",
+      "label": "redis的密码",
+      "description": "redis的密码",
+      "required": false,
+      "configType": "map",
+      "type": "input",
+      "value": "ENC(+BAvWuBv4huQqdiuca7vi7fCCchRqvHA5FkVRRqgFFg=)",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "ENC(+BAvWuBv4huQqdiuca7vi7fCCchRqvHA5FkVRRqgFFg=)"
+    },
+    {
+      "name": "bigdataRedisDatabase",
+      "label": "redis的库",
+      "description": "redis的库",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "0",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "0"
+    },
+    {
+      "name": "bigdataMinioAccessKey",
+      "label": "minio accessKey",
+      "description": "minio accessKey",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${minioAccessKey}"
+    },
+    {
+      "name": "bigdataMinioSecretKey",
+      "label": "minio secretKey",
+      "description": "minio secretKey",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${minioSecretKey}"
+    },
+    {
+      "name": "bigdataMinioHost",
+      "label": "minio的地址",
+      "description": "minio的地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${minioHost}"
+    },
+    {
+      "name": "bigdataEsNodes",
+      "label": "es的地址",
+      "description": "es的地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${initMasterNodes}"
+    },
+    {
+      "name": "bigdataEsUserName",
+      "label": "es的账号",
+      "description": "es的账号",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "ENC(N8A4dn5mGZiFQFwQtGmTQA==)",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "ENC(N8A4dn5mGZiFQFwQtGmTQA==)"
+    },
+    {
+      "name": "bigdataEsPassword",
+      "label": "es的密码",
+      "description": "es的密码",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "ENC(N8A4dn5mGZiFQFwQtGmTQA==)",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "ENC(N8A4dn5mGZiFQFwQtGmTQA==)"
+    },
+    {
+      "name": "bigdataWorkbenchSystemUrl",
+      "label": "平台管理地址",
+      "description": "平台管理地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "192.168.2.130",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "192.168.2.130"
+    },
+    {
+      "name": "bigdataWorkbenchSystemAppkey",
+      "label": "平台管理应用appkey",
+      "description": "平台管理应用appkey",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "k6w72aua",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "k6w72aua"
+    },
+    {
+      "name": "bigdataWorkbenchSystemType",
+      "label": "第三方跳转对接类型",
+      "description": "第三方跳转对接类型",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "DEFAULT",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "DEFAULT"
+    },
+    {
+      "name": "bigdataXApiKey",
+      "label": "api-six的xApiKey",
+      "description": "api-six的xApiKey",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "edd1c9f034335f136f87ad84b625c234",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "edd1c9f034335f136f87ad84b625c234"
+    },
+    {
+      "name": "bigdataKafkaPassword",
+      "label": "kafka密码",
+      "description": "kafka密码",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "123123",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "123123"
+    },
+    {
+      "name": "bigdataHsbNode",
+      "label": "hsb访问地址",
+      "description": "hsb访问地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://hsb:6657",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://hsb:6657"
+    }
+  ]
+}

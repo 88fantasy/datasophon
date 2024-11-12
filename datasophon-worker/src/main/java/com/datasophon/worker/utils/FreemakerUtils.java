@@ -35,21 +35,39 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.alibaba.nacos.api.NacosFactory;
+import com.alibaba.nacos.api.PropertyKeyConst;
+import com.alibaba.nacos.api.config.ConfigService;
+import com.alibaba.nacos.api.exception.NacosException;
+import com.alibaba.nacos.client.naming.remote.http.NamingHttpClientManager;
+import com.alibaba.nacos.client.naming.utils.NamingHttpUtil;
+import com.alibaba.nacos.common.http.HttpRestResult;
+import com.alibaba.nacos.common.http.client.NacosRestTemplate;
+import com.alibaba.nacos.common.http.param.Header;
+import com.alibaba.nacos.common.http.param.Query;
+
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONUtil;
 
 public class FreemakerUtils {
     
     private static final Logger logger = LoggerFactory.getLogger(FreemakerUtils.class);
+    
+    private static final NacosRestTemplate nacosRestTemplate = NamingHttpClientManager.getInstance().getNacosRestTemplate();
     
     public static void generateConfigFile(Generators generators,
                                           List<ServiceConfig> configs,
@@ -58,7 +76,6 @@ public class FreemakerUtils {
     }
     
     /**
-     *
      * 支持 从附加的目录加载 模版
      *
      * @param generators
@@ -107,12 +124,90 @@ public class FreemakerUtils {
             template = config.getTemplate(generators.getTemplateName());
             data = configs.stream().filter(e -> "map".equals(e.getConfigType()))
                     .collect(Collectors.toMap(key -> key.getName(), value -> value.getValue()));
+            if (Constants.NACOS.equals(generators.getType())) {
+                logger.info("生成nacos配置");
+                String outputDirectory = generators.getOutputDirectory();
+                if (StrUtil.isNotEmpty(outputDirectory)) {
+                    logger.info("解析nacos配置参数");
+                    String[] split = outputDirectory.split(":");
+                    String username = split[0];
+                    String password = split[1];
+                    String host = split[2];
+                    String port = split[3];
+                    String url = split[4];
+                    String[] urls = url.split("/");
+                    String profile = urls[1];
+                    String group = urls[2];
+                    Properties properties = new Properties();
+                    properties.put(PropertyKeyConst.SERVER_ADDR, host);
+                    properties.put(PropertyKeyConst.ENDPOINT_PORT, port);
+                    properties.put(PropertyKeyConst.USERNAME, username);
+                    properties.put(PropertyKeyConst.PASSWORD, password);
+                    properties.put(PropertyKeyConst.NAMESPACE, profile);
+                    // 检查命名空间
+                    checkNamespace(properties);
+                    StringWriter content = new StringWriter();
+                    template.process(data, content);
+                    String filename = generators.getFilename();
+                    String dataId = filename.substring(filename.lastIndexOf("."));
+                    publishConfig(properties, content.toString(), group, filename, dataId);
+                    return;
+                }
+            }
             configs = configs.stream().filter(e -> !"map".equals(e.getConfigType())).collect(Collectors.toList());
         }
         logger.info("load template: {} success.", template.getSourceName());
         data.put("itemList", configs);
         // 3.产生输出
         processOut(generators, template, data, decompressPackageName);
+    }
+    
+    private static void checkNamespace(Properties properties) {
+        logger.info("检查命名空间");
+        try {
+            String profile = properties.get(PropertyKeyConst.NAMESPACE).toString();
+            String namespacesUrl = "/nacos/v1/console/namespaces";
+            String url = "http://" + properties.get(PropertyKeyConst.SERVER_ADDR).toString() + ":" + properties.get(PropertyKeyConst.ENDPOINT_PORT).toString();
+            Header header = NamingHttpUtil.builderHeader();
+            HttpRestResult<String> result = nacosRestTemplate.get(url + namespacesUrl, header, Query.newInstance().initParams(new HashMap<>()), String.class);
+            if (result.getCode() == 200) {
+                logger.info("检查命名空间");
+                String data = result.getData();
+                JSONArray jsonArray = JSONUtil.parseObj(data).getJSONArray("data");
+                boolean anyMatch = jsonArray.stream().anyMatch(str -> Objects.equals(JSONUtil.parseObj(str).getStr("namespace"), profile));
+                if (!anyMatch) {
+                    logger.info("创建命名空间");
+                    Map<String, String> params = new HashMap<>();
+                    params.put("customNamespaceId", profile);
+                    params.put("namespaceName", profile);
+                    params.put("namespaceDesc", profile);
+                    params.put(PropertyKeyConst.SERVER_ADDR, properties.get(PropertyKeyConst.SERVER_ADDR).toString());
+                    params.put(PropertyKeyConst.ENDPOINT_PORT, properties.get(PropertyKeyConst.ENDPOINT_PORT).toString());
+                    params.put(PropertyKeyConst.USERNAME, properties.get(PropertyKeyConst.USERNAME).toString());
+                    params.put(PropertyKeyConst.PASSWORD, properties.get(PropertyKeyConst.PASSWORD).toString());
+                    HttpRestResult<Object> postForm = nacosRestTemplate.postForm(url + namespacesUrl, header, params, String.class);
+                    if (postForm.getCode() != 200) {
+                        logger.error("创建命名空间失败");
+                    }
+                }
+            } else {
+                logger.error("检查命名空间失败");
+            }
+        } catch (Exception e) {
+            logger.error("检查命名空间失败:", e);
+            throw new RuntimeException(e);
+        }
+    }
+    
+    private static void publishConfig(Properties properties, String content, String group, String dataId, String type) {
+        logger.info("写入nacos配置");
+        try {
+            ConfigService configService = NacosFactory.createConfigService(properties);
+            configService.publishConfig(dataId, group, content, type);
+        } catch (NacosException e) {
+            logger.error("写入nacos配置失败:", e);
+            throw new RuntimeException(e);
+        }
     }
     
     public static void generatePromAlertFile(Generators generators, List<AlertItem> configs,

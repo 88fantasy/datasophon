@@ -87,6 +87,8 @@ public final class Constants {
     public static final String ALERT_TARGET_NAME = "alert_target_name";
     public static final String USER_INFO = "userInfo";
     public static final String CUSTOM = "custom";
+    
+    public static final String NACOS = "nacos";
     public static final String INPUT = "input";
     public static final String SERVICE_ROLE_JMX_MAP = "service_role_jmx_port";
     public static final String MULTIPLE = "multiple";

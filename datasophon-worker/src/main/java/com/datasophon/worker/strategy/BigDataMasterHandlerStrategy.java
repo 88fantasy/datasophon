@@ -38,9 +38,9 @@ import cn.hutool.db.handler.RsHandler;
 import cn.hutool.db.sql.SqlExecutor;
 import cn.hutool.setting.yaml.YamlUtil;
 
-public class UstreamMasterHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
+public class BigDataMasterHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
     
-    public UstreamMasterHandlerStrategy(String serviceName, String serviceRoleName) {
+    public BigDataMasterHandlerStrategy(String serviceName, String serviceRoleName) {
         super(serviceName, serviceRoleName);
     }
     
@@ -51,9 +51,9 @@ public class UstreamMasterHandlerStrategy extends AbstractHandlerStrategy implem
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             // 判断数据库是否已经初始化
             boolean ready = true;
-            String applicaitonPath = workPath + Constants.SLASH + "conf/application.yaml";
-            String sqlPath = workPath + Constants.SLASH + "sql/create/ustream_ddl.sql";
-            logger.info("check if ustream database is ready");
+            String applicaitonPath = workPath + Constants.SLASH + "bigdata/conf/bootstrap.yaml";
+            String sqlPath = workPath + Constants.SLASH + "init/bigdata/chinaunicom_medical_mgmt_bigdata__baseline.sql";
+            logger.info("check if bigdata database is ready");
             logger.info("applicationPath:{}, sqlPath:{}", applicaitonPath, sqlPath);
             File applicationFile = new File(applicaitonPath);
             if (applicationFile.exists()) {
@@ -82,15 +82,15 @@ public class UstreamMasterHandlerStrategy extends AbstractHandlerStrategy implem
                             return result;
                         }
                     });
-                    if (entityList.stream().noneMatch(s -> s.equals("ustream_project")
-                            || s.equals("ustream_job_config") || s.equals("ustream_job_info"))) {
+                    if (entityList.stream().noneMatch(s -> s.equals("datasource_auth")
+                            || s.equals("workbench_user") || s.equals("workbench_resource"))) {
                         ready = false;
                     }
                     if (!ready) {
                         List<String> sqlList = com.datasophon.worker.utils.FileUtils.loadFileSQL(sqlPath);
                         con = DbUtil.use(new SimpleDataSource(url, username, password)).getConnection();
                         SqlExecutor.executeBatch(con, sqlList);
-                        logger.info("ustream初始化数据库成功");
+                        logger.info("bigdata初始化数据库成功");
                     }
                 } catch (Exception e) {
                     logger.error(e.getMessage(), e);
