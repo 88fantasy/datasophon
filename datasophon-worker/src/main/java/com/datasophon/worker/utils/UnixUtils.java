@@ -42,6 +42,8 @@ public class UnixUtils {
             commands.add("useradd");
         }
         commands.add(username);
+        commands.add("--shell");
+        commands.add("/bin/bash");
         if (StringUtils.isNotBlank(mainGroup)) {
             commands.add("-g");
             commands.add(mainGroup);
