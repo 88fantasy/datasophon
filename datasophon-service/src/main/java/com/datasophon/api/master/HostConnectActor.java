@@ -19,22 +19,18 @@
 
 package com.datasophon.api.master;
 
+import akka.actor.UntypedActor;
+import cn.hutool.core.util.ObjectUtil;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.command.HostCheckCommand;
 import com.datasophon.common.model.CheckResult;
 import com.datasophon.common.model.HostInfo;
 import com.datasophon.common.utils.HostUtils;
-
-import org.apache.sshd.client.session.ClientSession;
-
-import scala.Option;
-
+import com.jcraft.jsch.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import akka.actor.UntypedActor;
-import cn.hutool.core.util.ObjectUtil;
+import scala.Option;
 
 public class HostConnectActor extends UntypedActor {
     
@@ -62,9 +58,9 @@ public class HostConnectActor extends UntypedActor {
                                 Status.CHECK_HOST_SUCCESS.getCode(),
                                 Status.CHECK_HOST_SUCCESS.getMsg()));
             } else {
-                ClientSession session =
+                Session session =
                         MinaUtils.openConnection(
-                                hostInfo.getHostname(), hostInfo.getSshPort(), hostInfo.getSshUser());
+                                hostInfo.getHostname(), hostInfo.getSshPort(), hostInfo.getSshUser(), hostInfo.getSshPassword());
                 if (ObjectUtil.isNotNull(session)) {
                     hostInfo.setCheckResult(
                             new CheckResult(

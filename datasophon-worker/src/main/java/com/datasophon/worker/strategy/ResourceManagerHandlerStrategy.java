@@ -51,8 +51,8 @@ public class ResourceManagerHandlerStrategy extends AbstractHandlerStrategy impl
         String hadoopHome = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             // create /user/yarn
-            ShellUtils.exceShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir -p /user/yarn");
-            ShellUtils.exceShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chown yarn:hadoop /user/yarn");
+            ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir -p /user/yarn");
+            ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chown yarn:hadoop /user/yarn");
         }
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
                 command.getDecompressPackageName(), command.getRunAs());

@@ -24,17 +24,17 @@ import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.InstallState;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.model.HostInfo;
-
+import com.datasophon.common.utils.OsUtils;
+import com.jcraft.jsch.Session;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.sshd.client.session.ClientSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Date;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class StartWorkerHandler implements DispatcherWorkerHandler {
     
@@ -50,7 +50,7 @@ public class StartWorkerHandler implements DispatcherWorkerHandler {
     }
     
     @Override
-    public boolean handle(ClientSession session, HostInfo hostInfo) throws UnknownHostException {
+    public boolean handle(Session session, HostInfo hostInfo) throws UnknownHostException {
         ConfigBean configBean = SpringTool.getApplicationContext().getBean(ConfigBean.class);
         String installPath = Constants.INSTALL_PATH;
         String localHostName = InetAddress.getLocalHost().getHostName();
@@ -71,6 +71,14 @@ public class StartWorkerHandler implements DispatcherWorkerHandler {
             hostInfo.setMessage(MessageResolverUtils.getMessage("modify.configuration.file.fail"));
             CommonUtils.updateInstallState(InstallState.FAILED, hostInfo);
         } else {
+            // osType
+            String osStr = MinaUtils.execCmdWithResult(session, Constants.OS_VERSION_CMD);
+            OsType osType = OsUtils.getOs(osStr);
+            String addServiceCmd = "chkconfig --add datasophon-worker";
+            if(OsType.isUnbuntu(osType)){
+                addServiceCmd = "update-rc.d datasophon-worker defaults 90";
+            }
+
             // Initialize environment
             MinaUtils.execCmdWithResult(session, "ulimit -n 102400");
             MinaUtils.execCmdWithResult(session, "sysctl -w vm.max_map_count=2000000");
@@ -78,7 +86,8 @@ public class StartWorkerHandler implements DispatcherWorkerHandler {
             MinaUtils.execCmdWithResult(session,
                     "\\cp " + installPath + "/datasophon-worker/script/datasophon-worker /etc/rc.d/init.d/");
             MinaUtils.execCmdWithResult(session, "chmod +x /etc/rc.d/init.d/datasophon-worker");
-            MinaUtils.execCmdWithResult(session, "chkconfig --add datasophon-worker");
+
+            MinaUtils.execCmdWithResult(session, addServiceCmd);
             MinaUtils.execCmdWithResult(session,
                     "\\cp " + installPath + "/datasophon-worker/script/datasophon-env.sh /etc/profile.d/");
             MinaUtils.execCmdWithResult(session, "source /etc/profile.d/datasophon-env.sh");

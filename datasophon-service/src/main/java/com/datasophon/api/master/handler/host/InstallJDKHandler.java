@@ -22,10 +22,8 @@ import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.model.HostInfo;
-
+import com.jcraft.jsch.Session;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.sshd.client.session.ClientSession;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +32,7 @@ public class InstallJDKHandler implements DispatcherWorkerHandler {
     private static final Logger logger = LoggerFactory.getLogger(InstallJDKHandler.class);
     
     @Override
-    public boolean handle(ClientSession session, HostInfo hostInfo) {
+    public boolean handle(Session session, HostInfo hostInfo) {
         hostInfo.setProgress(60);
         ArchType arch = MinaUtils.getArch(session);
         String testResult = MinaUtils.execCmdWithResult(session, "test -d /usr/local/jdk1.8.0_333");
@@ -42,7 +40,7 @@ public class InstallJDKHandler implements DispatcherWorkerHandler {
         if (StringUtils.isNotBlank(testResult) && "failed".equals(testResult)) {
             exists = false;
         }
-        if (ArchType.X86 == arch) {
+        if (ArchType.X86_64 == arch) {
             if (!exists) {
                 hostInfo.setMessage(MessageResolverUtils.getMessage("start.install.jdk"));
                 MinaUtils.uploadFile(session, "/usr/local",
@@ -50,7 +48,7 @@ public class InstallJDKHandler implements DispatcherWorkerHandler {
                 MinaUtils.execCmdWithResult(session, "tar -zxvf /usr/local/jdk-8u333-linux-x64.tar.gz -C /usr/local/");
             }
         }
-        if (ArchType.ARM == arch) {
+        if (ArchType.AARCH64 == arch) {
             if (!exists) {
                 hostInfo.setMessage(MessageResolverUtils.getMessage("start.install.jdk"));
                 MinaUtils.uploadFile(session, "/usr/local",

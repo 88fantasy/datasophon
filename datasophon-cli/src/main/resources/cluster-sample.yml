@@ -1,0 +1,90 @@
+global:
+  offline: true
+  sshAuthType: AUTO
+  registry:
+    enable: true  # install minio
+    type: minio
+    config:
+      api: 9000
+      console: 9001
+      user: cuminio
+      password: u4Gkp19TRcKKlTCLNA1pyA==
+      volumes: /data/minio
+    host:
+      ip: 192.168.2.146
+      user: root
+      password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+      port: 22
+
+  nmapServer:
+    user: root
+    ip: 192.168.2.146
+    port: 22
+    password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+
+  mysql:
+    enable: false   # Install Mysql
+    password: datasophon123      # Set the MYSQL database root password
+    appDbs:
+      - account: datasophon
+        password: datasophon
+        dbName: datasophon
+      - account: hive
+        password: hive
+        dbName: hive
+      - account: dolphinscheduler
+        password: dolphinscheduler
+        dbName: dolphinscheduler
+      - account: ustream
+        password: ustream
+        dbName: ustream
+      - account: amoro
+        password: amoro
+        dbName: amoro
+      - account: nacos
+        password: nacos
+        dbName: nacos
+    host:
+      user: root
+      ip: 192.168.2.146
+      port: 22
+      password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+
+  yumServer:
+    host:
+      user: root
+      ip: 192.168.2.146
+      port: 22
+      password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+    reposTarName: offline-repos.tar.gz
+    listenPort: 4080
+
+  ntpServer:
+    host:
+      user: root
+      ip: 192.168.2.146
+      port: 22
+      password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+
+  logDir: ./logs
+
+nodes:
+  - ip: 192.168.2.146
+    user: root
+    password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+    port: 22
+    hostname: dd1
+    isLocalhost: true
+  - ip: 192.168.2.175
+    user: root
+    password: YTiZ#WY3MzFkQ5D2Y4Mw?o_
+    port: 22
+    hostname: dd2
+
+addNodes:
+  - ip: 192.168.2.160
+    user: root
+    password: Mj<U#LYpNjNz(M4NjQ0?Ygo_
+    port: 22
+    hostname: dd3
+

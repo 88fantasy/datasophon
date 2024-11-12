@@ -64,7 +64,7 @@ public class KerberosUtils {
         if (!FileUtil.exist("/etc/security/keytab/")) {
             FileUtil.mkdir("/etc/security/keytab/");
         }
-        ShellUtils.exceShell("chown -R root:hadoop /etc/security/keytab/");
-        ShellUtils.exceShell("chmod -R 770 /etc/security/keytab/");
+        ShellUtils.execShell("chown -R root:hadoop /etc/security/keytab/");
+        ShellUtils.execShell("chmod -R 770 /etc/security/keytab/");
     }
 }

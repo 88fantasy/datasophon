@@ -23,15 +23,20 @@ INIT_SBIN_PATH=${INIT_PATH}/sbin
 echo "INIT_SBIN_PATH: ${INIT_SBIN_PATH}"
 PACKAGES_PATH=${INIT_PATH}/packages
 echo "PACKAGES_PATH: ${PACKAGES_PATH}"
-JDK_FOLDER_PATH=/usr/java
+JDK_FOLDER_PATH=/usr/local
 source /etc/profile
-mkdir -p /usr/java
+mkdir -p ${JDK_FOLDER_PATH}
 JDK_PATH_NAME="jdk1.8.0_333"
 JDK_VERSION="1.8"
 BASH_PROFILE_PATH="/root/.bash_profile"
 BASHRC_PATH="/root/.bashrc"
 ETC_PROFILE_PATH="/etc/profile"
 JDK_TAR_NAME="jdk-8u333-linux-x64.tar.gz"
+arch=$(arch)
+echo arch:$arch
+if [ $arch = "aarch64" ]; then
+  JDK_TAR_NAME="jdk-8u333-linux-aarch64.tar.gz"
+fi
 
 jdkAvailable=$(java -version 2>&1 | awk 'NR==1{gsub(/"/,"");print $3}')
 result=$(echo $jdkAvailable | grep $JDK_VERSION)
@@ -56,12 +61,16 @@ else
   sleep 2s
   mkdir -p ${JDK_FOLDER_PATH}
   tar -zxvf ${PACKAGES_PATH}/${JDK_TAR_NAME} -C ${JDK_FOLDER_PATH}
+  if [ $? -ne 0 ]; then
+    echo "JDK install failed"
+    exit 1
+  fi
   JAVA_HOME="${JDK_FOLDER_PATH}/${JDK_PATH_NAME}"
   JRE_HOME="${JDK_FOLDER_PATH}/${JDK_PATH_NAME}/jre"
   JAVA_SOURCE_ENV="source /etc/profile"
   echo "export JAVA_HOME=$JAVA_HOME" >>/etc/profile
-  echo "export JRE_HOME=$JRE_HOME" >>/etc/profile
-  echo "export CLASSPATH=.:\$JRE_HOME/lib/rt.jar:\$JAVA_HOME/lib/dt.jar:\$JAVA_HOME/lib/tools.jar" >>/etc/profile
+  #echo "export JRE_HOME=$JRE_HOME" >>/etc/profile
+  #echo "export CLASSPATH=.:\$JRE_HOME/lib/rt.jar:\$JAVA_HOME/lib/dt.jar:\$JAVA_HOME/lib/tools.jar" >>/etc/profile
   echo "export PATH=\$PATH:\$JAVA_HOME/bin" >>/etc/profile
   echo ${JAVA_SOURCE_ENV} >>~/.bash_profile
   echo ${JAVA_SOURCE_ENV} >>~/.bashrc

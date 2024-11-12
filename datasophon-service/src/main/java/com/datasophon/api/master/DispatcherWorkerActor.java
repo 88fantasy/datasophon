@@ -19,40 +19,32 @@
 
 package com.datasophon.api.master;
 
-import com.datasophon.api.master.handler.host.CheckWorkerMd5Handler;
-import com.datasophon.api.master.handler.host.DecompressWorkerHandler;
-import com.datasophon.api.master.handler.host.DispatcherWorkerHandlerChain;
-import com.datasophon.api.master.handler.host.InstallJDKHandler;
-import com.datasophon.api.master.handler.host.StartWorkerHandler;
-import com.datasophon.api.master.handler.host.UploadWorkerHandler;
+import akka.actor.UntypedActor;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.ObjectUtil;
+import com.datasophon.api.master.handler.host.*;
 import com.datasophon.api.utils.CommonUtils;
-import com.datasophon.api.utils.ExecuteShellScriptUtils;
 import com.datasophon.api.utils.MessageResolverUtils;
 import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.DispatcherHostAgentCommand;
 import com.datasophon.common.enums.InstallState;
+import com.datasophon.common.enums.SSHAuthType;
 import com.datasophon.common.model.HostInfo;
 import com.datasophon.common.utils.HostUtils;
-
-import org.apache.sshd.client.session.ClientSession;
-
+import com.datasophon.common.utils.JschUtils;
+import com.jcraft.jsch.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.Option;
 
 import java.nio.charset.Charset;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import akka.actor.UntypedActor;
-
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.ObjectUtil;
+import java.util.Objects;
 
 public class DispatcherWorkerActor extends UntypedActor {
     
     private static final Logger logger = LoggerFactory.getLogger(DispatcherWorkerActor.class);
-    
+
     @Override
     public void preRestart(Throwable reason, Option<Object> message) throws Exception {
         logger.info("host actor restart because {}", reason.getMessage());
@@ -69,21 +61,17 @@ public class DispatcherWorkerActor extends UntypedActor {
         hostInfo.setMessage(
                 MessageResolverUtils.getMessage(
                         "distributed.host.management.agent.installation.package"));
-        ClientSession session =
-                MinaUtils.openConnection(
-                        hostInfo.getHostname(), hostInfo.getSshPort(), hostInfo.getSshUser());
+        Session session = JschUtils.getJSchSession(SSHAuthType.AUTO, hostInfo.getHostname(), hostInfo.getSshPort(), hostInfo.getSshUser(), hostInfo.getSshPassword());
+
         DispatcherWorkerHandlerChain handlerChain = new DispatcherWorkerHandlerChain();
         if (localIp.equals(hostInfo.getIp())) {
             String currDir = System.getProperty("user.dir");
-            String executeShellPath =
-                    currDir + Constants.SHELL_SCRIPT_PATH + Constants.SLASH + Constants.DISPATCHER_WORK;
-            logger.info("start dispatcher manage node host agent,execute shell path :{}", executeShellPath);
             String md5 = FileUtil.readString(
                     Constants.MASTER_MANAGE_PACKAGE_PATH +
                             Constants.SLASH +
                             Constants.WORKER_PACKAGE_NAME + ".md5",
                     Charset.defaultCharset()).trim();
-            int exeCode = ExecuteShellScriptUtils.executeShellScript(executeShellPath, md5);
+            int exeCode = dispatcherWorkerExec(session, md5);
             if (0 == exeCode) {
                 logger.info("distribution  datasophon-worker.tar.gz success");
                 logger.info("md5.verification datasophon-worker.tar.gz success");
@@ -111,7 +99,19 @@ public class DispatcherWorkerActor extends UntypedActor {
                 new StartWorkerHandler(command.getClusterId(), command.getClusterFrame()));
         handlerChain.handle(session, hostInfo);
         if (ObjectUtil.isNotEmpty(session)) {
-            session.close();
+            session.disconnect();
+        }
+    }
+
+    private int dispatcherWorkerExec(Session session, String md5){
+        String checkworkmd5 = MinaUtils.execCmdWithResult(session, Constants.CHECK_WORKER_MD5_CMD);
+        if(Objects.nonNull(checkworkmd5) && checkworkmd5.equals(md5)){
+            logger.info("md5校验通过");
+            MinaUtils.execCmdWithResult(session, Constants.UNZIP_DDH_WORKER_CMD);
+            return 0;
+        } else {
+            logger.error("md5校验不通过");
+            return 1;
         }
     }
 }

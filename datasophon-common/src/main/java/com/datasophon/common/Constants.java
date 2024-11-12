@@ -42,7 +42,7 @@ public final class Constants {
     
     public static final String MASTER_MANAGE_PACKAGE_PATH = INSTALL_PATH + "/DDP/packages";
     public static final String UNZIP_DDH_WORKER_CMD =
-            "tar -zxvf " + INSTALL_PATH + "/datasophon-worker.tar.gz -C " + INSTALL_PATH;
+            "tar -zxvf " + MASTER_MANAGE_PACKAGE_PATH + "/datasophon-worker.tar.gz -C " + INSTALL_PATH;
     public static final String START_DDH_WORKER_CMD = "service datasophon-worker restart";
     
     public static final String WORKER_PACKAGE_NAME = "datasophon-worker.tar.gz";
@@ -71,7 +71,7 @@ public final class Constants {
     public static final String CLUSTER_CODE = "cluster_code";
     public static final String START_DISTRIBUTE_AGENT = "start_distribute_agent";
     public static final String CHECK_WORKER_MD5_CMD =
-            "md5sum " + INSTALL_PATH + "/datasophon-worker.tar.gz | awk '{print $1}'";
+            "md5sum " + MASTER_MANAGE_PACKAGE_PATH + "/datasophon-worker.tar.gz | awk '{print $1}'";
     public static final String CREATE_TIME = "create_time";
     public static final String COMMAND_TYPE = "command_type";
     public static final String SERVICE_ROLE_NAME = "service_role_name";
@@ -123,6 +123,9 @@ public final class Constants {
     public static final String RACK = "rack";
     public static final String SERVICE_STATE = "service_state";
     public static final String EQUAL_SIGN = "=";
+
+    public static final String OS_ARCH_CMD = "arch";
+    public static final String OS_VERSION_CMD = "cat /etc/os-release";
     
     private Constants() {
         throw new IllegalStateException("Constants Exception");
@@ -265,8 +268,10 @@ public final class Constants {
      * root user
      */
     public static final String ROOT = "root";
+
+    public static final Integer PORT_DEFAULT = 22;
     
-    public static final String DISPATCHER_WORK = "dispatcher-worker.sh";
+    //public static final String DISPATCHER_WORK = "dispatcher-worker.sh";
     
     public static final String GRAFANA_PATH = "/grafana";
 }

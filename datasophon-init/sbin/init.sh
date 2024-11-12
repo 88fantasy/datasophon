@@ -35,6 +35,8 @@ smallTimeOut=300
 middleTimeOut=600
 longTimeOut=1200
 
+exit 1
+
 function prop {
   [ -f "$FilePath" ] && grep -P "^\s*[^#]?${1}=.*$" $FilePath | cut -d'=' -f2
 }
@@ -54,6 +56,7 @@ initAllHostNums=$(prop "init.host.num")
 initSingleHostNums=$(prop "init.add.host.num")
 initOS=$(prop "init.os")
 
+exit 1
 echo "yumRepoIp: ${yumRepoIp}"
 
 #初始化所有节点

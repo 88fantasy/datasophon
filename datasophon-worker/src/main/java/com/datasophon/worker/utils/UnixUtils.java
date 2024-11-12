@@ -42,6 +42,8 @@ public class UnixUtils {
             commands.add("useradd");
         }
         commands.add(username);
+        commands.add("--shell");
+        commands.add("/bin/bash");
         if (StringUtils.isNotBlank(mainGroup)) {
             commands.add("-g");
             commands.add(mainGroup);
@@ -89,7 +91,7 @@ public class UnixUtils {
     }
     
     public static boolean isGroupExists(String groupName) {
-        ExecResult execResult = ShellUtils.exceShell("egrep \"" + groupName + "\" /etc/group >& /dev/null");
+        ExecResult execResult = ShellUtils.execShell("egrep \"" + groupName + "\" /etc/group >& /dev/null");
         return execResult.getExecResult();
     }
     

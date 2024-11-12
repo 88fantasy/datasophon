@@ -177,11 +177,45 @@
             <fileMode>0755</fileMode>
         </fileSet>
         <fileSet>
-            <directory>${basedir}/../datasophon-init/</directory>
+            <directory>${basedir}/../datasophon-cli/src/main/resources/sbin</directory>
             <includes>
-                <include>**/*.*</include>
+                <include>**</include>
             </includes>
-            <outputDirectory>datasophon-init</outputDirectory>
+            <outputDirectory>datasophon-init/sbin/</outputDirectory>
+            <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
+        </fileSet>
+        <fileSet>
+            <directory>${basedir}/../datasophon-cli/target</directory>
+            <includes>
+                <include>datasophon-cli-cli.jar</include>
+            </includes>
+            <outputDirectory>datasophon-init/sbin</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${basedir}/../datasophon-cli/src/main/resources</directory>
+            <includes>
+                <include>cluster-sample.yml</include>
+            </includes>
+            <outputDirectory>datasophon-init/config</outputDirectory>
+            <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
+        </fileSet>
+        <fileSet>
+            <directory>${basedir}/../datasophon-cli</directory>
+            <includes>
+                <include>README.md</include>
+            </includes>
+            <outputDirectory>datasophon-init/</outputDirectory>
+            <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
+        </fileSet>
+        <fileSet>
+            <directory>${basedir}/../datasophon-cli/src/main/resources/bin</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+            <outputDirectory>datasophon-init/bin/</outputDirectory>
             <fileMode>0755</fileMode>
             <lineEnding>unix</lineEnding>
         </fileSet>

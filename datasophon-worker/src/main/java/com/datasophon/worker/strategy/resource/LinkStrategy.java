@@ -29,7 +29,7 @@ public class LinkStrategy extends ResourceStrategy {
         if (!targetFile.exists() && sourceFile.exists()) {
             // 先创建文件夹
             FileUtil.mkdir(targetFile.getParent());
-            ShellUtils.exceShell("ln -s " + source + " " + realTarget);
+            ShellUtils.execShell("ln -s " + source + " " + realTarget);
             log.info("Create symbolic dir: {} to {}", source, realTarget);
         }
     }
