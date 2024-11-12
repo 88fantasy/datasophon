@@ -23,9 +23,7 @@ import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.InstallState;
 import com.datasophon.common.model.HostInfo;
-
-import org.apache.sshd.client.session.ClientSession;
-
+import com.jcraft.jsch.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +32,7 @@ public class UploadWorkerHandler implements DispatcherWorkerHandler {
     private static final Logger logger = LoggerFactory.getLogger(StartWorkerHandler.class);
     
     @Override
-    public boolean handle(ClientSession session, HostInfo hostInfo) {
+    public boolean handle(Session session, HostInfo hostInfo) {
         boolean uploadFile = MinaUtils.uploadFile(session,
                 Constants.INSTALL_PATH,
                 Constants.MASTER_MANAGE_PACKAGE_PATH +

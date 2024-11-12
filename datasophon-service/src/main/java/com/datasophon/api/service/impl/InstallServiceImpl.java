@@ -19,6 +19,12 @@
 
 package com.datasophon.api.service.impl;
 
+import akka.actor.ActorRef;
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.crypto.SecureUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.ActorUtils;
@@ -48,33 +54,15 @@ import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.InstallStepEntity;
 import com.datasophon.dao.mapper.InstallStepMapper;
-
+import com.jcraft.jsch.Session;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.sshd.client.session.ClientSession;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-
-import akka.actor.ActorRef;
-
-import cn.hutool.core.date.DateUnit;
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.crypto.SecureUtil;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service("installService")
 public class InstallServiceImpl implements InstallService {
@@ -430,12 +418,12 @@ public class InstallServiceImpl implements InstallService {
         List<String> clusterHostIdList = Arrays.asList(clusterHostIdArray);
         List<ClusterHostDO> clusterHostList = hostService.getHostListByIds(clusterHostIdList);
         for (ClusterHostDO clusterHostDO : clusterHostList) {
-            ClientSession session =
-                    MinaUtils.openConnection(clusterHostDO.getHostname(), 22, Constants.ROOT);
+            Session session =
+                    MinaUtils.openConnection(clusterHostDO.getHostname(), clusterHostDO.getSshPort(), clusterHostDO.getSshUser(), clusterHostDO.getSshPassword());
             MinaUtils.execCmdWithResult(session, "service datasophon-worker " + commandType);
             logger.info("hostAgent command:{}", "service datasophon-worker " + commandType);
             if (ObjectUtil.isNotEmpty(session)) {
-                session.close();
+                MinaUtils.closeConnection(session);
             }
         }
         return Result.success();

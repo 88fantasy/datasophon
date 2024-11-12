@@ -268,6 +268,7 @@ public class JschUtils {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             result.setExecErrOut(e.getMessage());
+            throw new RuntimeException(e);
         } finally {
             if (channel != null && channel.isConnected()) {
                 channel.exit();
@@ -287,6 +288,7 @@ public class JschUtils {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             result.setExecErrOut(e.getMessage());
+            throw new RuntimeException(e);
         }  finally {
             if (channel != null && channel.isConnected()) {
                 channel.disconnect();

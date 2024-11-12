@@ -26,17 +26,15 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.enums.InstallState;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.model.HostInfo;
-
 import com.datasophon.common.utils.OsUtils;
+import com.jcraft.jsch.Session;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.sshd.client.session.ClientSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Date;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class StartWorkerHandler implements DispatcherWorkerHandler {
     
@@ -52,7 +50,7 @@ public class StartWorkerHandler implements DispatcherWorkerHandler {
     }
     
     @Override
-    public boolean handle(ClientSession session, HostInfo hostInfo) throws UnknownHostException {
+    public boolean handle(Session session, HostInfo hostInfo) throws UnknownHostException {
         ConfigBean configBean = SpringTool.getApplicationContext().getBean(ConfigBean.class);
         String installPath = Constants.INSTALL_PATH;
         String localHostName = InetAddress.getLocalHost().getHostName();
