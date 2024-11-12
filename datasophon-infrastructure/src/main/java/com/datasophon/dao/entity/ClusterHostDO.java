@@ -103,5 +103,19 @@ public class ClusterHostDO implements Serializable {
     
     @TableField(exist = false)
     private Integer serviceRoleNum;
-    
+
+    /**
+     * ssh port
+     */
+    private Integer sshPort;
+
+    /**
+     * ssh user
+     */
+    private String sshUser;
+
+    /**
+     * ssh password
+     */
+    private String sshPassword;
 }
