@@ -177,6 +177,15 @@
             <fileMode>0755</fileMode>
         </fileSet>
         <fileSet>
+            <directory>${basedir}/../datasophon-cli/src/main/resources/sbin</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+            <outputDirectory>datasophon-init/sbin/</outputDirectory>
+            <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
+        </fileSet>
+        <fileSet>
             <directory>${basedir}/../datasophon-cli/target</directory>
             <includes>
                 <include>datasophon-cli-cli.jar</include>
@@ -189,15 +198,6 @@
                 <include>cluster-sample.yml</include>
             </includes>
             <outputDirectory>datasophon-init/config</outputDirectory>
-            <fileMode>0755</fileMode>
-            <lineEnding>unix</lineEnding>
-        </fileSet>
-        <fileSet>
-            <directory>${basedir}/../datasophon-cli/src/main/resources/templates</directory>
-            <includes>
-                <include>**</include>
-            </includes>
-            <outputDirectory>datasophon-init/config/templates</outputDirectory>
             <fileMode>0755</fileMode>
             <lineEnding>unix</lineEnding>
         </fileSet>

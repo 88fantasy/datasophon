@@ -28,8 +28,8 @@ public class CreateCluster implements Runnable {
     @CommandLine.Option(names = {"-a", "action"}, description = "执行动作", required = true)
     String action;
 
-    @CommandLine.Option(names = {"-s", "skipInitBinPackage"}, description = "是否跳过分发安资源包(-s则跳过)")
-    boolean skipInitBinPackage = false;
+    @CommandLine.Option(names = {"-if", "initPathOverwriteForce"}, description = "datasophon-init目录存在是否覆盖")
+    boolean initPathOverwriteForce = false;
 
     @CommandLine.Option(names = {"-f", "--mysqlInstallForce"}, description = "mysql存在是否覆盖安装")
     boolean mysqlInstallForce = false;
@@ -60,8 +60,6 @@ public class CreateCluster implements Runnable {
         if (!installPath.exists()) {
             ShellUtils.execShell(String.format("mkdir -p %s", Constants.INSTALL_PATH));
         }
-       log.info("是否跳过分发资源包:{}", skipInitBinPackage);
-
         initPath = String.format("%s/datasophon-init", datasophonPath);
         initConfigPath = String.format("%s/config", initPath);
         packagesPath = String.format("%s/packages", initPath);
@@ -91,10 +89,8 @@ public class CreateCluster implements Runnable {
             return;
         }
 
-        if(!skipInitBinPackage) {
-            log.info("分发资源包");
-            initBinPackage(config, nodes);
-        }
+        log.info("分发资源包");
+        initBinPackage(config, nodes);
 
         log.info("shell bash设置");
         initBash(config, nodes);
@@ -167,10 +163,8 @@ public class CreateCluster implements Runnable {
             return;
         }
 
-        if(!skipInitBinPackage) {
-            log.info("分发资源包");
-            initBinPackage(config, nodes);
-        }
+        log.info("分发资源包");
+        initBinPackage(config, nodes);
 
         log.info("shell bash设置");
         initBash(config, nodes);
@@ -257,6 +251,7 @@ public class CreateCluster implements Runnable {
     private void initBinPackage(ClusterConfig config, List<Host> nodes) {
         InitBinPackage initBinPackage = new InitBinPackage();
         initBinPackage.setInitPath(initPath);
+        initBinPackage.setInitPathOverwriteForce(initPathOverwriteForce);
         List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
         allNodesExec(workerNodes, initBinPackage);
 

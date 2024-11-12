@@ -80,11 +80,6 @@ nodes:
     password: YTiZ#WY3MzFkQ5D2Y4Mw?o_
     port: 22
     hostname: dd2
-  - ip: 192.168.2.160
-    user: root
-    password: Mj<U#LYpNjNz(M4NjQ0?Ygo_
-    port: 22
-    hostname: dd3
 
 addNodes:
   - ip: 192.168.2.160
