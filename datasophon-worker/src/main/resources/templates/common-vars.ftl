@@ -8,7 +8,7 @@ minio:
 
 ## redis密码和库配置
 redis:
-  password: ${bigdataRedisPassword}
+  password: ${bigdataRedisPassword!}
   database: ${bigdataRedisDatabase}
   key:
     prefix:
@@ -18,8 +18,8 @@ redis:
       authCode: 90
 es:
   nodes: ${bigdataEsNodes}:27920
-  username: ${bigdataEsUserName}
-  password: ${bigdataEsPassword}
+  username: ${bigdataEsUserName!}
+  password: ${bigdataEsPassword!}
 
 ds:
   downloadPath: ${bigdataOutsideAccessUrl}/bigdata/bigdata
@@ -68,27 +68,27 @@ spring:
 
   ## spring redis config
   redis:
-    dc-mode: single
-    sentinel:
-      master: mymaster
-      # 配置redis集群
-      nodes:
-        - sentinel-node-1:7601
-        - sentinel-node-2:7602
-        - sentinel-node-3:7603
+    # dc-mode: single
+    # sentinel:
+    #   master: mymaster
+    #   # 配置redis集群
+    #   nodes:
+    #     - sentinel-node-1:7601
+    #     - sentinel-node-2:7602
+    #     - sentinel-node-3:7603
     # 可以屏蔽其他配置只配置单一一个redis
-    # host: redis-node-1
-    # port: 7501
+    host: ${bigdataRedisHost}
+    port: ${bigdataRedisPort}
     database: ${bigdataRedisDatabase}
-    password: ${bigdataRedisPassword}
-    redisson:
-      config: |
-        singleServerConfig:
-          address: "redis://redis-node-1:7501"
-          password: "${bigdataRedisPassword}"
-          database: 0
-        codec: !<org.redisson.codec.JsonJacksonCodec> {}
-        transportMode: "NIO"
+    #password: ${bigdataRedisPassword!}
+    #redisson:
+    #  config: |
+    #    singleServerConfig:
+    #      address: "redis://${bigdataRedisHost}:${bigdataRedisPort}"
+    #      password: "${bigdataRedisPassword!}"
+    #      database: 0
+    #    codec: !<org.redisson.codec.JsonJacksonCodec> {}
+    #    transportMode: "NIO"
 
   ##spring datasource config
   datasource:
@@ -142,6 +142,7 @@ sso:
 
 ## tomcat config
 server:
+  port: ${bigdataServerPort}
   tomcat:
     accept-count: 1024
 
@@ -304,8 +305,8 @@ com:
         es:
           enabled: true
           nodes: ${bigdataEsNodes}:27920
-          userName: ${bigdataEsUserName}
-          password: ${bigdataEsPassword}
+          userName: ${bigdataEsUserName!}
+          password: ${bigdataEsPassword!}
 ########### 分割线 ###############
 
 ## unicom-apisix
@@ -318,7 +319,7 @@ api-six:
   httpLoggerEndpoint: ${bigdataApiSixHttpLoggerEndpoint}
   limitCountRedisHost: redis-1
   limitCountRedisPort: 7501
-  limitCountRedisPassword: ${bigdataRedisPassword}
+  limitCountRedisPassword: ${bigdataRedisPassword!}
   limitCountRedisDatabase: 0
   kafkaLoggerBrokerList:
     - kafka213-node-1:9092
@@ -351,9 +352,9 @@ hsb:
 
 easy-es:
   enable: true
-  address: ${bigdataEsNodes}:27920
-  username: ${bigdataEsUserName}
-  password: ${bigdataEsPassword}
+  address: ${bigdataEsNodes}:${bigdataEsPort}
+  username: ${bigdataEsUserName!}
+  password: ${bigdataEsPassword!}
   global-config:
     process-index-mode: smoothly
     db-config:
