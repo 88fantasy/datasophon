@@ -103,8 +103,11 @@
         "templateName": "redis-master.ftl",
         "includeParams": [
           "redisMasterPort",
-          "dataDir",
-          "requirePass",
+          "redisDataDir",
+          "redisDatabases",
+          "redisPass",
+          "redisMaxMemory",
+          "redisMaxMemoryPolicy",
           "custom.master.conf"
         ]
       }
