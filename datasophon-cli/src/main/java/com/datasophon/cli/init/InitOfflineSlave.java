@@ -38,7 +38,7 @@ public class InitOfflineSlave extends InitBase implements InitNodeHandler {
         if(OsType.isUnbuntu(osType)) {
             executor.execShell("dpkg --configure -a");
 
-            String httpRepoUrl = String.format("http://%s:%s %s", serverIp, serverPort, repoOsSuffix);
+            String httpRepoUrl = String.format("http://%s:%s/%s", serverIp, serverPort, repoOsSuffix);
             InitOfflineServer.aptRepoConfFile(executor, httpRepoUrl);
             executor.execShell("apt clean");
             ExecResult execResult = executor.execShell("apt update");

@@ -68,7 +68,7 @@ public class InitOfflineServer extends InitBase implements InitNodeHandler {
             String apache2ConfPath = "/etc/apache2/apache2.conf";
             String portsConfPath = "/etc/apache2/ports.conf";
             // apt离线源配置
-            String fileRepoUrl = String.format("file://%s ./", repoOsPath);
+            String fileRepoUrl = String.format("file://%s", repoOsPath);
             aptRepoConfFile(executor, fileRepoUrl);
             executor.execShell("apt clean");
             ExecResult aptResult = executor.execShell("apt update");
@@ -141,7 +141,7 @@ public class InitOfflineServer extends InitBase implements InitNodeHandler {
 
         String localBaseRepoPath = "/etc/apt/sources.list";
         List<String> conf = new ArrayList<>();
-        conf.add(String.format("deb [trusted=yes] %s", baseurl));
+        conf.add(String.format("deb [trusted=yes] %s ./", baseurl));
         executor.writeLines(conf, localBaseRepoPath);
         log.info("baseUrl:{}", baseurl);
     }

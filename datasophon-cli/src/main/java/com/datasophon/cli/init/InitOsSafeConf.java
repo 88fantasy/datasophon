@@ -82,7 +82,6 @@ public class InitOsSafeConf extends InitBase {
         disableSourceRoute();
         disableIpv4RouteRedirects();
         setRsyslogRotateValue();
-        selinuxSetPermissive();
         setSshdBanner();
         setSshdProtocolVersion();
         setSshdSkipDnsCheck();
@@ -358,8 +357,9 @@ public class InitOsSafeConf extends InitBase {
     }
     
     /**
-     * 设置selinux模式为permissive
+     * 设置selinux模式为permissive（重复）
      */
+    @Deprecated
     private void selinuxSetPermissive() {
         log.info("===== 设置selinux模式为permissive =====");
         ExecResult exec = executor.execShell("sestatus &>/dev/null");
@@ -423,7 +423,7 @@ public class InitOsSafeConf extends InitBase {
                 log.error("*status of current is {}, maybe error, please check manually!", currentStatus);
             }
         } else {
-            log.info("**selinux maybe not install, please check!");
+            log.error("**selinux maybe not install, please check!");
             System.exit(1);
         }
     }
