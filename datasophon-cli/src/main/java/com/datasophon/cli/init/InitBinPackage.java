@@ -32,6 +32,7 @@ public class InitBinPackage extends InitBase {
 
     @Override
     public boolean doRun(Executor executor) {
+        Boolean flag = true;
         // 本地datasophon-init
         File initPathF = new File(initPath);
         if (!initPathF.exists() || !initPathF.isDirectory()) {
@@ -46,28 +47,26 @@ public class InitBinPackage extends InitBase {
         ExecResult remoteResult = executor.exists(initPath);
         if(remoteResult.getExecResult() && !initPathOverwriteForce){
             log.info("远程datasophon-init目录已存在,且overwrite={},跳过)", initPathOverwriteForce);
-            return true;
+        } else {
+            ExecResult createResult = executor.createDir(initPath);
+            if (!createResult.getExecResult()) {
+                throw new CommandLine.ExecutionException(new CommandLine(this), "dist createDir fail : " + initPath);
+            }
+            log.info("分发资源包路径:{} start", initPath);
+            long ts = System.currentTimeMillis();
+            ExecResult execResult = executor.sendDir(initPath, initPath, true);
+            log.info("分发资源包路径:{} end,耗时:{}s", initPath, (System.currentTimeMillis() - ts) / 1000.0);
+            if (execResult.getExecResult()) {
+                log.info("{} distribution sucess.", initPath);
+            } else {
+                log.info("{} distribution fail.", initPath);
+                flag = false;
+            }
         }
-        ExecResult createResult = executor.createDir(initPath);
-        if (!createResult.getExecResult()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "dist createDir fail : " + initPath);
-        }
-        log.info("分发资源包路径:{} start", initPath);
-        long ts = System.currentTimeMillis();
-        ExecResult execResult = executor.sendDir(initPath, initPath, true);
-        log.info("分发资源包路径:{} end,耗时:{}s", initPath, (System.currentTimeMillis() - ts) / 1000.0);
-
         if(!executor.exists(Constants.MASTER_MANAGE_PACKAGE_PATH).getExecResult()) {
             executor.execShell(String.format("mkdir -p %s/DDP", Constants.INSTALL_PATH));
             executor.execShell(String.format("ln -s %s/packages %s", initPath, Constants.MASTER_MANAGE_PACKAGE_PATH));
         }
-
-        if (execResult.getExecResult()) {
-            log.info("{} distribution sucess.", initPath);
-            return true;
-        } else {
-            log.info("{} distribution fail.", initPath);
-            return false;
-        }
+        return flag;
     }
 }
