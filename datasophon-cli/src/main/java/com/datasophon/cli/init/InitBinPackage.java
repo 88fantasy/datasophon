@@ -58,7 +58,7 @@ public class InitBinPackage extends InitBase {
         log.info("分发资源包路径:{} end,耗时:{}s", initPath, (System.currentTimeMillis() - ts) / 1000.0);
 
         if(!executor.exists(Constants.MASTER_MANAGE_PACKAGE_PATH).getExecResult()) {
-            executor.execShell(String.format("mkdir -p %s", Constants.INSTALL_PATH));
+            executor.execShell(String.format("mkdir -p %s/DDP", Constants.INSTALL_PATH));
             executor.execShell(String.format("ln -s %s/packages %s", initPath, Constants.MASTER_MANAGE_PACKAGE_PATH));
         }
 
