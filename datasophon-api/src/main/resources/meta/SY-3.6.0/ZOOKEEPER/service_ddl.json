@@ -114,7 +114,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "/data/zookeeper"
+      "defaultValue": "/data/zookeeper/data"
     },
     {
       "name": "dataLogDir",
@@ -126,7 +126,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "/data/log"
+      "defaultValue": "/data/zookeeper/log"
     },
     {
       "name": "tickTime",
