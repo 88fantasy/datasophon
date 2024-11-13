@@ -214,7 +214,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://minio-node-1:6943"
+      "defaultValue": "http://minio-node-1:9000"
     },
     {
       "name": "s3.path.style.access",

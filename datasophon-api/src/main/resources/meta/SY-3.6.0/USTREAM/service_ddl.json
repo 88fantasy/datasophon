@@ -226,7 +226,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "jdbc:mysql://mysql-node-1:3306/ustream?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2b8&autoReconnect=true&failOverReadOnly=false&allowPublicKeyRetrieval=true"
+			"defaultValue": "jdbc:mysql://${apiHost}:3306/ustream?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2b8&autoReconnect=true&failOverReadOnly=false&allowPublicKeyRetrieval=true"
 		},
 		{
 			"name": "dbUser",
@@ -250,7 +250,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "BALB4g6hNsWJAw94E3mFJA"
+			"defaultValue": "ustream"
 		},
 		{
 			"name": "redisHost",

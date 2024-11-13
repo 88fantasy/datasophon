@@ -380,10 +380,10 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "http://minio-node-1:6943",
+      "value": "http://minio-node-1:9000",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://minio-node-1:6943"
+      "defaultValue": "http://minio-node-1:9000"
 		}, {
 			"name": "resource.hdfs.root.user",
 			"label": "resource.hdfs.root.user",
