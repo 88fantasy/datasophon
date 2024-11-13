@@ -298,7 +298,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "${requirePass}"
+			"defaultValue": "${redisPass}"
 		},
 		{
 			"name": "encryptorPassword",

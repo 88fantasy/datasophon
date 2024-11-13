@@ -343,7 +343,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "cuminio"
+			"defaultValue": "${minioAccessKey}"
 		}, {
 			"name": "resource.aws.secret.access.key",
 			"label": "resource.aws.secret.access.key",
@@ -353,7 +353,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "u4Gkp19TRcKKlTCLNA1pyA=="
+			"defaultValue": "${minioSecretKey}"
 		}, {
 			"name": "resource.aws.region",
 			"label": "resource.aws.region",
