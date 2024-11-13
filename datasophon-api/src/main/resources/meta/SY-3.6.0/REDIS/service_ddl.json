@@ -173,10 +173,10 @@
       "type": "slider",
       "minValue": 0,
       "maxValue": 4294967296,
-      "value": "2147483648",
+      "value": 0,
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "2147483648"
+      "defaultValue": 0
     },
     {
       "name": "redisMaxMemoryPolicy",
