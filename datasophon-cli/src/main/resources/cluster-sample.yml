@@ -44,6 +44,9 @@ global:
       - account: nacos
         password: nacos
         dbName: nacos
+      - account: bigdata
+        password: bigdata
+        dbName: bigdata
     host:
       user: root
       ip: 192.168.2.146
