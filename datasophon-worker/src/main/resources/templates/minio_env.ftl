@@ -8,4 +8,4 @@ export MINIO_VOLUMES="${minioDataPaths}"
 
 # MINIO_OPTS sets any additional commandline options to pass to the MinIO server.
 # For example, `--console-address :9001` sets the MinIO Console listen port
-export MINIO_OPTS="--console-address :${minioConsolePort}"
+export MINIO_OPTS="--console-address :${minioConsolePort} --address :${minioApiPort}"

@@ -14,7 +14,7 @@
       "roleType": "master",
       "cardinality": "1",
       "sortNum": 1,
-      "logFile": "minio.log",
+      "logFile": "logs/minio.out",
       "jmxPort": 9000,
       "resourceStrategies":[{
         "type": "download",
@@ -55,7 +55,8 @@
           "minioAccessKey",
           "minioSecretKey",
           "minioDataPaths",
-          "minioConsolePort"
+          "minioConsolePort",
+          "minioApiPort"
         ]
       }
     ]
@@ -109,6 +110,18 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "9001"
+    },
+    {
+      "name": "minioApiPort",
+      "label": "API访问端口",
+      "description": "API访问端口",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "9000",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "9000"
     }
   ]
 }
