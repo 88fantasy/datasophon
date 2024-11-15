@@ -80,6 +80,7 @@ public class ServiceInstallHandler extends ServiceHandler {
             String packageName = archInfoMap.get(arch).getPackageName();
             String packageFilePath = Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + packageName;
             String md5FilePath = packageFilePath + ".md5";
+            logger.info("package path: {}, md5FilePath: {}", packageFilePath, md5FilePath);
             if (FileUtil.exist(packageFilePath) && FileUtil.exist(md5FilePath)) {
                 installServiceRoleCommand.setPackageName(packageName);
                 installServiceRoleCommand.setPackageMd5(FileUtil.readString(md5FilePath, Charset.defaultCharset()));

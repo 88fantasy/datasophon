@@ -9,11 +9,11 @@
   "decompressPackageName": "apache-doris-2.1.5",
   "arch":{
     "x86_64": {
-      "packageName": "apache-doris-2.1.5-bin-x64.tar.gz",
+      "packageName": "apache-doris-2.1.5-bin-x64.tar.gz"
     },
     "aarch64": {
-      "packageName": "apache-doris-2.1.5-bin-arm64.tar.gz",
-    },
+      "packageName": "apache-doris-2.1.5-bin-arm64.tar.gz"
+    }
   },
   "roles": [
     {
