@@ -114,6 +114,10 @@ public class MinaUtils {
         String arch = MinaUtils.execCmdWithResult(session, Constants.OS_ARCH_CMD);
         return ArchType.of(arch);
     }
+
+    public static String getFileString(Session session, String path){
+        return JschUtils.getFileString(session, path, 5);
+    }
     
     public static void main(String[] args) throws Exception {
         Session session = MinaUtils.openConnection("localhost", 22, "liuxin", null);
