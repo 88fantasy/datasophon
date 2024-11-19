@@ -13,29 +13,41 @@
       "label": "ResearchPlatform",
       "roleType": "master",
       "cardinality": "1",
-      "logFile": "research-server-2.0.0.RELEASE/module/chinaunicom-medical-research-platform/logs/chinaunicom-medical-research-platform.log",
+      "logFile": "module/chinaunicom-medical-research-platform/logs/chinaunicom-medical-research-platform.log",
       "startRunner": {
         "timeout": "60",
-        "program": "research-server-2.0.0.RELEASE/module/chinaunicom-medical-research-platform/bin/startup.sh",
+        "program": "module/chinaunicom-medical-research-platform/bin/server.sh",
         "args": [
+          "start",
+          "chinaunicom-medical-research-platform",
+          "2.0.0.RELEASE"
         ]
       },
       "stopRunner": {
         "timeout": "60",
-        "program": "research-server-2.0.0.RELEASE/module/chinaunicom-medical-research-platform/bin/shutdown.sh",
+        "program": "module/chinaunicom-medical-research-platform/bin/server.sh",
         "args": [
+          "stop",
+          "chinaunicom-medical-research-platform",
+          "2.0.0.RELEASE"
         ]
       },
       "statusRunner": {
         "timeout": "60",
-        "program": "research-server-2.0.0.RELEASE/module/chinaunicom-medical-research-platform/bin/status.sh",
+        "program": "module/chinaunicom-medical-research-platform/bin/server.sh",
         "args": [
+          "status",
+          "chinaunicom-medical-research-platform",
+          "2.0.0.RELEASE"
         ]
       },
       "restartRunner": {
         "timeout": "60",
-        "program": "research-server-2.0.0.RELEASE/module/chinaunicom-medical-research-platform/bin/restart.sh",
+        "program": "module/chinaunicom-medical-research-platform/bin/server.sh",
         "args": [
+          "restart",
+          "chinaunicom-medical-research-platform",
+          "2.0.0.RELEASE"
         ]
       },
       "externalLink": {
@@ -49,29 +61,41 @@
       "label": "AppRetrieval",
       "roleType": "master",
       "cardinality": "1",
-      "logFile": "research-server-2.0.0.RELEASE/module/chinaunicom-medical-app-retrieval/logs/chinaunicom-medical-app-retrieval.log",
+      "logFile": "module/chinaunicom-medical-app-retrieval/logs/chinaunicom-medical-app-retrieval.log",
       "startRunner": {
         "timeout": "60",
-        "program": "research-server-2.0.0.RELEASE/module/chinaunicom-medical-app-retrieval/bin/startup.sh",
+        "program": "module/chinaunicom-medical-app-retrieval/bin/server.sh",
         "args": [
+          "start",
+          "chinaunicom-medical-app-retrieval",
+          "2.0.0.RELEASE"
         ]
       },
       "stopRunner": {
         "timeout": "60",
-        "program": "research-server-2.0.0.RELEASE/module/chinaunicom-medical-app-retrieval/bin/shutdown.sh",
+        "program": "module/chinaunicom-medical-app-retrieval/bin/server.sh",
         "args": [
+          "stop",
+          "chinaunicom-medical-app-retrieval",
+          "2.0.0.RELEASE"
         ]
       },
       "statusRunner": {
         "timeout": "60",
-        "program": "research-server-2.0.0.RELEASE/module/chinaunicom-medical-app-retrieval/bin/status.sh",
+        "program": "module/chinaunicom-medical-app-retrieval/bin/server.sh",
         "args": [
+          "status",
+          "chinaunicom-medical-app-retrieval",
+          "2.0.0.RELEASE"
         ]
       },
       "restartRunner": {
         "timeout": "60",
-        "program": "research-server-2.0.0.RELEASE/module/chinaunicom-medical-app-retrieval/bin/restart.sh",
+        "program": "module/chinaunicom-medical-app-retrieval/bin/server.sh",
         "args": [
+          "restart",
+          "chinaunicom-medical-app-retrieval",
+          "2.0.0.RELEASE"
         ]
       },
       "externalLink": {
@@ -84,7 +108,7 @@
   "configWriter": {
     "generators": [
       {
-        "filename": "module/chinaunicom-medical-app-retrieval/config/bootstrap.yaml",
+        "filename": "module/chinaunicom-medical-app-retrieval/config/bootstrap.yml",
         "configFormat": "custom",
         "outputDirectory": "",
         "templateName": "research-bootstrap.ftl",
@@ -103,7 +127,7 @@
         ]
       },
       {
-        "filename": "module/chinaunicom-medical-research-platform/config/bootstrap.yaml",
+        "filename": "module/chinaunicom-medical-research-platform/config/bootstrap.yml",
         "configFormat": "custom",
         "outputDirectory": "",
         "templateName": "research-bootstrap.ftl",
@@ -125,7 +149,7 @@
         "filename": "common.yaml",
         "configFormat": "custom",
         "templateName": "research-common.ftl",
-        "outputDirectory": "${nacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
+        "outputDirectory": "${researchNacosUsername}:${nacosAdminPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
           "researchSsoAccessTokenKey",
@@ -161,7 +185,7 @@
         "filename": "chinaunicom-medical-app-retrieval.yaml",
         "configFormat": "custom",
         "templateName": "research-app-retrieval.ftl",
-        "outputDirectory": "${nacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
+        "outputDirectory": "${researchNacosUsername}:${nacosAdminPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
           "researchDbSystemUrl",
@@ -184,7 +208,7 @@
         "filename": "chinaunicom-medical-research-platform.yaml",
         "configFormat": "custom",
         "templateName": "research-research-platform.ftl",
-        "outputDirectory": "${nacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
+        "outputDirectory": "${researchNacosUsername}:${nacosAdminPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
           "researchDbSystemUrl",
@@ -275,10 +299,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "${nacosUsername}",
+      "value": "nacos",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${nacosUsername}"
+      "defaultValue": "nacos"
     },
     {
       "name": "researchNacosPassword",
@@ -287,10 +311,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "${nacosPassword}",
+      "value": "${nacosAdminPassword}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${nacosPassword}"
+      "defaultValue": "${nacosAdminPassword}"
     },
     {
       "name": "researchNacosHosts",
@@ -395,10 +419,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "jdbc:mysql://dh1:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "value": "jdbc:mysql://dd1:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://dh1:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://dd1:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
     },
     {
       "name": "researchDbSystemUsername",

@@ -9,7 +9,7 @@ spring:
           username: ${researchDbSystemUsername}
           password: ${researchDbSystemPassword}
           driver-class-name: ${researchDbSystemDriverClassName}
-          url: ${researchDbSystemDriverClassName}
+          url: ${researchDbSystemUrl}
         doris:
           username: ${researchDbDorisUsername}
           password: ${researchDbDorisPassword}
