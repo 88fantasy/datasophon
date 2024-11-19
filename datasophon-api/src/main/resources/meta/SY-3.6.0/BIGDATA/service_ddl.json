@@ -190,10 +190,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://192.168.2.122:7500/bigdata",
+      "value": "http://${uschedulerApiServerHost}:7500/bigdata",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://192.168.2.122:7500/bigdata"
+      "defaultValue": "http://${uschedulerApiServerHost}:7500/bigdata"
     },
     {
       "name": "bigdataAppProfile",
@@ -310,10 +310,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "jdbc:mysql://192.168.2.122:3306/chinaunicom_medical_mgmt_bigdata_ds?&allowMultiQueries=true&characterEncoding=utf-8",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://192.168.2.122:3306/chinaunicom_medical_mgmt_bigdata_ds?&allowMultiQueries=true&characterEncoding=utf-8"
+      "defaultValue": "jdbc:mysql://${apiHost}:3306/bigdata?&allowMultiQueries=true&characterEncoding=utf-8&allowPublicKeyRetrieval=true"
     },
     {
       "name": "bigdataMysqlBigdataUsername",
@@ -322,10 +322,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "root",
+      "value": "bigdata",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "root"
+      "defaultValue": "bigdata"
     },
     {
       "name": "bigdataMysqlBigdataPassword",
@@ -394,10 +394,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://10.81.17.102:36901",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://10.81.17.102:36901"
+      "defaultValue": "http://xx.xx.xx.xx:36901"
     },
     {
       "name": "bigdataAiMappingAiFieldMappingUrl",
@@ -406,10 +406,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://10.81.17.102:36902",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://10.81.17.102:36902"
+      "defaultValue": "http://xx.xx.xx.xx:36902"
     },
     {
       "name": "bigdataUstreamYarnRmAddress",
@@ -418,10 +418,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://yarnRm:8088/",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://yarnRm:8088/"
+      "defaultValue": "http://${yarn.resourcemanager.hostname.rm1}:8088/"
     },
     {
       "name": "bigdataUstreamAgentYarnRmAddress",
@@ -430,10 +430,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://yarnRm:8088/",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://yarnRm:8088/"
+      "defaultValue": "http://${yarn.resourcemanager.hostname.rm1}:8088/"
     },
     {
       "name": "bigdataUstreamFlinkHistoryRestAddress",
@@ -442,10 +442,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://flinkHistory:8082/",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://flinkHistory:8082/"
+      "defaultValue": "http://${flinkHistoryServerHost}:8082/"
     },
     {
       "name": "bigdataApiSixBaseUrl",

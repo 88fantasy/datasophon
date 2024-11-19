@@ -56,6 +56,7 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("NacosServer", new NacosHandlerStrategy());
         strategyMap.put("MinioServer", new MinioHandlerStrategy());
         strategyMap.put("RedisMaster", new RedisHandlerStrategy());
+        strategyMap.put("UApiServer", new USchedulerApiServerHandlerStrategy());
 
         strategyMap.put("RANGER", new RangerAdminHandlerStrategy());
         strategyMap.put("ZOOKEEPER", new ZkServerHandlerStrategy());
@@ -96,6 +97,7 @@ public class ServiceRoleStrategyContext {
         serviceNameMap.put("FlinkHistory", "FLINK");
         serviceNameMap.put("RedisMaster", "REDIS");
         serviceNameMap.put("NacosServer", "NACOS");
+        serviceNameMap.put("UApiServer", "USCHEDULER");
         
         serviceNameMap.put("FLINK", "FLINK");
         serviceNameMap.put("RANGER", "RANGER");
