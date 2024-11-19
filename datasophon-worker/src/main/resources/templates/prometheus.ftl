@@ -192,17 +192,39 @@ scrape_configs:
   - job_name: 'redis'
     file_sd_configs:
     - files:
-      - configs/redis.json
+      - configs/redisexporter.json
 
-  - job_name: 'amoro'
+#  - job_name: 'amoro'
+#    file_sd_configs:
+#    - files:
+#      - configs/amoroserver.json
+
+  - job_name: 'minio-cluster'
+    metrics_path: '/minio/v2/metrics/cluster'
     file_sd_configs:
     - files:
-      - configs/amoro.json
+      - configs/minioserver.json
+  - job_name: 'minio-bucket'
+    metrics_path: '/minio/v2/metrics/bucket'
+    file_sd_configs:
+    - files:
+      - configs/minioserver.json
+  - job_name: 'minio-node'
+    metrics_path: '/minio/v2/metrics/node'
+    file_sd_configs:
+    - files:
+      - configs/minioserver.json
+  - job_name: 'minio-resource'
+    metrics_path: '/minio/v2/metrics/resource'
+    file_sd_configs:
+    - files:
+      - configs/minioserver.json
 
   - job_name: 'nacos'
+    metrics_path: '/nacos/actuator/prometheus'
     file_sd_configs:
     - files:
-      - configs/nacos.json
+      - configs/nacosserver.json
 
   - job_name: 'bigdata'
     file_sd_configs:

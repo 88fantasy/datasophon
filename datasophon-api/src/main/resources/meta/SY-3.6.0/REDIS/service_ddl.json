@@ -13,7 +13,6 @@
       "label": "RedisMaster",
       "roleType": "master",
       "cardinality": "1",
-      "runAs": {},
       "logFile": "logs/master.log",
       "resourceStrategies":[{
         "type": "download",
