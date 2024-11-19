@@ -380,10 +380,10 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "http://minio-node-1:9000",
+      "value": "http://${minioHost}:${minioApiPort}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://minio-node-1:9000"
+      "defaultValue": "http://${minioHost}:${minioApiPort}"
 		}, {
 			"name": "resource.hdfs.root.user",
 			"label": "resource.hdfs.root.user",
@@ -443,7 +443,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "http://ds1:19888/ws/v1/history/mapreduce/jobs/%s"
+			"defaultValue": "http://${historyserverHost}:19888/ws/v1/history/mapreduce/jobs/%s"
 		}, {
 			"name": "datasource.encryption.enable",
 			"label": "datasource.encryption.enable",

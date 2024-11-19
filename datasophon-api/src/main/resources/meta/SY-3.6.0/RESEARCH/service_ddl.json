@@ -393,10 +393,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "7501",
+      "value": "${redisMasterPort}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "7501"
+      "defaultValue": "${redisMasterPort}"
     },
     {
       "name": "researchRedisDatabase",
@@ -417,10 +417,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "fX0GzFyWOK4LR^9K",
+      "value": "${redisPass}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "fX0GzFyWOK4LR^9K"
+      "defaultValue": "${redisPass}"
     },
     {
       "name": "researchRedisAddress",
@@ -429,10 +429,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "redis://redis-node-1:7501",
+      "value": "redis://${redisHost}:${redisMasterPort}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "redis://redis-node-1:7501"
+      "defaultValue": "redis://${redisHost}:${redisMasterPort}"
     },
     {
       "name": "researchMinioAccessKey",
@@ -441,10 +441,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "cuminio",
+      "value": "${minioAccessKey}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "cuminio"
+      "defaultValue": "${minioAccessKey}"
     },
     {
       "name": "researchMinioSecretKey",
@@ -453,10 +453,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "u4Gkp19TRcKKlTCLNA1pyA==",
+      "value": "${minioSecretKey}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "u4Gkp19TRcKKlTCLNA1pyA=="
+      "defaultValue": "${minioSecretKey}"
     },
     {
       "name": "researchMinioHost",
@@ -513,10 +513,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://minio-node-1:6943/",
+      "value": "http://${minioHost}:${minioApiPort}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://minio-node-1:6943/"
+      "defaultValue": "http://${minioHost}:${minioApiPort}"
     },
     {
       "name": "researchMinioBucket",

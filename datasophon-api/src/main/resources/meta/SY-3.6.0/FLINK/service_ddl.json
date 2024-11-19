@@ -268,7 +268,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "cuminio"
+      "defaultValue": "${minioAccessKey}"
     },
     {
       "name": "s3.secret-key",
@@ -279,7 +279,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "u4Gkp19TRcKKlTCLNA1pyA=="
+      "defaultValue": "${minioSecretKey}"
     },
     {
       "name": "s3.endpoint",
@@ -290,7 +290,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://minio-node-1:9000"
+      "defaultValue": "http://${minioHost}:${minioApiPort}"
     },
     {
       "name": "s3.path.style.access",

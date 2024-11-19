@@ -34,11 +34,11 @@ pagehelper:
   reasonable: true
   support-methods-arguments: true
 s3:
-  access-key: ${s3AccessKey}
-  basePath: ${s3BasePath}
-  bucket: ${s3Bucket}
-  endpoint: ${s3Endpoint}
-  secret-key: ${s3Secretkey}
+  access-key: ${ustreamS3AccessKey}
+  basePath: ${ustreamS3BasePath}
+  bucket: ${ustreamS3Bucket}
+  endpoint: ${ustreamS3Endpoint}
+  secret-key: ${ustreamS3Secretkey}
 spring:
   application:
     name: ustream
@@ -50,10 +50,10 @@ spring:
   main:
     allow-bean-definition-overriding: true
   redis:
-    host: ${redisHost}
-    password: ${redisPassword}
-    port: ${redisPort}
-    username: ${redisUsername}
+    host: ${ustreamRedisHost}
+    password: ${ustreamRedisPassword}
+    port: ${ustreamRedisPort}
+    username: ${ustreamRedisUsername}
   servlet:
     multipart:
       max-file-size: 500MB

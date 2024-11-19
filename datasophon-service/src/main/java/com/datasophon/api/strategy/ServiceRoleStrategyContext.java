@@ -32,7 +32,6 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("NameNode", new NameNodeHandlerStrategy());
         strategyMap.put("ResourceManager", new RMHandlerStrategy());
         strategyMap.put("HiveMetaStore", new HiveMetaStroreHandlerStrategy());
-        strategyMap.put("NacosServer", new NacosHandlerStrategy());
         strategyMap.put("HiveServer2", new HiveServer2HandlerStrategy());
         strategyMap.put("Grafana", new GrafanaHandlerStrategy());
         strategyMap.put("ZkServer", new ZkServerHandlerStrategy());
@@ -53,7 +52,11 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("ElasticSearch", new ElasticSearchHandlerStrategy());
         strategyMap.put("Prometheus", new PrometheusHandlerStrategy());
         strategyMap.put("AlertManager", new AlertManagerHandlerStrategy());
-        
+        strategyMap.put("FlinkHistory", new FlinkHistoryServerHandlerStrategy());
+        strategyMap.put("NacosServer", new NacosHandlerStrategy());
+        strategyMap.put("MinioServer", new MinioHandlerStrategy());
+        strategyMap.put("RedisMaster", new RedisHandlerStrategy());
+
         strategyMap.put("RANGER", new RangerAdminHandlerStrategy());
         strategyMap.put("ZOOKEEPER", new ZkServerHandlerStrategy());
         strategyMap.put("YARN", new RMHandlerStrategy());
@@ -89,6 +92,10 @@ public class ServiceRoleStrategyContext {
         serviceNameMap.put("ElasticSearch", "ELASTICSEARCH");
         serviceNameMap.put("Prometheus", "PROMETHEUS");
         serviceNameMap.put("AlertManager", "ALERTMANAGER");
+        serviceNameMap.put("MinioServer", "MINIO");
+        serviceNameMap.put("FlinkHistory", "FLINK");
+        serviceNameMap.put("RedisMaster", "REDIS");
+        serviceNameMap.put("NacosServer", "NACOS");
         
         serviceNameMap.put("FLINK", "FLINK");
         serviceNameMap.put("RANGER", "RANGER");

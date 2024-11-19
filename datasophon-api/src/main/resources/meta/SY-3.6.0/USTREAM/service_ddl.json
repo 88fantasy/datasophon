@@ -54,18 +54,18 @@
 					"flinkHomePath",
 					"flinkHistoryRestAddress",
 					"yarnRmHttpAddress",
-					"s3Endpoint",
-					"s3AccessKey",
-					"s3Secretkey",
-					"s3Bucket",
-					"s3BasePath",
+					"ustreamS3Endpoint",
+					"ustreamS3AccessKey",
+					"ustreamS3Secretkey",
+					"ustreamS3Bucket",
+					"ustreamS3BasePath",
 					"dbUrl",
 					"dbUser",
 					"dbPassword",
-					"redisHost",
-					"redisPort",
-					"redisUsername",
-					"redisPassword",
+					"ustreamRedisHost",
+					"ustreamRedisPort",
+					"ustreamRedisUsername",
+					"ustreamRedisPassword",
 					"encryptorPassword"
 				]
 			}
@@ -142,7 +142,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "http://flinkHistoryserver:${historyserver.web.port}"
+			"defaultValue": "http://${flinkHistoryServerHost}:${historyserver.web.port}"
 		},
 		{
 			"name": "yarnRmHttpAddress",
@@ -157,7 +157,7 @@
 			"defaultValue": "${yarn.resourcemanager.webapp.address.rm1}"
 		},
 		{
-			"name": "s3Endpoint",
+			"name": "ustreamS3Endpoint",
 			"label": "s3登录地址",
 			"description": "",
 			"configType": "map",
@@ -166,10 +166,10 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "http://minio-node-1:9000"
+			"defaultValue": "http://${minioHost}:${minioApiPort}"
 		},
 		{
-			"name": "s3AccessKey",
+			"name": "ustreamS3AccessKey",
 			"label": "s3登录账号",
 			"description": "",
 			"configType": "map",
@@ -178,10 +178,10 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "fileadmin"
+			"defaultValue": "${minioAccessKey}"
 		},
 		{
-			"name": "s3Secretkey",
+			"name": "ustreamS3Secretkey",
 			"label": "S3登录密码",
 			"description": "",
 			"configType": "map",
@@ -190,10 +190,10 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "fileadmin"
+			"defaultValue": "${minioSecretKey}"
 		},
 		{
-			"name": "s3Bucket",
+			"name": "ustreamS3Bucket",
 			"label": "s3存储bucket",
 			"description": "",
 			"configType": "map",
@@ -205,7 +205,7 @@
 			"defaultValue": "public"
 		},
 		{
-			"name": "s3BasePath",
+			"name": "ustreamS3BasePath",
 			"label": "s3存储前缀路径",
 			"description": "",
 			"configType": "map",
@@ -253,7 +253,7 @@
 			"defaultValue": "ustream"
 		},
 		{
-			"name": "redisHost",
+			"name": "ustreamRedisHost",
 			"label": "redis.host",
 			"description": "",
 			"configType": "map",
@@ -262,10 +262,10 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "redis-node-1"
+			"defaultValue": "${redisHost}"
 		},
 		{
-			"name": "redisPort",
+			"name": "ustreamRedisPort",
 			"label": "redis.port",
 			"description": "",
 			"configType": "map",
@@ -277,7 +277,7 @@
 			"defaultValue": "${redisMasterPort}"
 		},
 		{
-			"name": "redisUsername",
+			"name": "ustreamRedisUsername",
 			"label": "redis账号",
 			"description": "",
 			"configType": "map",
@@ -289,7 +289,7 @@
 			"defaultValue": "admin"
 		},
 		{
-			"name": "redisPassword",
+			"name": "ustreamRedisPassword",
 			"label": "redis密码",
 			"description": "",
 			"configType": "map",
