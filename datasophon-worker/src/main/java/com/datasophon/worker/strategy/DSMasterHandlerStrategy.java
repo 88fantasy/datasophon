@@ -37,6 +37,7 @@ import cn.hutool.db.DbUtil;
 import cn.hutool.db.ds.simple.SimpleDataSource;
 import cn.hutool.db.handler.RsHandler;
 import cn.hutool.db.sql.SqlExecutor;
+import com.datasophon.worker.utils.SqlUtils;
 
 public class DSMasterHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
     
@@ -71,17 +72,7 @@ public class DSMasterHandlerStrategy extends AbstractHandlerStrategy implements 
                     Connection con = null;
                     try {
                         con = DbUtil.use(new SimpleDataSource(url, username, password)).getConnection();
-                        List<String> entityList = SqlExecutor.query(con, "SHOW TABLES", new RsHandler<List<String>>() {
-                            
-                            @Override
-                            public List<String> handle(ResultSet rs) throws SQLException {
-                                final List<String> result = new ArrayList<>();
-                                while (rs.next()) {
-                                    result.add(rs.getString(1));
-                                }
-                                return result;
-                            }
-                        });
+                        List<String> entityList = SqlUtils.getTableList(con);
                         if (entityList.stream().noneMatch(s -> s.equals("t_escheduler_version")
                                 || s.equals("t_ds_version") || s.equals("t_escheduler_queue"))) {
                             ready = false;

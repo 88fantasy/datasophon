@@ -2,11 +2,11 @@
   "name": "NACOS",
   "label": "Nacos",
   "description": "服务注册发现、服务配置管理",
-  "version": "2.4.2.1",
+  "version": "2.4.3",
   "sortNum": 80,
   "dependencies": [],
-  "packageName": "nacos-server-2.4.2.1.tar.gz",
-  "decompressPackageName": "nacos-server-2.4.2.1",
+  "packageName": "nacos-server-2.4.3.tar.gz",
+  "decompressPackageName": "nacos",
   "roles": [{
     "name": "NacosServer",
     "label": "NacosServer",
@@ -17,29 +17,37 @@
     "resourceStrategies":[{
       "type": "download",
       "from": "script/control_nacos.sh",
-      "to": "control_nacos.sh"
+      "to": "bin/control_nacos.sh",
+      "md5": "66eddd29b1f85d39fcfd98485f5bd9d1"
     }],
     "startRunner": {
       "timeout": "60",
-      "program": "control_nacos.sh",
+      "program": "bin/startup.sh",
       "args": [
-        "start",
+        "-m",
         "standalone"
       ]
     },
     "stopRunner": {
       "timeout": "600",
-      "program": "control_nacos.sh",
+      "program": "bin/shutdown.sh",
       "args": [
-        "stop",
-        "standalone"
+
       ]
     },
     "statusRunner": {
       "timeout": "60",
-      "program": "control_nacos.sh",
+      "program": "bin/control_nacos.sh",
       "args": [
         "status",
+        "standalone"
+      ]
+    },
+    "restartRunner": {
+      "timeout": "60",
+      "program": "bin/control_nacos.sh",
+      "args": [
+        "restart",
         "standalone"
       ]
     },
@@ -55,23 +63,16 @@
         "filename": "application.properties",
         "configFormat": "custom",
         "outputDirectory": "conf",
-        "templateName": "nacos-server-master.ftl",
+        "templateName": "nacos-standalone.ftl",
         "includeParams": [
             "nacosServerPort",
             "nacosDbUrl",
             "nacosDbUser",
             "nacosDbPwd",
             "nacosAuthEnabled",
-            "nacosTokenSecretKey"
-        ]
-      },
-      {
-        "filename": "nacos-user-mgmt.properties",
-        "configFormat": "properties",
-        "outputDirectory": "conf",
-        "includeParams": [
-            "nacosUsername",
-            "nacosPassword"
+            "nacosTokenSecretKey",
+            "nacosWebUI",
+            "nacosAdminPassword"
         ]
       }
     ]
@@ -99,7 +100,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:3306/nacos?useUnicode=true&characterEncoding=UTF8&autoReconnect=true&useAffectedRows=true&useSSL=false"
+      "defaultValue": "jdbc:mysql://${apiHost}:3306/nacos?characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
     },
     {
       "name": "nacosDbUser",
@@ -140,7 +141,7 @@
     {
       "name": "nacosTokenSecretKey",
       "label": "密钥",
-      "description": "密钥",
+      "description": "密钥(Base64)",
       "required": true,
       "configType": "map",
       "type": "input",
@@ -150,28 +151,28 @@
       "defaultValue": "a73d81760ee6fe6a0c2482e0b79a409ce810ec969b6cf5e27bb81d822449b9ea"
     },
     {
-      "name": "nacosUsername",
-      "label": "用户名",
-      "description": "登录用户名",
+      "name": "nacosWebUI",
+      "label": "是否启用界面",
+      "description": "是否启用界面",
       "required": true,
       "configType": "map",
-      "type": "input",
-      "value": "nacos",
+      "type": "switch",
+      "value": true,
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "nacos"
+      "defaultValue": true
     },
     {
-      "name": "nacosPassword",
+      "name": "nacosAdminPassword",
       "label": "密码",
       "description": "登录密码",
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "nacos",
+      "value": "Td3DM4gAEebqkwrgJtcg",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "nacos"
+      "defaultValue": "Td3DM4gAEebqkwrgJtcg"
     }
   ]
 }

@@ -32,24 +32,11 @@ export PID_DIR=$NACOS_DIR/pid
 
 export HOSTNAME=`hostname`
 
-pid=$PID_DIR/$command.pid
-log=$LOG_DIR/$command.out
 
 if [ ! -d "$LOG_DIR" ]; then
   mkdir $LOG_DIR
 fi
 
-start(){
-  exec_command="$NACOS_DIR/bin/startup.sh -m $command"
-  echo starting nacos $command, logging to $log
-  nohup $exec_command > $log 2>&1 &
-}
-stop(){
-  PID=`ps -ef | grep '[n]acos.nacos' | awk '{print $2}'`
-  echo stop nacos $command $PID
-	exec_shutdown_command="$NACOS_DIR/bin/shutdown.sh"
-  $exec_shutdown_command
-}
 restart(){
 	stop
 	sleep 10
@@ -57,16 +44,15 @@ restart(){
 }
 status(){
   echo "start check $command status"
-  pid=`ps -ef | grep '[n]acos.nacos' | awk '{print $2}'`
-  echo "pid is : $pid"
-  kill -0 $pid
-  if [ $? -eq 0 ]
-  	then
-  		echo "nacos $command is  running "
-  	else
-  		echo "nacos $command  is not running"
-  		exit 1
-  	fi
+  cd `dirname $0`/../target
+  target_dir=`pwd`
+
+  pid=`pgrep -f nacos.nacos`
+  if [ -z "$pid" ] ; then
+      echo "No nacosServer running."
+      exit 1;
+  fi
+  echo "The nacosServer(${pid}) is running..."
 }
 
 case $startStop in
