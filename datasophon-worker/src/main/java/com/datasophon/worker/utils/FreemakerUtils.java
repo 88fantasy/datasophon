@@ -123,7 +123,7 @@ public class FreemakerUtils {
         if (Constants.CUSTOM.equals(configFormat)) {
             template = config.getTemplate(generators.getTemplateName());
             data = configs.stream().filter(e -> "map".equals(e.getConfigType()))
-                    .collect(Collectors.toMap(key -> key.getName(), value -> value.getValue()));
+                    .collect(Collectors.toMap(ServiceConfig::getName, ServiceConfig::getValue));
             if (Constants.NACOS.equals(generators.getType())) {
                 logger.info("生成nacos配置");
                 String outputDirectory = generators.getOutputDirectory();
