@@ -4,7 +4,7 @@
 	"description": "iceberg优化器",
 	"version": "0.6.1",
 	"sortNum": 92,
-	"dependencies": ["FLINK","YARN"],
+	"dependencies": [],
 	"packageName": "amoro-0.6.1.tar.gz",
 	"decompressPackageName": "amoro-0.6.1",
 	"roles": [{
@@ -123,7 +123,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "jdbc:mysql://${apiHost}:3306/amoro?useUnicode=true&characterEncoding=UTF8&autoReconnect=true&useAffectedRows=true&useSSL=false"
+			"defaultValue": "jdbc:mysql://${apiHost}:3306/amoro?useUnicode=true&characterEncoding=UTF8&autoReconnect=true&useAffectedRows=true&useSSL=false&allowPublicKeyRetrieval=true"
 		},
 		{
 			"name": "amoroDbUsername",
@@ -219,7 +219,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "jdbc:hive2://kyuubiServer:10009"
+			"defaultValue": "jdbc:hive2://${kyuubiServerHost}:10009"
 		},
 		{
 			"name": "amoroTerminalJdbcUser",

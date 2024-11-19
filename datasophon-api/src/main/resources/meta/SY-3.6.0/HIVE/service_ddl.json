@@ -261,7 +261,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:3306/hive?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false"
+      "defaultValue": "jdbc:mysql://${apiHost}:3306/hive?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;allowPublicKeyRetrieval=true"
     },
     {
       "name": "hive.server2.enable.doAs",

@@ -99,7 +99,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:3306/nacos?useUnicode=true&characterEncoding=UTF8&autoReconnect=true&useAffectedRows=true&useSSL=false"
+      "defaultValue": "jdbc:mysql://${apiHost}:3306/nacos?useUnicode=true&characterEncoding=UTF8&autoReconnect=true&useAffectedRows=true&useSSL=false&allowPublicKeyRetrieval=true"
     },
     {
       "name": "nacosDbUser",
