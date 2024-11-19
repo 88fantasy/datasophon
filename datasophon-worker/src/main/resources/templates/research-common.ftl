@@ -1,10 +1,10 @@
 sso:
-  accessTokenKey: ${researchSsoAccessTokenKey:accessTokenKey}
-  domain: ${researchSsoDomain:domaindev}
-  rolesystem: ${researchSsoRolesystem:rolesystem}
+  accessTokenKey: ${researchSsoAccessTokenKey}
+  domain: ${researchSsoDomain}
+  rolesystem: ${researchSsoRolesystem}
   jwt:
-    tokenExpiration: ${researchSsoJwtTokenExpiration:21600000}
-    tokenSecret: ${researchSsoJwtTokenSecret:NonceJwtSecre}
+    tokenExpiration: ${researchSsoJwtTokenExpiration}
+    tokenSecret: ${researchSsoJwtTokenSecret}
 
 server:
   tomcat:
@@ -15,15 +15,15 @@ monitor.schduler.run: true
 
 db:
   system:
-    url: ${researchDbSystemUrl:jdbc:mysql://192.168.2.239:33066/chinaunicom_medical_app_zssy?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai}
-    username: ${researchDbSystemUsername:chinaunicom}
-    password: ${researchDbSystemPassword:Un1c0m@Dqc79bf8473#22}
-    driver-class-name: ${researchDbSystemDriverClassName:com.mysql.cj.jdbc.Driver}
+    url: ${researchDbSystemUrl}
+    username: ${researchDbSystemUsername}
+    password: ${researchDbSystemPassword}
+    driver-class-name: ${researchDbSystemDriverClassName}
   doris:
-    url: ${researchDbDorisUrl:jdbc:mysql://192.168.2.48:9030/chinaunicom_medical_zssy_web?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai}
-    username: ${researchDbDorisUsername:root}
-    password: ${researchDbDorisPassword:3ght%ed75BGk}
-    driver-class-name: ${researchDbDorisDriverClassName:com.mysql.cj.jdbc.Driver}
+    url: ${researchDbDorisUrl}
+    username: ${researchDbDorisUsername}
+    password: ${researchDbDorisPassword}
+    driver-class-name: ${researchDbDorisDriverClassName}
 
 spring:
   servlet:
@@ -41,17 +41,17 @@ spring:
     # generator:
     #   write_numbers_as_strings: true
   redis:
-    dc-mode: ${researchRedisDcMode:single}
-    host: ${researchRedisHost:192.168.2.239}
-    port: ${researchRedisPort:7501}
-    database: ${researchRedisDatabase:0}
-    password: ${researchRedisPassword:fX0GzFyWOK4LR^9K}
+    dc-mode: ${researchRedisDcMode}
+    host: ${researchRedisHost}
+    port: ${researchRedisPort}
+    database: ${researchRedisDatabase}
+    password: ${researchRedisPassword}
     timeout: 300000
     redisson:
       config: |
         singleServerConfig:
-          address: ${researchRedisAddress:redis://redis-node-1:7501}
-          password: ${researchRedisPassword:fX0GzFyWOK4LR^9K}
+          address: ${researchRedisAddress}
+          password: ${researchRedisPassword}
           database: 0
         codec: !<org.redisson.codec.JsonJacksonCodec> {}
         transportMode: "NIO"
@@ -113,8 +113,6 @@ management:
         enabled: false
       simple:
         enabled: false
-    tags:
-      application: ${spring.application.name}
   endpoints:
     web:
       base-path: /actuator
@@ -144,14 +142,14 @@ com.chinaunicom.medical.designpattern.strategy.projectName: chinaunicom
 com.chinaunicom.medical.comp.core.cryptographSwitch: 0
 
 minio:
-  accessKey: ${researchMinioAccessKey:cuminio}
-  secretKey: ${researchMinioSecretKey:u4Gkp19TRcKKlTCLNA1pyA==}
-  url: ${researchMinioHost:http://192.168.2.239:6943/}
-  outsideUrl: ${researchMinioOutsideHost:http://192.168.2.239:6943/}
-  access: ${researchMinioAccess:cuminio}
-  secret: ${researchMinioSecret:u4Gkp19TRcKKlTCLNA1pyA==}
-  endpoint: ${researchMinioEndpoint:http://minio-node-1:6943/}
-  bucket: ${researchMinioBucket:public}
+  accessKey: ${researchMinioAccessKey}
+  secretKey: ${researchMinioSecretKey}
+  url: ${researchMinioHost}
+  outsideUrl: ${researchMinioOutsideHost}
+  access: ${researchMinioAccess}
+  secret: ${researchMinioSecret}
+  endpoint: ${researchMinioEndpoint}
+  bucket: ${researchMinioBucket}
 
 retrofit:
   log:

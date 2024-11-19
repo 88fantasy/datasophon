@@ -47,6 +47,9 @@ global:
       - account: bigdata
         password: bigdata
         dbName: bigdata
+      - account: research
+        password: research
+        dbName: research
     host:
       user: root
       ip: 192.168.2.146

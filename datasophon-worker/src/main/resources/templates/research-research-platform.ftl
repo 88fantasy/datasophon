@@ -6,15 +6,15 @@ spring:
       primary: doris
       datasource:
         system:
-          username: ${db.system.username:chinaunicom}
-          password: ${db.system.password:Un1c0m@Dqc79bf8473#22}
-          driver-class-name: ${db.system.driver-class-name:com.mysql.cj.jdbc.Driver}
-          url: ${db.system.url:jdbc:mysql://192.168.2.239:33066/chinaunicom_medical_app_zssy?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai}
+          username: ${researchDbSystemUsername}
+          password: ${researchDbSystemPassword}
+          driver-class-name: ${researchDbSystemDriverClassName}
+          url: ${researchDbSystemDriverClassName}
         doris:
-          username: ${db.doris.username:root}
-          password: ${db.doris.password:3ght%ed75BGk}
-          driver-class-name: ${db.doris.driver-class-name:com.mysql.cj.jdbc.Driver}
-          url: ${db.doris.url:jdbc:jdbc:mysql://192.168.2.48:9030/chinaunicom_medical_zssy_web?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai}
+          username: ${researchDbDorisUsername}
+          password: ${researchDbDorisPassword}
+          driver-class-name: ${researchDbDorisDriverClassName}
+          url: ${researchDbDorisUrl}
 
 logging:
   #   config: classpath:logback-spring.xml
@@ -25,13 +25,13 @@ log:
   level: info
 
 oa_admin:
-  url: ${researchOaAdminUrl:http://10.117.156.94:8380/}
+  url: ${researchOaAdminUrl}
 
 minio:
   enabled: true
   bucket: retrieval
   publicReadDir: public
-  proxyUrl: ${minio.url:http://192.168.2.239:6943}
+  proxyUrl: ${researchMinioHost}
 
 research:
   topOrgNodeId: 1595006145888526338
@@ -45,7 +45,7 @@ research:
       name: 通义千问7B
     - code: Qwen-72B-Chat-Int4
       name: 通义千问72B
-  llmApi: ${researchLlmApi:http://192.168.3.100:8001/v1/chat/completions}
+  llmApi: ${researchLlmApi}
   llmModel: string
   llmDoSample: true
   llmTemperature: 0.51
@@ -87,7 +87,7 @@ structure:
       name: 主诉结构化模型
       version: 1.0
       type: 1
-      url: ${researchStructuredMedicalChiefComplaintUrl:http://192.168.3.100:8002/v1/chat/structured_medical/chief_complaint}
+      url: ${researchStructuredMedicalChiefComplaintUrl}
       labels: 症状,时间,诱因
       description: 主诉结构化
       tableFields:
@@ -101,7 +101,7 @@ structure:
       name: 既往史结构化模型
       version: 1.0
       type: 3
-      url: ${researchStructuredMedicalPastHistoryUrl:http://192.168.3.100:8001/v1/chat/structured_medical/past_history}
+      url: ${researchStructuredMedicalPastHistoryUrl}
       labels: 既往疾病,既往症状,既往用药,既往手术,输血史,过敏史
       description: 既往史结构化
       tableFields:
@@ -115,7 +115,7 @@ structure:
       name: 个人史结构化模型
       version: 1.0
       type: 4
-      url: ${researchStructuredMedicalPersonalHistoryUrl:http://192.168.3.100:8001/v1/chat/structured_medical/personal_history}
+      url: ${researchStructuredMedicalPersonalHistoryUrl}
       labels: 是否吸烟,烟龄(年),吸烟量(支/日),是否戒烟,戒烟年限,复吸年限,是否饮酒,饮酒年限,是否戒酒,戒酒年限,复饮年限
       description: 个人史结构化
       tableFields:
@@ -129,7 +129,7 @@ structure:
       name: 家族史结构化模型
       version: 1.0
       type: 5
-      url: ${researchStructuredMedicalFamilyHistoryUrl:http://192.168.3.100:8001/v1/chat/structured_medical/family_history}
+      url: ${researchStructuredMedicalFamilyHistoryUrl}
       labels: 祖父,祖母,外祖父,外祖母,父亲,母亲,子,女,兄,弟,姐,妹
       description: 家族史结构化
       tableFields:
@@ -143,7 +143,7 @@ structure:
 project:
   executeCoreSize: 1
   maxQueueSize: 2000
-  llmApi: ${researchProjectLlmApi:http://157.148.123.64:8001/v1/chat/completions}
+  llmApi: ${researchProjectLlmApi}
   llmModel: /data/lzl/model_base/Qwen2/Qwen2-72B-Instruct-GPTQ-Int4
   llmDoSample: true
   llmTemperature: 0.51
