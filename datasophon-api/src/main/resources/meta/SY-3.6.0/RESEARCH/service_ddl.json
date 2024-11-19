@@ -84,7 +84,7 @@
   "configWriter": {
     "generators": [
       {
-        "filename": "chinaunicom-medical-research-server/module/chinaunicom-medical-app-retrieval/config/bootstrap.yaml",
+        "filename": "module/chinaunicom-medical-app-retrieval/config/bootstrap.yaml",
         "configFormat": "custom",
         "outputDirectory": "",
         "templateName": "research-bootstrap.ftl",
@@ -103,7 +103,7 @@
         ]
       },
       {
-        "filename": "chinaunicom-medical-research-server/module/chinaunicom-medical-research-platform/config/bootstrap.yaml",
+        "filename": "module/chinaunicom-medical-research-platform/config/bootstrap.yaml",
         "configFormat": "custom",
         "outputDirectory": "",
         "templateName": "research-bootstrap.ftl",
@@ -133,12 +133,20 @@
           "researchSsoRolesystem",
           "researchSsoJwtTokenExpiration",
           "researchSsoJwtTokenSecret",
+          "researchDbSystemUrl",
+          "researchDbSystemUsername",
+          "researchDbSystemPassword",
+          "researchDbSystemDriverClassName",
+          "researchDbDorisUrl",
+          "researchDbDorisUsername",
+          "researchDbDorisPassword",
+          "researchDbDorisDriverClassName",
           "researchRedisDcMode",
           "researchRedisHost",
           "researchRedisPort",
           "researchRedisDatabase",
           "researchRedisPassword",
-          "researchRedisPassword",
+          "researchRedisAddress",
           "researchMinioAccessKey",
           "researchMinioSecretKey",
           "researchMinioHost",
@@ -156,7 +164,16 @@
         "outputDirectory": "${nacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
-          "researchOaAdmin",
+          "researchDbSystemUrl",
+          "researchDbSystemUsername",
+          "researchDbSystemPassword",
+          "researchDbSystemDriverClassName",
+          "researchDbDorisUrl",
+          "researchDbDorisUsername",
+          "researchDbDorisPassword",
+          "researchDbDorisDriverClassName",
+          "researchOaAdminUrl",
+          "researchMinioHost",
           "researchRetrievalDsUrl",
           "researchRetrievalDsProjectName",
           "researchRetrievalDsUsername",
@@ -170,7 +187,16 @@
         "outputDirectory": "${nacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
-          "researchOaAdmin",
+          "researchDbSystemUrl",
+          "researchDbSystemUsername",
+          "researchDbSystemPassword",
+          "researchDbSystemDriverClassName",
+          "researchDbDorisUrl",
+          "researchDbDorisUsername",
+          "researchDbDorisPassword",
+          "researchDbDorisDriverClassName",
+          "researchOaAdminUrl",
+          "researchMinioHost",
           "researchLlmApi",
           "researchStructuredMedicalChiefComplaintUrl",
           "researchStructuredMedicalPastHistoryUrl",
@@ -249,10 +275,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "ENC(VSh41yrXgIrPfuHyiEDQIg==)",
+      "value": "${nacosUsername}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "ENC(VSh41yrXgIrPfuHyiEDQIg==)"
+      "defaultValue": "${nacosUsername}"
     },
     {
       "name": "researchNacosPassword",
@@ -261,10 +287,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "ENC(FD5U4rI9VcZ8sFFPz5fTqeAQSbzPdAPE3iM8sTWR9vfEJUv05XvTVA==)",
+      "value": "${nacosPassword}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "ENC(FD5U4rI9VcZ8sFFPz5fTqeAQSbzPdAPE3iM8sTWR9vfEJUv05XvTVA==)"
+      "defaultValue": "${nacosPassword}"
     },
     {
       "name": "researchNacosHosts",
@@ -273,10 +299,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "nacos-node-1:9066",
+      "value": "${nacosHost}:${nacosServerPort}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "nacos-node-1:9066"
+      "defaultValue": "${nacosHost}:${nacosServerPort}"
     },
     {
       "name": "researchNacosNamespace",
@@ -363,6 +389,102 @@
       "defaultValue": "NonceJwtSecre"
     },
     {
+      "name": "researchDbSystemUrl",
+      "label": "DbSystemUrl",
+      "description": "DbSystemUrl",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "jdbc:mysql://dh1:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "jdbc:mysql://dh1:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+    },
+    {
+      "name": "researchDbSystemUsername",
+      "label": "DbSystemUsername",
+      "description": "DbSystemUsername",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "research",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "research"
+    },
+    {
+      "name": "researchDbSystemPassword",
+      "label": "DbSystemPassword",
+      "description": "DbSystemPassword",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "research",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "research"
+    },
+    {
+      "name": "researchDbSystemDriverClassName",
+      "label": "DbSystemDriverClassName",
+      "description": "DbSystemDriverClassName",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "com.mysql.cj.jdbc.Driver",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "com.mysql.cj.jdbc.Driver"
+    },
+    {
+      "name": "researchDbDorisUrl",
+      "label": "DbDorisUrl",
+      "description": "DbDorisUrl",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "jdbc:mysql://dd1:9030/chinaunicom_medical_zssy_web?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "jdbc:mysql://dd1:9030/chinaunicom_medical_zssy_web?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+    },
+    {
+      "name": "researchDbDorisUsername",
+      "label": "DbDorisUsername",
+      "description": "DbDorisUsername",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "root",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "root"
+    },
+    {
+      "name": "researchDbDorisPassword",
+      "label": "DbDorisPassword",
+      "description": "DbDorisPassword",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "root",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "root"
+    },
+    {
+      "name": "researchDbDorisDriverClassName",
+      "label": "DbDorisDriverClassName",
+      "description": "DbDorisDriverClassName",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "com.mysql.cj.jdbc.Driver",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "com.mysql.cj.jdbc.Driver"
+    },
+    {
       "name": "researchRedisDcMode",
       "label": "RedisDcMode",
       "description": "RedisDcMode",
@@ -381,10 +503,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "192.168.2.239",
+      "value": "${redisHost}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "192.168.2.239"
+      "defaultValue": "${redisHost}"
     },
     {
       "name": "researchRedisPort",
@@ -393,10 +515,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "7501",
+      "value": "${redisPort}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "7501"
+      "defaultValue": "${redisPort}"
     },
     {
       "name": "researchRedisDatabase",
@@ -412,15 +534,15 @@
     },
     {
       "name": "researchRedisPassword",
-      "label": "RedisPassword",
-      "description": "RedisPassword",
+      "label": "redisPassword",
+      "description": "redisPassword",
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "fX0GzFyWOK4LR^9K",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "fX0GzFyWOK4LR^9K"
+      "defaultValue": "${redisPass}"
     },
     {
       "name": "researchRedisAddress",
@@ -429,10 +551,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "redis://redis-node-1:7501",
+      "value": "redis://${redisHost}:${redisPort}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "redis://redis-node-1:7501"
+      "defaultValue": "redis://${redisHost}:${redisPort}"
     },
     {
       "name": "researchMinioAccessKey",
@@ -441,10 +563,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "cuminio",
+      "value": "${minioAccessKey}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "cuminio"
+      "defaultValue": "${minioAccessKey}"
     },
     {
       "name": "researchMinioSecretKey",
@@ -453,10 +575,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "u4Gkp19TRcKKlTCLNA1pyA==",
+      "value": "${minioSecretKey}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "u4Gkp19TRcKKlTCLNA1pyA=="
+      "defaultValue": "${minioSecretKey}"
     },
     {
       "name": "researchMinioHost",
@@ -465,10 +587,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://192.168.2.239:6943/",
+      "value": "http://192.168.2.146:9000/",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://192.168.2.239:6943/"
+      "defaultValue": "http://192.168.2.146:9000/"
     },
     {
       "name": "researchMinioOutsideHost",
@@ -477,10 +599,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://192.168.2.239:6943/",
+      "value": "http://192.168.2.146:9000/",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://192.168.2.239:6943/"
+      "defaultValue": "http://192.168.2.146:9000/"
     },
     {
       "name": "researchMinioAccess",
@@ -489,10 +611,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "cuminio",
+      "value": "${minioAccessKey}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "cuminio"
+      "defaultValue": "${minioAccessKey}"
     },
     {
       "name": "researchMinioSecret",
@@ -501,10 +623,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "u4Gkp19TRcKKlTCLNA1pyA==",
+      "value": "${minioSecretKey}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "u4Gkp19TRcKKlTCLNA1pyA=="
+      "defaultValue": "${minioSecretKey}"
     },
     {
       "name": "researchMinioEndpoint",
@@ -513,10 +635,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://minio-node-1:6943/",
+      "value": "http://192.168.2.146:9000/",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://minio-node-1:6943/"
+      "defaultValue": "http://192.168.2.146:9000/"
     },
     {
       "name": "researchMinioBucket",
@@ -661,6 +783,54 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "http://157.148.123.64:8001/v1/chat/completions"
+    },
+    {
+      "name": "researchFlywayEnabled",
+      "label": "FlywayEnabled",
+      "description": "FlywayEnabled",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "true",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "true"
+    },
+    {
+      "name": "researchFlywayUrl",
+      "label": "FlywayUrl",
+      "description": "FlywayUrl",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "jdbc:mysql://dh1:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "jdbc:mysql://dh1:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+    },
+    {
+      "name": "researchFlywayUser",
+      "label": "FlywayUser",
+      "description": "FlywayUser",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "research",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "research"
+    },
+    {
+      "name": "researchFlywayPassword",
+      "label": "FlywayPassword",
+      "description": "FlywayPassword",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "research",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "research"
     }
   ]
 }

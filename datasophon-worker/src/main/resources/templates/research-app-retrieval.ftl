@@ -6,15 +6,16 @@ spring:
       primary: doris
       datasource:
         system:
-          username: ${db.system.username:chinaunicom}
-          password: ${db.system.password:Un1c0m@Dqc79bf8473#22}
-          driver-class-name: ${db.system.driver-class-name:com.mysql.cj.jdbc.Driver}
-          url: ${db.system.url:jdbc:mysql://192.168.2.239:33066/chinaunicom_medical_app_zssy?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai}
+          username: ${researchDbSystemUsername}
+          password: ${researchDbSystemPassword}
+          driver-class-name: ${researchDbSystemDriverClassName}
+          url: ${researchDbSystemDriverClassName}
         doris:
-          username: ${db.doris.username:root}
-          password: ${db.doris.password:3ght%ed75BGk}
-          driver-class-name: ${db.doris.driver-class-name:com.mysql.cj.jdbc.Driver}
-          url: ${db.doris.url:jdbc:jdbc:mysql://192.168.2.48:9030/chinaunicom_medical_zssy_web?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai}
+          username: ${researchDbDorisUsername}
+          password: ${researchDbDorisPassword}
+          driver-class-name: ${researchDbDorisDriverClassName}
+          url: ${researchDbDorisUrl}
+
 
 logging:
 #   config: classpath:logback-spring.xml
@@ -24,13 +25,13 @@ log:
   level: info
 
 oa_admin:
-  url: ${researchOaAdminUrl:http://10.117.156.94:8380/}
+  url: ${researchOaAdminUrl}
 
 minio:
   enabled: true
   bucket: public
   publicReadDir: public
-  proxyUrl: ${minio.url:http://192.168.2.239:6943}
+  proxyUrl: ${researchMinioHost}
 
 retrieval:
   #topOrgNodeId: 1595006145888526338
@@ -45,10 +46,10 @@ retrieval:
   excludeOrg: YD,ZQ
 
   sparkExport: false
-  dsUrl: ${researchRetrievalDsUrl:http://10.81.16.199:12345/dolphinscheduler}
-  dsProjectName: ${researchRetrievalDsProjectName:retrieval}
-  dsUsername: ${researchRetrievalDsUsername:admin}
-  dsPassword: ${researchRetrievalDsPassword:dolphinscheduler123}
+  dsUrl: ${researchRetrievalDsUrl}
+  dsProjectName: ${researchRetrievalDsProjectName}
+  dsUsername: ${researchRetrievalDsUsername}
+  dsPassword: ${researchRetrievalDsPassword}
 
   visitTypeFieldId: 56
   inVisitNoFieldId: 766
