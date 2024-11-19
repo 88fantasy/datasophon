@@ -42,10 +42,12 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.get(clusterId);
         CacheUtils.put("enableHiveServer2HA", false);
-        if (hosts.size() > 1) {
-            CacheUtils.put("enableHiveServer2HA", true);
+        if(hosts.size() > 0) {
             ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${masterHiveServer2}",
                     hosts.get(0));
+        }
+        if (hosts.size() > 1) {
+            CacheUtils.put("enableHiveServer2HA", true);
         }
     }
     

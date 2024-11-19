@@ -31,7 +31,7 @@ public class HistoryServerHandlerStrategy implements ServiceRoleStrategy {
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        if (hosts.size() == 1) {
+        if (hosts.size() > 0) {
             ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${historyserverHost}",
                     hosts.get(0));
         }

@@ -25,6 +25,7 @@ import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
+import com.datasophon.common.utils.HostUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 
@@ -42,7 +43,11 @@ public class KyuubiServerHandlerStrategy extends ServiceHandlerAbstract implemen
     
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        
+        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        if (hosts.size() > 0) {
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${kyuubiServerHost}",
+                    HostUtils.getIp(hosts.get(0)));
+        }
     }
     
     @Override
