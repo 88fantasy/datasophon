@@ -12,8 +12,8 @@
     "label": "NacosServer",
     "roleType": "master",
     "cardinality": "1",
-    "runAs": {},
     "logFile": "logs/start.out",
+    "jmxPort": 8848,
     "resourceStrategies":[{
       "type": "download",
       "from": "script/control_nacos.sh",
