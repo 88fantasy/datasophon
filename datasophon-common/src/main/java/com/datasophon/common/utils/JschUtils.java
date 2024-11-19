@@ -230,7 +230,7 @@ public class JschUtils {
         return Arrays.asList(fileString.split("\n"));
     }
     
-    public static String getFileString(Session session, String path, int connectTimeout) throws Exception {
+    public static String getFileString(Session session, String path, int connectTimeout){
         ChannelSftp channel = null;
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -238,7 +238,10 @@ public class JschUtils {
             channel = (ChannelSftp) session.openChannel("sftp");
             channel.connect(connectTimeout * 1000);
             channel.get(path, baos);
-            return baos.toString();
+            return baos.toString().trim();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         } finally {
             if (channel != null && channel.isConnected()) {
                 channel.disconnect();
