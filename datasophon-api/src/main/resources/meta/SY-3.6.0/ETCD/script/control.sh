@@ -74,7 +74,8 @@ function status() {
   else
     echo "etcd  pid file is not exists"
   fi
-  code=$($current_path/etcdctl endpoint health | grep -c "healthy: successfully")
+  url=$(awk -F " " '/^listen-client-urls:/ {print $2}' $current_path/conf.yml)
+  code=$($current_path/etcdctl --endpoints=$url  endpoint health | grep -c "healthy: successfully")
   if [ $code -eq 1 ]; then
       echo "etcd is OK"
   else

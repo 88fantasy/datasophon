@@ -68,6 +68,7 @@
           "listen-client-urls",
           "initial-advertise-peer-urls",
           "advertise-client-urls",
+          "initial-cluster-state",
           "custom.etcd.conf.yaml"
         ]
       }
@@ -135,10 +136,10 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "http://${ip}:2379,http://127.0.0.1:2379",
+      "value": "http://${ip}:2379",
       "configurableInWizard": false,
       "hidden": false,
-      "defaultValue": "http://${ip}:2379,http://127.0.0.1:2379"
+      "defaultValue": "http://${ip}:2379"
     },
     {
       "name": "initial-advertise-peer-urls",
@@ -173,6 +174,18 @@
       "configurableInWizard": false,
       "hidden": false,
       "defaultValue": "${etcd-node-list}"
+    },
+    {
+      "name": "initial-cluster-state",
+      "label": "初始化集群状态",
+      "description": "",
+      "required": true,
+      "type": "select",
+      "value": "new",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "new",
+      "selectValue" : ["new","existing"]
     },
     {
       "name": "custom.etcd.conf.yaml",

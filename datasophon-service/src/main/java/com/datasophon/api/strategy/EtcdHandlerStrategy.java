@@ -44,7 +44,7 @@ public class EtcdHandlerStrategy implements ServiceRoleStrategy {
             ClusterHostService clusterHostService = SpringTool.getApplicationContext().getBean(ClusterHostService.class);
             List<ClusterHostDO> hs = clusterHostService.lambdaQuery().in(ClusterHostDO::getHostname, hosts).list();
             Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-            String etcdNodeList = hs.stream().map(s -> s.getHostname() + "=http://" + s.getIp() + ":2379").collect(Collectors.joining(","));
+            String etcdNodeList = hs.stream().map(s -> s.getHostname() + "=http://" + s.getIp() + ":2380").collect(Collectors.joining(","));
             ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${etcd-node-list}", etcdNodeList);
         }
     }
