@@ -149,7 +149,7 @@ public class FreemakerUtils {
                     StringWriter content = new StringWriter();
                     template.process(data, content);
                     String filename = generators.getFilename();
-                    String dataId = filename.substring(filename.lastIndexOf("."));
+                    String dataId = filename.substring(filename.lastIndexOf(".") + 1);
                     publishConfig(properties, content.toString(), group, filename, dataId);
                     return;
                 }
@@ -161,7 +161,7 @@ public class FreemakerUtils {
         // 3.产生输出
         processOut(generators, template, data, decompressPackageName);
     }
-    
+
     private static void checkNamespace(Properties properties) {
         logger.info("检查命名空间");
         try {
