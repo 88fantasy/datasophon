@@ -4,7 +4,7 @@
   "description": "科研检索",
   "version": "1.1.3",
   "sortNum": 1,
-  "dependencies":["NACOS"],
+  "dependencies":["REDIS","NACOS"],
   "packageName": "research-server-2.0.0.RELEASE-install.tar.gz",
   "decompressPackageName": "research-server-2.0.0.RELEASE",
   "roles": [
@@ -18,36 +18,28 @@
         "timeout": "60",
         "program": "module/chinaunicom-medical-research-platform/bin/server.sh",
         "args": [
-          "start",
-          "chinaunicom-medical-research-platform",
-          "2.0.0.RELEASE"
+          "start"
         ]
       },
       "stopRunner": {
         "timeout": "60",
         "program": "module/chinaunicom-medical-research-platform/bin/server.sh",
         "args": [
-          "stop",
-          "chinaunicom-medical-research-platform",
-          "2.0.0.RELEASE"
+          "stop"
         ]
       },
       "statusRunner": {
         "timeout": "60",
         "program": "module/chinaunicom-medical-research-platform/bin/server.sh",
         "args": [
-          "status",
-          "chinaunicom-medical-research-platform",
-          "2.0.0.RELEASE"
+          "status"
         ]
       },
       "restartRunner": {
         "timeout": "60",
         "program": "module/chinaunicom-medical-research-platform/bin/server.sh",
         "args": [
-          "restart",
-          "chinaunicom-medical-research-platform",
-          "2.0.0.RELEASE"
+          "restart"
         ]
       },
       "externalLink": {
@@ -66,36 +58,28 @@
         "timeout": "60",
         "program": "module/chinaunicom-medical-app-retrieval/bin/server.sh",
         "args": [
-          "start",
-          "chinaunicom-medical-app-retrieval",
-          "2.0.0.RELEASE"
+          "start"
         ]
       },
       "stopRunner": {
         "timeout": "60",
         "program": "module/chinaunicom-medical-app-retrieval/bin/server.sh",
         "args": [
-          "stop",
-          "chinaunicom-medical-app-retrieval",
-          "2.0.0.RELEASE"
+          "stop"
         ]
       },
       "statusRunner": {
         "timeout": "60",
         "program": "module/chinaunicom-medical-app-retrieval/bin/server.sh",
         "args": [
-          "status",
-          "chinaunicom-medical-app-retrieval",
-          "2.0.0.RELEASE"
+          "status"
         ]
       },
       "restartRunner": {
         "timeout": "60",
         "program": "module/chinaunicom-medical-app-retrieval/bin/server.sh",
         "args": [
-          "restart",
-          "chinaunicom-medical-app-retrieval",
-          "2.0.0.RELEASE"
+          "restart"
         ]
       },
       "externalLink": {
@@ -233,6 +217,18 @@
   },
   "parameters": [
     {
+      "name": "researchServerAddress",
+      "label": "科研检索服务地址",
+      "description": "科研检索服务地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://${apiHost}:19000/",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://${apiHost}:19000/"
+    },
+    {
       "name": "researchAppProfile",
       "label": "nacosProfile",
       "description": "nacosProfile",
@@ -255,18 +251,6 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "retrieval"
-    },
-    {
-      "name": "researchJasyptEncryptorPassword",
-      "label": "jasypt加密密钥",
-      "description": "jasypt加密密钥",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "Wj!~I#+(JYMH-+9zWaM%8RVKrJW8n2Ch",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "Wj!~I#+(JYMH-+9zWaM%8RVKrJW8n2Ch"
     },
     {
       "name": "researchJasyptEncryptorPassword",
@@ -419,10 +403,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "jdbc:mysql://dd1:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "value": "jdbc:mysql://${apiHost}:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://dd1:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${apiHost}:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
     },
     {
       "name": "researchDbSystemUsername",
@@ -467,10 +451,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "jdbc:mysql://dd1:9030/chinaunicom_medical_zssy_web?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "value": "jdbc:mysql://${apiHost}:9030/chinaunicom_medical_zssy_web?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://dd1:9030/chinaunicom_medical_zssy_web?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${apiHost}:9030/chinaunicom_medical_zssy_web?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
     },
     {
       "name": "researchDbDorisUsername",
@@ -827,10 +811,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "jdbc:mysql://dd1:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "value": "jdbc:mysql://${apiHost}:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://dd1:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${apiHost}:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
     },
     {
       "name": "researchFlywayUser",
