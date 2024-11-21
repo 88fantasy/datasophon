@@ -24,6 +24,10 @@ public class LinkStrategy extends ResourceStrategy {
     @Override
     public void exec() {
         String realTarget = basePath + Constants.SLASH + target;
+        if(target.startsWith(Constants.SLASH)){
+            // 兼容绝对路径
+            realTarget = target;
+        }
         File sourceFile = new File(source);
         File targetFile = new File(realTarget);
         log.info("link. sourceFile[{}] exist is {},targetFile[{}] exist is {}", source, sourceFile.exists(), realTarget, targetFile.exists());
