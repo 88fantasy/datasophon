@@ -8,7 +8,7 @@ minio:
 
 ## redis密码和库配置
 redis:
-  password: ${bigdataRedisPassword!}
+  password: ${bigdataRedisPassword}
   database: ${bigdataRedisDatabase}
   key:
     prefix:
@@ -17,9 +17,9 @@ redis:
     expire:
       authCode: 90
 es:
-  nodes: ${bigdataEsNodes}:27920
-  username: ${bigdataEsUserName!}
-  password: ${bigdataEsPassword!}
+  nodes: ${bigdataEsNodes}
+  username: ${bigdataEsUserName}
+  password: ${bigdataEsPassword}
 
 ds:
   downloadPath: ${bigdataOutsideAccessUrl}/bigdata/bigdata
@@ -80,12 +80,12 @@ spring:
     host: ${bigdataRedisHost}
     port: ${bigdataRedisPort}
     database: ${bigdataRedisDatabase}
-    #password: ${bigdataRedisPassword!}
+    password: ${bigdataRedisPassword}
     #redisson:
     #  config: |
     #    singleServerConfig:
     #      address: "redis://${bigdataRedisHost}:${bigdataRedisPort}"
-    #      password: "${bigdataRedisPassword!}"
+    #      password: "${bigdataRedisPassword}"
     #      database: 0
     #    codec: !<org.redisson.codec.JsonJacksonCodec> {}
     #    transportMode: "NIO"
@@ -304,9 +304,9 @@ com:
           location: ${bigdataEtcdUrl}
         es:
           enabled: true
-          nodes: ${bigdataEsNodes}:27920
-          userName: ${bigdataEsUserName!}
-          password: ${bigdataEsPassword!}
+          nodes: ${bigdataEsNodes}:${bigdataEsPort}
+          userName: ${bigdataEsUserName}
+          password: ${bigdataEsPassword}
 ########### 分割线 ###############
 
 ## unicom-apisix
@@ -353,8 +353,8 @@ hsb:
 easy-es:
   enable: true
   address: ${bigdataEsNodes}:${bigdataEsPort}
-  username: ${bigdataEsUserName!}
-  password: ${bigdataEsPassword!}
+  username: ${bigdataEsUserName}
+  password: ${bigdataEsPassword}
   global-config:
     process-index-mode: smoothly
     db-config:

@@ -50,13 +50,17 @@ public class ElasticSearchHandlerStrategy implements ServiceRoleStrategy {
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        
-        ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${initMasterNodes}",
-                String.join(",", hosts));
-        String join = String.join(":9300,", hosts);
-        String seedHosts = join + ":9300";
-        ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${seedHosts}", seedHosts);
-        
+
+        if(hosts.size() > 0) {
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${initMasterNodes}",
+                    String.join(",", hosts));
+            String join = String.join(":9300,", hosts);
+            String seedHosts = join + ":9300";
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${seedHosts}", seedHosts);
+
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${elasticSearchHost}",
+                    hosts.get(0));
+        }
     }
     
     @Override

@@ -12,8 +12,8 @@ db.pool.config.minimumIdle=2
 
 nacos.core.auth.system.type=nacos
 nacos.core.auth.enabled=${nacosAuthEnabled}
-nacos.core.auth.server.identity.key=nacos
-nacos.core.auth.server.identity.value=${nacosAdminPassword}
+nacos.core.auth.server.identity.key=${nacosUsername}
+nacos.core.auth.server.identity.value=${nacosPassword}
 
 
 management.endpoints.web.exposure.include=prometheus

@@ -334,10 +334,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "datasophon",
+      "value": "bigdata",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "datasophon"
+      "defaultValue": "bigdata"
     },
     {
       "name": "hsbAppName",
@@ -361,7 +361,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${advertise-client-urls}"
+      "defaultValue": "${etcd-advertise-client-urls}"
     },
     {
       "name": "bigdataPrometheusUrl",
@@ -589,7 +589,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${initMasterNodes}"
+      "defaultValue": "${elasticSearchHost}"
     },
     {
       "name": "bigdataEsPort",
@@ -610,10 +610,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "ENC(N8A4dn5mGZiFQFwQtGmTQA==)",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "ENC(N8A4dn5mGZiFQFwQtGmTQA==)"
+      "defaultValue": "elastic"
     },
     {
       "name": "bigdataEsPassword",
@@ -622,10 +622,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "ENC(N8A4dn5mGZiFQFwQtGmTQA==)",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "ENC(N8A4dn5mGZiFQFwQtGmTQA==)"
+      "defaultValue": "elastic"
     },
     {
       "name": "bigdataWorkbenchSystemUrl",
@@ -634,7 +634,7 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "192.168.2.130",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "192.168.2.130"

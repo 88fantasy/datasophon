@@ -72,7 +72,8 @@
             "nacosAuthEnabled",
             "nacosTokenSecretKey",
             "nacosWebUI",
-            "nacosAdminPassword"
+            "nacosUsername",
+            "nacosPassword"
         ]
       }
     ]
@@ -163,7 +164,19 @@
       "defaultValue": true
     },
     {
-      "name": "nacosAdminPassword",
+      "name": "nacosUsername",
+      "label": "登录用户",
+      "description": "登录用户",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "nacos"
+    },
+    {
+      "name": "nacosPassword",
       "label": "密码",
       "description": "登录密码",
       "required": true,
