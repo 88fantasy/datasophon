@@ -132,7 +132,6 @@ jwt:
 
 info:
   author: unicom-medical
-  name: ${spring.application.name}
 
 encrypt.secretKey: 1bv1231gxg1vrujg
 cipher.switchButton: 0
