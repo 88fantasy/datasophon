@@ -4,7 +4,7 @@
   "description": "科研检索",
   "version": "2.0.0",
   "sortNum": 1,
-  "dependencies":["REDIS","NACOS"],
+  "dependencies":["NACOS"],
   "packageName": "research-server-2.0.0.RELEASE-install.tar.gz",
   "decompressPackageName": "research-server-2.0.0.RELEASE",
   "roles": [
