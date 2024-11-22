@@ -28,7 +28,6 @@ spring:
         password: ${researchNacosPassword}
         server-addr: ${researchNacosHosts}
         namespace: ${researchNacosNamespace}
-        group: ${researchNacosGroup}
 
   # flyway 配置内容，对应 FlywayAutoConfiguration.FlywayConfiguration 配置项
   flyway:

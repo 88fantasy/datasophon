@@ -2,9 +2,9 @@
   "name": "RESEARCH",
   "label": "Research",
   "description": "科研检索",
-  "version": "1.1.3",
+  "version": "2.0.0",
   "sortNum": 1,
-  "dependencies":["REDIS","NACOS"],
+  "dependencies":["NACOS"],
   "packageName": "research-server-2.0.0.RELEASE-install.tar.gz",
   "decompressPackageName": "research-server-2.0.0.RELEASE",
   "roles": [
@@ -133,7 +133,7 @@
         "filename": "common.yaml",
         "configFormat": "custom",
         "templateName": "research-common.ftl",
-        "outputDirectory": "${researchNacosUsername}:${nacosAdminPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
+        "outputDirectory": "${researchNacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
           "researchSsoAccessTokenKey",
@@ -169,7 +169,7 @@
         "filename": "chinaunicom-medical-app-retrieval.yaml",
         "configFormat": "custom",
         "templateName": "research-app-retrieval.ftl",
-        "outputDirectory": "${researchNacosUsername}:${nacosAdminPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
+        "outputDirectory": "${researchNacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
           "researchDbSystemUrl",
@@ -192,7 +192,7 @@
         "filename": "chinaunicom-medical-research-platform.yaml",
         "configFormat": "custom",
         "templateName": "research-research-platform.ftl",
-        "outputDirectory": "${researchNacosUsername}:${nacosAdminPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
+        "outputDirectory": "${researchNacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
           "researchDbSystemUrl",
@@ -295,10 +295,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "${nacosAdminPassword}",
+      "value": "${nacosPassword}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${nacosAdminPassword}"
+      "defaultValue": "${nacosPassword}"
     },
     {
       "name": "researchNacosHosts",
@@ -451,10 +451,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "jdbc:mysql://${apiHost}:9030/chinaunicom_medical_zssy_web?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "value": "jdbc:mysql://${apiHost}:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:9030/chinaunicom_medical_zssy_web?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${apiHost}:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
     },
     {
       "name": "researchDbDorisUsername",
@@ -463,10 +463,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "root",
+      "value": "research",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "root"
+      "defaultValue": "research"
     },
     {
       "name": "researchDbDorisPassword",
@@ -475,10 +475,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "root",
+      "value": "research",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "root"
+      "defaultValue": "research"
     },
     {
       "name": "researchDbDorisDriverClassName",
