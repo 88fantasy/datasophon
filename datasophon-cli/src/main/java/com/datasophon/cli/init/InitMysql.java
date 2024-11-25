@@ -159,6 +159,8 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         myconf.add("explicit_defaults_for_timestamp=true");
         myconf.add("max_connections=3600");
         myconf.add("max_connections=3600");
+        // sql_mode bigdata不支持ONLY_FULL_GROUP_BY
+        myconf.add("sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION");
         return myconf;
     }
 
