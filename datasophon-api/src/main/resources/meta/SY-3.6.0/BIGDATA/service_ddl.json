@@ -149,7 +149,7 @@
           "bigdataRedisDatabase",
           "bigdataMinioAccessKey",
           "bigdataMinioSecretKey",
-          "bigdataMinioHost",
+          "bigdataMinioUrl",
           "bigdataEsNodes",
           "bigdataEsPort",
           "bigdataEsUserName",
@@ -568,7 +568,7 @@
       "defaultValue": "${minioSecretKey}"
     },
     {
-      "name": "bigdataMinioHost",
+      "name": "bigdataMinioUrl",
       "label": "minio的地址",
       "description": "minio的地址",
       "required": true,
@@ -577,7 +577,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${minioHost}"
+      "defaultValue": "http://${minioHost}:${minioApiPort}"
     },
     {
       "name": "bigdataEsNodes",

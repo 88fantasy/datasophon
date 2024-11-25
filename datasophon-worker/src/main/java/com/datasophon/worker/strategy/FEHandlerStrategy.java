@@ -17,6 +17,14 @@
 
 package com.datasophon.worker.strategy;
 
+import akka.actor.ActorRef;
+import cn.hutool.core.net.NetUtil;
+import cn.hutool.db.DbUtil;
+import cn.hutool.db.ds.simple.SimpleDataSource;
+import cn.hutool.db.sql.SqlExecutor;
+import cn.hutool.json.JSONUtil;
+import cn.hutool.setting.dialect.Props;
+import com.datasophon.common.Constants;
 import com.datasophon.common.command.OlapOpsType;
 import com.datasophon.common.command.OlapSqlExecCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
@@ -27,12 +35,9 @@ import com.datasophon.common.utils.ThrowableUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.utils.ActorUtils;
 
+import java.nio.charset.Charset;
+import java.sql.Connection;
 import java.util.ArrayList;
-
-import akka.actor.ActorRef;
-
-import cn.hutool.core.net.NetUtil;
-import cn.hutool.json.JSONUtil;
 
 public class FEHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
     
@@ -45,6 +50,7 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
         ExecResult startResult = new ExecResult();
         logger.info("FEHandlerStrategy start fe" + JSONUtil.toJsonStr(command));
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
+        String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
         if (command.getCommandType() == CommandType.INSTALL_SERVICE) {
             if (command.isSlave()) {
                 logger.info("first start  fe");
@@ -79,10 +85,36 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                 startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
                         command.getDecompressPackageName(), command.getRunAs());
             }
+            // fe安装成功,初始化登录账号
+            if (startResult.getExecResult()){
+              passwordInit(workPath, command.getManagerHost());
+            }
         } else {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
                     command.getDecompressPackageName(), command.getRunAs());
         }
         return startResult;
+    }
+
+    private void passwordInit(String workPath, String masterHost){
+        String feConfPath = workPath + Constants.SLASH + "fe" + Constants.SLASH + "conf" + Constants.SLASH + "fe.conf";
+        Props props = Props.getProp(feConfPath, Charset.defaultCharset());
+        String queryPort = props.getProperty("query_port");
+        String url = String.format("jdbc:mysql://%s:%s", masterHost, queryPort);
+        Connection con = null;
+        String defaultPassword = "3ght%ed75BGk";
+        try {
+            logger.info("doris init password,url:{}", url);
+            con = DbUtil.use(new SimpleDataSource(url, "root", "")).getConnection();
+            // Jdbc root密码
+            SqlExecutor.execute(con, String.format("SET PASSWORD = PASSWORD('%s')", defaultPassword));
+            // WebUI admin密码
+            SqlExecutor.execute(con, String.format("SET PASSWORD FOR 'admin'@'%%' = PASSWORD('%s')", defaultPassword));
+            logger.info("doris init password finished");
+        } catch (Exception e) {
+            logger.error(e.getMessage() + ",doris init password fail. 可能密码已初始化过", e);
+        } finally {
+            DbUtil.close(con);
+        }
     }
 }

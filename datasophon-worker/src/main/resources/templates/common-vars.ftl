@@ -1,7 +1,7 @@
 minio:
   accessKey: ${bigdataMinioAccessKey}
   secretKey: ${bigdataMinioSecretKey}
-  url: http://${bigdataMinioHost}:6943
+  url: ${bigdataMinioUrl}
   viewurl: ${bigdataOutsideAccessUrl}/mfts
   outsideUrl: ${bigdataOutsideAccessUrl}/mfts
   savePath: public/quality
