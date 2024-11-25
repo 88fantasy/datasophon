@@ -85,6 +85,7 @@ public class ServiceInstallHandler extends ServiceHandler {
                 installServiceRoleCommand.setPackageName(packageName);
                 installServiceRoleCommand.setPackageMd5(FileUtil.readString(md5FilePath, Charset.defaultCharset()));
             } else {
+                logger.error("file or md5 not exist!, package path: {}, md5FilePath: {}", packageFilePath, md5FilePath);
                 execResult.setExecOut("file or md5 not exist !");
                 return execResult;
             }
