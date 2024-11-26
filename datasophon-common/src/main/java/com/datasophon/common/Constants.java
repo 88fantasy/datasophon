@@ -92,6 +92,8 @@ public final class Constants {
     public static final String INPUT = "input";
     public static final String SERVICE_ROLE_JMX_MAP = "service_role_jmx_port";
     public static final String MULTIPLE = "multiple";
+    public static final String STRING_ARRAY = "stringArray";
+    public static final String NUMBER = "number";
     public static final String CLUSTER_STATE = "cluster_state";
     public static final String PATH = "path";
     
@@ -251,7 +253,10 @@ public final class Constants {
     public static final String PROPERTIES = "properties";
     public static final String PROPERTIES2 = "properties2";
     public static final String PROPERTIES3 = "properties3";
-    
+
+    public static final String YAML = "yaml";
+
+
     /**
      * os name properties
      */

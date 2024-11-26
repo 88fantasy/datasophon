@@ -18,6 +18,8 @@
 package com.datasophon.common.utils;
 
 import com.datasophon.common.Constants;
+import com.datasophon.common.enums.ArchType;
+import com.datasophon.common.enums.OsType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -332,5 +334,15 @@ public class ShellUtils {
         command.add(user + ":" + group);
         command.add(path);
         execWithStatus(Constants.INSTALL_PATH, command, 60, logger);
+    }
+
+    public static ArchType getArch() {
+        String result = execShell(Constants.OS_ARCH_CMD).getExecOut();
+        return OsUtils.getArch(result);
+    }
+
+    public static OsType getOs() {
+        String result = execShell(Constants.OS_VERSION_CMD).getExecOut();
+        return OsUtils.getOs(result);
     }
 }

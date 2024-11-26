@@ -30,6 +30,8 @@ public class ServiceConfig implements Serializable {
     private Object value;
     
     private String label;
+
+    private String key;
     
     private String description;
     

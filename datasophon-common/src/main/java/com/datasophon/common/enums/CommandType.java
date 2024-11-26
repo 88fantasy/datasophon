@@ -28,8 +28,8 @@ public enum CommandType {
     START_SERVICE(2, "START", "启动"),
     STOP_SERVICE(3, "STOP", "停止"),
     RESTART_SERVICE(4, "RESTART", "重启"),
-    START_WITH_CONFIG(5, "START_WITH_CONFIG", ""),
-    RESTART_WITH_CONFIG(6, "RESTART_WITH_CONFIG", "znDesc");
+    START_WITH_CONFIG(5, "START_WITH_CONFIG", "更新配置后启动"),
+    RESTART_WITH_CONFIG(6, "RESTART_WITH_CONFIG", "更新配置后重启");
     
     private int value;
     
