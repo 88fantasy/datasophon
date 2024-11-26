@@ -252,18 +252,8 @@ public class FreemakerUtils {
                                    String decompressPackageName) throws IOException, TemplateException {
         String packagePath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH;
         String outputDirectory = generators.getOutputDirectory();
-
-        if (outputDirectory.contains(Constants.COMMA)) {
-            for (String outPutDir : generators.getOutputDirectory().split(StrUtil.COMMA)) {
-                String outputFile = packagePath + outPutDir + Constants.SLASH + generators.getFilename();
-                writeToTemplate(template, data, outputFile);
-            }
-        } else if (outputDirectory.startsWith(Constants.SLASH)) {
-            String outputFile = generators.getOutputDirectory() + Constants.SLASH + generators.getFilename();
-            writeToTemplate(template, data, outputFile);
-        } else {
-            String outputFile =
-                    packagePath + generators.getOutputDirectory() + Constants.SLASH + generators.getFilename();
+        for (String outPutDir : generators.getOutputDirectory().split(StrUtil.COMMA)) {
+            String outputFile = (outputDirectory.startsWith(Constants.SLASH) ? packagePath : "") + outPutDir + Constants.SLASH + generators.getFilename();
             writeToTemplate(template, data, outputFile);
         }
     }
@@ -293,17 +283,8 @@ public class FreemakerUtils {
                                     String decompressPackageName) {
         String packagePath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH;
         String outputDirectory = generators.getOutputDirectory();
-        if (outputDirectory.contains(Constants.COMMA)) {
-            for (String outPutDir : generators.getOutputDirectory().split(StrUtil.COMMA)) {
-                String outputFile = packagePath + outPutDir + Constants.SLASH + generators.getFilename();
-                writeToYaml(data, outputFile);
-            }
-        } else if (outputDirectory.startsWith(Constants.SLASH)) {
-            String outputFile = generators.getOutputDirectory() + Constants.SLASH + generators.getFilename();
-            writeToYaml(data, outputFile);
-        } else {
-            String outputFile =
-                    packagePath + generators.getOutputDirectory() + Constants.SLASH + generators.getFilename();
+        for (String outPutDir : generators.getOutputDirectory().split(StrUtil.COMMA)) {
+            String outputFile = (outputDirectory.startsWith(Constants.SLASH) ? packagePath : "") + outPutDir + Constants.SLASH + generators.getFilename();
             writeToYaml(data, outputFile);
         }
     }
