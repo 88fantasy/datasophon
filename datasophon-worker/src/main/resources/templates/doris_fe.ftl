@@ -37,7 +37,6 @@ JAVA_OPTS_FOR_JDK_9="-Xmx${fe_heap_size}G -XX:SurvivorRatio=8 -XX:MaxTenuringThr
 # INFO, WARN, ERROR, FATAL
 sys_log_level = INFO
 
-http_port = 18030
 mysql_service_nio_enabled = true
 edit_log_port = 9010
 <#list itemList as item>
