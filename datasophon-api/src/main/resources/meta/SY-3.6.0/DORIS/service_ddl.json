@@ -54,7 +54,7 @@
       "externalLink": {
         "name": "FE UI",
         "label": "FE UI",
-        "url": "http://${host}:18030"
+        "url": "http://${feMaster}:${dorisHttpPort}"
       }
     },
     {
@@ -137,7 +137,7 @@
         "includeParams": [
           "be_priority_networks",
           "sys_log_level",
-          "be_port",
+          "dorisBePort",
           "webserver_port",
           "brpc_port",
           "storage_root_path",
@@ -154,8 +154,9 @@
           "fe_heap_size",
           "cluster_id",
           "meta_dir",
-          "rpc_port",
-          "query_port",
+          "dorisHttpPort",
+          "dorisRpcPort",
+          "dorisQueryPort",
           "fe_priority_networks",
           "lower_case_table_names",
           "enable_outfile_to_local",
@@ -189,9 +190,10 @@
       "defaultValue": "${DORIS_HOME}/fe/doris-meta"
     },
     {
-      "name": "rpc_port",
-      "label": "FE节点上Thrift服务器的端口",
-      "description": "FE 节点上 Thrift 服务器的端口。",
+      "name": "dorisHttpPort",
+      "label": "FE节点上前端界面的端口",
+      "description": "FE节点上前端界面的端口",
+      "key": "http_port",
       "required": true,
       "type": "input",
       "value": "",
@@ -200,9 +202,22 @@
       "defaultValue": "9020"
     },
     {
-      "name": "query_port",
+      "name": "dorisRpcPort",
+      "label": "FE节点上Thrift服务器的端口",
+      "description": "FE 节点上 Thrift 服务器的端口。",
+      "key": "rpc_port",
+      "required": true,
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "9020"
+    },
+    {
+      "name": "dorisQueryPort",
       "label": "FE节点上MySQL服务器的端口",
       "description": "FE 节点上 MySQL 服务器的端口",
+      "key": "query_port",
       "required": true,
       "type": "input",
       "value": "",
@@ -292,9 +307,10 @@
       "defaultValue": "INFO"
     },
     {
-      "name": "be_port",
+      "name": "dorisBePort",
       "label": "BE admin端口",
       "description": "BE admin端口",
+      "key": "be_port",
       "required": true,
       "type": "input",
       "value": "",

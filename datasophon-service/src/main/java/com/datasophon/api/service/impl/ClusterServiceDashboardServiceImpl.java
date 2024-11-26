@@ -82,9 +82,8 @@ public class ClusterServiceDashboardServiceImpl
             return contextPath + GRAFANA_PATH + "/" + clusterId + url;
         } else {
             Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-            String dashboardUrl = PlaceholderUtils.replacePlaceholders(dashboard.getDashboardUrl(), globalVariables,
+            return PlaceholderUtils.replacePlaceholders(dashboard.getDashboardUrl(), globalVariables,
                     Constants.REGEX_VARIABLE);
-            return dashboardUrl;
         }
     }
 }

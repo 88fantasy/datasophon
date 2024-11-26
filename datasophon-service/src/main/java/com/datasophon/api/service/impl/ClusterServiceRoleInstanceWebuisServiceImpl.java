@@ -19,78 +19,90 @@
 
 package com.datasophon.api.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.datasophon.api.load.GlobalVariables;
+import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.common.Constants;
+import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceWebuis;
 import com.datasophon.dao.mapper.ClusterServiceRoleInstanceWebuisMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.springframework.stereotype.Service;
-
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service("clusterServiceRoleInstanceWebuisService")
 public class ClusterServiceRoleInstanceWebuisServiceImpl
         extends
-            ServiceImpl<ClusterServiceRoleInstanceWebuisMapper, ClusterServiceRoleInstanceWebuis>
+        ServiceImpl<ClusterServiceRoleInstanceWebuisMapper, ClusterServiceRoleInstanceWebuis>
         implements
-            ClusterServiceRoleInstanceWebuisService {
-    
+        ClusterServiceRoleInstanceWebuisService {
+
     private static final String ACTIVE = "(Active)";
-    
+
     private static final String STANDBY = "(Standby)";
-    
+
+    @Autowired
+    ClusterServiceRoleInstanceService clusterServiceRoleInstanceService;
+
     @Override
     public Result getWebUis(Integer serviceInstanceId) {
-        List<ClusterServiceRoleInstanceWebuis> list =
-                this.list(
-                        new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
-                                .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
-        return Result.success(list);
+        List<ClusterServiceRoleInstanceWebuis> list = this.list(
+                new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
+                        .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
+        Integer clusterId = clusterServiceRoleInstanceService.getClusterId(serviceInstanceId);
+        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        return Result.success(list.stream().peek(ui -> {
+            String newUrl = PlaceholderUtils.replacePlaceholders(ui.getWebUrl(), globalVariables,
+                    Constants.REGEX_VARIABLE);
+            ui.setWebUrl(newUrl);
+        }).collect(Collectors.toList()));
     }
-    
+
     @Override
     public void removeByServiceInsId(Integer serviceInstanceId) {
         this.remove(
                 new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
                         .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
     }
-    
+
     @Override
     public void updateWebUiToActive(Integer roleInstanceId) {
         updateWebUiName(roleInstanceId, ACTIVE);
     }
-    
+
     @Override
     public ClusterServiceRoleInstanceWebuis getRoleInstanceWebUi(Integer roleInstanceId) {
         return this.lambdaQuery()
                 .eq(ClusterServiceRoleInstanceWebuis::getServiceRoleInstanceId, roleInstanceId)
                 .one();
     }
-    
+
     @Override
     public void removeByRoleInsIds(ArrayList<Integer> needRemoveList) {
         this.lambdaUpdate()
                 .in(ClusterServiceRoleInstanceWebuis::getServiceRoleInstanceId, needRemoveList)
                 .remove();
     }
-    
+
     @Override
     public void updateWebUiToStandby(Integer roleInstanceId) {
         updateWebUiName(roleInstanceId, STANDBY);
     }
-    
+
     @Override
     public List<ClusterServiceRoleInstanceWebuis> listWebUisByServiceInstanceId(Integer serviceInstanceId) {
         return this.list(
                 new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
                         .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
     }
-    
+
     private void updateWebUiName(Integer roleInstanceId, String state) {
         ClusterServiceRoleInstanceWebuis webuis =
                 this.lambdaQuery()
