@@ -17,36 +17,10 @@
 
 package com.datasophon.worker.utils;
 
-import com.datasophon.common.Constants;
-import com.datasophon.common.model.AlertItem;
-import com.datasophon.common.model.Generators;
-import com.datasophon.common.model.ServiceConfig;
-
-import freemarker.cache.ClassTemplateLoader;
-import freemarker.cache.FileTemplateLoader;
-import freemarker.cache.MultiTemplateLoader;
-import freemarker.cache.TemplateLoader;
-import freemarker.template.Configuration;
-import freemarker.template.Template;
-import freemarker.template.TemplateException;
-
-import org.apache.commons.lang3.StringUtils;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONUtil;
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.config.ConfigService;
@@ -57,34 +31,46 @@ import com.alibaba.nacos.common.http.HttpRestResult;
 import com.alibaba.nacos.common.http.client.NacosRestTemplate;
 import com.alibaba.nacos.common.http.param.Header;
 import com.alibaba.nacos.common.http.param.Query;
+import com.datasophon.common.Constants;
+import com.datasophon.common.model.AlertItem;
+import com.datasophon.common.model.Generators;
+import com.datasophon.common.model.ServiceConfig;
+import freemarker.cache.ClassTemplateLoader;
+import freemarker.cache.FileTemplateLoader;
+import freemarker.cache.MultiTemplateLoader;
+import freemarker.cache.TemplateLoader;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONArray;
-import cn.hutool.json.JSONUtil;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.stream.Collectors;
 
 public class FreemakerUtils {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(FreemakerUtils.class);
-    
+
     private static final NacosRestTemplate nacosRestTemplate = NamingHttpClientManager.getInstance().getNacosRestTemplate();
-    
+
     public static void generateConfigFile(Generators generators,
                                           List<ServiceConfig> configs,
                                           String decompressPackageName) throws IOException, TemplateException {
         generateConfigFile(generators, configs, decompressPackageName, null);
     }
-    
-    /**
-     * 支持 从附加的目录加载 模版
-     *
-     * @param generators
-     * @param configs
-     * @param decompressPackageName
-     * @param extPath
-     * @throws IOException
-     * @throws TemplateException
-     */
+
     public static void generateConfigFile(Generators generators,
                                           List<ServiceConfig> configs,
                                           String decompressPackageName,
@@ -100,7 +86,7 @@ public class FreemakerUtils {
             loaderList.add(new FileTemplateLoader(new File(extPath)));
         }
         config.setTemplateLoader(new MultiTemplateLoader(loaderList.toArray(new TemplateLoader[0])));
-        
+
         Map<String, Object> data = new HashMap<>();
         // 得到模板对象
         String configFormat = generators.getConfigFormat();
@@ -119,6 +105,10 @@ public class FreemakerUtils {
         }
         if (Constants.PROMETHEUS.equals(configFormat)) {
             template = config.getTemplate("alert.yml");
+        }
+        if (Constants.YAML.equals(configFormat)) {
+            generateYaml(generators, configs, decompressPackageName);
+            return;
         }
         if (Constants.CUSTOM.equals(configFormat)) {
             template = config.getTemplate(generators.getTemplateName());
@@ -198,7 +188,7 @@ public class FreemakerUtils {
             throw new RuntimeException(e);
         }
     }
-    
+
     private static void publishConfig(Properties properties, String content, String group, String dataId, String type) {
         logger.info("写入nacos配置");
         try {
@@ -209,7 +199,7 @@ public class FreemakerUtils {
             throw new RuntimeException(e);
         }
     }
-    
+
     public static void generatePromAlertFile(Generators generators, List<AlertItem> configs,
                                              String serviceName) throws IOException, TemplateException {
         // 创建核心配置对象
@@ -220,18 +210,18 @@ public class FreemakerUtils {
         // 得到模板对象
         String configFormat = generators.getConfigFormat();
         Template template = null;
-        
+
         if (Constants.PROMETHEUS.equals(configFormat)) {
             template = config.getTemplate("alert.yml");
         }
-        
+
         Map<String, Object> data = new HashMap<>();
         data.put("itemList", configs);
         data.put("serviceName", serviceName);
         // 3.产生输出
         processOut(generators, template, data, "prometheus");
     }
-    
+
     public static void generatePromScrapeConfig(Generators generators, List<ServiceConfig> configs,
                                                 String serviceName) throws IOException, TemplateException {
         // 创建核心配置对象
@@ -241,18 +231,28 @@ public class FreemakerUtils {
         config.setClassForTemplateLoading(FreemakerUtils.class, "/templates");
         // 得到模板对象
         Template template = config.getTemplate("scrape.ftl");
-        
+
         Map<String, Object> data = new HashMap<>();
         data.put("itemList", configs);
         // 3.产生输出
         processOut(generators, template, data, serviceName);
     }
-    
+
+    public static void generateYaml(Generators generators, List<ServiceConfig> configs,
+                                    String servicename) {
+        Map<String, Object> configMap = new LinkedHashMap<>();
+        configs.parallelStream().forEach(serviceConfig -> {
+            String key = StringUtils.isEmpty(serviceConfig.getKey()) ? serviceConfig.getName() : serviceConfig.getKey();
+            configMap.put(key, serviceConfig.getValue());
+        });
+        processYaml(generators, configMap, servicename);
+    }
+
     private static void processOut(Generators generators, Template template, Map<String, Object> data,
                                    String decompressPackageName) throws IOException, TemplateException {
         String packagePath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH;
         String outputDirectory = generators.getOutputDirectory();
-        
+
         if (outputDirectory.contains(Constants.COMMA)) {
             for (String outPutDir : generators.getOutputDirectory().split(StrUtil.COMMA)) {
                 String outputFile = packagePath + outPutDir + Constants.SLASH + generators.getFilename();
@@ -267,7 +267,7 @@ public class FreemakerUtils {
             writeToTemplate(template, data, outputFile);
         }
     }
-    
+
     private static void writeToTemplate(Template template, Map<String, Object> data,
                                         String outputFile) throws IOException, TemplateException {
         File file = new File(outputFile);
@@ -278,5 +278,33 @@ public class FreemakerUtils {
         template.process(data, out);
         out.close();
     }
-    
+
+    private static void writeToYaml(Map<String, Object> data,
+                                    String outputFile) {
+        String yaml = YamlParser.flattenedMapToYaml(data);
+        File file = new File(outputFile);
+        if (!file.exists()) {
+            FileUtil.mkParentDirs(file);
+        }
+        FileUtil.writeUtf8String(yaml, file);
+    }
+
+    private static void processYaml(Generators generators, Map<String, Object> data,
+                                    String decompressPackageName) {
+        String packagePath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH;
+        String outputDirectory = generators.getOutputDirectory();
+        if (outputDirectory.contains(Constants.COMMA)) {
+            for (String outPutDir : generators.getOutputDirectory().split(StrUtil.COMMA)) {
+                String outputFile = packagePath + outPutDir + Constants.SLASH + generators.getFilename();
+                writeToYaml(data, outputFile);
+            }
+        } else if (outputDirectory.startsWith(Constants.SLASH)) {
+            String outputFile = generators.getOutputDirectory() + Constants.SLASH + generators.getFilename();
+            writeToYaml(data, outputFile);
+        } else {
+            String outputFile =
+                    packagePath + generators.getOutputDirectory() + Constants.SLASH + generators.getFilename();
+            writeToYaml(data, outputFile);
+        }
+    }
 }

@@ -2,11 +2,9 @@ package com.datasophon.cli.base;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
-import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.OsUtils;
 import com.datasophon.common.utils.ShellUtils;
 
 import java.nio.charset.Charset;
@@ -14,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 public class LocalExecutor implements Executor {
-    
+
     @Override
     public ExecResult execShell(String cmd) {
         return ShellUtils.execShell(cmd);
@@ -32,7 +30,7 @@ public class LocalExecutor implements Executor {
         execResult.setExecResult(FileUtil.exist(path));
         return execResult;
     }
-    
+
     @Override
     public ExecResult sendFile(String src, String dest, boolean override) {
         ExecResult execResult = new ExecResult();
@@ -44,17 +42,17 @@ public class LocalExecutor implements Executor {
         }
         return execResult;
     }
-    
+
     @Override
     public ExecResult sendDir(String srcDir, String destDir, boolean isVisual) {
         return null;
     }
-    
+
     @Override
     public ExecResult createDir(String destDir) {
         return ShellUtils.execShell(String.format("mkdir %s", destDir));
     }
-    
+
     @Override
     public ExecResult getFileString(String path) {
         ExecResult execResult = new ExecResult();
@@ -67,7 +65,7 @@ public class LocalExecutor implements Executor {
         }
         return execResult;
     }
-    
+
     @Override
     public ExecResult writeLines(List<String> lines, String path) {
         ExecResult execResult = new ExecResult();
@@ -79,16 +77,14 @@ public class LocalExecutor implements Executor {
         }
         return execResult;
     }
-    
+
     @Override
     public ArchType getArch() {
-        String result = ShellUtils.execShell(Constants.OS_ARCH_CMD).getExecOut();
-        return OsUtils.getArch(result);
+        return ShellUtils.getArch();
     }
-    
+
     @Override
     public OsType getOs() {
-        String result = ShellUtils.execShell(Constants.OS_VERSION_CMD).getExecOut();
-        return OsUtils.getOs(result);
+        return ShellUtils.getOs();
     }
 }

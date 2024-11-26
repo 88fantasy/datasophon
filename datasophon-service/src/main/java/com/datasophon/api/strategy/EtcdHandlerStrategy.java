@@ -49,7 +49,7 @@ public class EtcdHandlerStrategy implements ServiceRoleStrategy {
             ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${etcd-node-list}", etcdNodeList);
 
             // advertise-client-urls
-            String advertiseClientUrls = hosts.stream().map(host -> "http://" + host + ":2379").collect(Collectors.joining(","));
+            String advertiseClientUrls = hs.stream().map(s -> "http://" + s.getIp() + ":2379").collect(Collectors.joining(","));
             ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${etcd-advertise-client-urls}", advertiseClientUrls);
         }
     }

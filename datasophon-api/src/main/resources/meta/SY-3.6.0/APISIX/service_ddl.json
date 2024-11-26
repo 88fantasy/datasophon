@@ -1,0 +1,111 @@
+{
+  "name": "APISIX",
+  "label": "Apisix",
+  "description": "高性能分布式Api网关",
+  "version": "2.15.3",
+  "sortNum": 89,
+  "dependencies":[],
+  "packageName": "apisix-2.15.3.tar.gz",
+  "decompressPackageName": "apisix-2.15.3",
+  "roles": [
+    {
+      "name": "Apisix",
+      "label": "Apisix",
+      "roleType": "master",
+      "cardinality": "1+",
+      "logFile": "/usr/local/apisix/logs/access.log",
+      "resourceStrategies":[{
+        "type": "download",
+        "from": "script/control.sh",
+        "to": "control.sh",
+        "md5": "e00a98fede2df4441a650b83f6374468"
+      }],
+      "startRunner": {
+        "timeout": "60",
+        "program": "apisix",
+        "args": [
+          "start",
+          "-c",
+          "conf/config.yaml"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "apisix",
+        "args": [
+          "stop"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": [
+          "status"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "apisix",
+        "args": [
+          "restart",
+          "-c",
+          "conf/config.yaml"
+        ]
+      }
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "config.yaml",
+        "configFormat": "yaml",
+        "outputDirectory": "conf",
+        "includeParams": [
+          "apisixPort",
+          "apisixEtcdNodeList",
+          "apisixAdminKey"
+        ]
+      },
+    ]
+  },
+  "parameters": [
+    {
+      "name": "apisixPort",
+      "key": "apisix.node_listen",
+      "label": "网关端口",
+      "description": "网关入口端口",
+      "required": true,
+      "type": "input",
+      "configType": "number",
+      "value": 9080,
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": 9080
+    },
+    {
+      "name": "apisixEtcdNodeList",
+      "label": "ETCD",
+      "key": "etcd.host",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "configType": "stringArray",
+      "value": "${etcd-advertise-client-urls}",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${etcd-advertise-client-urls}"
+    },
+    {
+      "name": "apisixAdminKey",
+      "label": "管理密钥",
+      "key": "apisix.admin_key",
+      "description": "",
+      "required": true,
+      "type": "multipleWithMap",
+      "value": [{"name":"admin", "key":"edd1c9f034335f136f87ad84b625c8f1", "role": "admin"}],
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": [{"name":"admin", "key":"edd1c9f034335f136f87ad84b625c8f1", "role": "admin"}]
+    }
+  ]
+}

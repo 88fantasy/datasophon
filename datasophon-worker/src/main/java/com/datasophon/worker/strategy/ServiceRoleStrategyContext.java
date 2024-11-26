@@ -64,6 +64,9 @@ public class ServiceRoleStrategyContext {
         map.put("UstreamServer", new UstreamMasterHandlerStrategy("USTREAM", "UstreamServer"));
         // nacos
         map.put("NacosServer", new NacosMasterHandlerStrategy("NACOS", "NacosServer"));
+
+        // apisix
+        map.put("Apisix", new ApisixHandlerStrategy("APISIX", "Apisix"));
     }
     
     public static ServiceRoleStrategy getServiceRoleHandler(String type) {
