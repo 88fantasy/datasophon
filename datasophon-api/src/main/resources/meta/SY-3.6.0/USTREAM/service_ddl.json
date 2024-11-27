@@ -154,7 +154,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "${yarn.resourcemanager.webapp.address.rm1}"
+			"defaultValue": "http://${yarn.resourcemanager.webapp.address.rm1}"
 		},
 		{
 			"name": "ustreamS3Endpoint",
