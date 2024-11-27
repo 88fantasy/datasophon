@@ -49,7 +49,7 @@ start(){
     fi
   fi
   echo starting $command, logging to $log
-  exec_command="$SH_DIR/prometheus --config.file=prometheus.yml --web.listen-address=:9090 --web.enable-lifecycle"
+    exec_command="$SH_DIR/prometheus --config.file=prometheus.yml --web.listen-address=:9090 --web.enable-lifecycle"
   echo "nohup $exec_command > $log 2>&1 &"
   nohup $exec_command > $log 2>&1 &
   echo $! > $pid

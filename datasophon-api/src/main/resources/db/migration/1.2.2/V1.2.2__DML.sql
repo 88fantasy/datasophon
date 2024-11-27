@@ -1,2 +1,5 @@
-INSERT INTO `t_ddh_cluster_service_dashboard` (`id`, `service_name`, `dashboard_url`) VALUES (22, 'NACOS', 'http://${grafanaHost}:3000/d/Bz_QALEiz1/nacos?orgId=1&refresh=1m&kiosk');
-INSERT INTO `t_ddh_cluster_service_dashboard` (`id`, `service_name`, `dashboard_url`) VALUES (23, 'MINIO', 'http://${grafanaHost}:3000/d/TgmJnqnnk/minio-dashboard?orgId=1&refresh=1m&kiosk');
+INSERT INTO `t_ddh_cluster_service_dashboard` (`id`, `service_name`, `dashboard_url`) VALUES (80, 'NACOS', 'http://${grafanaHost}:3000/d/Bz_QALEiz1/nacos?orgId=1&refresh=1m&kiosk');
+INSERT INTO `t_ddh_cluster_service_dashboard` (`id`, `service_name`, `dashboard_url`) VALUES (81, 'MINIO', 'http://${grafanaHost}:3000/d/TgmJnqnnk/minio-dashboard?orgId=1&refresh=1m&kiosk');
+INSERT INTO `t_ddh_cluster_service_dashboard` (`id`, `service_name`, `dashboard_url`) VALUES (82, 'APISIX', 'http://${grafanaHost}:3000/d/bLlNuRLWz/apache-apisix?orgId=1&refresh=10s&kiosk');
+INSERT INTO `t_ddh_cluster_service_dashboard` (`id`, `service_name`, `dashboard_url`) VALUES (83, 'ETCD', 'http://${grafanaHost}:3000/d/etcd_cluster/etcd-cluster-overview?orgId=1&refresh=1m&kiosk');
+INSERT INTO `t_ddh_cluster_service_dashboard` (`id`, `service_name`, `dashboard_url`) VALUES (84, 'REDIS', 'http://${grafanaHost}:3000/d/e008bc3f-81a2-40f9-baf2-a33fd8dec7ec/redis-dashboard-for-prometheus-redis-exporter-1-x?orgId=1&refresh=1m&kiosk');
