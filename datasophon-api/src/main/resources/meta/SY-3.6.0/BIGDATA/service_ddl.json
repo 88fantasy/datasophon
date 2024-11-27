@@ -190,10 +190,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://${uschedulerApiServerHost}:7500/bigdata",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://${uschedulerApiServerHost}:7500/bigdata"
+      "defaultValue": "http://${ip}:7500/bigdata"
     },
     {
       "name": "bigdataAppProfile",
