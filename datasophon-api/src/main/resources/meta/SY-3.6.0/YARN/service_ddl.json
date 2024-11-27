@@ -162,6 +162,7 @@
           "yarn.scheduler.maximum-allocation-vcores",
           "yarn.nodemanager.vmem-pmem-ratio",
           "yarn.nodemanager.aux-services",
+          "yarn.nodemanager.aux-services.spark_shuffle.class",
           "yarn.log-aggregation-enable",
           "yarn.log.server.url",
           "yarn.log-aggregation.retain-seconds",
@@ -370,10 +371,21 @@
       "description": "yarn服务机制",
       "required": true,
       "type": "input",
-      "value": "mapreduce_shuffle",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "mapreduce_shuffle"
+      "defaultValue": "spark_shuffle,mapreduce_shuffle"
+    },
+    {
+      "name": "yarn.nodemanager.aux-services.spark_shuffle.class",
+      "label": "spark_shuffle类",
+      "description": "spark_shuffle类",
+      "required": true,
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "org.apache.spark.network.yarn.YarnShuffleService"
     },
     {
       "name": "yarn.log-aggregation-enable",
