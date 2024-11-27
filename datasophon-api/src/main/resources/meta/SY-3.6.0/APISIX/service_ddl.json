@@ -14,6 +14,7 @@
       "roleType": "master",
       "cardinality": "1+",
       "logFile": "/usr/local/apisix/logs/access.log",
+      "jmxPort": 9091,
       "resourceStrategies":[{
         "type": "download",
         "from": "script/control.sh",
@@ -106,6 +107,18 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": [{"name":"admin", "key":"edd1c9f034335f136f87ad84b625c8f1", "role": "admin"}]
+    },
+    {
+      "name": "apisixPrometheusAddr",
+      "label": "监控访问地址",
+      "key": "plugin_attr.prometheus.export_addr.ip",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value": "${apisixHost}",
+      "configurableInWizard": false,
+      "hidden": false,
+      "defaultValue": "${apisixHost}"
     }
   ]
 }
