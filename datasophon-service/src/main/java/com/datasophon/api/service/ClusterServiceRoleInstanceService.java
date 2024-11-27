@@ -82,5 +82,6 @@ public interface ClusterServiceRoleInstanceService extends IService<ClusterServi
     ClusterServiceRoleInstanceEntity getServiceRoleInsByHostAndName(String hostName, String serviceRoleName);
     
     List<ClusterServiceRoleInstanceEntity> listRoleIns(String hostname, String serviceName);
-    
+
+    Integer getClusterId(Integer serviceInstanceId);
 }

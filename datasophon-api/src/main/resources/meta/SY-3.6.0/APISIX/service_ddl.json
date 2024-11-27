@@ -26,7 +26,7 @@
         "args": [
           "start",
           "-c",
-          "conf/config.yaml"
+          "conf/apisix-config.yaml"
         ]
       },
       "stopRunner": {
@@ -57,7 +57,7 @@
   "configWriter": {
     "generators": [
       {
-        "filename": "config.yaml",
+        "filename": "apisix-config.yaml",
         "configFormat": "yaml",
         "outputDirectory": "conf",
         "includeParams": [
@@ -65,7 +65,7 @@
           "apisixEtcdNodeList",
           "apisixAdminKey"
         ]
-      },
+      }
     ]
   },
   "parameters": [
