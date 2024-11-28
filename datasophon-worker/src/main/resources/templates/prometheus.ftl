@@ -230,3 +230,9 @@ scrape_configs:
     file_sd_configs:
     - files:
       - configs/bigdata.json
+
+  - job_name: 'apisix'
+    metrics_path: '/apisix/prometheus/metrics'
+    file_sd_configs:
+    - files:
+      - configs/apisix.json
