@@ -118,16 +118,14 @@ public class FreemakerUtils {
                 logger.info("生成nacos配置");
                 String outputDirectory = generators.getOutputDirectory();
                 if (StrUtil.isNotEmpty(outputDirectory)) {
-                    logger.info("解析nacos配置参数");
                     String[] split = outputDirectory.split(":");
-                    String username = split[0];
-                    String password = split[1];
-                    String host = split[2];
-                    String port = split[3];
-                    String url = split[4];
-                    String[] urls = url.split("/");
-                    String profile = urls[1];
-                    String group = urls[2];
+                    String username = checkValue(data, split[0]);
+                    String password = checkValue(data, split[1]);
+                    String host = checkValue(data, split[2]);
+                    String port = checkValue(data, split[3]);
+                    String profile = checkValue(data, split[4]);
+                    String group = checkValue(data, split[5]);
+                    logger.info("解析nacos配置参数outputDirectory,host:{},port:{}", host, port);
                     Properties properties = new Properties();
                     properties.put(PropertyKeyConst.SERVER_ADDR, host);
                     properties.put(PropertyKeyConst.ENDPOINT_PORT, port);
@@ -152,6 +150,18 @@ public class FreemakerUtils {
         processOut(generators, template, data, decompressPackageName);
     }
 
+    public static String checkValue(Map<String, Object> data, String str){
+        String value = str;
+        if(str.startsWith("$")){
+            String key = str.substring(2, str.length()-1);
+            if(data.containsKey(key)){
+                value = data.get(key).toString();
+            } else {
+                throw new RuntimeException(key + "获取值失败");
+            }
+        }
+        return value;
+    }
     private static void checkNamespace(Properties properties) {
         logger.info("检查命名空间");
         try {

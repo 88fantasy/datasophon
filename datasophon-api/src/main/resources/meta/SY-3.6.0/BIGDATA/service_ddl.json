@@ -127,7 +127,7 @@
         "filename": "common-vars.yml",
         "configFormat": "custom",
         "templateName": "common-vars.ftl",
-        "outputDirectory": "${nacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${bigdataAppProfile}/${bigdataAppNacosGroup}",
+        "outputDirectory": "${bigdataAppNacosUsername}:${bigdataAppNacosPassword}:${bigdataAppNacosHost}:${bigdataAppNacosPort}:${bigdataAppProfile}:${bigdataAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
           "bigdataServerPort",
@@ -165,7 +165,13 @@
           "bigdataAppName",
           "bigdataMysqlBigdataUrl",
           "bigdataMysqlBigdataUsername",
-          "bigdataMysqlBigdataPassword"
+          "bigdataMysqlBigdataPassword",
+          "bigdataAppProfile",
+          "bigdataAppNacosGroup",
+          "bigdataAppNacosHost",
+          "bigdataAppNacosPort",
+          "bigdataAppNacosUsername",
+          "bigdataAppNacosPassword"
         ]
       }
     ]
@@ -193,7 +199,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://${ip}:7500/bigdata"
+      "defaultValue": "http://${host}:7500/bigdata"
     },
     {
       "name": "bigdataAppProfile",
