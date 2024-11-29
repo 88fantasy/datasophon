@@ -5,7 +5,12 @@ jasypt:
     # 此配置需要根据部署环境修改，配置jasypt算法
     algorithm: PBEWithMD5AndDES
     iv-generator-classname: org.jasypt.iv.NoIvGenerator
+
+## tomcat config
 server:
+  port: ${bigdataServerPort}
+  tomcat:
+    accept-count: 1024
   servlet:
     context-path: /bigdata
 bigdata:

@@ -6,6 +6,11 @@ jasypt:
     algorithm: PBEWithMD5AndDES
     iv-generator-classname: org.jasypt.iv.NoIvGenerator
 
+## tomcat config
+server:
+  port: ${bsbServerPort}
+  tomcat:
+    accept-count: 1024
 spring:
   profiles:
     active: ${bigdataAppProfile}
