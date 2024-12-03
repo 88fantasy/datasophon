@@ -370,8 +370,4 @@ public class ClusterServiceRoleInstanceServiceImpl
                 .eq(ClusterServiceRoleInstanceEntity::getServiceName, serviceName).list();
     }
 
-    @Override
-    public Integer getClusterId(Integer serviceInstanceId) {
-        return getById(serviceInstanceId).getClusterId();
-    }
 }

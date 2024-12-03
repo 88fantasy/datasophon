@@ -1,0 +1,96 @@
+{
+  "name": "JUICEFS",
+  "label": "Juicefs",
+  "description": "高性能、云原生分布式文件系统",
+  "version": "1.2.1",
+  "sortNum": 81,
+  "dependencies":["MINIO"],
+  "packageName": "juicefs-1.2.1-linux-amd64.tar.gz",
+  "decompressPackageName": "juicefs-1.2.1",
+  "arch":{
+      "x86_64": {
+        "packageName": "juicefs-1.2.1-linux-amd64.tar.gz"
+      },
+      "aarch64": {
+        "packageName": "juicefs-1.2.1-linux-arm64.tar.gz"
+      }
+    },
+  "roles": [
+    {
+      "name": "JuicefsMount",
+      "label": "JuicefsMount",
+      "roleType": "worker",
+      "cardinality": "1+",
+      "logFile": "",
+      "jmxPort": 9567,
+      "startRunner": {
+        "timeout": "60",
+        "program": "bin/control_juicefs.sh",
+        "args": [
+          "start"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "bin/control_juicefs.sh",
+        "args": [
+          "stop"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "bin/control_juicefs.sh",
+        "args": [
+          "status"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "bin/control_juicefs.sh",
+        "args": [
+          "restart"
+        ]
+      }
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "control_juicefs.sh",
+        "configFormat": "custom",
+        "outputDirectory": "bin",
+        "templateName": "juicefs-env.ftl",
+        "includeParams": [
+          "juicefsMeta",
+          "juicefsMounts"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "name": "juicefsMeta",
+      "label": "元数据地址",
+      "description": "元数据地址",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "mysql://juicefs:juicefs@(${apiIp}:3306)/juicefs"
+    },
+    {
+      "name": "juicefsMounts",
+      "label": "挂载目录列表",
+      "description": "挂载目录列表",
+      "required": true,
+      "type": "multipleWithMap",
+      "configType": "map",
+      "value": [{"path":"/opt/datasophon/juicefs/appweb", "log":"appweb"}],
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": [{"path":"/opt/datasophon/juicefs/appweb", "log":"appweb"}]
+    }
+  ]
+}

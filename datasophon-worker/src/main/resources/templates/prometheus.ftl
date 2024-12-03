@@ -236,3 +236,8 @@ scrape_configs:
     file_sd_configs:
     - files:
       - configs/apisix.json
+
+  - job_name: 'juicefs'
+      file_sd_configs:
+      - files:
+        - configs/juicefs.json

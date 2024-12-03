@@ -35,6 +35,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.model.AlertItem;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
+import com.datasophon.common.utils.ShellUtils;
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.cache.FileTemplateLoader;
 import freemarker.cache.MultiTemplateLoader;
@@ -58,6 +59,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.stream.Collectors;
+
+import static com.datasophon.worker.handler.ConfigureServiceHandler.SH;
 
 public class FreemakerUtils {
 
@@ -150,11 +153,11 @@ public class FreemakerUtils {
         processOut(generators, template, data, decompressPackageName);
     }
 
-    public static String checkValue(Map<String, Object> data, String str){
+    public static String checkValue(Map<String, Object> data, String str) {
         String value = str;
-        if(str.startsWith("$")){
-            String key = str.substring(2, str.length()-1);
-            if(data.containsKey(key)){
+        if (str.startsWith("$")) {
+            String key = str.substring(2, str.length() - 1);
+            if (data.containsKey(key)) {
                 value = data.get(key).toString();
             } else {
                 throw new RuntimeException(key + "获取值失败");
@@ -162,6 +165,7 @@ public class FreemakerUtils {
         }
         return value;
     }
+
     private static void checkNamespace(Properties properties) {
         logger.info("检查命名空间");
         try {
@@ -262,23 +266,16 @@ public class FreemakerUtils {
                                    String decompressPackageName) throws IOException, TemplateException {
         String packagePath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH;
         String outputDirectory = generators.getOutputDirectory();
-
-        if (outputDirectory.contains(Constants.COMMA)) {
-            for (String outPutDir : generators.getOutputDirectory().split(StrUtil.COMMA)) {
-                String outputFile = packagePath + outPutDir + Constants.SLASH + generators.getFilename();
-                writeToTemplate(template, data, outputFile);
+        for (String outPutDir : generators.getOutputDirectory().split(StrUtil.COMMA)) {
+            String outputFile = (outputDirectory.startsWith(Constants.SLASH) ? "" : packagePath) + outPutDir + Constants.SLASH + generators.getFilename();
+            File file = writeToTemplate(template, data, outputFile);
+            if(generators.getFilename().endsWith(SH) && !file.canExecute()) {
+                file.setExecutable(true);
             }
-        } else if (outputDirectory.startsWith(Constants.SLASH)) {
-            String outputFile = generators.getOutputDirectory() + Constants.SLASH + generators.getFilename();
-            writeToTemplate(template, data, outputFile);
-        } else {
-            String outputFile =
-                    packagePath + generators.getOutputDirectory() + Constants.SLASH + generators.getFilename();
-            writeToTemplate(template, data, outputFile);
         }
     }
 
-    private static void writeToTemplate(Template template, Map<String, Object> data,
+    private static File writeToTemplate(Template template, Map<String, Object> data,
                                         String outputFile) throws IOException, TemplateException {
         File file = new File(outputFile);
         if (!file.exists()) {
@@ -287,6 +284,7 @@ public class FreemakerUtils {
         FileWriter out = new FileWriter(file);
         template.process(data, out);
         out.close();
+        return file;
     }
 
     private static void writeToYaml(Map<String, Object> data,
@@ -304,8 +302,31 @@ public class FreemakerUtils {
         String packagePath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH;
         String outputDirectory = generators.getOutputDirectory();
         for (String outPutDir : generators.getOutputDirectory().split(StrUtil.COMMA)) {
-            String outputFile = (outputDirectory.startsWith(Constants.SLASH) ? packagePath : "") + outPutDir + Constants.SLASH + generators.getFilename();
+            String outputFile = (outputDirectory.startsWith(Constants.SLASH) ? "" : packagePath) + outPutDir + Constants.SLASH + generators.getFilename();
             writeToYaml(data, outputFile);
         }
     }
+
+//    public static void main(String[] args) throws IOException, TemplateException {
+//        Map<String, Object> data = new HashMap<>();
+//        Configuration config = new Configuration(Configuration.getVersion());
+//        List<TemplateLoader> loaderList = new ArrayList<>();
+//        loaderList.add(new ClassTemplateLoader(FreemakerUtils.class, "/templates"));
+//        config.setTemplateLoader(new MultiTemplateLoader(loaderList.toArray(new TemplateLoader[0])));
+//        Template template = config.getTemplate("juicefs-env.ftl");
+//
+//        data.put("juicefsMeta", "mysql://juicefs:juicefs@(${apiHost}:3306)/juicefs");
+//        ServiceConfig sc = new ServiceConfig();
+//        com.alibaba.fastjson.JSONArray array = new com.alibaba.fastjson.JSONArray();
+//        JSONObject obj = new JSONObject();
+//        obj.putOpt("path", "/opt/datasophon/juicefs/appweb");
+//        obj.putOpt("log", "appweb");
+//        array.add(obj);
+//        sc.setValue(array);
+//        data.put("juicefsMounts", sc);
+//        StringWriter sw = new StringWriter();
+//        template.process(data, sw);
+//        sw.close();
+//        System.out.println(sw);
+//    }
 }

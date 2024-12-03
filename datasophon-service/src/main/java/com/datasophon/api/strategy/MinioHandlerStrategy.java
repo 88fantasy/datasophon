@@ -32,7 +32,7 @@ public class MinioHandlerStrategy implements ServiceRoleStrategy {
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        if (hosts.size() > 0) {
+        if (!hosts.isEmpty()) {
             ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${minioHost}",
                     HostUtils.getIp(hosts.get(0)));
         }

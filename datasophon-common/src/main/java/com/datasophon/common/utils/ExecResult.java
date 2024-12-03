@@ -36,5 +36,15 @@ public class ExecResult implements Serializable {
     public boolean getExecResult() {
         return execResult;
     }
-    
+
+    public static ExecResult success() {
+        return success(null);
+    }
+
+    public static ExecResult success(String out) {
+        ExecResult exec = new ExecResult();
+        exec.setExecResult(true);
+        exec.setExecOut(out);
+        return exec;
+    }
 }

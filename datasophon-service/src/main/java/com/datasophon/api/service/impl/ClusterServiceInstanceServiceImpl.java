@@ -291,4 +291,10 @@ public class ClusterServiceInstanceServiceImpl
                 roleInstanceService.getRunningServiceRoleInstanceListByServiceId(serviceInstanceId);
         return !list.isEmpty();
     }
+
+
+    @Override
+    public Integer getClusterId(Integer serviceInstanceId) {
+        return getById(serviceInstanceId).getClusterId();
+    }
 }

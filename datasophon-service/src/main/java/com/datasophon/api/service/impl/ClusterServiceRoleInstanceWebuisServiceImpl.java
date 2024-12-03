@@ -22,6 +22,7 @@ package com.datasophon.api.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.load.GlobalVariables;
+import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.common.Constants;
@@ -49,14 +50,14 @@ public class ClusterServiceRoleInstanceWebuisServiceImpl
     private static final String STANDBY = "(Standby)";
 
     @Autowired
-    ClusterServiceRoleInstanceService clusterServiceRoleInstanceService;
+    ClusterServiceInstanceService clusterServiceInstanceService;
 
     @Override
     public Result getWebUis(Integer serviceInstanceId) {
         List<ClusterServiceRoleInstanceWebuis> list = this.list(
                 new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
                         .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
-        Integer clusterId = clusterServiceRoleInstanceService.getClusterId(serviceInstanceId);
+        Integer clusterId = clusterServiceInstanceService.getClusterId(serviceInstanceId);
         Map<String, String> globalVariables = GlobalVariables.get(clusterId);
         return Result.success(list.stream().peek(ui -> {
             String newUrl = PlaceholderUtils.replacePlaceholders(ui.getWebUrl(), globalVariables,

@@ -68,13 +68,15 @@ public class InstallServiceActor extends UntypedActor {
                 }
             } else {
                 installResult = serviceHandler.install(command);
-                // 其他服务创建软连接
-                String appHome = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
-                String appLinkHome =
-                        Constants.INSTALL_PATH + Constants.SLASH + StringUtils.lowerCase(command.getServiceName());
-                if (!new File(appLinkHome).exists()) {
-                    ShellUtils.execShell("ln -s " + appHome + " " + appLinkHome);
-                    logger.info("Create symbolic dir: {}", appLinkHome);
+                if(installResult.getExecResult()) {
+                    // 其他服务创建软连接
+                    String appHome = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
+                    String appLinkHome =
+                            Constants.INSTALL_PATH + Constants.SLASH + StringUtils.lowerCase(command.getServiceName());
+                    if (!new File(appLinkHome).exists()) {
+                        ShellUtils.execShell("ln -s " + appHome + " " + appLinkHome);
+                        logger.info("Create symbolic dir: {}", appLinkHome);
+                    }
                 }
             }
             getSender().tell(installResult, getSelf());

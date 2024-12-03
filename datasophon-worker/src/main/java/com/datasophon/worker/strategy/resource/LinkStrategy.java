@@ -1,16 +1,14 @@
 package com.datasophon.worker.strategy.resource;
 
+import cn.hutool.core.io.FileUtil;
 import com.datasophon.common.Constants;
+import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.io.File;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
-import cn.hutool.core.io.FileUtil;
-
-@Slf4j
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class LinkStrategy extends ResourceStrategy {
@@ -20,9 +18,14 @@ public class LinkStrategy extends ResourceStrategy {
     private String source;
     
     private String target;
-    
+
     @Override
-    public void exec() {
+    public String type() {
+        return LINK_TYPE;
+    }
+
+    @Override
+    public ExecResult exec() {
         String realTarget = basePath + Constants.SLASH + target;
         if(target.startsWith(Constants.SLASH)){
             // 兼容绝对路径
@@ -30,13 +33,14 @@ public class LinkStrategy extends ResourceStrategy {
         }
         File sourceFile = new File(source);
         File targetFile = new File(realTarget);
-        log.info("link. sourceFile[{}] exist is {},targetFile[{}] exist is {}", source, sourceFile.exists(), realTarget, targetFile.exists());
+        logger.info("link. sourceFile[{}] exist is {},targetFile[{}] exist is {}", source, sourceFile.exists(), realTarget, targetFile.exists());
         if(!FileUtil.exist(targetFile.getParent())){
             FileUtil.mkdir(targetFile.getParent());
         }
         if (!targetFile.exists() && sourceFile.exists()) {
             ShellUtils.execShell("ln -s " + source + " " + realTarget);
-            log.info("Create symbolic dir: {} to {}", source, realTarget);
+            logger.info("Create symbolic dir: {} to {}", source, realTarget);
         }
+        return ExecResult.success();
     }
 }

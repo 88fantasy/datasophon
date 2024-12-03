@@ -29,6 +29,9 @@ global:
       - account: datasophon
         password: datasophon
         dbName: datasophon
+      - account: juicefs
+        password: juicefs
+        dbName: juicefs
       - account: hive
         password: hive
         dbName: hive
