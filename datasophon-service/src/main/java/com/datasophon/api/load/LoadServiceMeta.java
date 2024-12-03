@@ -388,6 +388,7 @@ public class LoadServiceMeta implements ApplicationRunner {
                     globalVariables.put(variable.getVariableName(), variable.getVariableValue());
                 }
                 globalVariables.put("${apiHost}", InetAddress.getLocalHost().getHostName());
+                globalVariables.put("${apiIp}", InetAddress.getLocalHost().getHostAddress());
                 globalVariables.put("${apiPort}", configBean.getServerPort());
                 globalVariables.put("${INSTALL_PATH}", Constants.INSTALL_PATH);
                 

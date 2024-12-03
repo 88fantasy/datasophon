@@ -51,7 +51,7 @@ public class ConfigureServiceHandler {
 
     private static final String RANGER_ADMIN = "RangerAdmin";
 
-    private static final String SH = "sh";
+    public static final String SH = "sh";
 
     private String serviceName;
 

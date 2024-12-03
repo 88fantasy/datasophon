@@ -1,6 +1,7 @@
 package com.datasophon.worker.strategy.resource;
 
 import com.datasophon.common.Constants;
+import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.FileUtils;
 import com.datasophon.common.utils.PropertyUtils;
 
@@ -8,11 +9,9 @@ import java.io.File;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
 import cn.hutool.core.map.MapUtil;
 import cn.hutool.http.HttpUtil;
 
-@Slf4j
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class DownloadStrategy extends ResourceStrategy {
@@ -24,16 +23,21 @@ public class DownloadStrategy extends ResourceStrategy {
     private String to;
     
     private String md5;
-    
+
     @Override
-    public void exec() {
+    public String type() {
+        return DOWNLOAD_TYPE;
+    }
+
+    @Override
+    public ExecResult exec() {
         File file = new File(basePath + Constants.SLASH + to);
         if (file.exists() && FileUtils.md5(file).equals(md5)) {
-            log.info("resource {}  existed", to);
-            return;
+            logger.info("resource {}  existed", to);
+            return null;
         }
         
-        log.info("start to download resource : {}", from);
+        logger.info("start to download resource : {}", from);
         
         String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
         String masterPort = PropertyUtils.getString(Constants.MASTER_WEB_PORT);
@@ -46,6 +50,7 @@ public class DownloadStrategy extends ResourceStrategy {
                 + "/ddh/service/install/downloadResource?" + params;
         HttpUtil.downloadFile(url, file, 300);
         
-        log.info("end to download resource {} to {} ", from, to);
+        logger.info("end to download resource {} to {} ", from, to);
+        return ExecResult.success();
     }
 }

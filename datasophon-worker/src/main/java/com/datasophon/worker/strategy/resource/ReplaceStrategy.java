@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import cn.hutool.core.io.FileUtil;
@@ -22,14 +23,20 @@ public class ReplaceStrategy extends ResourceStrategy {
     private String regex;
     
     private String replacement;
-    
+
     @Override
-    public void exec() {
+    public String type() {
+        return REPLACE_TYPE;
+    }
+
+    @Override
+    public ExecResult exec() {
         File file = new File(basePath + Constants.SLASH + source);
         if (file.exists()) {
             List<String> lines = FileUtil.readLines(file, Charset.defaultCharset())
                     .stream().map(line -> line.replaceAll(regex, replacement)).collect(Collectors.toList());
             FileUtil.writeLines(lines, file, Charset.defaultCharset(), false);
         }
+        return ExecResult.success();
     }
 }

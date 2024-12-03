@@ -6,6 +6,7 @@ import java.io.File;
 import java.nio.charset.Charset;
 import java.util.List;
 
+import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import cn.hutool.core.io.FileUtil;
@@ -22,9 +23,14 @@ public class AppendLineStrategy extends ResourceStrategy {
     private Integer line;
     
     private String text;
-    
+
     @Override
-    public void exec() {
+    public String type() {
+        return APPEND_LINE_TYPE;
+    }
+
+    @Override
+    public ExecResult exec() {
         File file = new File(basePath + Constants.SLASH + source);
         if (file.exists() && ObjectUtil.isNotNull(line)) {
             List<String> lines = FileUtil.readLines(file, Charset.defaultCharset());
@@ -36,5 +42,6 @@ public class AppendLineStrategy extends ResourceStrategy {
                 FileUtil.writeLines(lines, file, Charset.defaultCharset(), false);
             }
         }
+        return ExecResult.success();
     }
 }

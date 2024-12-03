@@ -17,6 +17,14 @@
 
 package com.datasophon.worker.handler;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
+import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.StreamProgress;
+import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.ServiceLoaderUtil;
+import cn.hutool.http.HttpUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.InstallServiceRoleCommand;
@@ -24,50 +32,45 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.FileUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
-import com.datasophon.worker.strategy.resource.AppendLineStrategy;
-import com.datasophon.worker.strategy.resource.DownloadStrategy;
 import com.datasophon.worker.strategy.resource.EmptyStrategy;
-import com.datasophon.worker.strategy.resource.LinkStrategy;
-import com.datasophon.worker.strategy.resource.ReplaceStrategy;
 import com.datasophon.worker.strategy.resource.ResourceStrategy;
-import com.datasophon.worker.strategy.resource.ShellStrategy;
 import com.datasophon.worker.utils.TaskConstants;
-
-import org.apache.commons.lang3.StringUtils;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Objects;
-
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.bean.copier.CopyOptions;
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.StreamProgress;
-import cn.hutool.core.lang.Console;
-import cn.hutool.http.HttpUtil;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Data
 public class InstallServiceHandler {
-    
+
     private static final String HADOOP = "hadoop";
-    
+
+    public static final Map<String, Class<? extends ResourceStrategy>> cache = new ConcurrentHashMap<>();
+
     private String frameCode;
-    
+
     private String serviceName;
-    
+
     private String serviceRoleName;
-    
+
     private Logger logger;
-    
+
+    static {
+        List<ResourceStrategy> strategies = ServiceLoaderUtil.loadList(ResourceStrategy.class);
+        for (ResourceStrategy strategy : strategies) {
+            cache.put(strategy.type(), strategy.getClass());
+        }
+    }
+
     public InstallServiceHandler(String frameCode, String serviceName, String serviceRoleName) {
         this.frameCode = frameCode;
         this.serviceName = serviceName;
@@ -76,7 +79,7 @@ public class InstallServiceHandler {
                 serviceRoleName);
         logger = LoggerFactory.getLogger(loggerName);
     }
-    
+
     public ExecResult install(InstallServiceRoleCommand command) {
         ExecResult execResult = new ExecResult();
         try {
@@ -84,53 +87,36 @@ public class InstallServiceHandler {
             String packageName = command.getPackageName();
             String packagePath = destDir + packageName;
             String decompressPackageName = command.getDecompressPackageName();
-            
+
             Boolean needDownLoad =
                     !Objects.equals(PropertyUtils.getString(Constants.MASTER_HOST), CacheUtils.get(Constants.HOSTNAME))
                             && isNeedDownloadPkg(packagePath, command.getPackageMd5());
-            
+
             if (Boolean.TRUE.equals(needDownLoad)) {
                 downloadPkg(packageName, packagePath);
             }
-            
+
             boolean result = decompressPkg(packageName, decompressPackageName, destDir);
             if (result) {
                 if (CollUtil.isNotEmpty(command.getResourceStrategies())) {
                     for (Map<String, Object> strategy : command.getResourceStrategies()) {
                         String type = (String) strategy.get(ResourceStrategy.TYPE_KEY);
-                        ResourceStrategy rs;
-                        switch (type) {
-                            case ReplaceStrategy.REPLACE_TYPE:
-                                rs = BeanUtil.mapToBean(strategy, ReplaceStrategy.class, true,
-                                        CopyOptions.create().ignoreError());
-                                break;
-                            case DownloadStrategy.DOWNLOAD_TYPE:
-                                rs = BeanUtil.mapToBean(strategy, DownloadStrategy.class, true,
-                                        CopyOptions.create().ignoreError());
-                                break;
-                            case AppendLineStrategy.APPEND_LINE_TYPE:
-                                rs = BeanUtil.mapToBean(strategy, AppendLineStrategy.class, true,
-                                        CopyOptions.create().ignoreError());
-                                break;
-                            case LinkStrategy.LINK_TYPE:
-                                rs = BeanUtil.mapToBean(strategy, LinkStrategy.class, true,
-                                        CopyOptions.create().ignoreError());
-                                break;
-                            case ShellStrategy.SHELL_TYPE:
-                                rs = BeanUtil.mapToBean(strategy, ShellStrategy.class, true,
-                                        CopyOptions.create().ignoreError());
-                                break;
-                            default:
-                                rs = new EmptyStrategy();
-                        }
+                        Class<? extends ResourceStrategy> clazz = cache.getOrDefault(type, EmptyStrategy.class);
+                        ResourceStrategy rs = BeanUtil.toBean(strategy, clazz,
+                                CopyOptions.create().ignoreError());
+                        rs.setLogger(logger);
                         rs.setFrameCode(frameCode);
                         rs.setService(serviceName);
                         rs.setServiceRole(serviceRoleName);
                         rs.setBasePath(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-                        rs.exec();
+                        rs.setVariables(command.getVariables());
+                        ExecResult exec = rs.exec();
+                        if (!exec.getExecResult()) {
+                            return exec;
+                        }
                     }
                 }
-                
+
                 if (Objects.nonNull(command.getRunAs())) {
                     ExecResult chownResult = ShellUtils.execShell(
                             " chown -R " + command.getRunAs().getUser() + ":" + command.getRunAs().getGroup() + " "
@@ -149,52 +135,52 @@ public class InstallServiceHandler {
                 if (decompressPackageName.contains(HADOOP)) {
                     changeHadoopInstallPathPerm(decompressPackageName);
                 }
+                execResult.setExecResult(true);
             }
-            execResult.setExecResult(result);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
-            execResult.setExecOut(e.getMessage());
+            execResult.setExecErrOut(e.getMessage());
         }
         return execResult;
     }
-    
+
     private Boolean isNeedDownloadPkg(String packagePath, String packageMd5) {
         boolean needDownLoad = true;
         logger.info("Remote package md5 is {}", packageMd5);
         if (FileUtil.exist(packagePath)) {
             // check md5
             String md5 = FileUtils.md5(new File(packagePath));
-            
+
             logger.info("Local md5 is {}", md5);
-            
+
             if (StringUtils.isNotBlank(md5) && packageMd5.trim().equals(md5.trim())) {
                 needDownLoad = false;
             }
         }
         return needDownLoad;
     }
-    
+
     private void downloadPkg(String packageName, String packagePath) {
         String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
         String masterPort = PropertyUtils.getString(Constants.MASTER_WEB_PORT);
         String downloadUrl = "http://" + masterHost + ":" + masterPort
                 + "/ddh/service/install/downloadPackage?packageName=" + packageName;
-        
+
         logger.info("download url is {}", downloadUrl);
-        
+
         HttpUtil.downloadFile(downloadUrl, FileUtil.file(packagePath), new StreamProgress() {
-            
+
             @Override
             public void start() {
                 Console.log("start to install。。。。");
             }
-            
+
             @Override
             public void progress(long progressSize, long l1) {
                 Console.log("installed：{} / {} ", FileUtil.readableFileSize(progressSize),
                         FileUtil.readableFileSize(l1));
             }
-            
+
             @Override
             public void finish() {
                 Console.log("install success！");
@@ -202,7 +188,7 @@ public class InstallServiceHandler {
         });
         logger.info("download package {} success", packageName);
     }
-    
+
     private boolean decompressPkg(String packageName, String decompressPackageName, String destDir) {
         boolean decompressResult = true;
         if (!FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName)) {
@@ -210,33 +196,44 @@ public class InstallServiceHandler {
             logger.info("Start to decompress {}", sourceFile);
             String suffix = FileUtil.getSuffix(sourceFile);
             String prefix = packageName.substring(0, packageName.length() - suffix.length() - 1);
-            ArrayList<String> command = new ArrayList<>();
-            
-            if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
-                command.add("tar");
-                command.add("-zxvf");
-                command.add(sourceFile);
-                command.add("-C");
-                command.add(Constants.INSTALL_PATH);
-            } else if ("zip".equals(suffix)) {
-                command.add("unzip");
-                command.add("-d");
-                command.add(Constants.INSTALL_PATH);
-                command.add(sourceFile);
-            }
-            ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
-            boolean success = execResult.getExecResult();
-            if (success && !FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName)) {
-                // 自动重命名
-                if (FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + prefix)) {
-                    FileUtil.move(new File(Constants.INSTALL_PATH + Constants.SLASH + prefix), new File(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName), false);
+            boolean success = false;
+            try {
+                FileUtil.mkdir(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+
+                ArrayList<String> command = new ArrayList<>();
+
+                if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
+                    command.add("tar");
+                    command.add("-zxvf");
+                    command.add(sourceFile);
+                    command.add("-C");
+                    command.add(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                } else if ("zip".equals(suffix)) {
+                    command.add("unzip");
+                    command.add("-d");
+                    command.add(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                    command.add(sourceFile);
+                }
+                ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
+                success = execResult.getExecResult();
+                if (success) {
+                    // 自动重命名
+                    if (FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + decompressPackageName)) {
+                        FileUtil.move(new File(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + decompressPackageName), new File(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName), false);
+                    } else if (FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + prefix)) {
+                        FileUtil.move(new File(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + prefix), new File(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName), false);
+                    }
+                }
+            } finally {
+                if (!success) {
+                    FileUtil.del(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
                 }
             }
             return success;
         }
         return decompressResult;
     }
-    
+
     private void changeHadoopInstallPathPerm(String decompressPackageName) {
         ShellUtils.execShell(
                 " chown -R  root:hadoop " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);

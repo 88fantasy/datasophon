@@ -17,6 +17,7 @@
 
 package com.datasophon.api.master.handler.service;
 
+import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.host.ClusterHostService;
@@ -73,7 +74,9 @@ public class ServiceInstallHandler extends ServiceHandler {
         installServiceRoleCommand.setRunAs(serviceRoleInfo.getRunAs());
         installServiceRoleCommand.setServiceRoleType(serviceRoleInfo.getRoleType());
         installServiceRoleCommand.setResourceStrategies(serviceRoleInfo.getResourceStrategies());
-        
+        installServiceRoleCommand.setVariables(GlobalVariables.get(serviceRoleInfo.getClusterId()));
+
+
         String arch = hostEntity.getCpuArchitecture();
         Map<String, ArchInfo> archInfoMap = serviceRoleInfo.getArchInfoMap();
         if (archInfoMap.containsKey(arch)) {

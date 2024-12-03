@@ -50,7 +50,7 @@
       "label": "RedisExporter",
       "roleType": "worker",
       "cardinality": "1",
-      "logFile": "redis-exporter/logs/redis_exporter-${host}.out",
+      "logFile": "redis-exporter/logs/exporter.log",
       "jmxPort": 9121,
       "sortNum": 2,
       "resourceStrategies":[{

@@ -102,6 +102,7 @@ public class InstallServiceImpl implements InstallService {
                                    Integer clusterId,
                                    String hosts,
                                    String sshUser,
+                                   String sshPass,
                                    Integer sshPort,
                                    Integer page,
                                    Integer pageSize) {
@@ -137,7 +138,7 @@ public class InstallServiceImpl implements InstallService {
                                 PlaceholderUtils.getNewEquipmentNoList(preStr, endStr);
                         for (String next : newEquipmentNoList) {
                             HostInfo hostInfo =
-                                    createHostInfo(pre + next, sshPort, sshUser, clusterCode);
+                                    createHostInfo(pre + next, sshPort, sshUser, sshPass, clusterCode);
                             if (ObjectUtil.isNotNull(hostInfo)) {
                                 map.put(hostInfo.getHostname(), hostInfo);
                                 if (!hostInfo.isManaged()) {
@@ -150,7 +151,7 @@ public class InstallServiceImpl implements InstallService {
                         int limit = Integer.parseInt(split[1]);
                         for (int i = offset; i <= limit; i++) {
                             HostInfo hostInfo =
-                                    createHostInfo(pre + i, sshPort, sshUser, clusterCode);
+                                    createHostInfo(pre + i, sshPort, sshUser, sshPass, clusterCode);
                             if (ObjectUtil.isNotNull(hostInfo)) {
                                 map.put(hostInfo.getHostname(), hostInfo);
                                 if (!hostInfo.isManaged()) {
@@ -160,7 +161,7 @@ public class InstallServiceImpl implements InstallService {
                         }
                     }
                 } else {
-                    HostInfo hostInfo = createHostInfo(host, sshPort, sshUser, clusterCode);
+                    HostInfo hostInfo = createHostInfo(host, sshPort, sshUser, sshPass, clusterCode);
                     if (ObjectUtil.isNotNull(hostInfo)) {
                         map.put(hostInfo.getHostname(), hostInfo);
                         if (!hostInfo.isManaged()) {
@@ -177,8 +178,8 @@ public class InstallServiceImpl implements InstallService {
         // list分页
         list =
                 map.entrySet().stream()
-                        .sorted(Comparator.comparing(e -> e.getKey()))
-                        .map(e -> e.getValue())
+                        .sorted(Comparator.comparing(Map.Entry::getKey))
+                        .map(Map.Entry::getValue)
                         .collect(Collectors.toList());
         Integer offset = (page - 1) * pageSize;
         List<HostInfo> result = getListPage(list, offset, pageSize);
@@ -192,7 +193,7 @@ public class InstallServiceImpl implements InstallService {
     }
     
     public HostInfo createHostInfo(
-                                   String host, Integer sshPort, String sshUser, String clusterCode) {
+                                   String host, Integer sshPort, String sshUser, String sshPass, String clusterCode) {
         HostInfo hostInfo = new HostInfo();
         
         hostInfo.setHostname(HostUtils.getHostName(host));
@@ -219,6 +220,7 @@ public class InstallServiceImpl implements InstallService {
                             Status.START_CHECK_HOST.getCode(), Status.START_CHECK_HOST.getMsg()));
         }
         hostInfo.setSshPort(sshPort);
+        hostInfo.setSshPassword(sshPass);
         hostInfo.setSshUser(sshUser);
         hostInfo.setClusterCode(clusterCode);
         hostInfo.setCreateTime(new Date());

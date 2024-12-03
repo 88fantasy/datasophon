@@ -29,6 +29,9 @@ global:
       - account: datasophon
         password: datasophon
         dbName: datasophon
+      - account: juicefs
+        password: juicefs
+        dbName: juicefs
       - account: hive
         password: hive
         dbName: hive
@@ -50,6 +53,7 @@ global:
       - account: research
         password: research
         dbName: research
+
     host:
       user: root
       ip: 192.168.2.146

@@ -66,7 +66,7 @@ start_exporter(){
     fi
   fi
   echo starting $command, logging to $log
-  exec_command="$REDIS_DIR/redis-exporter/redis_exporter -redis.addr $HOSTNAME:6379 -web.listen-address 0.0.0.0:9121"
+  exec_command="$REDIS_DIR/redis-exporter/redis_exporter -redis.addr $HOSTNAME:6379 -web.listen-address 0.0.0.0:9121 -redis.password fX0GzFyWOK4LR^9K -include-config-metrics true -include-system-metrics true"
   echo "nohup $exec_command > $log 2>&1 &"
   nohup $exec_command > $log 2>&1 &
   echo $! > $pid
