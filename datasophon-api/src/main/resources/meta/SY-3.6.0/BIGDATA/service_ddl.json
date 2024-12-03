@@ -92,6 +92,7 @@
         "outputDirectory": "",
         "templateName": "bigdata-master.ftl",
         "includeParams": [
+          "bigdataServerPort",
           "bigdataJasyptEncryptorPassword",
           "bigdataServerAddress",
           "bigdataAppProfile",
@@ -113,6 +114,7 @@
         "outputDirectory": "",
         "templateName": "hsb-master.ftl",
         "includeParams": [
+          "hsbServerPort",
           "bigdataJasyptEncryptorPassword",
           "bigdataAppProfile",
           "bigdataAppNacosGroup",
@@ -130,7 +132,6 @@
         "outputDirectory": "${bigdataAppNacosUsername}:${bigdataAppNacosPassword}:${bigdataAppNacosHost}:${bigdataAppNacosPort}:${bigdataAppProfile}:${bigdataAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
-          "bigdataServerPort",
           "bigdataEtcdUrl",
           "bigdataPrometheusUrl",
           "bigdataGrafanaUrl",
@@ -177,6 +178,18 @@
     ]
   },
   "parameters": [
+    {
+      "name": "hsbServerPort",
+      "label": "hsb应用服务端口",
+      "description": "hsb应用服务端口",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "7777",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "7777"
+    },
     {
       "name": "bigdataJasyptEncryptorPassword",
       "label": "jasypt加密密钥",

@@ -140,12 +140,6 @@ sso:
     tokenExpiration: 18000000
     tokenSecret: NonceJwtSecre
 
-## tomcat config
-server:
-  port: ${bigdataServerPort}
-  tomcat:
-    accept-count: 1024
-
 ## swagger config
 swagger.enabled: true
 ##swagger3

@@ -14,12 +14,20 @@
       "roleType": "master",
       "cardinality": "1",
       "logFile": "module/chinaunicom-medical-research-platform/logs/chinaunicom-medical-research-platform.log",
-      "resourceStrategies":[{
-        "type": "frontend",
-        "meta": "${juicefsMeta}",
-        "source": "view/research-platform-view",
-        "target": "research-platform-view"
-      }],
+      "resourceStrategies": [
+        {
+          "type":"frontend",
+          "meta": "${juicefsMeta}",
+          "source": "module/view/research-platform-view",
+          "target": "research-platform-view"
+        },
+        {
+          "type":"frontend",
+          "meta": "${juicefsMeta}",
+          "source": "module/view/scientific-research-view",
+          "target": "scientific-research-view"
+        }
+      ],
       "startRunner": {
         "timeout": "60",
         "program": "module/chinaunicom-medical-research-platform/bin/server.sh",
@@ -47,11 +55,6 @@
         "args": [
           "restart"
         ]
-      },
-      "externalLink": {
-        "name": "ResearchPlatform UI",
-        "label": "ResearchPlatform UI",
-        "url": "${researchServerAddress}/research-platform-view/#/"
       }
     },
     {
@@ -87,11 +90,6 @@
         "args": [
           "restart"
         ]
-      },
-      "externalLink": {
-        "name": "AppRetrieval UI",
-        "label": "AppRetrieval UI",
-        "url": "${researchServerAddress}/app-retrieval-view/#/"
       }
     }
   ],
@@ -139,7 +137,7 @@
         "filename": "common.yaml",
         "configFormat": "custom",
         "templateName": "research-common.ftl",
-        "outputDirectory": "${researchNacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
+        "outputDirectory": "${researchNacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:${researchAppProfile}:${researchAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
           "researchSsoAccessTokenKey",
@@ -175,7 +173,7 @@
         "filename": "chinaunicom-medical-app-retrieval.yaml",
         "configFormat": "custom",
         "templateName": "research-app-retrieval.ftl",
-        "outputDirectory": "${researchNacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
+        "outputDirectory": "${researchNacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:${researchAppProfile}:${researchAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
           "researchDbSystemUrl",
@@ -198,7 +196,7 @@
         "filename": "chinaunicom-medical-research-platform.yaml",
         "configFormat": "custom",
         "templateName": "research-research-platform.ftl",
-        "outputDirectory": "${researchNacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:/${researchAppProfile}/${researchAppNacosGroup}",
+        "outputDirectory": "${researchNacosUsername}:${nacosPassword}:${nacosHost}:${nacosServerPort}:${researchAppProfile}:${researchAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
           "researchDbSystemUrl",
@@ -457,10 +455,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "jdbc:mysql://${apiHost}:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "value": "jdbc:mysql://${apiHost}:9030/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${apiHost}:9030/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
     },
     {
       "name": "researchDbDorisUsername",

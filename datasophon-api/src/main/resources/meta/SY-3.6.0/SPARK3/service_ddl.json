@@ -20,28 +20,51 @@
       "logFile": "logs/hadoop-${user}-datanode-${host}.log",
       "resourceStrategies":[{
         "type": "sh",
-        "commands": [["mkdir", "logs"]]
-      },{
-        "type": "link",
-        "source": "/opt/datasophon/spark-3.4.2-bin-hadoop3//yarn/spark-3.4.2-yarn-shuffle.jar",
-        "target": "/opt/datasophon/hadoop/share/hadoop/yarn/lib/spark-3.4.2-yarn-shuffle.jar"
-      },
-      {
-        "type": "link",
-        "source": "/opt/datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
-        "target": "jars/mysql-connector-java-8.0.28.jar"
-      },
-      {
-        "type": "link",
-        "source": "/opt/datasophon/DDP/packages/iceberg-spark-runtime-3.4_2.12-1.3.1.jar",
-        "target": "jars/iceberg-spark-runtime-3.4_2.12-1.3.1.jar"
-      },
-      {
-        "type": "link",
-        "source": "/opt/datasophon/DDP/packages/spark-doris-connector-3.4_2.12-1.3.2.jar",
-        "target": "jars/spark-doris-connector-3.4_2.12-1.3.2.jar"
+        "commands": [
+          ["mkdir", "logs"],
+          ["cp", "yarn/spark-3.4.2-yarn-shuffle.jar", "/opt/datasophon/hadoop/share/hadoop/yarn/lib/"],
+          ["cp", "/opt/datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar", "jars/"],
+          ["cp", "/opt/datasophon/DDP/packages/iceberg-spark-runtime-3.4_2.12-1.3.1.jar", "jars/"],
+          ["cp", "/opt/datasophon/DDP/packages/spark-doris-connector-3.4_2.12-1.3.2.jar", "jars/"]
+      ]
       }
       ]
+    },
+    {
+      "name": "SparkThriftServer",
+      "label": "SparkThriftServer",
+      "roleType": "worker",
+      "runAs": {
+        "user": "hive",
+        "group": "hadoop"
+      },
+      "cardinality": "1",
+      "logFile": "logs/spark-hive-org.apache.spark.sql.hive.thriftserver.HiveThriftServer2-1-${host}.out",
+      "resourceStrategies":[{
+        "type": "download",
+        "from": "script/control_spark_thrift.sh",
+        "to": "control_spark_thrift.sh"
+      }],
+      "startRunner": {
+        "timeout": "60",
+        "program": "control_spark_thrift.sh",
+        "args": ["start"]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "control_spark_thrift.sh",
+        "args": ["stop"]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control_spark_thrift.sh",
+        "args": ["status"]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "control_spark_thrift.sh",
+        "args": ["restart"]
+      }
     }
   ],
   "configWriter": {

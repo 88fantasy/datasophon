@@ -56,6 +56,8 @@ public class ServiceRoleStrategyContext {
         map.put("KyuubiServer", new KyuubiServerHandlerStrategy("KYUUBI", "KyuubiServer"));
         // flink
         map.put("FlinkClient", new FlinkHandlerStrategy("FLINK", "FlinkClient"));
+        // spark3
+        map.put("SparkThriftServer", new SparkThriftHandlerStrategy("SPARK3", "SparkThriftServer"));
         // uscheduler
         map.put("UMasterServer", new DSMasterHandlerStrategy("USCHEDULER", "UMasterServer"));
         // DolphinScheduler
