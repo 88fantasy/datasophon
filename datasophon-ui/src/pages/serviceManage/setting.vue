@@ -107,6 +107,7 @@
 import CommonTemplate from "@/components/commonTemplate/index";
 import { mapActions, mapState } from "vuex";
 import RenameGroup from "./renameGroup.vue";
+import { invokeFormatMultipleWithMapData } from "@/utils/setting";
 
 export default {
   components: { CommonTemplate },
@@ -300,6 +301,8 @@ export default {
           });
         });
       }
+      invokeFormatMultipleWithMapData(this.templateData, obj);
+
       return obj;
     },
     handleMultipleData(a) {
@@ -329,6 +332,9 @@ export default {
           obj[f].push(a[vals[index]]);
         });
       }
+
+      // this.invokeFormatMultipleWithMapData(this.templateData, obj);
+
       return obj;
     },
     // 单个标签页的保存
@@ -341,8 +347,9 @@ export default {
             let param = _.cloneDeep(this.templateData);
             const arrayWithData = this.handlearrayWithData(values);
             const multipleData = this.handleMultipleData(values);
+            // // const
             const formData = { ...values, ...arrayWithData, ...multipleData };
-            console.log(formData, "formDataformData");
+            console.log("formDataformData", values, arrayWithData);
             for (let name in formData) {
               param.forEach((item) => {
                 if (item.name === name) {
@@ -376,6 +383,7 @@ export default {
               serviceConfig: JSON.stringify(filterParam),
               roleGroupId: this.currentId,
             };
+            // console.log('saveParam',saveParam)
             // // 等待网络请求结束
             let res = await this.$axiosPost(
               global.API.saveServiceConfig,

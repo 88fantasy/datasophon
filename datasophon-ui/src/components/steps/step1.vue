@@ -62,9 +62,9 @@
         <a-form-item label="SSH密码">
           <a-input
             v-decorator="[
-              `password`,
+              `sshPass`,
               {
-                initialValue: steps1.password,
+                initialValue: steps1.sshPass,
                 rules: [{ required: true, message: `SSH密码不能为空!` }],
               },
             ]"

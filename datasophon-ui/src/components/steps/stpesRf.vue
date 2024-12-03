@@ -124,7 +124,7 @@ export default {
       steps1Data: {
         hosts: "",
         sshUser: "",
-        password: "",
+        sshPass: "",
         sshPort: "",
       },
       steps4Data: {
@@ -145,7 +145,7 @@ export default {
           this.steps1Data = {
             ...this.steps1Data,
             sshUser: "root",
-            password: "",
+            sshPass: "",
             sshPort: "22",
           };
       },

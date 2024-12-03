@@ -35,8 +35,9 @@
         <div
           class="form-item-container"
           v-if="
-            !['multipleWithKey', 'multipleSelect','multipleWithMap'].includes(item.type) &&
-            !invokeMapShowMultiply(item)
+            !['multipleWithKey', 'multipleSelect', 'multipleWithMap'].includes(
+              item.type
+            ) && !invokeMapShowMultiply(item)
           "
         >
           <a-form-item :label="item.label">
@@ -290,25 +291,29 @@
             v-if="['multipleWithMap'].includes(item.type)"
             class="form-item-container"
           >
-            <div v-for="(subItem, index) of item.value" :key="index">
+            <div
+              v-for="(subItem, index) of item.value"
+              :key="index"
+              class="multipleWithMap"
+            >
               <a-form-item
                 v-for="(child, childIndex) in subItem"
                 style="margin-bottom: 0px"
                 :key="childIndex"
                 :required="item.required"
                 v-bind="
-                  childIndex === 0 ? labelCol : formItemLayoutWithOutLabel
+                  !childIndex && !index ? labelCol : formItemLayoutWithOutLabel
                 "
-                :label="
-                  childIndex === 0 || item.value.length === 0 ? item.label : ''
-                "
+                :label="!childIndex && !index ? item.label : ''"
+                :class="childIndex === subItem.length - 1 ? 'lastitem' : ''"
               >
                 <a-row type="flex" style="position: relative">
                   <a-col :span="12">
                     <a-form-item style="width: 97%">
                       <a-input
+                        readOnly
                         v-decorator="[
-                          `${item.name + 'arrayWithKey' + childIndex}`,
+                          `${item.name + 'arrayWithKey' + childIndex}-${index}`,
                           {
                             validateTrigger: ['change', 'blur'],
                             initialValue: child.key,
@@ -329,7 +334,9 @@
                     <a-form-item style="width: 97%">
                       <a-input
                         v-decorator="[
-                          `${item.name + 'arrayWithValue' + childIndex}`,
+                          `${
+                            item.name + 'arrayWithValue' + childIndex
+                          }-${index}`,
                           {
                             validateTrigger: ['change', 'blur'],
                             initialValue: child.value,
@@ -349,35 +356,30 @@
                   <span
                     style="position: absolute; right: 0px"
                     @click="
-                      () =>
-                        reduceMultiple(item.name, childIndex, 'multipleWithKey')
+                      () => reduceMultiple(item.name, index, 'multipleWithMap')
                     "
+                    v-if="index && !childIndex"
                   >
-                    <svg-icon
-                      v-if="item.value.length > 1"
-                      icon-class="reduce-icon"
-                      class="reduce-icon"
-                    />
+                    <svg-icon icon-class="reduce-icon" class="reduce-icon" />
                   </span>
                 </a-row>
               </a-form-item>
-              <a-form-item
-                class="form-multiple-item"
-                v-bind="
-                  item.value.length === 0
-                    ? labelCol
-                    : formItemLayoutWithOutLabel
-                "
-                :label="item.value.length === 0 ? item.label : ''"
-              >
-                <a-button
-                  type="dashed"
-                  @click="() => addMultiple(item.name, 'multipleWithKey')"
-                >
-                  <a-icon type="plus" />Add field
-                </a-button>
-              </a-form-item>
             </div>
+
+            <a-form-item
+              class="form-multiple-item"
+              v-bind="
+                item.value.length === 0 ? labelCol : formItemLayoutWithOutLabel
+              "
+              :label="item.value.length === 0 ? item.label : ''"
+            >
+              <a-button
+                type="dashed"
+                @click="() => addMultiple(item.name, 'multipleWithMap')"
+              >
+                <a-icon type="plus" />Add field
+              </a-button>
+            </a-form-item>
 
             <div class="filed-name-tips">
               <span class="filed-name-tips-word" :title="item.name">{{
@@ -512,6 +514,7 @@ export default {
             return false;
           }
           for (var i in fileds) {
+            // console.warn("i", i);
             if (
               i.includes("multiple") ||
               i.includes("arrayWithKey") ||
@@ -534,17 +537,32 @@ export default {
                   if (i.includes("multiple")) {
                     item.value[Number(splitArr[1])] = fileds[i];
                   }
+
                   if (i.includes("arrayWithKey")) {
-                    item.value[Number(splitArr[1])].key = fileds[i];
+                    let index = splitArr[1];
+                    index = index.split("-");
+                    if (index.length > 1) {
+                      item.value[Number(index[1])][Number(index[0])].key =
+                        fileds[i];
+                    } else {
+                      item.value[Number(index[0])].key = fileds[i];
+                    }
                   }
                   if (i.includes("arrayWithValue")) {
-                    item.value[Number(splitArr[1])].value = fileds[i];
+                    let index = splitArr[1];
+                    index = index.split("-");
+                    if (index.length > 1) {
+                      item.value[Number(index[1])][Number(index[0])].value =
+                        fileds[i];
+                    } else {
+                      item.value[Number(index[0])].value = fileds[i];
+                    }
                   }
-                  if (i.includes("multipleWithMap")) {
-                    console.log("fileds", fileds);
-                    // item.value[Number(splitArr[1])].value = fileds[i];
-                    // item.value[splitArr[0]]
-                  }
+                  // if (i.includes("multipleWithMap")) {
+                  //   console.log("fileds", fileds);
+                  //   // item.value[Number(splitArr[1])].value = fileds[i];
+                  //   // item.value[splitArr[0]]
+                  // }
                 }
               });
               self.initFormFiledFlag = true;
@@ -635,6 +653,21 @@ export default {
               key: "",
               value: "",
             });
+          } else if (["multipleWithMap"].includes(type)) {
+            item.value.push([
+              {
+                key: "role",
+                value: "",
+              },
+              {
+                key: "name",
+                value: "",
+              },
+              {
+                key: "key",
+                value: "",
+              },
+            ]);
           } else {
             item.value.push("");
           }
@@ -655,6 +688,15 @@ export default {
           if (item.type === "multiple") {
             item.value.map((child, childIndex) => {
               obj[`${item.name + "multiple" + childIndex}`] = child;
+            });
+          } else if (item.type === "multipleWithMap") {
+            item.value.map((child, index) => {
+              child.map((val, childIndex) => {
+                obj[`${item.name + "arrayWithKey" + childIndex}-${index}`] =
+                  val.key;
+                obj[`${item.name + "arrayWithValue" + childIndex}-${index}`] =
+                  val.value;
+              });
             });
           }
           var keys = Object.keys(obj);
@@ -688,7 +730,18 @@ export default {
     }
     .form-item-container {
       position: relative;
-      // margin-bottom: 6px;
+
+      .multipleWithMap {
+        /deep/.lastitem {
+          // margin-bottom: 10px;
+
+          > div {
+            border-bottom: 1px solid #eee;
+            margin-bottom: 10px;
+          }
+        }
+      }
+
       .filed-name-tips {
         display: flex;
         align-items: center;
