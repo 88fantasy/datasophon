@@ -25,15 +25,39 @@
 -->
 <template>
   <div class="common-template steps">
-    <a-form :label-col="labelCol" :wrapper-col="wrapperCol" :form="form" class="form-content mgh160">
+    <a-form
+      :label-col="labelCol"
+      :wrapper-col="wrapperCol"
+      :form="form"
+      class="form-content mgh160"
+    >
       <div v-for="(item, index) in testData" :key="index">
-        <div class="form-item-container" v-if="!['multipleWithKey', 'multiple', 'multipleSelect'].includes(item.type)">
+        <div
+          class="form-item-container"
+          v-if="
+            !['multipleWithKey', 'multipleSelect', 'multipleWithMap'].includes(
+              item.type
+            ) && !invokeMapShowMultiply(item)
+          "
+        >
           <a-form-item :label="item.label">
-            <a-input v-if="item.type==='input'" v-decorator="[
-            `${item.name}`,
-            // { validator: checkName }
-            { initialValue: item.value+'',rules: [{ required: item.required, message: `${item.label}不能为空!` }] },
-          ]" placeholder="请输入" />
+            <a-input
+              v-if="item.type === 'input'"
+              v-decorator="[
+                `${item.name}`,
+                // { validator: checkName }
+                {
+                  initialValue: item.value + '',
+                  rules: [
+                    {
+                      required: item.required,
+                      message: `${item.label}不能为空!`,
+                    },
+                  ],
+                },
+              ]"
+              placeholder="请输入"
+            />
             <a-input
               v-if="item.type === 'password'"
               type="password"
@@ -51,122 +75,361 @@
                 },
               ]"
             />
-            <a-slider v-if="item.type==='slider'" :marks="marks(item)" :min="item.minValue" :max="item.maxValue" style="width: 96%;display: inline-block" v-decorator="[`${item.name}`,{initialValue: item.value? Number(item.value) : 0}]" />
-            <a-switch v-if="item.type==='switch'" v-decorator="[`${item.name}`, { valuePropName: 'checked', initialValue: item.value }]"></a-switch>
-            <a-select v-if="item.type==='select'" v-decorator="[
-           `${item.name}`,
-          {initialValue:item.value, rules: [{ required: item.required, message: `${item.label}不能为空!` }] },
-        ]" placeholder="请选择">
-              <a-select-option v-for="(child, childIndex) in item.selectValue" :key="childIndex" :value="child">{{child}}</a-select-option>
+            <a-slider
+              v-if="item.type === 'slider'"
+              :marks="marks(item)"
+              :min="item.minValue"
+              :max="item.maxValue"
+              style="width: 96%; display: inline-block"
+              v-decorator="[
+                `${item.name}`,
+                { initialValue: item.value ? Number(item.value) : 0 },
+              ]"
+            />
+            <a-switch
+              v-if="item.type === 'switch'"
+              v-decorator="[
+                `${item.name}`,
+                { valuePropName: 'checked', initialValue: item.value },
+              ]"
+            ></a-switch>
+            <a-select
+              v-if="item.type === 'select'"
+              v-decorator="[
+                `${item.name}`,
+                {
+                  initialValue: item.value,
+                  rules: [
+                    {
+                      required: item.required,
+                      message: `${item.label}不能为空!`,
+                    },
+                  ],
+                },
+              ]"
+              placeholder="请选择"
+            >
+              <a-select-option
+                v-for="(child, childIndex) in item.selectValue"
+                :key="childIndex"
+                :value="child"
+                >{{ child }}</a-select-option
+              >
             </a-select>
             <a-tooltip v-if="item.description">
               <template slot="title">
-                <span>{{item.description}}</span>
+                <span>{{ item.description }}</span>
               </template>
-              <a-icon :class="['mgl10','filed-name-tips-icon', item.type === 'slider' ? 'slider-icon' : '']" type="question-circle-o" />
+              <a-icon
+                :class="[
+                  'mgl10',
+                  'filed-name-tips-icon',
+                  item.type === 'slider' ? 'slider-icon' : '',
+                ]"
+                type="question-circle-o"
+              />
             </a-tooltip>
           </a-form-item>
           <div class="filed-name-tips">
-            <span class="filed-name-tips-word" :title="item.name">{{item.name.replaceAll("!", ".")}}</span>
+            <span class="filed-name-tips-word" :title="item.name">{{
+              item.name.replaceAll("!", ".")
+            }}</span>
           </div>
         </div>
         <div v-else>
-          <div v-if="['multiple'].includes(item.type)" class="form-item-container">
-            <a-form-item v-for="(child, childIndex) in item.value" :key="childIndex" v-bind="childIndex === 0 ? labelCol : formItemLayoutWithOutLabel" :label="(childIndex === 0 || item.value.length === 0) ? item.label : ''">
-              <a-input v-decorator="[
-                `${item.name+'multiple'+childIndex}`,
-                {
-                validateTrigger: ['change', 'blur'],
-                initialValue: child,
-                rules: [
+          <div v-if="invokeMapShowMultiply(item)" class="form-item-container">
+            <a-form-item
+              v-for="(child, childIndex) in item.value"
+              :key="childIndex"
+              v-bind="childIndex === 0 ? labelCol : formItemLayoutWithOutLabel"
+              :label="
+                childIndex === 0 || item.value.length === 0 ? item.label : ''
+              "
+            >
+              <a-input
+                v-decorator="[
+                  `${item.name + 'multiple' + childIndex}`,
                   {
-                    required: item.required,
-                    whitespace: true,
-                    message: `${item.label}不能为空!`,
+                    validateTrigger: ['change', 'blur'],
+                    initialValue: child,
+                    rules: [
+                      {
+                        required: item.required,
+                        whitespace: true,
+                        message: `${item.label}不能为空!`,
+                      },
+                    ],
                   },
-                ],
-              }
-              ]" placeholder="请输入" />
-              <span @click="() => reduceMultiple(item.name, childIndex, 'multiple')">
-                <svg-icon v-if="item.value.length > 1" icon-class="reduce-icon" class="reduce-icon" />
+                ]"
+                placeholder="请输入"
+              />
+              <span
+                @click="() => reduceMultiple(item.name, childIndex, 'multiple')"
+              >
+                <svg-icon
+                  v-if="item.value.length > 1"
+                  icon-class="reduce-icon"
+                  class="reduce-icon"
+                />
               </span>
             </a-form-item>
-            <a-form-item class="form-multiple-item" v-bind="item.value.length === 0 ? labelCol : formItemLayoutWithOutLabel" :label="item.value.length === 0 ? item.label : ''">
-              <a-button type="dashed" @click="() => addMultiple(item.name, 'multiple')">
+
+            <a-form-item
+              class="form-multiple-item"
+              v-bind="
+                item.value.length === 0 ? labelCol : formItemLayoutWithOutLabel
+              "
+              :label="item.value.length === 0 ? item.label : ''"
+            >
+              <a-button
+                type="dashed"
+                @click="() => addMultiple(item.name, 'multiple')"
+              >
                 <a-icon type="plus" />Add field
               </a-button>
             </a-form-item>
             <div class="filed-name-tips">
-              <span class="filed-name-tips-word" :title="item.name">{{item.name.replaceAll("!", ".")}}</span>
+              <span class="filed-name-tips-word" :title="item.name">{{
+                item.name.replaceAll("!", ".")
+              }}</span>
             </div>
           </div>
-          <div v-if="['multipleWithKey'].includes(item.type)" class="form-item-container">
-            <a-form-item v-for="(child, childIndex) in item.value" style="margin-bottom: 0px" :key="childIndex" :required="item.required" v-bind="childIndex === 0 ? labelCol : formItemLayoutWithOutLabel" :label="childIndex === 0 || item.value.length === 0  ? item.label : ''">
+          <div
+            v-if="['multipleWithKey'].includes(item.type)"
+            class="form-item-container"
+          >
+            <a-form-item
+              v-for="(child, childIndex) in item.value"
+              style="margin-bottom: 0px"
+              :key="childIndex"
+              :required="item.required"
+              v-bind="childIndex === 0 ? labelCol : formItemLayoutWithOutLabel"
+              :label="
+                childIndex === 0 || item.value.length === 0 ? item.label : ''
+              "
+            >
               <a-row type="flex" style="position: relative">
                 <a-col :span="12">
-                  <a-form-item style="width:97%">
-                    <a-input v-decorator="[
-                    `${item.name+'arrayWithKey'+childIndex}`,
-                    {
-                    validateTrigger: ['change', 'blur'],
-                    initialValue: child.key,
-                    rules: [
-                      {
-                        required: item.required,
-                        whitespace: true,
-                        message: `${item.label}不能为空!`,
-                      },
-                    ],
-                  }
-                  ]" placeholder="请输入" />
+                  <a-form-item style="width: 97%">
+                    <a-input
+                      v-decorator="[
+                        `${item.name + 'arrayWithKey' + childIndex}`,
+                        {
+                          validateTrigger: ['change', 'blur'],
+                          initialValue: child.key,
+                          rules: [
+                            {
+                              required: item.required,
+                              whitespace: true,
+                              message: `${item.label}不能为空!`,
+                            },
+                          ],
+                        },
+                      ]"
+                      placeholder="请输入"
+                    />
                   </a-form-item>
                 </a-col>
                 <a-col :span="12">
-                  <a-form-item style="width:97%">
-                    <a-input v-decorator="[
-                    `${item.name+'arrayWithValue'+childIndex}`,
-                    {
-                    validateTrigger: ['change', 'blur'],
-                    initialValue: child.value,
-                    rules: [
-                      {
-                        required: item.required,
-                        whitespace: true,
-                        message: `${item.label}不能为空!`,
-                      },
-                    ],
-                  }
-                  ]" placeholder="请输入" />
+                  <a-form-item style="width: 97%">
+                    <a-input
+                      v-decorator="[
+                        `${item.name + 'arrayWithValue' + childIndex}`,
+                        {
+                          validateTrigger: ['change', 'blur'],
+                          initialValue: child.value,
+                          rules: [
+                            {
+                              required: item.required,
+                              whitespace: true,
+                              message: `${item.label}不能为空!`,
+                            },
+                          ],
+                        },
+                      ]"
+                      placeholder="请输入"
+                    />
                   </a-form-item>
                 </a-col>
-                <span style="position: absolute; right: 0px" @click="() => reduceMultiple(item.name, childIndex, 'multipleWithKey')">
-                  <svg-icon v-if="item.value.length > 1" icon-class="reduce-icon" class="reduce-icon" />
+                <span
+                  style="position: absolute; right: 0px"
+                  @click="
+                    () =>
+                      reduceMultiple(item.name, childIndex, 'multipleWithKey')
+                  "
+                >
+                  <svg-icon
+                    v-if="item.value.length > 1"
+                    icon-class="reduce-icon"
+                    class="reduce-icon"
+                  />
                 </span>
               </a-row>
             </a-form-item>
-            <a-form-item class="form-multiple-item" v-bind="item.value.length === 0 ? labelCol : formItemLayoutWithOutLabel" :label="item.value.length === 0 ? item.label : ''">
-              <a-button type="dashed" @click="() => addMultiple(item.name, 'multipleWithKey')">
+            <a-form-item
+              class="form-multiple-item"
+              v-bind="
+                item.value.length === 0 ? labelCol : formItemLayoutWithOutLabel
+              "
+              :label="item.value.length === 0 ? item.label : ''"
+            >
+              <a-button
+                type="dashed"
+                @click="() => addMultiple(item.name, 'multipleWithKey')"
+              >
                 <a-icon type="plus" />Add field
               </a-button>
             </a-form-item>
             <div class="filed-name-tips">
-              <span class="filed-name-tips-word" :title="item.name">{{item.name.replaceAll("!", ".")}}</span>
+              <span class="filed-name-tips-word" :title="item.name">{{
+                item.name.replaceAll("!", ".")
+              }}</span>
             </div>
           </div>
-          <div v-if="['multipleSelect'].includes(item.type)" class="form-item-container">
+
+          <div
+            v-if="['multipleWithMap'].includes(item.type)"
+            class="form-item-container"
+          >
+            <div
+              v-for="(subItem, index) of item.value"
+              :key="index"
+              class="multipleWithMap"
+            >
+              <a-form-item
+                v-for="(child, childIndex) in subItem"
+                style="margin-bottom: 0px"
+                :key="childIndex"
+                :required="item.required"
+                v-bind="
+                  !childIndex && !index ? labelCol : formItemLayoutWithOutLabel
+                "
+                :label="!childIndex && !index ? item.label : ''"
+                :class="childIndex === subItem.length - 1 ? 'lastitem' : ''"
+              >
+                <a-row type="flex" style="position: relative">
+                  <a-col :span="12">
+                    <a-form-item style="width: 97%">
+                      <a-input
+                        readOnly
+                        v-decorator="[
+                          `${item.name + 'arrayWithKey' + childIndex}-${index}`,
+                          {
+                            validateTrigger: ['change', 'blur'],
+                            initialValue: child.key,
+                            rules: [
+                              {
+                                required: item.required,
+                                whitespace: true,
+                                message: `${item.label}不能为空!`,
+                              },
+                            ],
+                          },
+                        ]"
+                        placeholder="请输入"
+                      />
+                    </a-form-item>
+                  </a-col>
+                  <a-col :span="12">
+                    <a-form-item style="width: 97%">
+                      <a-input
+                        v-decorator="[
+                          `${
+                            item.name + 'arrayWithValue' + childIndex
+                          }-${index}`,
+                          {
+                            validateTrigger: ['change', 'blur'],
+                            initialValue: child.value,
+                            rules: [
+                              {
+                                required: item.required,
+                                whitespace: true,
+                                message: `${item.label}不能为空!`,
+                              },
+                            ],
+                          },
+                        ]"
+                        placeholder="请输入"
+                      />
+                    </a-form-item>
+                  </a-col>
+                  <span
+                    style="position: absolute; right: 0px"
+                    @click="
+                      () => reduceMultiple(item.name, index, 'multipleWithMap')
+                    "
+                    v-if="index && !childIndex"
+                  >
+                    <svg-icon icon-class="reduce-icon" class="reduce-icon" />
+                  </span>
+                </a-row>
+              </a-form-item>
+            </div>
+
+            <a-form-item
+              class="form-multiple-item"
+              v-bind="
+                item.value.length === 0 ? labelCol : formItemLayoutWithOutLabel
+              "
+              :label="item.value.length === 0 ? item.label : ''"
+            >
+              <a-button
+                type="dashed"
+                @click="() => addMultiple(item.name, 'multipleWithMap')"
+              >
+                <a-icon type="plus" />Add field
+              </a-button>
+            </a-form-item>
+
+            <div class="filed-name-tips">
+              <span class="filed-name-tips-word" :title="item.name">{{
+                item.name.replaceAll("!", ".")
+              }}</span>
+            </div>
+          </div>
+
+          <div
+            v-if="['multipleSelect'].includes(item.type)"
+            class="form-item-container"
+          >
             <a-form-item :label="item.label">
-              <a-select mode="multiple" v-decorator="[`${item.name}`, {initialValue:item.value, rules: [{ required: item.required, message: `${item.label}不能为空!` }] },]" placeholder="请选择">
-                <a-select-option v-for="(child, childIndex) in item.selectValue" :key="childIndex" :value="child">{{child}}</a-select-option>
+              <a-select
+                mode="multiple"
+                v-decorator="[
+                  `${item.name}`,
+                  {
+                    initialValue: item.value,
+                    rules: [
+                      {
+                        required: item.required,
+                        message: `${item.label}不能为空!`,
+                      },
+                    ],
+                  },
+                ]"
+                placeholder="请选择"
+              >
+                <a-select-option
+                  v-for="(child, childIndex) in item.selectValue"
+                  :key="childIndex"
+                  :value="child"
+                  >{{ child }}</a-select-option
+                >
               </a-select>
               <a-tooltip v-if="item.description">
                 <template slot="title">
-                  <span>{{item.description}}</span>
+                  <span>{{ item.description }}</span>
                 </template>
-                <a-icon class="mgl10 filed-name-tips-icon" type="question-circle-o" />
+                <a-icon
+                  class="mgl10 filed-name-tips-icon"
+                  type="question-circle-o"
+                />
               </a-tooltip>
             </a-form-item>
             <div class="filed-name-tips">
-              <span class="filed-name-tips-word" :title="item.name">{{item.name.replaceAll("!", ".")}}</span>
+              <span class="filed-name-tips-word" :title="item.name">{{
+                item.name.replaceAll("!", ".")
+              }}</span>
             </div>
           </div>
         </div>
@@ -175,12 +438,58 @@
   </div>
 </template>
 <script>
+function invokeInitStringArrayData(val) {
+  // 处理数据
+  //...
+
+  // data.forEach((val) => {
+  if (val.type === "input" && val.configType === "stringArray") {
+    // console.log("value", val);
+    if (val.defaultValue && !Array.isArray(val.defaultValue)) {
+      val.defaultValue = val.defaultValue.split(/,|;/);
+    }
+    if (!Array.isArray(val.value)) {
+      val.value = val.value.split(/,|;/);
+    }
+  }
+  // });
+  return val;
+}
+
+function invokeInitMultipleWithMapData(item) {
+  if (item.type === "multipleWithMap") {
+    const fn = (arr) => {
+      let mapArr = [];
+
+      arr.map((childItem, childIndex) => {
+        for (let key in childItem) {
+          let subArr = mapArr[childIndex];
+          if (!subArr) {
+            subArr = mapArr[childIndex] = [];
+          }
+          subArr.push({
+            key: key,
+            value: childItem[key],
+          });
+        }
+      });
+
+      return mapArr;
+    };
+
+    item.defaultValue = item.defaultValue && fn(item.defaultValue);
+    item.value = item.value && fn(item.value);
+  }
+
+  // return
+}
+
 export default {
   name: "CommonTemplate",
   components: {},
   props: { templateData: Array },
   data() {
-    const self = this
+    const self = this;
     return {
       testData: this.templateData,
       labelCol: {
@@ -201,35 +510,67 @@ export default {
       form: this.$form.createForm(this, {
         onValuesChange: function (props, fileds) {
           if (self.initFormFiledFlag) {
-            self.initFormFiledFlag = false
-            return false
+            self.initFormFiledFlag = false;
+            return false;
           }
           for (var i in fileds) {
-            if (i.includes('multiple') || i.includes('arrayWithKey') || i.includes('arrayWithValue')) {
-              console.log(fileds, 'sssss')
-              let splitArr = i.includes('multiple') ? i.split('multiple') :  i.includes('arrayWithKey') ? i.split('arrayWithKey') : i.split('arrayWithValue')
-              const name = splitArr[0]
-              let formData = self.testData
-              formData.forEach(item => {
+            // console.warn("i", i);
+            if (
+              i.includes("multiple") ||
+              i.includes("arrayWithKey") ||
+              i.includes("arrayWithValue") ||
+              ["multipleWithMap"].includes("i")
+            ) {
+              let splitArr = i.includes("multiple")
+                ? i.split("multiple")
+                : i.includes("arrayWithKey")
+                ? i.split("arrayWithKey")
+                : i.split("arrayWithValue")
+                ? i.split("arrayWithValue")
+                : i.split("multipleWithMap");
+
+              const name = splitArr[0];
+              let formData = self.testData;
+              formData.forEach((item) => {
                 if (item.name === name) {
                   // item.value
-                  if (i.includes('multiple')) {
-                    item.value[Number(splitArr[1])] = fileds[i]
+                  if (i.includes("multiple")) {
+                    item.value[Number(splitArr[1])] = fileds[i];
                   }
-                  if (i.includes('arrayWithKey')) {
-                    item.value[Number(splitArr[1])].key = fileds[i]
+
+                  if (i.includes("arrayWithKey")) {
+                    let index = splitArr[1];
+                    index = index.split("-");
+                    if (index.length > 1) {
+                      item.value[Number(index[1])][Number(index[0])].key =
+                        fileds[i];
+                    } else {
+                      item.value[Number(index[0])].key = fileds[i];
+                    }
                   }
-                  if (i.includes('arrayWithValue')) {
-                    item.value[Number(splitArr[1])].value = fileds[i]
+                  if (i.includes("arrayWithValue")) {
+                    let index = splitArr[1];
+                    index = index.split("-");
+                    if (index.length > 1) {
+                      item.value[Number(index[1])][Number(index[0])].value =
+                        fileds[i];
+                    } else {
+                      item.value[Number(index[0])].value = fileds[i];
+                    }
                   }
+                  // if (i.includes("multipleWithMap")) {
+                  //   console.log("fileds", fileds);
+                  //   // item.value[Number(splitArr[1])].value = fileds[i];
+                  //   // item.value[splitArr[0]]
+                  // }
                 }
-              })
-              self.initFormFiledFlag = true
-              self.testData = formData
-              self.form.getFieldsValue([`${i}`])
+              });
+              self.initFormFiledFlag = true;
+              self.testData = formData;
+              self.form.getFieldsValue([`${i}`]);
               self.form.setFieldsValue({
-                [`${i}`]: fileds[i]
-              })
+                [`${i}`]: fileds[i],
+              });
             }
           }
         },
@@ -239,6 +580,7 @@ export default {
   watch: {
     templateData: {
       handler(val) {
+        // console.log('val',val)
         this.testData = val;
         this.initFormData();
       },
@@ -247,10 +589,18 @@ export default {
     },
   },
   methods: {
+    invokeMapShowMultiply(item) {
+      const inputStringArray =
+        item.type === "input" && item.configType === "stringArray";
+      return ["multiple"].includes(item.type) || inputStringArray;
+    },
     initFormData() {
       let arr = _.cloneDeep(this.testData);
       let formData = arr.filter((item) => !item.hidden);
       formData.forEach((item, index) => {
+        invokeInitStringArrayData(item);
+        invokeInitMultipleWithMapData(item);
+
         if (["multipleWithKey", "multiple"].includes(item.type)) {
           if (item.value.length === 0) {
             if (["multipleWithKey"].includes(item.type)) {
@@ -279,8 +629,11 @@ export default {
           item.value = [null, undefined, ""].includes(item.value)
             ? item.defaultValue
             : item.value;
-          if (Object.prototype.toString.call(item.value) === '[object Array]' && item.value.length === 0) {
-            item.value = item.defaultValue
+          if (
+            Object.prototype.toString.call(item.value) === "[object Array]" &&
+            item.value.length === 0
+          ) {
+            item.value = item.defaultValue;
           }
         }
       });
@@ -300,6 +653,21 @@ export default {
               key: "",
               value: "",
             });
+          } else if (["multipleWithMap"].includes(type)) {
+            item.value.push([
+              {
+                key: "role",
+                value: "",
+              },
+              {
+                key: "name",
+                value: "",
+              },
+              {
+                key: "key",
+                value: "",
+              },
+            ]);
           } else {
             item.value.push("");
           }
@@ -310,23 +678,32 @@ export default {
       this.testData.forEach((item) => {
         if (item.name === name) {
           item.value.splice(childIndex, 1);
-          var obj = {}
-          if (item.type === 'multipleWithKey') {
+          var obj = {};
+          if (item.type === "multipleWithKey") {
             item.value.map((child, childIndex) => {
-              obj[`${item.name+'arrayWithKey'+childIndex}`]= child.key
-              obj[`${item.name+'arrayWithValue'+childIndex}`]= child.value
-            })
+              obj[`${item.name + "arrayWithKey" + childIndex}`] = child.key;
+              obj[`${item.name + "arrayWithValue" + childIndex}`] = child.value;
+            });
           }
-          if (item.type === 'multiple') {
+          if (item.type === "multiple") {
             item.value.map((child, childIndex) => {
-              obj[`${item.name+'multiple'+childIndex}`]= child
-            })
+              obj[`${item.name + "multiple" + childIndex}`] = child;
+            });
+          } else if (item.type === "multipleWithMap") {
+            item.value.map((child, index) => {
+              child.map((val, childIndex) => {
+                obj[`${item.name + "arrayWithKey" + childIndex}-${index}`] =
+                  val.key;
+                obj[`${item.name + "arrayWithValue" + childIndex}-${index}`] =
+                  val.value;
+              });
+            });
           }
-          var keys = Object.keys(obj)
-          this.form.getFieldsValue([...keys])
+          var keys = Object.keys(obj);
+          this.form.getFieldsValue([...keys]);
           this.form.setFieldsValue({
-            ...obj
-          })
+            ...obj,
+          });
         }
       });
     },
@@ -353,7 +730,18 @@ export default {
     }
     .form-item-container {
       position: relative;
-      // margin-bottom: 6px;
+
+      .multipleWithMap {
+        /deep/.lastitem {
+          // margin-bottom: 10px;
+
+          > div {
+            border-bottom: 1px solid #eee;
+            margin-bottom: 10px;
+          }
+        }
+      }
+
       .filed-name-tips {
         display: flex;
         align-items: center;
@@ -371,8 +759,8 @@ export default {
         }
       }
       .filed-name-tips-icon {
-          cursor: pointer;
-        }
+        cursor: pointer;
+      }
       .slider-icon {
         position: relative;
         top: -28px;

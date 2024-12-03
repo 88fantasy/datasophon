@@ -49,6 +49,7 @@
 import CommonTemplate from "@/components/commonTemplate/index";
 import { mapActions, mapState } from "vuex";
 import { de } from "date-fns/locale";
+import { invokeFormatMultipleWithMapData } from "@/utils/setting";
 
 export default {
   inject: ["handleCancel", "currentStepsAdd", "currentStepsSub", "clusterId"],
@@ -143,6 +144,10 @@ export default {
           });
         });
       }
+
+
+      invokeFormatMultipleWithMapData(this.templateData, obj);
+
       return obj;
     },
     handleMultipleData(a) {

@@ -26,46 +26,88 @@
 -->
 <template>
   <div class="service-setting steps">
-    <div class="flex-bewteen-container" style="flex-direction:row-reverse;">
-      <div class="w180" style="margin-right:23px;">
+    <div class="flex-bewteen-container" style="flex-direction: row-reverse">
+      <div class="w180" style="margin-right: 23px">
         版本：
-        <a-select placeholder="请选择" :value="currentVersion" @change="changeVersion" style="width:180px">
-          <a-select-option v-for="(child, childIndex) in verSionList" :key="childIndex" :value="child">{{child}}</a-select-option>
+        <a-select
+          placeholder="请选择"
+          :value="currentVersion"
+          @change="changeVersion"
+          style="width: 180px"
+        >
+          <a-select-option
+            v-for="(child, childIndex) in verSionList"
+            :key="childIndex"
+            :value="child"
+            >{{ child }}</a-select-option
+          >
         </a-select>
       </div>
     </div>
-    <div class="flex-bewteen-container" style="align-items: baseline; margin-top:10px;">
-      <a-spin :spinning="false" class=" w180  setting" style="display: grid;height:300px;">
-       <!-- <a-radio-group :default-value="currentId"  @change="changeCasting" style="margin-left:1px;" >
+    <div
+      class="flex-bewteen-container"
+      style="align-items: baseline; margin-top: 10px"
+    >
+      <a-spin
+        :spinning="false"
+        class="w180 setting"
+        style="display: grid; height: 300px"
+      >
+        <!-- <a-radio-group :default-value="currentId"  @change="changeCasting" style="margin-left:1px;" >
          <a-radio-button :value="item.id" v-for="(item, childIndex) in GroupList" :key="childIndex" :style="radioStyle" >
           {{item.roleGroupName}}
           </a-radio-button>
        </a-radio-group> -->
-        <div  v-for="(item, childIndex) in GroupList" :key="childIndex" @click="handlerClick(item,childIndex)" :class="[currentId==item.id ? 'active':'','system']">
-          <div :class="[currentId==item.id ? 'active':'','system']">
-            {{item.roleGroupName}}
-                <!-- <a-icon  type="sync" class="menu-sub-icon" @click="textCompare" /> -->
-            <a-popover trigger="hover" placement="rightTop" class="popover-index" overlayClassName="popover-index" :content="()=> getMoreMenu(item)">
-                <a-icon type="more" class="fr" />
-              </a-popover>
+        <div
+          v-for="(item, childIndex) in GroupList"
+          :key="childIndex"
+          @click="handlerClick(item, childIndex)"
+          :class="[currentId == item.id ? 'active' : '', 'system']"
+        >
+          <div :class="[currentId == item.id ? 'active' : '', 'system']">
+            {{ item.roleGroupName }}
+            <!-- <a-icon  type="sync" class="menu-sub-icon" @click="textCompare" /> -->
+            <a-popover
+              trigger="hover"
+              placement="rightTop"
+              class="popover-index"
+              overlayClassName="popover-index"
+              :content="() => getMoreMenu(item)"
+            >
+              <a-icon type="more" class="fr" />
+            </a-popover>
           </div>
         </div>
       </a-spin>
-      <a-spin :spinning="loading" class="steps-body" style="position: relative; flex:1; margin:0 20px">
-      <CommonTemplate :ref="'CommonTemplateRef'" :class="['']" :steps4Data="steps4Data" :templateData="templateData" />
-      <div class="footer">
-        <a-button class="mgr10" type="primary" @click="handleSubmit" :loading="loading">保存</a-button>
-      </div>
-     </a-spin>
-  
+      <a-spin
+        :spinning="loading"
+        class="steps-body"
+        style="position: relative; flex: 1; margin: 0 20px"
+      >
+        <CommonTemplate
+          :ref="'CommonTemplateRef'"
+          :class="['']"
+          :steps4Data="steps4Data"
+          :templateData="templateData"
+        />
+        <div class="footer">
+          <a-button
+            class="mgr10"
+            type="primary"
+            @click="handleSubmit"
+            :loading="loading"
+            >保存</a-button
+          >
+        </div>
+      </a-spin>
     </div>
-
   </div>
 </template>
 <script>
 import CommonTemplate from "@/components/commonTemplate/index";
 import { mapActions, mapState } from "vuex";
 import RenameGroup from "./renameGroup.vue";
+import { invokeFormatMultipleWithMapData } from "@/utils/setting";
 
 export default {
   components: { CommonTemplate },
@@ -77,8 +119,8 @@ export default {
       loading: false,
       templateData: [],
       verSionList: [],
-      GroupList:[],
-      currentId:undefined,
+      GroupList: [],
+      currentId: undefined,
       currentVersion: undefined,
       clusterId: Number(localStorage.getItem("clusterId") || -1),
       labelCol: {
@@ -90,12 +132,12 @@ export default {
         sm: { span: 19 },
       },
       radioStyle: {
-        display: 'block',
-        height: '30px',
-        lineHeight: '30px',
-        marginTop:'5px' ,
+        display: "block",
+        height: "30px",
+        lineHeight: "30px",
+        marginTop: "5px",
       },
-      value:0
+      value: 0,
     };
   },
   computed: {
@@ -125,19 +167,22 @@ export default {
         );
       });
     },
-    changeName (params) {
-      this.GroupList.forEach(item => {
-        if(item.id === params.roleGroupId) {
-          item.roleGroupName = params.roleGroupName
+    changeName(params) {
+      this.GroupList.forEach((item) => {
+        if (item.id === params.roleGroupId) {
+          item.roleGroupName = params.roleGroupName;
         }
-      })
+      });
     },
     renameCharacter(props) {
       const self = this;
       let width = 520;
-      let title =  "重命名";
+      let title = "重命名";
       let content = (
-        <RenameGroup grouopObj={props} callBack={(params) => self.changeName(params)} />
+        <RenameGroup
+          grouopObj={props}
+          callBack={(params) => self.changeName(params)}
+        />
       );
       this.$confirm({
         width: width,
@@ -149,10 +194,10 @@ export default {
         },
       });
     },
-    batchOpt (item, props) {
-      if (item.key === 'rename') {
-        this.renameCharacter(props)
-        return false
+    batchOpt(item, props) {
+      if (item.key === "rename") {
+        this.renameCharacter(props);
+        return false;
       }
       this.$confirm({
         width: 450,
@@ -170,7 +215,7 @@ export default {
         content: (
           <div style="margin-top:20px">
             <div style="padding:0 65px;font-size: 16px;color: #555555;">
-              {'确认删除吗？'}
+              {"确认删除吗？"}
             </div>
             <div style="margin-top:20px;text-align:right;padding:0 30px 30px 30px">
               <a-button
@@ -197,23 +242,25 @@ export default {
     },
     confirmDel(item, props) {
       let params = {
-        roleGroupId: props.id
+        roleGroupId: props.id,
       };
       this.$axiosPost(global.API.delGroup, params).then((res) => {
         this.$destroyAll();
         if (res.code === 200) {
           this.$message.success("操作成功");
-          this.GroupList = this.GroupList.filter(item => item.id !== props.id)
-          if (this.GroupList.length > 0 && this.currentId===props.id) {
+          this.GroupList = this.GroupList.filter(
+            (item) => item.id !== props.id
+          );
+          if (this.GroupList.length > 0 && this.currentId === props.id) {
             this.currentId = this.GroupList[0].id;
           }
         }
       });
     },
-    handlerClick(item,childIndex){
+    handlerClick(item, childIndex) {
       console.log(item);
-      this.currentId = item.id  
-      this.getConfigVersion()
+      this.currentId = item.id;
+      this.getConfigVersion();
     },
     handlearrayWithData(a) {
       let obj = {};
@@ -254,6 +301,8 @@ export default {
           });
         });
       }
+      invokeFormatMultipleWithMapData(this.templateData, obj);
+
       return obj;
     },
     handleMultipleData(a) {
@@ -283,20 +332,24 @@ export default {
           obj[f].push(a[vals[index]]);
         });
       }
+
+      // this.invokeFormatMultipleWithMapData(this.templateData, obj);
+
       return obj;
     },
     // 单个标签页的保存
     handleSubmit() {
-      const self = this
-      this.loading=true
+      const self = this;
+      this.loading = true;
       this.$refs[`CommonTemplateRef`].form.validateFields(
         async (err, values) => {
           if (!err) {
             let param = _.cloneDeep(this.templateData);
             const arrayWithData = this.handlearrayWithData(values);
             const multipleData = this.handleMultipleData(values);
+            // // const
             const formData = { ...values, ...arrayWithData, ...multipleData };
-            console.log(formData, "formDataformData");
+            console.log("formDataformData", values, arrayWithData);
             for (let name in formData) {
               param.forEach((item) => {
                 if (item.name === name) {
@@ -311,22 +364,26 @@ export default {
               (item) => !(!item.required && item.hidden)
             );
             console.log(arrayWithData, "arrayWithData", filterParam);
-            let serviceName = ''
-            const serviceId = this.$route.params.serviceId || ''
-            const menuData = JSON.parse(localStorage.getItem('menuData')) || []
-            const arr = menuData.filter(item => item.path === 'service-manage')
+            let serviceName = "";
+            const serviceId = this.$route.params.serviceId || "";
+            const menuData = JSON.parse(localStorage.getItem("menuData")) || [];
+            const arr = menuData.filter(
+              (item) => item.path === "service-manage"
+            );
             if (arr.length > 0) {
-              arr[0].children.map(item => {
-                if (item.meta.params.serviceId == serviceId) serviceName = item.name
-              })
+              arr[0].children.map((item) => {
+                if (item.meta.params.serviceId == serviceId)
+                  serviceName = item.name;
+              });
             }
             // 处理表单数据 将相同的key处理成数组
             let saveParam = {
               clusterId: this.clusterId,
               serviceName,
               serviceConfig: JSON.stringify(filterParam),
-              roleGroupId:this.currentId
+              roleGroupId: this.currentId,
             };
+            // console.log('saveParam',saveParam)
             // // 等待网络请求结束
             let res = await this.$axiosPost(
               global.API.saveServiceConfig,
@@ -334,8 +391,8 @@ export default {
             );
             if (res.code === 200) {
               this.$message.success("保存成功");
-              this.loading=false
-              this.getConfigVersion()
+              this.loading = false;
+              this.getConfigVersion();
               // this.getServiceRoleType()
             } else {
               // this.$message.error(res.msg || "保存失败");
@@ -348,41 +405,41 @@ export default {
       this.currentVersion = val;
       this.getServiceConfigOption();
     },
-    changeCasting(val){
+    changeCasting(val) {
       console.log(val.target.value);
-      this.currentId = val.target.value
-      this.getConfigVersion()
+      this.currentId = val.target.value;
+      this.getConfigVersion();
     },
-  
+
     //获取角色组
     getServiceRoleType() {
       this.loading = true;
-      const params={
+      const params = {
         serviceInstanceId: this.$route.params.serviceId,
-      }
+      };
       this.$axiosPost(global.API.getRoleGroupList, params).then((res) => {
-        if (res.code !== 200) return  //this.$message.error('获取角色组列表失败')
-        this.GroupList = res.data
+        if (res.code !== 200) return; //this.$message.error('获取角色组列表失败')
+        this.GroupList = res.data;
         if (this.GroupList.length > 0) {
           this.currentId = this.GroupList[0].id;
           //this.getServiceConfigOption( true);
         }
-        this.getConfigVersion()
-      })
+        this.getConfigVersion();
+      });
     },
     // 获取服务版本
     getConfigVersion() {
       this.loading = true;
       const params = {
         serviceInstanceId: this.$route.params.serviceId,
-        roleGroupId: JSON.stringify(this.currentId)||'',
+        roleGroupId: JSON.stringify(this.currentId) || "",
       };
       this.$axiosPost(global.API.getConfigVersion, params).then((res) => {
         if (res.code === 200) {
           this.verSionList = res.data;
           if (this.verSionList.length > 0) {
             this.currentVersion = this.verSionList[0];
-            this.getServiceConfigOption( true);
+            this.getServiceConfigOption(true);
           }
         }
       });
@@ -394,11 +451,35 @@ export default {
         serviceInstanceId: this.$route.params.serviceId,
         page: 1,
         pageSize: 10000,
-        "version":this.currentVersion||'',
-        "roleGroupId": JSON.stringify(this.currentId)||'',
+        version: this.currentVersion || "",
+        roleGroupId: JSON.stringify(this.currentId) || "",
       };
       this.$axiosPost(global.API.getConfigInfo, params).then((res) => {
         if (res.code === 200) {
+          // res.data.push({
+          //   name: "apisixAdminKey",
+          //   label: "管理密钥",
+          //   key: "apisix.admin_key",
+          //   description: "",
+          //   required: true,
+          //   type: "multipleWithMap",
+          //   value: [
+          //     {
+          //       name: "admin",
+          //       key: "edd1c9f034335f136f87ad84b625c8f1",
+          //       role: "admin",
+          //     },
+          //   ],
+          //   configurableInWizard: true,
+          //   hidden: false,
+          //   defaultValue: [
+          //     {
+          //       name: "admin",
+          //       key: "edd1c9f034335f136f87ad84b625c8f1",
+          //       role: "admin",
+          //     },
+          //   ],
+          // });
           self.templateData = self.handlerTemplate(res.data);
           self.loading = false;
         }
@@ -413,7 +494,7 @@ export default {
   },
   created() {},
   mounted() {
-    this.getServiceRoleType()
+    this.getServiceRoleType();
     // setTimeout(()=>{
     //   this.getConfigVersion()
     // },1000)
@@ -425,37 +506,37 @@ export default {
   /deep/ .ant-spin-container {
     position: relative;
   }
-  .setting{
-     overflow-y: auto;
-     font-size: 12px;
-     padding-left: 20px;
-     color: #000;
-     .active{
+  .setting {
+    overflow-y: auto;
+    font-size: 12px;
+    padding-left: 20px;
+    color: #000;
+    .active {
       color: #fff !important;
       background-color: #2872e0;
-      &.ant-form-item{
+      &.ant-form-item {
         color: #fff;
       }
-     }
-     .system{
-        padding: 4px 0 ;
-        text-align: center;
-        cursor: pointer;
-        font-size: 14px;
+    }
+    .system {
+      padding: 4px 0;
+      text-align: center;
+      cursor: pointer;
+      font-size: 14px;
+      .fr {
+        float: right;
+        position: relative;
+        top: 4px;
+        right: 4px;
+        visibility: hidden;
+      }
+      &:hover {
         .fr {
-          float: right;
-          position: relative;
-          top: 4px;
-          right: 4px;
-          visibility: hidden;
+          visibility: visible;
         }
-        &:hover {
-          .fr {
-            visibility: visible;
-          }
-        }
-     }
-      &::-webkit-scrollbar {
+      }
+    }
+    &::-webkit-scrollbar {
       width: 3px;
       height: 1px;
     }
@@ -472,8 +553,8 @@ export default {
     }
   }
   .steps-body {
-   max-height: calc(100vh - 240px);
-   height: calc(100vh - 240px);
+    max-height: calc(100vh - 240px);
+    height: calc(100vh - 240px);
 
     border: 1px solid #e5e6e8;
     margin: 10px 0;
@@ -490,10 +571,12 @@ export default {
         width: 86px;
       }
       /deep/
-        .ant-btn.ant-btn-loading:not(.ant-btn-circle):not(.ant-btn-circle-outline):not(.ant-btn-icon-only) {
+        .ant-btn.ant-btn-loading:not(.ant-btn-circle):not(
+          .ant-btn-circle-outline
+        ):not(.ant-btn-icon-only) {
         padding-left: 20px;
       }
     }
   }
 }
-</style> 
+</style>

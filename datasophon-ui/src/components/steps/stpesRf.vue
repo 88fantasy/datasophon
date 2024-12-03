@@ -27,18 +27,54 @@
   <div class="steps-rf">
     <div class="steps-rf-container">
       <Steps1 ref="steps1Ref" v-if="stepsNumber === 1" :steps1="steps1Data" />
-      <Steps2 ref="steps2Ref" v-if="stepsNumber === 2" :steps1Data="steps1Data" />
+      <Steps2
+        ref="steps2Ref"
+        v-if="stepsNumber === 2"
+        :steps1Data="steps1Data"
+      />
       <Steps3 ref="steps3Ref" v-if="stepsNumber === 3" />
-      <Steps4 ref="steps4Ref" v-if="stepsNumber === 4" :steps4Data="steps4Data" />
-      <Steps5 ref="steps5Ref" v-if="stepsNumber === 5" :steps4Data="steps4Data" />
-      <Steps6 ref="steps6Ref" v-if="stepsNumber === 6" :steps4Data="steps4Data" />
-      <Steps7 ref="steps7Ref" v-if="stepsNumber === 7" :steps4Data="steps4Data" />
-      <Steps8 ref="steps8Ref" v-if="stepsNumber === 8" :steps4Data="steps4Data" />
+      <Steps4
+        ref="steps4Ref"
+        v-if="stepsNumber === 4"
+        :steps4Data="steps4Data"
+      />
+      <Steps5
+        ref="steps5Ref"
+        v-if="stepsNumber === 5"
+        :steps4Data="steps4Data"
+      />
+      <Steps6
+        ref="steps6Ref"
+        v-if="stepsNumber === 6"
+        :steps4Data="steps4Data"
+      />
+      <Steps7
+        ref="steps7Ref"
+        v-if="stepsNumber === 7"
+        :steps4Data="steps4Data"
+      />
+      <Steps8
+        ref="steps8Ref"
+        v-if="stepsNumber === 8"
+        :steps4Data="steps4Data"
+      />
     </div>
     <div class="footer">
       <a-button class="mgr10" @click="closeModal">取消</a-button>
-      <a-button v-if="stepsNumber > 1 && stepsNumber !== 8" class="mgr10" type="primary" @click="back">上一步</a-button>
-      <a-button class="mgr10" type="primary" :loading="nextLoading" @click="next">{{ currentSteps !== stepsList.length ? '下一步' : '完成'}}</a-button>
+      <a-button
+        v-if="stepsNumber > 1 && stepsNumber !== 8"
+        class="mgr10"
+        type="primary"
+        @click="back"
+        >上一步</a-button
+      >
+      <a-button
+        class="mgr10"
+        type="primary"
+        :loading="nextLoading"
+        @click="next"
+        >{{ currentSteps !== stepsList.length ? "下一步" : "完成" }}</a-button
+      >
     </div>
   </div>
 </template>
@@ -68,14 +104,27 @@ export default {
     Steps7,
     Steps8,
   },
-  props: { currentSteps: Number, stepsList: Array, interval: Number, stepsType: String, serviceData: Object },
-  inject: ["handleCancel", "currentStepsAdd", "currentStepsSub", "clusterId" , 'onSearch'],
+  props: {
+    currentSteps: Number,
+    stepsList: Array,
+    interval: Number,
+    stepsType: String,
+    serviceData: Object,
+  },
+  inject: [
+    "handleCancel",
+    "currentStepsAdd",
+    "currentStepsSub",
+    "clusterId",
+    "onSearch",
+  ],
   data() {
     return {
       nextLoading: false,
       steps1Data: {
         hosts: "",
         sshUser: "",
+        sshPass: "",
         sshPort: "",
       },
       steps4Data: {
@@ -89,18 +138,24 @@ export default {
       console.log(val, "asdsdsa");
     },
     stepsType: {
-      handler (val) {
-        if (val === 'service-example')  this.steps4Data = {...this.serviceData}
-        if (val === 'hostManage')  this.steps1Data = {...this.steps1Data, sshUser: 'root', 'sshPort': '22'} 
-
+      handler(val) {
+        if (val === "service-example")
+          this.steps4Data = { ...this.serviceData };
+        if (val === "hostManage")
+          this.steps1Data = {
+            ...this.steps1Data,
+            sshUser: "root",
+            sshPass: "",
+            sshPort: "22",
+          };
       },
-      immediate: true
-    }
+      immediate: true,
+    },
   },
   computed: {
-    stepsNumber () {
-      return this.currentSteps + this.interval
-    }
+    stepsNumber() {
+      return this.currentSteps + this.interval;
+    },
   },
   methods: {
     ...mapActions("steps", ["setClusterId"]),
@@ -143,7 +198,7 @@ export default {
           if (!flag) return false;
           if (this.stepsList.length === this.currentSteps) {
             this.handleCancel();
-            this.onSearch()
+            this.onSearch();
           } else {
             this.currentStepsAdd();
           }
@@ -151,30 +206,38 @@ export default {
       }
       if (this.stepsNumber === 4) {
         //  这个地方过滤掉已经回显的服务 只传递给下一步新选的服务
-        this.steps4Data.serviceIds = _.cloneDeep(this.$refs.steps4Ref.selectedRowKeys);
-        this.steps4Data.serviceNames = _.cloneDeep(this.$refs.steps4Ref.selectedRowNames);
-        let arr = this.$refs.steps4Ref.dataSource.filter(item => item.installed)
+        this.steps4Data.serviceIds = _.cloneDeep(
+          this.$refs.steps4Ref.selectedRowKeys
+        );
+        this.steps4Data.serviceNames = _.cloneDeep(
+          this.$refs.steps4Ref.selectedRowNames
+        );
+        let arr = this.$refs.steps4Ref.dataSource.filter(
+          (item) => item.installed
+        );
         arr.map((item, index) => {
-          let curIndex = this.steps4Data.serviceIds.indexOf(item.id)
+          let curIndex = this.steps4Data.serviceIds.indexOf(item.id);
           if (curIndex !== -1) {
-            let serviceId = this.steps4Data.serviceIds[curIndex]
-            let nameIndex = this.steps4Data.serviceNames.findIndex(nameItem => nameItem.serviceId === serviceId)
-            this.steps4Data.serviceIds.splice(curIndex, 1)
-            this.steps4Data.serviceNames.splice(nameIndex, 1)
+            let serviceId = this.steps4Data.serviceIds[curIndex];
+            let nameIndex = this.steps4Data.serviceNames.findIndex(
+              (nameItem) => nameItem.serviceId === serviceId
+            );
+            this.steps4Data.serviceIds.splice(curIndex, 1);
+            this.steps4Data.serviceNames.splice(nameIndex, 1);
           }
-        })
+        });
         // && arr.length < 1
         if (this.steps4Data.serviceIds.length < 1) {
           this.$message.warning("请至少选择一个服务");
           flag = false;
         }
-        await this.$axiosPost('/ddh/service/install/checkServiceDependency', {
+        await this.$axiosPost("/ddh/service/install/checkServiceDependency", {
           clusterId: this.clusterId,
-          serviceIds:this.steps4Data.serviceIds.join(',')
+          serviceIds: this.steps4Data.serviceIds.join(","),
         }).then((res) => {
-          flag = res.code == 200
-          if(res.code != 200)return true
-        })
+          flag = res.code == 200;
+          if (res.code != 200) return true;
+        });
       }
       if (this.stepsNumber === 5) {
         // flag = this.$refs.steps5Ref.handleSubmit();
@@ -270,7 +333,9 @@ export default {
       width: 86px;
     }
     /deep/
-      .ant-btn.ant-btn-loading:not(.ant-btn-circle):not(.ant-btn-circle-outline):not(.ant-btn-icon-only) {
+      .ant-btn.ant-btn-loading:not(.ant-btn-circle):not(
+        .ant-btn-circle-outline
+      ):not(.ant-btn-icon-only) {
       padding-left: 20px;
     }
   }
