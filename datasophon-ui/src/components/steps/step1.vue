@@ -64,9 +64,7 @@
             v-decorator="[
               `sshPass`,
               {
-                initialValue: steps1.sshPass,
-                rules: [{ required: true, message: `SSH密码不能为空!` }],
-              },
+                initialValue: steps1.sshPass              },
             ]"
             placeholder="请输入SSH密码"
             type="password"
