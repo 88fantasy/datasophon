@@ -75,8 +75,7 @@ public class InstallServiceHandler {
         this.frameCode = frameCode;
         this.serviceName = serviceName;
         this.serviceRoleName = serviceRoleName;
-        String loggerName = String.format("%s-%s-%s-%s", TaskConstants.TASK_LOG_LOGGER_NAME, frameCode, serviceName,
-                serviceRoleName);
+        String loggerName = String.format("%s-%s-%s-%s", TaskConstants.TASK_LOG_LOGGER_NAME, frameCode, serviceName, serviceRoleName);
         logger = LoggerFactory.getLogger(loggerName);
     }
 
@@ -88,9 +87,7 @@ public class InstallServiceHandler {
             String packagePath = destDir + packageName;
             String decompressPackageName = command.getDecompressPackageName();
 
-            Boolean needDownLoad =
-                    !Objects.equals(PropertyUtils.getString(Constants.MASTER_HOST), CacheUtils.get(Constants.HOSTNAME))
-                            && isNeedDownloadPkg(packagePath, command.getPackageMd5());
+            Boolean needDownLoad = !Objects.equals(PropertyUtils.getString(Constants.MASTER_HOST), CacheUtils.get(Constants.HOSTNAME)) && isNeedDownloadPkg(packagePath, command.getPackageMd5());
 
             if (Boolean.TRUE.equals(needDownLoad)) {
                 downloadPkg(packageName, packagePath);
@@ -102,8 +99,7 @@ public class InstallServiceHandler {
                     for (Map<String, Object> strategy : command.getResourceStrategies()) {
                         String type = (String) strategy.get(ResourceStrategy.TYPE_KEY);
                         Class<? extends ResourceStrategy> clazz = cache.getOrDefault(type, EmptyStrategy.class);
-                        ResourceStrategy rs = BeanUtil.toBean(strategy, clazz,
-                                CopyOptions.create().ignoreError());
+                        ResourceStrategy rs = BeanUtil.toBean(strategy, clazz, CopyOptions.create().ignoreError());
                         rs.setLogger(logger);
                         rs.setFrameCode(frameCode);
                         rs.setService(serviceName);
@@ -118,19 +114,14 @@ public class InstallServiceHandler {
                 }
 
                 if (Objects.nonNull(command.getRunAs())) {
-                    ExecResult chownResult = ShellUtils.execShell(
-                            " chown -R " + command.getRunAs().getUser() + ":" + command.getRunAs().getGroup() + " "
-                                    + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                    ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getUser() + ":" + command.getRunAs().getGroup() + " " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
                     logger.info("chown {} {}", decompressPackageName, chownResult.getExecResult() ? "success" : "fail");
                 }
-                ExecResult chmodResult = ShellUtils
-                        .execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                ExecResult chmodResult = ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
                 logger.info("chmod {} {}", decompressPackageName, chmodResult.getExecResult() ? "success" : "fail");
                 if (decompressPackageName.contains(Constants.PROMETHEUS)) {
-                    String alertPath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName
-                            + Constants.SLASH + "alert_rules";
-                    ShellUtils.execShell("sed -i \"s/clusterIdValue/" + PropertyUtils.getString("clusterId")
-                            + "/g\" `grep clusterIdValue -rl " + alertPath + "`");
+                    String alertPath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + "alert_rules";
+                    ShellUtils.execShell("sed -i \"s/clusterIdValue/" + PropertyUtils.getString("clusterId") + "/g\" `grep clusterIdValue -rl " + alertPath + "`");
                 }
                 if (decompressPackageName.contains(HADOOP)) {
                     changeHadoopInstallPathPerm(decompressPackageName);
@@ -163,8 +154,7 @@ public class InstallServiceHandler {
     private void downloadPkg(String packageName, String packagePath) {
         String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
         String masterPort = PropertyUtils.getString(Constants.MASTER_WEB_PORT);
-        String downloadUrl = "http://" + masterHost + ":" + masterPort
-                + "/ddh/service/install/downloadPackage?packageName=" + packageName;
+        String downloadUrl = "http://" + masterHost + ":" + masterPort + "/ddh/service/install/downloadPackage?packageName=" + packageName;
 
         logger.info("download url is {}", downloadUrl);
 
@@ -177,8 +167,7 @@ public class InstallServiceHandler {
 
             @Override
             public void progress(long progressSize, long l1) {
-                Console.log("installed：{} / {} ", FileUtil.readableFileSize(progressSize),
-                        FileUtil.readableFileSize(l1));
+                Console.log("installed：{} / {} ", FileUtil.readableFileSize(progressSize), FileUtil.readableFileSize(l1));
             }
 
             @Override
@@ -198,7 +187,6 @@ public class InstallServiceHandler {
             String prefix = packageName.substring(0, packageName.length() - suffix.length() - 1);
             boolean success = false;
             try {
-                FileUtil.mkdir(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
 
                 ArrayList<String> command = new ArrayList<>();
 
@@ -207,21 +195,19 @@ public class InstallServiceHandler {
                     command.add("-zxvf");
                     command.add(sourceFile);
                     command.add("-C");
-                    command.add(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                    command.add(Constants.INSTALL_PATH);
                 } else if ("zip".equals(suffix)) {
                     command.add("unzip");
                     command.add("-d");
-                    command.add(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                    command.add(Constants.INSTALL_PATH);
                     command.add(sourceFile);
                 }
                 ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
                 success = execResult.getExecResult();
                 if (success) {
                     // 自动重命名
-                    if (FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + decompressPackageName)) {
-                        FileUtil.move(new File(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + decompressPackageName), new File(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName), false);
-                    } else if (FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + prefix)) {
-                        FileUtil.move(new File(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + prefix), new File(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName), false);
+                    if (FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + prefix)) {
+                        FileUtil.move(new File(Constants.INSTALL_PATH + Constants.SLASH + prefix), new File(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName), false);
                     }
                 }
             } finally {
@@ -235,20 +221,13 @@ public class InstallServiceHandler {
     }
 
     private void changeHadoopInstallPathPerm(String decompressPackageName) {
-        ShellUtils.execShell(
-                " chown -R  root:hadoop " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+        ShellUtils.execShell(" chown -R  root:hadoop " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
         ShellUtils.execShell(" chmod 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-        ShellUtils.execShell(
-                " chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/etc");
-        ShellUtils.execShell(" chmod 6050 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName
-                + "/bin/container-executor");
-        ShellUtils.execShell(" chmod 400 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName
-                + "/etc/hadoop/container-executor.cfg");
-        ShellUtils.execShell(" chown -R yarn:hadoop " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName
-                + "/logs/userlogs");
-        ShellUtils.execShell(
-                " chmod 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/logs/userlogs");
-        ShellUtils.execShell(" ln -s " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + " "
-                + Constants.INSTALL_PATH + Constants.SLASH + "hadoop");
+        ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/etc");
+        ShellUtils.execShell(" chmod 6050 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/bin/container-executor");
+        ShellUtils.execShell(" chmod 400 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/etc/hadoop/container-executor.cfg");
+        ShellUtils.execShell(" chown -R yarn:hadoop " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/logs/userlogs");
+        ShellUtils.execShell(" chmod 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/logs/userlogs");
+        ShellUtils.execShell(" ln -s " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + " " + Constants.INSTALL_PATH + Constants.SLASH + "hadoop");
     }
 }
