@@ -34,7 +34,7 @@ public class DownloadStrategy extends ResourceStrategy {
         File file = new File(basePath + Constants.SLASH + to);
         if (file.exists() && FileUtils.md5(file).equals(md5)) {
             logger.info("resource {}  existed", to);
-            return null;
+            return ExecResult.success();
         }
         
         logger.info("start to download resource : {}", from);
