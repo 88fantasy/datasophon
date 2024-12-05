@@ -31,7 +31,7 @@
         "type": "download",
         "from": "script/control.sh",
         "to": "control.sh",
-        "md5": "0444a23a00de1ca5b5a094537be6fc73"
+        "md5": "31179a30dd4d8c3314a25eb32ddc0c7f"
       },{
         "type": "download",
         "from": "data/grafana.db",
