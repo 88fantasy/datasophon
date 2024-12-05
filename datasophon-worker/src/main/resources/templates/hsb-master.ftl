@@ -8,7 +8,7 @@ jasypt:
 
 ## tomcat config
 server:
-  port: ${bsbServerPort}
+  port: ${hsbServerPort}
   tomcat:
     accept-count: 1024
 spring:
