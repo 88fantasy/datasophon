@@ -4,6 +4,7 @@ import cn.hutool.core.io.IoUtil;
 import com.datasophon.common.enums.SSHAuthType;
 import com.jcraft.jsch.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -18,6 +19,9 @@ public class JschUtils {
         JSch jSch = new JSch();
         Session session;
         try {
+            if(StringUtils.isEmpty(userName)) {
+                userName = "root";
+            }
             // 创建连接
             log.info("正在连接服务器{}@{}", userName, ip);
             session = jSch.getSession(userName, ip, port);
