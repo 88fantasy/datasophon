@@ -41,7 +41,7 @@ public interface ClusterServiceCommandHostCommandService extends IService<Cluste
     
     void updateByHostCommandId(ClusterServiceCommandHostCommandEntity hostCommand);
     
-    Integer getHostCommandSizeByHostnameAndCommandHostId(String hostname, String commandHostId);
+    Long getHostCommandSizeByHostnameAndCommandHostId(String hostname, String commandHostId);
     
     Integer getHostCommandTotalProgressByHostnameAndCommandHostId(String hostname, String commandHostId);
     

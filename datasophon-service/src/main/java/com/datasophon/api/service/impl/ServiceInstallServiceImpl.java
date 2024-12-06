@@ -517,13 +517,13 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     
     private ClusterServiceInstanceRoleGroup saveNewRoleGroup(
                                                              ClusterServiceInstanceEntity serviceInstanceEntity) {
-        int count =
+        long count =
                 roleGroupService.count(
                         new QueryWrapper<ClusterServiceInstanceRoleGroup>()
                                 .eq(Constants.ROLE_GROUP_TYPE, "auto")
                                 .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceEntity.getId()));
         ClusterServiceInstanceRoleGroup roleGroup = new ClusterServiceInstanceRoleGroup();
-        int num = count + 1;
+        long num = count + 1;
         roleGroup.setRoleGroupName("RoleGroup" + num);
         roleGroup.setServiceInstanceId(serviceInstanceEntity.getId());
         roleGroup.setServiceName(serviceInstanceEntity.getServiceName());

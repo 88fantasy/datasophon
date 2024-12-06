@@ -193,7 +193,7 @@ public class ClusterServiceCommandServiceImpl
         List<ClusterServiceCommandEntity> list = this.list(new QueryWrapper<ClusterServiceCommandEntity>()
                 .eq(Constants.CLUSTER_ID, clusterId)
                 .orderByDesc(Constants.CREATE_TIME).last("limit " + offset + "," + pageSize));
-        Integer total = this.count(new QueryWrapper<ClusterServiceCommandEntity>()
+        Long total = this.count(new QueryWrapper<ClusterServiceCommandEntity>()
                 .eq(Constants.CLUSTER_ID, clusterId));
         for (ClusterServiceCommandEntity commandEntity : list) {
             commandEntity.setCommandStateCode(commandEntity.getCommandState().getValue());

@@ -49,9 +49,8 @@ public class ClusterUserGroupServiceImpl extends ServiceImpl<ClusterUserGroupMap
     private ClusterUserService userService;
     
     @Override
-    public Integer countGroupUserNum(Integer groupId) {
-        int count = this.count(new QueryWrapper<ClusterUserGroup>().eq(Constants.GROUP_ID, groupId));
-        return count;
+    public Long countGroupUserNum(Integer groupId) {
+        return this.count(new QueryWrapper<ClusterUserGroup>().eq(Constants.GROUP_ID, groupId));
     }
     
     @Override

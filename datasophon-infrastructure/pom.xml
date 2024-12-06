@@ -50,9 +50,8 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>icu.mhb</groupId>
-            <artifactId>mybatis-plus-join</artifactId>
-            <version>${mybatis-plus-join}</version>
+            <groupId>com.github.yulichang</groupId>
+            <artifactId>mybatis-plus-join-boot-starter</artifactId>
         </dependency>
 
     </dependencies>

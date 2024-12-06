@@ -40,7 +40,7 @@
       "externalLink": {
         "name": "minio Ui",
         "label": "minio Ui",
-        "url": "http://${minioHost}:${minioConsolePort}"
+        "url": "http://${host}:${minioConsolePort}"
       }
     }
   ],

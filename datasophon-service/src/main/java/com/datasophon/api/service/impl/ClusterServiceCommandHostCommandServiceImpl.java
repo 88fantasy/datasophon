@@ -85,7 +85,7 @@ public class ClusterServiceCommandHostCommandServiceImpl
                         .eq(Constants.COMMAND_HOST_ID, commandHostId)
                         .orderByDesc(Constants.CREATE_TIME)
                         .last("limit " + offset + "," + pageSize));
-        int total = this.count(new QueryWrapper<ClusterServiceCommandHostCommandEntity>()
+        long total = this.count(new QueryWrapper<ClusterServiceCommandHostCommandEntity>()
                 .eq(Constants.COMMAND_HOST_ID, commandHostId));
         for (ClusterServiceCommandHostCommandEntity hostCommandEntity : list) {
             hostCommandEntity.setCommandStateCode(hostCommandEntity.getCommandState().getValue());
@@ -111,10 +111,9 @@ public class ClusterServiceCommandHostCommandServiceImpl
     }
     
     @Override
-    public Integer getHostCommandSizeByHostnameAndCommandHostId(String hostname, String commandHostId) {
-        int size = this.count(new QueryWrapper<ClusterServiceCommandHostCommandEntity>()
+    public Long getHostCommandSizeByHostnameAndCommandHostId(String hostname, String commandHostId) {
+        return this.count(new QueryWrapper<ClusterServiceCommandHostCommandEntity>()
                 .eq(Constants.HOSTNAME, hostname).eq(Constants.COMMAND_HOST_ID, commandHostId));
-        return size;
     }
     
     @Override

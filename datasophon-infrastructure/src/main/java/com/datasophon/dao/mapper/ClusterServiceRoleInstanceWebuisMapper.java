@@ -19,6 +19,7 @@ package com.datasophon.dao.mapper;
 
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceWebuis;
 
+import com.github.yulichang.base.MPJBaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -31,6 +32,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * @date 2022-04-24 16:25:17
  */
 @Mapper
-public interface ClusterServiceRoleInstanceWebuisMapper extends BaseMapper<ClusterServiceRoleInstanceWebuis> {
+public interface ClusterServiceRoleInstanceWebuisMapper extends MPJBaseMapper<ClusterServiceRoleInstanceWebuis> {
     
 }

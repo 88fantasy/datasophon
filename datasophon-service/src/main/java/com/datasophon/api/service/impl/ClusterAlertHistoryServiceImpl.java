@@ -89,7 +89,7 @@ public class ClusterAlertHistoryServiceImpl extends ServiceImpl<ClusterAlertHist
                 .eq(Constants.IS_ENABLED, 1)
                 .orderByDesc(Constants.CREATE_TIME)
                 .last("limit " + offset + "," + pageSize));
-        int count = this.count(new QueryWrapper<ClusterAlertHistory>()
+        long count = this.count(new QueryWrapper<ClusterAlertHistory>()
                 .eq(Constants.CLUSTER_ID, clusterId)
                 .eq(Constants.IS_ENABLED, 1));
         return Result.success(list).put(Constants.TOTAL, count);

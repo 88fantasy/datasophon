@@ -17,6 +17,7 @@
 
 package com.datasophon.worker.utils;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
@@ -35,7 +36,6 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.model.AlertItem;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.utils.ShellUtils;
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.cache.FileTemplateLoader;
 import freemarker.cache.MultiTemplateLoader;
@@ -90,6 +90,16 @@ public class FreemakerUtils {
         }
         config.setTemplateLoader(new MultiTemplateLoader(loaderList.toArray(new TemplateLoader[0])));
 
+
+        List<ServiceConfig> scs = configs.stream().map(serviceConfig -> {
+            ServiceConfig sc = new ServiceConfig();
+            BeanUtil.copyProperties(serviceConfig, sc);
+            if (StringUtils.isNotEmpty(sc.getKey())) {
+                sc.setName(sc.getKey());
+            }
+            return sc;
+        }).collect(Collectors.toList());
+
         Map<String, Object> data = new HashMap<>();
         // 得到模板对象
         String configFormat = generators.getConfigFormat();
@@ -110,13 +120,14 @@ public class FreemakerUtils {
             template = config.getTemplate("alert.yml");
         }
         if (Constants.YAML.equals(configFormat)) {
-            generateYaml(generators, configs, decompressPackageName);
+            generateYaml(generators, scs, decompressPackageName);
             return;
         }
         if (Constants.CUSTOM.equals(configFormat)) {
             template = config.getTemplate(generators.getTemplateName());
-            data = configs.stream().filter(e -> "map".equals(e.getConfigType()))
-                    .collect(Collectors.toMap(ServiceConfig::getName, ServiceConfig::getValue));
+            data = scs.stream().filter(e -> "map".equals(e.getConfigType()))
+                    .collect(Collectors.toMap(ServiceConfig::getName,
+                            ServiceConfig::getValue));
             if (Constants.NACOS.equals(generators.getType())) {
                 logger.info("生成nacos配置");
                 String outputDirectory = generators.getOutputDirectory();
@@ -145,10 +156,10 @@ public class FreemakerUtils {
                     return;
                 }
             }
-            configs = configs.stream().filter(e -> !"map".equals(e.getConfigType())).collect(Collectors.toList());
+            scs = scs.stream().filter(e -> !"map".equals(e.getConfigType())).collect(Collectors.toList());
         }
         logger.info("load template: {} success.", template.getSourceName());
-        data.put("itemList", configs);
+        data.put("itemList", scs);
         // 3.产生输出
         processOut(generators, template, data, decompressPackageName);
     }
@@ -269,7 +280,7 @@ public class FreemakerUtils {
         for (String outPutDir : generators.getOutputDirectory().split(StrUtil.COMMA)) {
             String outputFile = (outputDirectory.startsWith(Constants.SLASH) ? "" : packagePath) + outPutDir + Constants.SLASH + generators.getFilename();
             File file = writeToTemplate(template, data, outputFile);
-            if(generators.getFilename().endsWith(SH) && !file.canExecute()) {
+            if (generators.getFilename().endsWith(SH) && !file.canExecute()) {
                 file.setExecutable(true);
             }
         }

@@ -75,7 +75,7 @@ public class ClusterYarnQueueServiceImpl extends ServiceImpl<ClusterYarnQueueMap
                 .eq(Constants.CLUSTER_ID, clusterId)
                 .orderByDesc(Constants.CREATE_TIME)
                 .last("limit " + offset + "," + pageSize));
-        int count = this.count(new QueryWrapper<ClusterYarnQueue>()
+        long count = this.count(new QueryWrapper<ClusterYarnQueue>()
                 .eq(Constants.CLUSTER_ID, clusterId));
         for (ClusterYarnQueue clusterYarnQueue : list) {
             String minResources = clusterYarnQueue.getMinCore() + "Core," + clusterYarnQueue.getMinMem() + "GB";

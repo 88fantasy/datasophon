@@ -19,17 +19,21 @@
 
 package com.datasophon.api.service.impl;
 
+import cn.hutool.core.map.MapUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.ClusterServiceInstanceService;
-import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.Result;
+import com.datasophon.dao.entity.ClusterHostDO;
+import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceWebuis;
 import com.datasophon.dao.mapper.ClusterServiceRoleInstanceWebuisMapper;
+import com.datasophon.dao.model.WebuisVO;
+import com.github.yulichang.wrapper.MPJLambdaWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -54,13 +58,26 @@ public class ClusterServiceRoleInstanceWebuisServiceImpl
 
     @Override
     public Result getWebUis(Integer serviceInstanceId) {
-        List<ClusterServiceRoleInstanceWebuis> list = this.list(
-                new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
-                        .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
+
+        MPJLambdaWrapper<ClusterServiceRoleInstanceWebuis> wrapper = new MPJLambdaWrapper<ClusterServiceRoleInstanceWebuis>()
+                .selectAll(ClusterServiceRoleInstanceWebuis.class)
+                .select(ClusterHostDO::getIp)
+                .innerJoin(ClusterServiceRoleInstanceEntity.class, ClusterServiceRoleInstanceEntity::getId, ClusterServiceRoleInstanceWebuis::getServiceRoleInstanceId)
+                .innerJoin(ClusterHostDO.class, ClusterHostDO::getHostname, ClusterServiceRoleInstanceEntity::getHostname)
+                .eq(ClusterServiceRoleInstanceWebuis::getServiceInstanceId, serviceInstanceId);
+
+        List<WebuisVO> list = getBaseMapper().selectJoinList(WebuisVO.class, wrapper);
+
+//        List<ClusterServiceRoleInstanceWebuis> list = this.list(
+//                new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
+//                        .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
         Integer clusterId = clusterServiceInstanceService.getClusterId(serviceInstanceId);
         Map<String, String> globalVariables = GlobalVariables.get(clusterId);
         return Result.success(list.stream().peek(ui -> {
-            String newUrl = PlaceholderUtils.replacePlaceholders(ui.getWebUrl(), globalVariables,
+
+            String url = PlaceholderUtils.replacePlaceholders(ui.getWebUrl(), MapUtil.builder("${host}", ui.getIp()).build(),
+                    Constants.REGEX_VARIABLE);
+            String newUrl = PlaceholderUtils.replacePlaceholders(url, globalVariables,
                     Constants.REGEX_VARIABLE);
             ui.setWebUrl(newUrl);
         }).collect(Collectors.toList()));
