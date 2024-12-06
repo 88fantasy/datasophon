@@ -44,7 +44,8 @@ status(){
     if [ $? -eq 0 ]
     then
       # 发送GET请求到指定的URL
-      response=$(curl -s  http://127.0.0.1:18030/api/bootstrap)
+      port=$(awk -F " " '/^http_port/ {print $3}' $curdir/../conf/fe.conf)
+      response=$(curl -s  http://127.0.0.1:$port/api/bootstrap)
       # 检查返回值是否为200
       code=$(get_json "${response}" "code")
       if [ $code -eq 0 ]; then

@@ -44,7 +44,8 @@ status(){
     if [ $? -eq 0 ]
     then
       # 发送GET请求到指定的URL
-      response=$(curl -s  http://localhost:18040/api/health)
+      port=$(cat $curdir/../conf/be.conf  | grep webserver_port | awk -F "=" '{print $2}')
+      response=$(curl -s  http://127.0.0.1:${port}/api/health)
       # 检查返回值是否为200
       status=$(get_json "${response}" "status")
       if [ $status == "OK" ]; then
