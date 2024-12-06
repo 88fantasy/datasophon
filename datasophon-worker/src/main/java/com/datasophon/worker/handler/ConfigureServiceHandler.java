@@ -94,9 +94,13 @@ public class ConfigureServiceHandler {
                     if (StringUtils.isNotBlank(config.getType())) {
                         switch (config.getType()) {
                             case Constants.INPUT:
-                                String value = PlaceholderUtils.replacePlaceholders((String) config.getValue(),
-                                        paramMap, Constants.REGEX_VARIABLE);
-                                config.setValue(value);
+                                Object value = config.getValue();
+                                if (String.class.isAssignableFrom(value.getClass())) {
+                                    String value1 = PlaceholderUtils.replacePlaceholders((String) value,
+                                            paramMap, Constants.REGEX_VARIABLE);
+                                    config.setValue(value1);
+                                }
+
                                 break;
                             case Constants.MULTIPLE:
                                 conventToStr(config);

@@ -613,9 +613,14 @@ public class ProcessUtils {
                         Constants.REGEX_VARIABLE);
                 serviceConfig.setName(name);
 
-                String value = PlaceholderUtils.replacePlaceholders((String) serviceConfig.getValue(), globalVariables,
-                        Constants.REGEX_VARIABLE);
-                serviceConfig.setValue(value);
+
+                Object value = serviceConfig.getValue();
+                if (String.class.isAssignableFrom(value.getClass())) {
+                    String value1 = PlaceholderUtils.replacePlaceholders((String) value, globalVariables,
+                            Constants.REGEX_VARIABLE);
+                    serviceConfig.setValue(value1);
+                }
+
             }
         }
     }

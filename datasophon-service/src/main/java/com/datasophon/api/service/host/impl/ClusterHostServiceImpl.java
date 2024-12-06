@@ -114,14 +114,14 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
             QueryHostListPageDTO queryHostListPageDTO = new QueryHostListPageDTO();
             BeanUtils.copyProperties(clusterHostDO, queryHostListPageDTO);
             // 查询主机上服务角色数
-            int serviceRoleNum = roleInstanceService.count(new QueryWrapper<ClusterServiceRoleInstanceEntity>()
+            long serviceRoleNum = roleInstanceService.count(new QueryWrapper<ClusterServiceRoleInstanceEntity>()
                     .eq(Constants.HOSTNAME, clusterHostDO.getHostname()));
-            queryHostListPageDTO.setServiceRoleNum(serviceRoleNum);
+            queryHostListPageDTO.setServiceRoleNum((int) serviceRoleNum);
             queryHostListPageDTO.setHostState(clusterHostDO.getHostState().getValue());
             queryHostListPageDTO.setRack(rackMap.getOrDefault(queryHostListPageDTO.getRack(), "/default-rack"));
             hostListPageDTOS.add(queryHostListPageDTO);
         }
-        int count = this.count(new QueryWrapper<ClusterHostDO>().eq(Constants.CLUSTER_ID, clusterId)
+        long count = this.count(new QueryWrapper<ClusterHostDO>().eq(Constants.CLUSTER_ID, clusterId)
                 .eq(Constants.MANAGED, 1)
                 .eq(StringUtils.isNotBlank(cpuArchitecture), Constants.CPU_ARCHITECTURE, cpuArchitecture)
                 .eq(hostState != null, Constants.HOST_STATE, hostState)

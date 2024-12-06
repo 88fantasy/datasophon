@@ -45,7 +45,7 @@
       "externalLink": {
         "name": "BigData UI",
         "label": "BigData UI",
-        "url": "${bigdataServerAddress}/workbench-view#/login"
+        "url": "http://${host}:${bigdataServerPort}/bigdata/workbench-view#/login"
       }
     },
     {

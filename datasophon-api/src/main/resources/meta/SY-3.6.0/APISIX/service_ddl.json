@@ -64,7 +64,8 @@
         "includeParams": [
           "apisixPort",
           "apisixEtcdNodeList",
-          "apisixAdminKey"
+          "apisixAdminKey",
+          "apisixPrometheusAddr"
         ]
       }
     ]
@@ -115,10 +116,10 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "${apisixHost}",
+      "value": "${ip}",
       "configurableInWizard": false,
       "hidden": false,
-      "defaultValue": "${apisixHost}"
+      "defaultValue": "${ip}"
     }
   ]
 }

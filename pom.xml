@@ -30,7 +30,7 @@
         <module>datasophon-infrastructure</module>
         <module>datasophon-common</module>
         <module>datasophon-worker</module>
-        <!--<module>datasophon-ui</module>-->
+        <module>datasophon-ui</module>
         <module>datasophon-service</module>
         <module>datasophon-domain</module>
         <module>datasophon-cli</module>
@@ -42,7 +42,7 @@
         <akka.version>2.4.20</akka.version>
         <commons.httpclient>3.0.1</commons.httpclient>
         <commons.lang>3.12.0</commons.lang>
-        <druid.version>1.1.14</druid.version>
+        <druid.version>1.2.24</druid.version>
         <fastjson.version>1.2.83</fastjson.version>
         <hutool.version>5.8.31</hutool.version>
         <java.version>1.8</java.version>
@@ -51,9 +51,9 @@
         <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
         <maven-compiler-plugin.version>3.10.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
-        <mybatis-plus.version>3.2.0</mybatis-plus.version>
+        <mybatis-plus.version>3.5.9</mybatis-plus.version>
         <mybatis.spring.version>2.0.1</mybatis.spring.version>
-        <mybatis-plus-join>1.2.0</mybatis-plus-join>
+        <mybatis-plus-join>1.5.2</mybatis-plus-join>
         <mysql.connector.version>8.0.28</mysql.connector.version>
         <org.apache.sshd.version>2.9.3</org.apache.sshd.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -102,13 +102,8 @@
                 <version>${mybatis-plus.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.baomidou</groupId>
-                <artifactId>mybatis-plus</artifactId>
-                <version>${mybatis-plus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>icu.mhb</groupId>
-                <artifactId>mybatis-plus-join</artifactId>
+                <groupId>com.github.yulichang</groupId>
+                <artifactId>mybatis-plus-join-boot-starter</artifactId>
                 <version>${mybatis-plus-join}</version>
             </dependency>
             <dependency>

@@ -109,7 +109,7 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfoEnt
         List<UserInfoEntity> list = this.list(
                 new QueryWrapper<UserInfoEntity>().like(StringUtils.isNotBlank(username), Constants.USERNAME, username)
                         .last("limit " + offset + "," + pageSize));
-        int total = this.count(new QueryWrapper<UserInfoEntity>().like(StringUtils.isNotBlank(username),
+        long total = this.count(new QueryWrapper<UserInfoEntity>().like(StringUtils.isNotBlank(username),
                 Constants.USERNAME, username));
         return Result.success().put(Constants.DATA, list).put(Constants.TOTAL, total);
     }

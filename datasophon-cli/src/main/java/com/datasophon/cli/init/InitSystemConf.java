@@ -32,7 +32,14 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
             systemConf.removeIf(s -> s.contains("DefaultLimitNPROC"));
             systemConf.add("DefaultLimitNOFILE=1024000");
             systemConf.add("DefaultLimitNPROC=1024000");
-            executor.writeLines(systemConf, "/etc/systemd/system.conf");
+            ExecResult execResult = executor.writeLines(systemConf, "/etc/systemd/system.conf");
+            if(execResult.getExecResult()) {
+                log.error("system.conf has been initialized");
+            }
+            else {
+                log.error("system.conf write error: {}", execResult.getExecErrOut());
+                return false;
+            }
         }
         
         ExecResult limitsConfResult = executor.getFileString("/etc/security/limits.conf");
@@ -60,8 +67,15 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
             limitsConf.add("*            hard    nofile          1048576");
             limitsConf.add("*            soft    nproc           unlimited");
             limitsConf.add("*            hard    nproc           unlimited");
-            
-            executor.writeLines(limitsConf, "/etc/security/limits.conf");
+
+            ExecResult execLimit = executor.writeLines(limitsConf, "/etc/security/limits.conf");
+            if(execLimit.getExecResult()) {
+                log.error("limits.conf has been initialized");
+            }
+            else {
+                log.error("limits.conf write error: {}", execLimit.getExecErrOut());
+                return false;
+            }
         }
         
         OsType os = executor.getOs();
@@ -78,8 +92,16 @@ public class InitSystemConf extends InitBase implements InitNodeHandler {
             List<String> sysctlConf = Arrays.stream(sysctlConfResult.getExecOut().split("\n")).collect(Collectors.toList());
             sysctlConf.removeIf(s -> s.contains("kernel.pid_max"));
             sysctlConf.add("kernel.pid_max=1000000");
-            executor.writeLines(sysctlConf, "/etc/sysctl.conf");
+            ExecResult execResult = executor.writeLines(sysctlConf, "/etc/sysctl.conf");
+            if(execResult.getExecResult()) {
+                log.error("sysctl.conf has been initialized");
+            }
+            else {
+                log.error("sysctl.conf write error: {}", execResult.getExecErrOut());
+                return false;
+            }
         }
+
         ExecResult load = executor.execShell("sysctl -p");
         if (!load.getExecResult()) {
             return false;

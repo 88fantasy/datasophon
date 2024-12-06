@@ -101,12 +101,12 @@ public class ServiceCommandActor extends UntypedActor {
             ClusterServiceCommandHostEntity commandHost =
                     commandHostService.getOne(new QueryWrapper<ClusterServiceCommandHostEntity>()
                             .eq(Constants.COMMAND_HOST_ID, message.getCommandHostId()));
-            Integer size = service.getHostCommandSizeByHostnameAndCommandHostId(message.getHostname(),
+            Long size = service.getHostCommandSizeByHostnameAndCommandHostId(message.getHostname(),
                     message.getCommandHostId());
             Integer totalProgress = service.getHostCommandTotalProgressByHostnameAndCommandHostId(message.getHostname(),
                     message.getCommandHostId());
-            int progress = totalProgress / size;
-            commandHost.setCommandProgress(progress);
+            long progress = totalProgress / size;
+            commandHost.setCommandProgress((int) progress);
             
             if (progress == 100) {
                 List<ClusterServiceCommandHostCommandEntity> list =
@@ -124,12 +124,12 @@ public class ServiceCommandActor extends UntypedActor {
             }
             commandHostService.update(commandHost, new QueryWrapper<ClusterServiceCommandHostEntity>()
                     .eq(Constants.COMMAND_HOST_ID, message.getCommandHostId()));
-            Integer size1 = commandHostService.getCommandHostSizeByCommandId(message.getCommandId());
+            Long size1 = commandHostService.getCommandHostSizeByCommandId(message.getCommandId());
             Integer totalProgress1 = commandHostService.getCommandHostTotalProgressByCommandId(message.getCommandId());
-            int progress1 = totalProgress1 / size1;
+            long progress1 = totalProgress1 / size1;
             ClusterServiceCommandEntity command = commandService.lambdaQuery()
                     .eq(ClusterServiceCommandEntity::getCommandId, message.getCommandId()).one();
-            command.setCommandProgress(progress1);
+            command.setCommandProgress((int) progress1);
             if (progress1 == 100) {
                 command.setCommandState(CommandState.SUCCESS);
                 command.setEndTime(new Date());

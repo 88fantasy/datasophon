@@ -27,7 +27,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 public interface ClusterUserGroupService extends IService<ClusterUserGroup> {
     
-    Integer countGroupUserNum(Integer id);
+    Long countGroupUserNum(Integer id);
     
     void deleteByUser(Integer id);
     

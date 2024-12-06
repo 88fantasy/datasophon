@@ -130,7 +130,7 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
     @Override
     public Result deleteUserGroup(Integer id) {
         ClusterGroup clusterGroup = this.getById(id);
-        Integer num = userGroupService.countGroupUserNum(id);
+        Long num = userGroupService.countGroupUserNum(id);
         if (num > 0) {
             return Result.error(Status.USER_GROUP_TIPS_ONE.getMsg());
         }
@@ -172,7 +172,7 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
                 clusterGroup.setClusterUsers(clusterUsers);
             }
         }
-        int total = this.count(new QueryWrapper<ClusterGroup>()
+        long total = this.count(new QueryWrapper<ClusterGroup>()
                 .like(StringUtils.isNotBlank(groupName), Constants.GROUP_NAME, groupName)
                 .eq(Constants.CLUSTER_ID, clusterId));
         return Result.success(list).put(Constants.TOTAL, total);
