@@ -28,7 +28,7 @@ function start() {
   echo "starting juicefs"
 
 <#list juicefsMounts as item>
-$current_path/juicefs mount ${juicefsMeta} ${item.path} -d --log=$LOG_DIR/${item.log}
+  $current_path/juicefs mount -d "${juicefsMeta} ${item.path}" -d --log=$LOG_DIR/${item.log}
 </#list>
 
   echo "nohup $exec_command > $log 2>&1 &"
@@ -40,7 +40,7 @@ $current_path/juicefs mount ${juicefsMeta} ${item.path} -d --log=$LOG_DIR/${item
 function stop() {
 
 <#list juicefsMounts as item>
-$current_path/juicefs umount ${item.path} -f
+  $current_path/juicefs umount ${item.path} -f
 </#list>
 
 }
