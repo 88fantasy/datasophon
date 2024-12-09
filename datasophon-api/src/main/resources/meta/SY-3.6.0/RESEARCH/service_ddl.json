@@ -5,8 +5,8 @@
   "version": "2.0.0",
   "sortNum": 1,
   "dependencies":["NACOS"],
-  "packageName": "research-server-2.0.0.RELEASE-install.tar.gz",
-  "decompressPackageName": "research-server-2.0.0.RELEASE",
+  "packageName": "research-server-2.0.0-RELEASE-install.tar.gz",
+  "decompressPackageName": "research-server-2.0.0-RELEASE",
   "roles": [
     {
       "name": "ResearchPlatform",
@@ -108,10 +108,8 @@
           "researchNacosHosts",
           "researchNacosNamespace",
           "researchNacosGroup",
-          "researchFlywayEnabled",
-          "researchFlywayUrl",
-          "researchFlywayUser",
-          "researchFlywayPassword"
+          "researchMigrationEnabled",
+          "researchMigrationMapping"
         ]
       },
       {
@@ -127,10 +125,8 @@
           "researchNacosHosts",
           "researchNacosNamespace",
           "researchNacosGroup",
-          "researchFlywayEnabled",
-          "researchFlywayUrl",
-          "researchFlywayUser",
-          "researchFlywayPassword"
+          "researchMigrationEnabled",
+          "researchMigrationMapping"
         ]
       },
       {
@@ -455,10 +451,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "jdbc:mysql://${apiHost}:9030/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "value": "jdbc:mysql://${feMaster}:9030/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:9030/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${feMaster}:9030/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
     },
     {
       "name": "researchDbDorisUsername",
@@ -797,9 +793,9 @@
       "defaultValue": "http://157.148.123.64:8001/v1/chat/completions"
     },
     {
-      "name": "researchFlywayEnabled",
-      "label": "FlywayEnabled",
-      "description": "FlywayEnabled",
+      "name": "researchMigrationEnabled",
+      "label": "MigrationEnabled",
+      "description": "MigrationEnabled",
       "required": true,
       "configType": "map",
       "type": "input",
@@ -809,40 +805,16 @@
       "defaultValue": "true"
     },
     {
-      "name": "researchFlywayUrl",
-      "label": "FlywayUrl",
-      "description": "FlywayUrl",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "jdbc:mysql://${apiHost}:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "name": "researchMigrationMapping",
+      "label": "配置动态数据源类型映射",
+      "description": "自定义配置",
+      "configType": "custom",
+      "required": false,
+      "type": "multipleWithKey",
+      "value": [{"system":"mysql"},{"doris":"doris"}],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
-    },
-    {
-      "name": "researchFlywayUser",
-      "label": "FlywayUser",
-      "description": "FlywayUser",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "research",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "research"
-    },
-    {
-      "name": "researchFlywayPassword",
-      "label": "FlywayPassword",
-      "description": "FlywayPassword",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "research",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "research"
+      "defaultValue": [{"system":"mysql"},{"doris":"doris"}]
     }
   ]
 }
