@@ -246,16 +246,17 @@ public class ClusterServiceInstanceServiceImpl
         List<ClusterServiceInstanceRoleGroup> roleGroups =
                 roleGroupService.listRoleGroupByServiceInstanceId(serviceInstanceId);
         List<Integer> roleGroupIds = roleGroups.stream().map(ClusterServiceInstanceRoleGroup::getId).collect(Collectors.toList());
-        List<ClusterServiceRoleGroupConfig> roleGroupConfigList =
-                roleGroupConfigService.listRoleGroupConfigsByRoleGroupIds(roleGroupIds);
+        if (!roleGroupIds.isEmpty()){
+            List<ClusterServiceRoleGroupConfig> roleGroupConfigList =
+                    roleGroupConfigService.listRoleGroupConfigsByRoleGroupIds(roleGroupIds);
+            // del role group
+            roleGroupService.removeByIds(roleGroupIds);
+            // del role group config
+            roleGroupConfigService
+                    .removeByIds(roleGroupConfigList.stream().map(ClusterServiceRoleGroupConfig::getId).collect(Collectors.toList()));
+        }
         List<ClusterServiceRoleInstanceEntity> roleInstanceList =
                 roleInstanceService.getServiceRoleInstanceListByServiceId(serviceInstanceId);
-        
-        // del role group
-        roleGroupService.removeByIds(roleGroupIds);
-        // del role group config
-        roleGroupConfigService
-                .removeByIds(roleGroupConfigList.stream().map(ClusterServiceRoleGroupConfig::getId).collect(Collectors.toList()));
         // del service role instance
         if (!roleInstanceList.isEmpty()) {
             List<String> roleInsIds =

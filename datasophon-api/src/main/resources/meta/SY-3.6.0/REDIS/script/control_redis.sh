@@ -41,6 +41,9 @@ if [ ! -d "$LOG_DIR" ]; then
 fi
 
 DATA_DIR=$(awk -F " " '/^dir / {print $2}' $REDIS_DIR/conf/master.conf)
+port=$(awk -F " " '/^port / {print $2}' $REDIS_DIR/conf/master.conf)
+pwd=$(awk -F " " '/^requirepass / {print $2}' $REDIS_DIR/conf/master.conf)
+
 if [ ! -d "DATA_DIR" ]; then
   mkdir -p $DATA_DIR
 fi
@@ -66,7 +69,7 @@ start_exporter(){
     fi
   fi
   echo starting $command, logging to $log
-  exec_command="$REDIS_DIR/redis-exporter/redis_exporter -redis.addr $HOSTNAME:6379 -web.listen-address 0.0.0.0:9121 -redis.password fX0GzFyWOK4LR^9K -include-config-metrics true -include-system-metrics true"
+  exec_command="$REDIS_DIR/redis-exporter/redis_exporter -redis.addr 127.0.0.1:$port -web.listen-address 0.0.0.0:9121 -redis.password $pwd -include-config-metrics true -include-system-metrics true"
   echo "nohup $exec_command > $log 2>&1 &"
   nohup $exec_command > $log 2>&1 &
   echo $! > $pid
