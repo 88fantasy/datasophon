@@ -6,7 +6,7 @@
   "sortNum": 81,
   "dependencies":["MINIO"],
   "packageName": "juicefs-1.2.1-linux-amd64.tar.gz",
-  "decompressPackageName": "juicefs-1.2.1",
+  "decompressPackageName": "~/juicefs-1.2.1",
   "arch":{
       "x86_64": {
         "packageName": "juicefs-1.2.1-linux-amd64.tar.gz"

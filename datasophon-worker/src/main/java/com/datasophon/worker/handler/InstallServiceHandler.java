@@ -94,6 +94,10 @@ public class InstallServiceHandler {
             }
 
             boolean result = decompressPkg(packageName, decompressPackageName, destDir);
+            // 处理~/ 开头的包
+            if(decompressPackageName.startsWith("~/")){
+                decompressPackageName = decompressPackageName.replace("~/", "");
+            }
             if (result) {
                 if (CollUtil.isNotEmpty(command.getResourceStrategies())) {
                     for (Map<String, Object> strategy : command.getResourceStrategies()) {
@@ -180,26 +184,33 @@ public class InstallServiceHandler {
 
     private boolean decompressPkg(String packageName, String decompressPackageName, String destDir) {
         boolean decompressResult = true;
+        boolean needParentDir = false;
+        // ~/ 开头的包，解压到当前目录下
+        if(decompressPackageName.startsWith("~/")){
+            needParentDir = true;
+            decompressPackageName = decompressPackageName.replace("~/", "");
+        }
         if (!FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName)) {
             String sourceFile = destDir + packageName;
             logger.info("Start to decompress {}", sourceFile);
             String suffix = FileUtil.getSuffix(sourceFile);
             String prefix = packageName.substring(0, packageName.length() - suffix.length() - 1);
             boolean success = false;
+
             try {
 
                 ArrayList<String> command = new ArrayList<>();
-
+                String decompressDir = needParentDir ? Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName : Constants.INSTALL_PATH;
                 if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
                     command.add("tar");
                     command.add("-zxvf");
                     command.add(sourceFile);
                     command.add("-C");
-                    command.add(Constants.INSTALL_PATH);
+                    command.add(decompressDir);
                 } else if ("zip".equals(suffix)) {
                     command.add("unzip");
                     command.add("-d");
-                    command.add(Constants.INSTALL_PATH);
+                    command.add(decompressDir);
                     command.add(sourceFile);
                 }
                 ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
