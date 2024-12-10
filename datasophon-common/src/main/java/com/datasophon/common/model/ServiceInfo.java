@@ -44,6 +44,11 @@ public class ServiceInfo {
     private String packageName;
     
     private String decompressPackageName;
+
+    /**
+     * 创建解压目录
+     */
+    private Boolean createDecompressDir;
     
     private Map<String, ArchInfo> arch;
     

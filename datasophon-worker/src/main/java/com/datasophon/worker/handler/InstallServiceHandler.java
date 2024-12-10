@@ -23,6 +23,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.StreamProgress;
 import cn.hutool.core.lang.Console;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ServiceLoaderUtil;
 import cn.hutool.http.HttpUtil;
 import com.datasophon.common.Constants;
@@ -86,6 +87,7 @@ public class InstallServiceHandler {
             String packageName = command.getPackageName();
             String packagePath = destDir + packageName;
             String decompressPackageName = command.getDecompressPackageName();
+            Boolean createDecompressDir = command.getCreateDecompressDir();
 
             Boolean needDownLoad = !Objects.equals(PropertyUtils.getString(Constants.MASTER_HOST), CacheUtils.get(Constants.HOSTNAME)) && isNeedDownloadPkg(packagePath, command.getPackageMd5());
 
@@ -93,12 +95,15 @@ public class InstallServiceHandler {
                 downloadPkg(packageName, packagePath);
             }
 
-            boolean result = decompressPkg(packageName, decompressPackageName, destDir);
-            // 处理~/ 开头的包
-            if(decompressPackageName.startsWith("~/")){
-                decompressPackageName = decompressPackageName.replace("~/", "");
-            }
+            boolean result = decompressPkg(packageName, decompressPackageName, createDecompressDir, destDir);
             if (result) {
+                if (Objects.nonNull(command.getRunAs())) {
+                    ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getUser() + ":" + command.getRunAs().getGroup() + " " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                    logger.info("chown {} {}", decompressPackageName, chownResult.getExecResult() ? "success" : "fail");
+                }
+                ExecResult chmodResult = ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                logger.info("chmod {} {}", decompressPackageName, chmodResult.getExecResult() ? "success" : "fail");
+
                 if (CollUtil.isNotEmpty(command.getResourceStrategies())) {
                     for (Map<String, Object> strategy : command.getResourceStrategies()) {
                         String type = (String) strategy.get(ResourceStrategy.TYPE_KEY);
@@ -117,12 +122,6 @@ public class InstallServiceHandler {
                     }
                 }
 
-                if (Objects.nonNull(command.getRunAs())) {
-                    ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getUser() + ":" + command.getRunAs().getGroup() + " " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-                    logger.info("chown {} {}", decompressPackageName, chownResult.getExecResult() ? "success" : "fail");
-                }
-                ExecResult chmodResult = ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-                logger.info("chmod {} {}", decompressPackageName, chmodResult.getExecResult() ? "success" : "fail");
                 if (decompressPackageName.contains(Constants.PROMETHEUS)) {
                     String alertPath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + "alert_rules";
                     ShellUtils.execShell("sed -i \"s/clusterIdValue/" + PropertyUtils.getString("clusterId") + "/g\" `grep clusterIdValue -rl " + alertPath + "`");
@@ -182,14 +181,10 @@ public class InstallServiceHandler {
         logger.info("download package {} success", packageName);
     }
 
-    private boolean decompressPkg(String packageName, String decompressPackageName, String destDir) {
+    private boolean decompressPkg(String packageName, String decompressPackageName, Boolean createDecompressDir, String destDir) {
         boolean decompressResult = true;
-        boolean needParentDir = false;
+        boolean needParentDir = BooleanUtil.isTrue(createDecompressDir);
         // ~/ 开头的包，解压到当前目录下
-        if(decompressPackageName.startsWith("~/")){
-            needParentDir = true;
-            decompressPackageName = decompressPackageName.replace("~/", "");
-        }
         if (!FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName)) {
             String sourceFile = destDir + packageName;
             logger.info("Start to decompress {}", sourceFile);
@@ -201,6 +196,9 @@ public class InstallServiceHandler {
 
                 ArrayList<String> command = new ArrayList<>();
                 String decompressDir = needParentDir ? Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName : Constants.INSTALL_PATH;
+                if(needParentDir && !FileUtil.exist(decompressDir)){
+                    FileUtil.mkdir(decompressDir);
+                }
                 if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
                     command.add("tar");
                     command.add("-zxvf");

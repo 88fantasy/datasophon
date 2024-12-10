@@ -6,7 +6,8 @@
   "sortNum": 81,
   "dependencies":["MINIO"],
   "packageName": "juicefs-1.2.1-linux-amd64.tar.gz",
-  "decompressPackageName": "~/juicefs-1.2.1",
+  "decompressPackageName": "juicefs-1.2.1",
+  "createDecompressDir": true,
   "arch":{
       "x86_64": {
         "packageName": "juicefs-1.2.1-linux-amd64.tar.gz"
@@ -22,6 +23,12 @@
       "roleType": "worker",
       "cardinality": "1+",
       "logFile": "",
+      "resourceStrategies": [
+        {
+          "type":"init",
+          "commands": ["/opt/datasophon/juicefs-1.2.1/juicefs format --storage ${juicefsStorage} --bucket ${juicefsBucket} --access-key ${minioAccessKey} --secret-key ${minioSecretKey} '${juicefsMeta}', ${juicefsFileSystemName}"]
+        }
+      ],
       "jmxPort": 9567,
       "startRunner": {
         "timeout": "60",
@@ -91,6 +98,66 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": [{"path":"/opt/datasophon/juicefs/appweb", "log":"appweb"}]
+    },
+    {
+      "name": "juicefsStorage",
+      "label": "文件存储类型",
+      "description": "文件存储类型",
+      "required": true,
+      "type": "input",
+      "configType": "map",
+      "value": "s3",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "s3"
+    },
+    {
+      "name": "juicefsBucket",
+      "label": "文件储存桶",
+      "description": "文件储存桶",
+      "required": true,
+      "type": "input",
+      "configType": "map",
+      "value": "http://${minioHost}:${minioApiPort}/appweb",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://${minioHost}:${minioApiPort}/appweb"
+    },
+    {
+      "name": "juicefsAccessKey",
+      "label": "文件储存用户",
+      "description": "文件储存用户",
+      "required": true,
+      "type": "input",
+      "configType": "map",
+      "value": "${minioAccessKey}",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${minioAccessKey}"
+    },
+    {
+      "name": "juicefsSecretKey",
+      "label": "文件储存秘钥",
+      "description": "文件储存秘钥",
+      "required": true,
+      "type": "input",
+      "configType": "map",
+      "value": "${minioSecretKey}",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${minioSecretKey}"
+    },
+    {
+      "name": "juicefsFileSystemName",
+      "label": "创建文件系统名称",
+      "description": "创建文件系统名称",
+      "required": true,
+      "type": "input",
+      "configType": "map",
+      "value": "appweb",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "appweb"
     }
   ]
 }

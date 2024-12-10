@@ -8,15 +8,17 @@ if [ $# -le 0 ]; then
   exit 1
 fi
 
-current_path=$(cd `dirname $0`;pwd)
+BIN_PATH=$(cd `dirname $0`; pwd)
+cd `dirname $0`
+cd ..
+current_path=`pwd`
 startStop=$1
 shift
 
 echo "Begin $startStop ......"
 
-#export PID_DIR=$current_path/pid
+
 export LOG_DIR=$current_path/logs
-#export STOP_TIMEOUT=10
 
 if [ ! -d "$LOG_DIR" ]; then
   mkdir $LOG_DIR
@@ -25,20 +27,16 @@ fi
 
 function start() {
 
-  echo "starting juicefs"
+  echo "start juicefs"
 
 <#list juicefsMounts as item>
-  $current_path/juicefs mount -d "${juicefsMeta} ${item.path}" -d --log=$LOG_DIR/${item.log}
+  $current_path/juicefs mount "${juicefsMeta}" ${item.path} -d --log=$LOG_DIR/${item.log}
 </#list>
-
-  echo "nohup $exec_command > $log 2>&1 &"
-  nohup $exec_command > $log 2>&1 &
-  echo $! > $pid
 
 }
 
 function stop() {
-
+  echo "stop juicefs"
 <#list juicefsMounts as item>
   $current_path/juicefs umount ${item.path} -f
 </#list>
@@ -47,14 +45,13 @@ function stop() {
 
 function status() {
 <#list juicefsMounts as item>
-$current_path/juicefs info ${item.path}
+  if $current_path/juicefs info ${item.path} 2>&1 | grep -q "ERROR"; then
 </#list>
-#  if [ $code -eq 1 ]; then
-#      echo "juicefs is OK"
-#  else
-#      echo "juicefs  is not ready"
-#      exit 1
-#  fi
+      echo "juicefs  is not ready"
+      exit 1
+  else
+      echo "juicefs is OK"
+  fi
 }
 
 case $startStop in

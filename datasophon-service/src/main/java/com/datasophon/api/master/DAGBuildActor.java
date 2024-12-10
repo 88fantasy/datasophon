@@ -32,10 +32,7 @@ import com.datasophon.common.command.SubmitActiveTaskNodeCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.ServiceExecuteState;
 import com.datasophon.common.enums.ServiceRoleType;
-import com.datasophon.common.model.ArchInfo;
-import com.datasophon.common.model.DAGGraph;
-import com.datasophon.common.model.ServiceNode;
-import com.datasophon.common.model.ServiceRoleInfo;
+import com.datasophon.common.model.*;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
 import com.datasophon.dao.entity.ClusterServiceCommandHostCommandEntity;
@@ -113,6 +110,7 @@ public class DAGBuildActor extends UntypedActor {
                         String arch = serviceEntity.getArch();
                         Map<String, ArchInfo> stringArchInfoMap = StringUtils.isNotEmpty(arch) ? JSONObject.parseObject(arch, new TypeReference<Map<String, ArchInfo>>() {
                         }) : LoadServiceMeta.getArchInfo(serviceEntity.getPackageName(), serviceEntity.getDecompressPackageName());
+                        ServiceInfo serviceInfo = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
                         ServiceRoleInfo serviceRoleInfo = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
                         serviceRoleInfo.setHostname(hostCommand.getHostname());
                         serviceRoleInfo.setHostCommandId(hostCommand.getHostCommandId());
@@ -121,6 +119,7 @@ public class DAGBuildActor extends UntypedActor {
                         serviceRoleInfo.setPackageName(serviceEntity.getPackageName());
                         serviceRoleInfo.setArchInfoMap(stringArchInfoMap);
                         serviceRoleInfo.setDecompressPackageName(serviceEntity.getDecompressPackageName());
+                        serviceRoleInfo.setCreateDecompressDir(serviceInfo.getCreateDecompressDir());
                         serviceRoleInfo.setCommandType(commandType);
                         serviceRoleInfo.setServiceInstanceId(command.getServiceInstanceId());
                         serviceRoleInfo.setFrameCode(serviceEntity.getFrameCode());

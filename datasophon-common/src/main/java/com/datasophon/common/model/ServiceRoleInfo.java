@@ -63,6 +63,11 @@ public class ServiceRoleInfo implements Serializable, Comparable<ServiceRoleInfo
     private Map<String, ArchInfo> archInfoMap;
     
     private String decompressPackageName;
+
+    /**
+     * 创建解压目录
+     */
+    private Boolean createDecompressDir;
     
     private Map<Generators, List<ServiceConfig>> configFileMap;
     

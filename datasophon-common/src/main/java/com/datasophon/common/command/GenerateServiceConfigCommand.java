@@ -37,6 +37,10 @@ public class GenerateServiceConfigCommand implements Serializable {
     private String serviceName;
     
     private String decompressPackageName;
+    /**
+     * 创建解压目录
+     */
+    private Boolean createDecompressDir;
     
     private Integer myid;
     

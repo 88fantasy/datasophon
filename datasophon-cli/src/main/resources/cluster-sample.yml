@@ -56,6 +56,9 @@ global:
       - account: operation
         password: operation
         dbName: operation
+      - account: juicefs
+        password: juicefs
+        dbName: juicefs
     host:
       user: root
       ip: 192.168.2.146

@@ -40,7 +40,12 @@ public class InstallServiceRoleCommand extends BaseCommand implements Serializab
     private String packageMd5;
     
     private String decompressPackageName;
-    
+
+    /**
+     * 创建解压目录
+     */
+    private Boolean createDecompressDir;
+
     private RunAs runAs;
     
     private ServiceRoleType serviceRoleType;

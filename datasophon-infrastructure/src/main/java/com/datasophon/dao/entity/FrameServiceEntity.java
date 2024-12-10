@@ -76,7 +76,7 @@ public class FrameServiceEntity implements Serializable {
     private String configFileJsonMd5;
     
     private String decompressPackageName;
-    
+
     @TableField(exist = false)
     private Boolean installed;
     
