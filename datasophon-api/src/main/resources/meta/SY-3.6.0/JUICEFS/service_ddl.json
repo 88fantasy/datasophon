@@ -22,10 +22,10 @@
       "label": "JuicefsMount",
       "roleType": "worker",
       "cardinality": "1+",
-      "logFile": "",
+      "logFile": "/opt/datasophon/juicefs/logs/appweb",
       "resourceStrategies": [
         {
-          "type":"init",
+          "type":"execShell",
           "commands": ["/opt/datasophon/juicefs-1.2.1/juicefs format --storage ${juicefsStorage} --bucket ${juicefsBucket} --access-key ${minioAccessKey} --secret-key ${minioSecretKey} '${juicefsMeta}', ${juicefsFileSystemName}"]
         }
       ],
