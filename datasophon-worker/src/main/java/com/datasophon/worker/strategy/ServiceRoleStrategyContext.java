@@ -69,6 +69,9 @@ public class ServiceRoleStrategyContext {
 
         // apisix
         map.put("Apisix", new ApisixHandlerStrategy("APISIX", "Apisix"));
+
+        //nginx
+        map.put("Nginx", new NginxHandlerStrategy("NGINX", "Nginx"));
     }
     
     public static ServiceRoleStrategy getServiceRoleHandler(String type) {

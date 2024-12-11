@@ -19,13 +19,15 @@
           "type":"frontend",
           "meta": "${juicefsMeta}",
           "source": "module/view/research-platform-view",
-          "target": "research-platform-view"
+          "target": "research-platform-view",
+          "conf": "gateway-research.conf"
         },
         {
           "type":"frontend",
           "meta": "${juicefsMeta}",
           "source": "module/view/scientific-research-view",
-          "target": "scientific-research-view"
+          "target": "scientific-research-view",
+          "conf":"gateway-research.conf"
         }
       ],
       "startRunner": {
