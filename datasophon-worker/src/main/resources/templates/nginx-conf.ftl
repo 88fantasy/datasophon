@@ -2,14 +2,12 @@ load_module modules/ngx_stream_module.so;
 
 #user  nobody;
 #user  worker;
-worker_processes  4;
+worker_processes  ${nginxWorkerProcesses};
 
 
 events {
     worker_connections  1024;
 }
-
-include ${nginxOutSideConfIncludePath};
 
 http {
     include       mime.types;
@@ -58,5 +56,5 @@ http {
         gzip_comp_level 3;
         gzip_types text/plain application/json application/javascript application/x-javascript application/css application/xml application/xml+rss text/javascript application/x-httpd-php image/jpeg image/gif image/png image/x-ms-bmp;
         gzip_vary off;
-        include ${nginxInSideConfIncludePath};
+        include confs/inside_of_http_confs/*.conf;
 }

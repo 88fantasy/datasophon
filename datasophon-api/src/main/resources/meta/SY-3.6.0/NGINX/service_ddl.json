@@ -4,7 +4,7 @@
   "description": "Nginx网关",
   "version": "1.26.2",
   "sortNum": 90,
-  "dependencies":[],
+  "dependencies":["JUICEFS"],
   "packageName": "nginx-1.26.2.tar.gz",
   "decompressPackageName": "nginx-1.26.2",
   "roles": [
@@ -13,7 +13,7 @@
       "label": "Nginx",
       "roleType": "master",
       "cardinality": "1+",
-      "logFile": "/opt/datasophon/nginx-1.26.2/nginx/logs/access/access.log",
+      "logFile": "nginx/logs/access/access.log",
       "jmxPort": 9099,
       "resourceStrategies":[{
         "type": "download",
@@ -70,8 +70,7 @@
         "outputDirectory": "nginx/conf",
         "templateName": "nginx-conf.ftl",
         "includeParams": [
-          "nginxOutSideConfIncludePath",
-          "nginxInSideConfIncludePath"
+          "nginxWorkerProcesses"
         ]
       },
       {
@@ -99,11 +98,9 @@
         "filename": "gateway.conf",
         "configFormat": "custom",
         "outputDirectory": "nginx/conf/confs/inside_of_http_confs/app-confs",
-        "templateName": "nginx-app-conf.conf",
+        "templateName": "nginx-app-conf.ftl",
         "includeParams": [
-          "nginxProxyUrl",
-          "nginxAppName",
-          "nginxAppPort"
+          "nginxAppConf"
         ]
       }
     ]
@@ -209,30 +206,17 @@
       ]
     },
     {
-      "name": "nginxOutSideConfIncludePath",
-      "key": "nginxOutSideConfIncludePath",
-      "label": "http外的配置",
-      "description": "http外的配置",
+      "name": "nginxWorkerProcesses",
+      "key": "nginxWorkerProcesses",
+      "label": "nginx工作线程数",
+      "description": "nginx工作线程数",
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "confs/outside_of_http_confs/*.conf",
+      "value": "4",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "confs/outside_of_http_confs/*.conf"
-    },
-    {
-      "name": "nginxInSideConfIncludePath",
-      "key": "nginxInSideConfIncludePath",
-      "label": "http内的配置",
-      "description": "http内的配置",
-      "required": true,
-      "type": "input",
-      "configType": "map",
-      "value": "confs/inside_of_http_confs/*.conf",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "confs/inside_of_http_confs/*.conf"
+      "defaultValue": "4"
     },
     {
       "name": "nginxServerPort",
@@ -272,6 +256,32 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "/opt/datasophon/juicefs/appweb"
+    },
+    {
+      "name": "nginxAppConf",
+      "label": "应用配置",
+      "description": "应用配置",
+      "required": false,
+      "type": "multipleWithMap",
+      "configType": "map",
+      "value": [
+        {
+          "appName":"gateway",
+          "appPort":"8002",
+          "appUrl":"/gw/",
+          "metaInfo": "#    proxy_set_header        X-Real-IP $remote_addr ;\n#    proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for ;\n#    proxy_set_header        Host  $http_host;"
+        }
+      ],
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": [
+        {
+          "appName":"gateway",
+          "appPort":"8002",
+          "appUrl":"/gw/",
+          "metaInfo": "#    proxy_set_header        X-Real-IP $remote_addr ;\n#    proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for ;\n#    proxy_set_header        Host  $http_host;"
+        }
+      ]
     }
   ]
 }
