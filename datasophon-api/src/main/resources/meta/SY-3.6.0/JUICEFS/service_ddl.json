@@ -22,7 +22,7 @@
       "label": "JuicefsMount",
       "roleType": "worker",
       "cardinality": "1+",
-      "logFile": "/opt/datasophon/juicefs/logs/appweb",
+      "logFile": "logs/appweb",
       "resourceStrategies": [
         {
           "type":"execShell",
