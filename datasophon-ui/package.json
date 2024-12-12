@@ -4,8 +4,8 @@
   "homepage": "https://iczer.github.io/vue-antd-admin",
   "private": true,
   "scripts": {
-    "serve": "SET NODE_OPTIONS=--openssl-legacy-provider &&vue-cli-service serve",
-    "build": "SET NODE_OPTIONS=--openssl-legacy-provider &&vue-cli-service build",
+    "serve": "cross-env NODE_OPTIONS=--openssl-legacy-provider &&vue-cli-service serve",
+    "build": "cross-env NODE_OPTIONS=--openssl-legacy-provider &&vue-cli-service build",
     "lint": "vue-cli-service lint",
     "predeploy-yarn": "yarn build",
     "deploy": "node deploy.sh.js",
@@ -47,11 +47,13 @@
     "babel-plugin-transform-remove-console": "^6.9.4",
     "babel-polyfill": "^6.26.0",
     "compression-webpack-plugin": "^2.0.0",
+    "cross-env": "^7.0.3",
     "deepmerge": "^4.2.2",
     "eslint": "^6.7.2",
     "eslint-plugin-prettier": "^3.3.1",
     "eslint-plugin-vue": "^6.2.2",
     "fast-deep-equal": "^3.1.3",
+    "fs-extra": "^7.0.1",
     "gh-pages": "^3.1.0",
     "less": "^3.0.4",
     "less-loader": "^6.1.1",
@@ -65,9 +67,8 @@
     "vue-cli-plugin-style-resources-loader": "^0.1.4",
     "vue-template-compiler": "2.6.11",
     "vuepress": "^1.5.2",
-    "webpack-theme-color-replacer": "1.3.18",
-    "whatwg-fetch": "^3.0.0",
-    "fs-extra": "^7.0.1"
+    "webpack-theme-color-replacer": "^1.5.2",
+    "whatwg-fetch": "^3.0.0"
   },
   "eslintConfig": {
     "root": true,
