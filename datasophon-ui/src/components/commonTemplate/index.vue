@@ -654,20 +654,36 @@ export default {
               value: "",
             });
           } else if (["multipleWithMap"].includes(type)) {
-            item.value.push([
-              {
-                key: "role",
-                value: "",
-              },
-              {
-                key: "name",
-                value: "",
-              },
-              {
-                key: "key",
-                value: "",
-              },
-            ]);
+            // console.log("templateData", templateData);
+
+            const defaultValue = item.defaultValue && item.defaultValue[0];
+            if (defaultValue) {
+              // defaultValue.forEach((v) => {
+              //   item.value.push(_.cloneDeep(v));
+              // });
+
+              item.value.push(_.cloneDeep(defaultValue));
+              // Object.keys(defaultValue).map(key=>{
+              //   item.value.push({
+              //     key:defaultValue[key],
+              //     value:defaultValue[value]
+              //   })
+              // })
+            }
+            // item.value.push([
+            //   {
+            //     key: "role",
+            //     value: "",
+            //   },
+            //   {
+            //     key: "name",
+            //     value: "",
+            //   },
+            //   {
+            //     key: "key",
+            //     value: "",
+            //   },
+            // ]);
           } else {
             item.value.push("");
           }
