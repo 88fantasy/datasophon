@@ -23,7 +23,7 @@
       "roleType": "master",
       "cardinality": "1",
       "logFile": "logs/loki.out",
-      "jmxPort": 9567,
+      "jmxPort": 3100,
       "resourceStrategies":[{
         "type": "download",
         "from": "script/control.sh",
