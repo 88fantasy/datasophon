@@ -3,7 +3,7 @@
   "label": "Nginx",
   "description": "Nginx网关",
   "version": "1.26.2",
-  "sortNum": 90,
+  "sortNum": 93,
   "dependencies":["JUICEFS"],
   "packageName": "nginx-1.26.2.tar.gz",
   "decompressPackageName": "nginx-1.26.2",
