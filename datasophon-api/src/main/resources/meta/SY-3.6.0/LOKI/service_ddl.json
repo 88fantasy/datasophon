@@ -1,0 +1,142 @@
+{
+  "name": "LOKI",
+  "label": "Loki",
+  "description": "轻量级日志系统",
+  "version": "3.3",
+  "sortNum": 83,
+  "dependencies":["MINIO","REDIS"],
+  "packageName": "loki-linux-amd64.zip",
+  "decompressPackageName": "loki-3.3",
+  "createDecompressDir": true,
+  "arch":{
+      "x86_64": {
+        "packageName": "loki-linux-amd64.zip"
+      },
+      "aarch64": {
+        "packageName": "loki-linux-arm64.zip"
+      }
+    },
+  "roles": [
+    {
+      "name": "Loki",
+      "label": "Loki",
+      "roleType": "master",
+      "cardinality": "1",
+      "logFile": "logs/loki.out",
+      "jmxPort": 9567,
+      "resourceStrategies":[{
+        "type": "download",
+        "from": "script/control.sh",
+        "to": "control.sh",
+        "md5": "dbf5e8cfed3671cc673f4cef8763b458"
+      }],
+      "startRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": [
+          "start"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "control.sh",
+        "args": [
+          "stop"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": [
+          "status"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": [
+          "restart"
+        ]
+      }
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "config.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "config",
+        "templateName": "loki.ftl",
+        "includeParams": [
+          "lokiPort",
+          "lokiS3Addr",
+          "lokiRedisAddr",
+          "lokiRedisPwd",
+          "lokiRedisDb"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "name": "lokiPort",
+      "label": "服务端口",
+      "description": "若修改需要同步变更grafana数据源配置",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "3100",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "3100"
+    },
+    {
+      "name": "lokiS3Addr",
+      "label": "S3存储路径",
+      "description": "S3存储路径",
+      "required": true,
+      "type": "input",
+      "configType": "map",
+      "value": "http://${minioAccessKey}:${minioSecretKey}@${minioHost}:${minioApiPort}/loki",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://${minioAccessKey}:${minioSecretKey}@${minioHost}:${minioApiPort}/loki"
+    },
+    {
+      "name": "lokiRedisAddr",
+      "label": "Redis地址",
+      "description": "Redis地址",
+      "required": true,
+      "type": "input",
+      "configType": "map",
+      "value": "${redisHost}:${redisMasterPort}",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${redisHost}:${redisMasterPort}"
+    },
+    {
+      "name": "lokiRedisPwd",
+      "label": "Redis密码",
+      "description": "Redis密码",
+      "required": true,
+      "type": "input",
+      "configType": "map",
+      "value": "${redisPass}",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${redisPass}"
+    },
+    {
+      "name": "lokiRedisDb",
+      "label": "Redis库号",
+      "description": "Redis库号",
+      "required": true,
+      "type": "input",
+      "configType": "map",
+      "value": "5",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "5"
+    }
+  ]
+}
