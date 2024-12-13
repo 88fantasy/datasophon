@@ -41,11 +41,11 @@
             <version>${revision}</version>
         </dependency>
         <!-- ui 工程打包是一个空包，这里依赖主要是让 ui 先编译，这样前端就能自动打包到 tar 介质中-->
-        <!--<dependency>
+        <dependency>
             <groupId>com.datasophon</groupId>
             <artifactId>datasophon-ui</artifactId>
             <version>${project.version}</version>
-        </dependency>-->
+        </dependency>
 
         <dependency>
             <groupId>org.eclipse.jetty</groupId>

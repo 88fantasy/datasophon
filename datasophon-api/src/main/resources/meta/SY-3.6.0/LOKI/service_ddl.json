@@ -57,6 +57,11 @@
         "args": [
           "restart"
         ]
+      },
+      "externalLink": {
+        "name": "Explore",
+        "label": "Explore",
+        "url": "http://${host}:3000"
       }
     }
   ],
