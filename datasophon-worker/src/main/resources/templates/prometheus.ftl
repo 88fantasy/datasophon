@@ -242,6 +242,11 @@ scrape_configs:
     - files:
       - configs/juicefs.json
 
+  - job_name: 'loki'
+    file_sd_configs:
+    - files:
+      - configs/loki.json
+
   - job_name: 'nginx'
     file_sd_configs:
     - files:
