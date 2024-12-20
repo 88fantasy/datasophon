@@ -194,7 +194,8 @@
           "researchRetrievalDsUrl",
           "researchRetrievalDsProjectName",
           "researchRetrievalDsUsername",
-          "researchRetrievalDsPassword"
+          "researchRetrievalDsPassword",
+          "researchCapacityUserServerName"
         ]
       },
       {
@@ -219,7 +220,8 @@
           "researchStructuredMedicalPastHistoryUrl",
           "researchStructuredMedicalPersonalHistoryUrl",
           "researchStructuredMedicalFamilyHistoryUrl",
-          "researchProjectLlmApi"
+          "researchProjectLlmApi",
+          "researchCapacityUserServerName"
         ]
       }
     ]
@@ -824,6 +826,18 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": [{"system":"mysql"},{"doris":"doris"}]
+    },
+    {
+      "name": "researchCapacityUserServerName",
+      "label": "科研切换新老门户开关",
+      "description": "切换新老门户开关",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "portal",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "portal"
     }
   ]
 }
