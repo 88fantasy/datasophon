@@ -13,25 +13,25 @@
       "label": "OperationbrainServer",
       "roleType": "master",
       "cardinality": "1",
-      "logFile": "module/chinaunicom-medical-archtype-operationbrain-server/logs/chinaunicom-medical-archtype-operationbrain-server.log",
+      "logFile": "module/chinaunicom-medical-archtype-operationbrain-server/logs/operationbrain-server-info.log",
       "resourceStrategies": [
         {
           "type":"frontend",
           "meta": "${juicefsMeta}",
           "source": "module/view/hospital-index-monitor-view",
-          "target": "hospital-index-monitor-view"
+          "target": "/hospital-index-monitor-view"
         },
         {
           "type":"frontend",
           "meta": "${juicefsMeta}",
           "source": "module/view/operational-decision-center-view",
-          "target": "operational-decision-center-view"
+          "target": "/operational-decision-center-view"
         },
         {
           "type":"frontend",
           "meta": "${juicefsMeta}",
           "source": "module/view/smart-operation-brain-home-view",
-          "target": "smart-operation-brain-home-view"
+          "target": "/smart-operation-brain-home-view"
         }
       ],
       "startRunner": {
@@ -61,11 +61,6 @@
         "args": [
           "restart"
         ]
-      },
-      "externalLink": {
-        "name": "OperationPlatform UI",
-        "label": "OperationPlatform UI",
-        "url": "${operationServerAddress}/operation-platform-view/#/"
       }
     },
     {
@@ -73,7 +68,7 @@
       "label": "Indicator",
       "roleType": "master",
       "cardinality": "1",
-      "logFile": "module/chinaunicom-medical-capacity-indicator/logs/chinaunicom-medical-capacity-indicator.log",
+      "logFile": "module/chinaunicom-medical-capacity-indicator/logs/indicator.log",
       "startRunner": {
         "timeout": "60",
         "program": "module/chinaunicom-medical-capacity-indicator/bin/server.sh",
@@ -101,11 +96,6 @@
         "args": [
           "restart"
         ]
-      },
-      "externalLink": {
-        "name": "Indicator UI",
-        "label": "Indicator UI",
-        "url": "${operationServerAddress}/indicator-view/#/"
       }
     }
   ],
@@ -124,10 +114,8 @@
           "operationNacosHosts",
           "operationNacosNamespace",
           "operationNacosGroup",
-          "operationFlywayEnabled",
-          "operationFlywayUrl",
-          "operationFlywayUser",
-          "operationFlywayPassword"
+          "operationMigrationEnabled",
+          "operationMigrationMapping"
         ]
       },
       {
@@ -143,10 +131,8 @@
           "operationNacosHosts",
           "operationNacosNamespace",
           "operationNacosGroup",
-          "operationFlywayEnabled",
-          "operationFlywayUrl",
-          "operationFlywayUser",
-          "operationFlywayPassword"
+          "operationMigrationEnabled",
+          "operationMigrationMapping"
         ]
       },
       {
@@ -157,10 +143,14 @@
         "type": "nacos",
         "includeParams": [
           "operationServerPort",
-          "operationDbIndicatorUsername",
-          "operationDbIndicatorPassword",
-          "operationDbIndicatorDriverClassName",
-          "operationDbIndicatorUrl",
+          "operationDbWorkflowUsername",
+          "operationDbWorkflowPassword",
+          "operationDbWorkflowDriverClassName",
+          "operationDbWorkflowUrl",
+          "operationDbDorisUsername",
+          "operationDbDorisPassword",
+          "operationDbDorisDriverClassName",
+          "operationDbDorisUrl",
           "operationPrometheusUrl",
           "operationDsBaseUrl",
           "operationDsLogDir",
@@ -394,54 +384,6 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "indicator"
-    },
-    {
-      "name": "operationFlywayEnabled",
-      "label": "FlywayEnabled",
-      "description": "FlywayEnabled",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "true",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "true"
-    },
-    {
-      "name": "operationFlywayUrl",
-      "label": "FlywayUrl",
-      "description": "FlywayUrl",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "jdbc:mysql://${apiHost}:3306/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:3306/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
-    },
-    {
-      "name": "operationFlywayUser",
-      "label": "FlywayUser",
-      "description": "FlywayUser",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "operation",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "operation"
-    },
-    {
-      "name": "operationFlywayPassword",
-      "label": "FlywayPassword",
-      "description": "FlywayPassword",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "operation",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "operation"
     },
     {
       "name": "operationServerPort",
@@ -1206,10 +1148,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://192.168.2.146:9000/",
+      "value": "http://${minioHost}:${minioApiPort}/",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://192.168.2.146:9000/"
+      "defaultValue": "http://${minioHost}:${minioApiPort}/"
     },
     {
       "name": "operationMinioOutsideEndpoint",
@@ -1338,10 +1280,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "operation",
+      "value": "root",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "operation"
+      "defaultValue": "root"
     },
     {
       "name": "operationDbDorisPassword",
@@ -1350,10 +1292,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "operation",
+      "value": "3ght%ed75BGk",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "operation"
+      "defaultValue": "3ght%ed75BGk"
     },
     {
       "name": "operationDbDorisDriverClassName",
@@ -1374,10 +1316,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "jdbc:mysql://${apiHost}:9030/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "value": "jdbc:mysql://${feMaster}:9030/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:9030/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${feMaster}:9030/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
     },
     {
       "name": "operationRedisDcMode",
@@ -1470,10 +1412,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://192.168.2.146:9000/",
+      "value": "http://${minioHost}:${minioApiPort}/",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://192.168.2.146:9000/"
+      "defaultValue": "http://${minioHost}:${minioApiPort}/"
     },
     {
       "name": "operationMinioOutsideHost",
@@ -1482,10 +1424,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://192.168.2.146:9000/",
+      "value": "http://${minioHost}:${minioApiPort}/",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://192.168.2.146:9000/"
+      "defaultValue": "http://${minioHost}:${minioApiPort}/"
     },
     {
       "name": "operationMinioAccessKey",
@@ -1530,10 +1472,34 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://192.168.2.146:9000/",
+      "value": "http://${minioHost}:${minioApiPort}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://192.168.2.146:9000/"
+      "defaultValue": "http://${minioHost}:${minioApiPort}"
+    },
+    {
+      "name": "operationMigrationEnabled",
+      "label": "MigrationEnabled",
+      "description": "MigrationEnabled",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "true",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "true"
+    },
+    {
+      "name": "operationMigrationMapping",
+      "label": "配置动态数据源类型映射",
+      "description": "自定义配置",
+      "configType": "custom",
+      "required": false,
+      "type": "multipleWithKey",
+      "value": [{"workflow":"mysql"},{"doris":"doris"}],
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": [{"workflow":"mysql"},{"doris":"doris"}]
     }
   ]
 }
