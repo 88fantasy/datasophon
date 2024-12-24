@@ -42,3 +42,5 @@ front/
 node/
 
 *.flattened-pom.xml
+
+logs
