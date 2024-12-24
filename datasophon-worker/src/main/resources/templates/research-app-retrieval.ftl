@@ -84,3 +84,6 @@ retrieval.scheduled.tableAndFieldInit.schemaName: chinaunicom_medical_zssy_web
 retrieval.scheduled.tableAndFieldInit.tablePrefix: ads_srrs_
 retrieval.scheduled.tableAndFieldInit.batchSize: 50
 retrieval.scheduled.tableAndFieldInit.rootCatalogName: 未归类指标集
+
+#切换新老门户开关，默认portal新门户
+chinaunicom.medical.capacity.user.server: ${researchCapacityUserServerName}

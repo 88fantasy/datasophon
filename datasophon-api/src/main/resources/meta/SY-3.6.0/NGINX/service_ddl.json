@@ -14,7 +14,6 @@
       "roleType": "master",
       "cardinality": "1+",
       "logFile": "nginx/logs/access/access.log",
-      "jmxPort": 9099,
       "resourceStrategies":[{
         "type": "download",
         "from": "script/control.sh",
@@ -49,6 +48,43 @@
           "restart"
         ]
       }
+    },
+    {
+      "name": "NginxExporter",
+      "label": "NginxExporter",
+      "roleType": "worker",
+      "cardinality": "1",
+      "logFile": "nginx-exporter/logs/exporter.log",
+      "jmxPort": 9113,
+      "sortNum": 2,
+      "startRunner": {
+        "timeout": "60",
+        "program": "nginx-exporter/bin/nginx-exporter.sh",
+        "args": [
+          "start"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "nginx-exporter/bin/nginx-exporter.sh",
+        "args": [
+          "stop"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "nginx-exporter/bin/nginx-exporter.sh",
+        "args": [
+          "status"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "nginx-exporter/bin/nginx-exporter.sh",
+        "args": [
+          "restart"
+        ]
+      }
     }
   ],
   "configWriter": {
@@ -71,6 +107,26 @@
         "templateName": "nginx-conf.ftl",
         "includeParams": [
           "nginxWorkerProcesses"
+        ]
+      },
+      {
+        "filename": "nginx-status.conf",
+        "configFormat": "custom",
+        "outputDirectory": "nginx/conf/confs/inside_of_http_confs",
+        "templateName": "nginx-status-conf.ftl",
+        "includeParams": [
+          "nginxStatusPort"
+        ]
+      },
+      {
+        "filename": "nginx-exporter.sh",
+        "configFormat": "custom",
+        "outputDirectory": "nginx-exporter/bin",
+        "templateName": "nginx-exporter.ftl",
+        "includeParams": [
+          "nginxBasePath",
+          "nginxExporterPort",
+          "nginxStatusPort"
         ]
       },
       {
@@ -219,6 +275,32 @@
       "defaultValue": "4"
     },
     {
+      "name": "nginxStatusPort",
+      "key": "nginxStatusPort",
+      "label": "nginxStatus状态端口",
+      "description": "nginxStatus状态端口",
+      "required": true,
+      "type": "input",
+      "configType": "map",
+      "value": "9099",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "9099"
+    },
+    {
+      "name": "nginxExporterPort",
+      "key": "nginxExporterPort",
+      "label": "nginxExporter监控端口",
+      "description": "nginxExporter监控端口",
+      "required": true,
+      "type": "input",
+      "configType": "map",
+      "value": "9113",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "9113"
+    },
+    {
       "name": "nginxServerPort",
       "key": "nginxServerPort",
       "label": "nginx服务端口",
@@ -261,7 +343,7 @@
       "name": "nginxAppConf",
       "label": "应用配置",
       "description": "应用配置",
-      "required": false,
+      "required": true,
       "type": "multipleWithMap",
       "configType": "map",
       "value": [
@@ -269,7 +351,7 @@
           "appName":"gateway",
           "appPort":"8002",
           "appUrl":"/gw/",
-          "metaInfo": "#    proxy_set_header        X-Real-IP $remote_addr ;\n#    proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for ;\n#    proxy_set_header        Host  $http_host;"
+          "metaInfo": "    proxy_set_header        X-Real-IP $remote_addr ;\n    proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for ;\n    proxy_set_header        Host  $http_host;"
         }
       ],
       "configurableInWizard": true,
@@ -279,7 +361,7 @@
           "appName":"gateway",
           "appPort":"8002",
           "appUrl":"/gw/",
-          "metaInfo": "#    proxy_set_header        X-Real-IP $remote_addr ;\n#    proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for ;\n#    proxy_set_header        Host  $http_host;"
+          "metaInfo": "    proxy_set_header        X-Real-IP $remote_addr ;\n    proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for ;\n    proxy_set_header        Host  $http_host;"
         }
       ]
     }

@@ -152,3 +152,6 @@ project:
   llmMaxTokens: 1000
   prompt:
   mode: test
+
+#切换新老门户开关，默认portal新门户
+chinaunicom.medical.capacity.user.server: ${researchCapacityUserServerName}

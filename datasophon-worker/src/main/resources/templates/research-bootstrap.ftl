@@ -44,6 +44,6 @@ research:
       - classpath:db/migrations # 配置 SQL-based 的 SQL 脚本在该目录下
     # 对应动态数据源的数据库类型映射
     mapping:
-    <#list researchMigrationMapping as item>
+    <#list itemList as item>
       ${item.name}: ${item.value}
     </#list>

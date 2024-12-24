@@ -19,14 +19,21 @@
           "type":"frontend",
           "meta": "${juicefsMeta}",
           "source": "module/view/research-platform-view",
-          "target": "research-platform-view",
+          "target": "/research-platform-view",
           "conf": "gateway-research.conf"
         },
         {
           "type":"frontend",
           "meta": "${juicefsMeta}",
           "source": "module/view/scientific-research-view",
-          "target": "scientific-research-view",
+          "target": "/scientific-research-view",
+          "conf":"gateway-research.conf"
+        },
+        {
+          "type":"frontend",
+          "meta": "${juicefsMeta}",
+          "source": "module/view/research-service-platform-view",
+          "target": "/research-service-platform-view",
           "conf":"gateway-research.conf"
         }
       ],
@@ -187,7 +194,8 @@
           "researchRetrievalDsUrl",
           "researchRetrievalDsProjectName",
           "researchRetrievalDsUsername",
-          "researchRetrievalDsPassword"
+          "researchRetrievalDsPassword",
+          "researchCapacityUserServerName"
         ]
       },
       {
@@ -212,7 +220,8 @@
           "researchStructuredMedicalPastHistoryUrl",
           "researchStructuredMedicalPersonalHistoryUrl",
           "researchStructuredMedicalFamilyHistoryUrl",
-          "researchProjectLlmApi"
+          "researchProjectLlmApi",
+          "researchCapacityUserServerName"
         ]
       }
     ]
@@ -465,10 +474,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "research",
+      "value": "root",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "research"
+      "defaultValue": "root"
     },
     {
       "name": "researchDbDorisPassword",
@@ -477,10 +486,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "research",
+      "value": "3ght%ed75BGk",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "research"
+      "defaultValue": "3ght%ed75BGk"
     },
     {
       "name": "researchDbDorisDriverClassName",
@@ -817,6 +826,18 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": [{"system":"mysql"},{"doris":"doris"}]
+    },
+    {
+      "name": "researchCapacityUserServerName",
+      "label": "科研切换新老门户开关",
+      "description": "切换新老门户开关",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "portal",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "portal"
     }
   ]
 }

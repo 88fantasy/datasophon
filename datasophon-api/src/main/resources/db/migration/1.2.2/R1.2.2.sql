@@ -1,1 +1,1 @@
-DELETE FROM `t_ddh_cluster_service_dashboard` where `id` in (80, 81, 82, 83, 84);
+DELETE FROM `t_ddh_cluster_service_dashboard` where `id` in (80, 81, 82, 83, 84, 85);

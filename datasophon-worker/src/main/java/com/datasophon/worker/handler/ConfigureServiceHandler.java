@@ -17,6 +17,7 @@
 
 package com.datasophon.worker.handler;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
 import com.alibaba.fastjson.JSONArray;
@@ -83,12 +84,22 @@ public class ConfigureServiceHandler {
             paramMap.put("${ip}", ip);
             paramMap.put("${user}", "root");
             paramMap.put("${myid}", String.valueOf(myid));
+
+            ServiceConfig hostConfig = new ServiceConfig();
+            hostConfig.setName("host");
+            hostConfig.setConfigType("map");
+            hostConfig.setValue(hostName);
+            ServiceConfig ipConfig = new ServiceConfig();
+            ipConfig.setName("ip");
+            ipConfig.setConfigType("map");
+            ipConfig.setValue(ip);
+
             logger.info("Start to configure service role {}", serviceRoleName);
             for (Generators generators : cofigFileMap.keySet()) {
                 List<ServiceConfig> configs = cofigFileMap.get(generators);
                 String dataDir = "";
+                ArrayList<ServiceConfig> customConfList = CollUtil.newArrayList(hostConfig,ipConfig);
                 Iterator<ServiceConfig> iterator = configs.iterator();
-                ArrayList<ServiceConfig> customConfList = new ArrayList<>();
                 while (iterator.hasNext()) {
                     ServiceConfig config = iterator.next();
                     if (StringUtils.isNotBlank(config.getType())) {
