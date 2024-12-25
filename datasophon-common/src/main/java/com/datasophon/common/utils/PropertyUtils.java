@@ -17,12 +17,16 @@
 
 package com.datasophon.common.utils;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import cn.hutool.core.util.StrUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,13 +50,25 @@ public class PropertyUtils {
     private static final String COMMON_PROPERTIES_PATH = "/common.properties";
     
     static {
-        String[] propertyFiles = new String[]{COMMON_PROPERTIES_PATH};
+        List<String> propertyFiles = new ArrayList<>();
+        propertyFiles.add(COMMON_PROPERTIES_PATH);
+
+        String debug = System.getProperty("debug");
+        String path = System.getProperty("commonPropertiesLocation");
+        if ("true".equals(debug) && StrUtil.isNotBlank(path)) {
+            propertyFiles.add(path);
+        }
         for (String fileName : propertyFiles) {
             InputStream fis = null;
             try {
-                fis = PropertyUtils.class.getResourceAsStream(fileName);
+                if (StrUtil.startWith(fileName, "file://")) {
+                    String realPath = fileName.substring("file://".length());
+                    fis = new FileInputStream(realPath);
+                } else {
+                    fis = PropertyUtils.class.getResourceAsStream(fileName);
+                }
                 properties.load(fis);
-                
+                logger.info("use common properties file with {}", fileName);
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 if (fis != null) {

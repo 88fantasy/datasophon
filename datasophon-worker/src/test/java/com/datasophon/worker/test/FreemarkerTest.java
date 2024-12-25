@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FreemarkerTest {
 
@@ -18,21 +19,27 @@ public class FreemarkerTest {
     public void generateCustomTemplate() throws IOException, TemplateException {
         Generators generators = new Generators();
         generators.setConfigFormat("custom");
-        generators.setFilename("alertmanager.yml");
-        generators.setTemplateName("alertmanager.yml");
-        generators.setOutputDirectory("D:\\360downloads\\test");
+        generators.setFilename("gateway-mvc.ftl");
+        generators.setTemplateName("portal-gateway-mvc.ftl");
+        generators.setOutputDirectory("D:\\Desktop\\conf\\datasphon\\output");
 
+        Map<String, Object> map = new HashMap<>();
+        map.put("replaceReg", "/$\\{segment}");
+        map.put("predicateUrl", "/gateway/portal/**");
+        map.put("id", "portal");
+        map.put("uri", "lb://portal");
+        map.put("rewriteReg", "/gateway/portal/(?<segment>.*)");
         ServiceConfig serviceConfig = new ServiceConfig();
-        serviceConfig.setName("apiHost");
-        serviceConfig.setValue("ddp1016");
+        serviceConfig.setName("portalRoutes");
+        serviceConfig.setValue(map);
+        serviceConfig.setConfigType("map");
 
-        ServiceConfig serviceConfig2 = new ServiceConfig();
-        serviceConfig2.setName("apiPort");
-        serviceConfig2.setValue("8081");
+//        ServiceConfig serviceConfig2 = new ServiceConfig();
+//        serviceConfig2.setName("apiPort");
+//        serviceConfig2.setValue("8081");
 
         ArrayList<ServiceConfig> serviceConfigs = new ArrayList<>();
         serviceConfigs.add(serviceConfig);
-        serviceConfigs.add(serviceConfig2);
 
         FreemakerUtils.generateConfigFile(generators, serviceConfigs, "");
     }

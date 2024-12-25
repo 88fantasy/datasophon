@@ -12,5 +12,5 @@ spring:
             predicates:
               - Path=${route.predicateUrl}
             filters:
-              - RewritePath=<#rt>${route.rewriteReg}<#lt>, <#rt>${route.replaceReg}<#lt>
+              - RewritePath=${route.rewriteReg}, ${route.replaceReg}
 </#list>

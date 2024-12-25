@@ -1,7 +1,7 @@
 <#noparse>
 portal:
   captcha:
-    type: text
+    type: slice
   login:
     auth-type:
       - password

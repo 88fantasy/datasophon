@@ -8,9 +8,9 @@ redis:
   host: ${portalRedisHost}
   port: ${portalRedisPort}
   database: ${portalRedisDb}
-<if portalRedisPassword??>
+<#if portalRedisPassword??>
   password: ${portalRedisPassword}
-</if>
+</#if>
 
 loki:
   url: ${portalLokiUrl}
