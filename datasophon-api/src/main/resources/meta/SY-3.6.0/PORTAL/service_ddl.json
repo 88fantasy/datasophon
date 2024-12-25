@@ -71,7 +71,7 @@
         ]
       },
       {
-        "filename": "bootstrap.yml",
+        "filename": "bootstrap.yaml",
         "configFormat": "custom",
         "outputDirectory": "conf",
         "templateName": "portal-bootstrap.ftl",
@@ -89,66 +89,10 @@
         ]
       },
       {
-        "filename": "portal.yml",
+        "filename": "portal.yaml",
         "configFormat": "custom",
         "templateName": "portal.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${researchAppNacosGroup}",
-        "type": "nacos",
-        "includeParams": [
-          "portalProfilesActive",
-          "portalNacosHost",
-          "portalNacosPort",
-          "portalNacosUsername",
-          "portalNacosPassword"
-        ]
-      },
-      {
-        "filename": "common-redis.yml",
-        "configFormat": "custom",
-        "templateName": "portal-common-redis.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${researchAppNacosGroup}",
-        "type": "nacos",
-        "includeParams": [
-          "portalProfilesActive",
-          "portalNacosHost",
-          "portalNacosPort",
-          "portalNacosUsername",
-          "portalNacosPassword"
-        ]
-      },
-      {
-        "filename": "common-mysql.yml",
-        "configFormat": "custom",
-        "templateName": "portal-common-mysql.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${researchAppNacosGroup}",
-        "type": "nacos",
-        "includeParams": [
-          "portalProfilesActive",
-          "portalNacosHost",
-          "portalNacosPort",
-          "portalNacosUsername",
-          "portalNacosPassword"
-        ]
-      },
-      {
-        "filename": "common-log.yml",
-        "configFormat": "custom",
-        "templateName": "portal-common-log.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${researchAppNacosGroup}",
-        "type": "nacos",
-        "includeParams": [
-          "portalProfilesActive",
-          "portalNacosHost",
-          "portalNacosPort",
-          "portalNacosUsername",
-          "portalNacosPassword"
-        ]
-      },
-      {
-        "filename": "gateway-mvc.yml",
-        "configFormat": "custom",
-        "templateName": "portal-gateway-mvc.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${researchAppNacosGroup}",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
           "portalProfilesActive",
@@ -156,42 +100,75 @@
           "portalNacosPort",
           "portalNacosUsername",
           "portalNacosPassword",
+          "portalAppNacosGroup"
+        ]
+      },
+      {
+        "filename": "common-redis.yaml",
+        "configFormat": "custom",
+        "templateName": "portal-common-redis.ftl",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "type": "nacos",
+        "includeParams": [
+          "portalProfilesActive",
+          "portalNacosHost",
+          "portalNacosPort",
+          "portalNacosUsername",
+          "portalNacosPassword",
+          "portalAppNacosGroup"
+        ]
+      },
+      {
+        "filename": "common-mysql.yaml",
+        "configFormat": "custom",
+        "templateName": "portal-common-mysql.ftl",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "type": "nacos",
+        "includeParams": [
+          "portalProfilesActive",
+          "portalNacosHost",
+          "portalNacosPort",
+          "portalNacosUsername",
+          "portalNacosPassword",
+          "portalAppNacosGroup"
+        ]
+      },
+      {
+        "filename": "common-log.yaml",
+        "configFormat": "custom",
+        "templateName": "portal-common-log.ftl",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "type": "nacos",
+        "includeParams": [
+          "portalProfilesActive",
+          "portalNacosHost",
+          "portalNacosPort",
+          "portalNacosUsername",
+          "portalNacosPassword",
+          "portalAppNacosGroup"
+        ]
+      },
+      {
+        "filename": "gateway-mvc.yaml",
+        "configFormat": "custom",
+        "templateName": "portal-gateway-mvc.ftl",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "type": "nacos",
+        "includeParams": [
+          "portalProfilesActive",
+          "portalNacosHost",
+          "portalNacosPort",
+          "portalNacosUsername",
+          "portalNacosPassword",
+          "portalAppNacosGroup",
           "portalRoutes"
         ]
       },
       {
-        "filename": "common-oss.yml",
+        "filename": "common-oss.yaml",
         "configFormat": "custom",
         "templateName": "portal-common-oss.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${researchAppNacosGroup}",
-        "type": "nacos",
-        "includeParams": [
-          "portalProfilesActive",
-          "portalNacosHost",
-          "portalNacosPort",
-          "portalNacosUsername",
-          "portalNacosPassword"
-        ]
-      },
-      {
-        "filename": "portal-session.yml",
-        "configFormat": "custom",
-        "templateName": "portal-common-oss.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${researchAppNacosGroup}",
-        "type": "nacos",
-        "includeParams": [
-          "portalProfilesActive",
-          "portalNacosHost",
-          "portalNacosPort",
-          "portalNacosUsername",
-          "portalNacosPassword"
-        ]
-      },
-      {
-        "filename": "portal-common-vars.yml",
-        "configFormat": "custom",
-        "templateName": "portal-common-vars.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${researchAppNacosGroup}",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
         "type": "nacos",
         "includeParams": [
           "portalProfilesActive",
@@ -199,6 +176,37 @@
           "portalNacosPort",
           "portalNacosUsername",
           "portalNacosPassword",
+          "portalAppNacosGroup"
+        ]
+      },
+      {
+        "filename": "portal-session.yaml",
+        "configFormat": "custom",
+        "templateName": "portal-session.ftl",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "type": "nacos",
+        "includeParams": [
+          "portalProfilesActive",
+          "portalNacosHost",
+          "portalNacosPort",
+          "portalNacosUsername",
+          "portalNacosPassword",
+          "portalAppNacosGroup"
+        ]
+      },
+      {
+        "filename": "common-vars.yaml",
+        "configFormat": "custom",
+        "templateName": "portal-common-vars.ftl",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "type": "nacos",
+        "includeParams": [
+          "portalProfilesActive",
+          "portalNacosHost",
+          "portalNacosPort",
+          "portalNacosUsername",
+          "portalNacosPassword",
+          "portalAppNacosGroup",
           "portalRedisHost",
           "portalRedisPort",
           "portalRedisDb",
@@ -320,6 +328,18 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${nacosPassword}"
+    },
+    {
+      "name": "portalAppNacosGroup",
+      "label": "nacos配置的group",
+      "description": "配置需要写到哪一个组(group)",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "portal",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "portal"
     },
     {
       "name": "portalDomain",
@@ -499,10 +519,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "${portalDomain}/mfts/",
+      "value": "/mfts/",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${portalDomain}/mfts/"
+      "defaultValue": "/mfts/"
     }
   ]
 }
