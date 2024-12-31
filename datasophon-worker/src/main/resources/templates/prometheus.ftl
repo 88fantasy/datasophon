@@ -237,10 +237,10 @@ scrape_configs:
     - files:
       - configs/apisix.json
 
-  - job_name: 'juicefs'
+  - job_name: 'juicefsmount'
     file_sd_configs:
     - files:
-      - configs/juicefs.json
+      - configs/juicefsmount.json
 
   - job_name: 'loki'
     file_sd_configs:
