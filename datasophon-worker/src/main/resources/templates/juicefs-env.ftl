@@ -30,7 +30,7 @@ function start() {
   echo "start juicefs"
 
 <#list juicefsMounts as item>
-  $current_path/juicefs mount "${juicefsMeta}" ${item.path} -d --log=$LOG_DIR/${item.log}
+  $current_path/juicefs mount "${juicefsMeta}" ${item.path} -d --log=$LOG_DIR/${item.log} --metrics=0.0.0.0:9567
 </#list>
 
 }
