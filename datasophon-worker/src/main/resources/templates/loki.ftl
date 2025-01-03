@@ -59,3 +59,9 @@ chunk_store_config:
       expiration: 1h
       password: ${lokiRedisPwd}
       db: ${lokiRedisDb}
+
+limits_config:
+  ingestion_rate_strategy: local
+  ingestion_rate_mb: 32
+  ingestion_burst_size_mb: 64
+  max_global_streams_per_user: 0
