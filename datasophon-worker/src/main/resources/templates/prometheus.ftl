@@ -237,10 +237,10 @@ scrape_configs:
     - files:
       - configs/apisix.json
 
-  - job_name: 'juicefs'
+  - job_name: 'juicefsmount'
     file_sd_configs:
     - files:
-      - configs/juicefs.json
+      - configs/juicefsmount.json
 
   - job_name: 'loki'
     file_sd_configs:
@@ -251,3 +251,23 @@ scrape_configs:
     file_sd_configs:
     - files:
       - configs/nginx.json
+
+  - job_name: 'researchplatform'
+    file_sd_configs:
+    - files:
+      - configs/researchplatform.json
+
+  - job_name: 'appretrieval'
+    file_sd_configs:
+    - files:
+      - configs/appretrieval.json
+
+  - job_name: 'operationbrainserver'
+    file_sd_configs:
+    - files:
+      - configs/operationbrainserver.json
+
+  - job_name: 'indicator'
+    file_sd_configs:
+    - files:
+      - configs/indicator.json
