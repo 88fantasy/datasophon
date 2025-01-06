@@ -195,6 +195,48 @@
 					"alert-server"
 				]
 			}
+		},
+		{
+			"name": "EasyflowServer",
+			"label": "EasyflowServer",
+			"roleType": "worker",
+			"runAs": {
+				"user": "hive",
+				"group": "hadoop"
+			},
+			"cardinality": "1",
+			"logFile": "executor/easyflow-web/easyflow.log",
+			"resourceStrategies":[
+				{
+					"type": "sh",
+					"commands": [
+						["mkdir", "executor/easyflow-web"]
+					]
+				},{
+					"type": "download",
+					"from": "script/control_easyflow.sh",
+					"to": "executor/easyflow-web/control.sh"
+				}],
+			"startRunner": {
+				"timeout": "60",
+				"program": "executor/easyflow-web/control.sh",
+				"args": ["start"]
+			},
+			"stopRunner": {
+				"timeout": "600",
+				"program": "executor/easyflow-web/control.sh",
+				"args": ["stop"]
+			},
+			"statusRunner": {
+				"timeout": "60",
+				"program": "executor/easyflow-web/control.sh",
+				"args": ["status"]
+			},
+			"restartRunner": {
+				"timeout": "60",
+				"program": "executor/easyflow-web/control.sh",
+				"args": ["restart"]
+			}
 		}
 	],
 	"configWriter": {
