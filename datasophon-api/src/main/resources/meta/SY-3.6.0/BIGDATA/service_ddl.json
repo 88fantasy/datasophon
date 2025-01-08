@@ -137,9 +137,6 @@
           "bigdataGrafanaUrl",
           "bigdataAiMappingAiTermMappingUrl",
           "bigdataAiMappingAiFieldMappingUrl",
-          "bigdataUstreamYarnRmAddress",
-          "bigdataUstreamAgentYarnRmAddress",
-          "bigdataUstreamFlinkHistoryRestAddress",
           "bigdataApiSixBaseUrl",
           "bigdataApiSixAllowOrigins",
           "bigdataApiSixHttpLoggerEndpoint",
@@ -152,7 +149,6 @@
           "bigdataMinioSecretKey",
           "bigdataMinioUrl",
           "bigdataEsNodes",
-          "bigdataEsPort",
           "bigdataEsUserName",
           "bigdataEsPassword",
           "bigdataWorkbenchSystemUrl",
@@ -431,42 +427,6 @@
       "defaultValue": "http://xx.xx.xx.xx:36902"
     },
     {
-      "name": "bigdataUstreamYarnRmAddress",
-      "label": "ustream的yarn配置",
-      "description": "ustream的yarn配置",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "http://${yarn.resourcemanager.hostname.rm1}:8088/"
-    },
-    {
-      "name": "bigdataUstreamAgentYarnRmAddress",
-      "label": "ustream的agent-yarn配置",
-      "description": "ustream的agent-yarn配置",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "http://${yarn.resourcemanager.hostname.rm1}:8088/"
-    },
-    {
-      "name": "bigdataUstreamFlinkHistoryRestAddress",
-      "label": "ustream的flink配置",
-      "description": "ustream的flink配置",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "http://${flinkHistoryServerHost}:8082/"
-    },
-    {
       "name": "bigdataApiSixBaseUrl",
       "label": "配置apisix访问地址",
       "description": "配置apisix访问地址",
@@ -608,19 +568,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${elasticSearchHost}"
-    },
-    {
-      "name": "bigdataEsPort",
-      "label": "es的端口",
-      "description": "es的端口",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "${http.port}"
+      "defaultValue": "${elasticSearchHostPorts}"
     },
     {
       "name": "bigdataEsUserName",

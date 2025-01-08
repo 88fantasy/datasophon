@@ -16,10 +16,6 @@ redis:
       orderId: "portal:orderId:"
     expire:
       authCode: 90
-es:
-  nodes: ${bigdataEsNodes}
-  username: ${bigdataEsUserName}
-  password: ${bigdataEsPassword}
 
 ds:
   downloadPath: ${bigdataOutsideAccessUrl}/bigdata/bigdata
@@ -275,18 +271,6 @@ metadata:
     # 配置跳转到bigdata的/dc/v1/syncTask/callback接口地址
     callback: ${bigdataServerAddress}/dc/v1/syncTask/callback
   updateIndexMetadataFlag: true
-## 模块-ustream
-ustream:
-  user: hive
-  yarn-rm-address: ${bigdataUstreamYarnRmAddress}
-  agent-yarn-rm-address: ${bigdataUstreamAgentYarnRmAddress}
-  flink:
-    home: /data/flink/flink-lastest
-    history-rest-address: ${bigdataUstreamFlinkHistoryRestAddress}
-  gateway:
-    home: /data/flink/ustream
-    jarname: ustream-gateway-1.0-SNAPSHOT.jar
-    mainclass: com.chinaunicom.medical.business.ustream.gateway.Ulauncher
 ## unicom-etcd/es
 com:
   chinaunicom:
@@ -298,7 +282,7 @@ com:
           location: ${bigdataEtcdUrl}
         es:
           enabled: true
-          nodes: ${bigdataEsNodes}:${bigdataEsPort}
+          nodes: ${bigdataEsNodes}
           userName: ${bigdataEsUserName}
           password: ${bigdataEsPassword}
 ########### 分割线 ###############
@@ -346,7 +330,7 @@ hsb:
 
 easy-es:
   enable: true
-  address: ${bigdataEsNodes}:${bigdataEsPort}
+  address: ${bigdataEsNodes}
   username: ${bigdataEsUserName}
   password: ${bigdataEsPassword}
   global-config:

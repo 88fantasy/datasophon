@@ -58,6 +58,9 @@ public class ElasticSearchHandlerStrategy implements ServiceRoleStrategy {
             String seedHosts = join + ":9300";
             ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${seedHosts}", seedHosts);
 
+            String elasticSearchHostPorts = String.join(":9200,", hosts) + ":9200";
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${elasticSearchHostPorts}", elasticSearchHostPorts);
+
             ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${elasticSearchHost}",
                     hosts.get(0));
         }
