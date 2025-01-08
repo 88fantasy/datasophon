@@ -85,20 +85,11 @@ public class ConfigureServiceHandler {
             paramMap.put("${user}", "root");
             paramMap.put("${myid}", String.valueOf(myid));
 
-            ServiceConfig hostConfig = new ServiceConfig();
-            hostConfig.setName("host");
-            hostConfig.setConfigType("map");
-            hostConfig.setValue(hostName);
-            ServiceConfig ipConfig = new ServiceConfig();
-            ipConfig.setName("ip");
-            ipConfig.setConfigType("map");
-            ipConfig.setValue(ip);
-
             logger.info("Start to configure service role {}", serviceRoleName);
             for (Generators generators : cofigFileMap.keySet()) {
                 List<ServiceConfig> configs = cofigFileMap.get(generators);
                 String dataDir = "";
-                ArrayList<ServiceConfig> customConfList = CollUtil.newArrayList(hostConfig,ipConfig);
+                ArrayList<ServiceConfig> customConfList = CollUtil.newArrayList();
                 Iterator<ServiceConfig> iterator = configs.iterator();
                 while (iterator.hasNext()) {
                     ServiceConfig config = iterator.next();

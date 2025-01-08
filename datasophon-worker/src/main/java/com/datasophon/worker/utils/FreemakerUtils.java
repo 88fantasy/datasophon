@@ -51,6 +51,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -98,7 +99,7 @@ public class FreemakerUtils {
                 sc.setName(sc.getKey());
             }
             return sc;
-        }).collect(Collectors.toList());
+        }).collect(Collectors.toCollection(ArrayList::new));
 
         Map<String, Object> data = new HashMap<>();
         // 得到模板对象
@@ -124,6 +125,20 @@ public class FreemakerUtils {
             return;
         }
         if (Constants.CUSTOM.equals(configFormat)) {
+            // 添加内置变量
+            String hostName = InetAddress.getLocalHost().getHostName();
+            String ip = InetAddress.getLocalHost().getHostAddress();
+            ServiceConfig hostConfig = new ServiceConfig();
+            hostConfig.setName("host");
+            hostConfig.setConfigType("map");
+            hostConfig.setValue(hostName);
+            ServiceConfig ipConfig = new ServiceConfig();
+            ipConfig.setName("ip");
+            ipConfig.setConfigType("map");
+            ipConfig.setValue(ip);
+            scs.add(hostConfig);
+            scs.add(ipConfig);
+
             template = config.getTemplate(generators.getTemplateName());
             data = scs.stream().filter(e -> "map".equals(e.getConfigType()))
                     .collect(Collectors.toMap(ServiceConfig::getName,
