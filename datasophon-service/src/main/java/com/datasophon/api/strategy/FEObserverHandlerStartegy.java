@@ -18,11 +18,14 @@
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
+import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.model.ProcInfo;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.OlapUtils;
+import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.AlertLevel;
 import com.datasophon.dao.enums.ServiceRoleState;
@@ -87,7 +90,10 @@ public class FEObserverHandlerStartegy implements ServiceRoleStrategy {
     
     private void resolveProcInfoAlert(String serviceRoleName, List<ProcInfo> frontends,
                                       Map<String, ClusterServiceRoleInstanceEntity> map) {
+        ClusterHostService clusterHostService = SpringTool.getApplicationContext().getBean(ClusterHostService.class);
         for (ProcInfo frontend : frontends) {
+            ClusterHostDO clusterHostDO = clusterHostService.getClusterHostByIp(frontend.getIp());
+            frontend.setHostName(clusterHostDO.getHostname());
             ClusterServiceRoleInstanceEntity roleInstanceEntity = map.get(frontend.getHostName() + serviceRoleName);
             if (!frontend.getAlive()) {
                 String alertTargetName = serviceRoleName + " Not Add To Cluster";

@@ -27,6 +27,12 @@
         where hostname = #{hostname}
     </select>
 
+    <!--    getClusterHostByIp-->
+    <select id="getClusterHostByIp" resultType="com.datasophon.dao.entity.ClusterHostDO">
+        select *
+        from t_ddh_cluster_host
+        where ip = #{ip}
+    </select>
     <!--    updateBatchNodeLabel-->
     <update id="updateBatchNodeLabel">
         update t_ddh_cluster_host set node_label = #{nodeLabel}

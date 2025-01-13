@@ -32,7 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OlapUtils {
-    
+
+    public static final String DORIS_DEFAULT_PASSWORD = "3ght%ed75BGk";
     private static final Logger logger = LoggerFactory.getLogger(OlapUtils.class);
     
     public static ExecResult addFollower(String feMaster, String hostname) {
@@ -132,7 +133,7 @@ public class OlapUtils {
     
     private static Connection getConnection(String feMaster) throws ClassNotFoundException, SQLException {
         String username = "root";
-        String password = "";
+        String password = DORIS_DEFAULT_PASSWORD;
         String url = "jdbc:mysql://" + feMaster + ":9030";
         // 加载驱动
         Class.forName("com.mysql.cj.jdbc.Driver");
@@ -179,7 +180,7 @@ public class OlapUtils {
             ResultSet resultSet = statement.executeQuery(sql);
             while (resultSet.next()) {
                 ProcInfo procInfo = new ProcInfo();
-                procInfo.setHostName(resultSet.getString("HostName"));
+                procInfo.setIp(resultSet.getString("Host"));
                 procInfo.setAlive(resultSet.getBoolean("Alive"));
                 procInfo.setErrMsg(resultSet.getString("ErrMsg"));
                 list.add(procInfo);

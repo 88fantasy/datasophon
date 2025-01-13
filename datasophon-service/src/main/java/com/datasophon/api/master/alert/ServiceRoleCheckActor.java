@@ -35,11 +35,16 @@ import java.util.stream.Collectors;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 import akka.actor.UntypedActor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServiceRoleCheckActor extends UntypedActor {
+
+    private static final Logger logger = LoggerFactory.getLogger(ServiceRoleCheckActor.class);
     
     @Override
     public void onReceive(Object msg) throws Throwable {
+        logger.info("start to check serviceRole info");
         if (msg instanceof ServiceRoleCheckCommand) {
             ClusterServiceRoleInstanceService roleInstanceService =
                     SpringTool.getApplicationContext()

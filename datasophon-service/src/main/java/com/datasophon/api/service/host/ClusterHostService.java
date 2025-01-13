@@ -27,6 +27,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface ClusterHostService extends IService<ClusterHostDO> {
     
     ClusterHostDO getClusterHostByHostname(String hostname);
+
+    ClusterHostDO getClusterHostByIp(String ip);
     
     Result listByPage(Integer clusterId, String hostname, String ip, String cpuArchitecture, Integer hostState,
                       String orderField, String orderType, Integer page, Integer pageSize);

@@ -743,11 +743,13 @@ public class ProcessUtils {
                 SpringTool.getApplicationContext().getBean(ClusterAlertHistoryService.class);
         ClusterServiceInstanceService serviceInstanceService =
                 SpringTool.getApplicationContext().getBean(ClusterServiceInstanceService.class);
+
+        logger.info("alertTargetName:{},clusterId:{},hostname:{}", alertTargetName, roleInstanceEntity.getClusterId(),roleInstanceEntity.getHostname());
         ClusterAlertHistory clusterAlertHistory = alertHistoryService.getOne(new QueryWrapper<ClusterAlertHistory>()
-                .eq(Constants.ALERT_TARGET_NAME, alertTargetName)
-                .eq(Constants.CLUSTER_ID, roleInstanceEntity.getClusterId())
-                .eq(Constants.HOSTNAME, roleInstanceEntity.getHostname())
-                .eq(Constants.IS_ENABLED, 1));
+                .eq(Objects.nonNull(alertTargetName), Constants.ALERT_TARGET_NAME, alertTargetName)
+                .eq(Objects.nonNull(roleInstanceEntity.getClusterId()), Constants.CLUSTER_ID, roleInstanceEntity.getClusterId())
+                .eq(Objects.nonNull(roleInstanceEntity.getHostname()), Constants.HOSTNAME, roleInstanceEntity.getHostname())
+                .eq(Objects.nonNull(alertTargetName), Constants.IS_ENABLED, 1));
 
         ClusterServiceInstanceEntity serviceInstanceEntity =
                 serviceInstanceService.getById(roleInstanceEntity.getServiceId());

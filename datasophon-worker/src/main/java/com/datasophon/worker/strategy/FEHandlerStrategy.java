@@ -31,6 +31,7 @@ import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.OlapUtils;
 import com.datasophon.common.utils.ThrowableUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.utils.ActorUtils;
@@ -102,7 +103,7 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
         String queryPort = props.getProperty("query_port");
         String url = String.format("jdbc:mysql://%s:%s", masterHost, queryPort);
         Connection con = null;
-        String defaultPassword = "3ght%ed75BGk";
+        String defaultPassword = OlapUtils.DORIS_DEFAULT_PASSWORD;
         try {
             logger.info("doris init password,url:{}", url);
             con = DbUtil.use(new SimpleDataSource(url, "root", "")).getConnection();

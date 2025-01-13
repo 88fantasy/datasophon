@@ -90,6 +90,11 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
     public ClusterHostDO getClusterHostByHostname(String hostname) {
         return hostMapper.getClusterHostByHostname(hostname);
     }
+
+    @Override
+    public ClusterHostDO getClusterHostByIp(String ip) {
+        return hostMapper.getClusterHostByIp(ip);
+    }
     
     @Override
     public Result listByPage(Integer clusterId, String hostname, String ip, String cpuArchitecture, Integer hostState,
