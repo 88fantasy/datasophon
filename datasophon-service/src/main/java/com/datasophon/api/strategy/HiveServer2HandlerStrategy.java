@@ -19,6 +19,7 @@ package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
+import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
@@ -118,6 +119,6 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
     @Override
     public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
-        
+        CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
     }
 }

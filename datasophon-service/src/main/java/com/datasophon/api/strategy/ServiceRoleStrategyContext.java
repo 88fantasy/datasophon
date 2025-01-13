@@ -56,9 +56,7 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("NacosServer", new NacosHandlerStrategy());
         strategyMap.put("MinioServer", new MinioHandlerStrategy());
         strategyMap.put("RedisMaster", new RedisHandlerStrategy());
-        strategyMap.put("UApiServer", new USchedulerApiServerHandlerStrategy());
         strategyMap.put("KyuubiServer", new KyuubiServerHandlerStrategy());
-
         strategyMap.put("RANGER", new RangerAdminHandlerStrategy());
         strategyMap.put("ZOOKEEPER", new ZkServerHandlerStrategy());
         strategyMap.put("YARN", new RMHandlerStrategy());
@@ -67,8 +65,22 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("KAFKA", new KafkaHandlerStrategy());
         strategyMap.put("HBASE", new HBaseHandlerStrategy());
         strategyMap.put("FLINK", new FlinkHandlerStrategy());
-        strategyMap.put("KYUUBI", new KyuubiServerHandlerStrategy());
         strategyMap.put("Etcd", new EtcdHandlerStrategy());
+        strategyMap.put("AmoroServer", new AmoroHandlerStrategy());
+        strategyMap.put("Apisix", new ApisixHandlerStrategy());
+        strategyMap.put("BigData", new BigDataHandlerStrategy());
+        strategyMap.put("EasyflowServer", new EasyflowHandlerStrategy());
+        strategyMap.put("hsbServer", new HsbHandlerStrategy());
+        strategyMap.put("JuicefsMount", new JuicefsMountHandlerStrategy());
+        strategyMap.put("Loki", new LokiHandlerStrategy());
+        strategyMap.put("Nginx", new NginxHandlerStrategy());
+        strategyMap.put("Promtail", new PromtailHandlerStrategy());
+        strategyMap.put("SparkThriftServer", new SparkThriftHandlerStrategy());
+        strategyMap.put("UstreamServer", new UstreamHandlerStrategy());
+        strategyMap.put("UApiServer", new USchedulerApiServerHandlerStrategy());
+        strategyMap.put("UMasterServer", new USchedulerMasterServerHandlerStrategy());
+        strategyMap.put("UAlertServer", new USchedulerAlertServerHandlerStrategy());
+        strategyMap.put("UWorkerServer", new USchedulerWorkerServerHandlerStrategy());
         
         // serviceNameMap
         serviceNameMap.put("NameNode", "HDFS");

@@ -17,14 +17,32 @@
 
 package com.datasophon.api.utils;
 
+import akka.actor.ActorSelection;
+import akka.pattern.Patterns;
+import akka.util.Timeout;
 import com.datasophon.api.enums.Status;
+import com.datasophon.api.load.ServiceInfoMap;
+import com.datasophon.api.load.ServiceRoleMap;
+import com.datasophon.api.master.ActorUtils;
 import com.datasophon.common.Constants;
 
+import com.datasophon.common.command.ExecuteCmdCommand;
+import com.datasophon.common.model.ServiceInfo;
+import com.datasophon.common.model.ServiceRoleInfo;
+import com.datasophon.common.utils.ExecResult;
+import com.datasophon.dao.entity.ClusterInfoEntity;
+import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.enums.AlertLevel;
 import org.apache.commons.lang3.StringUtils;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public class CheckUtils {
@@ -125,5 +143,48 @@ public class CheckUtils {
         }
         
         return pattern.matcher(str).matches();
+    }
+
+    /**
+     * statusRunner检测状态
+     * @param roleInstanceEntity
+     * @param map
+     */
+    public static void handlerServiceRoleStatusRunnerCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
+                                        Map<String, ClusterServiceRoleInstanceEntity> map) {
+        Integer clusterId = roleInstanceEntity.getClusterId();
+
+        ClusterInfoEntity cluster = ProcessUtils.getClusterInfo(clusterId);
+        String frameCode = cluster.getClusterFrame();
+
+        String key = frameCode + Constants.UNDERLINE + roleInstanceEntity.getServiceName() + Constants.UNDERLINE
+                + roleInstanceEntity.getServiceRoleName();
+        ServiceRoleInfo serviceRoleInfo = ServiceRoleMap.get(key);
+        ServiceInfo serviceInfo =
+                ServiceInfoMap.get(frameCode + Constants.UNDERLINE + roleInstanceEntity.getServiceName());
+
+        ActorSelection execCmdActor = ActorUtils.actorSystem.actorSelection(
+                "akka.tcp://datasophon@" + roleInstanceEntity.getHostname() + ":2552/user/worker/executeCmdActor");
+        ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
+        ArrayList<String> commandList = new ArrayList<>();
+        commandList.add(serviceInfo.getDecompressPackageName() + Constants.SLASH
+                + serviceRoleInfo.getStatusRunner().getProgram());
+        commandList.addAll(serviceRoleInfo.getStatusRunner().getArgs());
+        cmdCommand.setCommands(commandList);
+        Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
+        Future<Object> execFuture = Patterns.ask(execCmdActor, cmdCommand, timeout);
+        try {
+            ExecResult execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+            if (execResult.getExecResult()) {
+                ProcessUtils.recoverAlert(roleInstanceEntity);
+            } else {
+                String alertTargetName = roleInstanceEntity.getServiceRoleName() + " Survive";
+                ProcessUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
+            }
+        } catch (Exception e) {
+            // save alert
+            String alertTargetName = roleInstanceEntity.getServiceRoleName() + " Survive";
+            ProcessUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
+        }
     }
 }

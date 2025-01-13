@@ -18,6 +18,7 @@
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
+import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
@@ -56,6 +57,6 @@ public class RedisHandlerStrategy implements ServiceRoleStrategy {
     @Override
     public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
-        
+        CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
     }
 }

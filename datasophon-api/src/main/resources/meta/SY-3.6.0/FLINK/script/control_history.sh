@@ -19,7 +19,7 @@ export LOG_DIR=$current_path/log
 export STOP_TIMEOUT=3
 
 log=$LOG_DIR/history-start.log
-pid=$PID_DIR/flink-${USER}-historyserver.pid
+pid=$PID_DIR/flink-hive-historyserver.pid
 
 exec_command_start="$current_path/bin/historyserver.sh start"
 exec_command_stop="$current_path/bin/historyserver.sh stop"

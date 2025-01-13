@@ -24,6 +24,7 @@ import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ServiceInstallService;
+import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
@@ -119,7 +120,7 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
     @Override
     public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
-        
+        CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
     }
     
     private void enableRangerPlugin(Integer clusterId, String serviceName, String serviceRoleName) {

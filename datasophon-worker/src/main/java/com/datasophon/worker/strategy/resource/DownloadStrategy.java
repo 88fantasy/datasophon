@@ -7,6 +7,7 @@ import com.datasophon.common.utils.PropertyUtils;
 
 import java.io.File;
 
+import com.datasophon.common.utils.ShellUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import cn.hutool.core.map.MapUtil;
@@ -49,6 +50,9 @@ public class DownloadStrategy extends ResourceStrategy {
         String url = "http://" + masterHost + ":" + masterPort
                 + "/ddh/service/install/downloadResource?" + params;
         HttpUtil.downloadFile(url, file, 300);
+        if(file.exists()){
+            ShellUtils.execShell(String.format("chmod 755 %s", basePath + Constants.SLASH + to));
+        }
         
         logger.info("end to download resource {} to {} ", from, to);
         return ExecResult.success();

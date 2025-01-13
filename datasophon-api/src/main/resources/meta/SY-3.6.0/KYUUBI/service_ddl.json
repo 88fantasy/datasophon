@@ -18,8 +18,15 @@
       },
       "cardinality": "1+",
       "jmxPort": "10019",
-      "logFile": "logs/kyuubi-server-${host}.out",
-      "resourceStrategies":[{
+      "logFile": "logs/kyuubi-hive-org.apache.kyuubi.server.KyuubiServer-${host}.out",
+      "resourceStrategies":[
+        {
+          "type": "append_line",
+          "source": "bin/kyuubi",
+          "line": 21,
+          "text": "USER=hive"
+        },
+        {
         "type": "append_line",
         "source": "bin/kyuubi",
         "line": 206,

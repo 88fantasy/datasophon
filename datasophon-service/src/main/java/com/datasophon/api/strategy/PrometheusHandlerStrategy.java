@@ -18,33 +18,15 @@
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.load.ServiceInfoMap;
-import com.datasophon.api.load.ServiceRoleMap;
-import com.datasophon.api.master.ActorUtils;
+import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.api.utils.ProcessUtils;
-import com.datasophon.common.Constants;
-import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
-import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.HostUtils;
-import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
-import com.datasophon.dao.enums.AlertLevel;
 
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
 
 public class PrometheusHandlerStrategy implements ServiceRoleStrategy {
     
@@ -75,39 +57,6 @@ public class PrometheusHandlerStrategy implements ServiceRoleStrategy {
     @Override
     public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
-        Integer clusterId = roleInstanceEntity.getClusterId();
-        
-        ClusterInfoEntity cluster = ProcessUtils.getClusterInfo(clusterId);
-        String frameCode = cluster.getClusterFrame();
-        
-        String key = frameCode + Constants.UNDERLINE + roleInstanceEntity.getServiceName() + Constants.UNDERLINE
-                + roleInstanceEntity.getServiceRoleName();
-        ServiceRoleInfo serviceRoleInfo = ServiceRoleMap.get(key);
-        ServiceInfo serviceInfo =
-                ServiceInfoMap.get(frameCode + Constants.UNDERLINE + roleInstanceEntity.getServiceName());
-        
-        ActorSelection execCmdActor = ActorUtils.actorSystem.actorSelection(
-                "akka.tcp://datasophon@" + roleInstanceEntity.getHostname() + ":2552/user/worker/executeCmdActor");
-        ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
-        ArrayList<String> commandList = new ArrayList<>();
-        commandList.add(serviceInfo.getDecompressPackageName() + Constants.SLASH
-                + serviceRoleInfo.getStatusRunner().getProgram());
-        commandList.addAll(serviceRoleInfo.getStatusRunner().getArgs());
-        cmdCommand.setCommands(commandList);
-        Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
-        Future<Object> execFuture = Patterns.ask(execCmdActor, cmdCommand, timeout);
-        try {
-            ExecResult execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-            if (execResult.getExecResult()) {
-                ProcessUtils.recoverAlert(roleInstanceEntity);
-            } else {
-                String alertTargetName = roleInstanceEntity.getServiceRoleName() + " Survive";
-                ProcessUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
-            }
-        } catch (Exception e) {
-            // save alert
-            String alertTargetName = roleInstanceEntity.getServiceRoleName() + " Survive";
-            ProcessUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
-        }
+        CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
     }
 }

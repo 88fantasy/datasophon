@@ -17,26 +17,22 @@
 
 package com.datasophon.api.strategy;
 
-import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.utils.CheckUtils;
-import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
-import com.datasophon.common.utils.HostUtils;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 
-public class NacosHandlerStrategy implements ServiceRoleStrategy {
+public class PromtailHandlerStrategy implements ServiceRoleStrategy {
+    
+    private static final Logger logger = LoggerFactory.getLogger(PromtailHandlerStrategy.class);
     
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        if (hosts.size() > 0) {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${nacosHost}",
-                    HostUtils.getIp(hosts.get(0)));
-        }
     }
     
     @Override
@@ -44,6 +40,10 @@ public class NacosHandlerStrategy implements ServiceRoleStrategy {
         
     }
     
+    /**
+     * @param clusterId
+     * @param list
+     */
     @Override
     public void getConfig(Integer clusterId, List<ServiceConfig> list) {
         

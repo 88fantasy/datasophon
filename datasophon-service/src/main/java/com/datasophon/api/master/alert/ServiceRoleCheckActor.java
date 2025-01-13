@@ -49,24 +49,11 @@ public class ServiceRoleCheckActor extends UntypedActor {
             ClusterServiceRoleInstanceService roleInstanceService =
                     SpringTool.getApplicationContext()
                             .getBean(ClusterServiceRoleInstanceService.class);
-            
+
+            //默认检测所有角色
             List<ClusterServiceRoleInstanceEntity> list =
                     roleInstanceService.list(
-                            new QueryWrapper<ClusterServiceRoleInstanceEntity>()
-                                    .in(
-                                            Constants.SERVICE_ROLE_NAME,
-                                            "Prometheus",
-                                            "AlertManager",
-                                            "Krb5Kdc",
-                                            "KAdmin",
-                                            "SRFE",
-                                            "SRBE",
-                                            "DorisFE",
-                                            "DorisFEObserver",
-                                            "DorisBE",
-                                            "NameNode",
-                                            "ResourceManager",
-                                            "ElasticSearch"));
+                            new QueryWrapper<>());
             
             if (!list.isEmpty()) {
                 Map<String, ClusterServiceRoleInstanceEntity> map = translateListToMap(list);

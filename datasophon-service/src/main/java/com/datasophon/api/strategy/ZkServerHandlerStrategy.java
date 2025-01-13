@@ -20,6 +20,7 @@ package com.datasophon.api.strategy;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.service.ClusterInfoService;
+import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
@@ -167,6 +168,6 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
     @Override
     public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
-        
+        CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
     }
 }

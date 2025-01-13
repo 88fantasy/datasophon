@@ -88,6 +88,5 @@ public class FlinkHandlerStrategy extends ServiceHandlerAbstract implements Serv
     @Override
     public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
-        
     }
 }

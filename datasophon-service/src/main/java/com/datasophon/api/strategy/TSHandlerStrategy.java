@@ -24,11 +24,10 @@ import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  *
