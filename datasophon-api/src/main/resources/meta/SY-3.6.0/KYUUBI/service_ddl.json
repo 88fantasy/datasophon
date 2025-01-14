@@ -558,10 +558,12 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [],
+      "value": [
+        {"spark.shuffle.useOldFetchProtocol":"true"}
+      ],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": []
     }
   ]
 }
