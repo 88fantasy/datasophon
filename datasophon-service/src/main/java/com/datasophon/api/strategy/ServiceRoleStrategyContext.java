@@ -62,7 +62,7 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("YARN", new RMHandlerStrategy());
         strategyMap.put("HDFS", new NameNodeHandlerStrategy());
         strategyMap.put("HIVE", new HiveServer2HandlerStrategy());
-        strategyMap.put("KAFKA", new KafkaHandlerStrategy());
+        strategyMap.put("KafkaBroker", new KafkaHandlerStrategy());
         strategyMap.put("HBASE", new HBaseHandlerStrategy());
         strategyMap.put("FLINK", new FlinkHandlerStrategy());
         strategyMap.put("Etcd", new EtcdHandlerStrategy());
