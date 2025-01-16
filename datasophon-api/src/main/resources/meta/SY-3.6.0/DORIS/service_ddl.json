@@ -2,7 +2,7 @@
   "name": "DORIS",
   "label": "Doris",
   "description": "简单易用、高性能和统一的分析数据库",
-  "version": "2.1.3",
+  "version": "2.1.7",
   "sortNum": 20,
   "dependencies":[],
   "packageName": "apache-doris-2.1.7-bin-x64.tar.gz",
@@ -187,7 +187,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${DORIS_HOME}/fe/doris-meta"
+      "defaultValue": "/data/fe/doris-meta"
     },
     {
       "name": "dorisHttpPort",
@@ -242,9 +242,7 @@
       "description": "FE最大堆内存，单位为GB",
       "required": true,
       "configType": "map",
-      "type": "slider",
-      "minValue": 0,
-      "maxValue": 64,
+      "type": "input",
       "value": "",
       "unit": "GB",
       "configurableInWizard": true,
