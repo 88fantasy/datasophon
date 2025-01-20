@@ -8,12 +8,19 @@ import freemarker.template.TemplateException;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class FreemarkerTest {
+
+    @Test
+    public void urlen(){
+        String s = "dafU&%Ukabm12";
+        System.out.println(URLEncoder.encode("dafU&%Ukabm12"));
+    }
 
     @Test
     public void generateCustomTemplate() throws IOException, TemplateException {

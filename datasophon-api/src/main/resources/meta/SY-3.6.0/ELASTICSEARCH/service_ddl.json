@@ -27,6 +27,15 @@
         "group": "elastic"
       },
       "sortNum": 1,
+      "resourceStrategies":[{
+        "type": "sh",
+        "commands": [
+          ["mkdir", "config/certs"],
+          ["cp", "/opt/datasophon/DDP/packages/elastic-certificates.p12","config/certs/"],
+          ["cp", "/opt/datasophon/DDP/packages/elastic-stack-ca.p12","config/certs/"]
+        ]
+      }
+      ],
       "startRunner": {
         "timeout": "60",
         "program": "bin/elasticsearch",
@@ -124,6 +133,11 @@
           "http.cors.enabled",
           "http.cors.allow-origin",
           "path.data",
+          "xpack.security.enabled",
+          "xpack.security.transport.ssl.enabled",
+          "xpack.security.transport.ssl.verification_mode",
+          "xpack.security.transport.ssl.keystore.path",
+          "xpack.security.transport.ssl.truststore.path",
           "custom.elasticsearch.yml"
         ]
       },
@@ -272,6 +286,61 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": ""
+    },
+    {
+      "name": "xpack.security.enabled",
+      "label": "xpack安全认证开关",
+      "description": "",
+      "required": true,
+      "type": "switch",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": true
+    },
+    {
+      "name": "xpack.security.transport.ssl.enabled",
+      "label": "xpack.ssl安全认证开关",
+      "description": "",
+      "required": true,
+      "type": "switch",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": true
+    },
+    {
+      "name": "xpack.security.transport.ssl.verification_mode",
+      "label": "xpack.ssl安全认证模式",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "certificate"
+    },
+    {
+      "name": "xpack.security.transport.ssl.keystore.path",
+      "label": "xpack.ssl.keystore密钥路径",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "certs/elastic-certificates.p12"
+    },
+    {
+      "name": "xpack.security.transport.ssl.truststore.path",
+      "label": "xpack.ssl.truststore密钥路径",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "certs/elastic-certificates.p12"
     },
     {
       "name": "heapSize",
