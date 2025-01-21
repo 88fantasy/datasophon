@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class BEHandlerStartegy implements ServiceRoleStrategy {
     
@@ -86,6 +87,10 @@ public class BEHandlerStartegy implements ServiceRoleStrategy {
             ClusterHostDO clusterHostDO = clusterHostService.getClusterHostByIp(frontend.getIp());
             frontend.setHostName(clusterHostDO.getHostname());
             ClusterServiceRoleInstanceEntity roleInstanceEntity = map.get(frontend.getHostName() + serviceRoleName);
+            if(Objects.isNull(roleInstanceEntity)){
+                logger.warn("{} at host {} is not add to cluster", serviceRoleName, frontend.getHostName());
+                return;
+            }
             if (!frontend.getAlive()) {
                 String alertTargetName = serviceRoleName + " Not Add To Cluster";
                 logger.info("{} at host {} is not add to cluster", serviceRoleName, frontend.getHostName());
