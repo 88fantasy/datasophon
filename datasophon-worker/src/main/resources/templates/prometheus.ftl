@@ -150,17 +150,17 @@ scrape_configs:
     metrics_path: '/dolphinscheduler/actuator/prometheus'
     file_sd_configs:
      - files:
-       - configs/apiserver.json
+       - configs/uapiserver.json
   - job_name: 'masterserver'
     metrics_path: '/actuator/prometheus'
     file_sd_configs:
      - files:
-       - configs/masterserver.json
+       - configs/umasterserver.json
   - job_name: 'workerserver'
     metrics_path: '/actuator/prometheus'
     file_sd_configs:
      - files:
-       - configs/workerserver.json
+       - configs/uworkerserver.json
   - job_name: 'alertserver'
     metrics_path: '/actuator/prometheus'
     file_sd_configs:
