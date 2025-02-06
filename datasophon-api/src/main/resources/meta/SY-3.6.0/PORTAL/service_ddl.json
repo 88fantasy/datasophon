@@ -76,83 +76,74 @@
         "outputDirectory": "conf",
         "templateName": "portal-bootstrap.ftl",
         "includeParams": [
-          "portalRunInProd",
           "portalProfilesActive",
           "portalNacosHost",
           "portalNacosPort",
           "portalNacosUsername",
-          "portalNacosPassword",
-          "portalDomain",
-          "dingdingProxyHost",
-          "dingdingProxyPort",
-          "minioOutsideUrl"
+          "portalNacosPassword"
         ]
       },
       {
         "filename": "portal.yaml",
         "configFormat": "custom",
         "templateName": "portal.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:portal",
         "type": "nacos",
         "includeParams": [
           "portalProfilesActive",
           "portalNacosHost",
           "portalNacosPort",
           "portalNacosUsername",
-          "portalNacosPassword",
-          "portalAppNacosGroup"
+          "portalNacosPassword"
         ]
       },
       {
         "filename": "common-redis.yaml",
         "configFormat": "custom",
         "templateName": "portal-common-redis.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:portal",
         "type": "nacos",
         "includeParams": [
           "portalProfilesActive",
           "portalNacosHost",
           "portalNacosPort",
           "portalNacosUsername",
-          "portalNacosPassword",
-          "portalAppNacosGroup"
+          "portalNacosPassword"
         ]
       },
       {
         "filename": "common-mysql.yaml",
         "configFormat": "custom",
         "templateName": "portal-common-mysql.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:portal",
         "type": "nacos",
         "includeParams": [
           "portalProfilesActive",
           "portalNacosHost",
           "portalNacosPort",
           "portalNacosUsername",
-          "portalNacosPassword",
-          "portalAppNacosGroup"
+          "portalNacosPassword"
         ]
       },
       {
         "filename": "common-log.yaml",
         "configFormat": "custom",
         "templateName": "portal-common-log.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:portal",
         "type": "nacos",
         "includeParams": [
           "portalProfilesActive",
           "portalNacosHost",
           "portalNacosPort",
           "portalNacosUsername",
-          "portalNacosPassword",
-          "portalAppNacosGroup"
+          "portalNacosPassword"
         ]
       },
       {
         "filename": "gateway-mvc.yaml",
         "configFormat": "custom",
         "templateName": "portal-gateway-mvc.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:portal",
         "type": "nacos",
         "includeParams": [
           "portalProfilesActive",
@@ -160,7 +151,6 @@
           "portalNacosPort",
           "portalNacosUsername",
           "portalNacosPassword",
-          "portalAppNacosGroup",
           "portalRoutes"
         ]
       },
@@ -168,37 +158,49 @@
         "filename": "common-oss.yaml",
         "configFormat": "custom",
         "templateName": "portal-common-oss.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:portal",
         "type": "nacos",
         "includeParams": [
           "portalProfilesActive",
           "portalNacosHost",
           "portalNacosPort",
           "portalNacosUsername",
-          "portalNacosPassword",
-          "portalAppNacosGroup"
+          "portalNacosPassword"
         ]
       },
       {
         "filename": "portal-session.yaml",
         "configFormat": "custom",
         "templateName": "portal-session.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:portal",
         "type": "nacos",
         "includeParams": [
           "portalProfilesActive",
           "portalNacosHost",
           "portalNacosPort",
           "portalNacosUsername",
-          "portalNacosPassword",
-          "portalAppNacosGroup"
+          "portalNacosPassword"
         ]
       },
       {
-        "filename": "common-vars.yaml",
+        "filename": "portal-proxy.yaml",
         "configFormat": "custom",
-        "templateName": "portal-common-vars.ftl",
-        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:${portalAppNacosGroup}",
+        "templateName": "portal-proxy.ftl",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:portal",
+        "type": "nacos",
+        "includeParams": [
+          "portalProfilesActive",
+          "portalNacosHost",
+          "portalNacosPort",
+          "portalNacosUsername",
+          "portalNacosPassword"
+        ]
+      },
+      {
+        "filename": "portal-vars.yaml",
+        "configFormat": "custom",
+        "templateName": "portal-vars.ftl",
+        "outputDirectory": "${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:portal",
         "type": "nacos",
         "includeParams": [
           "portalProfilesActive",
@@ -206,16 +208,18 @@
           "portalNacosPort",
           "portalNacosUsername",
           "portalNacosPassword",
-          "portalAppNacosGroup",
           "portalRedisHost",
           "portalRedisPort",
           "portalRedisDb",
           "portalRedisPassword",
+          "portalMysqlUrl",
+          "portalMysqlUsername",
+          "portalMysqlPassword",
           "portalLokiUrl",
+          "portalDomain",
           "minioEndpoint",
           "minioAccessKey",
-          "minioSecretKey",
-          "minioBucket"
+          "minioSecretKey"
         ]
       }
     ]
@@ -256,18 +260,6 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": ""
-    },
-    {
-      "name": "portalRunInProd",
-      "label": "是否运行在生产环境",
-      "description": "如果是，则会关闭swagger相关功能",
-      "required": true,
-      "configType": "map",
-      "type": "switch",
-      "value": true,
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": true
     },
     {
       "name": "portalProfilesActive",
@@ -330,45 +322,9 @@
       "defaultValue": "${nacosPassword}"
     },
     {
-      "name": "portalAppNacosGroup",
-      "label": "nacos配置的group",
-      "description": "配置需要写到哪一个组(group)",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "portal",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "portal"
-    },
-    {
       "name": "portalDomain",
       "label": "门户服务地址",
       "description": "对外服务地址(即前端的地址),只保留协议，host,端口。如http://192.168.2.130:19000",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": ""
-    },
-    {
-      "name": "dingdingProxyHost",
-      "label": "钉钉API代理地址host",
-      "description": "钉钉API代理地址host,如果无需代理，则为空",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": ""
-    },
-    {
-      "name": "dingdingProxyPort",
-      "label": "钉钉API代理地址port",
-      "description": "钉钉API代理地址port,如果无需代理，则为空",
       "required": true,
       "configType": "map",
       "type": "input",
@@ -453,6 +409,42 @@
       "defaultValue": "2"
     },
     {
+      "name": "portalMysqlUrl",
+      "label": "mysqlUrl",
+      "description": "主机+冒号+端口",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${apiHost}:3306"
+    },
+    {
+      "name": "portalMysqlUsername",
+      "label": "mysql username",
+      "description": "数据库用户名",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "portal"
+    },
+    {
+      "name": "portalMysqlPassword",
+      "label": "mysql password",
+      "description": "数据库密码",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "portal"
+    },
+    {
       "name": "portalLokiUrl",
       "label": "loki地址",
       "description": "loki地址,eg: http://192.168.2.122:3100",
@@ -499,30 +491,6 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${minioSecretKey}"
-    },
-    {
-      "name": "minioBucket",
-      "label": "minio桶名",
-      "description": "minio 桶名",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "portal",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "portal"
-    },
-    {
-      "name": "minioOutsideUrl",
-      "label": "minio外链地址",
-      "description": "minio外链地址",
-      "required": true,
-      "configType": "map",
-      "type": "input",
-      "value": "/mfts/",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "/mfts/"
     }
   ]
 }
