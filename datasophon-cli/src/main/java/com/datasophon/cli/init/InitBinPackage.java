@@ -38,14 +38,6 @@ public class InitBinPackage extends InitBase {
         if (!initPathF.exists() || !initPathF.isDirectory()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "local dir not found : " + initPath);
         }
-
-        File installPathF = new File(Constants.INSTALL_PATH);
-        String dataInstallDatasophon = "/data/install_datasophon";
-        if(!installPathF.exists()) {
-            ShellUtils.execShell(String.format("mkdir -p %s", dataInstallDatasophon));
-            ShellUtils.execShell(String.format("ln -s %s %s", dataInstallDatasophon, Constants.INSTALL_PATH));
-        }
-
         File installPackagePathF = new File(Constants.MASTER_MANAGE_PACKAGE_PATH);
         if(!installPackagePathF.exists()) {
             ShellUtils.execShell(String.format("mkdir -p %s/DDP", Constants.INSTALL_PATH));
@@ -70,10 +62,6 @@ public class InitBinPackage extends InitBase {
                 log.info("{} distribution fail.", initPath);
                 flag = false;
             }
-        }
-        if(!executor.exists(Constants.INSTALL_PATH).getExecResult()) {
-            executor.execShell(String.format("mkdir -p %s", dataInstallDatasophon));
-            executor.execShell(String.format("ln -s %s %s", dataInstallDatasophon, Constants.INSTALL_PATH));
         }
         if(!executor.exists(Constants.MASTER_MANAGE_PACKAGE_PATH).getExecResult()) {
             executor.execShell(String.format("mkdir -p %s/DDP", Constants.INSTALL_PATH));
