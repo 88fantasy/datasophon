@@ -17,7 +17,7 @@
       "label": "PortalAdmin",
       "roleType": "master",
       "cardinality": "1",
-      "logFile": "logs/chinaunicom-medical-capacity-portal-server.log",
+      "logFile": "logs/dgmed-framework-portal-server.log",
       "resourceStrategies": [
         {
           "type": "frontend",
