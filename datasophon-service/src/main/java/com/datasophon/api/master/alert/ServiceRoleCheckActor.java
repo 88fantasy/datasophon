@@ -22,6 +22,7 @@ package com.datasophon.api.master.alert;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.strategy.ServiceRoleStrategy;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
+import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleCheckCommand;
@@ -63,6 +64,9 @@ public class ServiceRoleCheckActor extends UntypedActor {
                                     roleInstanceEntity.getServiceRoleName());
                     if (Objects.nonNull(serviceRoleHandler)) {
                         serviceRoleHandler.handlerServiceRoleCheck(roleInstanceEntity, map);
+                    } else {
+                        //默认执行检测命令
+                        CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
                     }
                 }
             } else {

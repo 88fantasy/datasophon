@@ -17,6 +17,7 @@
 
 package com.datasophon.api.strategy;
 
+import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
@@ -34,6 +35,9 @@ public interface ServiceRoleStrategy {
     
     void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname);
     
-    void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
-                                 Map<String, ClusterServiceRoleInstanceEntity> map);
+    default void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
+                                 Map<String, ClusterServiceRoleInstanceEntity> map){
+        //默认执行检测命令
+        CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
+    }
 }

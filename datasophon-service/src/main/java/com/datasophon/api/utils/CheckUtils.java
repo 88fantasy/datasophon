@@ -20,6 +20,7 @@ package com.datasophon.api.utils;
 import akka.actor.ActorSelection;
 import akka.pattern.Patterns;
 import akka.util.Timeout;
+import cn.hutool.core.util.StrUtil;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.load.ServiceInfoMap;
 import com.datasophon.api.load.ServiceRoleMap;
@@ -167,6 +168,12 @@ public class CheckUtils {
                 "akka.tcp://datasophon@" + roleInstanceEntity.getHostname() + ":2552/user/worker/executeCmdActor");
         ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
         ArrayList<String> commandList = new ArrayList<>();
+        if(serviceRoleInfo.getStatusRunner() == null
+                || StrUtil.isBlank(serviceRoleInfo.getStatusRunner().getProgram())){
+            //不写则不执行检测命令
+            return;
+        }
+
         commandList.add(serviceInfo.getDecompressPackageName() + Constants.SLASH
                 + serviceRoleInfo.getStatusRunner().getProgram());
         commandList.addAll(serviceRoleInfo.getStatusRunner().getArgs());
