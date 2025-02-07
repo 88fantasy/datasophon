@@ -17,7 +17,6 @@
 
 package com.datasophon.worker.utils;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONArray;
@@ -25,6 +24,7 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.config.ConfigService;
+import com.alibaba.nacos.api.config.ConfigType;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.client.naming.remote.http.NamingHttpClientManager;
 import com.alibaba.nacos.client.naming.utils.NamingHttpUtil;
@@ -52,6 +52,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -79,107 +81,246 @@ public class FreemakerUtils {
                                           List<ServiceConfig> configs,
                                           String decompressPackageName,
                                           String extPath) throws IOException, TemplateException {
-        // 1.加载模板
+        Configuration config = initConfiguration(extPath);
+
+//        获取模板的名称
+        String tplName = determinateTplName(generators);
+        logger.info("begin to generate config file, tplName: {}, additional tpl path is: {}", tplName, extPath);
+
+        Template template = null;
+//        加载模板，有些configFormat不需要模板
+        if (tplName != null) {
+            template = config.getTemplate(tplName);
+        }
+
+        String content = renderTemplate(generators, template, configs);
+        if (logger.isDebugEnabled()) {
+            logger.debug("generate config file from tpl {}, content is: {}", tplName, content);
+        }
+
+        writeContent(generators, configs, decompressPackageName, content);
+
+    }
+
+    private static Configuration initConfiguration(String extPath) throws IOException {
         // 创建核心配置对象
         Configuration config = new Configuration(Configuration.getVersion());
-        // 设置加载的目录
         List<TemplateLoader> loaderList = new ArrayList<>();
-        loaderList.add(new ClassTemplateLoader(FreemakerUtils.class, "/templates"));
+//       安装包的模板优先
         if (StringUtils.isNotBlank(extPath) && new File(extPath).exists()) {
             // 如果 三方的 package 中存在 templates 模版，则直接加载
             loaderList.add(new FileTemplateLoader(new File(extPath)));
         }
+        loaderList.add(new ClassTemplateLoader(FreemakerUtils.class, "/templates"));
         config.setTemplateLoader(new MultiTemplateLoader(loaderList.toArray(new TemplateLoader[0])));
-
-
-        List<ServiceConfig> scs = configs.stream().map(serviceConfig -> {
-            ServiceConfig sc = new ServiceConfig();
-            BeanUtil.copyProperties(serviceConfig, sc);
-            if (StringUtils.isNotEmpty(sc.getKey())) {
-                sc.setName(sc.getKey());
-            }
-            return sc;
-        }).collect(Collectors.toCollection(ArrayList::new));
-
-        Map<String, Object> data = new HashMap<>();
-        // 得到模板对象
-        String configFormat = generators.getConfigFormat();
-        Template template = null;
-        if (Constants.XML.equals(configFormat)) {
-            template = config.getTemplate("xml.ftl");
-        }
-        if (Constants.PROPERTIES.equals(configFormat)) {
-            template = config.getTemplate("properties.ftl");
-        }
-        if (Constants.PROPERTIES2.equals(configFormat)) {
-            template = config.getTemplate("properties2.ftl");
-        }
-        if (Constants.PROPERTIES3.equals(configFormat)) {
-            template = config.getTemplate("properties3.ftl");
-        }
-        if (Constants.PROMETHEUS.equals(configFormat)) {
-            template = config.getTemplate("alert.yml");
-        }
-        if (Constants.YAML.equals(configFormat)) {
-            generateYaml(generators, scs, decompressPackageName);
-            return;
-        }
-        if (Constants.CUSTOM.equals(configFormat)) {
-            // 添加内置变量
-            String hostName = InetAddress.getLocalHost().getHostName();
-            String ip = InetAddress.getLocalHost().getHostAddress();
-            ServiceConfig hostConfig = new ServiceConfig();
-            hostConfig.setName("host");
-            hostConfig.setConfigType("map");
-            hostConfig.setValue(hostName);
-            ServiceConfig ipConfig = new ServiceConfig();
-            ipConfig.setName("ip");
-            ipConfig.setConfigType("map");
-            ipConfig.setValue(ip);
-            scs.add(hostConfig);
-            scs.add(ipConfig);
-
-            template = config.getTemplate(generators.getTemplateName());
-            data = scs.stream().filter(e -> "map".equals(e.getConfigType()))
-                    .collect(Collectors.toMap(ServiceConfig::getName,
-                            ServiceConfig::getValue));
-            if (Constants.NACOS.equals(generators.getType())) {
-                logger.info("生成nacos配置");
-                String outputDirectory = generators.getOutputDirectory();
-                if (StrUtil.isNotEmpty(outputDirectory)) {
-                    String[] split = outputDirectory.split(":");
-                    String username = checkValue(data, split[0]);
-                    String password = checkValue(data, split[1]);
-                    String host = checkValue(data, split[2]);
-                    String port = checkValue(data, split[3]);
-                    String profile = checkValue(data, split[4]);
-                    String group = checkValue(data, split[5]);
-                    logger.info("解析nacos配置参数outputDirectory,host:{},port:{}", host, port);
-                    Properties properties = new Properties();
-                    properties.put(PropertyKeyConst.SERVER_ADDR, host);
-                    properties.put(PropertyKeyConst.ENDPOINT_PORT, port);
-                    properties.put(PropertyKeyConst.USERNAME, username);
-                    properties.put(PropertyKeyConst.PASSWORD, password);
-                    properties.put(PropertyKeyConst.NAMESPACE, profile);
-                    // 检查命名空间
-                    checkNamespace(properties);
-                    StringWriter content = new StringWriter();
-                    template.process(data, content);
-                    String filename = generators.getFilename();
-                    String dataId = filename.substring(filename.lastIndexOf(".") + 1);
-                    publishConfig(properties, content.toString(), group, filename, dataId);
-                    return;
-                }
-            }
-            scs = scs.stream().filter(e -> !"map".equals(e.getConfigType())).collect(Collectors.toList());
-        }
-        logger.info("load template: {} success.", template.getSourceName());
-        data.put("itemList", scs);
-        // 3.产生输出
-        processOut(generators, template, data, decompressPackageName);
+        return config;
     }
 
-    public static String checkValue(Map<String, Object> data, String str) {
+    /**
+     * 获取模板名
+     * @param generators
+     * @return
+     */
+    private static String determinateTplName(Generators generators) {
+        String configFormat = generators.getConfigFormat();
+//        旧的代码，为了兼容，直接硬编码文件                 //
+//        ---------------开始------------------------- //
+        if (Constants.XML.equals(configFormat)) {
+            return "xml.ftl";
+        }
+        if (Constants.PROPERTIES.equals(configFormat)) {
+            return "properties.ftl";
+        }
+        if (Constants.PROPERTIES2.equals(configFormat)) {
+            return "properties2.ftl";
+        }
+        if (Constants.PROPERTIES3.equals(configFormat)) {
+            return "properties3.ftl";
+        }
+        if (Constants.PROMETHEUS.equals(configFormat)) {
+            return "alert.yml";
+        }
+        if (Constants.YAML.equals(configFormat)) {
+//            直接根据字段生成，无需模板
+            return null;
+        }
+//        旧的代码，为了兼容，直接硬编码文件                //
+//        ---------------结束-----------------------
+
+
+        return generators.getTemplateName();
+    }
+
+    /**
+     * TODO 改为SPI实现
+     * 渲染模板。
+     * 注意保留public，方便写单元测试代码
+     * @param generators
+     * @param template
+     * @param configs
+     * @return
+     */
+    public static String renderTemplate(Generators generators, Template template, List<ServiceConfig> configs) throws TemplateException, IOException {
+        String configFormat = generators.getConfigFormat();
+        if (Constants.YAML.equals(configFormat)) {
+            return renderYaml(generators, configs);
+        }
+        if (Constants.CUSTOM.equals(configFormat)) {
+            return renderCustomConfigFormat(template, configs);
+        }
+
+        return renderDefaultConfigFormat(template, configs);
+
+    }
+
+
+
+    public static String renderCustomConfigFormat(Template template, List<ServiceConfig> configs) throws TemplateException, IOException {
+        Map<String, Object> data = new HashMap<>();
+
+        // 添加内置变量, see commitId: 4420c26b96fc88d8a74db5b3053beae67f6197c9
+        data.put("ip", InetAddress.getLocalHost().getHostAddress());
+        data.put("host", InetAddress.getLocalHost().getHostName());
+
+//        “map”为自定义属性
+        configs.stream().filter(e -> "map".equals(e.getConfigType())).forEach(config-> {
+//            阮伟儿自定义的属性，优先级高于name
+            if (StrUtil.isNotBlank(config.getKey())) {
+                data.put(config.getKey(), config.getValue());
+            } else {
+                data.put(config.getName(), config.getValue());
+            }
+        });
+
+        data.put("itemList", configs.stream().filter(e -> !"map".equals(e.getConfigType())).collect(Collectors.toList()));
+        StringWriter out = new StringWriter();
+        template.process(data, out);
+        return out.toString();
+
+    }
+
+    public static String renderYaml(Generators generators, List<ServiceConfig> configs) {
+//        只保留generator要求的变量，其他变量均过滤掉。用于解决以下业务场景：
+//        ConfigureServiceHandler除了includeParams外，还会添加其他的额外的变量。
+//        这样子生成的yaml会包含这些额外的变量，部分软件(如apisix)在启动时，会检查配置文件，多余的配置项会报错
+        List<String> includeParams = generators.getIncludeParams();
+        List<ServiceConfig> finalConfigs = configs.stream()
+                .filter(config -> includeParams.contains(config.getName()))
+                .collect(Collectors.toList());
+
+        Map<String, Object> configMap = new LinkedHashMap<>();
+        finalConfigs.parallelStream().forEach(serviceConfig -> {
+            String key = StringUtils.isEmpty(serviceConfig.getKey()) ? serviceConfig.getName() : serviceConfig.getKey();
+            configMap.put(key, serviceConfig.getValue());
+        });
+        return YamlParser.flattenedMapToYaml(configMap);
+    }
+
+    public static String renderDefaultConfigFormat(Template template, List<ServiceConfig> configs) throws TemplateException, IOException {
+        //        default render
+        Map<String, Object> data = new HashMap<>();
+        data.put("itemList", configs);
+        StringWriter out = new StringWriter();
+        template.process(data, out);
+        return out.toString();
+    }
+
+
+    /**
+     * TODO 改为SPI实现
+     * @param generators
+     * @param configs
+     * @param decompressPackageName
+     * @param content
+     * @throws UnknownHostException
+     */
+    private static void writeContent(Generators generators, List<ServiceConfig> configs, String decompressPackageName, String content) throws UnknownHostException {
+        String protocol = generators.getType();
+//        默认写文件
+        if (protocol == null) {
+            writeContentToFile(generators, decompressPackageName, content);
+            return;
+        }
+
+        if (Constants.NACOS.equals(protocol)) {
+            writeContentToNacos(generators, configs, content);
+            return;
+        }
+
+        throw new IllegalArgumentException(String.format("unknown type:%s, 请检查service-ddl.json文件的filename属性为%s的generators的配置属性", protocol, generators.getFilename()));
+    }
+
+
+
+    private static void writeContentToFile(Generators generators, String decompressPackageName, String content) {
+        String packagePath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH;
+        String outputDirectory = generators.getOutputDirectory();
+        for (String outPutDir : generators.getOutputDirectory().split(StrUtil.COMMA)) {
+            String outputFile = (outputDirectory.startsWith(Constants.SLASH) ? "" : packagePath) + outPutDir + Constants.SLASH + generators.getFilename();
+            File file = new File(outputFile);
+            if (!file.exists()) {
+                FileUtil.mkParentDirs(file);
+            }
+            FileUtil.writeString(content, file, StandardCharsets.UTF_8);
+            logger.info("成功生成配置文件{}，写入位置为{}", generators.getFilename(), file.getAbsolutePath());
+
+            if (generators.getFilename().endsWith(SH) && !file.canExecute()) {
+                file.setExecutable(true);
+            }
+        }
+    }
+
+    private static void writeContentToNacos(Generators generators, List<ServiceConfig> configs, String content) throws UnknownHostException {
+        String[] split = generators.getOutputDirectory().split(":");
+
+        Map<String, Object> data = new HashMap<>();
+
+        // 添加内置变量, see commitId: 4420c26b96fc88d8a74db5b3053beae67f6197c9
+        data.put("ip", InetAddress.getLocalHost().getHostAddress());
+        data.put("host", InetAddress.getLocalHost().getHostName());
+
+        configs.stream().filter(e -> "map".equals(e.getConfigType())).forEach(config-> {
+//            阮伟儿自定义的属性，优先级高于name
+            if (StrUtil.isNotBlank(config.getKey())) {
+                data.put(config.getKey(), config.getValue());
+            } else {
+                data.put(config.getName(), config.getValue());
+            }
+        });
+        String username = parseValue(data, split[0]);
+        String password = parseValue(data, split[1]);
+        String host = parseValue(data, split[2]);
+        String port = parseValue(data, split[3]);
+        String profile = parseValue(data, split[4]);
+        String group = parseValue(data, split[5]);
+        logger.info("解析nacos配置参数outputDirectory, host:{},port:{}, namespace: {}, group: {}", host, port, profile, group);
+        Properties properties = new Properties();
+        properties.put(PropertyKeyConst.SERVER_ADDR, host);
+        properties.put(PropertyKeyConst.ENDPOINT_PORT, port);
+        properties.put(PropertyKeyConst.USERNAME, username);
+        properties.put(PropertyKeyConst.PASSWORD, password);
+        properties.put(PropertyKeyConst.NAMESPACE, profile);
+        // 检查命名空间
+        createNacosNamespaceIfAbsent(properties);
+
+        String filename = generators.getFilename();
+        String dataType = null;
+        int idx = filename.indexOf(".");
+        if (idx != -1) {
+            dataType = filename.substring(idx + 1);
+        }
+        if (StrUtil.isBlank(dataType)) {
+            dataType = ConfigType.getDefaultType().getType();
+        }
+
+        publishConfig(properties, content, group, filename, dataType);
+        logger.info("成功生成配置文件{}，写入nacos: url:{}:{}, namespace {}, group: {} 成功", generators.getFilename(), host, port, profile, group);
+    }
+
+
+
+
+    public static String parseValue(Map<String, Object> data, String str) {
         String value = str;
         if (str.startsWith("$")) {
             String key = str.substring(2, str.length() - 1);
@@ -192,8 +333,7 @@ public class FreemakerUtils {
         return value;
     }
 
-    private static void checkNamespace(Properties properties) {
-        logger.info("检查命名空间");
+    private static void createNacosNamespaceIfAbsent(Properties properties) {
         try {
             String profile = properties.get(PropertyKeyConst.NAMESPACE).toString();
             String namespacesUrl = "/nacos/v1/console/namespaces";
@@ -206,7 +346,7 @@ public class FreemakerUtils {
                 JSONArray jsonArray = JSONUtil.parseObj(data).getJSONArray("data");
                 boolean anyMatch = jsonArray.stream().anyMatch(str -> Objects.equals(JSONUtil.parseObj(str).getStr("namespace"), profile));
                 if (!anyMatch) {
-                    logger.info("创建命名空间");
+                    logger.info("创建命名空间:{}", profile);
                     Map<String, String> params = new HashMap<>();
                     params.put("customNamespaceId", profile);
                     params.put("namespaceName", profile);
@@ -217,11 +357,11 @@ public class FreemakerUtils {
                     params.put(PropertyKeyConst.PASSWORD, properties.get(PropertyKeyConst.PASSWORD).toString());
                     HttpRestResult<Object> postForm = nacosRestTemplate.postForm(url + namespacesUrl, header, params, String.class);
                     if (postForm.getCode() != 200) {
-                        logger.error("创建命名空间失败");
+                        logger.error("创建命名空间{}失败", profile);
                     }
                 }
             } else {
-                logger.error("检查命名空间失败");
+                logger.error("检查命名空间{}失败", profile);
             }
         } catch (Exception e) {
             logger.error("检查命名空间失败:", e);
@@ -288,6 +428,7 @@ public class FreemakerUtils {
         processYaml(generators, configMap, servicename);
     }
 
+
     private static void processOut(Generators generators, Template template, Map<String, Object> data,
                                    String decompressPackageName) throws IOException, TemplateException {
         String packagePath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH;
@@ -333,26 +474,5 @@ public class FreemakerUtils {
         }
     }
 
-//    public static void main(String[] args) throws IOException, TemplateException {
-//        Map<String, Object> data = new HashMap<>();
-//        Configuration config = new Configuration(Configuration.getVersion());
-//        List<TemplateLoader> loaderList = new ArrayList<>();
-//        loaderList.add(new ClassTemplateLoader(FreemakerUtils.class, "/templates"));
-//        config.setTemplateLoader(new MultiTemplateLoader(loaderList.toArray(new TemplateLoader[0])));
-//        Template template = config.getTemplate("juicefs-env.ftl");
-//
-//        data.put("juicefsMeta", "mysql://juicefs:juicefs@(${apiHost}:3306)/juicefs");
-//        ServiceConfig sc = new ServiceConfig();
-//        com.alibaba.fastjson.JSONArray array = new com.alibaba.fastjson.JSONArray();
-//        JSONObject obj = new JSONObject();
-//        obj.putOpt("path", "/opt/datasophon/juicefs/appweb");
-//        obj.putOpt("log", "appweb");
-//        array.add(obj);
-//        sc.setValue(array);
-//        data.put("juicefsMounts", sc);
-//        StringWriter sw = new StringWriter();
-//        template.process(data, sw);
-//        sw.close();
-//        System.out.println(sw);
-//    }
+
 }

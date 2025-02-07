@@ -128,9 +128,6 @@ public class ConfigureServiceHandler {
                         logger.info("Convert boolean and integer to string");
                         config.setValue(config.getValue().toString());
                     }
-                    if (!config.isRequired() && !Constants.CUSTOM.equals(config.getConfigType())) {
-                        iterator.remove();
-                    }
 
                     if ("dataDir".equals(config.getName())) {
                         logger.info("Find dataDir : {}", config.getValue());
