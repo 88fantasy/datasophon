@@ -31,14 +31,21 @@ import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.OlapUtils;
 import com.datasophon.common.utils.ThrowableUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.utils.ActorUtils;
+import org.apache.commons.lang3.StringUtils;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Objects;
+import java.util.Properties;
 
 public class FEHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
     
@@ -52,6 +59,7 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
         logger.info("FEHandlerStrategy start fe" + JSONUtil.toJsonStr(command));
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
+        String feUniConfPath = workPath + Constants.SLASH + "fe/conf/fe.uni.conf";
         if (command.getCommandType() == CommandType.INSTALL_SERVICE) {
             if (command.isSlave()) {
                 logger.info("first start  fe");
@@ -73,6 +81,7 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                         sqlExecCommand.setFeMaster(command.getMasterHost());
                         sqlExecCommand.setHostName(NetUtil.getLocalhostStr());
                         sqlExecCommand.setOpsType(OlapOpsType.ADD_FE_FOLLOWER);
+                        sqlExecCommand.setWorkerPath(workPath);
                         ActorUtils.getRemoteActor(command.getManagerHost(), "masterNodeProcessingActor")
                                 .tell(sqlExecCommand, ActorRef.noSender());
                         logger.info("slave fe start success");
@@ -85,10 +94,11 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
             } else {
                 startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
                         command.getDecompressPackageName(), command.getRunAs());
-            }
-            // fe安装成功,初始化登录账号
-            if (startResult.getExecResult()){
-              passwordInit(workPath, command.getManagerHost());
+                // fe leader安装成功,初始化登录账号
+                if (startResult.getExecResult()){
+                    String password = OlapUtils.getUniPassword(feUniConfPath);
+                    passwordInit(workPath, HostUtils.getLocalHostName(), password);
+                }
             }
         } else {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
@@ -97,20 +107,19 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
         return startResult;
     }
 
-    private void passwordInit(String workPath, String masterHost){
+    private void passwordInit(String workPath, String masterHost, String password){
         String feConfPath = workPath + Constants.SLASH + "fe" + Constants.SLASH + "conf" + Constants.SLASH + "fe.conf";
         Props props = Props.getProp(feConfPath, Charset.defaultCharset());
         String queryPort = props.getProperty("query_port");
         String url = String.format("jdbc:mysql://%s:%s", masterHost, queryPort);
         Connection con = null;
-        String defaultPassword = OlapUtils.DORIS_DEFAULT_PASSWORD;
         try {
             logger.info("doris init password,url:{}", url);
             con = DbUtil.use(new SimpleDataSource(url, "root", "")).getConnection();
             // Jdbc root密码
-            SqlExecutor.execute(con, String.format("SET PASSWORD = PASSWORD('%s')", defaultPassword));
+            SqlExecutor.execute(con, String.format("SET PASSWORD = PASSWORD('%s')", password));
             // WebUI admin密码
-            SqlExecutor.execute(con, String.format("SET PASSWORD FOR 'admin'@'%%' = PASSWORD('%s')", defaultPassword));
+            SqlExecutor.execute(con, String.format("SET PASSWORD FOR 'admin'@'%%' = PASSWORD('%s')", password));
             logger.info("doris init password finished");
         } catch (Exception e) {
             logger.error(e.getMessage() + ",doris init password fail. 可能密码已初始化过", e);

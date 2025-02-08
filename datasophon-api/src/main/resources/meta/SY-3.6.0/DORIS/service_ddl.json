@@ -54,7 +54,7 @@
       "externalLink": {
         "name": "FE UI",
         "label": "FE UI",
-        "url": "http://${feMaster}:${dorisHttpPort}"
+        "url": "http://${feMaster}:${http_port}"
       }
     },
     {
@@ -137,7 +137,7 @@
         "includeParams": [
           "be_priority_networks",
           "sys_log_level",
-          "dorisBePort",
+          "be_port",
           "webserver_port",
           "brpc_port",
           "storage_root_path",
@@ -154,13 +154,21 @@
           "fe_heap_size",
           "cluster_id",
           "meta_dir",
-          "dorisHttpPort",
-          "dorisRpcPort",
-          "dorisQueryPort",
+          "http_port",
+          "rpc_port",
+          "query_port",
           "fe_priority_networks",
           "lower_case_table_names",
           "enable_outfile_to_local",
           "custom.fe.conf"
+        ]
+      },
+      {
+        "filename": "fe.uni.conf",
+        "configFormat": "properties",
+        "outputDirectory": "fe/conf",
+        "includeParams": [
+          "root_password"
         ]
       }
     ]
@@ -190,7 +198,18 @@
       "defaultValue": "/data/fe/doris-meta"
     },
     {
-      "name": "dorisHttpPort",
+      "name": "root_password",
+      "label": "设置root用户初始化密码",
+      "description": "设置root用户初始化密码",
+      "required": true,
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "3ght%ed75BGk"
+    },
+    {
+      "name": "http_port",
       "label": "FE节点上前端界面的端口",
       "description": "FE节点上前端界面的端口",
       "key": "http_port",
@@ -202,7 +221,7 @@
       "defaultValue": "18030"
     },
     {
-      "name": "dorisRpcPort",
+      "name": "rpc_port",
       "label": "FE节点上Thrift服务器的端口",
       "description": "FE 节点上 Thrift 服务器的端口。",
       "key": "rpc_port",
@@ -214,7 +233,7 @@
       "defaultValue": "9020"
     },
     {
-      "name": "dorisQueryPort",
+      "name": "query_port",
       "label": "FE节点上MySQL服务器的端口",
       "description": "FE 节点上 MySQL 服务器的端口",
       "key": "query_port",
@@ -305,7 +324,7 @@
       "defaultValue": "INFO"
     },
     {
-      "name": "dorisBePort",
+      "name": "be_port",
       "label": "BE admin端口",
       "description": "BE admin端口",
       "key": "be_port",

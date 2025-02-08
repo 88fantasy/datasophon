@@ -25,13 +25,13 @@ public class MasterNodeProcessingActor extends UntypedActor {
             String tip = command.getOpsType().getDesc();
             switch (command.getOpsType()) {
                 case ADD_BE:
-                    execResult = OlapUtils.addBackend(command.getFeMaster(), command.getHostName());
+                    execResult = OlapUtils.addBackend(command.getFeMaster(), command.getHostName(), command.getWorkerPath());
                     break;
                 case ADD_FE_FOLLOWER:
-                    execResult = OlapUtils.addFollower(command.getFeMaster(), command.getHostName());
+                    execResult = OlapUtils.addFollower(command.getFeMaster(), command.getHostName(), command.getWorkerPath());
                     break;
                 case ADD_FE_OBSERVER:
-                    execResult = OlapUtils.addObserver(command.getFeMaster(), command.getHostName());
+                    execResult = OlapUtils.addObserver(command.getFeMaster(), command.getHostName(), command.getWorkerPath());
                     break;
             }
             if (execResult.getExecResult()) {

@@ -12,4 +12,6 @@ public class OlapSqlExecCommand implements Serializable {
     private String feMaster;
     
     private String hostName;
+
+    private String workerPath;
 }

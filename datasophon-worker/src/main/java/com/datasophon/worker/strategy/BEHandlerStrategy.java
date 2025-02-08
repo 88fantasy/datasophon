@@ -17,6 +17,7 @@
 
 package com.datasophon.worker.strategy;
 
+import com.datasophon.common.Constants;
 import com.datasophon.common.command.OlapOpsType;
 import com.datasophon.common.command.OlapSqlExecCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
@@ -39,7 +40,7 @@ public class BEHandlerStrategy extends AbstractHandlerStrategy implements Servic
     public ExecResult handler(ServiceRoleOperateCommand command) {
         ExecResult startResult = new ExecResult();
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-        
+        String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             logger.info("add  be to cluster");
             
@@ -51,6 +52,7 @@ public class BEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                     sqlExecCommand.setFeMaster(command.getMasterHost());
                     // 使用IP 否则应用侧使用时需要设置host
                     sqlExecCommand.setHostName(NetUtil.getLocalhostStr());
+                    sqlExecCommand.setWorkerPath(workPath);
                     sqlExecCommand.setOpsType(OlapOpsType.ADD_BE);
                     ActorUtils.getRemoteActor(command.getManagerHost(), "masterNodeProcessingActor")
                             .tell(sqlExecCommand, ActorRef.noSender());

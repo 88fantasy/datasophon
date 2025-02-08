@@ -17,6 +17,7 @@
 
 package com.datasophon.worker.strategy;
 
+import com.datasophon.common.Constants;
 import com.datasophon.common.command.OlapOpsType;
 import com.datasophon.common.command.OlapSqlExecCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
@@ -45,6 +46,7 @@ public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implement
         ExecResult startResult = new ExecResult();
         logger.info("FEObserverHandlerStrategy start fe observer" + JSONUtil.toJsonStr(command));
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
+        String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
         if (command.getCommandType() == CommandType.INSTALL_SERVICE) {
             logger.info("first start  fe observer");
             ArrayList<String> commands = new ArrayList<>();
@@ -64,6 +66,7 @@ public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implement
                     OlapSqlExecCommand sqlExecCommand = new OlapSqlExecCommand();
                     sqlExecCommand.setFeMaster(command.getMasterHost());
                     sqlExecCommand.setHostName(NetUtil.getLocalhostStr());
+                    sqlExecCommand.setWorkerPath(workPath);
                     sqlExecCommand.setOpsType(OlapOpsType.ADD_FE_OBSERVER);
                     ActorUtils.getRemoteActor(command.getManagerHost(), "masterNodeProcessingActor")
                             .tell(sqlExecCommand, ActorRef.noSender());
