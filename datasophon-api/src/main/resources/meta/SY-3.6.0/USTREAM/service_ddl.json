@@ -226,7 +226,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "jdbc:mysql://${apiHost}:3306/ustream?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2b8&autoReconnect=true&failOverReadOnly=false&allowPublicKeyRetrieval=true"
+			"defaultValue": "jdbc:mysql://${mysqlHostPort}/ustream?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2b8&autoReconnect=true&failOverReadOnly=false&allowPublicKeyRetrieval=true"
 		},
 		{
 			"name": "dbUser",

@@ -77,7 +77,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:3306/streampark?useSSL=false&useUnicode=true&characterEncoding=UTF-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=GMT%2B8"
+      "defaultValue": "jdbc:mysql://${mysqlHostPort}/streampark?useSSL=false&useUnicode=true&characterEncoding=UTF-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=GMT%2B8"
     },
     {
       "name": "username",

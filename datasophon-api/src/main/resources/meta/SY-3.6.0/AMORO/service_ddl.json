@@ -123,7 +123,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "jdbc:mysql://${apiHost}:3306/amoro?useUnicode=true&characterEncoding=UTF8&autoReconnect=true&useAffectedRows=true&useSSL=false&allowPublicKeyRetrieval=true"
+			"defaultValue": "jdbc:mysql://${mysqlHostPort}/amoro?useUnicode=true&characterEncoding=UTF8&autoReconnect=true&useAffectedRows=true&useSSL=false&allowPublicKeyRetrieval=true"
 		},
 		{
 			"name": "amoroDbUsername",

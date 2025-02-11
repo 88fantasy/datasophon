@@ -418,10 +418,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "jdbc:mysql://${apiHost}:3306/operation?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai",
+      "value": "jdbc:mysql://${mysqlHostPort}/operation?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:3306/operation?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai"
+      "defaultValue": "jdbc:mysql://${mysqlHostPort}/operation?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai"
     },
     {
       "name": "operationDbIndicatorUsername",
@@ -1270,10 +1270,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "jdbc:mysql://${apiHost}:3306/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "value": "jdbc:mysql://${mysqlHostPort}/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:3306/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${mysqlHostPort}/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
     },
     {
       "name": "operationDbDorisUsername",

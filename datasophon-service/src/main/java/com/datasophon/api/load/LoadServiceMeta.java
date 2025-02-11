@@ -59,6 +59,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -391,6 +393,7 @@ public class LoadServiceMeta implements ApplicationRunner {
                 globalVariables.put("${apiIp}", InetAddress.getLocalHost().getHostAddress());
                 globalVariables.put("${apiPort}", configBean.getServerPort());
                 globalVariables.put("${INSTALL_PATH}", Constants.INSTALL_PATH);
+                globalVariables.put("${mysqlHostPort}", extractMysqlHostPort(configBean.getDatasourceUrl()));
                 
                 GlobalVariables.put(cluster.getId(), globalVariables);
                 
@@ -478,5 +481,19 @@ public class LoadServiceMeta implements ApplicationRunner {
         arm.setPackageName(decompressPackageName + "-arm.tar.gz");
         arch.put(ArchType.AARCH64.getArch(), arm);
         return arch;
+    }
+
+    public static String extractMysqlHostPort(String jdbcUrl){
+        // jdbc:mysql://192.168.2.146:3306/datasophon?useUnicode=true&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&useSSL=false
+        String regex = "jdbc:mysql://([^:/]+:\\d+)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(jdbcUrl);
+
+        if (matcher.find()) {
+            // 返回匹配的host:port
+            return matcher.group(1);
+        } else {
+            throw new IllegalArgumentException("jdbcUrl格式不正确,无法提取host和port,jdbcUrl:"+ jdbcUrl);
+        }
     }
 }

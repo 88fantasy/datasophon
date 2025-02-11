@@ -416,10 +416,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "jdbc:mysql://${apiHost}:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "value": "jdbc:mysql://${mysqlHostPort}/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:3306/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${mysqlHostPort}/research?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
     },
     {
       "name": "researchDbSystemUsername",

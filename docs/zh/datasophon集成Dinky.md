@@ -134,7 +134,7 @@ vim service_ddl.json
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${apiHost}:3306/dinky?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&useSSL=false&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${mysqlHostPort}/dinky?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&useSSL=false&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
     },
     {
       "name": "username",

@@ -28,5 +28,8 @@ public class ConfigBean {
     
     @Value("${server.port}")
     private String serverPort;
+
+    @Value("${spring.datasource.url}")
+    private String datasourceUrl;
     
 }
