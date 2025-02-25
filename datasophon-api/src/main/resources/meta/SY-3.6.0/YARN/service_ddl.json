@@ -734,10 +734,10 @@
       "configType": "kb",
       "configWithKerberos": true,
       "type": "input",
-      "value": "rm/_HOST@HADOOP.COM",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "rm/_HOST@HADOOP.COM"
+      "defaultValue": ""
     },
     {
       "name": "yarn.resourcemanager.keytab",
@@ -747,10 +747,10 @@
       "configType": "kb",
       "configWithKerberos": true,
       "type": "input",
-      "value": "/etc/security/keytab/rm.service.keytab",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "/etc/security/keytab/rm.service.keytab"
+      "defaultValue": ""
     },
     {
       "name": "yarn.nodemanager.principal",
@@ -760,10 +760,10 @@
       "configType": "kb",
       "configWithKerberos": true,
       "type": "input",
-      "value": "nm/_HOST@HADOOP.COM",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "nm/_HOST@HADOOP.COM"
+      "defaultValue": ""
     },
     {
       "name": "yarn.nodemanager.keytab",
@@ -773,10 +773,10 @@
       "configType": "kb",
       "configWithKerberos": true,
       "type": "input",
-      "value": "/etc/security/keytab/nm.service.keytab",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "/etc/security/keytab/nm.service.keytab"
+      "defaultValue": ""
     },
     {
       "name": "mapreduce.jobhistory.principal",
@@ -786,10 +786,10 @@
       "configType": "kb",
       "configWithKerberos": true,
       "type": "input",
-      "value": "jhs/_HOST@HADOOP.COM",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "jhs/_HOST@HADOOP.COM"
+      "defaultValue": ""
     },
     {
       "name": "mapreduce.jobhistory.keytab",
@@ -799,10 +799,10 @@
       "configType": "kb",
       "configWithKerberos": true,
       "type": "input",
-      "value": "/etc/security/keytab/jhs.service.keytab",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "/etc/security/keytab/jhs.service.keytab"
+      "defaultValue": ""
     },
     {
       "name": "yarn.nodemanager.container-executor.class",
@@ -812,10 +812,10 @@
       "configType": "kb",
       "configWithKerberos": true,
       "type": "input",
-      "value": "org.apache.hadoop.yarn.server.nodemanager.LinuxContainerExecutor",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "org.apache.hadoop.yarn.server.nodemanager.LinuxContainerExecutor"
+      "defaultValue": ""
     },
     {
       "name": "yarn.nodemanager.linux-container-executor.group",
@@ -838,10 +838,10 @@
       "configType": "kb",
       "configWithKerberos": true,
       "type": "input",
-      "value": "${HADOOP_HOME}/bin/container-executor",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "${HADOOP_HOME}/bin/container-executor"
+      "defaultValue": ""
     },
     {
       "name": "yarn.node-labels.enabled",

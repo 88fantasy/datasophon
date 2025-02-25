@@ -431,10 +431,10 @@
       "configWithKerberos": true,
       "required": false,
       "type": "input",
-      "value": "kerberos",
+      "value": "simple",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "kerberos"
+      "defaultValue": "simple"
     },
     {
       "name": "hive.server2.authentication.kerberos.principal",
@@ -555,7 +555,7 @@
       "configType": "ha",
       "configWithHA": true,
       "description": "",
-      "required": false,
+      "required": true,
       "type": "input",
       "value": "${host}",
       "configurableInWizard": true,
@@ -567,7 +567,7 @@
       "configType": "ha",
       "configWithHA": true,
       "description": "",
-      "required": false,
+      "required": true,
       "type": "input",
       "value": "10000",
       "configurableInWizard": true,

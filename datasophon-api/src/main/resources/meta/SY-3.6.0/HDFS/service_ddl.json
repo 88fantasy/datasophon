@@ -302,7 +302,6 @@
           "ha.zookeeper.quorum",
           "hadoop.zk.address",
           "hadoop.tmp.dir",
-          "net.topology.script.file.name",
           "hadoop.security.authentication",
           "hadoop.security.authorization",
           "hadoop.security.auth_to_local.mechanism",
@@ -934,10 +933,10 @@
       "configType": "permission",
       "required": false,
       "type": "input",
-      "value": "org.apache.ranger.authorization.hadoop.RangerHdfsAuthorizer",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "org.apache.ranger.authorization.hadoop.RangerHdfsAuthorizer"
+      "defaultValue": ""
     },
     {
       "name": "rangerAdminUrl",
@@ -981,10 +980,10 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "kerberos",
+      "value": "simple",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "kerberos"
+      "defaultValue": "simple"
     },
     {
       "name": "hadoop.security.authorization",
@@ -994,10 +993,10 @@
       "required": false,
       "configType": "kb",
       "type": "switch",
-      "value": true,
+      "value": false,
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": true
+      "defaultValue": false
     },
     {
       "name": "hadoop.security.auth_to_local.mechanism",
@@ -1021,12 +1020,7 @@
       "configType": "kb",
       "separator": "\n",
       "type": "multiple",
-      "value": [
-        "RULE:[2:$1/$2@$0]([ndj]n\\/.*@HADOOP\\.COM)s/.*/hdfs/",
-        "RULE:[2:$1/$2@$0]([rn]m\\/.*@HADOOP\\.COM)s/.*/yarn/",
-        "RULE:[2:$1/$2@$0](jhs\\/.*@HADOOP\\.COM)s/.*/mapred/",
-        "DEFAULT"
-      ],
+      "value": [],
       "hidden": true,
       "defaultValue": []
     },
@@ -1064,10 +1058,10 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "nn/_HOST@${realm}",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "nn/_HOST@${realm}"
+      "defaultValue": ""
     },
     {
       "name": "dfs.namenode.keytab.file",
@@ -1077,10 +1071,10 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "/etc/security/keytab/nn.service.keytab",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "/etc/security/keytab/nn.service.keytab"
+      "defaultValue": ""
     },
     {
       "name": "dfs.journalnode.kerberos.principal",
@@ -1090,10 +1084,10 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "jn/_HOST@${realm}",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "jn/_HOST@${realm}"
+      "defaultValue": ""
     },
     {
       "name": "dfs.journalnode.keytab.file",
@@ -1103,10 +1097,10 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "/etc/security/keytab/jn.service.keytab",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "/etc/security/keytab/jn.service.keytab"
+      "defaultValue": ""
     },
     {
       "name": "dfs.web.authentication.kerberos.principal",
@@ -1116,23 +1110,10 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "HTTP/_HOST@${realm}",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "HTTP/_HOST@${realm}"
-    },
-    {
-      "name": "dfs.web.authentication.keytab.file",
-      "label": "Hadoop Web UI服务的Kerberos密钥文件路径",
-      "description": "",
-      "configWithKerberos": true,
-      "required": false,
-      "configType": "kb",
-      "type": "input",
-      "value": "/etc/security/keytab/spnego.service.keytab",
-      "configurableInWizard": true,
-      "hidden": true,
-      "defaultValue": "/etc/security/keytab/spnego.service.keytab"
+      "defaultValue": ""
     },
     {
       "name": "dfs.datanode.kerberos.principal",
@@ -1142,10 +1123,10 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "dn/_HOST@${realm}",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "dn/_HOST@${realm}"
+      "defaultValue": ""
     },
     {
       "name": "dfs.datanode.keytab.file",
@@ -1155,10 +1136,10 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "/etc/security/keytab/dn.service.keytab",
+      "value": "",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "/etc/security/keytab/dn.service.keytab"
+      "defaultValue": ""
     },
     {
       "name": "dfs.data.transfer.protection",
@@ -1181,10 +1162,10 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value": "HTTPS_ONLY",
+      "value": "HTTP_ONLY",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "HTTPS_ONLY"
+      "defaultValue": "HTTP_ONLY"
     },
     {
       "name": "net.topology.table.file.name",
@@ -1193,10 +1174,10 @@
       "required": false,
       "configType": "rack",
       "type": "input",
-      "value": "${HADOOP_HOME}/etc/hadoop/rack.properties",
+      "value": "",
       "configWithRack": true,
       "hidden": true,
-      "defaultValue": "${HADOOP_HOME}/etc/hadoop/rack.properties"
+      "defaultValue": ""
     },
     {
       "name": "net.topology.node.switch.mapping.impl",

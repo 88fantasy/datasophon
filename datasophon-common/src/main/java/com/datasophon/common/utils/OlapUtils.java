@@ -239,7 +239,6 @@ public class OlapUtils {
     public static String getUniPassword(String feUniConfPath){
         String root_password = "";
         File feUniConFile = new File(feUniConfPath);
-        logger.info("feUniConfPath:{} exist: {}", feUniConfPath, feUniConFile.exists());
         if (feUniConFile.exists()) {
             Properties properties = new Properties();
             try (FileInputStream fis = new FileInputStream(feUniConFile)) {
