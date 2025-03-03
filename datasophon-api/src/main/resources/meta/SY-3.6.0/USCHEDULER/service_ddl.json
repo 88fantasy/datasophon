@@ -205,7 +205,7 @@
 				"group": "hadoop"
 			},
 			"cardinality": "1",
-			"logFile": "executor/easyflow-web/easyflow.log",
+			"logFile": "executor/easyflow-web/easyflow-web.log",
 			"resourceStrategies":[
 				{
 					"type": "sh",
