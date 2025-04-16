@@ -195,7 +195,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "/data/fe/doris-meta"
+      "defaultValue": "/data/doris/fe/doris-meta"
     },
     {
       "name": "root_password",
@@ -366,7 +366,7 @@
       "required": true,
       "type": "multiple",
       "value": [
-        "/data/be/storage"
+        "/data/doris/be/storage"
       ],
       "configurableInWizard": true,
       "hidden": false,

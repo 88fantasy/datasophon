@@ -44,7 +44,9 @@ public enum OsType {
     }
     public static boolean isCentos(OsType osType){
         String desc = osType.getDesc();
-        return desc.startsWith("centos") || desc.startsWith("openEuler");
+        return desc.startsWith("centos")
+                || desc.startsWith("openEuler")
+                || desc.startsWith("other"); // 默认识别不到的系统都是centos
     }
 
 
