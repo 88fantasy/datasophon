@@ -457,10 +457,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://bigdata:7500/bigdata/hsb/v1/logger/info",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://bigdata:7500/bigdata/hsb/v1/logger/info"
+      "defaultValue": "http://${host}:7500/bigdata/hsb/v1/logger/info"
     },
     {
       "name": "bigdataOutsideAccessUrl",
@@ -469,10 +469,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://192.168.2.122:19000",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://192.168.2.122:19000"
+      "defaultValue": "http://${host}:7500"
     },
     {
       "name": "bigdataRedisHost",
@@ -661,10 +661,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "http://hsb:6657",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://hsb:6657"
+      "defaultValue": "http://${host}:6657"
     }
   ]
 }

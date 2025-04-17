@@ -2,8 +2,8 @@ minio:
   accessKey: ${bigdataMinioAccessKey}
   secretKey: ${bigdataMinioSecretKey}
   url: ${bigdataMinioUrl}
-  viewurl: ${bigdataOutsideAccessUrl}/mfts
-  outsideUrl: ${bigdataOutsideAccessUrl}/mfts
+  viewurl: ${bigdataMinioUrl}
+  outsideUrl: ${bigdataMinioUrl}
   savePath: public/quality
 
 ## redis密码和库配置
@@ -96,7 +96,7 @@ spring:
       connection-init-sql: set names utf8mb4
     initialization-mode: ALWAYS
     hikari.connection-init-sql: SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci
-    hikari.minimum-idle: 25
+    hikari.minimum-idle: 5
     hikari.maximum-pool-size: 50
     hikari.max-lifetime: 28700000
     idle-timeout: 60000
@@ -326,7 +326,7 @@ aiMapping:
 
 ## 其他
 hsb:
-  apisix-url: ${bigdataOutsideAccessUrl}/data-sharing-server
+  apisix-url: ${bigdataApiSixBaseUrl}
 
 easy-es:
   enable: true
