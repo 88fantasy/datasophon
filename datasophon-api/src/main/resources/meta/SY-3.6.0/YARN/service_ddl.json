@@ -25,7 +25,13 @@
         "from": "etc/hadoop/fair-scheduler.xml",
         "to": "etc/hadoop/fair-scheduler.xml",
         "md5": "de1428bdcb0c92a51354e46de3099f62"
-      }],
+      },
+        {
+          "type": "sh",
+          "commands": [
+            ["cp", "/opt/datasophon/DDP/packages/spark-3.4.2-yarn-shuffle.jar", "share/hadoop/yarn/lib/"]
+          ]
+        }],
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -75,6 +81,12 @@
       },
       "sortNum": 3,
       "logFile": "logs/hadoop-yarn-nodemanager-${host}.log",
+      "resourceStrategies":[{
+        "type": "sh",
+        "commands": [
+          ["cp", "/opt/datasophon/DDP/packages/spark-3.4.2-yarn-shuffle.jar", "share/hadoop/yarn/lib/"]
+        ]
+      }],
       "jmxPort": 9324,
       "startRunner": {
         "timeout": "60",

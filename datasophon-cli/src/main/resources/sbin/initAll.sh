@@ -16,7 +16,7 @@ if [ ! -d "INIT_LOG_PATH" ]; then
 fi
 
 echo "ini tar"
-bash ${INIT_BIN_PATH}/init-ssh.sh > ${INIT_LOG_PATH}/init-ssh.log
+bash ${INIT_BIN_PATH}/init-tar.sh > ${INIT_LOG_PATH}/init-tar.log
 
 echo "ini jdk"
 bash ${INIT_BIN_PATH}/init-jdk.sh > ${INIT_LOG_PATH}/init-jdk.log

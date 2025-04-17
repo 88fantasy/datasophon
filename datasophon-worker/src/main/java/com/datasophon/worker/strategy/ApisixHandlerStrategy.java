@@ -64,9 +64,9 @@ public class ApisixHandlerStrategy extends AbstractHandlerStrategy implements Se
                 commands.add("&&");
                 sudo(command, commands);
                 commands.add("yum");
-                commands.add("install");
+                commands.add("localinstall");
                 commands.add("-y");
-                commands.add(workPath + "/" + os.getDesc() + "/" + arch.getArch() + "/*.rpm");
+                commands.add(workPath + "/" + arch.getArch() + "/" + os.getDesc() + "/*.rpm");
             }
             ExecResult execResult = ShellUtils.execShell(String.join(" ", commands));
             logger.info("install output: {}", execResult.getExecOut());
@@ -100,7 +100,7 @@ public class ApisixHandlerStrategy extends AbstractHandlerStrategy implements Se
             ArrayList<String> delConfigCommands = new ArrayList<>();
             sudo(command, delConfigCommands);
             delConfigCommands.add("rm");
-            delConfigCommands.add("-rf");
+            delConfigCommands.add("-f");
             delConfigCommands.add("/usr/local/apisix/conf/config.yaml.bak");
             ExecResult execResult = ShellUtils.execShell(String.join(" ", delConfigCommands));
             logger.info("delete bak config file : {}", execResult.getExecOut());
