@@ -402,7 +402,9 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [],
+      "value": [
+        {"enable_brpc_builtin_services":"false"}
+      ],
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": ""
