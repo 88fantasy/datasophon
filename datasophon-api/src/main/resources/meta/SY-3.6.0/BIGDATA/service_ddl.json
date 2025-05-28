@@ -151,8 +151,13 @@
           "bigdataEsNodes",
           "bigdataEsUserName",
           "bigdataEsPassword",
-          "bigdataWorkbenchSystemUrl",
+          "bigdataWorkbenchSystemGetTokenUrl",
+          "bigdataWorkbenchSystemCheckToken",
+          "bigdataWorkbenchSystemQueryRootMenu",
+          "bigdataWorkbenchSystemRedirectUri",
+          "bigdataWorkbenchSystemAuthorizationUri",
           "bigdataWorkbenchSystemAppkey",
+          "bigdataWorkbenchSystemAppId",
           "bigdataWorkbenchSystemType",
           "bigdataXApiKey",
           "bigdataKafkaPassword",
@@ -168,7 +173,10 @@
           "bigdataAppNacosHost",
           "bigdataAppNacosPort",
           "bigdataAppNacosUsername",
-          "bigdataAppNacosPassword"
+          "bigdataAppNacosPassword",
+          "bigdataDatasourceConnectCron",
+          "bigdataProgressIsReceive",
+          "bigdataAppEnum"
         ]
       }
     ]
@@ -595,16 +603,64 @@
       "defaultValue": "dafU&%Ukabm12"
     },
     {
-      "name": "bigdataWorkbenchSystemUrl",
-      "label": "平台管理地址",
-      "description": "平台管理地址",
+      "name": "bigdataWorkbenchSystemGetTokenUrl",
+      "label": "获取token接口",
+      "description": "获取token接口",
       "required": true,
       "configType": "map",
       "type": "input",
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "192.168.2.130"
+      "defaultValue": ""
+    },
+    {
+      "name": "bigdataWorkbenchSystemCheckToken",
+      "label": "校验token获取用户信息接口",
+      "description": "校验token获取用户信息接口",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    },
+    {
+      "name": "bigdataWorkbenchSystemQueryRootMenu",
+      "label": "查询菜单权限",
+      "description": "查询菜单权限",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    },
+    {
+      "name": "bigdataWorkbenchSystemRedirectUri",
+      "label": "在门户配置的回调地址，平台管理不需要用",
+      "description": "在门户配置的回调地址，平台管理不需要用",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
+    },
+    {
+      "name": "bigdataWorkbenchSystemAuthorizationUri",
+      "label": "在门户配置的门户授权的url，平台管理不需要用",
+      "description": "在门户配置的门户授权的url，平台管理不需要用",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
     },
     {
       "name": "bigdataWorkbenchSystemAppkey",
@@ -613,10 +669,22 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "k6w72aua",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "k6w72aua"
+      "defaultValue": ""
+    },
+    {
+      "name": "bigdataWorkbenchSystemAppId",
+      "label": "平台管理应用appId",
+      "description": "平台管理应用appId",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ""
     },
     {
       "name": "bigdataWorkbenchSystemType",
@@ -665,6 +733,42 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "http://${host}:6657"
+    },
+    {
+      "name": "bigdataDatasourceConnectCron",
+      "label": "数据库接口连接性测试定时任务配置",
+      "description": "数据库接口连接性测试定时任务配置",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "-"
+    },
+    {
+      "name": "bigdataProgressIsReceive",
+      "label": "总体进度功能的统计回调接口开关",
+      "description": "总体进度功能的统计回调接口开关",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "false"
+    },
+    {
+      "name": "bigdataAppEnum",
+      "label": "菜单管理左侧列表显示枚举",
+      "description": "菜单管理左侧列表显示枚举",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "WORKBENCH,DATA_CONTROL,DATA_OPEN,DATA_PROPERTY"
     }
   ]
 }

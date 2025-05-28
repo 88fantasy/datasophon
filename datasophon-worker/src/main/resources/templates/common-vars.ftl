@@ -1,3 +1,14 @@
+bigdata:
+  # 菜单管理左侧列表显示枚举-不配置就是全部显示
+  app:
+    enum: ${bigdataAppEnum}
+  # 总体进度功能的统计回调接口开关，默认关闭
+  progress:
+    isReceive: ${bigdataProgressIsReceive}
+  ## 数据库接口连接性测试开关，配置"-"为关，配置cron表达式为开
+  datasource:
+    connect:
+      cron: ${bigdataDatasourceConnectCron}
 minio:
   accessKey: ${bigdataMinioAccessKey}
   secretKey: ${bigdataMinioSecretKey}
@@ -30,15 +41,20 @@ workbench:
     version: ${bigdataAppVersion}
   system:
     sso:
-      getTokenUrl: http://${bigdataWorkbenchSystemUrl}:19000/gw/system/auth/v1/getToken
+      ## 获取token
+      getTokenUrl: ${bigdataWorkbenchSystemGetTokenUrl}
       appkey: ${bigdataWorkbenchSystemAppkey}
-      # 默认DEFAULT，平台管理跳转SYSTEM
+      # 默认DEFAULT，平台管理跳转SYSTEM，统一门户PORTAL
       type: ${bigdataWorkbenchSystemType}
-      # type: SYSTEM
-      appId: 9999
-      checkToken: http://${bigdataWorkbenchSystemUrl}:19000/gw/system/api/checkToken
-      queryRootMenu: http://${bigdataWorkbenchSystemUrl}:19000/gw/system/user/v2/resource/queryRootMenu
-
+      appId: ${bigdataWorkbenchSystemAppId}
+      #校验token获取用户信息接口
+      checkToken: ${bigdataWorkbenchSystemCheckToken}
+      #查询菜单权限
+      queryRootMenu: ${bigdataWorkbenchSystemQueryRootMenu}
+      #在门户配置的回调地址，平台管理不需要用
+      redirectUri: ${bigdataWorkbenchSystemRedirectUri}
+      #在门户配置的门户授权的url，平台管理不需要用
+      authorizationUri: ${bigdataWorkbenchSystemAuthorizationUri}
 # api-six的xApiKey
 xApi:
   xApiKey: ${bigdataXApiKey}
