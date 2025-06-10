@@ -24,6 +24,12 @@ public class InitMysql extends InitBase implements InitNodeHandler {
 
     @CommandLine.Option(names = {"-f", "--force"}, description = "mysql存在是否覆盖安装")
     boolean force = false;
+
+    @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
+    String packagePath;
+
+    @CommandLine.Option(names = {"-t", "--tarName"}, description = "tar离线压缩包名", required = true)
+    String tarName;
     
     @Override
     public String name() {
@@ -44,6 +50,21 @@ public class InitMysql extends InitBase implements InitNodeHandler {
                 return true;
             }
         }
+        String tarPath = String.format("%s/%s", packagePath, tarName);
+        String httpRootPath = String.format("%s/tmp/mysql", Constants.INSTALL_PATH);
+
+        if(!executor.exists(tarPath).getExecResult()) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + tarPath);
+        }
+        if(executor.exists(httpRootPath).getExecResult()) {
+            executor.execShell(String.format("rm -rf %s/tmp/mysql", Constants.INSTALL_PATH));
+        }
+        executor.createDir(httpRootPath);
+        executor.execShell(String.format("tar -xvf %s -C %s", tarPath, httpRootPath));
+        if(!executor.exists(httpRootPath).getExecResult()) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + httpRootPath);
+        }
+
         if(OsType.isUnbuntu(osType)) {
             ExecResult mysqlResult = executor.execShell("dpkg --list|grep mysql");
             if (mysqlResult.getExecResult()) {
@@ -57,7 +78,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
                 executor.execShell("rm -rf /etc/mysql");
                 executor.execShell("rm -rf /var/log/mysql");
             }
-            executor.execShell("apt install mysql-server-8.0 -y");
+            executor.execShell(String.format("apt localinstall %s/*.rpm -y", httpRootPath));
             ExecResult statusResult = executor.execShell("systemctl status mysql");
             if (statusResult.getExecResult()) {
                 log.info("mysql在运行");
@@ -106,7 +127,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
             }
 
             // 安装mysql
-            executor.execShell("yum -y install mysql-community-server");
+            executor.execShell(String.format("yum -y localinstall %s/*.rpm", httpRootPath));
             // 初始化配置
             executor.execShell("mysqld --initialize --user=mysql");
             executor.execShell("systemctl start mysqld");
@@ -159,6 +180,8 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         myconf.add("explicit_defaults_for_timestamp=true");
         myconf.add("max_connections=3600");
         myconf.add("max_connections=3600");
+        //myconf.add("datadir=/data/mysql");
+        //myconf.add("socket=/data/mysql/mysql.sock");
         // sql_mode bigdata不支持ONLY_FULL_GROUP_BY
         myconf.add("sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION");
         return myconf;
