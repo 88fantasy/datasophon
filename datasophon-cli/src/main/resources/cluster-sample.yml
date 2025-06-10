@@ -18,88 +18,83 @@ global:
 
   nmapServer:
     user: root
-    ip: 192.168.2.146
+    ip: 192.168.2.173
     port: 22
-    password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+    password: gCZH^bEc8Ka%1IiqSpwo
 
   mysql:
-    enable: false   # Install Mysql
+    enable: true   # Install Mysql
     password: datasophon123      # Set the MYSQL database root password
+    tarName: mysql-8.0.28-1.el8.x86_64.rpm-bundle.tar
     appDbs:
       - account: datasophon
-        password: datasophon
+        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
         dbName: datasophon
-      - account: juicefs
-        password: juicefs
-        dbName: juicefs
       - account: hive
-        password: hive
+        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
         dbName: hive
       - account: dolphinscheduler
-        password: dolphinscheduler
+        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
         dbName: dolphinscheduler
       - account: ustream
-        password: ustream
+        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
         dbName: ustream
       - account: amoro
-        password: amoro
+        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
         dbName: amoro
       - account: nacos
-        password: nacos
+        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
         dbName: nacos
       - account: bigdata
-        password: bigdata
+        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
         dbName: bigdata
       - account: research
-        password: research
+        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
         dbName: research
       - account: operation
-        password: operation
+        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
         dbName: operation
       - account: juicefs
-        password: juicefs
+        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
         dbName: juicefs
     host:
       user: root
-      ip: 192.168.2.146
+      ip: 92.168.2.200
       port: 22
-      password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+      password: gCZH^bEc8Ka%1IiqSpwo
 
   yumServer:
     host:
       user: root
-      ip: 192.168.2.146
+      ip: 192.168.2.173
       port: 22
-      password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
-    reposTarName: offline-repos.tar.gz
+      password: gCZH^bEc8Ka%1IiqSpwo
     listenPort: 4080
 
   ntpServer:
     host:
       user: root
-      ip: 192.168.2.146
+      ip: 192.168.2.173
       port: 22
-      password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+      password: gCZH^bEc8Ka%1IiqSpwo
 
   logDir: ./logs
 
 nodes:
-  - ip: 192.168.2.146
+  - ip: 192.168.2.173
     user: root
-    password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+    password: gCZH^bEc8Ka%1IiqSpwo
     port: 22
-    hostname: dd1
+    hostname: hdp1
     isLocalhost: true
-  - ip: 192.168.2.175
+  - ip: 192.168.2.200
     user: root
-    password: YTiZ#WY3MzFkQ5D2Y4Mw?o_
+    password: gCZH^bEc8Ka%1IiqSpwo
     port: 22
-    hostname: dd2
-
-addNodes:
-  - ip: 192.168.2.160
+    hostname: hdp2
+  - ip: 192.168.2.202
     user: root
-    password: Mj<U#LYpNjNz(M4NjQ0?Ygo_
+    password: gCZH^bEc8Ka%1IiqSpwo
     port: 22
-    hostname: dd3
+    hostname: hdp3
 

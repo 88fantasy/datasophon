@@ -367,7 +367,9 @@
           "net.topology.node.switch.mapping.impl",
           "dfs.datanode.address",
           "dfs.datanode.http.address",
-          "dfs.router.monitor.namenode"
+          "dfs.router.monitor.namenode",
+          "fs.trash.interval",
+          "fs.trash.checkpoint.interval"
         ]
       },
       {
@@ -867,6 +869,30 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "0.0.0.0:1025"
+    },
+    {
+      "name": "fs.trash.interval",
+      "label": "回收站清理的间隔，单位是分钟",
+      "description": "",
+      "required": false,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": true,
+      "defaultValue": "1440"
+    },
+    {
+      "name": "fs.trash.checkpoint.interval",
+      "label": "回收站检查点的间隔，单位是秒",
+      "description": "",
+      "required": false,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": true,
+      "defaultValue": "3600"
     },
     {
       "name": "dfs.permissions.enabled",
