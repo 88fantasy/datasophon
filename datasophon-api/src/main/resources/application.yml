@@ -13,7 +13,7 @@ spring:
     type: com.alibaba.druid.pool.DruidDataSource
     url: jdbc:mysql://${datasource.ip:localhost}:${datasource.port:3306}/${datasource.database:datasophon}?&useUnicode=true&characterEncoding=utf-8
     username: ${datasource.username:datasophon}
-    password: ${datasource.password:datasophon}
+    password: ${datasource.password:MjRm>Tk#ZjU3N)z6Mc5Mgo_}
   #json格式化全局配置
   jackson:
     time-zone: GMT+8

@@ -37,6 +37,7 @@ public class InitLibrary extends InitBase {
             initChmodDev();
             initCleanBuff();
             sourceProfile();
+            telnet();
         } else if(OsType.isUnbuntu(osType)){
             installPsmisc();
             initJavaPolicy();
@@ -46,6 +47,7 @@ public class InitLibrary extends InitBase {
             sourceProfile();
             libpamCracklib();
             policycoreutils();
+            telnet();
         }
         return true;
     }
@@ -270,6 +272,22 @@ public class InitLibrary extends InitBase {
         executor.execShell("source /etc/profile");
         executor.execShell("source /root/.bash_profile");
         executor.execShell("echo $(java -version)");
+    }
+
+    private void telnet() {
+        log.info("install telnet.");
+        OsType osType = executor.getOs();
+        String installCmd = "yum install telnet -y";
+        if(OsType.isUnbuntu(osType)) {
+            installCmd = "DEBIAN_FRONTEND=noninteractive apt install telnet -y";
+        }
+        ExecResult result = executor.execShell(installCmd);
+        if (result.getExecResult()) {
+            log.info("telnet installe success");
+        } else {
+            log.info("telnet install failed.");
+            System.exit(1);
+        }
     }
 
     private void libpamCracklib() {

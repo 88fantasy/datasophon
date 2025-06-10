@@ -10,6 +10,7 @@ import picocli.CommandLine;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 import lombok.extern.slf4j.Slf4j;
@@ -263,6 +264,7 @@ public class InitOsSafeConf extends InitBase {
             log.info("**set user {} shell disabled:", user);
             ExecResult exec = executor.execShell(String.format("grep -E %s /etc/passwd >& /dev/null", user));
             if (exec.getExecResult()) {
+                // 禁止用户通过 Shell 登录系统
                 exec = executor.execShell(String.format("usermod -s /bin/false %s &>/dev/null", user));
                 if (exec.getExecResult()) {
                     log.info("successful, pass!");
@@ -285,6 +287,9 @@ public class InitOsSafeConf extends InitBase {
         confFullPath = "/etc/hosts.allow";
         backupSignal = "0";
         failedSignal = "skip";
+        if(!executor.exists(confFullPath).getExecResult()){
+            executor.writeLines(new ArrayList<>(), confFullPath);
+        }
         editConf();
         
         keyword = "telnet:all";
@@ -292,6 +297,9 @@ public class InitOsSafeConf extends InitBase {
         confFullPath = "/etc/hosts.deny";
         backupSignal = "0";
         failedSignal = "skip";
+        if(!executor.exists(confFullPath).getExecResult()){
+            executor.writeLines(new ArrayList<>(), confFullPath);
+        }
         editConf();
     }
     

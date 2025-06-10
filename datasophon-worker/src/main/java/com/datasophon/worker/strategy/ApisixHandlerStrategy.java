@@ -55,6 +55,12 @@ public class ApisixHandlerStrategy extends AbstractHandlerStrategy implements Se
 
             ArrayList<String> commands = new ArrayList<>();
             sudo(command, commands);
+            String rpmPath = workPath + Constants.SLASH + arch.getArch() + Constants.SLASH + os.getDesc();
+            ExecResult rpmResult = ShellUtils.execShell(String.format(" ls %s", rpmPath));
+            if (!rpmResult.getExecResult()) {
+                logger.error(String.format("apisix安装包目录%s不存在", rpmPath));
+                return rpmResult;
+            }
             if (!OsType.isUnbuntu(os)) {
                 logger.info("Start to yum install apisix with os={}, arch={}", os.getDesc(), arch.getArch());
                 commands.add("yum");
@@ -66,7 +72,7 @@ public class ApisixHandlerStrategy extends AbstractHandlerStrategy implements Se
                 commands.add("yum");
                 commands.add("localinstall");
                 commands.add("-y");
-                commands.add(workPath + "/" + arch.getArch() + "/" + os.getDesc() + "/*.rpm");
+                commands.add(rpmPath + Constants.SLASH + "*.rpm");
             }
             ExecResult execResult = ShellUtils.execShell(String.join(" ", commands));
             logger.info("install output: {}", execResult.getExecOut());

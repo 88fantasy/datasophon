@@ -296,7 +296,6 @@ public class CreateCluster implements Runnable {
         InitOfflineServer initYumServer = new InitOfflineServer();
         initYumServer.setConfigFilePath(initConfigYamlPath);
         initYumServer.setPackagePath(packagesPath)
-                .setReposTarName(yumServer.getReposTarName())
                 .setServerIp(yumServer.getHost().getIp())
                 .setServerPort(yumServer.getListenPort());
         singleNodesExec(yumServer.getHost(), initYumServer);
@@ -359,7 +358,9 @@ public class CreateCluster implements Runnable {
         GlobalConfig.MysqlConfig mysqlConfig = config.getGlobal().getMysql();
         initMysql.setConfigFilePath(initConfigYamlPath);
         initMysql.setPassword(mysqlConfig.getPassword())
-            .setForce(mysqlInstallForce);
+                .setForce(mysqlInstallForce)
+                .setPackagePath(packagesPath)
+                .setTarName(mysqlConfig.getTarName());
         singleNodesExec(mysqlConfig.getHost(), initMysql);
     }
     

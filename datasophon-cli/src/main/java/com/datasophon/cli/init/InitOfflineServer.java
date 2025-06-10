@@ -23,8 +23,6 @@ public class InitOfflineServer extends InitBase implements InitNodeHandler {
     @CommandLine.Option(names = {"-p", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
 
-    @CommandLine.Option(names = {"-f", "--reposTarName"}, description = "repos离线压缩包名", required = true)
-    String reposTarName;
 
     @CommandLine.Option(names = {"-ip", "--serverIp"}, description = "httpd服务ip", required = true)
     String serverIp;
@@ -40,24 +38,14 @@ public class InitOfflineServer extends InitBase implements InitNodeHandler {
 
     @Override
     public boolean doRun(Executor executor) {
-        String reposTarPath = String.format("%s/%s", packagePath, reposTarName);
-        String httpRootPath = String.format("%s/httpd-root", Constants.INSTALL_PATH);
+        String httpRootPath = String.format("%s/offline-repos", packagePath);
         ArchType archType = executor.getArch();
         OsType osType = executor.getOs();
         String repoOsSuffix = String.format("offline-repos/%s/%s", archType.getArch(), osType.getDesc());
-        String repoOsPath = String.format("%s/%s", httpRootPath, repoOsSuffix);
-
-        if(!executor.exists(packagePath).getExecResult()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + packagePath);
+        String repoOsPath = String.format("%s/%s", packagePath, repoOsSuffix);
+        if(!executor.exists(httpRootPath).getExecResult()) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + httpRootPath);
         }
-        if(!executor.exists(reposTarPath).getExecResult()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + reposTarPath);
-        }
-        if(executor.exists(httpRootPath).getExecResult()) {
-            executor.execShell(String.format("rm -rf %s/httpd-root", Constants.INSTALL_PATH));
-        }
-        executor.createDir(httpRootPath);
-        executor.execShell(String.format("tar -zxf %s -C %s", reposTarPath, httpRootPath));
         if(!executor.exists(repoOsPath).getExecResult()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + repoOsPath);
         }

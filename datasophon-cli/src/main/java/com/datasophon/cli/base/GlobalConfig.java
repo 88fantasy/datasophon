@@ -43,6 +43,8 @@ public class GlobalConfig {
         private Boolean enable;
 
         private String password;
+
+        private String tarName;
         
         private List<MysqlAppDb> appDbs;
         
@@ -61,8 +63,6 @@ public class GlobalConfig {
     @Data
     public static class YumServer {
         private Host host;
-        
-        private String reposTarName;
         
         private String listenPort;
     }

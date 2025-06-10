@@ -34,7 +34,7 @@ public class InitOfflineSlave extends InitBase implements InitNodeHandler {
     public boolean doRun(Executor executor) {
         ArchType archType = executor.getArch();
         OsType osType = executor.getOs();
-        String repoOsSuffix = String.format("offline-repos/%s/%s/", archType.getArch(), osType.getDesc());
+        String repoOsSuffix = String.format("%s/%s/", archType.getArch(), osType.getDesc());
         if(OsType.isUnbuntu(osType)) {
             executor.execShell("dpkg --configure -a");
 
