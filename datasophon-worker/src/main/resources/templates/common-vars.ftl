@@ -9,6 +9,8 @@ bigdata:
   datasource:
     connect:
       cron: ${bigdataDatasourceConnectCron}
+app.
+  version: ${bigdataAppVersion}
 minio:
   accessKey: ${bigdataMinioAccessKey}
   secretKey: ${bigdataMinioSecretKey}
@@ -153,12 +155,17 @@ sso:
     tokenSecret: NonceJwtSecre
 
 ## swagger config
-swagger.enabled: true
+swagger:
+  enabled: true
 ##swagger3
-springdoc.api-docs.enabled: true
+springdoc:
+  api-docs:
+    enabled: true
 
 ## monitor config
-monitor.schduler.run: true
+monitor:
+  schduler:
+    run: true
 
 #ribbon conf
 ribbon:
@@ -263,14 +270,16 @@ logging:
   #   com.chinaunicom.medical.capacity.dc.mapper: DEBUG
 
 ## 关闭密评
-cipher.switchButton: 1
+cipher:
+  switchButton: 1
 
 
 ########################原bigdata.yaml##########################
 ## 模块-数据质控
 qc:
   executeResult: ${bigdataServerAddress}/qc/v1/qcRuleExecuteResult/internal/receive
-  imgServer.url: http://localhost:9800
+  imgServer:
+    url: http://localhost:9800
 
 ## 模块-元数据管理
 metadata:
