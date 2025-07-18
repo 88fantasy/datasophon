@@ -65,6 +65,7 @@
           "apisixPort",
           "apisixEtcdNodeList",
           "apisixAdminKey",
+          "apisixAllowAdmin",
           "apisixPrometheusAddr"
         ]
       }
@@ -108,6 +109,19 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": [{"name":"admin", "key":"edd1c9f034335f136f87ad84b625c8f1", "role": "admin"}]
+    },
+    {
+      "name": "apisixAllowAdmin",
+      "label": "允许访问",
+      "key": "apisix.allow_admin",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "configType": "stringArray",
+      "value": ["0.0.0.0/0"],
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": ["0.0.0.0/0"]
     },
     {
       "name": "apisixPrometheusAddr",
