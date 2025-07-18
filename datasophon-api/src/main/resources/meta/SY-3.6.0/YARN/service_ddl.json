@@ -179,6 +179,7 @@
           "yarn.log.server.url",
           "yarn.log-aggregation.retain-seconds",
           "yarn.nodemanager.remote-app-log-dir",
+          "yarn.nodemanager.remote-app-log-dir-suffix",
           "yarn.resourcemanager.scheduler.class",
           "yarn.scheduler.fair.allocation.file",
           "yarn.scheduler.fair.preemption",
@@ -226,6 +227,10 @@
           "mapreduce.jobhistory.keytab",
           "mapreduce.jobhistory.principal",
           "mapreduce.cluster.local.dir",
+          "mapreduce.jobhistory.address",
+          "mapreduce.jobhistory.webapp.address",
+          "mapreduce.jobhistory.done-dir",
+          "mapreduce.jobhistory.intermediate-done-dir",
           "custom.mapred.site.xml"
         ]
       }
@@ -681,7 +686,18 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "hdfs://${dfs.nameservices}/user/yarn/yarn-logs/"
+      "defaultValue": "/tmp/logs"
+    },
+    {
+      "name": "yarn.nodemanager.remote-app-log-dir-suffix",
+      "label": "日志后缀",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value":"",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "logs"
     },
     {
       "name": "yarn.nodemanager.local-dirs",
@@ -725,6 +741,50 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "/data/mapred/local"
+    },
+    {
+      "name": "mapreduce.jobhistory.address",
+      "label": "mapreduce.jobhistory.address",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value":"",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${historyserverHost}:10020"
+    },
+    {
+      "name": "mapreduce.jobhistory.webapp.address",
+      "label": "mapreduce.jobhistory.webapp.address",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value":"",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${historyserverHost}:19888"
+    },
+    {
+      "name": "mapreduce.jobhistory.done-dir",
+      "label": "mapreduce.jobhistory.done-dir",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value":"",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "/tmp/history/done"
+    },
+    {
+      "name": "mapreduce.jobhistory.intermediate-done-dir",
+      "label": "mapreduce.jobhistory.intermediate-done-dir",
+      "description": "",
+      "required": true,
+      "type": "input",
+      "value":"",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "/tmp/history/done_intermediate"
     },
     {
       "name": "yarn.application.classpath",
