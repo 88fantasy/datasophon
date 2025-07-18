@@ -445,7 +445,7 @@
       "value": "operation",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "MjRm>Tk#ZjU3N)z6Mc5Mgo_"
+      "defaultValue": "fI5sQ4yQ4fP5"
     },
     {
       "name": "operationDbIndicatorDriverClassName",
@@ -1249,7 +1249,7 @@
       "value": "operation",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "MjRm>Tk#ZjU3N)z6Mc5Mgo_"
+      "defaultValue": "fI5sQ4yQ4fP5"
     },
     {
       "name": "operationDbWorkflowDriverClassName",

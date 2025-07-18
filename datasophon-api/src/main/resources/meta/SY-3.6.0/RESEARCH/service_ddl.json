@@ -443,7 +443,7 @@
       "value": "research",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "MjRm>Tk#ZjU3N)z6Mc5Mgo_"
+      "defaultValue": "fI5sQ4yQ4fP5"
     },
     {
       "name": "researchDbSystemDriverClassName",
@@ -728,10 +728,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "dolphinscheduler123",
+      "value": "fI5sQ4yQ4fP5",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "dolphinscheduler123"
+      "defaultValue": "fI5sQ4yQ4fP5"
     },
     {
       "name": "researchLlmApi",
