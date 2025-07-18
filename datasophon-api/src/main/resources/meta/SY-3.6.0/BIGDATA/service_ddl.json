@@ -612,7 +612,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": "NONE"
     },
     {
       "name": "bigdataWorkbenchSystemCheckToken",
@@ -624,7 +624,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": "NONE"
     },
     {
       "name": "bigdataWorkbenchSystemQueryRootMenu",
@@ -636,7 +636,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": "NONE"
     },
     {
       "name": "bigdataWorkbenchSystemRedirectUri",
@@ -648,7 +648,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": "NONE"
     },
     {
       "name": "bigdataWorkbenchSystemAuthorizationUri",
@@ -660,7 +660,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": "NONE"
     },
     {
       "name": "bigdataWorkbenchSystemAppkey",
@@ -672,7 +672,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": "NONE"
     },
     {
       "name": "bigdataWorkbenchSystemAppId",
@@ -684,7 +684,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": "NONE"
     },
     {
       "name": "bigdataWorkbenchSystemType",
@@ -705,10 +705,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "edd1c9f034335f136f87ad84b625c234",
+      "value": "edd1c9f034335f136f87ad84b625c8f1",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "edd1c9f034335f136f87ad84b625c234"
+      "defaultValue": "edd1c9f034335f136f87ad84b625c8f1"
     },
     {
       "name": "bigdataKafkaPassword",
@@ -744,7 +744,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "-"
+      "defaultValue": "NONE"
     },
     {
       "name": "bigdataProgressIsReceive",
