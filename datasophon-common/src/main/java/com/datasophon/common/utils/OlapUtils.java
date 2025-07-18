@@ -143,7 +143,7 @@ public class OlapUtils {
         String url = "jdbc:mysql://" + feMaster + ":9030";
         // 加载驱动
         Class.forName("com.mysql.cj.jdbc.Driver");
-        String feUniConfPath = workPath + Constants.SLASH + "fe/conf/fe.uni.conf";
+        String feUniConfPath = "/data/datasophon/datasophon-init/packages/fe.uni.conf";
         String password = getUniPassword(feUniConfPath);
         try {
             connection = DriverManager.getConnection(url, username, password);

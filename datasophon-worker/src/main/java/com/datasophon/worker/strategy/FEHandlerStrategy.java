@@ -59,7 +59,7 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
         logger.info("FEHandlerStrategy start fe" + JSONUtil.toJsonStr(command));
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
-        String feUniConfPath = workPath + Constants.SLASH + "fe/conf/fe.uni.conf";
+        String feUniConfPath = "/data/datasophon/datasophon-init/packages/fe.uni.conf";
         if (command.getCommandType() == CommandType.INSTALL_SERVICE) {
             if (command.isSlave()) {
                 logger.info("first start  fe");
