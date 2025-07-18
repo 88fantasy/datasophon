@@ -11,90 +11,89 @@ global:
       password: u4Gkp19TRcKKlTCLNA1pyA==
       volumes: /data/minio
     host:
-      ip: 192.168.2.146
+      ip: 192.168.62.25
       user: root
-      password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+      password:
       port: 22
 
   nmapServer:
     user: root
-    ip: 192.168.2.173
+    ip: 192.168.62.25
     port: 22
-    password: gCZH^bEc8Ka%1IiqSpwo
+    password:
 
   mysql:
     enable: true   # Install Mysql
-    password: datasophon123      # Set the MYSQL database root password
+    password: MjRm>Tk#ZjU3N)z6M==      # Set the MYSQL database root password
     tarName: mysql-8.0.28-1.el8.x86_64.rpm-bundle.tar
     appDbs:
       - account: datasophon
-        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+        password: fI5sQ4yQ4fP5
         dbName: datasophon
       - account: hive
-        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+        password: fI5sQ4yQ4fP5
         dbName: hive
       - account: dolphinscheduler
-        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+        password: fI5sQ4yQ4fP5
         dbName: dolphinscheduler
       - account: ustream
-        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+        password: fI5sQ4yQ4fP5
         dbName: ustream
       - account: amoro
-        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+        password: fI5sQ4yQ4fP5
         dbName: amoro
       - account: nacos
-        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+        password: fI5sQ4yQ4fP5
         dbName: nacos
       - account: bigdata
-        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+        password: fI5sQ4yQ4fP5
         dbName: bigdata
       - account: research
-        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+        password: fI5sQ4yQ4fP5
         dbName: research
       - account: operation
-        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+        password: fI5sQ4yQ4fP5
         dbName: operation
       - account: juicefs
-        password: MjRm>Tk#ZjU3N)z6Mc5Mgo_
+        password: fI5sQ4yQ4fP5
         dbName: juicefs
     host:
       user: root
-      ip: 92.168.2.200
+      ip: 192.168.62.22
       port: 22
-      password: gCZH^bEc8Ka%1IiqSpwo
+      password:
 
   yumServer:
     host:
       user: root
-      ip: 192.168.2.173
+      ip: 192.168.62.25
       port: 22
-      password: gCZH^bEc8Ka%1IiqSpwo
+      password:
     listenPort: 4080
 
   ntpServer:
     host:
       user: root
-      ip: 192.168.2.173
+      ip: 192.168.62.25
       port: 22
-      password: gCZH^bEc8Ka%1IiqSpwo
+      password:
 
   logDir: ./logs
 
 nodes:
-  - ip: 192.168.2.173
+  - ip: 192.168.62.20
     user: root
-    password: gCZH^bEc8Ka%1IiqSpwo
+    password:
     port: 22
-    hostname: hdp1
+    hostname: hdp20
     isLocalhost: true
-  - ip: 192.168.2.200
+  - ip: 192.168.62.21
     user: root
-    password: gCZH^bEc8Ka%1IiqSpwo
+    password:
     port: 22
-    hostname: hdp2
-  - ip: 192.168.2.202
+    hostname: hdp21
+  - ip: 192.168.62.22
     user: root
-    password: gCZH^bEc8Ka%1IiqSpwo
+    password:
     port: 22
-    hostname: hdp3
-
+    hostname: hdp22
