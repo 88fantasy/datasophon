@@ -57,6 +57,9 @@ global:
       - account: juicefs
         password: fI5sQ4yQ4fP5
         dbName: juicefs
+      - account: portal
+        password: fI5sQ4yQ4fP5
+        dbName: portal
     host:
       user: root
       ip: 192.168.62.22

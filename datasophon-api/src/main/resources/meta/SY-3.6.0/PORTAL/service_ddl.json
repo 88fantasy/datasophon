@@ -2,15 +2,15 @@
   "name": "PORTAL",
   "label": "Portal",
   "description": "统一门户",
-  "version": "1.0.0",
+  "version": "3.1.0",
   "sortNum": 2,
   "dependencies": [
     "NACOS",
     "REDIS",
     "MINIO"
   ],
-  "packageName": "portal-application-1.0.0-RELEASE-install.tar.gz",
-  "decompressPackageName": "portal-application-1.0.0-RELEASE",
+  "packageName": "portal-application-3.1.0-RELEASE-install.tar.gz",
+  "decompressPackageName": "portal-application-3.1.0-RELEASE",
   "roles": [
     {
       "name": "PortalAdmin",
@@ -150,8 +150,7 @@
           "portalNacosHost",
           "portalNacosPort",
           "portalNacosUsername",
-          "portalNacosPassword",
-          "portalRoutes"
+          "portalNacosPassword"
         ]
       },
       {
@@ -193,7 +192,8 @@
           "portalNacosHost",
           "portalNacosPort",
           "portalNacosUsername",
-          "portalNacosPassword"
+          "portalNacosPassword",
+          "portalProxy"
         ]
       },
       {
@@ -219,7 +219,9 @@
           "portalDomain",
           "minioEndpoint",
           "minioAccessKey",
-          "minioSecretKey"
+          "minioSecretKey",
+          "minioBucket",
+          "oidcSignKey"
         ]
       }
     ]
@@ -232,10 +234,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "",
+      "value": "bs6xU7DDH#yrcxaetTTH5p^F$^=#5LG",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": "bs6xU7DDH#yrcxaetTTH5p^F$^=#5LG"
     },
     {
       "name": "portalJavaMemoryOpt",
@@ -244,10 +246,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "",
+      "value": "-Xms256M -Xmx1G -XX:MetaspaceSize=256M -XX:MaxMetaspaceSize=512M",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": "-Xms256M -Xmx1G -XX:MetaspaceSize=256M -XX:MaxMetaspaceSize=512M"
     },
     {
       "name": "portalJdkHomePath",
@@ -271,7 +273,7 @@
       "value": "dev",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "dev"
+      "defaultValue": "prod"
     },
     {
       "name": "portalNacosHost",
@@ -334,34 +336,6 @@
       "defaultValue": ""
     },
     {
-      "name": "portalRoutes",
-      "label": "gateway转发路由",
-      "description": "gateway转发路由配置",
-      "required": true,
-      "type": "multipleWithMap",
-      "configType": "map",
-      "value": [
-        {
-          "id": "portal",
-          "uri": "lb://portal",
-          "predicateUrl": "/gateway/portal/**",
-          "rewriteReg": "/gateway/portal/(?<segment>.*)",
-          "replaceReg": "/$\\{segment}"
-        }
-      ],
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": [
-        {
-          "id": "portal",
-          "uri": "lb://portal",
-          "predicateUrl": "/gateway/portal/**",
-          "rewriteReg": "/gateway/portal/(?<segment>.*)",
-          "replaceReg": "/$\\{segment}"
-        }
-      ]
-    },
-    {
       "name": "portalRedisHost",
       "label": "redis host",
       "description": "redis host",
@@ -384,7 +358,8 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${redisMasterPort}"
-    },{
+    },
+    {
       "name": "portalRedisPassword",
       "label": "redis password",
       "description": "redis password",
@@ -491,6 +466,41 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${minioSecretKey}"
+    },
+    {
+      "name": "minioBucket",
+      "label": "minio桶",
+      "description": "minio桶名，要求公共读，私有写",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "portal",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "portal"
+    },{
+      "name": "oidcSignKey",
+      "label": "oidc协议签名key",
+      "description": "oidc的签名密钥",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": null,
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "VG1GdFpTVXlNaVV6UVNVeU1pVkZOeVZDUWlVNVJpVkZOQ1ZDT0NVNE0="
+    },
+    {
+      "name": "portalProxy",
+      "label": "门户网络代理配置",
+      "description": "门户网络代理配置,不需要代理填none, 网络代理详见文档",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "none"
     }
   ]
 }
