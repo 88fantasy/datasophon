@@ -271,3 +271,8 @@ scrape_configs:
     file_sd_configs:
     - files:
       - configs/indicator.json
+
+  - job_name: 'datart'
+    file_sd_configs:
+    - files:
+      - configs/datart.json

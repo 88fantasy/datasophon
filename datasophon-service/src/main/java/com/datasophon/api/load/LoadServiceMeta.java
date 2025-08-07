@@ -393,8 +393,12 @@ public class LoadServiceMeta implements ApplicationRunner {
                 globalVariables.put("${apiIp}", InetAddress.getLocalHost().getHostAddress());
                 globalVariables.put("${apiPort}", configBean.getServerPort());
                 globalVariables.put("${INSTALL_PATH}", Constants.INSTALL_PATH);
-                globalVariables.put("${mysqlHostPort}", extractMysqlHostPort(configBean.getDatasourceUrl()));
-                
+                String mysqlHostPort = extractMysqlHostPort(configBean.getDatasourceUrl());
+                globalVariables.put("${mysqlHostPort}", mysqlHostPort);
+                String[] split = mysqlHostPort.split(":");
+                globalVariables.put("${mysqlHost}", split[0]);
+                globalVariables.put("${mysqlPort}", split[1]);
+
                 GlobalVariables.put(cluster.getId(), globalVariables);
                 
                 ProcessUtils.createServiceActor(cluster);
