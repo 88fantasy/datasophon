@@ -584,7 +584,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "1024"
+      "defaultValue": "4096"
     },
     {
       "name": "rangerAdminUrl",
