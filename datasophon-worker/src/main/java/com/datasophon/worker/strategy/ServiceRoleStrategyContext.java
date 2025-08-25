@@ -49,7 +49,8 @@ public class ServiceRoleStrategyContext {
         map.put("DorisBE", new BEHandlerStrategy("DORIS", "DorisBE"));
         map.put("HistoryServer", new HistoryServerHandlerStrategy("YARN", "HistoryServer"));
         map.put("BigData", new BigDataMasterHandlerStrategy("BIGDATA", "BigData"));
-        
+        map.put("Datart", new DatartMasterHandlerStrategy("DATART", "Datart"));
+
         // TEZ Server service
         map.put("TezServer", new TezServerHandlerStrategy("TEZ", "TezServer"));
         // kyuubi

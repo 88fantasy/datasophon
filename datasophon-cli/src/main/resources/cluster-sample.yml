@@ -60,6 +60,9 @@ global:
       - account: portal
         password: fI5sQ4yQ4fP5
         dbName: portal
+      - account: datart
+        password: fI5sQ4yQ4fP5
+        dbName: datart
     host:
       user: root
       ip: 192.168.62.22
