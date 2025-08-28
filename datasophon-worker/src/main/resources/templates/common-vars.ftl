@@ -9,7 +9,7 @@ bigdata:
   datasource:
     connect:
       cron: ${bigdataDatasourceConnectCron}
-app.
+app:
   version: ${bigdataAppVersion}
 minio:
   accessKey: ${bigdataMinioAccessKey}
