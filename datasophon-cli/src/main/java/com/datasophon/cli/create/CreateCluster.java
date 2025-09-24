@@ -252,6 +252,7 @@ public class CreateCluster implements Runnable {
         InitBinPackage initBinPackage = new InitBinPackage();
         initBinPackage.setInitPath(initPath);
         initBinPackage.setInitPathOverwriteForce(initPathOverwriteForce);
+        initBinPackage.setInstallDataDir(config.getGlobal().getInstallDataDir());
         List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
         allNodesExec(workerNodes, initBinPackage);
 

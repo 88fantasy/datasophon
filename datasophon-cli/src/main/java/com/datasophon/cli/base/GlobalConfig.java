@@ -24,6 +24,8 @@ public class GlobalConfig {
     private NtpServer ntpServer;
     
     private String logDir;
+
+    private String installDataDir;
     
     @Data
     public static class RegistryConfig {

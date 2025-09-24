@@ -22,6 +22,9 @@ public class InitBinPackage extends InitBase {
     @CommandLine.Option(names = {"-i", "--initPath"}, description = "initPath", required = true)
     private String initPath;
 
+    @CommandLine.Option(names = {"-d", "--installDataDir"}, description = "安装数据目录", required = true)
+    private String installDataDir;
+
     @CommandLine.Option(names = {"-pf", "initPathOverwriteForce"}, description = "initPath目录存在是否覆盖")
     boolean initPathOverwriteForce = false;
     
@@ -40,10 +43,9 @@ public class InitBinPackage extends InitBase {
         }
 
         File installPathF = new File(Constants.INSTALL_PATH);
-        String dataInstallDatasophon = "/data/install_datasophon";
         if(!installPathF.exists()) {
-            ShellUtils.execShell(String.format("mkdir -p %s", dataInstallDatasophon));
-            ShellUtils.execShell(String.format("ln -s %s %s", dataInstallDatasophon, Constants.INSTALL_PATH));
+            ShellUtils.execShell(String.format("mkdir -p %s", installDataDir));
+            ShellUtils.execShell(String.format("ln -s %s %s", installDataDir, Constants.INSTALL_PATH));
         }
 
         File installPackagePathF = new File(Constants.MASTER_MANAGE_PACKAGE_PATH);
@@ -72,8 +74,8 @@ public class InitBinPackage extends InitBase {
             }
         }
         if(!executor.exists(Constants.INSTALL_PATH).getExecResult()) {
-            executor.execShell(String.format("mkdir -p %s", dataInstallDatasophon));
-            executor.execShell(String.format("ln -s %s %s", dataInstallDatasophon, Constants.INSTALL_PATH));
+            executor.execShell(String.format("mkdir -p %s", installDataDir));
+            executor.execShell(String.format("ln -s %s %s", installDataDir, Constants.INSTALL_PATH));
         }
         if(!executor.exists(Constants.MASTER_MANAGE_PACKAGE_PATH).getExecResult()) {
             executor.execShell(String.format("mkdir -p %s/DDP", Constants.INSTALL_PATH));
