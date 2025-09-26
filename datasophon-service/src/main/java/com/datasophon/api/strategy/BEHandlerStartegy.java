@@ -41,21 +41,6 @@ public class BEHandlerStartegy implements ServiceRoleStrategy {
     private static final Logger logger = LoggerFactory.getLogger(BEHandlerStartegy.class);
     
     @Override
-    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        
-    }
-    
-    @Override
-    public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
-        
-    }
-    
-    @Override
-    public void getConfig(Integer clusterId, List<ServiceConfig> list) {
-        
-    }
-    
-    @Override
     public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
         Map<String, String> globalVariables = GlobalVariables.get(serviceRoleInfo.getClusterId());
         String feMaster = globalVariables.get("${feMaster}");

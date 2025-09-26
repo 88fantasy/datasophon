@@ -176,8 +176,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             list = JSONArray.parseArray(serviceConfig, ServiceConfig.class);
         }
 
-        ServiceRoleStrategy serviceRoleHandler =
-                ServiceRoleStrategyContext.getServiceRoleHandler(serviceName);
+        ServiceRoleStrategy serviceRoleHandler = ServiceRoleStrategyContext.getServiceRoleHandler(serviceName);
         if (Objects.nonNull(serviceRoleHandler)) {
             serviceRoleHandler.getConfig(clusterId, list);
         }
