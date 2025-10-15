@@ -1,4 +1,4 @@
-import { cloneDeep, isNil } from 'lodash-es';
+import { cloneDeep, isNil, isObject } from 'lodash-es';
 import { formatMomentObJ2YYYYMMDD } from './dateTime';
 import { Dropdown } from 'antd';
 import { isEmpty } from './util';
@@ -28,7 +28,7 @@ export const invokeMapValue = (data, property, objKey) => {
   if (objKey) {
     if (Array.isArray(res)) {
       res = res.map(item => item[objKey]).join(',');
-    } else if (_.isObject(res)) {
+    } else if (isObject(res)) {
       res = res.name;
     }
   }
@@ -309,15 +309,9 @@ export const invokeGenerateOptsCol = ({
       if (isEmpty(val.key)) {
         val.key = val.label
       }
-      // lastMapEvent[val.key || val.label] = val.onClick
     })
 
 
-    // const onClick = ({ key, onClick }) => {
-    //   const fn = lastMapEvent[key]
-
-    //   fn && fn()
-    // }
 
     const render = () => {
       const label = '更多'
