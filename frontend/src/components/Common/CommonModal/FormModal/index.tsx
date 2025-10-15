@@ -1,0 +1,98 @@
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ProForm, ProFormCascader, ProFormSelect, ProFormText, ProFormTextArea, ProFormTreeSelect, ProTable } from '@ant-design/pro-components';
+import { requireRules, showMsgAfferRequest } from '../../../../utils/util';
+import { cloneDeep } from 'lodash-es';
+import { API } from '../../../../api';
+import { axiosJsonPost } from '../../../../api/request';
+import { invokeRenderForm } from './utils';
+
+
+
+
+
+const Index = ({
+    record = {},
+    invokeInjectConfirmEvent,
+    apiConfig = {},
+    formConfig = [],
+}) => {
+
+    const formRef = useRef()
+
+    const onComfirm = useCallback(async () => {
+        try {
+            const validateFieldsRes = await formRef.current.validateFields()
+            if (validateFieldsRes) {
+                const params = {
+                    ...validateFieldsRes,
+                    id: record.id
+                }
+                let api = apiConfig.add
+                if (params.id && apiConfig.update) {
+                    api = apiConfig.update
+                }
+
+                let res
+
+                if (typeof api === 'function') {
+                    res = await api(params)
+                } else {
+                    res = await axiosJsonPost(api, params)
+                }
+
+                showMsgAfferRequest(res)
+
+
+                if (res.code === 200) {
+                    return res
+                } else {
+                    return false
+                }
+            }
+
+        } catch (error) {
+            console.error(error)
+            return false
+        }
+    }, [apiConfig.add, apiConfig.update, record.id])
+
+
+    const memoInitialValue = useMemo(() => {
+        const res = cloneDeep(record)
+        delete res.password
+        return res
+    }, [record])
+
+
+
+
+    useEffect(() => {
+        invokeInjectConfirmEvent(onComfirm)
+
+    }, [invokeInjectConfirmEvent, onComfirm])
+
+    const invokeRenderInfo = () => {
+        return (
+            <>
+                <ProForm
+                    formRef={formRef}
+                    submitter={false}
+                    initialValues={memoInitialValue}
+                >
+
+                    {
+                        invokeRenderForm(formConfig)
+                    }
+                </ProForm>
+            </>
+        )
+    }
+
+
+    return invokeRenderInfo()
+
+};
+
+export default Index
+

@@ -5,6 +5,9 @@ import { cloneDeep, isBoolean, noop } from "lodash-es";
 import { useRef } from "react";
 import { showComfirmModal, showMsgAfferRequest } from "../../../utils/util";
 
+const showFormModal = () =>
+    import("../CommonModal/FormModal/api");
+
 export type GithubIssueItem = {
     url: string;
     id: number;
@@ -22,7 +25,12 @@ export type GithubIssueItem = {
 };
 
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const invokeGenOptionCol = (list, config) => {
+
+    if (typeof config === 'function') {
+        config = config()
+    }
     const fn = (arr, ...args) => {
         arr = cloneDeep(arr)
 
@@ -46,8 +54,10 @@ export const invokeGenOptionCol = (list, config) => {
                 if (/delete|删除/.test(val.title || val.key)) {
                     const bakClick = val.onClick || noop
                     val.onClick = async () => {
+                        const titleKey = val.titleKey
+                        console.log('titleKey', titleKey)
                         const showComfirmModalRes = await showComfirmModal({
-                            content: '确定要删除吗？',
+                            content: `确定要删除${titleKey ? `${args[1]?.[titleKey] ? `【${args[1]?.[titleKey]}】` : ''}` : ''}吗？`,
                             okType: 'danger'
                         })
 
@@ -61,6 +71,20 @@ export const invokeGenOptionCol = (list, config) => {
 
                             action?.reload()
                         }
+                    }
+                } else if (/edit|编辑/.test(val.title || val.key) && /Object/.test(Object.prototype.toString.call(val.config))) {
+                    const bakClick = val.onClick || noop
+                    val.onClick = async () => {
+                        const modelApi = await showFormModal()
+                        modelApi.default({
+                            columns: list,
+                            ...val.config,
+                            record: args?.[2],
+                            onOk: (...onOkArgs) => {
+                                bakClick(...args, onOkArgs)
+                            }
+                        })
+
                     }
                 }
 
@@ -105,7 +129,10 @@ export const invokeGenOptionCol = (list, config) => {
 const Index = ({
     tableProps
 }) => {
-    const actionRef = useRef<ActionType>();
+    const actionRef = tableProps.actionRef || useRef<ActionType>();
+
+
+
     return (
         <ProTable<GithubIssueItem>
             actionRef={actionRef}
@@ -113,6 +140,7 @@ const Index = ({
             editable={{
                 type: 'multiple',
             }}
+            
             columnsState={{
                 persistenceKey: 'pro-table-singe-demos',
                 persistenceType: 'localStorage',
@@ -148,11 +176,11 @@ const Index = ({
             }}
             dateFormatter="string"
             toolBarRender={() => [
-                <Button
+                tableProps?.onBuildClick && <Button
                     key="button"
                     icon={<PlusOutlined />}
                     onClick={() => {
-                        actionRef.current?.reload();
+                        tableProps?.onBuildClick?.({ action: actionRef.current })
                     }}
                     type="primary"
                 >

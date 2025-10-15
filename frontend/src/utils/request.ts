@@ -165,8 +165,15 @@ function parseUrlParams(url) {
 export const invokePackProtableRequest = (api) => {
   return async (params, sort, filter) => {
     params.page = params.current;
-
-    return axiosPost(api, params);
+    let mapApi = api;
+    if (/Object/.test(Object.prototype.toString.call(api))) {
+      params = {
+        ...(api.params || {}),
+        ...params,
+      };
+      mapApi = api.api;
+    }
+    return axiosPost(mapApi, params);
   };
 };
 

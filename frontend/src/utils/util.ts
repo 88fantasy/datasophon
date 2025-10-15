@@ -1,5 +1,6 @@
 import { message, Modal, type ModalFuncProps } from "antd";
 import enquireJs from "enquire.js";
+import { isNull, isUndefined } from 'lodash-es';
 
 export function isDef(v) {
   return v !== undefined && v !== null;
@@ -76,4 +77,11 @@ export const invokeGenerateElId = () => {
 
   return `elid-${window.elId}`;
 };
+
+export const requireRules = [{ required: true }];
+
+export const isEmpty = (res) => {
+  return isNull(res) || isUndefined(res) || res === "";
+};
+
 const _toString = Object.prototype.toString;

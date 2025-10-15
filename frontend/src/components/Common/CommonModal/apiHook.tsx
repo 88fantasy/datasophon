@@ -4,6 +4,7 @@ import { message } from "antd";
 import injectLocationChange from "../../../utils/injectLocationChange";
 import { invokeGenerateElId } from "../../../utils/util";
 import { hydrateRoot } from "react-dom/client";
+import { cloneDeep } from "lodash-es";
 
 injectLocationChange()
 
@@ -61,6 +62,7 @@ const index = (com, fn) => {
 
   return async (options = {}) => {
     console.log("apiHook", com, options);
+    options = cloneDeep(options)
 
     if (com.hackerFnList) {
       com.hackerFnList.forEach(cb => {

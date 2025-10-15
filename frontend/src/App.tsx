@@ -4,7 +4,7 @@ import router, { routesMap } from "./routes"
 import { account } from "./utils/account";
 import { useNavigate } from "react-router-dom";
 import { VUE_APP_PUBLIC_PATH } from "./config";
-import { App, Spin } from "antd";
+import { App, ConfigProvider, Spin } from "antd";
 
 
 
@@ -27,13 +27,20 @@ const Index = () => {
 
   return (
     <>
-      <App>
-        <Suspense fallback={
-          <Spin />
-        }>
-          <RouterProvider router={router} />
-        </Suspense>
-      </App>
+      <ConfigProvider
+        theme={{
+          cssVar: true
+        }}
+      >
+        <App>
+          <Suspense fallback={
+            <Spin />
+          }>
+            <RouterProvider router={router} />
+          </Suspense>
+        </App>
+      </ConfigProvider>
+
 
     </>
 
