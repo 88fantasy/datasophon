@@ -17,14 +17,16 @@ const Index = () => {
                 label="SSH用户名"
                 name={"sshUser"}
                 formItemProps={{
-                    rules: requireRules
+                    rules: requireRules,
+                    initialValue: 'root'
                 }}
             />
             <ProFormText
                 label="SSH端口"
                 name={"sshPort"}
                 formItemProps={{
-                    rules: requireRules
+                    rules: requireRules,
+                    initialValue: '22'
                 }}
             />
         </>

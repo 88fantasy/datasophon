@@ -8,7 +8,7 @@ import { invokeMapValue } from "../../../../../../../utils/listUtils";
 import { axiosPost } from "../../../../../../../api/request";
 import { showMsgAfferRequest } from "../../../../../../../utils/util";
 import CommonBtnList from "../../../../../../../components/Common/CommonBtnList";
-import { message, Tag } from "antd";
+import { message, Progress, Tag } from "antd";
 
 
 
@@ -23,8 +23,6 @@ const Index = ({
     const invokeStartAutoUpdateId = useRef()
     const [selectedRows, setSelectedRows] = useState([])
 
-
-    console.log('formMapRef', formMapRef)
 
     const steps1Data = formMapRef.current[0]?.current?.getFieldsValue() || {}
 
@@ -57,7 +55,7 @@ const Index = ({
             sshPort: steps1Data.sshPort,
         };
 
-        const res = await axiosPost(API.rehostCheck, params)
+        const res = await axiosPost(API.reStartDispatcherHostAgent, params)
 
         showMsgAfferRequest(res)
         if (res.code === 200) {
@@ -95,7 +93,7 @@ const Index = ({
             clusterId: record.id,
         };
 
-        const res = await axiosPost(API.hostCheckCompleted, params);
+        const res = await axiosPost(API.dispatcherHostAgentCompleted, params);
 
         return res
 
@@ -114,53 +112,36 @@ const Index = ({
             ellipsis: true,
         },
         {
-            title: '当前受管',
-            dataIndex: 'managed',
+            title: '进度',
+            dataIndex: 'progress',
             search: false,
             ellipsis: true,
-            render: (text) => {
-                return <span>{text ? "是" : "否"}</span>;
+
+            render: (text, row,) => {
+                const {
+                    installStateCode
+                } = row
+                const statusMap = {
+                    1: 'active',
+                    2: undefined
+                }
+
+                const status = Object.prototype.hasOwnProperty.call(statusMap, installStateCode) ? statusMap[installStateCode] : 'exception'
+                return (
+                    <Progress
+                        status={status}
+                        percent={row.progress}
+                    />
+                )
 
             }
         },
         {
-            title: '检测结果',
-            dataIndex: 'checkResult.code',
+            title: '进度信息',
+            dataIndex: 'message',
             ellipsis: true,
             search: false,
-            render: (text, record) => {
-                let res = invokeMapValue(record, 'checkResult.msg')
 
-
-
-                const code = record.checkResult.code
-
-                if (code) {
-                    const colorMap = {
-                        10001: 'green',
-                        10000: 'blue'
-                    }
-
-
-                    const color = colorMap[code] || 'red'
-
-                    res = (
-                        <Tag
-                            color={color}
-                        >
-                            {
-                                res
-                            }
-                        </Tag>
-                    )
-                }
-
-
-                return res
-
-
-
-            }
         },
 
         {
@@ -172,7 +153,7 @@ const Index = ({
                 {
                     title: '重试',
                     disabled: (text, row) => {
-                        return row.userType === 1
+                        return row.installStateCode !== 3
                     },
                     onClick: async (text, record, _, action) => {
                         return onRetryClick([record.hostname])
@@ -184,7 +165,7 @@ const Index = ({
 
 
     useEffect(() => {
-        if (current === 1) {
+        if (current === 2) {
             actionRef.current?.reload?.()
             invokeStartAutoUpdate()
         }
@@ -207,12 +188,10 @@ const Index = ({
                 actionRef: actionRef,
                 search: false,
                 request: invokePackProtableRequest({
-                    api: API.analysisHostList,
+                    api: API.dispatcherHostAgentList,
                     params: {
                         clusterId: record.id,
-                        ...(steps1Data)
                     }
-                    ,
                 }),
                 columns,
                 className: 'mb-[20px]',

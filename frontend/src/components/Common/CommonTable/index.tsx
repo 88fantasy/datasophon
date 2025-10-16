@@ -134,13 +134,13 @@ const Index = ({
 
 
     return (
-        <ProTable<GithubIssueItem>
+        <ProTable
             actionRef={actionRef}
             cardBordered
             editable={{
                 type: 'multiple',
             }}
-            
+
             columnsState={{
                 persistenceKey: 'pro-table-singe-demos',
                 persistenceType: 'localStorage',
@@ -151,6 +151,9 @@ const Index = ({
                     console.log('value: ', value);
                 },
             }}
+
+
+
             rowKey="id"
             search={{
                 labelWidth: 'auto',
@@ -173,6 +176,9 @@ const Index = ({
             }}
             pagination={{
                 pageSize: 10,
+            }}
+            scroll={{
+                y: '50vh'
             }}
             dateFormatter="string"
             toolBarRender={() => [

@@ -22,7 +22,7 @@ const onBuildOrEditClick = async ({
     })
 }
 
-const columns: ProColumns<GithubIssueItem>[] = [
+const columns: ProColumns[] = [
     {
         dataIndex: 'index',
         title: '序号',

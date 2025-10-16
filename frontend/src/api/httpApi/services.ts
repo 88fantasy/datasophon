@@ -50,4 +50,5 @@ export default {
   updateQueue: path + "/cluster/yarn/queue/update", // 更新队列
   refreshQueues: path + "/cluster/yarn/queue/refreshQueues", // 刷新队列到Yarn
   refreshQueuesYARN: path + "/cluster/queue/capacity/refreshToYarn",
+  checkServiceDependency: path + "/service/install/checkServiceDependency",
 };

@@ -32,7 +32,7 @@ const Index: React.FC = () => {
         }
     }
 
-    const columns: ProColumns<GithubIssueItem>[] = useMemo(() => {
+    const columns: ProColumns[] = useMemo(() => {
         return [
             {
                 dataIndex: 'index',
