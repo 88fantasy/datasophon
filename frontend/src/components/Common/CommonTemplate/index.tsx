@@ -1,5 +1,5 @@
 import { grey } from "@ant-design/colors";
-import { ProFormList, ProFormSelect, ProFormSlider, ProFormSwitch, ProFormText } from "@ant-design/pro-components";
+import { ProCard, ProFormGroup, ProFormList, ProFormSelect, ProFormSlider, ProFormSwitch, ProFormText } from "@ant-design/pro-components";
 import type React from "react";
 
 function invokeMapShowMultiply(item) {
@@ -48,7 +48,7 @@ const Index = ({
 
             let label: React.ReactNode = item.label
 
-
+            item.type = 'multipleWithMap'
 
 
             if (
@@ -56,17 +56,19 @@ const Index = ({
                 item.name
             ) {
                 label = (
-                    <>
-                        {label}
-                        <span
+                    <div>
+                        {
+                            label
+                        }
+                        <div
                             style={{
                                 color: grey[1]
                             }}
-                            className="text-[12px] ml-[5px]"
+                            className="text-[12px] text-left"
                         >
                             {item.name}
-                        </span>
-                    </>
+                        </div>
+                    </div>
                 )
             }
 
@@ -75,7 +77,8 @@ const Index = ({
                 extra: item.description,
                 label,
                 placeholder: item.placeholder,
-                name: item.name
+                name: item.name,
+                key: item.name
             }
 
 
@@ -158,7 +161,7 @@ const Index = ({
 
 
             } else {
-                if ('multipleWithMap' === item.type) {
+                if ('multipleWithKey' === item.type) {
                     res = (
                         <ProFormList
                             {...commonProps}
@@ -174,8 +177,105 @@ const Index = ({
                                 },
                             ]}
                         >
+                            <ProFormGroup key="group">
+                                <ProFormText
+                                    colProps={{
+                                        span: 12
+                                    }}
+                                    rules={[
+                                        {
+                                            validateTrigger: ['change', 'blur'],
+                                            required: item.required,
+                                            whitespace: true,
+                                            message: `${item.label}不能为空!`,
+                                        }
+                                    ]}
+                                    name={`${item.name + 'arrayWithKey'}`}
+                                />
+                                <ProFormText
+                                    colProps={{
+                                        span: 12
+                                    }}
+                                    rules={[
+                                        {
+                                            validateTrigger: ['change', 'blur'],
+                                            required: item.required,
+                                            whitespace: true,
+                                            message: `不能为空!`,
+                                        }
+                                    ]}
+                                    name={`${item.name + 'arrayWithValue'}`}
+                                />
+                            </ProFormGroup>
 
+                        </ProFormList>
+                    )
+                } else if ('multipleWithMap' === item.type) {
+                    res = (
+                        <ProFormList
+                            {...commonProps}
+                            rules={[
+                                {
+                                    required: item.required,
+                                    validator: async (_, value) => {
+                                        if (value && value.length > 0) {
+                                            return;
+                                        }
+                                        throw new Error('至少要有一项！');
+                                    },
+                                },
+                            ]}
+                            itemRender={({ listDom, action }, { record, index }) => {
+                                return (
+                                    <ProCard
+                                        bordered
+                                        extra={action}
+                                        title={`${index}.${item.label}_配置`}
+                                        style={{
+                                            marginBlockEnd: 8,
+                                        }}
+                                    >
+                                        {listDom}
+                                    </ProCard>
+                                );
+                            }}
+                            creatorButtonProps={{
+                                creatorButtonText: '新增配置组',
+                            }}
+                            deleteIconProps={{ tooltipText: '删除该配置组' }}
 
+                        >
+                            <ProFormList
+                                name="lab4545els"
+                            >
+
+                                <ProFormGroup key="group">
+                                    <ProFormText
+                                        colProps={{
+                                            span: 12
+                                        }}
+                                        // readonly={true}
+                                        disabled={true}
+                                        name="key"
+                                    />
+                                    <ProFormText
+                                        colProps={{
+                                            span: 12
+                                        }}
+                                        rules={[
+                                            {
+                                                validateTrigger: ['change', 'blur'],
+                                                required: item.required,
+                                                whitespace: true,
+                                                message: `不能为空!`,
+                                            }
+                                        ]}
+                                        name="value"
+                                    />
+
+                                </ProFormGroup>
+
+                            </ProFormList>
                         </ProFormList>
                     )
                 }

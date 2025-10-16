@@ -212,6 +212,15 @@ const Index = ({
 
             formProps={{
                 grid: true,
+                layout: 'horizontal',
+                colon: false,
+                labelCol: {
+                    // style: {
+                    //     width: '200px'
+
+                    // },
+                    className: '!w-[200px] !text-left'
+                }
             }}
             containerStyle={{
                 width: '90%'
