@@ -276,7 +276,7 @@ public final class Constants {
      */
     public static final String ROOT = "root";
 
-    public static final Integer PORT_DEFAULT = 22;
+    public static final Integer PORT_DEFAULT = PropertyUtils.getInt("ssh_port");
     
     //public static final String DISPATCHER_WORK = "dispatcher-worker.sh";
     
