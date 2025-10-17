@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Tabs } from 'antd';
 import { axiosGet, axiosPost, axiosPostUpload } from '../../../api/request';
 import { API } from '../../../api';
@@ -7,6 +7,7 @@ import { getRouteQuery, replaceRouter } from '../../../utils/routerUtils';
 import CommonTable, { invokeGenOptionCol, type GithubIssueItem } from '../../../components/Common/CommonTable';
 import type { ProColumns } from '@ant-design/pro-components';
 import { invokeGenerateElId } from '../../../utils/util';
+import CommonTabs from '../../../components/Common/CommonTabs';
 
 
 
@@ -20,17 +21,17 @@ const Index: React.FC = () => {
 
     const [key, setKey] = useState(invokeGenerateElId())
 
-    const navigate = useNavigate()
+    // const navigate = useNavigate()
 
-    const activeKey = getRouteQuery('tab')
+    // const activeKey = getRouteQuery('tab')
 
-    const invokeInit = async () => {
+    const invokeInit = useCallback(async () => {
         const res = await axiosPost(API.getFrameList, {})
 
         if (res.code === 200) {
             setState(res.data)
         }
-    }
+    }, [])
 
     const columns: ProColumns[] = useMemo(() => {
         return [
@@ -85,7 +86,7 @@ const Index: React.FC = () => {
                 ])
             },
         ];
-    }, [])
+    }, [invokeInit])
 
 
     const memoTabItem = useMemo(() => {
@@ -98,7 +99,7 @@ const Index: React.FC = () => {
                         tableProps={{
                             search: false,
                             request: async (params, sort, filter) => {
-                                console.log(params, sort, filter);
+                                // console.log(params, sort, filter);
                                 const data = item.frameServiceList || []
                                 return {
                                     data,
@@ -113,26 +114,31 @@ const Index: React.FC = () => {
         })
     }, [columns, state])
 
-    const onChange = (e) => {
-        replaceRouter({
-            navigate,
-            query: {
-                tab: e
-            }
-        })
-    }
+    // const onChange = (e) => {
+    //     replaceRouter({
+    //         navigate,
+    //         query: {
+    //             tab: e
+    //         }
+    //     })
+    // }
 
 
     useEffect(() => {
         invokeInit()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     return state && (
-        <Tabs
+        // <Tabs
+        //     key={key}
+        //     activeKey={activeKey || memoTabItem[0]?.key}
+        //     items={memoTabItem}
+        //     onChange={onChange}
+        // />
+        <CommonTabs
+            memoTabItem={memoTabItem}
             key={key}
-            activeKey={activeKey || memoTabItem[0]?.key}
-            items={memoTabItem}
-            onChange={onChange}
         />
     )
 }

@@ -9,25 +9,37 @@ import {
 import type { MenuDataItem, ProSettings } from '@ant-design/pro-components';
 import { PageContainer, ProCard, ProLayout } from '@ant-design/pro-components';
 import { Alert, Button, Dropdown, Input, Space } from 'antd';
-import { menu, menuMap } from '../../routes';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { invokeGenMenuByPattern, menu, menuMap } from '../../routes';
+import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { account } from '../../utils/account';
 import { invokeRelogin } from '../../utils/authorityUtils';
+import { invokeGenPath, invokeHandlePath } from '../../utils/routerUtils';
+import { ClusterGlobalProvider } from '../../context/clusterGlobalContext';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
-
-const defaultProps = {
-    route: menu.route
-};
 
 const Index = () => {
+
+
     const settings: ProSettings | undefined = {
         layout: 'mix',
         splitMenus: true,
     };
 
+    const [proCardBodyStyle, setProCardBodyStyle] = useState({})
+
     const user = account.getUser()
 
     const navigate = useNavigate();
+    // const defaultProps = {
+    //     route: invokeGenMenuByPattern().route
+    // };
+
+    const defaultProps = useMemo(() => {
+        return {
+            route: invokeGenMenuByPattern().route
+        }
+    }, [])
 
 
     const onMenuClick = (obj: MenuDataItem) => {
@@ -41,26 +53,42 @@ const Index = () => {
         }
 
 
+        console.log('onMenuClick', obj)
+
+
+
 
         if (/^(http|\/\/)/.test(path)) {
-            window.open(path);
+            window.open(invokeGenPath(path));
         } else {
             const menuObj = menuMap[path]
             if (menuObj?.routes?.length) {
                 path = menuObj.routes[0].path
             }
-            navigate(path)
+            // invokeGetRouteByPath(path)
+            // invokgen
+            navigate(invokeHandlePath(path))
+            setProCardBodyStyle({})
         }
     };
 
-    const onLogoutClick = () => {
+    const onLogoutClick = useCallback(() => {
         account.clear()
         invokeRelogin()
-    }
+    }, [])
+
+
+    // useEffect(() => {
+    //     if()
+    // }, [])
 
 
     return (
-        <>
+        <ClusterGlobalProvider
+            config={{
+                setProCardBodyStyle
+            }}
+        >
             <div
                 id="test-pro-layout"
                 style={{
@@ -68,6 +96,7 @@ const Index = () => {
                 }}
             >
                 <ProLayout
+                    className='h-[100vh]'
                     headerTitleRender={
                         (logo) => {
                             return (
@@ -136,31 +165,44 @@ const Index = () => {
                             );
                         },
                     }}
-                    menuItemRender={(item, dom) => (
-                        <div
-                            onClick={() => {
-                                onMenuClick(item)
-                            }}
-                        >
-                            {dom}
-                        </div>
-                    )}
+                    menuItemRender={(item, dom) => {
+                        return (
+
+                            <div
+                                onClick={() => {
+                                    onMenuClick(item)
+                                }}
+                            >
+                                {dom}
+                            </div>
+                        )
+                    }}
                     {...settings}
                 >
                     <PageContainer
                         title={false}
+                        className='h-full'
                     >
                         <ProCard
                             style={{
-                                minHeight: 800,
+                                minHeight: '83vh',
                             }}
+                            bodyStyle={{
+                                height: '100%',
+                                ...proCardBodyStyle
+                            }}
+                        // className='p-[0]'
+
                         >
                             <Outlet />
                         </ProCard>
+                        {/* <Outlet /> */}
+
                     </PageContainer>
                 </ProLayout>
             </div>
-        </>
+        </ClusterGlobalProvider>
+
     );
 };
 

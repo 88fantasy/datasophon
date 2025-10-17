@@ -1,6 +1,8 @@
 import qs from "qs";
 import { cloneDeep, isNull, isString, isUndefined } from "lodash-es";
-import { replace } from "react-router-dom";
+import { VUE_APP_PUBLIC_PATH } from "../config";
+import { matchPath, matchRoutes, parsePath } from "react-router-dom";
+import router from "../routes";
 // import { useHistory } from 'react-router';
 
 // import { useHistory } from 'react-router';
@@ -57,9 +59,17 @@ export function replaceRouter({
   query = {},
   path = window.location.pathname,
 }) {
-  navigate(`${path}?${qs.stringify(Object.assign(getRouteQuery(), query))}`, {
-    replace: true,
-  });
+  if (navigate) {
+    navigate(`${path}?${qs.stringify(Object.assign(getRouteQuery(), query))}`, {
+      replace: true,
+    });
+  } else {
+    history.replaceState(
+      null,
+      "",
+      `${path}?${qs.stringify(Object.assign(getRouteQuery(), query))}`
+    );
+  }
 }
 
 export function pushRouter(obj) {
@@ -93,4 +103,90 @@ export function pushRouter(obj) {
   //   meta: obj.meta || null,
   // });
   // const histor;
+}
+
+export const invokeGenPath = (path) => {
+  let res;
+  if (/^(\/\/ | http)/.test(path)) {
+    res = path;
+  } else if (
+    VUE_APP_PUBLIC_PATH &&
+    new RegExp(VUE_APP_PUBLIC_PATH).test(path)
+  ) {
+    res = path;
+  } else {
+    res = `${VUE_APP_PUBLIC_PATH}${path}`;
+  }
+
+  return invokeHandlePath(res);
+};
+
+function flatterRoutes(arr, path = "") {
+  let res = [];
+
+  // if (!res) {
+
+  // res = flatterRoutes.cache = [];
+  arr.map((val) => {
+    if (path) {
+      val.path = `/${path}/${val.path}`.replace(/\/\//g, "/");
+    }
+
+    if (val.children) {
+      res.push(...flatterRoutes(val.children, val.path));
+    }
+
+    res.push(val);
+  });
+  // }
+
+  return res;
+}
+
+export function invokeGetRouteByPath(path = window.location.pathname) {
+  let routes = invokeGetRouteByPath.cache;
+
+  if (!routes) {
+    console.log("flatterRoutes(cloneDeep(router.routes))");
+    routes = invokeGetRouteByPath.cache = flatterRoutes(
+      cloneDeep(router.routes)
+    );
+  }
+
+  // const routes =invokeGetRouteByPath.cache flatterRoutes(cloneDeep(router.routes));
+
+  // console.log(
+  //   "flatterRoutes(cloneDeep(router.routes))",
+  //   matchRoutes(routes, path)
+  // );
+  const matchRoute = matchRoutes(routes, path)?.[0];
+
+  return matchRoute;
+}
+export const invokeHandlePath = (path) => {
+  // const currentPathArr = window.location.pathname.split("/");
+
+  // const patternId = currentPathArr.filter(Boolean)[1];
+
+  const matchRoute = invokeGetRouteByPath();
+  const params = matchRoute.params;
+
+  let pathArr = path.split("/").filter(Boolean);
+
+  pathArr = pathArr.map((val) => {
+    if (/:clusterId/.test(val)) {
+      return params.clusterId;
+    }
+
+    return val;
+  });
+
+  return `/${pathArr.join("/")}`;
+};
+
+export function convertToRoutePattern(url) {
+  // 匹配：/ddh/<包含"clusterId"的段>/HostManage
+  const matchRoute = invokeGetRouteByPath(url);
+
+  return matchRoute.pathname;
 }

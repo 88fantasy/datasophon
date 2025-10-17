@@ -1,7 +1,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ProForm, ProFormCascader, ProFormSelect, ProFormText, ProFormTextArea, ProFormTreeSelect, ProTable } from '@ant-design/pro-components';
-import { requireRules, showMsgAfferRequest } from '../../../../utils/util';
+import { isEmpty, requireRules, showMsgAfferRequest } from '../../../../utils/util';
 import { cloneDeep } from 'lodash-es';
 import { API } from '../../../../api';
 import { axiosJsonPost } from '../../../../api/request';
@@ -11,12 +11,15 @@ import { invokeRenderForm } from './utils';
 
 
 
-const Index = ({
-    record = {},
-    invokeInjectConfirmEvent,
-    apiConfig = {},
-    formConfig = [],
-}) => {
+const Index = (props) => {
+
+    const {
+        record = {},
+        invokeInjectConfirmEvent,
+        apiConfig = {},
+        formConfig = [],
+        paramsFn
+    } = props
 
     const formRef = useRef()
 
@@ -26,8 +29,20 @@ const Index = ({
             if (validateFieldsRes) {
                 const params = {
                     ...validateFieldsRes,
-                    id: record.id
+
                 }
+
+                if (!isEmpty(record.id)) {
+                    params.id = record.id
+                }
+
+                if (paramsFn) {
+                    params = paramsFn({
+                        params: cloneDeep(params),
+                        ...props
+                    })
+                }
+
                 let api = apiConfig.add
                 if (params.id && apiConfig.update) {
                     api = apiConfig.update

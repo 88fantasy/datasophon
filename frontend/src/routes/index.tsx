@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
+import { createBrowserRouter, matchRoutes, Navigate, useParams, type RouteObject } from 'react-router-dom';
 import { lazy } from 'react';
 import {
   ChromeFilled,
@@ -6,7 +6,7 @@ import {
   SmileFilled,
   TabletFilled,
 } from '@ant-design/icons';
-import { cloneDeep } from 'lodash-es';
+import { cloneDeep, noop } from 'lodash-es';
 import { VUE_APP_PUBLIC_PATH } from '../config';
 import type { TExendsRouteObject } from './interface';
 
@@ -17,6 +17,9 @@ const ColonyManage = lazy(() => import('../pages/Colony/ColonyManage'));
 const ColonyParcel = lazy(() => import('../pages/Colony/ColonyParcel'));
 const ColonyFrame = lazy(() => import('../pages/Colony/ColonyFrame'));
 const UserManage = lazy(() => import('../pages/User/UserManage'));
+const ClusterOverview = lazy(() => import('../pages/Cluster/Overview'));
+const SystemCenterTag = lazy(() => import('../pages/SystemCenter/Tag'));
+const SystemCenterFrame = lazy(() => import('../pages/SystemCenter/Frame'));
 
 const contentRoutes = [
   {
@@ -54,8 +57,63 @@ const contentRoutes = [
         element: <UserManage />,
       },
     ],
-  }
+  },
+  {
+    path: '/Cluster/:clusterId/Overview',
+    element: <Proxy />,
+    icon: <SmileFilled />,
+    title: '总览',
+    children: [
+      {
+        path: 'Index',
+        element: <ClusterOverview />,
+        hideInMenu: true,
+        title: '总览'
+      }
+    ]
+  },
+  {
+    path: '/Cluster/:clusterId/ServiceManage',
+    element: <Proxy />,
+    icon: <SmileFilled />,
+    title: '服务管理'
+  },
+  {
+    path: '/Cluster/:clusterId/HostManage',
+    element: <Proxy />,
+    icon: <SmileFilled />,
+    title: '主机管理'
+  },
+  {
+    path: '/Cluster/:clusterId/AlarmManage',
+    element: <Proxy />,
+    icon: <SmileFilled />,
+    title: '告警管理'
+  },
+  {
+    path: '/Cluster/:clusterId/SystemCenter',
+    element: <Proxy />,
+    icon: <SmileFilled />,
+    title: '系统管理',
+    children: [
+      {
+        path: 'User',
+        title: '租户管理',
+        element: <UserManage />,
+      },
+      {
+        path: 'Frame',
+        title: '机架管理',
+        element: <SystemCenterFrame />,
+      },
+      {
+        path: 'Tag',
+        title: '标签管理',
+        element: <SystemCenterTag />,
 
+      },
+    ],
+  }
 ]
 
 // 定义路由配置（使用 react-router 的 RouteObject 兼容结构）
@@ -106,6 +164,7 @@ const invokeGenMenus = (arr) => {
         component: val.element,
         access: 'canAdmin',
         path,
+        hideInMenu: val.hideInMenu,
         routes: val.children && fn(val.children, path)
       }
 
@@ -148,11 +207,73 @@ console.log('menu', menu)
 console.log('routes', routes)
 
 
+function invokeGenMenuByPattern() {
+  const currentPathArr = window.location.pathname.split('/')
+
+
+  let res = []
+
+  const params = useParams();
+
+
+  console.log('currentPathArr', params, currentPathArr)
+
+
+
+  if (params.clusterId) {
+
+
+    if (invokeGenMenuByPattern.clusterIdRoutes) {
+      res = invokeGenMenuByPattern.clusterIdRoutes
+    } else {
+
+      const cpContentRoutes = cloneDeep(contentRoutes)
+      res = cpContentRoutes.filter((val) => {
+        return /\/:clusterId\//.test(val.path)
+      })
+
+      res = invokeGenMenus(res)
+
+      invokeGenMenuByPattern.clusterIdRoutes = res
+    }
+
+
+
+  } else {
+    if (invokeGenMenuByPattern.defaultRoutes) {
+      res = invokeGenMenuByPattern.defaultRoutes
+    } else {
+      const cpContentRoutes = cloneDeep(contentRoutes)
+      res = cpContentRoutes.filter((val) => {
+        return !/\/:clusterId\//.test(val.path)
+      })
+
+      res = invokeGenMenus(res)
+
+      invokeGenMenuByPattern.defaultRoutes = res
+
+
+    }
+
+  }
+
+
+  console.log('res', res)
+
+  return res
+}
+
+window.invokeGenMenuByPattern = invokeGenMenuByPattern
 const router = createBrowserRouter(routes);
 
 export {
   menu,
   menuMap,
-  routesMap
+  routesMap,
+  invokeGenMenuByPattern
 }
+
+console.log('router', router)
+console.log("data ", matchRoutes(router.routes, window.location.pathname));
+
 export default router;

@@ -8,6 +8,8 @@ import { showComfirmModal, showMsgAfferRequest } from "../../../../../utils/util
 import { axiosPostUpload } from "../../../../../api/request";
 import { API } from "../../../../../api";
 import { noop } from "lodash-es";
+import { invokeGenPath } from "../../../../../utils/routerUtils";
+import { useParams } from "react-router-dom";
 
 const showAuthModal = () =>
     import("../AuthModal/api");
@@ -117,9 +119,10 @@ const Index = ({
         {
             label: '进入',
             disabled: clusterStateCode !== 2,
-
             onClick: () => {
                 console.log('edit')
+
+                window.open(invokeGenPath(`/Cluster/${val.id}/Overview/Index`))
             }
         },
         {
@@ -253,3 +256,4 @@ const Index = ({
 
 
 export default Index
+

@@ -2,6 +2,7 @@ import { VUE_APP_PUBLIC_PATH } from "../config";
 import { routesMap } from "../routes";
 import { account } from "./account";
 import { removeAuthorization } from "./request";
+import { convertToRoutePattern } from "./routerUtils";
 
 /**
  * 判断是否有路由的权限
@@ -104,7 +105,10 @@ export const invokeRelogin = () => {
   const user = account.getUser();
   console.log("user", user, location.pathname, routesMap);
   console.log("user", routesMap[location.pathname]?.auth);
-  if (!user && routesMap[location.pathname]?.auth !== 0) {
+  if (
+    !user &&
+    routesMap[convertToRoutePattern(location.pathname)]?.auth !== 0
+  ) {
     window.location.href = `${VUE_APP_PUBLIC_PATH}/account/login?redirectUri=${encodeURIComponent(
       window.location.href
     )}`;
