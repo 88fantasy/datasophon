@@ -21,6 +21,8 @@ const ClusterOverview = lazy(() => import('../pages/Cluster/Overview'));
 const SystemCenterTag = lazy(() => import('../pages/SystemCenter/Tag'));
 const SystemCenterFrame = lazy(() => import('../pages/SystemCenter/Frame'));
 const SystemCenterUser = lazy(() => import('../pages/SystemCenter/User'));
+const AlarmManageGroup = lazy(() => import('../pages/AlarmManage/Group'));
+const AlarmManageMetric = lazy(() => import('../pages/AlarmManage/Metric'));
 
 const contentRoutes = [
   {
@@ -89,7 +91,19 @@ const contentRoutes = [
     path: '/Cluster/:clusterId/AlarmManage',
     element: <Proxy />,
     icon: <SmileFilled />,
-    title: '告警管理'
+    title: '告警管理',
+    children: [
+      {
+        path: 'Group',
+        title: '告警组管理',
+        element: <AlarmManageGroup />,
+      },
+      {
+        path: 'Metric',
+        title: '告警指标管理',
+        element: <AlarmManageMetric />,
+      },
+    ],
   },
   {
     path: '/Cluster/:clusterId/SystemCenter',
