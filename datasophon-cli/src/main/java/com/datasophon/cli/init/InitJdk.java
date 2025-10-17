@@ -37,11 +37,11 @@ public class InitJdk extends InitBase {
         if (ArchType.AARCH64.equals(executor.getArch())) {
             jdkTarName = "jdk-8u333-linux-aarch64.tar.gz";
         }
-        ExecResult exec = executor.execShell("java -version 2>&1 | awk 'NR==1{gsub(/\"/,\"\");print $3}'");
-        String jdkAvailable = exec.getExecOut();
-        exec = executor.execShell(String.format("echo %s | grep %s", jdkAvailable, jdkVersion));
-        if (exec.getExecResult()) {
-            log.info("JDK installed");
+        ExecResult exec = executor.execShell("which java");
+        String jdkAvailable = exec.getExecOut().trim();
+        String javaBinPath = String.format("%s/%s/bin/java", jdkFolderPath, jdkPathName);
+        if (jdkAvailable.equals(javaBinPath)) {
+            log.info("JDK installed. java path is {}", javaBinPath);
         } else {
             log.info("JDK not installed, start to install");
             executor.execShell("sed -i '/export JAVA_HOME/d' /etc/profile");
