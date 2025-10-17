@@ -31,11 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 public class FlinkHandlerStrategy extends ServiceHandlerAbstract implements ServiceRoleStrategy {
-    
-    @Override
-    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        
-    }
+
     
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
@@ -73,16 +69,6 @@ public class FlinkHandlerStrategy extends ServiceHandlerAbstract implements Serv
         
         list.addAll(haConfigs);
         list.addAll(kbConfigs);
-    }
-    
-    @Override
-    public void getConfig(Integer clusterId, List<ServiceConfig> list) {
-        
-    }
-    
-    @Override
-    public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-        
     }
     
     @Override

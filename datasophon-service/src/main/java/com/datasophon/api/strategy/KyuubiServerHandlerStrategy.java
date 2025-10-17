@@ -45,7 +45,7 @@ public class KyuubiServerHandlerStrategy extends ServiceHandlerAbstract implemen
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        if (hosts.size() > 0) {
+        if (!hosts.isEmpty()) {
             ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${kyuubiServerHost}",
                     HostUtils.getIp(hosts.get(0)));
         }
@@ -76,21 +76,4 @@ public class KyuubiServerHandlerStrategy extends ServiceHandlerAbstract implemen
         }
         list.addAll(kbConfigs);
     }
-    
-    @Override
-    public void getConfig(Integer clusterId, List<ServiceConfig> list) {
-        
-    }
-    
-    @Override
-    public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-        
-    }
-    
-    @Override
-    public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
-                                        Map<String, ClusterServiceRoleInstanceEntity> map) {
-        CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
-    }
-    
 }

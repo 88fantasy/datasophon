@@ -19,7 +19,6 @@ package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
-import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
@@ -27,14 +26,12 @@ import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
-import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implements ServiceRoleStrategy {
     
@@ -43,7 +40,7 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.get(clusterId);
         CacheUtils.put("enableHiveServer2HA", false);
-        if(hosts.size() > 0) {
+        if(!hosts.isEmpty()) {
             ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${masterHiveServer2}",
                     hosts.get(0));
         }
@@ -115,10 +112,5 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
             serviceRoleInfo.setSlave(true);
         }
     }
-    
-    @Override
-    public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
-                                        Map<String, ClusterServiceRoleInstanceEntity> map) {
-        CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
-    }
+
 }

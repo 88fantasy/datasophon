@@ -53,7 +53,7 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        if (hosts.size() > 0) {
+        if (!hosts.isEmpty()) {
             String rangerAdminUrl = "http://" + hosts.get(0) + ":6080";
             logger.info("rangerAdminUrl is {}", rangerAdminUrl);
             ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${rangerAdminUrl}",
@@ -105,22 +105,6 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
             removeConfigWithKerberos(list, map, configs);
         }
         list.addAll(kbConfigs);
-    }
-    
-    @Override
-    public void getConfig(Integer clusterId, List<ServiceConfig> list) {
-        
-    }
-    
-    @Override
-    public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-        
-    }
-    
-    @Override
-    public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
-                                        Map<String, ClusterServiceRoleInstanceEntity> map) {
-        CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
     }
     
     private void enableRangerPlugin(Integer clusterId, String serviceName, String serviceRoleName) {

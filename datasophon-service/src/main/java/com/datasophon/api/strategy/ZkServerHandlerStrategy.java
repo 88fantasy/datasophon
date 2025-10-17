@@ -159,15 +159,5 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
             }
         }
     }
-    
-    @Override
-    public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-        
-    }
-    
-    @Override
-    public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
-                                        Map<String, ClusterServiceRoleInstanceEntity> map) {
-        CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
-    }
+
 }

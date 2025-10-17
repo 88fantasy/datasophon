@@ -112,10 +112,6 @@ public class NameNodeHandlerStrategy extends ServiceHandlerAbstract implements S
     }
     
     @Override
-    public void getConfig(Integer clusterId, List<ServiceConfig> list) {
-    }
-    
-    @Override
     public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
         Map<String, String> globalVariables = GlobalVariables.get(serviceRoleInfo.getClusterId());
         if (hostname.equals(globalVariables.get("${nn2}"))) {
