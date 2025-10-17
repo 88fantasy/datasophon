@@ -20,6 +20,7 @@ const UserManage = lazy(() => import('../pages/User/UserManage'));
 const ClusterOverview = lazy(() => import('../pages/Cluster/Overview'));
 const SystemCenterTag = lazy(() => import('../pages/SystemCenter/Tag'));
 const SystemCenterFrame = lazy(() => import('../pages/SystemCenter/Frame'));
+const SystemCenterUser = lazy(() => import('../pages/SystemCenter/User'));
 
 const contentRoutes = [
   {
@@ -99,7 +100,7 @@ const contentRoutes = [
       {
         path: 'User',
         title: '租户管理',
-        element: <UserManage />,
+        element: <SystemCenterUser />,
       },
       {
         path: 'Frame',

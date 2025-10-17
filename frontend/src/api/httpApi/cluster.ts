@@ -18,35 +18,39 @@
  *
  */
 
+import { VUE_APP_PUBLIC_PATH } from "../../config";
+import paths from "../baseUrl"; // 后台服务地址
 
-import { VUE_APP_PUBLIC_PATH } from '../../config'
-import paths from '../baseUrl'// 后台服务地址
-
-let path = paths.path() + VUE_APP_PUBLIC_PATH
+let path = paths.path() + VUE_APP_PUBLIC_PATH;
 
 export default {
-  getColonyList: path + '/api/cluster/list', // 获取集群列表
-  saveColony: path + '/api/cluster/save', // 集群保存
-  updateColony: path + '/api/cluster/update', // 集群更新
-  deleteColony: path + '/api/cluster/delete', // 集群删除
-  authCluster: path + '/api/cluster/user/saveClusterManager', // 集群授权
-  getFrameList: path + '/api/frame/list',// 获取服务框架列表
-  runningClusterList: path + '/api/cluster/runningClusterList',// 正在运行状态集群列表
-  getDashboardUrl: path + '/cluster/service/dashboard/getDashboardUrl',// 查询总览地址
-  reNameGroup: path + '/cluster/service/instance/role/group/rename',
-  delGroup: path + '/cluster/service/instance/role/group/delete',
-  saveLabel: path + '/cluster/node/label/save',
-  assginLabel: path + '/cluster/node/label/assign',
-  deleteLabel: path + '/cluster/node/label/delete',
-  getLabelList: path + '/cluster/node/label/list',
-  saveRack: path + '/cluster/rack/save',
-  assginRack: path + '/api/cluster/host/assignRack',
-  deleteRack: path + '/cluster/rack/delete',
-  deleteClusterRack: path + '/cluster/rack/delete',
-  getRackList: path + '/cluster/rack/list',
-  getParcelList: path + '/cluster/parcel/list',
-  getParcelParse: path + '/cluster/parcel/parse',
-  getParcelProcess: path + '/cluster/parcel/process',
-  downloadComponent: path + '/cluster/parcel/download',
-  installComponent: path + '/cluster/parcel/install',
-}
+  getColonyList: path + "/api/cluster/list", // 获取集群列表
+  saveColony: path + "/api/cluster/save", // 集群保存
+  updateColony: path + "/api/cluster/update", // 集群更新
+  deleteColony: path + "/api/cluster/delete", // 集群删除
+  authCluster: path + "/api/cluster/user/saveClusterManager", // 集群授权
+  getFrameList: path + "/api/frame/list", // 获取服务框架列表
+  runningClusterList: path + "/api/cluster/runningClusterList", // 正在运行状态集群列表
+  getDashboardUrl: path + "/cluster/service/dashboard/getDashboardUrl", // 查询总览地址
+  reNameGroup: path + "/cluster/service/instance/role/group/rename",
+  delGroup: path + "/cluster/service/instance/role/group/delete",
+  saveLabel: path + "/cluster/node/label/save",
+  assginLabel: path + "/cluster/node/label/assign",
+  deleteLabel: path + "/cluster/node/label/delete",
+  getLabelList: path + "/cluster/node/label/list",
+  saveRack: path + "/cluster/rack/save",
+  assginRack: path + "/api/cluster/host/assignRack",
+  deleteRack: path + "/cluster/rack/delete",
+  deleteClusterRack: path + "/cluster/rack/delete",
+  getRackList: path + "/cluster/rack/list",
+  getParcelList: path + "/cluster/parcel/list",
+  getParcelParse: path + "/cluster/parcel/parse",
+  getParcelProcess: path + "/cluster/parcel/process",
+  downloadComponent: path + "/cluster/parcel/download",
+  installComponent: path + "/cluster/parcel/install",
+  clusterGroupList: path + "/cluster/group/list",
+  clusterUserCreate: path + "/cluster/user/create",
+  clusterUserDelete: path + "/cluster/user/delete",
+  clusterGroupDelete: path + "/cluster/group/delete",
+  clusterGroupSave: path + "/cluster/group/save",
+};

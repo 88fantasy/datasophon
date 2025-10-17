@@ -54,11 +54,8 @@ export function getRouteQuery(key?: string, defVal?: any) {
   return "";
 }
 
-export function replaceRouter({
-  navigate,
-  query = {},
-  path = window.location.pathname,
-}) {
+export function replaceRouter(obj) {
+  const { navigate, query = {}, path = window.location.pathname } = obj;
   if (navigate) {
     navigate(`${path}?${qs.stringify(Object.assign(getRouteQuery(), query))}`, {
       replace: true,
