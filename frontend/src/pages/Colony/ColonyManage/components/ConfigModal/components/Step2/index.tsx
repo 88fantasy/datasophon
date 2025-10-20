@@ -9,6 +9,7 @@ import { axiosPost } from "../../../../../../../api/request";
 import { showMsgAfferRequest } from "../../../../../../../utils/util";
 import CommonBtnList from "../../../../../../../components/Common/CommonBtnList";
 import { message, Tag } from "antd";
+import { useConfigContext } from "../../configContext";
 
 
 
@@ -22,6 +23,8 @@ const Index = ({
     const actionRef = useRef()
     const invokeStartAutoUpdateId = useRef()
     const [selectedRows, setSelectedRows] = useState([])
+
+    const { clusterId } = useConfigContext()
 
 
     console.log('formMapRef', formMapRef)
@@ -52,7 +55,7 @@ const Index = ({
         const hostnames = rows.join(',')
         const params = {
             hostnames,
-            clusterId: record.id,
+            clusterId,
             sshUser: steps1Data.sshUser,
             sshPort: steps1Data.sshPort,
         };
@@ -92,7 +95,7 @@ const Index = ({
 
     const invokeValid = async () => {
         const params = {
-            clusterId: record.id,
+            clusterId,
         };
 
         const res = await axiosPost(API.hostCheckCompleted, params);
@@ -209,7 +212,7 @@ const Index = ({
                 request: invokePackProtableRequest({
                     api: API.analysisHostList,
                     params: {
-                        clusterId: record.id,
+                        clusterId,
                         ...(steps1Data)
                     }
                     ,

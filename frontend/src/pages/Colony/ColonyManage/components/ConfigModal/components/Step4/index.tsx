@@ -4,6 +4,7 @@ import { API } from "../../../../../../../api";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { axiosPost } from "../../../../../../../api/request";
 import { Input } from "antd";
+import { useConfigContext } from "../../configContext";
 
 
 
@@ -19,6 +20,8 @@ const Index = ({
     const actionRef = useRef()
     const [selectedRows, setSelectedRows] = useState([])
     const [dataSource, setDataSource] = useState([])
+    const { clusterId } = useConfigContext()
+
 
     const invokeUpdateFormData = useCallback((arr, source) => {
 
@@ -37,7 +40,7 @@ const Index = ({
 
     const invokeInit = async () => {
         const params = {
-            clusterId: record.id,
+            clusterId,
         };
 
         const res = await axiosPost(API.getServiceList, params)
@@ -77,7 +80,7 @@ const Index = ({
         }
 
         const params = {
-            clusterId: record.id,
+            clusterId,
             serviceIds: (services || []).map(val => val.id)
         };
 
@@ -122,7 +125,7 @@ const Index = ({
         if (current === 3 && !dataSource?.length) {
             invokeInit()
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [current, dataSource?.length,])
 
 

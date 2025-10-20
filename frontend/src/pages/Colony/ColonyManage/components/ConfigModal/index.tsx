@@ -18,7 +18,10 @@ import Step2 from './components/Step2';
 import Step3 from './components/Step3';
 import Step4 from './components/Step4';
 import Step5 from './components/Step5';
+import { ConfigContext } from './configContext';
 
+
+export const T_STEPS_TYPE_HOSTMANAGE = 'hostManage'
 // type FormValue = {
 //     jobInfo: {
 //         name: string;
@@ -47,11 +50,15 @@ import Step5 from './components/Step5';
 //     });
 // };
 
-const Index = ({
-    record,
-    onOkClickProxy,
+const Index = (props) => {
 
-}) => {
+
+    const {
+        record,
+        onOkClickProxy,
+        stepsType
+    } = props
+
     const formMapRef = useRef<
         React.MutableRefObject<ProFormInstance<any> | undefined>[]
     >([]);
@@ -61,7 +68,7 @@ const Index = ({
     const steps4Ref = useRef()
 
 
-
+    const clusterId = record?.clusterId || props.clusterId
     const [current, setCurrent] = useState(0)
 
 
@@ -79,7 +86,7 @@ const Index = ({
 
 
     const invokeRenderSteps = () => {
-        const arr = [
+        let arr = [
             {
                 title: '安装主机',
                 render: Step1
@@ -91,6 +98,7 @@ const Index = ({
                     current={current}
                     formMapRef={formMapRef}
                     record={record}
+
                 />
             },
             {
@@ -130,6 +138,10 @@ const Index = ({
             //     title: '安装并启动服务'
             // }
         ]
+
+        if (stepsType === T_STEPS_TYPE_HOSTMANAGE) {
+            arr = arr.slice(0, 3)
+        }
 
         return arr.map(val => {
             return (
@@ -196,46 +208,54 @@ const Index = ({
 
 
     return (
-        <StepsForm
-            stepsProps={{
-                // direction: 'vertical',
-                labelPlacement: 'vertical',
-                size: 'small',
-                // current,
-                // onChange: () => {
-                //     console.log('onChange111', '')
-                // }
+        <ConfigContext.Provider
+            value={{
+                clusterId: record?.id || clusterId
             }}
-
-            current={current}
-            onCurrentChange={onCurrentChange}
-
-            formProps={{
-                grid: true,
-                layout: 'horizontal',
-                colon: false,
-                labelCol: {
-                    // style: {
-                    //     width: '200px'
-
-                    // },
-                    className: '!w-[200px] !text-left'
-                }
-            }}
-            containerStyle={{
-                width: '90%'
-            }}
-            formMapRef={formMapRef}
-            onFinish={(values) => {
-                console.log(values);
-                return Promise.resolve(true);
-            }}
-
         >
-            {
-                stepsDom
-            }
-        </StepsForm>
+            <StepsForm
+                stepsProps={{
+                    // direction: 'vertical',
+                    labelPlacement: 'vertical',
+                    size: 'small',
+                    // current,
+                    // onChange: () => {
+                    //     console.log('onChange111', '')
+                    // }
+                }}
+
+                current={current}
+                onCurrentChange={onCurrentChange}
+
+                formProps={{
+                    grid: true,
+                    layout: 'horizontal',
+                    colon: false,
+                    labelCol: {
+                        // style: {
+                        //     width: '200px'
+
+                        // },
+                        className: '!w-[200px] !text-left'
+                    }
+                }}
+                containerStyle={{
+                    width: '90%'
+                }}
+                formMapRef={formMapRef}
+                onFinish={(values) => {
+                    console.log(values);
+                    return Promise.resolve(true);
+                }}
+
+            >
+                {
+                    stepsDom
+                }
+            </StepsForm>
+
+        </ConfigContext.Provider>
+
     );
 };
 export default Index;

@@ -10,6 +10,7 @@ import CommonBtnList from '../../components/Common/CommonBtnList';
 import list from 'antd/lib/transfer/list';
 import { showComfirmModal } from '../../utils/util';
 import { axiosPost } from '../../api/request';
+import { T_STEPS_TYPE_HOSTMANAGE } from '../Colony/ColonyManage/components/ConfigModal';
 
 
 
@@ -19,6 +20,10 @@ const showAddLabelModal = () =>
     import("./AddLabelModal/api");
 const showRoleModal = () =>
     import("./RoleModal/api");
+
+const showConfigModal = () =>
+    import("../Colony/ColonyManage/components/ConfigModal/api");
+
 
 
 const hostStateMap = {
@@ -182,6 +187,17 @@ const Index = () => {
             }
         }
     ];
+
+
+    const onBuildClick = async () => {
+        const modelApi = await showConfigModal()
+
+        modelApi.default({
+            clusterId,
+            stepsType: T_STEPS_TYPE_HOSTMANAGE,
+            record: {}
+        })
+    }
 
     const toolBarRender = () => {
 
@@ -367,7 +383,7 @@ const Index = () => {
                 </Dropdown>
                 <Button
                     type='primary'
-
+                    onClick={onBuildClick}
                 >
                     新建
                 </Button>

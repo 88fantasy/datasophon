@@ -4,6 +4,7 @@ import { API } from "../../../../../../../api";
 import { forwardRef, use, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { axiosPost } from "../../../../../../../api/request";
 import CommonTemplate from "../../../../../../../components/Common/CommonTemplate";
+import { useConfigContext } from "../../configContext";
 
 
 
@@ -17,7 +18,7 @@ const Index = ({
 }, ref) => {
     const [hostList, setHostList] = useState([])
     const [templateData, setTemplateData] = useState([])
-
+    const { clusterId } = useConfigContext()
 
     const steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
 
@@ -40,7 +41,7 @@ const Index = ({
     }
     const getServiceRoleList = async () => {
         const params = {
-            clusterId: record.id,
+            clusterId,
             serviceIds: steps4Data.services.map(val => val.id).join(",") || "",
             serviceRoleType: 1, // 传1查的是Master角色
         };
@@ -53,7 +54,7 @@ const Index = ({
 
     const getAllHost = async () => {
         const params = {
-            clusterId: record.id,
+            clusterId,
         };
         const res = await axiosPost(API.getAllHost, params)
 
@@ -83,7 +84,7 @@ const Index = ({
         }
 
         const params = {
-            clusterId: record.id,
+            clusterId,
             serviceIds: (services || []).map(val => val.id)
         };
 
