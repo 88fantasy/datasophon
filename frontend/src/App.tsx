@@ -1,13 +1,18 @@
 import { Suspense, useEffect } from "react"
 import { RouterProvider, useLocation } from "react-router-dom"
 import router, { routesMap } from "./routes"
-import { account } from "./utils/account";
-import { useNavigate } from "react-router-dom";
-import { VUE_APP_PUBLIC_PATH } from "./config";
 import { App, ConfigProvider, Spin } from "antd";
+import injectLocationChange from "./utils/injectLocationChange";
+import { invokeRelogin } from "./utils/authorityUtils";
 
 
+const invokeInjectLocationEvent = () => {
+  injectLocationChange()
 
+
+  window.addEventListener('locationchange', invokeRelogin)
+  invokeRelogin()
+}
 
 const Index = () => {
 
@@ -23,6 +28,11 @@ const Index = () => {
   //     navigate(`${VUE_APP_PUBLIC_PATH}/account/login`)
   //   }
   // }, [location.pathname, navigate])
+
+  // useEffect(() => {
+
+  //   invokeInjectLocationEvent()
+  // }, [])
 
 
   return (

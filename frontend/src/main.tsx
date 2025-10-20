@@ -11,11 +11,6 @@ import '@ant-design/v5-patch-for-react-19';
 
 
 
-injectLocationChange()
-
-
-window.addEventListener('locationchange', invokeRelogin)
-invokeRelogin()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -6,8 +6,6 @@ import { Button, Dropdown, message, Progress, Tag } from 'antd';
 import { noop } from 'lodash-es';
 import { useParams } from 'react-router';
 import { act, useRef, useState } from 'react';
-import CommonBtnList from '../../components/Common/CommonBtnList';
-import list from 'antd/lib/transfer/list';
 import { showComfirmModal } from '../../utils/util';
 import { axiosPost } from '../../api/request';
 import { T_STEPS_TYPE_HOSTMANAGE } from '../Colony/ColonyManage/components/ConfigModal';

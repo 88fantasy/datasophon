@@ -80,7 +80,15 @@ const contentRoutes = [
     path: '/Cluster/:clusterId/ServiceManage',
     element: <Proxy />,
     icon: <SmileFilled />,
-    title: '服务管理'
+    title: '服务管理',
+    children: [
+      {
+        path: 'Instance/:instanceId',
+        element: <HostManage />,
+        hideInMenu: true,
+        title: '实例'
+      }
+    ]
   },
   {
     path: '/Cluster/:clusterId/HostManage',
@@ -287,7 +295,7 @@ function invokeGenMenuByPattern() {
   return res
 }
 
-window.invokeGenMenuByPattern = invokeGenMenuByPattern
+// window.invokeGenMenuByPattern = invokeGenMenuByPattern
 const router = createBrowserRouter(routes);
 
 export {
@@ -296,6 +304,10 @@ export {
   routesMap,
   invokeGenMenuByPattern
 }
+
+
+
+
 
 console.log('router', router)
 console.log("data ", matchRoutes(router.routes, window.location.pathname));

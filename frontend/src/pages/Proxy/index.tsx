@@ -13,9 +13,11 @@ import { invokeGenMenuByPattern, menu, menuMap } from '../../routes';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { account } from '../../utils/account';
 import { invokeRelogin } from '../../utils/authorityUtils';
-import { invokeGenPath, invokeHandlePath } from '../../utils/routerUtils';
+import { invokeGenPath, invokeGetRouteByPath, invokeHandlePath } from '../../utils/routerUtils';
 import { ClusterGlobalProvider } from '../../context/clusterGlobalContext';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { API } from '../../api';
+import { axiosPost } from '../../api/request';
 
 
 const Index = () => {
@@ -25,6 +27,26 @@ const Index = () => {
         layout: 'mix',
         splitMenus: true,
     };
+
+    const hadInitRef = useRef()
+    const { clusterId, } = invokeGetRouteByPath().params
+
+    // if (!clusterId) {
+    //     hadInitRef.current = true
+    // }
+
+
+    // const [hadInit, setHadInit] = useState(false)
+
+    const [serviceList, setServiceList] = useState([])
+
+    const timeoutIdRef = useRef()
+
+
+
+
+
+    console.log('clusterId', clusterId)
 
     const [proCardBodyStyle, setProCardBodyStyle] = useState({})
 
@@ -36,11 +58,72 @@ const Index = () => {
     // };
 
     const defaultProps = useMemo(() => {
-        return {
-            route: invokeGenMenuByPattern().route
+        const {
+            route
+        } = invokeGenMenuByPattern()
+
+
+        if (serviceList.length) {
+            // route
+            const serviceRouteObj = route.routes.find(val => {
+                return /Cluster\/:clusterId\/HostManage/.test(val.path)
+            })
+            console.log('route.routes', serviceRouteObj)
+
+            const serviceRoutes = serviceList.map(val => {
+                return {
+                    name: val.serviceName,
+                    path: `${serviceRouteObj.path}/Instance/${val.id}`
+                }
+            })
+            serviceRouteObj.routes = serviceRoutes
         }
+
+        return {
+            route
+        }
+    }, [serviceList])
+
+
+    const invokeCancelGetServiceList = useCallback(() => {
+        if (timeoutIdRef.current) {
+            clearTimeout(timeoutIdRef.current)
+            timeoutIdRef.current = undefined
+        }
+
     }, [])
 
+    const invokeGetServiceList = useCallback(async () => {
+        invokeCancelGetServiceList()
+
+        const fn = async () => {
+            const res = await axiosPost(API.getServiceListByCluster, {
+                clusterId
+            })
+
+            if (res.code === 200) {
+                setServiceList(res.data)
+            }
+            invokeGetServiceList()
+        }
+
+
+        if (clusterId) {
+            if (!hadInitRef.current) {
+                await fn()
+
+            } else {
+                // invokeCancelGetServiceList()
+                timeoutIdRef.current = setTimeout(async () => {
+                    await fn()
+                    // invokeCancelGetServiceList()
+                }, 3 * 1000)
+            }
+        }
+
+        hadInitRef.current = true
+
+    }, [clusterId, invokeCancelGetServiceList])
 
     const onMenuClick = (obj: MenuDataItem) => {
 
@@ -78,9 +161,16 @@ const Index = () => {
     }, [])
 
 
-    // useEffect(() => {
-    //     if()
-    // }, [])
+    useEffect(() => {
+        if (!hadInitRef.current) {
+            invokeGetServiceList()
+        }
+
+        return () => {
+            invokeCancelGetServiceList()
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
 
     return (
@@ -179,26 +269,28 @@ const Index = () => {
                     }}
                     {...settings}
                 >
-                    <PageContainer
-                        title={false}
-                        className='h-full'
-                    >
-                        <ProCard
-                            style={{
-                                minHeight: '83vh',
-                            }}
-                            bodyStyle={{
-                                height: '100%',
-                                ...proCardBodyStyle
-                            }}
-                        // className='p-[0]'
+                    {
+                        hadInitRef.current && (
+                            <PageContainer
+                                title={false}
+                                className='h-full'
+                            >
+                                <ProCard
+                                    style={{
+                                        minHeight: '83vh',
+                                    }}
+                                    bodyStyle={{
+                                        height: '100%',
+                                        ...proCardBodyStyle
+                                    }}
+                                // className='p-[0]'
 
-                        >
-                            <Outlet />
-                        </ProCard>
-                        {/* <Outlet /> */}
-
-                    </PageContainer>
+                                >
+                                    <Outlet />
+                                </ProCard>
+                            </PageContainer>
+                        )
+                    }
                 </ProLayout>
             </div>
         </ClusterGlobalProvider>
