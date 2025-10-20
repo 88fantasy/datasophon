@@ -4,6 +4,7 @@ export const invokeRenderForm = (formConfig) => {
         return <Com
             key={val.name}
             {...val}
+
         />
     })
 }

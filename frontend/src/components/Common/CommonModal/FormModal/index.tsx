@@ -18,10 +18,21 @@ const Index = (props) => {
         invokeInjectConfirmEvent,
         apiConfig = {},
         formConfig = [],
-        paramsFn
+        proFormProps = {},
+        paramsFn,
+        initCallback
     } = props
 
-    const formRef = useRef()
+    let {
+        formRef
+    } = props
+
+    const innerFormRef = useRef()
+
+    if (!formRef) {
+        formRef = innerFormRef
+    }
+
 
     const onComfirm = useCallback(async () => {
         try {
@@ -84,8 +95,16 @@ const Index = (props) => {
 
     useEffect(() => {
         invokeInjectConfirmEvent(onComfirm)
-
     }, [invokeInjectConfirmEvent, onComfirm])
+
+    useEffect(() => {
+        // Object.assign(ruleForm, record || {});
+
+
+        // setRuleForm(ruleForm)
+        typeof initCallback === 'function' && initCallback({ formRef })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     const invokeRenderInfo = () => {
         return (
@@ -94,6 +113,7 @@ const Index = (props) => {
                     formRef={formRef}
                     submitter={false}
                     initialValues={memoInitialValue}
+                    {...proFormProps}
                 >
 
                     {

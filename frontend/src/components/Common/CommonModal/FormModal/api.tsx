@@ -10,9 +10,11 @@ export default async function (config) {
                 return val.com
             }).map(val => {
                 return {
+                    // ...val,
                     name: val.dataIndex || val.name,
                     label: val.title || val.label,
                     ...(val?.formItemProps || {}),
+                    // ...val,
                     com: val.com
                 }
             })
@@ -23,7 +25,10 @@ export default async function (config) {
     };
 
     config.dialogConfig = {
-        title: `${config?.record?.id ? '编辑' : '新增'}`,
+        title: config.title || `${config?.record?.id ? '编辑' : '新增'}`,
+        classNames: {
+            body: 'max-h-[60vh] overflow-auto'
+        }
     };
 
     return defineModalApi({

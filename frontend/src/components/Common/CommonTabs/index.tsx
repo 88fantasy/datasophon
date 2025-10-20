@@ -35,6 +35,7 @@ const Index = ({
             activeKey={activeKey || memoTabItem[0]?.key}
             items={memoTabItem}
             onChange={onChange}
+            destroyOnHidden={true}
         />
     )
 }

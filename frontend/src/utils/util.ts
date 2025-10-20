@@ -1,6 +1,6 @@
 import { message, Modal, type ModalFuncProps } from "antd";
 import enquireJs from "enquire.js";
-import { isNull, isUndefined } from 'lodash-es';
+import { isNull, isUndefined } from "lodash-es";
 
 export function isDef(v) {
   return v !== undefined && v !== null;
@@ -42,11 +42,20 @@ export function showComfirmModal(options?: ModalFuncProps) {
 
     const bakOk = options.onOk;
 
+    const bakOnCancel = options.onCancel;
+
     options.onOk = () => {
       if (bakOk) {
         bakOk();
       }
       resolve(true);
+    };
+
+    options.onCancel = () => {
+      if (bakOnCancel) {
+        bakOnCancel();
+      }
+      resolve(false);
     };
 
     return Modal.confirm({

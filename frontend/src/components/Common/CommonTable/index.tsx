@@ -129,7 +129,8 @@ export const invokeGenOptionCol = (list, config) => {
 const Index = ({
     tableProps
 }) => {
-    const actionRef = tableProps.actionRef || useRef<ActionType>();
+    const innnerActionRef = useRef<ActionType>();
+    const actionRef = tableProps.actionRef || innnerActionRef
 
 
 
@@ -193,6 +194,8 @@ const Index = ({
                     新建
                 </Button>,
             ]}
+
+
             {...tableProps}
         />
     );

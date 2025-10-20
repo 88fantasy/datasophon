@@ -23,6 +23,7 @@ const SystemCenterFrame = lazy(() => import('../pages/SystemCenter/Frame'));
 const SystemCenterUser = lazy(() => import('../pages/SystemCenter/User'));
 const AlarmManageGroup = lazy(() => import('../pages/AlarmManage/Group'));
 const AlarmManageMetric = lazy(() => import('../pages/AlarmManage/Metric'));
+const HostManage = lazy(() => import('../pages/HostManage'));
 
 const contentRoutes = [
   {
@@ -85,7 +86,15 @@ const contentRoutes = [
     path: '/Cluster/:clusterId/HostManage',
     element: <Proxy />,
     icon: <SmileFilled />,
-    title: '主机管理'
+    title: '主机管理',
+    children: [
+      {
+        path: 'Index',
+        element: <HostManage />,
+        hideInMenu: true,
+        title: '总览'
+      }
+    ]
   },
   {
     path: '/Cluster/:clusterId/AlarmManage',

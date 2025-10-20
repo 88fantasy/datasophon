@@ -7,6 +7,7 @@ import { useNavigate, useParams } from 'react-router';
 import type { ProColumns } from '@ant-design/pro-components';
 import { useCallback } from 'react';
 import { invokeGenPath } from '../../../utils/routerUtils';
+import qs from 'qs';
 
 
 const showFormModal = () =>
@@ -55,9 +56,11 @@ const Index = () => {
             render: invokeGenOptionCol([
                 {
                     title: '查看告警指标',
-                    onClick: () => {
+                    onClick: (text, record) => {
                         navigate(
-                            invokeGenPath(`/Cluster/${clusterId}/AlarmManage/Metric`)
+                            invokeGenPath(`/Cluster/${clusterId}/AlarmManage/Metric?${qs.stringify({
+                                alertGroupName: record.id
+                            })}`)
                         )
                     }
                 },
