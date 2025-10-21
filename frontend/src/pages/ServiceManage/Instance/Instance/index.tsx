@@ -18,6 +18,8 @@ import type { ProColumns } from '@ant-design/pro-components';
 //     import("./AddLabelModal/api");
 const showAddCharacterModal = () =>
     import("./AddCharacterModal/api");
+const showAllotCharacterModal = () =>
+    import("./AllotCharacterModal/api");
 
 const showCommonLogModal = () =>
     import("../../../../components/Common/CommonLogModal/api");
@@ -172,6 +174,15 @@ const Index = () => {
             record: {}
         })
     }
+    const onAllotCharacterModalClick = async () => {
+        const modelApi = await showAllotCharacterModal()
+
+        modelApi.default({
+            serviceInstanceId: instanceId,
+            roleInstanceIds: selectedRows.map(val => val.id),
+            record: {}
+        })
+    }
 
     const toolBarRender = () => {
 
@@ -252,14 +263,9 @@ const Index = () => {
             },
             {
                 label: '分配角色组',
-                // onClick: invokePreClick.bind(noop, async () => {
-                //     const res = await showComfirmModal()
-
-                //     if (res) {
-                //         return invokeOpWorder('stop')
-                //     }
-
-                // }),
+                onClick: invokePreClick.bind(noop, async () => {
+                    onAllotCharacterModalClick()
+                }),
             },
             {
                 label: '删除',
