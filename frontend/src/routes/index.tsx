@@ -24,6 +24,7 @@ const SystemCenterUser = lazy(() => import('../pages/SystemCenter/User'));
 const AlarmManageGroup = lazy(() => import('../pages/AlarmManage/Group'));
 const AlarmManageMetric = lazy(() => import('../pages/AlarmManage/Metric'));
 const HostManage = lazy(() => import('../pages/HostManage'));
+const ServiceManageInstance = lazy(() => import('../pages/ServiceManage/Instance'));
 
 const contentRoutes = [
   {
@@ -84,7 +85,7 @@ const contentRoutes = [
     children: [
       {
         path: 'Instance/:instanceId',
-        element: <HostManage />,
+        element: <ServiceManageInstance />,
         hideInMenu: true,
         title: '实例'
       }

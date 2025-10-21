@@ -38,7 +38,7 @@ const Index = (props) => {
         try {
             const validateFieldsRes = await formRef.current.validateFields()
             if (validateFieldsRes) {
-                const params = {
+                let params = {
                     ...validateFieldsRes,
 
                 }

@@ -173,7 +173,7 @@ export const invokePackProtableRequest = (api) => {
           : api.params || {}),
         ...params,
       };
-      mapApi = api.api;
+      mapApi = typeof api.api === "function" ? api.api(params) : api.api;
     }
     return axiosPost(mapApi, params);
   };

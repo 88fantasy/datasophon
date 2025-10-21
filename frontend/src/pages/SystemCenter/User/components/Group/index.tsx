@@ -5,7 +5,7 @@ import CommonTable, { invokeGenOptionCol, type GithubIssueItem } from '../../../
 import { axiosPost, axiosPostUpload } from '../../../../../api/request';
 import { useParams } from 'react-router';
 import type { ProColumns } from '@ant-design/pro-components';
-import { useCallback } from 'react';
+import { memo, useCallback } from 'react';
 
 
 const showFormModal = () =>
@@ -90,4 +90,4 @@ const Index = () => {
     )
 };
 
-export default Index
+export default memo(Index)

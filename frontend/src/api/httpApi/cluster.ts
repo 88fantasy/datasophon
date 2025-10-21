@@ -53,4 +53,5 @@ export default {
   clusterUserDelete: path + "/cluster/user/delete",
   clusterGroupDelete: path + "/cluster/group/delete",
   clusterGroupSave: path + "/cluster/group/save",
+  clusterServiceInstanceDelete: path + "/cluster/service/instance/delete",
 };

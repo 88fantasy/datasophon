@@ -1,11 +1,13 @@
-import { useEffect } from "react"
+import { useContext, useEffect } from "react"
 import { useClusterGlobalContext } from "../../../context/clusterGlobalContext"
+import { ProxyContext } from "../../../context/proxyContext"
 
 const Index = () => {
 
 
-    const { dashboardUrl, setProCardBodyStyle } = useClusterGlobalContext()
+    const { dashboardUrl, setProCardBodyStyle } = useContext(ProxyContext)
 
+    console.log('dashboardUrl', dashboardUrl)
 
     useEffect(() => {
         setProCardBodyStyle?.({
@@ -17,6 +19,7 @@ const Index = () => {
     return (
         <iframe className="w-full h-[82.5vh]" src={dashboardUrl}>
         </iframe>
+
     )
 }
 

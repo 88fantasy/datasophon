@@ -1,15 +1,16 @@
+"use client";
 import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useMatch, useParams } from "react-router-dom";
 import { invokeGetRouteByPath } from "../utils/routerUtils";
 import { axiosPost } from "../api/request";
 import { API } from "../api";
-import type { AnyObject } from "antd/es/_util/type";
+import { clone } from "lodash-es";
 
 
 let timer
 
 
-export const ClusterGlobalContext = createContext({})
+export const ClusterGlobalContext = createContext(null)
 
 
 export const ClusterGlobalProvider = ({
@@ -21,14 +22,14 @@ export const ClusterGlobalProvider = ({
     const [hadInit, setHadInit] = useState(false)
 
     const matchRoute = useRef(invokeGetRouteByPath())
-    
+
     const clusterId = useMemo(() => {
         return matchRoute.current.params.clusterId
     }, [])
 
-    const invokeGetClusterId = () => {
-        return matchRoute.current.params.clusterId
-    }
+    // const invokeGetClusterId = () => {
+    //     return matchRoute.current.params.clusterId
+    // }
 
     // const { clusterId } = matchRoute.params
 
@@ -84,18 +85,21 @@ export const ClusterGlobalProvider = ({
     }, [invokeInit])
 
 
-    return (
+    const value = clone(config.serviceListMapRef.current)
+    console.log('serviceListMapRef', value)
+
+    return hadInit && (
         <ClusterGlobalContext.Provider
             value={{
-                ...config,
                 runningClusterList,
                 dashboardUrl,
-                clusterId
+                clusterId,
+                ...config,
+
             }}
         >
-            {
-                hadInit && children
-            }
+            {children}
+
         </ClusterGlobalContext.Provider>
     )
 }

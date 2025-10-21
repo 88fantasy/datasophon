@@ -5,12 +5,14 @@ import CommonTable, { invokeGenOptionCol, type GithubIssueItem } from '../../../
 import { axiosPost, axiosPostUpload } from '../../../api/request';
 import { Tabs } from 'antd';
 import { getRouteQuery, replaceRouter } from '../../../utils/routerUtils';
-import { useMemo } from 'react';
+import { lazy, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CommonTabs from '../../../components/Common/CommonTabs';
-import User from './components/User';
-import Group from './components/Group';
+// import User from './components/User';
+// import Group from './components/Group';
 
+const User = lazy(() => import('./components/User'));
+const Group = lazy(() => import('./components/Group'));
 
 const showFormModal = () =>
     import("./BuildOrEditModal/api");
@@ -97,30 +99,15 @@ const Index = () => {
             {
                 label: '用户列表',
                 key: 'user',
-                children: (
-                    <User />
-                )
+                asyncChildren: User
             },
             {
                 label: '用户组列表',
                 key: 'group',
-                children: (
-                    <Group />
-                )
+                asyncChildren: Group
             },
         ]
     }, [])
-
-
-    const onChange = (e) => {
-        replaceRouter({
-            query: {
-                tab: e
-            }
-        })
-    }
-
-
 
 
     return (
