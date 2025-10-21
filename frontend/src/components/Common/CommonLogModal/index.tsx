@@ -29,7 +29,6 @@ const Index = ({
             <div className="flex-1">
                 <CommonMonacoEditor
                     language="yaml"
-
                     value={logs}
                     options={{
                         minimap: { enabled: false },

@@ -16,8 +16,8 @@ import type { ProColumns } from '@ant-design/pro-components';
 //     import("./HandRackModal/api");
 // const showAddLabelModal = () =>
 //     import("./AddLabelModal/api");
-// const showRoleModal = () =>
-//     import("./RoleModal/api");
+const showAddCharacterModal = () =>
+    import("./AddCharacterModal/api");
 
 const showCommonLogModal = () =>
     import("../../../../components/Common/CommonLogModal/api");
@@ -164,6 +164,15 @@ const Index = () => {
         // })
     }
 
+    const onAddCharacterModalClick = async () => {
+        const modelApi = await showAddCharacterModal()
+
+        modelApi.default({
+            serviceInstanceId: instanceId,
+            record: {}
+        })
+    }
+
     const toolBarRender = () => {
 
 
@@ -298,10 +307,16 @@ const Index = () => {
 
                 </Dropdown>
                 <Button
-                    type='primary'
+                    type="primary"
                     onClick={onBuildClick}
                 >
-                    新建
+                    添加新实例
+                </Button>
+                <Button
+                    type="primary"
+                    onClick={onAddCharacterModalClick}
+                >
+                    添加角色组
                 </Button>
             </>
         )
