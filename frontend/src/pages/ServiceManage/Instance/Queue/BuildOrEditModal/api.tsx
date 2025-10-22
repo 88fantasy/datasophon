@@ -2,59 +2,25 @@
 // import defineModalApi from "../../../../components/Common/CommonModal/DefineModal/api";
 // import Index from ".";
 
-import { ProFormText } from "@ant-design/pro-components";
-import { requireRules } from "../../../../../utils/util";
-import { API } from "../../../../../api";
+
+import defineModalApi from "../../../../../components/Common/CommonModal/DefineModal/api";
+import Index from '.'
 
 
-
-const showFormModal = () =>
-  import("../../../../../components/Common/CommonModal/FormModal/api");
 
 export default async function (config) {
-  const modelApi = await showFormModal()
+  config.render = conf => {
+    return <Index {...conf} />;
+  };
 
-  modelApi.default({
-    columns: [
-      {
-        title: '用户名',
-        dataIndex: 'username',
-        com: ProFormText,
-        formItemProps: {
-          rules: requireRules
-        },
-      },
-      {
-        title: '用户密码',
-        dataIndex: 'password',
-        com: ProFormText.Password,
+  config.dialogConfig = {
+    title: config.title || `${config?.record?.id ? '编辑' : '新增'}`,
+    classNames: {
+      body: 'max-h-[60vh] overflow-auto'
+    }
+  };
 
-        formItemProps: {
-          rules: requireRules
-        },
-      },
-      {
-        title: '邮箱',
-        dataIndex: 'email',
-        com: ProFormText,
-        formItemProps: {
-          rules: requireRules
-        },
-      },
-      {
-        title: '电话',
-        dataIndex: 'phone',
-        com: ProFormText,
-
-        formItemProps: {
-          rules: requireRules
-        },
-      }
-    ],
-    apiConfig: {
-      add: API.addUser,
-      update: API.updateUser
-    },
-    ...config
-  })
+  return defineModalApi({
+    config
+  });
 }
