@@ -112,7 +112,6 @@ const Index = () => {
             valueEnum: serviceRoleStateMap,
             render: (text, record) => {
 
-                console.log('record', record)
 
                 const colorMap = {
                     1: 'success',

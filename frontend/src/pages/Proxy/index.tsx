@@ -138,11 +138,11 @@ const Index = () => {
                 res = await invokeGetServiceListByClusterProxy()
                 fn(false)
             } else {
-                timeoutIdRef.current = setTimeout(async () => {
-                    await invokeGetServiceListByClusterProxy()
-                    invokeCancelGetServiceList()
-                    fn(false)
-                }, 3 * 1000)
+                // timeoutIdRef.current = setTimeout(async () => {
+                //     await invokeGetServiceListByClusterProxy()
+                //     invokeCancelGetServiceList()
+                //     fn(false)
+                // }, 3 * 1000)
             }
 
             return res
@@ -163,7 +163,7 @@ const Index = () => {
 
     }, [clusterId, invokeCancelGetServiceList, invokeGetServiceListByClusterProxy])
 
-    const onMenuClick = (obj: MenuDataItem) => {
+    const onMenuClick = useCallback((obj: MenuDataItem) => {
 
         let {
             path
@@ -191,7 +191,7 @@ const Index = () => {
             navigate(invokeHandlePath(path))
             setProCardBodyStyle({})
         }
-    };
+    }, [navigate]);
 
     const onLogoutClick = useCallback(() => {
         account.clear()
@@ -245,7 +245,7 @@ const Index = () => {
             setHadInit(true)
         }
 
-    }, [hadInit, invokeGetServiceList])
+    }, [hadInit, invokeGetRunningClusterList, invokeGetServiceList, runningClusterList?.length])
 
 
     const invokeGetServiceListMap = useCallback(() => {
@@ -383,4 +383,4 @@ const Index = () => {
     );
 };
 
-export default Index
+export default memo(Index)

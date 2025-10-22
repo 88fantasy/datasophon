@@ -1,11 +1,12 @@
 import { useNavigate } from "react-router-dom"
 import { getRouteQuery, invokeGenPath, replaceRouter } from "../../../utils/routerUtils"
 import { Tabs } from "antd"
-import { memo, Suspense, useCallback, useMemo, useState } from "react"
+import { memo, Suspense, useCallback, useEffect, useMemo, useState } from "react"
 import qs from "qs"
 
 const Index = ({
-    memoTabItem
+    memoTabItem,
+    // className
 }) => {
 
 
@@ -25,6 +26,7 @@ const Index = ({
     }, [])
 
     const items = useMemo(() => {
+        console.log('memoTabItem')
         return memoTabItem
             .filter(Boolean)
             .map(val => {
@@ -40,9 +42,19 @@ const Index = ({
             })
     }, [memoTabItem])
 
+
+    useEffect(() => {
+        const obj = items.find(val => val.key === activeKey)
+        if (!obj) {
+            setActiveKey(items[0]?.key)
+        }
+
+    }, [items, activeKey])
+
     return (
         <Tabs
             // key={key}
+            // className={className}
             activeKey={activeKey || memoTabItem[0]?.key}
             items={items}
             onChange={onChange}

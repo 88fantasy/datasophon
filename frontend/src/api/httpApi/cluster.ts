@@ -54,4 +54,5 @@ export default {
   clusterGroupDelete: path + "/cluster/group/delete",
   clusterGroupSave: path + "/cluster/group/save",
   clusterServiceInstanceDelete: path + "/cluster/service/instance/delete",
+  clusterYarnSchedulerInfo: path + "/cluster/yarn/scheduler/info",
 };

@@ -5,7 +5,7 @@ import CommonTable, { invokeGenOptionCol, type GithubIssueItem } from '../../../
 import { axiosPost, axiosPostUpload } from '../../../api/request';
 import { useParams } from 'react-router';
 import type { ProColumns } from '@ant-design/pro-components';
-import { use, useCallback, useEffect, useRef, useState } from 'react';
+import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { message, Tag } from 'antd';
 import { cloneDeep, noop } from 'lodash-es';
 import CommonBtnList from '../../../components/Common/CommonBtnList';
@@ -45,7 +45,7 @@ const Index = () => {
         })
     }, [clusterId])
 
-    const getAlarmGroupList = async () => {
+    const getAlarmGroupList = useCallback(async () => {
         const params = {
             pageSize: 1000,
             page: 1,
@@ -59,99 +59,101 @@ const Index = () => {
         }
 
 
-    }
+    }, [clusterId])
 
 
 
-    const columns: ProColumns[] = [
-        {
-            dataIndex: 'index',
-            title: '序号',
-            valueType: 'indexBorder',
-            width: 48,
-        },
-        {
-            title: '指标名称',
-            dataIndex: 'alertQuotaName',
-            ellipsis: true,
-        },
-        {
-            title: '比较方式',
-            dataIndex: 'compareMethod',
-            search: false,
-            ellipsis: true,
-        },
-        {
-            title: '告警阀值',
-            dataIndex: 'alertThreshold',
-            ellipsis: true,
-            search: false,
-        },
-        {
-            title: '告警组',
-            dataIndex: 'alertGroupName',
-            ellipsis: true,
-            valueEnum: groupList.reduce((acc, cur) => {
-                acc[cur.id] = cur.alertGroupName
-                return acc
-            }, {})
+    const columns: ProColumns[] = useMemo(() => {
+        return [
+            {
+                dataIndex: 'index',
+                title: '序号',
+                valueType: 'indexBorder',
+                width: 48,
+            },
+            {
+                title: '指标名称',
+                dataIndex: 'alertQuotaName',
+                ellipsis: true,
+            },
+            {
+                title: '比较方式',
+                dataIndex: 'compareMethod',
+                search: false,
+                ellipsis: true,
+            },
+            {
+                title: '告警阀值',
+                dataIndex: 'alertThreshold',
+                ellipsis: true,
+                search: false,
+            },
+            {
+                title: '告警组',
+                dataIndex: 'alertGroupName',
+                ellipsis: true,
+                valueEnum: groupList.reduce((acc, cur) => {
+                    acc[cur.id] = cur.alertGroupName
+                    return acc
+                }, {})
 
-        },
-        {
-            title: '通知组',
-            dataIndex: 'noticeGroupId',
-            ellipsis: true,
-            search: false,
-        },
-        {
-            title: '状态',
-            dataIndex: 'quotaState',
-            ellipsis: true,
-            search: false,
-            render: (text, record) => {
+            },
+            {
+                title: '通知组',
+                dataIndex: 'noticeGroupId',
+                ellipsis: true,
+                search: false,
+            },
+            {
+                title: '状态',
+                dataIndex: 'quotaState',
+                ellipsis: true,
+                search: false,
+                render: (text, record) => {
 
-                const colorMap = {
-                    1: 'success',
-                    2: 'error',
+                    const colorMap = {
+                        1: 'success',
+                        2: 'error',
+                    }
+
+                    const color = colorMap[record.quotaStateCode] || 'default'
+
+                    return <Tag color={color}>{record.quotaState}</Tag>
+
                 }
+            },
+            {
+                title: '操作',
+                valueType: 'option',
+                key: 'option',
+                width: 200,
+                render: invokeGenOptionCol([
+                    {
+                        title: '编辑',
+                        onClick: (text, record) => {
+                            onBuildOrEditClick({
+                                action: actionRef.current,
+                                record
+                            })
+                        }
+                    },
+                    {
+                        title: '删除',
+                        titleKey: 'alertGroupName',
+                        onClick: async (text, record) => {
 
-                const color = colorMap[record.quotaStateCode] || 'default'
+                            const params = JSON.stringify([record.id]);
 
-                return <Tag color={color}>{record.quotaState}</Tag>
-
-            }
-        },
-        {
-            title: '操作',
-            valueType: 'option',
-            key: 'option',
-            width: 200,
-            render: invokeGenOptionCol([
-                {
-                    title: '编辑',
-                    onClick: (text, record) => {
-                        onBuildOrEditClick({
-                            action: actionRef.current,
-                            record
-                        })
-                    }
-                },
-                {
-                    title: '删除',
-                    titleKey: 'alertGroupName',
-                    onClick: async (text, record) => {
-
-                        const params = JSON.stringify([record.id]);
-
-                        return axiosPostUpload(API.deleteMetric, params)
-                    }
-                },
-            ])
-        },
-    ];
+                            return axiosPostUpload(API.deleteMetric, params)
+                        }
+                    },
+                ])
+            },
+        ]
+    }, [groupList, onBuildOrEditClick]);
 
 
-    const onEnableOrDisableClick = async (type, arr) => {
+    const onEnableOrDisableClick = useCallback(async (type, arr) => {
         if (!arr.length) {
             message.warning('请选择要操作的项')
 
@@ -190,10 +192,10 @@ const Index = () => {
         }
 
 
-    }
+    }, [clusterId, selectedRows])
 
 
-    const toolBarRender = () => {
+    const toolBarRender = useCallback(() => {
 
 
 
@@ -221,8 +223,7 @@ const Index = () => {
                 list={list}
             />
         )
-    }
-
+    }, [onBuildOrEditClick, onEnableOrDisableClick, selectedRows])
 
     useEffect(() => {
         getAlarmGroupList()

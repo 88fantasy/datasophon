@@ -1,34 +1,11 @@
 import { grey } from "@ant-design/colors";
-import { ProCard, ProFormGroup, ProFormList, ProFormSelect, ProFormSlider, ProFormSwitch, ProFormText } from "@ant-design/pro-components";
+import { ProCard, ProForm, ProFormGroup, ProFormList, ProFormSelect, ProFormSlider, ProFormSwitch, ProFormText } from "@ant-design/pro-components";
+import { Col } from "antd";
+import { cloneDeep } from "lodash-es";
 import type React from "react";
-
-function invokeMapShowMultiply(item) {
-    const inputStringArray =
-        item.type === "input" && item.configType === "stringArray";
-    return ["multiple"].includes(item.type) || inputStringArray;
-}
+import { invokeMapShowMultiply } from "./utils";
 
 
-// const comMap = {
-//     input: {
-//         com: ProFormText,
-//     },
-//     password: {
-//         com: ProFormText.Password,
-
-//     },
-//     slider: {
-//         com: ProFormSlider,
-//         propsFn: (item) => {
-//             return {
-//                 min: item.minValue,
-//                 max: item.maxValue,
-//             }
-//         }
-//     },
-//     switch: ProFormSwitch,
-//     select: ProFormSelect
-// }
 
 
 const Index = ({
@@ -42,13 +19,13 @@ const Index = ({
 
         console.log('templateData', templateData)
 
-        return templateData.map((item, index) => {
+        const r = templateData.map((item, index) => {
             let res
 
 
             let label: React.ReactNode = item.label
 
-            item.type = 'multipleWithMap'
+            // item.type = 'multipleWithMap'
 
 
             if (
@@ -56,7 +33,7 @@ const Index = ({
                 item.name
             ) {
                 label = (
-                    <div>
+                    <div className="text-left">
                         {
                             label
                         }
@@ -74,11 +51,12 @@ const Index = ({
 
 
             const commonProps = {
-                extra: item.description,
+                tooltip: item.description,
                 label,
                 placeholder: item.placeholder,
                 name: item.name,
-                key: item.name
+                key: item.name,
+                initialValue: item.value || item.defaultValue
             }
 
 
@@ -120,13 +98,19 @@ const Index = ({
                     )
                 } else if (item.type === 'slider') {
                     res = (
+
                         <ProFormSlider
                             {...commonProps}
-
-                            min={item.minValue}
-                            max={item.maxValue}
-
+                            fieldProps={{
+                                min: item.minValue,
+                                max: item.maxValue,
+                                marks: {
+                                    0: item.minValue,
+                                    100: item.maxValue
+                                },
+                            }}
                         />
+
                     )
                 } else if (item.type === 'switch') {
                     res = (
@@ -161,56 +145,46 @@ const Index = ({
 
 
             } else {
-                if ('multipleWithKey' === item.type) {
+                if (invokeMapShowMultiply(item)) {
                     res = (
                         <ProFormList
                             {...commonProps}
+                            className="w-full"
                             rules={[
                                 {
                                     required: item.required,
                                     validator: async (_, value) => {
-                                        if (value && value.length > 0) {
-                                            return;
+                                        if (item.required) {
+                                            value = value.map(val => val.value).join('')
+                                            if (value && value.length > 0) {
+                                                return;
+                                            }
+                                            throw new Error('至少要有一项！');
+                                        } else {
+                                            return
                                         }
-                                        throw new Error('至少要有一项！');
+
                                     },
                                 },
                             ]}
                         >
                             <ProFormGroup key="group">
                                 <ProFormText
-                                    colProps={{
-                                        span: 12
-                                    }}
+                                    width="xl"
                                     rules={[
                                         {
-                                            validateTrigger: ['change', 'blur'],
                                             required: item.required,
                                             whitespace: true,
                                             message: `${item.label}不能为空!`,
                                         }
                                     ]}
-                                    name={`${item.name + 'arrayWithKey'}`}
-                                />
-                                <ProFormText
-                                    colProps={{
-                                        span: 12
-                                    }}
-                                    rules={[
-                                        {
-                                            validateTrigger: ['change', 'blur'],
-                                            required: item.required,
-                                            whitespace: true,
-                                            message: `不能为空!`,
-                                        }
-                                    ]}
-                                    name={`${item.name + 'arrayWithValue'}`}
+                                    name="value"
                                 />
                             </ProFormGroup>
 
                         </ProFormList>
                     )
-                } else if ('multipleWithMap' === item.type) {
+                } else if ('multipleWithKey' === item.type) {
                     res = (
                         <ProFormList
                             {...commonProps}
@@ -218,10 +192,60 @@ const Index = ({
                                 {
                                     required: item.required,
                                     validator: async (_, value) => {
-                                        if (value && value.length > 0) {
+                                        if (!item.required || value && value.length > 0) {
                                             return;
                                         }
                                         throw new Error('至少要有一项！');
+
+
+                                    },
+                                },
+                            ]}
+                        >
+                            <ProFormGroup key="group">
+                                <ProFormText
+                                    width="md"
+                                    rules={[
+                                        {
+                                            required: item.required,
+                                            message: `${item.label}key不能为空!`,
+                                        }
+                                    ]}
+                                    name="key"
+                                />
+                                <ProFormText
+                                    width="md"
+                                    rules={[
+                                        {
+                                            required: item.required,
+                                            message: `${item.label}value不能为空!`,
+
+                                        }
+                                    ]}
+                                    name="value"
+                                />
+                            </ProFormGroup>
+
+                        </ProFormList>
+                    )
+                } else if ('multipleWithMap' === item.type) {
+                    const creatorRecord = cloneDeep(item.defaultValue[0])
+                    creatorRecord.items.map(v => {
+                        v.value = ''
+                    })
+
+                    res = (
+                        <ProFormList
+                            {...commonProps}
+                            rules={[
+                                {
+                                    required: item.required,
+                                    validator: async (_, value) => {
+                                        if (!item.required || value && value.length > 0) {
+                                            return;
+                                        }
+                                        throw new Error('至少要有一项！');
+
                                     },
                                 },
                             ]}
@@ -242,29 +266,29 @@ const Index = ({
                             creatorButtonProps={{
                                 creatorButtonText: '新增配置组',
                             }}
+                            creatorRecord={creatorRecord}
                             deleteIconProps={{ tooltipText: '删除该配置组' }}
 
                         >
+
                             <ProFormList
-                                name="lab4545els"
+                                name="items"
+                                creatorButtonProps={false}
+                                copyIconProps={false}
+                                deleteIconProps={false}
                             >
 
                                 <ProFormGroup key="group">
                                     <ProFormText
-                                        colProps={{
-                                            span: 12
-                                        }}
+                                        width="md"
                                         // readonly={true}
                                         disabled={true}
                                         name="key"
                                     />
                                     <ProFormText
-                                        colProps={{
-                                            span: 12
-                                        }}
+                                        width="md"
                                         rules={[
                                             {
-                                                validateTrigger: ['change', 'blur'],
                                                 required: item.required,
                                                 whitespace: true,
                                                 message: `不能为空!`,
@@ -276,15 +300,21 @@ const Index = ({
                                 </ProFormGroup>
 
                             </ProFormList>
+
                         </ProFormList>
                     )
+                } else {
+                    console.warn('未兼容表单类型', item)
                 }
             }
+
 
             return res
 
 
         })
+
+        return r
     }
 
     return (

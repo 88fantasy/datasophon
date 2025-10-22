@@ -12,28 +12,12 @@ const Overview = lazy(() => import('./Overview'));
 const Instance = lazy(() => import('./Instance'));
 const Setting = lazy(() => import('./Setting'));
 const SourceSetting = lazy(() => import('./SourceSetting'));
+const Queue = lazy(() => import('./Queue'));
 
 
-const invokeRenderAsyncCompnent = (Component) => {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <Component />
-        </Suspense>
-    )
-}
+
 
 const Index = () => {
-
-    const params = useParams()
-    // const { invokeGetServiceListMap, serviceListMapRef } = useClusterGlobalContext()
-    // const { dashboardUrl, invokeGetServiceListMap, serviceListMapRef } = useClusterGlobalContext()
-
-    // console.log('子页面')
-    // const obj = invokeGetServiceListMap()
-
-    // console.log('invokeGetServiceListMap', cloneDeep(serviceListMapRef.current))
-    const { proxyContext, serviceListMapRef, a } = useContext(ProxyContext)
-
 
     const {
         // serviceListMapRef,
@@ -60,20 +44,23 @@ const Index = () => {
                 asyncChildren: Setting
 
             },
-            {
+            obj.serviceName === 'YARN' && {
                 label: '资源配置',
                 key: 'SourceSetting',
-                asyncChildren: SourceSetting
+                asyncChildren: Queue
             },
         ]
     }, [obj])
 
     return (
+        // <div className="h-[78vh] flex flex-col">
         <CommonTabs
+            // className="flex-1"
             memoTabItem={memoTabItem}
         />
+        // </div>
     )
 }
 
 
-export default Index
+export default memo(Index)
