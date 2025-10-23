@@ -10,7 +10,8 @@ import { invokeMapShowMultiply } from "./utils";
 
 const Index = ({
     templateData,
-    className
+    className = '',
+    namePrefix
 }) => {
 
 
@@ -54,7 +55,7 @@ const Index = ({
                 tooltip: item.description,
                 label,
                 placeholder: item.placeholder,
-                name: item.name,
+                name: namePrefix ? [...namePrefix, item.name].filter(Boolean) : item.name,
                 key: item.name,
                 initialValue: item.value || item.defaultValue
             }

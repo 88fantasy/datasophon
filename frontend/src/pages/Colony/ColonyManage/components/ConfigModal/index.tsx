@@ -18,6 +18,9 @@ import Step2 from './components/Step2';
 import Step3 from './components/Step3';
 import Step4 from './components/Step4';
 import Step5 from './components/Step5';
+import Step6 from './components/Step6';
+import Step7 from './components/Step7';
+import Step8 from './components/Step8';
 import { ConfigContext } from './configContext';
 
 
@@ -66,6 +69,8 @@ const Index = (props) => {
     const steps2Ref = useRef()
     const steps3Ref = useRef()
     const steps4Ref = useRef()
+    const steps5Ref = useRef()
+    const steps6Ref = useRef()
 
 
     const clusterId = record?.clusterId || props.clusterId
@@ -122,21 +127,39 @@ const Index = (props) => {
             {
                 title: '分配服务Master角色',
                 render: <Step5
+                    ref={steps5Ref}
+                    current={current}
+                    formMapRef={formMapRef}
+                    record={record}
+                />
+            },
+            {
+                title: '分配服务Worker与Client角色',
+                render: <Step6
+                    ref={steps6Ref}
+                    current={current}
+                    formMapRef={formMapRef}
+                    record={record}
+                />
+            },
+            {
+                title: '服务配置',
+                render: <Step7
                     // ref={steps4Ref}
                     current={current}
                     formMapRef={formMapRef}
                     record={record}
                 />
             },
-            // {
-            //     title: '分配服务Worker与Client角色'
-            // },
-            // {
-            //     title: '服务配置'
-            // },
-            // {
-            //     title: '安装并启动服务'
-            // }
+            {
+                title: '安装并启动服务',
+                render: <Step8
+                    // ref={steps4Ref}
+                    current={current}
+                    formMapRef={formMapRef}
+                    record={record}
+                />
+            },
         ]
 
         if (stepsType === T_STEPS_TYPE_HOSTMANAGE) {
@@ -187,6 +210,20 @@ const Index = (props) => {
                 if (!valid) {
                     message.warning(res.msg || '请至少选择一个服务')
                 }
+            } else if (current === 4) {
+                const res = await steps5Ref.current.invokeValid()
+                valid = res.valid
+
+                if (!valid) {
+                    message.warning(res.msg)
+                }
+            } else if (current === 5) {
+                const res = await steps6Ref.current.invokeValid()
+                valid = res.valid
+
+                if (!valid) {
+                    message.warning(res.msg)
+                }
             }
         }
 
@@ -236,7 +273,7 @@ const Index = (props) => {
                         //     width: '200px'
 
                         // },
-                        className: '!w-[200px] !text-left'
+                        className: '!w-[400px] !text-left'
                     }
                 }}
                 containerStyle={{

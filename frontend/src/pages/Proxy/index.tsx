@@ -67,14 +67,6 @@ const Index = () => {
 
     // const [hadInit, setHadInit] = useState(false)
 
-
-
-
-
-
-    console.log('clusterId', clusterId)
-
-
     const user = account.getUser()
 
     const navigate = useNavigate();
@@ -186,11 +178,6 @@ const Index = () => {
         }
 
 
-        console.log('onMenuClick', obj)
-
-
-
-
         if (/^(http|\/\/)/.test(path)) {
             window.open(invokeGenPath(path));
         } else {
@@ -296,7 +283,7 @@ const Index = () => {
                         headerTitleRender={
                             (logo) => {
                                 return (
-                                    <div className='flex gap-[10px] mr-[40px]'>
+                                    <div className='flex gap-[10px] w-[216px]'>
                                         {
                                             logo
                                         }

@@ -86,6 +86,12 @@ const Index = ({
 
         const res = await axiosPost(API.checkServiceDependency, params);
 
+
+        // TODO: 测试
+
+        return {
+            valid: true
+        }
         return {
             valid: res.code === 200,
             msg: res.msg

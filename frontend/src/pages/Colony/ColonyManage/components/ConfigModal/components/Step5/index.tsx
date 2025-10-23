@@ -2,13 +2,18 @@ import { pickControlPropsWithId, ProCard, ProForm, ProFormItemRender, type ProCo
 import CommonTable, { invokeGenOptionCol } from "../../../../../../../components/Common/CommonTable";
 import { API } from "../../../../../../../api";
 import { forwardRef, use, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { axiosPost } from "../../../../../../../api/request";
+import { axiosJsonPost, axiosPost } from "../../../../../../../api/request";
 import CommonTemplate from "../../../../../../../components/Common/CommonTemplate";
 import { useConfigContext } from "../../configContext";
 
 
 
-
+function deleteNum(str, key) {
+    let reg = /[0-9]+/g;
+    let str1 = str.replace(reg, "");
+    let str2 = str1.replace(key, "");
+    return str2;
+}
 
 const Index = ({
     current,
@@ -64,6 +69,8 @@ const Index = ({
                 arr.push(item.hostname);
             });
 
+            // TODO:测试
+            arr.push(1, 2, 3)
             setHostList(arr)
         }
 
@@ -73,22 +80,48 @@ const Index = ({
 
 
     const invokeValid = async () => {
-        const fieldValue = formMapRef.current[3]?.current.getFieldsValue()
-        const { services } = fieldValue
+        const fieldValue = formMapRef.current[4]?.current.getFieldsValue()
+        console.log('fieldValue', fieldValue)
+        let formData = {};
 
+        let saveParam = [];
 
-        if (!services?.length) {
-            return {
-                valid: false
+        for (var k in fieldValue) {
+            const key = deleteNum(k, "multipleSelect");
+            if (k.includes("multipleSelect")) {
+                if (Object.prototype.hasOwnProperty.call(formData, key)) {
+                    formData[`${key}`].push(fieldValue[k]);
+                } else {
+                    formData[`${key}`] = [fieldValue[k]];
+                }
+            } else {
+                if (
+                    Object.prototype.toString.call(fieldValue[k]) === "[object Array]"
+                ) {
+                    formData[`${k}`] = fieldValue[k];
+                } else {
+                    formData[`${k}`] = [fieldValue[k]];
+                }
             }
         }
 
-        const params = {
-            clusterId,
-            serviceIds: (services || []).map(val => val.id)
-        };
+        for (var label in formData) {
+            saveParam.push({
+                serviceRole: label,
+                hosts: formData[label],
+            });
+            templateData.forEach((item) => {
+                if (item.label === label) {
+                    item.value = formData[label];
+                }
+            });
+        }
 
-        const res = await axiosPost(API.checkServiceDependency, params);
+
+        const res = await axiosJsonPost(
+            API.saveServiceRoleHostMapping + `/${clusterId}`,
+            saveParam
+        )
 
         return {
             valid: res.code === 200,

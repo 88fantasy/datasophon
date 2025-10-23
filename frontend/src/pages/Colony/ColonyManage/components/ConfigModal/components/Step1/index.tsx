@@ -26,6 +26,10 @@ const Index = () => {
                 }}
             />
             <ProFormText
+                label="SSH密码"
+                name={"sshPass"}
+            />
+            <ProFormText
                 label="SSH端口"
                 name={"sshPort"}
                 formItemProps={{
