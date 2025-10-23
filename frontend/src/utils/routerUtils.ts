@@ -173,6 +173,8 @@ export const invokeHandlePath = (path) => {
   pathArr = pathArr.map((val) => {
     if (/:clusterId/.test(val)) {
       return params.clusterId;
+    } else if (/:instanceId/.test(val)) {
+      return params.instanceId;
     }
 
     return val;

@@ -25,6 +25,7 @@ const AlarmManageGroup = lazy(() => import('../pages/AlarmManage/Group'));
 const AlarmManageMetric = lazy(() => import('../pages/AlarmManage/Metric'));
 const HostManage = lazy(() => import('../pages/HostManage'));
 const ServiceManageInstance = lazy(() => import('../pages/ServiceManage/Instance'));
+const ServiceManage = lazy(() => import('../pages/ServiceManage'));
 
 const contentRoutes = [
   {
@@ -33,6 +34,10 @@ const contentRoutes = [
     icon: <CrownFilled />,
     title: '集群管理',
     children: [
+      // {
+      //   index: true,
+      //   element: <Navigate to="ColonyManage" replace />,
+      // },
       {
         path: 'ColonyManage',
         title: '集群管理',
@@ -83,6 +88,10 @@ const contentRoutes = [
     icon: <SmileFilled />,
     title: '服务管理',
     children: [
+      {
+        index: true,
+        element: <ServiceManage />
+      },
       {
         path: 'Instance/:instanceId',
         element: <ServiceManageInstance />,
@@ -160,22 +169,9 @@ let routes = [
 ] as RouteObject[];
 
 const routesMap = {}
-const invokeGenRoutes = (arr: RouteObject[]) => {
-  arr = cloneDeep(arr)
-  arr = arr.map(val => {
-    const path = `${VUE_APP_PUBLIC_PATH}/${val.path}`.replace(/\/\//, '/')
-    const obj = {
-      ...val,
-      path
-    }
 
-    routesMap[path] = obj
 
-    return obj
-  })
 
-  return arr
-}
 
 const menuMap = {}
 const invokeGenMenus = (arr) => {
@@ -222,8 +218,44 @@ const invokeGenMenus = (arr) => {
 
 }
 
-routes = invokeGenRoutes(routes)
 const menu = invokeGenMenus(contentRoutes)
+
+const invokeInejectIndex = (arr) => {
+  arr.map(val => {
+    if (val.children && val.children.length) {
+      const firstChidld = val.children[0]
+
+      if (!firstChidld.index) {
+        val.children.unshift({
+          index: true,
+          element: <Navigate to={firstChidld.path} replace />,
+        })
+      }
+
+
+      invokeInejectIndex(val.children)
+    }
+  })
+}
+const invokeGenRoutes = (arr: RouteObject[]) => {
+  arr = cloneDeep(arr)
+  arr = arr.map(val => {
+    const path = `${VUE_APP_PUBLIC_PATH}/${val.path}`.replace(/\/\//, '/')
+    const obj = {
+      ...val,
+      path
+    }
+
+    routesMap[path] = obj
+
+    return obj
+  })
+
+  invokeInejectIndex(arr)
+
+  return arr
+}
+routes = invokeGenRoutes(routes)
 routes.push(
   {
     path: '/',
@@ -303,7 +335,8 @@ export {
   menu,
   menuMap,
   routesMap,
-  invokeGenMenuByPattern
+  invokeGenMenuByPattern,
+  routes
 }
 
 

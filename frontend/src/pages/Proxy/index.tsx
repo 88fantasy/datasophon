@@ -10,7 +10,7 @@ import {
 import type { MenuDataItem, ProSettings } from '@ant-design/pro-components';
 import { PageContainer, ProCard, ProLayout } from '@ant-design/pro-components';
 import { Alert, Badge, Button, Dropdown, Input, Space } from 'antd';
-import { invokeGenMenuByPattern, menu, menuMap } from '../../routes';
+import { routes, invokeGenMenuByPattern, menu, menuMap } from '../../routes';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import { account } from '../../utils/account';
 import { invokeRelogin } from '../../utils/authorityUtils';
@@ -29,6 +29,18 @@ const settings: ProSettings | undefined = {
 };
 
 let timer
+
+const onClusterManageClick = () => {
+    const firstRoute = routes.find(val => {
+        return val.auth !== 0
+    })
+
+
+
+    window.location.href = firstRoute.path
+    // console.log('firstRoute', firstRoute)
+    // window.location.replace()
+}
 
 const Index = () => {
 
@@ -258,6 +270,8 @@ const Index = () => {
     }, [invokeInit])
 
 
+
+
     return (
         <ProxyContext.Provider
             value={{
@@ -334,6 +348,12 @@ const Index = () => {
                                         menu={{
                                             items: [
                                                 {
+                                                    key: 'onClusterManageClick',
+                                                    // icon: <LogoutOutlined />,
+                                                    label: '集群管理',
+                                                    onClick: onClusterManageClick
+                                                },
+                                                {
                                                     key: 'logout',
                                                     icon: <LogoutOutlined />,
                                                     label: '退出登录',
@@ -350,6 +370,7 @@ const Index = () => {
                         menuItemRender={menuRender.bind(noop, {
                             onMenuClick
                         })}
+                        
                         {...settings}
                     >
                         {

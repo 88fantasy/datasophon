@@ -20,6 +20,8 @@ export default async function (config) {
     }
   };
 
+  
+
   return defineModalApi({
     config
   });
