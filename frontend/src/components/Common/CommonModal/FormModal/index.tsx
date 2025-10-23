@@ -81,7 +81,7 @@ const Index = (props) => {
             console.error(error)
             return false
         }
-    }, [apiConfig.add, apiConfig.update, record.id])
+    }, [apiConfig.add, apiConfig.update, formRef, paramsFn, props, record.id])
 
 
     const memoInitialValue = useMemo(() => {
