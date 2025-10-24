@@ -1,4 +1,5 @@
 import {
+    AppstoreOutlined,
     ClockCircleOutlined,
     GithubFilled,
     InfoCircleFilled,
@@ -6,6 +7,7 @@ import {
     PlusCircleFilled,
     QuestionCircleFilled,
     SearchOutlined,
+    UserOutlined,
 } from '@ant-design/icons';
 import type { MenuDataItem, ProSettings } from '@ant-design/pro-components';
 import { PageContainer, ProCard, ProLayout } from '@ant-design/pro-components';
@@ -24,6 +26,8 @@ import { menuRender } from './components/menuRender';
 import { ProxyContext } from '../../context/proxyContext';
 import { actionsRender } from './components/actionsRender';
 
+const showUserCenterModal = () => import('./components/UserCenterModal/api')
+
 const settings: ProSettings | undefined = {
     layout: 'mix',
     splitMenus: true,
@@ -41,6 +45,13 @@ const onClusterManageClick = () => {
     window.location.href = firstRoute.path
     // console.log('firstRoute', firstRoute)
     // window.location.replace()
+}
+
+
+const onUserClick = async () => {
+    const modelApi = await showUserCenterModal()
+
+    modelApi.default({})
 }
 
 const Index = () => {
@@ -336,8 +347,14 @@ const Index = () => {
                                         menu={{
                                             items: [
                                                 {
+                                                    key: 'userCenter',
+                                                    icon: <UserOutlined />,
+                                                    label: '个人中心',
+                                                    onClick: onUserClick
+                                                },
+                                                {
                                                     key: 'onClusterManageClick',
-                                                    // icon: <LogoutOutlined />,
+                                                    icon: <AppstoreOutlined />,
                                                     label: '集群管理',
                                                     onClick: onClusterManageClick
                                                 },
