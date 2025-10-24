@@ -73,7 +73,8 @@ const Index = (props) => {
     const steps6Ref = useRef()
 
 
-    const clusterId = record?.clusterId || props.clusterId
+    const clusterId = record?.id || props.clusterId
+
     const [current, setCurrent] = useState(0)
 
 
@@ -158,6 +159,7 @@ const Index = (props) => {
                     current={current}
                     formMapRef={formMapRef}
                     record={record}
+                    clusterId={clusterId}
                 />
             },
         ]
@@ -247,7 +249,7 @@ const Index = (props) => {
     return (
         <ConfigContext.Provider
             value={{
-                clusterId: record?.id || clusterId
+                clusterId
             }}
         >
             <StepsForm
@@ -273,7 +275,7 @@ const Index = (props) => {
                         //     width: '200px'
 
                         // },
-                        className: '!w-[400px] !text-left'
+                        className: `${[6, 4].includes(current) ? '!w-[400px] !text-left' : '!w-[200px] '} `
                     }
                 }}
                 containerStyle={{

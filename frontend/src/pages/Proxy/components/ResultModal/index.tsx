@@ -15,12 +15,15 @@ const headerTitleMap = {
 
 }
 
-const Index = ({
-    current,
-    formMapRef,
-    record,
-    clusterId
-}, ref) => {
+const Index = (props, ref) => {
+
+    const {
+        current,
+        formMapRef,
+        record,
+        clusterId,
+        className = ''
+    } = props
 
     const [currentPage, setCurrentPage] = useState(1)
     const timeRef = useRef()
@@ -313,11 +316,14 @@ const Index = ({
                             actionRef: actionRef,
                             search: false,
                             columns,
-                            className: 'mb-[20px] mt-[30px]',
+                            className: `${className || ' mb-[20px] mt-[30px]'} `,
                             manualRequest: true,
                             tableAlertRender: false,
                             headerTitle: invokeGetHeaderTitle(),
                             // rowKey: currentPage === 1 ? 'commandId' : 'hostCommandId',
+                            scroll: {
+                                x: '60vw'
+                            },
                             request: invokePackProtableRequest({
                                 api: () => {
                                     return currentPage === 1
@@ -351,8 +357,7 @@ const Index = ({
 
                     /> :
                     <ProCard
-
-                        className="h-[70vh] !mt-[30px]"
+                        className={`${className || 'h-[70vh] !mt-[30px]'}  `}
                         title={invokeGetHeaderTitle()}
                         bordered={true}
                     >
