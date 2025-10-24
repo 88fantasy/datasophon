@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()] as PluginOption[],
   server: {
     proxy: {
-      "^/dev-mock": {
+      "^/ddh/dev-mock": {
         rewrite: (path) => {
           // console.log('rewrite', path);
           return path.replace(/\/dev-mock/, "");

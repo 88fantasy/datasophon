@@ -15,4 +15,4 @@ export const VUE_APP_API_BASE_URL = 'http://localhost:8081'
 
 
 
-Cookie.set('JSESSIONID', 'node0e9j8estidcr91vg4m3b4r7rhj32595.node0')
+// Cookie.set('JSESSIONID', 'node0e9j8estidcr91vg4m3b4r7rhj32595.node0')

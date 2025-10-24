@@ -21,7 +21,7 @@
 import { VUE_APP_PUBLIC_PATH } from "../../config";
 import paths from "../baseUrl"; // 后台服务地址
 
-let path = paths.path() + VUE_APP_PUBLIC_PATH;
+let path =  VUE_APP_PUBLIC_PATH + paths.path();
 export default {
   getServiceList: path + "/api/frame/service/list", // 选择服务的列表
   deleteService: path + "/api/frame/service/delete", // 删除框架服务

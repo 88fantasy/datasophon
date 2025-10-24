@@ -23,7 +23,7 @@
 import { VUE_APP_PUBLIC_PATH } from '../../config'
 import paths from '../baseUrl'// 后台服务地址
 
-let path = paths.path() + VUE_APP_PUBLIC_PATH
+let path =  VUE_APP_PUBLIC_PATH + paths.path()
 
 export default {
   getServiceListByCluster: path + '/cluster/service/instance/list', // 选择服务的列表

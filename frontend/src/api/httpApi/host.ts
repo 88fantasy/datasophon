@@ -21,7 +21,7 @@
 import { VUE_APP_PUBLIC_PATH } from '../../config'
 import paths from '../baseUrl'// 后台服务地址
 
-let path = paths.path() + VUE_APP_PUBLIC_PATH
+let path =  VUE_APP_PUBLIC_PATH + paths.path()
 export default {
   reStartDispatcherHostAgent: path + '/host/install/reStartDispatcherHostAgent', // 主机agent分发重试
   dispatcherHostAgentList: path + '/host/install/dispatcherHostAgentList', // 主机agent分发进度列表

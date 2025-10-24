@@ -1,14 +1,11 @@
 
 import { AlertOutlined, MoreOutlined, SettingOutlined } from "@ant-design/icons"
-import { useCallback } from "react"
 
 
 const showResultModal = () =>
     import("./ResultModal/api");
 const showAlarmModal = () =>
     import("./AlarmModal/api");
-
-
 
 export const actionsRender = (props) => {
 

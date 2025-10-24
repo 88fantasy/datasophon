@@ -74,9 +74,9 @@ const Index = ({
 
         // TODO:测试
 
-        return {
-            valid: true
-        }
+        // return {
+        //     valid: true
+        // }
 
         return {
             valid: res.code === 200,
@@ -194,8 +194,8 @@ const Index = ({
             let arr = [];
             res.data.map((item) => {
                 arr.push(item.serviceRoleName);
-                //TODO: 测试
-                item.hosts = ['test', 'test1']
+                // //TODO: 测试
+                // item.hosts = ['test', 'test1']
             });
             workNameList.current = arr;
             tableHeaderData.current = res.data;
@@ -213,22 +213,22 @@ const Index = ({
         const resArr = []
         if (res.code === 200) {
             //TODO: 测试
-            res.data = [
-                {
-                    hostname: "test",
-                    id: 1,
-                    hosts: [
-                        "test"
-                    ]
-                },
-                {
-                    hostname: "test1",
-                    id: 1,
-                    hosts: [
-                        "test"
-                    ]
-                }
-            ]
+            // res.data = [
+            //     {
+            //         hostname: "test",
+            //         id: 1,
+            //         hosts: [
+            //             "test"
+            //         ]
+            //     },
+            //     {
+            //         hostname: "test1",
+            //         id: 1,
+            //         hosts: [
+            //             "test"
+            //         ]
+            //     }
+            // ]
             res.data.map((item) => {
                 let obj = {};
                 tableHeaderData.current.map((keyItem) => {

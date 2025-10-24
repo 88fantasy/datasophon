@@ -21,7 +21,7 @@
 import { VUE_APP_PUBLIC_PATH } from '../../config'
 import paths from '../baseUrl'// 后台服务地址
 
-let path = paths.path() + VUE_APP_PUBLIC_PATH
+let path =  VUE_APP_PUBLIC_PATH + paths.path()
 console.log(path, '请求的地址')
 
 export default {
