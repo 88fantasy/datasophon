@@ -4,10 +4,12 @@ import { Tabs } from "antd"
 import { memo, Suspense, useCallback, useEffect, useMemo, useState } from "react"
 import qs from "qs"
 
-const Index = ({
-    memoTabItem,
-    // className
-}) => {
+const Index = (props) => {
+
+    const {
+        tabBarExtraContent,
+        memoTabItem,
+    } = props
 
 
     // const activeKey = getRouteQuery('tab')
@@ -55,6 +57,7 @@ const Index = ({
         <Tabs
             // key={key}
             // className={className}
+            tabBarExtraContent={tabBarExtraContent}
             activeKey={activeKey || memoTabItem[0]?.key}
             items={items}
             onChange={onChange}
