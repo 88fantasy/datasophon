@@ -18,9 +18,6 @@ const col = [
 ]
 const Index = () => {
     const user = account.getUser()
-
-
-
     return (
         <div>
             {
