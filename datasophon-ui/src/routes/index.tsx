@@ -1,10 +1,17 @@
 import { createBrowserRouter, matchRoutes, Navigate, useParams, type RouteObject } from 'react-router-dom';
 import { lazy } from 'react';
 import {
+  AlertOutlined,
+  AppstoreOutlined,
   ChromeFilled,
   CrownFilled,
+  DashboardOutlined,
+  LaptopOutlined,
+  ProjectOutlined,
+  SettingOutlined,
   SmileFilled,
   TabletFilled,
+  UserOutlined,
 } from '@ant-design/icons';
 import { cloneDeep, noop } from 'lodash-es';
 import { VUE_APP_PUBLIC_PATH } from '../config';
@@ -31,7 +38,7 @@ const contentRoutes = [
   {
     path: '/Colony',
     element: <Proxy />,
-    icon: <CrownFilled />,
+    icon: <AppstoreOutlined />,
     title: '集群管理',
     children: [
       // {
@@ -58,7 +65,7 @@ const contentRoutes = [
   {
     path: '/User',
     element: <Proxy />,
-    icon: <SmileFilled />,
+    icon: <UserOutlined />,
     title: '用户管理',
     children: [
       {
@@ -71,7 +78,7 @@ const contentRoutes = [
   {
     path: '/Cluster/:clusterId/Overview',
     element: <Proxy />,
-    icon: <SmileFilled />,
+    icon: <DashboardOutlined />,
     title: '总览',
     children: [
       {
@@ -85,7 +92,7 @@ const contentRoutes = [
   {
     path: '/Cluster/:clusterId/ServiceManage',
     element: <Proxy />,
-    icon: <SmileFilled />,
+    icon: <ProjectOutlined />,
     title: '服务管理',
     children: [
       {
@@ -103,7 +110,7 @@ const contentRoutes = [
   {
     path: '/Cluster/:clusterId/HostManage',
     element: <Proxy />,
-    icon: <SmileFilled />,
+    icon: <LaptopOutlined />,
     title: '主机管理',
     children: [
       {
@@ -117,7 +124,7 @@ const contentRoutes = [
   {
     path: '/Cluster/:clusterId/AlarmManage',
     element: <Proxy />,
-    icon: <SmileFilled />,
+    icon: <AlertOutlined />,
     title: '告警管理',
     children: [
       {
@@ -135,7 +142,7 @@ const contentRoutes = [
   {
     path: '/Cluster/:clusterId/SystemCenter',
     element: <Proxy />,
-    icon: <SmileFilled />,
+    icon: <SettingOutlined />,
     title: '系统管理',
     children: [
       {
