@@ -1,9 +1,23 @@
 import { defineConfig, type PluginOption } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import tailwindcss from "@tailwindcss/vite";
+import pkgJson from "./package.json";
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: `/${pkgJson.name}`,
+  optimizeDeps: {
+    esbuildOptions: {
+      // Node.js global to browser globalThis
+      define: {
+        global: "globalThis",
+      },
+      pure: process.env.NODE_ENV === "production" ? ["console.log"] : [],
+    },
+  },
+  build: {
+    assetsDir: `static`,
+  },
   plugins: [react(), tailwindcss()] as PluginOption[],
   server: {
     proxy: {

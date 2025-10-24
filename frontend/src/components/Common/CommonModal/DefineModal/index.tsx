@@ -2,8 +2,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { invokeGetModal } from "../modalInstance";
 // import { GlobalStyles } from 'styles/globalStyles';
-import _ from 'lodash'
-
 
 const Index = (initProps) => {
 

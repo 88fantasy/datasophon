@@ -1,13 +1,14 @@
 {
-  "name": "antd-demo",
+  "name": "ddh",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "pnpm install && vite",
-    "build": "pnpm install && tsc -b && vite build",
+    "build": "pnpm install && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "node deploy.sh.js"
   },
   "dependencies": {
     "@ant-design/colors": "^7.2.1",
