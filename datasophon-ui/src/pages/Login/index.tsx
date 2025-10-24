@@ -91,12 +91,12 @@ const Login = () => {
               />
             </Form.Item>
 
-            <Form.Item name="remember" valuePropName="checked">
+            {/* <Form.Item name="remember" valuePropName="checked">
               <Checkbox>记住我</Checkbox>
               <a className="float-right text-blue-500 hover:text-blue-700" href="#">
                 忘记密码?
               </a>
-            </Form.Item>
+            </Form.Item> */}
 
             <Form.Item>
               <Button
@@ -110,12 +110,12 @@ const Login = () => {
               </Button>
             </Form.Item>
           </Form>
-          {/* 
+
           <div className="mt-8 text-center">
             <Text type="secondary" className="text-sm">
               © {new Date().getFullYear()} 管理系统. 保留所有权利
             </Text>
-          </div> */}
+          </div>
         </div>
       </div>
     </div>
