@@ -86,7 +86,7 @@ const Index = () => {
 
             )
         }
-    }, [webUis?.length])
+    }, [webUis])
 
 
     const getWebUis = useCallback(async () => {

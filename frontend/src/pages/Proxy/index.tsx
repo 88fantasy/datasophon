@@ -22,6 +22,7 @@ import { axiosPost } from '../../api/request';
 import { cloneDeep, noop } from 'lodash-es';
 import { menuRender } from './components/menuRender';
 import { ProxyContext } from '../../context/proxyContext';
+import { actionsRender } from './components/actionsRender';
 
 const settings: ProSettings | undefined = {
     layout: 'mix',
@@ -354,10 +355,13 @@ const Index = () => {
                                 );
                             },
                         }}
+                        actionsRender={actionsRender.bind(noop, {
+                            clusterId
+                        })}
                         menuItemRender={menuRender.bind(noop, {
                             onMenuClick
                         })}
-                        
+
                         {...settings}
                     >
                         {
