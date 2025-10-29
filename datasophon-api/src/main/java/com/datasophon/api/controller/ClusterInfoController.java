@@ -19,17 +19,17 @@ package com.datasophon.api.controller;
 
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.ClusterInfoService;
+import com.datasophon.api.service.UniEngineService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterInfoEntity;
-
-import java.util.Arrays;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Arrays;
 
 @RestController
 @RequestMapping("api/cluster")
@@ -37,6 +37,9 @@ public class ClusterInfoController {
     
     @Autowired
     private ClusterInfoService clusterInfoService;
+
+    @Autowired
+    private UniEngineService uniEngineService;
     
     /**
      * 列表
@@ -98,6 +101,14 @@ public class ClusterInfoController {
         clusterInfoService.deleteCluster(Arrays.asList(ids));
         
         return Result.success();
+    }
+
+    /**
+     * 提供集群引擎信息给中台引擎
+     */
+    @RequestMapping("/engineInfo")
+    public Result engineInfo() {
+        return uniEngineService.getEngineInfo();
     }
     
 }

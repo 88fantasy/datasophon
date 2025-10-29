@@ -500,4 +500,9 @@ public class LoadServiceMeta implements ApplicationRunner {
             throw new IllegalArgumentException("jdbcUrl格式不正确,无法提取host和port,jdbcUrl:"+ jdbcUrl);
         }
     }
+
+    public static void main(String[] args) {
+        String url = "jdbc:mysql://192.168.2.146:3306/datasophon?useUnicode=true&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&useSSL=false";
+        System.out.println(extractMysqlHostPort(url));
+    }
 }

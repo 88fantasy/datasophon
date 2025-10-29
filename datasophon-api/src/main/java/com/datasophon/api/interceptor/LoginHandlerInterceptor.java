@@ -61,6 +61,13 @@ public class LoginHandlerInterceptor implements HandlerInterceptor {
         UserInfoEntity user = null;
         if (StringUtils.isEmpty(token)) {
             user = authenticator.getAuthUser(request);
+            String url = request.getRequestURI();
+
+            // 跳过拦截的接口
+            if (url.startsWith("/ddh/api/cluster/engineInfo")) {
+                logger.info("url:{}", url);
+                return true;
+            }
             // if user is null
             if (user == null) {
                 response.setStatus(HttpStatus.UNAUTHORIZED.value());
