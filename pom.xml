@@ -29,11 +29,11 @@
     <modules>
         <module>datasophon-infrastructure</module>
         <module>datasophon-common</module>
-        <module>datasophon-worker</module>
-        <module>datasophon-ui</module>
         <module>datasophon-service</module>
         <module>datasophon-domain</module>
+        <module>datasophon-worker</module>
         <module>datasophon-cli</module>
+        <module>datasophon-ui</module>
         <module>datasophon-api</module>
     </modules>
 
@@ -81,6 +81,7 @@
         <mockito-junit-jupiter.version>4.5.1</mockito-junit-jupiter.version>
         <snakeyaml.version>1.29</snakeyaml.version>
         <hadoop.version>3.3.6</hadoop.version>
+        <jdk15on.version>1.70</jdk15on.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -356,6 +357,11 @@
                 <artifactId>mockito-junit-jupiter</artifactId>
                 <version>${mockito-junit-jupiter.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk15on</artifactId>
+                <version>${jdk15on.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
