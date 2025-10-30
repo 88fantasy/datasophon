@@ -10,6 +10,7 @@ echo "Bash Path: ${BASE_PATH}"
 INIT_PATH=$(dirname "${BASE_PATH}")
 INIT_LOG_PATH=${INIT_PATH}/logs
 INIT_BIN_PATH=${INIT_PATH}/bin
+INIT_SBIN_PATH=${INIT_PATH}/sbin
 
 if [ ! -d "INIT_LOG_PATH" ]; then
   mkdir -p $INIT_LOG_PATH
@@ -23,4 +24,4 @@ bash ${INIT_BIN_PATH}/init-jdk.sh > ${INIT_LOG_PATH}/init-jdk.log
 
 source /etc/profile
 echo "ini create cluster"
-java -jar datasophon-cli-cli.jar create cluster -p /data/datasophon -a initALL > ${INIT_LOG_PATH}/cli.log
+java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar create cluster -p /data/datasophon -a initALL > ${INIT_LOG_PATH}/cli.log
