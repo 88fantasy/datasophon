@@ -1,12 +1,12 @@
 package com.datasophon.api.load;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class GlobalVariables {
     
     // cluster variable
-    private static Map<Integer, Map<String, String>> map = new HashMap<>();
+    private static Map<Integer, Map<String, String>> map = new ConcurrentHashMap<>();
     
     public static void put(Integer key, Map<String, String> value) {
         map.put(key, value);
