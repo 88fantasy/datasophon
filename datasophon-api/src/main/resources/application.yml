@@ -67,3 +67,13 @@ datasophon:
     enable: false
 #    max-threads: 32
 
+
+# 在idea的启动参数，加上 -Dspringdoc.api-docs.enabled=true
+springdoc:
+  api-docs:
+    enabled: false
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.datasophon.api.controller
+
