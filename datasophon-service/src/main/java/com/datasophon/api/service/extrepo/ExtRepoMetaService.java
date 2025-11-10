@@ -11,9 +11,10 @@ import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 public interface ExtRepoMetaService {
 
 
-
-
     ImportCompProgressVO importCmp(InstallComponentDTO dto);
 
 
+    ImportCompProgressVO queryProgress(Integer progressId);
+
+    void clearProgressCache();
 }

@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -82,10 +83,13 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         return progress;
     }
 
+
+
     private void doImportCmp(InstallComponentDTO dto, ImportCompProgressVO progress) {
         log.info("【导入第三方软件源】 进度ID:{}, 线程：{}, 开始执行", progress.getProgressId(), Thread.currentThread().getName());
         String error = null;
         String metaUnzipPath = null;
+        String pkgUnzipPath = null;
         try {
             log.info("【导入第三方软件源】 进度ID:{}，开始解析meta数据", progress.getProgressId());
 //            解析元数据
@@ -99,15 +103,15 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 //            解压安装包
             log.info("【导入第三方软件源】 进度ID:{}，开始解压软件安装包", progress.getProgressId());
             File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
-            String pkgDir = decompressPkgFile(pkgFile, vo, progress);
-            log.info("【导入第三方软件源】 进度ID:{}，解压软件安装包成功, 解压路径{}", progress.getProgressId(), pkgDir);
+            pkgUnzipPath = decompressPkgFile(pkgFile, vo, progress);
+            log.info("【导入第三方软件源】 进度ID:{}，解压软件安装包成功, 解压路径{}", progress.getProgressId(), pkgUnzipPath);
 
 //            保存数据
             saveFrameInfo(metaUnzipPath, vo, progress);
             log.info("【导入第三方软件源】 进度ID:{}，更新meta数据成功", progress.getProgressId());
 
 //            移动文件
-            moveFiles(metaUnzipPath, vo, pkgDir, progress);
+            moveFiles(metaUnzipPath, vo, pkgUnzipPath, progress);
             log.info("【导入第三方软件源】 进度ID:{}，移动安装安装文件成功", progress.getProgressId());
         } catch (Exception e) {
             error = "导入组件失败," + e.getMessage();
@@ -117,11 +121,17 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 //                meta文件中包含了很大敏感信息，必须保证删除掉
                 FileUtil.del(new File(metaUnzipPath));
             }
+            if (pkgUnzipPath != null) {
+                String finalPkgDir = pkgUnzipPath;
+//                异步删除安装包的解压目录
+                CompletableFuture.runAsync(()-> FileUtil.del(new File(finalPkgDir)));
+            }
             if (StringUtils.isNoneBlank(error)) {
                 progress.setState(-1);
             } else {
                 progress.setState(1);
             }
+            progress.setExpire(LocalDateTime.now().plusMinutes(5));
         }
     }
 
@@ -228,6 +238,27 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             FileUtil.move(new File(pkgDir, MetaUtils.getMd5FileName(pkg)), new File(Constants.MASTER_MANAGE_PACKAGE_PATH, MetaUtils.getMd5FileName(pkg)), true);
             progress.setStep(progress.getStep() + 1);
         });
+    }
+
+    @Override
+    public ImportCompProgressVO queryProgress(Integer progressId) {
+        ImportCompProgressVO vo = importCmpMap.get(progressId);
+        if (vo == null) {
+            vo = new ImportCompProgressVO(progressId);
+            vo.setState(-2);
+        }
+        return vo;
+    }
+
+    @Override
+    public void clearProgressCache() {
+        Set<Integer> keys = importCmpMap.keySet();
+        for (Integer key : keys) {
+            ImportCompProgressVO pg = importCmpMap.get(key);
+            if (pg != null && pg.isTimeout()) {
+                importCmpMap.remove(key);
+            }
+        }
     }
 
 }

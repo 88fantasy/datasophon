@@ -190,7 +190,7 @@ public class MetaUtils {
             meta.setTemplate(PathUtils.relative(tpl.getAbsolutePath(), root));
         }
 
-        File script =  Paths.get(ctx.getRoot(), serviceDir.getName(), "script").toFile();
+        File script =  currentPath.resolve( "script").toFile();
         if (script.exists() && script.isDirectory()) {
             meta.setScript(PathUtils.relative(script.getAbsolutePath(), root));
         }

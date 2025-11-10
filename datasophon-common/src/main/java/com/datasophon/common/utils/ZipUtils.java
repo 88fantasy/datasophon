@@ -34,7 +34,7 @@ public class ZipUtils {
     }
 
     public static String unzipToTemp(String zipFilePath, String password) throws IOException {
-        String dest = Paths.get(SystemUtils.getJavaIoTmpDir().getAbsolutePath(), "ddp_zip", RandomUtil.randomNumbers(12)).toString();
+        String dest = Paths.get(SystemUtils.getJavaIoTmpDir().getAbsolutePath(), "ddp_unzip", RandomUtil.randomNumbers(12)).toString();
         unzip(zipFilePath, dest, password);
         return dest;
     }

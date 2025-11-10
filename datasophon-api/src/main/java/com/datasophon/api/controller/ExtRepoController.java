@@ -1,5 +1,6 @@
 package com.datasophon.api.controller;
 
+import com.datasophon.api.dto.IntegerIdDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
@@ -35,6 +36,13 @@ public class ExtRepoController {
     @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ImportCompProgressVO.class))})
     public Result importCmp(@RequestBody @Validated InstallComponentDTO info) {
         return Result.success(extRepoMetaService.importCmp(info));
+    }
+
+    @PostMapping("/queryProgress")
+    @Operation(summary = "查询导入进度")
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ImportCompProgressVO.class))})
+    public Result queryProgress(@RequestBody @Validated IntegerIdDTO id) {
+        return Result.success(extRepoMetaService.queryProgress(id.getId()));
     }
 
 }

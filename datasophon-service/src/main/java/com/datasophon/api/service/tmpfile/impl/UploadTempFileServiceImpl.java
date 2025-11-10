@@ -328,10 +328,8 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
         Set<Long> keys = map.keySet();
         for (Long key : keys) {
             MergeProgressVO pg = map.get(key);
-            if (pg != null && pg.getExpire() != null) {
-                if (LocalDateTime.now().isAfter(pg.getExpire())) {
-                    map.remove(key);
-                }
+            if (pg != null && pg.isTimeout()) {
+                map.remove(key);
             }
         }
     }
