@@ -1,0 +1,97 @@
+package com.datasophon.api.controller;
+
+import com.datasophon.api.service.tmpfile.UploadTempFileService;
+import com.datasophon.common.utils.Result;
+import com.datasophon.api.dto.upload.BigFileDTO;
+import com.datasophon.api.dto.upload.ChunkDTO;
+import com.datasophon.api.dto.LongIdDTO;
+import com.datasophon.api.dto.upload.MergeChunkDTO;
+import com.datasophon.dao.entity.UploadTempFile;
+import com.datasophon.dao.entity.UploadTempFileChunk;
+import com.datasophon.api.vo.tmpfile.MergeProgressVO;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.validation.constraints.NotNull;
+
+/**
+ * @author zhanghuangbin
+ * @date 2025/11/5
+ */
+@RestController
+@RequestMapping("/api/tempfile")
+@Tag(name = "临时文件上传")
+public class TempFileController {
+
+
+    @Autowired
+    private UploadTempFileService uploadTempFileService;
+
+    @PostMapping("/upload")
+    @Operation(summary = "上传附件", description = "整个文件一起上传")
+    @ApiResponse(
+            content = {@Content(mediaType = "application/json", schema = @Schema(implementation = UploadTempFile.class))}
+    )
+    public Result uploadFile(@Validated @RequestPart("file") MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return Result.error("文件不能为空");
+        }
+        return Result.success(uploadTempFileService.upload(file));
+    }
+
+
+    @PostMapping("/createShardUploadTask")
+    @Operation(summary = "新建分片上传任务")
+    @ApiResponse(
+            content = {@Content(mediaType = "application/json", schema = @Schema(implementation = UploadTempFile.class))}
+    )
+    public Result createShardUploadTask(@RequestBody @Validated BigFileDTO info) {
+        return Result.success(uploadTempFileService.createShardUploadTask(info));
+    }
+
+
+    @PostMapping("/uploadChunk")
+    @Operation(summary = "上传分片")
+    @ApiResponse(
+            content = {@Content(mediaType = "application/json", schema = @Schema(implementation = UploadTempFileChunk.class))}
+    )
+    @Validated
+    public Result uploadChunk(
+            @NotNull(message = "分片不能为空") @RequestPart("chunk") MultipartFile chunk,
+            @NotNull(message = "chunkNo不能为空") @Schema(description = "分片索引，0-base") Integer chunkNo,
+            @NotNull(message = "attachId不能为空") Long attachId,
+            String md5) {
+        ChunkDTO info = new ChunkDTO();
+        info.setChunk(chunk);
+        info.setChunkNo(chunkNo);
+        info.setAttachId(attachId);
+        info.setMd5(md5);
+        return Result.success(uploadTempFileService.uploadChunk(info));
+    }
+
+    @PostMapping("/mergeChunk")
+    @Operation(summary = "合并分片")
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = MergeProgressVO.class))})
+    public Result mergeChunk(@RequestBody @Validated MergeChunkDTO vo) {
+        return Result.success(uploadTempFileService.mergeChunk(vo));
+    }
+
+
+    @PostMapping("/queryMergeProgress")
+    @Operation(summary = "查询合并进度")
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = MergeProgressVO.class))})
+    public Result queryMergeProgress(@RequestBody @Validated LongIdDTO id) {
+        return Result.success(uploadTempFileService.queryMergeProgress(id.getId()));
+    }
+}

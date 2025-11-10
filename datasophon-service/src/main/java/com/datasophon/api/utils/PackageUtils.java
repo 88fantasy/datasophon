@@ -19,11 +19,12 @@ package com.datasophon.api.utils;
 
 import com.datasophon.common.Constants;
 
-import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PackageUtils {
     
-    static HashMap<String, String> map = new HashMap<String, String>();
+    static Map<String, String> map = new ConcurrentHashMap<>();
     
     public static void putServicePackageName(String frameCode, String serviceName, String dcPackageName) {
         map.put(frameCode + Constants.UNDERLINE + serviceName, dcPackageName);

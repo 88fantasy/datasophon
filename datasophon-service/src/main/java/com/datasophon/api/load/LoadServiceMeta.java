@@ -133,7 +133,7 @@ public class LoadServiceMeta implements ApplicationRunner {
         for (File path : ddps) {
             List<File> files = FileUtil.loopFiles(path);
             String frameCode = path.getName();
-            FrameInfoEntity frameInfo = saveClusterFrame(frameCode);
+            FrameInfoEntity frameInfo = frameInfoService.saveClusterFrame(frameCode);
             // analysis file
             for (File file : files) {
                 if (file.getName().endsWith(Constants.JSON)) {
@@ -365,7 +365,13 @@ public class LoadServiceMeta implements ApplicationRunner {
             }
         }
     }
-    
+
+    /**
+     * @deprecated
+     * @see FrameInfoService#saveClusterFrame(String) 
+     * @param frameCode
+     * @return
+     */
     private FrameInfoEntity saveClusterFrame(String frameCode) {
         FrameInfoEntity frameInfo =
                 frameInfoService.getOne(
