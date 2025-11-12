@@ -5,13 +5,18 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.crypto.SmUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
 import com.datasophon.api.exceptions.BusinessException;
-import com.datasophon.dao.model.extrepo.ExtRepoMetaModel;
+import com.datasophon.api.service.extrepo.ctx.MetaParseOption;
+import com.datasophon.api.service.extrepo.ctx.SrvParseCtx;
+import com.datasophon.dao.model.extrepo.DeploymentModel;
+import com.datasophon.dao.model.extrepo.ExtRepoMetaFsModel;
 import com.datasophon.dao.model.extrepo.FrameworkMeta;
 import com.datasophon.dao.model.extrepo.ServiceMeta;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,9 +61,9 @@ public class MetaUtils {
      * 需要解密文件内容的文件
      */
     private static final List<String> ENCRYPT_FILES = Arrays.asList(
-            "conf/common.properties",
-            "conf/cluster-sample.yml",
-            "conf/datasophon.conf",
+            "config/common.properties",
+            "config/cluster-sample.yml",
+            "config/datasophon.conf",
             "meta/**/service_ddl.json"
     );
 
@@ -80,8 +85,10 @@ public class MetaUtils {
             @Override
             public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
                 try {
-                    if (matcher.isMatch(path)) {
-                        MetaUtils.decodeFile(path.toFile(), cipherKey);
+                    String relative = PathUtils.unixStyle(PathUtils.relative(path.toString(), dir));
+                    if (matcher.isMatch(relative)) {
+                        String plainText = MetaUtils.decodeFile(path.toFile(), cipherKey);
+                        FileUtil.writeString(plainText, path.toFile(), StandardCharsets.UTF_8);
                     }
                 } catch (IORuntimeException ex) {
                     if (ex.causeInstanceOf(IOException.class)) {
@@ -106,31 +113,38 @@ public class MetaUtils {
      * @param file
      * @param cipherKey
      */
-    public static void decodeFile(File file, String cipherKey) {
+    public static String decodeFile(File file, String cipherKey) {
         String cipherText = FileUtil.readString(file, StandardCharsets.UTF_8);
         String plainText = SmUtil.sm4(Base64.decode(cipherKey)).decryptStr(Base64.decode(cipherText), StandardCharsets.UTF_8);
-        FileUtil.writeString(plainText, file, StandardCharsets.UTF_8);
         log.info("decode file: {}", file.getName());
+        return plainText;
+//        return cipherText;
     }
 
 
+    /**
+     * 解析meta文件的信息
+     *
+     * @return
+     */
+    public static ExtRepoMetaFsModel parseRepoMeta(MetaParseOption option) {
+        String root = option.getRoot();
 
-
-    public static ExtRepoMetaModel parseRepoMeta(String root) {
-        ExtRepoMetaModel vo = new ExtRepoMetaModel();
-        List<String> errors = new ArrayList<>();
+        ExtRepoMetaFsModel vo = new ExtRepoMetaFsModel();
 
         Path base = getConfPath(root);
         if (!base.toFile().exists()) {
             throw new BusinessException("meta文件未包含config目录");
         }
+
+        List<String> errors = new ArrayList<>();
         File sample = base.resolve(SAMPLE).toFile();
         if (sample.exists()) {
-//          TODO
+            vo.setSample(PathUtils.relative(sample, root));
         }
 
 
-        File metaDir = base.resolve( "meta").toFile();
+        File metaDir = base.resolve("meta").toFile();
         if (metaDir.exists()) {
             File[] frameDirs = metaDir.listFiles();
             if (frameDirs != null) {
@@ -138,7 +152,7 @@ public class MetaUtils {
                     if (!frameDir.isDirectory()) {
                         continue;
                     }
-                    FrameworkMeta framework = parseFrameMeta(root, frameDir, errors);
+                    FrameworkMeta framework = parseFrameMeta(option, frameDir, errors);
                     vo.getFrameworks().add(framework);
                 }
             }
@@ -152,7 +166,7 @@ public class MetaUtils {
         return vo;
     }
 
-    private static FrameworkMeta parseFrameMeta(String root, File frameDir, List<String> errors) {
+    private static FrameworkMeta parseFrameMeta(MetaParseOption option, File frameDir, List<String> errors) {
         FrameworkMeta meta = new FrameworkMeta();
         meta.setFrameCode(frameDir.getName());
 
@@ -164,15 +178,15 @@ public class MetaUtils {
             if (!serviceDir.isDirectory()) {
                 continue;
             }
-            List<ServiceMeta> serviceMeta = parseServiceMeta(new SrvParseCtx(root, meta.getFrameCode()), serviceDir, errors);
+            List<ServiceMeta> serviceMeta = parseServiceMeta(new SrvParseCtx(option, meta.getFrameCode(), errors), serviceDir);
             meta.getServices().addAll(serviceMeta);
         }
         return meta;
     }
 
 
-    private static List<ServiceMeta> parseServiceMeta(SrvParseCtx  ctx, File serviceDir, List<String> errors) {
-        String root = ctx.getRoot();
+    private static List<ServiceMeta> parseServiceMeta(SrvParseCtx ctx, File serviceDir) {
+        String root = ctx.getOption().getRoot();
         Path currentPath = getSrvPath(ctx, serviceDir.getName());
 
         File ddl = currentPath.resolve(SERVICE_DDL).toFile();
@@ -183,17 +197,18 @@ public class MetaUtils {
         ServiceMeta meta = new ServiceMeta();
         meta.setFrameCode(ctx.getFramework());
         meta.setName(serviceDir.getName());
-        meta.setDdl(PathUtils.relative(ddl.getAbsolutePath(), root));
+        meta.setDdl(PathUtils.relative(ddl, root));
 
-        File tpl = currentPath.resolve( "template").toFile();
+        File tpl = currentPath.resolve("template").toFile();
         if (tpl.exists() && tpl.isDirectory()) {
-            meta.setTemplate(PathUtils.relative(tpl.getAbsolutePath(), root));
+            meta.setTemplate(PathUtils.relative(tpl, root));
         }
 
-        File script =  currentPath.resolve( "script").toFile();
+        File script = currentPath.resolve("script").toFile();
         if (script.exists() && script.isDirectory()) {
-            meta.setScript(PathUtils.relative(script.getAbsolutePath(), root));
+            meta.setScript(PathUtils.relative(script, root));
         }
+
 
         String content = FileUtil.readString(ddl, StandardCharsets.UTF_8);
         JSONObject ddlInfo = JSONObject.parseObject(content);
@@ -201,27 +216,41 @@ public class MetaUtils {
         meta.setVersion(ddlInfo.getString("version"));
 
         if (!StringUtils.equals(meta.getName(), ddlInfo.getString("name"))) {
-            errors.add(String.format("框架%s服务%s ddl文件放置有误，name不一致", serviceDir.getParentFile().getName(), meta.getName()));
+            ctx.addError(String.format("框架%s服务%s ddl文件放置有误，name不一致", serviceDir.getParentFile().getName(), meta.getName()));
         }
+        meta.setDependencies(ddlInfo.getObject("dependencies", new TypeReference<List<String>>() {
+        }));
         return Collections.singletonList(meta);
     }
 
+    private static Path getSrvPath(SrvParseCtx ctx, String srv) {
+        return PathUtils.join(getConfPath(ctx.getOption().getRoot()), "meta", ctx.getFramework(), srv);
+    }
 
     public static Path getConfPath(String root) {
         return Paths.get(root, "config");
     }
 
 
-    public static Path getSrvPath(SrvParseCtx ctx, String srv) {
-       return PathUtils.join(getConfPath(ctx.getRoot()), "meta", ctx.getFramework(), srv);
-    }
-
     public static Path getPkgPath(String root) {
         return Paths.get(root, "packages", "raw");
     }
+
+    public static Path getFileRelativePath(ServiceMeta meta) {
+        return PathUtils.join("packages", "raw", meta.getPackageName());
+    }
+
+    public static Path getMd5FileRelativePath(ServiceMeta meta) {
+        return PathUtils.join("packages", "raw", getMd5FileName(meta.getPackageName()));
+    }
+
 
     public static String getMd5FileName(String pkgName) {
         return pkgName.endsWith(".md5") ? pkgName : pkgName + ".md5";
     }
 
+
+    public static DeploymentModel parseDeploymentFile(String content) {
+        return new Yaml().loadAs(content, DeploymentModel.class);
+    }
 }

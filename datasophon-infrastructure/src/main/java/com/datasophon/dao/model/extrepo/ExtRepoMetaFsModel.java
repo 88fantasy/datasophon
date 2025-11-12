@@ -10,7 +10,10 @@ import java.util.List;
  * @date 2025/11/7
  */
 @Data
-public class ExtRepoMetaModel {
+public class ExtRepoMetaFsModel {
+
+
+    private String sample;
 
 
     private List<FrameworkMeta> frameworks = new ArrayList<>();

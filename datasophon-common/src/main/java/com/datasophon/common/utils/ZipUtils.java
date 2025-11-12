@@ -1,15 +1,16 @@
 package com.datasophon.common.utils;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.model.FileHeader;
 import org.apache.commons.lang3.SystemUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.function.Consumer;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author zhanghuangbin
@@ -40,20 +41,17 @@ public class ZipUtils {
     }
 
 
-    public static void visitZipFile(String zipFilePath, String password, Consumer<File> visitor)     {
-        String dest = null;
-        try {
-            dest = unzipToTemp(zipFilePath, password);
-            File dir = new File(dest);
-            if (dir.exists()) {
-                visitor.accept(dir);
+    public static List<String> getZipEntry(String zipFilePath, String password) throws Exception {
+        try (ZipFile zipFile = new ZipFile(zipFilePath)){
+            if (StrUtil.isNotBlank(password)) {
+                zipFile.setPassword(password.toCharArray());
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (dest != null) {
-                FileUtil.del(new File(dest));
+            zipFile.setCharset(StandardCharsets.UTF_8);
+            if (!zipFile.isValidZipFile()) {
+                throw new IllegalStateException("ZIP文件不合法或已损坏");
             }
+            List<FileHeader> fileHeaders = zipFile.getFileHeaders();
+            return fileHeaders.stream().map(FileHeader::getFileName).collect(Collectors.toList());
         }
     }
 

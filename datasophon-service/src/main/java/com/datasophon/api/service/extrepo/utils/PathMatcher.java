@@ -23,8 +23,7 @@ public class PathMatcher {
     }
 
 
-    public boolean isMatch(Path path) {
-        String relative = path.relativize(base).toString();
+    public boolean isMatch(String relative) {
         if (relative.startsWith("/")) {
             relative = relative.substring(1);
         }

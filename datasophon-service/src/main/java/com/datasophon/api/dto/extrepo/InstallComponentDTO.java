@@ -17,7 +17,6 @@ public class InstallComponentDTO {
     @Schema(description = "meta文件ID")
     private Long meteFileId;
 
-    @NotNull(message = "软件安装文件不能为空")
     @Schema(description = "软件安装文件ID")
     private Long pkgFileId;
 
@@ -25,7 +24,8 @@ public class InstallComponentDTO {
     @Schema(description = "meta文件解压密码")
     private String unzipPasswd;
 
-//    @NotBlank(message = "敏感文件解密密码不能为空")
+    @NotBlank(message = "敏感文件解密密码不能为空")
     @Schema(description = "敏感文件解密密码")
     private String contentDecodePasswd;
+
 }

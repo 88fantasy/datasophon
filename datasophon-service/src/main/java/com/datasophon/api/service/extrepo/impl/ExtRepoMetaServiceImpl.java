@@ -2,21 +2,32 @@ package com.datasophon.api.service.extrepo.impl;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
+import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.LoadServiceMeta;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.FrameInfoService;
+import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
+import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
+import com.datasophon.api.service.extrepo.ctx.MetaParseOption;
+import com.datasophon.api.service.extrepo.ctx.SrvDependenciesContext;
 import com.datasophon.api.service.extrepo.utils.MetaUtils;
 import com.datasophon.api.service.extrepo.utils.PathUtils;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
+import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
+import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.ZipUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.FrameInfoEntity;
-import com.datasophon.dao.model.extrepo.ExtRepoMetaModel;
+import com.datasophon.dao.entity.FrameServiceEntity;
+import com.datasophon.dao.model.extrepo.DeploymentModel;
+import com.datasophon.dao.model.extrepo.ExtRepoMetaFsModel;
+import com.datasophon.dao.model.extrepo.FrameworkMeta;
 import com.datasophon.dao.model.extrepo.ServiceMeta;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -36,6 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -62,6 +74,88 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     @Autowired
     private ClusterInfoService clusterInfoService;
 
+    @Autowired
+    private FrameServiceService frameService;
+
+    @Autowired
+    private FrameServiceService frameServiceService;
+
+
+    @Override
+    public ValidateResultVO validMetaFile(InstallComponentDTO dto) {
+        return unzipMetaFile(dto, unzipDir -> {
+            MetaParseOption option = new MetaParseOption();
+            option.setRoot(unzipDir);
+            ExtRepoMetaFsModel model = MetaUtils.parseRepoMeta(option);
+
+
+            SrvDependenciesContext ctx = new SrvDependenciesContext();
+            List<String> frames = model.getFrameworks().stream().map(FrameworkMeta::getFrameCode).collect(Collectors.toList());
+            List<FrameServiceEntity> installedSrv = frameServiceService.listSimpleService(frames);
+            ctx.addService(installedSrv);
+            model.getFrameworks().stream().flatMap(f -> f.getServices().stream()).forEach(srv -> ctx.addService(srv.getFrameCode(), srv.getName()));
+
+            List<String> errors = new ArrayList<>();
+            model.getFrameworks().stream().flatMap(f -> f.getServices().stream()).forEach(srv -> {
+                errors.addAll(ctx.validDependency(srv));
+            });
+
+            return new ValidateResultVO(errors);
+        });
+    }
+
+
+    private <T> T unzipMetaFile(InstallComponentDTO dto, Function<String, T> mapper) {
+        File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId());
+        if (metaFile == null) {
+            throw new BusinessException("元信息文件不存在");
+        }
+        String unzipDir = null;
+        try {
+            unzipDir = ZipUtils.unzipToTemp(metaFile.getAbsolutePath(), dto.getUnzipPasswd());
+            MetaUtils.decodeMatchedFiles(unzipDir, dto.getContentDecodePasswd());
+
+            return mapper.apply(unzipDir);
+        } catch (IOException e) {
+            throw new BusinessException("IO异常" + e.getMessage(), e);
+        } finally {
+            if (unzipDir != null) {
+//                meta文件中包含了很大敏感信息，必须保证删除掉
+                FileUtil.del(new File(unzipDir));
+            }
+        }
+    }
+
+
+    @Override
+    public ValidateResultVO validatePkgFile(InstallComponentDTO dto) {
+        ExtRepoMetaFsModel model = unzipMetaFile(dto, unzipDir -> {
+            MetaParseOption option = new MetaParseOption();
+            option.setRoot(unzipDir);
+            return MetaUtils.parseRepoMeta(option);
+        });
+
+        File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
+        try {
+            List<String> fileNames = ZipUtils.getZipEntry(pkgFile.getAbsolutePath(), null);
+            List<String> errors = new ArrayList<>();
+            model.getFrameworks().stream().flatMap(f -> f.getServices().stream()).forEach(srv -> {
+                String filePath = PathUtils.unixStyle(MetaUtils.getFileRelativePath(srv));
+                if (!fileNames.contains(filePath)) {
+                    errors.add(filePath);
+                }
+                String md5Path = PathUtils.unixStyle(MetaUtils.getMd5FileRelativePath(srv));
+                if (!fileNames.contains(md5Path)) {
+                    errors.add(md5Path);
+                }
+            });
+
+            return new ValidateResultVO(errors.stream().map(e-> String.format("压缩包中缺少%s文件", e)).collect(Collectors.toList()));
+        } catch (Exception e) {
+            throw new BusinessException("IO异常" + e.getMessage(), e);
+        }
+    }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -75,14 +169,13 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             throw new BusinessException("安装包文件不存在");
         }
 
-        int progressId = RandomUtil.randomInt();
+        int progressId = RandomUtil.randomInt(1, Integer.MAX_VALUE);
         ImportCompProgressVO progress = new ImportCompProgressVO(progressId);
         importCmpMap.put(progressId, progress);
 
         CompletableFuture.runAsync(() -> doImportCmp(dto, progress));
         return progress;
     }
-
 
 
     private void doImportCmp(InstallComponentDTO dto, ImportCompProgressVO progress) {
@@ -95,7 +188,10 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 //            解析元数据
             File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId());
             metaUnzipPath = unpackMetaFile(metaFile, dto, progress);
-            ExtRepoMetaModel vo = MetaUtils.parseRepoMeta(metaUnzipPath);
+
+            MetaParseOption option = new MetaParseOption();
+            option.setRoot(metaUnzipPath);
+            ExtRepoMetaFsModel vo = MetaUtils.parseRepoMeta(option);
             progress.setStep(9);
             log.info("【导入第三方软件源】 进度ID:{}，解析meta数据成功，metaUnzipPath: {}, 解析到{}个服务", progress.getProgressId(),
                     metaUnzipPath, vo.getFrameworks().stream().mapToLong(fw -> fw.getServices().size()).sum());
@@ -124,7 +220,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             if (pkgUnzipPath != null) {
                 String finalPkgDir = pkgUnzipPath;
 //                异步删除安装包的解压目录
-                CompletableFuture.runAsync(()-> FileUtil.del(new File(finalPkgDir)));
+                CompletableFuture.runAsync(() -> FileUtil.del(new File(finalPkgDir)));
             }
             if (StringUtils.isNoneBlank(error)) {
                 progress.setState(-1);
@@ -148,7 +244,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     }
 
 
-    private String decompressPkgFile(File pkgFile, ExtRepoMetaModel vo, ImportCompProgressVO progress) throws IOException {
+    private String decompressPkgFile(File pkgFile, ExtRepoMetaFsModel vo, ImportCompProgressVO progress) throws IOException {
         progress.setState(3);
         progress.setStep(0);
 
@@ -185,7 +281,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     }
 
 
-    private void saveFrameInfo(String unzipDir, ExtRepoMetaModel vo, ImportCompProgressVO progress) {
+    private void saveFrameInfo(String unzipDir, ExtRepoMetaFsModel vo, ImportCompProgressVO progress) {
         progress.setState(4);
         progress.setTotal(vo.getFrameworks().stream().mapToLong(f -> f.getServices().size()).sum());
         progress.setStep(0);
@@ -203,7 +299,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     }
 
 
-    private void moveFiles(String metaUnzipPath, ExtRepoMetaModel vo, String pkgPath, ImportCompProgressVO progress) {
+    private void moveFiles(String metaUnzipPath, ExtRepoMetaFsModel vo, String pkgPath, ImportCompProgressVO progress) {
         progress.setState(5);
         progress.setStep(0);
 
@@ -260,5 +356,36 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             }
         }
     }
+
+    @Override
+    public DeploymentDAG buildDeploymentDAG(DeploymentDTO dto) {
+        File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId());
+        if (deploymentFile == null) {
+            throw new BusinessException("部署清单文件不存在");
+        }
+        String content = MetaUtils.decodeFile(deploymentFile, dto.getContentDecodePasswd());
+        DeploymentModel model = MetaUtils.parseDeploymentFile(content);
+
+        ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
+        List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
+        DeploymentDAGBuildContext context = new DeploymentDAGBuildContext(clusterInfo, serviceList);
+
+
+        List<String> errors = new ArrayList<>();
+        model.getApp().forEach(app -> {
+            FrameServiceEntity entity = context.getSrvEntity(app);
+            if (entity == null) {
+                errors.add(app.getName() + "(" + app.getVersion() + ")");
+            }
+        });
+        if (!errors.isEmpty()) {
+            throw new BusinessException(String.format("服务: %s在框架中%s不存在", StrUtil.join(";", errors), clusterInfo.getClusterCode()));
+        }
+
+
+        DeploymentDAG dag = context.buildDAG(model.getApp());
+        return dag;
+    }
+
 
 }
