@@ -17,18 +17,13 @@
 
 package com.datasophon.api.controller;
 
+import com.alibaba.fastjson.JSONArray;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.common.model.HostServiceRoleMapping;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.utils.Result;
-
-import java.io.IOException;
-import java.util.List;
-
-import javax.servlet.http.HttpServletResponse;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,7 +31,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.alibaba.fastjson.JSONArray;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("service/install")
@@ -50,7 +47,7 @@ public class ServiceInstallController {
      */
     @RequestMapping("/getServiceConfigOption")
     public Result getServiceConfigOption(Integer clusterId, String serviceName) {
-        return serviceInstallService.getServiceConfigOption(clusterId, serviceName);
+        return Result.success(serviceInstallService.getServiceConfigOption(clusterId, serviceName));
     }
     
     /**
@@ -71,7 +68,8 @@ public class ServiceInstallController {
     @RequestMapping("/saveServiceRoleHostMapping/{clusterId}")
     public Result saveServiceRoleHostMapping(@RequestBody List<ServiceRoleHostMapping> list,
                                              @PathVariable("clusterId") Integer clusterId) {
-        return serviceInstallService.saveServiceRoleHostMapping(clusterId, list);
+        serviceInstallService.saveServiceRoleHostMapping(clusterId, list);
+        return Result.success();
     }
     
     /**

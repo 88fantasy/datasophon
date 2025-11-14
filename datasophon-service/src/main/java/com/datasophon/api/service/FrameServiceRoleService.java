@@ -32,8 +32,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @date 2022-04-18 14:38:53
  */
 public interface FrameServiceRoleService extends IService<FrameServiceRoleEntity> {
-    
-    Result getServiceRoleList(Integer clusterId, String serviceIds, Integer serviceRoleType);
+
+    List<FrameServiceRoleEntity> getServiceRoleList(Integer clusterId, List<Integer> serviceIds, Integer serviceRoleType);
     
     FrameServiceRoleEntity getServiceRoleByServiceIdAndServiceRoleName(Integer id, String name);
     

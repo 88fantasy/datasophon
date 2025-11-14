@@ -336,9 +336,8 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
     /**
      * Only DAG has a topological sort
      * @return topologically sorted results, returns false if the DAG result is a ring result
-     * @throws Exception errors
      */
-    public List<Node> topologicalSort() throws Exception {
+    public List<Node> topologicalSort() {
         lock.readLock().lock();
         
         try {
@@ -348,7 +347,7 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
                 return entry.getValue();
             }
             
-            throw new Exception("serious error: graph has cycle ! ");
+            throw new IllegalStateException("serious error: graph has cycle ! ");
         } finally {
             lock.readLock().unlock();
         }
@@ -587,5 +586,15 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
         }
 
         return false;
+    }
+
+    public DAG<Node, NodeInfo, EdgeInfo> getReverseDag() {
+        DAG<Node, NodeInfo, EdgeInfo> reverse = new DAG<>();
+        reverse.nodesMap = nodesMap;
+
+        Map<Node, Map<Node, EdgeInfo>> temp = edgesMap;
+        reverse.edgesMap = reverseEdgesMap;
+        reverse.reverseEdgesMap = temp;
+        return reverse;
     }
 }

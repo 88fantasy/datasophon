@@ -6,6 +6,8 @@ import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 
+import java.util.List;
+
 /**
  * 软件外部源的元数据业务逻辑处理类
  * @author zhanghuangbin
@@ -26,4 +28,7 @@ public interface ExtRepoMetaService {
 
 
     DeploymentDAG buildDeploymentDAG(DeploymentDTO dto);
+
+    List<String> deploy(DeploymentDTO dto);
+
 }

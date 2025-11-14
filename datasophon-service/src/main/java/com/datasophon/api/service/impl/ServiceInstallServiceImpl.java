@@ -153,7 +153,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     public static final String PROMETHEUS = "prometheus";
 
     @Override
-    public Result getServiceConfigOption(Integer clusterId, String serviceName) {
+    public List<ServiceConfig> getServiceConfigOption(Integer clusterId, String serviceName) {
         List<ServiceConfig> list = null;
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
 
@@ -181,7 +181,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             serviceRoleHandler.getConfig(clusterId, list);
         }
 
-        return Result.success(list);
+        return list;
     }
 
     @Override
@@ -240,19 +240,14 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             configUpdate = isConfigNeedUpdate(serviceInstanceEntity, list);
             ClusterServiceRoleGroupConfig roleGroupConfig;
             if (Objects.isNull(roleGroupId)) {
-                ClusterServiceInstanceRoleGroup roleGroup =
-                        roleGroupService.getRoleGroupByServiceInstanceId(
-                                serviceInstanceEntity.getId());
+                ClusterServiceInstanceRoleGroup roleGroup = roleGroupService.getRoleGroupByServiceInstanceId(serviceInstanceEntity.getId());
                 roleGroupConfig = groupConfigService.getConfigByRoleGroupId(roleGroup.getId());
             } else {
                 roleGroupConfig = groupConfigService.getConfigByRoleGroupId(roleGroupId);
             }
-            CacheUtils.put(
-                    "UseRoleGroup_" + serviceInstanceEntity.getId(),
-                    roleGroupConfig.getRoleGroupId());
+            CacheUtils.put("UseRoleGroup_" + serviceInstanceEntity.getId(), roleGroupConfig.getRoleGroupId());
             if (configUpdate) {
-                ClusterServiceRoleGroupConfig newRoleGroupConfig =
-                        new ClusterServiceRoleGroupConfig();
+                ClusterServiceRoleGroupConfig newRoleGroupConfig = new ClusterServiceRoleGroupConfig();
                 if (Objects.isNull(roleGroupId)) {
                     ClusterServiceInstanceRoleGroup roleGroup =
                             saveNewRoleGroup(serviceInstanceEntity);
@@ -283,7 +278,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     }
 
     @Override
-    public Result saveServiceRoleHostMapping(Integer clusterId, List<ServiceRoleHostMapping> list) {
+    public void saveServiceRoleHostMapping(Integer clusterId, List<ServiceRoleHostMapping> list) {
 
         checkOnSameNode(clusterId, list);
 
@@ -331,7 +326,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
                         + Constants.UNDERLINE
                         + Constants.SERVICE_ROLE_HOST_MAPPING,
                 map);
-        return Result.success();
     }
 
     @Override

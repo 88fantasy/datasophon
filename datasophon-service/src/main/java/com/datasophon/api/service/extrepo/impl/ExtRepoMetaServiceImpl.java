@@ -1,30 +1,67 @@
 package com.datasophon.api.service.extrepo.impl;
 
+import akka.actor.ActorRef;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.LoadServiceMeta;
+import com.datasophon.api.master.ActorUtils;
+import com.datasophon.api.master.SubmitTaskNodeActor;
 import com.datasophon.api.service.ClusterInfoService;
+import com.datasophon.api.service.ClusterServiceCommandHostCommandService;
+import com.datasophon.api.service.ClusterServiceCommandHostService;
+import com.datasophon.api.service.ClusterServiceCommandService;
+import com.datasophon.api.service.ClusterServiceInstanceConfigService;
+import com.datasophon.api.service.ClusterServiceInstanceService;
+import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.FrameInfoService;
+import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
+import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
 import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
+import com.datasophon.api.service.extrepo.ctx.ExecDAGBuilderContext;
 import com.datasophon.api.service.extrepo.ctx.MetaParseOption;
 import com.datasophon.api.service.extrepo.ctx.SrvDependenciesContext;
 import com.datasophon.api.service.extrepo.utils.MetaUtils;
 import com.datasophon.api.service.extrepo.utils.PathUtils;
+import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
+import com.datasophon.api.strategy.ServiceRoleStrategyContext;
+import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.Constants;
+import com.datasophon.common.cache.CacheUtils;
+import com.datasophon.common.command.SubmitActiveTaskNodeCommand;
+import com.datasophon.common.enums.CommandType;
+import com.datasophon.common.enums.ServiceRoleType;
+import com.datasophon.common.model.ArchInfo;
+import com.datasophon.common.model.DAG;
+import com.datasophon.common.model.DAGGraph;
+import com.datasophon.common.model.ServiceConfig;
+import com.datasophon.common.model.ServiceInfo;
+import com.datasophon.common.model.ServiceNode;
+import com.datasophon.common.model.ServiceRoleHostMapping;
+import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ZipUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
+import com.datasophon.dao.entity.ClusterServiceCommandEntity;
+import com.datasophon.dao.entity.ClusterServiceCommandHostCommandEntity;
+import com.datasophon.dao.entity.ClusterServiceCommandHostEntity;
+import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
+import com.datasophon.dao.entity.FrameServiceRoleEntity;
+import com.datasophon.dao.enums.ServiceState;
+import com.datasophon.dao.model.extrepo.DeploySrvConfig;
 import com.datasophon.dao.model.extrepo.DeploymentModel;
 import com.datasophon.dao.model.extrepo.ExtRepoMetaFsModel;
 import com.datasophon.dao.model.extrepo.FrameworkMeta;
@@ -35,6 +72,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,8 +81,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,6 +122,38 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
     @Autowired
     private FrameServiceService frameServiceService;
+
+    @Autowired
+    private ServiceInstallService serviceInstallService;
+
+
+    @Autowired
+    private ClusterServiceInstanceService clusterServiceInstanceService;
+
+    @Autowired
+    private FrameServiceRoleService frameServiceRoleService;
+
+    @Autowired
+    private ClusterServiceCommandHostService commandHostService;
+
+    @Autowired
+    private ClusterServiceCommandHostCommandService hostCommandService;
+
+
+    @Autowired
+    private ClusterServiceCommandService commandService;
+
+    @Autowired
+    private ClusterHostService hostService;
+
+    @Autowired
+    private ClusterServiceInstanceService serviceInstanceService;
+
+    @Autowired
+    private ClusterServiceInstanceConfigService serviceInstanceConfigService;
+
+    @Autowired
+    private ClusterServiceRoleInstanceService roleInstanceService;
 
 
     @Override
@@ -150,7 +225,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
                 }
             });
 
-            return new ValidateResultVO(errors.stream().map(e-> String.format("压缩包中缺少%s文件", e)).collect(Collectors.toList()));
+            return new ValidateResultVO(errors.stream().map(e -> String.format("压缩包中缺少%s文件", e)).collect(Collectors.toList()));
         } catch (Exception e) {
             throw new BusinessException("IO异常" + e.getMessage(), e);
         }
@@ -371,21 +446,225 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         DeploymentDAGBuildContext context = new DeploymentDAGBuildContext(clusterInfo, serviceList);
 
 
-        List<String> errors = new ArrayList<>();
+        List<String> uninstall = new ArrayList<>();
         model.getApp().forEach(app -> {
             FrameServiceEntity entity = context.getSrvEntity(app);
             if (entity == null) {
-                errors.add(app.getName() + "(" + app.getVersion() + ")");
+                uninstall.add(app.getName() + "(" + app.getVersion() + ")");
             }
         });
-        if (!errors.isEmpty()) {
-            throw new BusinessException(String.format("服务: %s在框架中%s不存在", StrUtil.join(";", errors), clusterInfo.getClusterCode()));
+        if (!uninstall.isEmpty()) {
+            throw new BusinessException(String.format("服务: %s在框架中%s不存在", StrUtil.join(";", uninstall), clusterInfo.getClusterCode()));
         }
 
 
-        DeploymentDAG dag = context.buildDAG(model.getApp());
+        DeploymentDAG dag = context.buildDAG(model.getApp(), false);
         return dag;
     }
 
+    @Override
+    public List<String> deploy(DeploymentDTO dto) {
+        File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId());
+        if (deploymentFile == null) {
+            throw new BusinessException("部署清单文件不存在");
+        }
+        String content = MetaUtils.decodeFile(deploymentFile, dto.getContentDecodePasswd());
+        DeploymentModel model = MetaUtils.parseDeploymentFile(content);
+        log.info("完成解析部署文件");
+
+
+        ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
+        List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
+
+        DeploymentDAGBuildContext context = new DeploymentDAGBuildContext(clusterInfo, serviceList);
+
+
+//        保存serviceRole和host的映射
+        List<ServiceRoleHostMapping> hostMappings = new ArrayList<>();
+        model.getApp().stream()
+                .flatMap(app -> app.getRoles().stream())
+                .forEach(role -> {
+                    ServiceRoleHostMapping hostMapping = new ServiceRoleHostMapping();
+                    hostMapping.setHosts(role.getDeployHosts());
+                    hostMapping.setServiceRole(role.getName());
+                    hostMappings.add(hostMapping);
+                });
+        serviceInstallService.saveServiceRoleHostMapping(dto.getClusterId(), hostMappings);
+        log.info("保存角色和host映射成功");
+
+
+//        保存应用的启动配置
+        model.getApp().forEach(app -> {
+            List<ServiceConfig> configs = serviceInstallService.getServiceConfigOption(dto.getClusterId(), app.getName());
+            Map<String, DeploySrvConfig> configMap = CollectionUtil.toMap(app.getConfig(), new HashMap<>(), DeploySrvConfig::getName);
+            configs.forEach(conf -> {
+                DeploySrvConfig deployConf = configMap.get(conf.getName());
+                if (deployConf == null) {
+                    conf.setValue(conf.getDefaultValue());
+                } else {
+                    conf.setValue(deployConf.getValue());
+                }
+            });
+            serviceInstallService.saveServiceConfig(dto.getClusterId(), app.getName(), configs, null);
+        });
+        log.info("保存部署配置项成功");
+
+
+//
+        DAG<String, DeploymentDAG.SrvNodeVO, Integer> dag = context.buildDeployDAG(model.getApp(), false);
+        List<String> nodes = dag.topologicalSort();
+        List<String> commandIds = new ArrayList<>(model.getApp().size());
+        nodes.forEach(node -> {
+            DeploymentDAG.SrvNodeVO srv = dag.getNode(node);
+            commandIds.add(generateCommand(clusterInfo, context.getSrvEntity(srv.getName(), srv.getVersion())));
+        });
+        log.info("保存安装命令成功");
+
+//        必须等待事务提交，否则，有概率查询不到保存的命令
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                CompletableFuture.runAsync(() -> doInstall(clusterInfo.getId(), commandIds, dag));
+            }
+        });
+        return commandIds;
+    }
+
+
+    public String generateCommand(ClusterInfoEntity cluster, FrameServiceEntity frameService) {
+        ClusterServiceInstanceEntity serviceInstance = clusterServiceInstanceService.getServiceInstanceByClusterIdAndServiceName(cluster.getId(), frameService.getServiceName());
+        CommandType commandType = ServiceState.WAIT_INSTALL.equals(serviceInstance.getServiceState()) ? CommandType.INSTALL_SERVICE : CommandType.UPGRADE_SERVICE;
+        ClusterServiceCommandEntity commandEntity = ProcessUtils.generateCommandEntity(cluster.getId(), commandType, frameService.getServiceName());
+        commandEntity.setServiceInstanceId(serviceInstance.getId());
+        commandService.save(commandEntity);
+
+        Map<String, List<String>> serviceRoleHostMap = (Map<String, List<String>>) CacheUtils.get(cluster.getClusterCode() + Constants.UNDERLINE + Constants.SERVICE_ROLE_HOST_MAPPING);
+        if (serviceRoleHostMap == null) {
+            serviceRoleHostMap = new HashMap<>();
+        }
+        List<FrameServiceRoleEntity> serviceRoleList = frameServiceRoleService.getServiceRoleList(cluster.getId(), Collections.singletonList(frameService.getId()), null);
+
+        List<ClusterServiceCommandHostEntity> commandHostList = new ArrayList<>();
+        List<ClusterServiceCommandHostCommandEntity> hostCommandList = new ArrayList<>();
+//        FIXME
+        HashMap<String, ClusterServiceCommandHostEntity> cache = new HashMap<>();
+        for (FrameServiceRoleEntity serviceRole : serviceRoleList) {
+            if (serviceRoleHostMap.containsKey(serviceRole.getServiceRoleName())) {
+                List<String> hosts = serviceRoleHostMap.get(serviceRole.getServiceRoleName());
+                for (String hostname : hosts) {
+//
+
+                }
+            }
+        }
+//        commandHostService.saveBatch(commandHostList);
+//        hostCommandService.saveBatch(hostCommandList);
+
+        return commandEntity.getCommandId();
+    }
+
+
+    private void doInstall(Integer clusterId, List<String> commandIds, DAG<String, DeploymentDAG.SrvNodeVO, Integer> dag) {
+        log.info("开始执行安装操作");
+        SubmitActiveTaskNodeCommand submitActiveTaskNodeCommand = new SubmitActiveTaskNodeCommand();
+        submitActiveTaskNodeCommand.setCommandType(null);
+        ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
+        submitActiveTaskNodeCommand.setClusterId(clusterInfo.getId());
+        submitActiveTaskNodeCommand.setClusterCode(clusterInfo.getClusterCode());
+
+        Collection<String> beginNode = dag.getBeginNode();
+        Map<String, String> readyToSubmitTaskList = new ConcurrentHashMap<>();
+        for (String node : beginNode) {
+            readyToSubmitTaskList.put(node, "");
+        }
+
+
+        ExecDAGBuilderContext context = new ExecDAGBuilderContext();
+
+
+        List<ClusterServiceCommandEntity> commandList = commandService.listByIds(commandIds);
+        context.setSrvCmd(commandList);
+
+
+        List<ClusterServiceCommandHostCommandEntity> hostCommandList = hostCommandService.lambdaQuery()
+                .in(ClusterServiceCommandHostCommandEntity::getCommandId, commandIds)
+                .list();
+        context.setCmdHost(hostCommandList);
+
+
+        DAGGraph<String, ServiceNode, String> deployGAG = new DAGGraph<>();
+        dag.getNodes().forEach((srv, info) -> {
+            ServiceNode serviceNode = new ServiceNode();
+            ClusterServiceCommandEntity cmd = context.getCmd(srv);
+            serviceNode.setCommandId(cmd.getCommandId());
+
+            FrameServiceEntity serviceEntity = frameService.lambdaQuery()
+                    .eq(FrameServiceEntity::getFrameId, clusterId)
+                    .eq(FrameServiceEntity::getServiceName, info.getName())
+                    .eq(FrameServiceEntity::getServiceVersion, info.getVersion())
+                    .one();
+
+            List<ServiceRoleInfo> masterRoles = new ArrayList<>();
+            List<ServiceRoleInfo> elseRoles = new ArrayList<>();
+
+            for (ClusterServiceCommandHostCommandEntity hostCommand : context.getCmdHostList(cmd.getCommandId())) {
+                FrameServiceRoleEntity frameServiceRoleEntity = frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(clusterInfo.getClusterFrame(), hostCommand.getServiceRoleName());
+
+                ServiceRoleInfo serviceRoleInfo = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
+                serviceRoleInfo.setClusterId(clusterInfo.getId());
+
+                serviceRoleInfo.setHostname(hostCommand.getHostname());
+                serviceRoleInfo.setHostCommandId(hostCommand.getHostCommandId());
+
+                serviceRoleInfo.setParentName(cmd.getServiceName());
+                serviceRoleInfo.setCommandType(CommandType.ofCode(cmd.getCommandType()));
+                serviceRoleInfo.setServiceInstanceId(cmd.getServiceInstanceId());
+
+                serviceRoleInfo.setPackageName(serviceEntity.getPackageName());
+                serviceRoleInfo.setArchInfoMap(getArchMap(serviceEntity));
+                serviceRoleInfo.setDecompressPackageName(serviceEntity.getDecompressPackageName());
+                serviceRoleInfo.setFrameCode(serviceEntity.getFrameCode());
+                ServiceInfo serviceInfo = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
+                serviceRoleInfo.setCreateDecompressDir(serviceInfo.getCreateDecompressDir());
+
+                Optional.ofNullable(ServiceRoleStrategyContext.getServiceRoleHandler(serviceRoleInfo.getName()))
+                        .ifPresent(ha -> ha.handlerServiceRoleInfo(serviceRoleInfo, hostCommand.getHostname()));
+
+
+                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())) {
+                    masterRoles.add(serviceRoleInfo);
+                } else {
+                    elseRoles.add(serviceRoleInfo);
+                }
+            }
+
+            serviceNode.setMasterRoles(masterRoles);
+            serviceNode.setElseRoles(elseRoles);
+            deployGAG.addNode(srv, serviceNode);
+        });
+
+        dag.getEdges().forEach(edge -> {
+            deployGAG.addEdge(edge.getStart(), edge.getEnd(), false);
+        });
+
+        submitActiveTaskNodeCommand.setDag(deployGAG);
+        submitActiveTaskNodeCommand.setReadyToSubmitTaskList(readyToSubmitTaskList);
+        log.debug("开始执行dag, submitActiveTaskNodeCommand:{}", JSONObject.toJSONString(submitActiveTaskNodeCommand));
+
+        log.info("构建DAG完成，开始执行命令");
+        ActorRef submitTaskNodeActor = ActorUtils.getLocalActor(SubmitTaskNodeActor.class, ActorUtils.getActorRefName(SubmitTaskNodeActor.class));
+        submitTaskNodeActor.tell(submitActiveTaskNodeCommand, ActorRef.noSender());
+    }
+
+
+    private Map<String, ArchInfo> getArchMap(FrameServiceEntity srv) {
+        Map<String, ArchInfo> arch;
+        if (StringUtils.isNotEmpty(srv.getArch())) {
+            return JSONObject.parseObject(srv.getArch(), new TypeReference<Map<String, ArchInfo>>() {
+            });
+        } else {
+            return LoadServiceMeta.getArchInfo(srv.getPackageName(), srv.getDecompressPackageName());
+        }
+    }
 
 }
