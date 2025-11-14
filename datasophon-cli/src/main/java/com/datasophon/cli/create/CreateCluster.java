@@ -10,6 +10,8 @@ import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.SSHAuthType;
 import com.datasophon.common.model.Host;
+import com.datasophon.common.model.uni.NexusRegistry;
+import com.datasophon.common.model.uni.Rustfs;
 import com.datasophon.common.utils.ShellUtils;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
@@ -33,6 +35,9 @@ public class CreateCluster implements Runnable {
 
     @CommandLine.Option(names = {"-f", "--mysqlInstallForce"}, description = "mysql存在是否覆盖安装")
     boolean mysqlInstallForce = false;
+
+    @CommandLine.Option(names = {"-e", "--enableRegistry"}, description = "是否启动制品库")
+    boolean enableRegistry = false;
     
     private String initPath;
     
@@ -97,6 +102,17 @@ public class CreateCluster implements Runnable {
 
         log.info("安装tar");
         initTar(config, nodes);
+
+        if(enableRegistry) {
+            log.info("安装rustfs");
+            initRustfs(config);
+
+            log.info("安装registry");
+            initRegistry(config);
+
+            log.info("安装registryUpload");
+            initRegistryUpload(config);
+        }
 
         log.info("安装jdk");
         initJdk(config, nodes);
@@ -290,6 +306,55 @@ public class CreateCluster implements Runnable {
     
     private void initSwap(ClusterConfig config, List<Host> nodes) {
         allNodesExec(nodes, new InitSwap());
+    }
+
+    private void initRegistry(ClusterConfig config) {
+        NexusRegistry registryConfig = config.getGlobal().getRegistry();
+        InitRegistry initRegistry = new InitRegistry();
+        initRegistry.setEnableRegistry(registryConfig.isEnable())
+                .setType(registryConfig.getType())
+                .setPackagePath(packagesPath)
+                .setInstallPath(config.getGlobal().getInstallDataDir())
+                .setX86Tar(registryConfig.getPackages().getX86_64())
+                .setAarch64Tar(registryConfig.getPackages().getAarch64())
+                .setWebHost(registryConfig.getHost().getIp())
+                .setWebPort(registryConfig.getConfig().getWebPort())
+                .setUsername(registryConfig.getConfig().getUser())
+                .setPassword(registryConfig.getConfig().getPassword());
+        singleNodesExec(registryConfig.getHost(), initRegistry);
+    }
+
+    private void initRegistryUpload(ClusterConfig config) {
+        NexusRegistry registryConfig = config.getGlobal().getRegistry();
+        InitRegistryUpload initRegistryUpload = new InitRegistryUpload();
+        initRegistryUpload.setEnableRegistry(registryConfig.isEnable())
+                .setType(registryConfig.getType())
+                .setDatasophonHomePath(datasophonPath)
+                .setInitPath(initPath)
+                .setPackagePath(datasophonPath)
+                .setPackagesTarName(registryConfig.getConfig().getPackagesTarName())
+                .setConfigTarName(registryConfig.getConfig().getConfigTarName())
+                .setWebHost(registryConfig.getHost().getIp())
+                .setWebPort(registryConfig.getConfig().getWebPort())
+                .setUsername(registryConfig.getConfig().getUser())
+                .setPassword(registryConfig.getConfig().getPassword());
+        singleNodesExec(registryConfig.getHost(), initRegistryUpload);
+    }
+
+    private void initRustfs(ClusterConfig config) {
+        Rustfs rustfs = config.getGlobal().getRustfs();
+        InitRustfs initRustfs = new InitRustfs();
+        initRustfs.setEnable(rustfs.isEnable())
+            .setPackagePath(packagesPath)
+            .setInstallPath(config.getGlobal().getInstallDataDir())
+            .setX86Tar(rustfs.getPackages().getX86_64())
+            .setAarch64Tar(rustfs.getPackages().getAarch64())
+            .setWebHost(rustfs.getHost().getIp())
+            .setWebPort(rustfs.getConfig().getWebPort())
+            .setApiPort(rustfs.getConfig().getApiPort())
+            .setUsername(rustfs.getConfig().getUser())
+            .setPassword(rustfs.getConfig().getPassword());
+        singleNodesExec(rustfs.getHost(), initRustfs);
     }
     
     private void initOfflineServer(ClusterConfig config) {

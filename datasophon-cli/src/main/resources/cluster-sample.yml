@@ -2,19 +2,38 @@ global:
   offline: true
   sshAuthType: AUTO
   registry:
-    enable: true  # install minio
-    type: minio
+    enable: true  #启动第三方存储库
+    type: nexus
+    packages:
+      x86_64: nexus-3.85.0-03-linux-x86_64.tar.gz
+      aarch64: nexus-3.85.0-03-linux-aarch_64.tar.gz
     config:
-      api: 9000
-      console: 9001
-      user: cuminio
+      webPort: 8091
+      user: admin
       password: u4Gkp19TRcKKlTCLNA1pyA==
-      volumes: /data/minio
+      repositories: ["yum","apt","raw"]
+      configTarName: config.tar.gz
+      packagesTarName: packages.tar.gz
     host:
-      ip: 192.168.62.25
+      ip: 192.168.2.146
       user: root
       password:
       port: 22
+  rustfs:
+    enable: true
+    packages:
+      x86_64: rustfs-linux-x86_64-musl-1.0.0.tar.gz
+      aarch64: rustfs-linux-aarch64-musl-1.0.0.tar.gz
+    config:
+      webPort: 9011
+      apiPort: 9010
+      user: admin
+      password: u4Gkp19TRcKKlTCLNA1pyA==
+    host:
+      user: root
+      ip: 192.168.2.146
+      port: 22
+      password:
 
   nmapServer:
     user: root
@@ -65,14 +84,14 @@ global:
         dbName: datart
     host:
       user: root
-      ip: 192.168.62.22
+      ip: 192.168.2.146
       port: 22
       password:
 
   yumServer:
     host:
       user: root
-      ip: 192.168.62.25
+      ip: 192.168.2.146
       port: 22
       password:
     listenPort: 4080
@@ -80,7 +99,7 @@ global:
   ntpServer:
     host:
       user: root
-      ip: 192.168.62.25
+      ip: 192.168.2.146
       port: 22
       password:
 
@@ -88,18 +107,18 @@ global:
   installDataDir: /data/install_datasophon
 
 nodes:
-  - ip: 192.168.62.20
+  - ip: 192.168.2.146
     user: root
     password:
     port: 22
     hostname: hdp20
     isLocalhost: true
-  - ip: 192.168.62.21
+  - ip: 192.168.2.175
     user: root
     password:
     port: 22
     hostname: hdp21
-  - ip: 192.168.62.22
+  - ip: 192.168.2.160
     user: root
     password:
     port: 22

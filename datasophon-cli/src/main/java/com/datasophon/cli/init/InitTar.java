@@ -1,6 +1,8 @@
 package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
+import com.datasophon.common.enums.ArchType;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +10,7 @@ import picocli.CommandLine;
 
 /**
  * 安装tar
+ * TODO,默认已安装tar。废弃
  */
 @Slf4j
 @Data

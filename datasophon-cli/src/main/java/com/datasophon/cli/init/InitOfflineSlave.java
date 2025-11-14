@@ -8,10 +8,8 @@ import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import picocli.CommandLine;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @Accessors(chain = true)
@@ -19,11 +17,16 @@ import java.util.List;
 @CommandLine.Command(name = "offlineSlave", description = "offlineSlave")
 public class InitOfflineSlave extends InitBase implements InitNodeHandler {
 
+    @CommandLine.Option(names = {"-er", "--enableRegistry"}, description = "是否启动制品库")
+    boolean enableRegistry = false;
     @CommandLine.Option(names = {"-ip", "--serverIp"}, description = "httpd服务ip", required = true)
     String serverIp;
     
     @CommandLine.Option(names = {"-port", "--serverPort"}, description = "httpd服务端口", required = true)
     String serverPort;
+
+    @CommandLine.Option(names = {"-rPath", "--registryPath"}, description = "制品库路径", required = false)
+    String registryPath;
     
     @Override
     public String name() {
@@ -36,6 +39,9 @@ public class InitOfflineSlave extends InitBase implements InitNodeHandler {
         OsType osType = executor.getOs();
         String repoOsSuffix = String.format("%s/%s/", archType.getArch(), osType.getDesc());
         if(OsType.isUnbuntu(osType)) {
+            if(enableRegistry) {
+                repoOsSuffix = String.format("repository/apt/%s/%s/", archType.getArch(), osType.getDesc());
+            }
             executor.execShell("dpkg --configure -a");
 
             String httpRepoUrl = String.format("http://%s:%s/%s", serverIp, serverPort, repoOsSuffix);
@@ -48,6 +54,9 @@ public class InitOfflineSlave extends InitBase implements InitNodeHandler {
                 throw new RuntimeException("init aptConf fail.");
             }
         } else if (OsType.isCentos(osType)) {
+            if(enableRegistry) {
+                repoOsSuffix = String.format("repository/yum/%s/%s/", archType.getArch(), osType.getDesc());
+            }
             String httpRepoUrl = String.format("http://%s:%s/%s", serverIp, serverPort, repoOsSuffix);
             InitOfflineServer.yumRepoConfFile(executor, httpRepoUrl);
             executor.execShell("yum clean all");

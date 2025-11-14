@@ -1,11 +1,15 @@
 package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
+import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.NexusFileUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
+
+import java.io.InputStream;
 
 /**
  * 初始化jdk
@@ -17,6 +21,21 @@ public class InitJdk extends InitBase {
 
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
+
+    @CommandLine.Option(names = {"-e", "--enableRegistry"}, description = "是否启动制品库")
+    boolean enableRegistry = false;
+
+    @CommandLine.Option(names = {"-ip", "--registryIp"}, description = "制品ip", required = true)
+    String registryIp;
+
+    @CommandLine.Option(names = {"-port", "--registryPort"}, description = "制品端口", required = true)
+    String registryPort;
+
+    @CommandLine.Option(names = {"-u", "--registryUsername"}, description = "制品用户", required = true)
+    String registryUsername;
+
+    @CommandLine.Option(names = {"-p", "--registryPassword"}, description = "制品密码", required = true)
+    String registryPassword;
 
     private Executor executor;
     @Override
@@ -44,6 +63,9 @@ public class InitJdk extends InitBase {
             log.info("JDK installed. java path is {}", javaBinPath);
         } else {
             log.info("JDK not installed, start to install");
+            CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword,
+                    jdkTarName, String.format("%s/%s", packagePath, jdkTarName));
+
             executor.execShell("sed -i '/export JAVA_HOME/d' /etc/profile");
             executor.execShell("sed -i '/export CLASSPATH/d' /etc/profile");
             executor.execShell("sed -i '/export PATH=$PATH:$JAVA_HOME/d' /etc/profile");
@@ -60,7 +82,11 @@ public class InitJdk extends InitBase {
             executor.execShell(String.format("echo %s >>~/.bashrc", javaSourceEnv));
             log.info("Prepare to config BCPROV...");
             String javaBcprovDir = javaHome + "/jre/lib/ext/";
-            String javaBcprovJar = packagePath + "/bcprov-jdk15on-1.68.jar";
+            String javaBcprovJarName = "bcprov-jdk15on-1.68.jar";
+            String javaBcprovJar = packagePath + "/" + javaBcprovJarName;
+            CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword,
+                    javaBcprovJarName, javaBcprovJar);
+
             executor.execShell(String.format("cp -a %s %s", javaBcprovJar, javaBcprovDir));
             log.info("BCPROV Installed.");
             executor.execShell(String.format("source %s", bashProfilePath));

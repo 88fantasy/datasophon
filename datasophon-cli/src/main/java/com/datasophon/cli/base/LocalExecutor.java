@@ -7,6 +7,7 @@ import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
 
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +60,18 @@ public class LocalExecutor implements Executor {
         try {
             String string = FileUtil.readString(path, Charset.defaultCharset());
             execResult.setExecOut(string);
+            execResult.setExecResult(true);
+        } catch (IORuntimeException exception) {
+            execResult.setExecErrOut(exception.getMessage());
+        }
+        return execResult;
+    }
+
+    @Override
+    public ExecResult writeFromStream(InputStream in, String path) {
+        ExecResult execResult = new ExecResult();
+        try {
+            FileUtil.writeFromStream(in, path);
             execResult.setExecResult(true);
         } catch (IORuntimeException exception) {
             execResult.setExecErrOut(exception.getMessage());

@@ -2,14 +2,18 @@ package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.handler.InitNodeHandler;
+import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.Constants;
+import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.NexusFileUtils;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +34,21 @@ public class InitMysql extends InitBase implements InitNodeHandler {
 
     @CommandLine.Option(names = {"-t", "--tarName"}, description = "tar离线压缩包名", required = true)
     String tarName;
+
+    @CommandLine.Option(names = {"-e", "--enableRegistry"}, description = "是否启动制品库")
+    boolean enableRegistry = false;
+
+    @CommandLine.Option(names = {"-ip", "--registryIp"}, description = "制品ip", required = true)
+    String registryIp;
+
+    @CommandLine.Option(names = {"-port", "--registryPort"}, description = "制品端口", required = true)
+    String registryPort;
+
+    @CommandLine.Option(names = {"-u", "--registryUsername"}, description = "制品用户", required = true)
+    String registryUsername;
+
+    @CommandLine.Option(names = {"-p", "--registryPassword"}, description = "制品密码", required = true)
+    String registryPassword;
     
     @Override
     public String name() {
@@ -52,7 +71,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         }
         String tarPath = String.format("%s/%s", packagePath, tarName);
         String httpRootPath = String.format("%s/tmp/mysql", Constants.INSTALL_PATH);
-
+        CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword, tarName, tarPath);
         if(!executor.exists(tarPath).getExecResult()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + tarPath);
         }
@@ -194,6 +213,5 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         executor.execShell(String.format("mysql -uroot -p'%s' -e \"ALTER USER 'root'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';\"", password, password));
         executor.execShell(String.format("mysql -uroot -p'%s' -e \"FLUSH PRIVILEGES;\"", password));
     }
-
 
 }

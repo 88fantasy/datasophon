@@ -13,7 +13,6 @@ import picocli.CommandLine;
         InitNtpServer.class,
         InitMysql.class,
         InitMysqlAppDb.class,
-        InitRegistry.class,
         InitHostname.class,
         InitHugePage.class,
         InitLibrary.class,
@@ -23,7 +22,11 @@ import picocli.CommandLine;
         InitAllHost.class,
         InitJdk.class,
         InitTar.class,
-        InitBash.class
+        InitBash.class,
+        InitRegistry.class,
+        InitRegistryUpload.class,
+        InitRustfs.class,
+        InitDecode.class
 })
 public class Init implements Runnable {
     

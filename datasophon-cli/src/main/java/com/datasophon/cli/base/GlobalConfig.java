@@ -2,6 +2,8 @@ package com.datasophon.cli.base;
 
 import com.datasophon.common.enums.SSHAuthType;
 import com.datasophon.common.model.Host;
+import com.datasophon.common.model.uni.NexusRegistry;
+import com.datasophon.common.model.uni.Rustfs;
 import lombok.Data;
 
 import java.util.List;
@@ -13,7 +15,9 @@ public class GlobalConfig {
 
     private SSHAuthType sshAuthType;
     
-    private RegistryConfig registry;
+    private NexusRegistry registry;
+
+    private Rustfs rustfs;
     
     private Host nmapServer;
     
@@ -26,19 +30,7 @@ public class GlobalConfig {
     private String logDir;
 
     private String installDataDir;
-    
-    @Data
-    public static class RegistryConfig {
-        
-        private Boolean enable;
-        
-        private String type;
-        
-        private Object config;
-        
-        private Host host;
-    }
-    
+
     @Data
     public static class MysqlConfig {
         

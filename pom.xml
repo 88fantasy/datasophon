@@ -82,6 +82,7 @@
         <snakeyaml.version>1.29</snakeyaml.version>
         <hadoop.version>3.3.6</hadoop.version>
         <jdk15on.version>1.70</jdk15on.version>
+        <zip4j.version>2.11.5</zip4j.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -336,6 +337,11 @@
                         <artifactId>reload4j</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>net.lingala.zip4j</groupId>
+                <artifactId>zip4j</artifactId>
+                <version>${zip4j.version}</version>
             </dependency>
 
             <!-- test -->
