@@ -83,6 +83,7 @@
         <hadoop.version>3.3.6</hadoop.version>
         <jdk15on.version>1.70</jdk15on.version>
         <zip4j.version>2.11.5</zip4j.version>
+        <httpclient.version>4.5.14</httpclient.version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -368,6 +369,16 @@
                 <groupId>org.bouncycastle</groupId>
                 <artifactId>bcprov-jdk15on</artifactId>
                 <version>${jdk15on.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpmime</artifactId>
+                <version>${httpclient.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

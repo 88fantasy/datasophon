@@ -7,6 +7,7 @@ import com.datasophon.cli.base.Executor;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.RepositoriesType;
 import com.datasophon.common.model.uni.request.AptRepository;
+import com.datasophon.common.model.uni.request.Eula;
 import com.datasophon.common.model.uni.request.RawRepository;
 import com.datasophon.common.model.uni.request.YumRepository;
 import com.datasophon.common.utils.ExecResult;
@@ -56,6 +57,8 @@ public class InitRegistry extends InitBase {
 
     @CommandLine.Option(names = {"-r", "--repositories"}, description = "repositories", split = ",", required = true)
     List<String> repositories;
+
+    private String DISCLAIMER = "Use of Sonatype Nexus Repository - Community Edition is governed by the End User License Agreement at https://links.sonatype.com/products/nxrm/ce-eula. By returning the value from ‘accepted:false’ to ‘accepted:true’, you acknowledge that you have read and agree to the End User License Agreement at https://links.sonatype.com/products/nxrm/ce-eula.";
 
     @Override
     public String name() {
@@ -121,6 +124,7 @@ public class InitRegistry extends InitBase {
             } else {
                 log.warn("admin.password[{}] is not exist", passwordPath);
             }
+            systemEula(baseUrl);
             repoCreateByList(baseUrl, repositories);
             log.info("nexus install sucess. path:{}", home);
             return true;
@@ -169,6 +173,24 @@ public class InitRegistry extends InitBase {
                 log.info("修改密码成功");
             } else {
                 log.error("修改密码失败. url:{}, status:{}, body:{}", url, response.getStatus(), response.body());
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean systemEula(String baseUrl) {
+        String url = String.format("%s/service/rest/v1/system/eula", baseUrl);
+        log.info("init eula协议 ,url:{}", url);
+        Eula eula = new Eula();
+        eula.setAccepted(true);
+        eula.setDisclaimer(DISCLAIMER);
+
+        try (HttpResponse response = HttpPost(url, JSONObject.toJSONString(eula))) {
+            if (response.getStatus() == 204) {
+                log.info("eula协议设置成功");
+            } else {
+                log.error("eula协议设置失败. url:{}, response.status:{}, response.body:{}", url, response.getStatus(), response.body());
                 return false;
             }
         }

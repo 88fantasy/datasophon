@@ -12,10 +12,11 @@ global:
       user: admin
       password: u4Gkp19TRcKKlTCLNA1pyA==
       repositories: ["yum","apt","raw"]
+      registryPath: /data
       configTarName: config.tar.gz
       packagesTarName: packages.tar.gz
     host:
-      ip: 192.168.2.146
+      ip: 192.168.2.175
       user: root
       password:
       port: 22
@@ -25,19 +26,19 @@ global:
       x86_64: rustfs-linux-x86_64-musl-1.0.0.tar.gz
       aarch64: rustfs-linux-aarch64-musl-1.0.0.tar.gz
     config:
-      webPort: 9011
-      apiPort: 9010
+      webPort: 9041
+      apiPort: 9040
       user: admin
       password: u4Gkp19TRcKKlTCLNA1pyA==
     host:
       user: root
-      ip: 192.168.2.146
+      ip: 192.168.2.175
       port: 22
       password:
 
   nmapServer:
     user: root
-    ip: 192.168.62.25
+    ip: 192.168.2.146
     port: 22
     password:
 
@@ -84,7 +85,7 @@ global:
         dbName: datart
     host:
       user: root
-      ip: 192.168.2.146
+      ip: 192.168.2.175
       port: 22
       password:
 
@@ -111,15 +112,15 @@ nodes:
     user: root
     password:
     port: 22
-    hostname: hdp20
+    hostname: dd1
     isLocalhost: true
   - ip: 192.168.2.175
     user: root
     password:
     port: 22
-    hostname: hdp21
+    hostname: dd2
   - ip: 192.168.2.160
     user: root
     password:
     port: 22
-    hostname: hdp22
+    hostname: dd3

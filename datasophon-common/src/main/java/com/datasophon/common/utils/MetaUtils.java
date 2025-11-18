@@ -45,21 +45,28 @@ public class MetaUtils {
      */
     private static final List<String> ENCRYPT_FILES = Arrays.asList(
             "**/config/common.properties",
-            "**/config/cluster-sample.yml",
+            "**/config/datasophon-init/cluster-sample.yml",
             "**/config/application.conf",
             "**/config/datasophon.conf",
             "**/meta/**/service_ddl.json"
     );
     private static final Logger log = LoggerFactory.getLogger(MetaUtils.class);
 
+    public static void decodeMatchedFiles(String dir, String cipherKey) throws IOException {
+        commonMatchedFiles(dir, cipherKey, "decode");
+    }
+
+    public static void encodeMatchedFiles(String dir, String cipherKey) throws IOException {
+        commonMatchedFiles(dir, cipherKey, "encode");
+    }
     /**
-     * 对需要解压的文件，进行文件内容解压
+     * 解压与解密方法
      *
      * @param dir
      * @param cipherKey
      * @throws IOException
      */
-    public static void decodeMatchedFiles(String dir, String cipherKey) throws IOException {
+    public static void commonMatchedFiles(String dir, String cipherKey, String type) throws IOException {
         PathMatcher matcher = new PathMatcher(dir, ENCRYPT_FILES);
 //        解密文件内容
         Files.walkFileTree(Paths.get(dir), new SimpleFileVisitor<Path>() {
@@ -68,7 +75,11 @@ public class MetaUtils {
                 try {
                     String relative = PathUtils.unixStyle(PathUtils.relative(path.toString(), dir));
                     if (matcher.isMatch(relative)) {
-                        decodeFile(path.toFile(), cipherKey);
+                        if(type.equals("decode")) {
+                            decodeFile(path.toFile(), cipherKey);
+                        } else {
+                            encodeFile(path.toFile(), cipherKey);
+                        }
                     }
                 } catch (IORuntimeException ex) {
                     if (ex.causeInstanceOf(IOException.class)) {
@@ -115,8 +126,9 @@ public class MetaUtils {
     }
 
     public static void main(String[] args) throws IOException {
-        encodeFile(new File("/Users/liushumin/_tmp/cluster-sample.yml"), "5bWx3KT7vM7pJUjBf9GtSA==");
-        decodeFile(new File("/Users/liushumin/_tmp/cluster-sample.yml"), "5bWx3KT7vM7pJUjBf9GtSA==");
-        decodeMatchedFiles("/Users/liushumin/_tmp/config", "5bWx3KT7vM7pJUjBf9GtSA==");
+        //encodeFile(new File("/Users/liushumin/_tmp/cluster-sample.yml"), "5bWx3KT7vM7pJUjBf9GtSA==");
+        //decodeFile(new File("/Users/liushumin/_tmp/cluster-sample.yml"), "5bWx3KT7vM7pJUjBf9GtSA==");
+        encodeMatchedFiles("/Users/liushumin/_tmp/config", "5bWx3KT7vM7pJUjBf9GtSA==");
+        //decodeMatchedFiles("/Users/liushumin/_tmp/config", "5bWx3KT7vM7pJUjBf9GtSA==");
     }
 }

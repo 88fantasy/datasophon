@@ -1,5 +1,6 @@
 package com.datasophon.cli.init;
 
+import cn.hutool.core.io.FileUtil;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.ExecResult;
@@ -27,6 +28,12 @@ public class InitBinPackage extends InitBase {
 
     @CommandLine.Option(names = {"-pf", "initPathOverwriteForce"}, description = "initPath目录存在是否覆盖")
     boolean initPathOverwriteForce = false;
+
+    @CommandLine.Option(names = {"-e", "--enableRegistry"}, description = "是否启动制品库")
+    boolean enableRegistry = false;
+
+    @CommandLine.Option(names = {"-pp", "--registryPath"}, description = "制品安装包路径", required = true)
+    String registryPath;
     
     @Override
     public String name() {
@@ -43,8 +50,10 @@ public class InitBinPackage extends InitBase {
         }
 
         File installPathF = new File(Constants.INSTALL_PATH);
-        if(!installPathF.exists()) {
+        if(!FileUtil.exist(installDataDir)) {
             ShellUtils.execShell(String.format("mkdir -p %s", installDataDir));
+        }
+        if(!installPathF.exists()) {
             ShellUtils.execShell(String.format("ln -s %s %s", installDataDir, Constants.INSTALL_PATH));
         }
 
@@ -53,6 +62,24 @@ public class InitBinPackage extends InitBase {
             ShellUtils.execShell(String.format("mkdir -p %s/DDP", Constants.INSTALL_PATH));
             ShellUtils.execShell(String.format("ln -s %s/packages %s", initPath, Constants.MASTER_MANAGE_PACKAGE_PATH));
         }
+
+        // 制品库基础包
+        if(enableRegistry) {
+            String registryRawFullDir = String.format("%s/packages/raw", registryPath);
+            String initPackagesFullDir = String.format("%s/packages", initPath);
+            if(!FileUtil.exist(registryRawFullDir)) {
+                throw new CommandLine.ExecutionException(new CommandLine(this), "local dir not found : " + registryRawFullDir);
+            }
+            if(!FileUtil.exist(initPackagesFullDir)) {
+                throw new CommandLine.ExecutionException(new CommandLine(this), "local dir not found : " + initPackagesFullDir);
+            }
+            ShellUtils.execShell(String.format("cp -rf %s/jdk-* %s", registryRawFullDir, initPackagesFullDir));
+            ShellUtils.execShell(String.format("cp -rf %s/nexus-* %s", registryRawFullDir, initPackagesFullDir));
+            ShellUtils.execShell(String.format("cp -rf %s/rustfs-* %s", registryRawFullDir, initPackagesFullDir));
+            // 强制覆盖
+            initPathOverwriteForce = true;
+        }
+
         // 远程datasophon-init
         ExecResult remoteResult = executor.exists(initPath);
         if(remoteResult.getExecResult() && !initPathOverwriteForce){
@@ -73,8 +100,10 @@ public class InitBinPackage extends InitBase {
                 flag = false;
             }
         }
-        if(!executor.exists(Constants.INSTALL_PATH).getExecResult()) {
+        if(!executor.exists(installDataDir).getExecResult()) {
             executor.execShell(String.format("mkdir -p %s", installDataDir));
+        }
+        if(!executor.exists(Constants.INSTALL_PATH).getExecResult()) {
             executor.execShell(String.format("ln -s %s %s", installDataDir, Constants.INSTALL_PATH));
         }
         if(!executor.exists(Constants.MASTER_MANAGE_PACKAGE_PATH).getExecResult()) {

@@ -1,20 +1,19 @@
 package com.datasophon.cli.util;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.RuntimeUtil;
 import com.datasophon.cli.base.CliConstants;
 import com.datasophon.cli.base.ClusterConfig;
 import com.datasophon.cli.base.Executor;
-import com.datasophon.cli.base.GlobalConfig;
 import com.datasophon.common.Constants;
-import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.NexusFileUtils;
 import com.datasophon.common.utils.ShellUtils;
-
 import freemarker.template.Configuration;
 import freemarker.template.Template;
+import lombok.extern.slf4j.Slf4j;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -24,11 +23,6 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import cn.hutool.core.util.RuntimeUtil;
-import lombok.extern.slf4j.Slf4j;
-import org.yaml.snakeyaml.Yaml;
-import picocli.CommandLine;
 
 @Slf4j
 public final class CliUtil {
@@ -84,12 +78,18 @@ public final class CliUtil {
     }
 
     public static void downRegistryFile(Executor executor, boolean enableRegistry, String registryIp, String registryPort, String registryUsername, String registryPassword,
-                                  String sourceName, String distPath) {
+                                  String sourceName, String distPath){
         if(enableRegistry) {
             String url = String.format("http://%s:%s/repository/raw/%s", registryIp, registryPort, sourceName);
             log.info("制品{}下载开始, url:{}", sourceName, url);
-            InputStream inputStream = NexusFileUtils.downStream(url, registryUsername, registryPassword);
-            executor.writeFromStream(inputStream, distPath);
+            InputStream inputStream = null;
+            try {
+                inputStream = NexusFileUtils.downStream(url, registryUsername, registryPassword);
+                executor.writeFromStream(inputStream, distPath);
+                inputStream.close();
+            } catch (Exception e) {
+                throw new RuntimeException("url:"+ url, e);
+            }
             log.info("制品{}下载完成", distPath);
         } else {
             log.info("enableRegistry is {}. skip", enableRegistry);

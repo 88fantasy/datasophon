@@ -4,17 +4,16 @@ import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.NexusFileUtils;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
-
-import java.io.InputStream;
 
 /**
  * 初始化jdk
  */
 @Slf4j
+@Accessors(chain = true)
 @Data
 @CommandLine.Command(name = "jdk", description = "init jdk")
 public class InitJdk extends InitBase {

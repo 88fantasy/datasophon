@@ -17,5 +17,5 @@ if [ ! -d "INIT_LOG_PATH" ]; then
 fi
 
 source /etc/profile
-echo "解密元数据包"
-java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar init configDecode -e -pp /data -cn config.tar.gz -p ${PASSWORD}
+echo "制品包解压解密"
+java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar init registryDecode --enable --datasophonHomePath /data/datasophon --initPath /data/datasophon/datasophon-init -pp /data -cn config.tar.gz -pn packages.tar.gz -p ${PASSWORD}

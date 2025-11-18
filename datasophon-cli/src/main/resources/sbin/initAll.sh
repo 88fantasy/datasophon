@@ -24,9 +24,9 @@ bash ${INIT_BIN_PATH}/init-tar.sh > ${INIT_LOG_PATH}/init-tar.log
 echo "ini jdk"
 bash ${INIT_BIN_PATH}/init-jdk.sh > ${INIT_LOG_PATH}/init-jdk.log
 
-echo "init decode"
-bash ${INIT_BIN_PATH}/init-decode.sh > ${INIT_LOG_PATH}/init-decode.log
+echo "init registryDecode"
+bash ${INIT_BIN_PATH}/init-registryDecode.sh > ${INIT_LOG_PATH}/init-registryDecode.log
 
 source /etc/profile
 echo "ini create cluster"
-java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar create cluster --enableRegistry -p /data/datasophon -a initALL > ${INIT_LOG_PATH}/cli.log
+java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar create cluster --enableRegistry -p /data/datasophon -a initALL > ${INIT_LOG_PATH}/initAll.log

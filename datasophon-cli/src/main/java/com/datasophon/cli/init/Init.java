@@ -26,7 +26,7 @@ import picocli.CommandLine;
         InitRegistry.class,
         InitRegistryUpload.class,
         InitRustfs.class,
-        InitDecode.class
+        InitRegistryDecode.class
 })
 public class Init implements Runnable {
     

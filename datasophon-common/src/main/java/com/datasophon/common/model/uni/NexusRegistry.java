@@ -41,6 +41,8 @@ public class NexusRegistry {
 
         private List<String> repositories;
 
+        private String registryPath;
+
         private String configTarName;
 
         private String packagesTarName;

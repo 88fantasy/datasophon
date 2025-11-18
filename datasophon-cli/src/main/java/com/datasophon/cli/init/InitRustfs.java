@@ -1,9 +1,6 @@
 package com.datasophon.cli.init;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.StrUtil;
 import com.datasophon.cli.base.Executor;
-import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
@@ -11,8 +8,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 
 @Slf4j
 @Accessors(chain = true)
@@ -61,20 +57,20 @@ public class InitRustfs extends InitBase {
             return true;
         }
 
-        if(!FileUtil.exist(installPath)) {
+        if(!executor.exists(installPath).getExecResult()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + installPath);
         }
         String home = String.format("%s/rustfs", installPath);
         String dataPath = String.format("%s/data", home);
         String logsPath = String.format("%s/logs", home);
-        if(FileUtil.exist(home)) {
+        if(executor.exists(home).getExecResult()) {
             log.info("rusfs path exist: {}", home);
         } else {
             String tarPath = String.format("%s/%s", packagePath, x86Tar);
             if (ArchType.AARCH64 == executor.getArch()) {
                 tarPath = String.format("%s/%s", packagePath, aarch64Tar);
             }
-            if (!FileUtil.exist(tarPath)) {
+            if (!executor.exists(tarPath).getExecResult()) {
                 throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + tarPath);
             }
             executor.execShell(String.format("tar xvz -f %s -C %s", tarPath, installPath));
@@ -110,8 +106,11 @@ public class InitRustfs extends InitBase {
     }
 
     public boolean start(Executor executor, String home, String data, String logs) {
-        ExecResult execResult = executor.execShell(String.format("%s/rustfs --address %s:%s --console-enable --console-address %s:%s  --access-key %s --secret-key %s %s > %s/rustfs.log 2>&1 &",
-                home, webHost, apiPort, webHost, webPort, username, password, data, logs));
+        String startCmd = String.format("%s/rustfs --address %s:%s --console-enable --console-address %s:%s  --access-key %s --secret-key %s %s > %s/rustfs.log 2>&1 &",
+                home, webHost, apiPort, webHost, webPort, username, password, data, logs);
+        String startPath = String.format("%s/start.sh", home);
+        executor.writeLines(Collections.singletonList(startCmd), startPath);
+        ExecResult execResult = executor.execShell(String.format("bash %s", startPath));
         return execResult.getExecResult();
     }
 }

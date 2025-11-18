@@ -47,7 +47,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
     @CommandLine.Option(names = {"-u", "--registryUsername"}, description = "制品用户", required = true)
     String registryUsername;
 
-    @CommandLine.Option(names = {"-p", "--registryPassword"}, description = "制品密码", required = true)
+    @CommandLine.Option(names = {"-rp", "--registryPassword"}, description = "制品密码", required = true)
     String registryPassword;
     
     @Override
@@ -78,7 +78,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         if(executor.exists(httpRootPath).getExecResult()) {
             executor.execShell(String.format("rm -rf %s/tmp/mysql", Constants.INSTALL_PATH));
         }
-        executor.createDir(httpRootPath);
+        executor.execShell(String.format("mkdir -p %s", httpRootPath));
         executor.execShell(String.format("tar -xvf %s -C %s", tarPath, httpRootPath));
         if(!executor.exists(httpRootPath).getExecResult()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + httpRootPath);

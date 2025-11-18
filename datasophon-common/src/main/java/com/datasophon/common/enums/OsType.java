@@ -19,7 +19,7 @@ public enum OsType {
 
     UBUNTU_22_04_1_LTS("Ubuntu-22.04.1-LTS"),
 
-    KYLIN_V10("centos-V10"),
+    KYLIN_V10("KylinV10"),
 
     OTHER("other"),
 

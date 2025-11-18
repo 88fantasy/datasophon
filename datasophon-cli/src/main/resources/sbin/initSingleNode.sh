@@ -17,4 +17,4 @@ if [ ! -d "INIT_LOG_PATH" ]; then
 fi
 
 source /etc/profile
-java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar create cluster -p /data/datasophon -a initSingleNode > ${INIT_LOG_PATH}/cliSingle.log
+java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar create cluster -p /data/datasophon -a initSingleNode > ${INIT_LOG_PATH}/initSingleNode.log
