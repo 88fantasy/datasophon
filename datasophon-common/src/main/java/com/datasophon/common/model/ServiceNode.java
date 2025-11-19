@@ -19,6 +19,7 @@ package com.datasophon.common.model;
 
 import java.util.List;
 
+import com.datasophon.common.enums.CommandType;
 import lombok.Data;
 
 @Data
@@ -29,6 +30,8 @@ public class ServiceNode {
     private List<ServiceRoleInfo> elseRoles;
     
     private String commandId;
+
+    private CommandType commandType;
     
     private Integer serviceInstanceId;
     

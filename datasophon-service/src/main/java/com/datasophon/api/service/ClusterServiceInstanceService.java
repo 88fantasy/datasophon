@@ -34,7 +34,11 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface ClusterServiceInstanceService extends IService<ClusterServiceInstanceEntity> {
     
     ClusterServiceInstanceEntity getServiceInstanceByClusterIdAndServiceName(Integer clusterId, String parentName);
-    
+
+
+    List<ClusterServiceInstanceEntity> getServiceInstanceByClusterId(Integer clusterId);
+
+
     String getServiceConfigByClusterIdAndServiceName(Integer id, String node);
     
     List<ClusterServiceInstanceEntity> listAll(Integer clusterId);

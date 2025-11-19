@@ -29,7 +29,10 @@ public enum CommandType {
     STOP_SERVICE(3, "STOP", "停止"),
     RESTART_SERVICE(4, "RESTART", "重启"),
     START_WITH_CONFIG(5, "START_WITH_CONFIG", "更新配置后启动"),
-    RESTART_WITH_CONFIG(6, "RESTART_WITH_CONFIG", "更新配置后重启");
+    RESTART_WITH_CONFIG(6, "RESTART_WITH_CONFIG", "更新配置后重启"),
+    UPGRADE_SERVICE(7, "UPGRADE_SERVICE", "升级"),
+
+    ;
     
     private int value;
     
@@ -74,6 +77,15 @@ public enum CommandType {
         } else {
             return this.desc;
         }
+    }
+
+    public static CommandType ofCode(Integer type) {
+        for (CommandType cmd : values()) {
+            if (cmd.value == type) {
+                return cmd;
+            }
+        }
+        return null;
     }
     
     @Override

@@ -60,7 +60,7 @@ public class ClusterServiceCommandController {
     public Result generateCommand(Integer clusterId, String commandType, String serviceNames) {
         CommandType command = EnumUtil.fromString(CommandType.class, commandType);
         List<String> list = Arrays.asList(serviceNames.split(","));
-        return clusterServiceCommandService.generateCommand(clusterId, command, list);
+        return Result.success(clusterServiceCommandService.generateCommand(clusterId, command, list));
     }
     
     /**

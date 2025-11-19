@@ -17,6 +17,8 @@
 
 package com.datasophon.common.utils;
 
+import com.google.common.io.CharStreams;
+import com.google.common.io.LineProcessor;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tools.tar.TarEntry;
@@ -30,13 +32,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Iterator;
+import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 
-import com.google.common.io.CharStreams;
-import com.google.common.io.LineProcessor;
-
 /**
- *
  * 基本文件的特殊操作，文件MD5，从 targz 压缩包不解压读取一个文本文件，读取一个文件的第一行 等
  *
  * <pre>
@@ -51,15 +52,16 @@ import com.google.common.io.LineProcessor;
  * @author zhenqin
  */
 public class FileUtils {
-    
+
     /**
      * 获取一个文件的md5值(可处理大文件)
+     *
      * @return md5 value
      */
     public static String md5(File file) {
         try (FileInputStream fileInputStream = new FileInputStream(file)) {
             MessageDigest md5 = MessageDigest.getInstance("MD5");
-            
+
             byte[] buffer = new byte[8192];
             int length;
             while ((length = fileInputStream.read(buffer)) != -1) {
@@ -70,9 +72,33 @@ public class FileUtils {
             throw new IllegalStateException(e);
         }
     }
-    
+
+    public static String md5(Iterator<File> iterator, Consumer<Integer> consumer) {
+        MessageDigest md5;
+        try {
+            md5 = MessageDigest.getInstance("MD5");
+            while (iterator.hasNext()) {
+               File file =  iterator.next();
+                try (FileInputStream fileInputStream = new FileInputStream(file)) {
+                    byte[] buffer = new byte[8192];
+                    int length;
+                    while ((length = fileInputStream.read(buffer)) != -1) {
+                        md5.update(buffer, 0, length);
+                        consumer.accept(length);
+                    }
+                }
+            }
+            return new String(Hex.encodeHex(md5.digest()));
+        } catch (NoSuchAlgorithmException | IOException e){
+            throw new IllegalStateException(e);
+        }
+    }
+
+
+
     /**
      * 从 tar.gz 的压缩包内读取一个 文本文件
+     *
      * @param targz
      * @param name
      * @return
@@ -103,25 +129,26 @@ public class FileUtils {
         }
         return content;
     }
-    
+
     /**
      * 读取文件第一行，第一行的非空行
+     *
      * @param file
      * @return
      * @throws Exception
      */
     public static String readFirstLine(File file) throws Exception {
         final String firstLine = CharStreams.readLines(new FileReader(file), new LineProcessor<String>() {
-            
+
             String firstLine = null;
-            
+
             @Override
             public boolean processLine(String line) throws IOException {
                 this.firstLine = line;
                 // 第一行非空则返回
                 return StringUtils.trimToNull(line) == null;
             }
-            
+
             @Override
             public String getResult() {
                 return firstLine;
@@ -129,9 +156,10 @@ public class FileUtils {
         });
         return firstLine;
     }
-    
+
     /**
      * 连接路径
+     *
      * @param paths
      * @return
      */

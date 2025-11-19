@@ -35,12 +35,14 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 import org.springframework.context.annotation.ComponentScan;
 
 import cn.hutool.extra.spring.EnableSpringUtil;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @ServletComponentScan
 @ComponentScan("com.datasophon")
 @MapperScan("com.datasophon.dao")
 @EnableSpringUtil
+@EnableScheduling
 public class DataSophonApplicationServer extends SpringBootServletInitializer {
     
     public static void main(String[] args) {

@@ -18,6 +18,8 @@
 package com.datasophon.api.service.impl;
 
 import com.datasophon.api.enums.Status;
+import com.datasophon.api.exceptions.BusinessException;
+import com.datasophon.api.exceptions.ServiceException;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.DAGBuildActor;
 import com.datasophon.api.service.ClusterInfoService;
@@ -48,6 +50,7 @@ import com.datasophon.dao.mapper.ClusterServiceCommandMapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -111,7 +114,7 @@ public class ClusterServiceCommandServiceImpl
     
     @Override
     @Transactional
-    public Result generateCommand(Integer clusterId, CommandType commandType, List<String> serviceNames) {
+    public String generateCommand(Integer clusterId, CommandType commandType, List<String> serviceNames) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         
         List<ClusterServiceCommandEntity> list = new ArrayList<>();
@@ -137,11 +140,11 @@ public class ClusterServiceCommandServiceImpl
             // 查询服务的服务角色
             FrameServiceEntity frameService =
                     frameServiceService.getServiceByFrameCodeAndServiceName(clusterInfo.getClusterFrame(), serviceName);
-            Result result =
-                    frameServiceRoleService.getServiceRoleList(clusterId, String.valueOf(frameService.getId()), null);
-            List<FrameServiceRoleEntity> serviceRoleList = (List<FrameServiceRoleEntity>) result.getData();
+            List<FrameServiceRoleEntity> serviceRoleList =
+                    frameServiceRoleService.getServiceRoleList(clusterId, Collections.singletonList(frameService.getId()), null);
             HashMap<String, ClusterServiceCommandHostEntity> map = new HashMap<>();
             for (FrameServiceRoleEntity serviceRole : serviceRoleList) {
+//                FIXME 不要同时安装大量的框架，数据量大时，缓存有可能因为LRU已经过期，但是一般不会有问题
                 if (Objects.nonNull(serviceRoleHostMap)
                         && serviceRoleHostMap.containsKey(serviceRole.getServiceRoleName())) {
                     List<String> hosts = serviceRoleHostMap.get(serviceRole.getServiceRoleName());
@@ -170,12 +173,12 @@ public class ClusterServiceCommandServiceImpl
         }
         if (commandHostList.isEmpty()) {
             logger.warn("No service role selected");
-            return Result.error(Status.NO_SERVICE_ROLE_SELECTED.getMsg());
+            throw new ServiceException(Status.NO_SERVICE_ROLE_SELECTED);
         }
         commandService.saveBatch(list);
         commandHostService.saveBatch(commandHostList);
         hostCommandService.saveBatch(hostCommandList);
-        return Result.success(String.join(",", commandIds));
+        return String.join(",", commandIds);
     }
     
     private boolean alreadyExistsServiceRole(String serviceRoleName, String hostname, Integer clusterId) {

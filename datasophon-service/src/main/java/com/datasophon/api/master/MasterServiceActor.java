@@ -19,6 +19,7 @@
 
 package com.datasophon.api.master;
 
+import akka.actor.UntypedActor;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.handler.service.ServiceHandler;
 import com.datasophon.api.master.handler.service.ServiceStopHandler;
@@ -41,280 +42,296 @@ import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.NeedRestart;
 import com.datasophon.dao.enums.ServiceRoleState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Callable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import akka.actor.UntypedActor;
-
+/**
+ * changelog:
+ * 1. 2025/11/19 重构代码
+ */
 public class MasterServiceActor extends UntypedActor {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(MasterServiceActor.class);
-    
+
     @Override
     public void postStop() {
-        
+
         logger.info("{} service actor stopped ", getSelf().path().toString());
     }
-    
+
     @Override
     public void onReceive(Object message) {
+        ExecuteServiceRoleCommand executeServiceRoleCommand = null;
         if (message instanceof ExecuteServiceRoleCommand) {
-            ExecuteServiceRoleCommand executeServiceRoleCommand =
-                    (ExecuteServiceRoleCommand) message;
-            
-            ClusterServiceRoleGroupConfigService roleGroupConfigService =
-                    SpringTool.getApplicationContext()
-                            .getBean(ClusterServiceRoleGroupConfigService.class);
-            ClusterServiceRoleInstanceService roleInstanceService =
-                    SpringTool.getApplicationContext()
-                            .getBean(ClusterServiceRoleInstanceService.class);
-            
-            List<ServiceRoleInfo> serviceRoleInfoList = executeServiceRoleCommand.getMasterRoles();
-            Collections.sort(serviceRoleInfoList);
-            int successNum = 0;
-            for (ServiceRoleInfo serviceRoleInfo : serviceRoleInfoList) {
-                logger.info(
-                        "{} service role size is {}",
-                        serviceRoleInfo.getName(),
-                        serviceRoleInfoList.size());
-                if (CancelCommandMap.exists(serviceRoleInfo.getHostCommandId())) {
-                    continue;
-                }
-                ExecResult execResult = new ExecResult();
-                Integer serviceInstanceId = serviceRoleInfo.getServiceInstanceId();
-                ClusterServiceRoleInstanceEntity serviceRoleInstance =
-                        roleInstanceService.getOneServiceRole(
-                                serviceRoleInfo.getName(),
-                                serviceRoleInfo.getHostname(),
-                                serviceRoleInfo.getClusterId());
-                HashMap<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
-                boolean enableRangerPlugin =
-                        isEnableRangerPlugin(
-                                serviceRoleInfo.getClusterId(), serviceRoleInfo.getParentName());
-                boolean needReConfig = false;
-                if (executeServiceRoleCommand.getCommandType() == CommandType.INSTALL_SERVICE) {
-                    Integer roleGroupId =
-                            (Integer) CacheUtils.get("UseRoleGroup_" + serviceInstanceId);
-                    ClusterServiceRoleGroupConfig config =
-                            roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
-                    ProcessUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
-                } else if (serviceRoleInstance.getNeedRestart() == NeedRestart.YES) {
-                    ClusterServiceRoleGroupConfig config =
-                            roleGroupConfigService.getConfigByRoleGroupId(
-                                    serviceRoleInstance.getRoleGroupId());
-                    ProcessUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
-                    needReConfig = true;
-                }
-                logger.info("enable ranger plugin is {}", enableRangerPlugin);
-                Map<String, String> globalVariables = GlobalVariables.get(serviceRoleInfo.getClusterId());
-                for (Generators generators : configFileMap.keySet()) {
-                    String outputDirectory = generators.getOutputDirectory();
-                    generators.setOutputDirectory(PlaceholderUtils.replacePlaceholders(outputDirectory, globalVariables,
-                            Constants.REGEX_VARIABLE));
-                }
-                serviceRoleInfo.setConfigFileMap(configFileMap);
-                serviceRoleInfo.setEnableRangerPlugin(enableRangerPlugin);
-                switch (executeServiceRoleCommand.getCommandType()) {
-                    case INSTALL_SERVICE:
-                        try {
-                            logger.info(
-                                    "start to install {} in host {}",
-                                    serviceRoleInfo.getName(),
-                                    serviceRoleInfo.getHostname());
-                            
-                            execResult = ProcessUtils.startInstallService(serviceRoleInfo);
-                            if (Objects.nonNull(execResult) && execResult.getExecResult()) {
-                                ProcessUtils.saveServiceInstallInfo(serviceRoleInfo);
-                                successNum += 1;
-                                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())
-                                        && successNum == serviceRoleInfoList.size()) {
-                                    logger.info("all master role has installed");
-                                    ProcessUtils.tellCommandActorResult(
-                                            serviceRoleInfo.getParentName(),
-                                            executeServiceRoleCommand,
-                                            ServiceExecuteState.SUCCESS);
-                                }
-                                logger.info(
-                                        "{} install success in {}",
-                                        serviceRoleInfo.getName(),
-                                        serviceRoleInfo.getHostname());
-                            } else {
-                                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())) {
-                                    logger.info(
-                                            "{} install failed in {}",
-                                            serviceRoleInfo.getName(),
-                                            serviceRoleInfo.getHostname());
-                                    ProcessUtils.tellCommandActorResult(
-                                            serviceRoleInfo.getParentName(),
-                                            executeServiceRoleCommand,
-                                            ServiceExecuteState.ERROR);
-                                }
-                            }
-                            
-                        } catch (Exception e) {
-                            logger.info(
-                                    "{} install failed in {}",
-                                    serviceRoleInfo.getName(),
-                                    serviceRoleInfo.getHostname());
-                            ProcessUtils.tellCommandActorResult(
-                                    serviceRoleInfo.getParentName(),
-                                    executeServiceRoleCommand,
-                                    ServiceExecuteState.ERROR);
-                            logger.error(ProcessUtils.getExceptionMessage(e));
-                        }
-                        break;
-                    case START_SERVICE:
-                        try {
-                            logger.info(
-                                    "start  {} in host {}",
-                                    serviceRoleInfo.getName(),
-                                    serviceRoleInfo.getHostname());
-                            execResult = ProcessUtils.startService(serviceRoleInfo, needReConfig);
-                            if (Objects.nonNull(execResult) && execResult.getExecResult()) {
-                                successNum += 1;
-                                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())
-                                        && successNum == serviceRoleInfoList.size()) {
-                                    logger.info(
-                                            "{} start success", serviceRoleInfo.getParentName());
-                                    ProcessUtils.tellCommandActorResult(
-                                            serviceRoleInfo.getParentName(),
-                                            executeServiceRoleCommand,
-                                            ServiceExecuteState.SUCCESS);
-                                }
-                                // update service role state is running
-                                ProcessUtils.updateServiceRoleState(
-                                        CommandType.START_SERVICE,
-                                        serviceRoleInfo.getName(),
-                                        serviceRoleInfo.getHostname(),
-                                        executeServiceRoleCommand.getClusterId(),
-                                        ServiceRoleState.RUNNING);
-                            } else {
-                                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())) {
-                                    logger.info("{} start failed", serviceRoleInfo.getParentName());
-                                    ProcessUtils.tellCommandActorResult(
-                                            serviceRoleInfo.getParentName(),
-                                            executeServiceRoleCommand,
-                                            ServiceExecuteState.ERROR);
-                                }
-                            }
-                        } catch (Exception e) {
-                            ProcessUtils.tellCommandActorResult(
-                                    serviceRoleInfo.getParentName(),
-                                    executeServiceRoleCommand,
-                                    ServiceExecuteState.ERROR);
-                            logger.error(ProcessUtils.getExceptionMessage(e));
-                        }
-                        break;
-                    case STOP_SERVICE:
-                        try {
-                            logger.info(
-                                    "stop {} in host {}",
-                                    serviceRoleInfo.getName(),
-                                    serviceRoleInfo.getHostname());
-                            ServiceHandler serviceStopHandler = new ServiceStopHandler();
-                            execResult = serviceStopHandler.handlerRequest(serviceRoleInfo);
-                            if (Objects.nonNull(execResult) && execResult.getExecResult()) { // 执行成功
-                                successNum += 1;
-                                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())
-                                        && successNum == serviceRoleInfoList.size()) {
-                                    logger.info("{} stop success", serviceRoleInfo.getParentName());
-                                    ProcessUtils.tellCommandActorResult(
-                                            serviceRoleInfo.getParentName(),
-                                            executeServiceRoleCommand,
-                                            ServiceExecuteState.SUCCESS);
-                                }
-                                // update service role state is stopped
-                                ProcessUtils.updateServiceRoleState(
-                                        CommandType.STOP_SERVICE,
-                                        serviceRoleInfo.getName(),
-                                        serviceRoleInfo.getHostname(),
-                                        executeServiceRoleCommand.getClusterId(),
-                                        ServiceRoleState.STOP);
-                            } else {
-                                
-                                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())) {
-                                    logger.info("{} stop failed", serviceRoleInfo.getParentName());
-                                    ProcessUtils.tellCommandActorResult(
-                                            serviceRoleInfo.getParentName(),
-                                            executeServiceRoleCommand,
-                                            ServiceExecuteState.ERROR);
-                                }
-                            }
-                        } catch (Exception e) {
-                            ProcessUtils.tellCommandActorResult(
-                                    serviceRoleInfo.getParentName(),
-                                    executeServiceRoleCommand,
-                                    ServiceExecuteState.ERROR);
-                            logger.error(ProcessUtils.getExceptionMessage(e));
-                        }
-                        break;
-                    case RESTART_SERVICE:
-                        try {
-                            logger.info(
-                                    "restart {} in host {}",
-                                    serviceRoleInfo.getName(),
-                                    serviceRoleInfo.getHostname());
-                            execResult = ProcessUtils.restartService(serviceRoleInfo, needReConfig);
-                            if (Objects.nonNull(execResult) && execResult.getExecResult()) {
-                                successNum += 1;
-                                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())
-                                        && successNum == serviceRoleInfoList.size()) {
-                                    logger.info(
-                                            "{} restart success", serviceRoleInfo.getParentName());
-                                    ProcessUtils.tellCommandActorResult(
-                                            serviceRoleInfo.getParentName(),
-                                            executeServiceRoleCommand,
-                                            ServiceExecuteState.SUCCESS);
-                                }
-                                // update service role state is running
-                                ProcessUtils.updateServiceRoleState(
-                                        CommandType.RESTART_SERVICE,
-                                        serviceRoleInfo.getName(),
-                                        serviceRoleInfo.getHostname(),
-                                        executeServiceRoleCommand.getClusterId(),
-                                        ServiceRoleState.RUNNING);
-                            } else {
-                                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())) {
-                                    logger.info(
-                                            "{} restart failed", serviceRoleInfo.getParentName());
-                                    ProcessUtils.tellCommandActorResult(
-                                            serviceRoleInfo.getParentName(),
-                                            executeServiceRoleCommand,
-                                            ServiceExecuteState.ERROR);
-                                }
-                            }
-                        } catch (Exception e) {
-                            ProcessUtils.tellCommandActorResult(
-                                    serviceRoleInfo.getParentName(),
-                                    executeServiceRoleCommand,
-                                    ServiceExecuteState.ERROR);
-                            logger.error(ProcessUtils.getExceptionMessage(e));
-                        }
-                        break;
-                    default:
-                        break;
-                }
-                ProcessUtils.handleCommandResult(
-                        serviceRoleInfo.getHostCommandId(),
-                        execResult.getExecResult(),
-                        execResult.getExecOut());
-            }
-        } else {
+            executeServiceRoleCommand = (ExecuteServiceRoleCommand) message;
+        }
+        if (executeServiceRoleCommand == null) {
             unhandled(message);
+            return;
+        }
+
+        ClusterServiceRoleGroupConfigService roleGroupConfigService = SpringTool.getApplicationContext().getBean(ClusterServiceRoleGroupConfigService.class);
+        ClusterServiceRoleInstanceService roleInstanceService = SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
+
+        List<ServiceRoleInfo> masterRoles = executeServiceRoleCommand.getMasterRoles();
+        Collections.sort(masterRoles);
+        ExecContext ctx = new ExecContext(masterRoles.size());
+
+        for (ServiceRoleInfo serviceRoleInfo : masterRoles) {
+            logger.info("{} service role size is {}", serviceRoleInfo.getName(), masterRoles.size());
+            if (CancelCommandMap.exists(serviceRoleInfo.getHostCommandId())) {
+                continue;
+            }
+
+
+            Integer serviceInstanceId = serviceRoleInfo.getServiceInstanceId();
+            ClusterServiceRoleInstanceEntity serviceRoleInstance = roleInstanceService.getOneServiceRole(serviceRoleInfo.getName(),
+                    serviceRoleInfo.getHostname(), serviceRoleInfo.getClusterId());
+            boolean enableRangerPlugin = isEnableRangerPlugin(serviceRoleInfo.getClusterId(), serviceRoleInfo.getParentName());
+            logger.info("enable ranger plugin is {}", enableRangerPlugin);
+
+
+            HashMap<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
+            boolean needReConfig = false;
+            if (executeServiceRoleCommand.getCommandType() == CommandType.INSTALL_SERVICE) {
+                Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + serviceInstanceId);
+                ClusterServiceRoleGroupConfig config = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
+                ProcessUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
+            } else if (serviceRoleInstance.getNeedRestart() == NeedRestart.YES) {
+                ClusterServiceRoleGroupConfig config = roleGroupConfigService.getConfigByRoleGroupId(serviceRoleInstance.getRoleGroupId());
+                ProcessUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
+                needReConfig = true;
+            }
+            Map<String, String> globalVariables = GlobalVariables.get(serviceRoleInfo.getClusterId());
+            for (Generators generators : configFileMap.keySet()) {
+                String outputDirectory = generators.getOutputDirectory();
+                generators.setOutputDirectory(PlaceholderUtils.replacePlaceholders(outputDirectory, globalVariables,
+                        Constants.REGEX_VARIABLE));
+            }
+            serviceRoleInfo.setConfigFileMap(configFileMap);
+            serviceRoleInfo.setEnableRangerPlugin(enableRangerPlugin);
+
+            ExecResult execResult = new ExecResult();
+            switch (executeServiceRoleCommand.getCommandType()) {
+                case INSTALL_SERVICE:
+                    execResult = doInstallService(serviceRoleInfo, executeServiceRoleCommand, ctx);
+                    break;
+                case START_SERVICE:
+                    execResult = doStartService(serviceRoleInfo, executeServiceRoleCommand, ctx, needReConfig);
+                    break;
+                case STOP_SERVICE:
+                    execResult = doStopService(serviceRoleInfo, executeServiceRoleCommand, ctx);
+                    break;
+                case RESTART_SERVICE:
+                    execResult = doRestartService(serviceRoleInfo, executeServiceRoleCommand, ctx, needReConfig);
+                    break;
+                case UPGRADE_SERVICE:
+                    execResult = doUpgradeService(serviceRoleInfo, executeServiceRoleCommand, ctx);
+                    break;
+                default:
+                    break;
+            }
+//            FIXME 按照旧代码的逻辑，execResult可能造成NPE。
+            ProcessUtils.handleCommandResult(serviceRoleInfo.getHostCommandId(), execResult.getExecResult(), execResult.getExecOut());
         }
     }
-    
+
+
     private boolean isEnableRangerPlugin(Integer clusterId, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        return globalVariables.containsKey("${enable" + serviceName + "Plugin}")
-                && "true".equals(globalVariables.get("${enable" + serviceName + "Plugin}"));
+        return "true".equals(globalVariables.get("${enable" + serviceName + "Plugin}"));
     }
-    
+
+
+    /**
+     * 这段代码，是从原来的一坨代码分割处理，后续再优化。后续修改成调用 doServiceAction
+     * @param serviceRoleInfo
+     * @param executeServiceRoleCommand
+     * @param ctx
+     * @return
+     */
+    private ExecResult doInstallService(ServiceRoleInfo serviceRoleInfo, ExecuteServiceRoleCommand executeServiceRoleCommand, ExecContext ctx) {
+        ExecResult execResult = null;
+        try {
+            logger.info("start to install {} in host {}", serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
+
+            execResult = ProcessUtils.startInstallService(serviceRoleInfo);
+            if (Objects.nonNull(execResult) && execResult.getExecResult()) {
+                ProcessUtils.saveServiceInstallInfo(serviceRoleInfo);
+                ctx.successNumInc();
+                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType()) && ctx.isAllSuccess()) {
+                    logger.info("all master role has installed");
+                    ProcessUtils.tellCommandActorResult(serviceRoleInfo.getParentName(), executeServiceRoleCommand, ServiceExecuteState.SUCCESS);
+                }
+                logger.info("{} install success in {}", serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
+            } else {
+                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())) {
+                    logger.info("{} install failed in {}", serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
+                    ProcessUtils.tellCommandActorResult(serviceRoleInfo.getParentName(), executeServiceRoleCommand, ServiceExecuteState.ERROR);
+                }
+            }
+
+        } catch (Exception e) {
+            logger.info("{} install failed in {}", serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
+            ProcessUtils.tellCommandActorResult(serviceRoleInfo.getParentName(), executeServiceRoleCommand, ServiceExecuteState.ERROR);
+            logger.error(ProcessUtils.getExceptionMessage(e));
+        }
+
+        return execResult;
+    }
+
+
+    private ExecResult doStartService(ServiceRoleInfo serviceRoleInfo, ExecuteServiceRoleCommand executeServiceRoleCommand, ExecContext ctx, boolean needReConfig) {
+        ExecResult execResult = null;
+        try {
+            logger.info("start  {} in host {}", serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
+            execResult = ProcessUtils.startService(serviceRoleInfo, needReConfig);
+            if (Objects.nonNull(execResult) && execResult.getExecResult()) {
+                ctx.successNumInc();
+                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType()) && ctx.isAllSuccess()) {
+                    logger.info("{} start success", serviceRoleInfo.getParentName());
+                    ProcessUtils.tellCommandActorResult(serviceRoleInfo.getParentName(), executeServiceRoleCommand, ServiceExecuteState.SUCCESS);
+                }
+                // update service role state is running
+                ProcessUtils.updateServiceRoleState(CommandType.START_SERVICE, serviceRoleInfo.getName(), serviceRoleInfo.getHostname(),
+                        executeServiceRoleCommand.getClusterId(), ServiceRoleState.RUNNING);
+            } else {
+                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())) {
+                    logger.info("{} start failed", serviceRoleInfo.getParentName());
+                    ProcessUtils.tellCommandActorResult(serviceRoleInfo.getParentName(), executeServiceRoleCommand, ServiceExecuteState.ERROR);
+                }
+            }
+        } catch (Exception e) {
+            ProcessUtils.tellCommandActorResult(serviceRoleInfo.getParentName(), executeServiceRoleCommand, ServiceExecuteState.ERROR);
+            logger.error(ProcessUtils.getExceptionMessage(e));
+        }
+        return execResult;
+    }
+
+
+    private ExecResult doStopService(ServiceRoleInfo serviceRoleInfo, ExecuteServiceRoleCommand executeServiceRoleCommand, ExecContext ctx) {
+        ExecResult execResult = null;
+        try {
+            logger.info("stop {} in host {}", serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
+            ServiceHandler serviceStopHandler = new ServiceStopHandler();
+            execResult = serviceStopHandler.handlerRequest(serviceRoleInfo);
+            if (Objects.nonNull(execResult) && execResult.getExecResult()) { // 执行成功
+                ctx.successNumInc();
+                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType()) && ctx.isAllSuccess()) {
+                    logger.info("{} stop success", serviceRoleInfo.getParentName());
+                    ProcessUtils.tellCommandActorResult(serviceRoleInfo.getParentName(), executeServiceRoleCommand, ServiceExecuteState.SUCCESS);
+                }
+                // update service role state is stopped
+                ProcessUtils.updateServiceRoleState(CommandType.STOP_SERVICE, serviceRoleInfo.getName(), serviceRoleInfo.getHostname(),
+                        executeServiceRoleCommand.getClusterId(), ServiceRoleState.STOP);
+            } else {
+                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())) {
+                    logger.info("{} stop failed", serviceRoleInfo.getParentName());
+                    ProcessUtils.tellCommandActorResult(serviceRoleInfo.getParentName(), executeServiceRoleCommand, ServiceExecuteState.ERROR);
+                }
+            }
+        } catch (Exception e) {
+            ProcessUtils.tellCommandActorResult(serviceRoleInfo.getParentName(), executeServiceRoleCommand, ServiceExecuteState.ERROR);
+            logger.error(ProcessUtils.getExceptionMessage(e));
+        }
+        return execResult;
+    }
+
+
+    private ExecResult doRestartService(ServiceRoleInfo serviceRoleInfo, ExecuteServiceRoleCommand executeServiceRoleCommand, ExecContext ctx, boolean needReConfig) {
+        ExecResult execResult = null;
+        try {
+            logger.info("restart {} in host {}", serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
+
+            execResult = ProcessUtils.restartService(serviceRoleInfo, needReConfig);
+            if (Objects.nonNull(execResult) && execResult.getExecResult()) {
+                ctx.successNumInc();
+                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType()) && ctx.isAllSuccess()) {
+                    logger.info("{} restart success", serviceRoleInfo.getParentName());
+                    ProcessUtils.tellCommandActorResult(serviceRoleInfo.getParentName(), executeServiceRoleCommand, ServiceExecuteState.SUCCESS);
+                }
+                // update service role state is running
+                ProcessUtils.updateServiceRoleState(CommandType.RESTART_SERVICE, serviceRoleInfo.getName(), serviceRoleInfo.getHostname(),
+                        executeServiceRoleCommand.getClusterId(), ServiceRoleState.RUNNING);
+            } else {
+                if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())) {
+                    logger.info("{} restart failed", serviceRoleInfo.getParentName());
+                    ProcessUtils.tellCommandActorResult(serviceRoleInfo.getParentName(), executeServiceRoleCommand, ServiceExecuteState.ERROR);
+                }
+            }
+        } catch (Exception e) {
+            ProcessUtils.tellCommandActorResult(serviceRoleInfo.getParentName(), executeServiceRoleCommand, ServiceExecuteState.ERROR);
+            logger.error(ProcessUtils.getExceptionMessage(e));
+        }
+        return execResult;
+    }
+
+    /**
+     * 升级服务
+     *
+     * @return
+     */
+    private ExecResult doUpgradeService(ServiceRoleInfo serviceRoleInfo, ExecuteServiceRoleCommand executeServiceRoleCommand, ExecContext ctx) {
+        return doServiceAction(serviceRoleInfo, executeServiceRoleCommand, ctx, () -> ProcessUtils.upgradeService(serviceRoleInfo));
+    }
+
+
+    private ExecResult doServiceAction(ServiceRoleInfo srvInfo, ExecuteServiceRoleCommand cmd, ExecContext ctx, Callable<ExecResult> callable) {
+        try {
+            logger.info("{} {} in host {}", cmd.getCommandType().getCommandName(Constants.CN), srvInfo.getName(), srvInfo.getHostname());
+            ExecResult execResult = callable.call();
+            if (execResult.isSuccess()) {
+                ctx.successNumInc();
+                if (ServiceRoleType.MASTER.equals(srvInfo.getRoleType()) && ctx.isAllSuccess()) {
+                    logger.info("{} {} success", srvInfo.getParentName(), cmd.getCommandType().getCommandName(Constants.CN));
+                    ProcessUtils.tellCommandActorResult(srvInfo.getParentName(), cmd, ServiceExecuteState.SUCCESS);
+                }
+                // update service role state is running
+                ProcessUtils.updateServiceRoleState(cmd.getCommandType(), srvInfo.getName(), srvInfo.getHostname(),
+                        cmd.getClusterId(), ServiceRoleState.RUNNING);
+            } else {
+                if (ServiceRoleType.MASTER.equals(srvInfo.getRoleType())) {
+                    logger.info("{} {} failed", srvInfo.getParentName(), cmd.getCommandType().getCommandName(Constants.CN));
+                    ProcessUtils.tellCommandActorResult(srvInfo.getParentName(), cmd, ServiceExecuteState.ERROR);
+                }
+            }
+            return execResult;
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+            ProcessUtils.tellCommandActorResult(srvInfo.getParentName(), cmd, ServiceExecuteState.ERROR);
+
+            String error = String.format("%s %s失败, 堆栈信息：%s", srvInfo.getParentName(), cmd.getCommandType().getCommandName(Constants.CN),
+                    ProcessUtils.getExceptionMessage(e));
+            return ExecResult.error(error);
+        }
+    }
+
+
+    private static class ExecContext {
+
+        private final int totalCnt;
+
+        private int successCnt;
+
+
+        public ExecContext(int totalCnt) {
+            successCnt = 0;
+            this.totalCnt = totalCnt;
+        }
+
+        public void successNumInc() {
+            successCnt++;
+        }
+
+        public boolean isAllSuccess() {
+            return totalCnt == successCnt;
+        }
+    }
 }

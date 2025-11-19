@@ -49,80 +49,84 @@ public class SubmitTaskNodeActor extends UntypedActor {
     
     @Override
     public void onReceive(Object message) throws Throwable {
-        
-        if (message instanceof SubmitActiveTaskNodeCommand) {
-            SubmitActiveTaskNodeCommand submitActiveTaskNodeCommand = (SubmitActiveTaskNodeCommand) message;
-            DAGGraph<String, ServiceNode, String> dag = submitActiveTaskNodeCommand.getDag();
-            Map<String, ServiceExecuteState> activeTaskList = submitActiveTaskNodeCommand.getActiveTaskList();
-            Map<String, String> errorTaskList = submitActiveTaskNodeCommand.getErrorTaskList();
-            Map<String, String> readyToSubmitTaskList = submitActiveTaskNodeCommand.getReadyToSubmitTaskList();
-            Map<String, String> completeTaskList = submitActiveTaskNodeCommand.getCompleteTaskList();
-            // dag
-            if (!readyToSubmitTaskList.isEmpty()) {
-                for (String node : readyToSubmitTaskList.keySet()) {
-                    Set<String> previousNodes = dag.getPreviousNodes(node);
-                    for (String previousNode : previousNodes) {
-                        if (errorTaskList.containsKey(previousNode)) {
-                            readyToSubmitTaskList.remove(node);
-                        }
-                        if (!completeTaskList.containsKey(previousNode)) {
-                            readyToSubmitTaskList.remove(node);
-                        }
-                    }
-                    if (activeTaskList.containsKey(node)) {
-                        continue;
-                    }
-                    if (completeTaskList.containsKey(node)) {
-                        continue;
-                    }
-                    ServiceNode serviceNode = dag.getNode(node);
-                    List<ServiceRoleInfo> masterRoles = serviceNode.getMasterRoles();
-                    
-                    activeTaskList.put(node, ServiceExecuteState.RUNNING);
-                    
-                    if (!masterRoles.isEmpty()) {
-                        logger.info("start to submit {} master roles", node);
-                        ActorRef serviceActor = ActorUtils.getLocalActor(MasterServiceActor.class,
-                                submitActiveTaskNodeCommand.getClusterCode() + "-serviceActor-" + node);
-                        ProcessUtils.buildExecuteServiceRoleCommand(
-                                submitActiveTaskNodeCommand.getClusterId(),
-                                submitActiveTaskNodeCommand.getCommandType(),
-                                submitActiveTaskNodeCommand.getClusterCode(),
-                                dag,
-                                activeTaskList,
-                                errorTaskList,
-                                readyToSubmitTaskList,
-                                completeTaskList,
-                                node,
-                                masterRoles,
-                                null,
-                                serviceActor,
-                                ServiceRoleType.MASTER);
-                        
-                    } else if (!serviceNode.getElseRoles().isEmpty()) {
-                        logger.info("{} does not has master roles , start to submit worker or client roles", node);
-                        for (ServiceRoleInfo elseRole : serviceNode.getElseRoles()) {
-                            ActorRef serviceActor = ActorUtils.getLocalActor(WorkerServiceActor.class,
-                                    submitActiveTaskNodeCommand.getClusterCode() + "-serviceActor-" + node + "-"
-                                            + elseRole.getHostname());
-                            ProcessUtils.buildExecuteServiceRoleCommand(
-                                    submitActiveTaskNodeCommand.getClusterId(),
-                                    submitActiveTaskNodeCommand.getCommandType(),
-                                    submitActiveTaskNodeCommand.getClusterCode(),
-                                    dag,
-                                    activeTaskList,
-                                    errorTaskList,
-                                    readyToSubmitTaskList,
-                                    completeTaskList,
-                                    node,
-                                    serviceNode.getElseRoles(),
-                                    elseRole,
-                                    serviceActor,
-                                    ServiceRoleType.WORKER);
-                        }
-                        
-                    }
+        if (!(message instanceof SubmitActiveTaskNodeCommand)) {
+            return;
+        }
+
+
+        SubmitActiveTaskNodeCommand submitActiveTaskNodeCommand = (SubmitActiveTaskNodeCommand) message;
+        Map<String, String> readyToSubmitTaskList = submitActiveTaskNodeCommand.getReadyToSubmitTaskList();
+        if (readyToSubmitTaskList.isEmpty()) {
+            return;
+        }
+
+
+        DAGGraph<String, ServiceNode, String> dag = submitActiveTaskNodeCommand.getDag();
+        Map<String, ServiceExecuteState> activeTaskList = submitActiveTaskNodeCommand.getActiveTaskList();
+        Map<String, String> errorTaskList = submitActiveTaskNodeCommand.getErrorTaskList();
+        Map<String, String> completeTaskList = submitActiveTaskNodeCommand.getCompleteTaskList();
+
+
+        for (String node : readyToSubmitTaskList.keySet()) {
+            Set<String> previousNodes = dag.getPreviousNodes(node);
+            for (String previousNode : previousNodes) {
+                if (errorTaskList.containsKey(previousNode)) {
+                    readyToSubmitTaskList.remove(node);
                 }
+                if (!completeTaskList.containsKey(previousNode)) {
+                    readyToSubmitTaskList.remove(node);
+                }
+            }
+            if (activeTaskList.containsKey(node)) {
+                continue;
+            }
+            if (completeTaskList.containsKey(node)) {
+                continue;
+            }
+
+            activeTaskList.put(node, ServiceExecuteState.RUNNING);
+
+            ServiceNode serviceNode = dag.getNode(node);
+            List<ServiceRoleInfo> masterRoles = serviceNode.getMasterRoles();
+            if (!masterRoles.isEmpty()) {
+                logger.info("start to submit {} master roles", node);
+                ActorRef serviceActor = ActorUtils.getLocalActor(MasterServiceActor.class,
+                        submitActiveTaskNodeCommand.getClusterCode() + "-serviceActor-" + node);
+                ProcessUtils.buildExecuteServiceRoleCommand(
+                        submitActiveTaskNodeCommand.getClusterId(),
+                        serviceNode.getCommandType(),
+                        submitActiveTaskNodeCommand.getClusterCode(),
+                        dag,
+                        activeTaskList,
+                        errorTaskList,
+                        readyToSubmitTaskList,
+                        completeTaskList,
+                        node,
+                        masterRoles,
+                        null,
+                        serviceActor,
+                        ServiceRoleType.MASTER);
+
+            } else if (!serviceNode.getElseRoles().isEmpty()) {
+                logger.info("{} does not has master roles , start to submit worker or client roles", node);
+                for (ServiceRoleInfo elseRole : serviceNode.getElseRoles()) {
+                    ActorRef serviceActor = ActorUtils.getLocalActor(WorkerServiceActor.class, submitActiveTaskNodeCommand.getClusterCode() + "-serviceActor-" + node + "-" + elseRole.getHostname());
+                    ProcessUtils.buildExecuteServiceRoleCommand(
+                            submitActiveTaskNodeCommand.getClusterId(),
+                            serviceNode.getCommandType(),
+                            submitActiveTaskNodeCommand.getClusterCode(),
+                            dag,
+                            activeTaskList,
+                            errorTaskList,
+                            readyToSubmitTaskList,
+                            completeTaskList,
+                            node,
+                            serviceNode.getElseRoles(),
+                            elseRole,
+                            serviceActor,
+                            ServiceRoleType.WORKER);
+                }
+
             }
         }
     }

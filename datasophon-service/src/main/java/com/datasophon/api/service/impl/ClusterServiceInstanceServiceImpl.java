@@ -46,6 +46,7 @@ import com.datasophon.dao.enums.ServiceRoleState;
 import com.datasophon.dao.enums.ServiceState;
 import com.datasophon.dao.mapper.ClusterServiceInstanceMapper;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,7 +111,13 @@ public class ClusterServiceInstanceServiceImpl
                 .eq(Constants.CLUSTER_ID, clusterId)
                 .eq(Constants.SERVICE_NAME, serviceName));
     }
-    
+
+    @Override
+    public List<ClusterServiceInstanceEntity> getServiceInstanceByClusterId(Integer clusterId) {
+        return this.list(new QueryWrapper<ClusterServiceInstanceEntity>()
+                .eq(Constants.CLUSTER_ID, clusterId));
+    }
+
     @Override
     public String getServiceConfigByClusterIdAndServiceName(Integer clusterId, String serviceName) {
         return serviceInstanceMapper.getServiceConfigByClusterIdAndServiceName(clusterId, serviceName);

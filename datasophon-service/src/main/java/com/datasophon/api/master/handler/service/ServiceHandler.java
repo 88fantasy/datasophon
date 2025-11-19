@@ -28,5 +28,17 @@ public abstract class ServiceHandler {
     private ServiceHandler next;
     
     public abstract ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception;
-    
+
+
+    public ServiceHandler thenNext(ServiceHandler next) {
+        this.next = next;
+        return next;
+    }
+    public ExecResult invokeNext(ServiceRoleInfo srvRoleInfo, ExecResult lastResult) throws Exception {
+        boolean canGoOn = lastResult != null && lastResult.isSuccess() && next != null;
+        if (!canGoOn) {
+            return lastResult;
+        }
+        return next.handlerRequest(srvRoleInfo);
+    }
 }

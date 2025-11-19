@@ -153,7 +153,7 @@ public class ProcessUtils {
             serviceInstanceService.save(clusterServiceInstance);
             // save config
             List<ServiceConfig> list = ServiceConfigMap.get(clusterInfo.getClusterCode() + Constants.UNDERLINE
-                    + serviceRoleInfo.getParentName() + Constants.CONFIG);
+                                                            + serviceRoleInfo.getParentName() + Constants.CONFIG);
             String config = JSON.toJSONString(list);
             ClusterServiceInstanceConfigEntity clusterServiceInstanceConfig = new ClusterServiceInstanceConfigEntity();
             clusterServiceInstanceConfig.setClusterId(serviceRoleInfo.getClusterId());
@@ -376,7 +376,7 @@ public class ProcessUtils {
         commandEntity.setCommandId(commandId);
         commandEntity.setClusterId(clusterId);
         commandEntity.setCommandName(commandType.getCommandName(PropertyUtils.getString(Constants.LOCALE_LANGUAGE))
-                + Constants.SPACE + serviceName);
+                                     + Constants.SPACE + serviceName);
         commandEntity.setCommandProgress(0);
         commandEntity.setCommandState(CommandState.RUNNING);
         commandEntity.setCommandType(commandType.getValue());
@@ -413,7 +413,7 @@ public class ProcessUtils {
         hostCommand.setCommandProgress(0);
         hostCommand.setHostname(commandHost.getHostname());
         hostCommand.setCommandName(commandType.getCommandName(PropertyUtils.getString(Constants.LOCALE_LANGUAGE))
-                + Constants.SPACE + serviceRoleName);
+                                   + Constants.SPACE + serviceRoleName);
         hostCommand.setCommandId(commandId);
         hostCommand.setCommandType(commandType.getValue());
         hostCommand.setServiceRoleType(serviceRoleType);
@@ -556,6 +556,27 @@ public class ProcessUtils {
         serviceInstallHandler.setNext(serviceConfigureHandler);
         serviceConfigureHandler.setNext(serviceStartHandler);
         ExecResult execResult = serviceInstallHandler.handlerRequest(serviceRoleInfo);
+        return execResult;
+    }
+
+
+    /**
+     * 升级角色服务，操作链
+     * 1. 停止服务
+     * 2. 安装软件
+     * 3. 生成配置
+     * 4. 启动应用
+     */
+    public static ExecResult upgradeService(ServiceRoleInfo serviceRoleInfo) throws Exception {
+        ServiceHandler handler = new ServiceStopHandler();
+
+        handler
+                .thenNext(new ServiceInstallHandler())
+                .thenNext(new ServiceConfigureHandler())
+                .thenNext(new ServiceStartHandler())
+        ;
+
+        ExecResult execResult = handler.handlerRequest(serviceRoleInfo);
         return execResult;
     }
 
@@ -744,7 +765,7 @@ public class ProcessUtils {
         ClusterServiceInstanceService serviceInstanceService =
                 SpringTool.getApplicationContext().getBean(ClusterServiceInstanceService.class);
 
-        logger.info("alertTargetName:{},clusterId:{},hostname:{}", alertTargetName, roleInstanceEntity.getClusterId(),roleInstanceEntity.getHostname());
+        logger.info("alertTargetName:{},clusterId:{},hostname:{}", alertTargetName, roleInstanceEntity.getClusterId(), roleInstanceEntity.getHostname());
         ClusterAlertHistory clusterAlertHistory = alertHistoryService.getOne(new QueryWrapper<ClusterAlertHistory>()
                 .eq(Objects.nonNull(alertTargetName), Constants.ALERT_TARGET_NAME, alertTargetName)
                 .eq(Objects.nonNull(roleInstanceEntity.getClusterId()), Constants.CLUSTER_ID, roleInstanceEntity.getClusterId())

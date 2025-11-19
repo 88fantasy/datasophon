@@ -23,9 +23,8 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.ServiceException;
 import com.datasophon.api.load.GlobalVariables;
@@ -153,7 +152,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     public static final String PROMETHEUS = "prometheus";
 
     @Override
-    public Result getServiceConfigOption(Integer clusterId, String serviceName) {
+    public List<ServiceConfig> getServiceConfigOption(Integer clusterId, String serviceName) {
         List<ServiceConfig> list = null;
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
 
@@ -181,11 +180,11 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             serviceRoleHandler.getConfig(clusterId, list);
         }
 
-        return Result.success(list);
+        return list;
     }
 
     @Override
-    public Result saveServiceConfig(
+    public void saveServiceConfig(
             Integer clusterId, String serviceName, List<ServiceConfig> list,
             Integer roleGroupId) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
@@ -240,19 +239,14 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             configUpdate = isConfigNeedUpdate(serviceInstanceEntity, list);
             ClusterServiceRoleGroupConfig roleGroupConfig;
             if (Objects.isNull(roleGroupId)) {
-                ClusterServiceInstanceRoleGroup roleGroup =
-                        roleGroupService.getRoleGroupByServiceInstanceId(
-                                serviceInstanceEntity.getId());
+                ClusterServiceInstanceRoleGroup roleGroup = roleGroupService.getRoleGroupByServiceInstanceId(serviceInstanceEntity.getId());
                 roleGroupConfig = groupConfigService.getConfigByRoleGroupId(roleGroup.getId());
             } else {
                 roleGroupConfig = groupConfigService.getConfigByRoleGroupId(roleGroupId);
             }
-            CacheUtils.put(
-                    "UseRoleGroup_" + serviceInstanceEntity.getId(),
-                    roleGroupConfig.getRoleGroupId());
+            CacheUtils.put("UseRoleGroup_" + serviceInstanceEntity.getId(), roleGroupConfig.getRoleGroupId());
             if (configUpdate) {
-                ClusterServiceRoleGroupConfig newRoleGroupConfig =
-                        new ClusterServiceRoleGroupConfig();
+                ClusterServiceRoleGroupConfig newRoleGroupConfig = new ClusterServiceRoleGroupConfig();
                 if (Objects.isNull(roleGroupId)) {
                     ClusterServiceInstanceRoleGroup roleGroup =
                             saveNewRoleGroup(serviceInstanceEntity);
@@ -279,11 +273,10 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             serviceInstanceEntity.setLabel(frameServiceEntity.getLabel());
             serviceInstanceService.updateById(serviceInstanceEntity);
         }
-        return Result.success();
     }
 
     @Override
-    public Result saveServiceRoleHostMapping(Integer clusterId, List<ServiceRoleHostMapping> list) {
+    public void saveServiceRoleHostMapping(Integer clusterId, List<ServiceRoleHostMapping> list) {
 
         checkOnSameNode(clusterId, list);
 
@@ -331,7 +324,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
                         + Constants.UNDERLINE
                         + Constants.SERVICE_ROLE_HOST_MAPPING,
                 map);
-        return Result.success();
     }
 
     @Override
@@ -674,7 +666,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
                 List<ServiceConfig> serviceConfigs =
                         configMap.get(fileJson).toJavaList(ServiceConfig.class);
                 for (ServiceConfig config : serviceConfigs) {
-                    logger.info(config.getName());
                     if (map.containsKey(config.getName())) {
                         ServiceConfig newConfig = map.get(config.getName());
                         config.setValue(map.get(config.getName()).getValue());

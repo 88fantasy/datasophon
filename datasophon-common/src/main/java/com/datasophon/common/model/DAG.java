@@ -18,6 +18,10 @@
 package com.datasophon.common.model;
 
 import com.datasophon.common.utils.CollectionUtils;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -32,9 +36,6 @@ import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * analysis of DAG
  * Node: node
@@ -44,7 +45,8 @@ import org.slf4j.LoggerFactory;
 public class DAG<Node, NodeInfo, EdgeInfo> {
     
     private static final Logger logger = LoggerFactory.getLogger(DAG.class);
-    
+
+
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     
     /**
@@ -73,12 +75,18 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
      *
      * @param node          node
      * @param nodeInfo      node information
+     * @param nodeInfo      node information
      */
-    public void addNode(Node node, NodeInfo nodeInfo) {
+    public boolean addNode(Node node, NodeInfo nodeInfo) {
         lock.writeLock().lock();
         
         try {
-            nodesMap.put(node, nodeInfo);
+            if (nodesMap.containsKey(node)) {
+                return false;
+            } else {
+                nodesMap.put(node, nodeInfo);
+                return true;
+            }
         } finally {
             lock.writeLock().unlock();
         }
@@ -138,6 +146,9 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
         }
         
     }
+
+
+
     
     /**
      * whether this node is contained
@@ -325,9 +336,8 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
     /**
      * Only DAG has a topological sort
      * @return topologically sorted results, returns false if the DAG result is a ring result
-     * @throws Exception errors
      */
-    public List<Node> topologicalSort() throws Exception {
+    public List<Node> topologicalSort() {
         lock.readLock().lock();
         
         try {
@@ -337,7 +347,7 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
                 return entry.getValue();
             }
             
-            throw new Exception("serious error: graph has cycle ! ");
+            throw new IllegalStateException("serious error: graph has cycle ! ");
         } finally {
             lock.readLock().unlock();
         }
@@ -503,5 +513,88 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
         return resultMap;
         
     }
-    
+
+
+    /**
+     * 获取全部节点
+     * @return
+     */
+    public Map<Node, NodeInfo> getNodes() {
+        return new HashMap<>(nodesMap);
+    }
+
+
+    @Data
+    @RequiredArgsConstructor
+    public static class Edge<N,  E> {
+        private final N start;
+        private final N end;
+        private final E edge;
+    }
+
+    /**
+     * 获取全部的边
+     * @return
+     */
+    public List<Edge<Node, EdgeInfo>> getEdges() {
+        List<Edge<Node, EdgeInfo>> edges = new ArrayList<>(getEdgesCount());
+        edgesMap.forEach((start, next)-> {
+            next.forEach((end, ed)-> {
+                edges.add(new Edge<>(start, end, ed));
+            });
+        });
+        return edges;
+    }
+
+    /**
+     * 从有向无环图中，查找start->end的路径
+     * @param start
+     * @param end
+     * @return
+     */
+    public List<Node> findPath(Node start, Node end) {
+        if (!containsNode(start) || !containsNode(end)) {
+            return null;
+        }
+        List<Node> result = new ArrayList<>(getNodesCount());
+        result.add(start);
+        boolean find = backtrace(result, start, end);
+        return find ? result : null;
+    }
+
+
+    /***
+     * 回溯法查找路径
+     * @param ctx
+     * @param current
+     * @param end
+     * @return
+     */
+    private boolean backtrace(List<Node> ctx, Node current, Node end) {
+        if (current.equals(end)) {
+            return true;
+        }
+        Set<Node> nextNodes = getSubsequentNodes(current);
+        for(Node node : nextNodes) {
+            ctx.add(node);
+            boolean find = backtrace(ctx, node, end);
+            if (find) {
+                return true;
+            }
+//            回溯
+            ctx.remove(ctx.size() - 1);
+        }
+
+        return false;
+    }
+
+    public DAG<Node, NodeInfo, EdgeInfo> getReverseDag() {
+        DAG<Node, NodeInfo, EdgeInfo> reverse = new DAG<>();
+        reverse.nodesMap = nodesMap;
+
+        Map<Node, Map<Node, EdgeInfo>> temp = edgesMap;
+        reverse.edgesMap = reverseEdgesMap;
+        reverse.reverseEdgesMap = temp;
+        return reverse;
+    }
 }

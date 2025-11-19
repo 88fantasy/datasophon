@@ -21,6 +21,7 @@ package com.datasophon.api.load;
 
 import static com.datasophon.common.Constants.META_PATH;
 
+import com.alibaba.fastjson.TypeReference;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
@@ -133,7 +134,7 @@ public class LoadServiceMeta implements ApplicationRunner {
         for (File path : ddps) {
             List<File> files = FileUtil.loopFiles(path);
             String frameCode = path.getName();
-            FrameInfoEntity frameInfo = saveClusterFrame(frameCode);
+            FrameInfoEntity frameInfo = frameInfoService.saveClusterFrame(frameCode);
             // analysis file
             for (File file : files) {
                 if (file.getName().endsWith(Constants.JSON)) {
@@ -365,7 +366,13 @@ public class LoadServiceMeta implements ApplicationRunner {
             }
         }
     }
-    
+
+    /**
+     * @deprecated
+     * @see FrameInfoService#saveClusterFrame(String) 
+     * @param frameCode
+     * @return
+     */
     private FrameInfoEntity saveClusterFrame(String frameCode) {
         FrameInfoEntity frameInfo =
                 frameInfoService.getOne(
@@ -485,6 +492,15 @@ public class LoadServiceMeta implements ApplicationRunner {
         arm.setPackageName(decompressPackageName + "-arm.tar.gz");
         arch.put(ArchType.AARCH64.getArch(), arm);
         return arch;
+    }
+
+    public static Map<String, ArchInfo> getArchInfo(FrameServiceEntity srv) {
+        if (StringUtils.isNotEmpty(srv.getArch())) {
+            return JSONObject.parseObject(srv.getArch(), new TypeReference<Map<String, ArchInfo>>() {
+            });
+        } else {
+            return getArchInfo(srv.getPackageName(), srv.getDecompressPackageName());
+        }
     }
 
     public static String extractMysqlHostPort(String jdbcUrl){
