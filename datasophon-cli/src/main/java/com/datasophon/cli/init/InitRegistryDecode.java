@@ -86,7 +86,7 @@ public class InitRegistryDecode extends InitBase {
             if (!FileUtil.exist(packagesTarFullName)) {
                 throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + packagesTarFullName);
             }
-            executor.execShell(String.format("tar xzf %s -C %s", packagesTarFullName, registryPath));
+            executor.execShell(String.format("tar xzvf %s -C %s", packagesTarFullName, registryPath));
             if (!FileUtil.exist(packagesFullDir)) {
                 throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + packagesFullDir);
             }
