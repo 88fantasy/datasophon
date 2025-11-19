@@ -8,10 +8,12 @@ import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import picocli.CommandLine;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Accessors(chain = true)
@@ -19,11 +21,22 @@ import java.util.List;
 @CommandLine.Command(name = "offlineSlave", description = "offlineSlave")
 public class InitOfflineSlave extends InitBase implements InitNodeHandler {
 
+    @CommandLine.Option(names = {"-er", "--enableRegistry"}, description = "是否启动制品库")
+    boolean enableRegistry = false;
     @CommandLine.Option(names = {"-ip", "--serverIp"}, description = "httpd服务ip", required = true)
     String serverIp;
     
     @CommandLine.Option(names = {"-port", "--serverPort"}, description = "httpd服务端口", required = true)
     String serverPort;
+
+    @CommandLine.Option(names = {"-rPath", "--registryPath"}, description = "制品库路径", required = false)
+    String registryPath;
+
+    @CommandLine.Option(names = {"-u", "--registryUsername"}, description = "制品用户", required = false)
+    String registryUsername;
+
+    @CommandLine.Option(names = {"-rp", "--registryPassword"}, description = "制品密码", required = false)
+    String registryPassword;
     
     @Override
     public String name() {
@@ -36,10 +49,11 @@ public class InitOfflineSlave extends InitBase implements InitNodeHandler {
         OsType osType = executor.getOs();
         String repoOsSuffix = String.format("%s/%s/", archType.getArch(), osType.getDesc());
         if(OsType.isUnbuntu(osType)) {
+            if(enableRegistry) {
+                repoOsSuffix = "repository/apt/";
+            }
             executor.execShell("dpkg --configure -a");
-
-            String httpRepoUrl = String.format("http://%s:%s/%s", serverIp, serverPort, repoOsSuffix);
-            InitOfflineServer.aptRepoConfFile(executor, httpRepoUrl);
+            InitOfflineServer.aptRepoConfFile(executor, getUrl(repoOsSuffix));
             executor.execShell("apt clean");
             ExecResult execResult = executor.execShell("apt update");
             if(execResult.getExecResult()) {
@@ -48,8 +62,10 @@ public class InitOfflineSlave extends InitBase implements InitNodeHandler {
                 throw new RuntimeException("init aptConf fail.");
             }
         } else if (OsType.isCentos(osType)) {
-            String httpRepoUrl = String.format("http://%s:%s/%s", serverIp, serverPort, repoOsSuffix);
-            InitOfflineServer.yumRepoConfFile(executor, httpRepoUrl);
+            if(enableRegistry) {
+                repoOsSuffix = String.format("repository/yum/%s/%s/", archType.getArch(), osType.getDesc());
+            }
+            InitOfflineServer.yumRepoConfFile(executor, getUrl(repoOsSuffix));
             executor.execShell("yum clean all");
             ExecResult execResult = executor.execShell("yum makecache");
             if(execResult.getExecResult()) {
@@ -61,5 +77,17 @@ public class InitOfflineSlave extends InitBase implements InitNodeHandler {
             throw new RuntimeException("os不支持,os=" + osType.getDesc());
         }
         return true;
+    }
+
+    private String getUrl(String repoOsSuffix){
+        String url = String.format("http://%s:%s/%s", serverIp, serverPort, repoOsSuffix);
+        if(StringUtils.isNoneBlank(registryUsername, registryPassword)) {
+            try {
+                url = String.format("http://%s:%s@%s:%s/%s", registryUsername, URLEncoder.encode(registryPassword, StandardCharsets.UTF_8.name()), serverIp, serverPort, repoOsSuffix);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return url;
     }
 }

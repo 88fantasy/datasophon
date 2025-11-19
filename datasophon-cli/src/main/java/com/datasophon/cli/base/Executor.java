@@ -4,6 +4,8 @@ import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 
+import java.io.File;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -59,6 +61,14 @@ public interface Executor {
      * @return 文件内容列表
      */
     ExecResult getFileString(String path);
+
+    /**
+     * 写入文件流
+     * @param in
+     * @param path
+     * @return
+     */
+    ExecResult writeFromStream(InputStream in, String path);
     
     /**
      * 写入文件内容

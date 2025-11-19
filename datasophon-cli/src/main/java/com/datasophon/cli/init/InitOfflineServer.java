@@ -2,7 +2,6 @@ package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.handler.InitNodeHandler;
-import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
@@ -19,6 +18,9 @@ import java.util.List;
 @Data
 @CommandLine.Command(name = "offlineServer", description = "offlineServer")
 public class InitOfflineServer extends InitBase implements InitNodeHandler {
+
+    @CommandLine.Option(names = {"-er", "--enableRegistry"}, description = "是否启动制品库")
+    boolean enableRegistry = false;
 
     @CommandLine.Option(names = {"-p", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
@@ -38,6 +40,10 @@ public class InitOfflineServer extends InitBase implements InitNodeHandler {
 
     @Override
     public boolean doRun(Executor executor) {
+        if(enableRegistry) {
+            log.info("enableRegistry:{}. offlineServer is not necessary.", enableRegistry);
+            return true;
+        }
         String httpRootPath = String.format("%s/offline-repos", packagePath);
         ArchType archType = executor.getArch();
         OsType osType = executor.getOs();

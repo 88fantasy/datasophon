@@ -10,8 +10,11 @@ import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.SSHAuthType;
 import com.datasophon.common.model.Host;
+import com.datasophon.common.model.uni.NexusRegistry;
+import com.datasophon.common.model.uni.Rustfs;
 import com.datasophon.common.utils.ShellUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -33,6 +36,9 @@ public class CreateCluster implements Runnable {
 
     @CommandLine.Option(names = {"-f", "--mysqlInstallForce"}, description = "mysql存在是否覆盖安装")
     boolean mysqlInstallForce = false;
+
+    @CommandLine.Option(names = {"-e", "--enableRegistry"}, description = "是否启动制品库")
+    boolean enableRegistry = false;
     
     private String initPath;
     
@@ -97,6 +103,17 @@ public class CreateCluster implements Runnable {
 
         log.info("安装tar");
         initTar(config, nodes);
+
+        if(enableRegistry) {
+            log.info("安装rustfs");
+            initRustfs(config);
+
+            log.info("安装registry");
+            initRegistry(config);
+
+            log.info("安装registryUpload");
+            initRegistryUpload(config, nodes);
+        }
 
         log.info("安装jdk");
         initJdk(config, nodes);
@@ -252,6 +269,8 @@ public class CreateCluster implements Runnable {
         InitBinPackage initBinPackage = new InitBinPackage();
         initBinPackage.setInitPath(initPath);
         initBinPackage.setInitPathOverwriteForce(initPathOverwriteForce);
+        initBinPackage.setEnableRegistry(config.getGlobal().getRegistry().isEnable());
+        initBinPackage.setRegistryPath(config.getGlobal().getRegistry().getConfig().getRegistryPath());
         initBinPackage.setInstallDataDir(config.getGlobal().getInstallDataDir());
         List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
         allNodesExec(workerNodes, initBinPackage);
@@ -272,6 +291,14 @@ public class CreateCluster implements Runnable {
     private void initJdk(ClusterConfig config, List<Host> nodes) {
         InitJdk initJdk = new InitJdk();
         initJdk.setPackagePath(packagesPath);
+        NexusRegistry registry = config.getGlobal().getRegistry();
+        if(registry.isEnable()) {
+            initJdk.setEnableRegistry(registry.isEnable())
+                    .setRegistryIp(registry.getHost().getIp())
+                    .setRegistryPort(registry.getConfig().getWebPort())
+                    .setRegistryUsername(registry.getConfig().getUser())
+                    .setRegistryPassword(registry.getConfig().getPassword());
+        }
         List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
         allNodesExec(workerNodes, initJdk);
     }
@@ -291,6 +318,53 @@ public class CreateCluster implements Runnable {
     private void initSwap(ClusterConfig config, List<Host> nodes) {
         allNodesExec(nodes, new InitSwap());
     }
+
+    private void initRegistry(ClusterConfig config) {
+        NexusRegistry registryConfig = config.getGlobal().getRegistry();
+        InitRegistry initRegistry = new InitRegistry();
+        initRegistry.setEnableRegistry(registryConfig.isEnable())
+                .setType(registryConfig.getType())
+                .setPackagePath(packagesPath)
+                .setRepositories(registryConfig.getConfig().getRepositories())
+                .setInstallPath(config.getGlobal().getInstallDataDir())
+                .setX86Tar(registryConfig.getPackages().getX86_64())
+                .setAarch64Tar(registryConfig.getPackages().getAarch64())
+                .setWebHost(registryConfig.getHost().getIp())
+                .setWebPort(registryConfig.getConfig().getWebPort())
+                .setUsername(registryConfig.getConfig().getUser())
+                .setPassword(registryConfig.getConfig().getPassword());
+        singleNodesExec(registryConfig.getHost(), initRegistry);
+    }
+
+    private void initRegistryUpload(ClusterConfig config, List<Host> nodes) {
+        Host localNode = getLocalNode(nodes);
+        NexusRegistry registryConfig = config.getGlobal().getRegistry();
+        InitRegistryUpload initRegistryUpload = new InitRegistryUpload();
+        initRegistryUpload.setEnableRegistry(registryConfig.isEnable())
+                .setType(registryConfig.getType())
+                .setRegistryPath(registryConfig.getConfig().getRegistryPath())
+                .setWebHost(registryConfig.getHost().getIp())
+                .setWebPort(registryConfig.getConfig().getWebPort())
+                .setUsername(registryConfig.getConfig().getUser())
+                .setPassword(registryConfig.getConfig().getPassword());
+        singleNodesExec(localNode, initRegistryUpload);
+    }
+
+    private void initRustfs(ClusterConfig config) {
+        Rustfs rustfs = config.getGlobal().getRustfs();
+        InitRustfs initRustfs = new InitRustfs();
+        initRustfs.setEnable(rustfs.isEnable())
+            .setPackagePath(packagesPath)
+            .setInstallPath(config.getGlobal().getInstallDataDir())
+            .setX86Tar(rustfs.getPackages().getX86_64())
+            .setAarch64Tar(rustfs.getPackages().getAarch64())
+            .setWebHost(rustfs.getHost().getIp())
+            .setWebPort(rustfs.getConfig().getWebPort())
+            .setApiPort(rustfs.getConfig().getApiPort())
+            .setUsername(rustfs.getConfig().getUser())
+            .setPassword(rustfs.getConfig().getPassword());
+        singleNodesExec(rustfs.getHost(), initRustfs);
+    }
     
     private void initOfflineServer(ClusterConfig config) {
         GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
@@ -298,16 +372,27 @@ public class CreateCluster implements Runnable {
         initYumServer.setConfigFilePath(initConfigYamlPath);
         initYumServer.setPackagePath(packagesPath)
                 .setServerIp(yumServer.getHost().getIp())
-                .setServerPort(yumServer.getListenPort());
+                .setServerPort(yumServer.getListenPort())
+                .setEnableRegistry(config.getGlobal().getRegistry().isEnable());
         singleNodesExec(yumServer.getHost(), initYumServer);
     }
     
     private void initOfflineNodes(ClusterConfig config, List<Host> nodes) {
         GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
+        NexusRegistry registryConfig = config.getGlobal().getRegistry();
         InitOfflineSlave initYumConf = new InitOfflineSlave();
         initYumConf.setConfigFilePath(initConfigYamlPath);
         initYumConf.setServerIp(yumServer.getHost().getIp())
                 .setServerPort(yumServer.getListenPort());
+        NexusRegistry registry = config.getGlobal().getRegistry();
+        if(registry.isEnable()) {
+            initYumConf.setEnableRegistry(registry.isEnable())
+                    .setServerIp(registry.getHost().getIp())
+                    .setServerPort(registry.getConfig().getWebPort())
+                    .setRegistryUsername(registry.getConfig().getUser())
+                    .setRegistryPassword(registry.getConfig().getPassword())
+                    .setRegistryPath(registry.getConfig().getRegistryPath());
+        }
         allNodesExec(nodes, initYumConf);
     }
     
@@ -362,6 +447,14 @@ public class CreateCluster implements Runnable {
                 .setForce(mysqlInstallForce)
                 .setPackagePath(packagesPath)
                 .setTarName(mysqlConfig.getTarName());
+        NexusRegistry registry = config.getGlobal().getRegistry();
+        if(registry.isEnable()) {
+            initMysql.setEnableRegistry(registry.isEnable())
+                    .setRegistryIp(registry.getHost().getIp())
+                    .setRegistryPort(registry.getConfig().getWebPort())
+                    .setRegistryUsername(registry.getConfig().getUser())
+                    .setRegistryPassword(registry.getConfig().getPassword());
+        }
         singleNodesExec(mysqlConfig.getHost(), initMysql);
     }
     
@@ -380,5 +473,18 @@ public class CreateCluster implements Runnable {
     
     private void initHugePage(ClusterConfig config, List<Host> nodes) {
         allNodesExec(nodes, new InitHugePage());
+    }
+
+    /**
+     * 获取localhost, 默认第一个节点
+     * @return
+     */
+    private Host getLocalNode(List<Host> nodes) {
+        Host localNode = nodes.get(0);
+        List<Host> localNodes = nodes.stream().filter(Host::getIsLocalhost).collect(Collectors.toList());
+        if(CollectionUtils.isNotEmpty(localNodes)) {
+            localNode = localNodes.get(0);
+        }
+        return localNode;
     }
 }
