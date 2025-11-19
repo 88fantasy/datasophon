@@ -29,10 +29,10 @@ import java.util.List;
 public interface ServiceInstallService {
 
     List<ServiceConfig> getServiceConfigOption(Integer clusterId, String serviceName);
-    
 
-    
-    Result saveServiceConfig(Integer clusterId, String serviceName, List<ServiceConfig> configJson,
+
+
+    void saveServiceConfig(Integer clusterId, String serviceName, List<ServiceConfig> configJson,
                              Integer roleGroupId);
 
     void saveServiceRoleHostMapping(Integer clusterId, List<ServiceRoleHostMapping> list);

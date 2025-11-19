@@ -17,6 +17,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.introspector.PropertyUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -118,6 +120,7 @@ public class MetaUtils {
         String plainText = SmUtil.sm4(Base64.decode(cipherKey)).decryptStr(Base64.decode(cipherText), StandardCharsets.UTF_8);
         log.info("decode file: {}", file.getName());
         return plainText;
+
 //        return cipherText;
     }
 
@@ -251,6 +254,11 @@ public class MetaUtils {
 
 
     public static DeploymentModel parseDeploymentFile(String content) {
-        return new Yaml().loadAs(content, DeploymentModel.class);
+        Constructor constructor = new Constructor(DeploymentModel.class);
+        PropertyUtils propertyUtils = new PropertyUtils();
+        propertyUtils.setSkipMissingProperties(true);
+        constructor.setPropertyUtils(propertyUtils);
+        return new Yaml(constructor).loadAs(content, DeploymentModel.class);
     }
+
 }

@@ -1,5 +1,6 @@
 package com.datasophon.api.vo.extrepo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -37,6 +38,7 @@ public class ImportCompProgressVO {
         this.progressId = progressId;
         total = 0;
         step = 0;
+        createTime = LocalDateTime.now();
     }
 
 
@@ -52,8 +54,9 @@ public class ImportCompProgressVO {
     }
 
 
+    @JsonIgnore
     public boolean isTimeout() {
 //        已经到了过期时间或者距离创建时间已经过期了1天(不可一天都还没有处理完）
-        return expire != null && LocalDateTime.now().isAfter(expire) || LocalDateTime.now().plusDays(1).isAfter(createTime);
+        return (expire != null && LocalDateTime.now().isAfter(expire)) || LocalDateTime.now().plusDays(1).isAfter(createTime);
     }
 }

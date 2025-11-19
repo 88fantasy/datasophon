@@ -31,7 +31,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SubmitActiveTaskNodeCommand implements Serializable {
     
     private static final long serialVersionUID = 3733897759707096649L;
-    
+
+
+    /**
+     * @deprecated 不再使用，由serviceNode传递
+     * @see ServiceNode#setCommandType(CommandType)
+     */
+    @Deprecated
     private CommandType commandType;
     private Integer clusterId;
     private String clusterCode;

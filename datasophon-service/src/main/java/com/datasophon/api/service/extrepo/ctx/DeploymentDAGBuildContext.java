@@ -106,7 +106,7 @@ public class DeploymentDAGBuildContext {
         for (int i = 0; i < serviceList.size(); i++) {
             DeploySrvModel srv = serviceList.get(i);
             DeploymentDAG.SrvNodeVO node = BeanUtil.toBean(srv, DeploymentDAG.SrvNodeVO.class);
-            node.setId(i++);
+            node.setId(i);
             node.setState(0);
             dag.addNode(srv.getName(), node);
         }
@@ -182,7 +182,11 @@ public class DeploymentDAGBuildContext {
             DeploySrvModel start = serviceList.get(i);
             Set<String> dependencies = getDependencies(start.getName());
 
-            for (int j = i + 1; j < serviceList.size(); j++) {
+            for (int j = 0; j < serviceList.size(); j++) {
+//                不能自依赖
+                if (i == j) {
+                    continue;
+                }
                 DeploySrvModel end = serviceList.get(j);
                 if (dependencies.contains(end.getName())) {
                     List<String> path = dag.findPath(end.getName(), start.getName());
@@ -198,7 +202,7 @@ public class DeploymentDAGBuildContext {
         }
     }
 
-    private Set<String> getDependencies(String srv) {
+    public Set<String> getDependencies(String srv) {
         Set<String> visited = new HashSet<>();
         doAddDependencies(visited, srv);
         return visited;

@@ -144,6 +144,7 @@ public class ClusterServiceCommandServiceImpl
                     frameServiceRoleService.getServiceRoleList(clusterId, Collections.singletonList(frameService.getId()), null);
             HashMap<String, ClusterServiceCommandHostEntity> map = new HashMap<>();
             for (FrameServiceRoleEntity serviceRole : serviceRoleList) {
+//                FIXME 不要同时安装大量的框架，数据量大时，缓存有可能因为LRU已经过期，但是一般不会有问题
                 if (Objects.nonNull(serviceRoleHostMap)
                         && serviceRoleHostMap.containsKey(serviceRole.getServiceRoleName())) {
                     List<String> hosts = serviceRoleHostMap.get(serviceRole.getServiceRoleName());

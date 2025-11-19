@@ -25,6 +25,7 @@ import cn.hutool.core.io.StreamProgress;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ServiceLoaderUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
@@ -89,13 +90,14 @@ public class InstallServiceHandler {
             String decompressPackageName = command.getDecompressPackageName();
             Boolean createDecompressDir = command.getCreateDecompressDir();
 
-            Boolean needDownLoad = !Objects.equals(PropertyUtils.getString(Constants.MASTER_HOST), CacheUtils.get(Constants.HOSTNAME)) && isNeedDownloadPkg(packagePath, command.getPackageMd5());
+            boolean installPkgChange = isFileContentChange(packagePath, command.getPackageMd5());
+            Boolean needDownLoad = !Objects.equals(PropertyUtils.getString(Constants.MASTER_HOST), CacheUtils.get(Constants.HOSTNAME)) && installPkgChange;
 
             if (Boolean.TRUE.equals(needDownLoad)) {
                 downloadPkg(packageName, packagePath);
             }
 
-            boolean result = decompressPkg(packageName, decompressPackageName, createDecompressDir, destDir);
+            boolean result = decompressPkg(packageName, decompressPackageName, createDecompressDir, destDir, installPkgChange);
             if (result) {
                 if (Objects.nonNull(command.getRunAs())) {
                     ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getUser() + ":" + command.getRunAs().getGroup() + " " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
@@ -138,7 +140,7 @@ public class InstallServiceHandler {
         return execResult;
     }
 
-    private Boolean isNeedDownloadPkg(String packagePath, String packageMd5) {
+    private Boolean isFileContentChange(String packagePath, String packageMd5) {
         boolean needDownLoad = true;
         logger.info("Remote package md5 is {}", packageMd5);
         if (FileUtil.exist(packagePath)) {
@@ -181,11 +183,13 @@ public class InstallServiceHandler {
         logger.info("download package {} success", packageName);
     }
 
-    private boolean decompressPkg(String packageName, String decompressPackageName, Boolean createDecompressDir, String destDir) {
+    private boolean decompressPkg(String packageName, String decompressPackageName, Boolean createDecompressDir, String destDir, boolean installPkgChange) {
         boolean decompressResult = true;
         boolean needParentDir = BooleanUtil.isTrue(createDecompressDir);
         // ~/ 开头的包，解压到当前目录下
-        if (!FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName)) {
+
+        boolean fileExist = FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+        if (!fileExist || installPkgChange) {
             String sourceFile = destDir + packageName;
             logger.info("Start to decompress {}", sourceFile);
             String suffix = FileUtil.getSuffix(sourceFile);
@@ -205,12 +209,21 @@ public class InstallServiceHandler {
                     command.add(sourceFile);
                     command.add("-C");
                     command.add(decompressDir);
+
+                    if (installPkgChange) {
+                        command.add("--overwrite");
+                    }
                 } else if ("zip".equals(suffix)) {
                     command.add("unzip");
+                    if (installPkgChange) {
+                        command.add("-o");
+                    }
                     command.add("-d");
                     command.add(decompressDir);
                     command.add(sourceFile);
                 }
+
+                log.info("exec decompress cmd :{}", StrUtil.join(" ", command));
                 ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
                 success = execResult.getExecResult();
                 if (success) {

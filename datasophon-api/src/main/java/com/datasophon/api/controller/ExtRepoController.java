@@ -2,10 +2,13 @@ package com.datasophon.api.controller;
 
 import com.datasophon.api.dto.IntegerIdDTO;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
+import com.datasophon.api.dto.extrepo.DeploymentProgressDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
+import com.datasophon.api.service.extrepo.ExtRepoInstallService;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
+import com.datasophon.api.vo.extrepo.InstallProgressDAG;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.utils.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * @author zhanghuangbin
  * @date 2025/11/5
@@ -33,6 +38,9 @@ public class ExtRepoController {
     @Autowired
     private ExtRepoMetaService extRepoMetaService;
 
+
+    @Autowired
+    private ExtRepoInstallService extRepoInstallService;
 
     @PostMapping("/validMetaFile")
     @Operation(summary = "校验meta文件是否正确")
@@ -70,5 +78,22 @@ public class ExtRepoController {
     public Result buildDeploymentDAG(@RequestBody @Validated DeploymentDTO dto) {
         return Result.success(extRepoMetaService.buildDeploymentDAG(dto));
     }
+
+
+    @PostMapping("/deploy")
+    @Operation(summary = "部署应用")
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = List.class))})
+    public Result deploy(@RequestBody @Validated DeploymentDTO dto) {
+        return Result.success(extRepoInstallService.deploy(dto));
+    }
+
+
+   @PostMapping("/getDeployProgressDAG")
+    @Operation(summary = "获取部署进度DAG")
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = InstallProgressDAG.class))})
+    public Result getDeployProgressDAG(@RequestBody @Validated DeploymentProgressDTO dto) {
+        return Result.success(extRepoInstallService.getDeployProgressDAG(dto.getClusterId(), dto.getCmdIds()));
+    }
+
 
 }

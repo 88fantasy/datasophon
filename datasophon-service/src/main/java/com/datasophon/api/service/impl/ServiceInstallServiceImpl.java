@@ -23,9 +23,8 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-
 import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.ServiceException;
 import com.datasophon.api.load.GlobalVariables;
@@ -185,7 +184,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     }
 
     @Override
-    public Result saveServiceConfig(
+    public void saveServiceConfig(
             Integer clusterId, String serviceName, List<ServiceConfig> list,
             Integer roleGroupId) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
@@ -274,7 +273,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             serviceInstanceEntity.setLabel(frameServiceEntity.getLabel());
             serviceInstanceService.updateById(serviceInstanceEntity);
         }
-        return Result.success();
     }
 
     @Override
@@ -668,7 +666,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
                 List<ServiceConfig> serviceConfigs =
                         configMap.get(fileJson).toJavaList(ServiceConfig.class);
                 for (ServiceConfig config : serviceConfigs) {
-                    logger.info(config.getName());
                     if (map.containsKey(config.getName())) {
                         ServiceConfig newConfig = map.get(config.getName());
                         config.setValue(map.get(config.getName()).getValue());

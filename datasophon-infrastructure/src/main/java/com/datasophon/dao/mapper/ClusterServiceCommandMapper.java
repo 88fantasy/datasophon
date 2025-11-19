@@ -17,11 +17,9 @@
 
 package com.datasophon.dao.mapper;
 
-import com.datasophon.dao.entity.ClusterServiceCommandEntity;
-
-import org.apache.ibatis.annotations.Mapper;
-
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.datasophon.dao.entity.ClusterServiceCommandEntity;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
  * 集群服务操作指令表
@@ -32,5 +30,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 @Mapper
 public interface ClusterServiceCommandMapper extends BaseMapper<ClusterServiceCommandEntity> {
-    
+
+
 }

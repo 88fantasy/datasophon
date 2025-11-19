@@ -58,8 +58,8 @@ public class ServiceInstallController {
     public Result saveServiceConfig(Integer clusterId, String serviceName, String serviceConfig, Integer roleGroupId) {
         JSONArray jsonArray = JSONArray.parseArray(serviceConfig);
         List<ServiceConfig> list = jsonArray.toJavaList(ServiceConfig.class);
-        return serviceInstallService.saveServiceConfig(clusterId, serviceName, list, roleGroupId);
-        
+        serviceInstallService.saveServiceConfig(clusterId, serviceName, list, roleGroupId);
+        return Result.success();
     }
     
     /**

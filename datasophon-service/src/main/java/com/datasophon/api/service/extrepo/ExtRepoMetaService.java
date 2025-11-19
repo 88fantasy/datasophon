@@ -29,6 +29,6 @@ public interface ExtRepoMetaService {
 
     DeploymentDAG buildDeploymentDAG(DeploymentDTO dto);
 
-    List<String> deploy(DeploymentDTO dto);
+
 
 }
