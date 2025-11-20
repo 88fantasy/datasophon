@@ -9,7 +9,13 @@ import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.api.service.UniEngineService;
 import com.datasophon.common.Constants;
-import com.datasophon.common.model.uni.*;
+import com.datasophon.common.model.uni.DorisDatasource;
+import com.datasophon.common.model.uni.EngineInfo;
+import com.datasophon.common.model.uni.HiveDatasource;
+import com.datasophon.common.model.uni.KafkaDatasource;
+import com.datasophon.common.model.uni.MysqlDatasource;
+import com.datasophon.common.model.uni.PaimonDatasource;
+import com.datasophon.common.utils.LazyTask;
 import com.datasophon.common.utils.PasswordSupport;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.Result;
@@ -23,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,23 +50,27 @@ public class UniEngineServiceImpl implements UniEngineService {
 
     private JSONObject clusterSampleConfig;
 
-    @PostConstruct
-    private void init() {
+    private final LazyTask loadCfgTask = LazyTask.of(() -> {
         String initPath = PropertyUtils.getString("INIT_HOME");
         String clusterSamplePath = String.format("%s/config/cluster-sample.yml", initPath);
-        if(!FileUtil.exist(clusterSamplePath)) {
+        if (!FileUtil.exist(clusterSamplePath)) {
             throw new RuntimeException("clusterSamplePath is not exist. Please set INIT_HOME in common.properties");
         }
         this.clusterSampleConfig = YamlUtil.loadByPath(clusterSamplePath, JSONObject.class);
         logger.info("{} load success.", clusterSamplePath);
+    });
+
+    private void init() {
+        loadCfgTask.exec();
     }
 
     @Override
     public Result getEngineInfo() {
+        init();
 
         Result result = clusterInfoService.getClusterList();
         List<ClusterInfoEntity> clusterList = (List<ClusterInfoEntity>) result.getData();
-        if(CollectionUtils.isEmpty(clusterList)) {
+        if (CollectionUtils.isEmpty(clusterList)) {
             return Result.error("vos集群列表为空");
         }
         Integer clusterId = clusterList.get(0).getId();
@@ -94,7 +103,7 @@ public class UniEngineServiceImpl implements UniEngineService {
         List<ClusterServiceRoleInstanceEntity> ustreamServers = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(
                 clusterId, "UstreamServer");
         if (CollectionUtils.isNotEmpty(ustreamServers)) {
-            Map<String, String>  ustreamVars = getClusterVarsMap(clusterId, "USTREAM");
+            Map<String, String> ustreamVars = getClusterVarsMap(clusterId, "USTREAM");
             engineInfo.setRealTimeSchedulerAddress(String.format("http://%s:%s", ustreamServers.get(0).getHostname(), "9112"));
             engineInfo.setRealTimeSchedulerUserName(ustreamVars.getOrDefault("${loginUsername}", "admin"));
             engineInfo.setRealTimeSchedulerUserPassword(ustreamVars.get("${loginPassword}"));
@@ -135,7 +144,7 @@ public class UniEngineServiceImpl implements UniEngineService {
     public HiveDatasource getHiveDatasource(Integer clusterId) {
         List<ClusterServiceRoleInstanceEntity> hiveServer2s = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(
                 clusterId, "HiveServer2");
-        if(CollectionUtils.isNotEmpty(hiveServer2s)) {
+        if (CollectionUtils.isNotEmpty(hiveServer2s)) {
             HiveDatasource hiveDatasource = new HiveDatasource();
             Map<String, String> hdfsVars = getClusterVarsMap(clusterId, "HDFS");
             Map<String, String> hiveVars = getClusterVarsMap(clusterId, "HIVE");
@@ -163,7 +172,7 @@ public class UniEngineServiceImpl implements UniEngineService {
         List<ClusterServiceRoleInstanceEntity> sparkThriftServers = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(
                 clusterId, "SparkThriftServer");
 
-        if(CollectionUtils.isNotEmpty(sparkThriftServers)) {
+        if (CollectionUtils.isNotEmpty(sparkThriftServers)) {
             PaimonDatasource paimonDatasource = new PaimonDatasource();
             Map<String, String> hdfsVars = getClusterVarsMap(clusterId, "HDFS");
             Map<String, String> hiveVars = getClusterVarsMap(clusterId, "HIVE");
@@ -189,7 +198,7 @@ public class UniEngineServiceImpl implements UniEngineService {
     }
 
     private String getHadoopConfig(Map<String, String> hdfsVars, String haNodes, String dfsNameservices) {
-        if(StringUtils.isBlank(haNodes)) {
+        if (StringUtils.isBlank(haNodes)) {
             return "";
         }
         String nn1 = haNodes.split(Constants.COMMA)[0];
@@ -197,7 +206,7 @@ public class UniEngineServiceImpl implements UniEngineService {
         JSONObject hadoopConfigJson = new JSONObject();
         hadoopConfigJson.put("dfs.nameservices", dfsNameservices);
         hadoopConfigJson.put(String.format("dfs.ha.namenodes.%s", dfsNameservices), haNodes);
-        hadoopConfigJson.put(String.format("dfs.namenode.rpc-address.%s.%s", dfsNameservices, nn1), hdfsVars.getOrDefault(String.format("${dfs.namenode.rpc-address.${dfs.nameservices}.%s}", nn1),""));
+        hadoopConfigJson.put(String.format("dfs.namenode.rpc-address.%s.%s", dfsNameservices, nn1), hdfsVars.getOrDefault(String.format("${dfs.namenode.rpc-address.${dfs.nameservices}.%s}", nn1), ""));
         hadoopConfigJson.put(String.format("dfs.namenode.rpc-address.%s.%s", dfsNameservices, nn2), hdfsVars.getOrDefault(String.format("${dfs.namenode.rpc-address.${dfs.nameservices}.%s}", nn2), ""));
         hadoopConfigJson.put(String.format("dfs.client.failover.proxy.provider.%s", dfsNameservices), hdfsVars.getOrDefault("${dfs.client.failover.proxy.provider.${dfs.nameservices}}", ""));
         return hadoopConfigJson.toJSONString();
@@ -210,18 +219,18 @@ public class UniEngineServiceImpl implements UniEngineService {
         List<ClusterServiceRoleInstanceEntity> dorisBEs = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(
                 clusterId, "DorisBE");
 
-        if(CollectionUtils.isNotEmpty(dorisFEs) && CollectionUtils.isNotEmpty(dorisBEs)) {
+        if (CollectionUtils.isNotEmpty(dorisFEs) && CollectionUtils.isNotEmpty(dorisBEs)) {
             Map<String, String> dorisVars = getClusterVarsMap(clusterId, "DORIS");
             DorisDatasource dorisDatasource = new DorisDatasource();
             dorisDatasource.setHost(dorisFEs.get(0).getHostname());
-            dorisDatasource.setPort(dorisVars.getOrDefault("${query_port}","9030"));
-            dorisDatasource.setWebPort(dorisVars.getOrDefault("${http_port}","8030"));
+            dorisDatasource.setPort(dorisVars.getOrDefault("${query_port}", "9030"));
+            dorisDatasource.setWebPort(dorisVars.getOrDefault("${http_port}", "8030"));
             dorisDatasource.setUserName("root");
-            dorisDatasource.setPassword(dorisVars.getOrDefault("${root_password}",""));
+            dorisDatasource.setPassword(dorisVars.getOrDefault("${root_password}", ""));
 
             String webserverPort = dorisVars.getOrDefault("${webserver_port}", "8040");
             List<String> beHostPorts = dorisBEs.stream().map(x -> String.format("%s:%s", x.getHostname(), webserverPort)).collect(Collectors.toList());
-                dorisDatasource.setBeHostPorts(beHostPorts);
+            dorisDatasource.setBeHostPorts(beHostPorts);
             dorisDatasource.setBeHostPorts(beHostPorts);
             logger.info("doris get info success");
 
@@ -235,7 +244,7 @@ public class UniEngineServiceImpl implements UniEngineService {
     public KafkaDatasource getKafkaDatasource(Integer clusterId) {
         List<ClusterServiceRoleInstanceEntity> kafkas = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(
                 clusterId, "KafkaBroker");
-        if(CollectionUtils.isNotEmpty(kafkas)) {
+        if (CollectionUtils.isNotEmpty(kafkas)) {
             KafkaDatasource kafkaDatasource = new KafkaDatasource();
             String bootstrapServers = kafkas.stream().map(x -> String.format("%s:%s", x.getHostname(), "9092")).collect(Collectors.joining(Constants.COMMA));
             kafkaDatasource.setBootstrapServers(bootstrapServers);
