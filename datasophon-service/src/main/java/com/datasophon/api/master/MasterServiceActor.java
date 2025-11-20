@@ -20,6 +20,7 @@
 package com.datasophon.api.master;
 
 import akka.actor.UntypedActor;
+import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.handler.service.ServiceHandler;
 import com.datasophon.api.master.handler.service.ServiceStopHandler;
@@ -62,31 +63,32 @@ public class MasterServiceActor extends UntypedActor {
 
     @Override
     public void postStop() {
-
-        logger.info("{} service actor stopped ", getSelf().path().toString());
+        logger.info("{} service actor stopped after handle message", getSelf().path().toString());
     }
 
     @Override
     public void onReceive(Object message) {
-        ExecuteServiceRoleCommand executeServiceRoleCommand = null;
-        if (message instanceof ExecuteServiceRoleCommand) {
-            executeServiceRoleCommand = (ExecuteServiceRoleCommand) message;
-        }
-        if (executeServiceRoleCommand == null) {
+        logger.info("MasterServiceActor:{} receive message type of {}", getSelf().path().toString(), message.getClass().getSimpleName());
+
+        if (!(message instanceof ExecuteServiceRoleCommand)) {
+            logger.warn("unrecognized message type : {}", message.getClass().getSimpleName());
             unhandled(message);
             return;
         }
 
+        ExecuteServiceRoleCommand srvRoleCmd  = (ExecuteServiceRoleCommand) message;
+
         ClusterServiceRoleGroupConfigService roleGroupConfigService = SpringTool.getApplicationContext().getBean(ClusterServiceRoleGroupConfigService.class);
         ClusterServiceRoleInstanceService roleInstanceService = SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
 
-        List<ServiceRoleInfo> masterRoles = executeServiceRoleCommand.getMasterRoles();
+        List<ServiceRoleInfo> masterRoles = srvRoleCmd.getMasterRoles();
         Collections.sort(masterRoles);
         ExecContext ctx = new ExecContext(masterRoles.size());
 
         for (ServiceRoleInfo serviceRoleInfo : masterRoles) {
             logger.info("{} service role size is {}", serviceRoleInfo.getName(), masterRoles.size());
             if (CancelCommandMap.exists(serviceRoleInfo.getHostCommandId())) {
+                logger.warn("cmd {} {} in host {} canceled",  srvRoleCmd.getCommandType().getCommandName(Constants.CN), serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
                 continue;
             }
 
@@ -95,12 +97,12 @@ public class MasterServiceActor extends UntypedActor {
             ClusterServiceRoleInstanceEntity serviceRoleInstance = roleInstanceService.getOneServiceRole(serviceRoleInfo.getName(),
                     serviceRoleInfo.getHostname(), serviceRoleInfo.getClusterId());
             boolean enableRangerPlugin = isEnableRangerPlugin(serviceRoleInfo.getClusterId(), serviceRoleInfo.getParentName());
-            logger.info("enable ranger plugin is {}", enableRangerPlugin);
+            logger.info("{} enable ranger plugin is {}", serviceRoleInfo.getParentName(), enableRangerPlugin);
 
-
+            logger.info("{} {} in host {}, begin to generate config map", srvRoleCmd.getCommandType().getCommandName(Constants.CN), serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
             HashMap<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
             boolean needReConfig = false;
-            if (executeServiceRoleCommand.getCommandType() == CommandType.INSTALL_SERVICE) {
+            if (srvRoleCmd.getCommandType() == CommandType.INSTALL_SERVICE) {
                 Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + serviceInstanceId);
                 ClusterServiceRoleGroupConfig config = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
                 ProcessUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
@@ -118,25 +120,32 @@ public class MasterServiceActor extends UntypedActor {
             serviceRoleInfo.setConfigFileMap(configFileMap);
             serviceRoleInfo.setEnableRangerPlugin(enableRangerPlugin);
 
-            ExecResult execResult = new ExecResult();
-            switch (executeServiceRoleCommand.getCommandType()) {
+            ExecResult execResult = null;
+            logger.info("{} {} in host {}", srvRoleCmd.getCommandType().getCommandName(Constants.CN), serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
+            switch (srvRoleCmd.getCommandType()) {
                 case INSTALL_SERVICE:
-                    execResult = doInstallService(serviceRoleInfo, executeServiceRoleCommand, ctx);
+                    execResult = doInstallService(serviceRoleInfo, srvRoleCmd, ctx);
                     break;
                 case START_SERVICE:
-                    execResult = doStartService(serviceRoleInfo, executeServiceRoleCommand, ctx, needReConfig);
+                    execResult = doStartService(serviceRoleInfo, srvRoleCmd, ctx, needReConfig);
                     break;
                 case STOP_SERVICE:
-                    execResult = doStopService(serviceRoleInfo, executeServiceRoleCommand, ctx);
+                    execResult = doStopService(serviceRoleInfo, srvRoleCmd, ctx);
                     break;
                 case RESTART_SERVICE:
-                    execResult = doRestartService(serviceRoleInfo, executeServiceRoleCommand, ctx, needReConfig);
+                    execResult = doRestartService(serviceRoleInfo, srvRoleCmd, ctx, needReConfig);
                     break;
                 case UPGRADE_SERVICE:
-                    execResult = doUpgradeService(serviceRoleInfo, executeServiceRoleCommand, ctx);
+                    execResult = doUpgradeService(serviceRoleInfo, srvRoleCmd, ctx);
                     break;
                 default:
-                    break;
+                    throw new BusinessException(
+                            String.format(
+                                    "unknown cmd type: %s of srv %s in host %s{}",
+                                    srvRoleCmd.getCommandType().getCommandName(Constants.CN),
+                                    serviceRoleInfo.getName(), serviceRoleInfo.getHostname()
+                                    )
+                    );
             }
 //            FIXME 按照旧代码的逻辑，execResult可能造成NPE。
             ProcessUtils.handleCommandResult(serviceRoleInfo.getHostCommandId(), execResult.getExecResult(), execResult.getExecOut());
@@ -152,6 +161,7 @@ public class MasterServiceActor extends UntypedActor {
 
     /**
      * 这段代码，是从原来的一坨代码分割处理，后续再优化。后续修改成调用 doServiceAction
+     *
      * @param serviceRoleInfo
      * @param executeServiceRoleCommand
      * @param ctx

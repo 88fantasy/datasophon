@@ -50,6 +50,7 @@ import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
+import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.model.DAG;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.HostServiceRoleMapping;
@@ -391,6 +392,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             }
             serviceNode.setMasterRoles(masterRoles);
             serviceNode.setElseRoles(elseRoles);
+            serviceNode.setCommandType(CommandType.INSTALL_SERVICE);
             dag.addNode(command.getServiceName(), serviceNode);
             if (serviceInfo.getDependencies().size() > 0) {
                 for (String dependency : serviceInfo.getDependencies()) {
