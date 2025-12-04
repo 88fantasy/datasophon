@@ -269,11 +269,11 @@
       "name": "metricsProvider.className",
       "label": "metricsProvider.className",
       "description": "",
-      "required": true,
+      "required": false,
       "type": "input",
       "value": "org.apache.zookeeper.metrics.prometheus.PrometheusMetricsProvider",
       "configurableInWizard": true,
-      "hidden": false,
+      "hidden": true,
       "defaultValue": "org.apache.zookeeper.metrics.prometheus.PrometheusMetricsProvider"
     },
     {
@@ -343,7 +343,10 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [],
+      "value": [
+        {"metricsProvider.exportJvmInfo":"false"},
+        {"admin.enableServer":"false"}
+      ],
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": ""

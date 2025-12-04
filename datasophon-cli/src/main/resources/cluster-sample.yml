@@ -43,9 +43,9 @@ global:
     password:
 
   mysql:
-    enable: true   # Install Mysql
-    password: MjRm>Tk#ZjU3N)z6M==      # Set the MYSQL database root password
-    tarName: mysql-8.0.28-1.el8.x86_64.rpm-bundle.tar
+    enable: true
+    password: MjRm>Tk#ZjU3N)z6M==
+    tarName: mysql-8.0.28-1.el8.x86_64.rpm-bundle.tar #默认centos8包
     appDbs:
       - account: datasophon
         password: fI5sQ4yQ4fP5
