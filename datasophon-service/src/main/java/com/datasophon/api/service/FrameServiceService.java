@@ -32,8 +32,17 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @date 2022-03-15 17:36:08
  */
 public interface FrameServiceService extends IService<FrameServiceEntity> {
-    
-    Result getAllFrameService(Integer clusterId);
+
+    /**
+     * @deprecated
+     * @see #getFrameServiceList(Integer)
+     */
+    @Deprecated
+    default Result getAllFrameService(Integer clusterId) {
+        return Result.success(getFrameServiceList(clusterId));
+    }
+
+    List<FrameServiceEntity> getFrameServiceList(Integer clusterId);
     
     Result getServiceListByServiceIds(List<Integer> serviceIds);
     
@@ -44,4 +53,6 @@ public interface FrameServiceService extends IService<FrameServiceEntity> {
     List<FrameServiceEntity> getAllFrameServiceByFrameCode(String clusterFrame);
     
     List<FrameServiceEntity> listServices(String serviceIds);
+
+    List<FrameServiceEntity> listSimpleService(List<String> clusterFrames);
 }

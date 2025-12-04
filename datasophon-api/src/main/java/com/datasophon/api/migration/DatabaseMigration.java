@@ -246,6 +246,9 @@ public class DatabaseMigration {
     }
     
     private boolean runScript(Resource resource, boolean stopOnError) {
+        if (!resource.exists()) {
+            return true;
+        }
         try (Connection connection = DriverManager.getConnection(url, username, password)) {
             ScriptRunner scriptRunner = new ScriptRunner(connection);
             scriptRunner.setAutoCommit(false);

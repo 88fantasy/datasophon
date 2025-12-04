@@ -21,24 +21,31 @@ import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.ServiceExecuteState;
 import com.datasophon.common.model.DAGGraph;
 import com.datasophon.common.model.ServiceNode;
+import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Map;
-
-import lombok.Data;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 public class SubmitActiveTaskNodeCommand implements Serializable {
     
     private static final long serialVersionUID = 3733897759707096649L;
-    
+
+
+    /**
+     * @deprecated 不再使用，由serviceNode传递
+     * @see ServiceNode#setCommandType(CommandType)
+     */
+    @Deprecated
     private CommandType commandType;
     private Integer clusterId;
     private String clusterCode;
     private DAGGraph<String, ServiceNode, String> dag;
-    private Map<String, String> errorTaskList;
-    private Map<String, ServiceExecuteState> activeTaskList;
-    private Map<String, String> readyToSubmitTaskList;
-    private Map<String, String> completeTaskList;
-    
+    private Map<String, String> errorTaskList = new ConcurrentHashMap<>();
+    private Map<String, ServiceExecuteState> activeTaskList = new ConcurrentHashMap<>();
+    private Map<String, String> readyToSubmitTaskList = new ConcurrentHashMap<>();
+    private Map<String, String> completeTaskList  = new ConcurrentHashMap<>();
+
+
 }

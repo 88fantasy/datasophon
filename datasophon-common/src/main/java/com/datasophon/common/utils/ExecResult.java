@@ -24,7 +24,7 @@ import lombok.Setter;
 
 @Setter
 public class ExecResult implements Serializable {
-    
+
     private boolean execResult = false;
     
     @Getter
@@ -37,6 +37,10 @@ public class ExecResult implements Serializable {
         return execResult;
     }
 
+
+    public boolean isSuccess() {
+        return execResult;
+    }
     public static ExecResult success() {
         return success(null);
     }
@@ -44,6 +48,13 @@ public class ExecResult implements Serializable {
     public static ExecResult success(String out) {
         ExecResult exec = new ExecResult();
         exec.setExecResult(true);
+        exec.setExecOut(out);
+        return exec;
+    }
+
+    public static ExecResult error(String out) {
+        ExecResult exec = new ExecResult();
+        exec.setExecResult(false);
         exec.setExecOut(out);
         return exec;
     }

@@ -23,6 +23,7 @@ import com.datasophon.api.interceptor.UserPermissionHandler;
 
 import java.util.Locale;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -30,6 +31,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
@@ -46,7 +48,10 @@ public class AppConfiguration implements WebMvcConfigurer {
     public static final String LOGIN_PATH_PATTERN = "/login";
     public static final String PATH_PATTERN = "/**";
     public static final String LOCALE_LANGUAGE_COOKIE = "language";
-    
+
+    @Value("${springdoc.api-docs.enabled:false}")
+    private boolean enableOpenApi;
+
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
@@ -94,8 +99,10 @@ public class AppConfiguration implements WebMvcConfigurer {
         registry.addInterceptor(localeChangeInterceptor());
         registry.addInterceptor(userPermissionHandler());
         // login
-        registry.addInterceptor(loginInterceptor())
-                .addPathPatterns("/**").excludePathPatterns("/login", "/error",
+        InterceptorRegistration loginRegistration = registry.addInterceptor(loginInterceptor())
+                .addPathPatterns("/**")
+                .excludePathPatterns(
+                        "/login", "/error",
                         "/grafana/**",
                         "/service/install/downloadPackage",
                         "/service/install/downloadResource",
@@ -103,7 +110,14 @@ public class AppConfiguration implements WebMvcConfigurer {
                         "/cluster/kerberos/downloadKeytab",
                         "/index.html",
                         "/",
-                        "/static/**");
+                        "/static/**"
+                );
+        if (enableOpenApi) {
+            loginRegistration.excludePathPatterns(
+                    "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
+                    "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico"
+            );
+        }
     }
     
     @Override

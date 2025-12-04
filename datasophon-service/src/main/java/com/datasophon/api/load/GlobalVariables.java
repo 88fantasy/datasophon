@@ -9,7 +9,7 @@ public class GlobalVariables {
     private static Map<Integer, Map<String, String>> map = new ConcurrentHashMap<>();
     
     public static void put(Integer key, Map<String, String> value) {
-        map.put(key, value);
+        map.put(key, new ConcurrentHashMap<>(value));
     }
     
     public static Map<String, String> get(Integer key) {

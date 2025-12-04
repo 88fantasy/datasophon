@@ -81,7 +81,7 @@
         <mockito-junit-jupiter.version>4.5.1</mockito-junit-jupiter.version>
         <snakeyaml.version>1.29</snakeyaml.version>
         <hadoop.version>3.3.6</hadoop.version>
-        <jdk15on.version>1.70</jdk15on.version>
+        <bc.version>1.78.1</bc.version>
         <zip4j.version>2.11.5</zip4j.version>
         <httpclient.version>4.5.14</httpclient.version>
     </properties>
@@ -158,6 +158,11 @@
                 <groupId>cn.hutool</groupId>
                 <artifactId>hutool-all</artifactId>
                 <version>${hutool.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk18on</artifactId>
+                <version>${bc.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.sshd</groupId>
@@ -344,6 +349,11 @@
                 <artifactId>zip4j</artifactId>
                 <version>${zip4j.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations</artifactId>
+                <version>2.2.40</version>
+            </dependency>
 
             <!-- test -->
             <dependency>
@@ -364,11 +374,6 @@
                 <artifactId>mockito-junit-jupiter</artifactId>
                 <version>${mockito-junit-jupiter.version}</version>
                 <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.bouncycastle</groupId>
-                <artifactId>bcprov-jdk15on</artifactId>
-                <version>${jdk15on.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>

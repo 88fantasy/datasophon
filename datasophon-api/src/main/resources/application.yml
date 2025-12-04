@@ -31,6 +31,10 @@ spring:
   web:
     resources:
       static-locations: classpath:/front/views/
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
 #mybatis
 mybatis-plus:
   mapper-locations: classpath*:/mapper/*.xml
@@ -66,4 +70,14 @@ datasophon:
   proxy-grafana:
     enable: false
 #    max-threads: 32
+
+
+# 在idea的启动参数，加上 -Dspringdoc.api-docs.enabled=true
+springdoc:
+  api-docs:
+    enabled: false
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.datasophon.api.controller
 

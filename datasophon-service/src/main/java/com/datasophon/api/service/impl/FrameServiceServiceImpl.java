@@ -17,6 +17,9 @@
 
 package com.datasophon.api.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.FrameServiceService;
@@ -29,18 +32,17 @@ import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.enums.ServiceState;
 import com.datasophon.dao.mapper.FrameInfoMapper;
 import com.datasophon.dao.mapper.FrameServiceMapper;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
+import org.apache.hadoop.util.VersionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service("frameServiceService")
 public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, FrameServiceEntity>
@@ -57,7 +59,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
     ClusterServiceInstanceService serviceInstanceService;
     
     @Override
-    public Result getAllFrameService(Integer clusterId) {
+    public List<FrameServiceEntity> getFrameServiceList(Integer clusterId) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         FrameInfoEntity frameInfo = frameInfoMapper.getFrameInfoByFrameCode(clusterInfo.getClusterFrame());
         List<FrameServiceEntity> list = this.lambdaQuery()
@@ -65,22 +67,25 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
                 .orderByAsc(FrameServiceEntity::getSortNum)
                 .list();
         setInstalled(clusterId, list);
-        return Result.success(list);
+        return list;
     }
     
     private void setInstalled(Integer clusterId, List<FrameServiceEntity> list) {
+        List<ClusterServiceInstanceEntity> serviceInstances = serviceInstanceService.getServiceInstanceByClusterId(clusterId);
+        Map<String, ClusterServiceInstanceEntity> map = serviceInstances.stream().collect(
+                Collectors.toMap(ClusterServiceInstanceEntity::getServiceName, a->a, (a,b)-> a.getUpdateTime().after(b.getUpdateTime()) ? a : b)
+        );
         for (FrameServiceEntity serviceEntity : list) {
-            ClusterServiceInstanceEntity serviceInstance = serviceInstanceService
-                    .getServiceInstanceByClusterIdAndServiceName(clusterId, serviceEntity.getServiceName());
-            if (Objects.nonNull(serviceInstance)
-                    && !serviceInstance.getServiceState().equals(ServiceState.WAIT_INSTALL)) {
+            ClusterServiceInstanceEntity serviceInstance = map.get(serviceEntity.getServiceName());
+            if (Objects.nonNull(serviceInstance) && !serviceInstance.getServiceState().equals(ServiceState.WAIT_INSTALL)) {
                 serviceEntity.setInstalled(true);
             } else {
                 serviceEntity.setInstalled(false);
             }
         }
     }
-    
+
+
     @Override
     public Result getServiceListByServiceIds(List<Integer> serviceIds) {
         Collection<FrameServiceEntity> list = this.listByIds(serviceIds);
@@ -97,9 +102,14 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
     
     @Override
     public FrameServiceEntity getServiceByFrameCodeAndServiceName(String clusterFrame, String serviceName) {
-        return this.getOne(new QueryWrapper<FrameServiceEntity>()
-                .eq(Constants.FRAME_CODE_1, clusterFrame)
-                .eq(Constants.SERVICE_NAME, serviceName));
+//        changlog: 旧版本没有版本之分，新需求有了版本，为了兼容，约定使用最新版本
+        List<FrameServiceEntity> list = lambdaQuery()
+                .eq(FrameServiceEntity::getFrameCode, clusterFrame)
+                .eq(FrameServiceEntity::getServiceName, serviceName)
+                .list();
+        list.sort((s1, s2) -> VersionUtil.compareVersions(s1.getServiceVersion(), s2.getServiceVersion()));
+//        返回版本最新的定义
+        return list.get(list.size() - 1);
     }
     
     @Override
@@ -112,5 +122,16 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
         List<String> ids = Arrays.stream(serviceIds.split(",")).collect(Collectors.toList());
         return this.lambdaQuery().in(FrameServiceEntity::getId, ids).list();
     }
-    
+
+    @Override
+    public List<FrameServiceEntity> listSimpleService(List<String> clusterFrames) {
+        if (CollectionUtil.isEmpty(clusterFrames)) {
+            return Collections.emptyList();
+        }
+        return lambdaQuery()
+                .in(FrameServiceEntity::getFrameCode, clusterFrames)
+                .select(FrameServiceEntity::getServiceName, FrameServiceEntity::getServiceVersion)
+                .list();
+    }
+
 }

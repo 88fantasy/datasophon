@@ -17,6 +17,11 @@
 
 package com.datasophon.api.master;
 
+import akka.actor.ActorRef;
+import akka.actor.UntypedActor;
+import cn.hutool.core.util.ArrayUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.TypeReference;
 import com.datasophon.api.load.LoadServiceMeta;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceCommandHostCommandService;
@@ -32,14 +37,19 @@ import com.datasophon.common.command.SubmitActiveTaskNodeCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.ServiceExecuteState;
 import com.datasophon.common.enums.ServiceRoleType;
-import com.datasophon.common.model.*;
+import com.datasophon.common.model.ArchInfo;
+import com.datasophon.common.model.DAGGraph;
+import com.datasophon.common.model.ServiceInfo;
+import com.datasophon.common.model.ServiceNode;
+import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
 import com.datasophon.dao.entity.ClusterServiceCommandHostCommandEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.FrameServiceRoleEntity;
-
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,16 +57,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.TypeReference;
-
-import akka.actor.ActorRef;
-import akka.actor.UntypedActor;
-import cn.hutool.core.util.ArrayUtil;
 
 public class DAGBuildActor extends UntypedActor {
     
@@ -101,6 +101,7 @@ public class DAGBuildActor extends UntypedActor {
                     frameServiceList.add(serviceEntity);
                     
                     serviceNode.setCommandId(command.getCommandId());
+                    serviceNode.setCommandType(commandType);
                     for (ClusterServiceCommandHostCommandEntity hostCommand : hostCommandList) {
                         logger.info("service role is {}", hostCommand.getServiceRoleName());
                         FrameServiceRoleEntity frameServiceRoleEntity =

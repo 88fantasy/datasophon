@@ -19,12 +19,13 @@ package com.datasophon.api.load;
 
 import com.datasophon.common.model.ServiceConfig;
 
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ServiceConfigMap {
     
-    private static HashMap<String, List<ServiceConfig>> map = new HashMap<String, List<ServiceConfig>>();
+    private static Map<String, List<ServiceConfig>> map = new ConcurrentHashMap<>();
     
     public static void put(String key, List<ServiceConfig> configs) {
         map.put(key, configs);

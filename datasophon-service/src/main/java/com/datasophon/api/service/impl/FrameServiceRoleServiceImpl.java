@@ -59,11 +59,10 @@ public class FrameServiceRoleServiceImpl extends ServiceImpl<FrameServiceRoleMap
     private FrameServiceService frameService;
     
     @Override
-    public Result getServiceRoleList(Integer clusterId, String serviceIds, Integer serviceRoleType) {
-        List<String> ids = Arrays.asList(serviceIds.split(","));
+    public  List<FrameServiceRoleEntity> getServiceRoleList(Integer clusterId, List<Integer> serviceIds, Integer serviceRoleType) {
         List<FrameServiceRoleEntity> list = this.lambdaQuery()
                 .eq(Objects.nonNull(serviceRoleType), FrameServiceRoleEntity::getServiceRoleType, serviceRoleType)
-                .in(FrameServiceRoleEntity::getServiceId, ids)
+                .in(FrameServiceRoleEntity::getServiceId, serviceIds)
                 .list();
         // 校验是否已安装依赖的服务
         // 校验是否已安装Prometheus,Grafana,AlertManager
@@ -87,7 +86,7 @@ public class FrameServiceRoleServiceImpl extends ServiceImpl<FrameServiceRoleMap
                 }
             }
         }
-        return Result.success(list);
+        return list;
     }
     
     @Override
