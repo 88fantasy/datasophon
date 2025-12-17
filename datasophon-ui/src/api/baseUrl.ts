@@ -20,10 +20,10 @@
 
 export default {
   path() {
-    let path = "";
+    let path = "/api";
 
     if (process.env.NODE_ENV === "development") {
-      path = "/dev-mock";
+      path = `/dev-mock${path}`;
     }
     // if(process.env.NODE_ENV === 'production') {
     //   path = process.env.VUE_APP_API_BASE_URL

@@ -1,7 +1,6 @@
 import { CheckCircleOutlined, ClockCircleOutlined, ForkOutlined } from "@ant-design/icons"
 import { ProCard, ProForm } from "@ant-design/pro-components"
 import { Button, Card, Col, Empty } from "antd"
-import Meta from "antd/es/card/Meta"
 import { blue, gold, gray, red } from '@ant-design/colors';
 import { invokeRenderSimpleDetails } from "../../../../../components/Common/CommonDetails";
 import { showComfirmModal, showMsgAfferRequest } from "../../../../../utils/util";
@@ -190,7 +189,7 @@ const Index = ({
                         }}
                         title={
                             <>
-                                <Meta
+                                <Card.Meta
                                     className="flex items-center flex-1"
                                     avatar={title}
                                     title={val.clusterName}
