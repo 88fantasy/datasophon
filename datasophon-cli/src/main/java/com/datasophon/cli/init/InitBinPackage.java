@@ -85,7 +85,7 @@ public class InitBinPackage extends InitBase {
         if(remoteResult.getExecResult() && !initPathOverwriteForce){
             log.info("远程datasophon-init目录已存在,且overwrite={},跳过)", initPathOverwriteForce);
         } else {
-            ExecResult createResult = executor.createDir(initPath);
+            ExecResult createResult = executor.execShell(String.format("mkdir -p %s", initPath));
             if (!createResult.getExecResult()) {
                 throw new CommandLine.ExecutionException(new CommandLine(this), "dist createDir fail : " + initPath);
             }
