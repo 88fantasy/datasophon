@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("api/cluster/user")
-public class ClusterRoleUserController {
+public class ClusterRoleUserController extends ApiController {
     
     @Autowired
     private ClusterRoleUserService clusterRoleUserService;

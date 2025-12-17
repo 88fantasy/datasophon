@@ -20,7 +20,6 @@ package com.datasophon.api.service.impl;
 import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.common.Constants;
@@ -30,6 +29,7 @@ import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.enums.ServiceState;
+import com.datasophon.dao.mapper.ClusterInfoMapper;
 import com.datasophon.dao.mapper.FrameInfoMapper;
 import com.datasophon.dao.mapper.FrameServiceMapper;
 import org.apache.hadoop.util.VersionUtil;
@@ -50,17 +50,17 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
             FrameServiceService {
     
     @Autowired
-    ClusterInfoService clusterInfoService;
-    
-    @Autowired
     FrameInfoMapper frameInfoMapper;
+
+    @Autowired
+    ClusterInfoMapper clusterInfoMapper;
     
     @Autowired
     ClusterServiceInstanceService serviceInstanceService;
     
     @Override
     public List<FrameServiceEntity> getFrameServiceList(Integer clusterId) {
-        ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
+        ClusterInfoEntity clusterInfo = clusterInfoMapper.selectById(clusterId);
         FrameInfoEntity frameInfo = frameInfoMapper.getFrameInfoByFrameCode(clusterInfo.getClusterFrame());
         List<FrameServiceEntity> list = this.lambdaQuery()
                 .eq(FrameServiceEntity::getFrameId, frameInfo.getId())
@@ -99,19 +99,13 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
                 .eq(FrameServiceEntity::getServiceName, serviceName)
                 .one();
     }
-    
+
     @Override
     public FrameServiceEntity getServiceByFrameCodeAndServiceName(String clusterFrame, String serviceName) {
-//        changlog: 旧版本没有版本之分，新需求有了版本，为了兼容，约定使用最新版本
-        List<FrameServiceEntity> list = lambdaQuery()
-                .eq(FrameServiceEntity::getFrameCode, clusterFrame)
-                .eq(FrameServiceEntity::getServiceName, serviceName)
-                .list();
-        list.sort((s1, s2) -> VersionUtil.compareVersions(s1.getServiceVersion(), s2.getServiceVersion()));
-//        返回版本最新的定义
-        return list.get(list.size() - 1);
+        return this.getBaseMapper().getServiceByFrameCodeAndServiceName(clusterFrame, serviceName);
     }
-    
+
+
     @Override
     public List<FrameServiceEntity> getAllFrameServiceByFrameCode(String clusterFrame) {
         return this.list(new QueryWrapper<FrameServiceEntity>().eq(Constants.FRAME_CODE_1, clusterFrame));

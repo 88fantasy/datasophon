@@ -38,7 +38,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 @RestController
 @RequestMapping("cluster/yarn/queue")
-public class ClusterYarnQueueController {
+public class ClusterYarnQueueController extends ApiController {
     
     @Autowired
     private ClusterYarnQueueService clusterYarnQueueService;

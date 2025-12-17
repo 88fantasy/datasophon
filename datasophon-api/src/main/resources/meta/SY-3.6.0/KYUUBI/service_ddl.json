@@ -202,7 +202,6 @@
       "type": "input",
       "value": "cluster",
       "configurableInWizard": true,
-      "hidden": false,
       "defaultValue": "cluster"
     },
     {
@@ -211,6 +210,7 @@
       "description": "配置spark-driver运行内存",
       "required": true,
       "type": "input",
+      "hidden": false,
       "value": "2g",
       "configurableInWizard": true,
       "hidden": false,

@@ -30,8 +30,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("api/cluster/service/command/host/command")
-public class ClusterServiceCommandHostCommandController {
+@RequestMapping("cluster/service/command/host/command")
+public class ClusterServiceCommandHostCommandController extends ApiController {
     
     @Autowired
     private ClusterServiceCommandHostCommandService clusterServiceCommandHostCommandService;

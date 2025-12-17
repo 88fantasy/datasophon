@@ -32,8 +32,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Arrays;
 
 @RestController
-@RequestMapping("api/cluster")
-public class ClusterInfoController {
+@RequestMapping("cluster")
+public class ClusterInfoController extends ApiController {
     
     @Autowired
     private ClusterInfoService clusterInfoService;

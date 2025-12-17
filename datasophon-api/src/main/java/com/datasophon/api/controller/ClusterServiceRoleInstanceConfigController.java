@@ -32,8 +32,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("api/clusterserviceroleinstanceconfig")
-public class ClusterServiceRoleInstanceConfigController {
+@RequestMapping("clusterserviceroleinstanceconfig")
+public class ClusterServiceRoleInstanceConfigController extends ApiController {
     
     @Autowired
     private ClusterServiceRoleInstanceConfigService clusterServiceRoleInstanceConfigService;

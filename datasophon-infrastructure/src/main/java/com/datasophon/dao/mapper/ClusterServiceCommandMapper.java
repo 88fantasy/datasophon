@@ -17,13 +17,14 @@
 
 package com.datasophon.dao.mapper;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
  * 集群服务操作指令表
- * 
+ *
  * @author gaodayu
  * @email gaodayu2022@163.com
  * @date 2022-04-12 11:28:06
@@ -31,5 +32,8 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface ClusterServiceCommandMapper extends BaseMapper<ClusterServiceCommandEntity> {
 
-
+  default ClusterServiceCommandEntity getCommandById(String commandId) {
+    return selectOne(
+        new QueryWrapper<ClusterServiceCommandEntity>().eq("command_id", commandId));
+  }
 }

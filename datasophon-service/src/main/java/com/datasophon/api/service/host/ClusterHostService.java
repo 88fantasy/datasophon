@@ -57,6 +57,5 @@ public interface ClusterHostService extends IService<ClusterHostDO> {
     List<ClusterHostDO> getHostListByIds(List<String> ids);
     
     Result assignRack(Integer clusterId, String rack, String hostIds);
-    
-    List<ClusterHostDO> getClusterHostByRack(Integer clusterId, String rack);
+
 }

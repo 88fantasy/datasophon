@@ -62,6 +62,7 @@ import scala.concurrent.duration.Duration;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -71,303 +72,226 @@ import java.util.stream.Collectors;
 
 @Service("clusterServiceRoleInstanceService")
 public class ClusterServiceRoleInstanceServiceImpl
-        extends
-        ServiceImpl<ClusterServiceRoleInstanceMapper, ClusterServiceRoleInstanceEntity>
-        implements
-        ClusterServiceRoleInstanceService {
+    extends
+    ServiceImpl<ClusterServiceRoleInstanceMapper, ClusterServiceRoleInstanceEntity>
+    implements
+    ClusterServiceRoleInstanceService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ClusterServiceRoleInstanceServiceImpl.class);
+  private static final Logger logger = LoggerFactory.getLogger(ClusterServiceRoleInstanceServiceImpl.class);
 
-    @Autowired
-    ClusterInfoService clusterInfoService;
+  @Autowired
+  ClusterInfoService clusterInfoService;
 
-    @Autowired
-    FrameServiceRoleService frameServiceRoleService;
+  @Autowired
+  FrameServiceRoleService frameServiceRoleService;
 
-    @Autowired
-    FrameServiceService frameService;
+  @Autowired
+  FrameServiceService frameService;
 
 
-    @Autowired
-    private ClusterServiceCommandService commandService;
+  @Autowired
+  private ClusterServiceCommandService commandService;
 
-    @Autowired
-    private ClusterServiceInstanceRoleGroupService roleGroupService;
+  @Autowired
+  private ClusterServiceInstanceRoleGroupService roleGroupService;
 
-    @Autowired
-    private ClusterServiceRoleInstanceMapper roleInstanceMapper;
+  @Autowired
+  private ClusterServiceRoleInstanceMapper roleInstanceMapper;
 
-    @Autowired
-    private ClusterAlertHistoryService alertHistoryService;
+  @Autowired
+  private ClusterAlertHistoryService alertHistoryService;
 
-    @Autowired
-    private ClusterServiceRoleInstanceWebuisService webuisService;
+  @Autowired
+  private ClusterServiceRoleInstanceWebuisService webuisService;
 
-    @Override
-    public List<ClusterServiceRoleInstanceEntity> listStoppedServiceRoleListByHostnameAndClusterId(String hostname,
-                                                                                                   Integer clusterId) {
-        return this.lambdaQuery()
-                .eq(ClusterServiceRoleInstanceEntity::getClusterId, clusterId)
-                .eq(ClusterServiceRoleInstanceEntity::getHostname, hostname)
-                .eq(ClusterServiceRoleInstanceEntity::getServiceRoleState, ServiceRoleState.STOP)
-                .list();
+  @Override
+  public List<ClusterServiceRoleInstanceEntity> listStoppedServiceRoleListByHostnameAndClusterId(String hostname, Integer clusterId) {
+    return roleInstanceMapper.listStoppedServiceRoleListByHostnameAndClusterId(hostname, clusterId);
+  }
+
+  @Override
+  public List<ClusterServiceRoleInstanceEntity> getServiceRoleListByHostnameAndClusterId(String hostname, Integer clusterId) {
+    return roleInstanceMapper.getServiceRoleListByHostnameAndClusterId(hostname, clusterId);
+  }
+
+  @Override
+  public ClusterServiceRoleInstanceEntity getOneServiceRole(String serviceRoleName, String hostname, Integer clusterId) {
+    return roleInstanceMapper.getOneServiceRole(serviceRoleName, hostname, clusterId);
+  }
+
+  @Override
+  public Result listAll(Integer serviceInstanceId, String hostname, Integer serviceRoleState, String serviceRoleName,
+                        Integer roleGroupId, Integer page, Integer pageSize) {
+    int offset = (page - 1) * pageSize;
+
+    LambdaQueryChainWrapper<ClusterServiceRoleInstanceEntity> wrapper = this.lambdaQuery()
+        .eq(ClusterServiceRoleInstanceEntity::getServiceId, serviceInstanceId)
+        .eq(Objects.nonNull(serviceRoleState), ClusterServiceRoleInstanceEntity::getServiceRoleState,
+            serviceRoleState)
+        .eq(StringUtils.isNotBlank(serviceRoleName), ClusterServiceRoleInstanceEntity::getServiceRoleName,
+            serviceRoleName)
+        .eq(Objects.nonNull(roleGroupId), ClusterServiceRoleInstanceEntity::getRoleGroupId, roleGroupId)
+        .like(StringUtils.isNotBlank(hostname), ClusterServiceRoleInstanceEntity::getHostname, hostname);
+    long count = wrapper.count() == null ? 0 : wrapper.count();
+    List<ClusterServiceRoleInstanceEntity> cluServiceRoleInstList = wrapper
+        .last("limit " + offset + "," + pageSize)
+        .list();
+    if (CollectionUtils.isEmpty(cluServiceRoleInstList)) {
+      return Result.successEmptyCount();
     }
 
-    @Override
-    public List<ClusterServiceRoleInstanceEntity> getServiceRoleListByHostnameAndClusterId(String hostname,
-                                                                                           Integer clusterId) {
-        return this.list(new QueryWrapper<ClusterServiceRoleInstanceEntity>()
-                .eq(Constants.CLUSTER_ID, clusterId)
-                .eq(Constants.HOSTNAME, hostname));
+    for (ClusterServiceRoleInstanceEntity roleInstanceEntity : cluServiceRoleInstList) {
+      ClusterServiceInstanceRoleGroup roleGroup = roleGroupService.getById(roleInstanceEntity.getRoleGroupId());
+      if (Objects.nonNull(roleGroup)) {
+        roleInstanceEntity.setRoleGroupName(roleGroup.getRoleGroupName());
+      }
+      roleInstanceEntity.setServiceRoleStateCode(roleInstanceEntity.getServiceRoleState().getValue());
     }
 
-    @Override
-    public List<ClusterServiceRoleInstanceEntity> getServiceRoleInstanceListByServiceIdAndRoleState(Integer serviceId,
-                                                                                                    ServiceRoleState stop) {
-        return this.lambdaQuery()
-                .eq(ClusterServiceRoleInstanceEntity::getServiceId, serviceId)
-                .eq(ClusterServiceRoleInstanceEntity::getServiceRoleState, stop)
-                .list();
+    return Result.success(cluServiceRoleInstList).put(Constants.TOTAL, count);
+  }
+
+  @Override
+  public Result getLog(Integer serviceRoleInstanceId) throws Exception {
+    ClusterServiceRoleInstanceEntity roleInstance = this.getById(serviceRoleInstanceId);
+    ClusterInfoEntity clusterInfo = clusterInfoService.getById(roleInstance.getClusterId());
+    FrameServiceRoleEntity serviceRole = frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(
+        clusterInfo.getClusterFrame(), roleInstance.getServiceRoleName());
+    Map<String, String> globalVariables = GlobalVariables.get(roleInstance.getClusterId());
+    if (serviceRole.getServiceRoleType() == RoleType.CLIENT) {
+      return Result.success("client does not have any log");
     }
-
-    @Override
-    public ClusterServiceRoleInstanceEntity getOneServiceRole(String name, String hostname, Integer id) {
-        List<ClusterServiceRoleInstanceEntity> list = this.list(new QueryWrapper<ClusterServiceRoleInstanceEntity>()
-                .eq(Constants.SERVICE_ROLE_NAME, name)
-                .eq(StringUtils.isNotBlank(hostname), Constants.HOSTNAME, hostname)
-                .eq(Constants.CLUSTER_ID, id));
-        if (Objects.nonNull(list) && !list.isEmpty()) {
-            return list.get(0);
-        }
-        return null;
+    FrameServiceEntity frameServiceEntity = frameService.getById(serviceRole.getServiceId());
+    String logFile = serviceRole.getLogFile();
+    if (StringUtils.isNotBlank(logFile)) {
+      logFile = PlaceholderUtils.replacePlaceholders(logFile, globalVariables, Constants.REGEX_VARIABLE);
+      logger.info("logFile is {}", logFile);
     }
+    GetLogCommand command = new GetLogCommand();
+    command.setLogFile(logFile);
+    command.setDecompressPackageName(frameServiceEntity.getDecompressPackageName());
+    logger.info("start to get {} log from {}", serviceRole.getServiceRoleName(), roleInstance.getHostname());
 
-    @Override
-    public Result listAll(Integer serviceInstanceId, String hostname, Integer serviceRoleState, String serviceRoleName,
-                          Integer roleGroupId, Integer page, Integer pageSize) {
-        int offset = (page - 1) * pageSize;
-
-        LambdaQueryChainWrapper<ClusterServiceRoleInstanceEntity> wrapper = this.lambdaQuery()
-                .eq(ClusterServiceRoleInstanceEntity::getServiceId, serviceInstanceId)
-                .eq(Objects.nonNull(serviceRoleState), ClusterServiceRoleInstanceEntity::getServiceRoleState,
-                        serviceRoleState)
-                .eq(StringUtils.isNotBlank(serviceRoleName), ClusterServiceRoleInstanceEntity::getServiceRoleName,
-                        serviceRoleName)
-                .eq(Objects.nonNull(roleGroupId), ClusterServiceRoleInstanceEntity::getRoleGroupId, roleGroupId)
-                .like(StringUtils.isNotBlank(hostname), ClusterServiceRoleInstanceEntity::getHostname, hostname);
-        long count = wrapper.count() == null ? 0 : wrapper.count();
-        List<ClusterServiceRoleInstanceEntity> cluServiceRoleInstList = wrapper
-                .last("limit " + offset + "," + pageSize)
-                .list();
-        if (CollectionUtils.isEmpty(cluServiceRoleInstList)) {
-            return Result.successEmptyCount();
-        }
-
-        for (ClusterServiceRoleInstanceEntity roleInstanceEntity : cluServiceRoleInstList) {
-            ClusterServiceInstanceRoleGroup roleGroup = roleGroupService.getById(roleInstanceEntity.getRoleGroupId());
-            if (Objects.nonNull(roleGroup)) {
-                roleInstanceEntity.setRoleGroupName(roleGroup.getRoleGroupName());
-            }
-            roleInstanceEntity.setServiceRoleStateCode(roleInstanceEntity.getServiceRoleState().getValue());
-        }
-
-        return Result.success(cluServiceRoleInstList).put(Constants.TOTAL, count);
+    ActorSelection configActor = ActorUtils.actorSystem
+        .actorSelection("akka.tcp://datasophon@" + roleInstance.getHostname() + ":2552/user/worker/logActor");
+    Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
+    Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
+    ExecResult logResult = (ExecResult) Await.result(logFuture, timeout.duration());
+    if (Objects.nonNull(logResult) && logResult.getExecResult()) {
+      return Result.success(logResult.getExecOut());
     }
+    return Result.success();
+  }
 
-    @Override
-    public Result getLog(Integer serviceRoleInstanceId) throws Exception {
-        ClusterServiceRoleInstanceEntity roleInstance = this.getById(serviceRoleInstanceId);
-        ClusterInfoEntity clusterInfo = clusterInfoService.getById(roleInstance.getClusterId());
-        FrameServiceRoleEntity serviceRole = frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(
-                clusterInfo.getClusterFrame(), roleInstance.getServiceRoleName());
-        Map<String, String> globalVariables = GlobalVariables.get(roleInstance.getClusterId());
-        if (serviceRole.getServiceRoleType() == RoleType.CLIENT) {
-            return Result.success("client does not have any log");
-        }
-        FrameServiceEntity frameServiceEntity = frameService.getById(serviceRole.getServiceId());
-        String logFile = serviceRole.getLogFile();
-        if (StringUtils.isNotBlank(logFile)) {
-            logFile = PlaceholderUtils.replacePlaceholders(logFile, globalVariables, Constants.REGEX_VARIABLE);
-            logger.info("logFile is {}", logFile);
-        }
-        GetLogCommand command = new GetLogCommand();
-        command.setLogFile(logFile);
-        command.setDecompressPackageName(frameServiceEntity.getDecompressPackageName());
-        logger.info("start to get {} log from {}", serviceRole.getServiceRoleName(), roleInstance.getHostname());
+  @Override
+  public List<ClusterServiceRoleInstanceEntity> getServiceRoleInstanceListByServiceId(int id) {
+    return roleInstanceMapper.getServiceRoleInstanceListByServiceId(id);
+  }
 
-        ActorSelection configActor = ActorUtils.actorSystem
-                .actorSelection("akka.tcp://datasophon@" + roleInstance.getHostname() + ":2552/user/worker/logActor");
-        Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
-        Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
-        ExecResult logResult = (ExecResult) Await.result(logFuture, timeout.duration());
-        if (Objects.nonNull(logResult) && logResult.getExecResult()) {
-            return Result.success(logResult.getExecOut());
-        }
-        return Result.success();
+  @Override
+  public List<ClusterServiceRoleInstanceEntity> getServiceRoleInstanceListByClusterId(int clusterId) {
+    return roleInstanceMapper.getServiceRoleInstanceListByClusterId(clusterId);
+  }
+
+
+  @Override
+  public Result deleteServiceRole(List<String> idList) {
+    Collection<ClusterServiceRoleInstanceEntity> list = this.listByIds(idList);
+    // is there a running instance
+    boolean flag = false;
+    ArrayList<Integer> needRemoveList = new ArrayList<>();
+    for (ClusterServiceRoleInstanceEntity instance : list) {
+      if (instance.getServiceRoleState() == ServiceRoleState.RUNNING) {
+        flag = true;
+      } else {
+        needRemoveList.add(instance.getId());
+      }
     }
-
-    @Override
-    public List<ClusterServiceRoleInstanceEntity> getServiceRoleInstanceListByServiceId(int id) {
-        return this.lambdaQuery().eq(ClusterServiceRoleInstanceEntity::getServiceId, id).list();
+    if (!needRemoveList.isEmpty()) {
+      alertHistoryService.removeAlertByRoleInstanceIds(needRemoveList);
+      this.removeByIds(needRemoveList);
+      // delete if there is a webui
+      webuisService.removeByRoleInsIds(needRemoveList);
     }
+    return flag ? Result.error(Status.EXIT_RUNNING_INSTANCES.getMsg()) : Result.success();
+  }
 
-    @Override
-    public List<ClusterServiceRoleInstanceEntity> getServiceRoleInstanceListByClusterId(int clusterId) {
-        return this.lambdaQuery().eq(ClusterServiceRoleInstanceEntity::getClusterId, clusterId).list();
+  @Override
+  public List<ClusterServiceRoleInstanceEntity> getServiceRoleInstanceListByClusterIdAndRoleName(Integer clusterId,
+                                                                                                 String roleName) {
+    return this.list(new QueryWrapper<ClusterServiceRoleInstanceEntity>()
+        .eq(Constants.CLUSTER_ID, clusterId).eq(Constants.SERVICE_ROLE_NAME, roleName));
+  }
+
+
+  @Override
+  public Result restartObsoleteService(Integer roleGroupId) {
+    ClusterServiceInstanceRoleGroup roleGroup = roleGroupService.getById(roleGroupId);
+    List<ClusterServiceRoleInstanceEntity> list = this.list(new QueryWrapper<ClusterServiceRoleInstanceEntity>()
+        .eq(Constants.ROLE_GROUP_ID, roleGroupId)
+        .eq(Constants.NEET_RESTART, NeedRestart.YES));
+    if (Objects.nonNull(list) && !list.isEmpty()) {
+      List<String> ids = list.stream().map(e -> e.getId() + "").collect(Collectors.toList());
+      commandService.generateServiceRoleCommand(roleGroup.getClusterId(), CommandType.RESTART_SERVICE,
+          roleGroup.getServiceInstanceId(), ids);
+    } else {
+      return Result.error(Status.ROLE_GROUP_HAS_NO_OUTDATED_SERVICE.getMsg());
     }
+    return Result.success();
+  }
 
-    @Override
-    public Result deleteServiceRole(List<String> idList) {
-        Collection<ClusterServiceRoleInstanceEntity> list = this.listByIds(idList);
-        // is there a running instance
-        boolean flag = false;
-        ArrayList<Integer> needRemoveList = new ArrayList<>();
-        for (ClusterServiceRoleInstanceEntity instance : list) {
-            if (instance.getServiceRoleState() == ServiceRoleState.RUNNING) {
-                flag = true;
-            } else {
-                needRemoveList.add(instance.getId());
-            }
-        }
-        if (!needRemoveList.isEmpty()) {
-            alertHistoryService.removeAlertByRoleInstanceIds(needRemoveList);
-            this.removeByIds(needRemoveList);
-            // delete if there is a webui
-            webuisService.removeByRoleInsIds(needRemoveList);
-
-        }
-        return flag ? Result.error(Status.EXIT_RUNNING_INSTANCES.getMsg()) : Result.success();
+  @Override
+  public Result decommissionNode(String serviceRoleInstanceIds, String serviceName) throws Exception {
+    TreeSet<String> hosts = new TreeSet<>();
+    Integer serviceInstanceId = null;
+    String serviceRoleName = "";
+    for (String str : serviceRoleInstanceIds.split(",")) {
+      int serviceRoleInstanceId = Integer.parseInt(str);
+      ClusterServiceRoleInstanceEntity roleInstanceEntity = this.getById(serviceRoleInstanceId);
+      if ("DataNode".equals(roleInstanceEntity.getServiceRoleName())
+          || "NodeManager".equals(roleInstanceEntity.getServiceRoleName())) {
+        hosts.add(roleInstanceEntity.getHostname());
+        serviceInstanceId = roleInstanceEntity.getServiceId();
+        serviceRoleName = roleInstanceEntity.getServiceRoleName();
+        roleInstanceEntity.setServiceRoleState(ServiceRoleState.DECOMMISSIONING);
+        this.updateById(roleInstanceEntity);
+      }
     }
-
-    @Override
-    public List<ClusterServiceRoleInstanceEntity> getServiceRoleInstanceListByClusterIdAndRoleName(Integer clusterId,
-                                                                                                   String roleName) {
-        return this.list(new QueryWrapper<ClusterServiceRoleInstanceEntity>()
-                .eq(Constants.CLUSTER_ID, clusterId).eq(Constants.SERVICE_ROLE_NAME, roleName));
+    // 查询已退役节点
+    List<ClusterServiceRoleInstanceEntity> list = this.lambdaQuery()
+        .eq(ClusterServiceRoleInstanceEntity::getServiceRoleState, ServiceRoleState.DECOMMISSIONING)
+        .in(ClusterServiceRoleInstanceEntity::getId, serviceRoleInstanceIds)
+        .list();
+    // 添加已退役节点到黑名单
+    for (ClusterServiceRoleInstanceEntity roleInstanceEntity : list) {
+      hosts.add(roleInstanceEntity.getHostname());
     }
-
-    @Override
-    public List<ClusterServiceRoleInstanceEntity> getRunningServiceRoleInstanceListByServiceId(Integer serviceInstanceId) {
-        return this.lambdaQuery()
-                .eq(ClusterServiceRoleInstanceEntity::getServiceId, serviceInstanceId)
-                .eq(ClusterServiceRoleInstanceEntity::getServiceRoleState, ServiceRoleState.RUNNING)
-                .list();
+    String type = "blacklist";
+    String roleName = "NameNode";
+    if ("nodemanager".equalsIgnoreCase(serviceRoleName)) {
+      type = "nmexclude";
+      roleName = "ResourceManager";
     }
-
-    @Override
-    public Result restartObsoleteService(Integer roleGroupId) {
-        ClusterServiceInstanceRoleGroup roleGroup = roleGroupService.getById(roleGroupId);
-        List<ClusterServiceRoleInstanceEntity> list = this.list(new QueryWrapper<ClusterServiceRoleInstanceEntity>()
-                .eq(Constants.ROLE_GROUP_ID, roleGroupId)
-                .eq(Constants.NEET_RESTART, NeedRestart.YES));
-        if (Objects.nonNull(list) && !list.isEmpty()) {
-            List<String> ids = list.stream().map(e -> e.getId() + "").collect(Collectors.toList());
-            commandService.generateServiceRoleCommand(roleGroup.getClusterId(), CommandType.RESTART_SERVICE,
-                    roleGroup.getServiceInstanceId(), ids);
-        } else {
-            return Result.error(Status.ROLE_GROUP_HAS_NO_OUTDATED_SERVICE.getMsg());
-        }
-        return Result.success();
+    if (!hosts.isEmpty()) {
+      ProcessUtils.hdfsEcMethond(serviceInstanceId, this, hosts, "blacklist", roleName);
     }
+    return Result.success();
+  }
 
-    @Override
-    public Result decommissionNode(String serviceRoleInstanceIds, String serviceName) throws Exception {
-        TreeSet<String> hosts = new TreeSet<>();
-        Integer serviceInstanceId = null;
-        String serviceRoleName = "";
-        for (String str : serviceRoleInstanceIds.split(",")) {
-            int serviceRoleInstanceId = Integer.parseInt(str);
-            ClusterServiceRoleInstanceEntity roleInstanceEntity = this.getById(serviceRoleInstanceId);
-            if ("DataNode".equals(roleInstanceEntity.getServiceRoleName())
-                    || "NodeManager".equals(roleInstanceEntity.getServiceRoleName())) {
-                hosts.add(roleInstanceEntity.getHostname());
-                serviceInstanceId = roleInstanceEntity.getServiceId();
-                serviceRoleName = roleInstanceEntity.getServiceRoleName();
-                roleInstanceEntity.setServiceRoleState(ServiceRoleState.DECOMMISSIONING);
-                this.updateById(roleInstanceEntity);
-            }
-        }
-        // 查询已退役节点
-        List<ClusterServiceRoleInstanceEntity> list = this.lambdaQuery()
-                .eq(ClusterServiceRoleInstanceEntity::getServiceRoleState, ServiceRoleState.DECOMMISSIONING)
-                .in(ClusterServiceRoleInstanceEntity::getId, serviceRoleInstanceIds)
-                .list();
-        // 添加已退役节点到黑名单
-        for (ClusterServiceRoleInstanceEntity roleInstanceEntity : list) {
-            hosts.add(roleInstanceEntity.getHostname());
-        }
-        String type = "blacklist";
-        String roleName = "NameNode";
-        if ("nodemanager".equalsIgnoreCase(serviceRoleName)) {
-            type = "nmexclude";
-            roleName = "ResourceManager";
-        }
-        if (!hosts.isEmpty()) {
-            ProcessUtils.hdfsEcMethond(serviceInstanceId, this, hosts, "blacklist", roleName);
-        }
-        return Result.success();
-    }
+  @Override
+  public void updateToNeedRestart(Integer roleGroupId) {
+    roleInstanceMapper.updateToNeedRestart(roleGroupId);
+  }
 
-    @Override
-    public void updateToNeedRestart(Integer roleGroupId) {
-        roleInstanceMapper.updateToNeedRestart(roleGroupId);
-    }
+  @Override
+  public void updateToNeedRestartByHost(String hostName) {
+    roleInstanceMapper.updateToNeedRestartByHost(hostName);
+  }
 
-    @Override
-    public void updateToNeedRestartByHost(String hostName) {
-        roleInstanceMapper.updateToNeedRestartByHost(hostName);
-    }
+  @Override
+  public List<ClusterServiceRoleInstanceEntity> listRoleIns(String hostname, String serviceName) {
+    return roleInstanceMapper.listRoleIns(hostname, serviceName);
+  }
 
-    @Override
-    public List<ClusterServiceRoleInstanceEntity> getObsoleteService(Integer serviceInstanceId) {
-        return this.lambdaQuery()
-                .eq(ClusterServiceRoleInstanceEntity::getServiceId, serviceInstanceId)
-                .eq(ClusterServiceRoleInstanceEntity::getNeedRestart, NeedRestart.YES)
-                .list();
-    }
-
-    @Override
-    public List<ClusterServiceRoleInstanceEntity> getStoppedRoleInstanceOnHost(Integer clusterId, String hostname,
-                                                                               ServiceRoleState state) {
-        return list(new QueryWrapper<ClusterServiceRoleInstanceEntity>()
-                .eq(Constants.CLUSTER_ID, clusterId)
-                .eq(Constants.HOSTNAME, hostname)
-                .eq(Constants.SERVICE_ROLE_STATE, state));
-    }
-
-    @Override
-    public void reomveRoleInstance(Integer serviceInstanceId) {
-        this.lambdaUpdate()
-                .eq(ClusterServiceRoleInstanceEntity::getServiceId, serviceInstanceId)
-                .eq(ClusterServiceRoleInstanceEntity::getServiceRoleState, ServiceRoleState.STOP)
-                .remove();
-    }
-
-    @Override
-    public ClusterServiceRoleInstanceEntity getKAdminRoleIns(Integer clusterId) {
-        return this.getOne(new QueryWrapper<ClusterServiceRoleInstanceEntity>()
-                .eq(Constants.CLUSTER_ID, clusterId)
-                .eq(Constants.SERVICE_ROLE_NAME, "KAdmin"));
-    }
-
-    @Override
-    public List<ClusterServiceRoleInstanceEntity> listServiceRoleByName(String name) {
-        return this.list(new QueryWrapper<ClusterServiceRoleInstanceEntity>()
-                .eq(Constants.SERVICE_ROLE_NAME, name));
-    }
-
-    @Override
-    public ClusterServiceRoleInstanceEntity getServiceRoleInsByHostAndName(String hostName, String serviceRoleName) {
-        return this.getOne(new QueryWrapper<ClusterServiceRoleInstanceEntity>()
-                .eq(Constants.HOSTNAME, hostName)
-                .eq(Constants.SERVICE_ROLE_NAME, serviceRoleName));
-    }
-
-    @Override
-    public List<ClusterServiceRoleInstanceEntity> listRoleIns(String hostname, String serviceName) {
-        return this.lambdaQuery()
-                .eq(ClusterServiceRoleInstanceEntity::getHostname, hostname)
-                .eq(ClusterServiceRoleInstanceEntity::getServiceName, serviceName).list();
-    }
 
 }

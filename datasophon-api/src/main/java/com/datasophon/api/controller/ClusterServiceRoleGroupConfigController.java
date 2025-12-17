@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("cluster/service/role/group/config")
-public class ClusterServiceRoleGroupConfigController {
+public class ClusterServiceRoleGroupConfigController extends ApiController {
     
     @Autowired
     private ClusterServiceRoleGroupConfigService clusterServiceRoleGroupConfigService;

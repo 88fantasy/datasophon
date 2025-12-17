@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("cluster/yarn/scheduler")
-public class ClusterYarnSchedulerController {
+public class ClusterYarnSchedulerController extends ApiController {
     
     @Autowired
     private ClusterYarnSchedulerService clusterYarnSchedulerService;

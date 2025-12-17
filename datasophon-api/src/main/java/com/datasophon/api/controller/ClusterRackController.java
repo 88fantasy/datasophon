@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("cluster/rack")
-public class ClusterRackController {
+public class ClusterRackController extends ApiController {
     
     @Autowired
     private ClusterRackService clusterRackService;

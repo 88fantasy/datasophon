@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("cluster/queue/capacity")
-public class ClusterQueueCapacityController {
+public class ClusterQueueCapacityController extends ApiController {
     
     @Autowired
     private ClusterQueueCapacityService clusterQueueCapacityService;

@@ -43,8 +43,8 @@ import cn.hutool.core.io.FileUtil;
 
 @Slf4j
 @RestController
-@RequestMapping("api/frame/service")
-public class FrameServiceController {
+@RequestMapping("frame/service")
+public class FrameServiceController extends ApiController {
     
     @Autowired
     private FrameServiceService frameVersionServiceService;

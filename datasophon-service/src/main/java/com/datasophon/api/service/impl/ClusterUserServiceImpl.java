@@ -17,10 +17,14 @@
 
 package com.datasophon.api.service.impl;
 
+import akka.actor.ActorSelection;
+import akka.pattern.Patterns;
+import akka.util.Timeout;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.ServiceException;
 import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.service.ClusterGroupService;
 import com.datasophon.api.service.ClusterUserGroupService;
 import com.datasophon.api.service.ClusterUserService;
 import com.datasophon.api.service.host.ClusterHostService;
@@ -33,41 +37,32 @@ import com.datasophon.dao.entity.ClusterGroup;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterUser;
 import com.datasophon.dao.entity.ClusterUserGroup;
+import com.datasophon.dao.mapper.ClusterGroupMapper;
 import com.datasophon.dao.mapper.ClusterUserMapper;
-
 import org.apache.commons.lang3.StringUtils;
-
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service("clusterUserService")
 @Transactional
 public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, ClusterUser> implements ClusterUserService {
     
     private static final Logger logger = LoggerFactory.getLogger(ClusterUserServiceImpl.class);
+
     @Autowired
-    private ClusterGroupService groupService;
+    private ClusterGroupMapper clusterGroupMapper;
     
     @Autowired
     private ClusterHostService hostService;
@@ -92,15 +87,15 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         String otherGroup = null;
         if (StringUtils.isNotBlank(groupIds)) {
             List<Integer> otherGroupIds =
-                    Arrays.stream(groupIds.split(",")).map(e -> Integer.parseInt(e)).collect(Collectors.toList());
+                    Arrays.stream(groupIds.split(",")).map(Integer::parseInt).collect(Collectors.toList());
             for (Integer id : otherGroupIds) {
                 buildClusterUserGroup(clusterId, clusterUser.getId(), id, 2);
             }
-            Collection<ClusterGroup> clusterGroups = groupService.listByIds(otherGroupIds);
-            otherGroup = clusterGroups.stream().map(e -> e.getGroupName()).collect(Collectors.joining(","));
+            List<ClusterGroup> clusterGroups = clusterGroupMapper.selectByIds(otherGroupIds);
+            otherGroup = clusterGroups.stream().map(ClusterGroup::getGroupName).collect(Collectors.joining(","));
         }
         
-        ClusterGroup mainGroup = groupService.getById(mainGroupId);
+        ClusterGroup mainGroup = clusterGroupMapper.selectById(mainGroupId);
         // sync to all hosts
         for (ClusterHostDO clusterHost : hostList) {
             ActorSelection unixUserActor = ActorUtils.actorSystem.actorSelection(
@@ -144,15 +139,12 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         List<ClusterUser> list = this.list(new QueryWrapper<ClusterUser>()
                 .eq(Constants.CLUSTER_ID, clusterId)
                 .eq(Constants.USERNAME, username));
-        if (list.size() > 0) {
-            return true;
-        }
-        return false;
+      return !list.isEmpty();
     }
     
     @Override
     public Result listPage(Integer clusterId, String username, Integer page, Integer pageSize) {
-        Integer offset = (page - 1) * pageSize;
+        int offset = (page - 1) * pageSize;
         List<ClusterUser> list = this.list(new QueryWrapper<ClusterUser>()
                 .like(StringUtils.isNotBlank(username), Constants.USERNAME, username)
                 .eq(Constants.CLUSTER_ID, clusterId)
@@ -162,7 +154,7 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
             List<ClusterGroup> otherGroupList = userGroupService.listOtherGroups(clusterUser.getId());
             if (Objects.nonNull(otherGroupList) && !otherGroupList.isEmpty()) {
                 String otherGroups =
-                        otherGroupList.stream().map(e -> e.getGroupName()).collect(Collectors.joining(","));
+                        otherGroupList.stream().map(ClusterGroup::getGroupName).collect(Collectors.joining(","));
                 clusterUser.setOtherGroups(otherGroups);
             }
             clusterUser.setMainGroup(mainGroup.getGroupName());
@@ -215,7 +207,7 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         List<ClusterGroup> otherGroupList = userGroupService.listOtherGroups(clusterUser.getId());
         String otherGroup = "";
         if (Objects.nonNull(otherGroupList) && !otherGroupList.isEmpty()) {
-            otherGroup = otherGroupList.stream().map(e -> e.getGroupName()).collect(Collectors.joining(","));
+            otherGroup = otherGroupList.stream().map(ClusterGroup::getGroupName).collect(Collectors.joining(","));
         }
         ActorSelection unixUserActor = ActorUtils.actorSystem
                 .actorSelection("akka.tcp://datasophon@" + hostname + ":2552/user/worker/unixUserActor");

@@ -34,7 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("cluster/kerberos")
-public class ClusterKerberosController {
+public class ClusterKerberosController extends ApiController {
     
     @Autowired
     private ClusterKerberosService kerberosService;

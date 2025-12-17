@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("cluster/group")
-public class ClusterGroupController {
+public class ClusterGroupController extends ApiController {
     
     @Autowired
     private ClusterGroupService clusterGroupService;

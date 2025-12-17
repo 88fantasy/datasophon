@@ -31,6 +31,7 @@ import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.mapper.ClusterAlertHistoryMapper;
 
+import com.datasophon.dao.mapper.ClusterServiceRoleInstanceMapper;
 import scala.concurrent.duration.FiniteDuration;
 
 import java.util.List;
@@ -56,7 +57,7 @@ public class ClusterAlertHistoryServiceImpl extends ServiceImpl<ClusterAlertHist
     private static final Logger logger = LoggerFactory.getLogger(ClusterAlertHistoryServiceImpl.class);
     
     @Autowired
-    private ClusterServiceRoleInstanceService roleInstanceService;
+    private ClusterServiceRoleInstanceMapper roleInstanceMapper;
     
     @Autowired
     private ClusterInfoService clusterInfoService;
@@ -97,7 +98,7 @@ public class ClusterAlertHistoryServiceImpl extends ServiceImpl<ClusterAlertHist
     
     @Override
     public void removeAlertByRoleInstanceIds(List<Integer> ids) {
-        ClusterServiceRoleInstanceEntity roleInstanceEntity = roleInstanceService.getById(ids.get(0));
+        ClusterServiceRoleInstanceEntity roleInstanceEntity = roleInstanceMapper.selectById(ids.get(0));
         ClusterInfoEntity clusterInfoEntity = clusterInfoService.getById(roleInstanceEntity.getClusterId());
         this.remove(new QueryWrapper<ClusterAlertHistory>()
                 .eq(Constants.IS_ENABLED, 1)

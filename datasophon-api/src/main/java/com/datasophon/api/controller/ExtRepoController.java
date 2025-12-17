@@ -30,9 +30,9 @@ import java.util.List;
  * @date 2025/11/5
  */
 @RestController
-@RequestMapping("/api/extrepo")
+@RequestMapping("extrepo")
 @Tag(name = "外部软件源")
-public class ExtRepoController {
+public class ExtRepoController extends ApiController {
 
 
     @Autowired

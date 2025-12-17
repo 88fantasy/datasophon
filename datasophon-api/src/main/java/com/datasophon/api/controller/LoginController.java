@@ -46,8 +46,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("")
-public class LoginController {
+public class LoginController extends ApiController {
     
     private static final Logger logger = LoggerFactory.getLogger(LoginController.class);
     

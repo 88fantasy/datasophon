@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("cluster/alert/group/map")
-public class ClusterAlertGroupMapController {
+public class ClusterAlertGroupMapController extends ApiController {
     
     @Autowired
     private ClusterAlertGroupMapService clusterAlertGroupMapService;

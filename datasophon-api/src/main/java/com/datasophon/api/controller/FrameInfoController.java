@@ -30,8 +30,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("api/frame")
-public class FrameInfoController {
+@RequestMapping("frame")
+public class FrameInfoController extends ApiController {
     
     @Autowired
     private FrameInfoService frameInfoService;

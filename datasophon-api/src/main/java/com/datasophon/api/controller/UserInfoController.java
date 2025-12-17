@@ -39,8 +39,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 @RestController
-@RequestMapping("api/user")
-public class UserInfoController {
+@RequestMapping("user")
+public class UserInfoController extends ApiController {
     
     @Autowired
     private UserInfoService userInfoService;

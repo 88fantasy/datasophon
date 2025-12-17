@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("cluster/webuis")
-public class ClusterServiceRoleInstanceWebuisController {
+public class ClusterServiceRoleInstanceWebuisController extends ApiController {
     
     @Autowired
     private ClusterServiceRoleInstanceWebuisService clusterServiceRoleInstanceWebuisService;

@@ -17,12 +17,12 @@
 
 package com.datasophon.api.configuration;
 
+import com.datasophon.api.controller.ApiController;
+import com.datasophon.api.interceptor.BasicValidRequestInterceptor;
 import com.datasophon.api.interceptor.LocaleChangeInterceptor;
 import com.datasophon.api.interceptor.LoginHandlerInterceptor;
 import com.datasophon.api.interceptor.UserPermissionHandler;
-
-import java.util.Locale;
-
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,120 +30,134 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.servlet.LocaleResolver;
-import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.CookieLocaleResolver;
+
+import java.util.Locale;
 
 /**
  * application configuration
  */
 @Configuration
 public class AppConfiguration implements WebMvcConfigurer {
-    
-    public static final String LOGIN_INTERCEPTOR_PATH_PATTERN = "/**/*";
-    public static final String LOGIN_PATH_PATTERN = "/login";
-    public static final String PATH_PATTERN = "/**";
-    public static final String LOCALE_LANGUAGE_COOKIE = "language";
 
-    @Value("${springdoc.api-docs.enabled:false}")
-    private boolean enableOpenApi;
+  public static final String LOCALE_LANGUAGE_COOKIE = "language";
 
-    @Bean
-    public CorsFilter corsFilter() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.addAllowedOrigin("*");
-        config.addAllowedMethod("*");
-        config.addAllowedHeader("*");
-        UrlBasedCorsConfigurationSource configSource = new UrlBasedCorsConfigurationSource();
-        configSource.registerCorsConfiguration(PATH_PATTERN, config);
-        return new CorsFilter(configSource);
+  @Value("${datasophon.server.path-prefix}")
+  private String pathPrefix;
+
+  @Value("${springdoc.api-docs.enabled:false}")
+  private boolean enableOpenApi;
+
+  private final LoginHandlerInterceptor loginHandlerInterceptor;
+
+  private final UserPermissionHandler userPermissionHandler;
+
+  private final LocaleChangeInterceptor localeChangeInterceptor;
+
+  private final BasicValidRequestInterceptor basicValidRequestInterceptor;
+
+
+
+  @Bean
+  public CorsFilter corsFilter() {
+    CorsConfiguration config = new CorsConfiguration();
+    config.addAllowedOrigin("*");
+    config.addAllowedMethod("*");
+    config.addAllowedHeader("*");
+    UrlBasedCorsConfigurationSource configSource = new UrlBasedCorsConfigurationSource();
+    configSource.registerCorsConfiguration(getPathPrefix() + "/**", config);
+    return new CorsFilter(configSource);
+  }
+
+  public AppConfiguration(LoginHandlerInterceptor loginHandlerInterceptor,
+                          UserPermissionHandler userPermissionHandler,
+                          LocaleChangeInterceptor localeChangeInterceptor,
+                          BasicValidRequestInterceptor basicValidRequestInterceptor
+  ) {
+    this.loginHandlerInterceptor = loginHandlerInterceptor;
+    this.userPermissionHandler = userPermissionHandler;
+    this.localeChangeInterceptor = localeChangeInterceptor;
+    this.basicValidRequestInterceptor = basicValidRequestInterceptor;
+  }
+
+
+  /**
+   * Cookie
+   *
+   * @return local resolver
+   */
+  @Bean(name = "localeResolver")
+  public LocaleResolver localeResolver() {
+    CookieLocaleResolver localeResolver = new CookieLocaleResolver();
+    localeResolver.setCookieName(LOCALE_LANGUAGE_COOKIE);
+    /** set default locale **/
+    localeResolver.setDefaultLocale(Locale.SIMPLIFIED_CHINESE);
+    /** set language tag compliant **/
+    localeResolver.setLanguageTagCompliant(false);
+    return localeResolver;
+  }
+
+
+  @Override
+  public void addInterceptors(InterceptorRegistry registry) {
+    // i18n
+    registry.addInterceptor(localeChangeInterceptor);
+    registry.addInterceptor(userPermissionHandler);
+    // login
+    InterceptorRegistration loginRegistration = registry.addInterceptor(loginHandlerInterceptor)
+        .addPathPatterns(getPathPrefix() + "/**")
+        .excludePathPatterns(
+            getPathPrefix() + "/login", "/error",
+            "/grafana/**",
+            "/cluster/alert/history/save",
+            "/cluster/kerberos/downloadKeytab",
+            "/index.html",
+            "/",
+            "/static/**"
+        );
+    if (enableOpenApi) {
+      loginRegistration.excludePathPatterns(
+          "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
+          "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico"
+      );
     }
-    
-    @Bean
-    public LoginHandlerInterceptor loginInterceptor() {
-        return new LoginHandlerInterceptor();
-    }
-    
-    /**
-     * Cookie
-     * @return local resolver
-     */
-    @Bean(name = "localeResolver")
-    public LocaleResolver localeResolver() {
-        CookieLocaleResolver localeResolver = new CookieLocaleResolver();
-        localeResolver.setCookieName(LOCALE_LANGUAGE_COOKIE);
-        /** set default locale **/
-        localeResolver.setDefaultLocale(Locale.SIMPLIFIED_CHINESE);
-        /** set language tag compliant **/
-        localeResolver.setLanguageTagCompliant(false);
-        return localeResolver;
-    }
-    
-    @Bean
-    public LocaleChangeInterceptor localeChangeInterceptor() {
-        return new LocaleChangeInterceptor();
-    }
-    
-    @Bean
-    public UserPermissionHandler userPermissionHandler() {
-        return new UserPermissionHandler();
-    }
-    
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        // i18n
-        registry.addInterceptor(localeChangeInterceptor());
-        registry.addInterceptor(userPermissionHandler());
-        // login
-        InterceptorRegistration loginRegistration = registry.addInterceptor(loginInterceptor())
-                .addPathPatterns("/**")
-                .excludePathPatterns(
-                        "/login", "/error",
-                        "/grafana/**",
-                        "/service/install/downloadPackage",
-                        "/service/install/downloadResource",
-                        "/cluster/alert/history/save",
-                        "/cluster/kerberos/downloadKeytab",
-                        "/index.html",
-                        "/",
-                        "/static/**"
-                );
-        if (enableOpenApi) {
-            loginRegistration.excludePathPatterns(
-                    "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
-                    "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico"
-            );
-        }
-    }
-    
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("/static/**")
-                .addResourceLocations("classpath:/front/static/resources/bundle-main/static/");
-        registry.addResourceHandler("doc.html").addResourceLocations("classpath:/META-INF/resources/");
-        registry.addResourceHandler("swagger-ui.html").addResourceLocations("classpath:/META-INF/resources/");
-        registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
-        registry.addResourceHandler("/ui/**").addResourceLocations("file:ui/");
-    }
-    
-    @Override
-    public void addViewControllers(ViewControllerRegistry registry) {
-        registry.addViewController("/ui/").setViewName("forward:/ui/index.html");
-        registry.addViewController("/").setViewName("index");
-    }
-    
-    /**
-     * Turn off suffix-based content negotiation
-     *
-     * @param configurer configurer
-     */
-    @Override
-    public void configureContentNegotiation(final ContentNegotiationConfigurer configurer) {
-        configurer.favorPathExtension(false);
-    }
-    
+
+    registry.addInterceptor(basicValidRequestInterceptor).addPathPatterns("/**");
+  }
+
+  //Add request url prefix
+  @Override
+  public void configurePathMatch(PathMatchConfigurer configurer) {
+    configurer.addPathPrefix(getPathPrefix(), aClass -> aClass.getSuperclass().equals(ApiController.class));
+  }
+
+  private String getPathPrefix() {
+    return StringUtils.removeEnd(pathPrefix, "/");
+  }
+
+//  @Override
+//  public void addViewControllers(ViewControllerRegistry registry) {
+//    // 排除的文件扩展名
+//    String excludedPatterns = ".*\\.(js|css|map|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$";
+//
+//    // 捕获所有请求，但排除API、静态资源和某些已知路径
+//    registry.addViewController("/{path:^(?!api$|static$|swagger$|webjars$|v2$|v3$).*$}/**")
+//        .setViewName("forward:/index.html");
+//  }
+
+  /**
+   * Turn off suffix-based content negotiation
+   *
+   * @param configurer configurer
+   */
+//  @Override
+//  public void configureContentNegotiation(final ContentNegotiationConfigurer configurer) {
+//    configurer.favorPathExtension(false);
+//  }
+
 }

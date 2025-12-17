@@ -46,6 +46,11 @@
         </dependency>
         <dependency>
             <groupId>com.datasophon</groupId>
+            <artifactId>datasophon-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.datasophon</groupId>
             <artifactId>datasophon-domain</artifactId>
             <version>${project.version}</version>
         </dependency>

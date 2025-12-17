@@ -38,13 +38,13 @@
     </modules>
 
     <properties>
-        <revision>1.2.2-RC1</revision>
+        <revision>2.0-SNAPSHOT</revision>
         <akka.version>2.4.20</akka.version>
         <commons.httpclient>3.0.1</commons.httpclient>
         <commons.lang>3.12.0</commons.lang>
         <druid.version>1.2.24</druid.version>
         <fastjson.version>1.2.83</fastjson.version>
-        <hutool.version>5.8.31</hutool.version>
+        <hutool.version>5.8.40</hutool.version>
         <java.version>1.8</java.version>
         <junit.version>4.12</junit.version>
         <logback.version>1.2.9</logback.version>
@@ -451,6 +451,26 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
                 <version>${versions-maven-plugin.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>static</directory>
+                            <includes>
+                                <include>**</include>
+                            </includes>
+                        </fileset>
+                        <fileset>
+                            <directory>${project.basedir}</directory>
+                            <includes>
+                                <include>datasophon-manager-*.tar.gz</include>
+                            </includes>
+                        </fileset>
+                    </filesets>
+                </configuration>
             </plugin>
 
             <!--            <plugin>-->

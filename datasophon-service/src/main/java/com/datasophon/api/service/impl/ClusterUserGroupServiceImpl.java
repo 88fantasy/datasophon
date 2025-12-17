@@ -17,76 +17,70 @@
 
 package com.datasophon.api.service.impl;
 
-import com.datasophon.api.service.ClusterGroupService;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.service.ClusterUserGroupService;
-import com.datasophon.api.service.ClusterUserService;
 import com.datasophon.common.Constants;
 import com.datasophon.dao.entity.ClusterGroup;
 import com.datasophon.dao.entity.ClusterUser;
 import com.datasophon.dao.entity.ClusterUserGroup;
+import com.datasophon.dao.mapper.ClusterGroupMapper;
 import com.datasophon.dao.mapper.ClusterUserGroupMapper;
-
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
+import com.datasophon.dao.mapper.ClusterUserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service("clusterUserGroupService")
 public class ClusterUserGroupServiceImpl extends ServiceImpl<ClusterUserGroupMapper, ClusterUserGroup>
-        implements
-            ClusterUserGroupService {
-    
-    @Autowired
-    private ClusterGroupService clusterGroupService;
-    
-    @Autowired
-    private ClusterUserService userService;
-    
-    @Override
-    public Long countGroupUserNum(Integer groupId) {
-        return this.count(new QueryWrapper<ClusterUserGroup>().eq(Constants.GROUP_ID, groupId));
+    implements
+    ClusterUserGroupService {
+
+  @Autowired
+  private ClusterGroupMapper clusterGroupMapper;
+
+  @Autowired
+  private ClusterUserMapper clusterUserMapper;
+
+  @Override
+  public Long countGroupUserNum(Integer groupId) {
+    return this.count(new QueryWrapper<ClusterUserGroup>().eq(Constants.GROUP_ID, groupId));
+  }
+
+  @Override
+  public void deleteByUser(Integer id) {
+    this.remove(new QueryWrapper<ClusterUserGroup>().eq(Constants.USER_ID, id));
+  }
+
+  @Override
+  public ClusterGroup queryMainGroup(Integer userId) {
+    List<ClusterUserGroup> clusterUserGroups =
+        this.list(new QueryWrapper<ClusterUserGroup>().eq(Constants.USER_ID, userId).eq("user_group_type", 1));
+    List<Integer> groupIds = clusterUserGroups.stream().map(ClusterUserGroup::getGroupId).collect(Collectors.toList());
+    return clusterGroupMapper.selectById(groupIds.get(0));
+  }
+
+  @Override
+  public List<ClusterGroup> listOtherGroups(Integer userId) {
+    List<ClusterUserGroup> clusterUserGroups =
+        this.list(new QueryWrapper<ClusterUserGroup>().eq(Constants.USER_ID, userId).eq("user_group_type", 2));
+    List<Integer> groupIds = clusterUserGroups.stream().map(ClusterUserGroup::getGroupId).collect(Collectors.toList());
+    if (!groupIds.isEmpty()) {
+      return clusterGroupMapper.selectByIds(groupIds);
     }
-    
-    @Override
-    public void deleteByUser(Integer id) {
-        this.remove(new QueryWrapper<ClusterUserGroup>().eq(Constants.USER_ID, id));
+    return null;
+  }
+
+  @Override
+  public List<ClusterUser> listClusterUsers(Integer groupId) {
+    List<ClusterUserGroup> clusterUserGroups =
+        this.list(new QueryWrapper<ClusterUserGroup>().eq(Constants.GROUP_ID, groupId));
+    if (!clusterUserGroups.isEmpty()) {
+      List<Integer> userIds = clusterUserGroups.stream().map(ClusterUserGroup::getUserId).collect(Collectors.toList());
+      return clusterUserMapper.selectByIds(userIds);
     }
-    
-    @Override
-    public ClusterGroup queryMainGroup(Integer userId) {
-        List<ClusterUserGroup> clusterUserGroups =
-                this.list(new QueryWrapper<ClusterUserGroup>().eq(Constants.USER_ID, userId).eq("user_group_type", 1));
-        List<Integer> groupIds = clusterUserGroups.stream().map(e -> e.getGroupId()).collect(Collectors.toList());
-        return clusterGroupService.getById(groupIds.get(0));
-    }
-    
-    @Override
-    public List<ClusterGroup> listOtherGroups(Integer userId) {
-        List<ClusterUserGroup> clusterUserGroups =
-                this.list(new QueryWrapper<ClusterUserGroup>().eq(Constants.USER_ID, userId).eq("user_group_type", 2));
-        List<Integer> groupIds = clusterUserGroups.stream().map(e -> e.getGroupId()).collect(Collectors.toList());
-        if (Objects.nonNull(groupIds) && !groupIds.isEmpty()) {
-            List<ClusterGroup> clusterGroups = (List<ClusterGroup>) clusterGroupService.listByIds(groupIds);
-            return clusterGroups;
-        }
-        return null;
-    }
-    
-    @Override
-    public List<ClusterUser> listClusterUsers(Integer groupId) {
-        List<ClusterUserGroup> clusterUserGroups =
-                this.list(new QueryWrapper<ClusterUserGroup>().eq(Constants.GROUP_ID, groupId));
-        if (!clusterUserGroups.isEmpty()) {
-            List<Integer> userIds = clusterUserGroups.stream().map(e -> e.getUserId()).collect(Collectors.toList());
-            Collection<ClusterUser> clusterUsers = userService.listByIds(userIds);
-            return (List<ClusterUser>) clusterUsers;
-        }
-        return null;
-    }
+    return null;
+  }
 }
