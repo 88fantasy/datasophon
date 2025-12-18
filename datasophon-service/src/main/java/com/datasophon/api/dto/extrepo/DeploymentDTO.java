@@ -15,7 +15,7 @@ public class DeploymentDTO {
     private Integer clusterId;
 
     @Schema(description = "发布清单文件ID")
-    private Long deployFileId;
+    private Integer deployFileId;
 
     @Schema(description = "敏感文件解密密码")
     private String contentDecodePasswd;

@@ -20,6 +20,7 @@ import com.datasophon.dao.entity.UploadTempFileChunk;
 import com.datasophon.dao.mapper.UploadTempFileChunkMapper;
 import com.datasophon.dao.mapper.UploadTempFileMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +61,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     @Autowired
     private TransactionalUtils transactionalUtils;
 
-    private final Map<Long, MergeProgressVO> map = new ConcurrentHashMap<>();
+    private final Map<Integer, MergeProgressVO> map = new ConcurrentHashMap<>();
 
     private static final String CHUNK_SUFFIX = ".chunk.tmp";
 
@@ -73,6 +74,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
         }
         try {
             UploadTempFile db = new UploadTempFile();
+            db.setId(RandomUtils.nextInt(0, Integer.MAX_VALUE));
             db.setFileName(file.getOriginalFilename());
             db.setContentType(file.getContentType());
             db.setByteCnt(file.getSize());
@@ -105,7 +107,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
         return new File(SystemUtils.getJavaIoTmpDir(), "ddp_upload");
     }
 
-    private String saveFileToDisk(MultipartFile file, File ddhTmpDir, Long attachId) throws IOException {
+    private String saveFileToDisk(MultipartFile file, File ddhTmpDir, Integer attachId) throws IOException {
         File attachDir = new File(ddhTmpDir, attachId.toString());
         if (!attachDir.exists() && !attachDir.mkdirs()) {
             throw new ServiceException(500, "创建文件存储目录失败: " + attachDir.getAbsolutePath());
@@ -213,7 +215,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     }
 
     @Override
-    public MergeProgressVO queryMergeProgress(Long attachId) {
+    public MergeProgressVO queryMergeProgress(Integer attachId) {
         UploadTempFile db = getById(attachId);
         if (db == null) {
             throw new BusinessException("任务不存在");
@@ -311,7 +313,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     }
 
     @Override
-    public File getTempFile(Long attachId) {
+    public File getTempFile(Integer attachId) {
         UploadTempFile db = getById(attachId);
         if (db == null) {
             return null;
@@ -325,8 +327,8 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
 
     @Override
     public void clearProgressCache() {
-        Set<Long> keys = map.keySet();
-        for (Long key : keys) {
+        Set<Integer> keys = map.keySet();
+        for (Integer key : keys) {
             MergeProgressVO pg = map.get(key);
             if (pg != null && pg.isTimeout()) {
                 map.remove(key);

@@ -1,5 +1,6 @@
 package com.datasophon.api.controller;
 
+import com.datasophon.api.dto.IntegerIdDTO;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.common.utils.Result;
 import com.datasophon.api.dto.upload.BigFileDTO;
@@ -91,7 +92,7 @@ public class TempFileController extends ApiController {
     @PostMapping("/queryMergeProgress")
     @Operation(summary = "查询合并进度")
     @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = MergeProgressVO.class))})
-    public Result queryMergeProgress(@RequestBody @Validated LongIdDTO id) {
+    public Result queryMergeProgress(@RequestBody @Validated IntegerIdDTO id) {
         return Result.success(uploadTempFileService.queryMergeProgress(id.getId()));
     }
 }
