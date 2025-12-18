@@ -18,13 +18,18 @@
  *
  */
 
+import cluster from "./cluster";
+import host from "./host";
+import services from "./services";
+import user from "./user";
+import system from "./system";
+import upload from "./upload";
 
-import cluster from './cluster'
-import host from './host'
-import services from './services'
-import user from './user'
-import system from './system'
-
-
-
-export default {...cluster, ...host, ...user, ...services, ...system}
+export default {
+  ...cluster,
+  ...host,
+  ...user,
+  ...services,
+  ...system,
+  ...upload,
+};

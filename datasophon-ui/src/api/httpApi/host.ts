@@ -29,10 +29,10 @@ export default {
   analysisHostList: path + '/host/install/analysisHostList', // 解析主机列表
   hostCheckCompleted: path + '/host/install/hostCheckCompleted', // 查询主机环境校验是否完成
   dispatcherHostAgentCompleted: path + '/host/install/dispatcherHostAgentCompleted', // 查询主机agent分发是否完成
-  getRack: path + '/api/cluster/host/getRack', // 查询机架
-  updateRack: path + '/api/cluster/host/update', // 分配机架
-  deleteRack: path + '/api/cluster/host/delete', // 分配机架
-  getRoleListByHostname: path + '/api/cluster/host/getRoleListByHostname', // 根据主机查询角色列表
+  getRack: path + '/cluster/host/getRack', // 查询机架
+  updateRack: path + '/cluster/host/update', // 分配机架
+  deleteRack: path + '/cluster/host/delete', // 分配机架
+  getRoleListByHostname: path + '/cluster/host/getRoleListByHostname', // 根据主机查询角色列表
   generateHostAgentCommand: path + '/host/install/generateHostAgentCommand', // 主机 Worker 管理
   generateHostServiceCommand: path + '/host/install/generateHostServiceCommand', // 主机 Worker Service 管理
 }
