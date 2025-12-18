@@ -39,17 +39,18 @@ const Index = (props, ref) => {
     const invokeInit = useCallback(async (forceUpdate) => {
 
         const fn = () => {
+
             actionRef.current?.reload()
-            invokeInit(false)
+            invokeInit(!actionRef.current && forceUpdate || false)
         }
 
-        if (forceUpdate) {
+        // if (forceUpdate) {
+        //     fn()
+        // } else {
+        timeRef.current = setTimeout(() => {
             fn()
-        } else {
-            timeRef.current = setTimeout(() => {
-                fn()
-            }, 3 * 1000)
-        }
+        }, forceUpdate ? 0 : 3 * 1000)
+        // }
 
     }, [])
 
