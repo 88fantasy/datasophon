@@ -223,6 +223,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             }
             if (StringUtils.isNoneBlank(error)) {
                 progress.setState(-1);
+                progress.setError(error);
             } else {
                 progress.setState(1);
             }
