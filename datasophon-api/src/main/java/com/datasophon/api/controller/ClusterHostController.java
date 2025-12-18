@@ -38,8 +38,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 @Slf4j
 @RestController
-@RequestMapping("api/cluster/host")
-public class ClusterHostController {
+@RequestMapping("cluster/host")
+public class ClusterHostController extends ApiController {
     
     @Autowired
     private ClusterHostService clusterHostService;

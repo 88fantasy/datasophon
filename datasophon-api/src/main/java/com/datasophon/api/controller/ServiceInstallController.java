@@ -37,7 +37,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("service/install")
-public class ServiceInstallController {
+public class ServiceInstallController extends ApiController {
     
     @Autowired
     ServiceInstallService serviceInstallService;

@@ -74,7 +74,7 @@ import cn.hutool.http.HttpUtil;
 @Slf4j
 @RestController
 @RequestMapping("/cluster/parcel")
-public class ParcelController implements DisposableBean {
+public class ParcelController extends ApiController implements DisposableBean {
     
     /**
      * 组件下载进程缓存，不会安装太多组件的，直接采用内存

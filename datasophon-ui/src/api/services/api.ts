@@ -26,7 +26,7 @@ import { VUE_APP_API_BASE_URL } from "../../config";
 const BASE_URL = VUE_APP_API_BASE_URL;
 
 
-const LOGIN = `${BASE_URL}/ddh/login`;
+const LOGIN = `${BASE_URL}/ddh/api/login`;
 const ROUTES = `${BASE_URL}/routes`;
 const GOODS = `${BASE_URL}/goods`;
 const GOODS_COLUMNS = `${BASE_URL}/columns`;

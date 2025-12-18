@@ -33,6 +33,7 @@ import com.datasophon.dao.entity.ClusterServiceCommandHostCommandEntity;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.mapper.ClusterServiceCommandHostCommandMapper;
 
+import com.datasophon.dao.mapper.ClusterServiceCommandMapper;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
@@ -66,16 +67,10 @@ public class ClusterServiceCommandHostCommandServiceImpl
     ClusterServiceCommandHostCommandMapper hostCommandMapper;
     
     @Autowired
-    FrameServiceRoleService frameServiceRoleService;
-    
-    @Autowired
-    FrameServiceService frameService;
-    
-    @Autowired
     ClusterInfoService clusterInfoService;
     
     @Autowired
-    ClusterServiceCommandService commandService;
+    ClusterServiceCommandMapper commandMapper;
     
     @Override
     public Result getHostCommandList(String hostname, String commandHostId, Integer page, Integer pageSize) {
@@ -129,7 +124,7 @@ public class ClusterServiceCommandHostCommandServiceImpl
                 this.getOne(new QueryWrapper<ClusterServiceCommandHostCommandEntity>().eq(Constants.HOST_COMMAND_ID,
                         hostCommandId));
         
-        ClusterServiceCommandEntity commandEntity = commandService.getCommandById(hostCommand.getCommandId());
+        ClusterServiceCommandEntity commandEntity = commandMapper.getCommandById(hostCommand.getCommandId());
         
         String serviceName = commandEntity.getServiceName();
         String serviceRoleName = hostCommand.getServiceRoleName();

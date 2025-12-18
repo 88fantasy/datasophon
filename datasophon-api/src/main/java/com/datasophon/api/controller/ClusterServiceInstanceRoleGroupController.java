@@ -33,7 +33,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 @RestController
 @RequestMapping("cluster/service/instance/role/group")
-public class ClusterServiceInstanceRoleGroupController {
+public class ClusterServiceInstanceRoleGroupController extends ApiController {
     
     @Autowired
     private ClusterServiceInstanceRoleGroupService clusterServiceInstanceRoleGroupService;

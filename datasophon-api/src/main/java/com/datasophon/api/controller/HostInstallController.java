@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("host/install")
-public class HostInstallController {
+public class HostInstallController extends ApiController {
     
     @Autowired
     private InstallService installService;

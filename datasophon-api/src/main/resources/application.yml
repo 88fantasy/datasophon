@@ -20,17 +20,21 @@ spring:
     date-format: yyyy-MM-dd HH:mm:ss
   mvc:
     date-format: yyyy-MM-dd HH:mm:ss
-    view:
-      suffix: .html
+    static-path-pattern: /**
+  web:
+    resources:
+      static-locations: classpath:/static/
+      add-mappings: true
+  resources:
+    chain:
+      strategy:
+        content:
+          enabled: true
+          paths: /**
   #国际化配置
   messages:
     basename: i18n/messages
     encoding: UTF-8
-  main:
-    allow-circular-references: true
-  web:
-    resources:
-      static-locations: classpath:/front/views/
   servlet:
     multipart:
       max-file-size: 200MB
@@ -67,6 +71,8 @@ logging:
 datasophon:
   migration:
     enable: true
+  server:
+    path-prefix: /api
   proxy-grafana:
     enable: false
 #    max-threads: 32

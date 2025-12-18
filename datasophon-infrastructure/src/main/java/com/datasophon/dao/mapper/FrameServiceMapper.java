@@ -17,11 +17,13 @@
 
 package com.datasophon.dao.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.datasophon.dao.entity.FrameServiceEntity;
-
+import org.apache.hadoop.util.VersionUtil;
 import org.apache.ibatis.annotations.Mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import java.util.List;
 
 /**
  * 集群框架版本服务表
@@ -32,5 +34,14 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 @Mapper
 public interface FrameServiceMapper extends BaseMapper<FrameServiceEntity> {
-    
+
+  default FrameServiceEntity getServiceByFrameCodeAndServiceName(String clusterFrame, String serviceName) {
+//        changlog: 旧版本没有版本之分，新需求有了版本，为了兼容，约定使用最新版本
+    List<FrameServiceEntity> list = selectList(Wrappers.<FrameServiceEntity>lambdaQuery()
+        .eq(FrameServiceEntity::getFrameCode, clusterFrame)
+        .eq(FrameServiceEntity::getServiceName, serviceName));
+    list.sort((s1, s2) -> VersionUtil.compareVersions(s1.getServiceVersion(), s2.getServiceVersion()));
+//        返回版本最新的定义
+    return list.get(list.size() - 1);
+  }
 }

@@ -32,8 +32,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Arrays;
 
 @RestController
-@RequestMapping("api/frame/service/role")
-public class FrameServiceRoleController {
+@RequestMapping("frame/service/role")
+public class FrameServiceRoleController extends ApiController {
     
     @Autowired
     private FrameServiceRoleService frameServiceRoleService;

@@ -55,5 +55,4 @@ public interface ClusterServiceInstanceService extends IService<ClusterServiceIn
     
     boolean hasRunningRoleInstance(Integer serviceInstanceId);
 
-    Integer getClusterId(Integer serviceInstanceId);
 }

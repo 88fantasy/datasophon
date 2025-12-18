@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("cluster/alert/history")
-public class ClusterAlertHistoryController {
+public class ClusterAlertHistoryController extends ApiController {
     
     @Autowired
     private ClusterAlertHistoryService clusterAlertHistoryService;

@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("cluster/alert/quota")
-public class ClusterAlertQuotaController {
+public class ClusterAlertQuotaController extends ApiController {
     
     @Autowired
     private ClusterAlertQuotaService clusterAlertQuotaService;

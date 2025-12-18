@@ -62,7 +62,7 @@
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
-                <version>1.10.3</version>
+                <version>1.15.4</version>
                 <configuration>
                     <nodeVersion>${build.node.version}</nodeVersion>
                     <npmVersion>${build.npm.version}</npmVersion>
@@ -85,17 +85,28 @@
                         </goals>
                         <phase>generate-resources</phase>
                         <configuration>
-                            <arguments>install --registry=https://registry.npmmirror.com --sass-binary-site=https://npmmirror.com/mirrors/node-sass</arguments>
+                            <arguments>run build</arguments>
                         </configuration>
                     </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
                     <execution>
-                        <id>npm run deploy</id>
+                        <id>copy-resource</id>
+                        <phase>compile</phase>
                         <goals>
-                            <goal>npm</goal>
+                            <goal>copy-resources</goal>
                         </goals>
-                        <phase>install</phase>
                         <configuration>
-                            <arguments>run deploy</arguments>
+                            <outputDirectory>${project.parent.basedir}/static</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.parent.basedir}/datasophon-ui/dist</directory>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>

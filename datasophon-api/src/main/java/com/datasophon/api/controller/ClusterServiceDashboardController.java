@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("cluster/service/dashboard")
-public class ClusterServiceDashboardController {
+public class ClusterServiceDashboardController extends ApiController {
     
     @Autowired
     private ClusterServiceDashboardService clusterServiceDashboardService;

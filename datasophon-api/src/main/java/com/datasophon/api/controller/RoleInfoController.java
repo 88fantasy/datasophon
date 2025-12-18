@@ -32,8 +32,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/role/info")
-public class RoleInfoController {
+@RequestMapping("role/info")
+public class RoleInfoController extends ApiController {
     
     @Autowired
     private RoleInfoService roleInfoService;

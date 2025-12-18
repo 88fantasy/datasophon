@@ -38,8 +38,8 @@ import org.springframework.web.bind.annotation.RestController;
 import cn.hutool.core.util.EnumUtil;
 
 @RestController
-@RequestMapping("api/cluster/service/command")
-public class ClusterServiceCommandController {
+@RequestMapping("cluster/service/command")
+public class ClusterServiceCommandController extends ApiController {
     
     @Autowired
     private ClusterServiceCommandService clusterServiceCommandService;

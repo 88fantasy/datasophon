@@ -32,8 +32,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("api/notice/group/user")
-public class NoticeGroupUserController {
+@RequestMapping("notice/group/user")
+public class NoticeGroupUserController extends ApiController {
     
     @Autowired
     private NoticeGroupUserService noticeGroupUserService;

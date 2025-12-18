@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("cluster/service/instance/config")
-public class ClusterServiceInstanceConfigController {
+public class ClusterServiceInstanceConfigController extends ApiController {
     
     @Autowired
     private ClusterServiceInstanceConfigService clusterServiceInstanceConfigService;

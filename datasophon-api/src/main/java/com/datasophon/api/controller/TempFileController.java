@@ -30,9 +30,9 @@ import javax.validation.constraints.NotNull;
  * @date 2025/11/5
  */
 @RestController
-@RequestMapping("/api/tempfile")
+@RequestMapping("tempfile")
 @Tag(name = "临时文件上传")
-public class TempFileController {
+public class TempFileController extends ApiController {
 
 
     @Autowired

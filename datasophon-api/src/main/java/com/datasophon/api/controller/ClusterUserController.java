@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("cluster/user")
-public class ClusterUserController {
+public class ClusterUserController extends ApiController {
     
     @Autowired
     private ClusterUserService clusterUserService;
