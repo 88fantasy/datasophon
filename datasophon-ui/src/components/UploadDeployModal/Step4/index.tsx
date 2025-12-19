@@ -53,7 +53,7 @@ const Index = (props) => {
             if (res.code === 200) {
 
                 if (res.data.state === 1) {
-                    const formRef = formMapRef.current[1]
+                    const formRef = formMapRef.current[3]
                     // const values = formRef?.current?.getFieldsValue()
                     formRef.current.setFieldsValue({
                         importCmp: true
@@ -91,15 +91,23 @@ const Index = (props) => {
 
     const invokeInit = useCallback(async () => {
 
-        // console.log('invokeInit', formMapRef)
-        const formRef = formMapRef.current[0]
-        const values = formRef?.current?.getFieldsValue()
+        console.log('invokeInit', formMapRef)
+        const firstFormRef = formMapRef.current[0]
+        const secondFormRef = formMapRef.current[1]
+        const firstFormRefValues = firstFormRef?.current?.getFieldsValue()
+        const secondFormRefValues = secondFormRef?.current?.getFieldsValue()
 
         const {
             meteFileId,
-            pkgFileId,
             contentDecodePasswd
-        } = values
+        } = firstFormRefValues
+
+        const {
+            pkgFileId
+        } = secondFormRefValues
+
+        console.log('invokeInit', meteFileId,
+            contentDecodePasswd, pkgFileId, secondFormRefValues)
 
 
         if (

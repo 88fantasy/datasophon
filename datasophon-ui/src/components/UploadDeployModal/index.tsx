@@ -10,6 +10,7 @@ import Step4 from "./Step4";
 import { axiosJsonPost } from "../../api/request";
 import { API } from "../../api";
 import { showMsgAfferRequest } from "../../utils/util";
+import Step3 from "./Step3";
 
 
 const Index = (props) => {
@@ -36,14 +37,32 @@ const Index = (props) => {
 
     const invokeRenderSteps = () => {
         const arr = [
-            // {
-            //     title: '上传配置文件',
-            //     render: Step1
-            // },
-            // {
-            //     title: '上传部署包',
-            //     render: Step2
-            // },
+            {
+                title: '上传配置文件',
+                render: Step1
+            },
+            {
+                title: '上传部署包',
+                render: <Step2
+                    key={currentStep}
+                    formMapRef={formMapRef}
+                />
+            },
+            {
+                title: '上传部署清单',
+                render: currentStep === 2 && <Step3
+                    key={currentStep}
+                    formMapRef={formMapRef}
+                />
+            },
+            {
+                title: '导入安装组件',
+                render: currentStep === 3 && <Step4
+                    key={currentStep}
+                    formMapRef={formMapRef}
+                />
+            },
+
             // {
             //     title: '导入安装组件',
             //     render: Step1
@@ -52,18 +71,18 @@ const Index = (props) => {
             //     title: '导入安装组件',
             //     render: <Step4/>
             // },
-            {
-                title: '上传文件',
-                render: UploadStep
-            },
-            {
-                title: '导入安装组件',
-                render: currentStep === 1 && <Step4
-                    key={currentStep}
-                    formMapRef={formMapRef}
-                // formRef={formRef}
-                />
-            },
+            // {
+            //     title: '上传文件',
+            //     render: UploadStep
+            // },
+            // {
+            //     title: '导入安装组件',
+            //     render: currentStep === 1 && <Step4
+            //         key={currentStep}
+            //         formMapRef={formMapRef}
+            //     // formRef={formRef}
+            //     />
+            // },
         ]
 
         // if (stepsType === T_STEPS_TYPE_HOSTMANAGE) {
@@ -109,7 +128,7 @@ const Index = (props) => {
                 } = props
 
 
-                if (step === 1) {
+                if (step === 3) {
                     const nextClick = () => {
                         // onSubmit()
                         const values = form?.getFieldsValue() || {}
@@ -135,12 +154,20 @@ const Index = (props) => {
                 }
 
                 return (
-                    <Button
-                        type="primary"
-                        onClick={() => onSubmit()}
-                    >
-                        下一步
-                    </Button>
+                    <>
+                        <Button
+                            type="primary"
+                            onClick={() => onPre()}
+                        >
+                            上一步
+                        </Button>
+                        <Button
+                            type="primary"
+                            onClick={() => onSubmit()}
+                        >
+                            下一步
+                        </Button>
+                    </>
                 )
             }
         }

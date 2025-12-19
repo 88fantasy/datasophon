@@ -23,6 +23,7 @@
     "enquire.js": "^2.1.6",
     "eventemitter3": "^5.0.1",
     "js-cookie": "^3.0.5",
+    "js-yaml": "^4.1.1",
     "lodash-es": "^4.17.21",
     "monaco-editor": "^0.52.0",
     "qs": "^6.11.2",
@@ -32,6 +33,7 @@
     "react-router": "^7.9.4",
     "react-router-dom": "^7.9.4",
     "shiki": "^3.11.0",
+    "sm-crypto": "^0.3.13",
     "spark-md5": "^3.0.2",
     "sql-formatter": "^9.2.0",
     "tailwindcss": "^4.1.14"
