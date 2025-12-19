@@ -376,7 +376,6 @@ const Index = (props) => {
                     {
                         invokeGenStatusDom(commandState)
                     }
-
                 </div>
             </div>
 
