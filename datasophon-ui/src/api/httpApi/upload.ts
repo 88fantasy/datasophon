@@ -10,4 +10,5 @@ export default {
   importCmp: path + "/extrepo/importCmp",
   queryProgress: path + "/extrepo/queryProgress",
   deploy: path + "/extrepo/deploy",
+  getDeployProgressDAG: path + "/extrepo/getDeployProgressDAG",
 };
