@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
     Graph,
     Node,
@@ -8,12 +8,14 @@ import {
     Selection,
     IS_SAFARI,
 } from '@antv/x6'
-import { Dropdown, Tooltip } from "antd"
+import { Card, Dropdown, Progress, Tooltip } from "antd"
 import { register } from '@antv/x6-react-shape'
 import insertCss from 'insert-css'
 import { CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, LoadingOutlined } from "@ant-design/icons"
 import { blue, gold, green, orange, red } from "@ant-design/colors"
 import { invokeGenSourceAndTarget } from "../../utils/antvUtils"
+import { invokeGenerateElId } from "../../utils/util"
+import gobalEvent, { uiEvent } from "../../utils/gobalEvent"
 
 
 
@@ -26,13 +28,14 @@ const invokeGenStatusDom = (val) => {
             com: CheckCircleOutlined,
             style: {
                 color: green.primary
-            }
+            },
         },
         '失败': {
             com: ExclamationCircleOutlined,
             style: {
                 color: red.primary
-            }
+            },
+            status: 'exception'
         },
         '取消': {
             com: CloseCircleOutlined,
@@ -49,7 +52,8 @@ const invokeGenStatusDom = (val) => {
         com: LoadingOutlined,
         style: {
             color: blue.primary
-        }
+        },
+        status: "active"
     }
     const Com = val.com
     return (
@@ -266,11 +270,23 @@ const Index = (props) => {
 
     console.log('props', props)
 
+    const elId = useRef(invokeGenerateElId())
     const { node } = props
 
     const [state, setState] = useState({
         plusActionSelected: false,
     })
+
+    const [nodeData, setNodeData] = useState(() => {
+
+        return node?.getData() || {}
+    })
+
+
+
+    const { plusActionSelected } = state
+    // const data = node?.getData() as ProcessingNodeData
+    const { name, type, commandState, statusMsg, roles = [] } = nodeData
 
 
     // 创建下游的节点和边
@@ -354,30 +370,134 @@ const Index = (props) => {
     }
 
 
-    const { plusActionSelected } = state
-    const data = node?.getData() as ProcessingNodeData
-    const { name, type, commandState, statusMsg } = data
+
+
+
+    const invokeRenderRole = () => {
+        return roles.map(role => {
+            const {
+                roleName,
+                cmdList
+            } = role
+
+
+            return (
+                <Card
+                    title={`服务${roleName}`}
+                    size="small"
+                    key={roleName}
+                    className="my-[2px]"
+                >
+                    {
+                        cmdList.map(cmd => {
+                            const {
+                                hostname,
+                                serviceRoleType,
+                                commandState,
+                                commandProgress
+                            } = cmd
+
+                            const {
+                                status
+                            } = invokeGenStatusDom(commandState)
+                            return (
+                                <div
+                                    key={cmd}
+
+                                >
+
+                                    <div>
+                                        {hostname} - {serviceRoleType}
+                                    </div>
+                                    <Progress percent={commandProgress} size="small" status={status} />
+                                </div>
+                            )
+                        })
+                    }
+                </Card>
+            )
+        })
+    }
+
+    const invokEestimateLabelHeight = useCallback(() => {
+        setTimeout(() => {
+            const el = document.getElementById(elId.current)
+            const {
+                height,
+                width
+            } = el.getBoundingClientRect()
+
+            console.log('height', height, width)
+
+            // node.updatePorts()
+
+            console.log('node', node)
+
+
+
+
+            node.resize(width, height)
+
+
+            node.port.ports.map(val => {
+                node.setPortProp(val.id, ['args', 'y'], height / 2);
+            })
+
+
+
+            // // const { width, height } = node.getSize();
+            // node.prop('ports/items', [
+            //     { id: 'p1', args: { x: width / 2, y: height / 2 }, /* ... */ },
+            //     { id: 'p2', args:     { x: width / 2, y: height / 2 }, /* ... */ },
+            // ]);
+        }, 0.5 * 1000)
+
+    }, [node])
+
+
+    useEffect(() => {
+        gobalEvent.on(uiEvent.updateDataProcessingDagNodeSize, invokEestimateLabelHeight)
+
+        return () => {
+            gobalEvent.off(uiEvent.updateDataProcessingDagNodeSize, invokEestimateLabelHeight)
+        }
+    }, [invokEestimateLabelHeight])
+
+
+    // useEffect(() => {
+    //     setNodeData(node?.getData() || {})
+    // }, [node])
+
+
+    useEffect(() => {
+        invokEestimateLabelHeight()
+    }, [])
 
     return (
-        <div className="data-processing-dag-node">
+        <div className="data-processing-dag-node" id={elId.current}>
             <div
                 className="main-area"
                 onMouseEnter={onMainMouseEnter}
                 onMouseLeave={onMainMouseLeave}
             >
-                <div className="main-info">
+                <div className="flex  justify-between items-center ">
                     <Tooltip title={name} mouseEnterDelay={0.8}>
-                        <div className="ellipsis-row node-name">{name}</div>
+                        <div className="ellipsis-row node-name font-bold">{name}</div>
                     </Tooltip>
+                    {/* 节点状态信息 */}
+                    <div className="status-action ">
+                        {
+                            invokeGenStatusDom(commandState)
+                        }
+                    </div>
+
                 </div>
 
-                {/* 节点状态信息 */}
-                <div className="status-action ">
-                    {
-                        invokeGenStatusDom(commandState)
-                    }
-                </div>
+
+                {invokeRenderRole()}
             </div>
+
+
 
             {/* 添加下游节点 */}
             {type !== NodeType.OUTPUT && (
@@ -446,7 +566,7 @@ Index.invokeRegisterNode = () => {
     register({
         shape: Index.shape,
         width: 212,
-        height: 48,
+        // height: 48,
         component: Index,
         // port默认不可见
         ports: Index.ports
@@ -515,7 +635,7 @@ Index.invokeRegisterEdge = () => {
                 },
             },
         ],
-        connector: { name: 'curveConnector' },
+        connector: { name: Index.connectortName },
         attrs: {
             wrap: {
                 connection: true,
@@ -553,12 +673,12 @@ Index.invokeInit = () => {
       }
     
       .main-area {
-        display: flex;
-        flex-direction: row;    
-        justify-content: space-between;   
+        // display: flex;
+        // flex-direction: row;    
+        // justify-content: space-between;   
         padding: 12px;    
         width: 180px;   
-        height: 48px;   
+        // height: 48px;   
         color: rgba(0, 0, 0, 65%);    
         font-size: 12px;    
         font-family: PingFangSC;    

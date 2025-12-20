@@ -11,6 +11,7 @@ import {
 } from '@antv/x6'
 import { invokeGenerateElId } from "../../utils/util"
 import { invokeGenPort, invokeGenSourceAndTarget } from "../../utils/antvUtils"
+import gobalEvent, { uiEvent } from "../../utils/gobalEvent"
 
 DataProcessingDagNode.invokeInit()
 
@@ -219,12 +220,16 @@ const Index = (props) => {
         nodeStatusList.forEach((item) => {
             const { id, status, statusMsg } = item
             const node = graphRef.current.getCellById(id)
-            const data = (node?.getData() || {})
-            node.setData({
-                ...data,
-                status,
-                statusMsg,
-            })
+
+            if (node) {
+                const data = (node?.getData() || {})
+                node.setData({
+                    ...data,
+                    status,
+                    statusMsg,
+                })
+            }
+
         })
     }, [])
 
@@ -251,10 +256,10 @@ const Index = (props) => {
             const { id, status } = item
             const edge = graphRef.current.getCellById(id)
             if (status === 'success') {
-                edge.attr('line/stroke', '#52c41a')
+                edge?.attr('line/stroke', '#52c41a')
             }
             if (status === 'error') {
-                edge.attr('line/stroke', '#ff4d4f')
+                edge?.attr('line/stroke', '#ff4d4f')
             }
         })
         // 默认选中一个节点
@@ -450,7 +455,7 @@ const Index = (props) => {
             setTimeout(() => {
                 excuteAnimate()
                 showNodeStatus()
-
+                gobalEvent.emit(uiEvent.updateDataProcessingDagNodeSize)
             }, 2000)
             setTimeout(() => {
                 showNodeStatus()
