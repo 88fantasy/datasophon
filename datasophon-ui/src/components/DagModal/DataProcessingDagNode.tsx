@@ -16,6 +16,7 @@ import { blue, gold, green, orange, red } from "@ant-design/colors"
 import { invokeGenSourceAndTarget } from "../../utils/antvUtils"
 import { invokeGenerateElId } from "../../utils/util"
 import gobalEvent, { uiEvent } from "../../utils/gobalEvent"
+import { isEqual } from "lodash-es"
 
 
 
@@ -455,6 +456,24 @@ const Index = (props) => {
     }, [node])
 
 
+    const updateDataProcessingDagNodeData = useCallback((dataMap) => {
+        const data = dataMap[node.id]
+        if (data) {
+
+            try {
+
+                console.log('isNotSame', !isEqual(data, nodeData))   
+                if (!isEqual(data, nodeData)) {
+                    // node.setData(data)
+                    setNodeData(data)
+                }
+            } catch (error) {
+                console.warn('updateDataProcessingDagNodeData error', error)
+            }
+        }
+    }, [])
+
+
     useEffect(() => {
         gobalEvent.on(uiEvent.updateDataProcessingDagNodeSize, invokEestimateLabelHeight)
 
@@ -462,6 +481,18 @@ const Index = (props) => {
             gobalEvent.off(uiEvent.updateDataProcessingDagNodeSize, invokEestimateLabelHeight)
         }
     }, [invokEestimateLabelHeight])
+
+
+
+    useEffect(() => {
+        gobalEvent.on(uiEvent.updateDataProcessingDagNodeData, updateDataProcessingDagNodeData)
+
+        return () => {
+            gobalEvent.off(uiEvent.updateDataProcessingDagNodeData, updateDataProcessingDagNodeData)
+        }
+    }, [updateDataProcessingDagNodeData])
+
+
 
 
     // useEffect(() => {

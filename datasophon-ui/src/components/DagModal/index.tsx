@@ -110,6 +110,7 @@ const invokeTransferData = (data) => {
 const Index = (props) => {
 
     const graphRef = useRef()
+    const updateTimeoutIdRef = useRef()
     const containerRef = useRef(invokeGenerateElId())
 
     const [state, setState] = useState({})
@@ -267,8 +268,14 @@ const Index = (props) => {
     }, [])
 
 
+    const invokeCancelUpdateTimeoutIdRef = useCallback(() => {
+        if (updateTimeoutIdRef.current) {
+            clearTimeout(updateTimeoutIdRef.current)
+            updateTimeoutIdRef.current = undefined
+        }
+    }, [])
 
-    const invokeInit = useCallback(async () => {
+    const invokeInit = useCallback(async (update) => {
         const res = await axiosJsonPost(API.getDeployProgressDAG, {
             "clusterId": 1,
             "cmdIds": ["0100722958ec439ba2f0d865b98f18d7"]
@@ -443,7 +450,6 @@ const Index = (props) => {
             //         }
             //     ]
             // }
-            graphRef.current.fromJSON(data)
             // const zoomOptions = {
             //     padding: {
             //         left: 10,
@@ -452,15 +458,32 @@ const Index = (props) => {
             // }
             // graphRef.current.zoomToFit(zoomOptions)
 
-            setTimeout(() => {
-                excuteAnimate()
-                showNodeStatus()
-                gobalEvent.emit(uiEvent.updateDataProcessingDagNodeSize)
-            }, 2000)
-            setTimeout(() => {
-                showNodeStatus()
-                stopAnimate()
-            }, 3000)
+
+            if (!update) {
+                graphRef.current.fromJSON(data)
+                    
+                setTimeout(() => {
+                    excuteAnimate()
+                    showNodeStatus()
+                    gobalEvent.emit(uiEvent.updateDataProcessingDagNodeSize)
+                }, 2000)
+                setTimeout(() => {
+                    showNodeStatus()
+                    stopAnimate()
+                }, 3000)
+            } else {
+                const dataMap = res.data?.srvList.reduce((acc, curr) => {
+                    acc[curr.id] = curr
+                    return acc
+                }, {})
+                gobalEvent.emit(uiEvent.updateDataProcessingDagNodeData, dataMap)
+            }
+
+
+            updateTimeoutIdRef.current = setTimeout(() => {
+                invokeInit(true)
+            }, 3 * 1000)
+
         }
     }, [excuteAnimate, showNodeStatus, stopAnimate])
 
@@ -468,6 +491,10 @@ const Index = (props) => {
     useEffect(() => {
         invokeInitGraph()
         invokeInit()
+
+        return () => {
+            invokeCancelUpdateTimeoutIdRef()
+        }
     }, [invokeInit, invokeInitGraph])
 
     return (

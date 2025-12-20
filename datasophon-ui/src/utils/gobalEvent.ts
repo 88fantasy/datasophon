@@ -11,7 +11,8 @@ import { invokeGenerateElId } from "./util";
 const gobalEvent = new EventEmitter();
 
 const uiEvent = {
-  updateDataProcessingDagNodeSize: invokeGenerateElId()
+  updateDataProcessingDagNodeSize: invokeGenerateElId(),
+  updateDataProcessingDagNodeData: invokeGenerateElId(),
 };
 
 export { uiEvent };
