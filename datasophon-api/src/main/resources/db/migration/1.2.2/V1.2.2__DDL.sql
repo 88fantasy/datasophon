@@ -9,7 +9,7 @@ ALTER TABLE t_ddh_cluster_host ADD ssh_port BIGINT NULL COMMENT 'ssh端口';
 
 create table t_ddh_upload_temp_file
 (
-    `id`           bigint NOT NULL COMMENT 'id',
+    `id`           int(11) NOT NULL COMMENT 'id',
     `file_name`    varchar(255) DEFAULT NULL COMMENT '文件名',
     `content_type` varchar(255) DEFAULT NULL COMMENT 'content-type',
     `byte_cnt`     bigint(20)   DEFAULT NULL COMMENT '附件大小',

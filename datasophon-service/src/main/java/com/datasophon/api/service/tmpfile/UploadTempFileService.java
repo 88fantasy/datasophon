@@ -51,9 +51,9 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
      * @param attachId
      * @return
      */
-    MergeProgressVO queryMergeProgress(Long attachId);
+    MergeProgressVO queryMergeProgress(Integer attachId);
 
-    File getTempFile(Long attachId);
+    File getTempFile(Integer attachId);
 
     /**
      * 清理缓存

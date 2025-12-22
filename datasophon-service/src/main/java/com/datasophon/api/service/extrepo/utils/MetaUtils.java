@@ -66,7 +66,7 @@ public class MetaUtils {
             "config/common.properties",
             "config/cluster-sample.yml",
             "config/datasophon.conf",
-            "meta/**/service_ddl.json"
+            "config/meta/**/service_ddl.json"
     );
 
     public static final String SAMPLE = "cluster-sample.yml";

@@ -21,7 +21,7 @@ import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.Constants;
-import com.datasophon.common.utils.ZipUtils;
+import com.datasophon.common.utils.TarUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
@@ -80,8 +80,6 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     @Autowired
     private FrameServiceService frameServiceService;
 
-
-
     @Override
     public ValidateResultVO validMetaFile(InstallComponentDTO dto) {
         return unzipMetaFile(dto, unzipDir -> {
@@ -113,7 +111,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         }
         String unzipDir = null;
         try {
-            unzipDir = ZipUtils.unzipToTemp(metaFile.getAbsolutePath(), dto.getUnzipPasswd());
+            unzipDir = TarUtils.decompressToTemp(metaFile.getAbsolutePath());
             MetaUtils.decodeMatchedFiles(unzipDir, dto.getContentDecodePasswd());
 
             return mapper.apply(unzipDir);
@@ -138,7 +136,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
         File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
         try {
-            List<String> fileNames = ZipUtils.getZipEntry(pkgFile.getAbsolutePath(), null);
+            List<String> fileNames = TarUtils.getEntry(pkgFile.getAbsolutePath());
             List<String> errors = new ArrayList<>();
             model.getFrameworks().stream().flatMap(f -> f.getServices().stream()).forEach(srv -> {
                 String filePath = PathUtils.unixStyle(MetaUtils.getFileRelativePath(srv));
@@ -225,6 +223,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             }
             if (StringUtils.isNoneBlank(error)) {
                 progress.setState(-1);
+                progress.setError(error);
             } else {
                 progress.setState(1);
             }
@@ -235,7 +234,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     private String unpackMetaFile(File metaFile, InstallComponentDTO dto, ImportCompProgressVO progress) throws IOException {
         progress.setState(2);
         progress.setTotal(10);
-        String unzipDir = ZipUtils.unzipToTemp(metaFile.getAbsolutePath(), dto.getUnzipPasswd());
+        String unzipDir = TarUtils.decompressToTemp(metaFile.getAbsolutePath());
         progress.setStep(5);
         //      解密文件的内容
         MetaUtils.decodeMatchedFiles(unzipDir, dto.getContentDecodePasswd());
@@ -249,7 +248,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         progress.setState(3);
         progress.setStep(0);
 
-        String dir = ZipUtils.unzipToTemp(pkgFile.getAbsolutePath(), null);
+        String dir = TarUtils.decompressToTemp(pkgFile.getAbsolutePath());
         progress.setStep(9);
 
         Set<String> packageNames = vo.getFrameworks()

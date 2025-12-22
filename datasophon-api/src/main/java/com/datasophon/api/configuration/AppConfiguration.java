@@ -127,7 +127,14 @@ public class AppConfiguration implements WebMvcConfigurer {
       );
     }
 
-    registry.addInterceptor(basicValidRequestInterceptor).addPathPatterns("/**");
+      InterceptorRegistration basicValidRegistration = registry.addInterceptor(basicValidRequestInterceptor)
+              .addPathPatterns("/**");
+      if (enableOpenApi) {
+          basicValidRegistration.excludePathPatterns(
+                  "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
+                  "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico"
+          );
+      }
   }
 
   //Add request url prefix

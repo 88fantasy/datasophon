@@ -19,13 +19,10 @@ import static com.baomidou.mybatisplus.annotation.IdType.ASSIGN_ID;
 @TableName("t_ddh_upload_temp_file")
 public class UploadTempFile implements Serializable {
 
-    /**
-     * 这里比较特殊，全局的生成策略不一致。
-     * 使用雪花算法，保证顺序性同时，防止通过id遍历越权
-     */
-    @TableId(type = ASSIGN_ID)
+
+    @TableId
     @Schema(description = "主键")
-    private Long id;
+    private Integer id;
 
     @Schema(description = "文件名")
     private String fileName;
