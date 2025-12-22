@@ -4,7 +4,6 @@ import cn.hutool.core.util.StrUtil;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.model.extrepo.ServiceMeta;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +14,7 @@ import java.util.Set;
  * @date 2025/11/12
  */
 public class SrvDependenciesContext {
+
 
 
     private Set<String> srvSet = new HashSet<>();
@@ -33,14 +33,14 @@ public class SrvDependenciesContext {
     }
 
     public List<String> validDependency(ServiceMeta srv) {
-        List<String> lackSrv = new ArrayList<>();
+        Set<String> lackSrv = new HashSet<>();
 
         srv.getDependencies().forEach(dep -> {
             if (!srvSet.contains(generateKey(srv.getFrameCode(), dep))) {
                 lackSrv.add(dep);
             }
         });
-        if (lackSrv.isEmpty()) {
+        if (!lackSrv.isEmpty()) {
             return Collections.singletonList(
                     String.format("框架%s服务%s的依赖%s不存在", srv.getFrameCode(), srv.getName(), StrUtil.join(",", lackSrv))
             );

@@ -263,7 +263,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
             throw e;
         } finally {
             progress.setError(error);
-            progress.setState(StringUtils.isBlank(error) ? -1 : 1);
+            progress.setState(StringUtils.isBlank(error) ? 1 : -1);
             progress.setExpire(LocalDateTime.now().plusMinutes(1));
         }
 

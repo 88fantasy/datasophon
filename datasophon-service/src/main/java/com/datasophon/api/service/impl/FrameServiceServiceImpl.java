@@ -124,7 +124,8 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
         }
         return lambdaQuery()
                 .in(FrameServiceEntity::getFrameCode, clusterFrames)
-                .select(FrameServiceEntity::getServiceName, FrameServiceEntity::getServiceVersion)
+                .select(FrameServiceEntity::getServiceName, FrameServiceEntity::getServiceVersion,
+                    FrameServiceEntity::getFrameId, FrameServiceEntity::getFrameCode)
                 .list();
     }
 
