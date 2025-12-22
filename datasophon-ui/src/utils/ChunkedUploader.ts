@@ -1,10 +1,12 @@
 // utils/ChunkedUploader.js
 import axios from "axios";
 import SparkMD5 from "spark-md5";
+import { API } from "../api";
+import { axiosJsonPost, axiosPostUpload } from "../api/request";
 
 class ChunkedUploader {
   constructor({
-    chunkSize = 10 * 1024 * 1024, // 5MB per chunk
+    chunkSize = 200 * 1024 * 1024, // 5MB per chunk
     maxConcurrency = 1, // 默认逐片上传（设为1即串行），可调高如3
     maxRetries = 3,
     onProgress = (percent) => {},
@@ -21,8 +23,8 @@ class ChunkedUploader {
 
   // === 1. 计算文件唯一 ID（基于内容哈希）===
   async calculateFileHash(file) {
+    const chunkSize = this.chunkSize;
     return new Promise((resolve, reject) => {
-      const chunkSize = 2 * 1024 * 1024; // 2MB for hash calc
       const chunks = Math.ceil(file.size / chunkSize);
       const spark = new SparkMD5.ArrayBuffer();
       const fileReader = new FileReader();
@@ -48,6 +50,22 @@ class ChunkedUploader {
       };
 
       loadNext();
+    });
+  }
+
+  // 计算单个 Blob 分片的 MD5（返回 Base64）
+  calculateMD5(blob) {
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.onload = (e) => {
+        const spark = new SparkMD5();
+        spark.appendBinary(e.target.result);
+        const hexMD5 = spark.end(); // 十六进制字符串
+        // const base64MD5 = hexToBase64(hexMD5);
+        resolve(hexMD5);
+      };
+      fileReader.onerror = () => reject(fileReader.error);
+      fileReader.readAsBinaryString(blob);
     });
   }
 
@@ -93,17 +111,21 @@ class ChunkedUploader {
 
   // === 5. 上传单个分片（带重试）===
   async uploadChunkWithRetry(chunk, index, fileId, filename, retries = 0) {
+    const md5 = await this.calculateMD5(chunk);
+
+    console.log("md5", md5);
     const formData = new FormData();
     formData.append("chunk", chunk);
-    formData.append("chunkIndex", index);
-    formData.append("fileId", fileId);
-    formData.append("filename", filename);
+    formData.append("chunkNo", index);
+    formData.append("attachId", fileId);
+    formData.append("md5", md5);
 
     try {
-      await axios.post("/api/upload/chunk", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        // timeout: 60000,
-      });
+      await axiosPostUpload(API.uploadChunk, formData);
+      // await axios.post(API.uploadChunk, formData, {
+      //   headers: { "Content-Type": "multipart/form-data" },
+      //   // timeout: 60000,
+      // });
       return true;
     } catch (error) {
       if (retries < this.maxRetries) {

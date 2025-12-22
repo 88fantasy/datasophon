@@ -21,7 +21,8 @@ const Index = (props) => {
         invokeInjectConfirmEvent,
         clusterId,
         onCancelClickProxy,
-        record
+        record,
+        type
     } = props
 
     // const formRef = useRef()
@@ -29,6 +30,7 @@ const Index = (props) => {
     const formMapRef = useRef([])
 
     const [currentStep, setCurrentStep] = useState(0)
+    const [submitPending, setSubmitPending] = useState(false)
 
 
 
@@ -36,6 +38,9 @@ const Index = (props) => {
 
 
     const invokeRenderSteps = () => {
+
+
+
         const arr = [
             {
                 title: '上传配置文件',
@@ -48,7 +53,7 @@ const Index = (props) => {
                     formMapRef={formMapRef}
                 />
             },
-            {
+            type !== 'frame' && {
                 title: '上传部署清单',
                 render: currentStep === 2 && <Step3
                     key={currentStep}
@@ -57,9 +62,10 @@ const Index = (props) => {
             },
             {
                 title: '导入安装组件',
-                render: currentStep === 3 && <Step4
+                render: (!type && currentStep === 3 || type && currentStep === 2) && <Step4
                     key={currentStep}
                     formMapRef={formMapRef}
+                    type={type}
                 />
             },
 
@@ -83,7 +89,7 @@ const Index = (props) => {
             //     // formRef={formRef}
             //     />
             // },
-        ]
+        ].filter(Boolean)
 
         // if (stepsType === T_STEPS_TYPE_HOSTMANAGE) {
         //     arr = arr.slice(0, 3)
@@ -128,7 +134,15 @@ const Index = (props) => {
                 } = props
 
 
-                if (step === 3) {
+                const onSubmitProxy = async () => {
+                    setSubmitPending(true)
+                    await onSubmit()
+
+                    setSubmitPending(false)
+                }
+
+
+                if (!type && step === 3) {
                     const nextClick = () => {
                         // onSubmit()
                         const values = form?.getFieldsValue() || {}
@@ -137,7 +151,7 @@ const Index = (props) => {
                         if (!values.importCmp) {
                             message.error('导入未完成,请稍后重试')
                         } else {
-                            onSubmit()
+                            onSubmitProxy()
                         }
                     }
 
@@ -146,24 +160,31 @@ const Index = (props) => {
                         <Button
                             type="primary"
                             onClick={nextClick}
+                            loading={submitPending}
                         // disabled={!meteFileId}
                         >
                             开始部署
                         </Button>
                     )
+                } else if (type && step === 2) {
+                    return
                 }
 
                 return (
                     <>
+                        {
+                            !!step &&
+                            <Button
+                                type="primary"
+                                onClick={() => onPre()}
+                            >
+                                上一步
+                            </Button>
+                        }
                         <Button
                             type="primary"
-                            onClick={() => onPre()}
-                        >
-                            上一步
-                        </Button>
-                        <Button
-                            type="primary"
-                            onClick={() => onSubmit()}
+                            onClick={onSubmitProxy}
+                            loading={submitPending}
                         >
                             下一步
                         </Button>
@@ -171,7 +192,7 @@ const Index = (props) => {
                 )
             }
         }
-    }, [])
+    }, [type])
 
     const onFinish = useCallback(async (valuse) => {
         const res = await axiosJsonPost(

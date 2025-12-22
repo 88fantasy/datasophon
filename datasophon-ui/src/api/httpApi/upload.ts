@@ -11,4 +11,8 @@ export default {
   queryProgress: path + "/extrepo/queryProgress",
   deploy: path + "/extrepo/deploy",
   getDeployProgressDAG: path + "/extrepo/getDeployProgressDAG",
+  uploadChunk: path + "/tempfile/uploadChunk",
+  createShardUploadTask: path + "/tempfile/createShardUploadTask",
+  mergeChunk: path + "/tempfile/mergeChunk",
+  queryMergeProgress: path + "/tempfile/queryMergeProgress",
 };
