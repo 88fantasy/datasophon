@@ -159,7 +159,7 @@ public class InstallServiceHandler {
     private void downloadPkg(String packageName, String packagePath) {
         String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
         String masterPort = PropertyUtils.getString(Constants.MASTER_WEB_PORT);
-        String downloadUrl = "http://" + masterHost + ":" + masterPort + "/ddh/service/install/downloadPackage?packageName=" + packageName;
+        String downloadUrl = "http://" + masterHost + ":" + masterPort + "/ddh/api/service/install/downloadPackage?packageName=" + packageName;
 
         logger.info("download url is {}", downloadUrl);
 

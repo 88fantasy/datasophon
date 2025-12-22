@@ -120,6 +120,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     @Override
     public UploadTempFile createShardUploadTask(BigFileDTO info) {
         UploadTempFile db = BeanUtil.toBean(info, UploadTempFile.class);
+        db.setId(RandomUtils.nextInt(0, Integer.MAX_VALUE));
         db.setByteDesc(FileUtil.readableFileSize(db.getByteCnt()));
         db.setSuffix(FileUtil.getSuffix(db.getFileName()));
         db.setCreateTime(new Date());
