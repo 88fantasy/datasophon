@@ -114,8 +114,8 @@ public class AppConfiguration implements WebMvcConfigurer {
         .excludePathPatterns(
             getPathPrefix() + "/login", "/error",
             "/grafana/**",
-            "/cluster/alert/history/save",
-            "/cluster/kerberos/downloadKeytab",
+            "/api/cluster/alert/history/save",
+            "/api/cluster/kerberos/downloadKeytab",
             "/index.html",
             "/",
             "/static/**"
