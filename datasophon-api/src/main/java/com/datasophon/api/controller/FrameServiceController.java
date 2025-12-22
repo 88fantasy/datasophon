@@ -118,7 +118,7 @@ public class FrameServiceController extends ApiController {
             return Result.error("Service 组件正在使用中。");
         }
         
-        // delete /DDP/packages 下的软件包
+        // delete /packages 下的软件包
         File targetPackageFile = new File(Constants.MASTER_MANAGE_PACKAGE_PATH, serviceEntity.getPackageName());
         FileUtil.del(targetPackageFile);
         log.info("delete package file to: {}", targetPackageFile.getAbsolutePath());

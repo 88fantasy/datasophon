@@ -19,12 +19,12 @@ BASE_PATH=$(
 INIT_PATH=$(dirname "${BASE_PATH}")
 echo "INIT_PATH: ${INIT_PATH}"
 
-cp /opt/datasophon/DDP/packages/datasophon-worker.tar.gz /opt/datasophon/
-checkworkmd5=$(md5sum /opt/datasophon/DDP/packages/datasophon-worker.tar.gz | awk '{print $1}')
+cp /data/install_datasophon/packages/datasophon-worker.tar.gz /data/install_datasophon/
+checkworkmd5=$(md5sum /data/install_datasophon/packages/datasophon-worker.tar.gz | awk '{print $1}')
 if [ "$checkworkmd5" = "$workmd5" ]; then
   echo "md5效验通过"
 else
   echo "md5效验不通过"
   exit 1
 fi
-tar -zxvf /opt/datasophon/datasophon-worker.tar.gz -C /opt/datasophon/
+tar -zxvf /data/install_datasophon/datasophon-worker.tar.gz -C /data/install_datasophon/

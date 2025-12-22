@@ -89,7 +89,7 @@ md5sum dolphinscheduler-3.1.8.tar.gz > dolphinscheduler-3.1.8.tar.gz.md5
 ### 将dolphinscheduler-3.1.8.tar.gz和dolphinscheduler-3.1.8.tar.gz.md5上传到DataSophon的安装包中
 
 ```shell
-cp ./dolphinscheduler-3.1.8.tar.gz /opt/datasophon/DDP/packages/
-cp ./dolphinscheduler-3.1.8.tar.gz.md5 /opt/datasophon/DDP/packages/
+cp ./dolphinscheduler-3.1.8.tar.gz /data/install_datasophon/packages/
+cp ./dolphinscheduler-3.1.8.tar.gz.md5 /data/install_datasophon/packages/
 ```
 

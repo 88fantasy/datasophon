@@ -13,7 +13,7 @@ chown hadoop:hadoop /spark-3.2.2/jars/hudi-spark3.2-bundle_2.12-0.13.0.jar
 tar czf spark-3.2.2.tar.gz spark-3.2.2
 md5sum spark-3.2.2.tar.gz
 echo 'eadd4bb2ce5d809ce4c8631f1e865252' > spark-3.2.2.tar.gz.md5
-cp ./spark-3.2.2.tar.gz ./spark-3.2.2.tar.gz.md5 /opt/datasophon/DDP/packages/
+cp ./spark-3.2.2.tar.gz ./spark-3.2.2.tar.gz.md5 /data/install_datasophon/packages/
 ```
 
 ### 2、修改servcie_ddl.json
@@ -129,7 +129,7 @@ cp ./spark-3.2.2.tar.gz ./spark-3.2.2.tar.gz.md5 /opt/datasophon/DDP/packages/
 
 ```shell
 vim /etc/profile.d/datasophon-env.sh
-export SPARK_HOME=/opt/datasophon/spark-3.2.2
+export SPARK_HOME=/data/install_datasophon/spark-3.2.2
 ```
 
 各节点分发
@@ -139,7 +139,7 @@ export SPARK_HOME=/opt/datasophon/spark-3.2.2
 各节点worker重启
 
 ```shell
-sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
+sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
 ```
 
 主节点重启api
@@ -153,13 +153,13 @@ sh /opt/apps/datasophon-manager-1.2.0/bin/datasophon-api.sh restart api
 单机：
 
 ```shell
-sh /opt/datasophon/spark-3.2.2/bin/spark-submit --class org.apache.spark.examples.SparkPi /opt/datasophon/spark-3.2.2/examples/jars/spark-examples_2.12-3.2.2.jar 12
+sh /data/install_datasophon/spark-3.2.2/bin/spark-submit --class org.apache.spark.examples.SparkPi /data/install_datasophon/spark-3.2.2/examples/jars/spark-examples_2.12-3.2.2.jar 12
 ```
 
 yarn:
 
 ```shell
 su - hdfs
-sh /opt/datasophon/spark-3.2.2/bin/spark-submit --master yarn --deploy-mode client --class org.apache.spark.examples.SparkPi /opt/datasophon/spark-3.2.2/examples/jars/spark-examples_2.12-3.2.2.jar 12
+sh /data/install_datasophon/spark-3.2.2/bin/spark-submit --master yarn --deploy-mode client --class org.apache.spark.examples.SparkPi /data/install_datasophon/spark-3.2.2/examples/jars/spark-examples_2.12-3.2.2.jar 12
 ```
 

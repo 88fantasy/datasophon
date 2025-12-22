@@ -18,12 +18,12 @@
         "type": "replace",
         "source": "config/seatunnel-env.sh",
         "regex":"\/opt\/spark",
-        "replacement": "/opt/datasophon/spark3"
+        "replacement": "/data/install_datasophon/spark3"
       },{
         "type": "replace",
         "source": "config/seatunnel-env.sh",
         "regex":"\/opt\/flink",
-        "replacement": "/opt/datasophon/flink"
+        "replacement": "/data/install_datasophon/flink"
       },{
         "type": "sh",
         "commands": [["sh", "bin/install-plugin.sh", "2.3.4"]]

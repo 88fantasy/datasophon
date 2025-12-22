@@ -26,7 +26,7 @@
       "resourceStrategies": [
         {
           "type":"execShell",
-          "commands": ["/opt/datasophon/juicefs-1.2.1/juicefs format --storage ${juicefsStorage} --bucket ${juicefsBucket} --access-key ${minioAccessKey} --secret-key ${minioSecretKey} '${juicefsMeta}', ${juicefsFileSystemName}"]
+          "commands": ["/data/install_datasophon/juicefs-1.2.1/juicefs format --storage ${juicefsStorage} --bucket ${juicefsBucket} --access-key ${minioAccessKey} --secret-key ${minioSecretKey} '${juicefsMeta}', ${juicefsFileSystemName}"]
         }
       ],
       "jmxPort": 9567,
@@ -94,10 +94,10 @@
       "required": true,
       "type": "multipleWithMap",
       "configType": "map",
-      "value": [{"path":"/opt/datasophon/juicefs/appweb", "log":"appweb"}],
+      "value": [{"path":"/data/install_datasophon/juicefs/appweb", "log":"appweb"}],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": [{"path":"/opt/datasophon/juicefs/appweb", "log":"appweb"}]
+      "defaultValue": [{"path":"/data/install_datasophon/juicefs/appweb", "log":"appweb"}]
     },
     {
       "name": "juicefsStorage",

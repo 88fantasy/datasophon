@@ -22,7 +22,7 @@
         "md5": "069991e599422ce2264d7cb7964e9394"
       },{
         "type": "link",
-        "source": "/opt/datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+        "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
         "target": "api-server/libs/mysql-connector-java-8.0.28.jar"
       },{
         "type": "append_line",
@@ -82,11 +82,11 @@
         "md5": "069991e599422ce2264d7cb7964e9394"
       },{
         "type": "link",
-        "source": "/opt/datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+        "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
         "target": "master-server/libs/mysql-connector-java-8.0.28.jar"
       },{
         "type": "link",
-        "source": "/opt/datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+        "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
         "target": "tools/libs/mysql-connector-java-8.0.28.jar"
       },{
         "type": "append_line",
@@ -141,7 +141,7 @@
         "md5": "069991e599422ce2264d7cb7964e9394"
       },{
         "type": "link",
-        "source": "/opt/datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+        "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
         "target": "worker-server/libs/mysql-connector-java-8.0.28.jar"
       },{
         "type": "append_line",
@@ -196,7 +196,7 @@
         "md5": "069991e599422ce2264d7cb7964e9394"
       },{
         "type": "link",
-        "source": "/opt/datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+        "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
         "target": "alert-server/libs/mysql-connector-java-8.0.28.jar"
       },{
         "type": "append_line",

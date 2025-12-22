@@ -989,21 +989,21 @@ doris-webui在selectDb当中：https://doris-build-1308700295.cos.ap-beijing.myq
 
 ## 刷新datasophon-manager
 
-上传manager安装到/opt/datasophon/DDP/packages
+上传manager安装到/data/install_datasophon/packages
 
-上传 service\_ddl.json和control\_dorismanager.sh脚本到/opt/datasophon/datasophon-manager-1.1.2/conf/meta/DDP-1.1.2/DORISMANAGER
+上传 service\_ddl.json和control\_dorismanager.sh脚本到/data/install_datasophon/datasophon-manager-1.1.2/conf/meta/DDP-1.1.2/DORISMANAGER
 
 重启manager服务
 
-    sh /opt/datasophon/datasophon-manager-1.1.2/bin/datasophon-api.sh restart api
+    sh /data/install_datasophon/datasophon-manager-1.1.2/bin/datasophon-api.sh restart api
 
 ## 刷新worker
 
-将worker模块下的 三个ftl文件上传到/opt/datasophon/datasophon-worker/conf/templates（每台机器都需重启worker）
+将worker模块下的 三个ftl文件上传到/data/install_datasophon/datasophon-worker/conf/templates（每台机器都需重启worker）
 
 并重启worker服务
 
-    sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
+    sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
 
 ## 安装doris-manager
 

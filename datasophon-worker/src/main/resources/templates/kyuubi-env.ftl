@@ -61,12 +61,12 @@ export KYUUBI_BEELINE_OPTS="-Xmx${kyuubiClientHeapSize}g -XX:+UnlockDiagnosticVM
 #jdk
 export JAVA_HOME=${javaHome}
 #spark engine
-export SPARK_HOME=/opt/datasophon/spark3/
-export FLINK_HOME=/opt/datasophon/flink/
+export SPARK_HOME=/data/install_datasophon/spark3/
+export FLINK_HOME=/data/install_datasophon/flink/
 
 #hadoop config
-export HADOOP_CONF_DIR=/opt/datasophon/hadoop/etc/hadoop
-export YARN_CONF_DIR=/opt/datasophon/hadoop/etc/hadoop
+export HADOOP_CONF_DIR=/data/install_datasophon/hadoop/etc/hadoop
+export YARN_CONF_DIR=/data/install_datasophon/hadoop/etc/hadoop
 
 # customer env
 <#list itemList as item>

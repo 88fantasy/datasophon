@@ -30,15 +30,15 @@
         "md5": "11f36c034dbbca447fc6b16308169572"
       },{
         "type": "link",
-        "source": "/opt/datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
+        "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
         "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
       },{
         "type": "link",
-        "source": "/opt/datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
+        "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
           "target": "jmx/metastore.yaml"
       },{
         "type": "link",
-        "source": "/opt/datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+        "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
         "target": "lib/mysql-connector-java-8.0.28.jar"
       }],
       "startRunner": {
@@ -95,15 +95,15 @@
         "md5": "11f36c034dbbca447fc6b16308169572"
       },{
         "type": "link",
-        "source": "/opt/datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
+        "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
         "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
       },{
         "type": "link",
-        "source": "/opt/datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
+        "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
         "target": "jmx/hiveserver2.yaml"
       },{
         "type": "link",
-        "source": "/opt/datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+        "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
         "target": "lib/mysql-connector-java-8.0.28.jar"
       }],
       "startRunner": {

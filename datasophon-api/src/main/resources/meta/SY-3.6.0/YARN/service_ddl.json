@@ -29,7 +29,7 @@
         {
           "type": "sh",
           "commands": [
-            ["cp", "/opt/datasophon/DDP/packages/spark-3.4.2-yarn-shuffle.jar", "share/hadoop/yarn/lib/"]
+            ["cp", "/data/install_datasophon/packages/spark-3.4.2-yarn-shuffle.jar", "share/hadoop/yarn/lib/"]
           ]
         }],
       "startRunner": {
@@ -84,7 +84,7 @@
       "resourceStrategies":[{
         "type": "sh",
         "commands": [
-          ["cp", "/opt/datasophon/DDP/packages/spark-3.4.2-yarn-shuffle.jar", "share/hadoop/yarn/lib/"]
+          ["cp", "/data/install_datasophon/packages/spark-3.4.2-yarn-shuffle.jar", "share/hadoop/yarn/lib/"]
         ]
       }],
       "jmxPort": 9324,

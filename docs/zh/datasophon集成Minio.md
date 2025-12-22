@@ -73,7 +73,7 @@ echo '8f766b89b11cbc15b46b9f620a20780f' > minio-8.4.3.tar.gz.md5
 将安装包拷贝到各worker节点对应目录
 
 ```shell
-cp ./minio-8.4.3.tar.gz ./minio-8.4.3.tar.gz.md5 /opt/datasophon/DDP/packages/
+cp ./minio-8.4.3.tar.gz ./minio-8.4.3.tar.gz.md5 /data/install_datasophon/packages/
 ```
 
 ### 2、创建minio配置文件
@@ -214,7 +214,7 @@ touch service_ddl.json
 各worker几点创建minio-run.flt文件
 
 ```shell
-cd /opt/datasophon/datasophon-worker/conf/templates
+cd /data/install_datasophon/datasophon-worker/conf/templates
 touch minio-run.flt
 ```
 
@@ -227,9 +227,9 @@ export MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
 
 export MINIO_PROMETHEUS_AUTH_TYPE=public   #加入这行环境变量，“public”表示Prometheus访问minio集群可以不通过身份验证
 
-/opt/datasophon/minio/minio server --config-dir /opt/datasophon/minio/etc \
+/data/install_datasophon/minio/minio server --config-dir /data/install_datasophon/minio/etc \
         --address "0.0.0.0:${apiPort}" --console-address ":${consolePort}" \
-        ${dataPaths} > /opt/datasophon/minio/minio.log 2>&1 &
+        ${dataPaths} > /data/install_datasophon/minio/minio.log 2>&1 &
 ```
 
 ### 3、重启datasophon
@@ -237,7 +237,7 @@ export MINIO_PROMETHEUS_AUTH_TYPE=public   #加入这行环境变量，“public
 各节点worker重启
 
 ```shell
-sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
+sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
 ```
 
 主节点重启api
@@ -259,7 +259,7 @@ sh /opt/apps/datasophon/datasophon-manager-1.1.2/bin/datasophon-api.sh restart a
 ### 5、监控
 
 ```shell
-vim /opt/datasophon/prometheus/prometheus.yml
+vim /data/install_datasophon/prometheus/prometheus.yml
 # 新增配置
   - job_name: minio_job
     metrics_path: /minio/prometheus/metrics

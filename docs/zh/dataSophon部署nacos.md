@@ -2,7 +2,7 @@
 
 下载安装包
 
-把安装包放在/data/datasophon/package/DDP/packages目录下
+把安装包放在/data/datasophon/package/packages目录下
 
 ```shell
 # 解压安装包 解压后的目录为nacos
@@ -34,7 +34,7 @@ touch control_nacos.sh
 各worker节点新增：
 
 ```shell
-cd /opt/datasophon/datasophon-worker/conf/templates
+cd /data/install_datasophon/datasophon-worker/conf/templates
 touch nacos-server-master.ftl
 ```
 
@@ -58,7 +58,7 @@ map.put("NacosServer", new NacosMasterHandlerStrategy("NACOS", "NacosServer"));
 各节点worker重启
 
 ```shell
-sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
+sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
 ```
 
 主节点重启api
@@ -84,7 +84,7 @@ grant all privileges on nacos.* to 'nacos'@'%' with grant option;
 flush privileges;
       
 -- 初始化nacos数据库
-sh /opt/datasophon/datasophon-worker/bin/init_nacos_db.sh
+sh /data/install_datasophon/datasophon-worker/bin/init_nacos_db.sh
 ```
 
 安装服务

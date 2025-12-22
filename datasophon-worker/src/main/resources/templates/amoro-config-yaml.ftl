@@ -95,9 +95,9 @@ containers:
   - name: flinkContainer
     container-impl: com.netease.arctic.server.manager.FlinkOptimizerContainer
     properties:
-      flink-home: /opt/datasophon/flink
+      flink-home: /data/install_datasophon/flink
       target: yarn-per-job
 #      export.JVM_ARGS: -Djava.security.krb5.conf=/opt/krb5.conf
-      export.HADOOP_CONF_DIR: /opt/datasophon/hadoop/etc/hadoop/
+      export.HADOOP_CONF_DIR: /data/install_datasophon/hadoop/etc/hadoop/
       export.HADOOP_USER_NAME: ${amoroHadoopUsername}
-      export.FLINK_CONF_DIR: /opt/datasophon/flink/conf/
+      export.FLINK_CONF_DIR: /data/install_datasophon/flink/conf/

@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 public final class Constants {
     
     public static final String INSTALL_PATH = PropertyUtils.getString("install.path");
+    public static final String INIT_HOME = PropertyUtils.getString("INIT_HOME");
     public static final String DATA = "data";
     public static final String INSTALL_TYPE = "install_type";
     public static final String TOTAL = "total";
@@ -39,8 +40,8 @@ public final class Constants {
     public static final String ID_RSA = PropertyUtils.getString("id_rsa", "/root/.ssh/id_rsa");
     public static final String HOSTNAME = "hostname";
     public static final String CPU_ARCH = "hostname";
-    
-    public static final String MASTER_MANAGE_PACKAGE_PATH = INSTALL_PATH + "/DDP/packages";
+
+    public static final String MASTER_MANAGE_PACKAGE_PATH = INIT_HOME + "/packages";
     public static final String UNZIP_DDH_WORKER_CMD =
             "tar -zxvf " + MASTER_MANAGE_PACKAGE_PATH + "/datasophon-worker.tar.gz -C " + INSTALL_PATH;
     public static final String START_DDH_WORKER_CMD = "service datasophon-worker restart";

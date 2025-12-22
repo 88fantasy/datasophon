@@ -84,7 +84,7 @@ public class InstallServiceHandler {
     public ExecResult install(InstallServiceRoleCommand command) {
         ExecResult execResult = new ExecResult();
         try {
-            String destDir = Constants.INSTALL_PATH + Constants.SLASH + "DDP/packages" + Constants.SLASH;
+            String destDir = Constants.INSTALL_PATH + Constants.SLASH + "packages" + Constants.SLASH;
             String packageName = command.getPackageName();
             String packagePath = destDir + packageName;
             String decompressPackageName = command.getDecompressPackageName();

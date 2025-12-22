@@ -35,13 +35,13 @@ export REGISTRY_TYPE=${r"${REGISTRY_TYPE"}:-zookeeper}
 export REGISTRY_ZOOKEEPER_CONNECT_STRING=${r"${REGISTRY_ZOOKEEPER_CONNECT_STRING"}:-${zkUrls}}
 
 # Tasks related configurations, need to change the configuration if you use the related tasks.
-export HADOOP_HOME=${r"${HADOOP_HOME"}:-/opt/datasophon/hadoop}
-export HADOOP_CONF_DIR=${r"${HADOOP_CONF_DIR"}:-/opt/datasophon/hadoop/etc/hadoop}
+export HADOOP_HOME=${r"${HADOOP_HOME"}:-/data/install_datasophon/hadoop}
+export HADOOP_CONF_DIR=${r"${HADOOP_CONF_DIR"}:-/data/install_datasophon/hadoop/etc/hadoop}
 export SPARK_HOME1=${r"${SPARK_HOME1"}:-/opt/soft/spark1}
 export SPARK_HOME2=${r"${SPARK_HOME2"}:-/opt/soft/spark2}
 export PYTHON_HOME=${r"${PYTHON_HOME"}:-/opt/soft/python}
-export HIVE_HOME=${r"${HIVE_HOME"}:-/opt/datasophon/hive}
-export FLINK_HOME=${r"${FLINK_HOME"}:-/opt/datasophon/flink}
+export HIVE_HOME=${r"${HIVE_HOME"}:-/data/install_datasophon/hive}
+export FLINK_HOME=${r"${FLINK_HOME"}:-/data/install_datasophon/flink}
 export DATAX_HOME=${r"${DATAX_HOME"}:-/opt/soft/datax}
 export SEATUNNEL_HOME=${r"${SEATUNNEL_HOME"}:-/opt/soft/seatunnel}
 export CHUNJUN_HOME=${r"${CHUNJUN_HOME"}:-/opt/soft/chunjun}

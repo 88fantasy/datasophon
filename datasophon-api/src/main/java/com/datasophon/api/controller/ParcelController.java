@@ -327,7 +327,7 @@ public class ParcelController extends ApiController implements DisposableBean {
                 
                 Thread.sleep(5000);
                 
-                // mv 到 /DDP/packages
+                // mv 到 /packages
                 File targetPackageFile = new File(Constants.MASTER_MANAGE_PACKAGE_PATH, packageFile.getName());
                 FileUtil.move(packageFile, targetPackageFile, true);
                 log.info("move package file to: {}", targetPackageFile.getAbsolutePath());

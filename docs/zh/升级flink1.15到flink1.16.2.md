@@ -11,7 +11,7 @@ cp ./hudi-flink1.16-bundle-0.13.0.jar /flink-1.16.2/lib
 
 md5sum flink-1.16.2.tar.gz
 echo '8d6c243ebc9bf58d3ee3e45e5c6509f4' > flink-1.16.2.tar.gz.md5
-cp ./flink-1.16.2.tar.gz ./flink-1.16.2.tar.gz.md5 /opt/datasophon/DDP/packages/
+cp ./flink-1.16.2.tar.gz ./flink-1.16.2.tar.gz.md5 /data/install_datasophon/packages/
 ```
 
 ### 2、修改service_ddl.json
@@ -184,7 +184,7 @@ vim /opt/apps/datasophon-manager-1.2.0/conf/meta/DDP-1.2.0/FLINK/service_ddl.jso
 
 ```shell
 vim /etc/profile.d/datasophon-env.sh
-export FLINK_HOME=/opt/datasophon/flink-1.16.2
+export FLINK_HOME=/data/install_datasophon/flink-1.16.2
 export HADOOP_CLASSPATH=`hadoop classpath`
 source /etc/profile.d/datasophon-env.sh
 ```
@@ -196,7 +196,7 @@ source /etc/profile.d/datasophon-env.sh
 各节点worker重启
 
 ```shell
-sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
+sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
 ```
 
 主节点重启api

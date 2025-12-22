@@ -31,8 +31,8 @@
         "type": "sh",
         "commands": [
           ["mkdir", "config/certs"],
-          ["cp", "/opt/datasophon/DDP/packages/elastic-certificates.p12","config/certs/"],
-          ["cp", "/opt/datasophon/DDP/packages/elastic-stack-ca.p12","config/certs/"]
+          ["cp", "/data/install_datasophon/packages/elastic-certificates.p12","config/certs/"],
+          ["cp", "/data/install_datasophon/packages/elastic-stack-ca.p12","config/certs/"]
         ]
       }
       ],

@@ -10,7 +10,7 @@ cd ..
 tar czf alluxio-2.9.3.tar.gz alluxio-2.9.3
 mkd5sum alluxio-2.9.3.tar.gz
 echo 'bf0bf449ee28d0db8da56a5dba8ecee3' > alluxio-2.9.3.tar.gz.md5
-cp ./alluxio-2.9.3.tar.gz ./alluxio-2.9.3.tar.gz.md5 /opt/datasophon/DDP/packages
+cp ./alluxio-2.9.3.tar.gz ./alluxio-2.9.3.tar.gz.md5 /data/install_datasophon/packages
 ```
 
 control_alluxio.sh:
@@ -503,7 +503,7 @@ public class AlluxioHandlerStrategy  extends AbstractHandlerStrategy implements 
 各节点worker重启
 
 ```shell
-sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker debug
+sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker debug
 ```
 
 主节点重启api

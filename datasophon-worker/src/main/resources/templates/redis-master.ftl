@@ -3,8 +3,8 @@ daemonize yes
 protected-mode no
 port ${redisMasterPort}
 tcp-backlog 511
-logfile /opt/datasophon/redis/logs/master.log
-pidfile /opt/datasophon/redis//pid/master.pid
+logfile /data/install_datasophon/redis/logs/master.log
+pidfile /data/install_datasophon/redis//pid/master.pid
 databases ${redisDatabases}
 dir ${redisDataDir}
 requirepass ${redisPass}

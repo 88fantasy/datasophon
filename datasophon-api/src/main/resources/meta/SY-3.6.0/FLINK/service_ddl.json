@@ -21,7 +21,7 @@
       "resourceStrategies":[
         {
           "type": "link",
-          "source": "/opt/datasophon/flink-1.16.2/opt/flink-s3-fs-hadoop-1.16.2.jar",
+          "source": "/data/install_datasophon/flink-1.16.2/opt/flink-s3-fs-hadoop-1.16.2.jar",
           "target": "plugins/s3-fs-hadoop/flink-s3-fs-hadoop-1.16.2.jar"
         },
         {
@@ -34,7 +34,7 @@
           "type": "append_line",
           "source": "bin/config.sh",
           "line": 20,
-          "text": "export HADOOP_CLASSPATH=`/opt/datasophon/hadoop/bin/hadoop classpath`"
+          "text": "export HADOOP_CLASSPATH=`/data/install_datasophon/hadoop/bin/hadoop classpath`"
         }
       ]
     },
@@ -55,7 +55,7 @@
         "md5": "5c45caf5e57d8f203f9936d830b835bb"
       },{
           "type": "link",
-          "source": "/opt/datasophon/flink-1.16.2/opt/flink-s3-fs-hadoop-1.16.2.jar",
+          "source": "/data/install_datasophon/flink-1.16.2/opt/flink-s3-fs-hadoop-1.16.2.jar",
           "target": "plugins/s3-fs-hadoop/flink-s3-fs-hadoop-1.16.2.jar"
         },
         {
@@ -68,7 +68,7 @@
           "type": "append_line",
           "source": "bin/config.sh",
           "line": 20,
-          "text": "export HADOOP_CLASSPATH=`/opt/datasophon/hadoop/bin/hadoop classpath`"
+          "text": "export HADOOP_CLASSPATH=`/data/install_datasophon/hadoop/bin/hadoop classpath`"
         }],
       "startRunner": {
         "timeout": "60",
