@@ -15,9 +15,9 @@ import cn.hutool.core.util.StrUtil;
 public class MinioRegistry implements Registry {
     
     // minio 下载目录 https://dl.min.io/server/minio/release/linux-amd64/minio
-    private static final String TAR_PATH = "/opt/datasophon/minio.tar.gz";
+    private static final String TAR_PATH = "/data/install_datasophon/minio.tar.gz";
     
-    private static final String MINIO_PATH = "/opt/datasophon/minio";
+    private static final String MINIO_PATH = "/data/install_datasophon/minio";
     
     @Override
     public String type() {
@@ -47,7 +47,7 @@ public class MinioRegistry implements Registry {
                     return installResult;
                 }
             }
-            executor.execShell("tar -zxvf /opt/datasophon/minio.tar.gz -C " + MINIO_PATH);
+            executor.execShell("tar -zxvf /data/install_datasophon/minio.tar.gz -C " + MINIO_PATH);
         }
         return installResult;
     }

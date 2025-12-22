@@ -271,7 +271,6 @@ public class CreateCluster implements Runnable {
         initBinPackage.setInitPathOverwriteForce(initPathOverwriteForce);
         initBinPackage.setEnableRegistry(config.getGlobal().getRegistry().isEnable());
         initBinPackage.setRegistryPath(config.getGlobal().getRegistry().getConfig().getRegistryPath());
-        initBinPackage.setInstallDataDir(config.getGlobal().getInstallDataDir());
         List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
         allNodesExec(workerNodes, initBinPackage);
 
@@ -326,7 +325,6 @@ public class CreateCluster implements Runnable {
                 .setType(registryConfig.getType())
                 .setPackagePath(packagesPath)
                 .setRepositories(registryConfig.getConfig().getRepositories())
-                .setInstallPath(config.getGlobal().getInstallDataDir())
                 .setX86Tar(registryConfig.getPackages().getX86_64())
                 .setAarch64Tar(registryConfig.getPackages().getAarch64())
                 .setWebHost(registryConfig.getHost().getIp())
@@ -355,7 +353,6 @@ public class CreateCluster implements Runnable {
         InitRustfs initRustfs = new InitRustfs();
         initRustfs.setEnable(rustfs.isEnable())
             .setPackagePath(packagesPath)
-            .setInstallPath(config.getGlobal().getInstallDataDir())
             .setX86Tar(rustfs.getPackages().getX86_64())
             .setAarch64Tar(rustfs.getPackages().getAarch64())
             .setWebHost(rustfs.getHost().getIp())
@@ -379,7 +376,6 @@ public class CreateCluster implements Runnable {
     
     private void initOfflineNodes(ClusterConfig config, List<Host> nodes) {
         GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
-        NexusRegistry registryConfig = config.getGlobal().getRegistry();
         InitOfflineSlave initYumConf = new InitOfflineSlave();
         initYumConf.setConfigFilePath(initConfigYamlPath);
         initYumConf.setServerIp(yumServer.getHost().getIp())
@@ -417,7 +413,7 @@ public class CreateCluster implements Runnable {
     }
     
     private void initNmap(ClusterConfig config) {
-        singleNodesExec(config.getGlobal().getNmapServer(), new InitNmap());
+        singleNodesExec(config.getGlobal().getNmapServer().getHost(), new InitNmap());
     }
     
     private void initNtpServer(ClusterConfig config) {
@@ -446,6 +442,7 @@ public class CreateCluster implements Runnable {
         initMysql.setPassword(mysqlConfig.getPassword())
                 .setForce(mysqlInstallForce)
                 .setPackagePath(packagesPath)
+                .setPort(initMysql.getPort())
                 .setTarName(mysqlConfig.getTarName());
         NexusRegistry registry = config.getGlobal().getRegistry();
         if(registry.isEnable()) {

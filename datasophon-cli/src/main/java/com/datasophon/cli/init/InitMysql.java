@@ -35,13 +35,16 @@ public class InitMysql extends InitBase implements InitNodeHandler {
     @CommandLine.Option(names = {"-t", "--tarName"}, description = "tar离线压缩包名", required = true)
     String tarName;
 
+    @CommandLine.Option(names = {"-mp", "--mysqlPort"}, description = "端口", required = true)
+    Integer port;
+
     @CommandLine.Option(names = {"-e", "--enableRegistry"}, description = "是否启动制品库")
     boolean enableRegistry = false;
 
     @CommandLine.Option(names = {"-ip", "--registryIp"}, description = "制品ip", required = true)
     String registryIp;
 
-    @CommandLine.Option(names = {"-port", "--registryPort"}, description = "制品端口", required = true)
+    @CommandLine.Option(names = {"-rport", "--registryPort"}, description = "制品端口", required = true)
     String registryPort;
 
     @CommandLine.Option(names = {"-u", "--registryUsername"}, description = "制品用户", required = true)
@@ -199,6 +202,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         myconf.add("explicit_defaults_for_timestamp=true");
         myconf.add("max_connections=3600");
         myconf.add("max_connections=3600");
+        myconf.add(String.format("port=%s", port));
         //myconf.add("datadir=/data/mysql");
         //myconf.add("socket=/data/mysql/mysql.sock");
         // sql_mode bigdata不支持ONLY_FULL_GROUP_BY
@@ -207,11 +211,11 @@ public class InitMysql extends InitBase implements InitNodeHandler {
     }
 
     private void rootUserConf(Executor executor){
-        executor.execShell(String.format("mysql -uroot -p'%s' -e \"update mysql.user set host='%%' where user ='root';\"", password));
-        executor.execShell(String.format("mysql -uroot -p'%s' -e \"FLUSH PRIVILEGES;\"", password));
-        executor.execShell(String.format("mysql -uroot -p'%s' -e \"ALTER USER 'root'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;\"", password, password));
-        executor.execShell(String.format("mysql -uroot -p'%s' -e \"ALTER USER 'root'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';\"", password, password));
-        executor.execShell(String.format("mysql -uroot -p'%s' -e \"FLUSH PRIVILEGES;\"", password));
+        executor.execShell(String.format("mysql -uroot -P'%s' -p'%s' -e \"update mysql.user set host='%%' where user ='root';\"", port, password));
+        executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"FLUSH PRIVILEGES;\"", port, password));
+        executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"ALTER USER 'root'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;\"", port, password, password));
+        executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"ALTER USER 'root'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';\"", port, password, password));
+        executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"FLUSH PRIVILEGES;\"", port, password));
     }
 
 }

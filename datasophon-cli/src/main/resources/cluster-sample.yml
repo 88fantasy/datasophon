@@ -1,126 +1,151 @@
 global:
   offline: true
-  sshAuthType: AUTO
+  osInfo:
+    auto: true
+    osType: openEuler-22.03-LTS-SP3
+    archType: x86_64
   registry:
-    enable: true  #启动第三方存储库
-    type: nexus
+    enable: true
+    type: "nexus"
     packages:
-      x86_64: nexus-3.85.0-03-linux-x86_64.tar.gz
-      aarch64: nexus-3.85.0-03-linux-aarch_64.tar.gz
+      x86_64: "nexus-3.85.0-03-linux-x86_64.tar.gz"
     config:
       webPort: 8091
-      user: admin
-      password: u4Gkp19TRcKKlTCLNA1pyA==
-      repositories: ["yum","apt","raw"]
-      registryPath: /data
-      configTarName: config.tar.gz
-      packagesTarName: packages.tar.gz
+      user: "admin"
+      password: "u4Gkp19TRcKKlTCLNA1pyA=="
+      repositories:
+        - "yum"
+        - "raw"
+      registryPath: "/data"
+      configTarName: "config.tar.gz"
+      packagesTarName: "packages.tar.gz"
     host:
-      ip: 192.168.2.175
-      user: root
-      password:
+      projectEnvDetailId: 2001478085448630273
+      hostname: "app4"
+      user: "root"
+      ip: "192.168.2.200"
       port: 22
+      password: "aKv6uT_QpkZ_EvKr3n"
+  yumServer:
+    host:
+      projectEnvDetailId: 2001478085448630272
+      hostname: "app3"
+      user: "root"
+      ip: "192.168.2.173"
+      port: 22
+      password: "aKv6uT_QpkZ_EvKr3n"
+    listenPort: 4080
+  nmapServer:
+    host:
+      projectEnvDetailId: 2001478085436047360
+      hostname: "app1"
+      user: "root"
+      ip: "192.168.2.230"
+      port: 22
+      password: "aKv6uT_QpkZ_EvKr3n"
+  sshAuthType: "AUTO"
+  mysql:
+    enable: true
+    password: "MjRm>Tk#ZjU3N)z6M=="
+    tarName: "mysql-8.0.28-1.el8.x86_64.rpm-bundle.tar"
+    port: 3306
+    appDbs:
+      - account: "datasophon"
+        password: "fI5sQ4yQ4fP5"
+        dbName: "datasophon"
+      - account: "hive"
+        password: "fI5sQ4yQ4fP5"
+        dbName: "hive"
+      - account: "dolphinscheduler"
+        password: "fI5sQ4yQ4fP5"
+        dbName: "dolphinscheduler"
+      - account: "ustream"
+        password: "fI5sQ4yQ4fP5"
+        dbName: "ustream"
+      - account: "amoro"
+        password: "fI5sQ4yQ4fP5"
+        dbName: "amoro"
+      - account: "nacos"
+        password: "fI5sQ4yQ4fP5"
+        dbName: "nacos"
+      - account: "bigdata"
+        password: "fI5sQ4yQ4fP5"
+        dbName: "bigdata"
+      - account: "research"
+        password: "fI5sQ4yQ4fP5"
+        dbName: "research"
+      - account: "operation"
+        password: "fI5sQ4yQ4fP5"
+        dbName: "operation"
+      - account: "juicefs"
+        password: "fI5sQ4yQ4fP5"
+        dbName: "juicefs"
+      - account: "portal"
+        password: "fI5sQ4yQ4fP5"
+        dbName: "portal"
+      - account: "datart"
+        password: "fI5sQ4yQ4fP5"
+        dbName: "datart"
+    host:
+      projectEnvDetailId: 2001478085448630274
+      hostname: "app5"
+      user: "root"
+      ip: "192.168.2.202"
+      port: 22
+      password: "aKv6uT_QpkZ_EvKr3n"
+  ntpServer:
+    host:
+      projectEnvDetailId: 2001478085436047360
+      hostname: "app1"
+      user: "root"
+      ip: "192.168.2.230"
+      port: 22
+      password: "aKv6uT_QpkZ_EvKr3n"
   rustfs:
     enable: true
     packages:
-      x86_64: rustfs-linux-x86_64-musl-1.0.0.tar.gz
-      aarch64: rustfs-linux-aarch64-musl-1.0.0.tar.gz
+      x86_64: "rustfs-linux-x86_64-musl-1.0.0.tar.gz"
     config:
       webPort: 9041
       apiPort: 9040
-      user: admin
-      password: u4Gkp19TRcKKlTCLNA1pyA==
+      user: "admin"
+      password: "u4Gkp19TRcKKlTCLNA1pyA=="
     host:
-      user: root
-      ip: 192.168.2.175
+      projectEnvDetailId: 2001478085448630272
+      hostname: "app3"
+      user: "root"
+      ip: "192.168.2.173"
       port: 22
-      password:
-
-  nmapServer:
-    user: root
-    ip: 192.168.2.146
-    port: 22
-    password:
-
-  mysql:
-    enable: true
-    password: MjRm>Tk#ZjU3N)z6M==
-    tarName: mysql-8.0.28-1.el8.x86_64.rpm-bundle.tar #默认centos8包
-    appDbs:
-      - account: datasophon
-        password: fI5sQ4yQ4fP5
-        dbName: datasophon
-      - account: hive
-        password: fI5sQ4yQ4fP5
-        dbName: hive
-      - account: dolphinscheduler
-        password: fI5sQ4yQ4fP5
-        dbName: dolphinscheduler
-      - account: ustream
-        password: fI5sQ4yQ4fP5
-        dbName: ustream
-      - account: amoro
-        password: fI5sQ4yQ4fP5
-        dbName: amoro
-      - account: nacos
-        password: fI5sQ4yQ4fP5
-        dbName: nacos
-      - account: bigdata
-        password: fI5sQ4yQ4fP5
-        dbName: bigdata
-      - account: research
-        password: fI5sQ4yQ4fP5
-        dbName: research
-      - account: operation
-        password: fI5sQ4yQ4fP5
-        dbName: operation
-      - account: juicefs
-        password: fI5sQ4yQ4fP5
-        dbName: juicefs
-      - account: portal
-        password: fI5sQ4yQ4fP5
-        dbName: portal
-      - account: datart
-        password: fI5sQ4yQ4fP5
-        dbName: datart
-    host:
-      user: root
-      ip: 192.168.2.175
-      port: 22
-      password:
-
-  yumServer:
-    host:
-      user: root
-      ip: 192.168.2.146
-      port: 22
-      password:
-    listenPort: 4080
-
-  ntpServer:
-    host:
-      user: root
-      ip: 192.168.2.146
-      port: 22
-      password:
-
-  logDir: ./logs
-  installDataDir: /data/install_datasophon
-
+      password: "aKv6uT_QpkZ_EvKr3n"
 nodes:
-  - ip: 192.168.2.146
-    user: root
-    password:
+  - projectEnvDetailId: 2001478085436047360
+    ip: "192.168.2.230"
+    user: "root"
+    password: "aKv6uT_QpkZ_EvKr3n"
     port: 22
-    hostname: dd1
+    hostname: "app1"
     isLocalhost: true
-  - ip: 192.168.2.175
-    user: root
-    password:
+  - projectEnvDetailId: 2001478085444435968
+    ip: "192.168.2.213"
+    user: "root"
+    password: "aKv6uT_QpkZ_EvKr3n"
     port: 22
-    hostname: dd2
-  - ip: 192.168.2.160
-    user: root
-    password:
+    hostname: "app2"
+  - projectEnvDetailId: 2001478085448630272
+    ip: "192.168.2.173"
+    user: "root"
+    password: "aKv6uT_QpkZ_EvKr3n"
     port: 22
-    hostname: dd3
+    hostname: "app3"
+  - projectEnvDetailId: 2001478085448630273
+    ip: "192.168.2.200"
+    user: "root"
+    password: "aKv6uT_QpkZ_EvKr3n"
+    port: 22
+    hostname: "app4"
+  - projectEnvDetailId: 2001478085448630274
+    ip: "192.168.2.202"
+    user: "root"
+    password: "aKv6uT_QpkZ_EvKr3n"
+    port: 22
+    hostname: "app5"

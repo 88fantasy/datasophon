@@ -11,6 +11,7 @@ import picocli.CommandLine;
 /**
  * 安装tar
  * TODO,默认已安装tar。废弃。在线安装
+ * 只能是非压缩包
  */
 @Slf4j
 @Data

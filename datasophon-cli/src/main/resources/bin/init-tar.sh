@@ -16,9 +16,12 @@ BASE_PATH=$(
   pwd
 )
 INIT_PATH=$(dirname "${BASE_PATH}")
-echo "INIT_PATH: ${INIT_PATH}"
 PACKAGES_PATH=${INIT_PATH}/packages
-echo "PACKAGES_PATH: ${PACKAGES_PATH}"
+CONFIG_FILE=${INIT_PATH}/config/cluster-sample.yml
+echo "INIT_PATH: ${}, PACKAGES_PATH: ${PACKAGES_PATH}, CONFIG_PATH:${CONFIG_PATH}"
+
+osType=$(cat ${CONFIG_FILE} | grep 'osType:' | cut -d: -f2 | xargs)
+osType=$(cat ${CONFIG_FILE} | grep 'archType:' | cut -d: -f2 | xargs)
 
 which tar
 if [ $? -eq 0 ]; then

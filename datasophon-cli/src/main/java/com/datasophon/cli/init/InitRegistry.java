@@ -4,6 +4,7 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.cli.base.Executor;
+import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.RepositoriesType;
 import com.datasophon.common.model.uni.request.AptRepository;
@@ -33,9 +34,6 @@ public class InitRegistry extends InitBase {
 
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
-
-    @CommandLine.Option(names = {"-i", "--installPath"}, description = "installPath", required = true)
-    String installPath;
 
     @CommandLine.Option(names = {"-x", "--x86Tar"}, description = "x86_64包", required = true)
     String x86Tar;
@@ -72,10 +70,10 @@ public class InitRegistry extends InitBase {
             return true;
         }
 
-        if(!executor.exists(installPath).getExecResult()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + installPath);
+        if(!executor.exists(Constants.INSTALL_PATH).getExecResult()) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + Constants.INSTALL_PATH);
         }
-        String home = String.format("%s/nexusDir", installPath);
+        String home = String.format("%s/nexusDir", Constants.INSTALL_PATH);
         String nexusPath = String.format("%s/nexus", home);
         String nexusPropertiesPath = String.format("%s/etc/nexus-default.properties", nexusPath);
         String sonatypePath = String.format("%s/sonatype-work", home);
@@ -129,8 +127,7 @@ public class InitRegistry extends InitBase {
             log.info("nexus install sucess. path:{}", home);
             return true;
         } else {
-            log.info("nexus install failed. path:{}", home);
-            return false;
+            throw new CommandLine.ExecutionException(new CommandLine(this), String.format("nexus install failed. path:%s", home));
         }
     }
 

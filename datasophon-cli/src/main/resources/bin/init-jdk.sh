@@ -21,7 +21,7 @@ INIT_BIN_PATH=${INIT_PATH}/bin
 echo "INIT_BIN_PATH: ${INIT_BIN_PATH}"
 INIT_SBIN_PATH=${INIT_PATH}/sbin
 echo "INIT_SBIN_PATH: ${INIT_SBIN_PATH}"
-PACKAGES_PATH=${INIT_PATH}/packages
+PACKAGES_PATH=/data/packages/raw
 echo "PACKAGES_PATH: ${PACKAGES_PATH}"
 JDK_FOLDER_PATH=/usr/local
 source /etc/profile

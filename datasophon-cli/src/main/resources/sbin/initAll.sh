@@ -12,7 +12,7 @@ INIT_LOG_PATH=${INIT_PATH}/logs
 INIT_BIN_PATH=${INIT_PATH}/bin
 INIT_SBIN_PATH=${INIT_PATH}/sbin
 #密钥
-export PASSWORD=5bWx3KT7vM7pJUjBf9GtSA==
+export PASSWORD=6/6NbaOFowDPEXlnANcNag==
 
 if [ ! -d "INIT_LOG_PATH" ]; then
   mkdir -p $INIT_LOG_PATH

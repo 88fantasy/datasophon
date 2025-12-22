@@ -13,23 +13,21 @@ public class GlobalConfig {
     
     private boolean offline;
 
+    private OsInfo osInfo;
+
     private SSHAuthType sshAuthType;
     
     private NexusRegistry registry;
 
     private Rustfs rustfs;
     
-    private Host nmapServer;
+    private NmapServer nmapServer;
     
     private MysqlConfig mysql;
     
     private YumServer yumServer;
     
     private NtpServer ntpServer;
-    
-    private String logDir;
-
-    private String installDataDir;
 
     @Data
     public static class MysqlConfig {
@@ -37,6 +35,8 @@ public class GlobalConfig {
         private Boolean enable;
 
         private String password;
+
+        private Integer port;
 
         private String tarName;
         
@@ -64,5 +64,17 @@ public class GlobalConfig {
     @Data
     public static class NtpServer {
         private Host host;
+    }
+
+    @Data
+    public static class NmapServer {
+        private Host host;
+    }
+
+    @Data
+    public static class OsInfo {
+        private boolean isAuto;
+        private String osType;
+        private String archType;
     }
 }
