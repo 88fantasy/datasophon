@@ -149,27 +149,27 @@ const Index = (props) => {
                                         setTimeout(async () => {
                                             value = value[0]
                                             if (value?.response?.code === 200) {
-                                                resolve()
-                                                // const res = await axiosJsonPost(API.validatePkgFile, {
-                                                //     pkgFileId: value.response.data.id,
-                                                //     meteFileId,
-                                                //     contentDecodePasswd
-                                                // })
-                                                // if (
-                                                //     res.code === 200
-                                                // ) {
-                                                //     const msg = res.data.errors?.join(',')
+                                                // resolve()
+                                                const res = await axiosJsonPost(API.validatePkgFile, {
+                                                    pkgFileId: value.response.data.id,
+                                                    meteFileId,
+                                                    contentDecodePasswd
+                                                })
+                                                if (
+                                                    res.code === 200
+                                                ) {
+                                                    const msg = res.data.errors?.join(',')
 
-                                                //     if (msg) {
-                                                //         reject(msg)
-                                                //     } else {
-                                                //         resolve()
-                                                //     }
-                                                // } else {
-                                                //     TODO:
-                                                //     // resolve()
-                                                //     reject(res.msg)
-                                                // }
+                                                    if (msg) {
+                                                        reject(msg)
+                                                    } else {
+                                                        resolve()
+                                                    }
+                                                } else {
+                                                    TODO:
+                                                    // resolve()
+                                                    reject(res.msg)
+                                                }
                                             } else if (value?.status === 'uploading') {
                                                 reject('正在上传中,请稍后重试')
                                             } else {

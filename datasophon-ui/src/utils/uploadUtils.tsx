@@ -12,17 +12,39 @@ export const CHUNK_SIZE = 5 * 1024 * 1024; // 2MB per chunk
 
 
 // 计算整个文件的 MD5（用于文件唯一 ID）
-export const computeFileMD5 = (file: File): Promise<string> => {
-    return new Promise((resolve) => {
+export const computeFileMD5 = (file: File, chunkSize = 2 * 1024 * 1024): Promise<string> => {
+    return new Promise((resolve, reject) => {
         const spark = new SparkMD5.ArrayBuffer();
         const fileReader = new FileReader();
+        let currentChunk = 0;
+        const totalChunks = Math.ceil(file.size / chunkSize);
 
-        fileReader.onload = (e) => {
-            spark.append(e.target?.result as ArrayBuffer);
-            resolve(spark.end());
+        const loadNext = () => {
+            const start = currentChunk * chunkSize;
+            const end = Math.min(start + chunkSize, file.size);
+            const chunk = file.slice(start, end);
+
+            fileReader.onload = (e) => {
+                spark.append(e.target?.result as ArrayBuffer); // 累积到 MD5
+
+                currentChunk++;
+                if (currentChunk < totalChunks) {
+                    // 可选：加个微延迟避免阻塞 UI（尤其在低端设备）
+                    setTimeout(loadNext, 1); // 或直接 loadNext()
+                } else {
+                    const md5 = spark.end();
+                    resolve(md5);
+                }
+            };
+
+            fileReader.onerror = () => {
+                reject(new Error('File read error'));
+            };
+
+            fileReader.readAsArrayBuffer(chunk);
         };
 
-        fileReader.readAsArrayBuffer(file);
+        loadNext();
     });
 };
 
