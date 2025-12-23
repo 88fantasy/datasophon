@@ -65,6 +65,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
 
     private static final String CHUNK_SUFFIX = ".chunk.tmp";
 
+    private static final long MAX_CHUNK_SIZE = 100L * 1024 * 1024;
 
     @Override
     public UploadTempFile upload(MultipartFile file) {
@@ -126,6 +127,8 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
         db.setCreateTime(new Date());
         db.setStatus(0);
         db.setUploadType(1);
+        db.setChunk((int) (info.getByteCnt() % MAX_CHUNK_SIZE == 0 ? info.getByteCnt() / MAX_CHUNK_SIZE : (info.getByteCnt() / MAX_CHUNK_SIZE) + 1));
+        db.setChunkSize(MAX_CHUNK_SIZE);
         save(db);
 
         File attachDir = new File(getSaveDir(), db.getId().toString());
@@ -263,7 +266,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
             throw e;
         } finally {
             progress.setError(error);
-            progress.setState(StringUtils.isBlank(error) ? -1 : 1);
+            progress.setState(StringUtils.isBlank(error) ? 1 : -1);
             progress.setExpire(LocalDateTime.now().plusMinutes(1));
         }
 

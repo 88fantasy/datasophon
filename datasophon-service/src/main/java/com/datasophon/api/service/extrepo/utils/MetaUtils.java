@@ -93,6 +93,7 @@ public class MetaUtils {
                         FileUtil.writeString(plainText, path.toFile(), StandardCharsets.UTF_8);
                     }
                 } catch (IORuntimeException ex) {
+                    log.error("handle encoded file:{} fail, {}", path, ex.getMessage());
                     if (ex.causeInstanceOf(IOException.class)) {
                         throw (IOException) ex.getCause();
                     }
@@ -117,8 +118,8 @@ public class MetaUtils {
      */
     public static String decodeFile(File file, String cipherKey) {
         String cipherText = FileUtil.readString(file, StandardCharsets.UTF_8);
+        log.info("decode file: {}", file.getAbsolutePath());
         String plainText = SmUtil.sm4(Base64.decode(cipherKey)).decryptStr(Base64.decode(cipherText), StandardCharsets.UTF_8);
-        log.info("decode file: {}", file.getName());
         return plainText;
 
 //        return cipherText;

@@ -1,5 +1,6 @@
 package com.datasophon.dao.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -58,5 +59,8 @@ public class UploadTempFile implements Serializable {
     private Integer chunk;
 
 
+    @Schema(description = "分片大小")
+    @TableField(exist = false)
+    private Long chunkSize;
 
 }

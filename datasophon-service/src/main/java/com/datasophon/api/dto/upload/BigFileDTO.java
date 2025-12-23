@@ -24,8 +24,8 @@ public class BigFileDTO {
     @NotNull(message = "文件总大小不能为空")
     private Long byteCnt;
 
-    @Schema(description = "分片数量")
-    @NotNull(message = "分片数量不能为空")
-    private Integer chunk;
+//    @Schema(description = "分片数量")
+//    @NotNull(message = "分片数量不能为空")
+//    private Integer chunk;
 
 }
