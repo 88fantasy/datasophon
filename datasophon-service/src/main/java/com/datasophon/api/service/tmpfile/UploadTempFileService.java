@@ -2,6 +2,7 @@ package com.datasophon.api.service.tmpfile;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.datasophon.api.dto.upload.BigFileDTO;
+import com.datasophon.api.dto.upload.CheckChunkDTO;
 import com.datasophon.api.dto.upload.ChunkDTO;
 import com.datasophon.api.dto.upload.MergeChunkDTO;
 import com.datasophon.dao.entity.UploadTempFile;
@@ -39,6 +40,7 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
     UploadTempFileChunk uploadChunk(ChunkDTO info);
 
 
+    boolean isChunkUpload(CheckChunkDTO dto);
     /**
      * 合并分片
      * @param vo

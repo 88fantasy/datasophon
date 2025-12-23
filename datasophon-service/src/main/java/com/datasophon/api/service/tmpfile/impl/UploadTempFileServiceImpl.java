@@ -6,6 +6,7 @@ import cn.hutool.core.io.IORuntimeException;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.dto.upload.BigFileDTO;
+import com.datasophon.api.dto.upload.CheckChunkDTO;
 import com.datasophon.api.dto.upload.ChunkDTO;
 import com.datasophon.api.dto.upload.MergeChunkDTO;
 import com.datasophon.api.exceptions.BusinessException;
@@ -177,6 +178,27 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
 
         uploadTempFileChunkMapper.insertOrUpdate(chunk);
         return chunk;
+    }
+
+    @Override
+    public boolean isChunkUpload(CheckChunkDTO dto) {
+        UploadTempFile db = getById(dto.getAttachId());
+        if (db == null) {
+            throw new BusinessException("任务不存在");
+        }
+        if (dto.getChunkNo() >= db.getChunk()) {
+            throw new BusinessException("chunkNo大于任务的分片数");
+        }
+        UploadTempFileChunk chunk = uploadTempFileChunkMapper.selectOne(
+                Wrappers.lambdaQuery(UploadTempFileChunk.class)
+                        .eq(UploadTempFileChunk::getAttachId, dto.getAttachId())
+                        .eq(UploadTempFileChunk::getChunkNo, dto.getChunkNo())
+        );
+        if (chunk == null) {
+            return false;
+        }
+        Path chunkPath = PathUtils.join(getSaveDir().toPath(), dto.getAttachId().toString(), createChunkName(db.getFileName(), dto.getChunkNo()));
+        return chunkPath.toFile().exists();
     }
 
 

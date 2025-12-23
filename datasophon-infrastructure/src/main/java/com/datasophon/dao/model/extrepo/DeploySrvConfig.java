@@ -11,5 +11,5 @@ public class DeploySrvConfig {
 
     private String name;
 
-    private String value;
+    private Object value;
 }

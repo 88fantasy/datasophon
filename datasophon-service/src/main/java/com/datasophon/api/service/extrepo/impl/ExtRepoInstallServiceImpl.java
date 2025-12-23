@@ -3,6 +3,7 @@ package com.datasophon.api.service.extrepo.impl;
 import akka.actor.ActorRef;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.exceptions.BusinessException;
@@ -22,6 +23,7 @@ import com.datasophon.api.service.extrepo.ExtRepoInstallService;
 import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
 import com.datasophon.api.service.extrepo.ctx.ExecDAGBuilderContext;
 import com.datasophon.api.service.extrepo.utils.MetaUtils;
+import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.ProcessUtils;
@@ -38,6 +40,7 @@ import com.datasophon.common.model.ServiceInfo;
 import com.datasophon.common.model.ServiceNode;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.model.ServiceRoleInfo;
+import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
 import com.datasophon.dao.entity.ClusterServiceCommandHostCommandEntity;
@@ -117,6 +120,9 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
     @Autowired
     private ClusterServiceRoleInstanceService roleInstanceService;
 
+    @Autowired
+    private ClusterHostService clusterHostService;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<String> deploy(DeploymentDTO dto) {
@@ -129,6 +135,18 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         log.debug("解析到配置\n：{}", JSONObject.toJSONString(model, true));
         log.info("完成解析部署文件, 需要部署{}个应用", model.getApp().size());
 
+
+        Set<String> deployHosts = model.getApp()
+                .stream()
+                .flatMap(app -> app.getRoles().stream())
+                .flatMap(role -> role.getDeployHosts().stream())
+                .collect(Collectors.toSet());
+        List<ClusterHostDO> hostList = clusterHostService.getHostListByClusterId(dto.getClusterId());
+        Map<String, ClusterHostDO> hostMap = hostList.stream().collect(Collectors.toMap(ClusterHostDO::getHostname, a->a, (a,b)->a));
+        deployHosts = deployHosts.stream().filter(hostMap::containsKey).collect(Collectors.toSet());
+        if (!deployHosts.isEmpty()) {
+            throw new BusinessException(String.format("以下主机%s不存在或者无法通讯", StrUtil.join(",", deployHosts)));
+        }
 
 //        保存serviceRole和host的映射
         List<ServiceRoleHostMapping> hostMappings = new ArrayList<>();
@@ -274,7 +292,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
 
         ExecDAGBuilderContext context = new ExecDAGBuilderContext();
-        context.setSrvCmd(commandService.lambdaQuery().in(ClusterServiceCommandEntity::getCommandId,commandIds).list());
+        context.setSrvCmd(commandService.lambdaQuery().in(ClusterServiceCommandEntity::getCommandId, commandIds).list());
         context.setCmdHost(hostCommandService.lambdaQuery().in(ClusterServiceCommandHostCommandEntity::getCommandId, commandIds).list());
 
 
