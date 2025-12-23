@@ -1,7 +1,7 @@
 package com.datasophon.cli.create;
 
-import com.datasophon.cli.base.ClusterConfig;
-import com.datasophon.cli.base.GlobalConfig;
+import com.datasophon.common.model.ClusterConfig;
+import com.datasophon.common.model.GlobalConfig;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 

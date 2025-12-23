@@ -17,11 +17,15 @@
 
 package com.datasophon.api.configuration;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.setting.yaml.YamlUtil;
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.interceptor.BasicValidRequestInterceptor;
 import com.datasophon.api.interceptor.LocaleChangeInterceptor;
 import com.datasophon.api.interceptor.LoginHandlerInterceptor;
 import com.datasophon.api.interceptor.UserPermissionHandler;
+import com.datasophon.common.Constants;
+import com.datasophon.common.model.ClusterConfig;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -166,5 +170,16 @@ public class AppConfiguration implements WebMvcConfigurer {
 //  public void configureContentNegotiation(final ContentNegotiationConfigurer configurer) {
 //    configurer.favorPathExtension(false);
 //  }
+
+
+  @Bean(name = "clusterSampleConfig")
+  public ClusterConfig clusterSampleConfig() {
+    if (!FileUtil.exist(Constants.INIT_CLUSTER_SAMPLE)) {
+      throw new RuntimeException("clusterSamplePath is not exist. Please set INIT_HOME in common.properties");
+    }
+    return YamlUtil.loadByPath(Constants.INIT_CLUSTER_SAMPLE, ClusterConfig.class);
+  }
+
+
 
 }

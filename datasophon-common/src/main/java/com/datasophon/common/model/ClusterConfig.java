@@ -1,5 +1,6 @@
-package com.datasophon.cli.base;
+package com.datasophon.common.model;
 
+import com.datasophon.common.model.GlobalConfig;
 import com.datasophon.common.model.Host;
 
 import java.util.ArrayList;

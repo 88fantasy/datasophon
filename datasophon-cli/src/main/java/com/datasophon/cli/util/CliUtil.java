@@ -3,7 +3,7 @@ package com.datasophon.cli.util;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import com.datasophon.cli.base.CliConstants;
-import com.datasophon.cli.base.ClusterConfig;
+import com.datasophon.common.model.ClusterConfig;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.OsType;

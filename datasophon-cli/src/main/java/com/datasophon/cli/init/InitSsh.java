@@ -1,6 +1,6 @@
 package com.datasophon.cli.init;
 
-import com.datasophon.cli.base.ClusterConfig;
+import com.datasophon.common.model.ClusterConfig;
 import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.model.Host;

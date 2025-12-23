@@ -15,6 +15,7 @@ import picocli.CommandLine;
 @Slf4j
 @Accessors(chain = true)
 @Data
+// TODO JDK8和JDK17
 @CommandLine.Command(name = "jdk", description = "init jdk")
 public class InitJdk extends InitBase {
 

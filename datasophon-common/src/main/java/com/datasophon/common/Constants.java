@@ -28,6 +28,7 @@ public final class Constants {
     
     public static final String INSTALL_PATH = PropertyUtils.getString("install.path");
     public static final String INIT_HOME = PropertyUtils.getString("INIT_HOME");
+    public static final String INIT_CLUSTER_SAMPLE = String.format("%s/config/cluster-sample.yml", INIT_HOME);
     public static final String DATA = "data";
     public static final String INSTALL_TYPE = "install_type";
     public static final String TOTAL = "total";

@@ -1,4 +1,4 @@
-package com.datasophon.cli.base;
+package com.datasophon.common.model;
 
 import com.datasophon.common.enums.SSHAuthType;
 import com.datasophon.common.model.Host;

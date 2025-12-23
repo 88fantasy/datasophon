@@ -1,6 +1,6 @@
 package com.datasophon.cli.init;
 
-import com.datasophon.cli.base.ClusterConfig;
+import com.datasophon.common.model.ClusterConfig;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.base.JschExecutor;
 import com.datasophon.cli.base.LocalExecutor;

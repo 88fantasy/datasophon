@@ -1,8 +1,8 @@
 package com.datasophon.cli.create;
 
 import cn.hutool.core.collection.CollUtil;
-import com.datasophon.cli.base.ClusterConfig;
-import com.datasophon.cli.base.GlobalConfig;
+import com.datasophon.common.model.ClusterConfig;
+import com.datasophon.common.model.GlobalConfig;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.cli.handler.InitNodeHandlerChain;
 import com.datasophon.cli.init.*;

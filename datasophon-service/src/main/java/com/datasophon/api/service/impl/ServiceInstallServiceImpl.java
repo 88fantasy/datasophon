@@ -51,19 +51,9 @@ import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.enums.CommandType;
-import com.datasophon.common.model.DAG;
-import com.datasophon.common.model.Generators;
-import com.datasophon.common.model.HostServiceRoleMapping;
-import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceInfo;
-import com.datasophon.common.model.ServiceNode;
-import com.datasophon.common.model.ServiceNodeEdge;
-import com.datasophon.common.model.ServiceRoleHostMapping;
-import com.datasophon.common.model.ServiceRoleInfo;
-import com.datasophon.common.utils.CollectionUtils;
-import com.datasophon.common.utils.HostUtils;
-import com.datasophon.common.utils.PlaceholderUtils;
-import com.datasophon.common.utils.Result;
+import com.datasophon.common.model.*;
+import com.datasophon.common.model.uni.NexusRegistry;
+import com.datasophon.common.utils.*;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
@@ -85,10 +75,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -149,6 +136,9 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
 
     @Autowired
     private ClusterServiceRoleInstanceService roleInstanceService;
+
+    @Autowired
+    private ClusterConfig clusterSampleConfig;
 
     public static final String PROMETHEUS = "prometheus";
 
@@ -405,16 +395,23 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
 
     @Override
     public void downloadPackage(String packageName, HttpServletResponse response) throws IOException {
-        FileInputStream inputStream = null;
+        InputStream inputStream = null;
         OutputStream out = null;
-        // 通过文件路径获得File对象
-        File file = new File(Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + packageName);
 
-        inputStream = new FileInputStream(file);
+        NexusRegistry registry = clusterSampleConfig.getGlobal().getRegistry();
+        String url = String.format("http://%s:%s/repository/raw/%s", registry.getHost().getIp(), registry.getConfig().getWebPort(), packageName);
+        if(registry.isEnable()) {
+            // 制品库
+            inputStream = NexusFileUtils.downStream(url, registry.getConfig().getUser(), registry.getConfig().getPassword());
+        } else {
+            // 本地
+            File file = new File(Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + packageName);
+            inputStream = new FileInputStream(file);
+            response.addHeader("Content-Length", "" + file.length());
+        }
 
         response.reset();
         response.setContentType("application/octet-stream");
-        response.addHeader("Content-Length", "" + file.length());
         // 支持中文名称文件,需要对header进行单独设置，不然下载的文件名会出现乱码或者无法显示的情况
         // 设置响应头，控制浏览器下载该文件
         response.setHeader("Content-Disposition", "attachment;filename=" + packageName);

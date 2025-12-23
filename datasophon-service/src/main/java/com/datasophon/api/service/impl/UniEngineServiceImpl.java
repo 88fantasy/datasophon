@@ -1,7 +1,5 @@
 package com.datasophon.api.service.impl;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.setting.yaml.YamlUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.api.service.ClusterInfoService;
@@ -9,15 +7,10 @@ import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.api.service.UniEngineService;
 import com.datasophon.common.Constants;
-import com.datasophon.common.model.uni.DorisDatasource;
-import com.datasophon.common.model.uni.EngineInfo;
-import com.datasophon.common.model.uni.HiveDatasource;
-import com.datasophon.common.model.uni.KafkaDatasource;
-import com.datasophon.common.model.uni.MysqlDatasource;
-import com.datasophon.common.model.uni.PaimonDatasource;
-import com.datasophon.common.utils.LazyTask;
+import com.datasophon.common.model.ClusterConfig;
+import com.datasophon.common.model.GlobalConfig;
+import com.datasophon.common.model.uni.*;
 import com.datasophon.common.utils.PasswordSupport;
-import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
@@ -48,25 +41,11 @@ public class UniEngineServiceImpl implements UniEngineService {
     @Autowired
     ClusterInfoService clusterInfoService;
 
-    private JSONObject clusterSampleConfig;
-
-    private final LazyTask loadCfgTask = LazyTask.of(() -> {
-        String initPath = PropertyUtils.getString("INIT_HOME");
-        String clusterSamplePath = String.format("%s/config/cluster-sample.yml", initPath);
-        if (!FileUtil.exist(clusterSamplePath)) {
-            throw new RuntimeException("clusterSamplePath is not exist. Please set INIT_HOME in common.properties");
-        }
-        this.clusterSampleConfig = YamlUtil.loadByPath(clusterSamplePath, JSONObject.class);
-        logger.info("{} load success.", clusterSamplePath);
-    });
-
-    private void init() {
-        loadCfgTask.exec();
-    }
+    @Autowired
+    private ClusterConfig clusterSampleConfig;
 
     @Override
     public Result getEngineInfo() {
-        init();
 
         Result result = clusterInfoService.getClusterList();
         List<ClusterInfoEntity> clusterList = (List<ClusterInfoEntity>) result.getData();
@@ -127,11 +106,11 @@ public class UniEngineServiceImpl implements UniEngineService {
 
     public MysqlDatasource getMysqlDatasource() {
         MysqlDatasource mysqlDatasource = new MysqlDatasource();
-        JSONObject mysqlInfo = clusterSampleConfig.getJSONObject("global").getJSONObject("mysql");
-        mysqlDatasource.setHost(mysqlInfo.getJSONObject("host").getString("ip"));
+        GlobalConfig.MysqlConfig mysqlInfo = clusterSampleConfig.getGlobal().getMysql();
+        mysqlDatasource.setHost(mysqlInfo.getHost().getIp());
         mysqlDatasource.setPort("3306");
         mysqlDatasource.setUserName("root");
-        mysqlDatasource.setPassword(mysqlInfo.getString("password"));
+        mysqlDatasource.setPassword(mysqlInfo.getPassword());
         JSONObject mysqlOther = new JSONObject();
         mysqlOther.put("allowPublicKeyRetrieval", true);
         mysqlOther.put("useSSL", false);
