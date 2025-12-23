@@ -38,10 +38,10 @@ import java.util.List;
 @RestController
 @RequestMapping("service/install")
 public class ServiceInstallController extends ApiController {
-    
+
     @Autowired
     ServiceInstallService serviceInstallService;
-    
+
     /**
      * 根据服务名称查询服务配置选项
      */
@@ -49,7 +49,7 @@ public class ServiceInstallController extends ApiController {
     public Result getServiceConfigOption(Integer clusterId, String serviceName) {
         return Result.success(serviceInstallService.getServiceConfigOption(clusterId, serviceName));
     }
-    
+
     /**
      * 保存服务配置
      */
@@ -61,7 +61,7 @@ public class ServiceInstallController extends ApiController {
         serviceInstallService.saveServiceConfig(clusterId, serviceName, list, roleGroupId);
         return Result.success();
     }
-    
+
     /**
      * 保存服务角色与主机对应关系
      */
@@ -71,7 +71,7 @@ public class ServiceInstallController extends ApiController {
         serviceInstallService.saveServiceRoleHostMapping(clusterId, list);
         return Result.success();
     }
-    
+
     /**
      * 查询服务角色与主机对应关系
      */
@@ -80,17 +80,17 @@ public class ServiceInstallController extends ApiController {
     public Result getServiceRoleHostMapping(Integer clusterId) {
         return serviceInstallService.getServiceRoleHostMapping(clusterId);
     }
-    
+
     /**
      * 保存主机与服务角色对应关系
      */
     @RequestMapping("/saveHostServiceRoleMapping/{clusterId}")
     public Result saveHostServiceRoleMapping(@PathVariable("clusterId") Integer clusterId,
                                              @RequestBody List<HostServiceRoleMapping> list) {
-        
+
         return serviceInstallService.saveHostServiceRoleMapping(clusterId, list);
     }
-    
+
     /**
      * 服务部署总览
      */
@@ -98,27 +98,35 @@ public class ServiceInstallController extends ApiController {
     public Result getServiceRoleDeployOverview(Integer clusterId) {
         return serviceInstallService.getServiceRoleDeployOverview(clusterId);
     }
-    
+
     /**
      * 开始安装服务
      */
     @RequestMapping("/startInstallService/{clusterId}")
     public Result startInstallService(@PathVariable("clusterId") Integer clusterId,
                                       @RequestBody List<String> commandIds) {
-        
+
         return serviceInstallService.startInstallService(clusterId, commandIds);
     }
-    
+
     /**
      * 下载安装包
      */
     @GetMapping("/downloadPackage")
     public void downloadPackage(String packageName, String cpuArchitecture,
                                 HttpServletResponse response) throws IOException {
-        
+
         serviceInstallService.downloadPackage(packageName, response);
     }
-    
+
+    /**
+     * 下载模板
+     */
+    @GetMapping("/downloadTemplate")
+    public void downloadResource(String templateName, HttpServletResponse response) throws IOException {
+        serviceInstallService.downloadTemplate(templateName, response);
+    }
+
     /**
      * 下载额外资源
      */
@@ -137,5 +145,5 @@ public class ServiceInstallController extends ApiController {
     public Result checkServiceDependency(Integer clusterId, String serviceIds) {
         return serviceInstallService.checkServiceDependency(clusterId, serviceIds);
     }
-    
+
 }

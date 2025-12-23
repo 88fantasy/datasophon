@@ -73,6 +73,7 @@ public class MetaUtils {
     public static final String SERVICE_DDL = "service_ddl.json";
     private static final Logger log = LoggerFactory.getLogger(MetaUtils.class);
 
+    public static final String PACKAGES = "packages";
     /**
      * 对需要解压的文件，进行文件内容解压
      *
@@ -147,9 +148,15 @@ public class MetaUtils {
             vo.setSample(PathUtils.relative(sample, root));
         }
 
+        File tpl = base.resolve("template").toFile();
+        if (tpl.exists() && tpl.isDirectory()) {
+            vo.setTemplate(PathUtils.relative(tpl, root));
+        }
+
 
         File metaDir = base.resolve("meta").toFile();
         if (metaDir.exists()) {
+            vo.setMeta(PathUtils.relative(metaDir, root));
             File[] frameDirs = metaDir.listFiles();
             if (frameDirs != null) {
                 for (File frameDir : frameDirs) {
@@ -203,10 +210,7 @@ public class MetaUtils {
         meta.setName(serviceDir.getName());
         meta.setDdl(PathUtils.relative(ddl, root));
 
-        File tpl = currentPath.resolve("template").toFile();
-        if (tpl.exists() && tpl.isDirectory()) {
-            meta.setTemplate(PathUtils.relative(tpl, root));
-        }
+
 
         File script = currentPath.resolve("script").toFile();
         if (script.exists() && script.isDirectory()) {

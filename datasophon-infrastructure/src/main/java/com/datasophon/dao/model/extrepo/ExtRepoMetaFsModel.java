@@ -16,6 +16,10 @@ public class ExtRepoMetaFsModel {
     private String sample;
 
 
+    private String template;
+
+    private String meta;
+
     private List<FrameworkMeta> frameworks = new ArrayList<>();
 
 

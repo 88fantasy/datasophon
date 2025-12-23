@@ -16,6 +16,7 @@ import com.datasophon.api.service.extrepo.ctx.MetaParseOption;
 import com.datasophon.api.service.extrepo.ctx.SrvDependenciesContext;
 import com.datasophon.api.service.extrepo.utils.MetaUtils;
 import com.datasophon.api.service.extrepo.utils.PathUtils;
+import com.datasophon.api.service.storage.StorageService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
@@ -79,6 +80,10 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
     @Autowired
     private FrameServiceService frameServiceService;
+
+
+    @Autowired
+    private StorageService storageService;
 
     @Override
     public ValidateResultVO validMetaFile(InstallComponentDTO dto) {
@@ -299,7 +304,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     }
 
 
-    private void moveFiles(String metaUnzipPath, ExtRepoMetaFsModel vo, String pkgPath, ImportCompProgressVO progress) {
+    private void moveFiles(String metaUnzipPath, ExtRepoMetaFsModel vo, String pkgPath, ImportCompProgressVO progress) throws IOException {
         progress.setState(5);
         progress.setStep(0);
 
@@ -308,33 +313,38 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
                 .flatMap(f -> f.getServices().stream())
                 .map(ServiceMeta::getPackageName)
                 .collect(Collectors.toSet());
-        progress.setTotal(packageNames.size() + 1);
+        progress.setTotal(2);
 
         File metaDir = FileUtil.file(Constants.META_PATH);
         if (metaDir != null && metaDir.exists()) {
-            vo.getFrameworks().stream().flatMap(fw -> fw.getServices().stream()).forEach(srv -> {
-                String targetSrvDir = PathUtils.join(metaDir.toPath(), srv.getFrameCode(), srv.getName()).toString();
-                FileUtil.copy(new File(metaUnzipPath, srv.getDdl()), new File(targetSrvDir, MetaUtils.SERVICE_DDL), true);
-                if (StringUtils.isNotBlank(srv.getScript())) {
-                    FileUtil.copy(new File(metaUnzipPath, srv.getScript()), new File(targetSrvDir), true);
-                }
-
-//                FIXME copy template dir
-            });
+            if (StrUtil.isNotBlank(vo.getMeta())) {
+                FileUtil.copy(PathUtils.join(metaUnzipPath, vo.getMeta()).toFile(), metaDir.getParentFile(), true);
+            }
+//            vo.getFrameworks().stream().flatMap(fw -> fw.getServices().stream()).forEach(srv -> {
+//                String targetSrvDir = PathUtils.join(metaDir.toPath(), srv.getFrameCode(), srv.getName()).toString();
+//                FileUtil.copy(new File(metaUnzipPath, srv.getDdl()), new File(targetSrvDir, MetaUtils.SERVICE_DDL), true);
+//                if (StringUtils.isNotBlank(srv.getScript())) {
+//                    FileUtil.copy(new File(metaUnzipPath, srv.getScript()), new File(targetSrvDir), true);
+//                }
+//            });
+        }
+        if (StrUtil.isNotBlank(vo.getTemplate())) {
+            File dir = PathUtils.join(metaUnzipPath, vo.getTemplate()).toFile();
+            log.info("开始上传模板：{}", dir.getAbsolutePath());
+            storageService.moveToStorage(dir,true);
         }
         progress.setStep(1);
 
-        if (packageNames.isEmpty()) {
-            return;
-        }
-
         File pkgDir = MetaUtils.getPkgPath(pkgPath).toFile();
-        packageNames.forEach(pkg -> {
-            FileUtil.move(new File(pkgDir, pkg), new File(Constants.MASTER_MANAGE_PACKAGE_PATH, pkg), true);
-            FileUtil.move(new File(pkgDir, MetaUtils.getMd5FileName(pkg)), new File(Constants.MASTER_MANAGE_PACKAGE_PATH, MetaUtils.getMd5FileName(pkg)), true);
+        for (String pkg : packageNames) {
+            log.info("上传安装软件：{}/{}", pkgDir, pkg);
+            storageService.moveToStorage(new File(pkgDir, pkg), file-> "packages");
+            storageService.moveToStorage(new File(pkgDir, MetaUtils.getMd5FileName(pkg)), file-> "packages");
             progress.setStep(progress.getStep() + 1);
-        });
+        }
+        progress.setStep(progress.getTotal());
     }
+
 
     @Override
     public ImportCompProgressVO queryProgress(Integer progressId) {

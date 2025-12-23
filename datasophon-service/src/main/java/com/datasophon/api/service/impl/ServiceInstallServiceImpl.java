@@ -20,6 +20,7 @@
 package com.datasophon.api.service.impl;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -51,9 +52,24 @@ import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.enums.CommandType;
-import com.datasophon.common.model.*;
+import com.datasophon.common.model.ClusterConfig;
+import com.datasophon.common.model.DAG;
+import com.datasophon.common.model.Generators;
+import com.datasophon.common.model.HostServiceRoleMapping;
+import com.datasophon.common.model.ServiceConfig;
+import com.datasophon.common.model.ServiceInfo;
+import com.datasophon.common.model.ServiceNode;
+import com.datasophon.common.model.ServiceNodeEdge;
+import com.datasophon.common.model.ServiceRoleHostMapping;
+import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.model.uni.NexusRegistry;
-import com.datasophon.common.utils.*;
+import com.datasophon.common.utils.CollectionUtils;
+import com.datasophon.common.utils.HostUtils;
+import com.datasophon.common.utils.IOUtils;
+import com.datasophon.common.utils.NexusFileUtils;
+import com.datasophon.common.utils.PathUtils;
+import com.datasophon.common.utils.PlaceholderUtils;
+import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
@@ -75,7 +91,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -458,6 +482,36 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             out.flush();
             out.close();
         }
+    }
+
+    @Override
+    public void downloadTemplate(String templateName, HttpServletResponse response) throws IOException {
+        InputStream inputStream = null;
+        OutputStream out = null;
+        try {
+            NexusRegistry registry = clusterSampleConfig.getGlobal().getRegistry();
+            if(registry.isEnable()) {
+                String url = String.format("http://%s:%s/repository/raw/template/%s", registry.getHost().getIp(), registry.getConfig().getWebPort(), templateName);
+                logger.info("download template from nexus, url is {}", url);
+                inputStream = NexusFileUtils.downStream(url, registry.getConfig().getUser(), registry.getConfig().getPassword());
+            } else {
+                Path path = PathUtils.join(Paths.get(Constants.INIT_HOME), "template", templateName);
+                logger.info("download template from local storage, path is: {}", path);
+                File file = path.toFile();
+                inputStream = new BufferedInputStream(Files.newInputStream(file.toPath()));
+                response.addHeader("Content-Length", "" + file.length());
+            }
+
+            response.reset();
+            response.setContentType("application/octet-stream");
+            response.setHeader("Content-Disposition", "attachment;filename=" + templateName.replaceAll("/", "_"));
+            out = response.getOutputStream();
+            IoUtil.copy(inputStream, response.getOutputStream());
+        }  finally {
+            IOUtils.closeQuietly(inputStream);
+            IOUtils.closeQuietly(out);
+        }
+
     }
 
     @Override

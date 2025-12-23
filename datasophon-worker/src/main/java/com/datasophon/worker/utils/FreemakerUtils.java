@@ -36,6 +36,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.model.AlertItem;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
+import com.datasophon.common.utils.PropertyUtils;
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.cache.FileTemplateLoader;
 import freemarker.cache.MultiTemplateLoader;
@@ -106,18 +107,28 @@ public class FreemakerUtils {
         // 创建核心配置对象
         Configuration config = new Configuration(Configuration.getVersion());
         List<TemplateLoader> loaderList = new ArrayList<>();
+
+        String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
+        String masterPort = PropertyUtils.getString(Constants.MASTER_WEB_PORT);
 //       安装包的模板优先
         if (StringUtils.isNotBlank(extPath) && new File(extPath).exists()) {
             // 如果 三方的 package 中存在 templates 模版，则直接加载
             loaderList.add(new FileTemplateLoader(new File(extPath)));
         }
+        //      master的下发的模板优先
+        loaderList.add(new RemoteTemplateLoader(String.format("http://%s:%s", masterHost, masterPort)));
         loaderList.add(new ClassTemplateLoader(FreemakerUtils.class, "/templates"));
-        config.setTemplateLoader(new MultiTemplateLoader(loaderList.toArray(new TemplateLoader[0])));
+
+
+        MultiTemplateLoader loader = new MultiTemplateLoader(loaderList.toArray(new TemplateLoader[0]));
+        loader.setSticky(false);
+        config.setTemplateLoader(loader);
         return config;
     }
 
     /**
      * 获取模板名
+     *
      * @param generators
      * @return
      */
@@ -155,6 +166,7 @@ public class FreemakerUtils {
      * TODO 改为SPI实现
      * 渲染模板。
      * 注意保留public，方便写单元测试代码
+     *
      * @param generators
      * @param template
      * @param configs
@@ -174,7 +186,6 @@ public class FreemakerUtils {
     }
 
 
-
     public static String renderCustomConfigFormat(Template template, List<ServiceConfig> configs) throws TemplateException, IOException {
         Map<String, Object> data = new HashMap<>();
 
@@ -183,7 +194,7 @@ public class FreemakerUtils {
         data.put("host", InetAddress.getLocalHost().getHostName());
 
 //        “map”为自定义属性
-        configs.stream().filter(e -> "map".equals(e.getConfigType())).forEach(config-> {
+        configs.stream().filter(e -> "map".equals(e.getConfigType())).forEach(config -> {
 //            阮伟儿自定义的属性，优先级高于name
             if (StrUtil.isNotBlank(config.getKey())) {
                 data.put(config.getKey(), config.getValue());
@@ -228,6 +239,7 @@ public class FreemakerUtils {
 
     /**
      * TODO 改为SPI实现
+     *
      * @param generators
      * @param configs
      * @param decompressPackageName
@@ -249,7 +261,6 @@ public class FreemakerUtils {
 
         throw new IllegalArgumentException(String.format("unknown type:%s, 请检查service-ddl.json文件的filename属性为%s的generators的配置属性", protocol, generators.getFilename()));
     }
-
 
 
     private static void writeContentToFile(Generators generators, String decompressPackageName, String content) {
@@ -279,7 +290,7 @@ public class FreemakerUtils {
         data.put("ip", InetAddress.getLocalHost().getHostAddress());
         data.put("host", InetAddress.getLocalHost().getHostName());
 
-        configs.stream().filter(e -> "map".equals(e.getConfigType())).forEach(config-> {
+        configs.stream().filter(e -> "map".equals(e.getConfigType())).forEach(config -> {
 //            阮伟儿自定义的属性，优先级高于name
             if (StrUtil.isNotBlank(config.getKey())) {
                 data.put(config.getKey(), config.getValue());
@@ -316,8 +327,6 @@ public class FreemakerUtils {
         publishConfig(properties, content, group, filename, dataType);
         logger.info("成功生成配置文件{}，写入nacos: url:{}:{}, namespace {}, group: {} 成功", generators.getFilename(), host, port, profile, group);
     }
-
-
 
 
     public static String parseValue(Map<String, Object> data, String str) {

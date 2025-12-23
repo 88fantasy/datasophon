@@ -14,5 +14,8 @@ public class FrameworkMeta {
 
     private String frameCode;
 
+
+
+
     private List<ServiceMeta> services = new ArrayList<>();
 }

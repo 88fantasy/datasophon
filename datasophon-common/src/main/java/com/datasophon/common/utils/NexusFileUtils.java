@@ -1,18 +1,15 @@
 package com.datasophon.common.utils;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.enums.RepositoriesType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.datasophon.common.model.uni.NexusRegistry;
+import lombok.Data;
 import org.apache.commons.lang3.tuple.Pair;
-import java.io.File;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -23,9 +20,16 @@ import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 public class NexusFileUtils {
 
@@ -33,21 +37,23 @@ public class NexusFileUtils {
 
     /**
      * 下载文件
-     * @param url: http://ip:port/repository/raw/linux/x86_64/centos7/tree-1.6.0-10.el7.x86_64.rpm
+     *
+     * @param url:     http://ip:port/repository/raw/linux/x86_64/centos7/tree-1.6.0-10.el7.x86_64.rpm
      * @param username
      * @param password
      */
     public static InputStream downStream(String url, String username, String password) {
         HttpResponse response = HttpRequest.get(url)
-                    .basicAuth(username, password)
-                    .execute();
+                .basicAuth(username, password)
+                .execute();
         return response.bodyStream();
     }
 
     /**
      * 批量上传仓库文件:
+     *
      * @param packageFullDir: /data/packages
-     * @param baseUrl: http://ip:port
+     * @param baseUrl:        http://ip:port
      * @param username
      * @param password
      */
@@ -89,7 +95,7 @@ public class NexusFileUtils {
                     log.info("不支持:{},跳过", repositoriesType.getDesc());
             }
 
-            if(repositoriesType == RepositoriesType.YUM || repositoriesType == RepositoriesType.APT) {
+            if (repositoriesType == RepositoriesType.YUM || repositoriesType == RepositoriesType.APT) {
 
             }
         }
@@ -166,5 +172,79 @@ public class NexusFileUtils {
             log.error(msg, e);
             uploadFails.put(file.getAbsolutePath(), e.toString());
         }
+    }
+
+    public static ExecResult uploadFileToRawRepo(NexusRegistry.NexusUri host, String path, File file) throws IOException {
+        if (!file.isFile()) {
+            throw new IllegalArgumentException(String.format("file %s is not a file", file.getAbsoluteFile()));
+        }
+        path = StrUtil.isBlank(path) ? "/" : path;
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+
+
+        String url = String.format("%s/service/rest/internal/ui/upload/%s", host.getUri(), RepositoriesType.RAW.getDesc());
+
+        // 配置超时（根据文件大小调整）
+        RequestConfig config = RequestConfig.custom()
+                .setConnectTimeout(30000)      // 连接超时 30s
+                .setSocketTimeout(600000)      // 上传超时 10分钟
+                .build();
+
+        try (CloseableHttpClient httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(config)
+                .build()) {
+
+            HttpPost post = new HttpPost(url);
+
+            // Basic Auth
+            String auth = Base64.getEncoder().encodeToString((host.getUser() + ":" + host.getPassword()).getBytes(StandardCharsets.UTF_8));
+            post.setHeader("Authorization", "Basic " + auth);
+
+            // 构建 multipart/form-data（流式，不加载到内存）
+            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+            FileBody fileBody = new FileBody(file, ContentType.DEFAULT_BINARY);
+            builder.addPart("asset0", fileBody);
+
+            // 根据仓库类型添加额外参数
+            builder.addTextBody("asset0.filename", file.getName(), ContentType.TEXT_PLAIN);
+            builder.addTextBody("directory", path, ContentType.TEXT_PLAIN);
+
+            HttpEntity entity = builder.build();
+            post.setEntity(entity);
+
+            log.info("开始上传 {}", file.getAbsolutePath());
+
+            try (CloseableHttpResponse response = httpClient.execute(post)) {
+                int status = response.getStatusLine().getStatusCode();
+                String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                if (status == 200) {
+                    return ExecResult.success(body);
+                } else {
+                    return ExecResult.fail(body);
+                }
+            }
+        }
+    }
+
+
+    @Data
+    public static class ExecResult {
+
+        private final boolean success;
+
+        private final String message;
+
+
+        public static ExecResult success(String message) {
+            return new ExecResult(true, message);
+        }
+
+
+        public static ExecResult fail(String message) {
+            return new ExecResult(false, message);
+        }
+
     }
 }

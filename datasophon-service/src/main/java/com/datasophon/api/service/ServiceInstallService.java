@@ -56,10 +56,13 @@ public interface ServiceInstallService {
     Result startInstallService(Integer clusterId, List<String> commandIds);
     
     void downloadPackage(String packageName, HttpServletResponse response) throws IOException;
-    
+
     void downloadResource(String frameCode, String serviceRoleName,
                           String resource, HttpServletResponse response) throws IOException;
-    
+
+
+    void downloadTemplate(String templateName, HttpServletResponse response) throws IOException;
+
     Result getServiceRoleHostMapping(Integer clusterId);
     
     Result checkServiceDependency(Integer clusterId, String serviceIds);

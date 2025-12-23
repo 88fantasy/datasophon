@@ -21,7 +21,7 @@ public class ServiceMeta {
 
     private String script;
 
-    private String template;
+
 
     private String frameCode;
 

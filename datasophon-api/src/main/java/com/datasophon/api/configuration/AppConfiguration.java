@@ -37,10 +37,11 @@ import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.CookieLocaleResolver;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -116,14 +117,18 @@ public class AppConfiguration implements WebMvcConfigurer {
     InterceptorRegistration loginRegistration = registry.addInterceptor(loginHandlerInterceptor)
         .addPathPatterns(getPathPrefix() + "/**")
         .excludePathPatterns(
-            getPathPrefix() + "/login", "/error",
+             "/error",
             "/grafana/**",
-            getPathPrefix() + "/cluster/alert/history/save",
-            getPathPrefix() + "/cluster/kerberos/downloadKeytab",
             "/index.html",
             "/",
             "/static/**"
-        );
+        )
+        .excludePathPatterns(getRealExcludeUrl(
+                "/login",
+                "/cluster/alert/history/save",
+                "/cluster/kerberos/downloadKeytab",
+                "/service/install/download*"
+        ));
     if (enableOpenApi) {
       loginRegistration.excludePathPatterns(
           "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
@@ -131,7 +136,8 @@ public class AppConfiguration implements WebMvcConfigurer {
       );
     }
 
-      InterceptorRegistration basicValidRegistration = registry.addInterceptor(basicValidRequestInterceptor)
+      InterceptorRegistration basicValidRegistration = registry
+              .addInterceptor(basicValidRequestInterceptor)
               .addPathPatterns("/**");
       if (enableOpenApi) {
           basicValidRegistration.excludePathPatterns(
@@ -139,6 +145,17 @@ public class AppConfiguration implements WebMvcConfigurer {
                   "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico"
           );
       }
+  }
+
+  private String[] getRealExcludeUrl(String...urls) {
+      List<String> result = new ArrayList<>(urls.length);
+      for (String url : urls) {
+          if (!url.startsWith("/")) {
+              url = "/" + url;
+          }
+          result.add(getPathPrefix() + url);
+      }
+      return result.toArray(new String[0]);
   }
 
   //Add request url prefix
