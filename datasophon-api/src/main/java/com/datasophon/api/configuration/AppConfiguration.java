@@ -189,14 +189,6 @@ public class AppConfiguration implements WebMvcConfigurer {
 //  }
 
 
-  @Bean(name = "clusterSampleConfig")
-  public ClusterConfig clusterSampleConfig() {
-    if (!FileUtil.exist(Constants.INIT_CLUSTER_SAMPLE)) {
-      throw new RuntimeException("clusterSamplePath is not exist. Please set INIT_HOME in common.properties");
-    }
-    return YamlUtil.loadByPath(Constants.INIT_CLUSTER_SAMPLE, ClusterConfig.class);
-  }
-
 
 
 }

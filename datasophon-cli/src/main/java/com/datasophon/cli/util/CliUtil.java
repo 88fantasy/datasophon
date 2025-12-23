@@ -80,7 +80,7 @@ public final class CliUtil {
     public static void downRegistryFile(Executor executor, boolean enableRegistry, String registryIp, String registryPort, String registryUsername, String registryPassword,
                                   String sourceName, String distPath){
         if(enableRegistry) {
-            String url = String.format("http://%s:%s/repository/raw/%s", registryIp, registryPort, sourceName);
+            String url = String.format("http://%s:%s/repository/raw/packages/%s", registryIp, registryPort, sourceName);
             log.info("制品{}下载开始, url:{}", sourceName, url);
             InputStream inputStream = null;
             try {

@@ -21,17 +21,13 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.StreamProgress;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ServiceLoaderUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpUtil;
 import com.datasophon.common.Constants;
-import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.FileUtils;
+import com.datasophon.common.utils.NexusFileUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.strategy.resource.EmptyStrategy;
@@ -39,7 +35,6 @@ import com.datasophon.worker.strategy.resource.ResourceStrategy;
 import com.datasophon.worker.utils.TaskConstants;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,11 +85,10 @@ public class InstallServiceHandler {
             String decompressPackageName = command.getDecompressPackageName();
             Boolean createDecompressDir = command.getCreateDecompressDir();
 
-            boolean installPkgChange = isFileContentChange(packagePath, command.getPackageMd5());
-            Boolean needDownLoad = !Objects.equals(PropertyUtils.getString(Constants.MASTER_HOST), CacheUtils.get(Constants.HOSTNAME)) && installPkgChange;
+            boolean installPkgChange = NexusFileUtils.isFileContentChange(packageName, packagePath);
 
-            if (Boolean.TRUE.equals(needDownLoad)) {
-                downloadPkg(packageName, packagePath);
+            if (Boolean.TRUE.equals(installPkgChange)) {
+                NexusFileUtils.downloadPkg(packageName, packagePath);
             }
 
             boolean result = decompressPkg(packageName, decompressPackageName, createDecompressDir, destDir, installPkgChange);
@@ -140,23 +134,7 @@ public class InstallServiceHandler {
         return execResult;
     }
 
-    private Boolean isFileContentChange(String packagePath, String packageMd5) {
-        boolean needDownLoad = true;
-        logger.info("Remote package md5 is {}", packageMd5);
-        if (FileUtil.exist(packagePath)) {
-            // check md5
-            String md5 = FileUtils.md5(new File(packagePath));
-
-            logger.info("Local md5 is {}", md5);
-
-            if (StringUtils.isNotBlank(md5) && packageMd5.trim().equals(md5.trim())) {
-                needDownLoad = false;
-            }
-        }
-        return needDownLoad;
-    }
-
-    private void downloadPkg(String packageName, String packagePath) {
+    /*private void downloadPkg(String packageName, String packagePath) {
         String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
         String masterPort = PropertyUtils.getString(Constants.MASTER_WEB_PORT);
         String downloadUrl = "http://" + masterHost + ":" + masterPort + "/ddh/api/service/install/downloadPackage?packageName=" + packageName;
@@ -181,7 +159,7 @@ public class InstallServiceHandler {
             }
         });
         logger.info("download package {} success", packageName);
-    }
+    }*/
 
     private boolean decompressPkg(String packageName, String decompressPackageName, Boolean createDecompressDir, String destDir, boolean installPkgChange) {
         boolean decompressResult = true;

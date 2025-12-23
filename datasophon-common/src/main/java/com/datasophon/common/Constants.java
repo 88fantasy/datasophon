@@ -28,7 +28,6 @@ public final class Constants {
     
     public static final String INSTALL_PATH = PropertyUtils.getString("install.path");
     public static final String INIT_HOME = PropertyUtils.getString("INIT_HOME");
-    public static final String INIT_CLUSTER_SAMPLE = String.format("%s/config/cluster-sample.yml", INIT_HOME);
     public static final String DATA = "data";
     public static final String INSTALL_TYPE = "install_type";
     public static final String TOTAL = "total";
@@ -283,4 +282,12 @@ public final class Constants {
     //public static final String DISPATCHER_WORK = "dispatcher-worker.sh";
     
     public static final String GRAFANA_PATH = "/grafana";
+
+    public static final Boolean NEXUS_ENABLE = PropertyUtils.getBoolean("nexus.enable");
+    public static final String NEXUS_IP= PropertyUtils.getString("nexus.ip");
+    public static final Integer NEXUS_PORT= PropertyUtils.getInt("nexus.port");
+    public static final String NEXUS_USERNAME= PropertyUtils.getString("nexus.username");
+    public static final String NEXUS_PASSWORD= PropertyUtils.getString("nexus.password");
+
+    public static final String MD5 = "md5";
 }

@@ -1,14 +1,17 @@
 package com.datasophon.common.utils;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.enums.RepositoriesType;
 import com.datasophon.common.model.uni.NexusRegistry;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
@@ -86,7 +89,8 @@ public class NexusFileUtils {
                     }
                     break;
                 case RAW:
-                    File[] files = FileUtil.ls(repoFile.getAbsolutePath());
+                    String packagesPath = repoFile.getAbsolutePath() + Constants.SLASH + "packages";
+                    File[] files = FileUtil.ls(packagesPath);
                     for (File file : files) {
                         repositoryUploadFile(baseUrl, repositoriesType, null, null, file, username, password, uploadSucess, uploadFails);
                     }
@@ -142,7 +146,7 @@ public class NexusFileUtils {
                     break;
                 case RAW:
                     builder.addTextBody("asset0.filename", file.getName(), ContentType.TEXT_PLAIN);
-                    builder.addTextBody("directory", "/", ContentType.TEXT_PLAIN);
+                    builder.addTextBody("directory", "/packages", ContentType.TEXT_PLAIN);
                     break;
                 case APT:
                     break;
@@ -228,6 +232,50 @@ public class NexusFileUtils {
         }
     }
 
+    public static String getRawPackagesUrl(String packageName) {
+        return String.format("http://%s:%s/repository/raw/packages/%s", Constants.NEXUS_IP, Constants.NEXUS_PORT, packageName);
+    }
+
+    public static void downloadPkg(String packageName, String packagePath) {
+        if(!Constants.NEXUS_ENABLE) {
+            throw new RuntimeException("nexus.enable=false is not supported");
+        }
+        String url = getRawPackagesUrl(packageName);
+        log.info("download url is {}", url);
+        InputStream inputStream = NexusFileUtils.downStream(url, Constants.NEXUS_USERNAME, Constants.NEXUS_PASSWORD);
+        FileUtil.writeFromStream(inputStream, packagePath);
+        log.info("download package {} success", packageName);
+    }
+
+    public static Boolean isFileContentChange(String packageName, String packagePath) {
+        if(!Constants.NEXUS_ENABLE) {
+            throw new RuntimeException("nexus.enable=false is not supported");
+        }
+        String packageNameMD5 = packageName + Constants.DOT + Constants.MD5;
+        String packagePathMD5 = packagePath + Constants.DOT + Constants.MD5;
+
+        String url = NexusFileUtils.getRawPackagesUrl(packageNameMD5);
+        log.info("download url is {}", url);
+        InputStream inputStream = NexusFileUtils.downStream(url, Constants.NEXUS_USERNAME, Constants.NEXUS_PASSWORD);
+        FileUtil.writeFromStream(inputStream, packagePathMD5);
+        log.info("download package md5 {} success", packageNameMD5);
+
+        String remoteMd5Contxt = FileUtil.readString(packagePathMD5, CharsetUtil.CHARSET_UTF_8);
+
+        boolean needDownLoad = true;
+        log.info("Remote nexus package md5 is {}", remoteMd5Contxt);
+        if (FileUtil.exist(packagePath)) {
+            // check md5
+            String md5 = FileUtils.md5(new File(packagePath));
+
+            log.info("Local md5 is {}", md5);
+
+            if (StringUtils.isNotBlank(md5) && remoteMd5Contxt.trim().equals(md5.trim())) {
+                needDownLoad = false;
+            }
+        }
+        return needDownLoad;
+    }
 
     @Data
     public static class ExecResult {

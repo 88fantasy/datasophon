@@ -32,6 +32,10 @@ public class CheckWorkerMd5Handler implements DispatcherWorkerHandler {
     private static final Logger logger = LoggerFactory.getLogger(CheckWorkerMd5Handler.class);
     @Override
     public boolean handle(Session session, HostInfo hostInfo) {
+        /*if(Constants.NEXUS_ENABLE) {
+            logger.info("nexus.enable=true, 跳过worker package md5检查");
+            return true;
+        }*/
         String checkWorkerMd5Result = MinaUtils.execCmdWithResult(session, Constants.CHECK_WORKER_MD5_CMD).trim();
         String md5 = MinaUtils.getFileString(session, Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + Constants.WORKER_PACKAGE_NAME + ".md5");
         logger.info("{} worker package md5 value is : {}", hostInfo.getHostname(), md5);
