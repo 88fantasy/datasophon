@@ -126,6 +126,13 @@ const Index = (props) => {
 
                         return invokeMakePartUploadRequest(options)
                     },
+                    beforeUpload: async (file) => {
+                        invokeCancelQueryMergeProgressTimeoutRef()
+
+                        setInvokeQueryMergeProgressRes(undefined)
+
+                        return true
+                    }
                 }}
                 formItemProps={{
                     rules: [
@@ -137,31 +144,32 @@ const Index = (props) => {
                                     if (!value?.length) {
                                         reject();
                                     } else {
-                                        // console.log('value', value)
+                                        console.log('value', value)
                                         // const status = value[0]?.status;
                                         setTimeout(async () => {
                                             value = value[0]
                                             if (value?.response?.code === 200) {
-                                                const res = await axiosJsonPost(API.validatePkgFile, {
-                                                    pkgFileId: value.response.data.id,
-                                                    meteFileId,
-                                                    contentDecodePasswd
-                                                })
-                                                if (
-                                                    res.code === 200
-                                                ) {
-                                                    const msg = res.data.errors?.join(',')
+                                                resolve()
+                                                // const res = await axiosJsonPost(API.validatePkgFile, {
+                                                //     pkgFileId: value.response.data.id,
+                                                //     meteFileId,
+                                                //     contentDecodePasswd
+                                                // })
+                                                // if (
+                                                //     res.code === 200
+                                                // ) {
+                                                //     const msg = res.data.errors?.join(',')
 
-                                                    if (msg) {
-                                                        reject(msg)
-                                                    } else {
-                                                        resolve()
-                                                    }
-                                                } else {
-                                                    TODO:
-                                                    // resolve()
-                                                    reject(res.msg)
-                                                }
+                                                //     if (msg) {
+                                                //         reject(msg)
+                                                //     } else {
+                                                //         resolve()
+                                                //     }
+                                                // } else {
+                                                //     TODO:
+                                                //     // resolve()
+                                                //     reject(res.msg)
+                                                // }
                                             } else if (value?.status === 'uploading') {
                                                 reject('正在上传中,请稍后重试')
                                             } else {
@@ -205,6 +213,7 @@ const Index = (props) => {
                             (invokeQueryMergeProgressRes.progress || 0) * 100
                         }
                         status={memoStatus}
+                        size="small"
                     />
                 </ProFormItem>
             }

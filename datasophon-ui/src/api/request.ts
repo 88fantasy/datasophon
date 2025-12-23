@@ -85,6 +85,7 @@ export const axiosPostUpload = function (url, params = {}) {
       method: "post",
       url: url,
       data: params,
+      timeout: 1000 * 60 * 60 * 24,
     })
       .then((res) => {
         resolve(res.data);

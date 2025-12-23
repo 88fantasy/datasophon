@@ -5,6 +5,7 @@ import { API } from '../api';
 import axios from 'axios';
 import { message } from 'antd';
 import { Export } from '@antv/x6';
+import { noop } from 'lodash-es';
 
 
 export const CHUNK_SIZE = 5 * 1024 * 1024; // 2MB per chunk
@@ -46,6 +47,7 @@ export const computeChunkMD5Base64 = (chunk: Blob): Promise<string> => {
 
 // 从 localStorage 获取已上传分片记录
 export const getUploadedChunks = (fileMd5: string): Set<number> => {
+    return new Set()
     const key = `upload_chunks_${fileMd5}`;
     const stored = localStorage.getItem(key);
     return stored ? new Set(JSON.parse(stored)) : new Set();
@@ -70,13 +72,17 @@ export const clearUploadRecord = (fileMd5: string) => {
 
 // 模拟上传单个分片（替换为你的 API）
 export const uploadChunk = async (
-    chunk: Blob,
-    chunkIndex: number,
-    totalChunks: number,
-    fileMd5: string,
-    filename: string,
-    chunkMd5: string,
-    attachId: string
+    {
+        chunk,
+        chunkIndex,
+        totalChunks,
+        fileMd5,
+        filename,
+        chunkMd5,
+        attachId,
+        fileSize,
+        onUploadProgress
+    }
 ) => {
     const formData = new FormData();
     formData.append('chunk', chunk);
@@ -89,6 +95,7 @@ export const uploadChunk = async (
 
     // const res = await axiosPostUpload(API.uploadChunk, formData)
     const res = await axios.post(API.uploadChunk, formData, {
+        onUploadProgress
         // headers: {
         //     'Content-Type': undefined // 强制 Axios 交由浏览器处理
         // }
@@ -132,7 +139,7 @@ export const invokeQueryMergeProgress = async (id: string) => {
 };
 
 
-export const invokeCreateUploadTask = async (file: File, chunk: number) => {
+export const invokeCreateUploadTask = async (file: File, chunk: number = 0) => {
     const res = await axiosPostUpload(API.createShardUploadTask, {
         fileName: file.name,
         contentType: file.type,
@@ -157,6 +164,9 @@ export const invokeMakePartUploadRequest = async (options) => {
 
     const _file = file;
 
+
+    let chunkSize = CHUNK_SIZE
+
     try {
         // 1. 计算整个文件 MD5（作为唯一标识）
         const fileMd5 = await computeFileMD5(_file);
@@ -164,14 +174,33 @@ export const invokeMakePartUploadRequest = async (options) => {
 
         // 2. 获取已上传分片
         const uploadedChunks = getUploadedChunks(fileMd5);
-        const totalChunks = Math.ceil(_file.size / CHUNK_SIZE);
+
 
 
         const invokeCreateUploadTaskRes = await invokeCreateUploadTask(
             file,
-            totalChunks
+            // totalChunks
         )
 
+        if (invokeCreateUploadTaskRes.code === 200) {
+            chunkSize = invokeCreateUploadTaskRes.data.chunkSize || CHUNK_SIZE
+        }
+
+        const fileSize = _file.size
+
+        const totalChunks = Math.ceil(fileSize / chunkSize);
+
+
+        // console.log('totalChunks', totalChunks)
+
+        let uploadedSize = 0
+        const onUploadProgress = (chunk, progressEvent) => {
+            // console.log('progressEvent', progressEvent, fileSize)
+            const currentChunkUploaded = progressEvent.loaded;
+            const totalUploaded = uploadedSize + currentChunkUploaded;
+            const percent = (totalUploaded / file.size) * 100;
+            onProgress?.({ percent }, _file);
+        }
 
         // 3. 逐个上传未完成的分片
         for (let i = 0; i < totalChunks; i++) {
@@ -180,25 +209,43 @@ export const invokeMakePartUploadRequest = async (options) => {
                 continue;
             }
 
-            const start = i * CHUNK_SIZE;
-            const end = Math.min(start + CHUNK_SIZE, _file.size);
+            const start = i * chunkSize;
+            const end = Math.min(start + chunkSize, _file.size);
             const chunk = _file.slice(start, end);
 
             // 计算分片 MD5
             const chunkMd5 = await computeChunkMD5Base64(chunk);
 
+
+
             // 上传分片
-            await uploadChunk(chunk, i, totalChunks, fileMd5, _file.name, chunkMd5, invokeCreateUploadTaskRes.data.id);
+            await uploadChunk({
+                chunk,
+                chunkIndex: i,
+                totalChunks,
+                fileMd5,
+                filename: _file.name,
+                chunkMd5,
+                attachId: invokeCreateUploadTaskRes.data.id,
+                onUploadProgress: onUploadProgress.bind(noop, {
+                    i,
+                    totalChunks,
+                    chunk
+                }),
+                fileSize
+            });
 
             // 保存上传记录（断点续传关键）
             saveUploadedChunk(fileMd5, i);
 
+            uploadedSize += chunk.size;
+
             // 更新进度
-            let percent = Math.round(((i + 1) / totalChunks) * 100);
+            // let percent = Math.round(((i + 1) / totalChunks) * 100);
             // if (percent === 100) {
             //     percent = 99
             // }
-            onProgress?.({ percent }, _file);
+            // onProgress?.({ percent }, _file);
         }
 
         // 4. 合并文件
@@ -219,6 +266,7 @@ export const invokeMakePartUploadRequest = async (options) => {
                     name: _file.name,
                     uid: _file.uid,
                     attachId: invokeCreateUploadTaskRes.data.id,
+                    ...invokeCreateUploadTaskRes,
                     status: 'done',
                 },
                 _file

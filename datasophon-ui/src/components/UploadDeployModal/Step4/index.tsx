@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { axiosJsonPost } from "../../../api/request";
 import { API } from "../../../api";
 import { ProFormItem } from "@ant-design/pro-components";
+import { QuestionCircleOutlined } from "@ant-design/icons";
 
 
 const twoColors: ProgressProps['strokeColor'] = {
@@ -169,7 +170,12 @@ const Index = (props) => {
             return (
                 <div>
                     <Tooltip title={state.queryProgressRes?.error}>
-                        <div>失败</div>
+                        <div className="relative">
+                            失败
+                            <QuestionCircleOutlined
+                            className="absolute !text-slate-400 ml-[10px] !text-[16px]" />
+                        </div>
+
                     </Tooltip>
                     <Button
                         className="mt-[20px]"
@@ -187,12 +193,12 @@ const Index = (props) => {
         return (
             <div>
                 <div>{percent}%</div>
-                <div className="mb-[20px] text-[14px]">
+                <div className="mb-[20px] text-[14px] mt-[20px]">
                     {/* 当前状态： */}
                     {stateMap[state?.queryProgressRes?.state]}
                     {
                         !!state?.queryProgressRes?.progress &&
-                        <span className="ml-[10px] mt-[10px]">
+                        <span className="ml-[10px] ">
                             {
                                 `${state?.queryProgressRes?.progress}%`
                             }
@@ -209,7 +215,7 @@ const Index = (props) => {
         )
 
 
-    }, [invokeInit, memoStatus.status, state.queryProgressRes?.error, state.queryProgressRes?.progress, state.queryProgressRes?.state, state.reloadBtnVisiable])
+    }, [invokeInit, memoStatus.status, state.queryProgressRes, state.reloadBtnVisiable])
 
     useEffect(() => {
         invokeInit()
