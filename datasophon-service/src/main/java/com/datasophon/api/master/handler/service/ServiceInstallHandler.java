@@ -75,7 +75,7 @@ public class ServiceInstallHandler extends ServiceHandler {
         installServiceRoleCommand.setRunAs(serviceRoleInfo.getRunAs());
         installServiceRoleCommand.setServiceRoleType(serviceRoleInfo.getRoleType());
         installServiceRoleCommand.setResourceStrategies(serviceRoleInfo.getResourceStrategies());
-        installServiceRoleCommand.setVariables(GlobalVariables.get(serviceRoleInfo.getClusterId()));
+        installServiceRoleCommand.setVariables(GlobalVariables.getVariables(serviceRoleInfo.getClusterId()));
 
 
         String arch = hostEntity.getCpuArchitecture();

@@ -17,23 +17,16 @@
 
 package com.datasophon.api.strategy;
 
-import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.utils.ProcessUtils;
-import com.datasophon.common.utils.HostUtils;
-
-import java.util.List;
-import java.util.Map;
-
 public class NacosHandlerStrategy implements ServiceRoleStrategy {
     
-    @Override
-    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        if (!hosts.isEmpty()) {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${nacosHost}",
-                    HostUtils.getIp(hosts.get(0)));
-        }
-    }
+//    @Override
+//    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
+//        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
+//        if (!hosts.isEmpty()) {
+//            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${nacosHost}",
+//                    HostUtils.getIp(hosts.get(0)));
+//        }
+//    }
     
 
 }

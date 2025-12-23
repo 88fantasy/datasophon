@@ -7,9 +7,11 @@ import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.api.service.UniEngineService;
 import com.datasophon.common.Constants;
-import com.datasophon.common.model.ClusterConfig;
-import com.datasophon.common.model.GlobalConfig;
-import com.datasophon.common.model.uni.*;
+import com.datasophon.common.model.uni.DorisDatasource;
+import com.datasophon.common.model.uni.EngineInfo;
+import com.datasophon.common.model.uni.HiveDatasource;
+import com.datasophon.common.model.uni.KafkaDatasource;
+import com.datasophon.common.model.uni.PaimonDatasource;
 import com.datasophon.common.utils.PasswordSupport;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -40,9 +42,6 @@ public class UniEngineServiceImpl implements UniEngineService {
 
     @Autowired
     ClusterInfoService clusterInfoService;
-
-    @Autowired
-    private ClusterConfig clusterSampleConfig;
 
     @Override
     public Result getEngineInfo() {
@@ -93,7 +92,6 @@ public class UniEngineServiceImpl implements UniEngineService {
         }
 
         // 数据源
-        engineInfo.setMysqlDatasource(getMysqlDatasource());
         engineInfo.setHiveDatasource(getHiveDatasource(clusterId));
         engineInfo.setPaimonDatasource(getPaimonDatasource(clusterId));
         engineInfo.setDorisDatasource(getDorisDatasource(clusterId));
@@ -102,22 +100,6 @@ public class UniEngineServiceImpl implements UniEngineService {
         String data = JSON.toJSONString(engineInfo);
         return Result.success().put(Constants.DATA, PasswordSupport.encryptDbPassword(data));
 
-    }
-
-    public MysqlDatasource getMysqlDatasource() {
-        MysqlDatasource mysqlDatasource = new MysqlDatasource();
-        GlobalConfig.MysqlConfig mysqlInfo = clusterSampleConfig.getGlobal().getMysql();
-        mysqlDatasource.setHost(mysqlInfo.getHost().getIp());
-        mysqlDatasource.setPort("3306");
-        mysqlDatasource.setUserName("root");
-        mysqlDatasource.setPassword(mysqlInfo.getPassword());
-        JSONObject mysqlOther = new JSONObject();
-        mysqlOther.put("allowPublicKeyRetrieval", true);
-        mysqlOther.put("useSSL", false);
-        mysqlDatasource.setOther(mysqlOther);
-        logger.info("mysql get info success");
-
-        return mysqlDatasource;
     }
 
     public HiveDatasource getHiveDatasource(Integer clusterId) {

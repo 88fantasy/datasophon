@@ -17,25 +17,15 @@
 
 package com.datasophon.api.strategy;
 
-import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.utils.CheckUtils;
-import com.datasophon.api.utils.ProcessUtils;
-import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceRoleInfo;
-import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
-
-import java.util.List;
-import java.util.Map;
-
-public class HiveMetaStroreHandlerStrategy implements ServiceRoleStrategy {
+public class HiveMetaStoreHandlerStrategy implements ServiceRoleStrategy {
     
-    @Override
-    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        if (!hosts.isEmpty()) {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${metastoreHost}",
-                    hosts.get(0));
-        }
-    }
+//    @Override
+//    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
+//        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
+//        if (!hosts.isEmpty()) {
+//            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "metastoreHost",
+//                    hosts.get(0));
+//        }
+//    }
 
 }

@@ -62,7 +62,6 @@ import scala.concurrent.duration.Duration;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -157,7 +156,7 @@ public class ClusterServiceRoleInstanceServiceImpl
     ClusterInfoEntity clusterInfo = clusterInfoService.getById(roleInstance.getClusterId());
     FrameServiceRoleEntity serviceRole = frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(
         clusterInfo.getClusterFrame(), roleInstance.getServiceRoleName());
-    Map<String, String> globalVariables = GlobalVariables.get(roleInstance.getClusterId());
+    Map<String, String> globalVariables = GlobalVariables.getVariables(roleInstance.getClusterId());
     if (serviceRole.getServiceRoleType() == RoleType.CLIENT) {
       return Result.success("client does not have any log");
     }

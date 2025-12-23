@@ -17,25 +17,20 @@
 
 package com.datasophon.api.strategy;
 
-import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.utils.ProcessUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.Map;
 
 public class USchedulerApiServerHandlerStrategy implements ServiceRoleStrategy {
 
     private static final Logger logger = LoggerFactory.getLogger(USchedulerApiServerHandlerStrategy.class);
 
-    @Override
-    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        if (!hosts.isEmpty()) {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${uschedulerApiServerHost}",
-                    hosts.get(0));
-        }
-    }
+//    @Override
+//    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
+//        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
+//        if (!hosts.isEmpty()) {
+//            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${uschedulerApiServerHost}",
+//                    hosts.get(0));
+//        }
+//    }
 
 }

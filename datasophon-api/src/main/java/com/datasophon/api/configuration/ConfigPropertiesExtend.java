@@ -1,7 +1,9 @@
 package com.datasophon.api.configuration;
 
+import com.datasophon.common.Constants;
 import com.datasophon.common.utils.FileUtils;
 
+import com.datasophon.common.utils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -28,8 +30,6 @@ import org.springframework.util.CollectionUtils;
 
 @Slf4j
 public class ConfigPropertiesExtend implements EnvironmentPostProcessor {
-    
-    private static final String CONFIG_HOME = "conf/datasophon.conf";
     
     private static final String DEFAULT_APPLICATION_CONFIG = "conf/profiles/application-config.yml";
     
@@ -62,7 +62,7 @@ public class ConfigPropertiesExtend implements EnvironmentPostProcessor {
     
     private Properties loadCustomProperties() {
         Properties properties = new Properties();
-        File file = new File(FileUtils.concatPath(System.getProperty("user.dir"), CONFIG_HOME));
+        File file = new File(FileUtils.concatPath(System.getProperty("user.dir"), PropertyUtils.CONFIG_HOME));
         try (InputStream inputStream = Files.newInputStream(file.toPath())) {
             properties.load(inputStream);
         } catch (Exception e) {

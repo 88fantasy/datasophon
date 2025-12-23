@@ -1,20 +1,42 @@
 package com.datasophon.api.utils;
 
 import akka.actor.ActorRef;
-import com.datasophon.api.service.ClusterHostService;
-import com.datasophon.api.service.ClusterServiceRoleInstanceService;
+import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.common.command.ExecuteServiceRoleCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.ServiceExecuteState;
 import com.datasophon.common.enums.ServiceRoleType;
-import com.datasophon.common.model.*;
+import com.datasophon.common.model.DAGGraph;
+import com.datasophon.common.model.ExternalLink;
+import com.datasophon.common.model.Generators;
+import com.datasophon.common.model.ServiceConfig;
+import com.datasophon.common.model.ServiceNode;
+import com.datasophon.common.model.ServiceRoleInfo;
+import com.datasophon.common.model.ServiceRoleRunner;
+import com.datasophon.common.model.StartWorkerMessage;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.dao.entity.*;
-import com.datasophon.dao.enums.*;
+import com.datasophon.dao.entity.ClusterHostDO;
+import com.datasophon.dao.entity.ClusterInfoEntity;
+import com.datasophon.dao.entity.ClusterServiceCommandEntity;
+import com.datasophon.dao.entity.ClusterServiceCommandHostCommandEntity;
+import com.datasophon.dao.entity.ClusterServiceCommandHostEntity;
+import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
+import com.datasophon.dao.entity.UserInfoEntity;
+import com.datasophon.dao.enums.ClusterState;
+import com.datasophon.dao.enums.CommandState;
+import com.datasophon.dao.enums.RoleType;
+import com.datasophon.dao.enums.ServiceRoleState;
+import com.datasophon.domain.host.enums.HostState;
+import com.datasophon.domain.host.enums.MANAGED;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -33,7 +55,7 @@ public class ProcessUtilsTest {
         final ServiceRoleRunner startRunner = new ServiceRoleRunner();
         startRunner.setTimeout("timeout");
         startRunner.setProgram("program");
-        startRunner.setArgs(Arrays.asList("value"));
+        startRunner.setArgs(Collections.singletonList("value"));
         serviceRoleInfo.setStartRunner(startRunner);
         final ExternalLink externalLink = new ExternalLink();
         externalLink.setName("name");
@@ -96,7 +118,7 @@ public class ProcessUtilsTest {
         final ServiceRoleRunner startRunner = new ServiceRoleRunner();
         startRunner.setTimeout("timeout");
         startRunner.setProgram("program");
-        startRunner.setArgs(Arrays.asList("value"));
+        startRunner.setArgs(Collections.singletonList("value"));
         serviceRoleInfo.setStartRunner(startRunner);
         final ExternalLink externalLink = new ExternalLink();
         externalLink.setName("name");
@@ -106,7 +128,7 @@ public class ProcessUtilsTest {
         serviceRoleInfo.setClusterId(0);
         serviceRoleInfo.setParentName("parentName");
         final ExecuteServiceRoleCommand executeServiceRoleCommand = new ExecuteServiceRoleCommand(0, "node",
-                Arrays.asList(serviceRoleInfo));
+            Collections.singletonList(serviceRoleInfo));
 
         // Run the test
         ProcessUtils.tellCommandActorResult("serviceName", executeServiceRoleCommand, ServiceExecuteState.RUNNING);
@@ -161,7 +183,7 @@ public class ProcessUtilsTest {
         final ServiceRoleRunner startRunner = new ServiceRoleRunner();
         startRunner.setTimeout("timeout");
         startRunner.setProgram("program");
-        startRunner.setArgs(Arrays.asList("value"));
+        startRunner.setArgs(Collections.singletonList("value"));
         serviceRoleInfo.setStartRunner(startRunner);
         final ExternalLink externalLink = new ExternalLink();
         externalLink.setName("name");
@@ -170,7 +192,7 @@ public class ProcessUtilsTest {
         serviceRoleInfo.setHostname("hostname");
         serviceRoleInfo.setClusterId(0);
         serviceRoleInfo.setParentName("parentName");
-        final List<ServiceRoleInfo> masterRoles = Arrays.asList(serviceRoleInfo);
+        final List<ServiceRoleInfo> masterRoles = Collections.singletonList(serviceRoleInfo);
         final ServiceRoleInfo workerRole = new ServiceRoleInfo();
         workerRole.setId(0);
         workerRole.setName("name");
@@ -180,7 +202,7 @@ public class ProcessUtilsTest {
         final ServiceRoleRunner startRunner1 = new ServiceRoleRunner();
         startRunner1.setTimeout("timeout");
         startRunner1.setProgram("program");
-        startRunner1.setArgs(Arrays.asList("value"));
+        startRunner1.setArgs(Collections.singletonList("value"));
         workerRole.setStartRunner(startRunner1);
         final ExternalLink externalLink1 = new ExternalLink();
         externalLink1.setName("name");
@@ -291,23 +313,10 @@ public class ProcessUtilsTest {
     }
 
     @Test
-    public void testGenerateClusterVariable() {
-        // Setup
-        final Map<String, String> globalVariables = new HashMap<>();
-
-        // Run the test
-        ProcessUtils.generateClusterVariable(globalVariables, 0, "variableName", "value");
-
-        // Verify the results
-    }
-
-    @Test
     public void testHdfsECMethond() throws Exception {
         // Setup
-        final ClusterServiceRoleInstanceService roleInstanceService = null;
-        final TreeSet<String> list = new TreeSet<>(Arrays.asList("value"));
 
-        // Run the test
+      // Run the test
 //        ProcessUtils.hdfsECMethond(0, roleInstanceService, list, "type", "roleName");
 
         // Verify the results
@@ -317,10 +326,8 @@ public class ProcessUtilsTest {
     public void testHdfsECMethond_ThrowsException() throws Exception {
         Assertions.assertThrows(Exception.class, () -> {
             // Setup
-            final ClusterServiceRoleInstanceService roleInstanceService = null;
-            final TreeSet<String> list = new TreeSet<>(Arrays.asList("value"));
 
-            // Run the test
+          // Run the test
 //        ProcessUtils.hdfsECMethond(0, roleInstanceService, list, "type", "roleName");
         });
 
@@ -345,7 +352,7 @@ public class ProcessUtilsTest {
         userInfoEntity.setPassword("password");
         userInfoEntity.setEmail("email");
         userInfoEntity.setPhone("phone");
-        clusterInfo.setClusterManagerList(Arrays.asList(userInfoEntity));
+        clusterInfo.setClusterManagerList(Collections.singletonList(userInfoEntity));
 
         // Run the test
         ProcessUtils.createServiceActor(clusterInfo);
@@ -370,7 +377,7 @@ public class ProcessUtilsTest {
         final ServiceRoleRunner startRunner = new ServiceRoleRunner();
         startRunner.setTimeout("timeout");
         startRunner.setProgram("program");
-        startRunner.setArgs(Arrays.asList("value"));
+        startRunner.setArgs(Collections.singletonList("value"));
         serviceRoleInfo.setStartRunner(startRunner);
         final ExternalLink externalLink = new ExternalLink();
         externalLink.setName("name");
@@ -399,7 +406,7 @@ public class ProcessUtilsTest {
             final ServiceRoleRunner startRunner = new ServiceRoleRunner();
             startRunner.setTimeout("timeout");
             startRunner.setProgram("program");
-            startRunner.setArgs(Arrays.asList("value"));
+            startRunner.setArgs(Collections.singletonList("value"));
             serviceRoleInfo.setStartRunner(startRunner);
             final ExternalLink externalLink = new ExternalLink();
             externalLink.setName("name");
@@ -427,7 +434,7 @@ public class ProcessUtilsTest {
         final ServiceRoleRunner startRunner = new ServiceRoleRunner();
         startRunner.setTimeout("timeout");
         startRunner.setProgram("program");
-        startRunner.setArgs(Arrays.asList("value"));
+        startRunner.setArgs(Collections.singletonList("value"));
         serviceRoleInfo.setStartRunner(startRunner);
         final ExternalLink externalLink = new ExternalLink();
         externalLink.setName("name");
@@ -456,7 +463,7 @@ public class ProcessUtilsTest {
             final ServiceRoleRunner startRunner = new ServiceRoleRunner();
             startRunner.setTimeout("timeout");
             startRunner.setProgram("program");
-            startRunner.setArgs(Arrays.asList("value"));
+            startRunner.setArgs(Collections.singletonList("value"));
             serviceRoleInfo.setStartRunner(startRunner);
             final ExternalLink externalLink = new ExternalLink();
             externalLink.setName("name");
@@ -484,7 +491,7 @@ public class ProcessUtilsTest {
         final ServiceRoleRunner startRunner = new ServiceRoleRunner();
         startRunner.setTimeout("timeout");
         startRunner.setProgram("program");
-        startRunner.setArgs(Arrays.asList("value"));
+        startRunner.setArgs(Collections.singletonList("value"));
         serviceRoleInfo.setStartRunner(startRunner);
         final ExternalLink externalLink = new ExternalLink();
         externalLink.setName("name");
@@ -513,7 +520,7 @@ public class ProcessUtilsTest {
             final ServiceRoleRunner startRunner = new ServiceRoleRunner();
             startRunner.setTimeout("timeout");
             startRunner.setProgram("program");
-            startRunner.setArgs(Arrays.asList("value"));
+            startRunner.setArgs(Collections.singletonList("value"));
             serviceRoleInfo.setStartRunner(startRunner);
             final ExternalLink externalLink = new ExternalLink();
             externalLink.setName("name");
@@ -547,7 +554,7 @@ public class ProcessUtilsTest {
         config.setServiceName("serviceName");
 
         // Run the test
-        ProcessUtils.generateConfigFileMap(configFileMap, config);
+        ProcessUtils.generateConfigFileMap(configFileMap, config, 1);
 
         // Verify the results
     }
@@ -564,11 +571,11 @@ public class ProcessUtilsTest {
         expectedResult.setType("input");
         expectedResult.setConfigurableInWizard(false);
         expectedResult.setDefaultValue("defaultValue");
-        expectedResult.setMinValue(0);
-        expectedResult.setMaxValue(0);
+        expectedResult.setMinValue(0L);
+        expectedResult.setMaxValue(0L);
         expectedResult.setUnit("unit");
         expectedResult.setHidden(false);
-        expectedResult.setSelectValue(Arrays.asList("value"));
+        expectedResult.setSelectValue(Collections.singletonList("value"));
         expectedResult.setConfigType("configType");
 
         // Run the test
@@ -597,7 +604,7 @@ public class ProcessUtilsTest {
         userInfoEntity.setPassword("password");
         userInfoEntity.setEmail("email");
         userInfoEntity.setPhone("phone");
-        expectedResult.setClusterManagerList(Arrays.asList(userInfoEntity));
+        expectedResult.setClusterManagerList(Collections.singletonList(userInfoEntity));
 
         // Run the test
         final ClusterInfoEntity result = ProcessUtils.getClusterInfo(0);
@@ -618,13 +625,13 @@ public class ProcessUtilsTest {
         serviceConfig.setType("input");
         serviceConfig.setConfigurableInWizard(false);
         serviceConfig.setDefaultValue("defaultValue");
-        serviceConfig.setMinValue(0);
-        serviceConfig.setMaxValue(0);
+        serviceConfig.setMinValue(0L);
+        serviceConfig.setMaxValue(0L);
         serviceConfig.setUnit("unit");
         serviceConfig.setHidden(false);
-        serviceConfig.setSelectValue(Arrays.asList("value"));
+        serviceConfig.setSelectValue(Collections.singletonList("value"));
         serviceConfig.setConfigType("configType");
-        final List<ServiceConfig> left = Arrays.asList(serviceConfig);
+        final List<ServiceConfig> left = Collections.singletonList(serviceConfig);
         final ServiceConfig serviceConfig1 = new ServiceConfig();
         serviceConfig1.setName("configName");
         serviceConfig1.setValue("configValue");
@@ -634,13 +641,13 @@ public class ProcessUtilsTest {
         serviceConfig1.setType("input");
         serviceConfig1.setConfigurableInWizard(false);
         serviceConfig1.setDefaultValue("defaultValue");
-        serviceConfig1.setMinValue(0);
-        serviceConfig1.setMaxValue(0);
+        serviceConfig1.setMinValue(0L);
+        serviceConfig1.setMaxValue(0L);
         serviceConfig1.setUnit("unit");
         serviceConfig1.setHidden(false);
-        serviceConfig1.setSelectValue(Arrays.asList("value"));
+        serviceConfig1.setSelectValue(Collections.singletonList("value"));
         serviceConfig1.setConfigType("configType");
-        final List<ServiceConfig> right = Arrays.asList(serviceConfig1);
+        final List<ServiceConfig> right = Collections.singletonList(serviceConfig1);
         final ServiceConfig serviceConfig2 = new ServiceConfig();
         serviceConfig2.setName("configName");
         serviceConfig2.setValue("configValue");
@@ -650,13 +657,13 @@ public class ProcessUtilsTest {
         serviceConfig2.setType("input");
         serviceConfig2.setConfigurableInWizard(false);
         serviceConfig2.setDefaultValue("defaultValue");
-        serviceConfig2.setMinValue(0);
-        serviceConfig2.setMaxValue(0);
+        serviceConfig2.setMinValue(0L);
+        serviceConfig2.setMaxValue(0L);
         serviceConfig2.setUnit("unit");
         serviceConfig2.setHidden(false);
-        serviceConfig2.setSelectValue(Arrays.asList("value"));
+        serviceConfig2.setSelectValue(Collections.singletonList("value"));
         serviceConfig2.setConfigType("configType");
-        final List<ServiceConfig> expectedResult = Arrays.asList(serviceConfig2);
+        final List<ServiceConfig> expectedResult = Collections.singletonList(serviceConfig2);
 
         // Run the test
         final List<ServiceConfig> result = ProcessUtils.addAll(left, right);
@@ -668,7 +675,7 @@ public class ProcessUtilsTest {
     @Test
     public void testSyncUserGroupToHosts() {
         // Setup
-        final ClusterHostEntity clusterHostEntity = new ClusterHostEntity();
+        final ClusterHostDO clusterHostEntity = new ClusterHostDO();
         clusterHostEntity.setId(0);
         clusterHostEntity.setCreateTime(new GregorianCalendar(2020, Calendar.JANUARY, 1).getTime());
         clusterHostEntity.setHostname("hostname");
@@ -682,9 +689,9 @@ public class ProcessUtilsTest {
         clusterHostEntity.setAverageLoad("averageLoad");
         clusterHostEntity.setCheckTime(new GregorianCalendar(2020, Calendar.JANUARY, 1).getTime());
         clusterHostEntity.setClusterId(0);
-        clusterHostEntity.setHostState(0);
+        clusterHostEntity.setHostState(HostState.RUNNING);
         clusterHostEntity.setManaged(MANAGED.YES);
-        final List<ClusterHostEntity> hostList = Arrays.asList(clusterHostEntity);
+        final List<ClusterHostDO> hostList = Collections.singletonList(clusterHostEntity);
 
         // Run the test
         ProcessUtils.syncUserGroupToHosts(hostList, "groupName", "operate");
@@ -695,7 +702,7 @@ public class ProcessUtilsTest {
     @Test
     public void testSyncUserToHosts() {
         // Setup
-        final ClusterHostEntity clusterHostEntity = new ClusterHostEntity();
+        final ClusterHostDO clusterHostEntity = new ClusterHostDO();
         clusterHostEntity.setId(0);
         clusterHostEntity.setCreateTime(new GregorianCalendar(2020, Calendar.JANUARY, 1).getTime());
         clusterHostEntity.setHostname("hostname");
@@ -709,9 +716,9 @@ public class ProcessUtilsTest {
         clusterHostEntity.setAverageLoad("averageLoad");
         clusterHostEntity.setCheckTime(new GregorianCalendar(2020, Calendar.JANUARY, 1).getTime());
         clusterHostEntity.setClusterId(0);
-        clusterHostEntity.setHostState(0);
+        clusterHostEntity.setHostState(HostState.RUNNING);
         clusterHostEntity.setManaged(MANAGED.YES);
-        final List<ClusterHostEntity> hostList = Arrays.asList(clusterHostEntity);
+        final List<ClusterHostDO> hostList = Collections.singletonList(clusterHostEntity);
 
         // Run the test
         ProcessUtils.syncUserToHosts(hostList, "username", "mainGroup", "otherGroup", "operate");

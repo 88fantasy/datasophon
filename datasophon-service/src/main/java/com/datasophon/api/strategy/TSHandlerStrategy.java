@@ -21,8 +21,6 @@ package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.utils.ProcessUtils;
-import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import lombok.extern.slf4j.Slf4j;
 
@@ -39,14 +37,14 @@ import java.util.Map;
 @Slf4j
 public class TSHandlerStrategy implements ServiceRoleStrategy {
     
-    @Override
-    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        if (!hosts.isEmpty()) {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${yarn_timeline_server}",
-                    hosts.get(0));
-        }
-    }
+//    @Override
+//    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
+//        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
+//        if (!hosts.isEmpty()) {
+//            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${yarn_timeline_server}",
+//                    hosts.get(0));
+//        }
+//    }
     
     @Override
     public void handlerServiceRoleCheck(

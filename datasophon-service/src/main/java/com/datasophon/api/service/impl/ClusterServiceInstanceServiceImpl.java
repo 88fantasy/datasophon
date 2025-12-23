@@ -121,7 +121,7 @@ public class ClusterServiceInstanceServiceImpl
 
   @Override
   public List<ClusterServiceInstanceEntity> listAll(Integer clusterId) {
-    Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+    Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
     List<ClusterServiceInstanceEntity> list = this.list(new QueryWrapper<ClusterServiceInstanceEntity>()
         .eq(Constants.CLUSTER_ID, clusterId).orderByAsc(Constants.SORT_NUM));
     for (ClusterServiceInstanceEntity serviceInstance : list) {
@@ -271,7 +271,7 @@ public class ClusterServiceInstanceServiceImpl
     roleGroups.forEach(roleGroup -> {
       List<ClusterVariable> variables = variableService.getVariables(roleGroup.getClusterId(), roleGroup.getServiceName());
       if (CollectionUtils.isNotEmpty(variables)) {
-        Map<String, String> variablesMap = GlobalVariables.get(roleGroup.getClusterId());
+        Map<String, String> variablesMap = GlobalVariables.getVariables(roleGroup.getClusterId());
         variables.forEach(var -> variablesMap.remove(var.getVariableName()));
         variableService.removeByIds(variables.stream().map(ClusterVariable::getId).collect(Collectors.toList()));
       }

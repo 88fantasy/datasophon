@@ -60,7 +60,7 @@ public class ClusterServiceDashboardServiceImpl
     
     @Override
     public String getGrafanaHost(Integer clusterId) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         return globalVariables.get("${grafanaHost}") + ":3000";
     }
     
@@ -74,7 +74,7 @@ public class ClusterServiceDashboardServiceImpl
             }
             return contextPath + GRAFANA_PATH + "/" + clusterId + url;
         } else {
-            Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+            Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
             return PlaceholderUtils.replacePlaceholders(dashboard.getDashboardUrl(), globalVariables,
                     Constants.REGEX_VARIABLE);
         }

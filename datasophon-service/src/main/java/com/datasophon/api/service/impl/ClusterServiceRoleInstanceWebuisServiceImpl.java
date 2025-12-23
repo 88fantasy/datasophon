@@ -72,7 +72,7 @@ public class ClusterServiceRoleInstanceWebuisServiceImpl
 //                new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
 //                        .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
     Integer clusterId = clusterServiceInstanceMapper.selectById(serviceInstanceId).getClusterId();
-    Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+    Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
     return Result.success(list.stream().peek(ui -> {
 
       String url = PlaceholderUtils.replacePlaceholders(ui.getWebUrl(), MapUtil.builder("${host}", ui.getIp()).build(),

@@ -17,8 +17,10 @@
 
 package com.datasophon.api.service.impl;
 
+import akka.actor.ActorRef;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.enums.Status;
-import com.datasophon.api.load.ConfigBean;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.ClusterActor;
@@ -37,7 +39,6 @@ import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SecurityUtils;
 import com.datasophon.common.Constants;
-import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ClusterCommand;
 import com.datasophon.common.enums.ClusterCommandType;
 import com.datasophon.common.utils.Result;
@@ -49,22 +50,15 @@ import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.UserInfoEntity;
 import com.datasophon.dao.enums.ClusterState;
 import com.datasophon.dao.mapper.ClusterInfoMapper;
-
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
-
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-
-import akka.actor.ActorRef;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service("clusterInfoService")
@@ -84,9 +78,6 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
     
     @Autowired
     private ClusterAlertGroupMapService groupMapService;
-    
-    @Autowired
-    private ConfigBean configBean;
     
     @Autowired
     private FrameServiceService frameServiceService;
@@ -116,8 +107,7 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
     
     @Override
     public Result saveCluster(ClusterInfoEntity clusterInfo) {
-        List<ClusterInfoEntity> list = this
-                .list(new QueryWrapper<ClusterInfoEntity>().eq(Constants.CLUSTER_CODE, clusterInfo.getClusterCode()));
+        List<ClusterInfoEntity> list = list(new QueryWrapper<ClusterInfoEntity>().eq(Constants.CLUSTER_CODE, clusterInfo.getClusterCode()));
         if (Objects.nonNull(list) && !list.isEmpty()) {
             return Result.error(Status.CLUSTER_CODE_EXISTS.getMsg());
         }
@@ -143,20 +133,17 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
         rackService.createDefaultRack(clusterInfo.getId());
         
         putClusterVariable(clusterInfo);
+
         return Result.success();
     }
     
     private void putClusterVariable(ClusterInfoEntity clusterInfo) {
-        HashMap<String, String> globalVariables = new HashMap<>();
-        List<FrameServiceEntity> frameServiceList =
-                frameServiceService.getAllFrameServiceByFrameCode(clusterInfo.getClusterFrame());
+        ConcurrentHashMap<String, String> globalVariables = GlobalVariables.genDefaultGlobalVariables();
+        List<FrameServiceEntity> frameServiceList = frameServiceService.getAllFrameServiceByFrameCode(clusterInfo.getClusterFrame());
         for (FrameServiceEntity frameServiceEntity : frameServiceList) {
             globalVariables.put("${" + frameServiceEntity.getServiceName() + "_HOME}",
                     Constants.INSTALL_PATH + Constants.SLASH + frameServiceEntity.getDecompressPackageName());
         }
-        globalVariables.put("${INSTALL_PATH}", Constants.INSTALL_PATH);
-        globalVariables.put("${apiHost}", CacheUtils.getString("hostname"));
-        globalVariables.put("${apiPort}", configBean.getServerPort());
         globalVariables.put("${HADOOP_HOME}", Constants.INSTALL_PATH + Constants.SLASH
                 + PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "HDFS"));
         

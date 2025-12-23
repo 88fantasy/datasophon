@@ -17,12 +17,18 @@
 
 package com.datasophon.worker.strategy;
 
+import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.worker.handler.ServiceHandler;
 
 import java.sql.SQLException;
 
 public interface ServiceRoleStrategy {
     
-    public ExecResult handler(ServiceRoleOperateCommand command) throws SQLException, ClassNotFoundException;
+    default ExecResult handler(ServiceRoleOperateCommand command) throws SQLException, ClassNotFoundException {
+        ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
+        return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
+            command.getDecompressPackageName(), command.getRunAs());
+    }
 }

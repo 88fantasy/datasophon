@@ -18,11 +18,7 @@
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.api.utils.ProcessUtils;
-import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceRoleInfo;
-import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 
 import java.util.List;
 import java.util.Map;
@@ -31,19 +27,19 @@ public class ElasticSearchHandlerStrategy implements ServiceRoleStrategy {
     
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
 
         if(!hosts.isEmpty()) {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${initMasterNodes}",
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "initMasterNodes",
                     String.join(",", hosts));
             String join = String.join(":9300,", hosts);
             String seedHosts = join + ":9300";
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${seedHosts}", seedHosts);
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "seedHosts", seedHosts);
 
             String elasticSearchHostPorts = String.join(":9200,", hosts) + ":9200";
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${elasticSearchHostPorts}", elasticSearchHostPorts);
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "elasticSearchHostPorts", elasticSearchHostPorts);
 
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${elasticSearchHost}",
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "elasticSearchHost",
                     hosts.get(0));
         }
     }

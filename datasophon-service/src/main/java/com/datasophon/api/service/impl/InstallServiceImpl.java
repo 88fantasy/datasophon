@@ -89,7 +89,9 @@ public class InstallServiceImpl implements InstallService {
     }
     
     /**
-     * 1、查询缓存是否存在当前主机列表 2、存在则根据分页返回数据 3、不存在则解析hosts，产生主机列表并放入缓存中
+     * 1、查询缓存是否存在当前主机列表
+     * 2、存在则根据分页返回数据
+     * 3、不存在则解析hosts，产生主机列表并放入缓存中
      *
      * @param clusterId
      * @param hosts
@@ -106,7 +108,7 @@ public class InstallServiceImpl implements InstallService {
                                    Integer sshPort,
                                    Integer page,
                                    Integer pageSize) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         ProcessUtils.generateClusterVariable(globalVariables, clusterId, null, SSHUSER, sshUser);
         
         List<HostInfo> list = new ArrayList<>();
@@ -175,9 +177,8 @@ public class InstallServiceImpl implements InstallService {
             CacheUtils.put(clusterCode + Constants.HOST_MD5, md5);
             logger.info("put host list in cache");
         }
-        // list分页
-        list =
-                map.entrySet().stream()
+        // list
+        list = map.entrySet().stream()
                         .sorted(Comparator.comparing(Map.Entry::getKey))
                         .map(Map.Entry::getValue)
                         .collect(Collectors.toList());

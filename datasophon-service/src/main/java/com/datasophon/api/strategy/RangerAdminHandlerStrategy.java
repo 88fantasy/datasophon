@@ -24,12 +24,10 @@ import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ServiceInstallService;
-import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
@@ -52,45 +50,44 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
     
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         if (!hosts.isEmpty()) {
             String rangerAdminUrl = "http://" + hosts.get(0) + ":6080";
             logger.info("rangerAdminUrl is {}", rangerAdminUrl);
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${rangerAdminUrl}",
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "rangerAdminUrl",
                     rangerAdminUrl);
         }
     }
     
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
         boolean enableKerberos = false;
         Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
         // enable ranger plugin
         for (ServiceConfig config : list) {
-            if ("enableHDFSPlugin".equals(config.getName()) && ((Boolean) config.getValue()).booleanValue()) {
+            if ("enableHDFSPlugin".equals(config.getName()) && (Boolean) config.getValue()) {
                 logger.info("enableHdfsPlugin");
-                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${enableHDFSPlugin}",
+                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "enableHDFSPlugin",
                         "true");
                 enableRangerPlugin(clusterId, "HDFS", "NameNode");
             }
-            if ("enableHIVEPlugin".equals(config.getName()) && ((Boolean) config.getValue()).booleanValue()) {
+            if ("enableHIVEPlugin".equals(config.getName()) && (Boolean) config.getValue()) {
                 logger.info("enableHivePlugin");
-                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${enableHIVEPlugin}",
+                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "enableHIVEPlugin",
                         "true");
                 enableRangerPlugin(clusterId, "HIVE", "HiveServer2");
             }
-            if ("enableHBASEPlugin".equals(config.getName()) && ((Boolean) config.getValue()).booleanValue()) {
+            if ("enableHBASEPlugin".equals(config.getName()) && (Boolean) config.getValue()) {
                 logger.info("enableHbasePlugin");
-                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${enableHBASEPlugin}",
+                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "enableHBASEPlugin",
                         "true");
                 enableRangerPlugin(clusterId, "HBASE", "HbaseMaster");
             }
             if (config.getName().contains("Plugin") && !(Boolean) config.getValue()) {
                 String configName = config.getName();
-                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${" + configName + "}",
-                        "false");
+                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, configName,"false");
             }
             if ("enableKerberos".equals(config.getName())) {
                 enableKerberos = isEnableKerberos(clusterId, globalVariables, enableKerberos, config, "RANGER");
@@ -118,14 +115,14 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
         ServiceInstallService serviceInstallService =
                 SpringTool.getApplicationContext().getBean(ServiceInstallService.class);
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        String rangerAdminUrl = GlobalVariables.getValue(clusterId, "rangerAdminUrl");
         ClusterServiceInstanceEntity serviceInstance =
                 serviceInstanceService.getServiceInstanceByClusterIdAndServiceName(clusterId, serviceName);
         // 查询角色组id
         List<ClusterServiceRoleInstanceEntity> roleList =
                 roleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(clusterId, serviceRoleName);
         
-        if (Objects.nonNull(roleList) && roleList.size() > 0) {
+        if (Objects.nonNull(roleList) && !roleList.isEmpty()) {
             Integer roleGroupId = roleList.get(0).getRoleGroupId();
             
             ClusterServiceRoleGroupConfig config = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
@@ -154,7 +151,7 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
                 if ("rangerAdminUrl".equals(parameter.getName())) {
                     parameter.setHidden(false);
                     parameter.setRequired(true);
-                    parameter.setValue(globalVariables.get("${rangerAdminUrl}"));
+                    parameter.setValue(rangerAdminUrl);
                 }
                 if (!map.containsKey(name)) {
                     logger.info("put config {} into service {}", name, serviceRoleName);

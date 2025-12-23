@@ -49,7 +49,7 @@ public class ServiceStartHandler extends ServiceHandler {
     public ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception {
         logger.info("start to start service {} in {}", serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
         // 启动
-        Map<String, String> globalVariables = GlobalVariables.get(serviceRoleInfo.getClusterId());
+        Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
         ServiceRoleOperateCommand serviceRoleOperateCommand = new ServiceRoleOperateCommand();
         serviceRoleOperateCommand.setServiceName(serviceRoleInfo.getParentName());
         serviceRoleOperateCommand.setServiceRoleName(serviceRoleInfo.getName());
@@ -66,8 +66,7 @@ public class ServiceStartHandler extends ServiceHandler {
         
         serviceRoleOperateCommand.setEnableRangerPlugin(serviceRoleInfo.getEnableRangerPlugin());
         serviceRoleOperateCommand.setRunAs(serviceRoleInfo.getRunAs());
-        Boolean enableKerberos =
-                Boolean.parseBoolean(globalVariables.get("${enable" + serviceRoleInfo.getParentName() + "Kerberos}"));
+        Boolean enableKerberos = Boolean.parseBoolean(globalVariables.get("${enable" + serviceRoleInfo.getParentName() + "Kerberos}"));
         logger.info("{} enable kerberos is {}", serviceRoleInfo.getParentName(), enableKerberos);
         serviceRoleOperateCommand.setEnableKerberos(enableKerberos);
         if (serviceRoleInfo.getRoleType() == ServiceRoleType.CLIENT) {

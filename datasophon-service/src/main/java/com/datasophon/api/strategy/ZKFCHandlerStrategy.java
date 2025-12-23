@@ -27,27 +27,27 @@ import java.util.List;
 import java.util.Map;
 
 public class ZKFCHandlerStrategy implements ServiceRoleStrategy {
-    
-    private static final Logger logger = LoggerFactory.getLogger(ZKFCHandlerStrategy.class);
-    
-    @Override
-    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        if (hosts.size() == 2) {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${ZKFC1}", hosts.get(0));
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${ZKFC2}", hosts.get(1));
-        }
-    }
 
-    
-    @Override
-    public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-        Map<String, String> globalVariables = GlobalVariables.get(serviceRoleInfo.getClusterId());
-        if (hostname.equals(globalVariables.get("${ZKFC2}"))) {
-            logger.info("set to slave zkfc");
-            serviceRoleInfo.setSlave(true);
-            serviceRoleInfo.setSortNum(6);
-        }
+  private static final Logger logger = LoggerFactory.getLogger(ZKFCHandlerStrategy.class);
+
+  @Override
+  public void handler(Integer clusterId, List<String> hosts, String serviceName) {
+    Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
+    if (hosts.size() == 2) {
+      ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "ZKFC1", hosts.get(0));
+      ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "ZKFC2", hosts.get(1));
     }
+  }
+
+
+  @Override
+  public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
+    String zkfc2 = GlobalVariables.getValue(serviceRoleInfo.getClusterId(), "ZKFC2");
+    if (hostname.equals(zkfc2)) {
+      logger.info("set to slave zkfc");
+      serviceRoleInfo.setSlave(true);
+      serviceRoleInfo.setSortNum(6);
+    }
+  }
 
 }

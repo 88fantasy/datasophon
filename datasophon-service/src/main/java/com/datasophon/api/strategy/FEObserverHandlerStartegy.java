@@ -22,7 +22,6 @@ import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.model.ProcInfo;
-import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.OlapUtils;
 import com.datasophon.dao.entity.ClusterHostDO;
@@ -42,7 +41,7 @@ public class FEObserverHandlerStartegy implements ServiceRoleStrategy {
     
     @Override
     public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-        Map<String, String> globalVariables = GlobalVariables.get(serviceRoleInfo.getClusterId());
+        Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
         String feMaster = globalVariables.get("${feMaster}");
         if (hostname.equals(feMaster)) {
             logger.info("fe master is {}", feMaster);
@@ -59,7 +58,7 @@ public class FEObserverHandlerStartegy implements ServiceRoleStrategy {
     @Override
     public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
-        Map<String, String> globalVariables = GlobalVariables.get(roleInstanceEntity.getClusterId());
+        Map<String, String> globalVariables = GlobalVariables.getVariables(roleInstanceEntity.getClusterId());
         String feMaster = globalVariables.get("${feMaster}");
         if (roleInstanceEntity.getHostname().equals(feMaster)
                 && roleInstanceEntity.getServiceRoleState() == ServiceRoleState.RUNNING) {

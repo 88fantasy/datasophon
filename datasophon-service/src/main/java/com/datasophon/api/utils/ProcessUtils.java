@@ -437,8 +437,7 @@ public class ProcessUtils {
 
     public static void generateClusterVariable(Map<String, String> globalVariables, Integer clusterId,
                                                String serviceName, String variableName, String value) {
-        ClusterVariableService variableService =
-                SpringTool.getApplicationContext().getBean(ClusterVariableService.class);
+        ClusterVariableService variableService = SpringTool.getApplicationContext().getBean(ClusterVariableService.class);
         ClusterVariable clusterVariable = variableService.getVariableByVariableName(variableName, clusterId);
         if (Objects.nonNull(clusterVariable)) {
             logger.info("update variable {} value {} to {}", variableName, clusterVariable.getVariableValue(), value);
@@ -627,7 +626,7 @@ public class ProcessUtils {
     }
 
     private static void replaceVariable(List<ServiceConfig> serviceConfigs, Integer clusterId) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         for (ServiceConfig serviceConfig : serviceConfigs) {
             if (Constants.INPUT.equals(serviceConfig.getType())) {
                 String name = PlaceholderUtils.replacePlaceholders(serviceConfig.getName(), globalVariables,

@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
  * Constants
  */
 public final class Constants {
-    
+
     public static final String INSTALL_PATH = PropertyUtils.getString("install.path");
     public static final String INIT_HOME = PropertyUtils.getString("INIT_HOME");
     public static final String DATA = "data";
@@ -79,7 +79,7 @@ public final class Constants {
     public static final String FRAME_CODE_1 = "frame_code";
     public static final String UPDATE_COMMON_CMD = "sh " + INSTALL_PATH + "/datasophon-worker/script/sed_common.sh ";
     public static final String MASTER_HOST = "masterHost";
-    public static final String MASTER_WEB_PORT = "masterWebPort";
+    public static final String MASTER_WEB_PORT = "server.port";
     
     public static final String HOST_COMMAND_ID = "host_command_id";
     
@@ -213,8 +213,7 @@ public final class Constants {
     /**
      * email regex
      */
-    public static final Pattern REGEX_MAIL_NAME =
-            Pattern.compile("^([a-z0-9A-Z]+[_|\\-|\\.]?)+[a-z0-9A-Z]@([a-z0-9A-Z]+(-[a-z0-9A-Z]+)?\\.)+[a-zA-Z]{2,}$");
+    public static final Pattern REGEX_MAIL_NAME = Pattern.compile("^([a-z0-9A-Z]+[_|\\-|\\.]?)+[a-z0-9A-Z]@([a-z0-9A-Z]+(-[a-z0-9A-Z]+)?\\.)+[a-zA-Z]{2,}$");
     
     /**
      * 常量-数值100

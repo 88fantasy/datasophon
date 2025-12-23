@@ -21,14 +21,11 @@ package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
-import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.HostUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
-import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,21 +37,22 @@ import org.slf4j.LoggerFactory;
 public class KyuubiServerHandlerStrategy extends ServiceHandlerAbstract implements ServiceRoleStrategy {
     
     private static final Logger logger = LoggerFactory.getLogger(KyuubiServerHandlerStrategy.class);
+
     private static final String ENABLE_KERBEROS = "enableKerberos";
     
-    @Override
-    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        if (!hosts.isEmpty()) {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${kyuubiServerHost}",
-                    HostUtils.getIp(hosts.get(0)));
-        }
-    }
+//    @Override
+//    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
+//        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
+//        if (!hosts.isEmpty()) {
+//            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "kyuubiServerHost",
+//                    HostUtils.getIp(hosts.get(0)));
+//        }
+//    }
     
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
         
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         boolean enableKerberos = false;
         Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
         ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);

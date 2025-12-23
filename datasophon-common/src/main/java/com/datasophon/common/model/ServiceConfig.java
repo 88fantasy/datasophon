@@ -62,5 +62,6 @@ public class ServiceConfig implements Serializable {
     private boolean configWithHA;
     
     private String separator;
-    
+
+    private Boolean register;
 }

@@ -207,7 +207,7 @@ public class ServiceCommandActor extends UntypedActor {
     }
     
     private void updateHDFSWebUi(Integer clusterId, Integer serviceInstanceId) {
-        Map<String, String> variables = GlobalVariables.get(clusterId);
+        Map<String, String> variables = GlobalVariables.getVariables(clusterId);
         if (variables.containsKey(ENABLE_HDFS_KERBEROS)) {
             ClusterServiceRoleInstanceWebuisService webuisService =
                     SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceWebuisService.class);

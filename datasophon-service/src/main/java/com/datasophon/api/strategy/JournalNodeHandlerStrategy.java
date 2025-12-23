@@ -27,13 +27,13 @@ public class JournalNodeHandlerStrategy implements ServiceRoleStrategy {
     
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         if (hosts.size() >= 3) {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${journalNode1}",
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "journalNode1",
                     hosts.get(0));
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${journalNode2}",
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "journalNode2",
                     hosts.get(1));
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${journalNode3}",
+            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "journalNode3",
                     hosts.get(2));
         }
     }

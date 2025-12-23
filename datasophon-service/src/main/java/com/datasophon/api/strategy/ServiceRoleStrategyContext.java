@@ -31,7 +31,7 @@ public class ServiceRoleStrategyContext {
     static {
         strategyMap.put("NameNode", new NameNodeHandlerStrategy());
         strategyMap.put("ResourceManager", new RMHandlerStrategy());
-        strategyMap.put("HiveMetaStore", new HiveMetaStroreHandlerStrategy());
+        strategyMap.put("HiveMetaStore", new HiveMetaStoreHandlerStrategy());
         strategyMap.put("HiveServer2", new HiveServer2HandlerStrategy());
         strategyMap.put("Grafana", new GrafanaHandlerStrategy());
         strategyMap.put("ZkServer", new ZkServerHandlerStrategy());
@@ -41,8 +41,8 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("JournalNode", new JournalNodeHandlerStrategy());
         strategyMap.put("ZKFC", new ZKFCHandlerStrategy());
         strategyMap.put("HttpFs", new HttpFsHandlerStrategy());
-        strategyMap.put("SRFE", new FEHandlerStartegy());
-        strategyMap.put("DorisFE", new FEHandlerStartegy());
+        strategyMap.put("SRFE", new FEHandlerStrategy());
+        strategyMap.put("DorisFE", new FEHandlerStrategy());
         strategyMap.put("DorisFEObserver", new FEObserverHandlerStartegy());
         strategyMap.put("SRBE", new BEHandlerStartegy());
         strategyMap.put("DorisBE", new BEHandlerStartegy());

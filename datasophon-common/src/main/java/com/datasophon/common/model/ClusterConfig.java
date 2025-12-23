@@ -1,12 +1,9 @@
 package com.datasophon.common.model;
 
-import com.datasophon.common.model.GlobalConfig;
-import com.datasophon.common.model.Host;
+import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import lombok.Data;
 
 @Data
 public class ClusterConfig {
