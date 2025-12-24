@@ -95,6 +95,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -485,11 +486,20 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
       if (registry.isEnabled()) {
         String url = String.format("%s/repository/raw/template/%s", registry.getUri(), templateName);
         logger.info("download template from nexus, url is {}", url);
-        inputStream = NexusFileUtils.downStream(url, registry.getUser(), registry.getPassword());
+        try {
+          inputStream = NexusFileUtils.downStream(url, registry.getUser(), registry.getPassword());
+        } catch (FileNotFoundException e) {
+          response.setStatus(404);
+          return;
+        }
       } else {
         Path path = PathUtils.join(Paths.get(Constants.INIT_HOME), "template", templateName);
         logger.info("download template from local storage, path is: {}", path);
         File file = path.toFile();
+        if (!file.exists()) {
+          response.setStatus(404);
+          return;
+        }
         inputStream = new BufferedInputStream(Files.newInputStream(file.toPath()));
         response.addHeader("Content-Length", "" + file.length());
       }

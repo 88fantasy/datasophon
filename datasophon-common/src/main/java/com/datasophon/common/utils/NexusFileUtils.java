@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -45,12 +46,19 @@ public class NexusFileUtils {
      * @param username
      * @param password
      */
-    public static InputStream downStream(String url, String username, String password) {
+    public static InputStream downStream(String url, String username, String password) throws FileNotFoundException {
         HttpResponse response = HttpRequest.get(url)
                 .basicAuth(username, password)
                 .execute();
+        if (response.getStatus() == 404) {
+          throw new FileNotFoundException(String.format("url: %s not found", url));
+        }
+        if (response.getStatus() == 401) {
+          throw new IllegalArgumentException("nexus require an auth, but fail");
+        }
         return response.bodyStream();
     }
+
 
     /**
      * 批量上传仓库文件:
@@ -242,8 +250,13 @@ public class NexusFileUtils {
         }
         String url = getRawPackagesUrl(packageName);
         log.info("download url is {}", url);
-        InputStream inputStream = NexusFileUtils.downStream(url, Constants.NEXUS_USERNAME, Constants.NEXUS_PASSWORD);
-        FileUtil.writeFromStream(inputStream, packagePath);
+      InputStream inputStream = null;
+      try {
+        inputStream = NexusFileUtils.downStream(url, Constants.NEXUS_USERNAME, Constants.NEXUS_PASSWORD);
+      } catch (FileNotFoundException e) {
+        throw new RuntimeException(String.format("fail to get %s, package not exist", packageName), e);
+      }
+      FileUtil.writeFromStream(inputStream, packagePath);
         log.info("download package {} success", packageName);
     }
 
@@ -256,8 +269,13 @@ public class NexusFileUtils {
 
         String url = NexusFileUtils.getRawPackagesUrl(packageNameMD5);
         log.info("download url is {}", url);
-        InputStream inputStream = NexusFileUtils.downStream(url, Constants.NEXUS_USERNAME, Constants.NEXUS_PASSWORD);
-        FileUtil.writeFromStream(inputStream, packagePathMD5);
+      InputStream inputStream = null;
+      try {
+        inputStream = NexusFileUtils.downStream(url, Constants.NEXUS_USERNAME, Constants.NEXUS_PASSWORD);
+      } catch (FileNotFoundException e) {
+        throw new RuntimeException(String.format("fail to get %s, package not exist", packageName), e);
+      }
+      FileUtil.writeFromStream(inputStream, packagePathMD5);
         log.info("download package md5 {} success", packageNameMD5);
 
         String remoteMd5Contxt = FileUtil.readString(packagePathMD5, CharsetUtil.CHARSET_UTF_8);

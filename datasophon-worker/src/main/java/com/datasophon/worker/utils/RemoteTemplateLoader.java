@@ -1,8 +1,10 @@
 package com.datasophon.worker.utils;
 
+import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import freemarker.cache.TemplateLoader;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -22,9 +24,13 @@ public class RemoteTemplateLoader implements TemplateLoader {
     }
 
     @Override
-    public Object findTemplateSource(String name) {
+    public Object findTemplateSource(String name) throws FileNotFoundException {
         String downloadUrl = String.format("%s/ddh/api/service/install/downloadTemplate?templateName=%s", baseUrl, name);
-        return HttpUtil.createGet(downloadUrl).execute().bodyStream();
+        HttpResponse resp = HttpUtil.createGet(downloadUrl).execute();
+        if (resp.getStatus() == 404) {
+          throw new FileNotFoundException(String.format("template %s not found", name));
+        }
+      return resp.bodyStream();
     }
 
     @Override
