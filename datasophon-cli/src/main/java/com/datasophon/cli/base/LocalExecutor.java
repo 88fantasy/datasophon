@@ -49,10 +49,10 @@ public class LocalExecutor implements Executor {
         return null;
     }
 
-    @Override
+    /*@Override
     public ExecResult createDir(String destDir) {
         return ShellUtils.execShell(String.format("mkdir -p %s", destDir));
-    }
+    }*/
 
     @Override
     public ExecResult getFileString(String path) {
