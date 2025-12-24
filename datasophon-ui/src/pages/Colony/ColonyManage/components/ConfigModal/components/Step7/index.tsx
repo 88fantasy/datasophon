@@ -40,6 +40,8 @@ const Index = ({
 
     const currentFormRef = formMapRef.current[current]
 
+    const currentRef = useRef()
+
     const [hadInit, setHadInit] = useState(false)
     const [dataSource, setDataSource] = useState([])
     const [activeKey, setActiveKey] = useState()
@@ -49,19 +51,22 @@ const Index = ({
     const { clusterId } = useConfigContext()
 
 
-    const memoTabs = steps4Data.services?.map(val => {
-        const key = val.serviceName
-        return {
-            key,
-            label: key,
-            children: <CommonTemplate
-                namePrefix={[key]}
-                templateData={templateMap[key]}
-            />
-        }
-    })
+    const memoTabs = useMemo(() => {
+        return steps4Data.services?.map(val => {
+            const key = val.serviceName
+            return {
+                key,
+                label: key,
+                value: key,
+                children: <CommonTemplate
+                    namePrefix={[key]}
+                    templateData={templateMap[key]}
+                />
+            }
+        })
+    }, [steps4Data.services, templateMap])
 
-    const getServiceConfigOption = async () => {
+    const getServiceConfigOption = useCallback(async () => {
 
         const reqArr = await Promise.all(
             memoTabs.map((item) => {
@@ -91,8 +96,7 @@ const Index = ({
         }, {})
 
         setTemplateMap(res)
-    }
-
+    }, [clusterId, memoTabs])
 
 
     const invokeValid = useCallback(async () => {
@@ -165,10 +169,10 @@ const Index = ({
             }
 
 
-
+            console.log('memoTabs', memoTabs)
             const params = {
                 clusterId,
-                serviceNames: memoTabs.map(val => val.serviceName),
+                serviceNames: memoTabs.map(val => val.value),
                 //TODO:
                 commandType: 'INSTALL_SERVICE'
             };
@@ -204,27 +208,36 @@ const Index = ({
 
         // return res
 
-    }, [dataSource])
+    }, [clusterId, currentFormRef, memoTabs, templateMap])
 
-    const onTabChange = async (key) => {
+    const onTabChange = useCallback(async (key) => {
         setActiveKey(key)
-    }
+    }, [])
+
+
 
     const invokeInit = useCallback(async () => {
         if (current === 6) {
             await getServiceConfigOption()
             setHadInit(true)
+            currentRef.current = true
         }
-    }, [current])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
     useEffect(() => {
         invokeInit()
     }, [invokeInit])
 
     useEffect(() => {
-        if (current === 6) {
+        if (
+            current === 6
+        ) {
+            console.log('memoTabs', memoTabs)
             setActiveKey(memoTabs[0]?.key)
+            currentRef.current = current
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [current])
 
 

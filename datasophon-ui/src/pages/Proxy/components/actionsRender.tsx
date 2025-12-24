@@ -1,5 +1,7 @@
 
-import { AlertOutlined, MoreOutlined, SettingOutlined } from "@ant-design/icons"
+import { AlertOutlined, MoreOutlined, SettingOutlined, UploadOutlined } from "@ant-design/icons"
+import { Tooltip } from "antd";
+import { noop } from "antd/es/_util/warning";
 
 
 const showResultModal = () =>
@@ -7,6 +9,7 @@ const showResultModal = () =>
 const showAlarmModal = () =>
     import("./AlarmModal/api");
 
+const showUploadDeployModal = () => import('../../../components/UploadDeployModal/api')
 export const actionsRender = (props) => {
 
 
@@ -43,12 +46,42 @@ export const actionsRender = (props) => {
     }
 
 
+
+    const onImportClick = async (record) => {
+        const modelApi = await showUploadDeployModal()
+        modelApi.default({
+            record
+        })
+    }
+
+
+
     return clusterId && [
-        <SettingOutlined
-            onClick={onSettingClick}
-        />,
-        <AlertOutlined
-            onClick={onAlarmClick}
-        />
+        <Tooltip
+            key="2"
+            title="上传部署文件包"
+        >
+            <UploadOutlined
+                onClick={onImportClick.bind(noop, {})}
+            />
+        </Tooltip>,
+        <Tooltip
+            key="1"
+            title="安装并启动服务进度">
+            <SettingOutlined
+                onClick={onSettingClick}
+            />
+        </Tooltip>,
+        <Tooltip
+            key="0"
+            title="告警情况"
+        >
+            <AlertOutlined
+                onClick={onAlarmClick}
+            />
+        </Tooltip>,
+
+
+
     ]
 }

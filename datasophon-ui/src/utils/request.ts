@@ -1,15 +1,15 @@
 import axios from "axios";
 import Cookie from "js-cookie";
-import { axiosPost } from "../api/request";
+import { axiosPost, codeMessage } from "../api/request";
+import { message } from "antd";
 
 // 跨域认证信息 header 名
 const xsrfHeaderName = "sessionId";
 
-axios.defaults.timeout = 5000;
+axios.defaults.timeout = 60 * 60 * 60 * 24;
 axios.defaults.withCredentials = true;
 axios.defaults.xsrfHeaderName = xsrfHeaderName;
 axios.defaults.xsrfCookieName = xsrfHeaderName;
-
 // 认证类型
 const AUTH_TYPE = {
   BEARER: "Bearer",
@@ -23,6 +23,34 @@ const METHOD = {
   GET: "get",
   POST: "post",
 };
+
+// axios.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     // console.log("error", error);
+
+//     // return error;
+
+//     const { response } = error;
+//     let errortext = codeMessage[response.status] || response.statusText;
+
+//     errortext = `【${response.status || ""}】${errortext}`;
+
+//     message.error(errortext);
+
+//     if (response.status === 401) {
+//       window.location.href = `/ddh/account/login?redirectUri=${encodeURIComponent(
+//         window.location.href
+//       )}`;
+//     }
+
+//     return {
+//       code: response.status,
+//       message: errortext,
+//       msg: errortext,
+//     };
+//   }
+// );
 
 /**
  * axios请求
@@ -102,42 +130,42 @@ function checkAuthorization(authType = AUTH_TYPE.BEARER) {
   return false;
 }
 
-/**
- * 加载 axios 拦截器
- * @param interceptors
- * @param options
- */
-function loadInterceptors(interceptors, options) {
-  const { request, response } = interceptors;
-  // 加载请求拦截器
-  request.forEach((item) => {
-    let { onFulfilled, onRejected } = item;
-    if (!onFulfilled || typeof onFulfilled !== "function") {
-      onFulfilled = (config) => config;
-    }
-    if (!onRejected || typeof onRejected !== "function") {
-      onRejected = (error) => Promise.reject(error);
-    }
-    axios.interceptors.request.use(
-      (config) => onFulfilled(config, options),
-      (error) => onRejected(error, options)
-    );
-  });
-  // 加载响应拦截器
-  response.forEach((item) => {
-    let { onFulfilled, onRejected } = item;
-    if (!onFulfilled || typeof onFulfilled !== "function") {
-      onFulfilled = (response) => response;
-    }
-    if (!onRejected || typeof onRejected !== "function") {
-      onRejected = (error) => Promise.reject(error);
-    }
-    axios.interceptors.response.use(
-      (response) => onFulfilled(response, options),
-      (error) => onRejected(error, options)
-    );
-  });
-}
+// /**
+//  * 加载 axios 拦截器
+//  * @param interceptors
+//  * @param options
+//  */
+// function loadInterceptors(interceptors, options) {
+//   const { request, response } = interceptors;
+//   // 加载请求拦截器
+//   request.forEach((item) => {
+//     let { onFulfilled, onRejected } = item;
+//     if (!onFulfilled || typeof onFulfilled !== "function") {
+//       onFulfilled = (config) => config;
+//     }
+//     if (!onRejected || typeof onRejected !== "function") {
+//       onRejected = (error) => Promise.reject(error);
+//     }
+//     axios.interceptors.request.use(
+//       (config) => onFulfilled(config, options),
+//       (error) => onRejected(error, options)
+//     );
+//   });
+//   // 加载响应拦截器
+//   response.forEach((item) => {
+//     let { onFulfilled, onRejected } = item;
+//     if (!onFulfilled || typeof onFulfilled !== "function") {
+//       onFulfilled = (response) => response;
+//     }
+//     if (!onRejected || typeof onRejected !== "function") {
+//       onRejected = (error) => Promise.reject(error);
+//     }
+//     axios.interceptors.response.use(
+//       (response) => onFulfilled(response, options),
+//       (error) => onRejected(error, options)
+//     );
+//   });
+// }
 
 /**
  * 解析 url 中的参数
@@ -186,6 +214,6 @@ export {
   setAuthorization,
   removeAuthorization,
   checkAuthorization,
-  loadInterceptors,
+  // loadInterceptors,
   parseUrlParams,
 };

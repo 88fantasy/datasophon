@@ -1,6 +1,7 @@
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/es/locale/zh_CN';
 import 'dayjs/locale/zh-cn';
+// import { antTheme } from '../../../styles/theme';
 // import 'antd/dist/antd.variable.min.css';
 
 
@@ -16,7 +17,8 @@ const index = <P extends object>(Com: React.ComponentType<P>) => {
     return (
       <ConfigProvider
         locale={zhCN}
-        // prefixCls="dfmm"
+      // theme={antTheme}
+      // prefixCls="dfmm"
       >
 
         <Com {...props} />

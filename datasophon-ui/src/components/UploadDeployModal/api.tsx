@@ -1,24 +1,24 @@
 /* eslint-disable react-refresh/only-export-components */
-import defineModalApi from "../DefineModal/api";
+import defineModalApi from "../Common/CommonModal/DefineModal/api";
 import Index from ".";
-import { invokeTransColToFormConfig } from "./utils";
 
 export default async function (config) {
 
-    invokeTransColToFormConfig(config)
 
     config.render = conf => {
         return <Index {...conf} />;
     };
 
     config.dialogConfig = {
-        title: config.title || `${config?.record?.id ? '编辑' : '新增'}`,
+        title: '导入',
         classNames: {
-            body: 'max-h-[60vh] overflow-auto'
-        }
+            body: 'max-h-[70vh] overflow-y-auto mt-[20px] overflow-hidden'
+        },
+        footer: false,
     };
 
     return defineModalApi({
         config
     });
 }
+

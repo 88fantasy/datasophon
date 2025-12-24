@@ -23,8 +23,9 @@ import axios from "axios";
 import { VUE_APP_PUBLIC_PATH } from "../config";
 import { removeAuthorization } from "../utils/request";
 import { invokeRelogin } from "../utils/authorityUtils";
+import { account } from "../utils/account";
 
-const codeMessage = {
+export const codeMessage = {
   200: "服务器成功返回请求的数据。",
   201: "新建或修改数据成功。",
   202: "一个请求已经进入后台排队（异步任务）。",
@@ -75,12 +76,28 @@ axios.interceptors.response.use(
 
     const response = error?.response;
 
+    //     const { response } = error;
+    let errortext = codeMessage[response.status] || response.statusText;
+
+    errortext = `【${response.status || ""}】${errortext}`;
+
+    message.error(errortext);
+
     if (response?.status === 401) {
-      message.error(codeMessage[response?.status]);
+      account.clear();
       invokeRelogin();
       // return true;
     }
 
-    return Promise.reject(error);
+    const data = {
+      code: response.status,
+      message: errortext,
+      msg: errortext,
+    };
+
+    return Promise.resolve({
+      data,
+      ...data,
+    });
   }
 );

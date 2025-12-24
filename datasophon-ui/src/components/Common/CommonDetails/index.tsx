@@ -7,7 +7,7 @@ export const invokeRenderSimpleDetails = (arr, obj) => {
         value = mapEmptyValueFn(value)
 
         return (
-            <div key={val.label}>
+            <div key={val.label || `${val.title}`}>
                 <span className="label">{val.title}：</span>
                 <span className="value">{value}</span>
             </div>

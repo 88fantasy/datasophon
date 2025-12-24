@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Tabs } from 'antd';
+import { Button, Tabs } from 'antd';
 import { axiosGet, axiosPost, axiosPostUpload } from '../../../api/request';
 import { API } from '../../../api';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,7 @@ import CommonTabs from '../../../components/Common/CommonTabs';
 
 
 
+const showUploadDeployModal = () => import('../../../components/UploadDeployModal/api')
 
 
 
@@ -122,6 +123,31 @@ const Index: React.FC = () => {
     //         }
     //     })
     // }
+    const tabBarExtraContent = useMemo(() => {
+
+
+        const onImportClick = async () => {
+            const modelApi = await showUploadDeployModal()
+            modelApi.default({
+                type: 'frame',
+                onOk: () => {
+                    invokeInit()
+                    // setKey(invokeGenerateElId())
+                }
+            })
+        }
+        return {
+            right: (
+                <Button
+                    variant="filled"
+                    color="primary"
+                    onClick={onImportClick}
+                >
+                    导入
+                </Button>
+            )
+        }
+    }, [invokeInit])
 
 
     useEffect(() => {
@@ -138,6 +164,7 @@ const Index: React.FC = () => {
         // />
         <CommonTabs
             memoTabItem={memoTabItem}
+            tabBarExtraContent={tabBarExtraContent}
             key={key}
         />
     )

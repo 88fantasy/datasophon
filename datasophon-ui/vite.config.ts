@@ -27,6 +27,8 @@ export default defineConfig({
           return path.replace(/\/dev-mock/, "");
         },
         target: "http://192.168.2.48:8081/",
+        target: "http://192.168.2.230:8081/",
+        target: "http://192.168.2.146:8081/",
         changeOrigin: true,
       },
     },

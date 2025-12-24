@@ -2,7 +2,7 @@ import { PlusOutlined } from "@ant-design/icons";
 import { ProTable, TableDropdown, type ActionType } from "@ant-design/pro-components";
 import { Button } from "antd";
 import { cloneDeep, isBoolean, noop } from "lodash-es";
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import { showComfirmModal, showMsgAfferRequest } from "../../../utils/util";
 
 const showFormModal = () =>
@@ -133,6 +133,10 @@ const Index = ({
     const actionRef = tableProps.actionRef || innnerActionRef
 
 
+    const onResetClick = useCallback(() => {
+        actionRef.current?.reset?.()
+        actionRef.current?.reload?.()
+    }, [actionRef])
 
     return (
         <ProTable
@@ -153,7 +157,9 @@ const Index = ({
                 },
             }}
 
-
+            cardProps={{
+                className: 'h-full'
+            }}
 
             rowKey="id"
             search={{
@@ -175,9 +181,9 @@ const Index = ({
                     return values;
                 },
             }}
-            pagination={{
-                pageSize: 10,
-            }}
+            // pagination={{
+            //     pageSize: 10,
+            // }}
             scroll={{
                 y: '50vh'
             }}
@@ -193,9 +199,9 @@ const Index = ({
                 >
                     新建
                 </Button>,
-            ]}
+            ].filter(Boolean)}
 
-
+            onReset={onResetClick}
             {...tableProps}
         />
     );

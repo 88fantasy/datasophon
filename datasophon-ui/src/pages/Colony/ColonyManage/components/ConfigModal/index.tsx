@@ -71,6 +71,7 @@ const Index = (props) => {
     const steps4Ref = useRef()
     const steps5Ref = useRef()
     const steps6Ref = useRef()
+    const steps7Ref = useRef()
 
 
     const clusterId = record?.id || props.clusterId
@@ -145,8 +146,8 @@ const Index = (props) => {
             },
             {
                 title: '服务配置',
-                render: <Step7
-                    // ref={steps4Ref}
+                render: current === 6 && <Step7
+                    ref={steps7Ref}
                     current={current}
                     formMapRef={formMapRef}
                     record={record}
@@ -221,6 +222,13 @@ const Index = (props) => {
                 }
             } else if (current === 5) {
                 const res = await steps6Ref.current.invokeValid()
+                valid = res.valid
+
+                if (!valid) {
+                    message.warning(res.msg)
+                }
+            } else if (current === 6) {
+                const res = await steps7Ref.current.invokeValid()
                 valid = res.valid
 
                 if (!valid) {
