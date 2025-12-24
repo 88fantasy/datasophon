@@ -289,4 +289,6 @@ public final class Constants {
     public static final String NEXUS_PASSWORD= PropertyUtils.getString("nexus.password");
 
     public static final String MD5 = "md5";
+
+    public static final String SECRET_KEY = PropertyUtils.getString("secret.key");
 }

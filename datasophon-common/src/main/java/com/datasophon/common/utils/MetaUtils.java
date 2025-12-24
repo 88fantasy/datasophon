@@ -114,13 +114,12 @@ public class MetaUtils {
 
     /**
      * 解密文件内容，并返回bytes
-     *
      * @param file
      * @param cipherKey
      */
     public static byte[] decodeContext(File file, String cipherKey) {
-        String base64Str = FileUtil.readString(file, StandardCharsets.UTF_8);
-        byte[] encryptedBytes = Base64.decode(base64Str);
+        String context = FileUtil.readString(file, StandardCharsets.UTF_8);
+        byte[] encryptedBytes = Base64.decode(context);
         return SmUtil.sm4(Base64.decode(cipherKey)).decrypt(encryptedBytes);
     }
 

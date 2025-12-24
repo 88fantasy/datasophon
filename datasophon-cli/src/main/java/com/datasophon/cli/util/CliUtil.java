@@ -8,11 +8,13 @@ import com.datasophon.cli.base.Executor;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.MetaUtils;
 import com.datasophon.common.utils.NexusFileUtils;
 import com.datasophon.common.utils.ShellUtils;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
@@ -20,6 +22,7 @@ import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -67,14 +70,25 @@ public final class CliUtil {
         }
     }
 
+    /**
+     * 优先使用 cluster-sample.yml.decode > cluster-sample.yml
+     * @param configFilePath
+     * @return
+     */
     public static ClusterConfig getConfig(String configFilePath) {
         File configFile = new File(configFilePath);
         if (!configFile.exists()) {
             throw new RuntimeException("config file not found, please check " + configFilePath);
         }
         Yaml yaml = new Yaml();
-        String content = FileUtil.readString(configFile, Charset.defaultCharset());
-        return yaml.loadAs(content, ClusterConfig.class);
+        String decodeClusterSamplePath = String.format("%s.decode", configFilePath);
+        if(!FileUtil.exist(decodeClusterSamplePath)) {
+            byte[] bytes = MetaUtils.decodeContext(configFile, Constants.SECRET_KEY);
+            return yaml.loadAs(StringUtils.toEncodedString(bytes, StandardCharsets.UTF_8), ClusterConfig.class);
+        } else {
+            String content = FileUtil.readString(configFile, Charset.defaultCharset());
+            return yaml.loadAs(content, ClusterConfig.class);
+        }
     }
 
     public static void downRegistryFile(Executor executor, boolean enableRegistry, String registryIp, String registryPort, String registryUsername, String registryPassword,
