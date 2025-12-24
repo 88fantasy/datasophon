@@ -7,12 +7,9 @@ import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.api.service.UniEngineService;
 import com.datasophon.common.Constants;
-import com.datasophon.common.model.uni.DorisDatasource;
-import com.datasophon.common.model.uni.EngineInfo;
-import com.datasophon.common.model.uni.HiveDatasource;
-import com.datasophon.common.model.uni.KafkaDatasource;
-import com.datasophon.common.model.uni.PaimonDatasource;
+import com.datasophon.common.model.uni.*;
 import com.datasophon.common.utils.PasswordSupport;
+import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
@@ -92,6 +89,7 @@ public class UniEngineServiceImpl implements UniEngineService {
         }
 
         // 数据源
+        engineInfo.setMysqlDatasource(getMysqlDatasource());
         engineInfo.setHiveDatasource(getHiveDatasource(clusterId));
         engineInfo.setPaimonDatasource(getPaimonDatasource(clusterId));
         engineInfo.setDorisDatasource(getDorisDatasource(clusterId));
@@ -100,6 +98,21 @@ public class UniEngineServiceImpl implements UniEngineService {
         String data = JSON.toJSONString(engineInfo);
         return Result.success().put(Constants.DATA, PasswordSupport.encryptDbPassword(data));
 
+    }
+
+    public MysqlDatasource getMysqlDatasource() {
+        MysqlDatasource mysqlDatasource = new MysqlDatasource();
+        mysqlDatasource.setHost(PropertyUtils.getString("datasource.ip"));
+        mysqlDatasource.setPort(PropertyUtils.getString("datasource.port"));
+        mysqlDatasource.setUserName(PropertyUtils.getString("datasource.username"));
+        mysqlDatasource.setPassword(PropertyUtils.getString("datasource.password"));
+        JSONObject mysqlOther = new JSONObject();
+        mysqlOther.put("allowPublicKeyRetrieval", true);
+        mysqlOther.put("useSSL", false);
+        mysqlDatasource.setOther(mysqlOther);
+        logger.info("mysql get info success");
+
+        return mysqlDatasource;
     }
 
     public HiveDatasource getHiveDatasource(Integer clusterId) {

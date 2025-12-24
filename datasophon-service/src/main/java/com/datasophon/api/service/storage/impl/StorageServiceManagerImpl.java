@@ -44,7 +44,7 @@ public class StorageServiceManagerImpl implements StorageService {
             relative = dir.getName() + "/" + relative;
           }
           relative = PathUtils.unixStyle(relative);
-          NexusFileUtils.uploadFileToRawRepo(registry.getNexusUri(), relative, path.toFile());
+          NexusFileUtils.uploadFileToRawRepo(relative, path.toFile());
           return FileVisitResult.CONTINUE;
         }
 
@@ -81,7 +81,7 @@ public class StorageServiceManagerImpl implements StorageService {
     relativePath = PathUtils.unixStyle(relativePath);
     NexusRegistry registry = Application.getNexus();
     if (registry.isEnable()) {
-      NexusFileUtils.uploadFileToRawRepo(registry.getNexusUri(), relativePath, file);
+      NexusFileUtils.uploadFileToRawRepo(relativePath, file);
     } else {
       File dir = StrUtil.isBlank(relativePath) || "/".equals(relativePath) ? new File(Constants.INIT_HOME) :
           new File(Constants.INIT_HOME, relativePath);

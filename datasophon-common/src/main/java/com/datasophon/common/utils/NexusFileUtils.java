@@ -178,7 +178,7 @@ public class NexusFileUtils {
         }
     }
 
-    public static ExecResult uploadFileToRawRepo(NexusRegistry.NexusUri host, String path, File file) throws IOException {
+    public static ExecResult uploadFileToRawRepo(String path, File file) throws IOException {
         if (!file.isFile()) {
             throw new IllegalArgumentException(String.format("file %s is not a file", file.getAbsoluteFile()));
         }
@@ -188,7 +188,7 @@ public class NexusFileUtils {
         }
 
 
-        String url = String.format("%s/service/rest/internal/ui/upload/%s", host.getUri(), RepositoriesType.RAW.getDesc());
+        String url = String.format("%s/service/rest/internal/ui/upload/%s", String.format("%s:%s", Constants.NEXUS_IP, Constants.NEXUS_PORT), RepositoriesType.RAW.getDesc());
 
         // 配置超时（根据文件大小调整）
         RequestConfig config = RequestConfig.custom()
@@ -203,7 +203,7 @@ public class NexusFileUtils {
             HttpPost post = new HttpPost(url);
 
             // Basic Auth
-            String auth = Base64.getEncoder().encodeToString((host.getUser() + ":" + host.getPassword()).getBytes(StandardCharsets.UTF_8));
+            String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
             post.setHeader("Authorization", "Basic " + auth);
 
             // 构建 multipart/form-data（流式，不加载到内存）
