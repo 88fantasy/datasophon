@@ -109,9 +109,11 @@ export const invokeRelogin = () => {
     !user &&
     routesMap[convertToRoutePattern(location.pathname)]?.auth !== 0
   ) {
-    window.location.href = `${VUE_APP_PUBLIC_PATH}/account/login?redirectUri=${encodeURIComponent(
-      window.location.href
-    )}`;
+    if (window.location.pathname.indexOf("account/login") < 0) {
+      window.location.href = `${VUE_APP_PUBLIC_PATH}/account/login?redirectUri=${encodeURIComponent(
+        window.location.href
+      )}`;
+    }
     removeAuthorization();
     account.clear();
   }

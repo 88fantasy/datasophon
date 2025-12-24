@@ -9,6 +9,7 @@ import { API } from "../../../../../api";
 import { noop } from "lodash-es";
 import { invokeGenPath } from "../../../../../utils/routerUtils";
 import { useParams } from "react-router-dom";
+import { useCallback, useMemo } from "react";
 
 const showAuthModal = () =>
     import("../AuthModal/api");
@@ -16,6 +17,8 @@ const showBuildOrEditModal = () =>
     import("../BuildOrEditModal/api");
 const showConfigModal = () =>
     import("../ConfigModal/api");
+
+const showUploadDeployModal = () => import('../../../../../components/UploadDeployModal/api')
 
 
 const Index = ({
@@ -86,7 +89,7 @@ const Index = ({
         }
     ]
 
-    const onEditOrBuildClick = async (record) => {
+    const onEditOrBuildClick = useCallback(async (record) => {
         const modelApi = await showBuildOrEditModal()
         modelApi.default({
             record,
@@ -94,86 +97,102 @@ const Index = ({
                 invokeInit()
             }
         })
-    }
+    }, [invokeInit])
 
 
-    const actions = [
-        {
-            label: '授权',
-            onClick: async () => {
-                const modelApi = await showAuthModal()
-                modelApi.default({
-                    record: val,
-                    onOk: () => {
-                        invokeInit()
-                    }
-                })
-            }
-        },
-        {
-            label: '编辑',
-            disabled: clusterStateCode === 2,
-            onClick: onEditOrBuildClick.bind(noop, val)
-        },
-        {
-            label: '进入',
-            disabled: clusterStateCode !== 2,
-            onClick: () => {
-                console.log('edit')
-
-                window.open(invokeGenPath(`/Cluster/${val.id}/Overview/Index`))
-            }
-        },
-        {
-            label: '配置',
-            disabled: clusterStateCode === 2,
-            onClick: async () => {
-                const modelApi = await showConfigModal()
-                modelApi.default({
-                    record: val,
-                    onOk: () => {
-                        invokeInit()
-                    }
-                })
-            }
-        },
-        {
-            label: '删除',
-            color: 'danger',
-            disabled: clusterStateCode === 2,
-            onClick: async () => {
-                let res = await showComfirmModal({
-                    content: '确定要删除该集群吗？',
-                    okType: 'danger'
-                })
-
-                if (res) {
-                    const params = JSON.stringify([val.id])
-                    res = axiosPostUpload(API.deleteColony, params)
-
-                    showMsgAfferRequest(res)
+    const onImportClick = useCallback(async (record) => {
+        const modelApi = await showUploadDeployModal()
+        modelApi.default({
+            record
+        })
+    }, [])
 
 
-                    if (res.code === 200) {
-                        invokeInit()
 
+    const actions = useMemo(() => {
+
+        return [
+            {
+                label: '授权',
+                onClick: async () => {
+                    const modelApi = await showAuthModal()
+                    modelApi.default({
+                        record: val,
+                        onOk: () => {
+                            invokeInit()
+                        }
+                    })
+                }
+            },
+            {
+                label: '编辑',
+                disabled: clusterStateCode === 2,
+                onClick: onEditOrBuildClick.bind(noop, val)
+            },
+            {
+                label: '进入',
+                disabled: clusterStateCode !== 2,
+                onClick: () => {
+                    console.log('edit')
+
+                    window.open(invokeGenPath(`/Cluster/${val.id}/Overview/Index`))
+                }
+            },
+            {
+                label: '导入',
+                onClick: onImportClick.bind(noop, val)
+            },
+            {
+                label: '配置',
+                disabled: clusterStateCode === 2,
+                onClick: async () => {
+                    const modelApi = await showConfigModal()
+                    modelApi.default({
+                        record: val,
+                        onOk: () => {
+                            invokeInit()
+                        }
+                    })
+                }
+            },
+            {
+                label: '删除',
+                color: 'danger',
+                disabled: clusterStateCode === 2,
+                onClick: async () => {
+                    let res = await showComfirmModal({
+                        content: '确定要删除该集群吗？',
+                        okType: 'danger'
+                    })
+
+                    if (res) {
+                        const params = JSON.stringify([val.id])
+                        res = axiosPostUpload(API.deleteColony, params)
+
+                        showMsgAfferRequest(res)
+
+
+                        if (res.code === 200) {
+                            invokeInit()
+
+                        }
                     }
                 }
             }
-        }
-    ].map(v => {
-        return (
-            <Button
-                color={v.disabled ? 'default' : v.color || 'primary'}
-                variant="text"
-                onClick={v.onClick}
-                disabled={v.disabled}
-                key={v.label}
-            >
-                {v.label}
-            </Button>
-        )
-    })
+        ].map(v => {
+            return (
+                <Button
+                    color={v.disabled ? 'default' : v.color || 'primary'}
+                    variant="text"
+                    onClick={v.onClick}
+                    disabled={v.disabled}
+                    key={v.label}
+                >
+                    {v.label}
+                </Button>
+            )
+        })
+    }, [clusterStateCode, invokeInit, onEditOrBuildClick, onImportClick, val])
 
 
 

@@ -6,8 +6,7 @@ import injectLocationChange from './utils/injectLocationChange'
 import { account } from './utils/account'
 import { routesMap } from './routes'
 import { VUE_APP_PUBLIC_PATH } from './config'
-import { invokeRelogin } from './utils/authorityUtils'
-import '@ant-design/v5-patch-for-react-19';
+// import '@ant-design/v5-patch-for-react-19';
 
 
 

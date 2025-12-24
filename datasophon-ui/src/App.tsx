@@ -5,13 +5,19 @@ import { App, ConfigProvider, Spin } from "antd";
 import injectLocationChange from "./utils/injectLocationChange";
 import { invokeRelogin } from "./utils/authorityUtils";
 
-
+const showDagModal = () => import('./components/DagModal/api')
 const invokeInjectLocationEvent = () => {
   injectLocationChange()
 
 
   window.addEventListener('locationchange', invokeRelogin)
   invokeRelogin()
+}
+
+
+window.invokeShowDagModal = async () => {
+  const modelApi = await showDagModal()
+  modelApi.default({})
 }
 
 const Index = () => {

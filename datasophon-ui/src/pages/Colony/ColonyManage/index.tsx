@@ -25,10 +25,10 @@ const Index: React.FC = () => {
     return state && (
         <Row gutter={16}>
             {
-                (state || []).map(val => {
+                (state || []).map((val, index) => {
                     return (
                         <Card
-                            key={val.id}
+                            key={`${index}_${val.id}`}
                             val={val}
                             invokeInit={invokeInit}
                         />

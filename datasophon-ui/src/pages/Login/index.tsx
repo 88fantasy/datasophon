@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Checkbox, Form, Input, Typography, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { axiosPost } from '../../api/request';
 import { setAuthorization } from '../../utils/request';
 import { account } from '../../utils/account';
 import { VUE_APP_PUBLIC_PATH } from '../../config';
+import { showMsgAfferRequest } from '../../utils/util';
 
 interface LoginFormValues {
   username: string;
@@ -37,11 +38,13 @@ const Login = () => {
       }
     )
 
+    console.log('res', res)
     if (res.code === 200) {
+      showMsgAfferRequest(res)
+
       const loginRes = res.data;
       setAuthorization({ sessionId: loginRes.sessionId });
       account.setUser(res.userInfo);
-      message.success('登录成功');
       navigate(`${VUE_APP_PUBLIC_PATH}/Colony/ColonyManage`)
     }
     setLoading(false);
@@ -50,6 +53,20 @@ const Login = () => {
     // navigate('/dashboard');
     // }, 1500);
   };
+
+  const invokeInit = useCallback(() => {
+    const user = account.getUser();
+
+
+    if (user) {
+      navigate(`${VUE_APP_PUBLIC_PATH}/Colony/ColonyManage`)
+    }
+  }, [navigate])
+
+
+  useEffect(() => {
+    invokeInit()
+  }, [invokeInit])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">

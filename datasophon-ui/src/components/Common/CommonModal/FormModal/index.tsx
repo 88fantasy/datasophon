@@ -1,11 +1,11 @@
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ProForm, ProFormCascader, ProFormSelect, ProFormText, ProFormTextArea, ProFormTreeSelect, ProTable } from '@ant-design/pro-components';
 import { isEmpty, requireRules, showMsgAfferRequest } from '../../../../utils/util';
 import { cloneDeep } from 'lodash-es';
 import { API } from '../../../../api';
 import { axiosJsonPost } from '../../../../api/request';
-import { invokeRenderForm } from './utils';
+import { invokeRenderForm, invokeRenderFormDom } from './utils';
 
 
 
@@ -20,12 +20,15 @@ const Index = (props) => {
         formConfig = [],
         proFormProps = {},
         paramsFn,
-        initCallback
+        renderCallback,
+        formItemRender,
     } = props
 
     let {
         formRef
     } = props
+
+    console.log('formRef', formRef)
 
     const innerFormRef = useRef()
 
@@ -59,22 +62,30 @@ const Index = (props) => {
                     api = apiConfig.update
                 }
 
-                let res
+                params = cloneDeep(params)
 
-                if (typeof api === 'function') {
-                    res = await api(params)
+                if (api) {
+                    let res
+
+                    if (typeof api === 'function') {
+                        res = await api(params)
+                    } else {
+                        res = await axiosJsonPost(api, params)
+                    }
+
+                    showMsgAfferRequest(res)
+
+
+                    if (res.code === 200) {
+                        return res
+                    } else {
+                        return false
+                    }
                 } else {
-                    res = await axiosJsonPost(api, params)
+                    return params
                 }
 
-                showMsgAfferRequest(res)
 
-
-                if (res.code === 200) {
-                    return res
-                } else {
-                    return false
-                }
             }
 
         } catch (error) {
@@ -97,35 +108,28 @@ const Index = (props) => {
         invokeInjectConfirmEvent(onComfirm)
     }, [invokeInjectConfirmEvent, onComfirm])
 
-    useEffect(() => {
-        // Object.assign(ruleForm, record || {});
+    // useEffect(() => {
+    //     // Object.assign(ruleForm, record || {});
 
 
-        // setRuleForm(ruleForm)
-        typeof initCallback === 'function' && initCallback({ formRef })
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-
-    const invokeRenderInfo = () => {
-        return (
-            <>
-                <ProForm
-                    formRef={formRef}
-                    submitter={false}
-                    initialValues={memoInitialValue}
-                    {...proFormProps}
-                >
-
-                    {
-                        invokeRenderForm(formConfig)
-                    }
-                </ProForm>
-            </>
-        )
-    }
+    //     // setRuleForm(ruleForm)
+    //     typeof initCallback === 'function' && initCallback({ formRef })
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [])
 
 
-    return invokeRenderInfo()
+    renderCallback?.({
+        formRef
+    })
+
+    return invokeRenderFormDom({
+        formRef,
+        memoInitialValue,
+        formConfig,
+        proFormProps,
+        formItemRender,
+        props
+    })
 
 };
 

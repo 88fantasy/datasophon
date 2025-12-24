@@ -31,9 +31,9 @@ export default {
   getConfigInfo: path + '/cluster/service/instance/config/info', // 查询服务配置 
   getConfigVersion: path + '/cluster/service/instance/config/getConfigVersion', // 查询服务版本 
   configVersionCompare:path + '/cluster/service/instance/configVersionCompare', // 服务版本比对 ,
-  getHostListByPage: path + '/api/cluster/host/list', // 分页查询集群主机  
-  generateServiceCommand: path + '/api/cluster/service/command/generateServiceCommand', // 生成服务操作指令 
-  generateServiceRoleCommand: path + '/api/cluster/service/command/generateServiceRoleCommand', // 生成服务角色操作指令 
+  getHostListByPage: path + '/cluster/host/list', // 分页查询集群主机  
+  generateServiceCommand: path + '/cluster/service/command/generateServiceCommand', // 生成服务操作指令 
+  generateServiceRoleCommand: path + '/cluster/service/command/generateServiceRoleCommand', // 生成服务角色操作指令 
   getAlertList: path + '/cluster/alert/history/getAlertList', // 查询服务告警列表 
   deleteExample: path + '/cluster/service/role/instance/delete', // 删除角色实例 
   restartObsoleteService:path + '/cluster/service/role/instance/restartObsoleteService', // 重启过时服务 ,
@@ -48,8 +48,8 @@ export default {
   // 告警模块
   getAlarmGroupList: path + '/alert/group/list', // 告警组列表  
   getAlarmMerticList: path + '/cluster/alert/quota/list', // 告警指标列表
-  getAlarmCate: path + '/api/frame/service/list', // 查询服务列表 告警组类别
-  getAlarmRole: path + '/api/frame/service/role/getServiceRoleByServiceName', // 查询服务列表 告警组类别
+  getAlarmCate: path + '/frame/service/list', // 查询服务列表 告警组类别
+  getAlarmRole: path + '/frame/service/role/getServiceRoleByServiceName', // 查询服务列表 告警组类别
   saveGroup: path + '/alert/group/save', // 查询服务列表 告警组类别
   saveMetric: path + '/cluster/alert/quota/save', // 告警指标保存
   updateMetric: path + '/cluster/alert/quota/update', // 查询服务列表 告警组类别
