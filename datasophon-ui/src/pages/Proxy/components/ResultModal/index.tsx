@@ -9,12 +9,6 @@ import { invokePackProtableRequest } from "../../../../utils/request";
 import CommonMonacoEditor from "../../../../components/Common/CommonMonacoEditor";
 
 
-
-const headerTitleMap = {
-    1: '安装并启动服务',
-
-}
-
 const Index = (props, ref) => {
 
     const {
@@ -22,7 +16,8 @@ const Index = (props, ref) => {
         formMapRef,
         record,
         clusterId,
-        className = ''
+        className = '',
+        y
     } = props
 
     const [currentPage, setCurrentPage] = useState(1)
@@ -323,7 +318,8 @@ const Index = (props, ref) => {
                             headerTitle: invokeGetHeaderTitle(),
                             // rowKey: currentPage === 1 ? 'commandId' : 'hostCommandId',
                             scroll: {
-                                x: '60vw'
+                                x: '60vw',
+                                y
                             },
                             request: invokePackProtableRequest({
                                 api: () => {

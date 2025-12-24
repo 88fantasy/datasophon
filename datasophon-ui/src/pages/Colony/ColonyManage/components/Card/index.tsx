@@ -144,7 +144,7 @@ const Index = ({
             },
             {
                 label: '配置',
-                disabled: clusterStateCode === 2,
+                // disabled: clusterStateCode === 2,
                 onClick: async () => {
                     const modelApi = await showConfigModal()
                     modelApi.default({
