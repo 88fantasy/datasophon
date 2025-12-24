@@ -42,10 +42,10 @@ public class MetaUtils {
 
     /**
      * 需要解密文件内容的文件
+     * cluster-sample.yml不需要解密输出文件
      */
     private static final List<String> ENCRYPT_FILES = Arrays.asList(
             "**/config/common.properties",
-            "**/config/datasophon-init/cluster-sample.yml",
             "**/config/application.conf",
             "**/config/datasophon.conf",
             "**/meta/**/service_ddl.json"
@@ -110,6 +110,18 @@ public class MetaUtils {
         byte[] decryptedBytes = SmUtil.sm4(Base64.decode(cipherKey)).decrypt(encryptedBytes);
         FileUtil.writeBytes(decryptedBytes, file);
         log.info("decode file: {}", file.getName());
+    }
+
+    /**
+     * 解密文件内容，并返回bytes
+     *
+     * @param file
+     * @param cipherKey
+     */
+    public static byte[] decodeContext(File file, String cipherKey) {
+        String base64Str = FileUtil.readString(file, StandardCharsets.UTF_8);
+        byte[] encryptedBytes = Base64.decode(base64Str);
+        return SmUtil.sm4(Base64.decode(cipherKey)).decrypt(encryptedBytes);
     }
 
     /**

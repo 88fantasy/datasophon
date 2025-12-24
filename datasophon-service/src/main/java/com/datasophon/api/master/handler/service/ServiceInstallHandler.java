@@ -85,14 +85,20 @@ public class ServiceInstallHandler extends ServiceHandler {
             String packageFilePath = Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + packageName;
             String md5FilePath = packageFilePath + ".md5";
             logger.info("package path: {}, md5FilePath: {}", packageFilePath, md5FilePath);
-            if (FileUtil.exist(packageFilePath) && FileUtil.exist(md5FilePath)) {
+            if(Constants.NEXUS_ENABLE) {
                 installServiceRoleCommand.setPackageName(packageName);
-                installServiceRoleCommand.setPackageMd5(FileUtil.readString(md5FilePath, Charset.defaultCharset()));
+                installServiceRoleCommand.setPackageMd5("");
             } else {
-                logger.error("file or md5 not exist!, package path: {}, md5FilePath: {}", packageFilePath, md5FilePath);
-                execResult.setExecOut("file or md5 not exist !");
-                return execResult;
+                if (FileUtil.exist(packageFilePath) && FileUtil.exist(md5FilePath)) {
+                    installServiceRoleCommand.setPackageName(packageName);
+                    installServiceRoleCommand.setPackageMd5(FileUtil.readString(md5FilePath, Charset.defaultCharset()));
+                } else {
+                    logger.error("file or md5 not exist!, package path: {}, md5FilePath: {}", packageFilePath, md5FilePath);
+                    execResult.setExecOut("file or md5 not exist !");
+                    return execResult;
+                }
             }
+
         } else {
             execResult.setExecOut("arch [" + arch + "] is undefined !");
             return execResult;
