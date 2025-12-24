@@ -11,6 +11,7 @@ const Index = (props) => {
     return <ResultModal
         clusterId={clusterId}
         className="!mb-[20px] h-[40vh]"
+        y="22vh"
     />
 }
 
