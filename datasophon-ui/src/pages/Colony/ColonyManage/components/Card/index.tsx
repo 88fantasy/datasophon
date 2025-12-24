@@ -197,7 +197,7 @@ const Index = ({
 
 
     return (
-        <Col span={8} className="mb-[20px]"
+        <Col span={6} className="mb-[20px]"
         >
             {
                 !add ? (
