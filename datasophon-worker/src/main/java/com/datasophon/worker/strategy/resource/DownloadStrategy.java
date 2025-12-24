@@ -48,7 +48,7 @@ public class DownloadStrategy extends ResourceStrategy {
                 .build());
         
         String url = "http://" + masterHost + ":" + masterPort
-                + "/ddh/service/install/downloadResource?" + params;
+                + "/ddh/api/service/install/downloadResource?" + params;
         HttpUtil.downloadFile(url, file, 300);
         if(file.exists()){
             ShellUtils.execShell(String.format("chmod 755 %s", basePath + Constants.SLASH + to));

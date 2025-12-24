@@ -7,6 +7,7 @@ import com.datasophon.api.service.extrepo.utils.PathUtils;
 import com.datasophon.api.service.storage.StorageService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.uni.NexusRegistry;
+import com.datasophon.common.model.uni.NexusUri;
 import com.datasophon.common.utils.NexusFileUtils;
 import org.springframework.stereotype.Service;
 
@@ -34,8 +35,8 @@ public class StorageServiceManagerImpl implements StorageService {
     if (!dir.isDirectory()) {
       throw new IllegalArgumentException(dir.getAbsolutePath() + " is not dir");
     }
-    NexusRegistry registry = Application.getNexus();
-    if (registry.isEnable()) {
+      NexusUri registry = Application.getNexusUri();
+    if (registry.isEnabled()) {
       Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<Path>() {
         @Override
         public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
@@ -79,8 +80,8 @@ public class StorageServiceManagerImpl implements StorageService {
 
     String relativePath = relativePathHandler.apply(file);
     relativePath = PathUtils.unixStyle(relativePath);
-    NexusRegistry registry = Application.getNexus();
-    if (registry.isEnable()) {
+    NexusUri registry = Application.getNexusUri();
+    if (registry.isEnabled()) {
       NexusFileUtils.uploadFileToRawRepo(relativePath, file);
     } else {
       File dir = StrUtil.isBlank(relativePath) || "/".equals(relativePath) ? new File(Constants.INIT_HOME) :

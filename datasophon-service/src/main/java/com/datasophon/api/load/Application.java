@@ -1,7 +1,9 @@
 package com.datasophon.api.load;
 
+import com.datasophon.common.Constants;
 import com.datasophon.common.model.Host;
 import com.datasophon.common.model.uni.NexusRegistry;
+import com.datasophon.common.model.uni.NexusUri;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -62,9 +64,15 @@ public class Application implements ApplicationContextAware {
     return getProperty("server.servlet.context-path", "/");
   }
 
+  /**
+   * @return
+   * @see #getNexusUri()
+   * @deprecated
+   */
+  @Deprecated
   public static NexusRegistry getNexus() {
     NexusRegistry nexusRegistry = new NexusRegistry();
-    nexusRegistry.setEnable(Boolean.parseBoolean(getProperty("nexus.enable", "true")));
+    nexusRegistry.setEnable(Constants.NEXUS_ENABLE);
     Host host = new Host();
     host.setIp(getProperty("nexus.ip"));
     NexusRegistry.Config config = new NexusRegistry.Config();
@@ -74,6 +82,16 @@ public class Application implements ApplicationContextAware {
     nexusRegistry.setHost(host);
     nexusRegistry.setConfig(config);
     return nexusRegistry;
+  }
+
+
+  public static NexusUri getNexusUri() {
+    NexusUri uri = new NexusUri();
+    uri.setEnabled(Constants.NEXUS_ENABLE);
+    uri.setUri(String.format("http://%s:%s", Constants.NEXUS_IP, Constants.NEXUS_PORT));
+    uri.setUser(Constants.NEXUS_USERNAME);
+    uri.setPassword(Constants.NEXUS_PASSWORD);
+    return uri;
   }
 
 

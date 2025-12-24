@@ -63,6 +63,7 @@ import com.datasophon.common.model.ServiceNodeEdge;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.model.uni.NexusRegistry;
+import com.datasophon.common.model.uni.NexusUri;
 import com.datasophon.common.utils.CollectionUtils;
 import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.IOUtils;
@@ -413,11 +414,11 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     InputStream inputStream = null;
     OutputStream out = null;
 
-    NexusRegistry registry = Application.getNexus();
-    String url = String.format("http://%s:%s/repository/raw/%s", registry.getHost().getIp(), registry.getConfig().getWebPort(), packageName);
-    if (registry.isEnable()) {
+    NexusUri nexusUri = Application.getNexusUri();
+    String url = String.format("%s/repository/raw/%s",nexusUri.getUri(), packageName);
+    if (nexusUri.isEnabled()) {
       // 制品库
-      inputStream = NexusFileUtils.downStream(url, registry.getConfig().getUser(), registry.getConfig().getPassword());
+      inputStream = NexusFileUtils.downStream(url,nexusUri.getUser(), nexusUri.getPassword());
     } else {
       // 本地
       File file = new File(Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + packageName);
@@ -480,11 +481,11 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     InputStream inputStream = null;
     OutputStream out = null;
     try {
-      NexusRegistry registry = Application.getNexus();
-      if (registry.isEnable()) {
-        String url = String.format("http://%s:%s/repository/raw/template/%s", registry.getHost().getIp(), registry.getConfig().getWebPort(), templateName);
+        NexusUri registry = Application.getNexusUri();
+      if (registry.isEnabled()) {
+        String url = String.format("%s/repository/raw/template/%s", registry.getUri(), templateName);
         logger.info("download template from nexus, url is {}", url);
-        inputStream = NexusFileUtils.downStream(url, registry.getConfig().getUser(), registry.getConfig().getPassword());
+        inputStream = NexusFileUtils.downStream(url, registry.getUser(), registry.getPassword());
       } else {
         Path path = PathUtils.join(Paths.get(Constants.INIT_HOME), "template", templateName);
         logger.info("download template from local storage, path is: {}", path);

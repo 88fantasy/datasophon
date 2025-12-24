@@ -49,18 +49,6 @@ public class NexusRegistry {
     }
 
 
-
-    @Data
-    public static class NexusUri {
-
-        private String user;
-
-        private String password;
-
-        private String uri;
-
-    }
-
     public NexusUri getNexusUri() {
         NexusUri uri = new NexusUri();
         uri.setUri(String.format("http://%s:%s", getHost().getIp(), getConfig().getWebPort()));
