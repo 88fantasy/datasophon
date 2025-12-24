@@ -60,6 +60,7 @@ public class BasicValidRequestInterceptor implements HandlerInterceptor {
         || requestURI.equals("/")
         || requestURI.equals("/index.html")
         || requestURI.equals("/favicon.ico")
+        || requestURI.equals("/grafana")
         || requestURI.startsWith(resourcePath)
         || requestURI.startsWith("/webjars")
         || requestURI.startsWith(staticPath);
