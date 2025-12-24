@@ -30,7 +30,7 @@ import org.springframework.util.CollectionUtils;
 
 @Slf4j
 public class ConfigPropertiesExtend implements EnvironmentPostProcessor {
-    
+
     private static final String DEFAULT_APPLICATION_CONFIG = "conf/profiles/application-config.yml";
     
     @Override
