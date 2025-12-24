@@ -9,7 +9,6 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.enums.RepositoriesType;
-import com.datasophon.common.model.uni.NexusRegistry;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -196,7 +195,7 @@ public class NexusFileUtils {
         }
 
 
-        String url = String.format("%s/service/rest/internal/ui/upload/%s", String.format("%s:%s", Constants.NEXUS_IP, Constants.NEXUS_PORT), RepositoriesType.RAW.getDesc());
+        String url = String.format("http://%s:%s/service/rest/internal/ui/upload/%s", Constants.NEXUS_IP, Constants.NEXUS_PORT, RepositoriesType.RAW.getDesc());
 
         // 配置超时（根据文件大小调整）
         RequestConfig config = RequestConfig.custom()
