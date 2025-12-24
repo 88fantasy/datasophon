@@ -1,6 +1,7 @@
 import { message, Modal, type ModalFuncProps } from "antd";
 import enquireJs from "enquire.js";
 import { isNull, isUndefined } from "lodash-es";
+import { codeMessage } from "../api/interceptors";
 
 export function isDef(v) {
   return v !== undefined && v !== null;
@@ -73,6 +74,10 @@ export const showMsgAfferRequest = (res) => {
   if (res.code === 200) {
     message.success(res.message || res.msg || "执行成功");
   } else {
+    if (res.msg && res.msg.indexOf(codeMessage[res.code]) > -1) {
+      return;
+    }
+
     message.error(res.message || res.msg || "执行失败");
   }
 };

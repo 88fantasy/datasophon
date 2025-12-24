@@ -20,6 +20,7 @@
 
 import axios from "axios";
 import "./interceptors";
+import { message } from "antd";
 
 // post数据处理
 export const handleParams = function (data) {
@@ -36,13 +37,9 @@ export const axiosGet = function (url, params = {}) {
       method: "get",
       url: url,
       params: params,
-    })
-      .then((res) => {
-        resolve(res.data);
-      })
-      .catch((error) => {
-        reject(error);
-      });
+    }).then((res) => {
+      resolve(res.data);
+    });
   });
 };
 
@@ -53,13 +50,9 @@ export const axiosPost = function (url, params = {}) {
       url: url,
       data: handleParams(params),
       ContentType: "application/json;charset=UTF-8",
-    })
-      .then((res) => {
-        resolve(res.data);
-      })
-      .catch((error) => {
-        reject(error);
-      });
+    }).then((res) => {
+      resolve(res.data);
+    });
   });
 };
 export const axiosJsonPost = function (url, params = {}) {
@@ -68,13 +61,9 @@ export const axiosJsonPost = function (url, params = {}) {
       method: "post",
       url: url,
       data: params,
-    })
-      .then((res) => {
-        resolve(res.data);
-      })
-      .catch((error) => {
-        reject(error);
-      });
+    }).then((res) => {
+      resolve(res.data);
+    });
   });
 };
 
@@ -86,12 +75,8 @@ export const axiosPostUpload = function (url, params = {}) {
       url: url,
       data: params,
       timeout: 1000 * 60 * 60 * 24,
-    })
-      .then((res) => {
-        resolve(res.data);
-      })
-      .catch((error) => {
-        reject(error);
-      });
+    }).then((res) => {
+      resolve(res.data);
+    });
   });
 };
