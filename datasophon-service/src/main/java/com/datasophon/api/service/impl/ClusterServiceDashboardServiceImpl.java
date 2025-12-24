@@ -61,7 +61,7 @@ public class ClusterServiceDashboardServiceImpl
     @Override
     public String getGrafanaHost(Integer clusterId) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
-        return globalVariables.get("${GRAFANA.${grafanaHost}}") + ":3000";
+        return globalVariables.get("${Grafana.__hostIp__}") + ":3000";
     }
     
     @Override
