@@ -154,7 +154,7 @@ public class MasterServiceActor extends UntypedActor {
 
 
   private boolean isEnableRangerPlugin(Integer clusterId, String serviceName) {
-    return "true".equals(GlobalVariables.getValue(clusterId, "${enable" + serviceName + "Plugin}"));
+    return "true".equals(GlobalVariables.getValue(clusterId, "enable" + serviceName + "Plugin"));
   }
 
 

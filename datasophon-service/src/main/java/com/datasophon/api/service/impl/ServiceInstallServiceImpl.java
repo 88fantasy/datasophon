@@ -315,10 +315,10 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
       if (!hosts.isEmpty()) {
         String serviceRole = serviceRoleHostMapping.getServiceRole();
         ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
-            String.format("${%s.%s}", serviceRole, GlobalVariables.HOST),
+            String.format("%s.%s", serviceRole, GlobalVariables.HOST),
             String.join(",", hosts));
         ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
-            String.format("${%s.%s}", serviceRole, GlobalVariables.HOST_IP),
+            String.format("%s.%s", serviceRole, GlobalVariables.HOST_IP),
             hosts.stream().map(HostUtils::getIp).collect(Collectors.joining(",")));
       }
 

@@ -141,10 +141,10 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
         ConcurrentHashMap<String, String> globalVariables = GlobalVariables.genDefaultGlobalVariables();
         List<FrameServiceEntity> frameServiceList = frameServiceService.getAllFrameServiceByFrameCode(clusterInfo.getClusterFrame());
         for (FrameServiceEntity frameServiceEntity : frameServiceList) {
-            globalVariables.put("${" + frameServiceEntity.getServiceName() + "_HOME}",
+            globalVariables.put(GlobalVariables.surroundKey(frameServiceEntity.getServiceName() + "_HOME"),
                     Constants.INSTALL_PATH + Constants.SLASH + frameServiceEntity.getDecompressPackageName());
         }
-        globalVariables.put("${HADOOP_HOME}", Constants.INSTALL_PATH + Constants.SLASH
+        globalVariables.put(GlobalVariables.surroundKey("HADOOP_HOME"), Constants.INSTALL_PATH + Constants.SLASH
                 + PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "HDFS"));
         
         GlobalVariables.put(clusterInfo.getId(), globalVariables);

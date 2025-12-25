@@ -11,6 +11,9 @@ import java.util.regex.Pattern;
 
 import static com.datasophon.api.load.Application.getProperty;
 
+/**
+ * fixme 由于历史代码的原因(需要修改的地方太多)，该类无法做到线程安全
+ */
 public class GlobalVariables {
 
   public static final String HOST = "__host__";
@@ -20,10 +23,16 @@ public class GlobalVariables {
   public static final String PORT = "__port__";
 
   // cluster variable
+  //    notes: 必须保证clusterId对应的map，始终都同一个对象
+//    @see ProcessUtils#generateClusterVariable的说明
   private static final Map<Integer, Map<String, String>> clusterVariablesMap = new ConcurrentHashMap<>();
 
   public static void put(Integer clusterId, Map<String, String> value) {
-    clusterVariablesMap.put(clusterId, new ConcurrentHashMap<>(value));
+    Map<String, String> vars = clusterVariablesMap.computeIfAbsent(clusterId, key -> new ConcurrentHashMap<>());
+    synchronized (vars) {
+      vars.clear();
+      vars.putAll(value);
+    }
   }
 
   public static Map<String, String> getVariables(Integer clusterId) {
@@ -31,25 +40,19 @@ public class GlobalVariables {
   }
 
   public static boolean containsValue(Integer clusterId, String key) {
-    return clusterVariablesMap.containsKey(clusterId) && clusterVariablesMap.get(clusterId).containsKey(surroundVariable(key));
+    return clusterVariablesMap.containsKey(clusterId) && clusterVariablesMap.get(clusterId).containsKey(surroundKey(key));
   }
 
   public static void putValue(Integer clusterId, String key, String value) {
-    Map<String, String> valueMap;
-    if (clusterVariablesMap.containsKey(clusterId)) {
-      valueMap = clusterVariablesMap.get(clusterId);
-    } else {
-      valueMap = new ConcurrentHashMap<>();
-    }
-    valueMap.put(surroundVariable(key), value);
-    clusterVariablesMap.put(clusterId, valueMap);
+    Map<String, String> valueMap = clusterVariablesMap.computeIfAbsent(clusterId, k-> new ConcurrentHashMap<>());
+    valueMap.put(surroundKey(key), value);
   }
 
   public static String getValue(Integer clusterId, String key) {
     if (!clusterVariablesMap.containsKey(clusterId)) {
       return null;
     }
-    return clusterVariablesMap.get(clusterId).get(surroundVariable(key));
+    return clusterVariablesMap.get(clusterId).get(surroundKey(key));
   }
 
   public static ConcurrentHashMap<String, String> genDefaultGlobalVariables() {
@@ -73,7 +76,7 @@ public class GlobalVariables {
     return globalVariables;
   }
 
-  public static String surroundVariable(String variable) {
+  public static String surroundKey(String variable) {
     return "${" + variable + "}";
   }
 

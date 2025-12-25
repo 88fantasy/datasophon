@@ -202,7 +202,7 @@ public class LoadServiceMeta implements ApplicationRunner {
         if (HDFS.equals(serviceName)) {
           serviceName = HADOOP;
         }
-        GlobalVariables.putValue(clusterId, "${" + serviceName + "_HOME}",
+        GlobalVariables.putValue(clusterId, serviceName + "_HOME",
             Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
       }
     }
@@ -362,7 +362,7 @@ public class LoadServiceMeta implements ApplicationRunner {
         List<ClusterVariable> variables = variableService.list(Wrappers.<ClusterVariable>lambdaQuery()
             .eq(ClusterVariable::getClusterId, cluster.getId()));
         for (ClusterVariable variable : variables) {
-          globalVariables.put("${" + variable.getServiceName() + "." + variable.getVariableName() + "}", variable.getVariableValue());
+          globalVariables.put(GlobalVariables.surroundKey( variable.getServiceName() + "." + variable.getVariableName()), variable.getVariableValue());
         }
         GlobalVariables.put(cluster.getId(), globalVariables);
         ProcessUtils.createServiceActor(cluster);
