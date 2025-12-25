@@ -468,7 +468,7 @@ public class ProcessUtils {
 //        如果globalVariables是通过GlobalVariables.getVariables获取，则需要加上${}
         Map<String, String> map = GlobalVariables.getVariables(clusterId);
         if (map == globalVariables) {
-            globalVariables.put(GlobalVariables.surroundKey(variableName), value);
+            globalVariables.put(GlobalVariables.surroundKey(serviceName + "." + variableName), value);
         } else {
             globalVariables.put(variableName, value);
         }
@@ -492,7 +492,7 @@ public class ProcessUtils {
             variableService.save(newClusterVariable);
         }
         
-        GlobalVariables.putValue(clusterId, variableName, value);
+        GlobalVariables.putValue(clusterId, serviceName + "." + variableName, value);
     }
 
     public static void hdfsEcMethond(Integer serviceInstanceId, ClusterServiceRoleInstanceService roleInstanceService,

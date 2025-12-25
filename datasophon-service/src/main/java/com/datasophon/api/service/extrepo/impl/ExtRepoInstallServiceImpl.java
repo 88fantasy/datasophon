@@ -151,20 +151,24 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
         DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
-        List<String> installing = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
         model.getApp().forEach(app -> {
             FrameServiceEntity entity = ctx.getSrvEntity(app);
+            if (entity == null) {
+                errors.add(String.format("服务%s %s不存在", app.getName(), app.getVersion()));
+                return;
+            }
             ClusterServiceInstanceEntity serviceInstance = clusterServiceInstanceService.getServiceInstanceByClusterIdAndServiceName(clusterInfo.getId(), entity.getServiceName());
             boolean exist = serviceInstance != null && commandService.lambdaQuery()
                     .eq(ClusterServiceCommandEntity::getServiceInstanceId, serviceInstance.getId())
                     .in(ClusterServiceCommandEntity::getCommandState, Arrays.asList(CommandState.RUNNING, CommandState.WAIT))
                     .exists();
             if (exist) {
-                installing.add(String.format("服务%s %s正在执行命令，请等待命令执行完成或者取消命令", app.getName(), app.getVersion()));
+                errors.add(String.format("服务%s %s正在执行命令，请等待命令执行完成或者取消命令", app.getName(), app.getVersion()));
             }
         });
-        if (!installing.isEmpty()) {
-            throw new BusinessException(installing);
+        if (!errors.isEmpty()) {
+            throw new BusinessException(errors);
         }
 
 //        保存serviceRole和host的映射
