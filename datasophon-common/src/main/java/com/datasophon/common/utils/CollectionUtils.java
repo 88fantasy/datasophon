@@ -47,26 +47,7 @@ public class CollectionUtils {
         throw new IllegalStateException("CollectionUtils class");
     }
     
-    /**
-     * Returns a new {@link Collection} containing <i>a</i> minus a subset of
-     * <i>b</i>.  Only the elements of <i>b</i> that satisfy the predicate
-     * condition, <i>p</i> are subtracted from <i>a</i>.
-     *
-     * <p>The cardinality of each element <i>e</i> in the returned {@link Collection}
-     * that satisfies the predicate condition will be the cardinality of <i>e</i> in <i>a</i>
-     * minus the cardinality of <i>e</i> in <i>b</i>, or zero, whichever is greater.</p>
-     * <p>The cardinality of each element <i>e</i> in the returned {@link Collection} that does <b>not</b>
-     * satisfy the predicate condition will be equal to the cardinality of <i>e</i> in <i>a</i>.</p>
-     *
-     * @param a the collection to subtract from, must not be null
-     * @param b the collection to subtract, must not be null
-     * @param <T> T
-     * @return a new collection with the results
-     * @see Collection#removeAll
-     */
-    public static <T> Collection<T> subtract(Set<T> a, Set<T> b) {
-        return CollectionUtils.subtract(a, b);
-    }
+
     
     public static boolean isNotEmpty(Collection coll) {
         return !isEmpty(coll);

@@ -17,7 +17,7 @@
 
 package com.datasophon.common.model;
 
-import com.datasophon.common.utils.CollectionUtils;
+import cn.hutool.core.collection.CollectionUtil;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -247,7 +247,7 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
         lock.readLock().lock();
         
         try {
-            return CollectionUtils.subtract(nodesMap.keySet(), reverseEdgesMap.keySet());
+            return CollectionUtil.subtract(nodesMap.keySet(), reverseEdgesMap.keySet());
         } finally {
             lock.readLock().unlock();
         }
@@ -260,11 +260,9 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
      * @return the end node of DAG
      */
     public Collection<Node> getEndNode() {
-        
-        lock.readLock().lock();
-        
         try {
-            return CollectionUtils.subtract(nodesMap.keySet(), edgesMap.keySet());
+            lock.readLock().lock();
+            return CollectionUtil.subtract(nodesMap.keySet(), edgesMap.keySet());
         } finally {
             lock.readLock().unlock();
         }
@@ -278,9 +276,8 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
      * @return all previous nodes of the node
      */
     public Set<Node> getPreviousNodes(Node node) {
-        lock.readLock().lock();
-        
         try {
+            lock.readLock().lock();
             return getNeighborNodes(node, reverseEdgesMap);
         } finally {
             lock.readLock().unlock();
@@ -294,9 +291,8 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
      * @return all subsequent nodes of the node
      */
     public Set<Node> getSubsequentNodes(Node node) {
-        lock.readLock().lock();
-        
         try {
+            lock.readLock().lock();
             return getNeighborNodes(node, edgesMap);
         } finally {
             lock.readLock().unlock();
@@ -310,9 +306,8 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
      * @return the degree of entry of the node
      */
     public int getIndegree(Node node) {
-        lock.readLock().lock();
-        
         try {
+            lock.readLock().lock();
             return getPreviousNodes(node).size();
         } finally {
             lock.readLock().unlock();
@@ -325,8 +320,8 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
      * @return true if has cycle, else return false.
      */
     public boolean hasCycle() {
-        lock.readLock().lock();
         try {
+            lock.readLock().lock();
             return !topologicalSortImpl().getKey();
         } finally {
             lock.readLock().unlock();
@@ -338,9 +333,8 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
      * @return topologically sorted results, returns false if the DAG result is a ring result
      */
     public List<Node> topologicalSort() {
-        lock.readLock().lock();
-        
         try {
+            lock.readLock().lock();
             Map.Entry<Boolean, List<Node>> entry = topologicalSortImpl();
             
             if (entry.getKey()) {

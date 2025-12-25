@@ -142,10 +142,30 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                 .flatMap(role -> role.getDeployHosts().stream())
                 .collect(Collectors.toSet());
         List<ClusterHostDO> hostList = clusterHostService.getHostListByClusterId(dto.getClusterId());
-        Map<String, ClusterHostDO> hostMap = hostList.stream().collect(Collectors.toMap(ClusterHostDO::getHostname, a->a, (a,b)->a));
-        deployHosts = deployHosts.stream().filter(hostMap::containsKey).collect(Collectors.toSet());
+        Map<String, ClusterHostDO> hostMap = hostList.stream().collect(Collectors.toMap(ClusterHostDO::getHostname, a -> a, (a, b) -> a));
+        deployHosts = deployHosts.stream().filter(host -> !hostMap.containsKey(host)).collect(Collectors.toSet());
         if (!deployHosts.isEmpty()) {
             throw new BusinessException(String.format("以下主机%s不存在或者无法通讯", StrUtil.join(",", deployHosts)));
+        }
+
+        ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
+        List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
+        DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
+        List<String> installing = new ArrayList<>();
+        model.getApp().forEach(app -> {
+            FrameServiceEntity entity = ctx.getSrvEntity(app);
+            ClusterServiceInstanceEntity serviceInstance = clusterServiceInstanceService.getServiceInstanceByClusterIdAndServiceName(clusterInfo.getId(), entity.getServiceName());
+            boolean exist = commandService.lambdaQuery()
+                    .eq(ClusterServiceCommandEntity::getServiceInstanceId, serviceInstance.getId())
+                    .in(ClusterServiceCommandEntity::getCommandState, Arrays.asList(CommandState.RUNNING, CommandState.WAIT))
+                    .in(ClusterServiceCommandEntity::getCommandType, Arrays.asList(CommandType.INSTALL_SERVICE.getValue(), CommandType.UPGRADE_SERVICE.getValue()))
+                    .exists();
+            if (exist) {
+                installing.add(String.format("服务%s %s正在安装，不能重复执行", app.getName(), app.getVersion()));
+            }
+        });
+        if (!installing.isEmpty()) {
+            throw new BusinessException(installing);
         }
 
 //        保存serviceRole和host的映射
@@ -179,26 +199,6 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         log.info("保存部署配置项成功");
 
 
-        ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
-        List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
-        DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
-        List<String> installing = new ArrayList<>();
-        model.getApp().forEach(app -> {
-            FrameServiceEntity entity = ctx.getSrvEntity(app);
-            ClusterServiceInstanceEntity serviceInstance = clusterServiceInstanceService.getServiceInstanceByClusterIdAndServiceName(clusterInfo.getId(), entity.getServiceName());
-            boolean exist = commandService.lambdaQuery()
-                    .eq(ClusterServiceCommandEntity::getServiceInstanceId, serviceInstance.getId())
-                    .in(ClusterServiceCommandEntity::getCommandState, Arrays.asList(CommandState.RUNNING, CommandState.WAIT))
-                    .in(ClusterServiceCommandEntity::getCommandType, Arrays.asList(CommandType.INSTALL_SERVICE.getValue(), CommandType.UPGRADE_SERVICE.getValue()))
-                    .exists();
-            if (exist) {
-                installing.add(String.format("服务%s %s正在安装，不能重复执行", app.getName(), app.getVersion()));
-            }
-        });
-        if (!installing.isEmpty()) {
-            throw new BusinessException(installing);
-        }
-
         Map<String, FrameServiceEntity> srvDefMap = CollectionUtil.toMap(serviceList, new HashMap<>(), srv -> srv.getServiceName() + ":" + srv.getServiceVersion());
         List<String> commandIds = new ArrayList<>(model.getApp().size());
         model.getApp().forEach(srv -> {
@@ -213,7 +213,17 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                CompletableFuture.runAsync(() -> doInstall(clusterInfo.getId(), commandIds, dag));
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        doInstall(clusterInfo.getId(), commandIds, dag);
+                    } catch (Exception e) {
+                        commandService.lambdaUpdate()
+                                .in(ClusterServiceCommandEntity::getCommandId, commandIds)
+                                .set(ClusterServiceCommandEntity::getCommandState, CommandState.FAILED)
+                                .update();
+                        log.error("execute command: {} fail, {}", StrUtil.join(",", commandIds), e.getMessage(), e);
+                    }
+                });
             }
         });
         return commandIds;
@@ -259,7 +269,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             for (String hostname : hosts) {
                 ClusterServiceRoleInstanceEntity db = roleInstanceService.getOneServiceRole(serviceRole.getServiceRoleName(), hostname, cluster.getId());
 
-                CommandType roleCmdType = db == null ? CommandType.UPGRADE_SERVICE : CommandType.INSTALL_SERVICE;
+                CommandType roleCmdType = db == null ? CommandType.INSTALL_SERVICE : CommandType.UPGRADE_SERVICE;
                 ClusterServiceCommandHostCommandEntity hostCommand = ProcessUtils.generateCommandHostCommandEntity(
                         roleCmdType, cmd.getCommandId(),
                         serviceRole.getServiceRoleName(), serviceRole.getServiceRoleType(),
@@ -302,9 +312,10 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             ServiceNode serviceNode = new ServiceNode();
             ClusterServiceCommandEntity cmd = context.getCmd(srv);
             serviceNode.setCommandId(cmd.getCommandId());
+            serviceNode.setCommandType(CommandType.ofCode(cmd.getCommandType()));
 
             FrameServiceEntity serviceEntity = frameService.lambdaQuery()
-                    .eq(FrameServiceEntity::getFrameId, clusterId)
+                    .eq(FrameServiceEntity::getFrameCode, clusterInfo.getClusterFrame())
                     .eq(FrameServiceEntity::getServiceName, info.getName())
                     .eq(FrameServiceEntity::getServiceVersion, info.getVersion())
                     .one();

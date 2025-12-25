@@ -82,7 +82,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${apiHost}:${apiPort}"
+      "defaultValue": "${ROOT.VosManager.__hostIp__}:${ROOT.VosManager.__port__}"
     }
   ]
 }
