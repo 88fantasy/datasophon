@@ -22,6 +22,7 @@ package com.datasophon.api.utils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.SSHAuthType;
+import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.JschUtils;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
@@ -88,7 +89,12 @@ public class MinaUtils {
     public static String execCmdWithResult(Session session, String command) {
         return JschUtils.execForStr(session, command).getExecOut();
     }
-    
+
+    public static ExecResult execCmd(Session session, String command) {
+        return JschUtils.execForStr(session, command);
+    }
+
+
     /**
      * 上传文件,相同路径ui覆盖
      *

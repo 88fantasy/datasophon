@@ -15,13 +15,14 @@ import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
 import com.datasophon.api.service.extrepo.ctx.MetaParseOption;
 import com.datasophon.api.service.extrepo.ctx.SrvDependenciesContext;
 import com.datasophon.api.service.extrepo.utils.MetaUtils;
-import com.datasophon.api.service.extrepo.utils.PathUtils;
-import com.datasophon.api.service.storage.StorageService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.Constants;
+import com.datasophon.common.storage.PackageStorage;
+import com.datasophon.common.storage.PackageStorageUtils;
+import com.datasophon.common.utils.PathUtils;
 import com.datasophon.common.utils.TarUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.FrameInfoEntity;
@@ -82,8 +83,6 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     private FrameServiceService frameServiceService;
 
 
-    @Autowired
-    private StorageService storageService;
 
     @Override
     public ValidateResultVO validMetaFile(InstallComponentDTO dto) {
@@ -320,26 +319,21 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             if (StrUtil.isNotBlank(vo.getMeta())) {
                 FileUtil.copy(PathUtils.join(metaUnzipPath, vo.getMeta()).toFile(), metaDir.getParentFile(), true);
             }
-//            vo.getFrameworks().stream().flatMap(fw -> fw.getServices().stream()).forEach(srv -> {
-//                String targetSrvDir = PathUtils.join(metaDir.toPath(), srv.getFrameCode(), srv.getName()).toString();
-//                FileUtil.copy(new File(metaUnzipPath, srv.getDdl()), new File(targetSrvDir, MetaUtils.SERVICE_DDL), true);
-//                if (StringUtils.isNotBlank(srv.getScript())) {
-//                    FileUtil.copy(new File(metaUnzipPath, srv.getScript()), new File(targetSrvDir), true);
-//                }
-//            });
         }
+
+        PackageStorage packageStorage = PackageStorageUtils.getStorage();
         if (StrUtil.isNotBlank(vo.getTemplate())) {
             File dir = PathUtils.join(metaUnzipPath, vo.getTemplate()).toFile();
             log.info("开始上传模板：{}", dir.getAbsolutePath());
-            storageService.moveToStorage(dir,true);
+            packageStorage.moveToStorage(dir,true);
         }
         progress.setStep(1);
 
         File pkgDir = MetaUtils.getPkgPath(pkgPath).toFile();
         for (String pkg : packageNames) {
             log.info("上传安装软件：{}/{}", pkgDir, pkg);
-            storageService.moveToStorage(new File(pkgDir, pkg), file-> "packages");
-            storageService.moveToStorage(new File(pkgDir, MetaUtils.getMd5FileName(pkg)), file-> "packages");
+            packageStorage.moveToStorage(new File(pkgDir, pkg), file-> "packages");
+            packageStorage.moveToStorage(new File(pkgDir, MetaUtils.getMd5FileName(pkg)), file-> "packages");
             progress.setStep(progress.getStep() + 1);
         }
         progress.setStep(progress.getTotal());

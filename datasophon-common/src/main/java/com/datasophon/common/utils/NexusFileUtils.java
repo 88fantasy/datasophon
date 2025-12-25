@@ -59,6 +59,11 @@ public class NexusFileUtils {
     }
 
 
+    public static String getNexusRawObjectUrl(String objectName) {
+      objectName = objectName.startsWith("/") ? objectName : "/" + objectName;
+      return String.format("http://%s:%s/repository/%s%s", Constants.NEXUS_IP, Constants.NEXUS_PORT, RepositoriesType.RAW.getDesc(), objectName);
+    }
+
     /**
      * 批量上传仓库文件:
      *
