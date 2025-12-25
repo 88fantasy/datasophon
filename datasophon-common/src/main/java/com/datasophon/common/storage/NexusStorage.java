@@ -122,7 +122,7 @@ public class NexusStorage implements PackageStorage {
 
     private void ensureNexusEnable() {
         NexusUri registry = getNexusUri();
-        if (registry.isEnabled()) {
+        if (!registry.isEnabled()) {
             throw new IllegalStateException("datasophon require an nexus available, but nexus is disabled");
         }
     }
