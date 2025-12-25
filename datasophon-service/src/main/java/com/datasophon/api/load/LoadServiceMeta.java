@@ -202,7 +202,7 @@ public class LoadServiceMeta implements ApplicationRunner {
         if (HDFS.equals(serviceName)) {
           serviceName = HADOOP;
         }
-        GlobalVariables.putValue(clusterId, serviceName + "_HOME",
+        GlobalVariables.putValue(clusterId, "${" + serviceName + "_HOME}",
             Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
       }
     }
