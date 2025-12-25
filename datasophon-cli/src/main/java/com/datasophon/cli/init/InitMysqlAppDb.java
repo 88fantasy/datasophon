@@ -48,7 +48,7 @@ public class InitMysqlAppDb extends InitBase {
     }
     
     public void initCommonAccount(Executor executor, String rootPasswd, String account, String passwd, String dbName) {
-        executor.execShell(String.format("mysql -uroot -p'%s' -e \"CREATE DATABASE IF NOT EXISTS %s DEFAULT CHARACTER SET utf8;\"", rootPasswd, dbName));
+        executor.execShell(String.format("mysql -uroot -p'%s' -e \"CREATE DATABASE IF NOT EXISTS %s DEFAULT CHARACTER SET utf8mb4  COLLATE utf8mb4_bin;\"", rootPasswd, dbName));
         executor.execShell(String.format("mysql -uroot -p'%s' -e \"CREATE USER '%s'@'%%' IDENTIFIED BY '%s';\"", rootPasswd, account, passwd));
         executor.execShell(String.format("mysql -uroot -p'%s' -e \"ALTER USER '%s'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;\"", rootPasswd, account, passwd));
         executor.execShell(String.format("mysql -uroot -p'%s' -e \"ALTER USER '%s'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';\"", rootPasswd, account, passwd));

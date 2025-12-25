@@ -197,7 +197,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         List<String> myconf = new ArrayList<>();
         myconf.add("[mysqld]");
         myconf.add("character_set_server=utf8mb4");
-        myconf.add("collation_server=utf8mb4_general_ci");
+        myconf.add("collation_server=COLLATE utf8mb4_bin");
         myconf.add("default-storage-engine=INNODB");
         myconf.add("explicit_defaults_for_timestamp=true");
         myconf.add("max_connections=3600");

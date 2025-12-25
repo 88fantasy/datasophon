@@ -155,13 +155,12 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         model.getApp().forEach(app -> {
             FrameServiceEntity entity = ctx.getSrvEntity(app);
             ClusterServiceInstanceEntity serviceInstance = clusterServiceInstanceService.getServiceInstanceByClusterIdAndServiceName(clusterInfo.getId(), entity.getServiceName());
-            boolean exist = commandService.lambdaQuery()
+            boolean exist = serviceInstance != null && commandService.lambdaQuery()
                     .eq(ClusterServiceCommandEntity::getServiceInstanceId, serviceInstance.getId())
                     .in(ClusterServiceCommandEntity::getCommandState, Arrays.asList(CommandState.RUNNING, CommandState.WAIT))
-                    .in(ClusterServiceCommandEntity::getCommandType, Arrays.asList(CommandType.INSTALL_SERVICE.getValue(), CommandType.UPGRADE_SERVICE.getValue()))
                     .exists();
             if (exist) {
-                installing.add(String.format("服务%s %s正在安装，不能重复执行", app.getName(), app.getVersion()));
+                installing.add(String.format("服务%s %s正在执行命令，请等待命令执行完成或者取消命令", app.getName(), app.getVersion()));
             }
         });
         if (!installing.isEmpty()) {
