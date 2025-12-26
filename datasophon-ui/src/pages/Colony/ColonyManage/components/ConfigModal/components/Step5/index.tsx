@@ -21,10 +21,8 @@ const Index = ({
     record,
 
 }, ref) => {
-    // const [hostList, setHostList] = useState([])
     const hosListRef = useRef([])
     const [templateData, setTemplateData] = useState([])
-    const [hadInit, setHadInit] = useState()
     const { clusterId } = useConfigContext()
 
     const steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
