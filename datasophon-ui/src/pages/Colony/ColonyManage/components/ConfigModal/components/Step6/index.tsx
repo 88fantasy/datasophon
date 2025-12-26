@@ -47,7 +47,7 @@ const Index = ({
     console.log('formMapRef', formMapRef)
 
     if (!steps4Data) {
-        steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
+        steps4Data = formMapRef.current[index - 2]?.current?.getFieldsValue() || {}
     }
 
 

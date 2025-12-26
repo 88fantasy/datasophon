@@ -31,10 +31,10 @@ const Index = ({
         );
 
 
-        formMapRef.current[3]?.current.setFieldsValue({
+        formMapRef.current[index]?.current.setFieldsValue({
             services: arr,
         })
-    }, [formMapRef])
+    }, [formMapRef, index])
 
 
 
@@ -68,7 +68,7 @@ const Index = ({
 
 
     const invokeValid = useCallback(async () => {
-        const fieldValue = formMapRef.current[3]?.current.getFieldsValue()
+        const fieldValue = formMapRef.current[index]?.current.getFieldsValue()
         const { services } = fieldValue
 
 
@@ -97,7 +97,7 @@ const Index = ({
             msg: res.msg
         }
 
-    }, [clusterId, formMapRef])
+    }, [clusterId, formMapRef, index])
 
     const columns: ProColumns[] = useMemo(() => {
         return [

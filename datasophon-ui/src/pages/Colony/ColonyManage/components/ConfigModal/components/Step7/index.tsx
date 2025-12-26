@@ -40,13 +40,13 @@ const Index = ({
 
 
     if (!steps4Data) {
-        steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
+        steps4Data = formMapRef.current[index - 3]?.current?.getFieldsValue() || {}
     }
 
 
     // const steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
 
-    const currentFormRef = formMapRef.current[current]
+    const currentFormRef = formMapRef.current[index]
 
     const templateMapRef = useRef({})
     const [hadInit, setHadInit] = useState(false)
@@ -145,7 +145,8 @@ const Index = ({
                     item.required &&
                     // isEmpty(serviceValue?.[item.name])
                     isEmpty(item.value) &&
-                    isEmpty(item.defaultValue)
+                    isEmpty(item.defaultValue) &&
+                    isEmpty(serviceValue[item.name])
 
                 ) {
                     res = `${tab.key}.${item.label} 不能为空`

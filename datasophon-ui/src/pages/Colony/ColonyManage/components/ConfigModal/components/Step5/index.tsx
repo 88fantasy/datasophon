@@ -29,12 +29,10 @@ const Index = ({
 
 
     if (!steps4Data) {
-        steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
+        steps4Data = formMapRef.current[index - 1]?.current?.getFieldsValue() || {}
     }
 
     console.log('steps4Data', steps4Data)
-
-
 
     const handlerData = useCallback((data) => {
         const arr = [];
@@ -92,7 +90,7 @@ const Index = ({
 
 
     const invokeValid = useCallback(async () => {
-        const fieldValue = formMapRef.current[4]?.current.getFieldsValue()
+        const fieldValue = formMapRef.current[index]?.current.getFieldsValue()
         console.log('fieldValue', fieldValue)
         let formData = {};
 

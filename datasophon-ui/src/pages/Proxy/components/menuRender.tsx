@@ -2,10 +2,13 @@ import { Badge, Dropdown } from "antd"
 import { invokeGetRouteByPath } from "../../../utils/routerUtils"
 import { isEmpty, showComfirmModal, showMsgAfferRequest } from "../../../utils/util"
 import { MoreOutlined } from "@ant-design/icons"
-import { axiosPost } from "../../../api/request"
+import { axiosJsonPost, axiosPost } from "../../../api/request"
 import { API } from "../../../api"
 import asyncHook from "../../../components/Common/CommonModal/asyncHook"
+import { T_SETPS_TYPE_ADDSERVICE } from "../../Colony/ColonyManage/components/ConfigModal/stepType"
 
+const showConfigModal = asyncHook(() =>
+    import("../../Colony/ColonyManage/components/ConfigModal/api"));
 
 const showResultModal = asyncHook(() =>
     import("./ResultModal/api"));
@@ -16,13 +19,15 @@ const badgeColorMap = {
     3: 'orange',
 }
 
-const invokeRenderItem = ({
-    obj,
-    item,
-    dom
-}) => {
 
-}
+const T_ADD_SERVICE = 'ADD_SERVICE'
+const T_STARTALL = 'STARTALL'
+const T_STOPALL = 'STOPALL'
+const T_RESTARTALL = 'RESTARTALL'
+const T_START_SERVICE = 'START_SERVICE'
+const T_STOP_SERVICE = 'STOP_SERVICE'
+const T_RESTART_SERVICE = 'RESTART_SERVICE'
+const T_DELETE_SERVICE = 'DELETE_SERVICE'
 
 
 const invokeRenderDot = ({
@@ -55,50 +60,123 @@ const invokeRenderMore = ({
 
     if (isServiceManage) {
 
-
-
         const {
 
             originData,
             name
         } = item
 
+        const isOverview = /Instance\/Overview/gi.test(item.path)
+
 
         const {
             id,
-            clusterId
+            clusterId,
+            serviceList
         } = originData
 
-        const items = [
+        console.log('serviceList', serviceList)
+
+        const items = isOverview ? [
+            {
+                label: '添加服务',
+                key: T_ADD_SERVICE
+            },
+            {
+                label: '启动所有服务',
+                key: T_STARTALL
+            },
+            {
+                label: '停止所有服务',
+                key: T_STOPALL
+            },
+            {
+                label: '重启所有需要重启的服务',
+                key: T_RESTARTALL
+            }
+        ] : [
             {
                 label: '启动',
-                key: 'START_SERVICE',
+                key: T_START_SERVICE,
             },
             {
                 label: '停止',
-                key: 'STOP_SERVICE'
+                key: T_STOP_SERVICE
             },
             {
                 label: '重启',
-                key: 'RESTART_SERVICE'
+                key: T_RESTART_SERVICE
             },
             {
                 label: '删除',
-                key: 'DELETE_SERVICE'
+                key: T_DELETE_SERVICE
             }
 
         ]
         const onClick = async (obj) => {
 
-            console.log('obj', obj, item)
+            // console.log('obj', obj, item)
             const menuItem = items.find(val => val.key === obj.key)
-            let res = await showComfirmModal({
-                content: `确定要${menuItem.label}${name}吗？`,
-                okType: 'danger'
-            })
+            let res = true
+
+            if (obj.key !== T_ADD_SERVICE) {
+                res = await showComfirmModal({
+                    content: `确定要${menuItem.label}${!isOverview ? name : ''}吗？`,
+                    okType: 'danger'
+                })
+
+            }
 
             if (res) {
-                if (obj.key === 'DELETE_SERVICE') {
+                if (obj.key === T_ADD_SERVICE) {
+                    const modelApi = await showConfigModal()
+
+                    modelApi.default({
+                        stepsType: T_SETPS_TYPE_ADDSERVICE,
+                        clusterId
+                    })
+                } else if (
+                    [T_STARTALL, T_STOPALL, T_RESTARTALL].includes(obj.key)
+
+                ) {
+
+                    const typeMap = {
+                        [T_STARTALL]: T_START_SERVICE,
+                        [T_STOPALL]: T_STOP_SERVICE,
+                        [T_RESTARTALL]: T_RESTART_SERVICE
+                    }
+
+                    const serviceInstanceIds = serviceList
+                        .filter(val => {
+
+                            if (obj.key === T_RESTARTALL) {
+                                return val.needRestart
+                            }
+
+                            return val
+                        })
+                        .map(val => val.id)
+                        .join(',')
+
+                    res = await axiosPost(
+                        API.generateServiceCommand,
+                        {
+                            serviceInstanceIds,
+                            clusterId,
+                            commandType: typeMap[obj.key]
+                        }
+                    )
+
+                    // .then((res) => {
+                    //     if (res.code === 200) {
+                    //         this.$message.success("操作成功");
+                    //         // todo: 打开头部那个setting栏
+                    //         this.$destroyAll()
+                    //         this.showClusterSetting(true)
+                    //     }
+                    // });
+
+                } else if (obj.key === 'DELETE_SERVICE') {
                     res = await axiosPost(
                         API.clusterServiceInstanceDelete,
                         {
@@ -164,6 +242,7 @@ export const menuRender = (obj, item, dom) => {
 
 
     const isServiceManage = invokeGetRouteByPath(item.path)?.route.path === '/ddh/Cluster/:clusterId/ServiceManage/Instance/:instanceId'
+
 
     return (
 

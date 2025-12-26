@@ -22,11 +22,9 @@ import Step6 from './components/Step6';
 import Step7 from './components/Step7';
 import Step8 from './components/Step8';
 import { ConfigContext } from './configContext';
+import { T_SETPS_TYPE_ADDSERVICE, T_SETPS_TYPE_INSTANCE, T_STEPS_TYPE_HOSTMANAGE } from './stepType';
 
 
-export const T_STEPS_TYPE_HOSTMANAGE = 'hostManage'
-
-export const T_SETPS_TYPE_INSTANCE = 'instance'
 // type FormValue = {
 //     jobInfo: {
 //         name: string;
@@ -141,6 +139,8 @@ const Index = (props) => {
             arr = arr.slice(0, 3)
         } else if (stepsType === T_SETPS_TYPE_INSTANCE) {
             arr = arr.slice(4)
+        } else if (stepsType === T_SETPS_TYPE_ADDSERVICE) {
+            arr = arr.slice(3)
         }
 
         return arr.map((val, index) => {

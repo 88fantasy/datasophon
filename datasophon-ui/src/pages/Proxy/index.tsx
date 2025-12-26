@@ -29,6 +29,34 @@ import asyncHook from '../../components/Common/CommonModal/asyncHook';
 
 const showUserCenterModal = asyncHook(() => import('./components/UserCenterModal/api'))
 
+const token = {
+    header: {
+        colorBgMenuItemSelected: 'rgba(0,0,0,0.04)',
+
+    },
+}
+
+const bgLayoutImgList = [
+    {
+        src: 'https://img.alicdn.com/imgextra/i2/O1CN01O4etvp1DvpFLKfuWq_!!6000000000279-2-tps-609-606.png',
+        left: 85,
+        bottom: 100,
+        height: '303px',
+    },
+    {
+        src: 'https://img.alicdn.com/imgextra/i2/O1CN01O4etvp1DvpFLKfuWq_!!6000000000279-2-tps-609-606.png',
+        bottom: -68,
+        right: -45,
+        height: '303px',
+    },
+    {
+        src: 'https://img.alicdn.com/imgextra/i3/O1CN018NxReL1shX85Yz6Cx_!!6000000005798-2-tps-884-496.png',
+        bottom: 0,
+        left: 0,
+        width: '331px',
+    },
+]
+
 const settings: ProSettings | undefined = {
     layout: 'mix',
     splitMenus: true,
@@ -47,7 +75,6 @@ const onClusterManageClick = () => {
     // console.log('firstRoute', firstRoute)
     // window.location.replace()
 }
-
 
 const onUserClick = async () => {
     const modelApi = await showUserCenterModal()
@@ -110,6 +137,18 @@ const Index = () => {
                     originData: val
                 }
             })
+
+
+            serviceRoutes.unshift({
+                name: '总览',
+                path: `${serviceRouteObj.path}/Instance/Overview`,
+                originData: {
+                    serviceStateCode: 1,
+                    serviceList,
+                    clusterId
+                }
+            })
+
             serviceRouteObj.routes = serviceRoutes
         }
 
@@ -117,7 +156,7 @@ const Index = () => {
         return {
             route
         }
-    }, [route, serviceList])
+    }, [clusterId, route, serviceList])
 
 
 
@@ -265,6 +304,45 @@ const Index = () => {
     }, [])
 
 
+    const memoAvatarProps = useMemo(() => {
+        return {
+            src: user.avatar,
+            size: 'small',
+            title: user.username,
+            render: (props, dom) => {
+                return (
+                    <Dropdown
+                        menu={{
+                            items: [
+                                {
+                                    key: 'userCenter',
+                                    icon: <UserOutlined />,
+                                    label: '个人中心',
+                                    onClick: onUserClick
+                                },
+                                {
+                                    key: 'onClusterManageClick',
+                                    icon: <AppstoreOutlined />,
+                                    label: '集群管理',
+                                    onClick: onClusterManageClick
+                                },
+                                {
+                                    key: 'logout',
+                                    icon: <LogoutOutlined />,
+                                    label: '退出登录',
+                                    onClick: onLogoutClick
+                                },
+                            ],
+                        }}
+                    >
+                        {dom}
+                    </Dropdown>
+                );
+            },
+        }
+    }, [onLogoutClick, user.avatar, user.username])
+
+
     useEffect(() => {
         invokeInit()
     }, [invokeInit])
@@ -306,73 +384,13 @@ const Index = () => {
                             }
                         }
 
-                        token={{
-
-                            header: {
-                                colorBgMenuItemSelected: 'rgba(0,0,0,0.04)',
-
-                            },
-                        }}
-                        bgLayoutImgList={[
-                            {
-                                src: 'https://img.alicdn.com/imgextra/i2/O1CN01O4etvp1DvpFLKfuWq_!!6000000000279-2-tps-609-606.png',
-                                left: 85,
-                                bottom: 100,
-                                height: '303px',
-                            },
-                            {
-                                src: 'https://img.alicdn.com/imgextra/i2/O1CN01O4etvp1DvpFLKfuWq_!!6000000000279-2-tps-609-606.png',
-                                bottom: -68,
-                                right: -45,
-                                height: '303px',
-                            },
-                            {
-                                src: 'https://img.alicdn.com/imgextra/i3/O1CN018NxReL1shX85Yz6Cx_!!6000000005798-2-tps-884-496.png',
-                                bottom: 0,
-                                left: 0,
-                                width: '331px',
-                            },
-                        ]}
+                        token={token}
+                        bgLayoutImgList={bgLayoutImgList}
                         {...defaultProps}
                         location={{
                             pathname: window.location.pathname,
                         }}
-
-                        avatarProps={{
-                            src: user.avatar,
-                            size: 'small',
-                            title: user.username,
-                            render: (props, dom) => {
-                                return (
-                                    <Dropdown
-                                        menu={{
-                                            items: [
-                                                {
-                                                    key: 'userCenter',
-                                                    icon: <UserOutlined />,
-                                                    label: '个人中心',
-                                                    onClick: onUserClick
-                                                },
-                                                {
-                                                    key: 'onClusterManageClick',
-                                                    icon: <AppstoreOutlined />,
-                                                    label: '集群管理',
-                                                    onClick: onClusterManageClick
-                                                },
-                                                {
-                                                    key: 'logout',
-                                                    icon: <LogoutOutlined />,
-                                                    label: '退出登录',
-                                                    onClick: onLogoutClick
-                                                },
-                                            ],
-                                        }}
-                                    >
-                                        {dom}
-                                    </Dropdown>
-                                );
-                            },
-                        }}
+                        avatarProps={memoAvatarProps}
                         actionsRender={actionsRender.bind(noop, {
                             clusterId
                         })}
