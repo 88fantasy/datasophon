@@ -29,6 +29,7 @@ import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG;
+import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.SubmitActiveTaskNodeCommand;
 import com.datasophon.common.enums.CommandType;
@@ -124,8 +125,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
     private ClusterHostService clusterHostService;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public List<String> deploy(DeploymentDTO dto) {
+    public ValidateResultVO validDeploymentFile(DeploymentDTO dto) {
         File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId());
         if (deploymentFile == null) {
             throw new BusinessException("部署清单文件不存在");
@@ -135,7 +135,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         log.debug("解析到配置\n：{}", JSONObject.toJSONString(model, true));
         log.info("完成解析部署文件, 需要部署{}个应用", model.getApp().size());
 
-
+        List<String> errors = new ArrayList<>();
         Set<String> deployHosts = model.getApp()
                 .stream()
                 .flatMap(app -> app.getRoles().stream())
@@ -145,13 +145,12 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         Map<String, ClusterHostDO> hostMap = hostList.stream().collect(Collectors.toMap(ClusterHostDO::getHostname, a -> a, (a, b) -> a));
         deployHosts = deployHosts.stream().filter(host -> !hostMap.containsKey(host)).collect(Collectors.toSet());
         if (!deployHosts.isEmpty()) {
-            throw new BusinessException(String.format("以下主机%s不存在或者无法通讯", StrUtil.join(",", deployHosts)));
+            errors.add(String.format("以下主机%s不存在或者无法通讯", StrUtil.join(",", deployHosts)));
         }
 
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
         DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
-        List<String> errors = new ArrayList<>();
         model.getApp().forEach(app -> {
             FrameServiceEntity entity = ctx.getSrvEntity(app);
             if (entity == null) {
@@ -167,9 +166,21 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                 errors.add(String.format("服务%s %s正在执行命令，请等待命令执行完成或者取消命令", app.getName(), app.getVersion()));
             }
         });
-        if (!errors.isEmpty()) {
-            throw new BusinessException(errors);
+
+        return new ValidateResultVO(errors);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<String> deploy(DeploymentDTO dto) {
+        ValidateResultVO result =  validDeploymentFile(dto);
+        if (!result.isSuccess()) {
+            throw new BusinessException(result.getErrors());
         }
+
+        File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId());
+        String content = MetaUtils.decodeFile(deploymentFile, dto.getContentDecodePasswd());
+        DeploymentModel model = MetaUtils.parseDeploymentFile(content);
 
 //        保存serviceRole和host的映射
         List<ServiceRoleHostMapping> hostMappings = new ArrayList<>();
@@ -202,6 +213,9 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         log.info("保存部署配置项成功");
 
 
+        ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
+        List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
+        DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
         Map<String, FrameServiceEntity> srvDefMap = CollectionUtil.toMap(serviceList, new HashMap<>(), srv -> srv.getServiceName() + ":" + srv.getServiceVersion());
         List<String> commandIds = new ArrayList<>(model.getApp().size());
         model.getApp().forEach(srv -> {

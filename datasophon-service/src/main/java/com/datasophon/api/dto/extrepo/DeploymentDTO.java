@@ -3,6 +3,9 @@ package com.datasophon.api.dto.extrepo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+
 /**
  * @author zhanghuangbin
  * @date 2025/11/11
@@ -12,11 +15,14 @@ public class DeploymentDTO {
 
 
     @Schema(description = "集群ID")
+    @NotNull(message = "集群ID不能为空")
     private Integer clusterId;
 
     @Schema(description = "发布清单文件ID")
+    @NotNull(message = "发布清单文件不能为空")
     private Integer deployFileId;
 
     @Schema(description = "敏感文件解密密码")
+    @NotBlank(message = "解密密码不能为空")
     private String contentDecodePasswd;
 }

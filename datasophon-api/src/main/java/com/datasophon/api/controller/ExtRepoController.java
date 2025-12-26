@@ -80,6 +80,14 @@ public class ExtRepoController extends ApiController {
     }
 
 
+    @PostMapping("/validDeploymentFile")
+    @Operation(summary = "校验部署文件")
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ValidateResultVO.class))})
+    public Result validDeploymentFile(@RequestBody @Validated DeploymentDTO dto) {
+        return Result.success(extRepoInstallService.validDeploymentFile(dto));
+    }
+
+
     @PostMapping("/deploy")
     @Operation(summary = "部署应用")
     @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = List.class))})
@@ -88,7 +96,7 @@ public class ExtRepoController extends ApiController {
     }
 
 
-   @PostMapping("/getDeployProgressDAG")
+    @PostMapping("/getDeployProgressDAG")
     @Operation(summary = "获取部署进度DAG")
     @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = InstallProgressDAG.class))})
     public Result getDeployProgressDAG(@RequestBody @Validated DeploymentProgressDTO dto) {

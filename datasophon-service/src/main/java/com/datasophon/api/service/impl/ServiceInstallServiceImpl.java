@@ -19,6 +19,7 @@
 
 package com.datasophon.api.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -595,13 +596,8 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
       ClusterServiceInstanceEntity serviceInstanceEntity, List<ServiceConfig> list) {
     List<ServiceConfig> originalConfigs =
         listServiceConfigByServiceInstance(serviceInstanceEntity);
-    Map<String, Object> originalConfigMap =
-        originalConfigs.stream()
-            .collect(
-                Collectors.toMap(
-                    ServiceConfig::getName,
-                    ServiceConfig::getValue,
-                    (v1, v2) -> v1));
+
+    Map<String, Object> originalConfigMap = CollectionUtil.toMap(originalConfigs, new HashMap<>(), ServiceConfig::getName, ServiceConfig::getValue);
     for (ServiceConfig serviceConfig : list) {
       String configName = serviceConfig.getName();
       String variableValue = String.valueOf(serviceConfig.getValue());
