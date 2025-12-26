@@ -134,9 +134,9 @@ const Index = ({
                 label: '进入',
                 disabled: clusterStateCode !== 2,
                 onClick: () => {
-                    console.log('edit')
+                    // console.log('edit')
 
-                    window.open(invokeGenPath(`/Cluster/${val.id}/Overview/Index`))
+                    window.open(invokeGenPath(`/Cluster/${val.id}/ServiceManage/Instance/Overview`))
                 }
             },
             {

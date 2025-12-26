@@ -24,7 +24,7 @@ const ColonyManage = lazy(() => import('../pages/Colony/ColonyManage'));
 const ColonyParcel = lazy(() => import('../pages/Colony/ColonyParcel'));
 const ColonyFrame = lazy(() => import('../pages/Colony/ColonyFrame'));
 const UserManage = lazy(() => import('../pages/User/UserManage'));
-const ClusterOverview = lazy(() => import('../pages/Cluster/Overview'));
+// const ClusterOverview = lazy(() => import('../pages/Cluster/Overview'));
 const SystemCenterTag = lazy(() => import('../pages/SystemCenter/Tag'));
 const SystemCenterFrame = lazy(() => import('../pages/SystemCenter/Frame'));
 const SystemCenterUser = lazy(() => import('../pages/SystemCenter/User'));
@@ -75,20 +75,20 @@ const contentRoutes = [
       },
     ],
   },
-  {
-    path: '/Cluster/:clusterId/Overview',
-    element: <Proxy />,
-    icon: <DashboardOutlined />,
-    title: '总览',
-    children: [
-      {
-        path: 'Index',
-        element: <ClusterOverview />,
-        hideInMenu: true,
-        title: '总览'
-      }
-    ]
-  },
+  // {
+  //   path: '/Cluster/:clusterId/Overview',
+  //   element: <Proxy />,
+  //   icon: <DashboardOutlined />,
+  //   title: '总览',
+  //   children: [
+  //     {
+  //       path: 'Index',
+  //       element: <ClusterOverview />,
+  //       hideInMenu: true,
+  //       title: '总览'
+  //     }
+  //   ]
+  // },
   {
     path: '/Cluster/:clusterId/ServiceManage',
     element: <Proxy />,

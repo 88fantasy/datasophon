@@ -12,7 +12,7 @@ import type { ProColumns } from '@ant-design/pro-components';
 import asyncHook from '../../../../components/Common/CommonModal/asyncHook';
 import { useInstanceHooks } from '../../../../hooks/useInstanceHooks';
 import { ProxyContext } from '../../../../context/proxyContext';
-import { T_SETPS_TYPE_INSTANCE } from '../../../Colony/ColonyManage/components/ConfigModal';
+import { T_SETPS_TYPE_INSTANCE } from '../../../Colony/ColonyManage/components/ConfigModal/stepType';
 
 
 
