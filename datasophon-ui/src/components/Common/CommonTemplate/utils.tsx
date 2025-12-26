@@ -164,6 +164,8 @@ export function invokeFormatTemplateData(data, values) {
                 val.value = invokeFormatMultipleWithKeyValue(val.value)
             } else if (val.type === 'multipleWithMap') {
                 val.value = invokeFormatMultipleWithMapValue(val.value)
+            } else {
+                val.value = values[val.name]
             }
         })
 
