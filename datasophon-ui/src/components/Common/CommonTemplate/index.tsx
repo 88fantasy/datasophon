@@ -126,12 +126,12 @@ const Index = ({
                             {...commonProps}
                             mode={item.type === 'multipleSelect' ? 'multiple' : 'single'}
                             options={
-                                item.selectValue.map(val => {
+                                item.selectValue?.map(val => {
                                     return {
                                         label: val,
                                         value: val
                                     }
-                                })
+                                }) || []
                             }
                             rules={[
                                 {

@@ -66,6 +66,12 @@ const Index = ({
         })
     }, [steps4Data.services, templateMap])
 
+    // const memoDefaultValues = useMemo(() => {
+    //     return steps4Data.services?.reduce((pre, aft) => {
+
+    //     }, {})
+    // }, [steps4Data.services])
+
     const getServiceConfigOption = useCallback(async () => {
 
         const reqArr = await Promise.all(
@@ -102,17 +108,44 @@ const Index = ({
     const invokeValid = useCallback(async () => {
 
 
-        const values = currentFormRef.current?.getFieldsValue()
+        const cpTemplateMap = cloneDeep(templateMap)
+
+        const values = {}
+        Object.keys(cpTemplateMap)
+            .forEach((k) => {
+
+                if (!values[k]) {
+                    values[k] = {}
+                }
+
+                cpTemplateMap[k].map(v => {
+                    values[k][v.name] = isEmpty(v.value) ? v.defaultValue : v.value
+                })
+
+            })
+
+
+
+
+        const currentValue = currentFormRef.current?.getFieldsValue()
 
         let res
+
+
+        Object.assign(values, currentValue)
 
         for (const tab of memoTabs) {
             const serviceValue = values[tab.key]
             const serviceTemplate = templateMap[tab.key]
-
-
             for (const item of serviceTemplate) {
-                if (!item.hidden && item.required && isEmpty(serviceValue?.[item.name])) {
+                if (
+                    !item.hidden &&
+                    item.required &&
+                    // isEmpty(serviceValue?.[item.name])
+                    isEmpty(item.value) &&
+                    isEmpty(item.defaultValue)
+
+                ) {
                     res = `${tab.key}.${item.label} 不能为空`
                 }
 
@@ -125,6 +158,18 @@ const Index = ({
             if (res) {
                 break
             }
+
+            // const newValues = invokeFormatTemplateData(serviceTemplate, serviceValue)
+
+            // Object.keys(values).map(k => {
+            //     const objConfig = values[k]
+
+            //     objConfig.forEach(v => {
+            //         if (isEmpty(v.value) && !isEmpty(v.defaultValue)) {
+            //             v.value = v.defaultValue
+            //         }
+            //     })
+            // })
 
             values[tab.key] = invokeFormatTemplateData(serviceTemplate, serviceValue)
         }
