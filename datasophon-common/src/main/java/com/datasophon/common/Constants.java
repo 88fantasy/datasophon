@@ -52,7 +52,8 @@ public final class Constants {
     public static final String SHELL_SCRIPT_PATH = "/scripts";
     
     public static final String META_PATH = "meta";
-    
+    public static final String FRAMEWORK_TPL = "frameworktpl";
+
     public static final String CLUSTER_ID = "cluster_id";
     public static final String MANAGED = "managed";
     public static final String JSON = "json";

@@ -292,7 +292,11 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
         vo.getFrameworks().forEach(framework -> {
-            FrameInfoEntity db = frameInfoService.saveClusterFrame(framework.getFrameCode());
+            boolean exists = frameInfoService.exists(framework.getFrameCode());
+            FrameInfoEntity db = frameInfoService.saveFrameIfAbsent(framework.getFrameCode());
+            if (!exists) {
+                loadServiceMeta.initFramework(db);
+            }
 
             framework.getServices().forEach(srv -> {
                 String ddl = FileUtil.readString(Paths.get(unzipDir, srv.getDdl()).toFile(), StandardCharsets.UTF_8);

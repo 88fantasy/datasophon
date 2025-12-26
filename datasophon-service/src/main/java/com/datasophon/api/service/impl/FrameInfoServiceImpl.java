@@ -62,7 +62,7 @@ public class FrameInfoServiceImpl extends ServiceImpl<FrameInfoMapper, FrameInfo
     }
 
     @Override
-    public FrameInfoEntity saveClusterFrame(String frameCode) {
+    public FrameInfoEntity saveFrameIfAbsent(String frameCode) {
         FrameInfoEntity frameInfo = lambdaQuery().eq(FrameInfoEntity::getFrameCode, frameCode).one();
         if (Objects.isNull(frameInfo)) {
             frameInfo = new FrameInfoEntity();
@@ -70,5 +70,10 @@ public class FrameInfoServiceImpl extends ServiceImpl<FrameInfoMapper, FrameInfo
             save(frameInfo);
         }
         return frameInfo;
+    }
+
+    @Override
+    public boolean exists(String frameCode) {
+        return lambdaQuery().eq(FrameInfoEntity::getFrameCode, frameCode).exists();
     }
 }

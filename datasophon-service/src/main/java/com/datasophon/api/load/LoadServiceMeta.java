@@ -74,6 +74,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static com.datasophon.common.Constants.FRAMEWORK_TPL;
 import static com.datasophon.common.Constants.META_PATH;
 
 @Component
@@ -123,7 +124,7 @@ public class LoadServiceMeta implements ApplicationRunner {
     for (File path : ddps) {
       List<File> files = FileUtil.loopFiles(path);
       String frameCode = path.getName();
-      FrameInfoEntity frameInfo = frameInfoService.saveClusterFrame(frameCode);
+      FrameInfoEntity frameInfo = frameInfoService.saveFrameIfAbsent(frameCode);
       // analysis file
       for (File file : files) {
         if (file.getName().endsWith(Constants.JSON)) {
@@ -137,6 +138,59 @@ public class LoadServiceMeta implements ApplicationRunner {
         }
       }
     }
+  }
+
+
+  public void initFramework(FrameInfoEntity entity) {
+      Objects.requireNonNull(entity);
+
+      String frameCode = entity.getFrameCode();
+      File[] ddps = FileUtil.ls(META_PATH);
+      File target = null;
+      if (ddps != null) {
+          for(File ddp : ddps) {
+              if (ddp.getName().equals(frameCode)) {
+                  target = ddp;
+                  break;
+              }
+          }
+      }
+      if (target == null) {
+//          ignore ? or throw exception
+          return;
+      }
+
+      logger.info("使用框架模板{}初始化框架{}", FileUtil.file(FRAMEWORK_TPL).getAbsolutePath(), frameCode);
+
+      File[] srvCmps = FileUtil.ls(FRAMEWORK_TPL);
+      List<String> installingCmp = new ArrayList<>();
+      for (File srvCmp : srvCmps) {
+          File targetDdp = new File(target, srvCmp.getName());
+          if (targetDdp.exists()) {
+              continue;
+          }
+          logger.info("add service component {} to framework {}", srvCmp.getName(), frameCode);
+          FileUtil.copy(srvCmp, target, false);
+          installingCmp.add(srvCmp.getName());
+      }
+      if (!installingCmp.isEmpty()) {
+          List<ClusterInfoEntity> clusters = clusterInfoService.list();
+          for (String cmp : installingCmp) {
+              List<File> files = FileUtil.loopFiles(new File(target, cmp));
+              // analysis file
+              for (File file : files) {
+                  if (file.getName().endsWith(Constants.JSON)) {
+                      String serviceName = file.getParentFile().getName();
+                      String serviceDdl = FileReader.create(file).readString();
+                      try {
+                          parseServiceDdl(frameCode, clusters, entity, serviceName, serviceDdl);
+                      } catch (Exception e) {
+                          logger.error("invalid service ddl file: {}/{}", frameCode, serviceName, e);
+                      }
+                  }
+              }
+          }
+      }
   }
 
   /**

@@ -32,5 +32,7 @@ public interface FrameInfoService extends IService<FrameInfoEntity> {
     
     Result getAllClusterFrame();
 
-    FrameInfoEntity saveClusterFrame(String frameCode);
+    FrameInfoEntity saveFrameIfAbsent(String frameCode);
+
+    boolean exists(String frameCode);
 }
