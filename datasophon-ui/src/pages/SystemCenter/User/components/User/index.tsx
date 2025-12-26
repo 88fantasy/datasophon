@@ -6,10 +6,11 @@ import { axiosPost, axiosPostUpload } from '../../../../../api/request';
 import { useParams } from 'react-router';
 import type { ProColumns } from '@ant-design/pro-components';
 import { memo, useCallback } from 'react';
+import asyncHook from '../../../../../components/Common/CommonModal/asyncHook';
 
 
-const showFormModal = () =>
-    import("./BuildOrEditModal/api");
+const showFormModal = asyncHook(() =>
+    import("./BuildOrEditModal/api"));
 
 
 

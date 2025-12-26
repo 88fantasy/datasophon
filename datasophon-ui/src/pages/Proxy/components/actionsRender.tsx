@@ -2,14 +2,15 @@
 import { AlertOutlined, MoreOutlined, SettingOutlined, UploadOutlined } from "@ant-design/icons"
 import { Tooltip } from "antd";
 import { noop } from "antd/es/_util/warning";
+import asyncHook from "../../../components/Common/CommonModal/asyncHook";
 
 
-const showResultModal = () =>
-    import("./ResultModal/api");
-const showAlarmModal = () =>
-    import("./AlarmModal/api");
+const showResultModal = asyncHook(() =>
+    import("./ResultModal/api"));
+const showAlarmModal = asyncHook(() =>
+    import("./AlarmModal/api"));
 
-const showUploadDeployModal = () => import('../../../components/UploadDeployModal/api')
+const showUploadDeployModal = asyncHook(() => import('../../../components/UploadDeployModal/api'))
 export const actionsRender = (props) => {
 
 

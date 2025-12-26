@@ -4,8 +4,9 @@ import router, { routesMap } from "./routes"
 import { App, ConfigProvider, Spin } from "antd";
 import injectLocationChange from "./utils/injectLocationChange";
 import { invokeRelogin } from "./utils/authorityUtils";
+import asyncHook from "./components/Common/CommonModal/asyncHook";
 
-const showDagModal = () => import('./components/DagModal/api')
+const showDagModal = asyncHook(() => import('./components/DagModal/api'))
 const invokeInjectLocationEvent = () => {
   injectLocationChange()
 

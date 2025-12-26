@@ -10,7 +10,7 @@ import {
 import { Alert, message } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styles from './index.module.less'
 import { requireRules } from '../../../../../utils/util';
 import Step1 from './components/Step1';
@@ -25,6 +25,8 @@ import { ConfigContext } from './configContext';
 
 
 export const T_STEPS_TYPE_HOSTMANAGE = 'hostManage'
+
+export const T_SETPS_TYPE_INSTANCE = 'instance'
 // type FormValue = {
 //     jobInfo: {
 //         name: string;
@@ -59,13 +61,11 @@ const Index = (props) => {
     const {
         record,
         onOkClickProxy,
-        stepsType
+        stepsType,
+        steps4Data
     } = props
 
-    const formMapRef = useRef<
-        React.MutableRefObject<ProFormInstance<any> | undefined>[]
-    >([]);
-
+    const formMapRef = useRef([]);
     const steps2Ref = useRef()
     const steps3Ref = useRef()
     const steps4Ref = useRef()
@@ -90,9 +90,7 @@ const Index = (props) => {
     //     });
     // }, []);
 
-
-
-    const invokeRenderSteps = () => {
+    const memoArr = useMemo(() => {
         let arr = [
             {
                 title: '安装主机',
@@ -100,76 +98,81 @@ const Index = (props) => {
             },
             {
                 title: '主机环境校验',
-                render: <Step2
-                    ref={steps2Ref}
-                    current={current}
-                    formMapRef={formMapRef}
-                    record={record}
-
-                />
+                ref: steps2Ref,
+                render: Step2
             },
             {
                 title: '主机Agent分发',
-                render: <Step3
-                    ref={steps3Ref}
-                    current={current}
-                    formMapRef={formMapRef}
-                    record={record}
-                />
+                ref: steps3Ref,
+                render: Step3
+
             },
             {
                 title: '选择服务',
-                render: <Step4
-                    ref={steps4Ref}
-                    current={current}
-                    formMapRef={formMapRef}
-                    record={record}
-                />
+                ref: steps4Ref,
+                render: Step4
             },
             {
                 title: '分配服务Master角色',
-                render: <Step5
-                    ref={steps5Ref}
-                    current={current}
-                    formMapRef={formMapRef}
-                    record={record}
-                />
+                ref: steps5Ref,
+                steps4Data,
+                render: Step5
             },
             {
                 title: '分配服务Worker与Client角色',
-                render: <Step6
-                    ref={steps6Ref}
-                    current={current}
-                    formMapRef={formMapRef}
-                    record={record}
-                />
+                ref: steps6Ref,
+                steps4Data,
+                render: Step6
             },
             {
                 title: '服务配置',
-                render: current === 6 && <Step7
-                    ref={steps7Ref}
-                    current={current}
-                    formMapRef={formMapRef}
-                    record={record}
-                />
+                ref: steps7Ref,
+                steps4Data,
+                render: Step7
             },
             {
                 title: '安装并启动服务',
-                render: <Step8
-                    // ref={steps4Ref}
-                    current={current}
-                    formMapRef={formMapRef}
-                    record={record}
-                    clusterId={clusterId}
-                />
+                clusterId,
+                render: Step8
             },
         ]
 
         if (stepsType === T_STEPS_TYPE_HOSTMANAGE) {
             arr = arr.slice(0, 3)
+        } else if (stepsType === T_SETPS_TYPE_INSTANCE) {
+            arr = arr.slice(4)
         }
 
-        return arr.map(val => {
+        return arr.map((val, index) => {
+
+
+            const Com = val.render
+
+
+            val = {
+                ...val,
+                render: (
+                    <Com
+                        {
+                        ...val
+                        }
+                        record={record}
+                        current={current}
+                        formMapRef={formMapRef}
+                        // indexKey={'11'}
+                        index={index}
+                        key={index}
+                    />
+                )
+            }
+            return val
+
+        })
+    }, [clusterId, current, record, steps4Data, stepsType])
+
+    const invokeRenderSteps = useCallback(() => {
+        return memoArr.map((val, index) => {
+
             return (
                 <StepsForm.StepForm
                     name={val.title}
@@ -182,59 +185,76 @@ const Index = (props) => {
                     }
                 </StepsForm.StepForm>
             )
+
         })
-    }
+    }, [memoArr])
 
     const stepsDom = invokeRenderSteps()
-    const onCurrentChange = async (e) => {
+
+    const onCurrentChange = useCallback(async (e) => {
 
         console.log('onCurrentChange', e)
         let valid = true
 
-        if (e > current || (current === stepsDom.length - 1 && !e)) {
-            if (current === 1) {
-                const res = await steps2Ref.current.invokeValid()
-                valid = res.hostCheckCompleted
+        if (e > current || (current === memoArr.length - 1 && !e)) {
+
+            const arrObj = memoArr[current]
+
+            if (arrObj.ref?.current) {
+                const invokeValidRes = await arrObj.ref?.current?.invokeValid()
+                valid = invokeValidRes.valid
+
 
                 if (!valid) {
-                    message.warning('存在为未检验成功的主机')
-                }
-            } else if (current === 2) {
-                const res = await steps3Ref.current.invokeValid()
-                valid = res.dispatcherHostAgentCompleted
-
-                if (!valid) {
-                    message.warning('存在为未分发完成的主机')
-                }
-            } else if (current === 3) {
-                const res = await steps4Ref.current.invokeValid()
-                valid = res.valid
-
-                if (!valid) {
-                    message.warning(res.msg || '请至少选择一个服务')
-                }
-            } else if (current === 4) {
-                const res = await steps5Ref.current.invokeValid()
-                valid = res.valid
-
-                if (!valid) {
-                    message.warning(res.msg)
-                }
-            } else if (current === 5) {
-                const res = await steps6Ref.current.invokeValid()
-                valid = res.valid
-
-                if (!valid) {
-                    message.warning(res.msg)
-                }
-            } else if (current === 6) {
-                const res = await steps7Ref.current.invokeValid()
-                valid = res.valid
-
-                if (!valid) {
-                    message.warning(res.msg)
+                    message.warning(invokeValidRes.msg)
                 }
             }
+
+
+
+            //     if (current === 1) {
+            //         const res = await steps2Ref.current.invokeValid()
+            //         valid = res.hostCheckCompleted
+
+            //         if (!valid) {
+            //             message.warning(res.msg)
+            //         }
+            //     } else if (current === 2) {
+            //         const res = await steps3Ref.current.invokeValid()
+            //         valid = res.dispatcherHostAgentCompleted
+
+            //         if (!valid) {
+            //             message.warning(res.msg)
+            //         }
+            //     } else if (current === 3) {
+            //         const res = await steps4Ref.current.invokeValid()
+            //         valid = res.valid
+
+            //         if (!valid) {
+            //             message.warning(res.msg)
+            //         }
+            //     } else if (current === 4) {
+            //         const res = await steps5Ref.current.invokeValid()
+            //         valid = res.valid
+
+            //         if (!valid) {
+            //             message.warning(res.msg)
+            //         }
+            //     } else if (current === 5) {
+            //         const res = await steps6Ref.current.invokeValid()
+            //         valid = res.valid
+
+            //         if (!valid) {
+            //             message.warning(res.msg)
+            //         }
+            //     } else if (current === 6) {
+            //         const res = await steps7Ref.current.invokeValid()
+            //         valid = res.valid
+
+            //         if (!valid) {
+            //             message.warning(res.msg)
+            //         }
+            //     }
         }
 
 
@@ -242,16 +262,11 @@ const Index = (props) => {
         if (valid) {
             if (Math.abs(current - e) === 1) {
                 setCurrent(e)
-            } else if (current === stepsDom.length - 1) {
+            } else if (current === memoArr.length - 1) {
                 onOkClickProxy()
             }
         }
-    }
-
-
-    useEffect(() => {
-
-    }, [])
+    }, [current, memoArr, onOkClickProxy])
 
 
     return (

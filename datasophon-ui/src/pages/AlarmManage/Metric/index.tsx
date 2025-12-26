@@ -11,10 +11,11 @@ import { cloneDeep, noop } from 'lodash-es';
 import CommonBtnList from '../../../components/Common/CommonBtnList';
 import { PlusOutlined } from '@ant-design/icons';
 import { showComfirmModal, showMsgAfferRequest } from '../../../utils/util';
+import asyncHook from '../../../components/Common/CommonModal/asyncHook';
 
 
-const showFormModal = () =>
-    import("./BuildOrEditModal/api");
+const showFormModal = asyncHook(() =>
+    import("./BuildOrEditModal/api"));
 
 
 

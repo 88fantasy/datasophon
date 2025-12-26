@@ -7,8 +7,9 @@ import { requireRules } from "../../../../../utils/util";
 import { API } from "../../../../../api";
 import { axiosPost } from "../../../../../api/request";
 import { cloneDeep } from "lodash-es";
-const showFormModal = () =>
-  import("../../../../../components/Common/CommonModal/FormModal/api");
+import asyncHook from "../../../../../components/Common/CommonModal/asyncHook";
+const showFormModal = asyncHook(() =>
+  import("../../../../../components/Common/CommonModal/FormModal/api"));
 
 export default async function (config) {
 

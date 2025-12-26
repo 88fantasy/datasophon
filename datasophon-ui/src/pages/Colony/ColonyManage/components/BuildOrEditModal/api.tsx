@@ -6,10 +6,11 @@ import { ProFormSelect, ProFormText } from "@ant-design/pro-components";
 import { requireRules } from "../../../../../utils/util";
 import { axiosPost } from "../../../../../api/request";
 import { API } from "../../../../../api";
+import asyncHook from "../../../../../components/Common/CommonModal/asyncHook";
 
 
-const showFormModal = () =>
-  import("../../../../../components/Common/CommonModal/FormModal/api");
+const showFormModal = asyncHook(() =>
+  import("../../../../../components/Common/CommonModal/FormModal/api"));
 
 
 export default async function (config) {

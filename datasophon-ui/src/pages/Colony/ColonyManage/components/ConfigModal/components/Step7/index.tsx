@@ -16,42 +16,46 @@ import CommonTemplate from "../../../../../../../components/Common/CommonTemplat
 
 
 
-const columns: ProColumns[] = [
-    {
-        dataIndex: 'index',
-        title: '序号',
-        valueType: 'indexBorder',
-        width: 48,
-    },
-    {
-        title: '主机名',
-        dataIndex: 'hostname',
-        ellipsis: true,
-    },
-];
+// const columns: ProColumns[] = [
+//     {
+//         dataIndex: 'index',
+//         title: '序号',
+//         valueType: 'indexBorder',
+//         width: 48,
+//     },
+//     {
+//         title: '主机名',
+//         dataIndex: 'hostname',
+//         ellipsis: true,
+//     },
+// ];
 
 const Index = ({
     current,
     formMapRef,
-    record
+    record,
+    index,
+    steps4Data
 }, ref) => {
 
-    const steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
+
+    if (!steps4Data) {
+        steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
+    }
+
+
+    // const steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
 
     const currentFormRef = formMapRef.current[current]
 
-    const currentRef = useRef()
-
+    const templateMapRef = useRef({})
     const [hadInit, setHadInit] = useState(false)
-    const [dataSource, setDataSource] = useState([])
     const [activeKey, setActiveKey] = useState()
 
-
-    const [templateMap, setTemplateMap] = useState({})
     const { clusterId } = useConfigContext()
 
 
-    const memoTabs = useMemo(() => {
+    const invokeMapMemoTab = useCallback(() => {
         return steps4Data.services?.map(val => {
             const key = val.serviceName
             return {
@@ -60,17 +64,13 @@ const Index = ({
                 value: key,
                 children: <CommonTemplate
                     namePrefix={[key]}
-                    templateData={templateMap[key]}
+                    templateData={templateMapRef.current[key] || []}
                 />
             }
         })
-    }, [steps4Data.services, templateMap])
+    }, [steps4Data.services])
 
-    // const memoDefaultValues = useMemo(() => {
-    //     return steps4Data.services?.reduce((pre, aft) => {
-
-    //     }, {})
-    // }, [steps4Data.services])
+    const memoTabs = invokeMapMemoTab()
 
     const getServiceConfigOption = useCallback(async () => {
 
@@ -101,14 +101,16 @@ const Index = ({
             return a
         }, {})
 
-        setTemplateMap(res)
+        // setTemplateMap(res)
+
+        templateMapRef.current = res
     }, [clusterId, memoTabs])
 
 
     const invokeValid = useCallback(async () => {
 
 
-        const cpTemplateMap = cloneDeep(templateMap)
+        const cpTemplateMap = cloneDeep(templateMapRef.current)
 
         const values = {}
         Object.keys(cpTemplateMap)
@@ -136,7 +138,7 @@ const Index = ({
 
         for (const tab of memoTabs) {
             const serviceValue = values[tab.key]
-            const serviceTemplate = templateMap[tab.key]
+            const serviceTemplate = templateMapRef.current[tab.key]
             for (const item of serviceTemplate) {
                 if (
                     !item.hidden &&
@@ -158,18 +160,6 @@ const Index = ({
             if (res) {
                 break
             }
-
-            // const newValues = invokeFormatTemplateData(serviceTemplate, serviceValue)
-
-            // Object.keys(values).map(k => {
-            //     const objConfig = values[k]
-
-            //     objConfig.forEach(v => {
-            //         if (isEmpty(v.value) && !isEmpty(v.defaultValue)) {
-            //             v.value = v.defaultValue
-            //         }
-            //     })
-            // })
 
             values[tab.key] = invokeFormatTemplateData(serviceTemplate, serviceValue)
         }
@@ -214,7 +204,7 @@ const Index = ({
             }
 
 
-            console.log('memoTabs', memoTabs)
+            // console.log('memoTabs', memoTabs)
             const params = {
                 clusterId,
                 serviceNames: memoTabs.map(val => val.value),
@@ -253,7 +243,7 @@ const Index = ({
 
         // return res
 
-    }, [clusterId, currentFormRef, memoTabs, templateMap])
+    }, [clusterId, currentFormRef, memoTabs])
 
     const onTabChange = useCallback(async (key) => {
         setActiveKey(key)
@@ -262,28 +252,26 @@ const Index = ({
 
 
     const invokeInit = useCallback(async () => {
-        if (current === 6) {
+        if (current === index) {
             await getServiceConfigOption()
             setHadInit(true)
-            currentRef.current = true
+            // currentRef.current = true
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [current, getServiceConfigOption, index])
 
     useEffect(() => {
         invokeInit()
     }, [invokeInit])
 
-    useEffect(() => {
-        if (
-            current === 6
-        ) {
-            console.log('memoTabs', memoTabs)
-            setActiveKey(memoTabs[0]?.key)
-            currentRef.current = current
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [current])
+    // useEffect(() => {
+    //     if (
+    //         index === current
+    //     ) {
+    //         console.log('memoTabs', index, current, memoTabs)
+    //         setActiveKey(memoTabs[0]?.key)
+    //         currentRef.current = current
+    //     }
+    // }, [current, index, memoTabs])
 
 
     useImperativeHandle(ref, () => {

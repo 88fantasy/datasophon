@@ -7,10 +7,11 @@ import { useClusterGlobalContext } from '../../../context/clusterGlobalContext';
 import type { ProColumns } from '@ant-design/pro-components';
 import { useParams } from 'react-router-dom';
 import { memo } from 'react';
+import asyncHook from '../../../components/Common/CommonModal/asyncHook';
 
 
-const showFormModal = () =>
-    import("./BuildOrEditModal/api");
+const showFormModal = asyncHook(() =>
+    import("./BuildOrEditModal/api"));
 
 
 const Index = () => {

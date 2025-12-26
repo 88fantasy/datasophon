@@ -8,10 +8,11 @@ import type { ProColumns } from '@ant-design/pro-components';
 import { useCallback } from 'react';
 import { invokeGenPath } from '../../../utils/routerUtils';
 import qs from 'qs';
+import asyncHook from '../../../components/Common/CommonModal/asyncHook';
 
 
-const showFormModal = () =>
-    import("./BuildOrEditModal/api");
+const showFormModal = asyncHook(() =>
+    import("./BuildOrEditModal/api"));
 
 
 

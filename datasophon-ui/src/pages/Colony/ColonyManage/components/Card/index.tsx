@@ -10,15 +10,16 @@ import { noop } from "lodash-es";
 import { invokeGenPath } from "../../../../../utils/routerUtils";
 import { useParams } from "react-router-dom";
 import { useCallback, useMemo } from "react";
+import asyncHook from "../../../../../components/Common/CommonModal/asyncHook";
 
-const showAuthModal = () =>
-    import("../AuthModal/api");
-const showBuildOrEditModal = () =>
-    import("../BuildOrEditModal/api");
-const showConfigModal = () =>
-    import("../ConfigModal/api");
+const showAuthModal = asyncHook(() =>
+    import("../AuthModal/api"));
+const showBuildOrEditModal = asyncHook(() =>
+    import("../BuildOrEditModal/api"));
+const showConfigModal = asyncHook(() =>
+    import("../ConfigModal/api"));
 
-const showUploadDeployModal = () => import('../../../../../components/UploadDeployModal/api')
+const showUploadDeployModal = asyncHook(() => import('../../../../../components/UploadDeployModal/api'))
 
 
 const Index = ({

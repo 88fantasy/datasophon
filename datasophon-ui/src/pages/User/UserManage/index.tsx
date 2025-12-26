@@ -3,10 +3,11 @@ import { API } from '../../../api';
 import { invokePackProtableRequest } from '../../../utils/request';
 import CommonTable, { invokeGenOptionCol, type GithubIssueItem } from '../../../components/Common/CommonTable';
 import { axiosPost, axiosPostUpload } from '../../../api/request';
+import asyncHook from '../../../components/Common/CommonModal/asyncHook';
 
 
-const showFormModal = () =>
-    import("./BuildOrEditModal/api");
+const showFormModal = asyncHook(() =>
+    import("./BuildOrEditModal/api"));
 
 const onBuildOrEditClick = async ({
     action,

@@ -68,11 +68,11 @@ axios.interceptors.request.use(
 axios.interceptors.response.use(
   (response) => {
     // 对响应数据操作
-    console.log("response", response);
+    // console.log("response", response);
     return response;
   },
   (error) => {
-    console.log("response", error);
+    // console.log("response", error);
 
     const response = error?.response;
 

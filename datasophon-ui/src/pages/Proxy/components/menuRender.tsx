@@ -4,10 +4,11 @@ import { isEmpty, showComfirmModal, showMsgAfferRequest } from "../../../utils/u
 import { MoreOutlined } from "@ant-design/icons"
 import { axiosPost } from "../../../api/request"
 import { API } from "../../../api"
+import asyncHook from "../../../components/Common/CommonModal/asyncHook"
 
 
-const showResultModal = () =>
-    import("./ResultModal/api");
+const showResultModal = asyncHook(() =>
+    import("./ResultModal/api"));
 
 const badgeColorMap = {
     1: ' ',

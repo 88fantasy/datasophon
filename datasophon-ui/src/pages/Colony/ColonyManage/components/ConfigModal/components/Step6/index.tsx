@@ -31,7 +31,9 @@ const columns: ProColumns[] = [
 const Index = ({
     current,
     formMapRef,
-    record
+    index,
+    record,
+    steps4Data
 }, ref) => {
 
     const actionRef = useRef()
@@ -44,7 +46,9 @@ const Index = ({
 
     console.log('formMapRef', formMapRef)
 
-    const steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
+    if (!steps4Data) {
+        steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
+    }
 
 
 
@@ -90,7 +94,7 @@ const Index = ({
 
         // return res
 
-    }, [dataSource])
+    }, [clusterId, dataSource])
 
     const changeheaderHost = useCallback((key) => {
 
@@ -181,7 +185,7 @@ const Index = ({
         }))
     }, [changeheaderHost, getAllCheckedStatus, getCheckedStatus])
 
-    const getNonMasterRoleList = async () => {
+    const getNonMasterRoleList = useCallback(async () => {
         const params = {
             clusterId: clusterId,
             serviceIds: steps4Data.services?.map(val => val.id).join(",") || "",
@@ -202,7 +206,7 @@ const Index = ({
         }
 
         return res
-    }
+    }, [clusterId, steps4Data.services])
 
     const apiFn = useCallback(async (params, sort, filter) => {
         const res = await axiosPost(API.getAllHost, {
@@ -249,17 +253,20 @@ const Index = ({
         }
 
         setDataSource(resArr)
-    }, [])
+    }, [clusterId])
 
     const invokeInit = useCallback(async () => {
-        if (current === 5) {
+        if (
+
+            index === current
+
+        ) {
             await getNonMasterRoleList()
             setHadInit(true)
         }
-    }, [current])
+    }, [current, getNonMasterRoleList, index])
 
     useEffect(() => {
-        console.log('current', current)
         invokeInit()
     }, [invokeInit])
 

@@ -4,9 +4,10 @@ import { Button } from "antd";
 import { cloneDeep, isBoolean, noop } from "lodash-es";
 import { useCallback, useRef } from "react";
 import { showComfirmModal, showMsgAfferRequest } from "../../../utils/util";
+import asyncHook from "../CommonModal/asyncHook";
 
-const showFormModal = () =>
-    import("../CommonModal/FormModal/api");
+const showFormModal = asyncHook(() =>
+    import("../CommonModal/FormModal/api"));
 
 export type GithubIssueItem = {
     url: string;

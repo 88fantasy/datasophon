@@ -19,13 +19,21 @@ const Index = ({
     current,
     formMapRef,
     record,
+    index,
+    steps4Data,
 
 }, ref) => {
     const hosListRef = useRef([])
     const [templateData, setTemplateData] = useState([])
     const { clusterId } = useConfigContext()
 
-    const steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
+
+    if (!steps4Data) {
+        steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
+    }
+
+    console.log('steps4Data', steps4Data)
+
 
 
     const handlerData = useCallback((data) => {
@@ -140,10 +148,10 @@ const Index = ({
 
 
     useEffect(() => {
-        if (current === 4) {
+        if (current === index) {
             getAllHost()
         }
-    }, [current, getAllHost])
+    }, [current, getAllHost, index])
 
 
     useImperativeHandle(ref, () => {
