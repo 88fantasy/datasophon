@@ -28,7 +28,7 @@ const Index = () => {
 
     useEffect(() => {
         invokeGetServiceListByClusterProxy()
-    }, [])
+    }, [invokeGetServiceListByClusterProxy])
 
 
     return instanceId && <Navigate to={`Instance/${instanceId}`} replace />;

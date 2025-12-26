@@ -8,14 +8,15 @@ import { getRouteQuery, replaceRouter } from '../../../utils/routerUtils';
 import { lazy, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CommonTabs from '../../../components/Common/CommonTabs';
+import asyncHook from '../../../components/Common/CommonModal/asyncHook';
 // import User from './components/User';
 // import Group from './components/Group';
 
 const User = lazy(() => import('./components/User'));
 const Group = lazy(() => import('./components/Group'));
 
-const showFormModal = () =>
-    import("./BuildOrEditModal/api");
+const showFormModal = asyncHook(() =>
+    import("./BuildOrEditModal/api"));
 
 const onBuildOrEditClick = async ({
     action,

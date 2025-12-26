@@ -5,10 +5,9 @@ import { noop } from "lodash-es";
 import * as yaml from 'js-yaml';
 import { sm4Encrypt, sm4Decrypt } from 'sm-crypto';
 import TableProxy from "./TableProxy";
+import { useCallback } from "react";
 
 const Index = (props) => {
-
-
 
     const {
         currentStep,
@@ -21,14 +20,12 @@ const Index = (props) => {
 
     const values = firstFormRef.current?.getFieldsValue()
 
-
     const {
         contentDecodePasswd
-
     } = values
 
 
-    const invokeRenderTable = () => {
+    const invokeRenderTable = useCallback(() => {
         const dom = ({ deployFileId }) => {
             return (
                 <TableProxy
@@ -47,7 +44,7 @@ const Index = (props) => {
 
             </ProFormDependency>
         )
-    }
+    }, [contentDecodePasswd])
 
     return (
         <ProCard bordered={true} className="!mb-[20px]">

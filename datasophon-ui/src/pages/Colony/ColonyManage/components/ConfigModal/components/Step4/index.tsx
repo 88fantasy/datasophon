@@ -14,7 +14,7 @@ const Index = ({
     current,
     formMapRef,
     record,
-
+    index
 }, ref) => {
 
     const actionRef = useRef()
@@ -38,7 +38,7 @@ const Index = ({
 
 
 
-    const invokeInit = async () => {
+    const invokeInit = useCallback(async () => {
         const params = {
             clusterId,
         };
@@ -64,18 +64,18 @@ const Index = ({
             // TODO:对比源代码补充
         }
 
-    }
+    }, [clusterId, invokeUpdateFormData])
 
 
-
-    const invokeValid = async () => {
+    const invokeValid = useCallback(async () => {
         const fieldValue = formMapRef.current[3]?.current.getFieldsValue()
         const { services } = fieldValue
 
 
         if (!services?.length) {
             return {
-                valid: false
+                valid: false,
+                msg: '请至少选择一个服务'
             }
         }
 
@@ -97,42 +97,46 @@ const Index = ({
             msg: res.msg
         }
 
-    }
+    }, [clusterId, formMapRef])
 
-    const columns: ProColumns[] = [
-        {
-            dataIndex: 'index',
-            title: '序号',
-            valueType: 'indexBorder',
-            width: 48,
-        },
-        {
-            title: '服务',
-            dataIndex: 'label',
-            ellipsis: true,
-        },
-        {
-            title: '描述',
-            dataIndex: 'serviceDesc'
-        },
-        {
-            title: '版本',
-            dataIndex: 'serviceVersion',
-            ellipsis: true,
-            search: false,
-        },
-    ];
+    const columns: ProColumns[] = useMemo(() => {
+        return [
+            {
+                dataIndex: 'index',
+                title: '序号',
+                valueType: 'indexBorder',
+                width: 48,
+            },
+            {
+                title: '服务',
+                dataIndex: 'label',
+                ellipsis: true,
+            },
+            {
+                title: '描述',
+                dataIndex: 'serviceDesc'
+            },
+            {
+                title: '版本',
+                dataIndex: 'serviceVersion',
+                ellipsis: true,
+                search: false,
+            },
+        ]
+    }, []);
 
 
 
 
 
     useEffect(() => {
-        if (current === 3 && !dataSource?.length) {
+        if (
+            current === index &&
+            !dataSource?.length
+        ) {
             invokeInit()
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [current, dataSource?.length,])
+    }, [current, dataSource?.length, index, invokeInit])
 
 
     useImperativeHandle(ref, () => {

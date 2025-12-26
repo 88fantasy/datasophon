@@ -9,18 +9,19 @@ import { act, useRef, useState } from 'react';
 import { showComfirmModal } from '../../utils/util';
 import { axiosPost } from '../../api/request';
 import { T_STEPS_TYPE_HOSTMANAGE } from '../Colony/ColonyManage/components/ConfigModal';
+import asyncHook from '../../components/Common/CommonModal/asyncHook';
 
 
 
-const showHandRackModal = () =>
-    import("./HandRackModal/api");
-const showAddLabelModal = () =>
-    import("./AddLabelModal/api");
-const showRoleModal = () =>
-    import("./RoleModal/api");
+const showHandRackModal = asyncHook(() =>
+    import("./HandRackModal/api"));
+const showAddLabelModal = asyncHook(() =>
+    import("./AddLabelModal/api"));
+const showRoleModal = asyncHook(() =>
+    import("./RoleModal/api"));
 
-const showConfigModal = () =>
-    import("../Colony/ColonyManage/components/ConfigModal/api");
+const showConfigModal = asyncHook(() =>
+    import("../Colony/ColonyManage/components/ConfigModal/api"));
 
 
 

@@ -19,32 +19,41 @@ const Index = ({
     current,
     formMapRef,
     record,
+    index,
+    steps4Data,
 
 }, ref) => {
-    const [hostList, setHostList] = useState([])
+    const hosListRef = useRef([])
     const [templateData, setTemplateData] = useState([])
     const { clusterId } = useConfigContext()
 
-    const steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
+
+    if (!steps4Data) {
+        steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
+    }
+
+    console.log('steps4Data', steps4Data)
 
 
-    const handlerData = (data) => {
+
+    const handlerData = useCallback((data) => {
         const arr = [];
         data.map((item) => {
             arr.push({
                 label: item.serviceRoleName,
                 name: item.serviceRoleName,
-                value: item.hosts ? item.hosts : hostList.length > 1 ? hostList[0] : undefined,
-                defaultValue: item.hosts ? item.hosts : hostList.length > 1 ? hostList[0] : undefined,
-                selectValue: hostList,
+                value: item.hosts ? item.hosts : hosListRef.current.length > 1 ? hosListRef.current[0] : undefined,
+                defaultValue: item.hosts ? item.hosts : hosListRef.current.length > 1 ? hosListRef.current[0] : undefined,
+                selectValue: hosListRef.current,
                 type: item.cardinality === "1" ? "select" : "multipleSelect",
                 isHidden: false,
                 required: item.serviceRoleType === "master",
             });
         });
         return arr;
-    }
-    const getServiceRoleList = async () => {
+    }, [])
+
+    const getServiceRoleList = useCallback(async () => {
         const params = {
             clusterId,
             serviceIds: steps4Data.services.map(val => val.id).join(",") || "",
@@ -55,9 +64,9 @@ const Index = ({
         if (res.code === 200) {
             setTemplateData(handlerData(res.data))
         }
-    }
+    }, [clusterId, handlerData, steps4Data.services])
 
-    const getAllHost = async () => {
+    const getAllHost = useCallback(async () => {
         const params = {
             clusterId,
         };
@@ -71,22 +80,25 @@ const Index = ({
 
             // TODO:测试
             // arr.push(1, 2, 3)
-            setHostList(arr)
+            // setHostList(arr)
+            hosListRef.current = arr
         }
 
 
         await getServiceRoleList()
-    }
 
 
-    const invokeValid = async () => {
+    }, [clusterId, getServiceRoleList])
+
+
+    const invokeValid = useCallback(async () => {
         const fieldValue = formMapRef.current[4]?.current.getFieldsValue()
         console.log('fieldValue', fieldValue)
         let formData = {};
 
         let saveParam = [];
 
-        for (var k in fieldValue) {
+        for (const k in fieldValue) {
             const key = deleteNum(k, "multipleSelect");
             if (k.includes("multipleSelect")) {
                 if (Object.prototype.hasOwnProperty.call(formData, key)) {
@@ -105,7 +117,7 @@ const Index = ({
             }
         }
 
-        for (var label in formData) {
+        for (const label in formData) {
             saveParam.push({
                 serviceRole: label,
                 hosts: formData[label],
@@ -128,7 +140,7 @@ const Index = ({
             msg: res.msg
         }
 
-    }
+    }, [clusterId, formMapRef, templateData])
 
 
 
@@ -136,11 +148,10 @@ const Index = ({
 
 
     useEffect(() => {
-        if (current === 4) {
+        if (current === index) {
             getAllHost()
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [current])
+    }, [current, getAllHost, index])
 
 
     useImperativeHandle(ref, () => {

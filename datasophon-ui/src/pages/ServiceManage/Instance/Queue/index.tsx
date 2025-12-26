@@ -11,10 +11,11 @@ import { Empty } from 'antd';
 import CommonBtnList from '../../../../components/Common/CommonBtnList';
 import { PlusOutlined } from '@ant-design/icons';
 import { showMsgAfferRequest } from '../../../../utils/util';
+import asyncHook from '../../../../components/Common/CommonModal/asyncHook';
 
 
-const showBuildOrEditModal = () =>
-    import("./BuildOrEditModal/api");
+const showBuildOrEditModal = asyncHook(() =>
+    import("./BuildOrEditModal/api"));
 
 const onBuildOrEditClick = async ({
     action,

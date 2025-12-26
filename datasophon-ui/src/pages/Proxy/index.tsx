@@ -25,8 +25,9 @@ import { cloneDeep, noop } from 'lodash-es';
 import { menuRender } from './components/menuRender';
 import { ProxyContext } from '../../context/proxyContext';
 import { actionsRender } from './components/actionsRender';
+import asyncHook from '../../components/Common/CommonModal/asyncHook';
 
-const showUserCenterModal = () => import('./components/UserCenterModal/api')
+const showUserCenterModal = asyncHook(() => import('./components/UserCenterModal/api'))
 
 const settings: ProSettings | undefined = {
     layout: 'mix',

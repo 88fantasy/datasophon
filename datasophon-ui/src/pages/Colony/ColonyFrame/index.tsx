@@ -8,10 +8,11 @@ import CommonTable, { invokeGenOptionCol, type GithubIssueItem } from '../../../
 import type { ProColumns } from '@ant-design/pro-components';
 import { invokeGenerateElId } from '../../../utils/util';
 import CommonTabs from '../../../components/Common/CommonTabs';
+import asyncHook from '../../../components/Common/CommonModal/asyncHook';
 
 
 
-const showUploadDeployModal = () => import('../../../components/UploadDeployModal/api')
+const showUploadDeployModal = asyncHook(() => import('../../../components/UploadDeployModal/api'))
 
 
 
