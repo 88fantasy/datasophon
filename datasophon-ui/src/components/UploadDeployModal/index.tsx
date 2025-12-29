@@ -157,14 +157,22 @@ const Index = (props) => {
 
 
                     return (
-                        <Button
-                            type="primary"
-                            onClick={nextClick}
-                            loading={submitPending}
-                        // disabled={!meteFileId}
-                        >
-                            开始部署
-                        </Button>
+                        <>
+                            <Button
+                                type="primary"
+                                onClick={() => onPre()}
+                            >
+                                上一步
+                            </Button>
+                            <Button
+                                type="primary"
+                                onClick={nextClick}
+                                loading={submitPending}
+                            // disabled={!meteFileId}
+                            >
+                                开始部署
+                            </Button>
+                        </>
                     )
                 } else if (type && step === 2) {
                     return
@@ -220,7 +228,7 @@ const Index = (props) => {
                 formMapRef={formMapRef}
                 onFinish={onFinish}
                 formProps={{
-                    className: 'w-[30vw]'
+                    className: 'w-[30vw] overflow-hidden'
                 }}
                 submitter={submitter}
                 onCurrentChange={onCurrentChange}

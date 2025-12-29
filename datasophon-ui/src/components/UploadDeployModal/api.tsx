@@ -12,7 +12,7 @@ export default async function (config) {
     config.dialogConfig = {
         title: '导入',
         classNames: {
-            body: 'max-h-[70vh] overflow-y-auto mt-[20px] overflow-hidden'
+            body: 'max-h-[70vh] mt-[20px] overflow-hidden'
         },
         footer: false,
     };

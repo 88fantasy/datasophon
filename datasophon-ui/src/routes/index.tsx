@@ -93,7 +93,7 @@ const contentRoutes = [
     path: '/Cluster/:clusterId/ServiceManage',
     element: <Proxy />,
     icon: <ProjectOutlined />,
-    title: '服务管理',
+    title: '首页',
     children: [
       {
         index: true,

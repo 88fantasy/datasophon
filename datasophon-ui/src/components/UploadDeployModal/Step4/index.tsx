@@ -17,7 +17,9 @@ const stateMap = {
     '-1': '失败',
     '-2': '进度对象不存在',
     2: '解析元数据',
-    3: '解压安装包'
+    3: '解压安装包',
+    4: '保存数据',
+    5: '上传安装包到nexus'
 }
 const Index = (props) => {
 
@@ -72,7 +74,7 @@ const Index = (props) => {
             if ([1, -1, -2].includes(Number(res.data.state))) {
                 invokeCancelUpdateProgress()
             } else {
-                if (res.data?.total && res.data?.total !== res.data?.step) {
+                if (![1, -1].includes(Number(res.data.state))) {
                     invokeUpdateProgress(id)
                 }
             }
@@ -163,17 +165,33 @@ const Index = (props) => {
         return res
     }, [state.queryProgressRes?.state, state.queryProgressRes?.step, state.queryProgressRes?.total])
 
+
+    const memoPrecent = useMemo(() => {
+        const currentState = state?.queryProgressRes?.state
+
+        if (currentState === 1) {
+            return 100
+        } else {
+            return ((currentState || 1) - 1) / 5 * 100
+        }
+
+    }, [state])
+
     const format = useCallback((percent) => {
         if (memoStatus.status === 'success') {
             return `成功`
         } else if (memoStatus.status === 'exception' || state.reloadBtnVisiable) {
             return (
                 <div>
-                    <Tooltip title={state.queryProgressRes?.error}>
+                    <Tooltip
+                        title={
+                            state.queryProgressRes?.error || stateMap[state.queryProgressRes?.state]
+                        }
+                    >
                         <div className="relative">
                             失败
                             <QuestionCircleOutlined
-                            className="absolute !text-slate-400 ml-[10px] !text-[16px]" />
+                                className="absolute !text-slate-400 ml-[10px] !text-[16px]" />
                         </div>
 
                     </Tooltip>
@@ -193,24 +211,24 @@ const Index = (props) => {
         return (
             <div>
                 <div>{percent}%</div>
-                <div className="mb-[20px] text-[14px] mt-[20px]">
-                    {/* 当前状态： */}
-                    {stateMap[state?.queryProgressRes?.state]}
-                    {
-                        !!state?.queryProgressRes?.progress &&
-                        <span className="ml-[10px] ">
-                            {
-                                `${state?.queryProgressRes?.progress}%`
-                            }
-                        </span>
-                    }
-                    {/* {
-                        !!state.queryProgressRes?.error &&
-                        <span className="ml-[10px]">
-                          
-                        </span>
-                    } */}
-                </div>
+
+                {
+                    stateMap[state?.queryProgressRes?.state] &&
+                    ![1].includes(Number(state?.queryProgressRes?.state)) &&
+                    <div className="mb-[20px] text-[14px] mt-[20px]">
+                        {/* 当前状态： */}
+                        {stateMap[state?.queryProgressRes?.state]}
+                        {
+                            !!state?.queryProgressRes?.progress &&
+                            <span className="ml-[10px] ">
+                                {
+                                    `${state?.queryProgressRes?.progress ? (state.queryProgressRes.progress * 100).toFixed(2) : '0'}%`
+                                }
+                            </span>
+                        }
+                    </div>
+                }
+
             </div>
         )
 
@@ -235,10 +253,11 @@ const Index = (props) => {
                 name="importCmp"
             >
                 <Progress
-                    type="circle"
+                    type="dashboard"
                     status={memoStatus.status}
-                    percent={memoStatus.percent}
-                    strokeColor={twoColors}
+                    percent={memoPrecent}
+                    steps={5}
+                    railColor="rgba(0, 0, 0, 0.06)"
                     size={300}
                     format={format}
                 />
