@@ -14,29 +14,34 @@ import { getRouteQuery } from './utils/routerUtils'
 const invokeInit = async () => {
 
 
-  const res = await axiosPost(API.getColonyList)
+  console.log('user', account.getUser())
+  if (account.getUser()) {
+    const res = await axiosPost(API.getColonyList)
 
 
-  if (res.code === 200) {
+    if (res.code === 200) {
 
 
-    if (/\/account\/login/gi.test(location.pathname) && account.getUser()) {
+      if (/\/account\/login/gi.test(location.pathname)) {
 
-      let redirectUri = getRouteQuery('redirectUri')
+        let redirectUri = getRouteQuery('redirectUri')
 
-      redirectUri = redirectUri ? decodeURIComponent(redirectUri) : `${VUE_APP_PUBLIC_PATH}/Colony/ColonyManage`
+        redirectUri = redirectUri ? decodeURIComponent(redirectUri) : `${VUE_APP_PUBLIC_PATH}/Colony/ColonyManage`
 
-      window.location.href = redirectUri
+        window.location.href = redirectUri
 
-      return
+        return
+      }
+
     }
-
-    createRoot(document.getElementById('root')!).render(
-      <StrictMode>
-        <App />
-      </StrictMode>,
-    )
   }
+
+
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  )
 }
 
 invokeInit()

@@ -13,6 +13,7 @@ const gobalEvent = new EventEmitter();
 const uiEvent = {
   updateDataProcessingDagNodeSize: invokeGenerateElId(),
   updateDataProcessingDagNodeData: invokeGenerateElId(),
+  updateServiceInstanceList: invokeGenerateElId(),
 };
 
 export { uiEvent };

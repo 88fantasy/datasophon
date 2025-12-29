@@ -125,6 +125,8 @@ const invokeRenderMore = ({
                     okType: 'danger'
                 })
 
+
+
             }
 
             if (res) {
@@ -135,6 +137,8 @@ const invokeRenderMore = ({
                         stepsType: T_SETPS_TYPE_ADDSERVICE,
                         clusterId
                     })
+
+                    return
                 } else if (
                     [T_STARTALL, T_STOPALL, T_RESTARTALL].includes(obj.key)
 

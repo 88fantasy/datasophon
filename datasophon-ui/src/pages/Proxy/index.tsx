@@ -145,7 +145,8 @@ const Index = () => {
                 originData: {
                     serviceStateCode: 1,
                     serviceList,
-                    clusterId
+                    clusterId,
+
                 }
             })
 
@@ -304,6 +305,8 @@ const Index = () => {
     }, [])
 
 
+
+
     const memoAvatarProps = useMemo(() => {
         return {
             src: user.avatar,
@@ -347,7 +350,9 @@ const Index = () => {
         invokeInit()
     }, [invokeInit])
 
-
+    useEffect(() => {
+        return invokeCancelGetServiceList()
+    }, [invokeCancelGetServiceList])
 
 
     return (

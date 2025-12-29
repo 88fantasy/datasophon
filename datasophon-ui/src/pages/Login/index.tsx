@@ -38,9 +38,10 @@ const Login = () => {
       }
     )
 
-    console.log('res', res)
+    // console.log('res', res)
+    showMsgAfferRequest(res)
+
     if (res.code === 200) {
-      showMsgAfferRequest(res)
 
       const loginRes = res.data;
       setAuthorization({ sessionId: loginRes.sessionId });
