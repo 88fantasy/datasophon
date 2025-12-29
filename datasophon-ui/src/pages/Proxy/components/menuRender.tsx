@@ -1,18 +1,26 @@
 import { Badge, Dropdown } from "antd"
 import { invokeGetRouteByPath } from "../../../utils/routerUtils"
 import { isEmpty, showComfirmModal, showMsgAfferRequest } from "../../../utils/util"
-import { MoreOutlined } from "@ant-design/icons"
+import { AlertOutlined, MoreOutlined, ReloadOutlined } from "@ant-design/icons"
 import { axiosJsonPost, axiosPost } from "../../../api/request"
 import { API } from "../../../api"
 import asyncHook from "../../../components/Common/CommonModal/asyncHook"
 import { T_SETPS_TYPE_ADDSERVICE } from "../../Colony/ColonyManage/components/ConfigModal/stepType"
-import { gray } from "@ant-design/colors"
+import { gray, orange } from "@ant-design/colors"
 
 const showConfigModal = asyncHook(() =>
     import("../../Colony/ColonyManage/components/ConfigModal/api"));
 
 const showResultModal = asyncHook(() =>
     import("./ResultModal/api"));
+
+
+const showAlarmModal = asyncHook(() =>
+    import("./AlarmModal/api"));
+
+const showCompareModal = asyncHook(() =>
+    import("./CompareModal/api"));
+
 
 const badgeColorMap = {
     '-1': ' ',
@@ -250,8 +258,39 @@ export const menuRender = (obj, item, dom) => {
 
     // if (item.path)
 
+    const {
+        originData = {}
+    } = item
+
+    // console.log('originData', originData)
+
+    // const isOverview = /Instance\/Overview/gi.test(item.path)
 
     const isServiceManage = invokeGetRouteByPath(item.path)?.route.path === '/ddh/Cluster/:clusterId/ServiceManage/Instance/:instanceId'
+
+
+
+    const onAlarmClick = async (e) => {
+        e.stopPropagation()
+        const modelApi = await showAlarmModal()
+
+        modelApi.default({
+            serviceInstanceId: originData.id
+            // alarmAll: true
+        })
+    }
+
+
+    const onRefreshClick = async (e) => {
+        e.stopPropagation()
+        const modelApi = await showCompareModal()
+        console.log('item', item)
+
+        modelApi.default({
+            // clusterId,
+            serviceInstanceId: originData.id
+        })
+    }
 
 
     return (
@@ -268,8 +307,38 @@ export const menuRender = (obj, item, dom) => {
                 invokeRenderDot({ obj, item, dom, isServiceManage })
             }
 
-            <div className="flex-1">
-                {dom}
+            <div className="flex-1 flex items-center justify-between overflow-hidden">
+                <div className="flex-1 overflow-hidden">
+                    {dom}
+                </div>
+                {
+                    !!originData.alertNum && (
+
+                        <div
+                            style={{
+                                color: orange.primary
+                            }}
+                            className="flex items-center gap-[2px] "
+                            onClick={onAlarmClick}
+                        >
+                            <AlertOutlined className="text-[19px]" />
+                            {
+                                originData.alertNum
+                            }
+                        </div>
+                    )
+                }
+                {
+                    originData.needRestart &&
+                    <ReloadOutlined
+                        className="!ml-[4px]"
+                        style={{
+                            color: gray[2]
+                        }}
+                        onClick={onRefreshClick}
+                    />
+                }
+
             </div>
             {
                 invokeRenderMore({ obj, item, dom, isServiceManage })
