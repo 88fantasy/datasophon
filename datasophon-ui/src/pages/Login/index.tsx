@@ -48,25 +48,7 @@ const Login = () => {
       navigate(`${VUE_APP_PUBLIC_PATH}/Colony/ColonyManage`)
     }
     setLoading(false);
-
-
-    // navigate('/dashboard');
-    // }, 1500);
   };
-
-  // const invokeInit = useCallback(() => {
-  //   const user = account.getUser();
-
-
-  //   if (user) {
-  //     navigate(`${VUE_APP_PUBLIC_PATH}/Colony/ColonyManage`)
-  //   }
-  // }, [navigate])
-
-
-  // useEffect(() => {
-  //   invokeInit()
-  // }, [invokeInit])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import * as yaml from 'js-yaml';
-import { sm4 } from 'sm-crypto';
 import CommonTable from "../../Common/CommonTable";
+import { sm4Decrypt } from "../../../utils/secretUtils";
 
 const Index = (props) => {
 
@@ -26,7 +26,10 @@ const Index = (props) => {
 
 
                 try {
-                    content = sm4.decrypt(content, contentDecodePasswd)
+
+                    // const keyBase64 = "E9+IV0ZpPTMKLzBnfeXPCQ==";
+                    // const key = Buffer.from(keyBase64, 'base64').toString('hex'); // 转为 hex 字符串
+                    content = sm4Decrypt(contentDecodePasswd, content)
                 } catch (error) {
                     console.warn('解密失败', error)
                 }
