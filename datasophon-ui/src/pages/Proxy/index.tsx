@@ -386,7 +386,7 @@ const Index = () => {
                         headerTitleRender={
                             (logo) => {
                                 return (
-                                    <div className='flex gap-[10px] w-[216px]'>
+                                    <div className='flex gap-[10px] w-[250px]'>
                                         {
                                             logo
                                         }
@@ -402,6 +402,7 @@ const Index = () => {
                         location={{
                             pathname: window.location.pathname,
                         }}
+                        siderWidth={250}
                         avatarProps={memoAvatarProps}
                         actionsRender={actionsRender.bind(noop, {
                             clusterId

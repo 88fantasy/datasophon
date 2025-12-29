@@ -13,7 +13,7 @@ const Index = (props, ref) => {
         formMapRef,
         record,
         clusterId,
-        instanceId,
+        serviceInstanceId,
         alarmAll
     } = props
 
@@ -128,7 +128,7 @@ const Index = (props, ref) => {
                             params.clusterId = clusterId
                         } else {
                             params = {
-                                instanceId
+                                serviceInstanceId
                             }
                         }
                         return params
