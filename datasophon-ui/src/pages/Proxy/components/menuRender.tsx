@@ -15,6 +15,7 @@ const showResultModal = asyncHook(() =>
     import("./ResultModal/api"));
 
 const badgeColorMap = {
+    '-1': ' ',
     1: gray.primary,
     2: 'green',
     3: 'orange',
@@ -37,6 +38,10 @@ const invokeRenderDot = ({
     dom,
     isServiceManage
 }) => {
+
+    const isOverview = /Instance\/Overview/gi.test(item.path)
+
+
     return isServiceManage &&
         <Badge
             // count={
@@ -46,7 +51,7 @@ const invokeRenderDot = ({
                 indicator: '!w-[8px] !h-[8px]'
             }}
             color={
-                isEmpty(badgeColorMap[item.originData?.serviceStateCode]) ? 'red' : badgeColorMap[item.originData?.serviceStateCode]
+                isEmpty(badgeColorMap[item.originData?.serviceStateCode]) && !isOverview ? 'red' : badgeColorMap[item.originData?.serviceStateCode]
             }
         />
 }

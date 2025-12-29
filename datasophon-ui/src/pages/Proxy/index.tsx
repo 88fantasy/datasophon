@@ -143,7 +143,7 @@ const Index = () => {
                 name: '总览',
                 path: `${serviceRouteObj.path}/Instance/Overview`,
                 originData: {
-                    serviceStateCode: 1,
+                    serviceStateCode: -1,
                     serviceList,
                     clusterId,
 
