@@ -21,7 +21,7 @@ import { ClusterGlobalProvider } from '../../context/clusterGlobalContext';
 import { memo, use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { API } from '../../api';
 import { axiosPost } from '../../api/request';
-import { cloneDeep, noop } from 'lodash-es';
+import { cloneDeep, isEqual, noop } from 'lodash-es';
 import { menuRender } from './components/menuRender';
 import { ProxyContext } from '../../context/proxyContext';
 import { actionsRender } from './components/actionsRender';
@@ -177,7 +177,14 @@ const Index = () => {
         })
 
         if (res.code === 200) {
-            setServiceList(res.data)
+            setServiceList(preState => {
+
+
+                if (!isEqual(res.data, preState)) {
+                    return res.data
+                }
+                return preState
+            })
             serviceListMapRef.current = res.data.reduce((acc, val) => {
                 acc[val.id] = val
                 return acc
@@ -195,11 +202,11 @@ const Index = () => {
                 res = await invokeGetServiceListByClusterProxy()
                 fn(false)
             } else {
-                // timeoutIdRef.current = setTimeout(async () => {
-                //     await invokeGetServiceListByClusterProxy()
-                //     invokeCancelGetServiceList()
-                //     fn(false)
-                // }, 3 * 1000)
+                timeoutIdRef.current = setTimeout(async () => {
+                    await invokeGetServiceListByClusterProxy()
+                    invokeCancelGetServiceList()
+                    fn(false)
+                }, 3 * 1000)
             }
 
             return res

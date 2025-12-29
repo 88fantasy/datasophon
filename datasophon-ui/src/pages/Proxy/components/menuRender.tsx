@@ -6,6 +6,7 @@ import { axiosJsonPost, axiosPost } from "../../../api/request"
 import { API } from "../../../api"
 import asyncHook from "../../../components/Common/CommonModal/asyncHook"
 import { T_SETPS_TYPE_ADDSERVICE } from "../../Colony/ColonyManage/components/ConfigModal/stepType"
+import { gray } from "@ant-design/colors"
 
 const showConfigModal = asyncHook(() =>
     import("../../Colony/ColonyManage/components/ConfigModal/api"));
@@ -14,7 +15,7 @@ const showResultModal = asyncHook(() =>
     import("./ResultModal/api"));
 
 const badgeColorMap = {
-    1: ' ',
+    1: gray.primary,
     2: 'green',
     3: 'orange',
 }
