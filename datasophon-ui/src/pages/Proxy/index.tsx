@@ -27,6 +27,9 @@ import { ProxyContext } from '../../context/proxyContext';
 import { actionsRender } from './components/actionsRender';
 import asyncHook from '../../components/Common/CommonModal/asyncHook';
 
+import bg1 from '../../assets/O1CN01O4etvp1DvpFLKfuWq_!!6000000000279-2-tps-609-606.png'
+import bg2 from '../../assets/O1CN018NxReL1shX85Yz6Cx_!!6000000005798-2-tps-884-496.png'
+
 const showUserCenterModal = asyncHook(() => import('./components/UserCenterModal/api'))
 
 const token = {
@@ -38,28 +41,43 @@ const token = {
 
 const bgLayoutImgList = [
     {
-        src: 'https://img.alicdn.com/imgextra/i2/O1CN01O4etvp1DvpFLKfuWq_!!6000000000279-2-tps-609-606.png',
+        src: bg1,
         left: 85,
         bottom: 100,
         height: '303px',
     },
     {
-        src: 'https://img.alicdn.com/imgextra/i2/O1CN01O4etvp1DvpFLKfuWq_!!6000000000279-2-tps-609-606.png',
+        src: bg1,
         bottom: -68,
         right: -45,
         height: '303px',
     },
     {
-        src: 'https://img.alicdn.com/imgextra/i3/O1CN018NxReL1shX85Yz6Cx_!!6000000005798-2-tps-884-496.png',
+        src: bg2,
         bottom: 0,
         left: 0,
         width: '331px',
     },
 ]
 
-const settings: ProSettings | undefined = {
+const headerTitleRender = (logo) => {
+    return (
+        <div className='flex gap-[10px] w-[250px]'>
+            {
+                logo
+            }
+            VOS
+        </div>
+    )
+}
+
+const settings = {
     layout: 'mix',
     splitMenus: true,
+    siderWidth: 250,
+    headerTitleRender,
+    token,
+    bgLayoutImgList
 };
 
 let timer
@@ -81,6 +99,9 @@ const onUserClick = async () => {
 
     modelApi.default({})
 }
+
+
+
 
 const Index = () => {
 
@@ -194,8 +215,6 @@ const Index = () => {
     }, [clusterId])
 
     const invokeGetServiceList = useCallback(async (hadInit) => {
-        console.log('invokeGetServiceList', hadInit)
-
         const fn = async (forceUpdate) => {
             let res
             if (forceUpdate) {
@@ -383,26 +402,11 @@ const Index = () => {
                 {
                     hadInit && <ProLayout
                         className='h-[100vh]'
-                        headerTitleRender={
-                            (logo) => {
-                                return (
-                                    <div className='flex gap-[10px] w-[250px]'>
-                                        {
-                                            logo
-                                        }
-                                        VOS
-                                    </div>
-                                )
-                            }
-                        }
-
-                        token={token}
-                        bgLayoutImgList={bgLayoutImgList}
+                        // collapsed={false}
                         {...defaultProps}
                         location={{
                             pathname: window.location.pathname,
                         }}
-                        siderWidth={250}
                         avatarProps={memoAvatarProps}
                         actionsRender={actionsRender.bind(noop, {
                             clusterId
@@ -410,7 +414,6 @@ const Index = () => {
                         menuItemRender={menuRender.bind(noop, {
                             onMenuClick
                         })}
-
                         {...settings}
                     >
                         {
