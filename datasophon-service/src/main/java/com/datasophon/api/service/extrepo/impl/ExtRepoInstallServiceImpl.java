@@ -9,7 +9,7 @@ import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.LoadServiceMeta;
 import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.master.SubmitTaskNodeActor;
+import com.datasophon.api.master.DAGExecActor;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.ClusterServiceCommandHostService;
@@ -19,6 +19,7 @@ import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.ServiceInstallService;
+import com.datasophon.api.service.dag.DAGService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallService;
 import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
 import com.datasophon.api.service.extrepo.ctx.ExecDAGBuilderContext;
@@ -31,11 +32,10 @@ import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.Constants;
-import com.datasophon.common.command.SubmitActiveTaskNodeCommand;
+import com.datasophon.common.command.dag.DAGExecCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.ServiceRoleType;
 import com.datasophon.common.model.DAG;
-import com.datasophon.common.model.DAGGraph;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceInfo;
 import com.datasophon.common.model.ServiceNode;
@@ -50,6 +50,7 @@ import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.FrameServiceRoleEntity;
+import com.datasophon.dao.entity.dag.NodeDefinitionEntity;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.ServiceState;
 import com.datasophon.dao.model.extrepo.DeploySrvConfig;
@@ -65,7 +66,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -75,7 +75,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -123,6 +122,9 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
     @Autowired
     private ClusterHostService clusterHostService;
+
+    @Autowired
+    private DAGService dagService;
 
     @Override
     public ValidateResultVO validDeploymentFile(DeploymentDTO dto) {
@@ -304,32 +306,21 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
     private void doInstall(Integer clusterId, List<String> commandIds, DAG<String, DeploymentDAG.SrvNodeVO, Integer> dag) {
         log.info("开始执行安装操作");
-        SubmitActiveTaskNodeCommand activeTaskNodeCmd = new SubmitActiveTaskNodeCommand();
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
-        activeTaskNodeCmd.setClusterId(clusterInfo.getId());
-        activeTaskNodeCmd.setClusterCode(clusterInfo.getClusterCode());
-
-//        设置准备就绪，可以安装的服务
-        Collection<String> beginNode = dag.getBeginNode();
-        Map<String, String> readyToSubmitTaskList = new ConcurrentHashMap<>();
-        for (String node : beginNode) {
-            readyToSubmitTaskList.put(node, "");
-        }
-        activeTaskNodeCmd.setReadyToSubmitTaskList(readyToSubmitTaskList);
 
 
         ExecDAGBuilderContext context = new ExecDAGBuilderContext();
         context.setSrvCmd(commandService.lambdaQuery().in(ClusterServiceCommandEntity::getCommandId, commandIds).list());
         context.setCmdHost(hostCommandService.lambdaQuery().in(ClusterServiceCommandHostCommandEntity::getCommandId, commandIds).list());
-
-
 //        将服务依赖的dag重构成节点安装服务的dag
-        DAGGraph<String, ServiceNode, String> deployGAG = new DAGGraph<>();
+        Map<String, NodeDefinitionEntity> nodeMap = new HashMap<>();
         dag.getNodes().forEach((srv, info) -> {
             ServiceNode serviceNode = new ServiceNode();
             ClusterServiceCommandEntity cmd = context.getCmd(srv);
             serviceNode.setCommandId(cmd.getCommandId());
             serviceNode.setCommandType(CommandType.ofCode(cmd.getCommandType()));
+            serviceNode.setServiceName(srv);
+
 
             FrameServiceEntity serviceEntity = frameService.lambdaQuery()
                     .eq(FrameServiceEntity::getFrameCode, clusterInfo.getClusterFrame())
@@ -375,17 +366,30 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
             serviceNode.setMasterRoles(masterRoles);
             serviceNode.setElseRoles(elseRoles);
-            deployGAG.addNode(srv, serviceNode);
+
+            NodeDefinitionEntity node = new NodeDefinitionEntity();
+            node.setNodeName(srv);
+            node.setNodeConfig(JSONObject.toJSONString(serviceNode));
+            nodeMap.put(srv, node);
         });
 
-        dag.getEdges().forEach(edge -> deployGAG.addEdge(edge.getStart(), edge.getEnd(), false));
-        activeTaskNodeCmd.setDag(deployGAG);
-        log.debug("开始执行dag, submitActiveTaskNodeCommand:{}", JSONObject.toJSONString(activeTaskNodeCmd));
+        String dagId = dagService.saveDAG("导入安装", null);
+        dagService.saveNodes(dagId, new ArrayList<>(nodeMap.values()));
+
+        dag.getEdges().forEach(edge -> {
+            NodeDefinitionEntity start = nodeMap.get(edge.getStart());
+            NodeDefinitionEntity end = nodeMap.get(edge.getEnd());
+            dagService.saveEdge(dagId, start, end);
+        });
 
 
         log.info("构建DAG完成，开始执行命令");
-        ActorRef submitTaskNodeActor = ActorUtils.getLocalActor(SubmitTaskNodeActor.class, ActorUtils.getActorRefName(SubmitTaskNodeActor.class));
-        submitTaskNodeActor.tell(activeTaskNodeCmd, ActorRef.noSender());
+        DAGExecCommand cmd = new DAGExecCommand();
+        cmd.setDagId(dagId);
+        cmd.setClusterId(clusterId);
+        cmd.setClusterCode(clusterInfo.getClusterCode());
+        ActorRef actor = ActorUtils.getLocalActor(DAGExecActor.class, ActorUtils.getActorRefName(DAGExecActor.class));
+        actor.tell(cmd, ActorRef.noSender());
     }
 
 

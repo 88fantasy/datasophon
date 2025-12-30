@@ -41,6 +41,13 @@ public class SubmitActiveTaskNodeCommand implements Serializable {
     private CommandType commandType;
     private Integer clusterId;
     private String clusterCode;
+
+
+    /**
+     * nodeKey(string): 服务名称
+     * nodeInfo(ServiceNode): 该服务需要执行的命令
+     * edge: 无意义
+     */
     private DAGGraph<String, ServiceNode, String> dag;
     private Map<String, String> errorTaskList = new ConcurrentHashMap<>();
     private Map<String, ServiceExecuteState> activeTaskList = new ConcurrentHashMap<>();

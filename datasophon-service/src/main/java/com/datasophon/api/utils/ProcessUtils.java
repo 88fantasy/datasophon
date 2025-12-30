@@ -587,6 +587,11 @@ public class ProcessUtils {
         return execResult;
     }
 
+    public static ExecResult stopService(ServiceRoleInfo serviceRoleInfo) throws Exception {
+        ServiceHandler serviceStopHandler = new ServiceStopHandler();
+        return serviceStopHandler.handlerRequest(serviceRoleInfo);
+    }
+
     public static ExecResult startInstallService(ServiceRoleInfo serviceRoleInfo) throws Exception {
         ServiceHandler serviceInstallHandler = new ServiceInstallHandler();
         ServiceHandler serviceConfigureHandler = new ServiceConfigureHandler();
@@ -842,5 +847,6 @@ public class ProcessUtils {
         roleInstanceService.updateById(roleInstanceEntity);
 
     }
+
 
 }

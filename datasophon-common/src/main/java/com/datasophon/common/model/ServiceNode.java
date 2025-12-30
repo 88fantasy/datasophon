@@ -32,7 +32,11 @@ public class ServiceNode {
     private String commandId;
 
     private CommandType commandType;
-    
+
+    /**
+     * @deprecated 没有用到
+     */
+    @Deprecated
     private Integer serviceInstanceId;
     
 }

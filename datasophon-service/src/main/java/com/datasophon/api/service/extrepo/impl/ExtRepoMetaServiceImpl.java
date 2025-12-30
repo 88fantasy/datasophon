@@ -316,7 +316,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
                 .flatMap(f -> f.getServices().stream())
                 .map(ServiceMeta::getPackageName)
                 .collect(Collectors.toSet());
-        progress.setTotal(2);
+        progress.setTotal(packageNames.size() + 1);
 
         File metaDir = FileUtil.file(Constants.META_PATH);
         if (metaDir != null && metaDir.exists()) {
@@ -368,7 +368,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
 
     @Override
-    public DeploymentDAG buildDeploymentDAG(DeploymentDTO dto) {
+    public DeploymentDAG  buildDeploymentDAG(DeploymentDTO dto) {
         File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId());
         if (deploymentFile == null) {
             throw new BusinessException("部署清单文件不存在");

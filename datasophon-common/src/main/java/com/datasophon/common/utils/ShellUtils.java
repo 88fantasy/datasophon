@@ -17,13 +17,21 @@
 
 package com.datasophon.common.utils;
 
+import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -196,6 +204,7 @@ public class ShellUtils {
     }
     
     public static ExecResult execWithStatus(String workPath, List<String> command, long timeout, Logger logger) {
+        logger.info("exec cmd, workdir: {}, commands {}", workPath, StrUtil.join(" ", command));
         Process process = null;
         ExecResult result = new ExecResult();
         try {
@@ -203,7 +212,7 @@ public class ShellUtils {
             processBuilder.command(command);
             processBuilder.redirectErrorStream(true);
             process = processBuilder.start();
-            getOutput(process, logger);
+            getOutput(workPath, command, process, logger);
             boolean execResult = process.waitFor(timeout, TimeUnit.SECONDS);
             if (execResult && process.exitValue() == 0) {
                 logger.info("script execute success");
@@ -219,9 +228,8 @@ public class ShellUtils {
         }
         return result;
     }
-    
-    public static void getOutput(Process process, Logger logger) {
-        
+
+    public static void getOutput(String workPath, List<String> command, Process process, Logger logger) {
         ExecutorService getOutputLogService = Executors.newSingleThreadExecutor();
         
         getOutputLogService.submit(() -> {
@@ -234,7 +242,11 @@ public class ShellUtils {
                     stringBuffer.append(line);
                     stringBuffer.append(System.lineSeparator());
                 }
-                logger.info(stringBuffer.toString());
+                String out = stringBuffer.toString();
+                if (StringUtils.isNotBlank(out)) {
+                    out = String.format("执行命令行: %s\n\t workdir: %s\n\t标准输出流输出: %s", StrUtil.join(" ", command), workPath, out);
+                    logger.info(out);
+                }
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             } finally {
@@ -249,7 +261,11 @@ public class ShellUtils {
                     stringBuffer.append(line);
                     stringBuffer.append(System.lineSeparator());
                 }
-                logger.error(stringBuffer.toString());
+                String out = stringBuffer.toString();
+                if (StringUtils.isNotBlank(out)) {
+                    out = String.format("执行命令行: %s\n\t workdir: %s\n\t错误输出流输出: %s", StrUtil.join(" ", command), workPath, out);
+                    logger.error(out);
+                }
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             } finally {

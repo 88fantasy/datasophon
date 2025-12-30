@@ -42,7 +42,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -93,8 +92,8 @@ public class InstallServiceHandler {
 
             boolean result = decompressPkg(packageName, decompressPackageName, createDecompressDir, destDir, installPkgChange);
             if (result) {
-                if (Objects.nonNull(command.getRunAs())) {
-                    ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getUser() + ":" + command.getRunAs().getGroup() + " " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                if (command.getRunAs() != null && command.getRunAs().hasOwner()) {
+                    ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getOwner() + " " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
                     logger.info("chown {} {}", decompressPackageName, chownResult.getExecResult() ? "success" : "fail");
                 }
                 ExecResult chmodResult = ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
