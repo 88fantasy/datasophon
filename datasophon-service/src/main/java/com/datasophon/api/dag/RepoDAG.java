@@ -2,6 +2,7 @@ package com.datasophon.api.dag;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
+import com.datasophon.api.CancelException;
 import com.datasophon.api.dag.model.EdgeDefinition;
 import com.datasophon.api.dag.model.NodeDefinition;
 import com.datasophon.api.dag.repo.DAGRepository;
@@ -22,7 +23,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -147,13 +147,12 @@ public class RepoDAG {
     }
 
 
-
     private void handleDagFailure(Throwable e) {
         if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
         }
         log.error("exec dag {} fail, ", dagId, e);
-        cancel(e instanceof TimeoutException ? null : e);
+        cancel(e);
         throw new RuntimeException(String.format("exec dag %s fail, %s", dagId, e.getMessage()), e);
     }
 
@@ -201,30 +200,37 @@ public class RepoDAG {
     }
 
     public void cancel(Throwable throwable) {
-        if (throwable != null) {
-            log.error("dag: {} stop due to exception, {}", dagId, throwable.getMessage(), throwable);
+        Throwable failCause = throwable;
+        if (throwable instanceof CancelException) {
+            CancelException ex = (CancelException) throwable;
+            failCause = ex.getCause();
+//            failCause为空，表示主动取消，打印info日志
+            if (failCause == null) {
+                log.info("dag: {} cancel due to {}", dagId, ex.getMessage());
+            } else {
+                log.error("dag: {} cancel due to {}", dagId, ex.getMessage(), ex);
+            }
         } else {
-            log.info("dag: {} cancel", dagId);
+            log.error("dag: {} stop due to exception, {}", dagId, throwable.getMessage(), throwable);
         }
 
         if (isRunning.compareAndSet(true, false)) {
-            DagStatus dagStatus = throwable == null ? DagStatus.CANCEL : DagStatus.FAILED;
+//            如果因为失败而取消，则标记为失败
+            DagStatus dagStatus = failCause != null ? DagStatus.FAILED : DagStatus.CANCEL;
             for (DAGListener listener : getCombineListeners()) {
-                listener.onCompleted(this, dagStatus, throwable);
+                listener.onCompleted(this, dagStatus, failCause);
             }
-            repository.doInNewTransactional(() -> {
-                repository.updateDagStatus(dagId, dagStatus);
-            });
+            repository.doInNewTransactional(() -> repository.updateDagStatus(dagId, dagStatus));
 
-            Map<String, NodeDefinition> nodes = getNodeAsMap(dagId, false);
+            Throwable cause = failCause;
+            Map<String, NodeDefinition> nodes = getNodeAsMap(dagId, true);
             nodes.values().forEach(n -> {
+//                取消正在跑的其他任务
                 if (Arrays.asList(NodeStatus.RUNNING, NodeStatus.PENDING).contains(n.getStatus())) {
-                    NodeStatus nodeStatus = throwable == null ? NodeStatus.CANCEL : NodeStatus.FAILED;
-                    n.setStatus(NodeStatus.CANCEL);
                     for (DAGListener listener : getCombineListeners()) {
-                        listener.onNodeCompleted(n, nodeStatus, null, throwable);
+                        listener.onNodeCompleted(n, NodeStatus.CANCEL, null, cause);
                     }
-                    repository.doInNewTransactional(() -> repository.updateNodeStatus(n.getId(), nodeStatus));
+                    repository.doInNewTransactional(() -> repository.updateNodeStatus(n.getId(), NodeStatus.CANCEL));
                 }
             });
         }
@@ -256,6 +262,7 @@ public class RepoDAG {
 
     /**
      * 获取入度为0的节点
+     *
      * @return
      */
     public Set<String> getReadNodes() {
@@ -284,6 +291,7 @@ public class RepoDAG {
 
     /**
      * 获取node节点的后继节点(这些节点的前置任务已经完成）
+     *
      * @param node
      * @return
      */

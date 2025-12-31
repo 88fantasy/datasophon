@@ -181,7 +181,6 @@ public class ShellUtils {
         Process process = null;
         ExecResult result = new ExecResult();
         try {
-            logger.info("command:{}", String.join(" ", command));
             processBuilder.directory(new File(workPath));
             processBuilder.command(command);
             processBuilder.redirectErrorStream(true);
@@ -189,7 +188,7 @@ public class ShellUtils {
             getOutput(process);
             boolean execResult = process.waitFor(timeout, TimeUnit.SECONDS);
             if (execResult && process.exitValue() == 0) {
-                logger.info("script execute success");
+                logger.info("exec cmd success, cmd: {}", String.join(" ", command));
                 result.setExecResult(true);
                 result.setExecOut("script execute success");
             } else {
@@ -198,7 +197,7 @@ public class ShellUtils {
             return result;
         } catch (Exception e) {
             result.setExecErrOut(e.getMessage());
-            logger.error(e.getMessage(), e);
+            logger.error("exec cmd fail, cmd: {}, message: {}", String.join(" ", command), e.getMessage(), e);
         }
         return result;
     }

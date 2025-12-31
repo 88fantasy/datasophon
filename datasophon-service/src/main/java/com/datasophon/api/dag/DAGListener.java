@@ -20,11 +20,20 @@ public interface DAGListener {
         if (NodeStatus.FAILED.equals(status)) {
             onNodeFail(node, throwable);
         }
+        if (NodeStatus.CANCEL.equals(status)) {
+            onNodeCancel(node, throwable);
+        }
     }
 
-    default void onNodeSuccess(NodeDefinition node, String result){}
 
-    default void onNodeFail(NodeDefinition node, Throwable throwable) {}
+    default void onNodeSuccess(NodeDefinition node, String result) {
+    }
+
+    default void onNodeFail(NodeDefinition node, Throwable throwable) {
+    }
+
+    default void onNodeCancel(NodeDefinition node, Throwable throwable) {
+    }
 
     default void onCompleted(RepoDAG dag, DagStatus status, Throwable throwable) {
     }

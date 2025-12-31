@@ -17,22 +17,20 @@
 
 package com.datasophon.worker.actor;
 
+import akka.actor.UntypedActor;
+import cn.hutool.core.io.FileUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.enums.ServiceRoleType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.InstallServiceHandler;
-
 import org.apache.commons.lang3.StringUtils;
-
-import java.io.File;
-import java.util.ArrayList;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import akka.actor.UntypedActor;
+import java.io.File;
+import java.util.ArrayList;
 
 public class InstallServiceActor extends UntypedActor {
     
@@ -67,12 +65,18 @@ public class InstallServiceActor extends UntypedActor {
                     installResult = serviceHandler.install(command);
                 }
             } else {
+                String normalPkgDir = FileUtil.getSuffix(command.getPackageName());
+                String linkName = StringUtils.lowerCase(command.getServiceName());
+                if (linkName.equals(normalPkgDir)) {
+                    throw new IllegalStateException(String.format("%s软件安装目录和软链目录名字一致，无法解压", command.getServiceName()));
+                }
+
+                command.setNormalPkgDir(normalPkgDir);
                 installResult = serviceHandler.install(command);
                 if(installResult.getExecResult()) {
                     // 其他服务创建软连接
-                    String appHome = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
-                    String appLinkHome =
-                            Constants.INSTALL_PATH + Constants.SLASH + StringUtils.lowerCase(command.getServiceName());
+                    String appHome = Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir;
+                    String appLinkHome = Constants.INSTALL_PATH + Constants.SLASH + linkName;
                     if (!new File(appLinkHome).exists()) {
                         ShellUtils.execShell("ln -s " + appHome + " " + appLinkHome);
                         logger.info("Create symbolic dir: {}", appLinkHome);
@@ -86,4 +90,5 @@ public class InstallServiceActor extends UntypedActor {
             unhandled(msg);
         }
     }
+
 }

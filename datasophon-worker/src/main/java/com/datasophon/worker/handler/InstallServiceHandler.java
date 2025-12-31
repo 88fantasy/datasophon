@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +83,6 @@ public class InstallServiceHandler {
             String packageName = command.getPackageName();
             String packagePath = destDir + packageName;
             String decompressPackageName = command.getDecompressPackageName();
-            Boolean createDecompressDir = command.getCreateDecompressDir();
 
             boolean installPkgChange = NexusFileUtils.isFileContentChange(packageName, packagePath);
 
@@ -90,7 +90,7 @@ public class InstallServiceHandler {
                 NexusFileUtils.downloadPkg(packageName, packagePath);
             }
 
-            boolean result = decompressPkg(packageName, decompressPackageName, createDecompressDir, destDir, installPkgChange);
+            boolean result = decompressPkg(command, destDir, installPkgChange);
             if (result) {
                 if (command.getRunAs() != null && command.getRunAs().hasOwner()) {
                     ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getOwner() + " " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
@@ -133,63 +133,49 @@ public class InstallServiceHandler {
         return execResult;
     }
 
-    /*private void downloadPkg(String packageName, String packagePath) {
-        String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
-        String masterPort = PropertyUtils.getString(Constants.MASTER_WEB_PORT);
-        String downloadUrl = "http://" + masterHost + ":" + masterPort + "/ddh/api/service/install/downloadPackage?packageName=" + packageName;
+    private boolean decompressPkg(InstallServiceRoleCommand instCmd, String destDir, boolean installPkgChange) {
+        String packageName = instCmd.getPackageName();
+        String decompressPackageName = instCmd.getPackageName();
 
-        logger.info("download url is {}", downloadUrl);
-
-        HttpUtil.downloadFile(downloadUrl, FileUtil.file(packagePath), new StreamProgress() {
-
-            @Override
-            public void start() {
-                Console.log("start to install。。。。");
-            }
-
-            @Override
-            public void progress(long progressSize, long l1) {
-                Console.log("installed：{} / {} ", FileUtil.readableFileSize(progressSize), FileUtil.readableFileSize(l1));
-            }
-
-            @Override
-            public void finish() {
-                Console.log("install success！");
-            }
-        });
-        logger.info("download package {} success", packageName);
-    }*/
-
-    private boolean decompressPkg(String packageName, String decompressPackageName, Boolean createDecompressDir, String destDir, boolean installPkgChange) {
         boolean decompressResult = true;
-        boolean needParentDir = BooleanUtil.isTrue(createDecompressDir);
-        // ~/ 开头的包，解压到当前目录下
 
-        boolean fileExist = FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+        boolean fileExist = FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + instCmd.getNormalPkgDir());
         if (!fileExist || installPkgChange) {
             String sourceFile = destDir + packageName;
             logger.info("Start to decompress {}", sourceFile);
             String suffix = FileUtil.getSuffix(sourceFile);
-            String prefix = packageName.substring(0, packageName.length() - suffix.length() - 1);
             boolean success = false;
 
+//           安装软件的临时解压目录
+            String serviceDecompressDir = null;
             try {
-
                 ArrayList<String> command = new ArrayList<>();
-                String decompressDir = needParentDir ? Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName : Constants.INSTALL_PATH;
-                if(needParentDir && !FileUtil.exist(decompressDir)){
-                    FileUtil.mkdir(decompressDir);
+
+                boolean needParentDir  =  BooleanUtil.isTrue(instCmd.getCreateDecompressDir());
+                String baseTempDir =  Constants.INSTALL_PATH + Constants.SLASH + "temp";
+                FileUtil.mkdir(new File(baseTempDir));
+
+                String decompressDir = null;
+                if (needParentDir) {
+                    decompressDir = baseTempDir +  Constants.SLASH + decompressPackageName;
+//                    检查越权，防止勿删系统文件
+                    checkIfPathOutOfBox(baseTempDir, decompressDir);
+                    FileUtil.mkdir(new File(decompressDir));
+                    FileUtil.cleanEmpty(new File(decompressDir));
+                    serviceDecompressDir = decompressDir;
+                } else {
+                    serviceDecompressDir =  decompressDir +  Constants.SLASH + decompressPackageName;
+//                    检查越权，防止勿删系统文件
+                    checkIfPathOutOfBox(baseTempDir, serviceDecompressDir);
+                    FileUtil.del(new File(serviceDecompressDir));
                 }
+
                 if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
                     command.add("tar");
                     command.add("-zxvf");
                     command.add(sourceFile);
                     command.add("-C");
                     command.add(decompressDir);
-
-                    if (installPkgChange) {
-                        command.add("--overwrite");
-                    }
                 } else if ("zip".equals(suffix)) {
                     command.add("unzip");
                     if (installPkgChange) {
@@ -204,19 +190,30 @@ public class InstallServiceHandler {
                 ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
                 success = execResult.getExecResult();
                 if (success) {
-                    // 自动重命名
-                    if (FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + prefix)) {
-                        FileUtil.move(new File(Constants.INSTALL_PATH + Constants.SLASH + prefix), new File(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName), false);
-                    }
+                    String targetDir = Constants.INSTALL_PATH + Constants.SLASH + instCmd.getNormalPkgDir();
+                    FileUtil.mkdir(targetDir);
+//                    将临时目录，重命名为安装目录
+                    FileUtil.moveContent(new File(serviceDecompressDir), new File(targetDir),true);
                 }
             } finally {
-                if (!success) {
-                    FileUtil.del(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                if (!success && serviceDecompressDir != null) {
+                    FileUtil.del(serviceDecompressDir);
                 }
             }
             return success;
         }
         return decompressResult;
+    }
+
+    /**
+     * 检查是否越权，防止innerDir存在 ../../之类的路径，造成越权
+     * @param baseTempDir
+     * @param innerDir
+     */
+    private void checkIfPathOutOfBox(String baseTempDir, String innerDir) {
+        if (!Paths.get(innerDir).startsWith(Paths.get(baseTempDir))) {
+            throw new SecurityException(String.format("can operation dir %s out of %s", innerDir, baseTempDir));
+        }
     }
 
     private void changeHadoopInstallPathPerm(String decompressPackageName) {
