@@ -82,7 +82,6 @@ public class InstallServiceHandler {
             String destDir = Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH;
             String packageName = command.getPackageName();
             String packagePath = destDir + packageName;
-            String decompressPackageName = command.getDecompressPackageName();
 
             boolean installPkgChange = NexusFileUtils.isFileContentChange(packageName, packagePath);
 
@@ -92,12 +91,13 @@ public class InstallServiceHandler {
 
             boolean result = decompressPkg(command, destDir, installPkgChange);
             if (result) {
+                String normalPkgDir = command.getNormalPkgDir();
                 if (command.getRunAs() != null && command.getRunAs().hasOwner()) {
-                    ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getOwner() + " " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-                    logger.info("chown {} {}", decompressPackageName, chownResult.getExecResult() ? "success" : "fail");
+                    ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getOwner() + " " + Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir);
+                    logger.info("chown {} {}", normalPkgDir, chownResult.getExecResult() ? "success" : "fail");
                 }
-                ExecResult chmodResult = ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-                logger.info("chmod {} {}", decompressPackageName, chmodResult.getExecResult() ? "success" : "fail");
+                ExecResult chmodResult = ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir);
+                logger.info("chmod {} {}", normalPkgDir, chmodResult.getExecResult() ? "success" : "fail");
 
                 if (CollUtil.isNotEmpty(command.getResourceStrategies())) {
                     for (Map<String, Object> strategy : command.getResourceStrategies()) {
@@ -108,7 +108,7 @@ public class InstallServiceHandler {
                         rs.setFrameCode(frameCode);
                         rs.setService(serviceName);
                         rs.setServiceRole(serviceRoleName);
-                        rs.setBasePath(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
+                        rs.setBasePath(Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir);
                         rs.setVariables(command.getVariables());
                         ExecResult exec = rs.exec();
                         if (!exec.getExecResult()) {
@@ -117,12 +117,12 @@ public class InstallServiceHandler {
                     }
                 }
 
-                if (decompressPackageName.contains(Constants.PROMETHEUS)) {
-                    String alertPath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + "alert_rules";
+                if (command.getNormalPkgDir().contains(Constants.PROMETHEUS)) {
+                    String alertPath = Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir + Constants.SLASH + "alert_rules";
                     ShellUtils.execShell("sed -i \"s/clusterIdValue/" + PropertyUtils.getString("clusterId") + "/g\" `grep clusterIdValue -rl " + alertPath + "`");
                 }
-                if (decompressPackageName.contains(HADOOP)) {
-                    changeHadoopInstallPathPerm(decompressPackageName);
+                if (command.getNormalPkgDir().contains(HADOOP)) {
+                    changeHadoopInstallPathPerm(normalPkgDir);
                 }
                 execResult.setExecResult(true);
             }
@@ -135,7 +135,7 @@ public class InstallServiceHandler {
 
     private boolean decompressPkg(InstallServiceRoleCommand instCmd, String destDir, boolean installPkgChange) {
         String packageName = instCmd.getPackageName();
-        String decompressPackageName = instCmd.getPackageName();
+        String decompressPackageName = instCmd.getDecompressPackageName();
 
         boolean decompressResult = true;
 
@@ -155,7 +155,7 @@ public class InstallServiceHandler {
                 String baseTempDir =  Constants.INSTALL_PATH + Constants.SLASH + "temp";
                 FileUtil.mkdir(new File(baseTempDir));
 
-                String decompressDir = null;
+                String decompressDir;
                 if (needParentDir) {
                     decompressDir = baseTempDir +  Constants.SLASH + decompressPackageName;
 //                    检查越权，防止勿删系统文件
@@ -164,7 +164,8 @@ public class InstallServiceHandler {
                     FileUtil.cleanEmpty(new File(decompressDir));
                     serviceDecompressDir = decompressDir;
                 } else {
-                    serviceDecompressDir =  decompressDir +  Constants.SLASH + decompressPackageName;
+                    decompressDir = baseTempDir;
+                    serviceDecompressDir =  baseTempDir +  Constants.SLASH + decompressPackageName;
 //                    检查越权，防止勿删系统文件
                     checkIfPathOutOfBox(baseTempDir, serviceDecompressDir);
                     FileUtil.del(new File(serviceDecompressDir));
@@ -196,7 +197,8 @@ public class InstallServiceHandler {
                     FileUtil.moveContent(new File(serviceDecompressDir), new File(targetDir),true);
                 }
             } finally {
-                if (!success && serviceDecompressDir != null) {
+//                删除临时解压目录
+                if (serviceDecompressDir != null) {
                     FileUtil.del(serviceDecompressDir);
                 }
             }

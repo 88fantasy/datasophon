@@ -5,6 +5,9 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.datasophon.api.dag.model.DagDefinition;
+import com.datasophon.api.dag.model.EdgeDefinition;
+import com.datasophon.api.dag.model.NodeDefinition;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.LoadServiceMeta;
@@ -30,6 +33,8 @@ import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG;
+import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
+import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.dag.DAGExecCommand;
@@ -174,8 +179,8 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<String> deploy(DeploymentDTO dto) {
-        ValidateResultVO result =  validDeploymentFile(dto);
+    public InstallResult deploy(DeploymentDTO dto) {
+        ValidateResultVO result = validDeploymentFile(dto);
         if (!result.isSuccess()) {
             throw new BusinessException(result.getErrors());
         }
@@ -228,24 +233,15 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
 
         DAG<String, DeploymentDAG.SrvNodeVO, Integer> dag = ctx.buildDeployDAG(model.getApp(), false);
+        String dagId = saveDAG(clusterInfo.getId(), commandIds, dag);
 //        必须等待事务提交，否则，有概率查询不到保存的命令
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        doInstall(clusterInfo.getId(), commandIds, dag);
-                    } catch (Exception e) {
-                        commandService.lambdaUpdate()
-                                .in(ClusterServiceCommandEntity::getCommandId, commandIds)
-                                .set(ClusterServiceCommandEntity::getCommandState, CommandState.FAILED)
-                                .update();
-                        log.error("execute command: {} fail, {}", StrUtil.join(",", commandIds), e.getMessage(), e);
-                    }
-                });
+                doInstall(dagId, clusterInfo, commandIds);
             }
         });
-        return commandIds;
+        return new InstallResult(dagId, commandIds);
     }
 
 
@@ -274,7 +270,9 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         }
         hostnames.forEach(host -> hostEntityList.add(ProcessUtils.generateCommandHostEntity(cmd.getCommandId(), host)));
         commandHostService.saveBatch(hostEntityList);
-        log.info("命令:{}保存各主机总命令信息成功,共涉及{}台主机", cmd.getCommandId(), hostEntityList.size());
+        log.info("命令:{}{}保存各主机总命令信息成功,共涉及{}台主机",
+                CommandType.ofCode(cmd.getCommandType()).getCommandName(Constants.CN),
+                cmd.getServiceName(), hostEntityList.size());
 
 
 //        保存每一台主机每一个角色需要执行的命令
@@ -298,14 +296,14 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             }
         }
         hostCommandService.saveBatch(hostCommandList);
-        log.info("命令:{}保存各主机需要执行命令成功,共需要执行{}个命令", cmd.getCommandId(), hostCommandList.size());
+        log.info("命令:{}{}保存各主机需要执行命令成功,共需要执行{}个命令", CommandType.ofCode(cmd.getCommandType()).getCommandName(Constants.CN),
+                cmd.getServiceName(), hostCommandList.size());
 
         return cmd.getCommandId();
     }
 
 
-    private void doInstall(Integer clusterId, List<String> commandIds, DAG<String, DeploymentDAG.SrvNodeVO, Integer> dag) {
-        log.info("开始执行安装操作");
+    private String saveDAG(Integer clusterId, List<String> commandIds, DAG<String, DeploymentDAG.SrvNodeVO, Integer> dag) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
 
 
@@ -382,14 +380,28 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             dagService.saveEdge(dagId, start, end);
         });
 
+        return dagId;
+    }
 
-        log.info("构建DAG完成，开始执行命令");
-        DAGExecCommand cmd = new DAGExecCommand();
-        cmd.setDagId(dagId);
-        cmd.setClusterId(clusterId);
-        cmd.setClusterCode(clusterInfo.getClusterCode());
-        ActorRef actor = ActorUtils.getLocalActor(DAGExecActor.class, ActorUtils.getActorRefName(DAGExecActor.class));
-        actor.tell(cmd, ActorRef.noSender());
+
+    private void doInstall(String dagId, ClusterInfoEntity clusterInfo, List<String> commandIds) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                log.info("构建DAG完成，开始执行命令");
+                DAGExecCommand cmd = new DAGExecCommand();
+                cmd.setDagId(dagId);
+                cmd.setClusterId(clusterInfo.getId());
+                cmd.setClusterCode(clusterInfo.getClusterCode());
+                ActorRef actor = ActorUtils.getLocalActor(DAGExecActor.class, ActorUtils.getActorRefName(DAGExecActor.class));
+                actor.tell(cmd, ActorRef.noSender());
+            } catch (Exception e) {
+                commandService.lambdaUpdate()
+                        .in(ClusterServiceCommandEntity::getCommandId, commandIds)
+                        .set(ClusterServiceCommandEntity::getCommandState, CommandState.FAILED)
+                        .update();
+                log.error("execute dagId: {} fail, {}", dagId, e.getMessage(), e);
+            }
+        });
     }
 
 
@@ -479,6 +491,67 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
         srv.setRoles(roles);
         return srv;
+    }
+
+
+    @Override
+    public InstallProgressDAG2 getDeployProgressDAG2(String dagId) {
+        DagDefinition def = dagService.getDagById(dagId);
+        InstallProgressDAG2 result = BeanUtil.toBean(def, InstallProgressDAG2.class);
+
+        List<NodeDefinition> nodes = dagService.getNodesByDagId(dagId, true);
+        if (nodes.isEmpty()) {
+            return result;
+        }
+
+        List<InstallProgressDAG2.Node> resultNodes = new ArrayList<>();
+        for (NodeDefinition node : nodes) {
+            InstallProgressDAG2.Node resultNode = BeanUtil.toBean(node, InstallProgressDAG2.Node.class);
+            ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
+            String cmdId = serviceNode.getCommandId();
+            resultNode.setCommandId(cmdId);
+            List<InstallProgressDAG2.SrvRole> roles = createSrvRole(cmdId);
+            resultNode.setRoles(roles);
+            resultNodes.add(resultNode);
+        }
+        result.setNodes(resultNodes);
+
+        List<InstallProgressDAG2.EdgeVO> edges = new ArrayList<>();
+        for (EdgeDefinition edgeDef : dagService.getEdgesByDagId(dagId)) {
+            InstallProgressDAG2.EdgeVO edge =  new InstallProgressDAG2.EdgeVO();
+            edge.setId(edgeDef.getId());
+            edge.setStart(edgeDef.getToNodeId());
+            edge.setEnd(edgeDef.getFromNodeId());
+            edges.add(edge);
+        }
+        result.setEdges(edges);
+
+        return result;
+    }
+
+    private List<InstallProgressDAG2.SrvRole> createSrvRole(String cmdId) {
+        List<ClusterServiceCommandHostCommandEntity> hostCmdList = hostCommandService.lambdaQuery()
+                .eq(ClusterServiceCommandHostCommandEntity::getCommandId, cmdId)
+                .list();
+        List<InstallProgressDAG2.SrvRole> roles = new ArrayList<>();
+        hostCmdList.stream()
+                .collect(Collectors.groupingBy(ClusterServiceCommandHostCommandEntity::getServiceRoleName))
+                .forEach((roleName, list) -> {
+                    InstallProgressDAG2.SrvRole role = new InstallProgressDAG2.SrvRole();
+                    role.setRoleName(roleName);
+
+                    List<InstallProgressDAG2.HostCmd> cmds = list.stream()
+                            .sorted(Comparator.comparing(ClusterServiceCommandHostCommandEntity::getCreateTime))
+                            .map(hostCmd -> {
+                                return BeanUtil.toBean(hostCmd, InstallProgressDAG2.HostCmd.class);
+                            })
+                            .collect(Collectors.toList());
+                    role.setCmdList(cmds);
+
+                    roles.add(role);
+                });
+
+        return roles;
     }
 
 }

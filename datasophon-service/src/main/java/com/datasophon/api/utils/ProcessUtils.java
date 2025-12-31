@@ -43,6 +43,7 @@ import com.datasophon.api.master.handler.service.ServiceHandler;
 import com.datasophon.api.master.handler.service.ServiceInstallHandler;
 import com.datasophon.api.master.handler.service.ServiceStartHandler;
 import com.datasophon.api.master.handler.service.ServiceStopHandler;
+import com.datasophon.api.master.handler.service.ServiceUpgradeHandler;
 import com.datasophon.api.service.ClusterAlertHistoryService;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceCommandHostCommandService;
@@ -614,7 +615,7 @@ public class ProcessUtils {
         ServiceHandler handler = new ServiceStopHandler();
 
         handler
-                .thenNext(new ServiceInstallHandler())
+                .thenNext(new ServiceUpgradeHandler())
                 .thenNext(new ServiceConfigureHandler())
                 .thenNext(new ServiceStartHandler())
         ;

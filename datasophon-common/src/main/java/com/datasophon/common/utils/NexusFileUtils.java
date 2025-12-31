@@ -50,18 +50,18 @@ public class NexusFileUtils {
                 .basicAuth(username, password)
                 .execute();
         if (response.getStatus() == 404) {
-          throw new FileNotFoundException(String.format("url: %s not found", url));
+            throw new FileNotFoundException(String.format("url: %s not found", url));
         }
         if (response.getStatus() == 401) {
-          throw new IllegalArgumentException("nexus require an auth, but fail");
+            throw new IllegalArgumentException("nexus require an auth, but fail");
         }
         return response.bodyStream();
     }
 
 
     public static String getNexusRawObjectUrl(String objectName) {
-      objectName = objectName.startsWith("/") ? objectName : "/" + objectName;
-      return String.format("http://%s:%s/repository/%s%s", Constants.NEXUS_IP, Constants.NEXUS_PORT, RepositoriesType.RAW.getDesc(), objectName);
+        objectName = objectName.startsWith("/") ? objectName : "/" + objectName;
+        return String.format("http://%s:%s/repository/%s%s", Constants.NEXUS_IP, Constants.NEXUS_PORT, RepositoriesType.RAW.getDesc(), objectName);
     }
 
     /**
@@ -249,23 +249,23 @@ public class NexusFileUtils {
     }
 
     public static void downloadPkg(String packageName, String packagePath) {
-        if(!Constants.NEXUS_ENABLE) {
+        if (!Constants.NEXUS_ENABLE) {
             throw new RuntimeException("nexus.enable=false is not supported");
         }
         String url = getRawPackagesUrl(packageName);
         log.info("download url is {}", url);
-      InputStream inputStream = null;
-      try {
-        inputStream = NexusFileUtils.downStream(url, Constants.NEXUS_USERNAME, Constants.NEXUS_PASSWORD);
-      } catch (FileNotFoundException e) {
-        throw new RuntimeException(String.format("fail to get %s, package not exist", packageName), e);
-      }
-      FileUtil.writeFromStream(inputStream, packagePath);
+        InputStream inputStream = null;
+        try {
+            inputStream = NexusFileUtils.downStream(url, Constants.NEXUS_USERNAME, Constants.NEXUS_PASSWORD);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(String.format("fail to get %s, package not exist", packageName), e);
+        }
+        FileUtil.writeFromStream(inputStream, packagePath);
         log.info("download package {} success", packageName);
     }
 
     public static Boolean isFileContentChange(String packageName, String packagePath) {
-        if(!Constants.NEXUS_ENABLE) {
+        if (!Constants.NEXUS_ENABLE) {
             throw new RuntimeException("nexus.enable=false is not supported");
         }
         String packageNameMD5 = packageName + Constants.DOT + Constants.MD5;
@@ -273,26 +273,26 @@ public class NexusFileUtils {
 
         String url = NexusFileUtils.getRawPackagesUrl(packageNameMD5);
         log.info("download url is {}", url);
-      InputStream inputStream = null;
-      try {
-        inputStream = NexusFileUtils.downStream(url, Constants.NEXUS_USERNAME, Constants.NEXUS_PASSWORD);
-      } catch (FileNotFoundException e) {
-        throw new RuntimeException(String.format("fail to get %s, package not exist", packageName), e);
-      }
-      FileUtil.writeFromStream(inputStream, packagePathMD5);
+        InputStream inputStream = null;
+        try {
+            inputStream = NexusFileUtils.downStream(url, Constants.NEXUS_USERNAME, Constants.NEXUS_PASSWORD);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(String.format("fail to get %s, package not exist", packageName), e);
+        }
+        FileUtil.writeFromStream(inputStream, packagePathMD5);
         log.info("download package md5 {} success", packageNameMD5);
 
-        String remoteMd5Contxt = FileUtil.readString(packagePathMD5, CharsetUtil.CHARSET_UTF_8);
+        String remoteMd5Content = FileUtil.readString(packagePathMD5, CharsetUtil.CHARSET_UTF_8);
 
         boolean needDownLoad = true;
-        log.info("Remote nexus package md5 is {}", remoteMd5Contxt);
+        log.info("Remote nexus package md5 is {}", remoteMd5Content);
         if (FileUtil.exist(packagePath)) {
             // check md5
             String md5 = FileUtils.md5(new File(packagePath));
 
             log.info("Local md5 is {}", md5);
 
-            if (StringUtils.isNotBlank(md5) && remoteMd5Contxt.trim().equals(md5.trim())) {
+            if (StringUtils.isNotBlank(md5) && remoteMd5Content.trim().equals(md5.trim())) {
                 needDownLoad = false;
             }
         }

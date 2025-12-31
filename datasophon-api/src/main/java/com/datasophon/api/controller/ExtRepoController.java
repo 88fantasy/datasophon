@@ -1,6 +1,7 @@
 package com.datasophon.api.controller;
 
 import com.datasophon.api.dto.IntegerIdDTO;
+import com.datasophon.api.dto.extrepo.DagIdDto;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.DeploymentProgressDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
@@ -9,6 +10,8 @@ import com.datasophon.api.service.extrepo.ExtRepoMetaService;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG;
+import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
+import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.utils.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,8 +25,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 /**
  * @author zhanghuangbin
@@ -90,17 +91,32 @@ public class ExtRepoController extends ApiController {
 
     @PostMapping("/deploy")
     @Operation(summary = "部署应用")
-    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = List.class))})
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = InstallResult.class))})
     public Result deploy(@RequestBody @Validated DeploymentDTO dto) {
         return Result.success(extRepoInstallService.deploy(dto));
     }
 
 
+    /**
+     * @deprecated 
+     * @see #getDeployProgressDAG2(DagIdDto) 
+     * @param dto
+     * @return
+     */
+    @Deprecated
     @PostMapping("/getDeployProgressDAG")
-    @Operation(summary = "获取部署进度DAG")
+    @Operation(summary = "获取部署进度DAG", deprecated = true)
     @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = InstallProgressDAG.class))})
     public Result getDeployProgressDAG(@RequestBody @Validated DeploymentProgressDTO dto) {
         return Result.success(extRepoInstallService.getDeployProgressDAG(dto.getClusterId(), dto.getCmdIds()));
+    }
+
+
+    @PostMapping("/getDeployProgressDAG2")
+    @Operation(summary = "获取部署进度DAG接口2")
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = InstallProgressDAG2.class))})
+    public Result getDeployProgressDAG2(@RequestBody @Validated DagIdDto dto) {
+        return Result.success(extRepoInstallService.getDeployProgressDAG2(dto.getDagId()));
     }
 
 

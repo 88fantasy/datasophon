@@ -1,40 +1,88 @@
 package com.datasophon.api.vo.extrepo;
 
+import com.datasophon.common.enums.CommandType;
+import com.datasophon.common.enums.ServiceRoleType;
+import com.datasophon.common.model.ArchInfo;
+import com.datasophon.common.model.ExternalLink;
+import com.datasophon.common.model.Generators;
+import com.datasophon.common.model.RunAs;
+import com.datasophon.common.model.ServiceConfig;
+import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.RoleType;
+import com.datasophon.dao.enums.dag.DagStatus;
+import com.datasophon.dao.enums.dag.NodeStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author zhanghuangbin
  * @date 2025/11/11
  */
 @Data
-public class InstallProgressDAG implements scala.Serializable {
+public class InstallProgressDAG2 implements scala.Serializable {
 
-    @Schema(description = "服务节点")
-    private List<Srv> srvList = new ArrayList<>();
+
+
+    @Schema(description = "dagId")
+    private String id;
+
+    @Schema(description = "dag状态")
+    private DagStatus status;
+
+    @Schema(description = "创建时间")
+    private LocalDateTime createdTime;
+
+    @Schema(description = "开始运行时间")
+    private LocalDateTime startedTime;
+
+    @Schema(description = "结束运行时间")
+    private LocalDateTime completedTime;
+
+    @Schema(description = "安装节点")
+    private List<Node> nodes;
+
 
     @Schema(description = "边")
-    private List<EdgeVO> edge = new ArrayList<>(0);
+    private List<EdgeVO> edges = new ArrayList<>(0);
 
 
     @Data
-    public static class Srv implements Serializable {
+    public static class Node implements Serializable {
 
-        private Integer id;
+        @Schema(description = "节点ID")
+        private String id;
 
-        @Schema(description = "命令ID")
-        private String cmdId;
+        @Schema(description = "dagId")
+        private String dagId;
 
-        @Schema(description = "服务名称")
-        private String name;
+        @Schema(description = "节点名称")
+        private String nodeName;
 
+        @Schema(description = "运行状态")
+        private NodeStatus status;
+
+        @Schema(description = "创建时间")
+        private LocalDateTime createdTime;
+
+        @Schema(description = "开始运行时间")
+        private LocalDateTime startedTime;
+
+        @Schema(description = "结束运行时间")
+        private LocalDateTime completedTime;
+
+        @Schema(description = "运行说明")
+        private String executionLog;
+
+        @Schema(description = "命令行ID")
+        private String commandId;
 
         @Schema(description = "命令行状态")
         private CommandState commandState;
@@ -42,6 +90,7 @@ public class InstallProgressDAG implements scala.Serializable {
         @Schema(description = "服务下的角色信息")
         private List<SrvRole> roles;
     }
+
 
 
     @Data
@@ -97,13 +146,13 @@ public class InstallProgressDAG implements scala.Serializable {
     public static class EdgeVO implements Serializable {
 
         @Schema(description = "连线id")
-        private Integer id;
+        private String id;
 
         @Schema(description = "开始节点ID")
-        private Integer start;
+        private String start;
 
         @Schema(description = "结束节点ID")
-        private Integer end;
+        private String end;
 
 
     }

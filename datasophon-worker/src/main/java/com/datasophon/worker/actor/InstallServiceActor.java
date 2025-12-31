@@ -65,7 +65,7 @@ public class InstallServiceActor extends UntypedActor {
                     installResult = serviceHandler.install(command);
                 }
             } else {
-                String normalPkgDir = FileUtil.getSuffix(command.getPackageName());
+                String normalPkgDir = FileUtil.getPrefix(command.getPackageName());
                 String linkName = StringUtils.lowerCase(command.getServiceName());
                 if (linkName.equals(normalPkgDir)) {
                     throw new IllegalStateException(String.format("%s软件安装目录和软链目录名字一致，无法解压", command.getServiceName()));
