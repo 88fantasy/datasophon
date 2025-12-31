@@ -24,8 +24,8 @@ import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.enums.ServiceRoleType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
+import com.datasophon.common.utils.SoftLinkUtils;
 import com.datasophon.worker.handler.InstallServiceHandler;
-import com.datasophon.worker.utils.SoftLinkUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

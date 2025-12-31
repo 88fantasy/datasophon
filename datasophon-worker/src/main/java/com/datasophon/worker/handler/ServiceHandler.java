@@ -25,7 +25,7 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.FileUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
-import com.datasophon.worker.utils.SoftLinkUtils;
+import com.datasophon.common.utils.SoftLinkUtils;
 import com.datasophon.worker.utils.TaskConstants;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
