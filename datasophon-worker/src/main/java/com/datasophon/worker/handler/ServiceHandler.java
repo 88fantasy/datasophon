@@ -18,25 +18,24 @@
 package com.datasophon.worker.handler;
 
 import com.datasophon.common.Constants;
+import com.datasophon.common.command.BaseCommand;
 import com.datasophon.common.model.RunAs;
 import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.FileUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
+import com.datasophon.worker.utils.SoftLinkUtils;
 import com.datasophon.worker.utils.TaskConstants;
-
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import lombok.Data;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Data
 public class ServiceHandler {
@@ -53,27 +52,36 @@ public class ServiceHandler {
         String loggerName = String.format("%s-%s-%s", TaskConstants.TASK_LOG_LOGGER_NAME, serviceName, serviceRoleName);
         logger = LoggerFactory.getLogger(loggerName);
     }
-    
+
+
+    private String getLinkDirName() {
+        BaseCommand cmd = new BaseCommand();
+        cmd.setServiceName(serviceName);
+        cmd.setServiceRoleName(serviceRoleName);
+        return SoftLinkUtils.getLinkDirName(cmd);
+    }
+
     public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, String decompressPackageName,
                             RunAs runAs) {
-        ExecResult statusResult = execRunner(statusRunner, decompressPackageName, null);
+        String linkName = getLinkDirName();
+        ExecResult statusResult = execRunner(statusRunner, linkName, null);
         if (statusResult.getExecResult()) {
-            logger.info("{} already started", decompressPackageName);
+            logger.info("{} already started", linkName);
             ExecResult execResult = new ExecResult();
             execResult.setExecResult(true);
             return execResult;
         }
         // start service
-        ExecResult startResult = execRunner(startRunner, decompressPackageName, runAs);
+        ExecResult startResult = execRunner(startRunner, linkName, runAs);
         // check start result
         if (startResult.getExecResult()) {
             int times = PropertyUtils.getInt("times");
             int count = 0;
             while (count < times) {
                 logger.info("check start result at times {}", count + 1);
-                ExecResult result = execRunner(statusRunner, decompressPackageName, runAs);
+                ExecResult result = execRunner(statusRunner, linkName, runAs);
                 if (result.getExecResult()) {
-                    logger.info("start success in {}", decompressPackageName);
+                    logger.info("start success in {}", linkName);
                     break;
                 } else {
                     try {
@@ -85,7 +93,7 @@ public class ServiceHandler {
                 count++;
             }
             if (count == times) {
-                logger.info(" start {} timeout", decompressPackageName);
+                logger.info(" start {} timeout", linkName);
                 startResult.setExecResult(false);
             }
         }
@@ -94,19 +102,20 @@ public class ServiceHandler {
     
     public ExecResult stop(ServiceRoleRunner runner, ServiceRoleRunner statusRunner, String decompressPackageName,
                            RunAs runAs) {
-        ExecResult statusResult = execRunner(statusRunner, decompressPackageName, runAs);
+        String linkName = getLinkDirName();
+        ExecResult statusResult = execRunner(statusRunner, linkName, runAs);
         ExecResult execResult = new ExecResult();
         if (statusResult.getExecResult()) {
-            execResult = execRunner(runner, decompressPackageName, runAs);
+            execResult = execRunner(runner, linkName, runAs);
             // 检测是否停止成功
             if (execResult.getExecResult()) {
                 int times = PropertyUtils.getInt("times");
                 int count = 0;
                 while (count < times) {
                     logger.info("check stop result at times {}", count + 1);
-                    ExecResult result = execRunner(statusRunner, decompressPackageName, runAs);
+                    ExecResult result = execRunner(statusRunner, linkName, runAs);
                     if (!result.getExecResult()) {
-                        logger.info("stop success in {}", decompressPackageName);
+                        logger.info("stop success in {}", linkName);
                         break;
                     } else {
                         try {
@@ -122,7 +131,7 @@ public class ServiceHandler {
                 }
             }
         } else {// 已经是停止状态，直接返回
-            logger.info("{} already stopped", decompressPackageName);
+            logger.info("{} already stopped", linkName);
             execResult.setExecResult(true);
         }
         return execResult;
@@ -138,7 +147,7 @@ public class ServiceHandler {
         return result;
     }
     
-    public ExecResult execRunner(ServiceRoleRunner runner, String decompressPackageName, RunAs runAs) {
+    public ExecResult execRunner(ServiceRoleRunner runner, String installHome, RunAs runAs) {
         String shell = runner.getProgram();
         List<String> args = runner.getArgs();
         long timeout = Long.parseLong(runner.getTimeout());
@@ -153,7 +162,7 @@ public class ServiceHandler {
             logger.info("do not use sh");
         } else {
             File shellFile = new File(
-                    Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + shell);
+                    Constants.INSTALL_PATH + Constants.SLASH + installHome + Constants.SLASH + shell);
             if (shellFile.exists()) {
                 try {
                     // 读取第一行，检查采用的 shell 是哪个，bash、sh ？
@@ -176,7 +185,7 @@ public class ServiceHandler {
         command.add(shell);
         command.addAll(args);
         logger.info("execute shell command : {}", command);
-        return ShellUtils.execWithStatus(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName, command,
+        return ShellUtils.execWithStatus(Constants.INSTALL_PATH + Constants.SLASH + installHome, command,
                 timeout, logger);
     }
     

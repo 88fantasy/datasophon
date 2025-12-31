@@ -25,7 +25,7 @@ import com.datasophon.common.enums.ServiceRoleType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.InstallServiceHandler;
-import org.apache.commons.lang3.StringUtils;
+import com.datasophon.worker.utils.SoftLinkUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +66,7 @@ public class InstallServiceActor extends UntypedActor {
                 }
             } else {
                 String normalPkgDir = FileUtil.getPrefix(command.getPackageName());
-                String linkName = StringUtils.lowerCase(command.getServiceName());
+                String linkName = SoftLinkUtils.getLinkDirName(command);
                 if (linkName.equals(normalPkgDir)) {
                     throw new IllegalStateException(String.format("%s软件安装目录和软链目录名字一致，无法解压", command.getServiceName()));
                 }
