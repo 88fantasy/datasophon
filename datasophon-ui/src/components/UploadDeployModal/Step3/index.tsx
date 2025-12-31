@@ -5,7 +5,7 @@ import { noop } from "lodash-es";
 import * as yaml from 'js-yaml';
 import { sm4Encrypt, sm4Decrypt } from 'sm-crypto';
 import TableProxy from "./TableProxy";
-import { useCallback } from "react";
+import { memo, useCallback } from "react";
 
 const Index = (props) => {
 
@@ -102,4 +102,4 @@ const Index = (props) => {
 
 
 
-export default Index
+export default memo(Index)

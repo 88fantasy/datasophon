@@ -36,11 +36,7 @@ const Index = (props) => {
 
     // console.log('props', props,)
 
-
-    const invokeRenderSteps = () => {
-
-
-
+    const memoArr = useMemo(() => {
         const arr = [
             {
                 title: '上传配置文件',
@@ -48,54 +44,65 @@ const Index = (props) => {
             },
             {
                 title: '上传部署包',
-                render: <Step2
-                    key={currentStep}
-                    formMapRef={formMapRef}
-                />
+                render: Step2
+                // render: <Step2
+                //     key={currentStep}
+                //     formMapRef={formMapRef}
+                // />
             },
             type !== 'frame' && {
                 title: '上传部署清单',
-                render: currentStep === 2 && <Step3
-                    key={currentStep}
-                    formMapRef={formMapRef}
-                />
+                render: Step3
+
+                // render: currentStep === 2 && <Step3
+                //     key={currentStep}
+                //     formMapRef={formMapRef}
+                // />
             },
             {
                 title: '导入安装组件',
-                render: (!type && currentStep === 3 || type && currentStep === 2) && <Step4
-                    key={currentStep}
-                    formMapRef={formMapRef}
-                    type={type}
-                />
-            },
+                render: Step4,
 
-            // {
-            //     title: '导入安装组件',
-            //     render: Step1
-            // },
-            // {
-            //     title: '导入安装组件',
-            //     render: <Step4/>
-            // },
-            // {
-            //     title: '上传文件',
-            //     render: UploadStep
-            // },
-            // {
-            //     title: '导入安装组件',
-            //     render: currentStep === 1 && <Step4
-            //         key={currentStep}
-            //         formMapRef={formMapRef}
-            //     // formRef={formRef}
-            //     />
-            // },
+                // render: (!type && currentStep === 3 || type && currentStep === 2) && <Step4
+                //     key={currentStep}
+                //     formMapRef={formMapRef}
+                //     type={type}
+                // />
+            },
         ].filter(Boolean)
 
-        // if (stepsType === T_STEPS_TYPE_HOSTMANAGE) {
-        //     arr = arr.slice(0, 3)
-        // }
 
-        return arr.map(val => {
+        return arr.map((val, index) => {
+
+
+            const Com = val.render
+
+
+            val = {
+                ...val,
+                render: (
+                    <Com
+                        {
+                        ...val
+                        }
+                        // record={record}
+                        current={currentStep}
+                        formMapRef={formMapRef}
+                        // indexKey={'11'}
+                        type={type}
+                        index={index}
+                        key={index}
+                    />
+                )
+            }
+            return val
+
+        })
+    }, [currentStep, type])
+
+    const invokeRenderSteps = useCallback(() => {
+
+        return memoArr.map(val => {
             return (
                 <StepsForm.StepForm
                     name={val.title}
@@ -110,7 +117,7 @@ const Index = (props) => {
                 </StepsForm.StepForm>
             )
         })
-    }
+    }, [memoArr])
 
     const stepsDom = invokeRenderSteps()
 
@@ -200,7 +207,7 @@ const Index = (props) => {
                 )
             }
         }
-    }, [type])
+    }, [submitPending, type])
 
     const onFinish = useCallback(async (valuse) => {
         const res = await axiosJsonPost(

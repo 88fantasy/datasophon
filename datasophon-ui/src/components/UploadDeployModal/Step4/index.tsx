@@ -1,5 +1,5 @@
 import { Button, Progress, Tooltip, type ProgressProps } from "antd"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { axiosJsonPost } from "../../../api/request";
 import { API } from "../../../api";
 import { ProFormItem } from "@ant-design/pro-components";
@@ -28,7 +28,9 @@ const Index = (props) => {
         formMapRef,
         clusterId,
         key,
-        record
+        record,
+        current,
+        index
     } = props
 
     const invokeUpdateProgressId = useRef()
@@ -56,7 +58,7 @@ const Index = (props) => {
             if (res.code === 200) {
 
                 if (res.data.state === 1) {
-                    const formRef = formMapRef.current[3]
+                    const formRef = formMapRef.current[index]
                     // const values = formRef?.current?.getFieldsValue()
                     formRef.current.setFieldsValue({
                         importCmp: true
@@ -89,7 +91,7 @@ const Index = (props) => {
                 fn()
             }, 3 * 1000)
         }
-    }, [formMapRef, invokeCancelUpdateProgress])
+    }, [formMapRef, index, invokeCancelUpdateProgress])
 
 
     const invokeInit = useCallback(async () => {
@@ -236,9 +238,17 @@ const Index = (props) => {
     }, [invokeInit, memoStatus.status, state.queryProgressRes, state.reloadBtnVisiable])
 
     useEffect(() => {
-        invokeInit()
+        if (current === index) {
+            invokeInit()
+        }
+    }, [current, index, invokeInit])
 
-    }, [invokeInit,])
+
+    useEffect(() => {
+        if (current !== index) {
+            invokeCancelUpdateProgress()
+        }
+    }, [current, index, invokeCancelUpdateProgress])
 
 
     useEffect(() => {
@@ -267,4 +277,4 @@ const Index = (props) => {
 }
 
 
-export default Index
+export default memo(Index)
