@@ -12,6 +12,9 @@ import {
 import { invokeGenerateElId } from "../../utils/util"
 import { invokeGenPort, invokeGenSourceAndTarget } from "../../utils/antvUtils"
 import gobalEvent, { uiEvent } from "../../utils/gobalEvent"
+import { getRouteQuery } from "../../utils/routerUtils"
+import { AntVDagreLayout } from "@antv/layout"
+
 
 DataProcessingDagNode.invokeInit()
 
@@ -65,16 +68,16 @@ const edgeStatusList = [
 
 const invokeTransferData = (data) => {
     const {
-        srvList = [],
-        edge = []
+        nodes = [],
+        edges = []
     } = data
 
 
-    const nodes = []
-    const edges = []
+    const mapNodes = []
+    const mapEdges = []
 
 
-    srvList.map(val => {
+    nodes.map(val => {
         val.id = String(val.id)
         const v = {
             id: val.id,
@@ -82,11 +85,11 @@ const invokeTransferData = (data) => {
             ports: invokeGenPort(val),
             data: val
         }
-        nodes.push(v)
+        mapNodes.push(v)
     })
 
 
-    edge.map(val => {
+    edges.map(val => {
         val.id = String(val.id)
         val.start = val.start && String(val.start)
         val.end = val.end && String(val.end)
@@ -97,13 +100,13 @@ const invokeTransferData = (data) => {
         }
 
 
-        edges.push(v)
+        mapEdges.push(v)
     })
 
     console.log(nodes, edges)
     return {
-        nodes,
-        edges
+        nodes: mapNodes,
+        edges: mapEdges
     }
 
 }
@@ -127,6 +130,7 @@ const Index = (props) => {
         const wrapperEl = container.parentElement.parentElement
         const wrapperElStyle = window.getComputedStyle(container.parentElement)
         const graph: Graph = new Graph({
+            interacting: false,
             container,
             width: wrapperEl.clientWidth - Number(wrapperElStyle.paddingLeft.replace(/px/, '')) - Number(wrapperElStyle.paddingRight.replace(/px/, '')),
             height: wrapperEl.clientHeight - Number(wrapperElStyle.paddingTop.replace(/px/, '')) - Number(wrapperElStyle.paddingBottom.replace(/px/, '')),
@@ -153,11 +157,18 @@ const Index = (props) => {
                     },
                 },
             },
+            // edgeRouter: {
+            //     name: 'manhattan', // 使用曼哈顿路径（推荐）
+            //     args: {
+            //         direction: 'horizontal', // 水平优先
+            //     },
+            // },
             connecting: {
                 snap: true,
                 allowBlank: false,
                 allowLoop: false,
                 highlight: true,
+
                 sourceAnchor: {
                     name: 'left',
                     args: {
@@ -168,6 +179,14 @@ const Index = (props) => {
                     name: 'right',
                     args: {
                         dx: IS_SAFARI ? 4 : -8,
+                    },
+                },
+                router: {
+                    name: 'manhattan',
+
+                    args: {
+                        direction: 'horizontal',
+                        padding: 10,
                     },
                 },
                 createEdge() {
@@ -276,9 +295,8 @@ const Index = (props) => {
     }, [])
 
     const invokeInit = useCallback(async (update) => {
-        const res = await axiosJsonPost(API.getDeployProgressDAG, {
-            "clusterId": 1,
-            "cmdIds": ["0100722958ec439ba2f0d865b98f18d7"]
+        const res = await axiosJsonPost(API.getDeployProgressDAG2, {
+            dagId: getRouteQuery('dagId')
 
         })
 
@@ -287,181 +305,68 @@ const Index = (props) => {
 
             let data = invokeTransferData(res.data)
 
-            // data = {
-            //     "nodes": [
-            //         {
-            //             "id": "node-0",
-            //             "shape": DataProcessingDagNode.shape,
-            //             "x": 0,
-            //             "y": 100,
-            //             "ports": [
-            //                 {
-            //                     "id": "node-0-out",
-            //                     "group": "out"
-            //                 }
-            //             ],
-            //             "data": {
-            //                 "name": "数据输入_1",
-            //                 "type": "INPUT",
-            //                 "checkStatus": "sucess"
-            //             }
-            //         },
-            //         {
-            //             "id": "node-1",
-            //             "shape": DataProcessingDagNode.shape,
-            //             "x": 250,
-            //             "y": 100,
-            //             "ports": [
-            //                 {
-            //                     "id": "node-1-in",
-            //                     "group": "in"
-            //                 },
-            //                 {
-            //                     "id": "node-1-out",
-            //                     "group": "out"
-            //                 }
-            //             ],
-            //             "data": {
-            //                 "name": "数据筛选_1",
-            //                 "type": "FILTER"
-            //             }
-            //         },
-            //         {
-            //             "id": "node-2",
-            //             "shape": DataProcessingDagNode.shape,
-            //             "x": 250,
-            //             "y": 200,
-            //             "ports": [
-            //                 {
-            //                     "id": "node-2-out",
-            //                     "group": "out"
-            //                 }
-            //             ],
-            //             "data": {
-            //                 "name": "数据输入_2",
-            //                 "type": "INPUT"
-            //             }
-            //         },
-            //         {
-            //             "id": "node-3",
-            //             "shape": DataProcessingDagNode.shape,
-            //             "x": 500,
-            //             "y": 100,
-            //             "ports": [
-            //                 {
-            //                     "id": "node-3-in",
-            //                     "group": "in"
-            //                 },
-            //                 {
-            //                     "id": "node-3-out",
-            //                     "group": "out"
-            //                 }
-            //             ],
-            //             "data": {
-            //                 "name": "数据连接_1",
-            //                 "type": "JOIN"
-            //             }
-            //         },
-            //         {
-            //             "id": "node-4",
-            //             "shape": DataProcessingDagNode.shape,
-            //             "x": 750,
-            //             "y": 100,
-            //             "ports": [
-            //                 {
-            //                     "id": "node-4-in",
-            //                     "group": "in"
-            //                 }
-            //             ],
-            //             "data": {
-            //                 "name": "数据输出_1",
-            //                 "type": "OUTPUT"
-            //             }
-            //         }
-            //     ],
-            //     "edges": [
-            //         {
-            //             "id": "edge-0",
-            //             "source": {
-            //                 "cell": "node-0",
-            //                 "port": "node-0-out"
-            //             },
-            //             "target": {
-            //                 "cell": "node-1",
-            //                 "port": "node-1-in"
-            //             },
-            //             "shape": "data-processing-curve",
-            //             "zIndex": -1,
-            //             "data": {
-            //                 "source": "node-0",
-            //                 "target": "node-1"
-            //             }
-            //         },
-            //         {
-            //             "id": "edge-1",
-            //             "source": {
-            //                 "cell": "node-2",
-            //                 "port": "node-2-out"
-            //             },
-            //             "target": {
-            //                 "cell": "node-3",
-            //                 "port": "node-3-in"
-            //             },
-            //             "shape": "data-processing-curve",
-            //             "zIndex": -1,
-            //             "data": {
-            //                 "source": "node-2",
-            //                 "target": "node-3"
-            //             }
-            //         },
-            //         {
-            //             "id": "edge-2",
-            //             "source": {
-            //                 "cell": "node-1",
-            //                 "port": "node-1-out"
-            //             },
-            //             "target": {
-            //                 "cell": "node-3",
-            //                 "port": "node-3-in"
-            //             },
-            //             "shape": "data-processing-curve",
-            //             "zIndex": -1,
-            //             "data": {
-            //                 "source": "node-1",
-            //                 "target": "node-3"
-            //             }
-            //         },
-            //         {
-            //             "id": "edge-3",
-            //             "source": {
-            //                 "cell": "node-3",
-            //                 "port": "node-3-out"
-            //             },
-            //             "target": {
-            //                 "cell": "node-4",
-            //                 "port": "node-4-in"
-            //             },
-            //             "shape": "data-processing-curve",
-            //             "zIndex": -1,
-            //             "data": {
-            //                 "source": "node-3",
-            //                 "target": "node-4"
-            //             }
-            //         }
-            //     ]
-            // }
-            // const zoomOptions = {
-            //     padding: {
-            //         left: 10,
-            //         right: 10,
-            //     },
-            // }
-            // graphRef.current.zoomToFit(zoomOptions)
-
 
             if (!update) {
-                graphRef.current.fromJSON(data)
-                    
+
+                // // 3. 应用 Dagre 自动布局
+                // const dagreLayoutData = layout({
+                //     nodes: data.nodes,
+                //     edges: data.edges,
+                //     type: 'dagre',
+                //     rankdir: 'TB',     // TB: Top-Bottom（纵向）；LR: Left-Right（横向）
+                //     ranksep: 80,       // 层级间距
+                //     nodesep: 50,       // 节点间距
+                //     controlPoints: true, // 生成控制点用于曲线/折线
+                // });
+
+
+                // 使用 Dagre 布局整理节点位置
+                // const layout = new DagreLayout({
+                //     // align: 'UL',
+                //     rankdir: 'LR',
+                //     nodesep: 80,   // 节点水平间距 → 增大以避免重叠
+                //     ranksep: 100,  // 层级垂直间距 → 增大以拉开层级
+                //     nodeSep: 50,   // 同一层级节点最小间距（部分库支持）
+                //     edgeSep: 30,   // 边之间的最小间距（可选）
+                //     minLen: 1,     // 强制每条边至少跨越一个层级（防止跨层过短）
+                //     // nodeSize: [180, 60],
+                //     // ranksep: 80,
+                //     // nodesep: 30,
+                //     // controlPoints: true,
+                // });
+
+                const layoutRes = new AntVDagreLayout({
+                    // nodes: data.nodes,
+                    // edges: data.edges,
+                    rankdir: 'LR',
+                    nodesep: 80,   // 节点水平间距 → 增大以避免重叠
+                    ranksep: 100,  // 层级垂直间距 → 增大以拉开层级
+                    nodeSep: 50,   // 同一层级节点最小间距（部分库支持）
+                    edgeSep: 30,   // 边之间的最小间距（可选）
+                    minLen: 1,
+                })
+
+                // layoutRes.
+
+                // const layout = new Layout({
+                //     type: 'elk',
+                //     // nodes: data.nodes,
+                //     // edges: data.edges,
+                //     // ELK 配置（通过 options 传入）
+                //     options: {
+                //         direction: 'DOWN', // 等价于 'elk.direction'
+                //         nodeNodeDistance: 80,
+                //         layerNodeDistance: 100,
+                //         edgeRouting: 'ORTHOGONAL', // 直角边
+                //     },
+                // })
+
+
+
+                const layoutData = layoutRes.execute(data);
+
+                graphRef.current.fromJSON(layoutData)
+
                 setTimeout(() => {
                     excuteAnimate()
                     showNodeStatus()
@@ -472,7 +377,7 @@ const Index = (props) => {
                     stopAnimate()
                 }, 3000)
             } else {
-                const dataMap = res.data?.srvList.reduce((acc, curr) => {
+                const dataMap = res.data?.nodes?.reduce((acc, curr) => {
                     acc[curr.id] = curr
                     return acc
                 }, {})
@@ -489,16 +394,19 @@ const Index = (props) => {
 
 
     useEffect(() => {
-        invokeInitGraph()
-        invokeInit()
-
         return () => {
             invokeCancelUpdateTimeoutIdRef()
         }
+    }, [invokeCancelUpdateTimeoutIdRef])
+
+
+    useEffect(() => {
+        invokeInitGraph()
+        invokeInit()
     }, [invokeInit, invokeInitGraph])
 
     return (
-        <div className="h-[40vh] w-full">
+        <div className="h-[100vh] w-[100vh]">
             <div id={containerRef.current}></div>
         </div>
     )

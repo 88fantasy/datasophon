@@ -11,6 +11,7 @@ import { axiosJsonPost } from "../../api/request";
 import { API } from "../../api";
 import { showMsgAfferRequest } from "../../utils/util";
 import Step3 from "./Step3";
+import { invokeGenPath } from "../../utils/routerUtils";
 
 
 const Index = (props) => {
@@ -221,6 +222,7 @@ const Index = (props) => {
 
         showMsgAfferRequest(res)
         if (res.code === 200) {
+            window.open(invokeGenPath(`/ddh/Dag?dagId=${res.data?.dagId || ''}`))
             onCancelClickProxy()
         }
 
