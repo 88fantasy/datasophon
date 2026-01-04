@@ -191,6 +191,10 @@ public class InstallServiceHandler {
                 ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
                 success = execResult.getExecResult();
                 if (success) {
+                    File src = new File(serviceDecompressDir);
+                    if (!src.exists()) {
+                        throw new IllegalStateException(String.format("无法找到解压后的文件夹%s，请检查ddl定义的解压目录是否和实际的安装包目录一致", src.getName()));
+                    }
                     String targetDir = Constants.INSTALL_PATH + Constants.SLASH + instCmd.getNormalPkgDir();
                     FileUtil.mkdir(targetDir);
 //                    将临时目录，重命名为安装目录

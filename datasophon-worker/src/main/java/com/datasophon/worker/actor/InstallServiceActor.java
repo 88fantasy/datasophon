@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 
 public class InstallServiceActor extends UntypedActor {
@@ -77,18 +78,24 @@ public class InstallServiceActor extends UntypedActor {
                     // 其他服务创建软连接
                     String appHome = Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir;
                     String appLinkHome = Constants.INSTALL_PATH + Constants.SLASH + linkName;
-                    if (!new File(appLinkHome).exists()) {
-                        ShellUtils.execShell("ln -s " + appHome + " " + appLinkHome);
-                        logger.info("Create symbolic dir: {}", appLinkHome);
+                    File linkFile = new File(appLinkHome);
+                    if (linkFile.exists()) {
+                        if (Files.isSymbolicLink(linkFile.toPath())) {
+                            ShellUtils.execShell("unlink " + appLinkHome);
+                        } else {
+                            throw new IllegalStateException(String.format(" %s exist but  not a link file, it is that true?", appLinkHome));
+                        }
                     }
+                    installResult = ShellUtils.execShell("ln -s " + appHome + " " + appLinkHome);
+                    logger.info("Create symbolic dir: {}", appLinkHome);
                 }
             }
             getSender().tell(installResult, getSelf());
-            logger.info("Install {} {}", command.getPackageName(),
-                    installResult.getExecResult() ? "success" : "failed");
+            logger.info("Install {} {}", command.getPackageName(), installResult.getExecResult() ? "success" : "failed");
         } else {
             unhandled(msg);
         }
     }
+
 
 }
