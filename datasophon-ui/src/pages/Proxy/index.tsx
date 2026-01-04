@@ -83,15 +83,7 @@ const settings = {
 let timer
 
 const onClusterManageClick = () => {
-    const firstRoute = routes.find(val => {
-        return val.auth !== 0
-    })
-
-
-
-    window.location.href = firstRoute.path
-    // console.log('firstRoute', firstRoute)
-    // window.location.replace()
+    window.location.href = invokeGenPath(`/Colony/ColonyManage`)
 }
 
 const onUserClick = async () => {

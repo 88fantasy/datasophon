@@ -411,9 +411,9 @@ const Index = () => {
         getServiceRoleType()
     }, [getServiceRoleType])
 
-
     return (
         <CommonTable
+            key={instanceId}
             tableProps={{
                 actionRef,
                 columns,

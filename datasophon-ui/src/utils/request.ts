@@ -194,6 +194,7 @@ export const invokePackProtableRequest = (api) => {
   return async (params, sort, filter) => {
     params.page = params.current;
     let mapApi = api;
+
     if (/Object/.test(Object.prototype.toString.call(api))) {
       params = {
         ...(typeof api.params === "function"

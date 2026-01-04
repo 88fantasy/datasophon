@@ -17,34 +17,41 @@ import { invokeGenSourceAndTarget } from "../../utils/antvUtils"
 import { invokeGenerateElId } from "../../utils/util"
 import gobalEvent, { uiEvent } from "../../utils/gobalEvent"
 import { isEqual } from "lodash-es"
+import { createAvoidancePath } from "./edge"
 
 
+
+export const T_PENDING = 'PENDING'
+export const T_RUNNING = 'RUNNING'
+export const T_SUCCESS = 'SUCCESS'
+export const T_FAILED = 'FAILED'
+export const T_CANCEL = 'CANCEL'
 
 
 
 
 const invokeGenStatusDom = (val) => {
     const statusIcon = {
-        '成功': {
+        [T_SUCCESS]: {
             com: CheckCircleOutlined,
             style: {
                 color: green.primary
             },
         },
-        '失败': {
+        [T_FAILED]: {
             com: ExclamationCircleOutlined,
             style: {
                 color: red.primary
             },
             status: 'exception'
         },
-        '取消': {
+        [T_CANCEL]: {
             com: CloseCircleOutlined,
             style: {
                 color: gold.primary
             }
         },
-        '待运行': {
+        [T_PENDING]: {
             com: ClockCircleOutlined,
         }
     }
@@ -287,7 +294,7 @@ const Index = (props) => {
 
     const { plusActionSelected } = state
     // const data = node?.getData() as ProcessingNodeData
-    const { name, type, commandState, statusMsg, roles = [] } = nodeData
+    const { nodeName, type, commandState, statusMsg, roles = [] } = nodeData
 
 
     // 创建下游的节点和边
@@ -400,7 +407,7 @@ const Index = (props) => {
 
                             const {
                                 status
-                            } = invokeGenStatusDom(commandState)
+                            } = invokeGenStatusDom(cmd.status)
                             return (
                                 <div
                                     key={cmd}
@@ -421,37 +428,37 @@ const Index = (props) => {
     }
 
     const invokEestimateLabelHeight = useCallback(() => {
-        setTimeout(() => {
-            const el = document.getElementById(elId.current)
-            const {
-                height,
-                width
-            } = el.getBoundingClientRect()
+        // setTimeout(() => {
+        const el = document.getElementById(elId.current)
+        const {
+            height,
+            width
+        } = el.getBoundingClientRect()
 
-            console.log('height', height, width)
+        console.log('height', height, width)
 
-            // node.updatePorts()
+        // node.updatePorts()
 
-            console.log('node', node)
-
-
-
-
-            node.resize(width, height)
-
-
-            node.port.ports.map(val => {
-                node.setPortProp(val.id, ['args', 'y'], height / 2);
-            })
+        console.log('node', node)
 
 
 
-            // // const { width, height } = node.getSize();
-            // node.prop('ports/items', [
-            //     { id: 'p1', args: { x: width / 2, y: height / 2 }, /* ... */ },
-            //     { id: 'p2', args:     { x: width / 2, y: height / 2 }, /* ... */ },
-            // ]);
-        }, 0.5 * 1000)
+
+        node.resize(width, height)
+
+
+        node.port.ports.map(val => {
+            node.setPortProp(val.id, ['args', 'y'], height / 2);
+        })
+
+
+
+        // // const { width, height } = node.getSize();
+        // node.prop('ports/items', [
+        //     { id: 'p1', args: { x: width / 2, y: height / 2 }, /* ... */ },
+        //     { id: 'p2', args:     { x: width / 2, y: height / 2 }, /* ... */ },
+        // ]);
+        // }, 0.5 * 1000)
 
     }, [node])
 
@@ -462,7 +469,7 @@ const Index = (props) => {
 
             try {
 
-                console.log('isNotSame', !isEqual(data, nodeData))   
+                console.log('isNotSame', !isEqual(data, nodeData))
                 if (!isEqual(data, nodeData)) {
                     // node.setData(data)
                     setNodeData(data)
@@ -471,7 +478,7 @@ const Index = (props) => {
                 console.warn('updateDataProcessingDagNodeData error', error)
             }
         }
-    }, [])
+    }, [node.id, nodeData])
 
 
     useEffect(() => {
@@ -502,7 +509,7 @@ const Index = (props) => {
 
     useEffect(() => {
         invokEestimateLabelHeight()
-    }, [])
+    }, [invokEestimateLabelHeight])
 
     return (
         <div className="data-processing-dag-node" id={elId.current}>
@@ -512,13 +519,13 @@ const Index = (props) => {
                 onMouseLeave={onMainMouseLeave}
             >
                 <div className="flex  justify-between items-center ">
-                    <Tooltip title={name} mouseEnterDelay={0.8}>
-                        <div className="ellipsis-row node-name font-bold">{name}</div>
+                    <Tooltip title={nodeName} mouseEnterDelay={0.8}>
+                        <div className="ellipsis-row node-name font-bold">{nodeName || 123}</div>
                     </Tooltip>
                     {/* 节点状态信息 */}
                     <div className="status-action ">
                         {
-                            invokeGenStatusDom(commandState)
+                            invokeGenStatusDom(nodeData.status)
                         }
                     </div>
 
@@ -608,7 +615,26 @@ Index.invokeRegisterNode = () => {
 Index.invokeRegisterConnector = () => {
     Graph.registerConnector(
         Index.connectortName,
-        (sourcePoint, targetPoint) => {
+        (sourcePoint, targetPoint, routePoints, options) => {
+
+
+            // const { sourceNode, targetNode } = options || {};
+
+            // // 获取节点实际边界
+            // let sourceBBox, targetBBox;
+            // if (sourceNode && targetNode) {
+            //     sourceBBox = sourceNode.getBoundingRect();
+            //     targetBBox = targetNode.getBoundingRect();
+            // } else {
+            //     // 默认边界
+            //     sourceBBox = { x: sourcePoint.x - 50, y: sourcePoint.y - 20, width: 100, height: 40 };
+            //     targetBBox = { x: targetPoint.x - 50, y: targetPoint.y - 20, width: 100, height: 40 };
+            // }
+
+            // return createAvoidancePath(sourcePoint, targetPoint, sourceBBox, targetBBox);
+
+
+
             const hgap = Math.abs(targetPoint.x - sourcePoint.x)
             const path = new Path()
             path.appendSegment(
@@ -638,6 +664,15 @@ Index.invokeRegisterConnector = () => {
             )
 
             return path.serialize()
+
+            // return Graph.getConnectionPathByBoundary(sourcePoint, targetPoint, {
+            //     sourceBBox: options.sourceBBox,   // 源节点包围盒
+            //     targetBBox: options.targetBBox,   // 目标节点包围盒
+            //     borderRadius: 4,
+            //     // 可选：指定从哪一边出发/进入（如 'top', 'bottom' 等）
+            //     sourcePosition: options.sourcePosition,
+            //     targetPosition: options.targetPosition,
+            // })
         },
         true,
     )
