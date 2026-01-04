@@ -19,6 +19,7 @@ import type { TExendsRouteObject } from './interface';
 
 // 懒加载页面组件
 const Login = lazy(() => import('../pages/Login'));
+const Dag = lazy(() => import('../components/DagModal'));
 const Proxy = lazy(() => import('../pages/Proxy'));
 const ColonyManage = lazy(() => import('../pages/Colony/ColonyManage'));
 const ColonyParcel = lazy(() => import('../pages/Colony/ColonyParcel'));
@@ -171,6 +172,10 @@ let routes = [
     path: '/account/login',
     element: <Login />,
     auth: 0
+  },
+  {
+    path: '/Dag',
+    element: <Dag />
   },
   ...contentRoutes,
 ] as RouteObject[];

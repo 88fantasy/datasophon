@@ -18,11 +18,11 @@ const Index = (props) => {
     const firstFormRef = formMapRef.current[0]
 
 
-    const values = firstFormRef.current?.getFieldsValue()
+    const values = firstFormRef?.current?.getFieldsValue()
 
     const {
         contentDecodePasswd
-    } = values
+    } = values || {}
 
 
     const invokeRenderTable = useCallback(() => {
