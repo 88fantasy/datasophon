@@ -394,7 +394,9 @@ const Index = (props) => {
 
                             const {
                                 status
-                            } = invokeGenStatusDom(cmd.status)
+                            } = invokeGenStatusDom(commandState)
+
+                            console.log('cmd.status', status)
                             return (
                                 <div
                                     key={cmd}
