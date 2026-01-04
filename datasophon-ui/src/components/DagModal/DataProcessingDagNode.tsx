@@ -17,7 +17,6 @@ import { invokeGenSourceAndTarget } from "../../utils/antvUtils"
 import { invokeGenerateElId } from "../../utils/util"
 import gobalEvent, { uiEvent } from "../../utils/gobalEvent"
 import { isEqual } from "lodash-es"
-import { createAvoidancePath } from "./edge"
 
 
 
@@ -396,7 +395,6 @@ const Index = (props) => {
                                 status
                             } = invokeGenStatusDom(commandState)
 
-                            console.log('cmd.status', status)
                             return (
                                 <div
                                     key={cmd}
