@@ -2,6 +2,7 @@ package com.datasophon.api.service.extrepo.impl;
 
 import akka.actor.ActorRef;
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -215,7 +216,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                     conf.setValue(deployConf.getValue());
                 }
             });
-            serviceInstallService.saveServiceConfig(dto.getClusterId(), app.getName(), configs, null);
+            serviceInstallService.saveServiceConfig(dto.getClusterId(), app.getName(), configs, -1);
         });
         log.info("保存部署配置项成功");
 
@@ -520,8 +521,8 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         for (EdgeDefinition edgeDef : dagService.getEdgesByDagId(dagId)) {
             InstallProgressDAG2.EdgeVO edge =  new InstallProgressDAG2.EdgeVO();
             edge.setId(edgeDef.getId());
-            edge.setStart(edgeDef.getToNodeId());
-            edge.setEnd(edgeDef.getFromNodeId());
+            edge.setStart(edgeDef.getFromNodeId());
+            edge.setEnd(edgeDef.getToNodeId());
             edges.add(edge);
         }
         result.setEdges(edges);
@@ -543,7 +544,12 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                     List<InstallProgressDAG2.HostCmd> cmds = list.stream()
                             .sorted(Comparator.comparing(ClusterServiceCommandHostCommandEntity::getCreateTime))
                             .map(hostCmd -> {
-                                return BeanUtil.toBean(hostCmd, InstallProgressDAG2.HostCmd.class);
+                                InstallProgressDAG2.HostCmd cmd = BeanUtil.toBean(hostCmd, InstallProgressDAG2.HostCmd.class, CopyOptions.create().setIgnoreProperties("commandState"));
+                                if (hostCmd.getCommandState() != null) {
+                                    cmd.setCommandState(hostCmd.getCommandState().name());
+                                    cmd.setCommandStateName(hostCmd.getCommandState().getDesc());
+                                }
+                                return cmd;
                             })
                             .collect(Collectors.toList());
                     role.setCmdList(cmds);

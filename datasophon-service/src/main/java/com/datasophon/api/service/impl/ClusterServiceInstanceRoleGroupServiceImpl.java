@@ -62,7 +62,7 @@ public class ClusterServiceInstanceRoleGroupServiceImpl
   private static final String DEFAULT = "default";
 
   @Override
-  public ClusterServiceInstanceRoleGroup getRoleGroupByServiceInstanceId(
+  public ClusterServiceInstanceRoleGroup getDefaultRoleGroupByServiceInstanceId(
       Integer serviceInstanceId) {
     return this.getOne(
         new QueryWrapper<ClusterServiceInstanceRoleGroup>()

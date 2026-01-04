@@ -22,14 +22,19 @@ import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.RunAs;
 import com.datasophon.common.model.ServiceConfig;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class InstallServiceRoleCommand extends BaseCommand implements Serializable {
-    
+
+
+    private static final long serialVersionUID = -521810628281824531L;
+
     private Map<Generators, List<ServiceConfig>> cofigFileMap;
     
     private Long deliveryId;

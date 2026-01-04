@@ -12,6 +12,7 @@ import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.RoleType;
 import com.datasophon.dao.enums.dag.DagStatus;
 import com.datasophon.dao.enums.dag.NodeStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -117,7 +118,10 @@ public class InstallProgressDAG2 implements scala.Serializable {
          * 指令状态 1、正在运行2：成功3：失败
          */
         @Schema(description = "指令状态")
-        private CommandState commandState;
+        private String commandState;
+
+        @Schema(description = "指令状态名称")
+        private String commandStateName;
 
         @Schema(description = "指令进度")
         private Integer commandProgress;

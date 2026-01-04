@@ -247,7 +247,7 @@ public class DAGExecActor extends TargetTypeActor<DAGExecCommand> {
         ClusterServiceRoleInstanceEntity serviceRoleInstance = roleInstanceService.getOneServiceRole(serviceRoleInfo.getName(), serviceRoleInfo.getHostname(), serviceRoleInfo.getClusterId());
 
         HashMap<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
-        if (serviceRoleInfo.getCommandType() == CommandType.INSTALL_SERVICE) {
+        if (Arrays.asList(CommandType.INSTALL_SERVICE, CommandType.UPGRADE_SERVICE).contains(serviceRoleInfo.getCommandType())) {
             Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + serviceRoleInfo.getServiceInstanceId());
             ClusterServiceRoleGroupConfig config = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
             ProcessUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
