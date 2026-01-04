@@ -82,19 +82,6 @@ enum NodeType {
     OUTPUT = 'OUTPUT', // 数据输出
 }
 
-// 元素校验状态
-enum CellStatus {
-    DEFAULT = 'default',
-    SUCCESS = 'success',
-    ERROR = 'error',
-}
-
-interface ProcessingNodeData {
-    name: string
-    type: NodeType
-    status?: CellStatus
-    statusMsg?: string
-}
 
 // 节点位置信息
 interface Position {
@@ -245,7 +232,7 @@ export const createNode = (
     const id = StringExt.uuid()
     const node = {
         id,
-        shape: 'data-processing-dag-node',
+        shape: Index.shape,
         x: position?.x,
         y: position?.y,
         ports: getPortsByType(type, id),
