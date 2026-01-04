@@ -40,6 +40,7 @@ public class ServiceConfigureHandler extends ServiceHandler {
     public ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception {
         // config
         GenerateServiceConfigCommand generateServiceConfigCommand = new GenerateServiceConfigCommand();
+        generateServiceConfigCommand.setPackageName(serviceRoleInfo.getPackageName());
         generateServiceConfigCommand.setClusterId(serviceRoleInfo.getClusterId());
         generateServiceConfigCommand.setServiceName(serviceRoleInfo.getParentName());
         generateServiceConfigCommand.setCofigFileMap(serviceRoleInfo.getConfigFileMap());

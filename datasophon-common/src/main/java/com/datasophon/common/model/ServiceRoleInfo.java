@@ -17,6 +17,7 @@
 
 package com.datasophon.common.model;
 
+import com.datasophon.common.command.ServiceRoleResource;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.ServiceRoleType;
 
@@ -28,7 +29,7 @@ import java.util.Objects;
 import lombok.Data;
 
 @Data
-public class ServiceRoleInfo implements Serializable, Comparable<ServiceRoleInfo> {
+public class ServiceRoleInfo implements Serializable, Comparable<ServiceRoleInfo>, ServiceRoleResource {
     
     private Integer id;
     
@@ -95,5 +96,15 @@ public class ServiceRoleInfo implements Serializable, Comparable<ServiceRoleInfo
             return this.sortNum - serviceRoleInfo.getSortNum();
         }
         return 0;
+    }
+
+    @Override
+    public String getServiceName() {
+        return parentName;
+    }
+
+    @Override
+    public String getServiceRoleName() {
+        return name;
     }
 }

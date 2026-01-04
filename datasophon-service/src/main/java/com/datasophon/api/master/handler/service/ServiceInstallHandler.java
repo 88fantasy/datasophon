@@ -70,6 +70,7 @@ public class ServiceInstallHandler extends ServiceHandler {
         installServiceRoleCommand.setServiceName(serviceRoleInfo.getParentName());
         installServiceRoleCommand.setServiceRoleName(serviceRoleInfo.getName());
         installServiceRoleCommand.setServiceRoleType(serviceRoleInfo.getRoleType());
+        installServiceRoleCommand.setPackageName(serviceRoleInfo.getPackageName());
         installServiceRoleCommand.setDecompressPackageName(serviceRoleInfo.getDecompressPackageName());
         installServiceRoleCommand.setCreateDecompressDir(serviceRoleInfo.getCreateDecompressDir());
         installServiceRoleCommand.setRunAs(serviceRoleInfo.getRunAs());

@@ -26,12 +26,11 @@ import com.datasophon.api.load.ServiceInfoMap;
 import com.datasophon.api.load.ServiceRoleMap;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.common.Constants;
-
 import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.model.ServiceInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.SoftLinkUtils;
+import com.datasophon.common.utils.PgkInstallPathUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.AlertLevel;
@@ -175,7 +174,7 @@ public class CheckUtils {
             return;
         }
 
-        String linkDirName = SoftLinkUtils.getLinkDirName(serviceInfo);
+        String linkDirName = PgkInstallPathUtils.getLinkDirName(serviceRoleInfo);
         commandList.add(linkDirName + Constants.SLASH + serviceRoleInfo.getStatusRunner().getProgram());
         commandList.addAll(serviceRoleInfo.getStatusRunner().getArgs());
         cmdCommand.setCommands(commandList);

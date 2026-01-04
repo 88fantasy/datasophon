@@ -68,7 +68,7 @@ public class ConfigureServiceHandler {
     }
 
     public ExecResult configure(Map<Generators, List<ServiceConfig>> cofigFileMap,
-                                String decompressPackageName,
+                                String pkgInstallHome,
                                 Integer clusterId,
                                 Integer myid,
                                 String serviceRoleName,
@@ -151,7 +151,7 @@ public class ConfigureServiceHandler {
                     if ("KyuubiServer".equals(serviceRoleName) && "sparkHome".equals(config.getName())) {
                         // add hive-site.xml link in kerberos module
                         final String targetPath =
-                                Constants.INSTALL_PATH + File.separator + decompressPackageName + "/conf/hive-site.xml";
+                                Constants.INSTALL_PATH + File.separator + pkgInstallHome + "/conf/hive-site.xml";
                         if (!FileUtil.exist(targetPath)) {
                             logger.info("Add hive-site.xml link");
                             ExecResult result = ShellUtils
@@ -178,18 +178,18 @@ public class ConfigureServiceHandler {
                 if (!configs.isEmpty()) {
                     // extra app, package: META, templates
                     File extTemplateDir =
-                            new File(Constants.INSTALL_PATH + File.separator + decompressPackageName, "templates");
+                            new File(Constants.INSTALL_PATH + File.separator + pkgInstallHome, "templates");
                     if (extTemplateDir.exists() && extTemplateDir.isDirectory()) {
                         // 3rd app, load ext templates
                         logger.info("Add ext app template path: {} to loader path.", extTemplateDir.getAbsolutePath());
-                        FreemakerUtils.generateConfigFile(generators, configs, decompressPackageName,
+                        FreemakerUtils.generateConfigFile(generators, configs, pkgInstallHome,
                                 extTemplateDir.getAbsolutePath());
                     } else {
-                        FreemakerUtils.generateConfigFile(generators, configs, decompressPackageName);
+                        FreemakerUtils.generateConfigFile(generators, configs, pkgInstallHome);
                     }
                 } else if (!generators.getFilename().endsWith(SH)) {
                     String packagePath =
-                            Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH;
+                            Constants.INSTALL_PATH + Constants.SLASH + pkgInstallHome + Constants.SLASH;
                     String outputFile =
                             packagePath + generators.getOutputDirectory() + Constants.SLASH + generators.getFilename();
                     FileUtil.writeUtf8String("", outputFile);
@@ -197,7 +197,7 @@ public class ConfigureServiceHandler {
                 execResult.setExecOut("configure success");
                 logger.info("configure success");
             }
-            if (RANGER_ADMIN.equals(serviceRoleName) && !setupRangerAdmin(decompressPackageName)) {
+            if (RANGER_ADMIN.equals(serviceRoleName) && !setupRangerAdmin(pkgInstallHome)) {
                 return execResult;
             }
             execResult.setExecResult(true);

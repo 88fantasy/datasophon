@@ -25,7 +25,7 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.FileUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
-import com.datasophon.common.utils.SoftLinkUtils;
+import com.datasophon.common.utils.PgkInstallPathUtils;
 import com.datasophon.worker.utils.TaskConstants;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
@@ -58,7 +58,7 @@ public class ServiceHandler {
         BaseCommand cmd = new BaseCommand();
         cmd.setServiceName(serviceName);
         cmd.setServiceRoleName(serviceRoleName);
-        return SoftLinkUtils.getLinkDirName(cmd);
+        return PgkInstallPathUtils.getLinkDirName(cmd);
     }
 
     public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, String decompressPackageName,

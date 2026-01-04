@@ -34,6 +34,7 @@ public class ServiceUpgradeHandler extends ServiceHandler {
 
 
         InstallServiceRoleCommand installServiceRoleCommand = new InstallServiceRoleCommand();
+        installServiceRoleCommand.setPackageName(serviceRoleInfo.getPackageName());
         installServiceRoleCommand.setFrameCode(serviceRoleInfo.getFrameCode());
         installServiceRoleCommand.setServiceName(serviceRoleInfo.getParentName());
         installServiceRoleCommand.setServiceRoleName(serviceRoleInfo.getName());

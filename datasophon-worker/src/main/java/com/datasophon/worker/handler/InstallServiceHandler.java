@@ -28,6 +28,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.NexusFileUtils;
+import com.datasophon.common.utils.PgkInstallPathUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.strategy.resource.EmptyStrategy;
@@ -91,7 +92,7 @@ public class InstallServiceHandler {
 
             boolean result = decompressPkg(command, destDir, installPkgChange);
             if (result) {
-                String normalPkgDir = command.getNormalPkgDir();
+                String normalPkgDir = PgkInstallPathUtils.getInstallHomeName(command);
                 if (command.getRunAs() != null && command.getRunAs().hasOwner()) {
                     ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getOwner() + " " + Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir);
                     logger.info("chown {} {}", normalPkgDir, chownResult.getExecResult() ? "success" : "fail");

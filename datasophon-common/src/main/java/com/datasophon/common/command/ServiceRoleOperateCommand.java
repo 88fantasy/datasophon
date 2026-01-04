@@ -33,8 +33,7 @@ public class ServiceRoleOperateCommand extends BaseCommand implements Serializab
     private CommandType commandType;
     
     private Long deliveryId;
-    
-    private String decompressPackageName;
+
 
     /**
      * 创建解压目录

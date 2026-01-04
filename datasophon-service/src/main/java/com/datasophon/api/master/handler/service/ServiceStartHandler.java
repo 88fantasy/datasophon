@@ -52,6 +52,7 @@ public class ServiceStartHandler extends ServiceHandler {
         Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
         ServiceRoleOperateCommand serviceRoleOperateCommand = new ServiceRoleOperateCommand();
         serviceRoleOperateCommand.setServiceName(serviceRoleInfo.getParentName());
+        serviceRoleOperateCommand.setPackageName(serviceRoleInfo.getPackageName());
         serviceRoleOperateCommand.setServiceRoleName(serviceRoleInfo.getName());
         serviceRoleOperateCommand.setStartRunner(serviceRoleInfo.getStartRunner());
         serviceRoleOperateCommand.setDecompressPackageName(serviceRoleInfo.getDecompressPackageName());
