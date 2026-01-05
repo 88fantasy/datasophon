@@ -80,6 +80,10 @@ const invokeRenderMore = ({
             name
         } = item
 
+        const {
+            onDeleteClick
+        } = obj
+
         const isOverview = /Instance\/Overview/gi.test(item.path)
 
 
@@ -91,43 +95,58 @@ const invokeRenderMore = ({
 
         console.log('serviceList', serviceList)
 
+        const onItemClick = (e) => {
+            e.domEvent.stopPropagation()
+        }
+
         const items = isOverview ? [
             {
                 label: '添加服务',
-                key: T_ADD_SERVICE
+                key: T_ADD_SERVICE,
+                onClick: onItemClick
             },
             {
                 label: '启动所有服务',
-                key: T_STARTALL
+                key: T_STARTALL,
+                onClick: onItemClick
+
             },
             {
                 label: '停止所有服务',
-                key: T_STOPALL
+                key: T_STOPALL,
+                onClick: onItemClick
             },
             {
                 label: '重启所有需要重启的服务',
-                key: T_RESTARTALL
+                key: T_RESTARTALL,
+                onClick: onItemClick
             }
         ] : [
             {
                 label: '启动',
                 key: T_START_SERVICE,
+                onClick: onItemClick
             },
             {
                 label: '停止',
-                key: T_STOP_SERVICE
+                key: T_STOP_SERVICE,
+                onClick: onItemClick
             },
             {
                 label: '重启',
-                key: T_RESTART_SERVICE
+                key: T_RESTART_SERVICE,
+                onClick: onItemClick
             },
             {
                 label: '删除',
-                key: T_DELETE_SERVICE
+                key: T_DELETE_SERVICE,
+                onClick: onItemClick
             }
 
         ]
-        const onClick = async (obj) => {
+        const onClick = async (obj, e) => {
+            console.log('obj', obj, e)
+            // e.stopPropagation()
 
             // console.log('obj', obj, item)
             const menuItem = items.find(val => val.key === obj.key)
@@ -138,8 +157,6 @@ const invokeRenderMore = ({
                     content: `确定要${menuItem.label}${!isOverview ? name : ''}吗？`,
                     okType: 'danger'
                 })
-
-
 
             }
 
@@ -194,7 +211,7 @@ const invokeRenderMore = ({
                     //     }
                     // });
 
-                } else if (obj.key === 'DELETE_SERVICE') {
+                } else if (obj.key === T_DELETE_SERVICE) {
                     res = await axiosPost(
                         API.clusterServiceInstanceDelete,
                         {
@@ -219,12 +236,14 @@ const invokeRenderMore = ({
                 if (res.code === 200) {
                     // TODO:
 
-                    if (obj.key !== 'DELETE_SERVICE') {
+                    if (obj.key !== T_DELETE_SERVICE) {
                         const modelApi = await showResultModal()
 
                         modelApi.default({
                             clusterId,
                         })
+                    } else {
+                        onDeleteClick?.({ item })
                     }
                 }
             }
@@ -251,7 +270,7 @@ const invokeRenderMore = ({
 export const menuRender = (obj, item, dom) => {
 
     const {
-        onMenuClick
+        onMenuClick,
     } = obj
 
     // console.log('item', item)

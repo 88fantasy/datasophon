@@ -13,7 +13,7 @@ import type { MenuDataItem, ProSettings } from '@ant-design/pro-components';
 import { PageContainer, ProCard, ProLayout } from '@ant-design/pro-components';
 import { Alert, Badge, Button, Dropdown, Input, Space } from 'antd';
 import { routes, invokeGenMenuByPattern, menu, menuMap } from '../../routes';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { account } from '../../utils/account';
 import { invokeRelogin } from '../../utils/authorityUtils';
 import { invokeGenPath, invokeGetRouteByPath, invokeHandlePath } from '../../utils/routerUtils';
@@ -21,7 +21,7 @@ import { ClusterGlobalProvider } from '../../context/clusterGlobalContext';
 import { memo, use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { API } from '../../api';
 import { axiosPost } from '../../api/request';
-import { cloneDeep, isEqual, noop } from 'lodash-es';
+import { clone, cloneDeep, isEqual, noop } from 'lodash-es';
 import { menuRender } from './components/menuRender';
 import { ProxyContext } from '../../context/proxyContext';
 import { actionsRender } from './components/actionsRender';
@@ -97,7 +97,8 @@ const onUserClick = async () => {
 
 const Index = () => {
 
-    const { clusterId, } = useParams()
+    const { clusterId, instanceId } = useParams()
+    const { pathname } = useLocation()
     const hadInitRef = useRef()
     const serviceListMapRef = useRef({})
     const timeoutIdRef = useRef()
@@ -112,6 +113,8 @@ const Index = () => {
     const [hadInit, setHadInit] = useState(() => {
         return !clusterId
     })
+
+    console.log('pathname', pathname)
 
     // if (!clusterId) {
     //     hadInitRef.current = true
@@ -132,16 +135,38 @@ const Index = () => {
         route
     } = invokeGenMenuByPattern()
 
+
+    const memoMenuProps = useMemo(() => {
+        const res = {}
+
+
+        if (
+            /ServiceManage\/Instance/gi.test(window.location.pathname) &&
+            instanceId
+        ) {
+            res.selectedKeys = [
+                `/ddh/Cluster/:clusterId/ServiceManage/Instance/${instanceId}`
+            ]
+        }
+
+
+        return res
+    }, [instanceId])
+
+    const memoServiceRouteObj = useMemo(() => {
+        return route.routes.find(val => {
+            return /Cluster\/:clusterId\/ServiceManage/.test(val.path)
+        })
+    }, [route.routes])
+
     const defaultProps = useMemo(() => {
 
+        // const menuProps = {}
 
-
-        if (serviceList.length) {
+        if (serviceList) {
             // route
-            const serviceRouteObj = route.routes.find(val => {
-                return /Cluster\/:clusterId\/ServiceManage/.test(val.path)
-            })
-            console.log('route.routes', serviceRouteObj)
+            const serviceRouteObj = memoServiceRouteObj
+            // console.log('route.routes', serviceRouteObj)
 
             const serviceRoutes = serviceList.map(val => {
                 return {
@@ -166,11 +191,12 @@ const Index = () => {
             serviceRouteObj.routes = serviceRoutes
         }
 
-        // console.log('defaultProps', cloneDeep(route))
+        console.log('defaultProps', cloneDeep(route))
         return {
-            route
+            route: cloneDeep(route),
+            // menuProps
         }
-    }, [clusterId, route, serviceList])
+    }, [clusterId, memoServiceRouteObj, route, serviceList])
 
 
 
@@ -239,6 +265,7 @@ const Index = () => {
     }, [clusterId, invokeCancelGetServiceList, invokeGetServiceListByClusterProxy])
 
     const onMenuClick = useCallback((obj: MenuDataItem) => {
+        console.log('obj', obj)
 
         let {
             path
@@ -323,6 +350,36 @@ const Index = () => {
     }, [])
 
 
+    const onDeleteClick = useCallback(({ item }) => {
+        const {
+            originData
+        } = item
+
+
+        const {
+            id,
+        } = originData
+
+
+        if (id) {
+
+            if (String(instanceId) === String(id)) {
+                const firstItem = memoServiceRouteObj?.routes[0]
+
+                if (firstItem) {
+                    // navigate(invokeHandlePath(firstItem.path))
+                    onMenuClick(firstItem)
+                }
+            }
+
+
+            invokeGetServiceList(false)
+
+
+        }
+    }, [instanceId, invokeGetServiceList, memoServiceRouteObj?.routes, onMenuClick])
+
+
 
 
     const memoAvatarProps = useMemo(() => {
@@ -404,8 +461,11 @@ const Index = () => {
                             clusterId
                         })}
                         menuItemRender={menuRender.bind(noop, {
-                            onMenuClick
+                            onMenuClick,
+                            onDeleteClick
+                            // onDele
                         })}
+                        menuProps={memoMenuProps}
                         {...settings}
                     >
                         {
