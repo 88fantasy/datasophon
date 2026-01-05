@@ -336,9 +336,6 @@ const Index = (props) => {
                 }, 3 * 1000)
             }
 
-
-
-
         }
     }, [updateAnimate])
 
