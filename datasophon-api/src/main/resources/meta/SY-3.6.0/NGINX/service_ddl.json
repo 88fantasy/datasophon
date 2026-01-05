@@ -347,22 +347,10 @@
       "type": "multipleWithMap",
       "configType": "map",
       "value": [
-        {
-          "appName":"gateway",
-          "appPort":"8002",
-          "appUrl":"/gw/",
-          "metaInfo": "    proxy_set_header        X-Real-IP $remote_addr ;\n    proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for ;\n    proxy_set_header        Host  $http_host;"
-        }
       ],
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": [
-        {
-          "appName":"gateway",
-          "appPort":"8002",
-          "appUrl":"/gw/",
-          "metaInfo": "    proxy_set_header        X-Real-IP $remote_addr ;\n    proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for ;\n    proxy_set_header        Host  $http_host;"
-        }
       ]
     }
   ]

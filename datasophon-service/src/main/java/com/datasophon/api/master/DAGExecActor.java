@@ -240,7 +240,7 @@ public class DAGExecActor extends TargetTypeActor<DAGExecCommand> {
 
 
     private Map<Generators, List<ServiceConfig>> createConfigFileMap(ServiceRoleInfo serviceRoleInfo) {
-        log.info("创建ConfigFileMap");
+        log.info("为service:{}, serviceRole: {}创建ConfigFileMap", serviceRoleInfo.getParentName(), serviceRoleInfo.getServiceRoleName());
         ClusterServiceRoleGroupConfigService roleGroupConfigService = SpringTool.getApplicationContext().getBean(ClusterServiceRoleGroupConfigService.class);
         ClusterServiceRoleInstanceService roleInstanceService = SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
 

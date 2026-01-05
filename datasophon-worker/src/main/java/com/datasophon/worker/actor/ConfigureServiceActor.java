@@ -20,7 +20,7 @@ package com.datasophon.worker.actor;
 import akka.actor.UntypedActor;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.PgkInstallPathUtils;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.worker.handler.ConfigureServiceHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +36,7 @@ public class ConfigureServiceActor extends UntypedActor {
             GenerateServiceConfigCommand command = (GenerateServiceConfigCommand) msg;
             logger.info("start configure {}", command.getServiceName());
 
-            String pkgInstallHome = PgkInstallPathUtils.getInstallHomeName(command);
+            String pkgInstallHome = PkgInstallPathUtils.getInstallHomeName(command);
             ConfigureServiceHandler serviceHandler =
                     new ConfigureServiceHandler(command.getServiceName(), command.getServiceRoleName());
             ExecResult startResult = serviceHandler.configure(command.getCofigFileMap(),

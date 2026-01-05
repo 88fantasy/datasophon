@@ -48,7 +48,12 @@ public class GlobalVariables {
     valueMap.put(surroundKey(key), value);
   }
 
-  public static String getValue(Integer clusterId, String key) {
+    public static void putValue(Integer clusterId, String serviceName,  String variableName, String value) {
+       putValue(clusterId, serviceName + "." + variableName, value);
+    }
+
+
+    public static String getValue(Integer clusterId, String key) {
     if (!clusterVariablesMap.containsKey(clusterId)) {
       return null;
     }

@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,15 +66,10 @@ public class ConfigureServiceHandler {
         logger = LoggerFactory.getLogger(loggerName);
     }
 
-    public ExecResult configure(Map<Generators, List<ServiceConfig>> cofigFileMap,
-                                String pkgInstallHome,
-                                Integer clusterId,
-                                Integer myid,
-                                String serviceRoleName,
-                                RunAs runAs) {
+    public ExecResult configure(Map<Generators, List<ServiceConfig>> cofigFileMap, String pkgInstallHome, Integer clusterId,
+                                Integer myid, String serviceRoleName, RunAs runAs) {
         ExecResult execResult = new ExecResult();
         try {
-
             String hostName = InetAddress.getLocalHost().getHostName();
             String ip = InetAddress.getLocalHost().getHostAddress();
             HashMap<String, String> paramMap = new HashMap<>();
@@ -87,6 +81,7 @@ public class ConfigureServiceHandler {
 
             logger.info("Start to configure service role {}", serviceRoleName);
             for (Generators generators : cofigFileMap.keySet()) {
+                logger.info("begin generate file: {}, use tpl: {}", generators.getFilename(), generators.getTemplateName());
                 List<ServiceConfig> configs = cofigFileMap.get(generators);
                 String dataDir = "";
                 ArrayList<ServiceConfig> customConfList = CollUtil.newArrayList();
@@ -98,8 +93,7 @@ public class ConfigureServiceHandler {
                             case Constants.INPUT:
                                 Object value = config.getValue();
                                 if (String.class.isAssignableFrom(value.getClass())) {
-                                    String value1 = PlaceholderUtils.replacePlaceholders((String) value,
-                                            paramMap, Constants.REGEX_VARIABLE);
+                                    String value1 = PlaceholderUtils.replacePlaceholders((String) value, paramMap, Constants.REGEX_VARIABLE);
                                     config.setValue(value1);
                                 }
 
@@ -143,19 +137,16 @@ public class ConfigureServiceHandler {
                         serviceConfig.setValue("false");
                         customConfList.add(serviceConfig);
                     }
-                    if ("fe_priority_networks".equals(config.getName())
-                            || "be_priority_networks".equals(config.getName())) {
+                    if ("fe_priority_networks".equals(config.getName()) || "be_priority_networks".equals(config.getName())) {
                         config.setName("priority_networks");
                     }
 
                     if ("KyuubiServer".equals(serviceRoleName) && "sparkHome".equals(config.getName())) {
                         // add hive-site.xml link in kerberos module
-                        final String targetPath =
-                                Constants.INSTALL_PATH + File.separator + pkgInstallHome + "/conf/hive-site.xml";
+                        final String targetPath = Constants.INSTALL_PATH + File.separator + pkgInstallHome + "/conf/hive-site.xml";
                         if (!FileUtil.exist(targetPath)) {
                             logger.info("Add hive-site.xml link");
-                            ExecResult result = ShellUtils
-                                    .execShell("ln -s " + config.getValue() + "/conf/hive-site.xml " + targetPath);
+                            ExecResult result = ShellUtils.execShell("ln -s " + config.getValue() + "/conf/hive-site.xml " + targetPath);
                             if (!result.getExecResult()) {
                                 logger.warn("Add hive-site.xml link failed,msg: " + result.getExecErrOut());
                             }
@@ -177,25 +168,21 @@ public class ConfigureServiceHandler {
                 configs.addAll(customConfList);
                 if (!configs.isEmpty()) {
                     // extra app, package: META, templates
-                    File extTemplateDir =
-                            new File(Constants.INSTALL_PATH + File.separator + pkgInstallHome, "templates");
+                    File extTemplateDir = new File(Constants.INSTALL_PATH + File.separator + pkgInstallHome, "templates");
                     if (extTemplateDir.exists() && extTemplateDir.isDirectory()) {
                         // 3rd app, load ext templates
                         logger.info("Add ext app template path: {} to loader path.", extTemplateDir.getAbsolutePath());
-                        FreemakerUtils.generateConfigFile(generators, configs, pkgInstallHome,
-                                extTemplateDir.getAbsolutePath());
+                        FreemakerUtils.generateConfigFile(generators, configs, pkgInstallHome, extTemplateDir.getAbsolutePath());
                     } else {
                         FreemakerUtils.generateConfigFile(generators, configs, pkgInstallHome);
                     }
                 } else if (!generators.getFilename().endsWith(SH)) {
-                    String packagePath =
-                            Constants.INSTALL_PATH + Constants.SLASH + pkgInstallHome + Constants.SLASH;
-                    String outputFile =
-                            packagePath + generators.getOutputDirectory() + Constants.SLASH + generators.getFilename();
+                    String packagePath = Constants.INSTALL_PATH + Constants.SLASH + pkgInstallHome + Constants.SLASH;
+                    String outputFile = packagePath + generators.getOutputDirectory() + Constants.SLASH + generators.getFilename();
                     FileUtil.writeUtf8String("", outputFile);
                 }
                 execResult.setExecOut("configure success");
-                logger.info("configure success");
+                logger.info("generate file {} success", generators.getFilename());
             }
             if (RANGER_ADMIN.equals(serviceRoleName) && !setupRangerAdmin(pkgInstallHome)) {
                 return execResult;
@@ -203,7 +190,7 @@ public class ConfigureServiceHandler {
             execResult.setExecResult(true);
         } catch (Exception e) {
             execResult.setExecErrOut(e.getMessage());
-            logger.error("load app config template error!", e);
+            logger.error("load app {} serviceRole {} config template error!", serviceName, serviceRoleName, e);
         }
         return execResult;
     }
@@ -275,12 +262,12 @@ public class ConfigureServiceHandler {
     }
 
     private String conventToStr(ServiceConfig config) {
+        logger.info("convert config value to string, key: {}", config.getName());
         JSONArray value = (JSONArray) config.getValue();
         List<String> strs = value.toJavaList(String.class);
-        logger.info("size is :{}", strs.size());
         String joinValue = String.join(config.getSeparator(), strs);
         config.setValue(joinValue);
-        logger.info("config set value to {}", config.getValue());
+        logger.info("config {} set value to {}", config.getName(), config.getValue());
         return joinValue;
     }
 

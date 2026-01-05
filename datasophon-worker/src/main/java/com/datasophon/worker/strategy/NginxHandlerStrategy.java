@@ -17,12 +17,10 @@
 
 package com.datasophon.worker.strategy;
 
-import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
-import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.CommandType;
-import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import org.apache.commons.lang3.StringUtils;
@@ -41,7 +39,7 @@ public class NginxHandlerStrategy extends AbstractHandlerStrategy implements Ser
   @Override
   public ExecResult handler(ServiceRoleOperateCommand command) {
     ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-    String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
+    String workPath = PkgInstallPathUtils.getInstallHome(command);
     if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
       ArrayList<String> commands = new ArrayList<>();
       sudo(command, commands);

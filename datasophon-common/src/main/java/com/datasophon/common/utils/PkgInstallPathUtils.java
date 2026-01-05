@@ -8,7 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 /**
  * @author zhanghuangbin
  */
-public class PgkInstallPathUtils {
+public class PkgInstallPathUtils {
 
     public static String getLinkDirName(ServiceRoleResource resource) {
         return StringUtils.lowerCase(resource.getServiceName());

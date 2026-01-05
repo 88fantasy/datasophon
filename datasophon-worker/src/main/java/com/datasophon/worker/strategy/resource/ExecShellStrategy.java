@@ -7,7 +7,9 @@ import com.datasophon.common.utils.ShellUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author ruanzhiming
@@ -27,8 +29,10 @@ public class ExecShellStrategy extends ResourceStrategy {
 
     @Override
     public ExecResult exec() {
+        Map<String, String> variables = new HashMap<>(this.variables);
+        variables.put("${" + this.getService() + "." + this.getServiceRole() + "_INSTALL_HOME}", basePath);
         for (String command : commands) {
-            command = PlaceholderUtils.replacePlaceholders(command, this.variables, Constants.REGEX_VARIABLE);
+            command = PlaceholderUtils.replacePlaceholdersRecursive(command, variables, Constants.REGEX_VARIABLE);
 
             ExecResult result = ShellUtils.execShell(command);
             logger.info(" {} result {} ", command, result.getExecResult() ? "success" : "fail");

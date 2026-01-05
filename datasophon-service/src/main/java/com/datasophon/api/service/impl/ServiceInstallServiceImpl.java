@@ -216,14 +216,14 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             if (Boolean.TRUE.equals(serviceConfig.getRegister())) {
                 addToGlobalVariable(clusterId, serviceName, variableName, variableValue);
             }
-            GlobalVariables.putValue(clusterId, variableName, variableValue);
+            GlobalVariables.putValue(clusterId, serviceName, variableName, variableValue);
         }
 
 
 //        构建configFileMap
         Map<String, ServiceConfig> map = new HashMap<>();
         for (ServiceConfig serviceConfig : list) {
-            map.put( serviceConfig.getName(), serviceConfig);
+            map.put(serviceConfig.getName(), serviceConfig);
         }
         Map<Generators, List<ServiceConfig>> configFileMap = buildConfigFileMap(serviceName, clusterInfo, map);
         if (PROMETHEUS.equalsIgnoreCase(serviceName)) {

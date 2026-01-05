@@ -22,7 +22,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.enums.ServiceRoleType;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.PgkInstallPathUtils;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.InstallServiceHandler;
 import org.slf4j.Logger;
@@ -66,8 +66,8 @@ public class InstallServiceActor extends UntypedActor {
                         installResult = serviceHandler.install(command);
                     }
                 } else {
-                    String normalPkgDir = PgkInstallPathUtils.getInstallHomeName(command);
-                    String linkName = PgkInstallPathUtils.getLinkDirName(command);
+                    String normalPkgDir = PkgInstallPathUtils.getInstallHomeName(command);
+                    String linkName = PkgInstallPathUtils.getLinkDirName(command);
                     if (linkName.equals(normalPkgDir)) {
                         throw new IllegalStateException(String.format("软件%s安装目录和软链目录名字一致，无法解压", command.getServiceName()));
                     }

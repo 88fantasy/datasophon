@@ -87,12 +87,12 @@ public class ShellUtils {
             String execOut = stringBuffer.toString();
             int exitValue = ps.waitFor();
             if (0 == exitValue) {
-                logger.info("{} command exec out is : {}{},exitValue:{}", pathOrCommand, System.lineSeparator(), execOut, exitValue);
+                logger.info("exec command: {}, cmd output is : {} {},exitValue:{}", pathOrCommand, System.lineSeparator(), execOut, exitValue);
                 result.setExecResult(true);
                 result.setExecOut(execOut);
             } else {
                 result.setExecOut("call shell failed. error code is :" + exitValue);
-                logger.error("{} command exec out is : {}{},exitValue:{}", pathOrCommand, System.lineSeparator(), execOut, exitValue);
+                logger.error("exec command {}, cmd out is : {} {},exitValue:{}", pathOrCommand, System.lineSeparator(), execOut, exitValue);
             }
             
         } catch (Exception e) {

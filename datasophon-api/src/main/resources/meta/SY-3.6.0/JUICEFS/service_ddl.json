@@ -26,7 +26,9 @@
       "resourceStrategies": [
         {
           "type":"execShell",
-          "commands": ["/data/install_datasophon/juicefs-1.2.1/juicefs format --storage ${juicefsStorage} --bucket ${juicefsBucket} --access-key ${minioAccessKey} --secret-key ${minioSecretKey} '${juicefsMeta}', ${juicefsFileSystemName}"]
+          "commands": [
+            "${JUICEFS.JuicefsMount_INSTALL_HOME}/juicefs format --storage ${JUICEFS.juicefsStorage} --bucket ${JUICEFS.juicefsBucket}  --access-key ${JUICEFS.juicefsAccessKey}  --secret-key ${JUICEFS.juicefsSecretKey} --no-update '${JUICEFS.juicefsMeta}'  ${JUICEFS.juicefsFileSystemName}"
+          ]
         }
       ],
       "jmxPort": 9567,
