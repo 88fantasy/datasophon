@@ -98,8 +98,6 @@ const onUserClick = async () => {
 const Index = () => {
 
     const { clusterId, instanceId } = useParams()
-    const { pathname } = useLocation()
-    const hadInitRef = useRef()
     const serviceListMapRef = useRef({})
     const timeoutIdRef = useRef()
     const matchRoute = useRef(invokeGetRouteByPath())
@@ -113,8 +111,6 @@ const Index = () => {
     const [hadInit, setHadInit] = useState(() => {
         return !clusterId
     })
-
-    console.log('pathname', pathname)
 
     // if (!clusterId) {
     //     hadInitRef.current = true
@@ -156,7 +152,7 @@ const Index = () => {
     const memoServiceRouteObj = useMemo(() => {
         return route.routes.find(val => {
             return /Cluster\/:clusterId\/ServiceManage/.test(val.path)
-        })
+        }) || {}
     }, [route.routes])
 
     const defaultProps = useMemo(() => {
@@ -191,10 +187,8 @@ const Index = () => {
             serviceRouteObj.routes = serviceRoutes
         }
 
-        console.log('defaultProps', cloneDeep(route))
         return {
             route: cloneDeep(route),
-            // menuProps
         }
     }, [clusterId, memoServiceRouteObj, route, serviceList])
 
