@@ -38,4 +38,22 @@ public class PkgInstallPathUtils {
         return Constants.INSTALL_PATH + Constants.SLASH + getLinkDirName(resource);
     }
 
+
+    /**
+     * 服务角色安装目录的key
+     * @param resource
+     * @return
+     */
+    public static String getRoleInstallHomeKey(ServiceRoleResource resource) {
+        return  String.format("${%s.%s_INSTALL_HOME}", resource.getServiceName(), resource.getServiceRoleName());
+    }
+
+    /**
+     * 软件安装目录的key
+     * @param resource
+     * @return
+     */
+    public static String getInstallHomeKey(ServiceRoleResource resource) {
+        return  String.format("${%s.INSTALL_HOME}", resource.getServiceName());
+    }
 }

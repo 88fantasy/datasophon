@@ -95,9 +95,8 @@
         "outputDirectory": "bin",
         "templateName": "nginx-configure.ftl",
         "includeParams": [
-          "nginxBasePath",
-          "nginxInstallPath",
-          "nginxModules"
+          "nginxModules",
+          "nginxBasePath"
         ]
       },
       {

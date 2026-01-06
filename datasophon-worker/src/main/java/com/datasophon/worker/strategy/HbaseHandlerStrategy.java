@@ -22,6 +22,7 @@ import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
@@ -46,8 +47,8 @@ public class HbaseHandlerStrategy extends AbstractHandlerStrategy implements Ser
             ArrayList<String> commands = new ArrayList<>();
             commands.add("sh");
             commands.add("./enable-hbase-plugin.sh");
-            if (!FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName()
-                    + "/ranger-hbase-plugin/success.id")) {
+            if (!FileUtil.exist(PkgInstallPathUtils.getInstallHome(command)
+                                + "/ranger-hbase-plugin/success.id")) {
                 ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH + Constants.SLASH
                         + command.getDecompressPackageName() + "/ranger-hbase-plugin", commands, 30L, logger);
                 if (execResult.getExecResult()) {

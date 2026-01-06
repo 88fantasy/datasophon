@@ -21,6 +21,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.utils.KerberosUtils;
@@ -44,8 +45,7 @@ public class JournalNodeHandlerStrategy extends AbstractHandlerStrategy implemen
             logger.info("start to get journalnode keytab file");
             String hostname = CacheUtils.getString(Constants.HOSTNAME);
             KerberosUtils.createKeytabDir();
-            String hadoopConfDir =
-                    Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName() + "/etc/hadoop/";
+            String hadoopConfDir = PkgInstallPathUtils.getInstallHome(command) + "/etc/hadoop/";
             if (!FileUtil.exist(hadoopConfDir + "ssl-server.xml")) {
                 ShellUtils.execShell(
                         "cp " + hadoopConfDir + "ssl-server.xml.template " + hadoopConfDir + "ssl-server.xml");

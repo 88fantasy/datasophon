@@ -41,6 +41,7 @@ public class NginxHandlerStrategy extends AbstractHandlerStrategy implements Ser
     ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
     String workPath = PkgInstallPathUtils.getInstallHome(command);
     if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
+
       ArrayList<String> commands = new ArrayList<>();
       sudo(command, commands);
       logger.info("Start to source install nginx");

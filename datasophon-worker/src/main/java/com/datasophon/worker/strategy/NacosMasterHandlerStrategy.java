@@ -8,6 +8,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.utils.FileUtils;
 import com.datasophon.worker.utils.SqlUtils;
@@ -29,7 +30,7 @@ public class NacosMasterHandlerStrategy extends AbstractHandlerStrategy implemen
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) throws SQLException, ClassNotFoundException {
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-        String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
+        String workPath = PkgInstallPathUtils.getInstallHome(command);
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             ExecResult execResult = new ExecResult();
             // 判断数据库是否已经初始化

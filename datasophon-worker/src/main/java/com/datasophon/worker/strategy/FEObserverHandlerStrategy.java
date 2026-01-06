@@ -24,6 +24,7 @@ import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ThrowableUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.utils.ActorUtils;
@@ -46,7 +47,7 @@ public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implement
         ExecResult startResult = new ExecResult();
         logger.info("FEObserverHandlerStrategy start fe observer" + JSONUtil.toJsonStr(command));
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-        String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
+        String workPath = PkgInstallPathUtils.getInstallHome(command);
         if (command.getCommandType() == CommandType.INSTALL_SERVICE) {
             logger.info("first start  fe observer");
             ArrayList<String> commands = new ArrayList<>();

@@ -23,10 +23,12 @@ import cn.hutool.core.util.IdUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.common.Constants;
+import com.datasophon.common.command.ServiceRoleResource;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.RunAs;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.utils.FreemakerUtils;
@@ -45,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Data
 public class ConfigureServiceHandler {
@@ -66,10 +69,11 @@ public class ConfigureServiceHandler {
         logger = LoggerFactory.getLogger(loggerName);
     }
 
-    public ExecResult configure(Map<Generators, List<ServiceConfig>> cofigFileMap, String pkgInstallHome, Integer clusterId,
-                                Integer myid, String serviceRoleName, RunAs runAs) {
+    public ExecResult configure(Map<Generators, List<ServiceConfig>> cofigFileMap, ServiceRoleResource srvRoleResource, Integer clusterId,
+                                Integer myid,  RunAs runAs) {
         ExecResult execResult = new ExecResult();
         try {
+            String pkgInstallHome = PkgInstallPathUtils.getInstallHomeName(srvRoleResource);
             String hostName = InetAddress.getLocalHost().getHostName();
             String ip = InetAddress.getLocalHost().getHostAddress();
             HashMap<String, String> paramMap = new HashMap<>();
@@ -78,6 +82,9 @@ public class ConfigureServiceHandler {
             paramMap.put("${ip}", ip);
             paramMap.put("${user}", "root");
             paramMap.put("${myid}", String.valueOf(myid));
+//            软件安装路径的相关变量
+            paramMap.put(PkgInstallPathUtils.getRoleInstallHomeKey(srvRoleResource), PkgInstallPathUtils.getInstallHome(srvRoleResource));
+            paramMap.put(PkgInstallPathUtils.getInstallHomeKey(srvRoleResource), PkgInstallPathUtils.getInstallHome(srvRoleResource));
 
             logger.info("Start to configure service role {}", serviceRoleName);
             for (Generators generators : cofigFileMap.keySet()) {
@@ -89,21 +96,7 @@ public class ConfigureServiceHandler {
                 while (iterator.hasNext()) {
                     ServiceConfig config = iterator.next();
                     if (StringUtils.isNotBlank(config.getType())) {
-                        switch (config.getType()) {
-                            case Constants.INPUT:
-                                Object value = config.getValue();
-                                if (String.class.isAssignableFrom(value.getClass())) {
-                                    String value1 = PlaceholderUtils.replacePlaceholders((String) value, paramMap, Constants.REGEX_VARIABLE);
-                                    config.setValue(value1);
-                                }
-
-                                break;
-                            case Constants.MULTIPLE:
-                                conventToStr(config);
-                                break;
-                            default:
-                                break;
-                        }
+                        replacePlaceholder(config, paramMap);
                     }
                     if (Constants.PATH.equals(config.getConfigType())) {
                         createPath(config, runAs);
@@ -195,6 +188,8 @@ public class ConfigureServiceHandler {
         return execResult;
     }
 
+
+
     private boolean setupRangerAdmin(String decompressPackageName) {
         logger.info("start to execute ranger admin setup.sh");
         ArrayList<String> commands = new ArrayList<>();
@@ -213,6 +208,30 @@ public class ConfigureServiceHandler {
         }
         logger.info("ranger admin setup failed");
         return false;
+    }
+
+
+    private void replacePlaceholder(ServiceConfig config, HashMap<String, String> paramMap) {
+        logger.info("handle config value, key: {}", config.getName());
+        switch (config.getType()) {
+            case Constants.INPUT:
+                Object tempVal = config.getValue();
+                if (String.class.isAssignableFrom(tempVal.getClass())) {
+                    String value = PlaceholderUtils.replacePlaceholders((String) tempVal, paramMap, Constants.REGEX_VARIABLE);
+                    config.setValue(value);
+                }
+                break;
+            case Constants.MULTIPLE:
+                JSONArray value2 = (JSONArray) config.getValue();
+                List<String> valueList = value2.toJavaList(String.class);
+                valueList = valueList.stream()
+                        .map(val-> PlaceholderUtils.replacePlaceholdersRecursive(val, paramMap, Constants.REGEX_VARIABLE))
+                        .collect(Collectors.toList());
+                String joinValue = String.join(config.getSeparator(), valueList);
+                config.setValue(joinValue);
+                break;
+        }
+        logger.info("config {} set value to {}", config.getName(), config.getValue());
     }
 
     private void createPath(ServiceConfig config, RunAs runAs) {
@@ -259,16 +278,6 @@ public class ConfigureServiceHandler {
                 }
             }
         }
-    }
-
-    private String conventToStr(ServiceConfig config) {
-        logger.info("convert config value to string, key: {}", config.getName());
-        JSONArray value = (JSONArray) config.getValue();
-        List<String> strs = value.toJavaList(String.class);
-        String joinValue = String.join(config.getSeparator(), strs);
-        config.setValue(joinValue);
-        logger.info("config {} set value to {}", config.getName(), config.getValue());
-        return joinValue;
     }
 
     private void conventArray(ServiceConfig config) {

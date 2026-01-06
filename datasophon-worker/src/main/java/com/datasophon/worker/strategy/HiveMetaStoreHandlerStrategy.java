@@ -26,6 +26,7 @@ import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ThrowableUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import org.w3c.dom.Document;
@@ -52,7 +53,7 @@ public class HiveMetaStoreHandlerStrategy extends AbstractHandlerStrategy implem
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) {
         ExecResult startResult = new ExecResult();
-        final String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
+        final String workPath = PkgInstallPathUtils.getInstallHome(command);
         final String hiveSitePath = workPath + Constants.SLASH + "conf" + Constants.SLASH + "hive-site.xml";
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         // 判断数据库是否已经初始化

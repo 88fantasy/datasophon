@@ -109,7 +109,7 @@ public class InstallServiceHandler {
                         rs.setFrameCode(frameCode);
                         rs.setService(serviceName);
                         rs.setServiceRole(serviceRoleName);
-                        rs.setBasePath(Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir);
+                        rs.setBasePath(PkgInstallPathUtils.getInstallHome(command));
                         rs.setVariables(command.getVariables());
                         ExecResult exec = rs.exec();
                         if (!exec.getExecResult()) {
