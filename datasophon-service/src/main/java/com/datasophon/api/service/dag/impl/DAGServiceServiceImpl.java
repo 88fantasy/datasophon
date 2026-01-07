@@ -106,10 +106,8 @@ public class DAGServiceServiceImpl implements DAGService {
     }
 
     @Override
-    public String saveDAG(String dagName, String desc) {
-        DagDefinitionEntity dag = new DagDefinitionEntity();
-        dag.setDagName(dagName);
-        dag.setDescription(desc);
+    public String saveDAG(DagDefinition definition) {
+        DagDefinitionEntity dag = BeanUtil.toBean(definition, DagDefinitionEntity.class);
         dag.setCreatedTime(LocalDateTime.now());
         dag.setStatus(DagStatus.PENDING);
         dagDefinitionEntityMapper.insert(dag);

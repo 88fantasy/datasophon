@@ -1,5 +1,6 @@
 package com.datasophon.api.service.dag;
 
+import com.datasophon.api.dag.model.DagDefinition;
 import com.datasophon.api.dag.repo.DAGRepository;
 import com.datasophon.dao.entity.dag.EdgeDefinitionEntity;
 import com.datasophon.dao.entity.dag.NodeDefinitionEntity;
@@ -11,7 +12,7 @@ import java.util.List;
  */
 public interface DAGService extends DAGRepository {
 
-    String saveDAG(String dagName, String desc);
+    String saveDAG(DagDefinition definition);
 
     List<NodeDefinitionEntity> saveNodes(String dagId, List<NodeDefinitionEntity> nodes);
 

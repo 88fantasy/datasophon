@@ -19,6 +19,8 @@ public interface ExtRepoInstallService {
     InstallResult deploy(DeploymentDTO dto);
 
 
+    void redeploy(String dagId);
+
     /**
      * @see #getDeployProgressDAG2(String) 
      * @param clusterId

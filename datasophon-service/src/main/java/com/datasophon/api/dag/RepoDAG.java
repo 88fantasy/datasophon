@@ -79,8 +79,28 @@ public class RepoDAG {
 
 
     public void exec(AsyncNodeTask task) {
+       doExec(task, false);
+    }
+
+    public void resume(AsyncNodeTask task) {
+        doExec(task, true);
+    }
+
+    public void exec(NodeTask task) {
+        AsyncNodeTask wrappedTask = (node, callback) -> {
+            try {
+                String result = task.exec(node);
+                callback.onSuccess(result);
+            } catch (Exception e) {
+                callback.onFailure(e);
+            }
+        };
+        exec(wrappedTask);
+    }
+
+    private void doExec(AsyncNodeTask task, boolean restart) {
         try {
-            start();
+            start(restart);
             Set<String> readNodes = getReadNodes();
             if (readNodes.isEmpty()) {
                 throw new IllegalStateException("未找到状态是就绪的任务，请检查任务状态");
@@ -91,25 +111,6 @@ public class RepoDAG {
             handleDagFailure(throwable);
         }
     }
-
-    public void exec(NodeTask task) {
-        try {
-            start();
-            AsyncNodeTask wrappedTask = (node, callback) -> {
-                try {
-                    String result = task.exec(node);
-                    callback.onSuccess(result);
-                } catch (Exception e) {
-                    callback.onFailure(e);
-                }
-            };
-            exec(wrappedTask);
-        } catch (Throwable throwable) {
-            handleDagFailure(throwable);
-        }
-    }
-
-
     public void forward(AsyncNodeTask task, Queue<String> queue, Throwable throwable) {
         if (throwable != null) {
             cancel(throwable);
@@ -156,7 +157,7 @@ public class RepoDAG {
         throw new RuntimeException(String.format("exec dag %s fail, %s", dagId, e.getMessage()), e);
     }
 
-    public void start() {
+    public void start(boolean ignoreSuccess) {
         if (!isRunning.compareAndSet(false, true)) {
             throw new IllegalStateException("DAG is already running");
         }
@@ -165,7 +166,7 @@ public class RepoDAG {
         }
         repository.doInNewTransactional(() -> {
             repository.updateDagStatus(dagId, DagStatus.RUNNING);
-            repository.markNodesPending(dagId, true);
+            repository.markNodesPending(dagId, ignoreSuccess);
         });
     }
 

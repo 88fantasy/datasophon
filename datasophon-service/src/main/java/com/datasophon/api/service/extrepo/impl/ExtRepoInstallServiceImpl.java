@@ -32,6 +32,7 @@ import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
@@ -59,6 +60,8 @@ import com.datasophon.dao.entity.FrameServiceRoleEntity;
 import com.datasophon.dao.entity.dag.NodeDefinitionEntity;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.ServiceState;
+import com.datasophon.dao.enums.dag.DagStatus;
+import com.datasophon.dao.enums.dag.NodeStatus;
 import com.datasophon.dao.model.extrepo.DeploySrvConfig;
 import com.datasophon.dao.model.extrepo.DeploymentModel;
 import org.slf4j.Logger;
@@ -70,6 +73,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.io.File;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -131,6 +135,8 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
     @Autowired
     private DAGService dagService;
+    @Autowired
+    private TransactionalUtils transactionalUtils;
 
     @Override
     public ValidateResultVO validDeploymentFile(DeploymentDTO dto) {
@@ -239,7 +245,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                doInstall(dagId, clusterInfo, commandIds);
+                doInstall(dagId, false, commandIds);
             }
         });
         return new InstallResult(dagId, commandIds);
@@ -372,7 +378,10 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             nodeMap.put(srv, node);
         });
 
-        String dagId = dagService.saveDAG("导入安装", null);
+
+        DagDefinition definition = new DagDefinition();
+        definition.setDagName("导入部署清单安装");
+        String dagId = dagService.saveDAG(definition);
         dagService.saveNodes(dagId, new ArrayList<>(nodeMap.values()));
 
         dag.getEdges().forEach(edge -> {
@@ -385,24 +394,73 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
     }
 
 
-    private void doInstall(String dagId, ClusterInfoEntity clusterInfo, List<String> commandIds) {
+    private void doInstall(String dagId, boolean restart, List<String> commandIds) {
         CompletableFuture.runAsync(() -> {
             try {
                 log.info("构建DAG完成，开始执行命令");
                 DAGExecCommand cmd = new DAGExecCommand();
                 cmd.setDagId(dagId);
-                cmd.setClusterId(clusterInfo.getId());
-                cmd.setClusterCode(clusterInfo.getClusterCode());
+                cmd.setRestart(restart);
                 ActorRef actor = ActorUtils.getLocalActor(DAGExecActor.class, ActorUtils.getActorRefName(DAGExecActor.class));
                 actor.tell(cmd, ActorRef.noSender());
             } catch (Exception e) {
-                commandService.lambdaUpdate()
-                        .in(ClusterServiceCommandEntity::getCommandId, commandIds)
-                        .set(ClusterServiceCommandEntity::getCommandState, CommandState.FAILED)
-                        .update();
                 log.error("execute dagId: {} fail, {}", dagId, e.getMessage(), e);
+                transactionalUtils.doInNewTx(() -> commandIds.forEach(cmdId -> updateCommandState(cmdId, CommandState.FAILED)));
             }
         });
+    }
+
+    private void updateCommandState(String cmdId, CommandState state) {
+        ClusterServiceCommandEntity cmd = commandService.getCommandById(cmdId);
+        if (state == CommandState.FAILED) {
+            if (Arrays.asList(CommandState.RUNNING, CommandState.WAIT).contains(cmd.getCommandState())) {
+                cmd.setCommandState(state);
+                commandService.updateById(cmd);
+                List<String> cmdHostList = commandHostService.lambdaQuery()
+                        .in(ClusterServiceCommandHostEntity::getCommandState, Arrays.asList(CommandState.WAIT, CommandState.RUNNING))
+                        .eq(ClusterServiceCommandHostEntity::getCommandId, cmdId)
+                        .select(ClusterServiceCommandHostEntity::getCommandHostId)
+                        .list()
+                        .stream()
+                        .map(ClusterServiceCommandHostEntity::getCommandHostId)
+                        .collect(Collectors.toList());
+                if (!cmdHostList.isEmpty()) {
+                    hostCommandService.lambdaUpdate()
+                            .in(ClusterServiceCommandHostCommandEntity::getCommandHostId, cmdHostList)
+                            .set(ClusterServiceCommandHostCommandEntity::getCommandState, state)
+                            .update();
+                    commandHostService.lambdaUpdate()
+                            .in(ClusterServiceCommandHostEntity::getCommandHostId, cmdHostList)
+                            .set(ClusterServiceCommandHostEntity::getCommandState, state)
+                            .update();
+                }
+            }
+        }
+
+        if (state == CommandState.RUNNING) {
+            if (cmd.getCommandState().equals(CommandState.SUCCESS)) {
+                return;
+            }
+            cmd.setCommandState(state);
+            commandService.updateById(cmd);
+            List<String> cmdHostList = commandHostService.lambdaQuery()
+                    .eq(ClusterServiceCommandHostEntity::getCommandId, cmdId)
+                    .select(ClusterServiceCommandHostEntity::getCommandHostId)
+                    .list()
+                    .stream()
+                    .map(ClusterServiceCommandHostEntity::getCommandHostId)
+                    .collect(Collectors.toList());
+            if (!cmdHostList.isEmpty()) {
+                hostCommandService.lambdaUpdate()
+                        .in(ClusterServiceCommandHostCommandEntity::getCommandHostId, cmdHostList)
+                        .set(ClusterServiceCommandHostCommandEntity::getCommandState, state)
+                        .update();
+                commandHostService.lambdaUpdate()
+                        .in(ClusterServiceCommandHostEntity::getCommandHostId, cmdHostList)
+                        .set(ClusterServiceCommandHostEntity::getCommandState, state)
+                        .update();
+            }
+        }
     }
 
 
@@ -464,7 +522,8 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         return result;
     }
 
-    private InstallProgressDAG.Srv newSrv(ClusterServiceCommandEntity cmd, int i, List<ClusterServiceCommandHostCommandEntity> hostCmdList) {
+    private InstallProgressDAG.Srv newSrv(ClusterServiceCommandEntity cmd, int i, List<
+            ClusterServiceCommandHostCommandEntity> hostCmdList) {
         InstallProgressDAG.Srv srv = new InstallProgressDAG.Srv();
         srv.setId(i);
         srv.setName(cmd.getServiceName());
@@ -494,6 +553,33 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         return srv;
     }
 
+    @Override
+    public void redeploy(String dagId) {
+        DagDefinition def = dagService.getDagById(dagId);
+        if (Arrays.asList(DagStatus.FAILED, DagStatus.CANCEL).contains(def.getStatus())) {
+            throw new BusinessException(String.format("当前任务的状态为%s，不允许重复运行", def.getStatus().name()));
+        }
+        if (def.getCreatedTime().plusDays(2).isBefore(LocalDateTime.now())) {
+            throw new BusinessException("任务已经过期, 不允许在运行");
+        }
+        List<NodeDefinition> nodes = dagService.getNodesByDagId(dagId, true);
+        if (nodes.isEmpty()) {
+            return;
+        }
+        for (NodeDefinition node : nodes) {
+            if (!NodeStatus.SUCCESS.equals(node.getStatus())) {
+                dagService.updateNodeStatus(node.getId(), NodeStatus.PENDING);
+            }
+        }
+        List<String> commandIds = new ArrayList<>();
+        for (NodeDefinition node : nodes) {
+            ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
+            commandIds.add(serviceNode.getCommandId());
+        }
+
+        commandIds.forEach(cmd -> updateCommandState(cmd, CommandState.RUNNING));
+        doInstall(dagId, true, commandIds);
+    }
 
     @Override
     public InstallProgressDAG2 getDeployProgressDAG2(String dagId) {
@@ -519,7 +605,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
         List<InstallProgressDAG2.EdgeVO> edges = new ArrayList<>();
         for (EdgeDefinition edgeDef : dagService.getEdgesByDagId(dagId)) {
-            InstallProgressDAG2.EdgeVO edge =  new InstallProgressDAG2.EdgeVO();
+            InstallProgressDAG2.EdgeVO edge = new InstallProgressDAG2.EdgeVO();
             edge.setId(edgeDef.getId());
             edge.setStart(edgeDef.getFromNodeId());
             edge.setEnd(edgeDef.getToNodeId());

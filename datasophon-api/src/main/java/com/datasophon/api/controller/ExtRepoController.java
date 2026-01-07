@@ -98,10 +98,10 @@ public class ExtRepoController extends ApiController {
 
 
     /**
-     * @deprecated 
-     * @see #getDeployProgressDAG2(DagIdDto)
      * @param dto
      * @return
+     * @see #getDeployProgressDAG2(DagIdDto)
+     * @deprecated
      */
     @Deprecated
     @PostMapping("/getDeployProgressDAG")
@@ -117,6 +117,15 @@ public class ExtRepoController extends ApiController {
     @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = InstallProgressDAG2.class))})
     public Result getDeployProgressDAG2(@RequestBody @Validated DagIdDto dto) {
         return Result.success(extRepoInstallService.getDeployProgressDAG2(dto.getDagId()));
+    }
+
+
+    @PostMapping("/redeploy")
+    @Operation(summary = "重新运行dag")
+    @ApiResponse(content = {@Content(mediaType = "application/json")})
+    public Result redeploy(@RequestBody @Validated DagIdDto dto) {
+        extRepoInstallService.redeploy(dto.getDagId());
+        return Result.success();
     }
 
 

@@ -11,8 +11,6 @@ public class DAGExecCommand {
 
     private String dagId;
 
-
-    private Integer clusterId;
-    private String clusterCode;
+    private boolean restart;
 
 }

@@ -10,11 +10,12 @@ import java.time.LocalDateTime;
 public class DagDefinition implements Serializable {
     private String id;
     private DagStatus status;
+
+    private String dagName;
+    private String description;
     private LocalDateTime createdTime;
     private LocalDateTime startedTime;
     private LocalDateTime completedTime;
-
-    
 
 }
 

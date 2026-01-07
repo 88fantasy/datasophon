@@ -2,6 +2,7 @@ package com.datasophon.api.master;
 
 import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.datasophon.api.dag.AsyncNodeTask;
 import com.datasophon.api.dag.DAGListener;
 import com.datasophon.api.dag.NodeExecutionCallback;
 import com.datasophon.api.dag.RepoDAG;
@@ -59,9 +60,9 @@ public class DAGExecActor extends TargetTypeActor<DAGExecCommand> {
 
     @Override
     protected void doOnReceive(DAGExecCommand message) {
-        RepoDAG dag = createMultiServiceDAG(message.getDagId());
+        RepoDAG dag = createMultiServiceDAG(message);
 
-        dag.exec((nodeDef, callback) -> {
+        AsyncNodeTask task = (nodeDef, callback) -> {
 //            单个服务的安装
             ServiceNode serviceNode = JSONObject.parseObject((String) nodeDef.getNodeConfig(), ServiceNode.class);
             log.info("准备执行{}{}, 命令行ID:{}", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName(), serviceNode.getCommandId());
@@ -71,11 +72,18 @@ public class DAGExecActor extends TargetTypeActor<DAGExecCommand> {
                 List<ServiceRoleInfo> roles = (List<ServiceRoleInfo>) node.getNodeConfig();
                 doExecServiceRoles(serviceNode, roles, cb);
             });
-        });
+        };
+
+        if (message.isRestart()) {
+            dag.exec(task);
+        } else {
+            dag.resume(task);
+        }
     }
 
 
-    private RepoDAG createMultiServiceDAG(String dagId) {
+    private RepoDAG createMultiServiceDAG(DAGExecCommand cmd) {
+        String dagId = cmd.getDagId();
         log.info("DAGExecActor开始执行任务， id:{}", dagId);
         DAGRepository repository = SpringUtil.getBean(DAGService.class);
         RepoDAG dag = new RepoDAG(repository);
