@@ -21,7 +21,7 @@
       "resourceStrategies": [
         {
           "type": "frontend",
-          "meta": "${juicefsMeta}",
+          "meta": "${JUICEFS.juicefsMeta}",
           "source": "view/gateway-view",
           "target": "/gateway-view",
           "conf": "gateway-view.conf"

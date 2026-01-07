@@ -104,6 +104,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -195,9 +196,23 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     }
 
     @Override
-    public void saveServiceConfig(
-            Integer clusterId, String serviceName, List<ServiceConfig> list,
-            Integer roleGroupId) {
+    public List<ServiceConfig> getServiceConfigFromDdl(Integer clusterId, String serviceName) {
+        ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
+        FrameServiceEntity frameService = this.frameService.getServiceByFrameCodeAndServiceName(clusterInfo.getClusterFrame(), serviceName);
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
+        String serviceConfig = PlaceholderUtils.replacePlaceholders(frameService.getServiceConfig(), globalVariables, Constants.REGEX_VARIABLE);
+        List<ServiceConfig> list = JSONArray.parseArray(serviceConfig, ServiceConfig.class);
+
+        ServiceRoleStrategy serviceRoleHandler = ServiceRoleStrategyContext.getServiceRoleHandler(serviceName);
+        if (Objects.nonNull(serviceRoleHandler)) {
+            serviceRoleHandler.getConfig(clusterId, list);
+        }
+
+        return list;
+    }
+
+    @Override
+    public void saveServiceConfig(Integer clusterId, String serviceName, List<ServiceConfig> list, Integer roleGroupId) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         ServiceConfigMap.put(clusterInfo.getClusterCode() + Constants.UNDERLINE + serviceName + Constants.CONFIG, list);
 
@@ -205,7 +220,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         // handler config
         ServiceRoleStrategy serviceRoleHandler = ServiceRoleStrategyContext.getServiceRoleHandler(serviceName);
         if (Objects.nonNull(serviceRoleHandler)) {
-            serviceRoleHandler.handlerConfig(clusterId, list, ServiceRoleStrategyContext.getServiceName(serviceName));
+            serviceRoleHandler.handlerConfig(clusterId, list, getServiceName(clusterInfo.getClusterFrame(), serviceName));
         }
 
         // 添加配置数据到全局变量
@@ -272,6 +287,11 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         serviceInstanceService.updateById(serviceInstanceEntity);
     }
 
+
+    private String getServiceName(String frameCode, String serviceRoleName) {
+       return frameServiceRoleService.getServiceName(frameCode, serviceRoleName);
+    }
+
     @Override
     public void saveServiceRoleHostMapping(Integer clusterId, List<ServiceRoleHostMapping> list) {
         checkOnSameNode(clusterId, list);
@@ -294,10 +314,9 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
 
             map.put(serviceRoleHostMapping.getServiceRole(), hosts);
 
-            ServiceRoleStrategy serviceRoleHandler =
-                    ServiceRoleStrategyContext.getServiceRoleHandler(
-                            serviceRoleHostMapping.getServiceRole());
-            String serviceName = ServiceRoleStrategyContext.getServiceName(serviceRoleHostMapping.getServiceRole());
+
+            ServiceRoleStrategy serviceRoleHandler = ServiceRoleStrategyContext.getServiceRoleHandler(serviceRoleHostMapping.getServiceRole());
+            String serviceName = getServiceName(clusterInfo.getClusterFrame(), serviceRoleHostMapping.getServiceRole());
 
             if (!hosts.isEmpty()) {
                 String serviceRole = serviceRoleHostMapping.getServiceRole();

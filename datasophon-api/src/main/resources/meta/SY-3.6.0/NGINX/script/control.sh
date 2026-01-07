@@ -12,7 +12,7 @@ startStop=$1
 shift  # Remove the first argument so that any additional options can be passed to Nginx
 
 # Nginx 配置路径
-nginx_path="/data/install_datasophon/nginx-1.26.2/nginx"
+nginx_path="/data/install_datasophon/nginx/nginx"
 nginx_bin="${nginx_path}/sbin/nginx"
 pid_file="${nginx_path}/sbin/nginx.pid"
 conf_file="${nginx_path}/conf/nginx.conf"

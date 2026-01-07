@@ -673,19 +673,22 @@ public class ProcessUtils {
     private static void replaceVariable(List<ServiceConfig> serviceConfigs, Integer clusterId) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         for (ServiceConfig serviceConfig : serviceConfigs) {
+            String name = PlaceholderUtils.replacePlaceholders(serviceConfig.getName(), globalVariables, Constants.REGEX_VARIABLE);
+            serviceConfig.setName(name);
             if (Constants.INPUT.equals(serviceConfig.getType())) {
-                String name = PlaceholderUtils.replacePlaceholders(serviceConfig.getName(), globalVariables,
-                        Constants.REGEX_VARIABLE);
-                serviceConfig.setName(name);
-
-
                 Object value = serviceConfig.getValue();
                 if (String.class.isAssignableFrom(value.getClass())) {
-                    String value1 = PlaceholderUtils.replacePlaceholders((String) value, globalVariables,
-                            Constants.REGEX_VARIABLE);
+                    String value1 = PlaceholderUtils.replacePlaceholders((String) value, globalVariables, Constants.REGEX_VARIABLE);
                     serviceConfig.setValue(value1);
                 }
-
+            }
+            if (Constants.MULTIPLE.equals(serviceConfig.getType())) {
+                JSONArray value2 = (JSONArray) serviceConfig.getValue();
+                List<String> valueList = value2.toJavaList(String.class);
+                List<Object> tmpList = valueList.stream()
+                        .map(val-> PlaceholderUtils.replacePlaceholdersRecursive(val, globalVariables, Constants.REGEX_VARIABLE))
+                        .collect(Collectors.toList());
+                serviceConfig.setValue(new JSONArray(tmpList));
             }
         }
     }

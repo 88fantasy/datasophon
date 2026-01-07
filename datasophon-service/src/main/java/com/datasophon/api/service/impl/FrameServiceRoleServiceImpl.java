@@ -156,4 +156,9 @@ public class FrameServiceRoleServiceImpl extends ServiceImpl<FrameServiceRoleMap
     return this.lambdaQuery().eq(FrameServiceRoleEntity::getServiceId, frameServiceId).list();
   }
 
+    @Override
+    public String getServiceName(String frameCode, String serviceRoleName) {
+        return getBaseMapper().getServiceName(frameCode, serviceRoleName);
+    }
+
 }

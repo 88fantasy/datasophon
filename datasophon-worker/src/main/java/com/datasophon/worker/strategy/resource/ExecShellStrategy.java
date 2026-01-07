@@ -30,7 +30,8 @@ public class ExecShellStrategy extends ResourceStrategy {
     @Override
     public ExecResult exec() {
         Map<String, String> variables = new HashMap<>(this.variables);
-        variables.put("${" + this.getService() + "." + this.getServiceRole() + "_INSTALL_HOME}", basePath);
+        variables.put("${" + this.getService() + "." + this.getServiceRole() + ".INSTALL_PATH}", basePath);
+        variables.put("${ROOT." + this.getService() + ".INSTALL_PATH}", basePath);
         for (String command : commands) {
             command = PlaceholderUtils.replacePlaceholdersRecursive(command, variables, Constants.REGEX_VARIABLE);
 

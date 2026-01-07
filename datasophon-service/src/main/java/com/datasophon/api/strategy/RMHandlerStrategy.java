@@ -111,6 +111,8 @@ public class RMHandlerStrategy extends ServiceHandlerAbstract implements Service
     String commandLine;
     String yarnAclAdminUser = GlobalVariables.getValue(clusterId, "yarn.admin.acl");
     String rm2 = GlobalVariables.getValue(clusterId, "rm2");
+
+//    TODO 使用 {ROOT.XXServiceName.INSTALL_PATH}
     String hadoopHome = GlobalVariables.getValue(clusterId, "HADOOP_HOME");
     String curRm = roleInstanceEntity.getHostname().equals(rm2) ? "rm2" : "rm1";
 
@@ -124,22 +126,7 @@ public class RMHandlerStrategy extends ServiceHandlerAbstract implements Service
     getRMState(roleInstanceEntity, commandLine);
   }
 
-  private String getRMStateCommand(Map<String, String> globalVariable, String hostName) {
 
-    String commandLine;
-    String yarnAclAdminUser = globalVariable.get("${yarn.admin.acl}");
-    String rm2 = globalVariable.get("${rm2}");
-    String curRm = rm2.equals(hostName) ? "rm2" : "rm1";
-
-    if (StringUtils.isNotEmpty(yarnAclAdminUser)) {
-      commandLine = String.format("sudo -u %s %s/bin/yarn rmadmin -getServiceState %s",
-          yarnAclAdminUser, globalVariable.get("${HADOOP_HOME}"), curRm);
-    } else {
-      commandLine = String.format("%s/bin/yarn rmadmin -getServiceState %s",
-          globalVariable.get("${HADOOP_HOME}"), curRm);
-    }
-    return commandLine;
-  }
 
   private void getRMState(ClusterServiceRoleInstanceEntity roleInstanceEntity, String commandLine) {
     ClusterServiceRoleInstanceWebuisService webuisService =

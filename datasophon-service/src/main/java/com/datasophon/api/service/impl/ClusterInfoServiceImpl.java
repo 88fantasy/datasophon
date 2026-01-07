@@ -41,6 +41,7 @@ import com.datasophon.api.utils.SecurityUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.ClusterCommand;
 import com.datasophon.common.enums.ClusterCommandType;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.AlertGroupEntity;
 import com.datasophon.dao.entity.ClusterAlertGroupMap;
@@ -136,16 +137,12 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
 
         return Result.success();
     }
-    
+
     private void putClusterVariable(ClusterInfoEntity clusterInfo) {
         ConcurrentHashMap<String, String> globalVariables = GlobalVariables.genDefaultGlobalVariables();
-        List<FrameServiceEntity> frameServiceList = frameServiceService.getAllFrameServiceByFrameCode(clusterInfo.getClusterFrame());
-        for (FrameServiceEntity frameServiceEntity : frameServiceList) {
-            globalVariables.put(GlobalVariables.surroundKey(frameServiceEntity.getServiceName() + "_HOME"),
-                    Constants.INSTALL_PATH + Constants.SLASH + frameServiceEntity.getDecompressPackageName());
-        }
-        globalVariables.put(GlobalVariables.surroundKey("HADOOP_HOME"), Constants.INSTALL_PATH + Constants.SLASH
-                + PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "HDFS"));
+        globalVariables.put(GlobalVariables.surroundKey("HADOOP_HOME"),
+                Constants.INSTALL_PATH + Constants.SLASH + PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "HDFS")
+        );
         
         GlobalVariables.put(clusterInfo.getId(), globalVariables);
     }

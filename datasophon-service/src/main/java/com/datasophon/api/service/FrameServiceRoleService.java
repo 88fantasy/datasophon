@@ -44,4 +44,6 @@ public interface FrameServiceRoleService extends IService<FrameServiceRoleEntity
     Result getServiceRoleByServiceName(Integer clusterId, String serviceName);
     
     List<FrameServiceRoleEntity> getAllServiceRoleList(Integer frameServiceId);
+
+    String getServiceName(String frameCode, String serviceRoleName);
 }

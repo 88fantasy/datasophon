@@ -26,8 +26,7 @@ public class ServiceRoleStrategyContext {
     
     private static final Map<String, ServiceRoleStrategy> strategyMap = new ConcurrentHashMap<>();
     
-    private static final Map<String, String> serviceNameMap = new ConcurrentHashMap<>();
-    
+
     static {
         strategyMap.put("NameNode", new NameNodeHandlerStrategy());
         strategyMap.put("ResourceManager", new RMHandlerStrategy());
@@ -81,61 +80,16 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("UMasterServer", new USchedulerMasterServerHandlerStrategy());
         strategyMap.put("UAlertServer", new USchedulerAlertServerHandlerStrategy());
         strategyMap.put("UWorkerServer", new USchedulerWorkerServerHandlerStrategy());
-        
-        // serviceNameMap
-        serviceNameMap.put("NameNode", "HDFS");
-        serviceNameMap.put("ResourceManager", "YARN");
-        serviceNameMap.put("HiveMetaStore", "HIVE");
-        serviceNameMap.put("HiveServer2", "HIVE");
-        serviceNameMap.put("Grafana", "GRAFANA");
-        serviceNameMap.put("ZkServer", "ZOOKEEPER");
-        serviceNameMap.put("HistoryServer", "YARN");
-        serviceNameMap.put("TimelineServer", "YARN");
-        serviceNameMap.put("TrinoCoordinator", "TRINO");
-        serviceNameMap.put("JournalNode", "HDFS");
-        serviceNameMap.put("ZKFC", "HDFS");
-        serviceNameMap.put("HttpFs", "HDFS");
-        serviceNameMap.put("SRFE", "STARROCKS");
-        serviceNameMap.put("DorisFE", "DORIS");
-        serviceNameMap.put("DorisFEObserver", "DORIS");
-        serviceNameMap.put("SRBE", "STARROCKS");
-        serviceNameMap.put("DorisBE", "DORIS");
-        serviceNameMap.put("Krb5Kdc", "KERBEROS");
-        serviceNameMap.put("KAdmin", "KERBEROS");
-        serviceNameMap.put("RangerAdmin", "RANGER");
-        serviceNameMap.put("ElasticSearch", "ELASTICSEARCH");
-        serviceNameMap.put("Prometheus", "PROMETHEUS");
-        serviceNameMap.put("AlertManager", "ALERTMANAGER");
-        serviceNameMap.put("MinioServer", "MINIO");
-        serviceNameMap.put("FlinkHistory", "FLINK");
-        serviceNameMap.put("RedisMaster", "REDIS");
-        serviceNameMap.put("NacosServer", "NACOS");
-        serviceNameMap.put("UApiServer", "USCHEDULER");
-        serviceNameMap.put("KyuubiServer", "KYUUBI");
-        
-        serviceNameMap.put("FLINK", "FLINK");
-        serviceNameMap.put("RANGER", "RANGER");
-        serviceNameMap.put("YARN", "YARN");
-        serviceNameMap.put("HDFS", "HDFS");
-        serviceNameMap.put("HIVE", "HIVE");
-        serviceNameMap.put("KAFKA", "KAFKA");
-        serviceNameMap.put("HBASE", "HBASE");
-        serviceNameMap.put("KYUUBI", "KYUUBI");
-        serviceNameMap.put("Etcd", "ETCD");
+
         
     }
-    
+
     public static ServiceRoleStrategy getServiceRoleHandler(String type) {
         if (StringUtils.isBlank(type)) {
             return null;
         }
         return strategyMap.get(type);
     }
-    
-    public static String getServiceName(String type) {
-        if (StringUtils.isBlank(type)) {
-            return null;
-        }
-        return serviceNameMap.get(type);
-    }
+
+
 }

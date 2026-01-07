@@ -31,6 +31,7 @@ public interface ServiceInstallService {
     List<ServiceConfig> getServiceConfigOption(Integer clusterId, String serviceName);
 
 
+    List<ServiceConfig> getServiceConfigFromDdl(Integer clusterId, String serviceName);
 
     void saveServiceConfig(Integer clusterId, String serviceName, List<ServiceConfig> configJson,
                              Integer roleGroupId);

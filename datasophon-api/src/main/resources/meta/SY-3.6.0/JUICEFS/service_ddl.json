@@ -27,7 +27,7 @@
         {
           "type":"execShell",
           "commands": [
-            "${JUICEFS.JuicefsMount_INSTALL_HOME}/juicefs format --storage ${JUICEFS.juicefsStorage} --bucket ${JUICEFS.juicefsBucket}  --access-key ${JUICEFS.juicefsAccessKey}  --secret-key ${JUICEFS.juicefsSecretKey} --no-update '${JUICEFS.juicefsMeta}'  ${JUICEFS.juicefsFileSystemName}"
+            "${ROOT.JUICEFS.INSTALL_PATH}/juicefs format --storage ${JUICEFS.juicefsStorage} --bucket ${JUICEFS.juicefsBucket}  --access-key ${JUICEFS.juicefsAccessKey}  --secret-key ${JUICEFS.juicefsSecretKey} --no-update '${JUICEFS.juicefsMeta}'  ${JUICEFS.juicefsFileSystemName}"
           ]
         }
       ],

@@ -45,7 +45,7 @@ public class PkgInstallPathUtils {
      * @return
      */
     public static String getRoleInstallHomeKey(ServiceRoleResource resource) {
-        return  String.format("${%s.%s_INSTALL_HOME}", resource.getServiceName(), resource.getServiceRoleName());
+        return  String.format("${%s.%s.INSTALL_PATH}", resource.getServiceName(), resource.getServiceRoleName());
     }
 
     /**
@@ -54,6 +54,6 @@ public class PkgInstallPathUtils {
      * @return
      */
     public static String getInstallHomeKey(ServiceRoleResource resource) {
-        return  String.format("${%s.INSTALL_HOME}", resource.getServiceName());
+        return  String.format("${ROOT.%s.INSTALL_PATH}", resource.getServiceName());
     }
 }

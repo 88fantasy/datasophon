@@ -122,6 +122,7 @@ public class NameNodeHandlerStrategy extends ServiceHandlerAbstract implements S
       ClusterServiceRoleInstanceEntity roleInstanceEntity,
       Map<String, ClusterServiceRoleInstanceEntity> map) {
     String nn2 = GlobalVariables.getValue(roleInstanceEntity.getClusterId(), "nn2");
+//    TODO 使用 {ROOT.XXServiceName.INSTALL_PATH}
     String hadoopHome = GlobalVariables.getValue(roleInstanceEntity.getClusterId(), "HADOOP_HOME");
     String commandLine = hadoopHome + "/bin/hdfs haadmin -getServiceState nn1";
     if (roleInstanceEntity.getHostname().equals(nn2)) {

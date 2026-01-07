@@ -206,7 +206,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
 //        保存应用的启动配置
         model.getApp().forEach(app -> {
-            List<ServiceConfig> configs = serviceInstallService.getServiceConfigOption(dto.getClusterId(), app.getName());
+            List<ServiceConfig> configs = serviceInstallService.getServiceConfigFromDdl(dto.getClusterId(), app.getName());
             Map<String, DeploySrvConfig> configMap = CollectionUtil.toMap(app.getConfig(), new HashMap<>(), DeploySrvConfig::getName);
             configs.forEach(conf -> {
                 DeploySrvConfig deployConf = configMap.get(conf.getName());
