@@ -638,20 +638,6 @@ public class ProcessUtils {
         return configureHandler.handlerRequest(serviceRoleInfo);
     }
 
-    public static void asyncConfigServiceRoleInstance(ClusterInfoEntity clusterInfo,
-                                                      Map<Generators, List<ServiceConfig>> configFileMap,
-                                                      ClusterServiceRoleInstanceEntity roleInstanceEntity,
-                                                      OnComplete<Object> onComplete) {
-        ServiceRoleInfo serviceRoleInfo = new ServiceRoleInfo();
-        serviceRoleInfo.setName(roleInstanceEntity.getServiceRoleName());
-        serviceRoleInfo.setParentName(roleInstanceEntity.getServiceName());
-        serviceRoleInfo.setConfigFileMap(configFileMap);
-        serviceRoleInfo
-                .setDecompressPackageName(PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "YARN"));
-        serviceRoleInfo.setHostname(roleInstanceEntity.getHostname());
-        ServiceConfigureAsyncHandler configureAsyncHandler = new ServiceConfigureAsyncHandler(onComplete);
-        configureAsyncHandler.handlerRequest(serviceRoleInfo);
-    }
 
     /**
      * @param configFileMap

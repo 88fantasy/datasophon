@@ -181,7 +181,25 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             }
         });
 
-        return new ValidateResultVO(errors);
+        if (errors.isEmpty()) {
+            ValidateResultVO vo = new ValidateResultVO();
+            List<ValidateResultVO.DeploySrvRoleModel> roles = new ArrayList<>();
+            model.getApp().forEach(app-> {
+                app.getRoles().forEach(role-> {
+                    ValidateResultVO.DeploySrvRoleModel tmp = new ValidateResultVO.DeploySrvRoleModel();
+                    tmp.setServiceName(app.getName());
+                    tmp.setVersion(app.getVersion());
+                    tmp.setRoleName(role.getName());
+                    tmp.setDeployHosts(role.getDeployHosts());
+                    roles.add(tmp);
+                });
+            });
+            vo.setRoles(roles);
+            return vo;
+        } else {
+            return new ValidateResultVO(errors);
+        }
+
     }
 
     @Override

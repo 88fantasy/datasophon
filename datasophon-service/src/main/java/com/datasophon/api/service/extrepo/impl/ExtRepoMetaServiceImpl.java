@@ -167,10 +167,13 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         if (metaFile == null) {
             throw new BusinessException("元信息文件不存在");
         }
-        File pkg = uploadTempFileService.getTempFile(dto.getPkgFileId());
-        if (pkg == null) {
-            throw new BusinessException("安装包文件不存在");
+        if (dto.getPkgFileId() != null) {
+            File pkg = uploadTempFileService.getTempFile(dto.getPkgFileId());
+            if (pkg == null) {
+                throw new BusinessException("安装包文件不存在");
+            }
         }
+
 
         int progressId = RandomUtil.randomInt(1, Integer.MAX_VALUE);
         ImportCompProgressVO progress = new ImportCompProgressVO(progressId);
@@ -200,10 +203,13 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
                     metaUnzipPath, vo.getFrameworks().stream().mapToLong(fw -> fw.getServices().size()).sum());
 
 //            解压安装包
-            log.info("【导入第三方软件源】 进度ID:{}，开始解压软件安装包", progress.getProgressId());
-            File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
-            pkgUnzipPath = decompressPkgFile(pkgFile, vo, progress);
-            log.info("【导入第三方软件源】 进度ID:{}，解压软件安装包成功, 解压路径{}", progress.getProgressId(), pkgUnzipPath);
+            if (dto.getPkgFileId() != null) {
+                log.info("【导入第三方软件源】 进度ID:{}，开始解压软件安装包", progress.getProgressId());
+                File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
+                pkgUnzipPath = decompressPkgFile(pkgFile, vo, progress);
+                log.info("【导入第三方软件源】 进度ID:{}，解压软件安装包成功, 解压路径{}", progress.getProgressId(), pkgUnzipPath);
+            }
+
 
 //            保存数据
             saveFrameInfo(metaUnzipPath, vo, progress);
@@ -316,7 +322,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
                 .flatMap(f -> f.getServices().stream())
                 .map(ServiceMeta::getPackageName)
                 .collect(Collectors.toSet());
-        progress.setTotal(packageNames.size() + 1);
+        progress.setTotal(pkgPath == null ? 1 : packageNames.size() + 1);
 
         File metaDir = FileUtil.file(Constants.META_PATH);
         if (metaDir != null && metaDir.exists()) {
@@ -333,13 +339,16 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         }
         progress.setStep(1);
 
-        File pkgDir = MetaUtils.getPkgPath(pkgPath).toFile();
-        for (String pkg : packageNames) {
-            log.info("上传安装软件：{}/{}", pkgDir, pkg);
-            packageStorage.moveToStorage(new File(pkgDir, pkg), file-> "packages");
-            packageStorage.moveToStorage(new File(pkgDir, MetaUtils.getMd5FileName(pkg)), file-> "packages");
-            progress.setStep(progress.getStep() + 1);
+        if (pkgPath != null) {
+            File pkgDir = MetaUtils.getPkgPath(pkgPath).toFile();
+            for (String pkg : packageNames) {
+                log.info("上传安装软件：{}/{}", pkgDir, pkg);
+                packageStorage.moveToStorage(new File(pkgDir, pkg), file-> "packages");
+                packageStorage.moveToStorage(new File(pkgDir, MetaUtils.getMd5FileName(pkg)), file-> "packages");
+                progress.setStep(progress.getStep() + 1);
+            }
         }
+
         progress.setStep(progress.getTotal());
     }
 

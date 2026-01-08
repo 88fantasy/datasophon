@@ -156,8 +156,8 @@ public class LoadServiceMeta implements ApplicationRunner {
             }
         }
         if (target == null) {
-//          ignore ? or throw exception
-            return;
+            target = new File(FileUtil.file(META_PATH), frameCode);
+            FileUtil.mkdir(target);
         }
 
         logger.info("使用框架模板{}初始化框架{}", FileUtil.file(FRAMEWORK_TPL).getAbsolutePath(), frameCode);

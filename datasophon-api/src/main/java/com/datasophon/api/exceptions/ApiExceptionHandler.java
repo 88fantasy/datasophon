@@ -47,8 +47,9 @@ public class ApiExceptionHandler {
     public Result exceptionHandler(Exception e, HandlerMethod hm) {
         ApiException ce = hm.getMethodAnnotation(ApiException.class);
         if (ce == null) {
+            String message = e instanceof NullPointerException ? "对象空指针" : e.getMessage();
             logger.error(e.getMessage(), e);
-            return Result.error(Status.INTERNAL_SERVER_ERROR_ARGS.getCode(), e.getMessage());
+            return Result.error(Status.INTERNAL_SERVER_ERROR_ARGS.getCode(), message);
         }
         Status st = ce.value();
         logger.error(st.getMsg(), e);

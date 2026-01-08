@@ -17,7 +17,7 @@ public class InstallComponentDTO {
     @Schema(description = "meta文件ID")
     private Integer meteFileId;
 
-    @Schema(description = "软件安装文件ID")
+    @Schema(description = "软件安装文件ID, 允许为空，为空时，则不上传到nexus")
     private Integer pkgFileId;
 
     @NotBlank(message = "敏感文件解密密码不能为空")
