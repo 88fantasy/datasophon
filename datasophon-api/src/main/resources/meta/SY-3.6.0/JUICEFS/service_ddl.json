@@ -4,18 +4,20 @@
   "description": "高性能、云原生分布式文件系统",
   "version": "1.2.1",
   "sortNum": 81,
-  "dependencies":["MINIO"],
+  "dependencies": [
+    "MINIO"
+  ],
   "packageName": "juicefs-1.2.1-linux-amd64.tar.gz",
   "decompressPackageName": "juicefs-1.2.1",
   "createDecompressDir": true,
-  "arch":{
-      "x86_64": {
-        "packageName": "juicefs-1.2.1-linux-amd64.tar.gz"
-      },
-      "aarch64": {
-        "packageName": "juicefs-1.2.1-linux-arm64.tar.gz"
-      }
+  "arch": {
+    "x86_64": {
+      "packageName": "juicefs-1.2.1-linux-amd64.tar.gz"
     },
+    "aarch64": {
+      "packageName": "juicefs-1.2.1-linux-arm64.tar.gz"
+    }
+  },
   "roles": [
     {
       "name": "JuicefsMount",
@@ -25,9 +27,15 @@
       "logFile": "logs/appweb",
       "resourceStrategies": [
         {
-          "type":"execShell",
+          "type": "download",
+          "from": "script/juicefs-format-wrapper.sh",
+          "to": "bin/juicefs-format-wrapper.sh",
+          "md5": "42afbf46e9625051f4637074fb7298ce"
+        },
+        {
+          "type": "execShell",
           "commands": [
-            "${ROOT.JUICEFS.INSTALL_PATH}/juicefs format --storage ${JUICEFS.juicefsStorage} --bucket ${JUICEFS.juicefsBucket}  --access-key ${JUICEFS.juicefsAccessKey}  --secret-key ${JUICEFS.juicefsSecretKey} --no-update '${JUICEFS.juicefsMeta}'  ${JUICEFS.juicefsFileSystemName}"
+            "${ROOT.JUICEFS.INSTALL_PATH}/bin/juicefs-format-wrapper.sh  --storage ${JUICEFS.juicefsStorage} --bucket ${JUICEFS.juicefsBucket}  --access-key ${JUICEFS.juicefsAccessKey}  --secret-key ${JUICEFS.juicefsSecretKey} --no-update '${JUICEFS.juicefsMeta}'  ${JUICEFS.juicefsFileSystemName}"
           ]
         }
       ],
@@ -96,10 +104,20 @@
       "required": true,
       "type": "multipleWithMap",
       "configType": "map",
-      "value": [{"path":"/data/install_datasophon/juicefs/appweb", "log":"appweb"}],
+      "value": [
+        {
+          "path": "/data/install_datasophon/juicefs/appweb",
+          "log": "appweb"
+        }
+      ],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": [{"path":"/data/install_datasophon/juicefs/appweb", "log":"appweb"}]
+      "defaultValue": [
+        {
+          "path": "/data/install_datasophon/juicefs/appweb",
+          "log": "appweb"
+        }
+      ]
     },
     {
       "name": "juicefsStorage",

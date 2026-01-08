@@ -37,6 +37,7 @@ public class ExecShellStrategy extends ResourceStrategy {
 
             ExecResult result = ShellUtils.execShell(command);
             logger.info(" {} result {} ", command, result.getExecResult() ? "success" : "fail");
+            return result;
         }
         return ExecResult.success();
     }
