@@ -38,9 +38,9 @@ if [ $arch = "aarch64" ]; then
   JDK_TAR_NAME="jdk-8u333-linux-aarch64.tar.gz"
 fi
 
-jdkAvailable=$(java -version 2>&1 | awk 'NR==1{gsub(/"/,"");print $3}')
-result=$(echo $jdkAvailable | grep $JDK_VERSION)
-if [[ "$result" != "" ]]; then
+# jdkAvailable=$(java -version 2>&1 | awk 'NR==1{gsub(/"/,"");print $3}')
+#result=$(echo $jdkAvailable | grep $JDK_VERSION)
+if [[ -d ${JAVA_HOME} ]]; then
   echo "JDK installed.............................."
 else
   echo "JDK not installed.............................."
