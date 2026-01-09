@@ -27,6 +27,7 @@ import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
+import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.common.utils.ThrowableUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import org.w3c.dom.Document;
@@ -85,42 +86,22 @@ public class HiveMetaStoreHandlerStrategy extends AbstractHandlerStrategy implem
                         ready = false;
                     }
                     if (!ready) {
-                        // init hive database
-                        logger.info("start to init hive schema");
-                        ArrayList<String> commands = new ArrayList<>();
-                        commands.add("bin/schematool");
-                        commands.add("-dbType");
-                        commands.add("mysql");
-                        commands.add("-initSchema");
-
-                        ServiceRoleRunner startRunner = new ServiceRoleRunner();
-                        startRunner.setProgram(command.getStartRunner().getProgram());
-                        startRunner.setArgs(commands);
-                        startRunner.setTimeout("600");
-                        startResult = serviceHandler.start(startRunner, command.getStatusRunner(),
-                                command.getDecompressPackageName(), command.getRunAs());
-                        if(startResult.getExecResult()) {
-                            ready = true;
-                            logger.info("hive初始化数据库成功");
-                        } else {
-                            logger.error("hive初始化数据库失败" + startResult.getExecErrOut());
-                        }
+                        String initCmd = String.format("%s/bin/schematool -dbType mysql -initSchema", workPath);
+                        logger.info("start to init hive schema:{}", initCmd);
+                        ShellUtils.execShell(initCmd);
+                        logger.info("hive初始化数据库成功");
                     }
-                    if(ready) {
-                        con = DbUtil.use(new SimpleDataSource(url, username, password)).getConnection();
-                        // 修改表字段注解和表注解
-                        SqlExecutor.execute(con, "ALTER TABLE `COLUMNS_V2` MODIFY COLUMN `COMMENT` varchar(256) CHARACTER SET utf8");
-                        SqlExecutor.execute(con, "ALTER TABLE `COLUMNS_V2` MODIFY COLUMN `COLUMN_NAME` varchar(767) CHARACTER SET utf8");
-                        SqlExecutor.execute(con, "ALTER TABLE `TABLE_PARAMS` MODIFY COLUMN `PARAM_VALUE` mediumtext CHARACTER SET utf8");
-                        // 修改分区字段注解
-                        SqlExecutor.execute(con, "ALTER TABLE `PARTITION_PARAMS` MODIFY COLUMN `PARAM_VALUE` varchar(4000) CHARACTER SET utf8");
-                        SqlExecutor.execute(con, "ALTER TABLE `PARTITION_KEYS` MODIFY COLUMN `PKEY_COMMENT` varchar(4000) CHARACTER SET utf8");
-                        // 修改索引注解
-                        SqlExecutor.execute(con, "ALTER TABLE `INDEX_PARAMS` MODIFY COLUMN `PARAM_VALUE` varchar(4000) CHARACTER SET utf8");
-                        logger.info("hive schema Chinese optimize 完成");
-                    } else {
-                        logger.error("hive表不存在,请先初始化hive表: bin/schematool -dbType mysql -initSchema");
-                    }
+                    con = DbUtil.use(new SimpleDataSource(url, username, password)).getConnection();
+                    // 修改表字段注解和表注解
+                    SqlExecutor.execute(con, "ALTER TABLE `COLUMNS_V2` MODIFY COLUMN `COMMENT` varchar(256) CHARACTER SET utf8");
+                    SqlExecutor.execute(con, "ALTER TABLE `COLUMNS_V2` MODIFY COLUMN `COLUMN_NAME` varchar(767) CHARACTER SET utf8");
+                    SqlExecutor.execute(con, "ALTER TABLE `TABLE_PARAMS` MODIFY COLUMN `PARAM_VALUE` mediumtext CHARACTER SET utf8");
+                    // 修改分区字段注解
+                    SqlExecutor.execute(con, "ALTER TABLE `PARTITION_PARAMS` MODIFY COLUMN `PARAM_VALUE` varchar(4000) CHARACTER SET utf8");
+                    SqlExecutor.execute(con, "ALTER TABLE `PARTITION_KEYS` MODIFY COLUMN `PKEY_COMMENT` varchar(4000) CHARACTER SET utf8");
+                    // 修改索引注解
+                    SqlExecutor.execute(con, "ALTER TABLE `INDEX_PARAMS` MODIFY COLUMN `PARAM_VALUE` varchar(4000) CHARACTER SET utf8");
+                    logger.info("hive schema Chinese optimize 完成");
                 } catch (Exception e) {
                     logger.info("hive初始化数据库失败");
                     logger.error(e.getMessage(), e);
@@ -128,10 +109,9 @@ public class HiveMetaStoreHandlerStrategy extends AbstractHandlerStrategy implem
                     DbUtil.close(con);
                 }
             }
-        } else {
-            startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
         }
+        startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
+                command.getDecompressPackageName(), command.getRunAs());
         return startResult;
     }
 
