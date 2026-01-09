@@ -55,7 +55,6 @@ public class NacosMasterHandlerStrategy extends AbstractHandlerStrategy implemen
                 String jdbcUrl = properties.getProperty("db.url.0");
                 String user = properties.getProperty("db.user.0");
                 String password = properties.getProperty("db.password.0");
-                String port = properties.getProperty("server.port");
                 String adminPassword = properties.getProperty("nacos.core.auth.server.identity.value");
                 String encoderPwd = BCrypt.hashpw(adminPassword);
                 logger.info("database info is using  {}  on {} ", user, jdbcUrl);

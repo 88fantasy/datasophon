@@ -68,6 +68,16 @@
             <outputDirectory>conf</outputDirectory>
         </fileSet>
 
+        <fileSet>
+            <directory>${basedir}/../conf</directory>
+            <outputDirectory>/conf</outputDirectory>
+            <directoryMode>0755</directoryMode>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>common.properties</include>
+            </includes>
+        </fileSet>
+
         <!--拷贝start.sh启动脚本文件到bin目录下面-->
         <fileSet>
             <directory>${basedir}/src/main/resources</directory>

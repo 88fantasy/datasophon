@@ -20,7 +20,6 @@
 package com.datasophon.api.master;
 
 import akka.actor.UntypedActor;
-import cn.hutool.core.util.ObjectUtil;
 import com.datasophon.api.master.handler.host.CheckWorkerMd5Handler;
 import com.datasophon.api.master.handler.host.DecompressWorkerHandler;
 import com.datasophon.api.master.handler.host.DispatcherWorkerHandlerChain;
@@ -29,7 +28,6 @@ import com.datasophon.api.master.handler.host.StartWorkerHandler;
 import com.datasophon.api.master.handler.host.UploadWorkerHandler;
 import com.datasophon.api.utils.CommonUtils;
 import com.datasophon.api.utils.MessageResolverUtils;
-import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.DispatcherHostAgentCommand;
 import com.datasophon.common.enums.InstallState;
@@ -37,13 +35,15 @@ import com.datasophon.common.enums.SSHAuthType;
 import com.datasophon.common.model.HostInfo;
 import com.datasophon.common.storage.PackageStorage;
 import com.datasophon.common.storage.PackageStorageUtils;
-import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.JschUtils;
+import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
+
+import java.util.function.Consumer;
 
 public class DispatcherWorkerActor extends UntypedActor {
 
@@ -60,54 +60,48 @@ public class DispatcherWorkerActor extends UntypedActor {
         DispatcherHostAgentCommand command = (DispatcherHostAgentCommand) message;
         HostInfo hostInfo = command.getHostInfo();
         String localIp = HostUtils.getLocalIp();
-        String localHostName = HostUtils.getLocalHostName();
         logger.info("start dispatcher host agent :{}", hostInfo.getHostname());
-        hostInfo.setMessage(
-                MessageResolverUtils.getMessage(
-                        "distributed.host.management.agent.installation.package"));
-        Session session = JschUtils.getJSchSession(SSHAuthType.AUTO, hostInfo.getHostname(), hostInfo.getSshPort(), hostInfo.getSshUser(), hostInfo.getSshPassword());
+        hostInfo.setMessage(MessageResolverUtils.getMessage("distributed.host.management.agent.installation.package"));
 
-        DispatcherWorkerHandlerChain handlerChain = new DispatcherWorkerHandlerChain();
-        if (localIp.equals(hostInfo.getIp())) {
-            ExecResult result = null;
-            Exception ex = null;
+        doWithSession(hostInfo, session -> {
             try {
                 PackageStorage packageStorage = PackageStorageUtils.getStorage();
                 packageStorage.downloadPackageToLocal(Constants.WORKER_PACKAGE_NAME);
-                result = MinaUtils.execCmd(session, Constants.UNZIP_DDH_WORKER_CMD);
-            } catch (Exception e) {
-                logger.error(e.getMessage());
-                ex = e;
-            }
-            if (result != null && result.isSuccess()) {
-                logger.info("distribution  datasophon-worker.tar.gz success");
-                logger.info("md5.verification datasophon-worker.tar.gz success");
-                logger.info("decompress datasophon-worker.tar.gz success");
-                hostInfo.setProgress(50);
-                hostInfo.setMessage(MessageResolverUtils
-                        .getMessage("installation.package.decompressed.success.and.modify.configuration.file"));
-            } else {
-                ex = ex == null ? new RuntimeException(String.format("dispatch worker fail, cmd result %s", result.getExecErrOut())) : ex;
-                logger.error("dispatcher manage node host agent failed", ex);
-                hostInfo.setErrMsg(ex.getMessage());
-                hostInfo.setMessage(MessageResolverUtils
-                        .getMessage("dispatcher manage node host agent failed"));
-                CommonUtils.updateInstallState(InstallState.FAILED, hostInfo);
-                throw ex;
-            }
-        } else {
-            handlerChain.addHandler(new UploadWorkerHandler());
-            handlerChain.addHandler(new CheckWorkerMd5Handler());
-            handlerChain.addHandler(new DecompressWorkerHandler());
-        }
 
-        handlerChain.addHandler(new InstallJDKHandler());
-        handlerChain.addHandler(
-                new StartWorkerHandler(command.getClusterId(), command.getClusterFrame()));
-        handlerChain.handle(session, hostInfo);
-        if (ObjectUtil.isNotEmpty(session)) {
-            session.disconnect();
+                DispatcherWorkerHandlerChain handlerChain = new DispatcherWorkerHandlerChain();
+                if (!localIp.equals(hostInfo.getIp())) {
+                    handlerChain.addHandler(new UploadWorkerHandler());
+                    handlerChain.addHandler(new CheckWorkerMd5Handler());
+                }
+                handlerChain.addHandler(new DecompressWorkerHandler());
+                handlerChain.addHandler(new InstallJDKHandler());
+                handlerChain.addHandler(new StartWorkerHandler(command.getClusterId(), command.getClusterFrame()));
+                handlerChain.handle(session, hostInfo);
+            } catch (Exception e) {
+                logger.error("dispatcher manage node host agent {} failed", hostInfo.getHostname(), e);
+                hostInfo.setErrMsg(e.getMessage());
+                hostInfo.setMessage(MessageResolverUtils.getMessage("dispatcher manage node host agent failed"));
+                CommonUtils.updateInstallState(InstallState.FAILED, hostInfo);
+            }
+        });
+    }
+
+
+    private void doWithSession(HostInfo hostInfo, Consumer<Session> task) throws JSchException {
+        Session session = null;
+        try {
+            session = JschUtils.getJSchSession(SSHAuthType.AUTO, hostInfo.getHostname(), hostInfo.getSshPort(), hostInfo.getSshUser(), hostInfo.getSshPassword());
+            task.accept(session);
+        } finally {
+            if(session != null) {
+                try {
+                    session.disconnect();
+                } catch (Exception e) {
+//                    ignore
+                }
+            }
         }
     }
+
 
 }

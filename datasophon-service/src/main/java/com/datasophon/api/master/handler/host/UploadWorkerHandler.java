@@ -34,20 +34,7 @@ public class UploadWorkerHandler implements DispatcherWorkerHandler {
     
     @Override
     public boolean handle(Session session, HostInfo hostInfo) {
-        if(Constants.NEXUS_ENABLE) {
-            String packageName = Constants.WORKER_PACKAGE_NAME;
-            String packagePath = Constants.MASTER_MANAGE_PACKAGE_PATH + "/datasophon-worker.tar.gz";
-            logger.info("nexus.enable=true,master下载worker包");
-            boolean installPkgChange = NexusFileUtils.isFileContentChange(packageName, packagePath);
-            if (Boolean.TRUE.equals(installPkgChange)) {
-                NexusFileUtils.downloadPkg(packageName, packagePath);
-            }
-        }
-        boolean uploadFile = MinaUtils.uploadFile(session,
-                Constants.INSTALL_PATH,
-                Constants.MASTER_MANAGE_PACKAGE_PATH +
-                        Constants.SLASH +
-                        Constants.WORKER_PACKAGE_NAME);
+        boolean uploadFile = MinaUtils.uploadFile(session, Constants.INSTALL_PATH, Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + Constants.WORKER_PACKAGE_NAME);
         if (uploadFile) {
             hostInfo.setMessage(
                     MessageResolverUtils.getMessage("distribution.successful.and.starts.md5.authentication"));
