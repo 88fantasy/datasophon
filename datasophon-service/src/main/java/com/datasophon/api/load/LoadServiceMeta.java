@@ -207,14 +207,15 @@ public class LoadServiceMeta implements ApplicationRunner {
                                 FrameInfoEntity frameInfo,
                                 final String serviceName,
                                 final String serviceDdl) {
-        ServiceInfo serviceInfo = JSONObject.parseObject(serviceDdl, ServiceInfo.class);
+        ServiceInfo serviceInfo = JSONObject.parseObject(serviceDdl, new TypeReference<ServiceInfo>() {});
         String packageName = serviceInfo.getPackageName();
         String decompressPackageName = serviceInfo.getDecompressPackageName();
         // 新增架构判断, 兼容旧版本
-        Map<String, ArchInfo> arch = serviceInfo.getArch();
-        if (CollUtil.isEmpty(arch)) {
-            serviceInfo.setArch(getArchInfo(packageName, decompressPackageName));
+        if (Objects.isNull(serviceInfo.getArch())) {
+            serviceInfo.setArch(getDefaultArchInfo(packageName, decompressPackageName));
         }
+        logger.info("arch:{}",serviceInfo.getArch());
+
 
         String serviceInfoMd5 = SecureUtil.md5(serviceDdl);
 
@@ -497,15 +498,17 @@ public class LoadServiceMeta implements ApplicationRunner {
         serviceEntity.setConfigFileJsonMd5(SecureUtil.md5(serviceEntity.getConfigFileJson()));
         serviceEntity.setSortNum(serviceInfo.getSortNum());
     }
-
-    public static Map<String, ArchInfo> getArchInfo(String packageName, String decompressPackageName) {
+    
+    public static Map<String, ArchInfo> getDefaultArchInfo(String packageName, String decompressPackageName) {
+        logger.info("arch packageName:{}, decompressPackageName:{}", packageName, decompressPackageName);
+        // x86与arm默认一致
         Map<String, ArchInfo> arch = new ConcurrentHashMap<>();
         ArchInfo x86 = new ArchInfo();
         x86.setPackageName(packageName);
         arch.put(ArchType.X86_64.getArch(), x86);
 
         ArchInfo arm = new ArchInfo();
-        arm.setPackageName(decompressPackageName + "-arm.tar.gz");
+        arm.setPackageName(packageName);
         arch.put(ArchType.AARCH64.getArch(), arm);
         return arch;
     }
@@ -515,7 +518,7 @@ public class LoadServiceMeta implements ApplicationRunner {
             return JSONObject.parseObject(srv.getArch(), new TypeReference<Map<String, ArchInfo>>() {
             });
         } else {
-            return getArchInfo(srv.getPackageName(), srv.getDecompressPackageName());
+            return getDefaultArchInfo(srv.getPackageName(), srv.getDecompressPackageName());
         }
     }
 }

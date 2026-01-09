@@ -110,7 +110,7 @@ public class DAGBuildActor extends UntypedActor {
                         
                         String arch = serviceEntity.getArch();
                         Map<String, ArchInfo> stringArchInfoMap = StringUtils.isNotEmpty(arch) ? JSONObject.parseObject(arch, new TypeReference<Map<String, ArchInfo>>() {
-                        }) : LoadServiceMeta.getArchInfo(serviceEntity.getPackageName(), serviceEntity.getDecompressPackageName());
+                        }) : LoadServiceMeta.getDefaultArchInfo(serviceEntity.getPackageName(), serviceEntity.getDecompressPackageName());
                         ServiceInfo serviceInfo = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
                         ServiceRoleInfo serviceRoleInfo = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
                         serviceRoleInfo.setHostname(hostCommand.getHostname());

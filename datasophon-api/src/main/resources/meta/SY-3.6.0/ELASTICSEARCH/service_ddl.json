@@ -5,14 +5,14 @@
   "version": "7.17.4",
   "sortNum": 11,
   "dependencies": [],
-  "packageName": "elasticsearch-7.17.4.tar.gz",
+  "packageName": "elasticsearch-7.17.4-x86_64.tar.gz",
   "decompressPackageName": "elasticsearch-7.17.4",
   "arch":{
       "x86_64": {
         "packageName": "elasticsearch-7.17.4-x86_64.tar.gz",
       },
       "aarch64": {
-        "packageName": "elasticsearch-7.17.4-arm_64.tar.gz",
+        "packageName": "elasticsearch-7.17.4-linux-aarch64.tar.gz",
       },
     },
   "roles": [

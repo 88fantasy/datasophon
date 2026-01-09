@@ -9,6 +9,14 @@
   ],
   "packageName": "hadoop-3.3.6.tar.gz",
   "decompressPackageName": "hadoop-3.3.6",
+  "arch": {
+    "x86_64": {
+      "packageName": "hadoop-3.3.6.tar.gz"
+    },
+    "aarch64": {
+      "packageName": "hadoop-3.3.6-aarch64.tar.gz"
+    }
+  },
   "roles": [
     {
       "name": "JournalNode",

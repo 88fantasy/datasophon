@@ -6,7 +6,7 @@
   "sortNum": 3,
   "dependencies":[],
   "packageName": "apache-zookeeper-3.8.4-bin.tar.gz",
-  "decompressPackageName": "apache-zookeeper-3.8.4-bin",
+  "decompressPackageName": "apache-zookeeper-3.8.4",
   "roles": [
     {
       "name": "ZkServer",

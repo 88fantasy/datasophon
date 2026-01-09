@@ -7,6 +7,14 @@
   "dependencies": [],
   "packageName": "minio-8.4.3.tar.gz",
   "decompressPackageName": "minio-8.4.3",
+  "arch":{
+    "x86_64": {
+      "packageName": "minio-8.4.3.tar.gz"
+    },
+    "aarch64": {
+      "packageName": "minio-8.4.3-arm.tar.gz"
+    }
+  },
   "roles": [
     {
       "name": "MinioServer",
