@@ -75,9 +75,9 @@ public class DAGExecActor extends TargetTypeActor<DAGExecCommand> {
         };
 
         if (message.isRestart()) {
-            dag.exec(task);
-        } else {
             dag.resume(task);
+        } else {
+            dag.exec(task);
         }
     }
 
@@ -257,6 +257,9 @@ public class DAGExecActor extends TargetTypeActor<DAGExecCommand> {
         HashMap<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
         if (Arrays.asList(CommandType.INSTALL_SERVICE, CommandType.UPGRADE_SERVICE).contains(serviceRoleInfo.getCommandType())) {
             Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + serviceRoleInfo.getServiceInstanceId());
+            if (roleGroupId == null) {
+                throw new BusinessException("缓存已经失效，请重新安装");
+            }
             ClusterServiceRoleGroupConfig config = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
             ProcessUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
         } else if (serviceRoleInstance.getNeedRestart() == NeedRestart.YES) {

@@ -17,6 +17,7 @@
 
 package com.datasophon.dao.entity;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.RoleType;
 
@@ -37,6 +38,7 @@ public class ClusterServiceCommandHostCommandEntity implements Serializable {
     /**
      * 主键
      */
+    @TableId
     private String hostCommandId;
     /**
      * 指令名称

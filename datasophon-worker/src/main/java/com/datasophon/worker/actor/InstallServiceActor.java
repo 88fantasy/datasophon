@@ -92,11 +92,10 @@ public class InstallServiceActor extends UntypedActor {
                 }
             } catch (Exception e) {
                 installResult = ExecResult.error(String.format("安装%s失败，%s", command.getServiceName(), e.getMessage()));
-                logger.error("安装{}{}失败, {}", command.getServiceName(), command
-                        .getServiceRoleName(), e.getMessage(), e);
+                logger.error("安装{}{}失败, {}", command.getServiceName(), command.getServiceRoleName(), e.getMessage(), e);
             } finally {
                 getSender().tell(installResult, getSelf());
-                logger.info("Install {} {}", command.getPackageName(), installResult.getExecResult() ? "success" : "failed");
+                logger.info("Install {} {}, message: {}", command.getPackageName(), installResult.getExecResult() ? "success" : "failed", installResult.getExecOut());
             }
         } else {
             unhandled(msg);

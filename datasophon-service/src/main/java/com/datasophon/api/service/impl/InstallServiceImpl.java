@@ -271,14 +271,12 @@ public class InstallServiceImpl implements InstallService {
         
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
-        String distributeAgentKey =
-                clusterCode + Constants.UNDERLINE + Constants.START_DISTRIBUTE_AGENT;
-        Map<String, HostInfo> map =
-                (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
+        String distributeAgentKey = clusterCode + Constants.UNDERLINE + Constants.START_DISTRIBUTE_AGENT;
+        Map<String, HostInfo> map = (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
         List<HostInfo> list =
                 map.entrySet().stream()
-                        .sorted(Comparator.comparing(e -> e.getKey()))
-                        .map(e -> e.getValue())
+                        .sorted(Comparator.comparing(Map.Entry::getKey))
+                        .map(Map.Entry::getValue)
                         .filter(e -> e.getCheckResult().getCode() == 10001)
                         .collect(Collectors.toList());
         
@@ -288,34 +286,24 @@ public class InstallServiceImpl implements InstallService {
                 hostInfo.setProgress(Constants.ONE_HUNDRRD);
                 hostInfo.setMessage(MessageResolverUtils.getMessage("distribution.success"));
                 hostInfo.setInstallState(InstallState.SUCCESS);
-            } else if (!CacheUtils.containsKey(
-                    distributeAgentKey + Constants.UNDERLINE + hostInfo.getHostname())) {
+            } else if (!CacheUtils.containsKey(distributeAgentKey + Constants.UNDERLINE + hostInfo.getHostname())) {
                 logger.info("start to dispatcher host agent to {}", hostInfo.getHostname());
-                ActorRef hostActor =
-                        ActorUtils.getLocalActor(
-                                DispatcherWorkerActor.class,
-                                "dispatcherWorkerActor-" + hostInfo.getHostname());
+                ActorRef hostActor = ActorUtils.getLocalActor(DispatcherWorkerActor.class, "dispatcherWorkerActor-" + hostInfo.getHostname());
                 hostInfo.setInstallStateCode(InstallState.RUNNING.getValue());
                 hostInfo.setCreateTime(new Date());
-                hostActor.tell(
-                        new DispatcherHostAgentCommand(
-                                hostInfo, clusterId, clusterInfo.getClusterFrame()),
-                        ActorRef.noSender());
+                hostActor.tell(new DispatcherHostAgentCommand(hostInfo, clusterId, clusterInfo.getClusterFrame()), ActorRef.noSender());
                 // 保存主机agent分发历史
-                CacheUtils.put(
-                        distributeAgentKey + Constants.UNDERLINE + hostInfo.getHostname(), true);
+                CacheUtils.put(distributeAgentKey + Constants.UNDERLINE + hostInfo.getHostname(), true);
                 
             } else {
-                long timeout =
-                        DateUtil.between(hostInfo.getCreateTime(), new Date(), DateUnit.MINUTE);
+                long timeout = DateUtil.between(hostInfo.getCreateTime(), new Date(), DateUnit.MINUTE);
                 long timeOutPeriodOne = PropertyUtils.getLong("timeOutPeriodOne");
                 long timeOutPeriodTwo = PropertyUtils.getLong("timeOutPeriodTwo");
                 Integer progress = hostInfo.getProgress();
                 if ("75".equals(String.valueOf(progress)) && timeout > timeOutPeriodOne) {
                     hostInfo.setInstallStateCode(InstallState.FAILED.getValue());
                     hostInfo.setProgress(Constants.ONE_HUNDRRD);
-                    hostInfo.setMessage(
-                            MessageResolverUtils.getMessage("distribution.fail.tips.one"));
+                    hostInfo.setMessage(MessageResolverUtils.getMessage("distribution.fail.tips.one"));
                     hostInfo.setInstallState(InstallState.FAILED);
                 }
                 if (timeout > timeOutPeriodTwo) {
@@ -394,12 +382,10 @@ public class InstallServiceImpl implements InstallService {
     public Result dispatcherHostAgentCompleted(Integer clusterId) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
-        Map<String, HostInfo> map =
-                (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
+        Map<String, HostInfo> map = (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
         for (Map.Entry<String, HostInfo> hostInfoEntry : map.entrySet()) {
             HostInfo hostInfo = hostInfoEntry.getValue();
-            if (hostInfo.getProgress() == 75
-                    && DateUtil.between(hostInfo.getCreateTime(), new Date(), DateUnit.MINUTE) > 1) {
+            if (hostInfo.getProgress() == 75 && DateUtil.between(hostInfo.getCreateTime(), new Date(), DateUnit.MINUTE) > 1) {
                 logger.info("dispatcher host agent timeout");
                 hostInfo.setInstallState(InstallState.FAILED);
                 hostInfo.setInstallStateCode(InstallState.FAILED.getValue());

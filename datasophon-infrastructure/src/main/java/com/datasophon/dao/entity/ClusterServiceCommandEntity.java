@@ -17,6 +17,7 @@
 
 package com.datasophon.dao.entity;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.datasophon.dao.enums.CommandState;
 
 import java.io.Serializable;
@@ -36,6 +37,7 @@ public class ClusterServiceCommandEntity implements Serializable {
     /**
      * 主键
      */
+    @TableId
     private String commandId;
     /**
      * 创建人

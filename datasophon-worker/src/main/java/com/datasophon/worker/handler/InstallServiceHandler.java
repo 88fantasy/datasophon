@@ -161,8 +161,8 @@ public class InstallServiceHandler {
                     decompressDir = baseTempDir +  Constants.SLASH + decompressPackageName;
 //                    检查越权，防止勿删系统文件
                     checkIfPathOutOfBox(baseTempDir, decompressDir);
-                    FileUtil.mkdir(new File(decompressDir));
                     FileUtil.cleanEmpty(new File(decompressDir));
+                    FileUtil.mkdir(new File(decompressDir));
                     serviceDecompressDir = decompressDir;
                 } else {
                     decompressDir = baseTempDir;

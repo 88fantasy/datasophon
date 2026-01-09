@@ -39,6 +39,7 @@ import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
 import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.Constants;
+import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.dag.DAGExecCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.ServiceRoleType;
@@ -574,7 +575,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
     @Override
     public void redeploy(String dagId) {
         DagDefinition def = dagService.getDagById(dagId);
-        if (Arrays.asList(DagStatus.FAILED, DagStatus.CANCEL).contains(def.getStatus())) {
+        if (!Arrays.asList(DagStatus.FAILED, DagStatus.CANCEL).contains(def.getStatus())) {
             throw new BusinessException(String.format("当前任务的状态为%s，不允许重复运行", def.getStatus().name()));
         }
         if (def.getCreatedTime().plusDays(2).isBefore(LocalDateTime.now())) {
@@ -592,6 +593,15 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         List<String> commandIds = new ArrayList<>();
         for (NodeDefinition node : nodes) {
             ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
+
+            if (!node.getStatus().equals(NodeStatus.SUCCESS)) {
+                serviceNode.getMasterRoles().forEach(role-> {
+                    Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + role.getServiceInstanceId());
+                    if (roleGroupId == null) {
+                        throw new BusinessException("系统已经重启，内存缓存数据已经丢失，当前任务无法恢复，请重写上传部署清单安装");
+                    }
+                });
+            }
             commandIds.add(serviceNode.getCommandId());
         }
 

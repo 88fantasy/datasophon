@@ -34,6 +34,7 @@ public class FrontendStrategy extends ResourceStrategy {
         if (StringUtils.isNotEmpty(meta)) {
             String metaUrl = variables.get(meta);
             if (StringUtils.isEmpty(metaUrl)) {
+                logger.error("{} {} 的变量{}未找到juicefs元数据地址", service, serviceRole, meta);
                 execResult.setExecErrOut("缺少juicefs元数据地址");
                 return execResult;
             }
