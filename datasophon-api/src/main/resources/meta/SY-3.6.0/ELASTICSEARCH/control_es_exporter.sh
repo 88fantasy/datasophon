@@ -51,7 +51,7 @@ start(){
   fi
   echo starting $command, logging to $log
   # --es.uri=<proto>://<user>:<password>@<host>:<port>。password包含特殊字符,需要URLEncoder.encode("password")编码
-  exec_command="$SH_DIR/elasticsearch_exporter --es.all --es.indices --collector.clustersettings --es.indices_settings --es.shards --collector.snapshots --es.timeout=10s --web.listen-address=:9114 --web.telemetry-path=/metrics --es.uri http://elastic:dafU%26%25Ukabm12@${HOSTNAME}:9200"
+  exec_command="$SH_DIR/elasticsearch_exporter --es.all --es.indices --collector.clustersettings --es.indices_settings --es.shards --collector.snapshots --es.timeout=10s --web.listen-address=:9114 --web.telemetry-path=/metrics --es.uri=http://elastic:dafU%26%25Ukabm12@{HOSTNAME}:9200"
   echo "nohup $exec_command > $log 2>&1 &"
   nohup $exec_command > $log 2>&1 &
   echo $! > $pid

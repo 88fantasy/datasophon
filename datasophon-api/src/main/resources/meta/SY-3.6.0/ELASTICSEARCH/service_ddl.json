@@ -27,14 +27,21 @@
         "group": "elastic"
       },
       "sortNum": 1,
-      "resourceStrategies":[{
+      "resourceStrategies":[
+        {
         "type": "sh",
         "commands": [
           ["mkdir", "config/certs"],
           ["cp", "/data/install_datasophon/packages/elastic-certificates.p12","config/certs/"],
           ["cp", "/data/install_datasophon/packages/elastic-stack-ca.p12","config/certs/"]
         ]
-      }
+       },
+        {
+          "type": "download",
+          "from": "control_es.sh",
+          "to": "control_es.sh",
+          "md5": "8c31a7ef7b949b52e083cd7d408647b6"
+        }
       ],
       "startRunner": {
         "timeout": "60",
@@ -78,6 +85,14 @@
       "logFile": "elasticsearch-exporter/logs/es_exporter-${host}.out",
       "jmxPort": 9114,
       "sortNum": 2,
+      "resourceStrategies":[
+        {
+          "type": "download",
+          "from": "control_es_exporter.sh",
+          "to": "elasticsearch-exporter/control_es_exporter.sh",
+          "md5": "8c31a7ef7b949b52e083cd7d408647b6"
+        }
+      ],
       "startRunner": {
         "timeout": "60",
         "program": "elasticsearch-exporter/control_es_exporter.sh",
