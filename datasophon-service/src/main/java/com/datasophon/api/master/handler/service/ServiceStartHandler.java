@@ -22,6 +22,7 @@ import com.datasophon.api.master.ActorUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
+import com.datasophon.common.enums.HookType;
 import com.datasophon.common.enums.ServiceRoleType;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
@@ -50,37 +51,29 @@ public class ServiceStartHandler extends ServiceHandler {
         logger.info("start to start service {} in {}", serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
         // 启动
         Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
-        ServiceRoleOperateCommand serviceRoleOperateCommand = new ServiceRoleOperateCommand();
-        serviceRoleOperateCommand.setServiceName(serviceRoleInfo.getParentName());
-        serviceRoleOperateCommand.setPackageName(serviceRoleInfo.getPackageName());
-        serviceRoleOperateCommand.setServiceRoleName(serviceRoleInfo.getName());
-        serviceRoleOperateCommand.setStartRunner(serviceRoleInfo.getStartRunner());
-        serviceRoleOperateCommand.setDecompressPackageName(serviceRoleInfo.getDecompressPackageName());
-        serviceRoleOperateCommand.setCreateDecompressDir(serviceRoleInfo.getCreateDecompressDir());
-        serviceRoleOperateCommand.setStatusRunner(serviceRoleInfo.getStatusRunner());
-        serviceRoleOperateCommand.setSlave(serviceRoleInfo.isSlave());
-        serviceRoleOperateCommand.setCommandType(serviceRoleInfo.getCommandType());
-        serviceRoleOperateCommand.setMasterHost(serviceRoleInfo.getMasterHost());
-        serviceRoleOperateCommand.setManagerHost(CacheUtils.getString(Constants.HOSTNAME));
+        ServiceRoleOperateCommand cmd = new ServiceRoleOperateCommand();
+        cmd.setServiceName(serviceRoleInfo.getParentName());
+        cmd.setPackageName(serviceRoleInfo.getPackageName());
+        cmd.setServiceRoleName(serviceRoleInfo.getName());
+        cmd.setStartRunner(serviceRoleInfo.getStartRunner());
+        cmd.setDecompressPackageName(serviceRoleInfo.getDecompressPackageName());
+        cmd.setCreateDecompressDir(serviceRoleInfo.getCreateDecompressDir());
+        cmd.setStatusRunner(serviceRoleInfo.getStatusRunner());
+        cmd.setSlave(serviceRoleInfo.isSlave());
+        cmd.setCommandType(serviceRoleInfo.getCommandType());
+        cmd.setMasterHost(serviceRoleInfo.getMasterHost());
+        cmd.setManagerHost(CacheUtils.getString(Constants.HOSTNAME));
+        cmd.setHooks(serviceRoleInfo.getMatchedHooks(HookType.POST_START, HookType.POST_START));
+        cmd.setVariables(GlobalVariables.getVariables(serviceRoleInfo.getClusterId()));
         
         logger.info("service master host is {}", serviceRoleInfo.getMasterHost());
         
-        serviceRoleOperateCommand.setEnableRangerPlugin(serviceRoleInfo.getEnableRangerPlugin());
-        serviceRoleOperateCommand.setRunAs(serviceRoleInfo.getRunAs());
+        cmd.setEnableRangerPlugin(serviceRoleInfo.getEnableRangerPlugin());
+        cmd.setRunAs(serviceRoleInfo.getRunAs());
         Boolean enableKerberos = Boolean.parseBoolean(globalVariables.get("${enable" + serviceRoleInfo.getParentName() + "Kerberos}"));
         logger.info("{} enable kerberos is {}", serviceRoleInfo.getParentName(), enableKerberos);
-        serviceRoleOperateCommand.setEnableKerberos(enableKerberos);
+        cmd.setEnableKerberos(enableKerberos);
         if (serviceRoleInfo.getRoleType() == ServiceRoleType.CLIENT) {
-            
-            /*if (serviceRoleInfo.getName().equals("FlinkClient") && enableKerberos) {
-                logger.info("when serviceRoleInfo name is FlinkClient ,start to startActor!");
-                ActorSelection startActors = ActorUtils.actorSystem.actorSelection(
-                        "akka.tcp://datasophon@" + serviceRoleInfo.getHostname()
-                                + ":2552/user/worker/startServiceActor");
-                Timeout timeouts = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-                Await.result(Patterns.ask(startActors, serviceRoleOperateCommand, timeouts), timeouts.duration());
-            }*/
-            
             ExecResult execResult = new ExecResult();
             execResult.setExecResult(true);
             if (Objects.nonNull(getNext())) {
@@ -91,7 +84,7 @@ public class ServiceStartHandler extends ServiceHandler {
         ActorSelection startActor = ActorUtils.actorSystem.actorSelection(
                 "akka.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/startServiceActor");
         Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-        Future<Object> startFuture = Patterns.ask(startActor, serviceRoleOperateCommand, timeout);
+        Future<Object> startFuture = Patterns.ask(startActor, cmd, timeout);
         try {
             ExecResult startResult = (ExecResult) Await.result(startFuture, timeout.duration());
             if (Objects.nonNull(startResult) && startResult.getExecResult()) {

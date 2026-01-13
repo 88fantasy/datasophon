@@ -18,11 +18,13 @@
 package com.datasophon.common.command;
 
 import com.datasophon.common.enums.CommandType;
+import com.datasophon.common.model.HookConfig;
 import com.datasophon.common.model.RunAs;
+import lombok.Data;
 
 import java.io.Serializable;
-
-import lombok.Data;
+import java.util.List;
+import java.util.Map;
 
 @Data
 public class ServiceRoleOperateCommand extends BaseCommand implements Serializable {
@@ -51,6 +53,10 @@ public class ServiceRoleOperateCommand extends BaseCommand implements Serializab
     private RunAs runAs;
     
     private Boolean enableKerberos;
+
+    private List<HookConfig> hooks;
+
+    private Map<String,String> variables;
     
     public ServiceRoleOperateCommand() {
         this.enableRangerPlugin = false;

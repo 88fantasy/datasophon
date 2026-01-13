@@ -24,6 +24,7 @@ import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.InstallServiceRoleCommand;
+import com.datasophon.common.enums.HookType;
 import com.datasophon.common.model.ArchInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
@@ -77,7 +78,7 @@ public class ServiceInstallHandler extends ServiceHandler {
         installServiceRoleCommand.setServiceRoleType(serviceRoleInfo.getRoleType());
         installServiceRoleCommand.setResourceStrategies(serviceRoleInfo.getResourceStrategies());
         installServiceRoleCommand.setVariables(GlobalVariables.getVariables(serviceRoleInfo.getClusterId()));
-
+        installServiceRoleCommand.setHooks(serviceRoleInfo.getMatchedHooks(HookType.PRE_INSTALL, HookType.POST_INSTALL));
 
         String arch = hostEntity.getCpuArchitecture();
         Map<String, ArchInfo> archInfoMap = serviceRoleInfo.getArchInfoMap();

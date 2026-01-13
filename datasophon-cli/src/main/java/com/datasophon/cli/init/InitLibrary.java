@@ -1,11 +1,13 @@
 package com.datasophon.cli.init;
 
+import com.datasophon.cli.base.BatchExecutor;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
-
-import picocli.CommandLine;
 import lombok.extern.slf4j.Slf4j;
+import picocli.CommandLine;
+
+import java.util.Arrays;
 
 /**
  * 初始化插件
@@ -49,9 +51,12 @@ public class InitLibrary extends InitBase {
             policycoreutils();
             telnet();
         }
+        installNginxModule();
         return true;
     }
-    
+
+
+
     private void installLibxsltDevel() {
         log.info("install libxslt-devel");
         OsType osType = executor.getOs();
@@ -339,5 +344,21 @@ public class InitLibrary extends InitBase {
         }
         log.info("install policycoreutils finished.");
     }
-    
+
+
+    private void installNginxModule() {
+        BatchExecutor batchExecutor = new BatchExecutor(executor);
+        batchExecutor.installSoftware(
+                Arrays.asList(
+                        "geoip geoip-devel",
+                        "gd gd-devel",
+                        "make"
+                ),
+                Arrays.asList(
+                        "libgeoip-dev",
+                        "libgd-dev",
+                        "make"
+                )
+        );
+    }
 }

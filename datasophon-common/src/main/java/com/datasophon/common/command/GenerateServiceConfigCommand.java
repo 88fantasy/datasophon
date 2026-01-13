@@ -18,6 +18,7 @@
 package com.datasophon.common.command;
 
 import com.datasophon.common.model.Generators;
+import com.datasophon.common.model.HookConfig;
 import com.datasophon.common.model.RunAs;
 import com.datasophon.common.model.ServiceConfig;
 import lombok.Data;
@@ -43,13 +44,15 @@ public class GenerateServiceConfigCommand implements Serializable, ServiceRoleRe
 
     private Integer myid;
 
-    Map<Generators, List<ServiceConfig>> cofigFileMap;
+    private Map<Generators, List<ServiceConfig>> cofigFileMap;
 
     private String serviceRoleName;
 
     private RunAs runAs;
 
     private String packageName;
+
+    private List<HookConfig> hooks;
 
 
 }

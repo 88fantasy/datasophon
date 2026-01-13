@@ -132,7 +132,14 @@ public final class Constants {
 
     public static final String OS_ARCH_CMD = "arch";
     public static final String OS_VERSION_CMD = "cat /etc/os-release";
-    
+
+
+    public static final String DB_USERNAME = "mysql.username";
+    public static final String DB_PASSWORD = "mysql.password";
+    public static final String DB_NAME = "mysql.database";
+    public static final String DB_IP = "mysql.ip";
+    public static final String DB_PORT = "mysql.port";
+
     private Constants() {
         throw new IllegalStateException("Constants Exception");
     }

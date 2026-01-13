@@ -34,6 +34,9 @@ import akka.dispatch.OnComplete;
 import akka.pattern.Patterns;
 import akka.util.Timeout;
 
+/**
+ * @deprecated
+ */
 public class ServiceConfigureAsyncHandler extends ServiceHandler {
     
     private final OnComplete<Object> function;

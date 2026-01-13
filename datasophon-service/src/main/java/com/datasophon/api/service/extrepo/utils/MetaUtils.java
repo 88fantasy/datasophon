@@ -38,21 +38,15 @@ import java.util.List;
 /**
  * 安装包的解析工具。 安装包的结构如下：
  * <pre>
- * ├── config                  # 配置目录
- *     ├── cluster-sample.yml      # cli初始化配置(vos-cli导入集群规划文件)
- *     ├── common.properties       # api 基础配置
- *     ├── datasophon.conf         # api 数据源配置
- *     ├── meta                    # 软件元数据配置
- *         ├── SY-3.6.0         # 安装软件配置
- *             ├── BIGDATA
- *             ├── USCHEDULER
- *                  ├── V1.0.0           # 版本号（待定）
- *                      ├── script           # 脚本等
- *                      ├── service_ddl.json # 软件json配置
- *                  ├── V1.0.1           # 版本号（待定）
- *                      ├── template           # 模版等
- *                      ├── script           # 脚本等
- *                      ├── service_ddl.json # 软件json配置
+ *└── config
+ *    ├── deploy.yaml   部署清单
+ *    ├── meta
+ *    |  └── datalake-3.8  框架名称
+ *    |     └── REDIS      服务
+ *    |        ├── script
+ *    |        └── service_ddl.json
+ *    └── template
+ *       └── redis-master.ftl
  * </pre>
  *
  * @author zhanghuangbin

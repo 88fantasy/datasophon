@@ -3,6 +3,7 @@ package com.datasophon.api.service.extrepo.impl;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.CryptoException;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
 import com.datasophon.api.exceptions.BusinessException;
@@ -38,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.crypto.BadPaddingException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -119,6 +121,11 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             MetaUtils.decodeMatchedFiles(unzipDir, dto.getContentDecodePasswd());
 
             return mapper.apply(unzipDir);
+        } catch (CryptoException e) {
+            if (e.getCause() instanceof BadPaddingException) {
+                throw new BusinessException("密码错误");
+            }
+            throw e;
         } catch (IOException e) {
             throw new BusinessException("IO异常" + e.getMessage(), e);
         } finally {
