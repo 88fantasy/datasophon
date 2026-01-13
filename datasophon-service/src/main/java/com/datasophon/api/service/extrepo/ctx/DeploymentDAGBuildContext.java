@@ -7,8 +7,6 @@ import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.DAG;
 import com.datasophon.dao.entity.ClusterInfoEntity;
-import com.datasophon.dao.entity.ClusterServiceCommandEntity;
-import com.datasophon.dao.entity.ClusterServiceCommandHostCommandEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.model.extrepo.DeploySrvModel;
 import lombok.Data;
