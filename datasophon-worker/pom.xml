@@ -37,12 +37,6 @@
             <version>${spring.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-            <version>6.5.7</version>
-        </dependency>
-
 
         <dependency>
             <groupId>com.typesafe.akka</groupId>
@@ -102,8 +96,11 @@
             <artifactId>juicefs-hadoop</artifactId>
             <version>1.2.1</version>
         </dependency>
-
-
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.17.102</version>
+        </dependency>
     </dependencies>
     <build>
         <testSourceDirectory>${project.basedir}/src/test</testSourceDirectory>
@@ -173,9 +170,11 @@
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <echo message="Generating MD5 file" />
-                                <checksum algorithm="MD5" file="${project.build.directory}/datasophon-worker.tar.gz" forceoverwrite="yes" />
-                                <move file="${project.build.directory}/datasophon-worker.tar.gz.MD5" tofile="${project.build.directory}/datasophon-worker.tar.gz.md5" />
+                                <echo message="Generating MD5 file"/>
+                                <checksum algorithm="MD5" file="${project.build.directory}/datasophon-worker.tar.gz"
+                                          forceoverwrite="yes"/>
+                                <move file="${project.build.directory}/datasophon-worker.tar.gz.MD5"
+                                      tofile="${project.build.directory}/datasophon-worker.tar.gz.md5"/>
                             </target>
                         </configuration>
                     </execution>

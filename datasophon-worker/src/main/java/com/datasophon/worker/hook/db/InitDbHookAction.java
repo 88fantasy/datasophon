@@ -18,7 +18,7 @@ import java.util.TreeSet;
  * @author zhanghuangbin
  */
 @Slf4j
-public class InitDbHook implements HookAction {
+public class InitDbHookAction implements HookAction {
 
     @Override
     public String getType() {

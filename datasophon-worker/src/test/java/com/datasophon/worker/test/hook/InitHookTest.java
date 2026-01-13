@@ -2,7 +2,7 @@ package com.datasophon.worker.test.hook;
 
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.worker.hook.HookContext;
-import com.datasophon.worker.hook.db.InitDbHook;
+import com.datasophon.worker.hook.db.InitDbHookAction;
 import com.datasophon.worker.test.PropertiesPathUtils;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +18,7 @@ public class InitHookTest {
     @Test
     public void testHook() {
         PropertiesPathUtils.resetPropertyFile();
-        InitDbHook hook = new InitDbHook();
+        InitDbHookAction hook = new InitDbHookAction();
 
         HookContext context = new HookContext();
         context.setServiceName("PORTAL");
