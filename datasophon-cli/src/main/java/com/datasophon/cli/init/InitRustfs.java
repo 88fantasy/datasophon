@@ -73,8 +73,8 @@ public class InitRustfs extends InitBase {
             }
             executor.execShell(String.format("tar xvz -f %s -C %s", tarPath, Constants.INSTALL_PATH));
             executor.execShell(String.format("mv %s/rustfs-* %s", Constants.INSTALL_PATH, home));
-            executor.createDir(dataPath);
-            executor.createDir(logsPath);
+            executor.execShell(String.format("mkdir -p %s", dataPath));
+            executor.execShell(String.format("mkdir -p %s", logsPath));
         }
 
         if(!checkStart(executor)) {

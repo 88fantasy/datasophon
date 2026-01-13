@@ -83,7 +83,7 @@ public class InitRegistry extends InitBase {
         if(executor.exists(home).getExecResult()) {
             log.info("nexusDir path exist: {}", home);
         } else {
-            executor.createDir(home);
+            executor.execShell(String.format("mkdir -p %s", home));
             String tarPath = String.format("%s/%s", packagePath, x86Tar);
             if (ArchType.AARCH64 == executor.getArch()) {
                 tarPath = String.format("%s/%s", packagePath, aarch64Tar);
