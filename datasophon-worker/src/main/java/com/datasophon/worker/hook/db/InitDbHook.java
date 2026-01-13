@@ -8,8 +8,7 @@ import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.worker.hook.HookAction;
 import com.datasophon.worker.hook.HookContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.sql.Connection;
 import java.util.Map;
@@ -18,10 +17,14 @@ import java.util.TreeSet;
 /**
  * @author zhanghuangbin
  */
+@Slf4j
 public class InitDbHook implements HookAction {
 
+    @Override
+    public String getType() {
+        return "initDb";
+    }
 
-    private static final Logger log = LoggerFactory.getLogger(InitDbHook.class);
 
     @Override
     public ExecResult invoke(HookContext context) {

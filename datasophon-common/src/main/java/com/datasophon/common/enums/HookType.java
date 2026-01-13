@@ -18,8 +18,8 @@ public enum HookType {
 //    暂时未实现
 //    PRE_CONFIG,
 //    POST_CONFIG,
-//    PRE_STOP,
-//    POST_STOP,
+    PRE_STOP,
+    POST_STOP,
 //    PRE_RESTART,
 //    POST_RESTART,
 //    PRE_UNINSTALL,

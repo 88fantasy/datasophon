@@ -63,7 +63,7 @@ public class ServiceStartHandler extends ServiceHandler {
         cmd.setCommandType(serviceRoleInfo.getCommandType());
         cmd.setMasterHost(serviceRoleInfo.getMasterHost());
         cmd.setManagerHost(CacheUtils.getString(Constants.HOSTNAME));
-        cmd.setHooks(serviceRoleInfo.getMatchedHooks(HookType.POST_START, HookType.POST_START));
+        cmd.setHooks(serviceRoleInfo.getMatchedHooks(HookType.PRE_START, HookType.POST_START));
         cmd.setVariables(GlobalVariables.getVariables(serviceRoleInfo.getClusterId()));
         
         logger.info("service master host is {}", serviceRoleInfo.getMasterHost());

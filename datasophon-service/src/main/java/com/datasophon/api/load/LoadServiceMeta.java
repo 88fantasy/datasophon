@@ -422,6 +422,7 @@ public class LoadServiceMeta implements ApplicationRunner {
                 for (ClusterVariable variable : variables) {
                     globalVariables.put(GlobalVariables.surroundKey(variable.getServiceName() + "." + variable.getVariableName()), variable.getVariableValue());
                 }
+                globalVariables.put(GlobalVariables.surroundKey(GlobalVariables.CLUSTER_CODE), cluster.getClusterFrame());
                 GlobalVariables.put(cluster.getId(), globalVariables);
                 ProcessUtils.createServiceActor(cluster);
             }

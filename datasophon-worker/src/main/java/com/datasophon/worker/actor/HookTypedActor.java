@@ -9,6 +9,7 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.worker.hook.HookContext;
 import com.datasophon.worker.hook.HookUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.util.Assert;
 
 import java.lang.reflect.ParameterizedType;
@@ -68,7 +69,6 @@ public abstract class HookTypedActor<T> extends UntypedActor {
     }
 
     protected abstract void doOnReceive(T message) throws Throwable;
-
 
     protected ExecResult invokeHook(List<HookConfig> hooks, HookType type, ServiceRoleResource resource, Map<String, String> globalVariables) {
         ExecResult result = ExecResult.success();

@@ -43,7 +43,7 @@ public class InstallServiceActor extends HookTypedActor<InstallServiceRoleComman
             installResult = invokeFunctions(
                     () -> invokeHook(command.getHooks(), HookType.PRE_INSTALL, command, command.getVariables()),
                     () -> doInstall(command),
-                    () -> invokeHook(command.getHooks(), HookType.PRE_INSTALL, command, command.getVariables())
+                    () -> invokeHook(command.getHooks(), HookType.POST_INSTALL, command, command.getVariables())
             );
         } catch (Exception e) {
             installResult = ExecResult.error(String.format("安装%s失败，%s", command.getServiceName(), e.getMessage()));

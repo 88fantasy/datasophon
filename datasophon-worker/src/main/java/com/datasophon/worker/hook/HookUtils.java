@@ -3,13 +3,14 @@ package com.datasophon.worker.hook;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.core.util.ServiceLoaderUtil;
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.command.ServiceRoleResource;
 import com.datasophon.common.enums.HookType;
 import com.datasophon.common.model.HookConfig;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
-import com.datasophon.worker.hook.db.InitDbHook;
+import org.slf4j.Logger;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
@@ -28,7 +29,10 @@ public class HookUtils {
     private static final Map<String, Class<? extends HookAction>> HOOK_MAP = new HashMap<>();
 
     static {
-        HOOK_MAP.put("initDb", InitDbHook.class);
+        List<? extends HookAction> strategies = ServiceLoaderUtil.loadList(HookAction.class);
+        for (HookAction strategy : strategies) {
+            HOOK_MAP.put(strategy.getType(), strategy.getClass());
+        }
     }
 
     public static List<HookConfig> getMatchedHooks(List<HookConfig> hooks, HookType type) {

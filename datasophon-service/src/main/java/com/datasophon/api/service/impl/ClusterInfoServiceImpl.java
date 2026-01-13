@@ -143,7 +143,7 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
         globalVariables.put(GlobalVariables.surroundKey("HADOOP_HOME"),
                 Constants.INSTALL_PATH + Constants.SLASH + PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "HDFS")
         );
-        
+        globalVariables.put(GlobalVariables.surroundKey(GlobalVariables.CLUSTER_CODE), clusterInfo.getClusterFrame());
         GlobalVariables.put(clusterInfo.getId(), globalVariables);
     }
     

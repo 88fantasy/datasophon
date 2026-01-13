@@ -7,6 +7,9 @@ import com.datasophon.common.utils.ExecResult;
  */
 public interface HookAction {
 
+    String getType();
+
+
     ExecResult invoke(HookContext context) throws Exception;
 
 }

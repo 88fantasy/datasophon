@@ -22,6 +22,8 @@ public class GlobalVariables {
 
   public static final String PORT = "__port__";
 
+  public static final String CLUSTER_CODE = "__frameCode__";
+
   // cluster variable
   //    notes: 必须保证clusterId对应的map，始终都同一个对象
 //    @see ProcessUtils#generateClusterVariable的说明

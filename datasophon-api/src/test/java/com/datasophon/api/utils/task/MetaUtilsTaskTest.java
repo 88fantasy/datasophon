@@ -15,8 +15,8 @@ public class MetaUtilsTaskTest {
 
     @Test
     public void  testDecode() throws IOException {
-        File file = new File("D:\\Desktop\\VOS集成测试\\全量测试2\\config_20260112091536.tar.gz");
-        String password = "Mu1E5fL/6ycwflLg4DCzIw==";
+        File file = new File("D:\\Desktop\\VOS集成测试\\门户1\\config_20260113105505.tar.gz");
+        String password = "Ax75UKPE8rL7evFCIQzekA==";
 
         String unzipDir = null;
         unzipDir = TarUtils.decompressToTemp(file.getAbsolutePath());

@@ -12,6 +12,7 @@ import java.util.Map;
 @Data
 public class HookConfig implements Serializable {
 
+    private static final long serialVersionUID = 2013439883474996138L;
     /**
      * hook类型
      */

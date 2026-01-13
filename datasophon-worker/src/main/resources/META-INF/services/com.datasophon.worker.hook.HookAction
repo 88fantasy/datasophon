@@ -1,0 +1,2 @@
+com.datasophon.worker.hook.db.InitDbHook
+com.datasophon.worker.hook.resource.ResourceStrategyHookAction
