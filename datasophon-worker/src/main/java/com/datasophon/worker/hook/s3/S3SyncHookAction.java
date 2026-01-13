@@ -96,9 +96,9 @@ public class S3SyncHookAction implements HookAction {
             resourcePath = context.getPath() + "/oss/migration";
         } else {
             resourcePath = PlaceholderUtils.replacePlaceholders(resourcePath, context.getGlobalVariables(), Constants.REGEX_VARIABLE);
-//            if (!resourcePath.startsWith("/")) {
-//                resourcePath = context.getPath() + "/" + resourcePath;
-//            }
+            if (!resourcePath.startsWith("/")) {
+                resourcePath = context.getPath() + "/" + resourcePath;
+            }
         }
         return resourcePath;
     }
