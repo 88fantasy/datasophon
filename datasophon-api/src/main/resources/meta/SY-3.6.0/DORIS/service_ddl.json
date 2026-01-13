@@ -2,17 +2,17 @@
   "name": "DORIS",
   "label": "Doris",
   "description": "简单易用、高性能和统一的分析数据库",
-  "version": "2.1.7",
+  "version": "2.1.11",
   "sortNum": 20,
   "dependencies":[],
-  "packageName": "apache-doris-2.1.7-bin-x64.tar.gz",
-  "decompressPackageName": "apache-doris-2.1.7",
+  "packageName": "apache-doris-2.1.11-bin-x64.tar.gz",
+  "decompressPackageName": "apache-doris-2.1.11",
   "arch":{
     "x86_64": {
-      "packageName": "apache-doris-2.1.7-bin-x64.tar.gz"
+      "packageName": "apache-doris-2.1.11-bin-x64.tar.gz"
     },
     "aarch64": {
-      "packageName": "apache-doris-2.1.7-bin-arm64.tar.gz"
+      "packageName": "apache-doris-2.1.11-bin-arm64.tar.gz"
     }
   },
   "roles": [
