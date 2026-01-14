@@ -3,13 +3,11 @@ package com.datasophon.api.controller;
 import com.datasophon.api.dto.IntegerIdDTO;
 import com.datasophon.api.dto.extrepo.DagIdDto;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
-import com.datasophon.api.dto.extrepo.DeploymentProgressDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
 import com.datasophon.api.service.extrepo.ExtRepoInstallService;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
-import com.datasophon.api.vo.extrepo.InstallProgressDAG;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
 import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
@@ -96,20 +94,6 @@ public class ExtRepoController extends ApiController {
         return Result.success(extRepoInstallService.deploy(dto));
     }
 
-
-    /**
-     * @param dto
-     * @return
-     * @see #getDeployProgressDAG2(DagIdDto)
-     * @deprecated
-     */
-    @Deprecated
-    @PostMapping("/getDeployProgressDAG")
-    @Operation(summary = "获取部署进度DAG", deprecated = true)
-    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = InstallProgressDAG.class))})
-    public Result getDeployProgressDAG(@RequestBody @Validated DeploymentProgressDTO dto) {
-        return Result.success(extRepoInstallService.getDeployProgressDAG(dto.getClusterId(), dto.getCmdIds()));
-    }
 
 
     @PostMapping("/getDeployProgressDAG2")

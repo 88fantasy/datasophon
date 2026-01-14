@@ -1,18 +1,9 @@
 package com.datasophon.api.vo.extrepo;
 
-import com.datasophon.common.enums.CommandType;
-import com.datasophon.common.enums.ServiceRoleType;
-import com.datasophon.common.model.ArchInfo;
-import com.datasophon.common.model.ExternalLink;
-import com.datasophon.common.model.Generators;
-import com.datasophon.common.model.RunAs;
-import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.RoleType;
 import com.datasophon.dao.enums.dag.DagStatus;
 import com.datasophon.dao.enums.dag.NodeStatus;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -21,7 +12,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author zhanghuangbin

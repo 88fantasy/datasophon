@@ -1,4 +1,4 @@
-package com.datasophon.api;
+package com.datasophon.api.dag;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;

@@ -34,7 +34,6 @@ import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
-import com.datasophon.api.vo.extrepo.InstallProgressDAG;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
 import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
@@ -480,96 +479,6 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                         .update();
             }
         }
-    }
-
-
-    @Override
-    public InstallProgressDAG getDeployProgressDAG(Integer clusterId, List<String> cmdIds) {
-        List<ClusterServiceCommandEntity> cmdList = commandService.lambdaQuery().in(ClusterServiceCommandEntity::getCommandId, cmdIds).list();
-
-        List<ClusterServiceCommandHostCommandEntity> hostCmdList = hostCommandService.lambdaQuery()
-                .in(ClusterServiceCommandHostCommandEntity::getCommandId, cmdIds)
-                .list();
-        Map<String, List<ClusterServiceCommandHostCommandEntity>> hostCmdMap = hostCmdList.stream().collect(
-                Collectors.groupingBy(ClusterServiceCommandHostCommandEntity::getCommandId)
-        );
-
-        ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
-        List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
-        DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
-
-
-        DAG<String, InstallProgressDAG.Srv, Integer> dag = new DAG<>();
-        for (int i = 0; i < cmdList.size(); i++) {
-            ClusterServiceCommandEntity cmd = cmdList.get(i);
-            InstallProgressDAG.Srv srv = newSrv(cmd, i, hostCmdMap.getOrDefault(cmd.getCommandId(), new ArrayList<>()));
-            dag.addNode(srv.getName(), srv);
-        }
-
-        int edgeIdCounter = 0;
-
-        for (int i = 0; i < cmdList.size(); i++) {
-            ClusterServiceCommandEntity start = cmdList.get(i);
-            Set<String> dependencies = ctx.getDependencies(start.getServiceName());
-
-            for (int j = 0; j < cmdList.size(); j++) {
-//                不能自依赖
-                if (i == j) {
-                    continue;
-                }
-                ClusterServiceCommandEntity end = cmdList.get(j);
-                if (dependencies.contains(end.getServiceName())) {
-                    List<String> path = dag.findPath(end.getServiceName(), start.getServiceName());
-                    if (path == null) {
-                        dag.addEdge(start.getServiceName(), end.getServiceName(), edgeIdCounter++, false);
-                    }
-                }
-            }
-        }
-
-
-        DAG<String, InstallProgressDAG.Srv, Integer> reverseDag = dag.getReverseDag();
-        InstallProgressDAG result = new InstallProgressDAG();
-        reverseDag.getNodes().values().forEach(node -> result.getSrvList().add(node));
-        reverseDag.getEdges().forEach(edge -> {
-            InstallProgressDAG.EdgeVO vo = new InstallProgressDAG.EdgeVO();
-            vo.setId(edge.getEdge());
-            vo.setStart(reverseDag.getNode(edge.getStart()).getId());
-            vo.setEnd(reverseDag.getNode(edge.getEnd()).getId());
-            result.getEdge().add(vo);
-        });
-        return result;
-    }
-
-    private InstallProgressDAG.Srv newSrv(ClusterServiceCommandEntity cmd, int i, List<
-            ClusterServiceCommandHostCommandEntity> hostCmdList) {
-        InstallProgressDAG.Srv srv = new InstallProgressDAG.Srv();
-        srv.setId(i);
-        srv.setName(cmd.getServiceName());
-        srv.setCmdId(cmd.getCommandId());
-        srv.setCommandState(cmd.getCommandState());
-
-
-        List<InstallProgressDAG.SrvRole> roles = new ArrayList<>();
-        hostCmdList.stream()
-                .collect(Collectors.groupingBy(ClusterServiceCommandHostCommandEntity::getServiceRoleName))
-                .forEach((roleName, list) -> {
-                    InstallProgressDAG.SrvRole role = new InstallProgressDAG.SrvRole();
-                    role.setRoleName(roleName);
-
-                    List<InstallProgressDAG.HostCmd> cmds = list.stream()
-                            .sorted(Comparator.comparing(ClusterServiceCommandHostCommandEntity::getCreateTime))
-                            .map(hostCmd -> {
-                                return BeanUtil.toBean(hostCmd, InstallProgressDAG.HostCmd.class);
-                            })
-                            .collect(Collectors.toList());
-                    role.setCmdList(cmds);
-
-                    roles.add(role);
-                });
-
-        srv.setRoles(roles);
-        return srv;
     }
 
     @Override
