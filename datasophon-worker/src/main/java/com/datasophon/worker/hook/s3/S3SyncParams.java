@@ -22,4 +22,6 @@ public class S3SyncParams {
 
     private boolean override;
 
+    private boolean createBucketIfAbsent;
+
 }

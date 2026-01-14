@@ -38,10 +38,11 @@ public class S3SyncHookAction implements HookAction {
             client = createS3Client(params);
 
             S3SyncService service = new S3SyncService(params, client);
+            service.createBucketIfAbsent(params.getBucket());
+
             List<ZipFileInfo> zipFiles = service.getUnsyncedVersion(params.getResourcePath(), params.getMetaObjectName());
             if (zipFiles.isEmpty()) {
-                String endpoint = PlaceholderUtils.replacePlaceholders(params.getEndpoint(), context.getGlobalVariables(), Constants.REGEX_VARIABLE);
-                log.info("{} migrate nothing to s3: {}/{}", context.getServiceName(), endpoint, params.getBucket());
+                log.info("{} migrate nothing to s3: {}/{}", context.getServiceName(), params.getEndpoint(), params.getBucket());
             } else {
                 service.sync(zipFiles, params.getMetaObjectName());
             }
