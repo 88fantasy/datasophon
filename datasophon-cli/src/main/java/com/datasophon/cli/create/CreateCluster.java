@@ -115,8 +115,11 @@ public class CreateCluster implements Runnable {
             initRegistryUpload(config, nodes);
         }
 
-        log.info("安装jdk");
-        initJdk(config, nodes);
+        log.info("安装jdk8");
+        initJdk8(config, nodes);
+
+        log.info("安装jdk17");
+        initJdk17(config, nodes);
         
         log.info("创建hadoop用户和组");
         initOsUser(config, nodes);
@@ -189,8 +192,11 @@ public class CreateCluster implements Runnable {
         log.info("安装tar");
         initTar(config, nodes);
 
-        log.info("安装jdk");
-        initJdk(config, nodes);
+        log.info("安装jdk8");
+        initJdk8(config, nodes);
+
+        log.info("安装jdk17");
+        initJdk17(config, nodes);
         
         log.info("创建hadoop用户和组");
         initOsUser(config, nodes);
@@ -287,8 +293,23 @@ public class CreateCluster implements Runnable {
         allNodesExec(workerNodes, initTar);
     }
 
-    private void initJdk(ClusterConfig config, List<Host> nodes) {
-        InitJdk initJdk = new InitJdk();
+    private void initJdk8(ClusterConfig config, List<Host> nodes) {
+        InitJdk8 initJdk = new InitJdk8();
+        initJdk.setPackagePath(packagesPath);
+        NexusRegistry registry = config.getGlobal().getRegistry();
+        if(registry.isEnable()) {
+            initJdk.setEnableRegistry(registry.isEnable())
+                    .setRegistryIp(registry.getHost().getIp())
+                    .setRegistryPort(registry.getConfig().getWebPort())
+                    .setRegistryUsername(registry.getConfig().getUser())
+                    .setRegistryPassword(registry.getConfig().getPassword());
+        }
+        List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
+        allNodesExec(workerNodes, initJdk);
+    }
+
+    private void initJdk17(ClusterConfig config, List<Host> nodes) {
+        InitJdk17 initJdk = new InitJdk17();
         initJdk.setPackagePath(packagesPath);
         NexusRegistry registry = config.getGlobal().getRegistry();
         if(registry.isEnable()) {

@@ -15,9 +15,8 @@ import picocli.CommandLine;
 @Slf4j
 @Accessors(chain = true)
 @Data
-// TODO JDK8和JDK17
-@CommandLine.Command(name = "jdk", description = "init jdk")
-public class InitJdk extends InitBase {
+@CommandLine.Command(name = "jdk8", description = "init jdk8")
+public class InitJdk8 extends InitBase {
 
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
@@ -40,7 +39,7 @@ public class InitJdk extends InitBase {
     private Executor executor;
     @Override
     public String name() {
-        return "初始化jdk";
+        return "初始化jdk8";
     }
 
     @Override
@@ -48,7 +47,6 @@ public class InitJdk extends InitBase {
         String jdkFolderPath = "/usr/local";
         executor.execShell("source /etc/profile");
         String jdkPathName = "jdk1.8.0_333";
-        String jdkVersion = "1.8";
         String bashProfilePath="/root/.bash_profile";
         String bashrcPath="/root/.bashrc";
         String etcProfilePath="/etc/profile";
@@ -93,8 +91,8 @@ public class InitJdk extends InitBase {
             executor.execShell(String.format("source %s", bashrcPath));
             executor.execShell(String.format("source %s", etcProfilePath));
             executor.execShell(javaSourceEnv);
-            log.info("JDK install successfully");
-            log.info("INIT JDK finished");
+            log.info("JDK8 install successfully");
+            log.info("INIT JDK8 finished");
         }
 
         return true;

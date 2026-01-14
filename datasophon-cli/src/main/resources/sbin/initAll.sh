@@ -19,8 +19,10 @@ fi
 echo "ini tar"
 bash ${INIT_BIN_PATH}/init-tar.sh > ${INIT_LOG_PATH}/init-tar.log
 
-echo "ini jdk"
-bash ${INIT_BIN_PATH}/init-jdk.sh > ${INIT_LOG_PATH}/init-jdk.log
+echo "ini jdk8"
+bash ${INIT_BIN_PATH}/init-jdk8.sh > ${INIT_LOG_PATH}/init-jdk8.log
+echo "ini jdk17"
+bash ${INIT_BIN_PATH}/init-jdk17.sh > ${INIT_LOG_PATH}/init-jdk17.log
 
 echo "init registryDecode"
 bash ${INIT_BIN_PATH}/init-registryDecode.sh > ${INIT_LOG_PATH}/init-registryDecode.log

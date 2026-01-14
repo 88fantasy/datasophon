@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# example: sh init-jdk.sh
+# example: sh init-jdk8.sh
 # instal and config jdk env
 if [ $UID -ne 0 ]; then
   echo Non root user. Please run as root.
@@ -21,31 +21,32 @@ INIT_BIN_PATH=${INIT_PATH}/bin
 echo "INIT_BIN_PATH: ${INIT_BIN_PATH}"
 INIT_SBIN_PATH=${INIT_PATH}/sbin
 echo "INIT_SBIN_PATH: ${INIT_SBIN_PATH}"
-PACKAGES_PATH=/data/packages/raw
+PACKAGES_PATH=/data/packages/raw/packages
 echo "PACKAGES_PATH: ${PACKAGES_PATH}"
 JDK_FOLDER_PATH=/usr/local
 source /etc/profile
 mkdir -p ${JDK_FOLDER_PATH}
-JDK_PATH_NAME="jdk1.8.0_333"
-JDK_VERSION="1.8"
+JDK_PATH_NAME="jdk-17.0.12"
 BASH_PROFILE_PATH="/root/.bash_profile"
 BASHRC_PATH="/root/.bashrc"
 ETC_PROFILE_PATH="/etc/profile"
-JDK_TAR_NAME="jdk-8u333-linux-x64.tar.gz"
+JDK_TAR_NAME="jdk-17.0.12_linux-x64_bin.tar.gz"
+JAVA17_HOME="${JDK_FOLDER_PATH}/${JDK_PATH_NAME}"
+#JRE_HOME="${JDK_FOLDER_PATH}/${JDK_PATH_NAME}/jre"
 arch=$(arch)
 echo arch:$arch
 if [ $arch = "aarch64" ]; then
-  JDK_TAR_NAME="jdk-8u333-linux-aarch64.tar.gz"
+  JDK_TAR_NAME="jdk-17.0.12_linux-aarch64_bin.tar.gz"
 fi
 
 # jdkAvailable=$(java -version 2>&1 | awk 'NR==1{gsub(/"/,"");print $3}')
 #result=$(echo $jdkAvailable | grep $JDK_VERSION)
-if [[ -d ${JAVA_HOME} ]]; then
+if [[ -d ${JAVA17_HOME} ]]; then
   echo "JDK installed.............................."
 else
   echo "JDK not installed.............................."
   echo "JDK environment already sets"
-  pid="sed -i '/export JAVA_HOME/d' /etc/profile"
+  pid="sed -i '/export JAVA17_HOME/d' /etc/profile"
   eval $pid
   pid="sed -i '/export CLASSPATH/d' /etc/profile"
   eval $pid
@@ -61,19 +62,17 @@ else
   sleep 2s
   mkdir -p ${JDK_FOLDER_PATH}
   tar -zxvf ${PACKAGES_PATH}/${JDK_TAR_NAME} -C ${JDK_FOLDER_PATH}
-  JAVA_HOME="${JDK_FOLDER_PATH}/${JDK_PATH_NAME}"
-  JRE_HOME="${JDK_FOLDER_PATH}/${JDK_PATH_NAME}/jre"
   JAVA_SOURCE_ENV="source /etc/profile"
-  echo "export JAVA_HOME=$JAVA_HOME" >>/etc/profile
+  echo "export JAVA17_HOME=$JAVA17_HOME" >>/etc/profile
   #echo "export JRE_HOME=$JRE_HOME" >>/etc/profile
-  #echo "export CLASSPATH=.:\$JRE_HOME/lib/rt.jar:\$JAVA_HOME/lib/dt.jar:\$JAVA_HOME/lib/tools.jar" >>/etc/profile
-  echo "export PATH=\$PATH:\$JAVA_HOME/bin" >>/etc/profile
+  #echo "export CLASSPATH=.:\$JRE_HOME/lib/rt.jar:\$JAVA17_HOME/lib/dt.jar:\$JAVA17_HOME/lib/tools.jar" >>/etc/profile
+  #echo "export PATH=\$PATH:\$JAVA17_HOME/bin" >>/etc/profile
   echo ${JAVA_SOURCE_ENV} >>~/.bash_profile
   echo ${JAVA_SOURCE_ENV} >>~/.bashrc
-  echo "Prepare to config BCPROV..."
-  JAVA_SECURITY_DIR="${JAVA_HOME}/jre/lib/security/java.security"
-  JAVA_BCPROV_DIR="${JAVA_HOME}/jre/lib/ext/"
-  JAVA_BCPROV_JAR="${PACKAGES_PATH}/bcprov-jdk15on-1.68.jar"
+  #echo "Prepare to config BCPROV..."
+  JAVA_SECURITY_DIR="${JAVA17_HOME}/conf/security/java.security"
+  #JAVA_BCPROV_DIR="${JAVA17_HOME}/jre/lib/ext/"
+  #JAVA_BCPROV_JAR="${PACKAGES_PATH}/bcprov-jdk15on-1.68.jar"
 
   JAVA_SECURITY_ARGS_ARR[0]="security.provider.1=sun.security.provider.Sun"
   JAVA_SECURITY_ARGS_ARR[1]="security.provider.2=sun.security.rsa.SunRsaSign"
@@ -85,20 +84,20 @@ else
   JAVA_SECURITY_ARGS_ARR[7]="security.provider.8=sun.security.smartcardio.SunPCSC"
   JAVA_SECURITY_ARGS_ARR[8]="security.provider.9=org.bouncycastle.jce.provider.BouncyCastleProvider"
 
-  for element in ${JAVA_SECURITY_ARGS_ARR[@]}; do
+  for element in "${JAVA_SECURITY_ARGS_ARR[@]}"; do
     JAVA_SECURITY_ARGS="${JAVA_SECURITY_ARGS}${element}\n"
   done
 
   echo -e ${JAVA_SECURITY_ARGS} >>${JAVA_SECURITY_DIR}
-  cp -a ${JAVA_BCPROV_JAR} ${JAVA_BCPROV_DIR}
+  #cp -a ${JAVA_BCPROV_JAR} ${JAVA_BCPROV_DIR}
 
-  echo "BCPROV Installed."
+  #echo "BCPROV Installed."
 
   echo "If you need to effect the environment variable in the current session, do it manually: "
   source ${BASH_PROFILE_PATH}
   source ${BASHRC_PATH}
   source ${ETC_PROFILE_PATH}
-  jdk2=$(grep -n "export JAVA_HOME=.*" /home/hadoop/.bash_profile | cut -f1 -d':')
+  jdk2=$(grep -n "export JAVA17_HOME=.*" /home/hadoop/.bash_profile | cut -f1 -d':')
   if [ -n "$jdk2" ]; then
     echo "JDK HADOOP environment exists"
   else
