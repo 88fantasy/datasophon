@@ -24,6 +24,7 @@ import akka.pattern.Patterns;
 import akka.util.Timeout;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -197,25 +198,22 @@ public class ProcessUtils {
                 clusterZkService.save(clusterZk);
             }
 
-            if (Objects.nonNull(serviceRoleInfo.getExternalLink())) {
-                ExternalLink externalLink = serviceRoleInfo.getExternalLink();
+            ExternalLink externalLink = serviceRoleInfo.getExternalLink();
+            boolean externalLinkConfigDefined = externalLink != null
+                                        && StrUtil.isNotBlank(externalLink.getUrl())
+                                        && StrUtil.isNotBlank(externalLink.getName());
+            if (externalLinkConfigDefined) {
                 ClusterServiceRoleInstanceWebuis webui = webuisService.getRoleInstanceWebUi(roleInstance.getId());
                 if (Objects.nonNull(webui)) {
                     logger.info("web ui already exists");
                 } else {
-//                    Map<String, String> globalVariables = GlobalVariables.get(clusterInfo.getId());
-//                    globalVariables.put("${host}", serviceRoleInfo.getHostname());
-//                    String url = PlaceholderUtils.replacePlaceholders(externalLink.getUrl(), globalVariables,
-//                            Constants.REGEX_VARIABLE);
                     ClusterServiceRoleInstanceWebuis webuis = new ClusterServiceRoleInstanceWebuis();
                     webuis.setWebUrl(externalLink.getUrl());
                     webuis.setServiceInstanceId(clusterServiceInstance.getId());
                     webuis.setServiceRoleInstanceId(roleInstance.getId());
                     webuis.setName(externalLink.getName() + "(" + serviceRoleInfo.getHostname() + ")");
                     webuisService.save(webuis);
-//                    globalVariables.remove("${host}");
                 }
-
             }
         }
 
