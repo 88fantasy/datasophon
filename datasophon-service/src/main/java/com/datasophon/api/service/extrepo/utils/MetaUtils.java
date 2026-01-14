@@ -58,9 +58,6 @@ public class MetaUtils {
      * 需要解密文件内容的文件
      */
     private static final List<String> ENCRYPT_FILES = Arrays.asList(
-            "config/common.properties",
-            "config/cluster-sample.yml",
-            "config/datasophon.conf",
             "config/meta/**/service_ddl.json"
     );
 
@@ -114,11 +111,23 @@ public class MetaUtils {
      */
     public static String decodeFile(File file, String cipherKey) {
         String cipherText = FileUtil.readString(file, StandardCharsets.UTF_8);
+        boolean isRaw = false;
+//        测试环境，有可能上传不加密的文件，则不需要解密，这段代码方便调试
+        if (file.getName().toLowerCase().endsWith("yml") || file.getName().toLowerCase().endsWith("yaml")) {
+//            如果包含冒号，说明，不需要解密
+            isRaw = cipherText.contains(":");
+        } else if (file.getName().toLowerCase().endsWith(".json")) {
+//            json，且以{或者[开头，说明不需要解密
+            isRaw = cipherText.trim().startsWith("{") || cipherText.startsWith("[");
+        }
+        if (isRaw) {
+            log.warn("file {} need decode, but content does not match the cipher rules", file.getAbsolutePath());
+            return cipherText;
+        }
         log.info("decode file: {}", file.getAbsolutePath());
         String plainText = SmUtil.sm4(Base64.decode(cipherKey)).decryptStr(Base64.decode(cipherText), StandardCharsets.UTF_8);
         return plainText;
 
-//        return cipherText;
     }
 
 
