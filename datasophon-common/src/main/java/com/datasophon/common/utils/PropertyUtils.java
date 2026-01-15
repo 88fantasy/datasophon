@@ -55,7 +55,7 @@ public class PropertyUtils {
 
     static {
         List<String> propertyFiles = new ArrayList<>();
-        propertyFiles.add(FileUtils.concatPath(System.getProperty("user.dir"), CONFIG_HOME));
+        propertyFiles.add(FileUtils.concatPath(System.getenv("DDH_HOME"), CONFIG_HOME));
 
         String mode = System.getProperty("devMode");
         String path = System.getProperty("commonPropertiesLocation");
