@@ -42,6 +42,7 @@ public final class Constants {
     public static final String CPU_ARCH = "hostname";
 
     public static final String MASTER_MANAGE_PACKAGE_PATH = INIT_HOME + "/packages";
+    public static final String PACKAGES_NAME = "packages";
     public static final String UNZIP_DDH_WORKER_CMD =
             "tar -zxvf " + MASTER_MANAGE_PACKAGE_PATH + "/datasophon-worker.tar.gz -C " + INSTALL_PATH;
     public static final String START_DDH_WORKER_CMD = "service datasophon-worker restart";
@@ -298,5 +299,5 @@ public final class Constants {
 
     public static final String MD5 = "md5";
 
-    public static final String SECRET_KEY = PropertyUtils.getString("secret.key");
+    //public static final String SECRET_KEY = PropertyUtils.getString("secret.key");
 }

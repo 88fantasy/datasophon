@@ -1,13 +1,13 @@
 package com.datasophon.cli.create;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.FileUtil;
 import com.datasophon.common.model.ClusterConfig;
 import com.datasophon.common.model.GlobalConfig;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.cli.handler.InitNodeHandlerChain;
 import com.datasophon.cli.init.*;
 import com.datasophon.cli.util.CliUtil;
-import com.datasophon.common.Constants;
 import com.datasophon.common.enums.SSHAuthType;
 import com.datasophon.common.model.Host;
 import com.datasophon.common.model.uni.NexusRegistry;
@@ -27,6 +27,12 @@ public class CreateCluster implements Runnable {
     
     @CommandLine.Option(names = {"-p", "datasophonPath"}, description = "datasophon绝对路径", required = true)
     String datasophonPath;
+
+    @CommandLine.Option(names = {"-in", "installPath"}, description = "安装路径", required = true)
+    String installPath;
+
+    @CommandLine.Option(names = {"-pwd", "password"}, description = "密钥", required = true)
+    String password;
     
     @CommandLine.Option(names = {"-a", "action"}, description = "执行动作", required = true)
     String action;
@@ -52,8 +58,8 @@ public class CreateCluster implements Runnable {
     
     @Override
     public void run() {
-        if (!datasophonPath.startsWith("/")) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "datasophonPath必须是绝对路径,即以/开头");
+        if (!datasophonPath.startsWith("/") || !installPath.startsWith("/")) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "datasophonPath、installPath必须是绝对路径,即以/开头");
         }
         if (datasophonPath.endsWith("/")) {
             datasophonPath = datasophonPath.substring(0, datasophonPath.length() - 1);
@@ -62,9 +68,8 @@ public class CreateCluster implements Runnable {
         if (!path.exists()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "path not found : " + datasophonPath);
         }
-        File installPath = new File(Constants.INSTALL_PATH);
-        if (!installPath.exists()) {
-            ShellUtils.execShell(String.format("mkdir -p %s", Constants.INSTALL_PATH));
+        if (FileUtil.exist(installPath)) {
+            ShellUtils.execShell(String.format("mkdir -p %s", installPath));
         }
         initPath = String.format("%s/datasophon-init", datasophonPath);
         initConfigPath = String.format("%s/config", initPath);
@@ -72,7 +77,7 @@ public class CreateCluster implements Runnable {
         initConfigYamlPath = String.format("%s/cluster-sample.yml", initConfigPath);
         log.info("\nDATASOPHON_PATH:{},\nINIT_PATH:{},\nINIT_CONFIG_YAML_PATH:{}", datasophonPath, initPath, initConfigYamlPath);
 
-        ClusterConfig clusterConfig = CliUtil.getConfig(initConfigYamlPath);
+        ClusterConfig clusterConfig = CliUtil.getConfig(initConfigYamlPath, password);
         sshAuthType = clusterConfig.getGlobal().getSshAuthType();
 
         if (action.equals("initALL")) {
@@ -274,6 +279,7 @@ public class CreateCluster implements Runnable {
     private void initBinPackage(ClusterConfig config, List<Host> nodes) {
         InitBinPackage initBinPackage = new InitBinPackage();
         initBinPackage.setInitPath(initPath);
+        initBinPackage.setInstallPath(installPath);
         initBinPackage.setInitPathOverwriteForce(initPathOverwriteForce);
         initBinPackage.setEnableRegistry(config.getGlobal().getRegistry().isEnable());
         initBinPackage.setRegistryPath(config.getGlobal().getRegistry().getConfig().getRegistryPath());
@@ -345,6 +351,7 @@ public class CreateCluster implements Runnable {
         initRegistry.setEnableRegistry(registryConfig.isEnable())
                 .setType(registryConfig.getType())
                 .setPackagePath(packagesPath)
+                .setInstallPath(installPath)
                 .setRepositories(registryConfig.getConfig().getRepositories())
                 .setX86Tar(registryConfig.getPackages().getX86_64())
                 .setAarch64Tar(registryConfig.getPackages().getAarch64())
@@ -374,6 +381,7 @@ public class CreateCluster implements Runnable {
         InitRustfs initRustfs = new InitRustfs();
         initRustfs.setEnable(rustfs.isEnable())
             .setPackagePath(packagesPath)
+            .setInstallPath(installPath)
             .setX86Tar(rustfs.getPackages().getX86_64())
             .setAarch64Tar(rustfs.getPackages().getAarch64())
             .setWebHost(rustfs.getHost().getIp())
@@ -387,7 +395,8 @@ public class CreateCluster implements Runnable {
     private void initOfflineServer(ClusterConfig config) {
         GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
         InitOfflineServer initYumServer = new InitOfflineServer();
-        initYumServer.setConfigFilePath(initConfigYamlPath);
+        initYumServer.setConfigFilePath(initConfigYamlPath)
+                        .setPassword(password);
         initYumServer.setPackagePath(packagesPath)
                 .setServerIp(yumServer.getHost().getIp())
                 .setServerPort(yumServer.getListenPort())
@@ -399,6 +408,7 @@ public class CreateCluster implements Runnable {
         GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
         InitOfflineSlave initYumConf = new InitOfflineSlave();
         initYumConf.setConfigFilePath(initConfigYamlPath);
+        initYumConf.setPassword(password);
         initYumConf.setServerIp(yumServer.getHost().getIp())
                 .setServerPort(yumServer.getListenPort());
         NexusRegistry registry = config.getGlobal().getRegistry();
@@ -429,6 +439,7 @@ public class CreateCluster implements Runnable {
         nodes.forEach(node -> {
             InitAllHost initAllHost = new InitAllHost();
             initAllHost.setConfigFilePath(initConfigYamlPath);
+            initAllHost.setPassword(password);
             singleNodesExec(node, initAllHost);
         });
     }
@@ -441,6 +452,7 @@ public class CreateCluster implements Runnable {
         InitNtpServer initNtpServer = new InitNtpServer();
         GlobalConfig.NtpServer ntpServer = config.getGlobal().getNtpServer();
         initNtpServer.setConfigFilePath(initConfigYamlPath);
+        initNtpServer.setPassword(password);
         singleNodesExec(ntpServer.getHost(), initNtpServer);
     }
     
@@ -448,6 +460,7 @@ public class CreateCluster implements Runnable {
         GlobalConfig.NtpServer ntpServer = config.getGlobal().getNtpServer();
         InitNtpSlave initNtpSlave = new InitNtpSlave();
         initNtpSlave.setConfigFilePath(initConfigYamlPath);
+        initNtpSlave.setPassword(password);
         initNtpSlave.setNtpServerIp(ntpServer.getHost().getIp());
         slavesNodesExec(ntpServer.getHost(), nodes, initNtpSlave);
     }
@@ -459,11 +472,13 @@ public class CreateCluster implements Runnable {
     private void initMysql(ClusterConfig config) {
         InitMysql initMysql = new InitMysql();
         GlobalConfig.MysqlConfig mysqlConfig = config.getGlobal().getMysql();
-        initMysql.setConfigFilePath(initConfigYamlPath);
+        initMysql.setConfigFilePath(initConfigYamlPath)
+                .setPassword(password);
         initMysql.setPassword(mysqlConfig.getPassword())
                 .setForce(mysqlInstallForce)
                 .setPackagePath(packagesPath)
-                .setPort(initMysql.getPort())
+                .setInstallPath(installPath)
+                .setPort(mysqlConfig.getPort())
                 .setTarName(mysqlConfig.getTarName());
         NexusRegistry registry = config.getGlobal().getRegistry();
         if(registry.isEnable()) {
@@ -480,11 +495,13 @@ public class CreateCluster implements Runnable {
         GlobalConfig.MysqlConfig mysqlConfig = config.getGlobal().getMysql();
         mysqlConfig.getAppDbs().forEach(x -> {
             InitMysqlAppDb initMysqlAppDb = new InitMysqlAppDb();
-            initMysqlAppDb.setConfigFilePath(initConfigYamlPath);
+            initMysqlAppDb.setConfigFilePath(initConfigYamlPath)
+                            .setPassword(password);
             initMysqlAppDb.setRootPassword(mysqlConfig.getPassword())
                     .setAccount(x.getAccount())
                     .setPassword(x.getPassword())
-                    .setDbName(x.getDbName());
+                    .setDbName(x.getDbName())
+                    .setPort(mysqlConfig.getPort());
             singleNodesExec(mysqlConfig.getHost(), initMysqlAppDb);
         });
     }

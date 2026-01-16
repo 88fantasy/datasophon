@@ -23,6 +23,9 @@ public class InitRustfs extends InitBase {
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
 
+    @CommandLine.Option(names = {"-in", "installPath"}, description = "安装路径", required = true)
+    String installPath;
+
     @CommandLine.Option(names = {"-x", "--x86Tar"}, description = "x86_64包", required = false)
     String x86Tar;
 
@@ -55,10 +58,10 @@ public class InitRustfs extends InitBase {
             return true;
         }
 
-        if(!executor.exists(Constants.INSTALL_PATH).getExecResult()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + Constants.INSTALL_PATH);
+        if(!executor.exists(installPath).getExecResult()) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + installPath);
         }
-        String home = String.format("%s/rustfs", Constants.INSTALL_PATH);
+        String home = String.format("%s/rustfs", installPath);
         String dataPath = String.format("%s/data", home);
         String logsPath = String.format("%s/logs", home);
         if(executor.exists(home).getExecResult()) {
@@ -71,8 +74,8 @@ public class InitRustfs extends InitBase {
             if (!executor.exists(tarPath).getExecResult()) {
                 throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + tarPath);
             }
-            executor.execShell(String.format("tar xvz -f %s -C %s", tarPath, Constants.INSTALL_PATH));
-            executor.execShell(String.format("mv %s/rustfs-* %s", Constants.INSTALL_PATH, home));
+            executor.execShell(String.format("tar xvz -f %s -C %s", tarPath, installPath));
+            executor.execShell(String.format("mv %s/rustfs-* %s", installPath, home));
             executor.execShell(String.format("mkdir -p %s", dataPath));
             executor.execShell(String.format("mkdir -p %s", logsPath));
         }

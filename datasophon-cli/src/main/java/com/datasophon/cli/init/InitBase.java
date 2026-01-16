@@ -17,9 +17,12 @@ public abstract class InitBase implements Runnable, InitNodeHandler {
     
     @CommandLine.Option(arity = "1", names = {"-c", "--config"}, description = "配置文件")
     String configFilePath;
+
+    @CommandLine.Option(names = {"-pwd", "password"}, description = "密钥", required = true)
+    String password;
     
     public ClusterConfig getConfig() {
-        return CliUtil.getConfig(configFilePath);
+        return CliUtil.getConfig(configFilePath, password);
     }
 
     @Override

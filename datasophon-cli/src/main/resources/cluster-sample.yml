@@ -16,6 +16,7 @@ global:
       repositories:
         - "yum"
         - "raw"
+        - "apt"
       registryPath: "/data"
       configTarName: "config.tar.gz"
       packagesTarName: "packages.tar.gz"

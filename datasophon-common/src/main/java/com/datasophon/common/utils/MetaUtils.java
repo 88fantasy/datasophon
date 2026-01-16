@@ -135,11 +135,4 @@ public class MetaUtils {
         FileUtil.writeString(base64, file, StandardCharsets.UTF_8);
         log.info("encode file: {}", file.getName());
     }
-
-    public static void main(String[] args) throws IOException {
-        //encodeFile(new File("/Users/liushumin/_tmp/cluster-sample.yml"), "5bWx3KT7vM7pJUjBf9GtSA==");
-        //decodeFile(new File("/Users/liushumin/_tmp/cluster-sample.yml"), "5bWx3KT7vM7pJUjBf9GtSA==");
-        encodeMatchedFiles("/Users/liushumin/_tmp/config", "5bWx3KT7vM7pJUjBf9GtSA==");
-        //decodeMatchedFiles("/Users/liushumin/_tmp/config", "5bWx3KT7vM7pJUjBf9GtSA==");
-    }
 }

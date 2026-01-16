@@ -72,7 +72,8 @@ public class NexusFileUtils {
      * @param username
      * @param password
      */
-    public static Pair<Map<String, String>, Map<String, String>> repositoryUploadBatch(String packageFullDir, String baseUrl, String username, String password) {
+    public static Pair<Map<String, String>, Map<String, String>> repositoryUploadBatch(String packageFullDir, String baseUrl,
+                                                                                       String username, String password, boolean isSuccessDelete) {
         File[] repoFiles = FileUtil.ls(packageFullDir);
         Map<String, String> uploadSucess = new HashMap<>();
         Map<String, String> uploadFails = new HashMap<>();
@@ -95,7 +96,7 @@ public class NexusFileUtils {
                             OsType osType = OsType.of(osFile.getName());
 
                             for (File file : files) {
-                                repositoryUploadFile(baseUrl, repositoriesType, archType, osType, file, username, password, uploadSucess, uploadFails);
+                                repositoryUploadFile(baseUrl, repositoriesType, archType, osType, file, username, password, uploadSucess, uploadFails, isSuccessDelete);
                             }
                         }
                     }
@@ -104,7 +105,7 @@ public class NexusFileUtils {
                     String packagesPath = repoFile.getAbsolutePath() + Constants.SLASH + "packages";
                     File[] files = FileUtil.ls(packagesPath);
                     for (File file : files) {
-                        repositoryUploadFile(baseUrl, repositoriesType, null, null, file, username, password, uploadSucess, uploadFails);
+                        repositoryUploadFile(baseUrl, repositoriesType, null, null, file, username, password, uploadSucess, uploadFails, isSuccessDelete);
                     }
                     break;
                 default:
@@ -120,7 +121,7 @@ public class NexusFileUtils {
 
     private static void repositoryUploadFile(String baseUrl, RepositoriesType repository, ArchType archType,
                                              OsType os, File file, String username, String password,
-                                             Map<String, String> uploadSuccess, Map<String, String> uploadFails) {
+                                             Map<String, String> uploadSuccess, Map<String, String> uploadFails, boolean isSuccessDelete) {
         if (file.isDirectory()) {
             return;
         }
@@ -175,8 +176,12 @@ public class NexusFileUtils {
                 int status = response.getStatusLine().getStatusCode();
                 String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
                 if (status == 200) {
-                    log.info("上传 {} 成功, Status: {}, Response: {}", file.getAbsolutePath(), status, body);
+                    log.info("上传 {} 成功, Status: {}, Response: {}, isSuccessDelete:{}", file.getAbsolutePath(), status, body, isSuccessDelete);
                     uploadSuccess.put(file.getAbsolutePath(), body);
+                    if(file.getAbsolutePath().contains(Constants.PACKAGES_NAME) && isSuccessDelete) {
+                        FileUtil.del(file);
+                        log.info("delete {}", file.getAbsolutePath());
+                    }
                 } else {
                     log.error("上传 {} 失败. URL: {}, Status: {}, Response: {}",
                             file.getAbsolutePath(), url, status, body);

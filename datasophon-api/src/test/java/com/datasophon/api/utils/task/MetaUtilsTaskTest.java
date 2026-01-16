@@ -15,11 +15,11 @@ public class MetaUtilsTaskTest {
 
     @Test
     public void  testDecode() throws IOException {
-        File file = new File("D:\\Desktop\\VOS集成测试\\门户1\\config_20260113105505.tar.gz");
-        String password = "Ax75UKPE8rL7evFCIQzekA==";
+        File file = new File("/Users/liushumin/Downloads/config_20260114162130.tar.gz");
+        String password = "WYe8VviWpGpjQJobsamkFQ==";
 
-        String unzipDir = null;
-        unzipDir = TarUtils.decompressToTemp(file.getAbsolutePath());
+        String unzipDir = "/Users/liushumin/Downloads/config";
+        TarUtils.decompress(file.getAbsolutePath(), unzipDir);
         MetaUtils.decodeMatchedFiles(unzipDir, password);
 
         System.out.println("解压路径为" + unzipDir);

@@ -35,6 +35,9 @@ public class InitRegistry extends InitBase {
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
 
+    @CommandLine.Option(names = {"-in", "installPath"}, description = "安装路径", required = true)
+    String installPath;
+
     @CommandLine.Option(names = {"-x", "--x86Tar"}, description = "x86_64包", required = true)
     String x86Tar;
 
@@ -70,27 +73,27 @@ public class InitRegistry extends InitBase {
             return true;
         }
 
-        if(!executor.exists(Constants.INSTALL_PATH).getExecResult()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + Constants.INSTALL_PATH);
+        if(!executor.exists(installPath).getExecResult()) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + installPath);
         }
-        String home = String.format("%s/nexusDir", Constants.INSTALL_PATH);
+        String home = String.format("%s/nexusDir", installPath);
         String nexusPath = String.format("%s/nexus", home);
         String nexusPropertiesPath = String.format("%s/etc/nexus-default.properties", nexusPath);
         String sonatypePath = String.format("%s/sonatype-work", home);
         String passwordPath = String.format("%s/nexus3/admin.password", sonatypePath);
         String baseUrl = String.format("http://%s:%s", webHost, webPort);
+        String tarPath = String.format("%s/%s", packagePath, x86Tar);
+        if (ArchType.AARCH64 == executor.getArch()) {
+            tarPath = String.format("%s/%s", packagePath, aarch64Tar);
+        }
+        if (!executor.exists(tarPath).getExecResult()) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + tarPath);
+        }
 
-        if(executor.exists(home).getExecResult()) {
-            log.info("nexusDir path exist: {}", home);
+        if(executor.exists(nexusPath).getExecResult()) {
+            log.info("nexusDir path exist: {}", nexusPath);
         } else {
             executor.execShell(String.format("mkdir -p %s", home));
-            String tarPath = String.format("%s/%s", packagePath, x86Tar);
-            if (ArchType.AARCH64 == executor.getArch()) {
-                tarPath = String.format("%s/%s", packagePath, aarch64Tar);
-            }
-            if (!executor.exists(tarPath).getExecResult()) {
-                throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + tarPath);
-            }
             executor.execShell(String.format("tar xzf %s -C %s", tarPath, home));
             // nexus-3.85.0-03
             executor.execShell(String.format("mv %s/nexus-* %s", home, nexusPath));
@@ -127,7 +130,7 @@ public class InitRegistry extends InitBase {
             log.info("nexus install sucess. path:{}", home);
             return true;
         } else {
-            throw new CommandLine.ExecutionException(new CommandLine(this), String.format("nexus install failed. path:%s", home));
+            throw new RuntimeException(String.format("nexus install failed. path:%s", home));
         }
     }
 

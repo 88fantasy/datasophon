@@ -1,11 +1,16 @@
 #!/bin/bash
 
+# 检查是否提供了密码参数
+PASSWORD=41nMhvOMYCZGT3vVdIZB1w==
+echo "PASSWORD:${PASSWORD}"
+
 BASE_DIR=$(dirname $0)
 
 BASE_PATH=$(
   cd ${BASE_DIR}
   pwd
 )
+
 echo "Bash Path: ${BASE_PATH}"
 INIT_PATH=$(dirname "${BASE_PATH}")
 INIT_LOG_PATH=${INIT_PATH}/logs
@@ -16,17 +21,14 @@ if [ ! -d "INIT_LOG_PATH" ]; then
   mkdir -p $INIT_LOG_PATH
 fi
 
-echo "ini tar"
-bash ${INIT_BIN_PATH}/init-tar.sh > ${INIT_LOG_PATH}/init-tar.log
-
 echo "ini jdk8"
 bash ${INIT_BIN_PATH}/init-jdk8.sh > ${INIT_LOG_PATH}/init-jdk8.log
 echo "ini jdk17"
 bash ${INIT_BIN_PATH}/init-jdk17.sh > ${INIT_LOG_PATH}/init-jdk17.log
 
 echo "init registryDecode"
-bash ${INIT_BIN_PATH}/init-registryDecode.sh > ${INIT_LOG_PATH}/init-registryDecode.log
+bash ${INIT_BIN_PATH}/init-registryDecode.sh ${PASSWORD} > ${INIT_LOG_PATH}/init-registryDecode.log
 
 source /etc/profile
 echo "ini create cluster"
-java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar create cluster --enableRegistry -p /data/datasophon -a initALL > ${INIT_LOG_PATH}/initAll.log
+java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar create cluster --enableRegistry -pwd ${PASSWORD} -p /data/datasophon -in /data/install_datasophon -a initALL > ${INIT_LOG_PATH}/initAll.log

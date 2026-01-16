@@ -1,5 +1,6 @@
 package com.datasophon.cli.util;
 
+import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import com.datasophon.cli.base.CliConstants;
@@ -16,6 +17,7 @@ import freemarker.template.Template;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.yaml.snakeyaml.Yaml;
+import picocli.CommandLine;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -71,22 +73,24 @@ public final class CliUtil {
     }
 
     /**
-     * 优先使用 cluster-sample.yml.decode > cluster-sample.yml
+     * cluster-sample.yml
      * @param configFilePath
      * @return
      */
-    public static ClusterConfig getConfig(String configFilePath) {
+    public static ClusterConfig getConfig(String configFilePath, String password) {
         File configFile = new File(configFilePath);
         if (!configFile.exists()) {
             throw new RuntimeException("config file not found, please check " + configFilePath);
         }
+        if (!Base64.isBase64(password)) {
+            throw new RuntimeException("password校验失败 : " + password);
+        }
         Yaml yaml = new Yaml();
-        String decodeClusterSamplePath = String.format("%s.decode", configFilePath);
-        if(!FileUtil.exist(decodeClusterSamplePath)) {
-            byte[] bytes = MetaUtils.decodeContext(configFile, Constants.SECRET_KEY);
+        String content = FileUtil.readString(configFile, StandardCharsets.UTF_8);
+        if(Base64.isBase64(content)) {
+            byte[] bytes = MetaUtils.decodeContext(configFile, password);
             return yaml.loadAs(StringUtils.toEncodedString(bytes, StandardCharsets.UTF_8), ClusterConfig.class);
         } else {
-            String content = FileUtil.readString(configFile, Charset.defaultCharset());
             return yaml.loadAs(content, ClusterConfig.class);
         }
     }
