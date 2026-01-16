@@ -18,6 +18,7 @@
 package com.datasophon.common.utils;
 
 import cn.hutool.core.util.StrUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,7 @@ import java.util.Properties;
  */
 public class PropertyUtils {
 
-    public static final String CONFIG_HOME = "conf/common.properties";
+    public static final String CONFIG_HOME = "/common.properties";
 
     /**
      * logger
@@ -55,7 +56,7 @@ public class PropertyUtils {
 
     static {
         List<String> propertyFiles = new ArrayList<>();
-        propertyFiles.add(FileUtils.concatPath(System.getenv("DDH_HOME"), CONFIG_HOME));
+        propertyFiles.add(CONFIG_HOME);
 
         String mode = System.getProperty("devMode");
         String path = System.getProperty("commonPropertiesLocation");
@@ -63,26 +64,20 @@ public class PropertyUtils {
             propertyFiles.add(path);
         }
 
-        boolean found = false;
         for (String fileName : propertyFiles) {
-            File file = new File(fileName);
             InputStream inputStream = null;
             try {
-                inputStream = Files.newInputStream(file.toPath());
+                inputStream = PropertyUtils.class.getResourceAsStream(fileName);
                 properties.load(inputStream);
-                found = true;
             } catch (FileNotFoundException | NoSuchFileException e) {
-                logger.warn("file {} do not exist, we just ignore", fileName);
+                logger.warn("file {} do not exist", fileName);
+                System.exit(1);
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 System.exit(1);
             } finally {
                 IOUtils.closeQuietly(inputStream);
             }
-        }
-        if (!found) {
-            logger.error("can not load common.properties from {}", StrUtil.join(",", propertyFiles));
-            System.exit(1);
         }
     }
 
