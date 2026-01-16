@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
  * @author zhanghuangbin
  */
 @Slf4j
-public class DAGExecActor extends TargetTypeActor<DAGExecCommand> {
+public class DAGExecActor extends TypedActor<DAGExecCommand> {
 
 
     @Override
