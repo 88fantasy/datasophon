@@ -2,7 +2,6 @@ package com.datasophon.api.master;
 
 import akka.actor.UntypedActor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
 
 import java.lang.reflect.ParameterizedType;
@@ -12,12 +11,12 @@ import java.lang.reflect.Type;
  * @author zhanghuangbin
  */
 @Slf4j
-public abstract class TargetTypeActor<T> extends UntypedActor {
+public abstract class TypedActor<T> extends UntypedActor {
 
 
     private Class<T> clazz;
 
-    protected TargetTypeActor() {
+    protected TypedActor() {
         Class<?> parameterizedTypeReferenceSubclass = findParameterizedTypeReferenceSubclass(getClass());
         Type type = parameterizedTypeReferenceSubclass.getGenericSuperclass();
         Assert.isInstanceOf(ParameterizedType.class, type, "Type must be a parameterized type");
@@ -32,7 +31,7 @@ public abstract class TargetTypeActor<T> extends UntypedActor {
         if (Object.class == parent) {
             throw new IllegalStateException("Expected ParameterizedTypeReference superclass");
         }
-        else if (TargetTypeActor.class == parent) {
+        else if (TypedActor.class == parent) {
             return child;
         }
         else {

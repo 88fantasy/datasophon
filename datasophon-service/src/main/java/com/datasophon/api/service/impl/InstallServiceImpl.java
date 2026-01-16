@@ -26,7 +26,6 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.enums.Status;
-import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.DispatcherWorkerActor;
 import com.datasophon.api.master.HostConnectActor;
@@ -61,7 +60,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service("installService")
@@ -108,8 +114,7 @@ public class InstallServiceImpl implements InstallService {
                                    Integer sshPort,
                                    Integer page,
                                    Integer pageSize) {
-        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
-        ProcessUtils.generateClusterVariable(globalVariables, clusterId, null, SSHUSER, sshUser);
+        ProcessUtils.generateClusterVariable(clusterId, null, SSHUSER, sshUser);
         
         List<HostInfo> list = new ArrayList<>();
         hosts = hosts.replace(" ", "");
@@ -117,12 +122,9 @@ public class InstallServiceImpl implements InstallService {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
         HashMap<String, HostInfo> map = new HashMap<>();
-        if (CacheUtils.containsKey(clusterCode + Constants.HOST_MAP)
-                && CacheUtils.containsKey(clusterCode + Constants.HOST_MD5)
-                && md5.equals(CacheUtils.getString(clusterCode + Constants.HOST_MD5))) {
+        if (CacheUtils.containsKey(clusterCode + Constants.HOST_MAP) && md5.equals(CacheUtils.getString(clusterCode + Constants.HOST_MD5))) {
             logger.info("get host list from cache");
             map = (HashMap<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
-            
         } else {
             logger.info("analysis host list");
             String[] hostsArr = hosts.split(",");
@@ -136,8 +138,7 @@ public class InstallServiceImpl implements InstallService {
                     if (host.matches(Constants.HAS_EN)) {
                         String preStr = split[0];
                         String endStr = split[1];
-                        List<String> newEquipmentNoList =
-                                PlaceholderUtils.getNewEquipmentNoList(preStr, endStr);
+                        List<String> newEquipmentNoList = PlaceholderUtils.getNewEquipmentNoList(preStr, endStr);
                         for (String next : newEquipmentNoList) {
                             HostInfo hostInfo =
                                     createHostInfo(pre + next, sshPort, sshUser, sshPass, clusterCode);
@@ -152,8 +153,7 @@ public class InstallServiceImpl implements InstallService {
                         int offset = Integer.parseInt(split[0]);
                         int limit = Integer.parseInt(split[1]);
                         for (int i = offset; i <= limit; i++) {
-                            HostInfo hostInfo =
-                                    createHostInfo(pre + i, sshPort, sshUser, sshPass, clusterCode);
+                            HostInfo hostInfo = createHostInfo(pre + i, sshPort, sshUser, sshPass, clusterCode);
                             if (ObjectUtil.isNotNull(hostInfo)) {
                                 map.put(hostInfo.getHostname(), hostInfo);
                                 if (!hostInfo.isManaged()) {
@@ -188,8 +188,7 @@ public class InstallServiceImpl implements InstallService {
     }
     
     private void tellHostCheck(String clusterCode, HostInfo hostInfo) {
-        ActorRef actor =
-                ActorUtils.getLocalActor(HostConnectActor.class, "hostActor-" + hostInfo.getHostname());
+        ActorRef actor = ActorUtils.getLocalActor(HostConnectActor.class, "hostActor-" + hostInfo.getHostname());
         actor.tell(new HostCheckCommand(hostInfo, clusterCode), ActorRef.noSender());
     }
     
