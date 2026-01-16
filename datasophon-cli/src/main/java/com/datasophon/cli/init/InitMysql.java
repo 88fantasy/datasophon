@@ -32,6 +32,9 @@ public class InitMysql extends InitBase implements InitNodeHandler {
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
 
+    @CommandLine.Option(names = {"-in", "installPath"}, description = "安装路径", required = true)
+    String installPath;
+
     @CommandLine.Option(names = {"-t", "--tarName"}, description = "tar离线压缩包名", required = true)
     String tarName;
 
@@ -61,25 +64,26 @@ public class InitMysql extends InitBase implements InitNodeHandler {
     @Override
     public boolean doRun(Executor executor) {
         OsType osType = executor.getOs();
-        String mysqlService = "mysqld";
-        if(OsType.isUnbuntu(osType)){
-            mysqlService = "mysql";
-        }
-        ExecResult result = executor.execShell(String.format("systemctl status %s", mysqlService));
-        if(result.getExecResult()){
-            log.info("mysql has exist");
-            if(!force){
-                return true;
-            }
-        }
         String tarPath = String.format("%s/%s", packagePath, tarName);
-        String httpRootPath = String.format("%s/tmp/mysql", Constants.INSTALL_PATH);
+        String httpRootPath = String.format("%s/tmp/mysql", installPath);
         CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword, tarName, tarPath);
+        Boolean isInstalled;
+        if(OsType.isUnbuntu(osType)) {
+            isInstalled = executor.execShell("dpkg --list|grep mysql").getExecResult();
+        } else {
+            isInstalled = executor.execShell("rpm -qa | grep mysql").getExecResult();
+        }
+        if(isInstalled && !force) {
+            log.info("exist mysql. force:{}", false);
+            checkStart(osType, executor);
+            return true;
+        }
+
         if(!executor.exists(tarPath).getExecResult()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + tarPath);
         }
         if(executor.exists(httpRootPath).getExecResult()) {
-            executor.execShell(String.format("rm -rf %s/tmp/mysql", Constants.INSTALL_PATH));
+            executor.execShell(String.format("rm -rf %s/tmp/mysql", installPath));
         }
         executor.execShell(String.format("mkdir -p %s", httpRootPath));
         executor.execShell(String.format("tar -xvf %s -C %s", tarPath, httpRootPath));
@@ -177,6 +181,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
                 System.exit(1);
             }
         }
+        checkStart(osType, executor);
         return true;
     }
     
@@ -197,7 +202,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         List<String> myconf = new ArrayList<>();
         myconf.add("[mysqld]");
         myconf.add("character_set_server=utf8mb4");
-        myconf.add("collation_server=COLLATE utf8mb4_bin");
+        myconf.add("collation_server=utf8mb4_bin");
         myconf.add("default-storage-engine=INNODB");
         myconf.add("explicit_defaults_for_timestamp=true");
         myconf.add("max_connections=3600");
@@ -216,6 +221,17 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"ALTER USER 'root'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;\"", port, password, password));
         executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"ALTER USER 'root'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';\"", port, password, password));
         executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"FLUSH PRIVILEGES;\"", port, password));
+    }
+
+    private void checkStart(OsType osType, Executor executor) {
+        String mysqlService = "mysqld";
+        if(OsType.isUnbuntu(osType)){
+            mysqlService = "mysql";
+        }
+        ExecResult result = executor.execShell(String.format("systemctl status %s", mysqlService));
+        if(!result.getExecResult()){
+            throw new RuntimeException("mysql启动状态失败,请检查");
+        }
     }
 
 }

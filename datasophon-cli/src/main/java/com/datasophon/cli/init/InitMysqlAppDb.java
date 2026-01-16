@@ -25,6 +25,9 @@ public class InitMysqlAppDb extends InitBase {
     
     @CommandLine.Option(names = {"-d", "--dbName"}, description = "数据库", required = true)
     String dbName;
+
+    @CommandLine.Option(names = {"-mp", "--mysqlPort"}, description = "端口", required = true)
+    Integer port;
     
     @Override
     public String name() {
@@ -48,11 +51,11 @@ public class InitMysqlAppDb extends InitBase {
     }
     
     public void initCommonAccount(Executor executor, String rootPasswd, String account, String passwd, String dbName) {
-        executor.execShell(String.format("mysql -uroot -p'%s' -e \"CREATE DATABASE IF NOT EXISTS %s DEFAULT CHARACTER SET utf8mb4  COLLATE utf8mb4_bin;\"", rootPasswd, dbName));
-        executor.execShell(String.format("mysql -uroot -p'%s' -e \"CREATE USER '%s'@'%%' IDENTIFIED BY '%s';\"", rootPasswd, account, passwd));
-        executor.execShell(String.format("mysql -uroot -p'%s' -e \"ALTER USER '%s'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;\"", rootPasswd, account, passwd));
-        executor.execShell(String.format("mysql -uroot -p'%s' -e \"ALTER USER '%s'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';\"", rootPasswd, account, passwd));
-        executor.execShell(String.format("mysql -uroot -p'%s' -e \"GRANT ALL PRIVILEGES ON %s.* TO '%s'@'%%';\"", rootPasswd, dbName, account));
-        executor.execShell(String.format("mysql -uroot -p'%s' -e \"FLUSH PRIVILEGES;\"", rootPasswd));
+        executor.execShell(String.format("mysql -uroot  -P'%s'  -p'%s' -e \"CREATE DATABASE IF NOT EXISTS %s DEFAULT CHARACTER SET utf8mb4  COLLATE utf8mb4_bin;\"", rootPasswd, dbName, port));
+        executor.execShell(String.format("mysql -uroot  -P'%s'  -p'%s' -e \"CREATE USER '%s'@'%%' IDENTIFIED BY '%s';\"", rootPasswd, account, passwd, port));
+        executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"ALTER USER '%s'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;\"", rootPasswd, account, passwd, port));
+        executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"ALTER USER '%s'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';\"", rootPasswd, account, passwd, port));
+        executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"GRANT ALL PRIVILEGES ON %s.* TO '%s'@'%%';\"", rootPasswd, dbName, account, port));
+        executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"FLUSH PRIVILEGES;\"", rootPasswd));
     }
 }
