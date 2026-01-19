@@ -416,7 +416,8 @@ const Index = (props) => {
                             console.log('status', status)
 
 
-                            const onCmdClick = async () => {
+                            const onCmdClick = async (e) => {
+                                e.stopPropagation()
                                 if (hostCommandId && clusterId) {
                                     const modelApi = await showCommonLogModal()
                                     modelApi.default({
@@ -514,7 +515,9 @@ const Index = (props) => {
     }, [node.id, nodeData])
 
 
-    const onMainIconClick = useCallback(async () => {
+    const onMainIconClick = useCallback(async (e) => {
+        e.stopPropagation()
+
         if (!nodeData.executionLog) {
             return
         }
