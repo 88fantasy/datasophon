@@ -16,8 +16,13 @@ import { blue, gold, green, orange, red } from "@ant-design/colors"
 import { invokeGenSourceAndTarget } from "../../utils/antvUtils"
 import { invokeGenerateElId } from "../../utils/util"
 import gobalEvent, { uiEvent } from "../../utils/gobalEvent"
-import { isEqual } from "lodash-es"
+import { isEqual, noop } from "lodash-es"
+import asyncHook from '../../components/Common/CommonModal/asyncHook';
+import { axiosJsonPost } from "../../api/request"
+import { API } from "../../api"
 
+const showCommonLogModal = asyncHook(() =>
+    import("../../components/Common/CommonLogModal/api"))
 
 
 export const T_PENDING = 'PENDING'
@@ -29,7 +34,9 @@ export const T_CANCEL = 'CANCEL'
 
 
 
-const invokeGenStatusDom = (val) => {
+const invokeGenStatusDom = ({
+    val,
+}) => {
     const statusIcon = {
         [T_SUCCESS]: {
             com: CheckCircleOutlined,
@@ -63,12 +70,16 @@ const invokeGenStatusDom = (val) => {
         status: "active"
     }
     const Com = val.com
-    return (
-        <Com
-            className="text-[16px]"
+
+
+
+    return {
+        com: <Com
+            className="text-[16px] cursor-pointer"
             {...val}
-        />
-    )
+        />,
+        status: val.status
+    }
 }
 
 // 节点类型
@@ -280,7 +291,7 @@ const Index = (props) => {
 
     const { plusActionSelected } = state
     // const data = node?.getData() as ProcessingNodeData
-    const { nodeName, type, commandState, statusMsg, roles = [] } = nodeData
+    const { nodeName, type, commandState, statusMsg, roles = [], clusterId } = nodeData
 
 
     // 创建下游的节点和边
@@ -375,6 +386,9 @@ const Index = (props) => {
             } = role
 
 
+
+
+
             return (
                 <Card
                     title={`服务${roleName}`}
@@ -388,23 +402,55 @@ const Index = (props) => {
                                 hostname,
                                 serviceRoleType,
                                 commandState,
-                                commandProgress
+                                commandProgress,
+                                hostCommandId
                             } = cmd
 
+                            console.log('commandState', commandState)
                             const {
                                 status
-                            } = invokeGenStatusDom(commandState)
+                            } = invokeGenStatusDom({
+                                val: commandState,
+                            })
+
+                            console.log('status', status)
+
+
+                            const onCmdClick = async () => {
+                                if (hostCommandId && clusterId) {
+                                    const modelApi = await showCommonLogModal()
+                                    modelApi.default({
+                                        api: () => {
+                                            return axiosJsonPost(API.getHostCommandLog, {
+                                                hostCommandId,
+                                                clusterId
+                                            })
+                                        }
+                                    })
+                                } else {
+                                    console.warn('没有hostCommandId,clusterId hostCommandId:',
+                                        hostCommandId,
+                                        'clusterId:',
+                                        clusterId
+                                    )
+                                }
+                            }
 
                             return (
                                 <div
                                     key={cmd}
-
+                                    onClick={onCmdClick}
+                                    className="cursor-pointer"
                                 >
 
                                     <div>
                                         {hostname} - {serviceRoleType}
                                     </div>
-                                    <Progress percent={commandProgress} size="small" status={status} />
+                                    <Progress
+                                        percent={commandProgress}
+                                        size="small"
+                                        status={status}
+                                    />
                                 </div>
                             )
                         })
@@ -468,6 +514,22 @@ const Index = (props) => {
     }, [node.id, nodeData])
 
 
+    const onMainIconClick = useCallback(async () => {
+        if (!nodeData.executionLog) {
+            return
+        }
+        const modelApi = await showCommonLogModal()
+        modelApi.default({
+            api: () => {
+                return {
+                    code: 200,
+                    data: nodeData.executionLog
+                }
+            }
+        })
+    }, [nodeData.executionLog])
+
+
     useEffect(() => {
         gobalEvent.on(uiEvent.updateDataProcessingDagNodeSize, invokEestimateLabelHeight)
 
@@ -510,9 +572,11 @@ const Index = (props) => {
                         <div className="ellipsis-row node-name font-bold">{nodeName}</div>
                     </Tooltip>
                     {/* 节点状态信息 */}
-                    <div className="status-action ">
+                    <div className="status-action cursor-pointer" onClick={onMainIconClick}>
                         {
-                            invokeGenStatusDom(nodeData.status)
+                            invokeGenStatusDom({
+                                val: nodeData.status
+                            }).com
                         }
                     </div>
 
