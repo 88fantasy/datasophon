@@ -155,7 +155,6 @@ public class InstallServiceHandler {
                 FileUtil.mkdir(new File(baseTempDir));
 
                 String decompressDir;
-                boolean needTrimDirName = !needParentDir;
                 if (needParentDir) {
                     decompressDir = baseTempDir +  Constants.SLASH + decompressPackageName;
 //                    检查越权，防止勿删系统文件
@@ -164,7 +163,7 @@ public class InstallServiceHandler {
                     FileUtil.mkdir(new File(decompressDir));
                     serviceDecompressDir = decompressDir;
                 } else {
-                    decompressDir = baseTempDir +  Constants.SLASH + decompressPackageName;
+                    decompressDir = baseTempDir;
                     serviceDecompressDir =  baseTempDir +  Constants.SLASH + decompressPackageName;
 //                    检查越权，防止勿删系统文件
                     checkIfPathOutOfBox(baseTempDir, serviceDecompressDir);
@@ -177,12 +176,14 @@ public class InstallServiceHandler {
                     command.add(sourceFile);
                     command.add("-C");
                     command.add(decompressDir);
-
-                    if (needTrimDirName) {
-                        command.add("--strip-components=1");
+                } else if ("zip".equals(suffix)) {
+                    command.add("unzip");
+                    if (installPkgChange) {
+                        command.add("-o");
                     }
-                } else {
-                    throw new UnsupportedOperationException(String.format("unsupported file type %s", suffix));
+                    command.add("-d");
+                    command.add(decompressDir);
+                    command.add(sourceFile);
                 }
 
                 logger.info("exec decompress cmd :{}", StrUtil.join(" ", command));
