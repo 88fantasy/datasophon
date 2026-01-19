@@ -29,7 +29,7 @@ public enum ClusterState {
     STOP(3, "停止"),
     
     RUNNING(2, "正在运行"),
-    NEED_CONFIG(1, "待配置");
+    NEED_CONFIG(1, "待初始化");
     
     @EnumValue
     private int value;
