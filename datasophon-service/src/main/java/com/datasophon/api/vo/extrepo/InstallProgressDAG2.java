@@ -37,6 +37,8 @@ public class InstallProgressDAG2 implements scala.Serializable {
     @Schema(description = "结束运行时间")
     private LocalDateTime completedTime;
 
+    private Integer clusterId;
+
     @Schema(description = "安装节点")
     private List<Node> nodes;
 

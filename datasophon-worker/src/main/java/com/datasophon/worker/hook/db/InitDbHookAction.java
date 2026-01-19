@@ -36,6 +36,7 @@ public class InitDbHookAction implements HookAction {
             metaConn = getMetaConnection(context);
             execConn = getExecConnection(context);
             DatabaseMigration migration = new DatabaseMigration(metaConn, execConn);
+            migration.setLogger(logger);
 
             InitDbParams params = context.getParamsAs(InitDbParams.class);
             String resourceKey = PlaceholderUtils.replacePlaceholders(params.getResourceKey(), context.getGlobalVariables(), Constants.REGEX_VARIABLE);
@@ -53,7 +54,10 @@ public class InitDbHookAction implements HookAction {
             if (migrations.isEmpty()) {
                 logger.info("{} nothing to migration", resourceKey);
             } else {
-                migration.migrate(resourceKey, migrations);
+                Migration errorMi = migration.migrate(resourceKey, migrations);
+                if (errorMi != null) {
+                    return ExecResult.error(String.format("更新数据库失败，resourceKey:%s, 版本:%s失败", resourceKey, errorMi.getVersion()));
+                }
             }
             return ExecResult.success("初始化数据库成功");
         } catch (Exception e) {

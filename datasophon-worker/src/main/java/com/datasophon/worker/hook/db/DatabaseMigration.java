@@ -1,7 +1,8 @@
 package com.datasophon.worker.hook.db;
 
 import cn.hutool.core.io.FileUtil;
-import lombok.extern.slf4j.Slf4j;
+import lombok.Setter;
+import org.slf4j.Logger;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.CollectionUtils;
@@ -22,7 +23,6 @@ import java.util.Objects;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-@Slf4j
 public class DatabaseMigration {
 
     private static final String MIGRATION_TABLE_NAME = "t_ddh_srv_db_migration_history";
@@ -43,10 +43,13 @@ public class DatabaseMigration {
     private static final String QUERY_HISTORY_SQL = "select * from %s where resource_key = ? ";
 
 
-
     private final Connection metaConn;
 
     private final Connection execConn;
+
+
+    @Setter
+    private Logger logger;
 
 
     private final JdbcConnectorUtils.ResultSetHandler<Migration> resultSetHandler = rs -> {
@@ -82,14 +85,14 @@ public class DatabaseMigration {
         }
     }
 
-    private static void prepareMigrationTable(Connection connection) throws SQLException {
+    private void prepareMigrationTable(Connection connection) throws SQLException {
         DatabaseMetaData meta = connection.getMetaData();
         boolean found;
         try (ResultSet rs = meta.getTables(connection.getCatalog(), connection.getSchema(), MIGRATION_TABLE_NAME, new String[]{"TABLE"})) {
             found = rs.next();
         }
         if (!found) {
-            log.info("create table {} at {}.{}", MIGRATION_TABLE_NAME, connection.getCatalog(), connection.getSchema());
+            logger.info("create table {} at {}.{}", MIGRATION_TABLE_NAME, connection.getCatalog(), connection.getSchema());
             JdbcConnectorUtils.executeUpdate(connection, TABLE_CREATE_SQL);
         }
     }
@@ -111,7 +114,7 @@ public class DatabaseMigration {
                 .collect(Collectors.groupingBy(
                         r -> Objects.requireNonNull(r.getFilename()).substring(1, r.getFilename().indexOf(SPLIT))));
 
-        resourceMap.forEach((version, files)-> {
+        resourceMap.forEach((version, files) -> {
             Resource ddl = null, dml = null, rollback = null;
             for (Resource resource : files) {
                 String fileName = FileUtil.mainName(Objects.requireNonNull(resource.getFilename()));
@@ -138,36 +141,38 @@ public class DatabaseMigration {
     }
 
 
-    public void migrate(String resourceKey, TreeSet<Migration> migrations) throws SQLException {
+    public Migration migrate(String resourceKey, TreeSet<Migration> migrations) throws SQLException {
         for (Migration migration : migrations) {
-            log.info("start migration, resourceKey: {}, version: {}", resourceKey, migration.getVersion());
+            logger.info("start migration, resourceKey: {}, version: {}", resourceKey, migration.getVersion());
             boolean success = doMigration(migration);
             migration.setExecuteUser("datasophon");
             migration.setExecuteDate(new Date());
             migration.setSuccess(success);
             upsertMigration(resourceKey, migration);
             if (!migration.isSuccess()) {
-                log.error("{} Migration break at version  {}", resourceKey, migration.getVersion());
+                logger.error("{} Migration break at version  {}", resourceKey, migration.getVersion());
+                return migration;
             } else {
-                log.info("{} Migration success! version: {}", resourceKey, migration.getVersion());
+                logger.info("{} Migration success! version: {}", resourceKey, migration.getVersion());
             }
         }
-        log.info("The {} migration is complete , The latest database version is {}", resourceKey, migrations.last().getVersion());
+        logger.info("The {} migration is complete , The latest database version is {}", resourceKey, migrations.last().getVersion());
+        return null;
     }
 
 
     public boolean doMigration(Migration migration) {
         Resource ddlFile = migration.getUpgradeDDLFile(), dmlFile = migration.getUpgradeDMLFile();
-        if (runScript(ddlFile, true, false) && runScript(dmlFile, true, true)) {
+        if (runScript(migration, ddlFile, true, false) && runScript(migration, dmlFile, true, true)) {
             return true;
         }
-        log.error("Migration failure! version: {}. A rollback is about to be performed", migration.getVersion());
+        logger.error("Migration failure! version: {}. A rollback is about to be performed", migration.getVersion());
         Resource rollbackFile = migration.getRollbackFile();
         if (rollbackFile != null) {
-            runScript(rollbackFile, false, false);
-            log.info("The rollback script ({}) is successfully executed", rollbackFile.getFilename());
+            runScript(migration, rollbackFile, false, false);
+            logger.info("The rollback script ({}) is successfully executed", rollbackFile.getFilename());
         } else {
-            log.warn("The rollback script does not exist. Skip execution");
+            logger.warn("The rollback script does not exist. Skip execution");
         }
         return false;
     }
@@ -192,16 +197,18 @@ public class DatabaseMigration {
 
     }
 
-    private boolean runScript(Resource resource, boolean stopOnError, boolean rollbackIfErr) {
+    private boolean runScript(Migration migration, Resource resource, boolean stopOnError, boolean rollbackIfErr) {
         if (resource == null || !resource.exists()) {
             return true;
         }
         try {
+            logger.info("exec sql resource: resourceKey: {}, resourceVersion: {}, fileName: {}", migration.getResourceKey(), migration.getVersion(), resource.getFilename());
             ScriptRunner scriptRunner = new ScriptRunner(execConn);
             scriptRunner.setAutoCommit(false);
             scriptRunner.setStopOnError(stopOnError);
             scriptRunner.setSendFullScript(false);
-            LogWriter logWriter = new LogWriter(System.out);
+
+            LogWriter logWriter = new LogWriter(System.out, logger);
             if (!stopOnError) {
                 scriptRunner.setErrorLogWriter(logWriter);
             }
@@ -210,12 +217,12 @@ public class DatabaseMigration {
             execConn.commit();
             return true;
         } catch (Exception e) {
-            log.error("Script execute failed! {}", resource.getFilename(), e);
+            logger.error("Script execute failed! {}", resource.getFilename(), e);
             if (rollbackIfErr) {
                 try {
                     execConn.rollback();
                 } catch (SQLException ex) {
-                    log.warn("{} rollback fail", resource.getFilename());
+                    logger.warn("{} rollback fail", resource.getFilename());
                 }
             }
             return false;
@@ -225,13 +232,16 @@ public class DatabaseMigration {
 
     static class LogWriter extends PrintWriter {
 
-        public LogWriter(OutputStream out) {
+        private final Logger logger;
+
+        public LogWriter(OutputStream out, Logger logger) {
             super(out);
+            this.logger = logger;
         }
 
         @Override
         public void write(String s) {
-            log.info(s);
+            logger.debug(s);
         }
     }
 

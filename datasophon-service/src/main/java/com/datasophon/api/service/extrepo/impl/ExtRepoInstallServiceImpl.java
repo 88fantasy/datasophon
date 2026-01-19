@@ -529,9 +529,19 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         }
 
         List<InstallProgressDAG2.Node> resultNodes = new ArrayList<>();
+        boolean first = true;
         for (NodeDefinition node : nodes) {
             InstallProgressDAG2.Node resultNode = BeanUtil.toBean(node, InstallProgressDAG2.Node.class);
             ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
+            if (first) {
+                first = false;
+                if (CollectionUtil.isNotEmpty(serviceNode.getMasterRoles())) {
+                    result.setClusterId(serviceNode.getMasterRoles().get(0).getClusterId());
+                } else if (CollectionUtil.isNotEmpty(serviceNode.getElseRoles())) {
+                    result.setClusterId(serviceNode.getElseRoles().get(0).getClusterId());
+                }
+            }
+
             String cmdId = serviceNode.getCommandId();
             resultNode.setCommandId(cmdId);
             List<InstallProgressDAG2.SrvRole> roles = createSrvRole(cmdId);
