@@ -141,11 +141,13 @@ const Index = ({
             },
             {
                 label: '导入',
+                disabled: clusterStateCode !== 2,
+
                 onClick: onImportClick.bind(noop, val)
             },
             {
-                label: '配置',
-                // disabled: clusterStateCode === 2,
+                label: '初始化',
+                disabled: clusterStateCode === 2,
                 onClick: async () => {
                     const modelApi = await showConfigModal()
                     modelApi.default({
@@ -188,6 +190,7 @@ const Index = ({
                     onClick={v.onClick}
                     disabled={v.disabled}
                     key={v.label}
+                    className="!p-[4px]"
                 >
                     {v.label}
                 </Button>

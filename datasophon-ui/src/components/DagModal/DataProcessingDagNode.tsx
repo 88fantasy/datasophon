@@ -507,7 +507,7 @@ const Index = (props) => {
             >
                 <div className="flex  justify-between items-center ">
                     <Tooltip title={nodeName} mouseEnterDelay={0.8}>
-                        <div className="ellipsis-row node-name font-bold">{nodeName || 123}</div>
+                        <div className="ellipsis-row node-name font-bold">{nodeName}</div>
                     </Tooltip>
                     {/* 节点状态信息 */}
                     <div className="status-action ">
@@ -525,7 +525,7 @@ const Index = (props) => {
 
 
             {/* 添加下游节点 */}
-            {type !== NodeType.OUTPUT && (
+            {/* {type !== NodeType.OUTPUT && (
                 <div className="plus-dag">
                     <Dropdown
                         dropdownRender={getPlusDagMenu}
@@ -541,7 +541,7 @@ const Index = (props) => {
                         />
                     </Dropdown>
                 </div>
-            )}
+            )} */}
         </div>
     )
 }
