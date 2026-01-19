@@ -193,7 +193,7 @@ public class DatabaseMigration {
     }
 
     private boolean runScript(Resource resource, boolean stopOnError, boolean rollbackIfErr) {
-        if (!resource.exists()) {
+        if (resource == null || !resource.exists()) {
             return true;
         }
         try {
