@@ -52,7 +52,8 @@ const lineStatus = {
 const invokeTransferData = (data) => {
     const {
         nodes = [],
-        edges = []
+        edges = [],
+        clusterId
     } = data
 
 
@@ -64,6 +65,7 @@ const invokeTransferData = (data) => {
 
     nodes.map(val => {
         val.id = String(val.id)
+        val.clusterId = clusterId
         const v = {
             id: val.id,
             shape: DataProcessingDagNode.shape,
