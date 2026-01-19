@@ -7,7 +7,10 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.worker.hook.HookAction;
 import com.datasophon.worker.hook.HookContext;
+import com.datasophon.worker.utils.TaskConstants;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -32,6 +35,8 @@ public class S3SyncHookAction implements HookAction {
 
     @Override
     public ExecResult invoke(HookContext context) throws Exception {
+        Logger logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(context.getServiceName(), context.getServiceRoleName(), this.getClass()));
+
         S3SyncParams params = createSyncParams(context);
         S3Client client = null;
         try {
@@ -42,12 +47,12 @@ public class S3SyncHookAction implements HookAction {
 
             List<ZipFileInfo> zipFiles = service.getUnsyncedVersion(params.getResourcePath(), params.getMetaObjectName());
             if (zipFiles.isEmpty()) {
-                log.info("{} migrate nothing to s3: {}/{}", context.getServiceName(), params.getEndpoint(), params.getBucket());
+                logger.info("{} migrate nothing to s3: {}/{}", context.getServiceName(), params.getEndpoint(), params.getBucket());
             } else {
                 service.sync(zipFiles, params.getMetaObjectName());
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            logger.error(e.getMessage(), e);
             return ExecResult.error(String.format("服务%s更新oss失败，%s", context.getServiceName(), e.getMessage()));
         }  finally {
             IoUtil.close(client);

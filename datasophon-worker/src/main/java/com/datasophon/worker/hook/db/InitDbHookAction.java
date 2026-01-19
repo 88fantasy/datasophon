@@ -8,7 +8,9 @@ import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.worker.hook.HookAction;
 import com.datasophon.worker.hook.HookContext;
-import lombok.extern.slf4j.Slf4j;
+import com.datasophon.worker.utils.TaskConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.util.Map;
@@ -17,7 +19,6 @@ import java.util.TreeSet;
 /**
  * @author zhanghuangbin
  */
-@Slf4j
 public class InitDbHookAction implements HookAction {
 
     @Override
@@ -28,6 +29,7 @@ public class InitDbHookAction implements HookAction {
 
     @Override
     public ExecResult invoke(HookContext context) {
+        Logger logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(context.getServiceName(), context.getServiceRoleName(), this.getClass()));
         Connection metaConn = null;
         Connection execConn = null;
         try {
@@ -49,13 +51,13 @@ public class InitDbHookAction implements HookAction {
             }
             TreeSet<Migration> migrations = migration.getMigrations(scriptPath, resourceKey);
             if (migrations.isEmpty()) {
-                log.info("{} nothing to migration", resourceKey);
+                logger.info("{} nothing to migration", resourceKey);
             } else {
                 migration.migrate(resourceKey, migrations);
             }
             return ExecResult.success("初始化数据库成功");
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            logger.error(e.getMessage(), e);
             return ExecResult.error(String.format("更新%s数据库失败，%s", context.getServiceName(), e.getMessage()));
         } finally {
             IoUtil.close(metaConn);
