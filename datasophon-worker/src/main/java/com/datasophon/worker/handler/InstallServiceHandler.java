@@ -35,7 +35,6 @@ import com.datasophon.worker.strategy.resource.EmptyStrategy;
 import com.datasophon.worker.strategy.resource.ResourceStrategy;
 import com.datasophon.worker.utils.TaskConstants;
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Slf4j
 @Data
 public class InstallServiceHandler {
 
@@ -128,7 +126,7 @@ public class InstallServiceHandler {
                 execResult.setExecResult(true);
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            logger.error(e.getMessage(), e);
             execResult.setExecErrOut(e.getMessage());
         }
         return execResult;
@@ -188,7 +186,7 @@ public class InstallServiceHandler {
                     command.add(sourceFile);
                 }
 
-                log.info("exec decompress cmd :{}", StrUtil.join(" ", command));
+                logger.info("exec decompress cmd :{}", StrUtil.join(" ", command));
                 ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
                 success = execResult.getExecResult();
                 if (success) {
