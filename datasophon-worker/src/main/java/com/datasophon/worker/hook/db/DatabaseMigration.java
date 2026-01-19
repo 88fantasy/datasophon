@@ -226,6 +226,12 @@ public class DatabaseMigration {
                 }
             }
             return false;
+        } finally {
+            try {
+                execConn.setAutoCommit(true);
+            } catch (SQLException e) {
+//                ignore
+            }
         }
     }
 
