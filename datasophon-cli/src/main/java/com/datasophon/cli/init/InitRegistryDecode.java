@@ -78,8 +78,7 @@ public class InitRegistryDecode extends InitBase {
                 throw new RuntimeException(String.format("解密失败, configFullDir:%s, password:%s", configFullDir, password), e);
             }
             executor.execShell(String.format("cp %s/common.properties   %s/conf", configFullDir, datasophonHomePath));
-            executor.execShell(String.format("cp %s/datasophon.conf  %s/conf", configFullDir, datasophonHomePath));
-            executor.execShell(String.format("cp -r %s/datasophon-init  %s/conf", configFullDir, datasophonHomePath));
+            executor.execShell(String.format("cp -r %s/datasophon-init/cluster-sample.yml  %s/datasophon-init/config", configFullDir, datasophonHomePath));
             log.info("{}处理完成", configFullDir);
         } else {
             log.info("{}已存在,跳过解密", configFullDir);
