@@ -39,8 +39,6 @@ if [ $arch = "aarch64" ]; then
   JDK_TAR_NAME="jdk-17.0.12_linux-aarch64_bin.tar.gz"
 fi
 
-# jdkAvailable=$(java -version 2>&1 | awk 'NR==1{gsub(/"/,"");print $3}')
-#result=$(echo $jdkAvailable | grep $JDK_VERSION)
 if [[ -d ${JAVA17_HOME} ]]; then
   echo "JDK installed.............................."
 else
@@ -64,34 +62,8 @@ else
   tar -zxvf ${PACKAGES_PATH}/${JDK_TAR_NAME} -C ${JDK_FOLDER_PATH}
   JAVA_SOURCE_ENV="source /etc/profile"
   echo "export JAVA17_HOME=$JAVA17_HOME" >>/etc/profile
-  #echo "export JRE_HOME=$JRE_HOME" >>/etc/profile
-  #echo "export CLASSPATH=.:\$JRE_HOME/lib/rt.jar:\$JAVA17_HOME/lib/dt.jar:\$JAVA17_HOME/lib/tools.jar" >>/etc/profile
-  #echo "export PATH=\$PATH:\$JAVA17_HOME/bin" >>/etc/profile
   echo ${JAVA_SOURCE_ENV} >>~/.bash_profile
   echo ${JAVA_SOURCE_ENV} >>~/.bashrc
-  #echo "Prepare to config BCPROV..."
-  JAVA_SECURITY_DIR="${JAVA17_HOME}/conf/security/java.security"
-  #JAVA_BCPROV_DIR="${JAVA17_HOME}/jre/lib/ext/"
-  #JAVA_BCPROV_JAR="${PACKAGES_PATH}/bcprov-jdk15on-1.68.jar"
-
-  JAVA_SECURITY_ARGS_ARR[0]="security.provider.1=sun.security.provider.Sun"
-  JAVA_SECURITY_ARGS_ARR[1]="security.provider.2=sun.security.rsa.SunRsaSign"
-  JAVA_SECURITY_ARGS_ARR[2]="security.provider.3=com.sun.net.ssl.internal.ssl.Provider"
-  JAVA_SECURITY_ARGS_ARR[3]="security.provider.4=com.sun.crypto.provider.SunJCE"
-  JAVA_SECURITY_ARGS_ARR[4]="security.provider.5=sun.security.jgss.SunProvider"
-  JAVA_SECURITY_ARGS_ARR[5]="security.provider.6=com.sun.security.sasl.Provider"
-  JAVA_SECURITY_ARGS_ARR[6]="security.provider.7=org.jcp.xml.dsig.internal.dom.XMLDSigRI"
-  JAVA_SECURITY_ARGS_ARR[7]="security.provider.8=sun.security.smartcardio.SunPCSC"
-  JAVA_SECURITY_ARGS_ARR[8]="security.provider.9=org.bouncycastle.jce.provider.BouncyCastleProvider"
-
-  for element in "${JAVA_SECURITY_ARGS_ARR[@]}"; do
-    JAVA_SECURITY_ARGS="${JAVA_SECURITY_ARGS}${element}\n"
-  done
-
-  echo -e ${JAVA_SECURITY_ARGS} >>${JAVA_SECURITY_DIR}
-  #cp -a ${JAVA_BCPROV_JAR} ${JAVA_BCPROV_DIR}
-
-  #echo "BCPROV Installed."
 
   echo "If you need to effect the environment variable in the current session, do it manually: "
   source ${BASH_PROFILE_PATH}

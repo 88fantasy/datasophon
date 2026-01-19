@@ -1,8 +1,11 @@
 #!/bin/bash
 
 # 检查是否提供了密码参数
-PASSWORD=41nMhvOMYCZGT3vVdIZB1w==
-echo "PASSWORD:${PASSWORD}"
+if [ $# -eq 0 ]; then
+    echo "用法: $0 <password>"
+    exit 1
+fi
+PASSWORD=$1
 
 BASE_DIR=$(dirname $0)
 
