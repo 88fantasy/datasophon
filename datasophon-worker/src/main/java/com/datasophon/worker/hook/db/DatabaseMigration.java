@@ -201,8 +201,14 @@ public class DatabaseMigration {
         if (resource == null || !resource.exists()) {
             return true;
         }
+        Boolean autoCommit = null;
         try {
             logger.info("exec sql resource: resourceKey: {}, resourceVersion: {}, fileName: {}", migration.getResourceKey(), migration.getVersion(), resource.getFilename());
+            if (execConn.isClosed()) {
+                logger.warn("exec sql resource: resourceKey: {}, but connection closed", migration.getResourceKey());
+                return false;
+            }
+            autoCommit = execConn.getAutoCommit();
             ScriptRunner scriptRunner = new ScriptRunner(execConn);
             scriptRunner.setAutoCommit(false);
             scriptRunner.setStopOnError(stopOnError);
@@ -228,7 +234,9 @@ public class DatabaseMigration {
             return false;
         } finally {
             try {
-                execConn.setAutoCommit(true);
+                if (!execConn.isClosed() && autoCommit != null) {
+                   execConn.setAutoCommit(autoCommit);
+                }
             } catch (SQLException e) {
 //                ignore
             }
