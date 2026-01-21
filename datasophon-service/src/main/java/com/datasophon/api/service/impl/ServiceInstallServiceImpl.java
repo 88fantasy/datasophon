@@ -19,7 +19,6 @@
 
 package com.datasophon.api.service.impl;
 
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -450,7 +449,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     }
 
     @Override
-    public Result checkServiceDependency(Integer clusterId, String serviceIds) {
+    public Result checkServiceDependency(Integer clusterId, List<Integer> serviceIds) {
         //
         List<ClusterServiceInstanceEntity> serviceInstanceList =
                 serviceInstanceService.listRunningServiceInstance(clusterId);
@@ -519,43 +518,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         return roleGroup;
     }
 
-    private boolean isConfigNeedUpdate(
-            ClusterServiceInstanceEntity serviceInstanceEntity, List<ServiceConfig> list) {
-        List<ServiceConfig> originalConfigs =
-                listServiceConfigByServiceInstance(serviceInstanceEntity);
 
-        Map<String, Object> originalConfigMap = CollectionUtil.toMap(originalConfigs, new HashMap<>(), ServiceConfig::getName, ServiceConfig::getValue);
-        for (ServiceConfig serviceConfig : list) {
-            String configName = serviceConfig.getName();
-            String variableValue = String.valueOf(serviceConfig.getValue());
-            if (originalConfigMap.containsKey(configName)) {
-                String configValue = String.valueOf(originalConfigMap.get(configName));
-                if (!variableValue.equals(configValue)) {
-                    return true;
-                }
-            } else {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void saveServiceRoleGroupConfig(
-            Integer clusterId,
-            String serviceName,
-            List<ServiceConfig> list,
-            Map<Generators, List<ServiceConfig>> configFileMap,
-            ClusterServiceInstanceRoleGroup clusterServiceInstanceRoleGroup) {
-        ClusterServiceRoleGroupConfig roleGroupConfig = new ClusterServiceRoleGroupConfig();
-        roleGroupConfig.setRoleGroupId(clusterServiceInstanceRoleGroup.getId());
-        roleGroupConfig.setClusterId(clusterId);
-        roleGroupConfig.setCreateTime(new Date());
-        roleGroupConfig.setUpdateTime(new Date());
-        roleGroupConfig.setServiceName(serviceName);
-        buildConfig(list, configFileMap, roleGroupConfig);
-        roleGroupConfig.setConfigVersion(1);
-        groupConfigService.save(roleGroupConfig);
-    }
 
     private ClusterServiceInstanceRoleGroup saveDefaultServiceInstanceRoleGroup(
             Integer clusterId,

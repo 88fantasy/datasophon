@@ -49,6 +49,7 @@ create table t_ddh_upload_temp_file_chunk
 CREATE TABLE t_ddh_dag_definition_entity
 (
     id             varchar(64)  NOT NULL COMMENT 'DAG唯一标识',
+    cluster_id     int(10)        DEFAULT NULL COMMENT '集群唯一标识',
     dag_name       VARCHAR(255) NOT NULL COMMENT 'DAG名称',
     description    VARCHAR(1000) COMMENT 'DAG描述',
     status         VARCHAR(50)  NOT NULL DEFAULT 'PENDING' COMMENT 'DAG状态: PENDING/RUNNING/SUCCESS/FAILED',
@@ -62,8 +63,8 @@ CREATE TABLE t_ddh_dag_definition_entity
 
 CREATE TABLE t_ddh_node_definition_entity
 (
-    id              varchar(64)   NOT NULL COMMENT '节点唯一标识',
-    dag_id          varchar(64)       NOT NULL COMMENT '所属DAG ID',
+    id              varchar(64)  NOT NULL COMMENT '节点唯一标识',
+    dag_id          varchar(64)  NOT NULL COMMENT '所属DAG ID',
     node_name       VARCHAR(255) NOT NULL COMMENT '节点名称',
     node_config     JSON         NOT NULL COMMENT '节点配置(JSON格式，包含执行参数)',
     status          VARCHAR(50)  NOT NULL DEFAULT 'PENDING' COMMENT '节点状态: PENDING/RUNNING/SUCCESS/FAILED',
@@ -79,7 +80,7 @@ CREATE TABLE t_ddh_node_definition_entity
 
 CREATE TABLE t_ddh_edge_definition_entity
 (
-    id           varchar(64)  NOT NULL COMMENT '依赖关系ID',
+    id           varchar(64) NOT NULL COMMENT '依赖关系ID',
     dag_id       varchar(64) NOT NULL COMMENT '所属DAG ID',
     from_node_id varchar(64) NOT NULL COMMENT '起始节点ID',
     to_node_id   varchar(64) NOT NULL COMMENT '目标节点ID',

@@ -51,5 +51,5 @@ public interface ServiceInstallService {
 
     Result getServiceRoleHostMapping(Integer clusterId);
     
-    Result checkServiceDependency(Integer clusterId, String serviceIds);
+    Result checkServiceDependency(Integer clusterId, List<Integer> serviceIds);
 }
