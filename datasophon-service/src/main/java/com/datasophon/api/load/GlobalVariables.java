@@ -80,6 +80,17 @@ public class GlobalVariables {
     globalVariables.put("${ROOT.Rustfs." + GlobalVariables.PORT + "}", getProperty("rustfs.port", "9000"));
     globalVariables.put("${ROOT.Rustfs.access_key}", getProperty("rustfs.access_key"));
     globalVariables.put("${ROOT.Rustfs.secret_key}", getProperty("rustfs.secret_key"));
+    //读取系统变量并且进行注册
+    if(System.getenv("JAVA_HOME") != null) {
+      globalVariables.put("${ROOT.Jdk.INSTALL_PATH}", System.getenv("JAVA_HOME"));
+    }
+    if(System.getenv("JAVA8_HOME") != null) {
+      globalVariables.put("${ROOT.Jdk8.INSTALL_PATH}", System.getenv("JAVA8_HOME"));
+    }
+    if(System.getenv("JAVA17_HOME") != null) {
+      globalVariables.put("${ROOT.Jdk17.INSTALL_PATH}", System.getenv("JAVA17_HOME"));
+    }
+
     return globalVariables;
   }
 

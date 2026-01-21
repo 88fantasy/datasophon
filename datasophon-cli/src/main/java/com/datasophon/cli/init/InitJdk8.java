@@ -65,6 +65,7 @@ public class InitJdk8 extends InitBase {
                     jdkTarName, String.format("%s/%s", packagePath, jdkTarName));
 
             executor.execShell("sed -i '/export JAVA_HOME/d' /etc/profile");
+            executor.execShell("sed -i '/export JAVA8_HOME/d' /etc/profile");
             executor.execShell("sed -i '/export CLASSPATH/d' /etc/profile");
             executor.execShell("sed -i '/export PATH=$PATH:$JAVA_HOME/d' /etc/profile");
             executor.execShell("sed -i '/source \\/etc\\/profile/d' /root/.bash_profile");
@@ -75,6 +76,7 @@ public class InitJdk8 extends InitBase {
             String javaHome = jdkFolderPath + "/" + jdkPathName;
             String javaSourceEnv="source /etc/profile";
             executor.execShell(String.format("echo 'export JAVA_HOME=%s' >>/etc/profile", javaHome));
+            executor.execShell(String.format("echo 'export JAVA8_HOME=%s' >>/etc/profile", javaHome));
             executor.execShell("echo 'export PATH=$PATH:$JAVA_HOME/bin' >>/etc/profile");
             executor.execShell(String.format("echo %s >>~/.bash_profile", javaSourceEnv));
             executor.execShell(String.format("echo %s >>~/.bashrc", javaSourceEnv));
