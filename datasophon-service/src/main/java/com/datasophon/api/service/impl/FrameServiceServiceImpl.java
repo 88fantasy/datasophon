@@ -150,7 +150,15 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
     public List<FrameServiceEntity> getAllFrameServiceByFrameCode(String clusterFrame) {
         return this.list(new QueryWrapper<FrameServiceEntity>().eq(Constants.FRAME_CODE_1, clusterFrame));
     }
-    
+
+    @Override
+    public List<FrameServiceEntity> listServices(List<Integer> serviceIds) {
+        if (serviceIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return lambdaQuery().in(FrameServiceEntity::getId, serviceIds).list();
+    }
+
     @Override
     public List<FrameServiceEntity> listServices(String serviceIds) {
         List<String> ids = Arrays.stream(serviceIds.split(",")).collect(Collectors.toList());

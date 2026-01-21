@@ -151,49 +151,33 @@ public class InstallServiceHandler {
                 ArrayList<String> command = new ArrayList<>();
 
                 boolean needParentDir  =  BooleanUtil.isTrue(instCmd.getCreateDecompressDir());
-                String baseTempDir =  Constants.INSTALL_PATH + Constants.SLASH + "temp";
-                FileUtil.mkdir(new File(baseTempDir));
 
-                String decompressDir;
-                if (needParentDir) {
-                    decompressDir = baseTempDir +  Constants.SLASH + decompressPackageName;
-//                    检查越权，防止勿删系统文件
-                    checkIfPathOutOfBox(baseTempDir, decompressDir);
-                    FileUtil.cleanEmpty(new File(decompressDir));
-                    FileUtil.mkdir(new File(decompressDir));
-                    serviceDecompressDir = decompressDir;
-                } else {
-                    decompressDir = baseTempDir;
-                    serviceDecompressDir =  baseTempDir +  Constants.SLASH + decompressPackageName;
-//                    检查越权，防止勿删系统文件
-                    checkIfPathOutOfBox(baseTempDir, serviceDecompressDir);
-                    FileUtil.del(new File(serviceDecompressDir));
-                }
+                String baseTempDir =  Constants.INSTALL_PATH + Constants.SLASH + "temp";
+                serviceDecompressDir =  baseTempDir +  Constants.SLASH + decompressPackageName;
+                checkIfPathOutOfBox(baseTempDir, serviceDecompressDir);
+
+                FileUtil.del(serviceDecompressDir);
+                FileUtil.mkdir(new File(serviceDecompressDir));
+
+                boolean needTrimDirName = !needParentDir;
 
                 if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
                     command.add("tar");
                     command.add("-zxvf");
                     command.add(sourceFile);
                     command.add("-C");
-                    command.add(decompressDir);
-                } else if ("zip".equals(suffix)) {
-                    command.add("unzip");
-                    if (installPkgChange) {
-                        command.add("-o");
+                    command.add(serviceDecompressDir);
+                    if (needTrimDirName) {
+                        command.add("--strip-components=1");
                     }
-                    command.add("-d");
-                    command.add(decompressDir);
-                    command.add(sourceFile);
+                } else {
+                    throw new UnsupportedOperationException(String.format("unsupported file type %s", suffix));
                 }
 
                 logger.info("exec decompress cmd :{}", StrUtil.join(" ", command));
                 ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
                 success = execResult.getExecResult();
                 if (success) {
-                    File src = new File(serviceDecompressDir);
-                    if (!src.exists()) {
-                        throw new IllegalStateException(String.format("无法找到解压后的文件夹%s，请检查ddl定义的解压目录是否和实际的安装包目录一致", src.getName()));
-                    }
                     String targetDir = Constants.INSTALL_PATH + Constants.SLASH + instCmd.getNormalPkgDir();
                     FileUtil.mkdir(targetDir);
 //                    将临时目录，重命名为安装目录

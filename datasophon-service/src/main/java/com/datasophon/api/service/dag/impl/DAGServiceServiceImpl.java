@@ -3,7 +3,9 @@ package com.datasophon.api.service.dag.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.datasophon.api.dag.model.DagDefinition;
 import com.datasophon.api.dag.model.EdgeDefinition;
 import com.datasophon.api.dag.model.NodeDefinition;
@@ -106,8 +108,9 @@ public class DAGServiceServiceImpl implements DAGService {
     }
 
     @Override
-    public String saveDAG(DagDefinition definition) {
+    public String saveDAG(Integer clusterId, DagDefinition definition) {
         DagDefinitionEntity dag = BeanUtil.toBean(definition, DagDefinitionEntity.class);
+        dag.setClusterId(clusterId);
         dag.setCreatedTime(LocalDateTime.now());
         dag.setStatus(DagStatus.PENDING);
         dagDefinitionEntityMapper.insert(dag);
@@ -134,6 +137,15 @@ public class DAGServiceServiceImpl implements DAGService {
         edge.setDagId(dagId);
         edgeDefinitionEntityMapper.insert(edge);
         return edge;
+    }
+
+    @Override
+    public IPage<DagDefinitionEntity> findDagByPage(Integer clusterId, Integer page, Integer pageSize) {
+        return dagDefinitionEntityMapper.selectPage(new Page<>(page, pageSize),
+                Wrappers.lambdaQuery(DagDefinitionEntity.class)
+                        .eq(DagDefinitionEntity::getClusterId, clusterId)
+                        .orderByDesc(DagDefinitionEntity::getCreatedTime)
+        );
     }
 
     @Override

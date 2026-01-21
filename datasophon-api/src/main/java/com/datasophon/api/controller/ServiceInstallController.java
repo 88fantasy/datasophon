@@ -23,6 +23,7 @@ import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.common.model.HostServiceRoleMapping;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleHostMapping;
+import com.datasophon.common.utils.ConverterUtils;
 import com.datasophon.common.utils.Result;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,7 +135,7 @@ public class ServiceInstallController extends ApiController {
      */
     @RequestMapping("/checkServiceDependency")
     public Result checkServiceDependency(Integer clusterId, String serviceIds) {
-        return serviceInstallService.checkServiceDependency(clusterId, serviceIds);
+        return serviceInstallService.checkServiceDependency(clusterId, ConverterUtils.convertIds(serviceIds, Integer::parseInt));
     }
 
 }

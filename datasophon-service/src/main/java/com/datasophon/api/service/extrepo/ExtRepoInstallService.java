@@ -5,6 +5,7 @@ import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
 import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
+import com.datasophon.common.enums.CommandType;
 
 import java.util.List;
 
@@ -26,4 +27,6 @@ public interface ExtRepoInstallService {
 
 
     String generateGenericInstallCommand(Integer clusterId, List<String> serviceNames);
+
+    String generateAndExecSrvInstCmd(Integer clusterId, CommandType command, List<Integer> ids);
 }

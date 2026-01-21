@@ -14,6 +14,9 @@ import java.time.LocalDateTime;
 public class DagDefinitionEntity implements Serializable {
     @TableId(type = IdType.ASSIGN_ID)
     private String id;
+
+    private Integer clusterId;
+
     private String dagName;
     private String description;
     private DagStatus status;

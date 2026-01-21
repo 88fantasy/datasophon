@@ -18,13 +18,17 @@
 package com.datasophon.api.controller;
 
 import cn.hutool.core.util.EnumUtil;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.ClusterServiceCommandService;
+import com.datasophon.api.service.dag.DAGService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallService;
 import com.datasophon.common.enums.CommandType;
+import com.datasophon.common.utils.ConverterUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
+import com.datasophon.dao.entity.dag.DagDefinitionEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +51,9 @@ public class ClusterServiceCommandController extends ApiController {
     @Autowired
     private ExtRepoInstallService extRepoInstallService;
 
+    @Autowired
+    private DAGService dagService;
+
     /**
      * 查询集群服务指令列表
      */
@@ -54,7 +61,14 @@ public class ClusterServiceCommandController extends ApiController {
     public Result list(Integer clusterId, Integer page, Integer pageSize) {
         return clusterServiceCommandService.getServiceCommandlist(clusterId, page, pageSize);
     }
-    
+
+
+    @RequestMapping("/findDagByPage")
+    public Result findDagByPage(Integer clusterId, Integer page, Integer pageSize) {
+        IPage<DagDefinitionEntity>  result = dagService.findDagByPage(clusterId, page, pageSize);
+        return Result.success(result.getTotal(), result.getRecords());
+    }
+
     /**
      * @deprecated 
      * @see #generateGenericInstallCommand(Integer, String)
@@ -88,6 +102,21 @@ public class ClusterServiceCommandController extends ApiController {
         if (StringUtils.isNotBlank(serviceInstanceIds)) {
             List<String> ids = Arrays.asList(serviceInstanceIds.split(","));
             return clusterServiceCommandService.generateServiceCommand(clusterId, command, ids);
+        } else {
+            return Result.error(Status.NO_SERVICE_EXECUTE.getMsg());
+        }
+    }
+
+
+
+    @RequestMapping("/generateAndExecSrvInstCmd")
+    @UserPermission
+    @Operation(summary = "执行服务通用操作(启停,不含安装)")
+    public Result generateAndExecSrvInstCmd(Integer clusterId, String commandType, String serviceInstanceIds) {
+        CommandType command = EnumUtil.fromString(CommandType.class, commandType);
+        if (StringUtils.isNotBlank(serviceInstanceIds)) {
+            List<Integer> ids = ConverterUtils.convertIds(serviceInstanceIds, Integer::parseInt);
+            return Result.success(extRepoInstallService.generateAndExecSrvInstCmd(clusterId, command, ids));
         } else {
             return Result.error(Status.NO_SERVICE_EXECUTE.getMsg());
         }
