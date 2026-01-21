@@ -18,7 +18,6 @@
 package com.datasophon.api.master;
 
 import akka.actor.ActorRef;
-import akka.actor.UntypedActor;
 import cn.hutool.core.util.ArrayUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
@@ -58,130 +57,122 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class DAGBuildActor extends UntypedActor {
-    
+public class DAGBuildActor extends TypedActor<StartExecuteCommandCommand> {
+
     private static final Logger logger = LoggerFactory.getLogger(DAGBuildActor.class);
-    
+
     @Override
-    public void onReceive(Object message) throws Throwable {
-        if (message instanceof StartExecuteCommandCommand) {
-            DAGGraph<String, ServiceNode, String> dag = new DAGGraph<>();
-            
-            StartExecuteCommandCommand executeCommandCommand = (StartExecuteCommandCommand) message;
-            CommandType commandType = executeCommandCommand.getCommandType();
-            logger.info("start execute command");
-            
-            ClusterServiceCommandService commandService =
-                    SpringTool.getApplicationContext().getBean(ClusterServiceCommandService.class);
-            ClusterServiceCommandHostCommandService hostCommandService =
-                    SpringTool.getApplicationContext().getBean(ClusterServiceCommandHostCommandService.class);
-            FrameServiceRoleService frameServiceRoleService =
-                    SpringTool.getApplicationContext().getBean(FrameServiceRoleService.class);
-            FrameServiceService frameService = SpringTool.getApplicationContext().getBean(FrameServiceService.class);
-            ClusterInfoService clusterInfoService =
-                    SpringTool.getApplicationContext().getBean(ClusterInfoService.class);
-            
-            ClusterInfoEntity clusterInfo = clusterInfoService.getById(executeCommandCommand.getClusterId());
-            List<ClusterServiceCommandEntity> commandList = commandService.lambdaQuery()
-                    .in(ClusterServiceCommandEntity::getCommandId, executeCommandCommand.getCommandIds()).list();
-            
-            ArrayList<FrameServiceEntity> frameServiceList = new ArrayList<>();
-            if (ArrayUtil.isNotEmpty(commandList)) {
-                for (ClusterServiceCommandEntity command : commandList) {
-                    // build dag
-                    List<ServiceRoleInfo> masterRoles = new ArrayList<>();
-                    List<ServiceRoleInfo> elseRoles = new ArrayList<>();
-                    ServiceNode serviceNode = new ServiceNode();
-                    
-                    List<ClusterServiceCommandHostCommandEntity> hostCommandList =
-                            hostCommandService.getHostCommandListByCommandId(command.getCommandId());
-                    
-                    FrameServiceEntity serviceEntity = frameService.getServiceByFrameCodeAndServiceName(
-                            clusterInfo.getClusterFrame(), command.getServiceName());
-                    frameServiceList.add(serviceEntity);
-                    
-                    serviceNode.setCommandId(command.getCommandId());
-                    serviceNode.setCommandType(commandType);
-                    for (ClusterServiceCommandHostCommandEntity hostCommand : hostCommandList) {
-                        logger.info("service role is {}", hostCommand.getServiceRoleName());
-                        FrameServiceRoleEntity frameServiceRoleEntity =
-                                frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(
-                                        clusterInfo.getClusterFrame(), hostCommand.getServiceRoleName());
-                        
-                        String arch = serviceEntity.getArch();
-                        Map<String, ArchInfo> stringArchInfoMap = StringUtils.isNotEmpty(arch) ? JSONObject.parseObject(arch, new TypeReference<Map<String, ArchInfo>>() {
-                        }) : LoadServiceMeta.getDefaultArchInfo(serviceEntity.getPackageName(), serviceEntity.getDecompressPackageName());
-                        ServiceInfo serviceInfo = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
-                        ServiceRoleInfo serviceRoleInfo = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
-                        serviceRoleInfo.setHostname(hostCommand.getHostname());
-                        serviceRoleInfo.setHostCommandId(hostCommand.getHostCommandId());
-                        serviceRoleInfo.setClusterId(clusterInfo.getId());
-                        serviceRoleInfo.setParentName(command.getServiceName());
-                        serviceRoleInfo.setPackageName(serviceEntity.getPackageName());
-                        serviceRoleInfo.setArchInfoMap(stringArchInfoMap);
-                        serviceRoleInfo.setDecompressPackageName(serviceEntity.getDecompressPackageName());
-                        serviceRoleInfo.setCreateDecompressDir(serviceInfo.getCreateDecompressDir());
-                        serviceRoleInfo.setCommandType(commandType);
-                        serviceRoleInfo.setServiceInstanceId(command.getServiceInstanceId());
-                        serviceRoleInfo.setFrameCode(serviceEntity.getFrameCode());
-                        
-                        ServiceRoleStrategy serviceRoleHandler =
-                                ServiceRoleStrategyContext.getServiceRoleHandler(serviceRoleInfo.getName());
-                        if (Objects.nonNull(serviceRoleHandler)) {
-                            serviceRoleHandler.handlerServiceRoleInfo(serviceRoleInfo, hostCommand.getHostname());
-                        }
-                        
-                        if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())) {
-                            masterRoles.add(serviceRoleInfo);
-                        } else {
-                            elseRoles.add(serviceRoleInfo);
-                        }
+    public void doOnReceive(StartExecuteCommandCommand executeCommandCommand) throws Throwable {
+        DAGGraph<String, ServiceNode, String> dag = new DAGGraph<>();
+        CommandType commandType = executeCommandCommand.getCommandType();
+        logger.info("start execute command");
+
+        ClusterServiceCommandService commandService = getBean(ClusterServiceCommandService.class);
+        ClusterServiceCommandHostCommandService hostCommandService = getBean(ClusterServiceCommandHostCommandService.class);
+        FrameServiceRoleService frameServiceRoleService = getBean(FrameServiceRoleService.class);
+        FrameServiceService frameService = getBean(FrameServiceService.class);
+        ClusterInfoService clusterInfoService = getBean(ClusterInfoService.class);
+
+        ClusterInfoEntity clusterInfo = clusterInfoService.getById(executeCommandCommand.getClusterId());
+        List<ClusterServiceCommandEntity> commandList = commandService.lambdaQuery()
+                .in(ClusterServiceCommandEntity::getCommandId, executeCommandCommand.getCommandIds()).list();
+
+        ArrayList<FrameServiceEntity> frameServiceList = new ArrayList<>();
+        if (ArrayUtil.isNotEmpty(commandList)) {
+            for (ClusterServiceCommandEntity command : commandList) {
+                // build dag
+                List<ServiceRoleInfo> masterRoles = new ArrayList<>();
+                List<ServiceRoleInfo> elseRoles = new ArrayList<>();
+                ServiceNode serviceNode = new ServiceNode();
+
+                List<ClusterServiceCommandHostCommandEntity> hostCommandList =
+                        hostCommandService.getHostCommandListByCommandId(command.getCommandId());
+
+                FrameServiceEntity serviceEntity = frameService.getServiceByFrameCodeAndServiceName(
+                        clusterInfo.getClusterFrame(), command.getServiceName());
+                frameServiceList.add(serviceEntity);
+
+                serviceNode.setCommandId(command.getCommandId());
+                serviceNode.setCommandType(commandType);
+                for (ClusterServiceCommandHostCommandEntity hostCommand : hostCommandList) {
+                    logger.info("service role is {}", hostCommand.getServiceRoleName());
+                    FrameServiceRoleEntity frameServiceRoleEntity =
+                            frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(
+                                    clusterInfo.getClusterFrame(), hostCommand.getServiceRoleName());
+
+                    String arch = serviceEntity.getArch();
+                    Map<String, ArchInfo> stringArchInfoMap = StringUtils.isNotEmpty(arch) ? JSONObject.parseObject(arch, new TypeReference<Map<String, ArchInfo>>() {
+                    }) : LoadServiceMeta.getDefaultArchInfo(serviceEntity.getPackageName(), serviceEntity.getDecompressPackageName());
+                    ServiceInfo serviceInfo = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
+                    ServiceRoleInfo serviceRoleInfo = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
+                    serviceRoleInfo.setHostname(hostCommand.getHostname());
+                    serviceRoleInfo.setHostCommandId(hostCommand.getHostCommandId());
+                    serviceRoleInfo.setClusterId(clusterInfo.getId());
+                    serviceRoleInfo.setParentName(command.getServiceName());
+                    serviceRoleInfo.setPackageName(serviceEntity.getPackageName());
+                    serviceRoleInfo.setArchInfoMap(stringArchInfoMap);
+                    serviceRoleInfo.setDecompressPackageName(serviceEntity.getDecompressPackageName());
+                    serviceRoleInfo.setCreateDecompressDir(serviceInfo.getCreateDecompressDir());
+                    serviceRoleInfo.setCommandType(commandType);
+                    serviceRoleInfo.setServiceInstanceId(command.getServiceInstanceId());
+                    serviceRoleInfo.setFrameCode(serviceEntity.getFrameCode());
+
+                    ServiceRoleStrategy serviceRoleHandler =
+                            ServiceRoleStrategyContext.getServiceRoleHandler(serviceRoleInfo.getName());
+                    if (Objects.nonNull(serviceRoleHandler)) {
+                        serviceRoleHandler.handlerServiceRoleInfo(serviceRoleInfo, hostCommand.getHostname());
                     }
-                    serviceNode.setMasterRoles(masterRoles);
-                    serviceNode.setElseRoles(elseRoles);
-                    dag.addNode(command.getServiceName(), serviceNode);
+
+                    if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())) {
+                        masterRoles.add(serviceRoleInfo);
+                    } else {
+                        elseRoles.add(serviceRoleInfo);
+                    }
                 }
-                // build edge
-                for (FrameServiceEntity serviceEntity : frameServiceList) {
-                    if (StringUtils.isNotBlank(serviceEntity.getDependencies())) {
-                        for (String dependency : serviceEntity.getDependencies().split(Constants.COMMA)) {
-                            if (dag.containsNode(dependency)) {
-                                dag.addEdge(dependency, serviceEntity.getServiceName(), false);
-                            }
+                serviceNode.setMasterRoles(masterRoles);
+                serviceNode.setElseRoles(elseRoles);
+                dag.addNode(command.getServiceName(), serviceNode);
+            }
+            // build edge
+            for (FrameServiceEntity serviceEntity : frameServiceList) {
+                if (StringUtils.isNotBlank(serviceEntity.getDependencies())) {
+                    for (String dependency : serviceEntity.getDependencies().split(Constants.COMMA)) {
+                        if (dag.containsNode(dependency)) {
+                            dag.addEdge(dependency, serviceEntity.getServiceName(), false);
                         }
                     }
                 }
             }
-            
-            if (commandType == CommandType.STOP_SERVICE) {
-                logger.info("reverse dag");
-                dag = dag.getReverseDagGraph(dag);
-            }
-            
-            Map<String, String> errorTaskList = new ConcurrentHashMap<>();
-            Map<String, ServiceExecuteState> activeTaskList = new ConcurrentHashMap<>();
-            Map<String, String> readyToSubmitTaskList = new ConcurrentHashMap<>();
-            Map<String, String> completeTaskList = new ConcurrentHashMap<>();
-            
-            Collection<String> beginNode = dag.getBeginNode();
-            logger.info("beginNode is {}", beginNode.toString());
-            for (String node : beginNode) {
-                readyToSubmitTaskList.put(node, "");
-            }
-            
-            SubmitActiveTaskNodeCommand submitActiveTaskNodeCommand = new SubmitActiveTaskNodeCommand();
-            submitActiveTaskNodeCommand.setCommandType(executeCommandCommand.getCommandType());
-            submitActiveTaskNodeCommand.setDag(dag);
-            submitActiveTaskNodeCommand.setClusterId(clusterInfo.getId());
-            submitActiveTaskNodeCommand.setActiveTaskList(activeTaskList);
-            submitActiveTaskNodeCommand.setErrorTaskList(errorTaskList);
-            submitActiveTaskNodeCommand.setReadyToSubmitTaskList(readyToSubmitTaskList);
-            submitActiveTaskNodeCommand.setCompleteTaskList(completeTaskList);
-            submitActiveTaskNodeCommand.setClusterCode(clusterInfo.getClusterCode());
-            
-            ActorRef submitTaskNodeActor = ActorUtils.getLocalActor(SubmitTaskNodeActor.class,
-                    ActorUtils.getActorRefName(SubmitTaskNodeActor.class));
-            submitTaskNodeActor.tell(submitActiveTaskNodeCommand, getSelf());
         }
+
+        if (commandType == CommandType.STOP_SERVICE) {
+            logger.info("reverse dag");
+            dag = dag.getReverseDagGraph(dag);
+        }
+
+        Map<String, String> errorTaskList = new ConcurrentHashMap<>();
+        Map<String, ServiceExecuteState> activeTaskList = new ConcurrentHashMap<>();
+        Map<String, String> readyToSubmitTaskList = new ConcurrentHashMap<>();
+        Map<String, String> completeTaskList = new ConcurrentHashMap<>();
+
+        Collection<String> beginNode = dag.getBeginNode();
+        logger.info("beginNode is {}", beginNode.toString());
+        for (String node : beginNode) {
+            readyToSubmitTaskList.put(node, "");
+        }
+
+        SubmitActiveTaskNodeCommand submitActiveTaskNodeCommand = new SubmitActiveTaskNodeCommand();
+        submitActiveTaskNodeCommand.setCommandType(executeCommandCommand.getCommandType());
+        submitActiveTaskNodeCommand.setDag(dag);
+        submitActiveTaskNodeCommand.setClusterId(clusterInfo.getId());
+        submitActiveTaskNodeCommand.setActiveTaskList(activeTaskList);
+        submitActiveTaskNodeCommand.setErrorTaskList(errorTaskList);
+        submitActiveTaskNodeCommand.setReadyToSubmitTaskList(readyToSubmitTaskList);
+        submitActiveTaskNodeCommand.setCompleteTaskList(completeTaskList);
+        submitActiveTaskNodeCommand.setClusterCode(clusterInfo.getClusterCode());
+
+        ActorRef submitTaskNodeActor = ActorUtils.getLocalActor(SubmitTaskNodeActor.class,
+                ActorUtils.getActorRefName(SubmitTaskNodeActor.class));
+        submitTaskNodeActor.tell(submitActiveTaskNodeCommand, getSelf());
     }
 }

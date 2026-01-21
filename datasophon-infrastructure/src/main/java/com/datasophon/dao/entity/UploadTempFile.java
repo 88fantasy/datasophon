@@ -52,7 +52,7 @@ public class UploadTempFile implements Serializable {
     @Schema(description = "文件md5")
     private String md5;
 
-    @Schema(description = "上传方式 0整体上传 1分片上传")
+    @Schema(description = "上传方式 0整体上传 1分片上传 2秒传")
     private Integer uploadType;
 
     @Schema(description = "分片大小")

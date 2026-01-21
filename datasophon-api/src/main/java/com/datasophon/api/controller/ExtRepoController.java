@@ -4,6 +4,7 @@ import com.datasophon.api.dto.IntegerIdDTO;
 import com.datasophon.api.dto.extrepo.DagIdDto;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
+import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.service.extrepo.ExtRepoInstallService;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
@@ -107,8 +108,8 @@ public class ExtRepoController extends ApiController {
     @PostMapping("/redeploy")
     @Operation(summary = "重新运行dag")
     @ApiResponse(content = {@Content(mediaType = "application/json")})
-    public Result redeploy(@RequestBody @Validated DagIdDto dto) {
-        extRepoInstallService.redeploy(dto.getDagId());
+    public Result redeploy(@RequestBody @Validated RunDagDto dto) {
+        extRepoInstallService.redeploy(dto);
         return Result.success();
     }
 

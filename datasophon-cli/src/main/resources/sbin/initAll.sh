@@ -15,10 +15,8 @@ BASE_PATH=$(
 )
 
 echo "Bash Path: ${BASE_PATH}"
-INIT_PATH=$(dirname "${BASE_PATH}")
-INIT_LOG_PATH=${INIT_PATH}/logs
-INIT_BIN_PATH=${INIT_PATH}/bin
-INIT_SBIN_PATH=${INIT_PATH}/sbin
+
+source "${BASE_PATH}/common-env.sh"
 
 if [ ! -d "INIT_LOG_PATH" ]; then
   mkdir -p $INIT_LOG_PATH

@@ -17,12 +17,12 @@
 
 package com.datasophon.api.service;
 
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.FrameServiceEntity;
 
 import java.util.List;
-
-import com.baomidou.mybatisplus.extension.service.IService;
+import java.util.Map;
 
 /**
  * 集群框架版本服务表
@@ -33,26 +33,23 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface FrameServiceService extends IService<FrameServiceEntity> {
 
-    /**
-     * @deprecated
-     * @see #getFrameServiceList(Integer)
-     */
-    @Deprecated
-    default Result getAllFrameService(Integer clusterId) {
-        return Result.success(getFrameServiceList(clusterId));
-    }
 
     List<FrameServiceEntity> getFrameServiceList(Integer clusterId);
     
+    List<FrameServiceEntity> getBasicFrameServiceList(Integer clusterId);
+
+    List<FrameServiceEntity> listNewest(Integer clusterId);
+
     Result getServiceListByServiceIds(List<Integer> serviceIds);
-    
+
     FrameServiceEntity getServiceByFrameIdAndServiceName(Integer id, String serviceName);
-    
+
     FrameServiceEntity getServiceByFrameCodeAndServiceName(String clusterFrame, String serviceName);
-    
+
     List<FrameServiceEntity> getAllFrameServiceByFrameCode(String clusterFrame);
-    
+
     List<FrameServiceEntity> listServices(String serviceIds);
 
     List<FrameServiceEntity> listSimpleService(List<String> clusterFrames);
+
 }

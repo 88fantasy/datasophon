@@ -32,8 +32,6 @@ import com.datasophon.api.exceptions.ServiceException;
 import com.datasophon.api.load.Application;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
-import com.datasophon.api.load.ServiceInfoMap;
-import com.datasophon.api.load.ServiceRoleMap;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.ClusterServiceCommandService;
@@ -52,14 +50,8 @@ import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
-import com.datasophon.common.enums.CommandType;
-import com.datasophon.common.model.DAG;
 import com.datasophon.common.model.Generators;
-import com.datasophon.common.model.HostServiceRoleMapping;
 import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceInfo;
-import com.datasophon.common.model.ServiceNode;
-import com.datasophon.common.model.ServiceNodeEdge;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.model.uni.NexusUri;
@@ -72,8 +64,6 @@ import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
-import com.datasophon.dao.entity.ClusterServiceCommandEntity;
-import com.datasophon.dao.entity.ClusterServiceCommandHostCommandEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceRoleGroup;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
@@ -104,7 +94,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -297,15 +286,11 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         checkOnSameNode(clusterId, list);
 
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
-        String hostMapKey = clusterInfo.getClusterCode()
-                            + Constants.UNDERLINE
-                            + Constants.SERVICE_ROLE_HOST_MAPPING;
-        HashMap<String, List<String>> map = new HashMap<>();
+        String hostMapKey = clusterInfo.getClusterCode() + Constants.UNDERLINE + Constants.SERVICE_ROLE_HOST_MAPPING;
+        Map<String, List<String>> map = new HashMap<>();
         if (CacheUtils.containsKey(hostMapKey)) {
-            map = (HashMap<String, List<String>>) CacheUtils.get(hostMapKey);
+            map = (Map<String, List<String>>) CacheUtils.get(hostMapKey);
         }
-
-        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
 
         for (ServiceRoleHostMapping serviceRoleHostMapping : list) {
             serviceValidation(serviceRoleHostMapping);
@@ -320,10 +305,9 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
 
             if (!hosts.isEmpty()) {
                 String serviceRole = serviceRoleHostMapping.getServiceRole();
-                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
-                        String.format("%s.%s", serviceRole, GlobalVariables.HOST),
-                        String.join(",", hosts));
-                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
+                ProcessUtils.generateClusterVariable(clusterId, serviceName,
+                        String.format("%s.%s", serviceRole, GlobalVariables.HOST), String.join(",", hosts));
+                ProcessUtils.generateClusterVariable(clusterId, serviceName,
                         String.format("%s.%s", serviceRole, GlobalVariables.HOST_IP),
                         hosts.stream().map(HostUtils::getIp).collect(Collectors.joining(",")));
             }
@@ -340,20 +324,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
                 map);
     }
 
-    @Override
-    public Result saveHostServiceRoleMapping(Integer clusterId, List<HostServiceRoleMapping> list) {
-        ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
-        HashMap<String, List<String>> map = new HashMap<>();
-        for (HostServiceRoleMapping hostServiceRoleMapping : list) {
-            map.put(hostServiceRoleMapping.getHost(), hostServiceRoleMapping.getServiceRoles());
-        }
-        CacheUtils.put(
-                clusterInfo.getClusterCode()
-                + Constants.UNDERLINE
-                + Constants.HOST_SERVICE_ROLE_MAPPING,
-                map);
-        return Result.success();
-    }
 
     @Override
     public Result getServiceRoleDeployOverview(Integer clusterId) {
@@ -366,55 +336,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         return Result.success(map);
     }
 
-    /**
-     * @param clusterId
-     * @param commandIds
-     * @return
-     */
-    @Override
-    public Result startInstallService(Integer clusterId, List<String> commandIds) {
-        Collection<ClusterServiceCommandEntity> commands = commandService.listByIds(commandIds);
-        ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
-        DAG<String, ServiceNode, ServiceNodeEdge> dag = new DAG<>();
-        for (ClusterServiceCommandEntity command : commands) {
-            List<ClusterServiceCommandHostCommandEntity> commandHostList =
-                    hostCommandService.getHostCommandListByCommandId(command.getCommandId());
-            List<ServiceRoleInfo> masterRoles = new ArrayList<>();
-            List<ServiceRoleInfo> elseRoles = new ArrayList<>();
-            ServiceNode serviceNode = new ServiceNode();
-            String serviceKey =
-                    clusterInfo.getClusterFrame() + Constants.UNDERLINE + command.getServiceName();
-            ServiceInfo serviceInfo = ServiceInfoMap.get(serviceKey);
-            for (ClusterServiceCommandHostCommandEntity hostCommand : commandHostList) {
-                String key =
-                        clusterInfo.getClusterFrame()
-                        + Constants.UNDERLINE
-                        + command.getServiceName()
-                        + Constants.UNDERLINE
-                        + hostCommand.getServiceRoleName();
-                ServiceRoleInfo serviceRoleInfo = ServiceRoleMap.get(key);
-                serviceRoleInfo.setHostname(hostCommand.getHostname());
-                serviceRoleInfo.setHostCommandId(hostCommand.getHostCommandId());
-                serviceRoleInfo.setClusterId(clusterId);
-                serviceRoleInfo.setParentName(command.getServiceName());
-                if (Constants.MASTER.equals(serviceRoleInfo.getRoleType())) {
-                    masterRoles.add(serviceRoleInfo);
-                } else {
-                    elseRoles.add(serviceRoleInfo);
-                }
-            }
-            serviceNode.setMasterRoles(masterRoles);
-            serviceNode.setElseRoles(elseRoles);
-            serviceNode.setCommandType(CommandType.INSTALL_SERVICE);
-            dag.addNode(command.getServiceName(), serviceNode);
-            if (!serviceInfo.getDependencies().isEmpty()) {
-                for (String dependency : serviceInfo.getDependencies()) {
-                    dag.addEdge(dependency, command.getServiceName());
-                }
-            }
-        }
-        return Result.success();
-    }
+
 
     @Override
     public void downloadPackage(String packageName, HttpServletResponse response) throws IOException {

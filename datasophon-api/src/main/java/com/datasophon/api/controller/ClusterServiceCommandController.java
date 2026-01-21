@@ -17,25 +17,24 @@
 
 package com.datasophon.api.controller;
 
+import cn.hutool.core.util.EnumUtil;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.ClusterServiceCommandService;
+import com.datasophon.api.service.extrepo.ExtRepoInstallService;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
-
+import io.swagger.v3.oas.annotations.Operation;
 import org.apache.commons.lang3.StringUtils;
-
-import java.util.Arrays;
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import cn.hutool.core.util.EnumUtil;
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping("cluster/service/command")
@@ -43,7 +42,11 @@ public class ClusterServiceCommandController extends ApiController {
     
     @Autowired
     private ClusterServiceCommandService clusterServiceCommandService;
-    
+
+
+    @Autowired
+    private ExtRepoInstallService extRepoInstallService;
+
     /**
      * 查询集群服务指令列表
      */
@@ -53,14 +56,26 @@ public class ClusterServiceCommandController extends ApiController {
     }
     
     /**
+     * @deprecated 
+     * @see #generateGenericInstallCommand(Integer, String)
      * 生成服务安装操作指令
      */
     @UserPermission
     @RequestMapping("/generateCommand")
+    @Operation(deprecated = true)
+    @Deprecated
     public Result generateCommand(Integer clusterId, String commandType, String serviceNames) {
         CommandType command = EnumUtil.fromString(CommandType.class, commandType);
         List<String> list = Arrays.asList(serviceNames.split(","));
         return Result.success(clusterServiceCommandService.generateCommand(clusterId, command, list));
+    }
+
+    @UserPermission
+    @RequestMapping("/generateGenericInstallCommand")
+    @Operation(summary = "生成通用安装命令")
+    public Result generateGenericInstallCommand(Integer clusterId, String serviceNames) {
+        List<String> list = Arrays.asList(serviceNames.split(","));
+        return Result.success(extRepoInstallService.generateGenericInstallCommand(clusterId, list));
     }
     
     /**
@@ -76,7 +91,6 @@ public class ClusterServiceCommandController extends ApiController {
         } else {
             return Result.error(Status.NO_SERVICE_EXECUTE.getMsg());
         }
-        
     }
     
     /**

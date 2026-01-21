@@ -17,4 +17,5 @@ public class CheckChunkDTO {
     @Schema(description = "分片索引 0base")
     private Integer chunkNo;
 
+    private String md5;
 }

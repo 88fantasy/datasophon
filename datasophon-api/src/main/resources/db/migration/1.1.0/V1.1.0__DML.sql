@@ -415,4 +415,6 @@ INSERT INTO `t_ddh_session` VALUES ('d25dd005-ceb6-4414-bfdf-9279a23c2ba6', 1, '
 -- ----------------------------
 -- Records of t_ddh_user_info
 -- ----------------------------
-INSERT INTO `t_ddh_user_info` VALUES (1, 'admin', '0192023a7bbd73250516f069df18b500', 'xxx@163.com', '1865xx', '2022-05-10 16:05:18', 1);
+
+-- default_password is : DJEutbydS@U%f7Jb
+INSERT INTO `t_ddh_user_info` VALUES (1, 'admin', 'b5cb92296be023663855af5e795c8225', 'xxx@163.com', '1865xx', '2022-05-10 16:05:18', 1);

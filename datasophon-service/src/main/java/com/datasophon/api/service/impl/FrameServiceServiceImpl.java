@@ -36,18 +36,19 @@ import org.apache.hadoop.util.VersionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service("frameServiceService")
-public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, FrameServiceEntity>
-        implements
-            FrameServiceService {
+public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, FrameServiceEntity> implements FrameServiceService {
     
     @Autowired
     FrameInfoMapper frameInfoMapper;
@@ -69,7 +70,46 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
         setInstalled(clusterId, list);
         return list;
     }
-    
+
+    @Override
+    public List<FrameServiceEntity> getBasicFrameServiceList(Integer clusterId) {
+        ClusterInfoEntity clusterInfo = clusterInfoMapper.selectById(clusterId);
+        FrameInfoEntity frameInfo = frameInfoMapper.getFrameInfoByFrameCode(clusterInfo.getClusterFrame());
+        List<FrameServiceEntity> list = this.lambdaQuery()
+                .eq(FrameServiceEntity::getFrameId, frameInfo.getId())
+                .in(FrameServiceEntity::getServiceName, Arrays.asList("ALERTMANAGER", "GRAFANA", "PROMETHEUS"))
+                .orderByAsc(FrameServiceEntity::getSortNum)
+                .list();
+        setInstalled(clusterId, list);
+        return list;
+    }
+
+    @Override
+    public List<FrameServiceEntity> listNewest(Integer clusterId) {
+        ClusterInfoEntity clusterInfo = clusterInfoMapper.selectById(clusterId);
+        FrameInfoEntity frameInfo = frameInfoMapper.getFrameInfoByFrameCode(clusterInfo.getClusterFrame());
+
+        List<FrameServiceEntity> list = this.lambdaQuery()
+                .eq(FrameServiceEntity::getFrameId, frameInfo.getId())
+                .orderByAsc(FrameServiceEntity::getSortNum)
+                .list();
+        Map<String, FrameServiceEntity> existEntity = new HashMap<>();
+        list.forEach(newVal-> {
+            FrameServiceEntity old = existEntity.get(newVal.getServiceName());
+            if (old == null) {
+                existEntity.put(newVal.getServiceName(), newVal);
+            } else {
+                if (VersionUtil.compareVersions(old.getServiceVersion(), newVal.getServiceVersion()) < 0) {
+                    existEntity.put(newVal.getServiceName(), newVal);
+                }
+            }
+        });
+        list = new ArrayList<>(existEntity.values());
+        list.sort(Comparator.nullsLast(Comparator.comparing(FrameServiceEntity::getSortNum, Comparator.naturalOrder())));
+        setInstalled(clusterId, list);
+        return list;
+    }
+
     private void setInstalled(Integer clusterId, List<FrameServiceEntity> list) {
         List<ClusterServiceInstanceEntity> serviceInstances = serviceInstanceService.getServiceInstanceByClusterId(clusterId);
         Map<String, ClusterServiceInstanceEntity> map = serviceInstances.stream().collect(

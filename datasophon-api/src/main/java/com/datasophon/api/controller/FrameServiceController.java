@@ -17,6 +17,8 @@
 
 package com.datasophon.api.controller;
 
+import cn.hutool.core.io.FileUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
@@ -25,21 +27,16 @@ import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.FrameServiceRoleEntity;
-
-import java.io.File;
-import java.util.List;
-
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-
-import cn.hutool.core.io.FileUtil;
+import java.io.File;
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -60,8 +57,26 @@ public class FrameServiceController extends ApiController {
      */
     @RequestMapping("/list")
     public Result list(Integer clusterId) {
-        return frameVersionServiceService.getAllFrameService(clusterId);
+        return Result.success(frameVersionServiceService.getFrameServiceList(clusterId));
     }
+
+    @RequestMapping("/listNewest")
+    @Operation(summary = "获取组件列表(最高版本)")
+    public Result listNewest(Integer clusterId) {
+        return Result.success(frameVersionServiceService.listNewest(clusterId));
+    }
+
+
+    /**
+     * 列表
+     */
+    @RequestMapping("/listBasicFrameService")
+    @Operation(summary = "获取框架基础组件列表")
+    public Result listBasicFrameService(Integer clusterId) {
+        return Result.success(frameVersionServiceService.getBasicFrameServiceList(clusterId));
+    }
+
+
     
     /**
      * 根据servce id列表查询服务

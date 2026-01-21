@@ -32,6 +32,7 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
      */
     UploadTempFile createShardUploadTask(BigFileDTO info);
 
+
     /**
      * 上传分片
      * @param info
@@ -40,7 +41,7 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
     UploadTempFileChunk uploadChunk(ChunkDTO info);
 
 
-    boolean isChunkUpload(CheckChunkDTO dto);
+    boolean isChunkUploaded(CheckChunkDTO dto);
     /**
      * 合并分片
      * @param vo

@@ -9,7 +9,7 @@ import java.util.List;
  * @date 2025/11/11
  */
 @Data
-public class DeploySrvModel {
+public class DeploySrvModel implements ServiceResource<DeploySrvModel>{
 
     private String name;
 

@@ -17,7 +17,6 @@
 
 package com.datasophon.api.service;
 
-import com.datasophon.common.model.HostServiceRoleMapping;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.utils.Result;
@@ -37,24 +36,10 @@ public interface ServiceInstallService {
                              Integer roleGroupId);
 
     void saveServiceRoleHostMapping(Integer clusterId, List<ServiceRoleHostMapping> list);
-    /**
-     * @deprecated 
-     * @see #saveServiceRoleHostMapping(Integer, List)
-     */
-    @Deprecated
-    Result saveHostServiceRoleMapping(Integer clusterId, List<HostServiceRoleMapping> list);
-    
+
+
     Result getServiceRoleDeployOverview(Integer clusterId);
 
-    /**
-     * @deprecated 无效方法，不会有什么效果
-     * @see ClusterServiceCommandService#startExecuteCommand(Integer, String, String)
-     * @param clusterId
-     * @param commandIds
-     * @return
-     */
-    @Deprecated
-    Result startInstallService(Integer clusterId, List<String> commandIds);
     
     void downloadPackage(String packageName, HttpServletResponse response) throws IOException;
 

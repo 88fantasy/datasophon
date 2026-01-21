@@ -15,12 +15,9 @@ BASE_PATH=$(
   cd ${BASE_DIR}
   pwd
 )
-INIT_PATH=$(dirname "${BASE_PATH}")
-echo "INIT_PATH: ${INIT_PATH}"
-INIT_BIN_PATH=${INIT_PATH}/bin
-echo "INIT_BIN_PATH: ${INIT_BIN_PATH}"
-INIT_SBIN_PATH=${INIT_PATH}/sbin
-echo "INIT_SBIN_PATH: ${INIT_SBIN_PATH}"
+
+source "${BASE_PATH}/common-env.sh"
+
 PACKAGES_PATH=/data/packages/raw/packages
 echo "PACKAGES_PATH: ${PACKAGES_PATH}"
 JDK_FOLDER_PATH=/usr/local
@@ -40,10 +37,10 @@ if [ $arch = "aarch64" ]; then
 fi
 
 if [[ -d ${JAVA17_HOME} ]]; then
-  echo "JDK installed.............................."
+  echo "JDK 17 installed.............................."
 else
-  echo "JDK not installed.............................."
-  echo "JDK environment already sets"
+  echo "JDK 17 not installed.............................."
+  echo "JDK 17 environment already sets"
   pid="sed -i '/export JAVA17_HOME/d' /etc/profile"
   eval $pid
   pid="sed -i '/export CLASSPATH/d' /etc/profile"

@@ -4,12 +4,15 @@ import akka.actor.ActorRef;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.date.DatePattern;
+import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.api.dag.model.DagDefinition;
 import com.datasophon.api.dag.model.EdgeDefinition;
 import com.datasophon.api.dag.model.NodeDefinition;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
+import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.LoadServiceMeta;
 import com.datasophon.api.master.ActorUtils;
@@ -27,18 +30,20 @@ import com.datasophon.api.service.dag.DAGService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallService;
 import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
 import com.datasophon.api.service.extrepo.ctx.ExecDAGBuilderContext;
+import com.datasophon.api.service.extrepo.ctx.SimpleServiceResource;
 import com.datasophon.api.service.extrepo.utils.MetaUtils;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.TransactionalUtils;
-import com.datasophon.api.vo.extrepo.DeploymentDAG;
+import com.datasophon.api.vo.extrepo.DAGNode;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
 import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
+import com.datasophon.common.cache.Namespace;
 import com.datasophon.common.command.dag.DAGExecCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.ServiceRoleType;
@@ -63,6 +68,7 @@ import com.datasophon.dao.enums.ServiceState;
 import com.datasophon.dao.enums.dag.DagStatus;
 import com.datasophon.dao.enums.dag.NodeStatus;
 import com.datasophon.dao.model.extrepo.DeploySrvConfig;
+import com.datasophon.dao.model.extrepo.DeploySrvModel;
 import com.datasophon.dao.model.extrepo.DeploymentModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,6 +84,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -247,7 +254,6 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
-        DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
         Map<String, FrameServiceEntity> srvDefMap = CollectionUtil.toMap(serviceList, new HashMap<>(), srv -> srv.getServiceName() + ":" + srv.getServiceVersion());
         List<String> commandIds = new ArrayList<>(model.getApp().size());
         model.getApp().forEach(srv -> {
@@ -257,7 +263,14 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         log.info("保存安装命令成功, 共需要安装{}个应用", commandIds.size());
 
 
-        DAG<String, DeploymentDAG.SrvNodeVO, Integer> dag = ctx.buildDeployDAG(model.getApp(), false);
+        DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
+        DAG<String, DAGNode, Integer> dag = ctx.buildDeployDAG(model.getApp(), t-> {
+            DeploySrvModel srvModel = t.unwrap();
+            DAGNode node = new DAGNode();
+            node.setName(srvModel.getName());
+            node.setVersion(srvModel.getVersion());
+            return node;
+        });
         String dagId = saveDAG(clusterInfo.getId(), commandIds, dag);
 //        必须等待事务提交，否则，有概率查询不到保存的命令
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -328,7 +341,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
     }
 
 
-    private String saveDAG(Integer clusterId, List<String> commandIds, DAG<String, DeploymentDAG.SrvNodeVO, Integer> dag) {
+    private String saveDAG(Integer clusterId, List<String> commandIds, DAG<String, DAGNode, Integer> dag) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
 
 
@@ -337,12 +350,12 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         context.setCmdHost(hostCommandService.lambdaQuery().in(ClusterServiceCommandHostCommandEntity::getCommandId, commandIds).list());
 //        将服务依赖的dag重构成节点安装服务的dag
         Map<String, NodeDefinitionEntity> nodeMap = new HashMap<>();
-        dag.getNodes().forEach((srv, info) -> {
+        dag.getNodes().forEach((serviceName, info) -> {
             ServiceNode serviceNode = new ServiceNode();
-            ClusterServiceCommandEntity cmd = context.getCmd(srv);
+            ClusterServiceCommandEntity cmd = context.getCmd(info.getName());
             serviceNode.setCommandId(cmd.getCommandId());
             serviceNode.setCommandType(CommandType.ofCode(cmd.getCommandType()));
-            serviceNode.setServiceName(srv);
+            serviceNode.setServiceName(info.getName());
 
 
             FrameServiceEntity serviceEntity = frameService.lambdaQuery()
@@ -391,14 +404,19 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             serviceNode.setElseRoles(elseRoles);
 
             NodeDefinitionEntity node = new NodeDefinitionEntity();
-            node.setNodeName(srv);
+            node.setNodeName(info.getName());
             node.setNodeConfig(JSONObject.toJSONString(serviceNode));
-            nodeMap.put(srv, node);
+            nodeMap.put(info.getName(), node);
         });
 
 
         DagDefinition definition = new DagDefinition();
-        definition.setDagName("导入部署清单安装");
+        definition.setDagName(String.format("服务部署-%s", DateUtil.format(new Date(), DatePattern.NORM_DATETIME_PATTERN)));
+
+        StringBuilder sb  = new StringBuilder("部署服务:");
+        dag.getNodes().forEach((srv, n)-> sb.append(srv).append(";"));
+        String desc = sb.toString();
+        definition.setDescription(desc.length() > 300 ? desc.substring(0, 300) + "..." : desc);
         String dagId = dagService.saveDAG(definition);
         dagService.saveNodes(dagId, new ArrayList<>(nodeMap.values()));
 
@@ -423,12 +441,12 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                 actor.tell(cmd, ActorRef.noSender());
             } catch (Exception e) {
                 log.error("execute dagId: {} fail, {}", dagId, e.getMessage(), e);
-                transactionalUtils.doInNewTx(() -> commandIds.forEach(cmdId -> updateCommandState(cmdId, CommandState.FAILED)));
+                transactionalUtils.doInNewTx(() -> commandIds.forEach(cmdId -> updateCommandState(cmdId, CommandState.FAILED, false)));
             }
         });
     }
 
-    private void updateCommandState(String cmdId, CommandState state) {
+    private void updateCommandState(String cmdId, CommandState state, boolean restart) {
         ClusterServiceCommandEntity cmd = commandService.getCommandById(cmdId);
         if (state == CommandState.FAILED) {
             if (Arrays.asList(CommandState.RUNNING, CommandState.WAIT).contains(cmd.getCommandState())) {
@@ -456,7 +474,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         }
 
         if (state == CommandState.RUNNING) {
-            if (cmd.getCommandState().equals(CommandState.SUCCESS)) {
+            if (restart && cmd.getCommandState().equals(CommandState.SUCCESS)) {
                 return;
             }
             cmd.setCommandState(state);
@@ -482,20 +500,20 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
     }
 
     @Override
-    public void redeploy(String dagId) {
-        DagDefinition def = dagService.getDagById(dagId);
-        if (!Arrays.asList(DagStatus.FAILED, DagStatus.CANCEL).contains(def.getStatus())) {
+    public void redeploy(RunDagDto dto) {
+        DagDefinition def = dagService.getDagById(dto.getDagId());
+        if (!Arrays.asList(DagStatus.PENDING, DagStatus.FAILED, DagStatus.CANCEL).contains(def.getStatus())) {
             throw new BusinessException(String.format("当前任务的状态为%s，不允许重复运行", def.getStatus().name()));
         }
         if (def.getCreatedTime().plusDays(2).isBefore(LocalDateTime.now())) {
             throw new BusinessException("任务已经过期, 不允许在运行");
         }
-        List<NodeDefinition> nodes = dagService.getNodesByDagId(dagId, true);
+        List<NodeDefinition> nodes = dagService.getNodesByDagId(dto.getDagId(), true);
         if (nodes.isEmpty()) {
             return;
         }
         for (NodeDefinition node : nodes) {
-            if (!NodeStatus.SUCCESS.equals(node.getStatus())) {
+            if (!dto.isRestart() || !NodeStatus.SUCCESS.equals(node.getStatus())) {
                 dagService.updateNodeStatus(node.getId(), NodeStatus.PENDING);
             }
         }
@@ -514,9 +532,10 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             commandIds.add(serviceNode.getCommandId());
         }
 
-        commandIds.forEach(cmd -> updateCommandState(cmd, CommandState.RUNNING));
-        doInstall(dagId, true, commandIds);
+        commandIds.forEach(cmd -> updateCommandState(cmd, CommandState.RUNNING, dto.isRestart()));
+        doInstall(dto.getDagId(), dto.isRestart(), commandIds);
     }
+
 
     @Override
     public InstallProgressDAG2 getDeployProgressDAG2(String dagId) {
@@ -563,6 +582,8 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         return result;
     }
 
+
+
     private List<InstallProgressDAG2.SrvRole> createSrvRole(String cmdId) {
         List<ClusterServiceCommandHostCommandEntity> hostCmdList = hostCommandService.lambdaQuery()
                 .eq(ClusterServiceCommandHostCommandEntity::getCommandId, cmdId)
@@ -593,4 +614,82 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         return roles;
     }
 
+    @Override
+    public String generateGenericInstallCommand(Integer clusterId, List<String> serviceNames) {
+        ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
+        List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
+        DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
+        List<String> commandIds = new ArrayList<>(serviceNames.size());
+
+        List<SimpleServiceResource> resources = new ArrayList<>();
+        serviceNames.forEach(srv -> {
+            FrameServiceEntity entity = ctx.getHighestVersionSrv(srv);
+            SimpleServiceResource resource = new SimpleServiceResource();
+            resource.setName(entity.getServiceName());
+            resource.setVersion(entity.getServiceVersion());
+            resources.add(resource);
+            String cmdId = generateCommand(clusterInfo, ctx.getHighestVersionSrv(srv));
+            commandIds.add(cmdId);
+        });
+
+        DAG<String, DAGNode, Integer> dag = ctx.buildDeployDAG(resources, rs-> {
+            SimpleServiceResource resource =  rs.unwrap();
+            return BeanUtil.toBean(resource, DAGNode.class);
+        });
+        String dagId = saveDAG(clusterId, commandIds, dag);
+        return dagId;
+    }
+
+
+    public String generateCommand(ClusterInfoEntity cluster, FrameServiceEntity frameService) {
+        ClusterServiceInstanceEntity serviceInstance = clusterServiceInstanceService.getServiceInstanceByClusterIdAndServiceName(cluster.getId(), frameService.getServiceName());
+        CommandType commandType = ServiceState.WAIT_INSTALL.equals(serviceInstance.getServiceState()) ? CommandType.INSTALL_SERVICE : CommandType.UPGRADE_SERVICE;
+        ClusterServiceCommandEntity cmd = ProcessUtils.generateCommandEntity(cluster.getId(), commandType, frameService.getServiceName());
+        cmd.setServiceInstanceId(serviceInstance.getId());
+        commandService.save(cmd);
+        log.info("保存{}{}命令成功, 命令ID:{}", commandType.getCommandName(Constants.CN), frameService.getServiceName(), cmd.getCommandId());
+
+
+
+        Map<String, List<String>> serviceRoleHostMap = (Map<String, List<String>>) CacheUtils.get(Namespace.of(cluster.getClusterCode(),  Constants.SERVICE_ROLE_HOST_MAPPING));
+//        保存commandHost的相关数据
+        List<ClusterServiceCommandHostEntity> hostEntityList = new ArrayList<>();
+        List<FrameServiceRoleEntity> serviceRoleList = frameServiceRoleService.getServiceRoleList(cluster.getId(), Collections.singletonList(frameService.getId()), null);
+        Set<String> hostnames = new HashSet<>();
+        for (FrameServiceRoleEntity serviceRole : serviceRoleList) {
+            hostnames.addAll(serviceRoleHostMap.getOrDefault(serviceRole.getServiceRoleName(), new ArrayList<>(0)));
+        }
+        hostnames.forEach(host -> hostEntityList.add(ProcessUtils.generateCommandHostEntity(cmd.getCommandId(), host)));
+        commandHostService.saveBatch(hostEntityList);
+        log.info("命令:{}{}保存各主机总命令信息成功,共涉及{}台主机",
+                CommandType.ofCode(cmd.getCommandType()).getCommandName(Constants.CN),
+                cmd.getServiceName(), hostEntityList.size());
+
+
+//        保存每一台主机每一个角色需要执行的命令
+        Map<String, ClusterServiceCommandHostEntity> cache = CollectionUtil.toMap(hostEntityList, new HashMap<>(), ClusterServiceCommandHostEntity::getHostname);
+        List<ClusterServiceCommandHostCommandEntity> hostCommandList = new ArrayList<>();
+        for (FrameServiceRoleEntity serviceRole : serviceRoleList) {
+            List<String> hosts = serviceRoleHostMap.get(serviceRole.getServiceRoleName());
+            if (hosts == null) {
+                continue;
+            }
+            for (String hostname : hosts) {
+                ClusterServiceRoleInstanceEntity db = roleInstanceService.getOneServiceRole(serviceRole.getServiceRoleName(), hostname, cluster.getId());
+
+                CommandType roleCmdType = db == null ? CommandType.INSTALL_SERVICE : CommandType.UPGRADE_SERVICE;
+                ClusterServiceCommandHostCommandEntity hostCommand = ProcessUtils.generateCommandHostCommandEntity(
+                        roleCmdType, cmd.getCommandId(),
+                        serviceRole.getServiceRoleName(), serviceRole.getServiceRoleType(),
+                        cache.get(hostname)
+                );
+                hostCommandList.add(hostCommand);
+            }
+        }
+        hostCommandService.saveBatch(hostCommandList);
+        log.info("命令:{}{}保存各主机需要执行命令成功,共需要执行{}个命令", CommandType.ofCode(cmd.getCommandType()).getCommandName(Constants.CN),
+                cmd.getServiceName(), hostCommandList.size());
+
+        return cmd.getCommandId();
+    }
 }

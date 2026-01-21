@@ -1,6 +1,8 @@
 package com.datasophon.api.master;
 
 import akka.actor.UntypedActor;
+import com.datasophon.api.service.ClusterServiceCommandService;
+import com.datasophon.api.utils.SpringTool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.Assert;
 
@@ -30,11 +32,9 @@ public abstract class TypedActor<T> extends UntypedActor {
         Class<?> parent = child.getSuperclass();
         if (Object.class == parent) {
             throw new IllegalStateException("Expected ParameterizedTypeReference superclass");
-        }
-        else if (TypedActor.class == parent) {
+        } else if (TypedActor.class == parent) {
             return child;
-        }
-        else {
+        } else {
             return findParameterizedTypeReferenceSubclass(parent);
         }
     }
@@ -50,7 +50,6 @@ public abstract class TypedActor<T> extends UntypedActor {
     }
 
 
-
     @Override
     public void onReceive(Object message) throws Throwable {
         boolean match = message != null && clazz.isAssignableFrom(message.getClass());
@@ -62,4 +61,8 @@ public abstract class TypedActor<T> extends UntypedActor {
     }
 
     protected abstract void doOnReceive(T message) throws Throwable;
+
+    protected <T> T getBean(Class<T> clazz) {
+        return SpringTool.getApplicationContext().getBean(clazz);
+    }
 }

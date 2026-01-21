@@ -24,6 +24,7 @@ import com.datasophon.common.model.HostServiceRoleMapping;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.utils.Result;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,6 +50,16 @@ public class ServiceInstallController extends ApiController {
     public Result getServiceConfigOption(Integer clusterId, String serviceName) {
         return Result.success(serviceInstallService.getServiceConfigOption(clusterId, serviceName));
     }
+
+    /**
+     *
+     */
+    @RequestMapping("/getServiceConfigFromDdl")
+    @Operation(summary = "从服务定义中获取配置项")
+    public Result getServiceConfigFromDdl(Integer clusterId, String serviceName) {
+        return Result.success(serviceInstallService.getServiceConfigFromDdl(clusterId, serviceName));
+    }
+
 
     /**
      * 保存服务配置
@@ -82,31 +93,11 @@ public class ServiceInstallController extends ApiController {
     }
 
     /**
-     * 保存主机与服务角色对应关系
-     */
-    @RequestMapping("/saveHostServiceRoleMapping/{clusterId}")
-    public Result saveHostServiceRoleMapping(@PathVariable("clusterId") Integer clusterId,
-                                             @RequestBody List<HostServiceRoleMapping> list) {
-
-        return serviceInstallService.saveHostServiceRoleMapping(clusterId, list);
-    }
-
-    /**
      * 服务部署总览
      */
     @RequestMapping("/getServiceRoleDeployOverview")
     public Result getServiceRoleDeployOverview(Integer clusterId) {
         return serviceInstallService.getServiceRoleDeployOverview(clusterId);
-    }
-
-    /**
-     * 开始安装服务
-     */
-    @RequestMapping("/startInstallService/{clusterId}")
-    public Result startInstallService(@PathVariable("clusterId") Integer clusterId,
-                                      @RequestBody List<String> commandIds) {
-
-        return serviceInstallService.startInstallService(clusterId, commandIds);
     }
 
     /**

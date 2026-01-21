@@ -69,11 +69,8 @@ import java.util.Map;
 import java.util.Objects;
 
 @Service("clusterServiceCommandService")
-public class ClusterServiceCommandServiceImpl
-        extends
-        ServiceImpl<ClusterServiceCommandMapper, ClusterServiceCommandEntity>
-        implements
-        ClusterServiceCommandService {
+public class ClusterServiceCommandServiceImpl extends ServiceImpl<ClusterServiceCommandMapper, ClusterServiceCommandEntity>
+        implements ClusterServiceCommandService {
 
     private static final Logger logger = LoggerFactory.getLogger(ClusterServiceCommandServiceImpl.class);
 
@@ -230,7 +227,7 @@ public class ClusterServiceCommandServiceImpl
             commandIds.add(commandId);
             list.add(commandEntity);
 
-            HashMap<String, ClusterServiceCommandHostEntity> map = new HashMap<>();
+            Map<String, ClusterServiceCommandHostEntity> map = new HashMap<>();
             for (ClusterServiceRoleInstanceEntity roleInstance : roleInstanceList) {
                 ClusterServiceCommandHostEntity commandHost;
                 if (map.containsKey(roleInstance.getHostname())) {
@@ -326,21 +323,18 @@ public class ClusterServiceCommandServiceImpl
     @Override
     public void cancelCommand(String commandId) {
         // command , command host, host command状态置为取消
-
+        throw new UnsupportedOperationException("暂不支持");
     }
 
-    @Override
-    public ClusterServiceCommandEntity getLastRestartCommand(Integer serviceInstanceId) {
-        return this.getOne(
-                new QueryWrapper<ClusterServiceCommandEntity>().eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId)
-                        .eq(Constants.COMMAND_TYPE, CommandType.RESTART_SERVICE.getValue()).or()
-                        .eq(Constants.COMMAND_TYPE, CommandType.INSTALL_SERVICE.getValue())
-                        .orderByDesc(Constants.CREATE_TIME).last("limit 1"));
-    }
+
 
     @Override
     public ClusterServiceCommandEntity getCommandById(String commandId) {
-        return this.getOne(
-                new QueryWrapper<ClusterServiceCommandEntity>().eq("command_id", commandId));
+       return lambdaQuery().eq(ClusterServiceCommandEntity::getCommandId, commandId).one();
+    }
+
+    @Override
+    public String generateUpgradeCommand(Integer clusterId, List<String> serviceNames) {
+        return "";
     }
 }

@@ -1,5 +1,6 @@
 package com.datasophon.cli;
 
+import cn.hutool.core.util.StrUtil;
 import com.datasophon.cli.create.Create;
 import com.datasophon.cli.init.Init;
 
@@ -21,6 +22,11 @@ public class Main implements Runnable {
     }
 
     public static void main(String[] args) {
+        String ddhHome = System.getenv("DDH_HOME");
+        if (StrUtil.isBlank(ddhHome)) {
+            System.err.println("DDH_HOME is empty, please set DDH_HOME using ‘export DDH_HOME=xxx’ command");
+            System.exit(1);
+        }
         int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
     }

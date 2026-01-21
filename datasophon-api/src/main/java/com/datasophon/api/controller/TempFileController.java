@@ -6,7 +6,6 @@ import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.common.utils.Result;
 import com.datasophon.api.dto.upload.BigFileDTO;
 import com.datasophon.api.dto.upload.ChunkDTO;
-import com.datasophon.api.dto.LongIdDTO;
 import com.datasophon.api.dto.upload.MergeChunkDTO;
 import com.datasophon.dao.entity.UploadTempFile;
 import com.datasophon.dao.entity.UploadTempFileChunk;
@@ -82,11 +81,11 @@ public class TempFileController extends ApiController {
         return Result.success(uploadTempFileService.uploadChunk(info));
     }
 
-    @PostMapping("/isChunkUpload")
+    @PostMapping("/isChunkUploaded")
     @Operation(summary = "分片是否已经上传")
     @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = Boolean.class))})
     public Result mergeChunk(@RequestBody @Validated CheckChunkDTO vo) {
-        return Result.success(uploadTempFileService.isChunkUpload(vo));
+        return Result.success(uploadTempFileService.isChunkUploaded(vo));
     }
 
     @PostMapping("/mergeChunk")

@@ -1,5 +1,6 @@
 package com.datasophon.api.service.extrepo.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
@@ -21,6 +22,7 @@ import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.Constants;
+import com.datasophon.common.model.DAG;
 import com.datasophon.common.storage.PackageStorage;
 import com.datasophon.common.storage.PackageStorageUtils;
 import com.datasophon.common.utils.PathUtils;
@@ -28,6 +30,7 @@ import com.datasophon.common.utils.TarUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
+import com.datasophon.dao.model.extrepo.DeploySrvModel;
 import com.datasophon.dao.model.extrepo.DeploymentModel;
 import com.datasophon.dao.model.extrepo.ExtRepoMetaFsModel;
 import com.datasophon.dao.model.extrepo.FrameworkMeta;
@@ -408,9 +411,20 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             throw new BusinessException(String.format("服务: %s在框架中%s不存在", StrUtil.join(";", uninstall), clusterInfo.getClusterCode()));
         }
 
-
-        DeploymentDAG dag = context.buildDAG(model.getApp(), false);
-        return dag;
+        DAG<String, DeploymentDAG.SrvNodeVO, Integer> dag = context.buildDeployDAG(model.getApp(), t-> {
+            DeploySrvModel srvModel = t.unwrap();
+            return BeanUtil.toBean(srvModel, DeploymentDAG.SrvNodeVO.class);
+        });
+        DeploymentDAG result = new DeploymentDAG();
+        dag.getNodes().values().forEach(node -> result.getNodes().add(node));
+        dag.getEdges().forEach(edge -> {
+            DeploymentDAG.EdgeVO vo = new DeploymentDAG.EdgeVO();
+            vo.setId(edge.getEdge());
+            vo.setStart(dag.getNode(edge.getStart()).getId());
+            vo.setEnd(dag.getNode(edge.getEnd()).getId());
+            result.getEdge().add(vo);
+        });
+        return result;
     }
 
 

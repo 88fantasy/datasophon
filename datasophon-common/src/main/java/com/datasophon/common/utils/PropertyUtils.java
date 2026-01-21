@@ -40,7 +40,7 @@ import java.util.Properties;
  */
 public class PropertyUtils {
 
-    public static final String CONFIG_HOME = "/common.properties";
+    public static final String CONFIG_HOME = "conf/common.properties";
 
     /**
      * logger
@@ -56,28 +56,33 @@ public class PropertyUtils {
 
     static {
         List<String> propertyFiles = new ArrayList<>();
-        propertyFiles.add(CONFIG_HOME);
+        propertyFiles.add(FileUtils.concatPath(System.getenv("DDH_HOME"), CONFIG_HOME));
 
-        String mode = System.getProperty("devMode");
         String path = System.getProperty("commonPropertiesLocation");
-        if ("local".equals(mode) && StrUtil.isNotBlank(path)) {
+        if (StrUtil.isNotBlank(path)) {
             propertyFiles.add(path);
         }
 
+        boolean found = false;
         for (String fileName : propertyFiles) {
+            File file = new File(fileName);
             InputStream inputStream = null;
             try {
-                inputStream = PropertyUtils.class.getResourceAsStream(fileName);
+                inputStream = Files.newInputStream(file.toPath());
                 properties.load(inputStream);
+                found = true;
             } catch (FileNotFoundException | NoSuchFileException e) {
-                logger.warn("file {} do not exist", fileName);
-                System.exit(1);
+                logger.warn("file {} do not exist, we just ignore", fileName);
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
                 System.exit(1);
             } finally {
                 IOUtils.closeQuietly(inputStream);
             }
+        }
+        if (!found) {
+            logger.error("can not load common.properties from {}", StrUtil.join(",", propertyFiles));
+            System.exit(1);
         }
     }
 
