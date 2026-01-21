@@ -17,15 +17,12 @@
 
 package com.datasophon.api.master;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
-
-import com.datasophon.api.service.ClusterGroupService;
+import akka.actor.ActorRef;
+import akka.actor.UntypedActor;
+import cn.hutool.core.util.ObjectUtil;
 import com.datasophon.api.service.ClusterInfoService;
-import com.datasophon.api.service.ClusterServiceCommandService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
-import com.datasophon.api.service.ClusterUserService;
+import com.datasophon.api.service.extrepo.ExtRepoInstallService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SpringTool;
@@ -38,26 +35,22 @@ import com.datasophon.common.model.HostInfo;
 import com.datasophon.common.model.StartWorkerMessage;
 import com.datasophon.common.model.WorkerServiceMessage;
 import com.datasophon.common.utils.CollectionUtils;
-import com.datasophon.common.utils.Result;
-import com.datasophon.dao.entity.ClusterGroup;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
-import com.datasophon.dao.entity.ClusterUser;
 import com.datasophon.dao.enums.ServiceRoleState;
 import com.datasophon.domain.host.enums.MANAGED;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import akka.actor.ActorRef;
-import akka.actor.UntypedActor;
-import cn.hutool.core.util.ObjectUtil;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
 
 public class WorkerStartActor extends UntypedActor {
     
@@ -128,8 +121,8 @@ public class WorkerStartActor extends UntypedActor {
                                               boolean needRestart) {
         ClusterServiceRoleInstanceService roleInstanceService =
                 SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
-        ClusterServiceCommandService serviceCommandService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceCommandService.class);
+        ExtRepoInstallService extRepoInstallService =
+                SpringTool.getApplicationContext().getBean(ExtRepoInstallService.class);
         
         List<ClusterServiceRoleInstanceEntity> serviceRoleList = null;
         // 启动服务
@@ -156,33 +149,18 @@ public class WorkerStartActor extends UntypedActor {
             return;
         }
         
-        Map<Integer, List<String>> serviceRoleMap = serviceRoleList.stream()
+        Map<Integer, List<Integer>> serviceRoleMap = serviceRoleList.stream()
                 .collect(
                         groupingBy(
                                 ClusterServiceRoleInstanceEntity::getServiceId,
-                                mapping(i -> String.valueOf(i.getId()), toList())));
-        Result result =
-                serviceCommandService.generateServiceRoleCommands(clusterId, commandType, serviceRoleMap);
-        if (result.getCode() == 200) {
+                                mapping(ClusterServiceRoleInstanceEntity::getId, toList())));
+        try {
+            extRepoInstallService.generateAndExecSrvRoleCommands(clusterId, commandType, serviceRoleMap);
             logger.info("Auto-start services successful");
-        } else {
-            logger.info("Some service auto-start failed, please check logs of the services that failed to start.");
+        } catch (Exception e) {
+            logger.info("Some service auto-start failed, please check logs of the services that failed to start.", e);
         }
     }
-    
-    private void syncClusterUserAndGroup(Integer clusterId, String hostname) {
-        ClusterGroupService clusterGroupService = SpringTool.getApplicationContext().getBean(ClusterGroupService.class);
-        ClusterUserService clusterUserService = SpringTool.getApplicationContext().getBean(ClusterUserService.class);
-        
-        List<ClusterGroup> userGroupList = clusterGroupService.listAllUserGroup(clusterId);
-        for (ClusterGroup clusterGroup : userGroupList) {
-            String groupName = clusterGroup.getGroupName();
-            clusterGroupService.createUnixGroupOnHost(hostname, groupName);
-        }
-        List<ClusterUser> userList = clusterUserService.listAllUser(clusterId);
-        for (ClusterUser clusterUser : userList) {
-            clusterUserService.createUnixUserOnHost(clusterUser, hostname);
-        }
-    }
+
     
 }

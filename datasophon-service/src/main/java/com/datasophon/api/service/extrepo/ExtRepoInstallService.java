@@ -8,6 +8,7 @@ import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.enums.CommandType;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author zhanghuangbin
@@ -29,4 +30,10 @@ public interface ExtRepoInstallService {
     String generateGenericInstallCommand(Integer clusterId, List<String> serviceNames);
 
     String generateAndExecSrvInstCmd(Integer clusterId, CommandType command, List<Integer> ids);
+
+    String generateAndExecSrvRoleCmd(Integer clusterId, CommandType command, Integer serviceInstanceId, List<Integer> ids);
+
+
+    void generateAndExecSrvRoleCommands(Integer clusterId, CommandType commandType, Map<Integer, List<Integer>> instanceIdMap);
+
 }

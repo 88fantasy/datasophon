@@ -17,6 +17,7 @@
 
 package com.datasophon.api.controller;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.EnumUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.datasophon.api.enums.Status;
@@ -33,6 +34,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -109,7 +111,7 @@ public class ClusterServiceCommandController extends ApiController {
 
 
 
-    @RequestMapping("/generateAndExecSrvInstCmd")
+    @PostMapping("/generateAndExecSrvInstCmd")
     @UserPermission
     @Operation(summary = "执行服务通用操作(启停,不含安装)")
     public Result generateAndExecSrvInstCmd(Integer clusterId, String commandType, String serviceInstanceIds) {
@@ -134,7 +136,21 @@ public class ClusterServiceCommandController extends ApiController {
         return clusterServiceCommandService.generateServiceRoleCommand(clusterId, command, serviceInstanceId, ids);
         
     }
-    
+
+    @PostMapping("/generateAndSrvRoleCmd")
+    @UserPermission
+    public Result generateAndSrvRoleCmd(Integer clusterId, String commandType, Integer serviceInstanceId,
+                                             String serviceRoleInstancesIds) {
+        List<Integer> ids = ConverterUtils.convertIds(serviceRoleInstancesIds, Integer::parseInt);
+        if (CollectionUtil.isEmpty(ids)) {
+            CommandType command = EnumUtil.fromString(CommandType.class, commandType);
+            return Result.success(extRepoInstallService.generateAndExecSrvRoleCmd(clusterId, command, serviceInstanceId, ids));
+        } else {
+            return Result.error(Status.NO_SERVICE_EXECUTE.getMsg());
+        }
+    }
+
+
     /**
      * 启动执行指令
      */

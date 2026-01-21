@@ -333,8 +333,5 @@ public class ClusterServiceCommandServiceImpl extends ServiceImpl<ClusterService
        return lambdaQuery().eq(ClusterServiceCommandEntity::getCommandId, commandId).one();
     }
 
-    @Override
-    public String generateUpgradeCommand(Integer clusterId, List<String> serviceNames) {
-        return "";
-    }
+
 }

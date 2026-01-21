@@ -54,5 +54,4 @@ public interface ClusterServiceCommandService extends IService<ClusterServiceCom
 
     ClusterServiceCommandEntity getCommandById(String commandId);
 
-    String generateUpgradeCommand(Integer clusterId, List<String> serviceNames);
 }

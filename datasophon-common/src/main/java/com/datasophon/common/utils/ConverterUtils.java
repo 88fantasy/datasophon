@@ -18,7 +18,7 @@ public class ConverterUtils {
         }
         List<T> result = new ArrayList<>();
         for(String idPart : id.split(",")) {
-            if (StrUtil.isEmpty(idPart)) {
+            if (StrUtil.isNotBlank(idPart)) {
                 result.add(mapper.apply(idPart));
             }
         }
