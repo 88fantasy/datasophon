@@ -28,7 +28,6 @@ import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterAlertHistoryService;
 import com.datasophon.api.service.ClusterInfoService;
-import com.datasophon.api.service.ClusterServiceCommandService;
 import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
@@ -88,9 +87,6 @@ public class ClusterServiceRoleInstanceServiceImpl
   @Autowired
   FrameServiceService frameService;
 
-
-  @Autowired
-  private ClusterServiceCommandService commandService;
 
   @Autowired
   private ExtRepoInstallService extRepoInstallService;

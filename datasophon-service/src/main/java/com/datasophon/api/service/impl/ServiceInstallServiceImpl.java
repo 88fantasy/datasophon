@@ -32,7 +32,6 @@ import com.datasophon.api.load.Application;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.service.ClusterInfoService;
-import com.datasophon.api.service.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.ClusterServiceCommandService;
 import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
@@ -129,10 +128,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
 
     @Autowired
     private ClusterServiceInstanceService serviceInstanceService;
-
-
-    @Autowired
-    private ClusterServiceCommandHostCommandService hostCommandService;
 
     @Autowired
     private ClusterVariableService variableService;

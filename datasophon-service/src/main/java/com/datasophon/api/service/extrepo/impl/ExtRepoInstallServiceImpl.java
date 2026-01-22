@@ -53,7 +53,6 @@ import com.datasophon.common.model.ServiceInfo;
 import com.datasophon.common.model.ServiceNode;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.model.ServiceRoleInfo;
-import com.datasophon.common.utils.ConverterUtils;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
@@ -250,7 +249,9 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             configs.forEach(conf -> {
                 DeploySrvConfig deployConf = configMap.get(conf.getName());
                 if (deployConf == null) {
-                    conf.setValue(conf.getDefaultValue());
+                    if (conf.getValue() == null) {
+                        conf.setValue(conf.getDefaultValue());
+                    }
                 } else {
                     conf.setValue(deployConf.getValue());
                 }
