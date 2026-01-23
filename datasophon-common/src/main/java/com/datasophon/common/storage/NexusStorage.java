@@ -19,6 +19,10 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 /**
@@ -26,6 +30,7 @@ import java.util.function.Function;
  */
 public class NexusStorage implements PackageStorage {
 
+    private static Map<String, ReentrantLock> LOCK_MAP = new ConcurrentHashMap<>();
 
     @Override
     public boolean isEnabled() {
@@ -88,27 +93,34 @@ public class NexusStorage implements PackageStorage {
     @Override
     public void downloadPackageToLocal(String packageName) {
         ensureNexusEnable();
-        File file = new File(Constants.MASTER_MANAGE_PACKAGE_PATH, packageName);
-        boolean needDownload;
-        if (!file.exists()) {
-            needDownload = true;
-        } else {
-            String remoteMd5 = readPackageMd5(packageName);
+        Lock lock = LOCK_MAP.computeIfAbsent(packageName, k -> new ReentrantLock());
+        try {
+            lock.lock();
+            File file = new File(Constants.MASTER_MANAGE_PACKAGE_PATH, packageName);
+            boolean needDownload;
+            if (!file.exists()) {
+                needDownload = true;
+            } else {
+                String remoteMd5 = readPackageMd5(packageName);
 //          ant生成的md5文件，会存在\r\n,直接去掉
-            remoteMd5 = remoteMd5.replaceAll("\\s", "");
-            String md5 = DigestUtil.md5Hex(file);
-            needDownload = !md5.equalsIgnoreCase(remoteMd5);
-        }
-        if (needDownload) {
-            NexusUri registry = getNexusUri();
-            String path = "packages/" + packageName;
-            try (InputStream in = NexusFileUtils.downStream(NexusFileUtils.getNexusRawObjectUrl(path), registry.getUser(), registry.getPassword())) {
-                FileUtil.copyFile(in, file, StandardCopyOption.REPLACE_EXISTING);
-            } catch (FileNotFoundException e) {
-                throw new IllegalStateException(String.format("package %s does not exists at %s", packageName, NexusFileUtils.getNexusRawObjectUrl(path)), e);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                remoteMd5 = remoteMd5.replaceAll("\\s", "");
+                String md5 = DigestUtil.md5Hex(file);
+                needDownload = !md5.equalsIgnoreCase(remoteMd5);
             }
+            if (needDownload) {
+                NexusUri registry = getNexusUri();
+                String path = "packages/" + packageName;
+                try (InputStream in = NexusFileUtils.downStream(NexusFileUtils.getNexusRawObjectUrl(path), registry.getUser(), registry.getPassword())) {
+                    FileUtil.copyFile(in, file, StandardCopyOption.REPLACE_EXISTING);
+                } catch (FileNotFoundException e) {
+                    throw new IllegalStateException(String.format("package %s does not exists at %s", packageName, NexusFileUtils.getNexusRawObjectUrl(path)), e);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        } finally {
+            LOCK_MAP.remove(packageName);
+            lock.unlock();
         }
     }
 

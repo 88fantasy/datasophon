@@ -19,7 +19,6 @@
 
 package com.datasophon.api.master;
 
-import akka.actor.UntypedActor;
 import com.datasophon.api.master.handler.host.CheckWorkerMd5Handler;
 import com.datasophon.api.master.handler.host.DecompressWorkerHandler;
 import com.datasophon.api.master.handler.host.DispatcherWorkerHandlerChain;
@@ -41,26 +40,19 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Option;
 
 import java.util.function.Consumer;
 
-public class DispatcherWorkerActor extends UntypedActor {
+public class DispatcherWorkerActor extends TypedActor<DispatcherHostAgentCommand> {
 
     private static final Logger logger = LoggerFactory.getLogger(DispatcherWorkerActor.class);
 
-    @Override
-    public void preRestart(Throwable reason, Option<Object> message) throws Exception {
-        logger.info("host actor restart because {}", reason.getMessage());
-        super.preRestart(reason, message);
-    }
 
     @Override
-    public void onReceive(Object message) throws Throwable {
-        DispatcherHostAgentCommand command = (DispatcherHostAgentCommand) message;
+    protected void doOnReceive(DispatcherHostAgentCommand command) throws Throwable {
         HostInfo hostInfo = command.getHostInfo();
         String localIp = HostUtils.getLocalIp();
-        logger.info("start dispatcher host agent :{}", hostInfo.getHostname());
+        logger.info("start dispatcher host agent :{}， ip: {}", hostInfo.getHostname(), hostInfo.getIp());
         hostInfo.setMessage(MessageResolverUtils.getMessage("distributed.host.management.agent.installation.package"));
 
         doWithSession(hostInfo, session -> {
@@ -77,7 +69,7 @@ public class DispatcherWorkerActor extends UntypedActor {
                 handlerChain.addHandler(new InstallJDKHandler());
                 handlerChain.addHandler(new StartWorkerHandler(command.getClusterId(), command.getClusterFrame()));
                 handlerChain.handle(session, hostInfo);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 logger.error("dispatcher manage node host agent {} failed", hostInfo.getHostname(), e);
                 hostInfo.setErrMsg(e.getMessage());
                 hostInfo.setMessage(MessageResolverUtils.getMessage("dispatcher manage node host agent failed"));

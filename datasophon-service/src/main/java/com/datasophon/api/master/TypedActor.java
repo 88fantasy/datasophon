@@ -59,14 +59,15 @@ public abstract class TypedActor<T> extends UntypedActor {
                 unhandled(message);
             }
         } catch (Throwable throwable) {
-            onError(throwable);
+            onError(message, throwable);
         }
     }
 
 
     protected abstract void doOnReceive(T message) throws Throwable;
 
-    protected void onError(Throwable throwable) throws Throwable {
+    protected void onError(Object message, Throwable throwable) throws Throwable {
+        log.error("{} receive messageType: {}, but handle fail, ", this.getClass().getSimpleName(), message == null ? "null" : message.getClass().getSimpleName(), throwable);
         throw throwable;
     }
 
