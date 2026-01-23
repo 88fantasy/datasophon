@@ -163,7 +163,7 @@ public class InstallServiceHandler {
 
                 if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
                     command.add("tar");
-                    command.add("-zxvf");
+                    command.add("-zxf");
                     command.add(sourceFile);
                     command.add("-C");
                     command.add(serviceDecompressDir);

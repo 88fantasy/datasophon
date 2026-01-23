@@ -44,7 +44,7 @@ public class KAdminHandlerStrategy extends AbstractHandlerStrategy implements Se
             }
         } else {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+                    command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
         }
         return startResult;
     }

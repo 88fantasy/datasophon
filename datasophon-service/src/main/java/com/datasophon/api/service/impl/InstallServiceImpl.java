@@ -242,8 +242,7 @@ public class InstallServiceImpl implements InstallService {
     }
     
     @Override
-    public Result rehostCheck(
-                              Integer clusterId, String hostnames, String sshUser, Integer sshPort) {
+    public Result rehostCheck(Integer clusterId, String hostnames, String sshUser, Integer sshPort) {
         // 开启主机校验
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
@@ -265,8 +264,7 @@ public class InstallServiceImpl implements InstallService {
     }
     
     @Override
-    public Result dispatcherHostAgentList(
-                                          Integer clusterId, Integer installStateCode, Integer page, Integer pageSize) {
+    public Result dispatcherHostAgentList(Integer clusterId, Integer installStateCode, Integer page, Integer pageSize) {
         
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
@@ -323,8 +321,7 @@ public class InstallServiceImpl implements InstallService {
         
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
-        Map<String, HostInfo> map =
-                (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
+        Map<String, HostInfo> map = (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
         
         for (String hostname : hostnames.split(",")) {
             ClusterHostDO clusterHost = hostService.getClusterHostByHostname(hostname);
@@ -335,20 +332,16 @@ public class InstallServiceImpl implements InstallService {
                 hostInfo.setHostname(hostname);
                 hostInfo.setSshUser("root");
                 hostInfo.setSshPort(Constants.PORT_DEFAULT);
+                hostInfo.setIp(clusterHost.getIp());
             }
-            ActorRef hostActor =
-                    ActorUtils.getLocalActor(
-                            DispatcherWorkerActor.class, "dispatcherWorkerActor-" + hostname);
+            ActorRef hostActor = ActorUtils.getLocalActor(DispatcherWorkerActor.class, "dispatcherWorkerActor-" + hostname);
             
             hostInfo.setInstallState(InstallState.RUNNING);
             hostInfo.setInstallStateCode(InstallState.RUNNING.getValue());
             hostInfo.setErrMsg("");
             hostInfo.setProgress(0);
             
-            hostActor.tell(
-                    new DispatcherHostAgentCommand(
-                            hostInfo, clusterId, clusterInfo.getClusterFrame()),
-                    ActorRef.noSender());
+            hostActor.tell(new DispatcherHostAgentCommand(hostInfo, clusterId, clusterInfo.getClusterFrame()), ActorRef.noSender());
         }
         return Result.success();
     }
@@ -357,13 +350,10 @@ public class InstallServiceImpl implements InstallService {
     public Result hostCheckCompleted(Integer clusterId) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
-        Map<String, HostInfo> map =
-                (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
+        Map<String, HostInfo> map = (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
         for (Map.Entry<String, HostInfo> hostInfoEntry : map.entrySet()) {
             HostInfo value = hostInfoEntry.getValue();
-            if (Objects.isNull(value.getCheckResult())
-                    || (Objects.nonNull(value.getCheckResult())
-                            && value.getCheckResult().getCode() != 10001)) {
+            if (Objects.isNull(value.getCheckResult()) || value.getCheckResult().getCode() != 10001) {
                 return Result.success().put("hostCheckCompleted", false);
             }
         }
@@ -371,10 +361,8 @@ public class InstallServiceImpl implements InstallService {
     }
     
     @Override
-    public Result cancelDispatcherHostAgent(
-                                            Integer clusterId, String hostname, Integer installStateCode) {
-        
-        return null;
+    public Result cancelDispatcherHostAgent(Integer clusterId, String hostname, Integer installStateCode) {
+        throw new UnsupportedOperationException("操作不支持");
     }
     
     @Override

@@ -55,6 +55,6 @@ public class HistoryServerHandlerStrategy extends AbstractHandlerStrategy implem
             ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chmod -R 777 /tmp/logs");
         }
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs());
+                command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
     }
 }

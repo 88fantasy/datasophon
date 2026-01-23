@@ -1,6 +1,6 @@
 import { CheckCircleOutlined, ClockCircleOutlined, ForkOutlined } from "@ant-design/icons"
 import { ProCard, ProForm } from "@ant-design/pro-components"
-import { Button, Card, Col, Empty } from "antd"
+import { Button, Card, Col, Dropdown, Empty } from "antd"
 import { blue, gold, gray, red } from '@ant-design/colors';
 import { invokeRenderSimpleDetails } from "../../../../../components/Common/CommonDetails";
 import { showComfirmModal, showMsgAfferRequest } from "../../../../../utils/util";
@@ -20,6 +20,7 @@ const showConfigModal = asyncHook(() =>
     import("../ConfigModal/api"));
 
 const showUploadDeployModal = asyncHook(() => import('../../../../../components/UploadDeployModal/api'))
+const showUploadDeployConfigModal = asyncHook(() => import('../../../../../components/UploadDeployConfigModal/api'))
 
 
 const Index = ({
@@ -104,9 +105,22 @@ const Index = ({
     const onImportClick = useCallback(async (record) => {
         const modelApi = await showUploadDeployModal()
         modelApi.default({
-            record
+            record,
+            onOk: () => {
+                invokeInit()
+            }
         })
-    }, [])
+    }, [invokeInit])
+
+    const onImportDeployManifestClick = useCallback(async (record) => {
+        const modelApi = await showUploadDeployConfigModal()
+        modelApi.default({
+            record,
+            onOk: () => {
+                invokeInit()
+            }
+        })
+    }, [invokeInit])
 
 
 
@@ -141,9 +155,18 @@ const Index = ({
             },
             {
                 label: '导入',
-                disabled: clusterStateCode !== 2,
+                children: [
+                    {
+                        label: '部署包',
+                        onClick: onImportClick.bind(noop, val)
 
-                onClick: onImportClick.bind(noop, val)
+                    },
+                    {
+                        label: '部署清单',
+                        onClick: onImportDeployManifestClick.bind(noop, val)
+                    }
+                ],
+                disabled: clusterStateCode !== 2,
             },
             {
                 label: '初始化',
@@ -183,7 +206,9 @@ const Index = ({
                 }
             }
         ].map(v => {
-            return (
+            const disbaled = v.disabled
+
+            let res = (
                 <Button
                     color={v.disabled ? 'default' : v.color || 'primary'}
                     variant="text"
@@ -195,6 +220,30 @@ const Index = ({
                     {v.label}
                 </Button>
             )
+
+            if (v.children?.length && !disbaled) {
+                res = (
+                    <Dropdown
+                        disabled={v.disabled}
+                        menu={{
+                            items: v.children.map(val => {
+                                return {
+                                    ...val,
+                                    key: val.label,
+                                }
+                            }),
+                        }}
+                    >
+                        {
+                            res
+                        }
+                    </Dropdown>
+                )
+            }
+
+
+            return res
+
         })
     }, [clusterStateCode, invokeInit, onEditOrBuildClick, onImportClick, val])
 

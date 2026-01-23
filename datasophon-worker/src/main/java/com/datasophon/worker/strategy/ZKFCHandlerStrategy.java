@@ -17,7 +17,6 @@
 
 package com.datasophon.worker.strategy;
 
-import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ExecResult;
@@ -51,13 +50,13 @@ public class ZKFCHandlerStrategy extends AbstractHandlerStrategy implements Serv
             if (execResult.getExecResult()) {
                 logger.info("zkfc format success");
                 startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                        command.getDecompressPackageName(), command.getRunAs());
+                        command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
             } else {
                 logger.info("zkfc format failed");
             }
         } else {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+                    command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
         }
         return startResult;
     }

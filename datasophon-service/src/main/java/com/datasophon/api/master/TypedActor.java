@@ -1,7 +1,6 @@
 package com.datasophon.api.master;
 
 import akka.actor.UntypedActor;
-import com.datasophon.api.service.ClusterServiceCommandService;
 import com.datasophon.api.utils.SpringTool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.Assert;
@@ -52,15 +51,26 @@ public abstract class TypedActor<T> extends UntypedActor {
 
     @Override
     public void onReceive(Object message) throws Throwable {
-        boolean match = message != null && clazz.isAssignableFrom(message.getClass());
-        if (match) {
-            doOnReceive((T) message);
-        } else {
-            unhandled(message);
+        try {
+            boolean match = message != null && clazz.isAssignableFrom(message.getClass());
+            if (match) {
+                doOnReceive((T) message);
+            } else {
+                unhandled(message);
+            }
+        } catch (Throwable throwable) {
+            onError(message, throwable);
         }
     }
 
+
     protected abstract void doOnReceive(T message) throws Throwable;
+
+    protected void onError(Object message, Throwable throwable) throws Throwable {
+        log.error("{} receive messageType: {}, but handle fail, ", this.getClass().getSimpleName(), message == null ? "null" : message.getClass().getSimpleName(), throwable);
+        throw throwable;
+    }
+
 
     protected <T> T getBean(Class<T> clazz) {
         return SpringTool.getApplicationContext().getBean(clazz);

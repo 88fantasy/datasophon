@@ -50,6 +50,8 @@ public class WorkerActor extends UntypedActor {
                 getContext().actorOf(Props.create(StartServiceActor.class), getActorRefName(StartServiceActor.class));
         ActorRef stopServiceActor =
                 getContext().actorOf(Props.create(StopServiceActor.class), getActorRefName(StopServiceActor.class));
+        ActorRef statusActor =
+                getContext().actorOf(Props.create(ServiceStatusActor.class), getActorRefName(ServiceStatusActor.class));
         ActorRef restartServiceActor = getContext().actorOf(Props.create(RestartServiceActor.class),
                 getActorRefName(RestartServiceActor.class));
         ActorRef logActor = getContext().actorOf(Props.create(LogActor.class), getActorRefName(LogActor.class));
@@ -76,6 +78,7 @@ public class WorkerActor extends UntypedActor {
         getContext().watch(configureServiceActor);
         getContext().watch(startServiceActor);
         getContext().watch(stopServiceActor);
+        getContext().watch(statusActor);
         getContext().watch(restartServiceActor);
         getContext().watch(logActor);
         getContext().watch(executeCmdActor);
@@ -87,17 +90,18 @@ public class WorkerActor extends UntypedActor {
         getContext().watch(rMStateActor);
         getContext().watch(nMStateActor);
         getContext().watch(pingActor);
+        getContext().watch(pingActor);
     }
-    
+
     /** Get ActorRef name from Class name. */
     private String getActorRefName(Class clazz) {
         return StringUtils.uncapitalize(clazz.getSimpleName());
     }
-    
+
     @Override
     public void onReceive(Object message) throws Throwable {
         if (message instanceof String) {
-            
+
         } else if (message instanceof Terminated) {
             Terminated t = (Terminated) message;
             logger.info("find actor {} terminated", t.getActor());

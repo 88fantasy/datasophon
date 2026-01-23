@@ -83,7 +83,7 @@ public class TempFileController extends ApiController {
 
     @PostMapping("/isChunkUploaded")
     @Operation(summary = "分片是否已经上传")
-    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = Boolean.class))})
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = UploadTempFileChunk.class))})
     public Result mergeChunk(@RequestBody @Validated CheckChunkDTO vo) {
         return Result.success(uploadTempFileService.isChunkUploaded(vo));
     }

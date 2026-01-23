@@ -113,7 +113,7 @@ public class ApisixHandlerStrategy extends AbstractHandlerStrategy implements Se
             logger.info("delete bak config file : {}", execResult.getExecOut());
         }
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs());
+                command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
     }
 
 

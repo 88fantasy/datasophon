@@ -31,7 +31,7 @@ public enum CommandType {
     START_WITH_CONFIG(5, "START_WITH_CONFIG", "更新配置后启动"),
     RESTART_WITH_CONFIG(6, "RESTART_WITH_CONFIG", "更新配置后重启"),
     UPGRADE_SERVICE(7, "UPGRADE_SERVICE", "升级"),
-
+    CHECK_STATUS(8, "CHECK_STATUS", "检查状态")
     ;
     
     private int value;

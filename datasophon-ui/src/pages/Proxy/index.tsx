@@ -29,6 +29,7 @@ import asyncHook from '../../components/Common/CommonModal/asyncHook';
 
 import bg1 from '../../assets/O1CN01O4etvp1DvpFLKfuWq_!!6000000000279-2-tps-609-606.png'
 import bg2 from '../../assets/O1CN018NxReL1shX85Yz6Cx_!!6000000005798-2-tps-884-496.png'
+import gobalEvent, { uiEvent } from '../../utils/gobalEvent';
 
 const showUserCenterModal = asyncHook(() => import('./components/UserCenterModal/api'))
 
@@ -248,8 +249,8 @@ const Index = () => {
             invokeCancelGetServiceList()
 
             if (clusterId) {
-                await fn(!hadInit)
-                resolve()
+                const res = await fn(!hadInit)
+                resolve(res)
             }
         })
 
@@ -375,6 +376,25 @@ const Index = () => {
 
 
 
+    const invokeUpdateServiceList = useCallback(async () => {
+        const res = await invokeGetServiceList(false)
+
+
+
+        if (!res?.data?.find(val => String(val.id) === instanceId)) {
+            const firstItem = memoServiceRouteObj?.routes[0]
+
+            if (firstItem) {
+                // navigate(invokeHandlePath(firstItem.path))
+                onMenuClick(firstItem)
+            }
+        }
+
+
+    }, [instanceId, invokeGetServiceList, memoServiceRouteObj?.routes, onMenuClick])
+
+
+
 
     const memoAvatarProps = useMemo(() => {
         return {
@@ -414,7 +434,6 @@ const Index = () => {
         }
     }, [onLogoutClick, user.avatar, user.username])
 
-
     useEffect(() => {
         invokeInit()
     }, [invokeInit])
@@ -452,7 +471,8 @@ const Index = () => {
                         }}
                         avatarProps={memoAvatarProps}
                         actionsRender={actionsRender.bind(noop, {
-                            clusterId
+                            clusterId,
+                            invokeUpdateServiceList
                         })}
                         menuItemRender={menuRender.bind(noop, {
                             onMenuClick,

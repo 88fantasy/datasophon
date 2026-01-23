@@ -41,7 +41,7 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
     UploadTempFileChunk uploadChunk(ChunkDTO info);
 
 
-    boolean isChunkUploaded(CheckChunkDTO dto);
+    UploadTempFileChunk isChunkUploaded(CheckChunkDTO dto);
     /**
      * 合并分片
      * @param vo

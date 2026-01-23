@@ -16,4 +16,5 @@ export default {
   createShardUploadTask: path + "/tempfile/createShardUploadTask",
   mergeChunk: path + "/tempfile/mergeChunk",
   queryMergeProgress: path + "/tempfile/queryMergeProgress",
+  isChunkUploaded: path + "/tempfile/isChunkUploaded",
 };

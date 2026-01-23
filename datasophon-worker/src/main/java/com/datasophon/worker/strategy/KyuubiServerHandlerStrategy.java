@@ -55,7 +55,7 @@ public class KyuubiServerHandlerStrategy extends AbstractHandlerStrategy impleme
                 command.getStartRunner(),
                 command.getStatusRunner(),
                 command.getDecompressPackageName(),
-                command.getRunAs());
+                command.getRunAs(), command.isCheckStatus());
         return startResult;
     }
 }

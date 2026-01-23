@@ -206,7 +206,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     }
 
     @Override
-    public boolean isChunkUploaded(CheckChunkDTO dto) {
+    public UploadTempFileChunk isChunkUploaded(CheckChunkDTO dto) {
         UploadTempFile db = getById(dto.getAttachId());
         if (db == null) {
             throw new BusinessException("任务不存在");
@@ -220,13 +220,16 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
                         .eq(UploadTempFileChunk::getChunkNo, dto.getChunkNo())
         );
         if (chunk == null) {
-            return false;
+            return null;
         }
         if (!chunk.getMd5().equalsIgnoreCase(dto.getMd5())) {
-            return false;
+            return null;
         }
         Path chunkPath = PathUtils.join(getSaveDir().toPath(), dto.getAttachId().toString(), createChunkName(db.getFileName(), dto.getChunkNo()));
-        return chunkPath.toFile().exists();
+        if (chunkPath.toFile().exists()) {
+            return chunk;
+        }
+        return null;
     }
 
 

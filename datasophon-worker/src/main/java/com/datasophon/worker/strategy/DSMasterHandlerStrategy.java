@@ -17,28 +17,22 @@
 
 package com.datasophon.worker.strategy;
 
-import com.datasophon.common.Constants;
+import cn.hutool.core.io.file.FileReader;
+import cn.hutool.db.DbUtil;
+import cn.hutool.db.ds.simple.SimpleDataSource;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
+import com.datasophon.worker.utils.SqlUtils;
 
 import java.io.File;
 import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import cn.hutool.core.io.file.FileReader;
-import cn.hutool.db.DbUtil;
-import cn.hutool.db.ds.simple.SimpleDataSource;
-import cn.hutool.db.handler.RsHandler;
-import cn.hutool.db.sql.SqlExecutor;
-import com.datasophon.worker.utils.SqlUtils;
 
 public class DSMasterHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
     
@@ -101,7 +95,7 @@ public class DSMasterHandlerStrategy extends AbstractHandlerStrategy implements 
         }
         
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs());
+                command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
     }
     
     private String getValue(String line) {

@@ -103,34 +103,54 @@ export const uploadChunk = async (
         chunkMd5,
         attachId,
         fileSize,
-        onUploadProgress
-    }
+        onUploadProgress,
+        signal
+    },
+
 ) => {
-    const formData = new FormData();
-    formData.append('chunk', chunk);
-    formData.append('chunkNo', String(chunkIndex));
-    formData.append('attachId', attachId);
-    formData.append('md5', chunkMd5);
-    // formData.append('filename', filename);
 
-    console.log('formData', formData.get('chunkNo'))
 
-    // const res = await axiosPostUpload(API.uploadChunk, formData)
-    const res = await axios.post(API.uploadChunk, formData, {
-        onUploadProgress
-        // headers: {
-        //     'Content-Type': undefined // 强制 Axios 交由浏览器处理
-        // }
-        // headers: {
-        //     'Content-Type': 'multipart/form-data',
-        // },
+    let res = await axios.post(API.isChunkUploaded, {
+        attachId,
+        chunkNo: String(chunkIndex),
+        md5: chunkMd5
+
     })
 
-    console.log('res', res)
 
-    if (res.data.code !== 200) {
-        throw new Error(`Chunk ${chunkIndex} upload failed`);
+    if (res.code !== 200 || !res.data) {
+        const formData = new FormData();
+        formData.append('chunk', chunk);
+        formData.append('chunkNo', String(chunkIndex));
+        formData.append('attachId', attachId);
+        formData.append('md5', chunkMd5);
+        // formData.append('filename', filename);
+
+        console.log('formData', formData.get('chunkNo'))
+
+
+
+        // const res = await axiosPostUpload(API.uploadChunk, formData)
+        res = await axios.post(API.uploadChunk, formData, {
+            signal,
+            onUploadProgress
+            // headers: {
+            //     'Content-Type': undefined // 强制 Axios 交由浏览器处理
+            // }
+            // headers: {
+            //     'Content-Type': 'multipart/form-data',
+            // },
+        })
+
+        console.log('res', res)
+
+        if (res.data.code !== 200) {
+            throw new Error(`Chunk ${chunkIndex} upload failed`);
+        }
     }
+
+
+
 
     return res
 };
@@ -161,12 +181,17 @@ export const invokeQueryMergeProgress = async (id: string) => {
 };
 
 
-export const invokeCreateUploadTask = async (file: File, chunk: number = 0) => {
+export const invokeCreateUploadTask = async (obj = {}, chunk: number = 0) => {
+    const {
+        file,
+        md5
+    } = obj
     const res = await axiosPostUpload(API.createShardUploadTask, {
         fileName: file.name,
         contentType: file.type,
         byteCnt: file.size,
-        chunk
+        chunk,
+        md5
     })
 
     return res
@@ -181,7 +206,9 @@ export const invokeMakePartUploadRequest = async (options) => {
         file,
         onProgress,
         onSuccess,
-        onError
+        onError,
+        signal
+
     } = options
 
     const _file = file;
@@ -200,107 +227,107 @@ export const invokeMakePartUploadRequest = async (options) => {
 
 
         const invokeCreateUploadTaskRes = await invokeCreateUploadTask(
-            file,
-            // totalChunks
+            {
+                file,
+                md5: fileMd5
+            }
         )
 
-        if (invokeCreateUploadTaskRes.code === 200) {
-            chunkSize = invokeCreateUploadTaskRes.data.chunkSize || CHUNK_SIZE
-        }
+        if (invokeCreateUploadTaskRes.data?.uploadType !== 2) {
 
-        const fileSize = _file.size
-
-        const totalChunks = Math.ceil(fileSize / chunkSize);
-
-
-        // console.log('totalChunks', totalChunks)
-
-        let uploadedSize = 0
-        const onUploadProgress = (chunk, progressEvent) => {
-            // console.log('progressEvent', progressEvent, fileSize)
-            const currentChunkUploaded = progressEvent.loaded;
-            const totalUploaded = uploadedSize + currentChunkUploaded;
-            const percent = (totalUploaded / file.size) * 100;
-            onProgress?.({ percent }, _file);
-        }
-
-        // 3. 逐个上传未完成的分片
-        for (let i = 0; i < totalChunks; i++) {
-            if (uploadedChunks.has(i)) {
-                console.log(`Chunk ${i} already uploaded, skip.`);
-                continue;
+            if (invokeCreateUploadTaskRes.code === 200) {
+                chunkSize = invokeCreateUploadTaskRes.data.chunkSize || CHUNK_SIZE
             }
 
-            const start = i * chunkSize;
-            const end = Math.min(start + chunkSize, _file.size);
-            const chunk = _file.slice(start, end);
+            const fileSize = _file.size
 
-            // 计算分片 MD5
-            const chunkMd5 = await computeChunkMD5Base64(chunk);
+            const totalChunks = Math.ceil(fileSize / chunkSize);
 
 
+            // console.log('totalChunks', totalChunks)
 
-            // 上传分片
-            await uploadChunk({
-                chunk,
-                chunkIndex: i,
-                totalChunks,
-                fileMd5,
-                filename: _file.name,
-                chunkMd5,
-                attachId: invokeCreateUploadTaskRes.data.id,
-                onUploadProgress: onUploadProgress.bind(noop, {
-                    i,
+            let uploadedSize = 0
+            const onUploadProgress = (chunk, progressEvent) => {
+                // console.log('progressEvent', progressEvent, fileSize)
+                const currentChunkUploaded = progressEvent.loaded;
+                const totalUploaded = uploadedSize + currentChunkUploaded;
+                const percent = (totalUploaded / file.size) * 100;
+                onProgress?.({ percent }, _file);
+            }
+
+            // 3. 逐个上传未完成的分片
+            for (let i = 0; i < totalChunks; i++) {
+                if (uploadedChunks.has(i)) {
+                    console.log(`Chunk ${i} already uploaded, skip.`);
+                    continue;
+                }
+
+                const start = i * chunkSize;
+                const end = Math.min(start + chunkSize, _file.size);
+                const chunk = _file.slice(start, end);
+
+                // 计算分片 MD5
+                const chunkMd5 = await computeChunkMD5Base64(chunk);
+
+
+
+
+                // 上传分片
+                await uploadChunk({
+                    chunk,
+                    chunkIndex: i,
                     totalChunks,
-                    chunk
-                }),
-                fileSize
-            });
-
-            // 保存上传记录（断点续传关键）
-            saveUploadedChunk(fileMd5, i);
-
-            uploadedSize += chunk.size;
-
-            // 更新进度
-            // let percent = Math.round(((i + 1) / totalChunks) * 100);
-            // if (percent === 100) {
-            //     percent = 99
-            // }
-            // onProgress?.({ percent }, _file);
-        }
-
-        // 4. 合并文件
-        const mergeFileRes = await mergeFile(fileMd5, invokeCreateUploadTaskRes.data.id);
-
-
-        if (mergeFileRes.code === 200) {
-            // 5. 通知成功（Ant Design 需要返回特定结构）
-
-
-            // const res = await invokeQueryMergeProgress(invokeCreateUploadTaskRes.data.id)
-
-
-            // if (res.code === 200) {
-
-            onSuccess?.(
-                {
-                    name: _file.name,
-                    uid: _file.uid,
+                    fileMd5,
+                    filename: _file.name,
+                    chunkMd5,
                     attachId: invokeCreateUploadTaskRes.data.id,
-                    ...invokeCreateUploadTaskRes,
-                    status: 'done',
-                },
-                _file
-            );
+                    onUploadProgress: onUploadProgress.bind(noop, {
+                        i,
+                        totalChunks,
+                        chunk
+                    }),
+                    fileSize,
+                    signal
+                },);
 
-            // }
+                // 保存上传记录（断点续传关键）
+                saveUploadedChunk(fileMd5, i);
 
-            message.success(`${_file.name} 上传完成！`);
+                uploadedSize += chunk.size;
 
-        } else {
-            throw new Error(`${JSON.stringify(mergeFileRes)}`);
+                // 更新进度
+                // let percent = Math.round(((i + 1) / totalChunks) * 100);
+                // if (percent === 100) {
+                //     percent = 99
+                // }
+                // onProgress?.({ percent }, _file);
+            }
+
+            const mergeFileRes = await mergeFile(fileMd5, invokeCreateUploadTaskRes.data.id);
+            if (mergeFileRes.code !== 200) {
+                throw new Error(`${JSON.stringify(mergeFileRes)}`);
+
+            }
         }
+
+
+
+        onSuccess?.(
+            {
+                name: _file.name,
+                uid: _file.uid,
+                attachId: invokeCreateUploadTaskRes.data.id,
+                ...invokeCreateUploadTaskRes,
+                status: 'done',
+            },
+            _file
+        );
+
+        // }
+
+        message.success(`${_file.name} 上传完成！`);
+
+
 
     } catch (err) {
         console.error('Upload error:', err);
