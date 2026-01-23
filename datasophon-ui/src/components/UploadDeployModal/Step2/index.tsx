@@ -1,10 +1,10 @@
 import { ProCard, ProFormDependency, ProFormItem, ProFormText, ProFormUploadButton } from "@ant-design/pro-components"
-import { requireRules } from "../../../utils/util";
+import { invokeGenerateElId, requireRules } from "../../../utils/util";
 import { Progress, type UploadFile } from "antd";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { API } from "../../../api";
 import { axiosJsonPost } from "../../../api/request";
-import { noop } from "lodash-es";
+import { noop, set } from "lodash-es";
 import ChunkedUploader from "../../../utils/ChunkedUploader";
 import { CHUNK_SIZE, computeChunkMD5Base64, computeFileMD5, getUploadedChunks, invokeCreateUploadTask, invokeMakePartUploadRequest, invokeQueryMergeProgress, mergeFile, saveUploadedChunk, uploadChunk } from "../../../utils/uploadUtils";
 
@@ -13,13 +13,16 @@ const Index = (props) => {
 
     const {
         currentStep,
-        formMapRef
+        formMapRef,
+        setSubmitPending
     } = props
 
-
+    const pendingIdRef = useRef()
     const firstFormRef = formMapRef?.current[0]
 
     const invokeQueryMergeProgressTimeoutRef = useRef()
+
+    const controllerRef = useRef()
 
     const [invokeQueryMergeProgressRes, setInvokeQueryMergeProgressRes] = useState()
 
@@ -77,10 +80,12 @@ const Index = (props) => {
 
             if ([0, 2].includes(res.data.state)) {
                 invokeQueryMergeProgressProxy(id)
+            } else {
+                setSubmitPending(false)
             }
 
         }, 1 * 1000)
-    }, [invokeCancelQueryMergeProgressTimeoutRef])
+    }, [invokeCancelQueryMergeProgressTimeoutRef, setSubmitPending])
 
 
     useEffect(() => {
@@ -107,8 +112,18 @@ const Index = (props) => {
                 // customRequest={async (options: { file: UploadFile }) => {
                 //     console.log('options', options)
                 // }}
+                onChange={(info) => {
+                    if (!info.fileList.length) {
+                        setSubmitPending(false)
+                        controllerRef.current?.abort?.()
+
+                        setInvokeQueryMergeProgressRes(undefined)
+                    }
+                }}
                 fieldProps={{
                     customRequest: (options) => {
+
+                        const pendingId = pendingIdRef.current = invokeGenerateElId()
 
 
                         const bakOnSuccess = options.onSuccess
@@ -116,13 +131,23 @@ const Index = (props) => {
 
                         options.onSuccess = async (...args) => {
 
+                            if (pendingId !== pendingIdRef.current) {
+                                return
+                            }
+
                             const obj = args[0]
 
                             invokeQueryMergeProgressProxy(obj.attachId)
 
                             bakOnSuccess(...args)
+
                         }
 
+                        setSubmitPending(true)
+
+                        controllerRef.current = new AbortController()
+
+                        options.signal = controllerRef.current.signal
 
                         return invokeMakePartUploadRequest(options)
                     },
@@ -146,6 +171,7 @@ const Index = (props) => {
                                     } else {
                                         console.log('value', value)
                                         // const status = value[0]?.status;
+                                        setSubmitPending(true)
                                         setTimeout(async () => {
                                             value = value[0]
                                             if (value?.response?.code === 200) {
@@ -170,6 +196,9 @@ const Index = (props) => {
                                                     // resolve()
                                                     reject(res.msg)
                                                 }
+
+                                                setSubmitPending(false)
+
                                             } else if (value?.status === 'uploading') {
                                                 reject('正在上传中,请稍后重试')
                                             } else {

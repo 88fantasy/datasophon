@@ -1,4 +1,4 @@
-import { ProCard, ProFormDependency, ProFormUploadButton } from "@ant-design/pro-components";
+import { ProCard, ProFormDependency, ProFormText, ProFormUploadButton } from "@ant-design/pro-components";
 import { requireRules } from "../../../utils/util";
 import { API } from "../../../api";
 import { noop } from "lodash-es";
@@ -15,18 +15,17 @@ const Index = (props) => {
     } = props
 
 
-    const firstFormRef = formMapRef.current[0]
 
 
-    const values = firstFormRef?.current?.getFieldsValue()
+    // const values = firstFormRef?.current?.getFieldsValue()
 
-    const {
-        contentDecodePasswd
-    } = values || {}
+    // const {
+    //     contentDecodePasswd
+    // } = values || {}
 
 
     const invokeRenderTable = useCallback(() => {
-        const dom = ({ deployFileId }) => {
+        const dom = ({ deployFileId, contentDecodePasswd }) => {
             return (
                 <TableProxy
                     deployFileId={deployFileId}
@@ -37,17 +36,18 @@ const Index = (props) => {
 
         return (
             <ProFormDependency
-                name={['deployFileId']}
+                name={['deployFileId', 'contentDecodePasswd']}
             >
 
                 {dom}
 
             </ProFormDependency>
         )
-    }, [contentDecodePasswd])
+    }, [])
 
     return (
-        <ProCard bordered={true} className="!mb-[20px]">
+        <>
+
             <ProFormUploadButton
                 label="部署清单"
                 name="deployFileId"
@@ -91,12 +91,17 @@ const Index = (props) => {
                     ]
                 }}
             />
-
+            <ProFormText
+                label="配置文件密码"
+                name="contentDecodePasswd"
+                rules={requireRules}
+            />
             {
                 invokeRenderTable()
             }
+        </>
 
-        </ProCard>
+
     )
 }
 
