@@ -46,8 +46,7 @@ public class FEHandlerStrategy implements ServiceRoleStrategy {
     // Prevent FE Observer nodes from starting and FE Master nodes from changing
     if (!globalVariables.containsKey("feMaster") || ObjUtil.isNull(globalVariables.get("feMaster"))) {
       if (!hosts.isEmpty()) {
-        ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "feMaster",
-            hosts.get(0));
+        ProcessUtils.generateClusterVariable(clusterId, serviceName, "feMaster", hosts.get(0));
       }
     }
   }

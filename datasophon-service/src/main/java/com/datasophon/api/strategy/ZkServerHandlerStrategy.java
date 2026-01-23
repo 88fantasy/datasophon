@@ -66,13 +66,9 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
             if ("enableKerberos".equals(config.getName())) {
                 if ((Boolean) config.getValue()) {
                     enableKerberos = true;
-                    ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
-                            "enableZOOKEEPERKerberos",
-                            "true");
+                    ProcessUtils.generateClusterVariable(clusterId, serviceName, "enableZOOKEEPERKerberos", "true");
                 } else {
-                    ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
-                            "enableZOOKEEPERKerberos",
-                            "false");
+                    ProcessUtils.generateClusterVariable(clusterId, serviceName, "enableZOOKEEPERKerberos", "false");
                 }
             }
         }

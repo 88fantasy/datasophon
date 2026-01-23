@@ -32,10 +32,9 @@ public class ZKFCHandlerStrategy implements ServiceRoleStrategy {
 
   @Override
   public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-    Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
     if (hosts.size() == 2) {
-      ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "ZKFC1", hosts.get(0));
-      ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "ZKFC2", hosts.get(1));
+      ProcessUtils.generateClusterVariable(clusterId, serviceName, "ZKFC1", hosts.get(0));
+      ProcessUtils.generateClusterVariable(clusterId, serviceName, "ZKFC2", hosts.get(1));
     }
   }
 

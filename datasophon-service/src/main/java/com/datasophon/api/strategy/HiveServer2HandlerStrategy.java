@@ -38,11 +38,9 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
     private static final Logger logger = LoggerFactory.getLogger(HiveServer2HandlerStrategy.class);
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         CacheUtils.put("enableHiveServer2HA", false);
         if(!hosts.isEmpty()) {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "masterHiveServer2",
-                    hosts.get(0));
+            ProcessUtils.generateClusterVariable(clusterId, serviceName, "masterHiveServer2", hosts.get(0));
         }
         if (hosts.size() > 1) {
             CacheUtils.put("enableHiveServer2HA", true);
@@ -57,7 +55,7 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
         Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
         for (ServiceConfig config : list) {
             if ("enableKerberos".equals(config.getName())) {
-                enableKerberos = isEnableKerberos(clusterId, globalVariables, enableKerberos, config, "HIVE");
+                enableKerberos = isEnableKerberos(clusterId, enableKerberos, config, "HIVE");
             }
             
         }

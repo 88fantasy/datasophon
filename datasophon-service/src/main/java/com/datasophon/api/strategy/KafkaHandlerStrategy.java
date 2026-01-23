@@ -43,7 +43,7 @@ public class KafkaHandlerStrategy extends ServiceHandlerAbstract implements Serv
         Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
         for (ServiceConfig config : list) {
             if ("enableKerberos".equals(config.getName())) {
-                enableKerberos = isEnableKerberos(clusterId, globalVariables, enableKerberos, config, "KAFKA");
+                enableKerberos = isEnableKerberos(clusterId, enableKerberos, config, "KAFKA");
             }
         }
         String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + "KAFKA" + Constants.CONFIG;

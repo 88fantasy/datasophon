@@ -17,23 +17,20 @@
 
 package com.datasophon.api.strategy;
 
-import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.utils.ProcessUtils;
 
 import java.util.List;
-import java.util.Map;
 
 public class JournalNodeHandlerStrategy implements ServiceRoleStrategy {
     
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         if (hosts.size() >= 3) {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "journalNode1",
+            ProcessUtils.generateClusterVariable(clusterId, serviceName, "journalNode1",
                     hosts.get(0));
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "journalNode2",
+            ProcessUtils.generateClusterVariable(clusterId, serviceName, "journalNode2",
                     hosts.get(1));
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "journalNode3",
+            ProcessUtils.generateClusterVariable(clusterId, serviceName, "journalNode3",
                     hosts.get(2));
         }
     }
