@@ -54,7 +54,7 @@
       "externalLink": {
         "name": "FE UI",
         "label": "FE UI",
-        "url": "http://${feMaster}:${http_port}"
+        "url": "http://${DORIS.feMaster}:${http_port}"
       }
     },
     {

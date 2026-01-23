@@ -44,7 +44,7 @@ public class FEHandlerStrategy implements ServiceRoleStrategy {
     Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
     // if feMaster is null, set the first host as feMaster
     // Prevent FE Observer nodes from starting and FE Master nodes from changing
-    if (!globalVariables.containsKey("feMaster") || ObjUtil.isNull(globalVariables.get("feMaster"))) {
+    if (!globalVariables.containsKey("DORIS.feMaster") || ObjUtil.isNull(globalVariables.get("DORIS.feMaster"))) {
       if (!hosts.isEmpty()) {
         ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "feMaster",
             hosts.get(0));
@@ -54,7 +54,7 @@ public class FEHandlerStrategy implements ServiceRoleStrategy {
 
   @Override
   public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-    String feMaster = GlobalVariables.getValue(serviceRoleInfo.getClusterId(), "feMaster");
+    String feMaster = GlobalVariables.getValue(serviceRoleInfo.getClusterId(), "DORIS.feMaster");
     if (hostname.equals(feMaster)) {
       logger.info("fe master is {}", feMaster);
       serviceRoleInfo.setSortNum(1);
@@ -70,7 +70,7 @@ public class FEHandlerStrategy implements ServiceRoleStrategy {
   @Override
   public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                       Map<String, ClusterServiceRoleInstanceEntity> map) {
-    String feMaster = GlobalVariables.getValue(roleInstanceEntity.getClusterId(), "feMaster");
+    String feMaster = GlobalVariables.getValue(roleInstanceEntity.getClusterId(), "DORIS.feMaster");
     if (roleInstanceEntity.getHostname().equals(feMaster)
         && roleInstanceEntity.getServiceRoleState() == ServiceRoleState.RUNNING) {
       try {
