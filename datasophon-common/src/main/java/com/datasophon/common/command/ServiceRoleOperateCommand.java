@@ -49,7 +49,7 @@ public class ServiceRoleOperateCommand extends BaseCommand implements Serializab
     private String managerHost;
     
     private Boolean enableRangerPlugin;
-    
+
     private RunAs runAs;
     
     private Boolean enableKerberos;
@@ -57,6 +57,8 @@ public class ServiceRoleOperateCommand extends BaseCommand implements Serializab
     private List<HookConfig> hooks;
 
     private Map<String,String> variables;
+
+    private boolean checkStatus = true;
     
     public ServiceRoleOperateCommand() {
         this.enableRangerPlugin = false;

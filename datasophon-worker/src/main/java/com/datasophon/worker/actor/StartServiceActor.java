@@ -46,7 +46,8 @@ public class StartServiceActor extends HookTypedActor<ServiceRoleOperateCommand>
                             return serviceRoleHandler.handler(command);
                         } else {
                             ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-                            return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(), command.getDecompressPackageName(), command.getRunAs());
+                            return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(), command.getDecompressPackageName(),
+                                    command.getRunAs(), command.isCheckStatus());
                         }
                     },
                     () -> invokeHook(command.getHooks(), HookType.POST_START, command, command.getVariables())

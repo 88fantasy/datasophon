@@ -91,6 +91,6 @@ public class NacosMasterHandlerStrategy extends AbstractHandlerStrategy implemen
             }
         }
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs());
+                command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
     }
 }

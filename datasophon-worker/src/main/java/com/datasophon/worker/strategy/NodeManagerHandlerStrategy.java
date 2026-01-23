@@ -49,7 +49,7 @@ public class NodeManagerHandlerStrategy extends AbstractHandlerStrategy implemen
                     command.getDecompressPackageName(), command.getRunAs());
         } else {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+                    command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
         }
         return startResult;
     }

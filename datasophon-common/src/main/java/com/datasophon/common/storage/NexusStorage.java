@@ -94,6 +94,8 @@ public class NexusStorage implements PackageStorage {
             needDownload = true;
         } else {
             String remoteMd5 = readPackageMd5(packageName);
+//          ant生成的md5文件，会存在\r\n,直接去掉
+            remoteMd5 = remoteMd5.replaceAll("\\s", "");
             String md5 = DigestUtil.md5Hex(file);
             needDownload = !md5.equalsIgnoreCase(remoteMd5);
         }

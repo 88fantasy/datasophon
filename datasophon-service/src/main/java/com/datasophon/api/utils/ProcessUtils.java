@@ -592,7 +592,12 @@ public class ProcessUtils {
     public static ExecResult startInstallService(ServiceRoleInfo serviceRoleInfo) throws Exception {
         ServiceHandler serviceInstallHandler = new ServiceInstallHandler();
         ServiceHandler serviceConfigureHandler = new ServiceConfigureHandler();
-        ServiceHandler serviceStartHandler = new ServiceStartHandler();
+
+
+//        安装时，不见是否启动成功(部分软件，需要全部节点启动成功后，状态才能成功)
+        ServiceStartHandler serviceStartHandler = new ServiceStartHandler();
+        serviceStartHandler.setCheckStatus(false);
+
         serviceInstallHandler.setNext(serviceConfigureHandler);
         serviceConfigureHandler.setNext(serviceStartHandler);
         ExecResult execResult = serviceInstallHandler.handlerRequest(serviceRoleInfo);

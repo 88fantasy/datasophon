@@ -18,6 +18,7 @@
       "startRunner": {
         "timeout": "60",
         "program": "bin/zkServer.sh",
+        "statusCondition": "",
         "args": [
           "start"
         ]

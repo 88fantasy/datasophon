@@ -61,8 +61,7 @@ public class ServiceHandler {
         return PkgInstallPathUtils.getLinkDirName(cmd);
     }
 
-    public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, String decompressPackageName,
-                            RunAs runAs) {
+    public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, String decompressPackageName, RunAs runAs, boolean checkStatus) {
         String linkName = getLinkDirName();
         ExecResult statusResult = execRunner(statusRunner, linkName, null);
         if (statusResult.getExecResult()) {
@@ -71,10 +70,12 @@ public class ServiceHandler {
             execResult.setExecResult(true);
             return execResult;
         }
+
         // start service
         ExecResult startResult = execRunner(startRunner, linkName, runAs);
+
         // check start result
-        if (startResult.getExecResult()) {
+        if (startResult.getExecResult() && checkStatus) {
             int times = PropertyUtils.getInt("times");
             int count = 0;
             while (count < times) {
@@ -86,8 +87,8 @@ public class ServiceHandler {
                 } else {
                     try {
                         Thread.sleep(5 * 1000);
-                    } catch (InterruptedException e) {
-                        logger.error(e.getMessage(), e);
+                    } catch (InterruptedException ignored) {
+
                     }
                 }
                 count++;
@@ -97,7 +98,13 @@ public class ServiceHandler {
                 startResult.setExecResult(false);
             }
         }
+
         return startResult;
+    }
+
+    public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, String decompressPackageName,
+                            RunAs runAs) {
+        return start(startRunner, statusRunner, decompressPackageName, runAs, true);
     }
     
     public ExecResult stop(ServiceRoleRunner runner, ServiceRoleRunner statusRunner, String decompressPackageName,

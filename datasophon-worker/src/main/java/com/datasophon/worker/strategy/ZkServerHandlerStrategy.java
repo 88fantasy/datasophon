@@ -34,7 +34,6 @@ public class ZkServerHandlerStrategy extends AbstractHandlerStrategy implements 
     
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) {
-        ExecResult startResult = new ExecResult();
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         if (command.getEnableKerberos()) {
             logger.info("start to get zkserver keytab file");
@@ -46,12 +45,9 @@ public class ZkServerHandlerStrategy extends AbstractHandlerStrategy implements 
             if (!FileUtil.exist("/etc/security/keytab/zkclient.service.keytab")) {
                 KerberosUtils.downloadKeytabFromMaster("zkcli/" + hostname, "zkclient.service.keytab");
             }
-            startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
-        } else {
-            startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
         }
+        ExecResult startResult  = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
+                command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
         return startResult;
     }
     

@@ -11,6 +11,7 @@ import com.datasophon.api.dag.repo.DAGRepository;
 import com.datasophon.api.dag.repo.SimpleDAGRepository;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.GlobalVariables;
+import com.datasophon.api.master.handler.service.ServiceStatusHandler;
 import com.datasophon.api.service.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.ClusterServiceCommandHostService;
 import com.datasophon.api.service.ClusterServiceCommandService;
@@ -180,13 +181,31 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
         try {
             roles.sort(Comparator.comparing(ServiceRoleInfo::getSortNum, Comparator.nullsFirst(Comparator.naturalOrder())));
             ExecResult result = null;
-            for (ServiceRoleInfo role : roles) {
-                currentRole = role;
-                result = execServiceRole(role);
-                if (!result.isSuccess()) {
-                    break;
+
+            Map<String, List<ServiceRoleInfo>> map = roles.stream().collect(Collectors.groupingBy(ServiceRoleInfo::getServiceRoleName));
+
+
+            outer:
+            for (Map.Entry<String, List<ServiceRoleInfo>> entry : map.entrySet()) {
+                for (ServiceRoleInfo role : entry.getValue()) {
+                    currentRole = role;
+                    result = execServiceRole(role);
+                    if (!result.isSuccess()) {
+                        break outer;
+                    }
+                }
+                if (Arrays.asList(CommandType.INSTALL_SERVICE, CommandType.UPGRADE_SERVICE).contains(currentRole.getCommandType())) {
+                    ServiceStatusHandler handler = new ServiceStatusHandler();
+                    for (ServiceRoleInfo role : entry.getValue()) {
+                        result = handler.handlerRequest(role);
+                        if (!result.isSuccess()) {
+                            break outer;
+                        }
+                    }
                 }
             }
+
+//
             if (result == null || result.isSuccess()) {
                 ServiceRoleType type = roles.get(0).getRoleType();
                 log.info("执行{}{}成功, 共{}个角色, 类型为{}", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName(), roles.size(), type.getName());
