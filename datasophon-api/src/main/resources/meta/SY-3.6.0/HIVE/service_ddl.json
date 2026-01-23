@@ -168,7 +168,6 @@
           "javax.jdo.option.ConnectionURL",
           "hive.server2.enable.doAs",
           "hive.metastore.schema.verification",
-          "hive.metastore.schema.verification.record.version",
           "hive.metastore.warehouse.dir",
           "hive.metastore.port",
           "hive.metastore.uris",
