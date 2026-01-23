@@ -162,13 +162,10 @@ const Index = (props) => {
                 formItemProps={{
                     rules: [
                         {
-                            required: true,
                             validator(rule, value) {
 
                                 return new Promise<void>(async (resolve, reject) => {
-                                    if (!value?.length) {
-                                        reject();
-                                    } else {
+                                    if (value?.length) {
                                         console.log('value', value)
                                         // const status = value[0]?.status;
                                         setSubmitPending(true)
@@ -206,19 +203,6 @@ const Index = (props) => {
                                             }
                                         }, 2 * 1000)
 
-                                    }
-                                })
-
-
-                            },
-                            validateTrigger: 'onSubmit'
-                        },
-                        {
-                            required: true,
-                            validator(rule, value) {
-                                return new Promise<void>(async (resolve, reject) => {
-                                    if (!value?.length) {
-                                        reject("请上传部署包");
                                     } else {
                                         resolve()
                                     }
@@ -226,8 +210,8 @@ const Index = (props) => {
 
 
                             },
-                            validateTrigger: 'onChange'
-                        }
+                            validateTrigger: 'onSubmit'
+                        },
                     ]
                 }}
             />

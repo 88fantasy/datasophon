@@ -129,7 +129,7 @@ const Index = (props) => {
 
                     const values = form.getFieldsValue()
 
-                    if (values.pkgFileId?.[0].status === 'uploading') {
+                    if (values.pkgFileId && values.pkgFileId?.[0].status === 'uploading') {
                         return message.warning('请等待上传完成')
                     }
 
@@ -168,24 +168,24 @@ const Index = (props) => {
         }
     }, [submitPending])
 
-    const onFinish = useCallback(async (valuse) => {
-        // const res = await axiosJsonPost(
-        //     API.deploy,
-        //     {
-        //         clusterId: record.id,
-        //         deployFileId: valuse.deployFileId[0]?.response?.data.id,
-        //         contentDecodePasswd: valuse.contentDecodePasswd
-        //     }
-        // )
+    // const onFinish = useCallback(async (valuse) => {
+    //     // const res = await axiosJsonPost(
+    //     //     API.deploy,
+    //     //     {
+    //     //         clusterId: record.id,
+    //     //         deployFileId: valuse.deployFileId[0]?.response?.data.id,
+    //     //         contentDecodePasswd: valuse.contentDecodePasswd
+    //     //     }
+    //     // )
 
-        // showMsgAfferRequest(res)
-        // if (res.code === 200) {
-        //     window.open(invokeGenPath(`/ddh/Dag?dagId=${res.data?.dagId || ''}`))
-        //     onCancelClickProxy()
-        // }
+    //     // showMsgAfferRequest(res)
+    //     // if (res.code === 200) {
+    //     //     window.open(invokeGenPath(`/ddh/Dag?dagId=${res.data?.dagId || ''}`))
+    //     //     onCancelClickProxy()
+    //     // }
 
 
-    }, [])
+    // }, [])
 
 
 
@@ -193,7 +193,7 @@ const Index = (props) => {
         <>
             <StepsForm
                 formMapRef={formMapRef}
-                onFinish={onFinish}
+                // onFinish={onFinish}
                 formProps={{
                     className: `w-[30vw] overflow-hidden`
                 }}
