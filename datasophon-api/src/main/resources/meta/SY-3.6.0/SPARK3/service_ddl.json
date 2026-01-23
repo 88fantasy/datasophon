@@ -23,8 +23,8 @@
         "commands": [
           ["mkdir", "logs"],
           ["cp", "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar", "jars/"],
-          ["cp", "/data/install_datasophon/packages/iceberg-spark-runtime-3.4_2.12-1.3.1.jar", "jars/"],
-          ["cp", "/data/install_datasophon/packages/spark-doris-connector-3.4_2.12-1.3.2.jar", "jars/"]
+          ["cp", "/data/datasophon/datasophon-init/packages/iceberg-spark-runtime-3.4_2.12-1.3.1.jar", "jars/"],
+          ["cp", "/data/datasophon/datasophon-init/packages/spark-doris-connector-3.4_2.12-1.3.2.jar", "jars/"]
       ]
       }
       ]
