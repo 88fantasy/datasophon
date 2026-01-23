@@ -1,8 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import defineModalApi from "../Common/CommonModal/DefineModal/api";
 import Index from ".";
-import styles from './index.module.less'
-
 
 export default async function (config) {
 
@@ -12,11 +10,11 @@ export default async function (config) {
     };
 
     config.dialogConfig = {
-        title: '部署包',
+        title: '导入部署清单',
         classNames: {
-            body: `max-h-[70vh] mt-[20px] overflow-hidden ${styles.s}`
+            body: 'max-h-[70vh] mt-[20px] overflow-hidden'
         },
-        footer: false,
+        okText: '开始部署',
     };
 
     return defineModalApi({

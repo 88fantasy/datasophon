@@ -1,17 +1,15 @@
 
 import { StepsForm } from "@ant-design/pro-components";
-import axios from "axios"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Step1 from "./Step1";
 import { Button, message } from "antd";
 import Step2 from "./Step2";
-import UploadStep from "./UploadStep";
 import Step4 from "./Step4";
 import { axiosJsonPost } from "../../api/request";
 import { API } from "../../api";
 import { showMsgAfferRequest } from "../../utils/util";
-import Step3 from "./Step3";
 import { invokeGenPath } from "../../utils/routerUtils";
+import styles from './index.module.less'
 
 
 const Index = (props) => {
@@ -29,6 +27,7 @@ const Index = (props) => {
     // const formRef = useRef()
 
     const formMapRef = useRef([])
+    const step4Ref = useRef()
 
     const [currentStep, setCurrentStep] = useState(0)
     const [submitPending, setSubmitPending] = useState(false)
@@ -46,29 +45,11 @@ const Index = (props) => {
             {
                 title: '上传部署包',
                 render: Step2
-                // render: <Step2
-                //     key={currentStep}
-                //     formMapRef={formMapRef}
-                // />
-            },
-            type !== 'frame' && {
-                title: '上传部署清单',
-                render: Step3
-
-                // render: currentStep === 2 && <Step3
-                //     key={currentStep}
-                //     formMapRef={formMapRef}
-                // />
             },
             {
                 title: '导入安装组件',
                 render: Step4,
-
-                // render: (!type && currentStep === 3 || type && currentStep === 2) && <Step4
-                //     key={currentStep}
-                //     formMapRef={formMapRef}
-                //     type={type}
-                // />
+                ref: step4Ref
             },
         ].filter(Boolean)
 
@@ -90,6 +71,8 @@ const Index = (props) => {
                         current={currentStep}
                         formMapRef={formMapRef}
                         // indexKey={'11'}
+                        setCurrentStep={setCurrentStep}
+                        setSubmitPending={setSubmitPending}
                         type={type}
                         index={index}
                         key={index}
@@ -131,7 +114,7 @@ const Index = (props) => {
 
     const submitter = useMemo(() => {
         return {
-            render: (props) => {
+            render: (props, dom) => {
                 console.log('props', props)
 
                 const {
@@ -143,6 +126,13 @@ const Index = (props) => {
 
 
                 const onSubmitProxy = async () => {
+
+                    const values = form.getFieldsValue()
+
+                    if (values.pkgFileId && values.pkgFileId?.[0].status === 'uploading') {
+                        return message.warning('请等待上传完成')
+                    }
+
                     setSubmitPending(true)
                     await onSubmit()
 
@@ -150,49 +140,16 @@ const Index = (props) => {
                 }
 
 
-                if (!type && step === 3) {
-                    const nextClick = () => {
-                        // onSubmit()
-                        const values = form?.getFieldsValue() || {}
-
-
-                        if (!values.importCmp) {
-                            message.error('导入未完成,请稍后重试')
-                        } else {
-                            onSubmitProxy()
-                        }
-                    }
-
-
-                    return (
-                        <>
-                            <Button
-                                type="primary"
-                                onClick={() => onPre()}
-                            >
-                                上一步
-                            </Button>
-                            <Button
-                                type="primary"
-                                onClick={nextClick}
-                                loading={submitPending}
-                            // disabled={!meteFileId}
-                            >
-                                开始部署
-                            </Button>
-                        </>
-                    )
-                } else if (type && step === 2) {
+                if (step === 2) {
                     return
                 }
 
                 return (
                     <>
                         {
-                            !!step &&
-                            <Button
-                                type="primary"
-                                onClick={() => onPre()}
+                            !!step && <Button
+                                onClick={onPre}
+                                disabled={submitPending}
                             >
                                 上一步
                             </Button>
@@ -201,6 +158,7 @@ const Index = (props) => {
                             type="primary"
                             onClick={onSubmitProxy}
                             loading={submitPending}
+                            disabled={submitPending}
                         >
                             下一步
                         </Button>
@@ -208,26 +166,26 @@ const Index = (props) => {
                 )
             }
         }
-    }, [submitPending, type])
+    }, [submitPending])
 
-    const onFinish = useCallback(async (valuse) => {
-        const res = await axiosJsonPost(
-            API.deploy,
-            {
-                clusterId: record.id,
-                deployFileId: valuse.deployFileId[0]?.response?.data.id,
-                contentDecodePasswd: valuse.contentDecodePasswd
-            }
-        )
+    // const onFinish = useCallback(async (valuse) => {
+    //     // const res = await axiosJsonPost(
+    //     //     API.deploy,
+    //     //     {
+    //     //         clusterId: record.id,
+    //     //         deployFileId: valuse.deployFileId[0]?.response?.data.id,
+    //     //         contentDecodePasswd: valuse.contentDecodePasswd
+    //     //     }
+    //     // )
 
-        showMsgAfferRequest(res)
-        if (res.code === 200) {
-            window.open(invokeGenPath(`/ddh/Dag?dagId=${res.data?.dagId || ''}`))
-            onCancelClickProxy()
-        }
+    //     // showMsgAfferRequest(res)
+    //     // if (res.code === 200) {
+    //     //     window.open(invokeGenPath(`/ddh/Dag?dagId=${res.data?.dagId || ''}`))
+    //     //     onCancelClickProxy()
+    //     // }
 
 
-    }, [record, onCancelClickProxy])
+    // }, [])
 
 
 
@@ -235,12 +193,14 @@ const Index = (props) => {
         <>
             <StepsForm
                 formMapRef={formMapRef}
-                onFinish={onFinish}
+                // onFinish={onFinish}
                 formProps={{
-                    className: 'w-[30vw] overflow-hidden'
+                    className: `w-[30vw] overflow-hidden`
                 }}
                 submitter={submitter}
                 onCurrentChange={onCurrentChange}
+                current={currentStep}
+
 
             >
                 {stepsDom}

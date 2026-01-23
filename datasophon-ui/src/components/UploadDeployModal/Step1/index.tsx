@@ -37,9 +37,11 @@ const Index = () => {
                                 title={!contentDecodePasswd ? '请先填写配置文件密码' : '选择并上传配置文件'}
                                 disabled={!contentDecodePasswd}
                                 formItemProps={{
+                                    validateFirst: true,
                                     rules: [
                                         {
                                             required: true,
+
                                             validator(rule, value) {
 
                                                 return new Promise<void>((resolve, reject) => {

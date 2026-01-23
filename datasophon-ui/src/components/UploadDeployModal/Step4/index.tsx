@@ -1,5 +1,5 @@
 import { Button, Progress, Tooltip, type ProgressProps } from "antd"
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import { axiosJsonPost } from "../../../api/request";
 import { API } from "../../../api";
 import { ProFormItem } from "@ant-design/pro-components";
@@ -21,7 +21,7 @@ const stateMap = {
     4: '保存数据',
     5: '上传安装包到nexus'
 }
-const Index = (props) => {
+const Index = forwardRef((props, ref) => {
 
     const {
         // formMapRef,
@@ -30,23 +30,31 @@ const Index = (props) => {
         key,
         record,
         current,
-        index
+        index,
+        setCurrentStep
     } = props
 
     const invokeUpdateProgressId = useRef()
     const [state, setState] = useState({})
+    const [pending, setPending] = useState(false)
 
 
     const invokeCancelUpdateProgress = useCallback(() => {
         if (invokeUpdateProgressId.current) {
             clearTimeout(invokeUpdateProgressId.current)
             invokeUpdateProgressId.current = undefined
+
         }
+
+        setPending(false)
+
     }, [])
 
 
     const invokeUpdateProgress = useCallback((id, delay = 0) => {
         invokeCancelUpdateProgress()
+
+        setPending(true)
         const fn = async () => {
             const res = await axiosJsonPost(
                 API.queryProgress,
@@ -65,7 +73,10 @@ const Index = (props) => {
                     })
                 }
 
+
+
                 setState(preState => {
+                    res.data.preState = preState.queryProgressRes?.state
                     return {
                         ...preState,
                         queryProgressRes: res.data
@@ -169,11 +180,14 @@ const Index = (props) => {
 
 
     const memoPrecent = useMemo(() => {
-        const currentState = state?.queryProgressRes?.state
+        let currentState = state?.queryProgressRes?.state
 
         if (currentState === 1) {
             return 100
         } else {
+            if (currentState === -1) {
+                currentState = state?.queryProgressRes?.preState
+            }
             return ((currentState || 1) - 1) / 5 * 100
         }
 
@@ -182,7 +196,7 @@ const Index = (props) => {
     const format = useCallback((percent) => {
         if (memoStatus.status === 'success') {
             return `成功`
-        } else if (memoStatus.status === 'exception' || state.reloadBtnVisiable) {
+        } else if (memoStatus.status === 'exception') {
             return (
                 <div>
                     <Tooltip
@@ -197,15 +211,7 @@ const Index = (props) => {
                         </div>
 
                     </Tooltip>
-                    <Button
-                        className="mt-[20px]"
-                        variant="filled"
-                        onClick={() => {
-                            invokeInit()
-                        }}
-                    >
-                        重新导入安装组件
-                    </Button>
+
                 </div>
             )
         }
@@ -235,13 +241,18 @@ const Index = (props) => {
         )
 
 
-    }, [invokeInit, memoStatus.status, state.queryProgressRes, state.reloadBtnVisiable])
+    }, [memoStatus.status, state.queryProgressRes])
 
-    useEffect(() => {
-        if (current === index) {
-            invokeInit()
-        }
-    }, [current, index, invokeInit])
+    // useEffect(() => {
+    //     // if (current === index) {
+    //     //     invokeInit()
+    //     // }
+    // }, [current, index, invokeInit])
+
+
+    const onPreClick = useCallback(() => {
+        setCurrentStep(current - 1)
+    }, [current, setCurrentStep])
 
 
     useEffect(() => {
@@ -256,6 +267,12 @@ const Index = (props) => {
             invokeCancelUpdateProgress()
         }
     }, [invokeCancelUpdateProgress])
+
+    useImperativeHandle(ref, () => {
+        return {
+            invokeInit
+        }
+    })
 
     return (
         <div className="m-[auto] text-center">
@@ -272,9 +289,29 @@ const Index = (props) => {
                     format={format}
                 />
             </ProFormItem>
+            <div >
+                <Button
+                    onClick={onPreClick}
+                >
+                    上一步
+                </Button>
+                <Button
+                    type="primary"
+                    onClick={invokeInit}
+                    className="ml-[10px]"
+                    loading={pending}
+                    disabled={pending}
+                >
+                    {
+                        pending ? '正在导入...' :
+                            memoStatus.status === 'exception' ? '重新导入' : '开始导入'
+                    }
+
+                </Button>
+            </div>
         </div>
     )
-}
+})
 
 
 export default memo(Index)

@@ -1,8 +1,9 @@
 
 import { AlertOutlined, MoreOutlined, SettingOutlined, UploadOutlined } from "@ant-design/icons"
-import { Tooltip } from "antd";
+import { Dropdown, Tooltip } from "antd";
 import { noop } from "antd/es/_util/warning";
 import asyncHook from "../../../components/Common/CommonModal/asyncHook";
+import gobalEvent, { uiEvent } from "../../../utils/gobalEvent";
 
 
 const showResultModal = asyncHook(() =>
@@ -11,6 +12,7 @@ const showAlarmModal = asyncHook(() =>
     import("./AlarmModal/api"));
 
 const showUploadDeployModal = asyncHook(() => import('../../../components/UploadDeployModal/api'))
+const showUploadDeployConfigModal = asyncHook(() => import('../../../components/UploadDeployConfigModal/api'))
 export const actionsRender = (props) => {
 
 
@@ -18,6 +20,7 @@ export const actionsRender = (props) => {
 
     const {
         clusterId,
+        invokeUpdateServiceList
     } = props
 
     // console.log('item', item)
@@ -34,6 +37,7 @@ export const actionsRender = (props) => {
 
         modelApi.default({
             clusterId,
+
         })
     }
 
@@ -51,21 +55,56 @@ export const actionsRender = (props) => {
     const onImportClick = async (record) => {
         const modelApi = await showUploadDeployModal()
         modelApi.default({
-            record
+            record,
+            onCancelClick: () => {
+                invokeUpdateServiceList()
+            }
+        })
+    }
+
+
+    const onImportDeployManifestClick = async (record) => {
+        const modelApi = await showUploadDeployConfigModal()
+        modelApi.default({
+            record,
+            onOk: () => {
+                invokeUpdateServiceList()
+            }
         })
     }
 
 
 
+    const menuItems = [
+        {
+            label: '部署包',
+            onClick: onImportClick.bind(noop, {})
+        },
+        {
+            label: '部署清单',
+            onClick: onImportDeployManifestClick.bind(noop, {})
+
+        }
+    ].map(val => {
+        val.key = val.label
+
+        return val
+    })
+
+
+
     return clusterId && [
-        <Tooltip
+
+        <Dropdown
             key="2"
-            title="上传部署文件包"
+
+            menu={{
+                items: menuItems
+            }}
         >
             <UploadOutlined
-                onClick={onImportClick.bind(noop, {})}
             />
-        </Tooltip>,
+        </Dropdown>,
         <Tooltip
             key="1"
             title="安装并启动服务进度">

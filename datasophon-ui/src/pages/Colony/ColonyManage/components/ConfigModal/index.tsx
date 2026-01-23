@@ -7,7 +7,7 @@ import {
     ProFormTextArea,
     StepsForm,
 } from '@ant-design/pro-components';
-import { Alert, message } from 'antd';
+import { Alert, Button, message } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -280,6 +280,7 @@ const Index = (props) => {
                     // direction: 'vertical',
                     labelPlacement: 'vertical',
                     size: 'small',
+
                     // current,
                     // onChange: () => {
                     //     console.log('onChange111', '')
@@ -308,6 +309,31 @@ const Index = (props) => {
                 onFinish={(values) => {
                     console.log(values);
                     return Promise.resolve(true);
+                }}
+                submitter={{
+                    render(props, dom) {
+                        const {
+                            step,
+                            onSubmit
+                        } = props
+                        if (step === stepsDom.length - 1) {
+                            return [
+                                dom[0],
+                                <Button
+                                    onClick={onSubmit}
+                                    type="primary"
+                                    loading={dom[1].props?.loading}
+                                    disabled={dom[1].props?.disabled}
+                                    key="submit"
+                                >
+                                    确定
+                                </Button>
+                            ]
+                        } else {
+                            return dom
+                        }
+
+                    },
                 }}
 
             >

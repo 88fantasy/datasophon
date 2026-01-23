@@ -16,5 +16,6 @@ const uiEvent = {
   updateServiceInstanceList: invokeGenerateElId(),
 };
 
+console.log("uiEvent", uiEvent);
 export { uiEvent };
 export default gobalEvent;
