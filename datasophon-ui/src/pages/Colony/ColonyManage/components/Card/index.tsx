@@ -245,12 +245,12 @@ const Index = ({
             return res
 
         })
-    }, [clusterStateCode, invokeInit, onEditOrBuildClick, onImportClick, val])
+    }, [clusterStateCode, invokeInit, onEditOrBuildClick, onImportClick, onImportDeployManifestClick, val])
 
 
 
     return (
-        <Col span={6} className="mb-[20px]"
+        <Col span={8} className="mb-[20px]"
         >
             {
                 !add ? (
