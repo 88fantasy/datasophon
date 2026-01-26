@@ -222,9 +222,10 @@ const Index = ({
 
                 // delete params.servicenames;
                 params = {
-                    dagId: generateCommandRes.data.dagId
+                    dagId: generateCommandRes.data
                 }
-                const startExecuteCommandRes = await axiosPost(API.redeploy, params)
+
+                const startExecuteCommandRes = await axiosJsonPost(API.redeploy, params)
 
                 return {
                     valid: startExecuteCommandRes.code === 200,
