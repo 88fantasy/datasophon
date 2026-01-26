@@ -1,18 +1,28 @@
 package com.datasophon.common.utils;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.enums.RepositoriesType;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import lombok.Data;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -28,9 +38,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 public class NexusFileUtils {
 
@@ -204,6 +218,21 @@ public class NexusFileUtils {
         if (!path.startsWith("/")) {
             path = "/" + path;
         }
+        if (!"/".equals(path) && path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+
+        Assert nexusAssert = getAssertFromRawRepo(path, String.format("%s/%s", path, file.getName()));
+        if (nexusAssert != null) {
+            String md5 = SecureUtil.md5(file);
+            if (md5.equals(nexusAssert.getMd5())) {
+                log.info("file {} is already exist and content is not changed", file.getAbsolutePath());
+                return ExecResult.success("already exists, we do not need to upload");
+            } else {
+                log.warn("file {} exists, but content change, we delete it", file.getAbsolutePath());
+                deleteAssertFromRawRepo(nexusAssert.getId());
+            }
+        }
 
 
         String url = String.format("http://%s:%s/service/rest/internal/ui/upload/%s", Constants.NEXUS_IP, Constants.NEXUS_PORT, RepositoriesType.RAW.getDesc());
@@ -252,6 +281,70 @@ public class NexusFileUtils {
 
 
 
+    private static Assert getAssertFromRawRepo(String group, String name) throws IOException {
+        String url = String.format("http://%s:%s/service/rest/v1/search/assets?repository=raw&format=raw&group=%s&name=%s",
+                Constants.NEXUS_IP, Constants.NEXUS_PORT, group, name
+        );
+
+
+        try (CloseableHttpClient httpClient = HttpClients.custom().build()) {
+
+            HttpGet get = new HttpGet(url);
+
+            // Basic Auth
+            String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
+            get.setHeader("Authorization", "Basic " + auth);
+
+            try (CloseableHttpResponse response = httpClient.execute(get)) {
+                int status = response.getStatusLine().getStatusCode();
+                String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                if (status == 200) {
+                    ObjectMapper mapper = getMapper();
+                    AssertResponse resp = mapper.readValue(body, AssertResponse.class);
+                    if (CollectionUtil.isNotEmpty(resp.getItems())) {
+                        return resp.getItems().get(0);
+                    }
+                    return null;
+                } else {
+                    throw new IllegalStateException(String.format("request url: %s fail, status: %s, response %s", url, status, body));
+                }
+            }
+        }
+    }
+
+
+    private static void deleteAssertFromRawRepo(String id) throws IOException {
+        String url = String.format("http://%s:%s/service/rest/v1/assets/%s", Constants.NEXUS_IP, Constants.NEXUS_PORT, id);
+        try (CloseableHttpClient httpClient = HttpClients.custom().build()) {
+            HttpDelete deleteAction = new HttpDelete(url);
+            String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
+            deleteAction.setHeader("Authorization", "Basic " + auth);
+
+            try (CloseableHttpResponse response = httpClient.execute(deleteAction)) {
+                int status = response.getStatusLine().getStatusCode();
+                boolean isSuccess = status >= 200 && status < 300;
+                if (!isSuccess) {
+                    String body = response.getEntity() == null ? null : EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                    throw new IllegalStateException(String.format("request url: %s fail, status: %s, response %s", url, status, body));
+                }
+            }
+        }
+    }
+    private static ObjectMapper getMapper() {
+        JsonMapper.Builder builder = JsonMapper.builder();
+
+        builder.defaultDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
+        builder.defaultLocale(Locale.CHINA);
+        builder.defaultTimeZone(TimeZone.getTimeZone("GMT+8"));
+
+        builder.disable(MapperFeature.DEFAULT_VIEW_INCLUSION);
+        builder.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        builder.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        builder.enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN);
+
+        return builder.build();
+    }
+
     @Data
     public static class ExecResult {
 
@@ -269,5 +362,27 @@ public class NexusFileUtils {
             return new ExecResult(false, message);
         }
 
+    }
+
+    @Data
+    public static class AssertResponse {
+        private List<Assert> items;
+    }
+
+    @Data
+    public static class Assert {
+        private String id;
+        private String repository;
+        private String format;
+        private Checksum checksum;
+
+        public String getMd5() {
+            return checksum == null ? null : checksum.getMd5();
+        }
+    }
+
+    @Data
+    public static class Checksum {
+        private String md5;
     }
 }
