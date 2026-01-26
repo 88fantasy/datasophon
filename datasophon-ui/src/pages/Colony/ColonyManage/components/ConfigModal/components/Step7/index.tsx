@@ -215,7 +215,7 @@ const Index = ({
             };
 
 
-            const generateCommandRes = await axiosPost(API.generateCommand, params)
+            const generateCommandRes = await axiosPost(API.generateGenericInstallCommand, params)
 
             if (generateCommandRes.code === 200) {
                 // params.commandIds = generateCommandRes.data
