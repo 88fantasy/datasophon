@@ -42,7 +42,7 @@ const Index = ({
             clusterId,
         };
 
-        const res = await axiosPost(API.getServiceList, params)
+        const res = await axiosPost(API.listBasicFrameService, params)
 
         if (res.code === 200) {
             res.data.map(val => {
@@ -52,7 +52,6 @@ const Index = ({
             const arr = res.data.filter(item => item.installed)
             if (arr.length > 0) {
                 setSelectedRows(arr)
-
             }
 
 
