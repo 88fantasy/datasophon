@@ -134,6 +134,7 @@ public class FrameServiceController extends ApiController {
         }
         
         // delete /packages 下的软件包
+//        FIXME
         File targetPackageFile = new File(Constants.MASTER_MANAGE_PACKAGE_PATH, serviceEntity.getPackageName());
         FileUtil.del(targetPackageFile);
         log.info("delete package file to: {}", targetPackageFile.getAbsolutePath());

@@ -17,19 +17,16 @@
 
 package com.datasophon.api.master.handler.host;
 
-import cn.hutool.core.io.FileUtil;
 import com.datasophon.api.utils.CommonUtils;
 import com.datasophon.api.utils.MessageResolverUtils;
 import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.InstallState;
 import com.datasophon.common.model.HostInfo;
+import com.datasophon.common.storage.PackageStorageUtils;
 import com.jcraft.jsch.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.nio.charset.StandardCharsets;
 
 public class CheckWorkerMd5Handler implements DispatcherWorkerHandler {
     
@@ -37,10 +34,7 @@ public class CheckWorkerMd5Handler implements DispatcherWorkerHandler {
     @Override
     public boolean handle(Session session, HostInfo hostInfo) {
         String checkWorkerMd5Result = MinaUtils.execCmdWithResult(session, Constants.CHECK_WORKER_MD5_CMD).trim();
-
-        File md5File = new File(Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + Constants.WORKER_PACKAGE_NAME + ".md5");
-        String md5 = FileUtil.readString(md5File, StandardCharsets.UTF_8);
-        md5 = md5.replaceAll("\\s", "");
+        String md5 = PackageStorageUtils.getStorage().readPackageMd5(Constants.WORKER_PACKAGE_NAME);
 
         logger.info("{} worker package md5 value is : {}", hostInfo.getHostname(), md5);
         if (!md5.equals(checkWorkerMd5Result)) {

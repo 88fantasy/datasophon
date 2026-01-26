@@ -82,7 +82,8 @@ public class NexusStorage implements PackageStorage {
         String path = packageName.endsWith(".md5") ? packageName : packageName + ".md5";
         path = "packages/" + path;
         try (InputStream in = NexusFileUtils.downStream(NexusFileUtils.getNexusRawObjectUrl(path), registry.getUser(), registry.getPassword())) {
-            return IoUtil.read(in, StandardCharsets.UTF_8);
+            String md5 = IoUtil.read(in, StandardCharsets.UTF_8);
+            return md5.replaceAll("\\s", "");
         } catch (FileNotFoundException e) {
             throw new IllegalStateException(String.format("package %s does not exists at %s", packageName, NexusFileUtils.getNexusRawObjectUrl(path)), e);
         } catch (IOException e) {
