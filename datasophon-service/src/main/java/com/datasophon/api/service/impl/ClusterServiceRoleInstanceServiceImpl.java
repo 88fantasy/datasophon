@@ -20,6 +20,8 @@ package com.datasophon.api.service.impl;
 import akka.actor.ActorSelection;
 import akka.pattern.Patterns;
 import akka.util.Timeout;
+import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -38,6 +40,7 @@ import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.GetLogCommand;
 import com.datasophon.common.enums.CommandType;
+import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.CollectionUtils;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PlaceholderUtils;
@@ -45,7 +48,6 @@ import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceRoleGroup;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
-import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.FrameServiceRoleEntity;
 import com.datasophon.dao.enums.NeedRestart;
 import com.datasophon.dao.enums.RoleType;
@@ -154,21 +156,32 @@ public class ClusterServiceRoleInstanceServiceImpl
   public Result getLog(Integer serviceRoleInstanceId) throws Exception {
     ClusterServiceRoleInstanceEntity roleInstance = this.getById(serviceRoleInstanceId);
     ClusterInfoEntity clusterInfo = clusterInfoService.getById(roleInstance.getClusterId());
-    FrameServiceRoleEntity serviceRole = frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(
-        clusterInfo.getClusterFrame(), roleInstance.getServiceRoleName());
+    FrameServiceRoleEntity serviceRole = frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(clusterInfo.getClusterFrame(), roleInstance.getServiceRoleName());
+
     Map<String, String> globalVariables = GlobalVariables.getVariables(roleInstance.getClusterId());
     if (serviceRole.getServiceRoleType() == RoleType.CLIENT) {
-      return Result.success("client does not have any log");
+      return Result.success("client service role type does not have any log");
     }
-    FrameServiceEntity frameServiceEntity = frameService.getById(serviceRole.getServiceId());
     String logFile = serviceRole.getLogFile();
     if (StringUtils.isNotBlank(logFile)) {
       logFile = PlaceholderUtils.replacePlaceholders(logFile, globalVariables, Constants.REGEX_VARIABLE);
       logger.info("logFile is {}", logFile);
     }
+
+
+    ServiceRoleInfo serviceRoleInfo = JSONObject.parseObject(serviceRole.getServiceRoleJson(), ServiceRoleInfo.class);
     GetLogCommand command = new GetLogCommand();
     command.setLogFile(logFile);
-    command.setDecompressPackageName(frameServiceEntity.getDecompressPackageName());
+    command.setDecompressPackageName(serviceRoleInfo.getDecompressPackageName());
+    command.setServiceRoleName(serviceRoleInfo.getServiceRoleName());
+    command.setServiceName(serviceRoleInfo.getServiceName());
+    command.setPackageName(serviceRoleInfo.getPackageName());
+
+    String user = serviceRoleInfo.getRunAs() != null ? serviceRoleInfo.getRunAs().getUser() : null;
+    if (StrUtil.isBlank(user)) {
+        user = "root";
+    }
+    command.setRunAsUser(user);
     logger.info("start to get {} log from {}", serviceRole.getServiceRoleName(), roleInstance.getHostname());
 
     ActorSelection configActor = ActorUtils.actorSystem

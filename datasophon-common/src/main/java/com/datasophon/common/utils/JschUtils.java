@@ -308,7 +308,7 @@ public class JschUtils {
         try {
             channel = (ChannelSftp) session.openChannel("sftp");
             channel.connect(connectTimeout * 1000);
-            result = ensureRemotePathExists(channel, remoteDirPath);
+            result = ensureRemotePathExists(session.getHost(), channel, remoteDirPath);
             if (result.isSuccess()) {
                 result = sendDirChannel(channel, localDirPath, remoteDirPath, isVisual);
             }
@@ -326,7 +326,7 @@ public class JschUtils {
 
 
 
-    private static ExecResult ensureRemotePathExists(ChannelSftp channel, String remotePath) {
+    private static ExecResult ensureRemotePathExists(String host, ChannelSftp channel, String remotePath) {
         if (remotePath == null || !remotePath.startsWith("/")) {
             return ExecResult.error("Invalid remote path: must be non-null and absolute (start with '/').");
         }
@@ -340,6 +340,8 @@ public class JschUtils {
                 return ExecResult.error("Failed to check existence of remote path '" + normalizedPath + "': " + e.getMessage());
             }
         }
+
+        log.info("create dir: {} at {}", remotePath, host);
 
         String[] parts = normalizedPath.substring(1).split("/");
         StringBuilder currentPath = new StringBuilder("/");

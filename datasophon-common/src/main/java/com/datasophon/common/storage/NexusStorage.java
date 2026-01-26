@@ -7,6 +7,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.model.uni.NexusUri;
 import com.datasophon.common.utils.NexusFileUtils;
 import com.datasophon.common.utils.PathUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,9 +29,10 @@ import java.util.function.Function;
 /**
  * @author zhanghuangbin
  */
+@Slf4j
 public class NexusStorage implements PackageStorage {
 
-    private static Map<String, ReentrantLock> LOCK_MAP = new ConcurrentHashMap<>();
+    private static final Map<String, ReentrantLock> LOCK_MAP = new ConcurrentHashMap<>();
 
     @Override
     public boolean isEnabled() {
@@ -49,13 +51,15 @@ public class NexusStorage implements PackageStorage {
                     relative = src.getName() + "/" + relative;
                 }
                 relative = PathUtils.unixStyle(relative);
+
+                log.info("upload {} to raw repo, path: {}", path, relative);
                 NexusFileUtils.uploadFileToRawRepo(relative, path.toFile());
                 return FileVisitResult.CONTINUE;
             }
 
             @Override
             public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                return FileVisitResult.TERMINATE;
+                throw exc;
             }
         });
     }
@@ -72,6 +76,8 @@ public class NexusStorage implements PackageStorage {
 
         String relativePath = relativePathHandler.apply(file);
         relativePath = PathUtils.unixStyle(relativePath);
+
+        log.info("upload {} to raw repo, path: {}", file, relativePath);
         NexusFileUtils.uploadFileToRawRepo(relativePath, file);
     }
 
@@ -81,8 +87,11 @@ public class NexusStorage implements PackageStorage {
         NexusUri registry = getNexusUri();
         String path = packageName.endsWith(".md5") ? packageName : packageName + ".md5";
         path = "packages/" + path;
+
+        log.info("read the md5 of package:{}", packageName);
         try (InputStream in = NexusFileUtils.downStream(NexusFileUtils.getNexusRawObjectUrl(path), registry.getUser(), registry.getPassword())) {
             String md5 = IoUtil.read(in, StandardCharsets.UTF_8);
+            log.info("read the md5 of package:{}, content: {}", packageName, md5);
             return md5.replaceAll("\\s", "");
         } catch (FileNotFoundException e) {
             throw new IllegalStateException(String.format("package %s does not exists at %s", packageName, NexusFileUtils.getNexusRawObjectUrl(path)), e);
@@ -111,6 +120,8 @@ public class NexusStorage implements PackageStorage {
             if (needDownload) {
                 NexusUri registry = getNexusUri();
                 String path = "packages/" + packageName;
+
+                log.info("download package: {}, path is {}", packageName, path);
                 try (InputStream in = NexusFileUtils.downStream(NexusFileUtils.getNexusRawObjectUrl(path), registry.getUser(), registry.getPassword())) {
                     FileUtil.copyFile(in, file, StandardCopyOption.REPLACE_EXISTING);
                 } catch (FileNotFoundException e) {
@@ -118,6 +129,8 @@ public class NexusStorage implements PackageStorage {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
+            } else {
+                log.info("package {} exists, we do need to download", packageName);
             }
 
             DownloadResult result = new DownloadResult();

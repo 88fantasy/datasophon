@@ -63,14 +63,14 @@ public class PropertyUtils {
             propertyFiles.add(path);
         }
 
-        boolean found = false;
+        String usedFileName = null;
         for (String fileName : propertyFiles) {
             File file = new File(fileName);
             InputStream inputStream = null;
             try {
                 inputStream = Files.newInputStream(file.toPath());
                 properties.load(inputStream);
-                found = true;
+                usedFileName = fileName;
             } catch (FileNotFoundException | NoSuchFileException e) {
                 logger.warn("file {} do not exist, we just ignore", fileName);
             } catch (IOException e) {
@@ -80,9 +80,11 @@ public class PropertyUtils {
                 IOUtils.closeQuietly(inputStream);
             }
         }
-        if (!found) {
+        if (usedFileName == null) {
             logger.error("can not load common.properties from {}", StrUtil.join(",", propertyFiles));
             System.exit(1);
+        } else {
+            logger.info("used {} file as the functional properties", usedFileName);
         }
     }
 

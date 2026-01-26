@@ -236,7 +236,7 @@ public class NexusFileUtils {
             HttpEntity entity = builder.build();
             post.setEntity(entity);
 
-            log.info("开始上传 {}", file.getAbsolutePath());
+            log.info("开始上传 {} 到 {}", file.getAbsolutePath(), url);
 
             try (CloseableHttpResponse response = httpClient.execute(post)) {
                 int status = response.getStatusLine().getStatusCode();

@@ -10,7 +10,6 @@ import java.io.File;
 public class PropertiesPathUtils {
 
     public static void resetPropertyFile() {
-        System.setProperty("devMode", "local");
         File workspace = new File("./");
         String path = PathUtils.join(workspace.getAbsolutePath(), "../conf/common.properties").toFile().getAbsolutePath();
         System.setProperty("commonPropertiesLocation", path);
