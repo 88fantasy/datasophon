@@ -95,7 +95,7 @@ public class DSMasterHandlerStrategy extends AbstractHandlerStrategy implements 
         }
         
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
+                command, command.getRunAs(), command.isCheckStatus());
     }
     
     private String getValue(String line) {

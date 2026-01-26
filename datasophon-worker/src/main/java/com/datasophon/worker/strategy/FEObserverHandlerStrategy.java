@@ -60,7 +60,7 @@ public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implement
             startRunner.setArgs(commands);
             startRunner.setTimeout("60");
             startResult = serviceHandler.start(startRunner, command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+                    command, command.getRunAs());
             if (startResult.getExecResult()) {
                 // add observer
                 try {
@@ -80,7 +80,7 @@ public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implement
             }
         } else {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+                    command, command.getRunAs());
         }
         return startResult;
     }

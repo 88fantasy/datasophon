@@ -77,7 +77,7 @@ public class NginxHandlerStrategy extends AbstractHandlerStrategy implements Ser
 
     }
     return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-        command.getDecompressPackageName(), command.getRunAs());
+        command, command.getRunAs());
   }
 
 

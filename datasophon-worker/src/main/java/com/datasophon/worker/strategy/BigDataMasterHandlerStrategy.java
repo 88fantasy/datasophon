@@ -100,8 +100,7 @@ public class BigDataMasterHandlerStrategy extends AbstractHandlerStrategy implem
                 }
             }
         }
-        return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs());
+        return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(), command, command.getRunAs());
     }
     
 }

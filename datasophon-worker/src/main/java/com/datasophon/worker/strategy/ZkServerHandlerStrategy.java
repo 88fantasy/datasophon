@@ -47,7 +47,7 @@ public class ZkServerHandlerStrategy extends AbstractHandlerStrategy implements 
             }
         }
         ExecResult startResult  = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
+                command, command.getRunAs(), command.isCheckStatus());
         return startResult;
     }
     

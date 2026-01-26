@@ -18,14 +18,14 @@
 package com.datasophon.worker.handler;
 
 import com.datasophon.common.Constants;
-import com.datasophon.common.command.BaseCommand;
+import com.datasophon.common.command.ServiceRoleResource;
 import com.datasophon.common.model.RunAs;
 import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.FileUtils;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
-import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.worker.utils.TaskConstants;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
@@ -54,15 +54,10 @@ public class ServiceHandler {
     }
 
 
-    private String getLinkDirName() {
-        BaseCommand cmd = new BaseCommand();
-        cmd.setServiceName(serviceName);
-        cmd.setServiceRoleName(serviceRoleName);
-        return PkgInstallPathUtils.getLinkDirName(cmd);
-    }
 
-    public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, String decompressPackageName, RunAs runAs, boolean checkStatus) {
-        String linkName = getLinkDirName();
+    public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, ServiceRoleResource resource,
+                            RunAs runAs, boolean checkStatus) {
+        String linkName = PkgInstallPathUtils.getLinkDirName(resource);
         ExecResult statusResult = execRunner(statusRunner, linkName, null);
         if (statusResult.getExecResult()) {
             logger.info("{} already started", linkName);
@@ -102,14 +97,13 @@ public class ServiceHandler {
         return startResult;
     }
 
-    public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, String decompressPackageName,
-                            RunAs runAs) {
-        return start(startRunner, statusRunner, decompressPackageName, runAs, true);
+    public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, ServiceRoleResource resource, RunAs runAs) {
+        return start(startRunner, statusRunner, resource, runAs, true);
     }
     
-    public ExecResult stop(ServiceRoleRunner runner, ServiceRoleRunner statusRunner, String decompressPackageName,
+    public ExecResult stop(ServiceRoleRunner runner, ServiceRoleRunner statusRunner, ServiceRoleResource resource,
                            RunAs runAs) {
-        String linkName = getLinkDirName();
+        String linkName = PkgInstallPathUtils.getLinkDirName(resource);
         ExecResult statusResult = execRunner(statusRunner, linkName, runAs);
         ExecResult execResult = new ExecResult();
         if (statusResult.getExecResult()) {
@@ -144,13 +138,13 @@ public class ServiceHandler {
         return execResult;
     }
     
-    public ExecResult reStart(ServiceRoleRunner runner, String decompressPackageName) {
-        ExecResult result = execRunner(runner, decompressPackageName, null);
+    public ExecResult restart(ServiceRoleRunner runner, ServiceRoleResource resource) {
+        ExecResult result = execRunner(runner, PkgInstallPathUtils.getLinkDirName(resource), null);
         return result;
     }
     
-    public ExecResult status(ServiceRoleRunner runner, String decompressPackageName) {
-        ExecResult result = execRunner(runner, decompressPackageName, null);
+    public ExecResult status(ServiceRoleRunner runner, ServiceRoleResource resource) {
+        ExecResult result = execRunner(runner, PkgInstallPathUtils.getLinkDirName(resource), null);
         return result;
     }
     

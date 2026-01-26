@@ -101,7 +101,7 @@ public class UstreamMasterHandlerStrategy extends AbstractHandlerStrategy implem
             }
         }
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
+                command, command.getRunAs(), command.isCheckStatus());
     }
     
 }

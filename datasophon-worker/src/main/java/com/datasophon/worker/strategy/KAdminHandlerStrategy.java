@@ -37,14 +37,14 @@ public class KAdminHandlerStrategy extends AbstractHandlerStrategy implements Se
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+                    command, command.getRunAs());
             if (startResult.getExecResult()) {
                 // create admin
                 ShellUtils.execShell("kadmin.local -q \"addprinc  -pw admin admin/admin\"");
             }
         } else {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
+                    command, command.getRunAs(), command.isCheckStatus());
         }
         return startResult;
     }

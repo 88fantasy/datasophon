@@ -38,7 +38,7 @@ public class StopServiceActor extends UntypedActor {
             logger.info("start to stop service role {}", command.getServiceRoleName());
             ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
             ExecResult stopResult = serviceHandler.stop(command.getStopRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+                    command, command.getRunAs());
             getSender().tell(stopResult, getSelf());
             
             logger.info("service role {} stop result {}", command.getServiceRoleName(),

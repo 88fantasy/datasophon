@@ -75,7 +75,7 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                 startRunner.setArgs(commands);
                 startRunner.setTimeout("600");
                 startResult = serviceHandler.start(startRunner, command.getStatusRunner(),
-                        command.getDecompressPackageName(), command.getRunAs());
+                        command, command.getRunAs());
                 if (startResult.getExecResult()) {
                     // add follower
                     try {
@@ -94,8 +94,7 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                     logger.error("slave fe start failed");
                 }
             } else {
-                startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                        command.getDecompressPackageName(), command.getRunAs());
+                startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(), command, command.getRunAs());
                 // fe leader安装成功,初始化登录账号
                 if (startResult.getExecResult()){
                     String password = OlapUtils.getUniPassword(feUniConfPath);
@@ -103,8 +102,7 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                 }
             }
         } else {
-            startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+            startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(), command, command.getRunAs());
         }
         return startResult;
     }

@@ -31,7 +31,7 @@ public class RestartServiceActor extends UntypedActor {
             ServiceRoleOperateCommand command = (ServiceRoleOperateCommand) msg;
             ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
             ExecResult startResult =
-                    serviceHandler.reStart(command.getRestartRunner(), command.getDecompressPackageName());
+                    serviceHandler.restart(command.getRestartRunner(), command);
             getSender().tell(startResult, getSelf());
         } else {
             unhandled(msg);

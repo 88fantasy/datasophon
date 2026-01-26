@@ -24,7 +24,7 @@ public class ServiceStatusActor extends HookTypedActor<ServiceRoleOperateCommand
             int count = 0;
             while (count < times) {
                 count++;
-                result = serviceHandler.status(command.getStatusRunner(), command.getDecompressPackageName());
+                result = serviceHandler.status(command.getStatusRunner(), command);
                 if (result.getExecResult()) {
                     break;
                 } else {

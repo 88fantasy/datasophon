@@ -28,6 +28,6 @@ public interface ServiceRoleStrategy {
     default ExecResult handler(ServiceRoleOperateCommand command) throws SQLException, ClassNotFoundException {
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-            command.getDecompressPackageName(), command.getRunAs());
+            command, command.getRunAs());
     }
 }

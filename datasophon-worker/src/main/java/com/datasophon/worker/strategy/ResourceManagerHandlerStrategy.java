@@ -56,6 +56,6 @@ public class ResourceManagerHandlerStrategy extends AbstractHandlerStrategy impl
             ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chown yarn:hadoop /user/yarn");
         }
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
+                command, command.getRunAs(), command.isCheckStatus());
     }
 }

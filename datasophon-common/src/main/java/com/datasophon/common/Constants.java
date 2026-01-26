@@ -44,7 +44,7 @@ public final class Constants {
     public static final String MASTER_MANAGE_PACKAGE_PATH = INIT_HOME + "/packages";
     public static final String PACKAGES_NAME = "packages";
     public static final String UNZIP_DDH_WORKER_CMD =
-            "tar -zxvf " + MASTER_MANAGE_PACKAGE_PATH + "/datasophon-worker.tar.gz -C " + INSTALL_PATH;
+            "tar -zxf " + MASTER_MANAGE_PACKAGE_PATH + "/datasophon-worker.tar.gz -C " + INSTALL_PATH;
     public static final String START_DDH_WORKER_CMD = "service datasophon-worker restart";
     
     public static final String WORKER_PACKAGE_NAME = "datasophon-worker.tar.gz";

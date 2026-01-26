@@ -46,7 +46,7 @@ public class BEHandlerStrategy extends AbstractHandlerStrategy implements Servic
             logger.info("add  be to cluster");
             
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
+                    command, command.getRunAs(), command.isCheckStatus());
             if (startResult.getExecResult()) {
                 try {
                     OlapSqlExecCommand sqlExecCommand = new OlapSqlExecCommand();
@@ -66,7 +66,7 @@ public class BEHandlerStrategy extends AbstractHandlerStrategy implements Servic
             }
         } else {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs(), command.isCheckStatus());
+                    command, command.getRunAs(), command.isCheckStatus());
         }
         return startResult;
     }
