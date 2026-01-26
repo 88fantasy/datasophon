@@ -40,6 +40,15 @@ const Index = (props) => {
     const steps5Ref = useRef()
     const steps6Ref = useRef()
     const steps7Ref = useRef()
+    // const refMapRef = useRef({
+    //     stepImportManifestRef,
+    //     steps2Ref,
+    //     steps3Ref,
+    //     steps4Ref,
+    //     steps5Ref,
+    //     steps6Ref,
+    //     steps7Ref,
+    // })
 
 
     const clusterId = record?.id || props.clusterId
@@ -47,7 +56,7 @@ const Index = (props) => {
     const [current, setCurrent] = useState(0)
 
 
-    console.log('record', record)
+    // console.log('record', record)
 
     // useEffect(() => {
     //     waitTime(1000).then(() => {
@@ -142,7 +151,7 @@ const Index = (props) => {
             ]
         } else if (stepsType === T_SETPS_TYPE_ADDSERVICE) {
             arr = [
-                stepImportManifestObj,
+                // stepImportManifestObj,
                 step4Obj,
                 step5Obj,
                 step6Obj,

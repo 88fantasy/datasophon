@@ -43,7 +43,7 @@ const Index = ({
 
         const stepImportManifestRef = formMapRef.current[index - 1]
 
-        const values = stepImportManifestRef?.current.getFieldsValue()
+        const values = stepImportManifestRef?.current?.getFieldsValue() || {}
         const deployFileId = values.deployFileId
         const contentDecodePasswd = values.contentDecodePasswd
         if (deployFileId && contentDecodePasswd) {
