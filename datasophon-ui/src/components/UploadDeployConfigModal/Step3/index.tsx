@@ -1,33 +1,26 @@
 import { ProCard, ProFormDependency, ProFormText, ProFormUploadButton } from "@ant-design/pro-components";
-import { requireRules } from "../../../utils/util";
 import { API } from "../../../api";
 import { noop } from "lodash-es";
-import * as yaml from 'js-yaml';
-import { sm4Encrypt, sm4Decrypt } from 'sm-crypto';
 import TableProxy from "./TableProxy";
-import { memo, useCallback } from "react";
+import { forwardRef, memo, useCallback, useImperativeHandle, useRef } from "react";
 
-const Index = (props) => {
+const Index = (props, ref) => {
 
     const {
         currentStep,
-        formMapRef
+        formMapRef,
+        requireRules
     } = props
 
+    // const tableProxyRef = useRef()
 
-
-
-    // const values = firstFormRef?.current?.getFieldsValue()
-
-    // const {
-    //     contentDecodePasswd
-    // } = values || {}
 
 
     const invokeRenderTable = useCallback(() => {
         const dom = ({ deployFileId, contentDecodePasswd }) => {
             return (
                 <TableProxy
+                    // ref={tableProxyRef}
                     deployFileId={deployFileId}
                     contentDecodePasswd={contentDecodePasswd}
                 />
@@ -44,6 +37,23 @@ const Index = (props) => {
             </ProFormDependency>
         )
     }, [])
+
+
+    // const invokeValid = useCallback(() => {
+
+    //     return {
+    //         yamlData: tableProxyRef.current?.yamlDataRef?.current,
+    //         valid: true
+    //     }
+
+    // }, [])
+
+
+    // useImperativeHandle(ref, () => {
+    //     return {
+    //         invokeValid
+    //     }
+    // })
 
     return (
         <>
@@ -62,8 +72,12 @@ const Index = (props) => {
                 formItemProps={{
                     rules: [
                         {
-                            required: true,
+                            required: requireRules ? true : false,
                             validator(rule, value) {
+
+                                if (!requireRules) {
+                                    return Promise.resolve()
+                                }
 
                                 return new Promise<void>((resolve, reject) => {
                                     if (!value?.length) {

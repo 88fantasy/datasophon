@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import * as yaml from 'js-yaml';
 import CommonTable from "../../Common/CommonTable";
 import { sm4Decrypt } from "../../../utils/secretUtils";
 
-const Index = (props) => {
+const Index = (props, ref) => {
 
 
     const {
@@ -12,6 +12,7 @@ const Index = (props) => {
     } = props
 
     const [state, setState] = useState({})
+    // const yamlDataRef = useRef()
 
     const invokeInit = useCallback(async () => {
 
@@ -67,6 +68,10 @@ const Index = (props) => {
                     }
                 })
             }
+
+            // if (yamlData) {
+            //     yamlDataRef.current = yamlData
+            // }
         } catch (error) {
             console.warn('YAML 解析错误:', error);
         }
@@ -93,6 +98,12 @@ const Index = (props) => {
     useEffect(() => {
         invokeInit()
     }, [invokeInit])
+
+    // useImperativeHandle(ref, () => {
+    //     return {
+    //         yamlDataRef
+    //     }
+    // })
 
     return (
         <div className="mb-[10px]">
