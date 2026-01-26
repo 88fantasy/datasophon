@@ -85,7 +85,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
     }
 
     @Override
-    public List<FrameServiceEntity> listNewest(Integer clusterId) {
+    public List<FrameServiceEntity> listNewest(Integer clusterId, boolean newest) {
         ClusterInfoEntity clusterInfo = clusterInfoMapper.selectById(clusterId);
         FrameInfoEntity frameInfo = frameInfoMapper.getFrameInfoByFrameCode(clusterInfo.getClusterFrame());
 
@@ -93,19 +93,21 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
                 .eq(FrameServiceEntity::getFrameId, frameInfo.getId())
                 .orderByAsc(FrameServiceEntity::getSortNum)
                 .list();
-        Map<String, FrameServiceEntity> existEntity = new HashMap<>();
-        list.forEach(newVal-> {
-            FrameServiceEntity old = existEntity.get(newVal.getServiceName());
-            if (old == null) {
-                existEntity.put(newVal.getServiceName(), newVal);
-            } else {
-                if (VersionUtil.compareVersions(old.getServiceVersion(), newVal.getServiceVersion()) < 0) {
+        if (Boolean.TRUE.equals(newest)) {
+            Map<String, FrameServiceEntity> existEntity = new HashMap<>();
+            list.forEach(newVal-> {
+                FrameServiceEntity old = existEntity.get(newVal.getServiceName());
+                if (old == null) {
                     existEntity.put(newVal.getServiceName(), newVal);
+                } else {
+                    if (VersionUtil.compareVersions(old.getServiceVersion(), newVal.getServiceVersion()) < 0) {
+                        existEntity.put(newVal.getServiceName(), newVal);
+                    }
                 }
-            }
-        });
-        list = new ArrayList<>(existEntity.values());
-        list.sort(Comparator.nullsLast(Comparator.comparing(FrameServiceEntity::getSortNum, Comparator.naturalOrder())));
+            });
+            list = new ArrayList<>(existEntity.values());
+            list.sort(Comparator.nullsLast(Comparator.comparing(FrameServiceEntity::getSortNum, Comparator.naturalOrder())));
+        }
         setInstalled(clusterId, list);
         return list;
     }

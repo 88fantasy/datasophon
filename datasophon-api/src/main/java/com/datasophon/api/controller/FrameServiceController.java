@@ -62,8 +62,8 @@ public class FrameServiceController extends ApiController {
 
     @RequestMapping("/listNewest")
     @Operation(summary = "获取组件列表(最高版本)")
-    public Result listNewest(Integer clusterId) {
-        return Result.success(frameVersionServiceService.listNewest(clusterId));
+    public Result listNewest(Integer clusterId, Boolean newest) {
+        return Result.success(frameVersionServiceService.listNewest(clusterId,newest));
     }
 
 
@@ -134,6 +134,7 @@ public class FrameServiceController extends ApiController {
         }
         
         // delete /packages 下的软件包
+//        FIXME
         File targetPackageFile = new File(Constants.MASTER_MANAGE_PACKAGE_PATH, serviceEntity.getPackageName());
         FileUtil.del(targetPackageFile);
         log.info("delete package file to: {}", targetPackageFile.getAbsolutePath());

@@ -1,6 +1,6 @@
 import axios from "axios";
 import Cookie from "js-cookie";
-import { axiosPost, codeMessage } from "../api/request";
+import { axiosGet, axiosPost, codeMessage } from "../api/request";
 import { message } from "antd";
 
 // 跨域认证信息 header 名
@@ -203,6 +203,10 @@ export const invokePackProtableRequest = (api) => {
         ...params,
       };
       mapApi = typeof api.api === "function" ? api.api(params) : api.api;
+    }
+
+    if (api.method === METHOD.GET) {
+      return axiosGet(mapApi, params);
     }
     return axiosPost(mapApi, params);
   };

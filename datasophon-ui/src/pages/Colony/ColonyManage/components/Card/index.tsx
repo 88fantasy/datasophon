@@ -11,6 +11,7 @@ import { invokeGenPath } from "../../../../../utils/routerUtils";
 import { useParams } from "react-router-dom";
 import { useCallback, useMemo } from "react";
 import asyncHook from "../../../../../components/Common/CommonModal/asyncHook";
+import { T_TYPE } from "../ConfigModal/stepType";
 
 const showAuthModal = asyncHook(() =>
     import("../AuthModal/api"));
@@ -175,6 +176,7 @@ const Index = ({
                     const modelApi = await showConfigModal()
                     modelApi.default({
                         record: val,
+                        type: T_TYPE,
                         onOk: () => {
                             invokeInit()
                         }
@@ -245,12 +247,12 @@ const Index = ({
             return res
 
         })
-    }, [clusterStateCode, invokeInit, onEditOrBuildClick, onImportClick, val])
+    }, [clusterStateCode, invokeInit, onEditOrBuildClick, onImportClick, onImportDeployManifestClick, val])
 
 
 
     return (
-        <Col span={6} className="mb-[20px]"
+        <Col span={8} className="mb-[20px]"
         >
             {
                 !add ? (

@@ -1,5 +1,5 @@
 
-import { AlertOutlined, MoreOutlined, SettingOutlined, UploadOutlined } from "@ant-design/icons"
+import { AlertOutlined, MoreOutlined, PartitionOutlined, SettingOutlined, UploadOutlined } from "@ant-design/icons"
 import { Dropdown, Tooltip } from "antd";
 import { noop } from "antd/es/_util/warning";
 import asyncHook from "../../../components/Common/CommonModal/asyncHook";
@@ -13,6 +13,7 @@ const showAlarmModal = asyncHook(() =>
 
 const showUploadDeployModal = asyncHook(() => import('../../../components/UploadDeployModal/api'))
 const showUploadDeployConfigModal = asyncHook(() => import('../../../components/UploadDeployConfigModal/api'))
+const showDagListModal = asyncHook(() => import('./DagListModal/api'))
 export const actionsRender = (props) => {
 
 
@@ -73,16 +74,30 @@ export const actionsRender = (props) => {
         })
     }
 
+    const onDagListClick = async (record) => {
+        const modelApi = await showDagListModal()
+        modelApi.default({
+            clusterId
+            // onOk: () => {
+            //     invokeUpdateServiceList()
+            // }
+        })
+    }
+
 
 
     const menuItems = [
         {
             label: '部署包',
-            onClick: onImportClick.bind(noop, {})
+            onClick: onImportClick.bind(noop, {
+                id: clusterId
+            })
         },
         {
             label: '部署清单',
-            onClick: onImportDeployManifestClick.bind(noop, {})
+            onClick: onImportDeployManifestClick.bind(noop, {
+                id: clusterId
+            })
 
         }
     ].map(val => {
@@ -94,7 +109,14 @@ export const actionsRender = (props) => {
 
 
     return clusterId && [
-
+        <Tooltip
+            key="3"
+            title="部署状况"
+        >
+            <PartitionOutlined
+                onClick={onDagListClick}
+            />
+        </Tooltip>,
         <Dropdown
             key="2"
 

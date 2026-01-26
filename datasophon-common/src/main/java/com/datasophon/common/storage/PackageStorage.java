@@ -20,5 +20,5 @@ public interface PackageStorage {
 
     String readPackageMd5(String packageName);
 
-    void downloadPackageToLocal(String packageName);
+    DownloadResult downloadPackageToLocal(String packageName);
 }

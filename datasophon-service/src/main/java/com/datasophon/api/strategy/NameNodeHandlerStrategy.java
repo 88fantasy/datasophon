@@ -59,9 +59,8 @@ public class NameNodeHandlerStrategy extends ServiceHandlerAbstract implements S
   @Override
   public void handler(Integer clusterId, List<String> hosts, String serviceName) {
 
-    Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
-    ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "nn1", hosts.get(0));
-    ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "nn2", hosts.get(1));
+    ProcessUtils.generateClusterVariable(clusterId, serviceName, "nn1", hosts.get(0));
+    ProcessUtils.generateClusterVariable(clusterId, serviceName, "nn2", hosts.get(1));
   }
 
   @Override
@@ -86,7 +85,7 @@ public class NameNodeHandlerStrategy extends ServiceHandlerAbstract implements S
       if (ENABLE_KERBEROS.equals(config.getName())) {
         enableKerberos =
             isEnableKerberos(
-                clusterId, globalVariables, enableKerberos, config, "HDFS");
+                clusterId, enableKerberos, config, "HDFS");
       }
     }
     List<ServiceConfig> rackConfigs = new ArrayList<>();

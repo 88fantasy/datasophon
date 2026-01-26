@@ -56,13 +56,9 @@ public class RMHandlerStrategy extends ServiceHandlerAbstract implements Service
 
   @Override
   public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-
-    Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
-
-    ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "rm1", hosts.get(0));
-    ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "rm2", hosts.get(1));
-    ProcessUtils.generateClusterVariable(
-        globalVariables, clusterId, serviceName, "rmHost", String.join(",", hosts));
+    ProcessUtils.generateClusterVariable(clusterId, serviceName, "rm1", hosts.get(0));
+    ProcessUtils.generateClusterVariable(clusterId, serviceName, "rm2", hosts.get(1));
+    ProcessUtils.generateClusterVariable(clusterId, serviceName, "rmHost", String.join(",", hosts));
   }
 
   @Override
@@ -90,7 +86,7 @@ public class RMHandlerStrategy extends ServiceHandlerAbstract implements Service
         }
       }
       if ("enableKerberos".equals(config.getName())) {
-        enableKerberos = isEnableKerberos(clusterId, globalVariables, enableKerberos, config, "YARN");
+        enableKerberos = isEnableKerberos(clusterId, enableKerberos, config, "YARN");
       }
     }
     String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + "YARN" + Constants.CONFIG;

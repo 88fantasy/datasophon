@@ -111,29 +111,25 @@ public abstract class ServiceHandlerAbstract {
         }
     }
     
-    public boolean isEnableKerberos(Integer clusterId, Map<String, String> globalVariables, boolean enableKerberos,
+    public boolean isEnableKerberos(Integer clusterId, boolean enableKerberos,
                                     ServiceConfig config, String serviceName) {
         if ((Boolean) config.getValue()) {
             enableKerberos = true;
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
-                    "enable" + serviceName + "Kerberos",
-                    "true");
+            ProcessUtils.generateClusterVariable(clusterId, serviceName, "enable" + serviceName + "Kerberos", "true");
         } else {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
-                    "enable" + serviceName + "Kerberos",
-                    "false");
+            ProcessUtils.generateClusterVariable( clusterId, serviceName, "enable" + serviceName + "Kerberos", "false");
         }
         return enableKerberos;
     }
     
-    public boolean isEnableHA(Integer clusterId, Map<String, String> globalVariables, boolean enableHA,
+    public boolean isEnableHA(Integer clusterId,  boolean enableHA,
                               ServiceConfig config, String serviceName) {
         if ((Boolean) config.getValue()) {
             enableHA = true;
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
+            ProcessUtils.generateClusterVariable( clusterId, serviceName,
                     "enable" + serviceName + "HA", "true");
         } else {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
+            ProcessUtils.generateClusterVariable(clusterId, serviceName,
                     "enable" + serviceName + "HA", "false");
         }
         return enableHA;

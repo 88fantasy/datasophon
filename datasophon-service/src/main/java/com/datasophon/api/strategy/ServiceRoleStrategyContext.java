@@ -32,9 +32,7 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("ResourceManager", new RMHandlerStrategy());
         strategyMap.put("HiveMetaStore", new HiveMetaStoreHandlerStrategy());
         strategyMap.put("HiveServer2", new HiveServer2HandlerStrategy());
-        strategyMap.put("Grafana", new GrafanaHandlerStrategy());
         strategyMap.put("ZkServer", new ZkServerHandlerStrategy());
-        strategyMap.put("HistoryServer", new HistoryServerHandlerStrategy());
         strategyMap.put("TimelineServer", new TSHandlerStrategy());
         strategyMap.put("TrinoCoordinator", new TrinoHandlerStrategy());
         strategyMap.put("JournalNode", new JournalNodeHandlerStrategy());

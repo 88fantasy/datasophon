@@ -82,7 +82,8 @@ public class NexusStorage implements PackageStorage {
         String path = packageName.endsWith(".md5") ? packageName : packageName + ".md5";
         path = "packages/" + path;
         try (InputStream in = NexusFileUtils.downStream(NexusFileUtils.getNexusRawObjectUrl(path), registry.getUser(), registry.getPassword())) {
-            return IoUtil.read(in, StandardCharsets.UTF_8);
+            String md5 = IoUtil.read(in, StandardCharsets.UTF_8);
+            return md5.replaceAll("\\s", "");
         } catch (FileNotFoundException e) {
             throw new IllegalStateException(String.format("package %s does not exists at %s", packageName, NexusFileUtils.getNexusRawObjectUrl(path)), e);
         } catch (IOException e) {
@@ -91,7 +92,7 @@ public class NexusStorage implements PackageStorage {
     }
 
     @Override
-    public void downloadPackageToLocal(String packageName) {
+    public DownloadResult downloadPackageToLocal(String packageName) {
         ensureNexusEnable();
         Lock lock = LOCK_MAP.computeIfAbsent(packageName, k -> new ReentrantLock());
         try {
@@ -118,6 +119,11 @@ public class NexusStorage implements PackageStorage {
                     throw new RuntimeException(e);
                 }
             }
+
+            DownloadResult result = new DownloadResult();
+            result.setChange(needDownload);
+            result.setTarget(file.getAbsolutePath());
+            return result;
         } finally {
             LOCK_MAP.remove(packageName);
             lock.unlock();

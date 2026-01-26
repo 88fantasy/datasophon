@@ -50,11 +50,10 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
     
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         if (!hosts.isEmpty()) {
             String rangerAdminUrl = "http://" + hosts.get(0) + ":6080";
             logger.info("rangerAdminUrl is {}", rangerAdminUrl);
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "rangerAdminUrl",
+            ProcessUtils.generateClusterVariable(clusterId, serviceName, "rangerAdminUrl",
                     rangerAdminUrl);
         }
     }
@@ -69,28 +68,28 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
         for (ServiceConfig config : list) {
             if ("enableHDFSPlugin".equals(config.getName()) && (Boolean) config.getValue()) {
                 logger.info("enableHdfsPlugin");
-                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "enableHDFSPlugin",
+                ProcessUtils.generateClusterVariable(clusterId, serviceName, "enableHDFSPlugin",
                         "true");
                 enableRangerPlugin(clusterId, "HDFS", "NameNode");
             }
             if ("enableHIVEPlugin".equals(config.getName()) && (Boolean) config.getValue()) {
                 logger.info("enableHivePlugin");
-                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "enableHIVEPlugin",
+                ProcessUtils.generateClusterVariable(clusterId, serviceName, "enableHIVEPlugin",
                         "true");
                 enableRangerPlugin(clusterId, "HIVE", "HiveServer2");
             }
             if ("enableHBASEPlugin".equals(config.getName()) && (Boolean) config.getValue()) {
                 logger.info("enableHbasePlugin");
-                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "enableHBASEPlugin",
+                ProcessUtils.generateClusterVariable(clusterId, serviceName, "enableHBASEPlugin",
                         "true");
                 enableRangerPlugin(clusterId, "HBASE", "HbaseMaster");
             }
             if (config.getName().contains("Plugin") && !(Boolean) config.getValue()) {
                 String configName = config.getName();
-                ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, configName,"false");
+                ProcessUtils.generateClusterVariable(clusterId, serviceName, configName,"false");
             }
             if ("enableKerberos".equals(config.getName())) {
-                enableKerberos = isEnableKerberos(clusterId, globalVariables, enableKerberos, config, "RANGER");
+                enableKerberos = isEnableKerberos(clusterId, enableKerberos, config, "RANGER");
             }
         }
         String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + "RANGER" + Constants.CONFIG;

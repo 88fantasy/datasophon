@@ -20,6 +20,7 @@ export default defineConfig({
   },
   plugins: [react(), tailwindcss()] as PluginOption[],
   server: {
+    port: 5180,
     proxy: {
       "^/ddh/dev-mock": {
         rewrite: (path) => {
