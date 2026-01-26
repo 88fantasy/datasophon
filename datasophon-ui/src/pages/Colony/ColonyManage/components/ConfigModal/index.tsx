@@ -60,7 +60,8 @@ const Index = (props) => {
         record,
         onOkClickProxy,
         stepsType,
-        steps4Data
+        steps4Data,
+        type
     } = props
 
     const formMapRef = useRef([]);
@@ -159,6 +160,7 @@ const Index = (props) => {
                         record={record}
                         current={current}
                         formMapRef={formMapRef}
+                        type={type}
                         // indexKey={'11'}
                         index={index}
                         key={index}
