@@ -170,7 +170,7 @@ const Index = (props) => {
             return val
 
         })
-    }, [clusterId, current, record, steps4Data, stepsType])
+    }, [clusterId, current, record, steps4Data, stepsType, type])
 
     const invokeRenderSteps = useCallback(() => {
         return memoArr.map((val, index) => {
