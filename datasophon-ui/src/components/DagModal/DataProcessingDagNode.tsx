@@ -11,8 +11,7 @@ import {
 import { Card, Dropdown, Progress, Tooltip } from "antd"
 import { register } from '@antv/x6-react-shape'
 import insertCss from 'insert-css'
-import { CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, LoadingOutlined } from "@ant-design/icons"
-import { blue, gold, green, orange, red } from "@ant-design/colors"
+
 import { invokeGenSourceAndTarget } from "../../utils/antvUtils"
 import { invokeGenerateElId } from "../../utils/util"
 import gobalEvent, { uiEvent } from "../../utils/gobalEvent"
@@ -20,67 +19,11 @@ import { isEqual, noop } from "lodash-es"
 import asyncHook from '../../components/Common/CommonModal/asyncHook';
 import { axiosJsonPost } from "../../api/request"
 import { API } from "../../api"
+import { invokeGenStatusDom } from "./status"
 
 const showCommonLogModal = asyncHook(() =>
     import("../../components/Common/CommonLogModal/api"))
 
-
-export const T_PENDING = 'PENDING'
-export const T_RUNNING = 'RUNNING'
-export const T_SUCCESS = 'SUCCESS'
-export const T_FAILED = 'FAILED'
-export const T_CANCEL = 'CANCEL'
-
-
-
-
-const invokeGenStatusDom = ({
-    val,
-}) => {
-    const statusIcon = {
-        [T_SUCCESS]: {
-            com: CheckCircleOutlined,
-            style: {
-                color: green.primary
-            },
-        },
-        [T_FAILED]: {
-            com: ExclamationCircleOutlined,
-            style: {
-                color: red.primary
-            },
-            status: 'exception'
-        },
-        [T_CANCEL]: {
-            com: CloseCircleOutlined,
-            style: {
-                color: gold.primary
-            }
-        },
-        [T_PENDING]: {
-            com: ClockCircleOutlined,
-        }
-    }
-
-    val = statusIcon[val] || {
-        com: LoadingOutlined,
-        style: {
-            color: blue.primary
-        },
-        status: "active"
-    }
-    const Com = val.com
-
-
-
-    return {
-        com: <Com
-            className="text-[16px] cursor-pointer"
-            {...val}
-        />,
-        status: val.status
-    }
-}
 
 // 节点类型
 enum NodeType {
@@ -413,7 +356,6 @@ const Index = (props) => {
                                 val: commandState,
                             })
 
-                            console.log('status', status)
 
 
                             const onCmdClick = async (e) => {

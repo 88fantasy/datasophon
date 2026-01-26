@@ -4,6 +4,7 @@ import { API } from "../../../../../../../api";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { axiosPost } from "../../../../../../../api/request";
 import { useConfigContext } from "../../configContext";
+import { T_TYPE } from "../../stepType";
 
 
 
@@ -13,7 +14,8 @@ const Index = ({
     current,
     formMapRef,
     record,
-    index
+    index,
+    type
 }, ref) => {
 
     const actionRef = useRef()
@@ -42,7 +44,7 @@ const Index = ({
             clusterId,
         };
 
-        const res = await axiosPost(API.getServiceList, params)
+        const res = await axiosPost(type === T_TYPE ? API.listBasicFrameService : API.getServiceList, params)
 
         if (res.code === 200) {
             res.data.map(val => {
@@ -52,7 +54,6 @@ const Index = ({
             const arr = res.data.filter(item => item.installed)
             if (arr.length > 0) {
                 setSelectedRows(arr)
-
             }
 
 

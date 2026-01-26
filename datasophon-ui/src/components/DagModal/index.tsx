@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { axiosJsonPost } from "../../api/request"
 import { API } from "../../api"
-import DataProcessingDagNode, { T_CANCEL, T_FAILED, T_PENDING, T_RUNNING, T_SUCCESS } from "./DataProcessingDagNode"
+import DataProcessingDagNode from "./DataProcessingDagNode"
 import {
     Graph,
     Path,
@@ -15,6 +15,7 @@ import gobalEvent, { uiEvent } from "../../utils/gobalEvent"
 import { getRouteQuery } from "../../utils/routerUtils"
 import { AntVDagreLayout, DagreLayout } from "@antv/layout"
 import { blue, gold, green, grey, red } from "@ant-design/colors"
+import { T_CANCEL, T_FAILED, T_PENDING, T_RUNNING, T_SUCCESS } from "./status"
 // import layout from '@antv/layout'
 
 
