@@ -12,7 +12,9 @@ public interface DAGRepository {
 
 
     DagDefinition getDagById(String dagId);
+
     int updateDagStatus(String dagId, DagStatus status);
+
     int markNodesPending(String dagId, boolean ignoreSuccess);
 
 

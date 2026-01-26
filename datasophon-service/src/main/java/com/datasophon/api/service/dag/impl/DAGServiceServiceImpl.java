@@ -2,7 +2,6 @@ package com.datasophon.api.service.dag.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -24,6 +23,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -48,22 +49,39 @@ public class DAGServiceServiceImpl implements DAGService {
 
     @Override
     public int updateDagStatus(String dagId, DagStatus status) {
-        return dagDefinitionEntityMapper.update(
-                Wrappers.lambdaUpdate(DagDefinitionEntity.class)
-                        .set(DagDefinitionEntity::getStatus, status)
-                        .eq(DagDefinitionEntity::getId, dagId)
-        );
+        DagDefinitionEntity dag = dagDefinitionEntityMapper.selectById(dagId);
+        if (DagStatus.RUNNING.equals(status) && dag.getStartedTime() == null) {
+            dag.setStartedTime(LocalDateTime.now());
+        }
+        if (Arrays.asList(DagStatus.CANCEL, DagStatus.FAILED, DagStatus.SUCCESS).contains(status) && dag.getCompletedTime() == null) {
+            dag.setCompletedTime(LocalDateTime.now());
+        }
+        return dagDefinitionEntityMapper.updateById(dag);
     }
 
     @Override
     public int markNodesPending(String dagId, boolean ignoreSuccess) {
-        LambdaUpdateWrapper<NodeDefinitionEntity> update = Wrappers.lambdaUpdate(NodeDefinitionEntity.class)
-                .set(NodeDefinitionEntity::getStatus, NodeStatus.PENDING)
+        LambdaQueryWrapper<NodeDefinitionEntity> query = Wrappers.lambdaQuery(NodeDefinitionEntity.class)
                 .eq(NodeDefinitionEntity::getId, dagId);
-        if (ignoreSuccess) {
-            update = update.ne(NodeDefinitionEntity::getStatus, NodeStatus.SUCCESS);
+
+        List<NodeDefinitionEntity> nodes = nodeDefinitionEntityMapper.selectList(query);
+
+        List<NodeDefinitionEntity> result = new ArrayList<>();
+        for(NodeDefinitionEntity node : nodes) {
+            boolean ignore = ignoreSuccess && NodeStatus.SUCCESS.equals(node.getStatus());
+            if (!ignore) {
+                result.add(node);
+            }
         }
-        return nodeDefinitionEntityMapper.update(update);
+        for(NodeDefinitionEntity node : result) {
+            node.setStatus(NodeStatus.PENDING);
+            if (node.getStartedTime() == null) {
+                node.setStartedTime(LocalDateTime.now());
+            }
+            nodeDefinitionEntityMapper.updateById(node);
+        }
+
+        return result.size();
     }
 
     @Override
@@ -94,11 +112,14 @@ public class DAGServiceServiceImpl implements DAGService {
 
     @Override
     public int updateNodeStatus(String nodeId, NodeStatus status) {
-        return nodeDefinitionEntityMapper.update(
-                Wrappers.lambdaUpdate(NodeDefinitionEntity.class)
-                        .set(NodeDefinitionEntity::getStatus, status)
-                        .eq(NodeDefinitionEntity::getId, nodeId)
-        );
+        NodeDefinitionEntity node = nodeDefinitionEntityMapper.selectById(nodeId);
+        if (NodeStatus.RUNNING.equals(status) && node.getStartedTime() == null) {
+            node.setStartedTime(LocalDateTime.now());
+        }
+        if (Arrays.asList(NodeStatus.CANCEL, NodeStatus.FAILED, NodeStatus.SUCCESS).contains(status) && node.getCompletedTime() == null) {
+            node.setCompletedTime(LocalDateTime.now());
+        }
+        return nodeDefinitionEntityMapper.updateById(node);
     }
 
     @Override
