@@ -90,58 +90,89 @@ const Index = (props) => {
     // }, []);
 
     const memoArr = useMemo(() => {
-        let arr = [
-            {
-                title: '安装主机',
-                render: Step1
-            },
-            {
-                title: '主机环境校验',
-                ref: steps2Ref,
-                render: Step2
-            },
-            {
-                title: '主机Agent分发',
-                ref: steps3Ref,
-                render: Step3
 
-            },
-            {
-                title: '选择服务',
-                ref: steps4Ref,
-                render: Step4
-            },
-            {
-                title: '分配服务Master角色',
-                ref: steps5Ref,
-                steps4Data,
-                render: Step5
-            },
-            {
-                title: '分配服务Worker与Client角色',
-                ref: steps6Ref,
-                steps4Data,
-                render: Step6
-            },
-            {
-                title: '服务配置',
-                ref: steps7Ref,
-                steps4Data,
-                render: Step7
-            },
-            {
-                title: '安装并启动服务',
-                clusterId,
-                render: Step8
-            },
+        const step1Obj = {
+            title: '安装主机',
+            render: Step1
+        }
+
+        const step2Obj = {
+            title: '主机环境校验',
+            ref: steps2Ref,
+            render: Step2
+        }
+
+        const step3Obj = {
+            title: '主机Agent安装',
+            ref: steps3Ref,
+            render: Step3
+        }
+
+        const step4Obj = {
+            title: '选择服务',
+            ref: steps4Ref,
+            render: Step4
+        }
+
+        const step5Obj = {
+            title: '分配服务Master角色',
+            ref: steps5Ref,
+            steps4Data,
+            render: Step5
+        }
+        const step6Obj = {
+            title: '分配服务Worker角色',
+            ref: steps6Ref,
+            steps4Data,
+            render: Step6
+        }
+
+        const step7Obj = {
+            title: '服务配置',
+            ref: steps7Ref,
+            steps4Data,
+            render: Step7
+        }
+
+        const step8Obj = {
+            title: '安装并启动服务',
+            clusterId,
+            render: Step8
+
+        }
+
+        let arr = [
+            step1Obj,
+            step2Obj,
+            step3Obj,
+            step4Obj,
+            step5Obj,
+            step6Obj,
+            step7Obj,
+            step8Obj
         ]
 
         if (stepsType === T_STEPS_TYPE_HOSTMANAGE) {
-            arr = arr.slice(0, 3)
+            arr = [
+                step1Obj,
+                step2Obj,
+                step3Obj,
+            ]
         } else if (stepsType === T_SETPS_TYPE_INSTANCE) {
-            arr = arr.slice(4)
+            arr = [
+                step5Obj,
+                step6Obj,
+                step7Obj,
+                step8Obj
+            ]
         } else if (stepsType === T_SETPS_TYPE_ADDSERVICE) {
-            arr = arr.slice(3)
+            arr = [
+                step4Obj,
+                step5Obj,
+                step6Obj,
+                step7Obj,
+                step8Obj
+            ]
         }
 
         return arr.map((val, index) => {

@@ -194,7 +194,7 @@ const invokeRenderMore = ({
                         .join(',')
 
                     res = await axiosPost(
-                        API.generateServiceCommand,
+                        API.generateGenericInstallCommand,
                         {
                             serviceInstanceIds,
                             clusterId,
@@ -220,7 +220,7 @@ const invokeRenderMore = ({
                     )
                 } else {
                     res = await axiosPost(
-                        API.generateServiceCommand,
+                        API.generateGenericInstallCommand,
                         {
                             commandType: obj.key,
                             serviceInstanceIds: id,
