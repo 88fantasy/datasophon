@@ -1,18 +1,12 @@
 // Mainly handles the scenarios of creating and editing
 import type { ProFormInstance } from '@ant-design/pro-components';
 import {
-    ProFormDateRangePicker,
-    ProFormSelect,
-    ProFormText,
-    ProFormTextArea,
+
     StepsForm,
 } from '@ant-design/pro-components';
 import { Alert, Button, message } from 'antd';
-import type { Dayjs } from 'dayjs';
-import dayjs from 'dayjs';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import styles from './index.module.less'
-import { requireRules } from '../../../../../utils/util';
+import StepImportManifest from './components/StepImportManifest'
 import Step1 from './components/Step1';
 import Step2 from './components/Step2';
 import Step3 from './components/Step3';
@@ -25,33 +19,6 @@ import { ConfigContext } from './configContext';
 import { T_SETPS_TYPE_ADDSERVICE, T_SETPS_TYPE_INSTANCE, T_STEPS_TYPE_HOSTMANAGE } from './stepType';
 
 
-// type FormValue = {
-//     jobInfo: {
-//         name: string;
-//         type: number;
-//     };
-//     syncTableInfo: {
-//         timeRange: [Dayjs, Dayjs];
-//         title: string;
-//     };
-// };
-// const formValue: FormValue = {
-//     jobInfo: {
-//         name: 'normal job',
-//         type: 1,
-//     },
-//     syncTableInfo: {
-//         timeRange: [dayjs().subtract(1, 'm'), dayjs()],
-//         title: 'example table title',
-//     },
-// };
-// const waitTime = (time: number = 100) => {
-//     return new Promise((resolve) => {
-//         setTimeout(() => {
-//             resolve(formValue);
-//         }, time);
-//     });
-// };
 
 const Index = (props) => {
 
@@ -65,6 +32,8 @@ const Index = (props) => {
     } = props
 
     const formMapRef = useRef([]);
+
+    const stepImportManifestRef = useRef()
     const steps2Ref = useRef()
     const steps3Ref = useRef()
     const steps4Ref = useRef()
@@ -90,6 +59,12 @@ const Index = (props) => {
     // }, []);
 
     const memoArr = useMemo(() => {
+
+        const stepImportManifestObj = {
+            title: '上传部署清单',
+            ref: stepImportManifestRef,
+            render: StepImportManifest,
+        }
 
         const step1Obj = {
             title: '安装主机',
@@ -167,6 +142,7 @@ const Index = (props) => {
             ]
         } else if (stepsType === T_SETPS_TYPE_ADDSERVICE) {
             arr = [
+                stepImportManifestObj,
                 step4Obj,
                 step5Obj,
                 step6Obj,
@@ -242,54 +218,7 @@ const Index = (props) => {
                     message.warning(invokeValidRes.msg)
                 }
             }
-
-
-
-            //     if (current === 1) {
-            //         const res = await steps2Ref.current.invokeValid()
-            //         valid = res.hostCheckCompleted
-
-            //         if (!valid) {
-            //             message.warning(res.msg)
-            //         }
-            //     } else if (current === 2) {
-            //         const res = await steps3Ref.current.invokeValid()
-            //         valid = res.dispatcherHostAgentCompleted
-
-            //         if (!valid) {
-            //             message.warning(res.msg)
-            //         }
-            //     } else if (current === 3) {
-            //         const res = await steps4Ref.current.invokeValid()
-            //         valid = res.valid
-
-            //         if (!valid) {
-            //             message.warning(res.msg)
-            //         }
-            //     } else if (current === 4) {
-            //         const res = await steps5Ref.current.invokeValid()
-            //         valid = res.valid
-
-            //         if (!valid) {
-            //             message.warning(res.msg)
-            //         }
-            //     } else if (current === 5) {
-            //         const res = await steps6Ref.current.invokeValid()
-            //         valid = res.valid
-
-            //         if (!valid) {
-            //             message.warning(res.msg)
-            //         }
-            //     } else if (current === 6) {
-            //         const res = await steps7Ref.current.invokeValid()
-            //         valid = res.valid
-
-            //         if (!valid) {
-            //             message.warning(res.msg)
-            //         }
-            //     }
         }
-
 
 
         if (valid) {

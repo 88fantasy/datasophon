@@ -58,9 +58,9 @@ export const computeChunkMD5Base64 = (chunk: Blob): Promise<string> => {
             const hex = spark.end();
             console.log('md5', hex)
             // 转为 base64
-            const bytes = hex.match(/\w{2}/g)?.map(b => parseInt(b, 16)) || [];
-            const binary = String.fromCharCode(...bytes);
-            resolve(btoa(binary));
+            // const bytes = hex.match(/\w{2}/g)?.map(b => parseInt(b, 16)) || [];
+            // const binary = String.fromCharCode(...bytes);
+            resolve(hex);
         };
         reader.onerror = () => reject(reader.error);
         reader.readAsArrayBuffer(chunk);

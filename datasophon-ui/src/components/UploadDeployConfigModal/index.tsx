@@ -4,7 +4,7 @@ import Step3 from "./Step3";
 import { useCallback, useEffect, useRef } from "react";
 import { axiosJsonPost } from "../../api/request";
 import { API } from "../../api";
-import { showMsgAfferRequest } from "../../utils/util";
+import { requireRules, showMsgAfferRequest } from "../../utils/util";
 import { invokeGenPath } from "../../utils/routerUtils";
 
 
@@ -56,7 +56,10 @@ const Index = (props) => {
             formRef={formRef}
             submitter={false}
         >
-            <Step3 />
+            <Step3
+
+                requireRules={requireRules}
+            />
 
         </ProForm>
 

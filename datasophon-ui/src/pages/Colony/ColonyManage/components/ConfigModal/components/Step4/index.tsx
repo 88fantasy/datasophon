@@ -5,6 +5,8 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import { axiosPost } from "../../../../../../../api/request";
 import { useConfigContext } from "../../configContext";
 import { T_TYPE } from "../../stepType";
+import { sm4Decrypt } from "../../../../../../../utils/secretUtils";
+import * as yaml from 'js-yaml';
 
 
 
@@ -26,11 +28,9 @@ const Index = ({
 
     const invokeUpdateFormData = useCallback((arr, source) => {
 
-
         arr = arr.filter(
             (item) => item.installed
         );
-
 
         formMapRef.current[index]?.current.setFieldsValue({
             services: arr,
@@ -39,7 +39,72 @@ const Index = ({
 
 
 
+    const invokeInitYamlData = useCallback(async () => {
+
+        const stepImportManifestRef = formMapRef.current[index - 1]
+
+        const values = stepImportManifestRef?.current.getFieldsValue()
+        const deployFileId = values.deployFileId
+        const contentDecodePasswd = values.contentDecodePasswd
+        if (deployFileId && contentDecodePasswd) {
+
+
+            const yamlData = deployFileId && await new Promise((resolve) => {
+                const file = deployFileId?.[0]?.originFileObj;
+                const reader = new FileReader();
+
+                reader.onload = function (event) {
+                    const yamlText = event.target.result;
+
+                    let content = yamlText
+
+
+                    try {
+
+                        // const keyBase64 = "E9+IV0ZpPTMKLzBnfeXPCQ==";
+                        // const key = Buffer.from(keyBase64, 'base64').toString('hex'); // 转为 hex 字符串
+                        content = sm4Decrypt(contentDecodePasswd, content)
+                    } catch (error) {
+                        console.warn('解密失败', error)
+                    }
+
+                    try {
+
+
+                        content = yaml.load(content); // 使用 js-yaml 解析
+                        console.log('loadcontent', content)
+                        content = JSON.parse(JSON.stringify(content, null, 2));
+                    } catch (err) {
+                        console.warn('YAML 解析错误:', err);
+                        content = undefined
+                        // document.getElementById('output').textContent = '解析失败: ' + err.message;
+                    }
+
+                    resolve(content)
+                };
+
+
+                if (file) {
+
+                    console.log('file', file)
+                    reader.readAsText(file);
+
+                }
+            })
+
+            return yamlData
+        }
+
+
+    }, [formMapRef, index])
+
     const invokeInit = useCallback(async () => {
+
+
+        const invokeInitYamlDataRes = await invokeInitYamlData()
+
+        console.log('invokeInitYamlDataRes', invokeInitYamlDataRes)
+
         const params = {
             clusterId,
         };
@@ -64,7 +129,7 @@ const Index = ({
             // TODO:对比源代码补充
         }
 
-    }, [clusterId, invokeUpdateFormData])
+    }, [clusterId, formMapRef, index, invokeUpdateFormData, type])
 
 
     const invokeValid = useCallback(async () => {
