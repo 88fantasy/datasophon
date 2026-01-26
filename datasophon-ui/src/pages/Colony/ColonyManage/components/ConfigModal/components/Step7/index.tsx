@@ -80,7 +80,7 @@ const Index = ({
                     clusterId,
                     serviceName: item.label,
                 };
-                return axiosPost(API.getServiceConfigOption, params)
+                return axiosPost(API.getServiceConfigFromDdl, params)
                     .then(
                         (res) => {
                             if (res.code === 200) {
@@ -180,6 +180,7 @@ const Index = ({
                         clusterId: clusterId,
                         serviceName: tab.key,
                         serviceConfig: JSON.stringify(values[tab.key]),
+                        roleGroupId: "-1"
                     };
                     return axiosPost(
                         API.saveServiceConfig,
@@ -206,7 +207,7 @@ const Index = ({
 
 
             // console.log('memoTabs', memoTabs)
-            const params = {
+            let params = {
                 clusterId,
                 serviceNames: memoTabs.map(val => val.value),
                 //TODO:
@@ -214,13 +215,16 @@ const Index = ({
             };
 
 
-            const generateCommandRes = await axiosPost(API.generateCommand, params)
+            const generateCommandRes = await axiosPost(API.generateGenericInstallCommand, params)
 
             if (generateCommandRes.code === 200) {
-                params.commandIds = generateCommandRes.data
+                // params.commandIds = generateCommandRes.data
 
-                delete params.servicenames;
-                const startExecuteCommandRes = await axiosPost(API.startExecuteCommand, params)
+                // delete params.servicenames;
+                params = {
+                    dagId: generateCommandRes.data.dagId
+                }
+                const startExecuteCommandRes = await axiosPost(API.redeploy, params)
 
                 return {
                     valid: startExecuteCommandRes.code === 200,
