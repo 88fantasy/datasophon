@@ -2,13 +2,31 @@ package com.datasophon.common.utils;
 
 import cn.hutool.core.io.IoUtil;
 import com.datasophon.common.enums.SSHAuthType;
-import com.jcraft.jsch.*;
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.ChannelShell;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpATTRS;
+import com.jcraft.jsch.SftpException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -290,8 +308,10 @@ public class JschUtils {
         try {
             channel = (ChannelSftp) session.openChannel("sftp");
             channel.connect(connectTimeout * 1000);
-            result = sendDirChannel(channel, localDirPath, remoteDirPath, isVisual);
-            result.setExecResult(true);
+            result = ensureRemotePathExists(channel, remoteDirPath);
+            if (result.isSuccess()) {
+                result = sendDirChannel(channel, localDirPath, remoteDirPath, isVisual);
+            }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             result.setExecErrOut(e.getMessage());
@@ -303,33 +323,86 @@ public class JschUtils {
         }
         return result;
     }
+
+
+
+    private static ExecResult ensureRemotePathExists(ChannelSftp channel, String remotePath) {
+        if (remotePath == null || !remotePath.startsWith("/")) {
+            return ExecResult.error("Invalid remote path: must be non-null and absolute (start with '/').");
+        }
+
+        String normalizedPath = remotePath.equals("/") ? "/" : remotePath.endsWith("/") ? remotePath.substring(0, remotePath.length() -1) : remotePath;
+        try {
+            channel.stat(normalizedPath);
+            return ExecResult.success();
+        } catch (SftpException e) {
+            if (e.id != ChannelSftp.SSH_FX_NO_SUCH_FILE) {
+                return ExecResult.error("Failed to check existence of remote path '" + normalizedPath + "': " + e.getMessage());
+            }
+        }
+
+        String[] parts = normalizedPath.substring(1).split("/");
+        StringBuilder currentPath = new StringBuilder("/");
+
+        for (String part : parts) {
+            if (part.isEmpty()){
+                continue;
+            }
+            currentPath.append(part);
+            String pathToCreate = currentPath.toString();
+            try {
+                channel.stat(pathToCreate);
+            } catch (SftpException ex) {
+                if (ex.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
+                    try {
+                        channel.mkdir(pathToCreate);
+                    } catch (SftpException mkdirEx) {
+                        return ExecResult.error("Failed to create directory '" + pathToCreate + "': " + mkdirEx.getMessage());
+                    }
+                } else {
+                    return ExecResult.error("Failed to check existence of directory '" + pathToCreate + "': " + ex.getMessage());
+                }
+            }
+            currentPath.append("/");
+        }
+
+        return ExecResult.success();
+    }
+
     private static ExecResult sendDirChannel(ChannelSftp channel, String localDirPath, String remoteDirPath, boolean isVisual) {
         ExecResult result = new ExecResult();
         try {
-            File dir = new File(localDirPath);
-            if (dir.exists() && dir.isDirectory()) {
-                File[] files = dir.listFiles();
+            File src = new File(localDirPath);
+            if (src.exists() && src.isDirectory()) {
+                File[] files = src.listFiles();
                 if (files != null) {
                     for (File file : files) {
                         if (file.isDirectory()) {
                             String newRemotePath = remoteDirPath + "/" + file.getName();
-                            try {
-                                channel.ls(newRemotePath);
-                            } catch (SftpException ex) {
-                                if (ex.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
-                                    channel.mkdir(newRemotePath);
+                            if (file.isDirectory()) {
+                                try {
                                     channel.ls(newRemotePath);
+                                } catch (SftpException ex) {
+                                    if (ex.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
+                                        channel.mkdir(newRemotePath);
+                                        channel.ls(newRemotePath);
+                                    }
                                 }
+                                sendDirChannel(channel, file.getAbsolutePath(), newRemotePath, isVisual);
+                            } else {
+                                if (isVisual) {
+                                    log.info("transmit file:{}", file.getAbsolutePath());
+                                }
+                                channel.put(file.getAbsolutePath(), remoteDirPath + "/" + file.getName());
                             }
-                            sendDirChannel(channel, file.getAbsolutePath(), newRemotePath, isVisual);
-                        } else {
-                            if (isVisual) {
-                                log.info("transmit file:{}", file.getAbsolutePath());
-                            }
-                            channel.put(file.getAbsolutePath(), remoteDirPath + "/" + file.getName());
                         }
                     }
                 }
+            } else {
+                if (isVisual) {
+                    log.info("transmit file:{}", src.getAbsolutePath());
+                }
+                channel.put(src.getAbsolutePath(), remoteDirPath + "/" + src.getName());
             }
             result.setExecResult(true);
         } catch (Exception e) {

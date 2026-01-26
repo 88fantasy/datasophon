@@ -62,8 +62,8 @@ public class FrameServiceController extends ApiController {
 
     @RequestMapping("/listNewest")
     @Operation(summary = "获取组件列表(最高版本)")
-    public Result listNewest(Integer clusterId) {
-        return Result.success(frameVersionServiceService.listNewest(clusterId));
+    public Result listNewest(Integer clusterId, Boolean newest) {
+        return Result.success(frameVersionServiceService.listNewest(clusterId,newest));
     }
 
 

@@ -34,7 +34,7 @@ public class UploadWorkerHandler implements DispatcherWorkerHandler {
     
     @Override
     public boolean handle(Session session, HostInfo hostInfo) {
-        boolean uploadFile = MinaUtils.uploadFile(session, Constants.INSTALL_PATH, Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + Constants.WORKER_PACKAGE_NAME);
+        boolean uploadFile = MinaUtils.uploadFile(session, Constants.MASTER_MANAGE_PACKAGE_PATH, Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + Constants.WORKER_PACKAGE_NAME);
         if (uploadFile) {
             hostInfo.setMessage(
                     MessageResolverUtils.getMessage("distribution.successful.and.starts.md5.authentication"));

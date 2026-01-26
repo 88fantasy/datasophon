@@ -26,8 +26,9 @@ import cn.hutool.core.util.ServiceLoaderUtil;
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.InstallServiceRoleCommand;
+import com.datasophon.common.storage.DownloadResult;
+import com.datasophon.common.storage.PackageStorageUtils;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.NexusFileUtils;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
@@ -78,17 +79,8 @@ public class InstallServiceHandler {
     public ExecResult install(InstallServiceRoleCommand command) {
         ExecResult execResult = new ExecResult();
         try {
-            String destDir = Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH;
-            String packageName = command.getPackageName();
-            String packagePath = destDir + packageName;
-
-            boolean installPkgChange = NexusFileUtils.isFileContentChange(packageName, packagePath);
-
-            if (Boolean.TRUE.equals(installPkgChange)) {
-                NexusFileUtils.downloadPkg(packageName, packagePath);
-            }
-
-            boolean result = decompressPkg(command, destDir, installPkgChange);
+            DownloadResult downloadResult = PackageStorageUtils.getStorage().downloadPackageToLocal(command.getPackageName());
+            boolean result = decompressPkg(command, downloadResult.getTarget(), downloadResult.isChange());
             if (result) {
                 String normalPkgDir = PkgInstallPathUtils.getInstallHomeName(command);
                 if (command.getRunAs() != null && command.getRunAs().hasOwner()) {
@@ -132,7 +124,7 @@ public class InstallServiceHandler {
         return execResult;
     }
 
-    private boolean decompressPkg(InstallServiceRoleCommand instCmd, String destDir, boolean installPkgChange) {
+    private boolean decompressPkg(InstallServiceRoleCommand instCmd, String sourceFile, boolean installPkgChange) {
         String packageName = instCmd.getPackageName();
         String decompressPackageName = instCmd.getDecompressPackageName();
 
@@ -140,9 +132,8 @@ public class InstallServiceHandler {
 
         boolean fileExist = FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + instCmd.getNormalPkgDir());
         if (!fileExist || installPkgChange) {
-            String sourceFile = destDir + packageName;
             logger.info("Start to decompress {}", sourceFile);
-            String suffix = FileUtil.getSuffix(sourceFile);
+            String suffix = FileUtil.getSuffix(packageName);
             boolean success = false;
 
 //           安装软件的临时解压目录

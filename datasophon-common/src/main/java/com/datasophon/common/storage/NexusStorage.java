@@ -91,7 +91,7 @@ public class NexusStorage implements PackageStorage {
     }
 
     @Override
-    public void downloadPackageToLocal(String packageName) {
+    public DownloadResult downloadPackageToLocal(String packageName) {
         ensureNexusEnable();
         Lock lock = LOCK_MAP.computeIfAbsent(packageName, k -> new ReentrantLock());
         try {
@@ -118,6 +118,11 @@ public class NexusStorage implements PackageStorage {
                     throw new RuntimeException(e);
                 }
             }
+
+            DownloadResult result = new DownloadResult();
+            result.setChange(needDownload);
+            result.setTarget(file.getAbsolutePath());
+            return result;
         } finally {
             LOCK_MAP.remove(packageName);
             lock.unlock();

@@ -22,7 +22,6 @@ import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.FrameServiceEntity;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 集群框架版本服务表
@@ -38,7 +37,7 @@ public interface FrameServiceService extends IService<FrameServiceEntity> {
     
     List<FrameServiceEntity> getBasicFrameServiceList(Integer clusterId);
 
-    List<FrameServiceEntity> listNewest(Integer clusterId);
+    List<FrameServiceEntity> listNewest(Integer clusterId, boolean newest);
 
     Result getServiceListByServiceIds(List<Integer> serviceIds);
 
