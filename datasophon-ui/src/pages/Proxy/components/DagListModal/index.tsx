@@ -19,7 +19,8 @@ const Index = (props, ref) => {
         record,
         clusterId,
         serviceInstanceId,
-        alarmAll
+        alarmAll,
+        className
     } = props
 
 
@@ -170,6 +171,8 @@ const Index = (props, ref) => {
                 search: false,
                 columns,
                 tableAlertRender: false,
+                className: `${className} `,
+
                 request: invokePackProtableRequest({
                     api: API.findDagByPage,
                     method: METHOD.GET,
