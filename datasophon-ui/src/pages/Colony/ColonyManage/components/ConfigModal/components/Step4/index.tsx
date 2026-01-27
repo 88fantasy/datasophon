@@ -7,6 +7,7 @@ import { useConfigContext } from "../../configContext";
 import { T_TYPE } from "../../stepType";
 import { sm4Decrypt } from "../../../../../../../utils/secretUtils";
 import * as yaml from 'js-yaml';
+import { valueFn } from "../../../../../../../utils/listUtils";
 
 
 
@@ -46,7 +47,7 @@ const Index = ({
         const values = stepImportManifestRef?.current?.getFieldsValue() || {}
         const deployFileId = values.deployFileId
         const contentDecodePasswd = values.contentDecodePasswd
-        if (deployFileId && contentDecodePasswd) {
+        if (deployFileId) {
 
 
             const yamlData = deployFileId && await new Promise((resolve) => {
@@ -104,19 +105,42 @@ const Index = ({
         const invokeInitYamlDataRes = await invokeInitYamlData()
 
         console.log('invokeInitYamlDataRes', invokeInitYamlDataRes)
+        const invokeInitYamlDataResMap = invokeInitYamlDataRes?.app?.reduce((pre, aft) => {
+            pre[aft.name] = aft
+
+            return pre
+        }, {})
+
 
         const params = {
             clusterId,
-        };
+        }
 
         const res = await axiosPost(type === T_TYPE ? API.listBasicFrameService : API.getServiceList, params)
+
+
+
 
         if (res.code === 200) {
             res.data.map(val => {
                 val.installed = true
             })
-            setDataSource(res.data)
-            const arr = res.data.filter(item => item.installed)
+
+
+            setDataSource(res.data.filter(item => {
+                let valid = true
+                // if (valid && invokeInitYamlDataRes?.app?.length) {
+                //     valid = invokeInitYamlDataResMap[item.serviceName]
+                // }
+
+                return valid
+            }))
+            const arr = res.data.filter(item => {
+
+
+                return item.installed
+
+            })
             if (arr.length > 0) {
                 setSelectedRows(arr)
             }
@@ -129,7 +153,8 @@ const Index = ({
             // TODO:对比源代码补充
         }
 
-    }, [clusterId, formMapRef, index, invokeUpdateFormData, type])
+
+    }, [clusterId, invokeInitYamlData, invokeUpdateFormData, type])
 
 
     const invokeValid = useCallback(async () => {
