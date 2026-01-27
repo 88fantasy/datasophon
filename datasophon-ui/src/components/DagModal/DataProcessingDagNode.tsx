@@ -17,7 +17,7 @@ import { invokeGenerateElId } from "../../utils/util"
 import gobalEvent, { uiEvent } from "../../utils/gobalEvent"
 import { isEqual, noop } from "lodash-es"
 import asyncHook from '../../components/Common/CommonModal/asyncHook';
-import { axiosJsonPost } from "../../api/request"
+import { axiosJsonPost, axiosPost } from "../../api/request"
 import { API } from "../../api"
 import { invokeGenStatusDom } from "./status"
 
@@ -364,7 +364,7 @@ const Index = (props) => {
                                     const modelApi = await showCommonLogModal()
                                     modelApi.default({
                                         api: () => {
-                                            return axiosJsonPost(API.getHostCommandLog, {
+                                            return axiosPost(API.getHostCommandLog, {
                                                 hostCommandId,
                                                 clusterId
                                             })
