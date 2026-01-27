@@ -24,6 +24,7 @@ import paths from "../baseUrl"; // 后台服务地址
 let path = VUE_APP_PUBLIC_PATH + paths.path();
 export default {
   getServiceList: path + "/frame/service/list", // 选择服务的列表
+  listNewest: path + "/frame/service/listNewest", // 选择服务的列表
   listBasicFrameService: path + "/frame/service/listBasicFrameService", // 选择服务的列表
   deleteService: path + "/frame/service/delete", // 删除框架服务
   getServiceConfigOption: path + "/service/install/getServiceConfigOption", // 查询服务配置

@@ -6,4 +6,4 @@ export const T_SETPS_TYPE_INSTANCE = 'instance'
 export const T_SETPS_TYPE_ADDSERVICE = 'addService'
 
 
-export const T_TYPE = '0'
+export const T_TYPE_INIT = '0'
