@@ -21,20 +21,13 @@ import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.worker.handler.ServiceHandler;
 
-import akka.actor.UntypedActor;
+public class RestartServiceActor extends HookTypedActor<ServiceRoleOperateCommand> {
 
-public class RestartServiceActor extends UntypedActor {
-    
     @Override
-    public void onReceive(Object msg) throws Throwable {
-        if (msg instanceof ServiceRoleOperateCommand) {
-            ServiceRoleOperateCommand command = (ServiceRoleOperateCommand) msg;
-            ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-            ExecResult startResult =
-                    serviceHandler.restart(command.getRestartRunner(), command);
-            getSender().tell(startResult, getSelf());
-        } else {
-            unhandled(msg);
-        }
+    protected void doOnReceive(ServiceRoleOperateCommand command) throws Throwable {
+        ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
+        ExecResult startResult =
+                serviceHandler.restart(command.getRestartRunner(), command);
+        getSender().tell(startResult, getSelf());
     }
 }
