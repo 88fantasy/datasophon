@@ -151,7 +151,7 @@ const Index = (props) => {
             ]
         } else if (stepsType === T_SETPS_TYPE_ADDSERVICE) {
             arr = [
-                // stepImportManifestObj,
+                stepImportManifestObj,
                 step4Obj,
                 step5Obj,
                 step6Obj,
