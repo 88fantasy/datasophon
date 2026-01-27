@@ -30,14 +30,10 @@ public class ServiceRoleStrategyContext {
     static {
         strategyMap.put("NameNode", new NameNodeHandlerStrategy());
         strategyMap.put("ResourceManager", new RMHandlerStrategy());
-        strategyMap.put("HiveMetaStore", new HiveMetaStoreHandlerStrategy());
         strategyMap.put("HiveServer2", new HiveServer2HandlerStrategy());
         strategyMap.put("ZkServer", new ZkServerHandlerStrategy());
-        strategyMap.put("TimelineServer", new TSHandlerStrategy());
-        strategyMap.put("TrinoCoordinator", new TrinoHandlerStrategy());
         strategyMap.put("JournalNode", new JournalNodeHandlerStrategy());
         strategyMap.put("ZKFC", new ZKFCHandlerStrategy());
-        strategyMap.put("HttpFs", new HttpFsHandlerStrategy());
         strategyMap.put("SRFE", new FEHandlerStrategy());
         strategyMap.put("DorisFE", new FEHandlerStrategy());
         strategyMap.put("DorisFEObserver", new FEObserverHandlerStartegy());
@@ -47,12 +43,7 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("KAdmin", new KAdminHandlerStrategy());
         strategyMap.put("RangerAdmin", new RangerAdminHandlerStrategy());
         strategyMap.put("ElasticSearch", new ElasticSearchHandlerStrategy());
-        strategyMap.put("Prometheus", new PrometheusHandlerStrategy());
         strategyMap.put("AlertManager", new AlertManagerHandlerStrategy());
-        strategyMap.put("FlinkHistory", new FlinkHistoryServerHandlerStrategy());
-        strategyMap.put("NacosServer", new NacosHandlerStrategy());
-        strategyMap.put("MinioServer", new MinioHandlerStrategy());
-        strategyMap.put("RedisMaster", new RedisHandlerStrategy());
         strategyMap.put("KyuubiServer", new KyuubiServerHandlerStrategy());
         strategyMap.put("RANGER", new RangerAdminHandlerStrategy());
         strategyMap.put("ZOOKEEPER", new ZkServerHandlerStrategy());
@@ -63,23 +54,7 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("HBASE", new HBaseHandlerStrategy());
         strategyMap.put("FLINK", new FlinkHandlerStrategy());
         strategyMap.put("Etcd", new EtcdHandlerStrategy());
-        strategyMap.put("AmoroServer", new AmoroHandlerStrategy());
-        strategyMap.put("Apisix", new ApisixHandlerStrategy());
-        strategyMap.put("BigData", new BigDataHandlerStrategy());
-        strategyMap.put("EasyflowServer", new EasyflowHandlerStrategy());
-        strategyMap.put("hsbServer", new HsbHandlerStrategy());
-        strategyMap.put("JuicefsMount", new JuicefsMountHandlerStrategy());
-        strategyMap.put("Loki", new LokiHandlerStrategy());
-        strategyMap.put("Nginx", new NginxHandlerStrategy());
-        strategyMap.put("Promtail", new PromtailHandlerStrategy());
-        strategyMap.put("SparkThriftServer", new SparkThriftHandlerStrategy());
-        strategyMap.put("UstreamServer", new UstreamHandlerStrategy());
-        strategyMap.put("UApiServer", new USchedulerApiServerHandlerStrategy());
-        strategyMap.put("UMasterServer", new USchedulerMasterServerHandlerStrategy());
-        strategyMap.put("UAlertServer", new USchedulerAlertServerHandlerStrategy());
-        strategyMap.put("UWorkerServer", new USchedulerWorkerServerHandlerStrategy());
 
-        
     }
 
     public static ServiceRoleStrategy getServiceRoleHandler(String type) {

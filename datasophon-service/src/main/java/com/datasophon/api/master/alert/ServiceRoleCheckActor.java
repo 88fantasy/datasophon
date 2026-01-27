@@ -55,9 +55,7 @@ public class ServiceRoleCheckActor extends UntypedActor {
       if (!list.isEmpty()) {
         Map<String, ClusterServiceRoleInstanceEntity> map = translateListToMap(list);
         for (ClusterServiceRoleInstanceEntity roleInstanceEntity : list) {
-          ServiceRoleStrategy serviceRoleHandler =
-              ServiceRoleStrategyContext.getServiceRoleHandler(
-                  roleInstanceEntity.getServiceRoleName());
+          ServiceRoleStrategy serviceRoleHandler = ServiceRoleStrategyContext.getServiceRoleHandler(roleInstanceEntity.getServiceRoleName());
           if (Objects.nonNull(serviceRoleHandler)) {
             serviceRoleHandler.handlerServiceRoleCheck(roleInstanceEntity, map);
           } else {

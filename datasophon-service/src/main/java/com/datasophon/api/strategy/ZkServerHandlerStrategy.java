@@ -46,7 +46,6 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         // 保存zkUrls到全局变量
-        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         String join = String.join(":2181,", hosts);
         String zkUrls = join + ":2181";
         ProcessUtils.generateClusterVariable(clusterId, serviceName, "zkUrls", zkUrls);

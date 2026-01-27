@@ -98,8 +98,8 @@ public class NexusFileUtils {
                     if (status == 401) {
                         throw new IllegalArgumentException("nexus require an auth, but fail");
                     }
+                    throw new IllegalStateException(String.format("download %s fail, response status is %s, message is %s", url, status, response.getStatusLine().getReasonPhrase()));
                 }
-                throw new IllegalStateException(String.format("download fail, response status is %s, message is %s", status, response.getStatusLine().getReasonPhrase()));
             }
         }
     }

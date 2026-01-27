@@ -24,30 +24,20 @@ import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.utils.HostUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class KyuubiServerHandlerStrategy extends ServiceHandlerAbstract implements ServiceRoleStrategy {
     
     private static final Logger logger = LoggerFactory.getLogger(KyuubiServerHandlerStrategy.class);
 
     private static final String ENABLE_KERBEROS = "enableKerberos";
-    
-//    @Override
-//    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-//        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
-//        if (!hosts.isEmpty()) {
-//            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "kyuubiServerHost",
-//                    HostUtils.getIp(hosts.get(0)));
-//        }
-//    }
+
     
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
