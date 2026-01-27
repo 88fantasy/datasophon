@@ -50,7 +50,7 @@ public class SimpleDAGRepository implements DAGRepository{
             ed.setFromNodeId(edge[0] + "");
             ed.setToNodeId(edge[1] + "");
             ed.setDagId(DAG_ID);
-            edges.add(edge);
+            this.edges.add(ed);
         }
 
     }

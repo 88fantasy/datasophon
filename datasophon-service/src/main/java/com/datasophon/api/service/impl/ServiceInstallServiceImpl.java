@@ -334,51 +334,41 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
 
     @Override
     public void downloadPackage(String packageName, HttpServletResponse response) throws IOException {
-        InputStream inputStream = null;
-        OutputStream out = null;
-
-        NexusUri nexusUri = Application.getNexusUri();
-        String url = String.format("%s/repository/raw/%s", nexusUri.getUri(), packageName);
-        if (nexusUri.isEnabled()) {
-            // 制品库
-            inputStream = NexusFileUtils.downStream(url, nexusUri.getUser(), nexusUri.getPassword());
-        } else {
-            // 本地
-            File file = new File(Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + packageName);
-            inputStream = Files.newInputStream(file.toPath());
-            response.addHeader("Content-Length", "" + file.length());
-        }
-
         response.reset();
         response.setContentType("application/octet-stream");
         // 支持中文名称文件,需要对header进行单独设置，不然下载的文件名会出现乱码或者无法显示的情况
         // 设置响应头，控制浏览器下载该文件
         response.setHeader("Content-Disposition", "attachment;filename=" + packageName);
-        // 通过response获取ServletOutputStream对象(out)
-        out = response.getOutputStream();
-        int length = 0;
-        byte[] buffer = new byte[1024];
-        while ((length = inputStream.read(buffer)) != -1) {
-            // 4.写到输出流(out)中
-            out.write(buffer, 0, length);
+        NexusUri nexusUri = Application.getNexusUri();
+
+        try (OutputStream out = response.getOutputStream()){
+            if (nexusUri.isEnabled()) {
+                String url = String.format("%s/repository/raw/%s", nexusUri.getUri(), packageName);
+                NexusFileUtils.downStream(url, out);
+            } else {
+                // 本地
+                File file = new File(Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + packageName);
+                response.addHeader("Content-Length", "" + file.length());
+
+                try (InputStream in = Files.newInputStream(file.toPath())){
+                    IoUtil.copy(in, response.getOutputStream());
+                }
+            }
+        } catch (FileNotFoundException exception) {
+            response.setStatus(404);
         }
-        inputStream.close();
-        out.flush();
-        out.close();
     }
 
     @Override
     public void downloadResource(String frameCode, String serviceRoleName, String resource,
                                  HttpServletResponse response) throws IOException {
         String metaPath = FileUtil.getAbsolutePath(META_PATH);
-        FrameServiceRoleEntity entity =
-                frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(frameCode, serviceRoleName);
+        FrameServiceRoleEntity entity = frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(frameCode, serviceRoleName);
         ServiceRoleInfo roleInfo = JSONObject.parseObject(entity.getServiceRoleJson(), ServiceRoleInfo.class);
 
         OutputStream out = null;
         // 通过文件路径获得File对象
-        File file = new File(metaPath + Constants.SLASH + frameCode + Constants.SLASH + roleInfo.getParentName()
-                             + Constants.SLASH + resource);
+        File file = new File(metaPath + Constants.SLASH + frameCode + Constants.SLASH + roleInfo.getParentName() + Constants.SLASH + resource);
         try (FileInputStream fis = new FileInputStream(file)) {
             response.reset();
             response.setContentType("application/octet-stream");
@@ -396,6 +386,8 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             }
             out.flush();
             out.close();
+        } catch (FileNotFoundException ex) {
+            response.setStatus(404);
         }
     }
 

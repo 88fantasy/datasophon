@@ -1,7 +1,6 @@
 package com.datasophon.common.storage;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IoUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.uni.NexusUri;
@@ -11,14 +10,12 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -84,13 +81,12 @@ public class NexusStorage implements PackageStorage {
     @Override
     public String readPackageMd5(String packageName) {
         ensureNexusEnable();
-        NexusUri registry = getNexusUri();
         String path = packageName.endsWith(".md5") ? packageName : packageName + ".md5";
         path = "packages/" + path;
 
         log.info("read the md5 of package:{}", packageName);
-        try (InputStream in = NexusFileUtils.downStream(NexusFileUtils.getNexusRawObjectUrl(path), registry.getUser(), registry.getPassword())) {
-            String md5 = IoUtil.read(in, StandardCharsets.UTF_8);
+        try {
+            String md5 = NexusFileUtils.downloadAsString(NexusFileUtils.getNexusRawObjectUrl(path));
             log.info("read the md5 of package:{}, content: {}", packageName, md5);
             return md5.replaceAll("\\s", "");
         } catch (FileNotFoundException e) {
@@ -112,18 +108,18 @@ public class NexusStorage implements PackageStorage {
                 needDownload = true;
             } else {
                 String remoteMd5 = readPackageMd5(packageName);
-//          ant生成的md5文件，会存在\r\n,直接去掉
-                remoteMd5 = remoteMd5.replaceAll("\\s", "");
                 String md5 = DigestUtil.md5Hex(file);
                 needDownload = !md5.equalsIgnoreCase(remoteMd5);
             }
             if (needDownload) {
-                NexusUri registry = getNexusUri();
                 String path = "packages/" + packageName;
-
                 log.info("download package: {}, path is {}", packageName, path);
-                try (InputStream in = NexusFileUtils.downStream(NexusFileUtils.getNexusRawObjectUrl(path), registry.getUser(), registry.getPassword())) {
-                    FileUtil.copyFile(in, file, StandardCopyOption.REPLACE_EXISTING);
+                if (file.exists()) {
+                    file.delete();
+                }
+                file = FileUtil.newFile(file.getAbsolutePath());
+                try (FileOutputStream out = new FileOutputStream(file)) {
+                    NexusFileUtils.downStream(NexusFileUtils.getNexusRawObjectUrl(path), out);
                 } catch (FileNotFoundException e) {
                     throw new IllegalStateException(String.format("package %s does not exists at %s", packageName, NexusFileUtils.getNexusRawObjectUrl(path)), e);
                 } catch (IOException e) {

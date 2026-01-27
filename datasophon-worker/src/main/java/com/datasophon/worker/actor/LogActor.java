@@ -41,7 +41,6 @@ public class LogActor extends HookTypedActor<GetLogCommand> {
     @Override
     protected void doOnReceive(GetLogCommand command) throws Throwable {
         HashMap<String, String> paramMap = new HashMap<>();
-        paramMap.put("${user}", command.getRunAsUser());
         paramMap.put("${host}", InetAddress.getLocalHost().getHostName());
         String logFileName = PlaceholderUtils.replacePlaceholders(command.getLogFile(), paramMap, Constants.REGEX_VARIABLE);
         logger.info("get log content of {}", logFileName);
@@ -51,7 +50,7 @@ public class LogActor extends HookTypedActor<GetLogCommand> {
         if (logFileName.startsWith(StrUtil.SLASH) && FileUtil.exist(logFileName)) {
             logStr = FileUtils.readLastRows(logFileName, Charset.defaultCharset(), PropertyUtils.getInt("rows"));
         } else {
-            String path = PkgInstallPathUtils.getInstallUniHome(command) + Constants.SLASH + Constants.SLASH + logFileName;
+            String path = command.getBaseDir() + Constants.SLASH + Constants.SLASH + logFileName;
             File logFile = new File(path);
             if (logFile.exists()) {
                 logStr = FileUtils.readLastRows(path, Charset.defaultCharset(), PropertyUtils.getInt("rows"));

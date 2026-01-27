@@ -22,20 +22,14 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-public class GetLogCommand implements Serializable, ServiceRoleResource {
+public class GetLogCommand implements Serializable{
 
     private static final long serialVersionUID = 7545190998721469036L;
     private String logFile;
-    
-    private String decompressPackageName;
 
-    private String serviceName;
 
-    private String serviceRoleName;
+    private String baseDir;
 
-    private String hostCommandId;
-
-    private String packageName;
 
     private String runAsUser;
 

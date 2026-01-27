@@ -118,8 +118,6 @@ public class ClusterServiceCommandHostCommandServiceImpl
     
     @Override
     public Result getHostCommandLog(Integer clusterId, String hostCommandId) throws Exception {
-        ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
-        
         ClusterServiceCommandHostCommandEntity hostCommand =
                 this.getOne(new QueryWrapper<ClusterServiceCommandHostCommandEntity>().eq(Constants.HOST_COMMAND_ID,
                         hostCommandId));
@@ -128,11 +126,11 @@ public class ClusterServiceCommandHostCommandServiceImpl
         
         String serviceName = commandEntity.getServiceName();
         String serviceRoleName = hostCommand.getServiceRoleName();
-        String logFile = String.format("%s/%s/%s.log", "logs", serviceName, serviceRoleName);
+        String logFile = String.format("logs/%s/%s.log", serviceName, serviceRoleName);
         
         GetLogCommand command = new GetLogCommand();
         command.setLogFile(logFile);
-        command.setDecompressPackageName("datasophon-worker");
+        command.setBaseDir(Constants.WORKER_PATH);
         logger.info("Start to get {} install log from host {}", serviceRoleName, hostCommand.getHostname());
         ActorSelection configActor = ActorUtils.actorSystem
                 .actorSelection("akka.tcp://datasophon@" + hostCommand.getHostname() + ":2552/user/worker/logActor");

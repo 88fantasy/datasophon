@@ -2,6 +2,7 @@ package com.datasophon.common.utils;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.http.HttpRequest;
@@ -33,10 +34,12 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
@@ -71,6 +74,52 @@ public class NexusFileUtils {
             return response.bodyStream();
         }
         throw new IllegalStateException(String.format("download fail, response status is %s, message is %s", response.getStatus(), response.body()));
+    }
+
+
+    public static void downStream(String url, OutputStream out) throws IOException {
+        try (CloseableHttpClient client = newLongTimeClient()) {
+            HttpGet request = new HttpGet(url);
+            String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
+            request.setHeader("Authorization", "Basic " + auth);
+            log.info("开始下载 {}", url);
+            try (CloseableHttpResponse response = client.execute(request)) {
+                int status = response.getStatusLine().getStatusCode();
+                boolean isSuccess = status >= 200 && status < 300;
+                if (isSuccess) {
+                    try (InputStream in = response.getEntity().getContent()){
+                        IoUtil.copy(in, out);
+                    }
+                } else {
+                    EntityUtils.consume(response.getEntity());
+                    if (status == 404) {
+                        throw new FileNotFoundException(String.format("url: %s not found", url));
+                    }
+                    if (status == 401) {
+                        throw new IllegalArgumentException("nexus require an auth, but fail");
+                    }
+                }
+                throw new IllegalStateException(String.format("download fail, response status is %s, message is %s", status, response.getStatusLine().getReasonPhrase()));
+            }
+        }
+    }
+
+    public static String downloadAsString(String url) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        downStream(url, out);
+        return new String(out.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+
+    private static CloseableHttpClient newLongTimeClient() {
+        RequestConfig config = RequestConfig.custom()
+                .setConnectTimeout(30000)      // 连接超时 30s
+                .setSocketTimeout(600000)      // 上传超时 10分钟
+                .build();
+
+        return HttpClients.custom()
+                .setDefaultRequestConfig(config)
+                .build();
     }
 
 
@@ -193,7 +242,7 @@ public class NexusFileUtils {
                 if (status == 200) {
                     log.info("上传 {} 成功, Status: {}, Response: {}, isSuccessDelete:{}", file.getAbsolutePath(), status, body, isSuccessDelete);
                     uploadSuccess.put(file.getAbsolutePath(), body);
-                    if(file.getAbsolutePath().contains(Constants.PACKAGES_NAME) && isSuccessDelete) {
+                    if (file.getAbsolutePath().contains(Constants.PACKAGES_NAME) && isSuccessDelete) {
                         FileUtil.del(file);
                         log.info("delete {}", file.getAbsolutePath());
                     }
@@ -280,7 +329,6 @@ public class NexusFileUtils {
     }
 
 
-
     private static Assert getAssertFromRawRepo(String group, String name) throws IOException {
         String url = String.format("http://%s:%s/service/rest/v1/search/assets?repository=raw&format=raw&group=%s&name=%s",
                 Constants.NEXUS_IP, Constants.NEXUS_PORT, group, name
@@ -330,6 +378,7 @@ public class NexusFileUtils {
             }
         }
     }
+
     private static ObjectMapper getMapper() {
         JsonMapper.Builder builder = JsonMapper.builder();
 
