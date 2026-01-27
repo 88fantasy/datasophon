@@ -56,6 +56,7 @@ public class DAGServiceServiceImpl implements DAGService {
         if (Arrays.asList(DagStatus.CANCEL, DagStatus.FAILED, DagStatus.SUCCESS).contains(status) && dag.getCompletedTime() == null) {
             dag.setCompletedTime(LocalDateTime.now());
         }
+        dag.setStatus(status);
         return dagDefinitionEntityMapper.updateById(dag);
     }
 
@@ -119,6 +120,7 @@ public class DAGServiceServiceImpl implements DAGService {
         if (Arrays.asList(NodeStatus.CANCEL, NodeStatus.FAILED, NodeStatus.SUCCESS).contains(status) && node.getCompletedTime() == null) {
             node.setCompletedTime(LocalDateTime.now());
         }
+        node.setStatus(status);
         return nodeDefinitionEntityMapper.updateById(node);
     }
 
