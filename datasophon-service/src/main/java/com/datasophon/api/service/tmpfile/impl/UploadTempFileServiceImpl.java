@@ -197,7 +197,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
 
         chunk = BeanUtil.toBean(info, UploadTempFileChunk.class);
         chunk.setMd5(FileUtils.md5(chunkPath.toFile()));
-        if (StringUtils.isNotBlank(info.getMd5()) && chunk.getMd5().equalsIgnoreCase(info.getMd5())) {
+        if (StringUtils.isNotBlank(info.getMd5()) && !chunk.getMd5().equalsIgnoreCase(info.getMd5())) {
             throw new BusinessException("文件MD5不一致");
         }
 
