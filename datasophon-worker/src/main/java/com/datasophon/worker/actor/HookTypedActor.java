@@ -8,7 +8,10 @@ import com.datasophon.common.model.HookConfig;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.worker.hook.HookContext;
 import com.datasophon.worker.hook.HookUtils;
+import com.datasophon.worker.utils.TaskConstants;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import java.lang.reflect.ParameterizedType;
@@ -47,7 +50,7 @@ public abstract class HookTypedActor<T> extends UntypedActor {
     }
 
     @Override
-    public void preStart() throws Exception {
+    public void preStart() {
         log.info("{} service actor start before handle message", getSelf().path().toString());
     }
 
@@ -87,15 +90,21 @@ public abstract class HookTypedActor<T> extends UntypedActor {
 
         int i = -1;
         try {
+
+            Logger logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(resource.getServiceName(), resource.getServiceRoleName(), HookTypedActor.class));
             for (i = 0; i < hookList.size(); i++) {
                 HookConfig hook = hookList.get(i);
                 HookContext ctx = HookUtils.createContext(hook, resource, globalVariables);
                 if (HookUtils.isHookEnable(hook.getCondition(), ctx.getAllInfoAsMap())) {
+                    logger.info("开始执行服务{} {}第{}个Hook，类型: {}, 动作：{}", resource.getServiceName(), resource.getServiceRoleName(),
+                            hook.getType(), i, hook.getAction());
                     log.info("{}.{} invoke {} hook, index:{}, action: {}", resource.getServiceName(), resource.getServiceRoleName(),
                             hook.getType(), i, hook.getAction());
                     result =  HookUtils.invokeHook(hook, ctx);
                     log.info("{}.{} invoke {} hook {}, index:{}, action: {}", resource.getServiceName(), resource.getServiceRoleName(),
                             hook.getType(), result.isSuccess() ? "success" : "fail", i, hook.getAction());
+
+                    logger.info("执行服务{}.{} 第{}个Hook {}，信息: {}", resource.getServiceName(), resource.getServiceRoleName(), i, result.isSuccess() ? "成功" : "失败", result.getExecOut());
                     if (!result.isSuccess()) {
                         break;
                     }

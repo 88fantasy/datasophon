@@ -25,6 +25,7 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.InstallServiceHandler;
+import com.datasophon.worker.utils.TaskConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,23 +40,28 @@ public class InstallServiceActor extends HookTypedActor<InstallServiceRoleComman
     @Override
     protected void doOnReceive(InstallServiceRoleCommand command) throws Throwable {
         ExecResult installResult = new ExecResult();
+
+        Logger log = LoggerFactory.getLogger(TaskConstants.createLoggerName(command.getServiceName(), command.getServiceRoleName(), this.getClass()));
         try {
+            log.info("开始安装服务:{} {}", command.getServiceName(), command.getServiceRoleName());
             installResult = invokeFunctions(
                     () -> invokeHook(command.getHooks(), HookType.PRE_INSTALL, command, command.getVariables()),
-                    () -> doInstall(command),
+                    () -> doInstall(command, log),
                     () -> invokeHook(command.getHooks(), HookType.POST_INSTALL, command, command.getVariables())
             );
         } catch (Exception e) {
             installResult = ExecResult.error(String.format("安装%s失败，%s", command.getServiceName(), e.getMessage()));
             logger.error("安装{}{}失败, {}", command.getServiceName(), command.getServiceRoleName(), e.getMessage(), e);
+            log.error("安装{}{}失败, {}", command.getServiceName(), command.getServiceRoleName(), e.getMessage(), e);
         } finally {
             getSender().tell(installResult, getSelf());
             logger.info("Install {} {}, message: {}", command.getPackageName(), installResult.getExecResult() ? "success" : "failed", installResult.getExecOut());
+            log.info("安装 {} {}, 信息: {}", command.getPackageName(), installResult.getExecResult() ? "成功" : "失败", installResult.getExecOut());
         }
     }
 
 
-    private ExecResult doInstall(InstallServiceRoleCommand command) {
+    private ExecResult doInstall(InstallServiceRoleCommand command, Logger log) {
         ExecResult installResult = new ExecResult();
         InstallServiceHandler serviceHandler = new InstallServiceHandler(command.getFrameCode(), command.getServiceName(), command.getServiceRoleName());
         logger.info("Start install package {}", command.getPackageName());
@@ -88,7 +94,7 @@ public class InstallServiceActor extends HookTypedActor<InstallServiceRoleComman
             command.setNormalPkgDir(normalPkgDir);
             installResult = serviceHandler.install(command);
             if (installResult.getExecResult()) {
-                // 其他服务创建软连接
+                log.info("安装服务{} {}成功，准备创建软链...", command.getServiceName(), command.getServiceRoleName());
                 String appHome = Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir;
                 String appLinkHome = Constants.INSTALL_PATH + Constants.SLASH + linkName;
                 File linkFile = new File(appLinkHome);
@@ -101,6 +107,7 @@ public class InstallServiceActor extends HookTypedActor<InstallServiceRoleComman
                 }
                 installResult = ShellUtils.execShell("ln -s " + appHome + " " + appLinkHome);
                 logger.info("Create symbolic dir: {}", appLinkHome);
+                log.info("创建软链：{} -> {} 成功", appHome, appLinkHome);
             }
         }
         return installResult;
