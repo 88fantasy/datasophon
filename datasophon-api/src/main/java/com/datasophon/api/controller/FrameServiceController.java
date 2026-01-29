@@ -44,7 +44,7 @@ import java.util.List;
 public class FrameServiceController extends ApiController {
     
     @Autowired
-    private FrameServiceService frameVersionServiceService;
+    private FrameServiceService frameServiceService;
     
     @Autowired
     private FrameServiceRoleService frameServiceRoleService;
@@ -57,13 +57,13 @@ public class FrameServiceController extends ApiController {
      */
     @RequestMapping("/list")
     public Result list(Integer clusterId) {
-        return Result.success(frameVersionServiceService.getFrameServiceList(clusterId));
+        return Result.success(frameServiceService.getFrameServiceList(clusterId));
     }
 
     @RequestMapping("/listNewest")
     @Operation(summary = "获取组件列表(最高版本)")
     public Result listNewest(Integer clusterId, Boolean newest) {
-        return Result.success(frameVersionServiceService.listNewest(clusterId,newest));
+        return Result.success(frameServiceService.listNewest(clusterId,newest));
     }
 
 
@@ -73,7 +73,7 @@ public class FrameServiceController extends ApiController {
     @RequestMapping("/listBasicFrameService")
     @Operation(summary = "获取框架基础组件列表")
     public Result listBasicFrameService(Integer clusterId) {
-        return Result.success(frameVersionServiceService.getBasicFrameServiceList(clusterId));
+        return Result.success(frameServiceService.getBasicFrameServiceList(clusterId));
     }
 
 
@@ -83,7 +83,7 @@ public class FrameServiceController extends ApiController {
      */
     @RequestMapping("/getServiceListByServiceIds")
     public Result getServiceListByServiceIds(List<Integer> serviceIds) {
-        return frameVersionServiceService.getServiceListByServiceIds(serviceIds);
+        return frameServiceService.getServiceListByServiceIds(serviceIds);
     }
     
     /**
@@ -91,7 +91,7 @@ public class FrameServiceController extends ApiController {
      */
     @RequestMapping("/info/{id}")
     public Result info(@PathVariable("id") Integer id) {
-        FrameServiceEntity frameVersionService = frameVersionServiceService.getById(id);
+        FrameServiceEntity frameVersionService = frameServiceService.getById(id);
         
         return Result.success().put("frameVersionService", frameVersionService);
     }
@@ -101,7 +101,7 @@ public class FrameServiceController extends ApiController {
      */
     @RequestMapping("/save")
     public Result save(@RequestBody FrameServiceEntity frameVersionService) {
-        frameVersionServiceService.save(frameVersionService);
+        frameServiceService.save(frameVersionService);
         
         return Result.success();
     }
@@ -111,7 +111,7 @@ public class FrameServiceController extends ApiController {
      */
     @RequestMapping("/update")
     public Result update(@RequestBody FrameServiceEntity frameVersionService) {
-        frameVersionServiceService.updateById(frameVersionService);
+        frameServiceService.updateById(frameVersionService);
         
         return Result.success();
     }
@@ -121,7 +121,7 @@ public class FrameServiceController extends ApiController {
      */
     @RequestMapping("/delete/{id}")
     public Result delete(@PathVariable("id") Integer id) {
-        final FrameServiceEntity serviceEntity = frameVersionServiceService.getById(id);
+        final FrameServiceEntity serviceEntity = frameServiceService.getById(id);
         if (serviceEntity == null) {
             return Result.error("Service 组件不存在。");
         }
@@ -147,7 +147,7 @@ public class FrameServiceController extends ApiController {
         frameServiceRoleService.remove(Wrappers.<FrameServiceRoleEntity>lambdaQuery()
                 .eq(FrameServiceRoleEntity::getServiceId, id));
         // 删除主服务
-        frameVersionServiceService.removeById(id);
+        frameServiceService.removeById(id);
         return Result.success();
     }
     

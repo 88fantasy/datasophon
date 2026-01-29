@@ -245,17 +245,18 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 //        保存应用的启动配置
         model.getApp().forEach(app -> {
             List<ServiceConfig> configs = serviceInstallService.getServiceConfigFromDdl(dto.getClusterId(), app.getName());
-            Map<String, DeploySrvConfig> configMap = CollectionUtil.toMap(app.getConfig(), new HashMap<>(), DeploySrvConfig::getName);
-            configs.forEach(conf -> {
-                DeploySrvConfig deployConf = configMap.get(conf.getName());
-                if (deployConf == null) {
-                    if (conf.getValue() == null) {
-                        conf.setValue(conf.getDefaultValue());
-                    }
-                } else {
-                    conf.setValue(deployConf.getValue());
-                }
-            });
+//          约定从ddl中取值
+//            Map<String, DeploySrvConfig> configMap = CollectionUtil.toMap(app.getConfig(), new HashMap<>(), DeploySrvConfig::getName);
+//            configs.forEach(conf -> {
+//                DeploySrvConfig deployConf = configMap.get(conf.getName());
+//                if (deployConf == null) {
+//                    if (conf.getValue() == null) {
+//                        conf.setValue(conf.getDefaultValue());
+//                    }
+//                } else {
+//                    conf.setValue(deployConf.getValue());
+//                }
+//            });
             serviceInstallService.saveServiceConfig(dto.getClusterId(), app.getName(), configs, -1);
         });
         log.info("保存部署配置项成功");

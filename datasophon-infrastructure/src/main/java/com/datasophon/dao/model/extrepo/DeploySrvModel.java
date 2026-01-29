@@ -21,6 +21,6 @@ public class DeploySrvModel implements ServiceResource<DeploySrvModel>{
 
     private List<DeploySrvRoleModel> roles;
 
-    private List<DeploySrvConfig> config;
+//    private List<DeploySrvConfig> config;
 
 }
