@@ -85,7 +85,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
     }
 
     @Override
-    public List<FrameServiceEntity> listNewest(Integer clusterId, boolean newest) {
+    public List<FrameServiceEntity> listNewest(Integer clusterId, Boolean newest) {
         ClusterInfoEntity clusterInfo = clusterInfoMapper.selectById(clusterId);
         FrameInfoEntity frameInfo = frameInfoMapper.getFrameInfoByFrameCode(clusterInfo.getClusterFrame());
 
@@ -93,7 +93,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
                 .eq(FrameServiceEntity::getFrameId, frameInfo.getId())
                 .orderByAsc(FrameServiceEntity::getSortNum)
                 .list();
-        if (Boolean.TRUE.equals(newest)) {
+        if (!Boolean.FALSE.equals(newest)) {
             Map<String, FrameServiceEntity> existEntity = new HashMap<>();
             list.forEach(newVal-> {
                 FrameServiceEntity old = existEntity.get(newVal.getServiceName());

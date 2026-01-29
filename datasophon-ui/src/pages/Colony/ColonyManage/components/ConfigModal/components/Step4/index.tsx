@@ -116,6 +116,10 @@ const Index = ({
             clusterId,
         }
 
+        if (type !== T_TYPE_INIT) {
+            params.newest = true
+        }
+
         const res = await axiosPost(type === T_TYPE_INIT ? API.listBasicFrameService : API.listNewest, params)
 
 
