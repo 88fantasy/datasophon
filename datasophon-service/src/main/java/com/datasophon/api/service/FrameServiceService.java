@@ -37,7 +37,7 @@ public interface FrameServiceService extends IService<FrameServiceEntity> {
     
     List<FrameServiceEntity> getBasicFrameServiceList(Integer clusterId);
 
-    List<FrameServiceEntity> listNewest(Integer clusterId, boolean newest);
+    List<FrameServiceEntity> listNewest(Integer clusterId, Boolean newest);
 
     Result getServiceListByServiceIds(List<Integer> serviceIds);
 
