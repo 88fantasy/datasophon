@@ -24,6 +24,10 @@ const Index = (props, ref) => {
     } = props
 
 
+    const actionRef = useRef()
+    const invokeUpdateId = useRef()
+
+
 
     const columns = useMemo(() => {
         const res: ProColumns[] = [
@@ -164,6 +168,32 @@ const Index = (props, ref) => {
     }, [])
 
 
+    const invokeCancelInvokeUpdateId = useCallback(() => {
+        if (invokeUpdateId.current) {
+            clearTimeout(invokeUpdateId.current)
+            invokeUpdateId.current = undefined
+        }
+    }, [])
+
+    const invokeUpdateData = useCallback(() => {
+        invokeCancelInvokeUpdateId()
+        invokeUpdateId.current = setTimeout(() => {
+            actionRef.current?.reload()
+            invokeUpdateData()
+        }, 2 * 1000)
+    }, [invokeCancelInvokeUpdateId])
+
+
+    useEffect(() => {
+        invokeUpdateData()
+
+        return () => {
+            invokeCancelInvokeUpdateId()
+        }
+    }, [invokeCancelInvokeUpdateId, invokeUpdateData])
+
+
+
 
     return (
         <CommonTable
@@ -172,6 +202,7 @@ const Index = (props, ref) => {
                 columns,
                 tableAlertRender: false,
                 className: `${className} `,
+                actionRef,
 
                 request: invokePackProtableRequest({
                     api: API.findDagByPage,
