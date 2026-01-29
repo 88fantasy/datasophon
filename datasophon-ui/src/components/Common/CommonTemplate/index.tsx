@@ -231,7 +231,7 @@ const Index = ({
                     )
                 } else if ('multipleWithMap' === item.type) {
                     const creatorRecord = cloneDeep(item.defaultValue[0])
-                    creatorRecord.items.map(v => {
+                    creatorRecord?.items?.map(v => {
                         v.value = ''
                     })
 
