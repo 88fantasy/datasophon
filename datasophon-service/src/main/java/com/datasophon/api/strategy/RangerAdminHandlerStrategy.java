@@ -114,7 +114,7 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
         ServiceInstallService serviceInstallService =
                 SpringTool.getApplicationContext().getBean(ServiceInstallService.class);
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
-        String rangerAdminUrl = GlobalVariables.getValue(clusterId, "rangerAdminUrl");
+        String rangerAdminUrl = GlobalVariables.getValueByService(clusterId,serviceName, "rangerAdminUrl");
         ClusterServiceInstanceEntity serviceInstance =
                 serviceInstanceService.getServiceInstanceByClusterIdAndServiceName(clusterId, serviceName);
         // 查询角色组id

@@ -105,10 +105,10 @@ public class RMHandlerStrategy extends ServiceHandlerAbstract implements Service
                                       Map<String, ClusterServiceRoleInstanceEntity> map) {
     Integer clusterId = roleInstanceEntity.getClusterId();
     String commandLine;
-    String yarnAclAdminUser = GlobalVariables.getValue(clusterId, "yarn.admin.acl");
-    String rm2 = GlobalVariables.getValue(clusterId, "rm2");
+    String yarnAclAdminUser = GlobalVariables.getValueByService(clusterId,roleInstanceEntity.getServiceName(), "yarn.admin.acl");
+    String rm2 = GlobalVariables.getValueByService(clusterId, roleInstanceEntity.getServiceName(),"rm2");
 
-//    TODO 使用 {ROOT.XXServiceName.INSTALL_PATH}
+//  TODO 使用 {ROOT.XXServiceName.xx}。HADOOP_HOME使用比较多
     String hadoopHome = GlobalVariables.getValue(clusterId, "HADOOP_HOME");
     String curRm = roleInstanceEntity.getHostname().equals(rm2) ? "rm2" : "rm1";
 

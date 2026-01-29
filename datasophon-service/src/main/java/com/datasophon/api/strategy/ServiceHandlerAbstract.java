@@ -110,7 +110,11 @@ public abstract class ServiceHandlerAbstract {
             rackConfigs.add(serviceConfig);
         }
     }
-    
+
+    /**
+     * TODO 将废弃
+     * @return
+     */
     public boolean isEnableKerberos(Integer clusterId, boolean enableKerberos,
                                     ServiceConfig config, String serviceName) {
         if ((Boolean) config.getValue()) {

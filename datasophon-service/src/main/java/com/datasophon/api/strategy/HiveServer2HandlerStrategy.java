@@ -103,9 +103,8 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
     
     @Override
     public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-        Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
-        if (GlobalVariables.containsValue(serviceRoleInfo.getClusterId(), "masterHiveServer2")
-                && !hostname.equals(GlobalVariables.getValue(serviceRoleInfo.getClusterId(), "masterHiveServer2"))) {
+        if (GlobalVariables.containsValueByServerce(serviceRoleInfo.getClusterId(),serviceRoleInfo.getServiceName(), "masterHiveServer2")
+                && !hostname.equals(GlobalVariables.getValueByService(serviceRoleInfo.getClusterId(), serviceRoleInfo.getServiceName(),"masterHiveServer2"))) {
             logger.info("set to slave hiveserver2");
             serviceRoleInfo.setSlave(true);
         }

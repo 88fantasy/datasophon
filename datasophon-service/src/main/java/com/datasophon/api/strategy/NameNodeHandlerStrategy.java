@@ -108,7 +108,7 @@ public class NameNodeHandlerStrategy extends ServiceHandlerAbstract implements S
 
   @Override
   public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-    String nn2 = GlobalVariables.getValue(serviceRoleInfo.getClusterId(), "nn2");
+    String nn2 = GlobalVariables.getValueByService(serviceRoleInfo.getClusterId(), serviceRoleInfo.getServiceName(), "nn2");
     if (hostname.equals(nn2)) {
       logger.info("set to slave namenode");
       serviceRoleInfo.setSlave(true);
@@ -120,7 +120,7 @@ public class NameNodeHandlerStrategy extends ServiceHandlerAbstract implements S
   public void handlerServiceRoleCheck(
       ClusterServiceRoleInstanceEntity roleInstanceEntity,
       Map<String, ClusterServiceRoleInstanceEntity> map) {
-    String nn2 = GlobalVariables.getValue(roleInstanceEntity.getClusterId(), "nn2");
+      String nn2 = GlobalVariables.getValueByService(roleInstanceEntity.getClusterId(),roleInstanceEntity.getServiceName(), "nn2");
 //    TODO 使用 {ROOT.XXServiceName.INSTALL_PATH}
     String hadoopHome = GlobalVariables.getValue(roleInstanceEntity.getClusterId(), "HADOOP_HOME");
     String commandLine = hadoopHome + "/bin/hdfs haadmin -getServiceState nn1";

@@ -41,7 +41,7 @@ public class ZKFCHandlerStrategy implements ServiceRoleStrategy {
 
   @Override
   public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-    String zkfc2 = GlobalVariables.getValue(serviceRoleInfo.getClusterId(), "ZKFC2");
+    String zkfc2 = GlobalVariables.getValueByService(serviceRoleInfo.getClusterId(), serviceRoleInfo.getServiceName(),"ZKFC2");
     if (hostname.equals(zkfc2)) {
       logger.info("set to slave zkfc");
       serviceRoleInfo.setSlave(true);

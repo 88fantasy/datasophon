@@ -1,6 +1,10 @@
 package com.datasophon.api.load;
 
+import com.alibaba.fastjson.JSON;
+import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.common.Constants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -15,6 +19,8 @@ import static com.datasophon.api.load.Application.getProperty;
  * fixme 由于历史代码的原因(需要修改的地方太多)，该类无法做到线程安全
  */
 public class GlobalVariables {
+
+  private static final Logger logger = LoggerFactory.getLogger(GlobalVariables.class);
 
   public static final String HOST = "__host__";
 
@@ -38,11 +44,21 @@ public class GlobalVariables {
   }
 
   public static Map<String, String> getVariables(Integer clusterId) {
+    // TODO 临时打印调试
+    logger.info("clusterVariablesMap:{}", JSON.toJSON(clusterVariablesMap));
     return clusterVariablesMap.get(clusterId);
   }
 
   public static boolean containsValue(Integer clusterId, String key) {
+    // TODO 临时打印调试
+    logger.info("clusterVariablesMap:{}", JSON.toJSON(clusterVariablesMap));
     return clusterVariablesMap.containsKey(clusterId) && clusterVariablesMap.get(clusterId).containsKey(surroundKey(key));
+  }
+
+  public static boolean containsValueByServerce(Integer clusterId, String serviceName,  String variableName) {
+    // TODO 临时打印调试
+    logger.info("clusterVariablesMap:{}", JSON.toJSON(clusterVariablesMap));
+    return clusterVariablesMap.containsKey(clusterId) && clusterVariablesMap.get(clusterId).containsKey(surroundKey(serviceName + "." + variableName));
   }
 
   public static void putValue(Integer clusterId, String key, String value) {
@@ -56,10 +72,21 @@ public class GlobalVariables {
 
 
     public static String getValue(Integer clusterId, String key) {
+      // TODO
+      logger.info("clusterVariablesMap:{}", JSON.toJSON(clusterVariablesMap));
     if (!clusterVariablesMap.containsKey(clusterId)) {
       return null;
     }
     return clusterVariablesMap.get(clusterId).get(surroundKey(key));
+  }
+
+  public static String getValueByService(Integer clusterId, String serviceName, String variableName) {
+    // TODO
+    logger.info("clusterVariablesMap:{}", JSON.toJSON(clusterVariablesMap));
+    if (!clusterVariablesMap.containsKey(clusterId)) {
+      return null;
+    }
+    return clusterVariablesMap.get(clusterId).get(surroundKey(serviceName + "." + variableName));
   }
 
   public static ConcurrentHashMap<String, String> genDefaultGlobalVariables() {

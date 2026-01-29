@@ -302,7 +302,7 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
         }
         Integer clusterId = roleInfo.getClusterId();
         String serviceName = roleInfo.getParentName();
-        return "true".equals(GlobalVariables.getValue(clusterId, "enable" + serviceName + "Plugin"));
+        return "true".equals(GlobalVariables.getValueByService(clusterId, serviceName, "enable" + serviceName + "Plugin"));
     }
 
 
