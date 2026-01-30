@@ -8,10 +8,10 @@ import cn.hutool.crypto.CryptoException;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
 import com.datasophon.api.exceptions.BusinessException;
-import com.datasophon.api.load.LoadServiceMeta;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.FrameServiceService;
+import com.datasophon.api.service.ddl.DdlMetaService;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
 import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
 import com.datasophon.api.service.extrepo.ctx.MetaParseOption;
@@ -75,8 +75,9 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     @Autowired
     private FrameInfoService frameInfoService;
 
+
     @Autowired
-    private LoadServiceMeta loadServiceMeta;
+    private DdlMetaService ddlMetaService;
 
     @Autowired
     private ClusterInfoService clusterInfoService;
@@ -311,12 +312,12 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             boolean exists = frameInfoService.exists(framework.getFrameCode());
             FrameInfoEntity db = frameInfoService.saveFrameIfAbsent(framework.getFrameCode());
             if (!exists) {
-                loadServiceMeta.initFramework(db);
+                ddlMetaService.initFramework(db);
             }
 
             framework.getServices().forEach(srv -> {
                 String ddl = FileUtil.readString(Paths.get(unzipDir, srv.getDdl()).toFile(), StandardCharsets.UTF_8);
-                loadServiceMeta.parseServiceDdl(db.getFrameCode(), clusters, db, srv.getName(), ddl);
+                ddlMetaService.loadServiceDdl(clusters, db, srv.getName(), ddl);
                 progress.setStep(progress.getStep() + 1);
             });
         });

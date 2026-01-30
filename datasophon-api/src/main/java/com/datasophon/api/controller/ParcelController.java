@@ -17,10 +17,17 @@
 
 package com.datasophon.api.controller;
 
-import com.datasophon.api.load.LoadServiceMeta;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.StreamProgress;
+import cn.hutool.core.util.NumberUtil;
+import cn.hutool.http.HttpUtil;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.FrameServiceService;
+import com.datasophon.api.service.ddl.DdlMetaService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.FileUtils;
 import com.datasophon.common.utils.Result;
@@ -29,9 +36,16 @@ import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.model.ComponentVO;
 import com.datasophon.dao.model.ParcelInfoVO;
-
+import com.google.common.util.concurrent.AtomicDouble;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,25 +58,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
-import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.google.common.util.concurrent.AtomicDouble;
-
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.StreamProgress;
-import cn.hutool.core.util.NumberUtil;
-import cn.hutool.http.HttpUtil;
 
 /**
  *
@@ -94,9 +89,10 @@ public class ParcelController extends ApiController implements DisposableBean {
     
     @Autowired
     private ClusterInfoService clusterInfoService;
-    
+
+
     @Autowired
-    LoadServiceMeta loadServiceMeta;
+    private DdlMetaService ddlMetaService;
     
     /**
      * 列表
@@ -349,7 +345,7 @@ public class ParcelController extends ApiController implements DisposableBean {
                 String serviceDdl =
                         FileUtils.readTargzTextFile(targetPackageFile, tempFileName, StandardCharsets.UTF_8);
                 String serviceName = vo.getName();
-                loadServiceMeta.parseServiceDdl(frameCode, clusters, frameInfo, serviceName, serviceDdl);
+                ddlMetaService.loadServiceDdl(clusters, frameInfo, serviceName, serviceDdl);
                 // 成功，安装结束
                 vo.setProcess(1.0f);
                 vo.setStep("install");
