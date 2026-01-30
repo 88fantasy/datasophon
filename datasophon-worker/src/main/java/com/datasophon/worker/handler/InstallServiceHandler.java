@@ -30,7 +30,6 @@ import com.datasophon.common.storage.DownloadResult;
 import com.datasophon.common.storage.PackageStorageUtils;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
-import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.strategy.resource.EmptyStrategy;
 import com.datasophon.worker.strategy.resource.ResourceStrategy;
@@ -40,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,15 +49,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @Data
 public class InstallServiceHandler {
 
-    private static final String HADOOP = "hadoop";
 
     public static final Map<String, Class<? extends ResourceStrategy>> cache = new ConcurrentHashMap<>();
 
-    private String frameCode;
+    protected String frameCode;
 
-    private String serviceName;
+    protected String serviceName;
 
-    private String serviceRoleName;
+    protected String serviceRoleName;
 
     private Logger logger;
 
@@ -68,15 +67,29 @@ public class InstallServiceHandler {
         }
     }
 
-    public InstallServiceHandler(String frameCode, String serviceName, String serviceRoleName) {
-        this.frameCode = frameCode;
-        this.serviceName = serviceName;
-        this.serviceRoleName = serviceRoleName;
-        String loggerName = TaskConstants.createLoggerName(serviceName, serviceRoleName, this.getClass());
-        logger = LoggerFactory.getLogger(loggerName);
+
+    public void init(InstallServiceRoleCommand command) {
+        this.frameCode = command.getFrameCode();
+        this.serviceName = command.getServiceName();
+        this.serviceRoleName = command.getServiceRoleName();
+        logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(serviceName, serviceRoleName, this.getClass()));
+    }
+
+    public boolean match(InstallServiceRoleCommand command) {
+        return true;
+    }
+
+
+    public int getOrder() {
+        return Integer.MAX_VALUE;
     }
 
     public ExecResult install(InstallServiceRoleCommand command) {
+        String linkName = getLinkName(command);
+        if (command.getNormalPkgDir().equals(linkName)) {
+            throw new IllegalStateException(String.format("软件%s安装目录和软链目录名字一致，无法解压", command.getServiceName()));
+        }
+
         ExecResult execResult = new ExecResult();
         try {
             DownloadResult downloadResult = PackageStorageUtils.getStorage().downloadPackageToLocal(command.getPackageName());
@@ -108,13 +121,6 @@ public class InstallServiceHandler {
                     }
                 }
 
-                if (command.getNormalPkgDir().contains(Constants.PROMETHEUS)) {
-                    String alertPath = Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir + Constants.SLASH + "alert_rules";
-                    ShellUtils.execShell("sed -i \"s/clusterIdValue/" + PropertyUtils.getString("clusterId") + "/g\" `grep clusterIdValue -rl " + alertPath + "`");
-                }
-                if (command.getNormalPkgDir().contains(HADOOP)) {
-                    changeHadoopInstallPathPerm(normalPkgDir);
-                }
                 execResult.setExecResult(true);
             }
         } catch (Exception e) {
@@ -124,7 +130,7 @@ public class InstallServiceHandler {
         return execResult;
     }
 
-    private boolean decompressPkg(InstallServiceRoleCommand instCmd, String sourceFile, boolean installPkgChange) {
+    protected boolean decompressPkg(InstallServiceRoleCommand instCmd, String sourceFile, boolean installPkgChange) {
         String packageName = instCmd.getPackageName();
         String decompressPackageName = instCmd.getDecompressPackageName();
 
@@ -190,20 +196,39 @@ public class InstallServiceHandler {
      * @param baseTempDir
      * @param innerDir
      */
-    private void checkIfPathOutOfBox(String baseTempDir, String innerDir) {
+    protected void checkIfPathOutOfBox(String baseTempDir, String innerDir) {
         if (!Paths.get(innerDir).startsWith(Paths.get(baseTempDir))) {
             throw new SecurityException(String.format("can operation dir %s out of %s", innerDir, baseTempDir));
         }
     }
 
-    private void changeHadoopInstallPathPerm(String decompressPackageName) {
-        ShellUtils.execShell(" chown -R  root:hadoop " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-        ShellUtils.execShell(" chmod 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-        ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/etc");
-        ShellUtils.execShell(" chmod 6050 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/bin/container-executor");
-        ShellUtils.execShell(" chmod 400 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/etc/hadoop/container-executor.cfg");
-        ShellUtils.execShell(" chown -R yarn:hadoop " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/logs/userlogs");
-        ShellUtils.execShell(" chmod 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/logs/userlogs");
-        ShellUtils.execShell(" ln -s " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + " " + Constants.INSTALL_PATH + Constants.SLASH + "hadoop");
+
+
+    public ExecResult createLink(InstallServiceRoleCommand command) {
+        String appLinkHome = getLinkName(command);
+        if (appLinkHome == null) {
+            logger.info("服务{} {}无需创建软链...", command.getServiceName(), command.getServiceRoleName());
+            return ExecResult.success();
+        }
+
+        logger.info("安装服务{} {}成功，准备创建软链...", command.getServiceName(), command.getServiceRoleName());
+        String appHome = Constants.INSTALL_PATH + Constants.SLASH + command.getNormalPkgDir();
+        File linkFile = new File(appLinkHome);
+        if (linkFile.exists()) {
+            if (Files.isSymbolicLink(linkFile.toPath())) {
+                ShellUtils.execShell("unlink " + appLinkHome);
+            } else {
+                throw new IllegalStateException(String.format(" %s exist but  not a link file, it is that true?", appLinkHome));
+            }
+        }
+        ExecResult installResult = ShellUtils.execShell("ln -s " + appHome + " " + appLinkHome);
+        logger.info("Create symbolic dir: {}", appLinkHome);
+        logger.info("创建软链：{} -> {} 成功", appHome, appLinkHome);
+        return installResult;
+    }
+
+
+    protected String getLinkName(InstallServiceRoleCommand command) {
+        return Constants.INSTALL_PATH + Constants.SLASH + PkgInstallPathUtils.getLinkDirName(command);
     }
 }

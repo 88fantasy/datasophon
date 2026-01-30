@@ -55,7 +55,7 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
         Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
         for (ServiceConfig config : list) {
             if ("enableKerberos".equals(config.getName())) {
-                enableKerberos = isEnableKerberos(clusterId, enableKerberos, config, "HIVE");
+                enableKerberos = decideEnableKerberos(clusterId, enableKerberos, config, "HIVE");
             }
             
         }

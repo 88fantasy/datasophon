@@ -18,10 +18,12 @@
 package com.datasophon.api.controller;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IoUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
+import com.datasophon.api.service.ddl.DdlMetaService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
@@ -31,11 +33,15 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Slf4j
@@ -51,6 +57,8 @@ public class FrameServiceController extends ApiController {
     
     @Autowired
     private ClusterServiceInstanceService clusterServiceInstanceService;
+    @Autowired
+    private DdlMetaService ddlMetaService;
     
     /**
      * 列表
@@ -150,5 +158,13 @@ public class FrameServiceController extends ApiController {
         frameServiceService.removeById(id);
         return Result.success();
     }
-    
+
+
+    @PostMapping("/updateDdl/{serviceId}")
+    @Operation(summary = "更新service_ddl")
+    public Result delete(@PathVariable("serviceId") Integer serviceId, MultipartFile file) throws IOException {
+        String content = IoUtil.read(file.getInputStream(), StandardCharsets.UTF_8);
+        ddlMetaService.updateServiceDdl(serviceId, content);
+        return Result.success();
+    }
 }

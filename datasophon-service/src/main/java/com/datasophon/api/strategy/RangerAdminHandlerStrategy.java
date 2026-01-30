@@ -89,7 +89,7 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
                 ProcessUtils.generateClusterVariable(clusterId, serviceName, configName,"false");
             }
             if ("enableKerberos".equals(config.getName())) {
-                enableKerberos = isEnableKerberos(clusterId, enableKerberos, config, "RANGER");
+                enableKerberos = decideEnableKerberos(clusterId, enableKerberos, config, "RANGER");
             }
         }
         String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + "RANGER" + Constants.CONFIG;

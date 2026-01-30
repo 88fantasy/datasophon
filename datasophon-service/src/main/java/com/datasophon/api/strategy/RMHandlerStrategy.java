@@ -86,7 +86,7 @@ public class RMHandlerStrategy extends ServiceHandlerAbstract implements Service
         }
       }
       if ("enableKerberos".equals(config.getName())) {
-        enableKerberos = isEnableKerberos(clusterId, enableKerberos, config, "YARN");
+        enableKerberos = decideEnableKerberos(clusterId, enableKerberos, config, "YARN");
       }
     }
     String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + "YARN" + Constants.CONFIG;

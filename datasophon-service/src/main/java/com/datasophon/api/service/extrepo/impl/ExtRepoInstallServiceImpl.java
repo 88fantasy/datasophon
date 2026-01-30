@@ -14,7 +14,6 @@ import com.datasophon.api.dag.model.NodeDefinition;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.exceptions.BusinessException;
-import com.datasophon.api.load.LoadServiceMeta;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.DAGExecActor;
 import com.datasophon.api.service.ClusterInfoService;
@@ -36,6 +35,7 @@ import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.api.vo.extrepo.DAGNode;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
@@ -69,7 +69,6 @@ import com.datasophon.dao.enums.ServiceState;
 import com.datasophon.dao.enums.dag.DagStatus;
 import com.datasophon.dao.enums.dag.NodeStatus;
 import com.datasophon.dao.mapper.dag.DagDefinitionEntityMapper;
-import com.datasophon.dao.model.extrepo.DeploySrvConfig;
 import com.datasophon.dao.model.extrepo.DeploySrvModel;
 import com.datasophon.dao.model.extrepo.DeploymentModel;
 import org.slf4j.Logger;
@@ -386,7 +385,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                 serviceRoleInfo.setServiceInstanceId(cmd.getServiceInstanceId());
 
                 serviceRoleInfo.setPackageName(serviceEntity.getPackageName());
-                serviceRoleInfo.setArchInfoMap(LoadServiceMeta.getArchInfo(serviceEntity));
+                serviceRoleInfo.setArchInfoMap(ServicePkgNameUtils.getArchInfo(serviceEntity));
                 serviceRoleInfo.setDecompressPackageName(serviceEntity.getDecompressPackageName());
                 serviceRoleInfo.setFrameCode(serviceEntity.getFrameCode());
 

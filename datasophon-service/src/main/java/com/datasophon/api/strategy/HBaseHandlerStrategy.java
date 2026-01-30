@@ -38,7 +38,7 @@ public class HBaseHandlerStrategy extends ServiceHandlerAbstract implements Serv
         Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
         for (ServiceConfig config : list) {
             if ("enableKerberos".equals(config.getName())) {
-                enableKerberos = isEnableKerberos(clusterId, enableKerberos, config, "HBASE");
+                enableKerberos = decideEnableKerberos(clusterId, enableKerberos, config, "HBASE");
             }
         }
         String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + "HBASE" + Constants.CONFIG;

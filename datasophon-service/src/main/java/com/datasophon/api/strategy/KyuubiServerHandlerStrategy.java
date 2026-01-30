@@ -50,7 +50,7 @@ public class KyuubiServerHandlerStrategy extends ServiceHandlerAbstract implemen
         for (ServiceConfig config : list) {
             if (ENABLE_KERBEROS.equals(config.getName())) {
                 enableKerberos =
-                        isEnableKerberos(
+                        decideEnableKerberos(
                                 clusterId, enableKerberos, config, "KYUUBI");
             }
         }

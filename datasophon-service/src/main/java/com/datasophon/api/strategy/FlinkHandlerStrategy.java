@@ -41,13 +41,13 @@ public class FlinkHandlerStrategy extends ServiceHandlerAbstract implements Serv
         Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
         for (ServiceConfig serviceConfig : list) {
             if ("enableKerberos".equals(serviceConfig.getName())) {
-                enableKerberos = isEnableKerberos(clusterId, enableKerberos, serviceConfig, "FLINK");
+                enableKerberos = decideEnableKerberos(clusterId, enableKerberos, serviceConfig, "FLINK");
             }
         }
         
         for (ServiceConfig config : list) {
             if ("enableJMHA".equals(config.getName())) {
-                enableJM2HA = isEnableHA(clusterId, enableJM2HA, config, "FLINK");
+                enableJM2HA = decideEnableHA(clusterId, enableJM2HA, config, "FLINK");
             }
         }
         String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + "FLINK" + Constants.CONFIG;

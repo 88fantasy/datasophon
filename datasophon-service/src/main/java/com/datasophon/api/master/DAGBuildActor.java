@@ -20,8 +20,6 @@ package com.datasophon.api.master;
 import akka.actor.ActorRef;
 import cn.hutool.core.util.ArrayUtil;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.TypeReference;
-import com.datasophon.api.load.LoadServiceMeta;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.ClusterServiceCommandService;
@@ -29,6 +27,7 @@ import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.strategy.ServiceRoleStrategy;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
+import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.StartExecuteCommandCommand;
 import com.datasophon.common.command.SubmitActiveTaskNodeCommand;
@@ -99,9 +98,7 @@ public class DAGBuildActor extends TypedActor<StartExecuteCommandCommand> {
                             frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(
                                     clusterInfo.getClusterFrame(), hostCommand.getServiceRoleName());
 
-                    String arch = serviceEntity.getArch();
-                    Map<String, ArchInfo> stringArchInfoMap = StringUtils.isNotEmpty(arch) ? JSONObject.parseObject(arch, new TypeReference<Map<String, ArchInfo>>() {
-                    }) : LoadServiceMeta.getDefaultArchInfo(serviceEntity.getPackageName(), serviceEntity.getDecompressPackageName());
+                    Map<String, ArchInfo> stringArchInfoMap = ServicePkgNameUtils.getArchInfo(serviceEntity);
                     ServiceInfo serviceInfo = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
                     ServiceRoleInfo serviceRoleInfo = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
                     serviceRoleInfo.setHostname(hostCommand.getHostname());

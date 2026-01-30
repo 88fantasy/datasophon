@@ -78,13 +78,11 @@ public class NameNodeHandlerStrategy extends ServiceHandlerAbstract implements S
 
     for (ServiceConfig config : list) {
       if (ENABLE_RACK.equals(config.getName())) {
-        if ((Boolean) config.getValue()) {
-          enableRack = isEnableRack(enableRack, config);
-        }
+          enableRack = isEnableRack(config, enableRack);
       }
       if (ENABLE_KERBEROS.equals(config.getName())) {
         enableKerberos =
-            isEnableKerberos(
+            decideEnableKerberos(
                 clusterId, enableKerberos, config, "HDFS");
       }
     }

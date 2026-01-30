@@ -115,34 +115,28 @@ public abstract class ServiceHandlerAbstract {
      * TODO 将废弃
      * @return
      */
-    public boolean isEnableKerberos(Integer clusterId, boolean enableKerberos,
-                                    ServiceConfig config, String serviceName) {
-        if ((Boolean) config.getValue()) {
-            enableKerberos = true;
-            ProcessUtils.generateClusterVariable(clusterId, serviceName, "enable" + serviceName + "Kerberos", "true");
-        } else {
-            ProcessUtils.generateClusterVariable( clusterId, serviceName, "enable" + serviceName + "Kerberos", "false");
+    public boolean decideEnableKerberos(Integer clusterId, boolean defaultVal, ServiceConfig config, String serviceName) {
+        boolean enableKerberos = defaultVal;
+        if (config.getValue() != null) {
+            enableKerberos = Boolean.TRUE.equals(config.getValue());
         }
+        ProcessUtils.generateClusterVariable(clusterId, serviceName, "enable" + serviceName + "Kerberos", enableKerberos ? "true" : "false");
         return enableKerberos;
     }
     
-    public boolean isEnableHA(Integer clusterId,  boolean enableHA,
-                              ServiceConfig config, String serviceName) {
-        if ((Boolean) config.getValue()) {
-            enableHA = true;
-            ProcessUtils.generateClusterVariable( clusterId, serviceName,
-                    "enable" + serviceName + "HA", "true");
-        } else {
-            ProcessUtils.generateClusterVariable(clusterId, serviceName,
-                    "enable" + serviceName + "HA", "false");
+    public boolean decideEnableHA(Integer clusterId, boolean defaultVal, ServiceConfig config, String serviceName) {
+        boolean enableHA = defaultVal;
+        if (config.getValue() != null) {
+            enableHA = Boolean.TRUE.equals(config.getValue());
         }
+        ProcessUtils.generateClusterVariable(clusterId, serviceName, "enable" + serviceName + "HA",  enableHA ? "true" : "false");
         return enableHA;
     }
     
-    public boolean isEnableRack(boolean enableRack, ServiceConfig config) {
-        if ((Boolean) config.getValue()) {
-            enableRack = true;
+    public boolean isEnableRack(ServiceConfig config, boolean defaultVal) {
+        if (config.getValue() == null) {
+            return defaultVal;
         }
-        return enableRack;
+        return (boolean) config.getValue();
     }
 }
