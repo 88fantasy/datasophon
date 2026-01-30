@@ -19,9 +19,8 @@
 
 package com.datasophon.api.master.alert;
 
-import akka.actor.UntypedActor;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.datasophon.api.load.Application;
+import com.datasophon.api.master.TypedActor;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.strategy.ServiceRoleStrategy;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
@@ -36,46 +35,34 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class ServiceRoleCheckActor extends UntypedActor {
+public class ServiceRoleCheckActor extends TypedActor<ServiceRoleCheckCommand> {
 
-  private static final Logger logger = LoggerFactory.getLogger(ServiceRoleCheckActor.class);
+    private static final Logger logger = LoggerFactory.getLogger(ServiceRoleCheckActor.class);
 
-  @Override
-  public void onReceive(Object msg) throws Throwable {
-    logger.info("start to check serviceRole info");
-    if (msg instanceof ServiceRoleCheckCommand) {
-      ClusterServiceRoleInstanceService roleInstanceService =
-          Application.getBean(ClusterServiceRoleInstanceService.class);
+    @Override
+    protected void doOnReceive(ServiceRoleCheckCommand message) throws Throwable {
+        ClusterServiceRoleInstanceService roleInstanceService = getBean(ClusterServiceRoleInstanceService.class);
+        //默认检测所有角色
+        List<ClusterServiceRoleInstanceEntity> list = roleInstanceService.list(new QueryWrapper<>());
 
-      //默认检测所有角色
-      List<ClusterServiceRoleInstanceEntity> list =
-          roleInstanceService.list(
-              new QueryWrapper<>());
-
-      if (!list.isEmpty()) {
         Map<String, ClusterServiceRoleInstanceEntity> map = translateListToMap(list);
         for (ClusterServiceRoleInstanceEntity roleInstanceEntity : list) {
-          ServiceRoleStrategy serviceRoleHandler = ServiceRoleStrategyContext.getServiceRoleHandler(roleInstanceEntity.getServiceRoleName());
-          if (Objects.nonNull(serviceRoleHandler)) {
-            serviceRoleHandler.handlerServiceRoleCheck(roleInstanceEntity, map);
-          } else {
-            //默认执行检测命令
-            CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
-          }
+            ServiceRoleStrategy serviceRoleHandler = ServiceRoleStrategyContext.getServiceRoleHandler(roleInstanceEntity.getServiceRoleName());
+            if (Objects.nonNull(serviceRoleHandler)) {
+                serviceRoleHandler.handlerServiceRoleCheck(roleInstanceEntity, map);
+            } else {
+                //默认执行检测命令
+                CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
+            }
         }
-      } else {
-        unhandled(msg);
-      }
     }
-  }
 
-  private Map<String, ClusterServiceRoleInstanceEntity> translateListToMap(
-      List<ClusterServiceRoleInstanceEntity> list) {
-    return list.stream()
-        .collect(
-            Collectors.toMap(
-                e -> e.getHostname() + e.getServiceRoleName(),
-                e -> e,
-                (v1, v2) -> v1));
-  }
+    private Map<String, ClusterServiceRoleInstanceEntity> translateListToMap(List<ClusterServiceRoleInstanceEntity> list) {
+        return list.stream()
+                .collect(
+                        Collectors.toMap(
+                                e -> e.getHostname() + e.getServiceRoleName(),
+                                e -> e,
+                                (v1, v2) -> v1));
+    }
 }

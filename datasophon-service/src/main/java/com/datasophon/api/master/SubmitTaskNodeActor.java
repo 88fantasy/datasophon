@@ -17,6 +17,7 @@
 
 package com.datasophon.api.master;
 
+import akka.actor.ActorRef;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.command.SubmitActiveTaskNodeCommand;
 import com.datasophon.common.enums.ServiceExecuteState;
@@ -24,37 +25,20 @@ import com.datasophon.common.enums.ServiceRoleType;
 import com.datasophon.common.model.DAGGraph;
 import com.datasophon.common.model.ServiceNode;
 import com.datasophon.common.model.ServiceRoleInfo;
-
-import scala.Option;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import akka.actor.ActorRef;
-import akka.actor.UntypedActor;
-
-public class SubmitTaskNodeActor extends UntypedActor {
+public class SubmitTaskNodeActor extends TypedActor<SubmitActiveTaskNodeCommand> {
     
     private static final Logger logger = LoggerFactory.getLogger(SubmitTaskNodeActor.class);
-    
-    @Override
-    public void preRestart(Throwable reason, Option<Object> message) throws Exception {
-        logger.info("service command actor restart because {}", reason.getMessage());
-        super.preRestart(reason, message);
-    }
-    
-    @Override
-    public void onReceive(Object message) throws Throwable {
-        if (!(message instanceof SubmitActiveTaskNodeCommand)) {
-            return;
-        }
 
 
-        SubmitActiveTaskNodeCommand submitActiveTaskNodeCommand = (SubmitActiveTaskNodeCommand) message;
+    @Override
+    protected void doOnReceive(SubmitActiveTaskNodeCommand submitActiveTaskNodeCommand) throws Throwable {
         Map<String, String> readyToSubmitTaskList = submitActiveTaskNodeCommand.getReadyToSubmitTaskList();
         if (readyToSubmitTaskList.isEmpty()) {
             return;
@@ -130,5 +114,5 @@ public class SubmitTaskNodeActor extends UntypedActor {
             }
         }
     }
-    
+
 }

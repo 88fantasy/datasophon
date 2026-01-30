@@ -17,6 +17,7 @@
 
 package com.datasophon.api.master;
 
+import akka.actor.ActorRef;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.command.SubmitActiveTaskNodeCommand;
 import com.datasophon.common.enums.ServiceExecuteState;
@@ -25,91 +26,81 @@ import com.datasophon.common.model.DAGGraph;
 import com.datasophon.common.model.ServiceExecuteResultMessage;
 import com.datasophon.common.model.ServiceNode;
 import com.datasophon.common.model.ServiceRoleInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import akka.actor.ActorRef;
-import akka.actor.UntypedActor;
-
-public class ServiceExecuteResultActor extends UntypedActor {
+public class ServiceExecuteResultActor extends TypedActor<ServiceExecuteResultMessage> {
     
     private static final Logger logger = LoggerFactory.getLogger(ServiceExecuteResultActor.class);
-    
+
     @Override
-    public void onReceive(Object message) throws Throwable {
-        if (message instanceof ServiceExecuteResultMessage) {
-            ServiceExecuteResultMessage result = (ServiceExecuteResultMessage) message;
-            
-            DAGGraph<String, ServiceNode, String> dag = result.getDag();
-            Map<String, ServiceExecuteState> activeTaskList = result.getActiveTaskList();
-            Map<String, String> errorTaskList = result.getErrorTaskList();
-            Map<String, String> readyToSubmitTaskList = result.getReadyToSubmitTaskList();
-            Map<String, String> completeTaskList = result.getCompleteTaskList();
-            ActorRef submitTaskNodeActor = ActorUtils.getLocalActor(SubmitTaskNodeActor.class,
-                    ActorUtils.getActorRefName(SubmitTaskNodeActor.class));
-            String node = result.getServiceName();
-            ServiceNode serviceNode = dag.getNode(node);
-            if (result.getServiceRoleType().equals(ServiceRoleType.MASTER)) {
-                if (result.getServiceExecuteState().equals(ServiceExecuteState.ERROR)) {
-                    // move to error list
-                    errorTaskList.put(node, "");
+    protected void doOnReceive(ServiceExecuteResultMessage result) throws Throwable {
+        DAGGraph<String, ServiceNode, String> dag = result.getDag();
+        Map<String, ServiceExecuteState> activeTaskList = result.getActiveTaskList();
+        Map<String, String> errorTaskList = result.getErrorTaskList();
+        Map<String, String> readyToSubmitTaskList = result.getReadyToSubmitTaskList();
+        Map<String, String> completeTaskList = result.getCompleteTaskList();
+        ActorRef submitTaskNodeActor = ActorUtils.getLocalActor(SubmitTaskNodeActor.class,
+                ActorUtils.getActorRefName(SubmitTaskNodeActor.class));
+        String node = result.getServiceName();
+        ServiceNode serviceNode = dag.getNode(node);
+        if (result.getServiceRoleType().equals(ServiceRoleType.MASTER)) {
+            if (result.getServiceExecuteState().equals(ServiceExecuteState.ERROR)) {
+                // move to error list
+                errorTaskList.put(node, "");
+                activeTaskList.remove(node);
+                readyToSubmitTaskList.remove(node);
+                completeTaskList.put(node, "");
+                // cancel all next node
+                logger.info("{} master roles failed , cancel all next node by commandId {}", node,
+                        serviceNode.getCommandId());
+                List<String> commandIds = new ArrayList<String>();
+                commandIds.add(serviceNode.getCommandId());
+                listCancelCommand(dag, node, commandIds);
+                ProcessUtils.updateCommandStateToFailed(commandIds);
+            } else if (result.getServiceExecuteState().equals(ServiceExecuteState.SUCCESS)) {
+                // submit worker node
+                ServiceNode serviceNode2 = dag.getNode(node);
+                List<ServiceRoleInfo> elseRoles = serviceNode2.getElseRoles();
+                if (!elseRoles.isEmpty()) {
+                    logger.info("start to submit worker/client roles");
+                    for (ServiceRoleInfo elseRole : serviceNode2.getElseRoles()) {
+                        ActorRef serviceActor = ActorUtils.getLocalActor(WorkerServiceActor.class,
+                                result.getClusterCode() + "-serviceActor-" + node + "-" + elseRole.getHostname());
+                        ProcessUtils.buildExecuteServiceRoleCommand(
+                                result.getClusterId(),
+                                result.getCommandType(),
+                                result.getClusterCode(),
+                                dag,
+                                activeTaskList,
+                                errorTaskList,
+                                readyToSubmitTaskList,
+                                completeTaskList,
+                                node,
+                                serviceNode2.getElseRoles(),
+                                elseRole,
+                                serviceActor,
+                                ServiceRoleType.WORKER);
+                    }
+
+                } else {
                     activeTaskList.remove(node);
                     readyToSubmitTaskList.remove(node);
-                    completeTaskList.put(node, "");
-                    // cancel all next node
-                    logger.info("{} master roles failed , cancel all next node by commandId {}", node,
-                            serviceNode.getCommandId());
-                    List<String> commandIds = new ArrayList<String>();
-                    commandIds.add(serviceNode.getCommandId());
-                    listCancelCommand(dag, node, commandIds);
-                    ProcessUtils.updateCommandStateToFailed(commandIds);
-                } else if (result.getServiceExecuteState().equals(ServiceExecuteState.SUCCESS)) {
-                    // submit worker node
-                    ServiceNode serviceNode2 = dag.getNode(node);
-                    List<ServiceRoleInfo> elseRoles = serviceNode2.getElseRoles();
-                    if (!elseRoles.isEmpty()) {
-                        logger.info("start to submit worker/client roles");
-                        for (ServiceRoleInfo elseRole : serviceNode2.getElseRoles()) {
-                            ActorRef serviceActor = ActorUtils.getLocalActor(WorkerServiceActor.class,
-                                    result.getClusterCode() + "-serviceActor-" + node + "-" + elseRole.getHostname());
-                            ProcessUtils.buildExecuteServiceRoleCommand(
-                                    result.getClusterId(),
-                                    result.getCommandType(),
-                                    result.getClusterCode(),
-                                    dag,
-                                    activeTaskList,
-                                    errorTaskList,
-                                    readyToSubmitTaskList,
-                                    completeTaskList,
-                                    node,
-                                    serviceNode2.getElseRoles(),
-                                    elseRole,
-                                    serviceActor,
-                                    ServiceRoleType.WORKER);
-                        }
-                        
-                    } else {
-                        activeTaskList.remove(node);
-                        readyToSubmitTaskList.remove(node);
-                    }
-                    logger.info("start to submit next node");
-                    tellToSubmitActiveTaskNode(result, dag, activeTaskList, errorTaskList, readyToSubmitTaskList,
-                            completeTaskList, submitTaskNodeActor, node);
                 }
+                logger.info("start to submit next node");
+                tellToSubmitActiveTaskNode(result, dag, activeTaskList, errorTaskList, readyToSubmitTaskList,
+                        completeTaskList, submitTaskNodeActor, node);
             }
-        } else {
-            unhandled(message);
         }
     }
-    
+
     public void listCancelCommand(DAGGraph<String, ServiceNode, String> dag, String node, List<String> commandIds) {
-        if (dag.getSubsequentNodes(node).size() == 0) {
+        if (dag.getSubsequentNodes(node).isEmpty()) {
             return;
         }
         Set<String> subsequentNodes = dag.getSubsequentNodes(node);

@@ -536,11 +536,12 @@ public class ProcessUtils {
                 frameServiceService.getAllFrameServiceByFrameCode(clusterInfo.getClusterFrame());
         for (FrameServiceEntity frameServiceEntity : frameServiceList) {
             // create service actor
-            logger.info("create {} actor",
-                    clusterInfo.getClusterCode() + "-serviceActor-" + frameServiceEntity.getServiceName());
-            ActorUtils.actorSystem.actorOf(Props.create(MasterServiceActor.class)
-                            .withDispatcher("my-forkjoin-dispatcher"),
-                    clusterInfo.getClusterCode() + "-serviceActor-" + frameServiceEntity.getServiceName());
+            logger.info("create {} actor", clusterInfo.getClusterCode() + "-serviceActor-" + frameServiceEntity.getServiceName());
+            ActorUtils.actorSystem
+                    .actorOf(
+                            Props.create(MasterServiceActor.class).withDispatcher("my-forkjoin-dispatcher"),
+                            clusterInfo.getClusterCode() + "-serviceActor-" + frameServiceEntity.getServiceName()
+                    );
         }
     }
 

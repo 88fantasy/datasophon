@@ -9,13 +9,16 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 /**
+ * 用于特定类型消息的actor的基类
+ *
+ * @param <T> 消息类型
  * @author zhanghuangbin
  */
 @Slf4j
 public abstract class TypedActor<T> extends UntypedActor {
 
 
-    private Class<T> clazz;
+    private final Class<T> clazz;
 
     protected TypedActor() {
         Class<?> parameterizedTypeReferenceSubclass = findParameterizedTypeReferenceSubclass(getClass());
@@ -72,7 +75,7 @@ public abstract class TypedActor<T> extends UntypedActor {
     }
 
 
-    protected <T> T getBean(Class<T> clazz) {
+    protected <E> E getBean(Class<E> clazz) {
         return SpringTool.getApplicationContext().getBean(clazz);
     }
 }
