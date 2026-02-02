@@ -1,10 +1,8 @@
 import type { ProColumns } from "@ant-design/pro-components";
-import type { GithubIssueItem } from "../../../../../../../components/Common/CommonTable";
 import CommonTable, { invokeGenOptionCol } from "../../../../../../../components/Common/CommonTable";
 import { invokePackProtableRequest } from "../../../../../../../utils/request";
 import { API } from "../../../../../../../api";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { invokeMapValue } from "../../../../../../../utils/listUtils";
 import { axiosPost } from "../../../../../../../api/request";
 import { showMsgAfferRequest } from "../../../../../../../utils/util";
 import CommonBtnList from "../../../../../../../components/Common/CommonBtnList";
