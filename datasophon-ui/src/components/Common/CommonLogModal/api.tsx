@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import defineModalApi from "../CommonModal/DefineModal/api";
 import Index from ".";
+import { className } from "@antv/x6/lib/registry/highlighter/class";
 
 export default async function (config) {
 
@@ -9,11 +10,15 @@ export default async function (config) {
     };
 
     config.dialogConfig = {
-        title: '日志',
+        // title: '日志',
         footer: false,
-        // classNames: {
-        //     body: 'max-h-[60vh] overflow-auto'
-        // }
+        closable: false,
+        // className: 'w-[80vh]'
+        width: '80vw',
+        // className: 'h-[70vh]'
+        classNames: {
+            body: 'h-[70vh] overflow-auto'
+        }
     };
 
     return defineModalApi({
