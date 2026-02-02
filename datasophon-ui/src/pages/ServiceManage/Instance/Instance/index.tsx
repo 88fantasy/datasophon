@@ -255,17 +255,8 @@ const Index = () => {
                 serviceRoleInstancesIds: selectedRows.map(val => val.id).join(","),
             };
 
-            return axiosPost(API.generateServiceRoleCommand, params)
+            return axiosPost(API.generateAndSrvRoleCmd, params)
         }
-
-        // const invokeOpWorder = async (commandType) => {
-        //     const params = {
-        //         clusterHostIds: selectedRows.map(val => val.hostname).join(","),
-        //         commandType
-        //     };
-
-        //     return axiosPost(API.generateHostAgentCommand, params)
-        // }
 
         const items = [
             {
