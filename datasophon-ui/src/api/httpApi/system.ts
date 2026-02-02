@@ -32,10 +32,14 @@ export default {
   getHostListByPage: path + "/cluster/host/list", // 分页查询集群主机
   generateServiceCommand:
     path + "/cluster/service/command/generateServiceCommand", // 生成服务操作指令
+  generateAndExecSrvInstCmd:
+    path + "/cluster/service/command/generateAndExecSrvInstCmd", // 生成服务操作指令
   generateGenericInstallCommand:
     path + "/cluster/service/command/generateGenericInstallCommand", // 生成服务操作指令
   generateServiceRoleCommand:
     path + "/cluster/service/command/generateServiceRoleCommand", // 生成服务角色操作指令
+  generateAndSrvRoleCmd:
+    path + "/cluster/service/command/generateAndSrvRoleCmd", // 生成服务角色操作指令
   getAlertList: path + "/cluster/alert/history/getAlertList", // 查询服务告警列表
   deleteExample: path + "/cluster/service/role/instance/delete", // 删除角色实例
   restartObsoleteService:

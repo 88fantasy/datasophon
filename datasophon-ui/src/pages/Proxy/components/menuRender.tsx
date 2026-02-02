@@ -194,22 +194,13 @@ const invokeRenderMore = ({
                         .join(',')
 
                     res = await axiosPost(
-                        API.generateServiceCommand,
+                        API.generateAndExecSrvInstCmd,
                         {
                             serviceInstanceIds,
                             clusterId,
                             commandType: typeMap[obj.key]
                         }
                     )
-
-                    // .then((res) => {
-                    //     if (res.code === 200) {
-                    //         this.$message.success("操作成功");
-                    //         // todo: 打开头部那个setting栏
-                    //         this.$destroyAll()
-                    //         this.showClusterSetting(true)
-                    //     }
-                    // });
 
                 } else if (obj.key === T_DELETE_SERVICE) {
                     res = await axiosPost(
@@ -220,7 +211,7 @@ const invokeRenderMore = ({
                     )
                 } else {
                     res = await axiosPost(
-                        API.generateServiceCommand,
+                        API.generateAndExecSrvInstCmd,
                         {
                             commandType: obj.key,
                             serviceInstanceIds: id,

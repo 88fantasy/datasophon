@@ -39,13 +39,13 @@ const Index = (props, ref) => {
             invokeInit(!actionRef.current && forceUpdate || false)
         }
 
-        // if (forceUpdate) {
-        //     fn()
-        // } else {
-        timeRef.current = setTimeout(() => {
+        if (forceUpdate) {
             fn()
-        }, forceUpdate ? 0 : 3 * 1000)
-        // }
+        } else {
+            timeRef.current = setTimeout(() => {
+                fn()
+            }, forceUpdate ? 0 : 3 * 1000)
+        }
 
     }, [])
 
@@ -313,13 +313,13 @@ const Index = (props, ref) => {
                             search: false,
                             columns,
                             className: `${className || ' mb-[20px] mt-[30px]'} `,
-                            manualRequest: true,
+                            // manualRequest: true,
                             tableAlertRender: false,
                             headerTitle: invokeGetHeaderTitle(),
                             // rowKey: currentPage === 1 ? 'commandId' : 'hostCommandId',
                             scroll: {
                                 x: '60vw',
-                                y
+                                y: y || '50vh'
                             },
                             request: invokePackProtableRequest({
                                 api: () => {

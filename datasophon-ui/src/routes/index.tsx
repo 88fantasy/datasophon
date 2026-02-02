@@ -51,11 +51,11 @@ const contentRoutes = [
         title: '集群管理',
         element: <ColonyManage />,
       },
-      {
-        path: 'ColonyParcel',
-        title: '存储库管理',
-        element: <ColonyParcel />,
-      },
+      // {
+      //   path: 'ColonyParcel',
+      //   title: '存储库管理',
+      //   element: <ColonyParcel />,
+      // },
       {
         path: 'ColonyFrame',
         title: '集群框架',

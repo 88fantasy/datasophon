@@ -19,6 +19,8 @@ const showAddLabelModal = asyncHook(() =>
     import("./AddLabelModal/api"));
 const showRoleModal = asyncHook(() =>
     import("./RoleModal/api"));
+const showWorkerProgressModal = asyncHook(() =>
+    import("./WorkerProgressModal/api"));
 
 const showConfigModal = asyncHook(() =>
     import("../Colony/ColonyManage/components/ConfigModal/api"));
@@ -285,11 +287,11 @@ const Index = () => {
                 }),
             },
             {
-                label: '重新安装Workder',
+                label: '重新安装Worker',
                 onClick: invokePreClick.bind(noop, async () => {
 
 
-                    const res = await showComfirmModal()
+                    let res = await showComfirmModal()
 
                     if (res) {
                         const params = {
@@ -297,7 +299,19 @@ const Index = () => {
                             clusterId
                         };
 
-                        return axiosPost(API.reStartDispatcherHostAgent, params)
+                        res = await axiosPost(API.reStartDispatcherHostAgent, params)
+
+
+                        if (res.code === 200) {
+                            const modelApi = await showWorkerProgressModal()
+
+                            modelApi.default({
+                                clusterId,
+                            })
+                        }
+
+
+                        return res
                     }
 
                 }),

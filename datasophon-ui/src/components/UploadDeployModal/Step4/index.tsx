@@ -106,7 +106,7 @@ const Index = forwardRef((props, ref) => {
 
 
 
-    
+
     const invokeInit = useCallback(async () => {
 
         console.log('invokeInit', formMapRef)
@@ -130,7 +130,7 @@ const Index = forwardRef((props, ref) => {
 
         if (
             meteFileId &&
-            pkgFileId &&
+            // pkgFileId &&
             contentDecodePasswd
         ) {
 
@@ -142,7 +142,7 @@ const Index = forwardRef((props, ref) => {
                     // deployFileId: formRef.current?.getFieldsValue().deployFileId
                     contentDecodePasswd,
                     meteFileId: meteFileId[0]?.response?.data.id,
-                    pkgFileId: pkgFileId[0]?.response?.data.id
+                    pkgFileId: pkgFileId?.[0]?.response?.data?.id
                 }
             )
 
