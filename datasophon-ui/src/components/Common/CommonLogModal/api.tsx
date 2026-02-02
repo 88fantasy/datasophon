@@ -1,7 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import defineModalApi from "../CommonModal/DefineModal/api";
 import Index from ".";
-import { className } from "@antv/x6/lib/registry/highlighter/class";
 
 export default async function (config) {
 
