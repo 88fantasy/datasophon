@@ -96,9 +96,12 @@ public class ClusterServiceCommandController extends ApiController {
     
     /**
      * 生成服务实例操作指令
+     * @deprecated
+     * @see #generateAndExecSrvInstCmd
      */
     @RequestMapping("/generateServiceCommand")
     @UserPermission
+    @Deprecated
     public Result generateServiceCommand(Integer clusterId, String commandType, String serviceInstanceIds) {
         CommandType command = EnumUtil.fromString(CommandType.class, commandType);
         if (StringUtils.isNotBlank(serviceInstanceIds)) {
@@ -126,9 +129,11 @@ public class ClusterServiceCommandController extends ApiController {
     
     /**
      * 生成服务角色实例操作指令
+     * @see #generateAndSrvRoleCmd
      */
     @RequestMapping("/generateServiceRoleCommand")
     @UserPermission
+    @Deprecated
     public Result generateServiceRoleCommand(Integer clusterId, String commandType, Integer serviceInstanceId,
                                              String serviceRoleInstancesIds) {
         CommandType command = EnumUtil.fromString(CommandType.class, commandType);
@@ -142,7 +147,7 @@ public class ClusterServiceCommandController extends ApiController {
     public Result generateAndSrvRoleCmd(Integer clusterId, String commandType, Integer serviceInstanceId,
                                              String serviceRoleInstancesIds) {
         List<Integer> ids = ConverterUtils.convertIds(serviceRoleInstancesIds, Integer::parseInt);
-        if (CollectionUtil.isEmpty(ids)) {
+        if (CollectionUtil.isNotEmpty(ids)) {
             CommandType command = EnumUtil.fromString(CommandType.class, commandType);
             return Result.success(extRepoInstallService.generateAndExecSrvRoleCmd(clusterId, command, serviceInstanceId, ids));
         } else {

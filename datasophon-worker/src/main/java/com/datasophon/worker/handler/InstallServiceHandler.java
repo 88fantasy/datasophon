@@ -147,10 +147,10 @@ public class InstallServiceHandler {
             try {
                 ArrayList<String> command = new ArrayList<>();
 
-                boolean needParentDir  =  BooleanUtil.isTrue(instCmd.getCreateDecompressDir());
+                boolean needParentDir = BooleanUtil.isTrue(instCmd.getCreateDecompressDir());
 
-                String baseTempDir =  Constants.INSTALL_PATH + Constants.SLASH + "temp";
-                serviceDecompressDir =  baseTempDir +  Constants.SLASH + decompressPackageName;
+                String baseTempDir = Constants.INSTALL_PATH + Constants.SLASH + "temp";
+                serviceDecompressDir = baseTempDir + Constants.SLASH + decompressPackageName;
                 checkIfPathOutOfBox(baseTempDir, serviceDecompressDir);
 
                 FileUtil.del(serviceDecompressDir);
@@ -178,7 +178,7 @@ public class InstallServiceHandler {
                     String targetDir = Constants.INSTALL_PATH + Constants.SLASH + instCmd.getNormalPkgDir();
                     FileUtil.mkdir(targetDir);
 //                    将临时目录，重命名为安装目录
-                    FileUtil.moveContent(new File(serviceDecompressDir), new File(targetDir),true);
+                    FileUtil.moveContent(new File(serviceDecompressDir), new File(targetDir), true);
                 }
             } finally {
 //                删除临时解压目录
@@ -193,6 +193,7 @@ public class InstallServiceHandler {
 
     /**
      * 检查是否越权，防止innerDir存在 ../../之类的路径，造成越权
+     *
      * @param baseTempDir
      * @param innerDir
      */
@@ -201,7 +202,6 @@ public class InstallServiceHandler {
             throw new SecurityException(String.format("can operation dir %s out of %s", innerDir, baseTempDir));
         }
     }
-
 
 
     public ExecResult createLink(InstallServiceRoleCommand command) {
@@ -213,18 +213,21 @@ public class InstallServiceHandler {
 
         logger.info("安装服务{} {}成功，准备创建软链...", command.getServiceName(), command.getServiceRoleName());
         String appHome = Constants.INSTALL_PATH + Constants.SLASH + command.getNormalPkgDir();
-        File linkFile = new File(appLinkHome);
+        return doCreateLink(appLinkHome, appHome);
+    }
+
+    protected ExecResult doCreateLink(String linkPath, String targetPath) {
+        File linkFile = new File(linkPath);
         if (linkFile.exists()) {
             if (Files.isSymbolicLink(linkFile.toPath())) {
-                ShellUtils.execShell("unlink " + appLinkHome);
+                ShellUtils.execShell("unlink " + linkPath);
             } else {
-                throw new IllegalStateException(String.format(" %s exist but  not a link file, it is that true?", appLinkHome));
+                throw new IllegalStateException(String.format(" %s exist but  not a link file, it is that true?", linkPath));
             }
         }
-        ExecResult installResult = ShellUtils.execShell("ln -s " + appHome + " " + appLinkHome);
-        logger.info("Create symbolic dir: {}", appLinkHome);
-        logger.info("创建软链：{} -> {} 成功", appHome, appLinkHome);
-        return installResult;
+        ExecResult execResult = ShellUtils.execShell("ln -s " + targetPath + " " + linkPath);
+        logger.info("创建软链：{} -> {} {}", linkPath, targetPath, execResult.isSuccess() ? "成功" : "失败");
+        return execResult;
     }
 
 
