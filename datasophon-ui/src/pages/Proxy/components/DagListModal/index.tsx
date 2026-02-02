@@ -203,7 +203,9 @@ const Index = (props, ref) => {
                 tableAlertRender: false,
                 className: `${className} `,
                 actionRef,
-
+                scroll: {
+                    y: '44vh'
+                },
                 request: invokePackProtableRequest({
                     api: API.findDagByPage,
                     method: METHOD.GET,
