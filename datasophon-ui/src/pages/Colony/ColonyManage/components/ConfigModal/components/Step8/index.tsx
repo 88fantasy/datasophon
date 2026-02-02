@@ -1,6 +1,5 @@
 
 
-import { useParams } from 'react-router'
 import DagListModal from '../../../../../../Proxy/components/DagListModal'
 const Index = (props) => {
 
@@ -10,7 +9,7 @@ const Index = (props) => {
     } = props
     return <DagListModal
         clusterId={clusterId}
-        className="!mb-[20px] h-[40vh]"
+        className="!mb-[20px] min-h-[40vh]"
         y="22vh"
     />
 }
