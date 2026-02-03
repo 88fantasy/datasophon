@@ -110,9 +110,9 @@ public class HostCheckActor extends TypedActor<HostCheckCommand> {
             Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
             Future<Object> execFuture = Patterns.ask(pingActor, pingCommand, timeout);
             ExecResult execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+            host.setManaged(MANAGED.YES);
             if (execResult.getExecResult()) {
                 host.setHostState(HostState.RUNNING);
-                host.setManaged(MANAGED.YES);
                 logger.info("ping host: {} success", host.getHostname());
             } else {
                 host.setHostState(HostState.OFFLINE);

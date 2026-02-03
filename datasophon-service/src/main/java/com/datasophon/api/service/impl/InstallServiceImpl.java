@@ -20,6 +20,7 @@
 package com.datasophon.api.service.impl;
 
 import akka.actor.ActorRef;
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -28,6 +29,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.DispatcherWorkerActor;
+import com.datasophon.api.master.HostCheckActor;
 import com.datasophon.api.master.HostConnectActor;
 import com.datasophon.api.master.WorkerStartActor;
 import com.datasophon.api.service.ClusterInfoService;
@@ -53,12 +55,12 @@ import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.InstallStepEntity;
 import com.datasophon.dao.mapper.InstallStepMapper;
-import com.jcraft.jsch.Session;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,6 +70,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service("installService")
@@ -265,7 +268,6 @@ public class InstallServiceImpl implements InstallService {
     
     @Override
     public Result dispatcherHostAgentList(Integer clusterId, Integer installStateCode, Integer page, Integer pageSize) {
-        
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
         String distributeAgentKey = clusterCode + Constants.UNDERLINE + Constants.START_DISTRIBUTE_AGENT;
@@ -393,14 +395,25 @@ public class InstallServiceImpl implements InstallService {
         String[] clusterHostIdArray = clusterHostIds.split(Constants.COMMA);
         List<String> clusterHostIdList = Arrays.asList(clusterHostIdArray);
         List<ClusterHostDO> clusterHostList = hostService.getHostListByIds(clusterHostIdList);
-        for (ClusterHostDO clusterHostDO : clusterHostList) {
-            Session session =
-                    MinaUtils.openConnection(clusterHostDO.getHostname(), clusterHostDO.getSshPort(), clusterHostDO.getSshUser(), clusterHostDO.getSshPassword());
-            MinaUtils.execCmdWithResult(session, "service datasophon-worker " + commandType);
-            logger.info("hostAgent command:{}", "service datasophon-worker " + commandType);
-            if (ObjectUtil.isNotEmpty(session)) {
-                MinaUtils.closeConnection(session);
-            }
+        for (ClusterHostDO host : clusterHostList) {
+            MinaUtils.doWithSession(
+                    MinaUtils.SessionCredential.builder()
+                            .host(host.getHostname())
+                            .port(host.getSshPort())
+                            .username(host.getSshUser())
+                            .password(host.getSshPassword())
+                            .build(),
+                    session-> {
+                        logger.info("hostAgent command:{}", "service datasophon-worker " + commandType);
+                        MinaUtils.execCmdWithResult(session, "service datasophon-worker " + commandType);
+                    }
+            );
+            ActorRef actor = ActorUtils.getLocalActor(HostCheckActor.class, String.format("%s-%s", HostCheckActor.class.getSimpleName(), host.getHostname()));
+            HostCheckCommand command = new HostCheckCommand();
+            HostInfo info = BeanUtil.copyProperties(host, HostInfo.class);
+            command.setHostInfo(info);
+            ActorUtils.actorSystem.scheduler().scheduleOnce(FiniteDuration.apply(4L, TimeUnit.SECONDS), actor, command,
+                    ActorUtils.actorSystem.dispatcher(), ActorRef.noSender());
         }
         return Result.success();
     }

@@ -22,10 +22,13 @@ package com.datasophon.api.utils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.SSHAuthType;
+import com.datasophon.common.function.ThrowableConsumer;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.JschUtils;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
+import lombok.Builder;
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +39,9 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class MinaUtils {
     
@@ -124,17 +130,32 @@ public class MinaUtils {
     public static String getFileString(Session session, String path){
         return JschUtils.getFileString(session, path, 5);
     }
-    
-    public static void main(String[] args) throws Exception {
-        Session session = MinaUtils.openConnection("localhost", 22, "liuxin", null);
-        for (int i = 0; i < Constants.TEN; i++) {
-            String ls = MinaUtils.execCmdWithResult(session, "arch");
-            System.out.println(ls);
+
+
+
+    public static void doWithSession(SessionCredential credential, ThrowableConsumer<Session> action) throws Exception{
+        Session session = null;
+        try {
+            session = openConnection(credential.getHost(), credential.getPort(), credential.getUsername(), credential.getPassword());
+            action.accept(session);
+        } finally {
+            if (session != null) {
+                session.disconnect();
+            }
         }
-        // boolean dir = MinaUtils.createDir(session,"/home/shinow/test/");
-        // System.out.println(dir);
-        // boolean uploadFile = MinaUtils.uploadFile(session, "/Users/liuxin/opt/test",
-        // "/Users/liuxin/Downloads/yarn-default.xml");
-        // System.out.println(uploadFile);
+    }
+
+    @Data
+    @Builder
+    public static class SessionCredential {
+
+        private String host;
+
+        @Builder.Default
+        private int port = 22;
+
+        private String username;
+
+        private String password;
     }
 }
