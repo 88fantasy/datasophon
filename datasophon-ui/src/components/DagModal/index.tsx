@@ -9,13 +9,14 @@ import {
     IS_SAFARI,
     Selection
 } from '@antv/x6'
-import { invokeGenerateElId } from "../../utils/util"
+import { invokeGenerateElId, showMsgAfferRequest } from "../../utils/util"
 import { invokeGenPort, invokeGenSourceAndTarget } from "../../utils/antvUtils"
 import gobalEvent, { uiEvent } from "../../utils/gobalEvent"
 import { getRouteQuery } from "../../utils/routerUtils"
 import { AntVDagreLayout, DagreLayout } from "@antv/layout"
 import { blue, gold, green, grey, red } from "@ant-design/colors"
 import { T_CANCEL, T_FAILED, T_PENDING, T_RUNNING, T_SUCCESS } from "./status"
+import { Button } from "antd"
 // import layout from '@antv/layout'
 
 
@@ -267,6 +268,18 @@ const Index = (props) => {
         }
     }, [])
 
+
+    const onRedeployClick = useCallback(async () => {
+        const params = {
+            dagId: getRouteQuery('dagId'),
+            restart: true
+        }
+
+        const res = await axiosJsonPost(API.redeploy, params)
+
+        showMsgAfferRequest(res)
+    }, [])
+
     const invokeInit = useCallback(async (update) => {
         const res = await axiosJsonPost(API.getDeployProgressDAG2, {
             dagId: getRouteQuery('dagId')
@@ -365,6 +378,14 @@ const Index = (props) => {
     return (
         <div className="h-[100vh] w-[100vh]">
             <div id={containerRef.current}></div>
+            <div className="fixed top-[20px] right-[20px]">
+                <Button
+                    type="primary"
+                    onClick={onRedeployClick}
+                >
+                    重新运行
+                </Button>
+            </div>
         </div>
     )
 }
