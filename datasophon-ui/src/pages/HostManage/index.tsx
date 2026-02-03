@@ -109,6 +109,12 @@ const Index = () => {
             search: false,
         },
         {
+            title: '检查时间',
+            dataIndex: 'checkTime',
+            ellipsis: true,
+            search: false,
+        },
+        {
             title: '核数',
             dataIndex: 'coreNum',
             ellipsis: true,

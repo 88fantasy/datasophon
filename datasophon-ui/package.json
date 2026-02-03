@@ -23,7 +23,7 @@
     "@dagrejs/dagre": "^1.1.8",
     "@monaco-editor/react": "^4.7.0",
     "@shikijs/monaco": "^3.8.0",
-    "antd": "^6.1.1",
+    "antd": "^6.2.3",
     "axios": "^0.22.0",
     "dayjs": "^1.11.9",
     "elkjs": "^0.11.0",

@@ -6,7 +6,7 @@ import { Badge, Button, Dropdown, message, Progress, Tag } from 'antd';
 import { noop } from 'lodash-es';
 import { useParams } from 'react-router';
 import { act, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { showComfirmModal } from '../../../../utils/util';
+import { showComfirmModal, showMsgAfferRequest } from '../../../../utils/util';
 import { axiosPost } from '../../../../api/request';
 import type { ProColumns } from '@ant-design/pro-components';
 import asyncHook from '../../../../components/Common/CommonModal/asyncHook';
@@ -235,7 +235,7 @@ const Index = () => {
 
             const res = await fn?.()
 
-
+            showMsgAfferRequest(res)
             if (res) {
                 setSelectedRows([])
 

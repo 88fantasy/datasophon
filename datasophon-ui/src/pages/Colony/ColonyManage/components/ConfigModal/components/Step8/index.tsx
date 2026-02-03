@@ -5,9 +5,14 @@ const Index = (props) => {
 
 
     const {
-        clusterId
+        clusterId,
+        current,
+        index
     } = props
-    return <DagListModal
+
+
+
+    return current === index && <DagListModal
         clusterId={clusterId}
         className="!mb-[20px] min-h-[40vh]"
         y="22vh"
