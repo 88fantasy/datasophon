@@ -1,5 +1,5 @@
 import { Badge, Dropdown } from "antd"
-import { invokeGetRouteByPath } from "../../../utils/routerUtils"
+import { invokeGenPath, invokeGetRouteByPath } from "../../../utils/routerUtils"
 import { isEmpty, showComfirmModal, showMsgAfferRequest } from "../../../utils/util"
 import { AlertOutlined, MoreOutlined, ReloadOutlined } from "@ant-design/icons"
 import { axiosJsonPost, axiosPost } from "../../../api/request"
@@ -228,11 +228,17 @@ const invokeRenderMore = ({
                     // TODO:
 
                     if (obj.key !== T_DELETE_SERVICE) {
-                        const modelApi = await showResultModal()
 
-                        modelApi.default({
-                            clusterId,
-                        })
+                        if ([T_STARTALL, T_STOPALL, T_RESTARTALL].includes(obj.key)) {
+                            window.open(invokeGenPath(`/ddh/Dag?dagId=${res.data || ''}`))
+                        } else {
+                            const modelApi = await showResultModal()
+
+                            modelApi.default({
+                                clusterId,
+                            })
+                        }
+
                     } else {
                         onDeleteClick?.({ item })
                     }
