@@ -4,6 +4,7 @@ import { Col } from "antd";
 import { cloneDeep } from "lodash-es";
 import type React from "react";
 import { invokeMapShowMultiply } from "./utils";
+import { isEmpty } from "../../../utils/util";
 
 
 
@@ -230,10 +231,19 @@ const Index = ({
                         </ProFormList>
                     )
                 } else if ('multipleWithMap' === item.type) {
-                    const creatorRecord = cloneDeep(item.defaultValue[0])
-                    creatorRecord?.items?.map(v => {
-                        v.value = ''
-                    })
+
+                    let creatorRecord = {
+                        items: []
+                    }
+
+                    const defValue = item.value?.[0]
+                    if (!isEmpty(defValue)) {
+                        creatorRecord = cloneDeep(item.value?.[0])
+                        creatorRecord?.items?.map(v => {
+                            v.value = ''
+                        })
+                    }
+
 
                     res = (
                         <ProFormList
