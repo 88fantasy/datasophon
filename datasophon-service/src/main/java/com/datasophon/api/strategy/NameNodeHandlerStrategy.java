@@ -48,109 +48,102 @@ import java.util.concurrent.TimeUnit;
 
 public class NameNodeHandlerStrategy extends ServiceHandlerAbstract implements ServiceRoleStrategy {
 
-  private static final Logger logger = LoggerFactory.getLogger(NameNodeHandlerStrategy.class);
+    private static final Logger logger = LoggerFactory.getLogger(NameNodeHandlerStrategy.class);
 
-  private static final String ENABLE_RACK = "enableRack";
+    private static final String ENABLE_RACK = "enableRack";
 
-  private static final String ENABLE_KERBEROS = "enableKerberos";
+    private static final String ENABLE_KERBEROS = "enableKerberos";
 
-  private static final String ACTIVE = "active";
+    private static final String ACTIVE = "active";
 
-  @Override
-  public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-
-    ProcessUtils.generateClusterVariable(clusterId, serviceName, "nn1", hosts.get(0));
-    ProcessUtils.generateClusterVariable(clusterId, serviceName, "nn2", hosts.get(1));
-  }
-
-  @Override
-  public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
-    Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
-    ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
-
-    boolean enableRack = false;
-    boolean enableKerberos = false;
-    Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
-
-    String key =
-        clusterInfo.getClusterFrame() + Constants.UNDERLINE + "HDFS" + Constants.CONFIG;
-    List<ServiceConfig> configs = ServiceConfigMap.get(key);
-
-    for (ServiceConfig config : list) {
-      if (ENABLE_RACK.equals(config.getName())) {
-          enableRack = isEnableRack(config, enableRack);
-      }
-      if (ENABLE_KERBEROS.equals(config.getName())) {
-        enableKerberos =
-            decideEnableKerberos(
-                clusterId, enableKerberos, config, "HDFS");
-      }
+    @Override
+    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
+        ProcessUtils.generateClusterVariable(clusterId, serviceName, "nn1", hosts.get(0));
+        ProcessUtils.generateClusterVariable(clusterId, serviceName, "nn2", hosts.get(1));
     }
-    List<ServiceConfig> rackConfigs = new ArrayList<>();
-    if (enableRack) {
-      logger.info("start to add rack config");
-      addConfigWithRack(globalVariables, map, configs, rackConfigs);
-    } else {
-      removeConfigWithRack(list, map, configs);
-    }
-    list.addAll(rackConfigs);
 
-    ArrayList<ServiceConfig> kbConfigs = new ArrayList<>();
-    if (enableKerberos) {
-      addConfigWithKerberos(globalVariables, map, configs, kbConfigs);
-    } else {
-      removeConfigWithKerberos(list, map, configs);
-    }
-    list.addAll(kbConfigs);
-  }
+    @Override
+    public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
+        ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
 
-  @Override
-  public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-    String nn2 = GlobalVariables.getValueByService(serviceRoleInfo.getClusterId(), serviceRoleInfo.getServiceName(), "nn2");
-    if (hostname.equals(nn2)) {
-      logger.info("set to slave namenode");
-      serviceRoleInfo.setSlave(true);
-      serviceRoleInfo.setSortNum(5);
-    }
-  }
+        boolean enableRack = false;
+        boolean enableKerberos = false;
+        Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
 
-  @Override
-  public void handlerServiceRoleCheck(
-      ClusterServiceRoleInstanceEntity roleInstanceEntity,
-      Map<String, ClusterServiceRoleInstanceEntity> map) {
-      String nn2 = GlobalVariables.getValueByService(roleInstanceEntity.getClusterId(),roleInstanceEntity.getServiceName(), "nn2");
-//    TODO 使用 {ROOT.XXServiceName.INSTALL_PATH}
-    String hadoopHome = GlobalVariables.getValue(roleInstanceEntity.getClusterId(), "HADOOP_HOME");
-    String commandLine = hadoopHome + "/bin/hdfs haadmin -getServiceState nn1";
-    if (roleInstanceEntity.getHostname().equals(nn2)) {
-      commandLine = hadoopHome + "/bin/hdfs haadmin -getServiceState nn2";
-    }
-    getNMState(roleInstanceEntity, commandLine);
-  }
+        String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + "HDFS" + Constants.CONFIG;
+        List<ServiceConfig> configs = ServiceConfigMap.get(key);
 
-  private void getNMState(
-      ClusterServiceRoleInstanceEntity roleInstanceEntity, String commandLine) {
-    ClusterServiceRoleInstanceWebuisService webuisService =
-        SpringTool.getApplicationContext()
-            .getBean(ClusterServiceRoleInstanceWebuisService.class);
-    ActorRef execCmdActor = ActorUtils.getRemoteActor(roleInstanceEntity.getHostname(), "nMStateActor");
-    ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
-    cmdCommand.setCommandLine(commandLine);
-    Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
-    Future<Object> execFuture = Patterns.ask(execCmdActor, cmdCommand, timeout);
-    try {
-      ExecResult execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-      if (execResult.getExecResult()) {
-        if (execResult.getExecOut().contains(ACTIVE)) {
-          webuisService.updateWebUiToActive(roleInstanceEntity.getId());
-        } else {
-          webuisService.updateWebUiToStandby(roleInstanceEntity.getId());
+        for (ServiceConfig config : list) {
+            if (ENABLE_RACK.equals(config.getName())) {
+                enableRack = isEnableRack(config, enableRack);
+            }
+            if (ENABLE_KERBEROS.equals(config.getName())) {
+                enableKerberos = decideEnableKerberos(clusterId, enableKerberos, config, "HDFS");
+            }
         }
-      } else {
-        webuisService.updateWebUiToStandby(roleInstanceEntity.getId());
-      }
-    } catch (Exception e) {
-      logger.error(e.getMessage());
+        List<ServiceConfig> rackConfigs = new ArrayList<>();
+        if (enableRack) {
+            logger.info("start to add rack config");
+            addConfigWithRack(globalVariables, map, configs, rackConfigs);
+        } else {
+            removeConfigWithRack(list, map, configs);
+        }
+        list.addAll(rackConfigs);
+
+        ArrayList<ServiceConfig> kbConfigs = new ArrayList<>();
+        if (enableKerberos) {
+            addConfigWithKerberos(globalVariables, map, configs, kbConfigs);
+        } else {
+            removeConfigWithKerberos(list, map, configs);
+        }
+        list.addAll(kbConfigs);
     }
-  }
+
+    @Override
+    public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
+        String nn2 = GlobalVariables.getValueByService(serviceRoleInfo.getClusterId(), serviceRoleInfo.getServiceName(), "nn2");
+        if (hostname.equals(nn2)) {
+            logger.info("set to slave namenode");
+            serviceRoleInfo.setSlave(true);
+            serviceRoleInfo.setSortNum(5);
+        }
+    }
+
+    @Override
+    public void handlerServiceRoleCheck(
+            ClusterServiceRoleInstanceEntity roleInstanceEntity,
+            Map<String, ClusterServiceRoleInstanceEntity> map) {
+        String nn2 = GlobalVariables.getValueByService(roleInstanceEntity.getClusterId(), roleInstanceEntity.getServiceName(), "nn2");
+//    TODO 使用 {ROOT.XXServiceName.INSTALL_PATH}
+        String hadoopHome = GlobalVariables.getValue(roleInstanceEntity.getClusterId(), "HADOOP_HOME");
+        String commandLine = hadoopHome + "/bin/hdfs haadmin -getServiceState nn1";
+        if (roleInstanceEntity.getHostname().equals(nn2)) {
+            commandLine = hadoopHome + "/bin/hdfs haadmin -getServiceState nn2";
+        }
+        getNMState(roleInstanceEntity, commandLine);
+    }
+
+    private void getNMState(ClusterServiceRoleInstanceEntity roleInstanceEntity, String commandLine) {
+        ClusterServiceRoleInstanceWebuisService webuisService = SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceWebuisService.class);
+        ActorRef execCmdActor = ActorUtils.getRemoteActor(roleInstanceEntity.getHostname(), "nMStateActor");
+        ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
+        cmdCommand.setCommandLine(commandLine);
+        Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
+        Future<Object> execFuture = Patterns.ask(execCmdActor, cmdCommand, timeout);
+        try {
+            ExecResult execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+            if (execResult.getExecResult()) {
+                if (execResult.getExecOut().contains(ACTIVE)) {
+                    webuisService.updateWebUiToActive(roleInstanceEntity.getId());
+                } else {
+                    webuisService.updateWebUiToStandby(roleInstanceEntity.getId());
+                }
+            } else {
+                webuisService.updateWebUiToStandby(roleInstanceEntity.getId());
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+        }
+    }
 }

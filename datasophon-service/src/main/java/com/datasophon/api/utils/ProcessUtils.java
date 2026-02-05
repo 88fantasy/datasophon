@@ -202,18 +202,18 @@ public class ProcessUtils {
             boolean externalLinkConfigDefined = externalLink != null
                                         && StrUtil.isNotBlank(externalLink.getUrl())
                                         && StrUtil.isNotBlank(externalLink.getName());
+            ClusterServiceRoleInstanceWebuis webui = webuisService.getRoleInstanceWebUi(roleInstance.getId());
             if (externalLinkConfigDefined) {
-                ClusterServiceRoleInstanceWebuis webui = webuisService.getRoleInstanceWebUi(roleInstance.getId());
-                if (Objects.nonNull(webui)) {
-                    logger.info("web ui already exists");
-                } else {
-                    ClusterServiceRoleInstanceWebuis webuis = new ClusterServiceRoleInstanceWebuis();
-                    webuis.setWebUrl(externalLink.getUrl());
-                    webuis.setServiceInstanceId(clusterServiceInstance.getId());
-                    webuis.setServiceRoleInstanceId(roleInstance.getId());
-                    webuis.setName(externalLink.getName() + "(" + serviceRoleInfo.getHostname() + ")");
-                    webuisService.save(webuis);
+                if (webui == null) {
+                    webui = new ClusterServiceRoleInstanceWebuis();
                 }
+                webui.setWebUrl(externalLink.getUrl());
+                webui.setServiceInstanceId(clusterServiceInstance.getId());
+                webui.setServiceRoleInstanceId(roleInstance.getId());
+                webui.setName(externalLink.getName() + "(" + serviceRoleInfo.getHostname() + ")");
+                webuisService.saveOrUpdate(webui);
+            } else if (webui != null) {
+                webuisService.removeById(webui.getId());
             }
         }
 
