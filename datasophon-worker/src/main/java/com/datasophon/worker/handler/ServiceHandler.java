@@ -49,7 +49,7 @@ public class ServiceHandler {
     public ServiceHandler(String serviceName, String serviceRoleName) {
         this.serviceName = serviceName;
         this.serviceRoleName = serviceRoleName;
-        String loggerName = TaskConstants.createLoggerName(serviceName, serviceRoleName, this.getClass());
+        String loggerName = TaskConstants.createLoggerName(serviceName, serviceRoleName, ServiceHandler.class);
         logger = LoggerFactory.getLogger(loggerName);
     }
 
@@ -57,10 +57,11 @@ public class ServiceHandler {
 
     public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, ServiceRoleResource resource,
                             RunAs runAs, boolean checkStatus) {
+        logger.info("开始执行服务{} {}的启动命令", resource.getServiceName(), resource.getServiceRoleName());
         String linkName = PkgInstallPathUtils.getLinkDirName(resource);
         ExecResult statusResult = execRunner(statusRunner, linkName, null);
         if (statusResult.getExecResult()) {
-            logger.info("{} already started", linkName);
+            logger.info("服务{} {} 已经处于运行状态，无需执行启动命令", resource.getServiceName(), resource.getServiceRoleName());
             ExecResult execResult = new ExecResult();
             execResult.setExecResult(true);
             return execResult;
@@ -77,7 +78,7 @@ public class ServiceHandler {
                 logger.info("check start result at times {}", count + 1);
                 ExecResult result = execRunner(statusRunner, linkName, runAs);
                 if (result.getExecResult()) {
-                    logger.info("start success in {}", linkName);
+                    logger.info("服务{} {}启动成功", resource.getServiceName(), resource.getServiceRoleName());
                     break;
                 } else {
                     try {
@@ -89,7 +90,7 @@ public class ServiceHandler {
                 count++;
             }
             if (count == times) {
-                logger.info(" start {} timeout", linkName);
+                logger.error("服务{} {}启动超时，请查看应用的启动日志", resource.getServiceName(), resource.getServiceRoleName());
                 startResult.setExecResult(false);
             }
         }
@@ -116,13 +117,13 @@ public class ServiceHandler {
                     logger.info("check stop result at times {}", count + 1);
                     ExecResult result = execRunner(statusRunner, linkName, runAs);
                     if (!result.getExecResult()) {
-                        logger.info("stop success in {}", linkName);
+                        logger.info("服务{} {}关闭成功", resource.getServiceName(), resource.getServiceRoleName());
                         break;
                     } else {
                         try {
                             Thread.sleep(5 * 1000);
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            Thread.currentThread().interrupt();
                         }
                     }
                     count++;
@@ -132,7 +133,7 @@ public class ServiceHandler {
                 }
             }
         } else {// 已经是停止状态，直接返回
-            logger.info("{} already stopped", linkName);
+            logger.info("服务{} {}已经停止，无需执行停止命令", resource.getServiceName(), resource.getServiceRoleName());
             execResult.setExecResult(true);
         }
         return execResult;

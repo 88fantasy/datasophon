@@ -35,7 +35,7 @@ public class S3SyncHookAction implements HookAction {
 
     @Override
     public ExecResult invoke(HookContext context) throws Exception {
-        Logger logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(context.getServiceName(), context.getServiceRoleName(), this.getClass()));
+        Logger logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(context.getServiceName(), context.getServiceRoleName(), S3SyncHookAction.class));
 
         S3SyncParams params = createSyncParams(context);
         S3Client client = null;

@@ -29,7 +29,7 @@ public class InitDbHookAction implements HookAction {
 
     @Override
     public ExecResult invoke(HookContext context) {
-        Logger logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(context.getServiceName(), context.getServiceRoleName(), this.getClass()));
+        Logger logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(context.getServiceName(), context.getServiceRoleName(),InitDbHookAction.class));
         Connection metaConn = null;
         Connection execConn = null;
         try {

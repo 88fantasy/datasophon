@@ -388,6 +388,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
                 ServiceInfo serviceInfo = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
                 serviceRoleInfo.setCreateDecompressDir(serviceInfo.getCreateDecompressDir());
+
                 Optional.ofNullable(ServiceRoleStrategyContext.getServiceRoleHandler(serviceRoleInfo.getName()))
                         .ifPresent(ha -> ha.handlerServiceRoleInfo(serviceRoleInfo, hostCommand.getHostname()));
 
@@ -565,13 +566,15 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         for(ServiceRoleInfo oldOne : roleInfoList) {
             FrameServiceRoleEntity frameServiceRoleEntity = srvRoleMap.get(oldOne.getName());
             ServiceRoleInfo newOne = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
-            Optional.ofNullable(ServiceRoleStrategyContext.getServiceRoleHandler(newOne.getName()))
-                    .ifPresent(ha -> ha.handlerServiceRoleInfo(newOne, newOne.getHostname()));
             BeanUtil.copyProperties(newOne, oldOne, cpOpt);
+
             oldOne.setCreateDecompressDir(serviceDef.getCreateDecompressDir());
             oldOne.setDecompressPackageName(serviceEntity.getDecompressPackageName());
             oldOne.setPackageName(serviceEntity.getPackageName());
             oldOne.setArchInfoMap(ServicePkgNameUtils.getArchInfo(serviceEntity));
+
+            Optional.ofNullable(ServiceRoleStrategyContext.getServiceRoleHandler(newOne.getName()))
+                    .ifPresent(ha -> ha.handlerServiceRoleInfo(oldOne, oldOne.getHostname()));
         }
 
         node.setStatus(NodeStatus.PENDING);

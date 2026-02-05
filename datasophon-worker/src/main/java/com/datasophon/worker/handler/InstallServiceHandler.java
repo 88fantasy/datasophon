@@ -74,7 +74,7 @@ public class InstallServiceHandler {
         this.frameCode = command.getFrameCode();
         this.serviceName = command.getServiceName();
         this.serviceRoleName = command.getServiceRoleName();
-        logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(serviceName, serviceRoleName, this.getClass()));
+        logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(serviceName, serviceRoleName, InstallServiceHandler.class));
     }
 
     public boolean match(InstallServiceRoleCommand command) {
@@ -94,27 +94,37 @@ public class InstallServiceHandler {
 
         ExecResult execResult = new ExecResult();
         try {
+            logger.info("开始下载安装包{}....", command.getPackageName());
             DownloadResult downloadResult = PackageStorageUtils.getStorage().downloadPackageToLocal(command.getPackageName());
 
             boolean goon = true;
             boolean unpackPkg = needDecompressPkg(command, downloadResult);
             if (unpackPkg) {
+                logger.info("开始解压安装包{}->{}", command.getPackageName(), command.getNormalPkgDir());
                 goon = decompressPkg(command, downloadResult);
                 if (!goon) {
                     execResult.setExecOut("解压安装包失败，请查看日志");
                 }
+            } else {
+                logger.info("安装包{}没有变更，无需解压", command.getPackageName());
             }
             if (goon) {
                 String normalPkgDir = PkgInstallPathUtils.getInstallHomeName(command);
                 if (command.getRunAs() != null && command.getRunAs().hasOwner()) {
                     ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getOwner() + " " + Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir);
-                    logger.info("chown {} {}", normalPkgDir, chownResult.getExecResult() ? "success" : "fail");
+                    if (chownResult.isSuccess()) {
+                        logger.info("chown {} success", normalPkgDir);
+                    } else {
+                        logger.warn("chown {} fail", normalPkgDir);
+                    }
                 }
                 ExecResult chmodResult = ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir);
                 logger.info("chmod {} {}", normalPkgDir, chmodResult.getExecResult() ? "success" : "fail");
 
                 if (CollUtil.isNotEmpty(command.getResourceStrategies())) {
-                    for (Map<String, Object> strategy : command.getResourceStrategies()) {
+                    logger.info("开始执行资源策略，总共需要执行{}个策略", command.getResourceStrategies().size());
+                    for (int i = 0; i < command.getResourceStrategies().size(); i++) {
+                        Map<String, Object> strategy = command.getResourceStrategies().get(i);
                         String type = (String) strategy.get(ResourceStrategy.TYPE_KEY);
                         Class<? extends ResourceStrategy> clazz = cache.getOrDefault(type, EmptyStrategy.class);
                         ResourceStrategy rs = BeanUtil.toBean(strategy, clazz, CopyOptions.create().ignoreError());
@@ -126,6 +136,7 @@ public class InstallServiceHandler {
                         rs.setVariables(command.getVariables());
                         ExecResult exec = rs.exec();
                         if (!exec.getExecResult()) {
+                            logger.error("执行第{}个资源策略失败, {}", i + 1, exec.getExecOut());
                             return exec;
                         }
                     }
@@ -133,7 +144,7 @@ public class InstallServiceHandler {
                 execResult.setExecResult(true);
             }
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("安装服务{} {}失败,  {}", command.getServiceName(), command.getServiceRoleName(), e.getMessage(), e);
             execResult.setExecOut(e.getMessage());
         }
         return execResult;
@@ -157,7 +168,7 @@ public class InstallServiceHandler {
     }
 
     private File getMetaDir() {
-        File dir =  new File(Constants.INSTALL_PATH + Constants.SLASH + ".install_meta");
+        File dir = new File(Constants.INSTALL_PATH + Constants.SLASH + ".install_meta");
         if (!dir.exists()) {
             FileUtil.mkdir(dir);
         }
@@ -179,7 +190,6 @@ public class InstallServiceHandler {
         String decompressPackageName = instCmd.getDecompressPackageName();
 
         String sourceFile = downloadResult.getTarget();
-        logger.info("Start to decompress {}", sourceFile);
         String suffix = FileUtil.getSuffix(packageName);
         boolean success;
 //           安装软件的临时解压目录

@@ -74,13 +74,13 @@ public class FreemakerUtils {
 
     public static void generateConfigFile(Generators generators,
                                           List<ServiceConfig> configs,
-                                          String decompressPackageName) throws IOException, TemplateException {
-        generateConfigFile(generators, configs, decompressPackageName, null);
+                                          String serviceInstallHome) throws IOException, TemplateException {
+        generateConfigFile(generators, configs, serviceInstallHome, null);
     }
 
     public static void generateConfigFile(Generators generators,
                                           List<ServiceConfig> configs,
-                                          String decompressPackageName,
+                                          String serviceInstallHome,
                                           String extPath) throws IOException, TemplateException {
         Configuration config = initConfiguration(extPath);
 
@@ -99,7 +99,7 @@ public class FreemakerUtils {
             logger.debug("generate config file from tpl {}, content is: {}", tplName, content);
         }
 
-        writeContent(generators, configs, decompressPackageName, content);
+        writeContent(generators, configs, serviceInstallHome, content);
 
     }
 
@@ -242,15 +242,15 @@ public class FreemakerUtils {
      *
      * @param generators
      * @param configs
-     * @param decompressPackageName
+     * @param serviceInstallHome
      * @param content
      * @throws UnknownHostException
      */
-    private static void writeContent(Generators generators, List<ServiceConfig> configs, String decompressPackageName, String content) throws UnknownHostException {
+    private static void writeContent(Generators generators, List<ServiceConfig> configs, String serviceInstallHome, String content) throws UnknownHostException {
         String protocol = generators.getType();
 //        默认写文件
         if (protocol == null) {
-            writeContentToFile(generators, decompressPackageName, content);
+            writeContentToFile(generators, serviceInstallHome, content);
             return;
         }
 

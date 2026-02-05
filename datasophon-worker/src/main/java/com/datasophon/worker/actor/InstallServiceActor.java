@@ -38,7 +38,7 @@ public class InstallServiceActor extends HookTypedActor<InstallServiceRoleComman
     protected void doOnReceive(InstallServiceRoleCommand command) throws Throwable {
         ExecResult installResult = new ExecResult();
 
-        Logger log = LoggerFactory.getLogger(TaskConstants.createLoggerName(command.getServiceName(), command.getServiceRoleName(), this.getClass()));
+        Logger log = LoggerFactory.getLogger(TaskConstants.createLoggerName(command.getServiceName(), command.getServiceRoleName(), InstallServiceActor.class));
         try {
             log.info("开始安装服务:{} {}", command.getServiceName(), command.getServiceRoleName());
             installResult = invokeFunctions(
