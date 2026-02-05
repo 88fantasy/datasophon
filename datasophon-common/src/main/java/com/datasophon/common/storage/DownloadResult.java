@@ -15,5 +15,7 @@ public class DownloadResult {
 
     private String target;
 
+    private String md5;
+
 
 }

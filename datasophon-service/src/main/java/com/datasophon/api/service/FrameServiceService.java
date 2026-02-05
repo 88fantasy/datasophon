@@ -49,9 +49,8 @@ public interface FrameServiceService extends IService<FrameServiceEntity> {
 
     List<FrameServiceEntity> listServices(List<Integer> serviceIds);
 
-    @Deprecated
-    List<FrameServiceEntity> listServices(String serviceIds);
 
     List<FrameServiceEntity> listSimpleService(List<String> clusterFrames);
 
+    FrameServiceEntity getNewestDefByName(String serviceName);
 }

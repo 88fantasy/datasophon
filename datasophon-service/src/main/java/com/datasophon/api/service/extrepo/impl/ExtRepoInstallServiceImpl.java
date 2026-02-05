@@ -13,6 +13,7 @@ import com.datasophon.api.dag.model.EdgeDefinition;
 import com.datasophon.api.dag.model.NodeDefinition;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
+import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.DAGExecActor;
@@ -53,6 +54,7 @@ import com.datasophon.common.model.ServiceInfo;
 import com.datasophon.common.model.ServiceNode;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.model.ServiceRoleInfo;
+import com.datasophon.common.utils.IdUtils;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
@@ -65,11 +67,13 @@ import com.datasophon.dao.entity.FrameServiceRoleEntity;
 import com.datasophon.dao.entity.dag.DagDefinitionEntity;
 import com.datasophon.dao.entity.dag.NodeDefinitionEntity;
 import com.datasophon.dao.enums.CommandState;
+import com.datasophon.dao.enums.RoleType;
 import com.datasophon.dao.enums.ServiceState;
 import com.datasophon.dao.enums.dag.DagStatus;
 import com.datasophon.dao.enums.dag.NodeStatus;
 import com.datasophon.dao.mapper.dag.DagDefinitionEntityMapper;
 import com.datasophon.dao.model.extrepo.DeploySrvModel;
+import com.datasophon.dao.model.extrepo.DeploySrvRoleModel;
 import com.datasophon.dao.model.extrepo.DeploymentModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,6 +94,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -154,15 +159,23 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
     @Override
     public ValidateResultVO validDeploymentFile(DeploymentDTO dto) {
+        DeploymentModel model = doParseDeploymentFile(dto);
+        return validateDeploymentModel(model, dto);
+    }
+
+
+    private DeploymentModel doParseDeploymentFile(DeploymentDTO dto) {
         File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId());
         if (deploymentFile == null) {
             throw new BusinessException("部署清单文件不存在");
         }
         String content = MetaUtils.decodeFile(deploymentFile, dto.getContentDecodePasswd());
         DeploymentModel model = MetaUtils.parseDeploymentFile(content);
-        log.debug("解析到配置\n：{}", JSONObject.toJSONString(model, true));
-        log.info("完成解析部署文件, 需要部署{}个应用", model.getApp().size());
 
+        return model;
+    }
+
+    private ValidateResultVO validateDeploymentModel(DeploymentModel model, DeploymentDTO dto) {
         List<String> errors = new ArrayList<>();
         Set<String> deployHosts = model.getApp()
                 .stream()
@@ -213,19 +226,14 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         } else {
             return new ValidateResultVO(errors);
         }
-
     }
+
 
     @Override
     public InstallResult deploy(DeploymentDTO dto) {
-        ValidateResultVO result = validDeploymentFile(dto);
-        if (!result.isSuccess()) {
-            throw new BusinessException(result.getErrors());
-        }
-
-        File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId());
-        String content = MetaUtils.decodeFile(deploymentFile, dto.getContentDecodePasswd());
-        DeploymentModel model = MetaUtils.parseDeploymentFile(content);
+        DeploymentModel model = doParseDeploymentFile(dto);
+        log.debug("解析到配置\n：{}", JSONObject.toJSONString(model, true));
+        log.info("完成解析部署文件, 需要部署{}个应用", model.getApp().size());
 
 //        保存serviceRole和host的映射
         List<ServiceRoleHostMapping> hostMappings = new ArrayList<>();
@@ -244,18 +252,6 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 //        保存应用的启动配置
         model.getApp().forEach(app -> {
             List<ServiceConfig> configs = serviceInstallService.getServiceConfigFromDdl(dto.getClusterId(), app.getName());
-//          约定从ddl中取值
-//            Map<String, DeploySrvConfig> configMap = CollectionUtil.toMap(app.getConfig(), new HashMap<>(), DeploySrvConfig::getName);
-//            configs.forEach(conf -> {
-//                DeploySrvConfig deployConf = configMap.get(conf.getName());
-//                if (deployConf == null) {
-//                    if (conf.getValue() == null) {
-//                        conf.setValue(conf.getDefaultValue());
-//                    }
-//                } else {
-//                    conf.setValue(deployConf.getValue());
-//                }
-//            });
             serviceInstallService.saveServiceConfig(dto.getClusterId(), app.getName(), configs, -1);
         });
         log.info("保存部署配置项成功");
@@ -509,35 +505,78 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         if (!Arrays.asList(DagStatus.PENDING, DagStatus.FAILED, DagStatus.CANCEL).contains(def.getStatus())) {
             throw new BusinessException(String.format("当前任务的状态为%s，不允许重复运行", def.getStatus().name()));
         }
-        if (def.getCreatedTime().plusDays(2).isBefore(LocalDateTime.now())) {
+        if (def.getCreatedTime().plusDays(1).isBefore(LocalDateTime.now())) {
             throw new BusinessException("任务已经过期, 不允许在运行");
         }
         List<NodeDefinition> nodes = dagService.getNodesByDagId(dto.getDagId(), true);
         if (nodes.isEmpty()) {
             return;
         }
-        for (NodeDefinition node : nodes) {
-            if (!dto.isRestart() || !NodeStatus.SUCCESS.equals(node.getStatus())) {
-                dagService.updateNodeStatus(node.getId(), NodeStatus.PENDING);
-            }
-        }
         List<String> commandIds = new ArrayList<>();
         for (NodeDefinition node : nodes) {
             ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
 
-            if (!node.getStatus().equals(NodeStatus.SUCCESS)) {
+            if (!dto.isRestart() || !node.getStatus().equals(NodeStatus.SUCCESS)) {
                 serviceNode.getMasterRoles().forEach(role -> {
                     Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + role.getServiceInstanceId());
                     if (roleGroupId == null) {
-                        throw new BusinessException("系统已经重启，内存缓存数据已经丢失，当前任务无法恢复，请重写上传部署清单安装");
+                        throw new BusinessException("系统已经重启，内存缓存数据已经丢失，当前任务无法恢复，请重新上传部署清单安装");
                     }
                 });
             }
             commandIds.add(serviceNode.getCommandId());
         }
 
+        for (NodeDefinition node : nodes) {
+            if (!dto.isRestart() || !NodeStatus.SUCCESS.equals(node.getStatus())) {
+                updateNode(node);
+
+            }
+        }
+
         commandIds.forEach(cmd -> updateCommandState(cmd, CommandState.RUNNING, dto.isRestart()));
         invokeCommands(dto.getDagId(), dto.isRestart(), commandIds);
+    }
+
+    /**
+     * 更新节点的状态以及配置
+     * @param node
+     */
+    private void updateNode(NodeDefinition node) {
+        ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
+        FrameServiceEntity serviceEntity = frameService.getNewestDefByName(serviceNode.getServiceName());
+        List<FrameServiceRoleEntity> srvRoles = frameServiceRoleService.getAllServiceRoleList(serviceEntity.getId());
+        Map<String, FrameServiceRoleEntity> srvRoleMap = CollectionUtil.toMap(srvRoles, new HashMap<>(), FrameServiceRoleEntity::getServiceRoleName);
+
+        List<ServiceRoleInfo> roleInfoList = new ArrayList<>();
+        if (serviceNode.getMasterRoles() != null) {
+            roleInfoList.addAll(serviceNode.getMasterRoles());
+        }
+        if (serviceNode.getElseRoles() != null) {
+            roleInfoList.addAll(serviceNode.getElseRoles());
+        }
+
+        ServiceInfo serviceDef = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
+        CopyOptions cpOpt = CopyOptions.create().setIgnoreProperties(
+                ServiceRoleInfo::getClusterId, ServiceRoleInfo::getHostname, ServiceRoleInfo::getHostCommandId,
+                ServiceRoleInfo::getParentName, ServiceRoleInfo::getCommandType, ServiceRoleInfo::getServiceInstanceId,
+                ServiceRoleInfo::getFrameCode
+        );
+        for(ServiceRoleInfo oldOne : roleInfoList) {
+            FrameServiceRoleEntity frameServiceRoleEntity = srvRoleMap.get(oldOne.getName());
+            ServiceRoleInfo newOne = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
+            Optional.ofNullable(ServiceRoleStrategyContext.getServiceRoleHandler(newOne.getName()))
+                    .ifPresent(ha -> ha.handlerServiceRoleInfo(newOne, newOne.getHostname()));
+            BeanUtil.copyProperties(newOne, oldOne, cpOpt);
+            oldOne.setCreateDecompressDir(serviceDef.getCreateDecompressDir());
+            oldOne.setDecompressPackageName(serviceEntity.getDecompressPackageName());
+            oldOne.setPackageName(serviceEntity.getPackageName());
+            oldOne.setArchInfoMap(ServicePkgNameUtils.getArchInfo(serviceEntity));
+        }
+
+        node.setStatus(NodeStatus.PENDING);
+        node.setNodeConfig(JSONObject.toJSONString(serviceNode));
+        dagService.updateNode(node);
     }
 
 
@@ -766,6 +805,60 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
     @Override
     public void generateAndExecSrvRoleCommands(Integer clusterId, CommandType commandType, Map<Integer, List<Integer>> instanceIdMap) {
         instanceIdMap.forEach((instId, roleInstIds)-> generateAndExecSrvRoleCmd(clusterId, commandType, instId, roleInstIds));
+    }
+
+    @Override
+    public List<FrameServiceEntity> listNewestByDeployment(DeploymentDTO dto) {
+        DeploymentModel model = doParseDeploymentFile(dto);
+        List<String> serviceList = model.getApp().stream().map(DeploySrvModel::getName).collect(Collectors.toList());
+        List<FrameServiceEntity> list = frameService.listNewest(dto.getClusterId(), true);
+        list.forEach(et-> et.setSelected(serviceList.contains(et.getServiceName())));
+        return list;
+    }
+
+    @Override
+    public List<FrameServiceRoleEntity> getServiceRoleListByDeployment(ServiceRoleQueryDTO dto) {
+        ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
+        List<Integer> ids = IdUtils.toIdList(dto.getServiceIds());
+        List<FrameServiceRoleEntity> list =  frameServiceRoleService.lambdaQuery()
+                .eq(FrameServiceRoleEntity::getFrameCode, clusterInfo.getClusterFrame())
+                .eq(Objects.nonNull(dto.getServiceRoleType()), FrameServiceRoleEntity::getServiceRoleType, dto.getServiceRoleType())
+                .in(!ids.isEmpty(), FrameServiceRoleEntity::getServiceId, ids)
+                .list();
+        setHosts(list, BeanUtil.toBean(dto, DeploymentDTO.class));
+        return list;
+    }
+
+    private void setHosts(List<FrameServiceRoleEntity> list, DeploymentDTO dto) {
+        DeploymentModel model = doParseDeploymentFile(dto);
+
+        Map<String, DeploySrvRoleModel> map = new HashMap<>();
+        model.getApp().forEach(app-> {
+            app.getRoles().forEach(role-> {
+                map.put(app.getName() + "_" + role.getName(), role);
+            });
+        });
+
+        for (FrameServiceRoleEntity role : list) {
+            FrameServiceEntity frameServiceEntity = frameService.getById(role.getServiceId());
+            DeploySrvRoleModel roleModel = map.get(frameServiceEntity.getServiceName() + "_" + role.getServiceRoleName());
+            if (roleModel != null) {
+                role.setHosts(roleModel.getDeployHosts());
+            }
+        }
+    }
+
+    @Override
+    public List<FrameServiceRoleEntity> getNonMasterRoleListByDeployment(DeploymentDTO dto) {
+        ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
+        List<Integer> ids = IdUtils.toIdList(dto.getServiceIds());
+        List<FrameServiceRoleEntity> list = frameServiceRoleService.lambdaQuery()
+                .eq(FrameServiceRoleEntity::getFrameCode, clusterInfo.getClusterFrame())
+                .ne(FrameServiceRoleEntity::getServiceRoleType, RoleType.MASTER)
+                .in(!ids.isEmpty(), FrameServiceRoleEntity::getServiceId, ids)
+                .list();
+        setHosts(list, dto);
+        return list;
     }
 
 }

@@ -8,11 +8,9 @@ import javax.validation.constraints.NotNull;
 
 /**
  * @author zhanghuangbin
- * @date 2025/11/11
  */
 @Data
-public class DeploymentDTO {
-
+public class ServiceRoleQueryDTO {
 
     @Schema(description = "集群ID")
     @NotNull(message = "集群ID不能为空")
@@ -30,4 +28,6 @@ public class DeploymentDTO {
     @Schema(description = "服务ID列表")
     private String serviceIds;
 
+    @Schema(description = "服务类型")
+    private Integer serviceRoleType;
 }

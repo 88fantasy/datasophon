@@ -102,14 +102,16 @@ public class NexusStorage implements PackageStorage {
         Lock lock = LOCK_MAP.computeIfAbsent(packageName, k -> new ReentrantLock());
         try {
             lock.lock();
+            DownloadResult result = new DownloadResult();
+            result.setMd5(readPackageMd5(packageName));
+
             File file = new File(Constants.MASTER_MANAGE_PACKAGE_PATH, packageName);
             boolean needDownload;
             if (!file.exists()) {
                 needDownload = true;
             } else {
-                String remoteMd5 = readPackageMd5(packageName);
                 String md5 = DigestUtil.md5Hex(file);
-                needDownload = !md5.equalsIgnoreCase(remoteMd5);
+                needDownload = !md5.equalsIgnoreCase(result.getMd5());
             }
             if (needDownload) {
                 String path = "packages/" + packageName;
@@ -129,7 +131,7 @@ public class NexusStorage implements PackageStorage {
                 log.info("package {} exists, we do need to download", packageName);
             }
 
-            DownloadResult result = new DownloadResult();
+
             result.setChange(needDownload);
             result.setTarget(file.getAbsolutePath());
             return result;

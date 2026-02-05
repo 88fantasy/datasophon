@@ -665,18 +665,20 @@ public class ProcessUtils {
             serviceConfig.setName(name);
             if (Constants.INPUT.equals(serviceConfig.getType())) {
                 Object value = serviceConfig.getValue();
-                if (String.class.isAssignableFrom(value.getClass())) {
+                if (value != null && String.class.isAssignableFrom(value.getClass())) {
                     String value1 = PlaceholderUtils.replacePlaceholders((String) value, globalVariables, Constants.REGEX_VARIABLE);
                     serviceConfig.setValue(value1);
                 }
             }
             if (Constants.MULTIPLE.equals(serviceConfig.getType())) {
                 JSONArray value2 = (JSONArray) serviceConfig.getValue();
-                List<String> valueList = value2.toJavaList(String.class);
-                List<Object> tmpList = valueList.stream()
-                        .map(val-> PlaceholderUtils.replacePlaceholdersRecursive(val, globalVariables, Constants.REGEX_VARIABLE))
-                        .collect(Collectors.toList());
-                serviceConfig.setValue(new JSONArray(tmpList));
+                if (value2 != null) {
+                    List<String> valueList = value2.toJavaList(String.class);
+                    List<Object> tmpList = valueList.stream()
+                            .map(val-> PlaceholderUtils.replacePlaceholdersRecursive(val, globalVariables, Constants.REGEX_VARIABLE))
+                            .collect(Collectors.toList());
+                    serviceConfig.setValue(new JSONArray(tmpList));
+                }
             }
         }
     }

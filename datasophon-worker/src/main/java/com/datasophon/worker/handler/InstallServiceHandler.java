@@ -28,6 +28,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.storage.DownloadResult;
 import com.datasophon.common.storage.PackageStorageUtils;
+import com.datasophon.common.utils.EncryptionUtils;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
@@ -39,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -93,8 +95,14 @@ public class InstallServiceHandler {
         ExecResult execResult = new ExecResult();
         try {
             DownloadResult downloadResult = PackageStorageUtils.getStorage().downloadPackageToLocal(command.getPackageName());
-            boolean result = decompressPkg(command, downloadResult.getTarget(), downloadResult.isChange());
-            if (result) {
+
+            boolean goon = true;
+            boolean unpackPkg = needDecompressPkg(command, downloadResult);
+            if (unpackPkg) {
+                goon = decompressPkg(command, downloadResult);
+                execResult.setExecOut("解压安装包失败，请查看日志");
+            }
+            if (goon) {
                 String normalPkgDir = PkgInstallPathUtils.getInstallHomeName(command);
                 if (command.getRunAs() != null && command.getRunAs().hasOwner()) {
                     ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getOwner() + " " + Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir);
@@ -120,75 +128,93 @@ public class InstallServiceHandler {
                         }
                     }
                 }
-
                 execResult.setExecResult(true);
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
-            execResult.setExecErrOut(e.getMessage());
+            execResult.setExecOut(e.getMessage());
         }
         return execResult;
     }
 
-    protected boolean decompressPkg(InstallServiceRoleCommand instCmd, String sourceFile, boolean installPkgChange) {
+    private boolean needDecompressPkg(InstallServiceRoleCommand command, DownloadResult downloadResult) {
+        if (downloadResult.isChange()) {
+            return true;
+        }
+        File installHome = new File(Constants.INSTALL_PATH + Constants.SLASH + command.getNormalPkgDir());
+        if (!installHome.exists()) {
+            return true;
+        }
+        File metaFile = new File(installHome, ".pkg_meta.md5");
+        if (!metaFile.exists()) {
+            return true;
+        }
+        String content = FileUtil.readString(metaFile, StandardCharsets.UTF_8);
+        String md5 = EncryptionUtils.getMd5(
+                String.format("%s-%s", downloadResult.getMd5(), BooleanUtil.isTrue(command.getCreateDecompressDir()))
+        );
+        return !md5.equalsIgnoreCase(content);
+    }
+
+    protected boolean decompressPkg(InstallServiceRoleCommand instCmd, DownloadResult downloadResult) {
         String packageName = instCmd.getPackageName();
         String decompressPackageName = instCmd.getDecompressPackageName();
 
-        boolean decompressResult = true;
-
-        boolean fileExist = FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + instCmd.getNormalPkgDir());
-        if (!fileExist || installPkgChange) {
-            logger.info("Start to decompress {}", sourceFile);
-            String suffix = FileUtil.getSuffix(packageName);
-            boolean success = false;
-
+        String sourceFile = downloadResult.getTarget();
+        logger.info("Start to decompress {}", sourceFile);
+        String suffix = FileUtil.getSuffix(packageName);
+        boolean success;
 //           安装软件的临时解压目录
-            String serviceDecompressDir = null;
-            try {
-                ArrayList<String> command = new ArrayList<>();
+        String serviceDecompressDir = null;
+        try {
+            ArrayList<String> command = new ArrayList<>();
 
-                boolean needParentDir = BooleanUtil.isTrue(instCmd.getCreateDecompressDir());
+            boolean needParentDir = BooleanUtil.isTrue(instCmd.getCreateDecompressDir());
 
-                String baseTempDir = Constants.INSTALL_PATH + Constants.SLASH + "temp";
-                serviceDecompressDir = baseTempDir + Constants.SLASH + decompressPackageName;
-                checkIfPathOutOfBox(baseTempDir, serviceDecompressDir);
+            String baseTempDir = Constants.INSTALL_PATH + Constants.SLASH + "temp";
+            serviceDecompressDir = baseTempDir + Constants.SLASH + decompressPackageName;
+            checkIfPathOutOfBox(baseTempDir, serviceDecompressDir);
 
-                FileUtil.del(serviceDecompressDir);
-                FileUtil.mkdir(new File(serviceDecompressDir));
+            FileUtil.del(serviceDecompressDir);
+            FileUtil.mkdir(new File(serviceDecompressDir));
 
-                boolean needTrimDirName = !needParentDir;
+            boolean needTrimDirName = !needParentDir;
 
-                if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
-                    command.add("tar");
-                    command.add("-zxf");
-                    command.add(sourceFile);
-                    command.add("-C");
-                    command.add(serviceDecompressDir);
-                    if (needTrimDirName) {
-                        command.add("--strip-components=1");
-                    }
-                } else {
-                    throw new UnsupportedOperationException(String.format("unsupported file type %s", suffix));
+            if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
+                command.add("tar");
+                command.add("-zxf");
+                command.add(sourceFile);
+                command.add("-C");
+                command.add(serviceDecompressDir);
+                if (needTrimDirName) {
+                    command.add("--strip-components=1");
                 }
-
-                logger.info("exec decompress cmd :{}", StrUtil.join(" ", command));
-                ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
-                success = execResult.getExecResult();
-                if (success) {
-                    String targetDir = Constants.INSTALL_PATH + Constants.SLASH + instCmd.getNormalPkgDir();
-                    FileUtil.mkdir(targetDir);
-//                    将临时目录，重命名为安装目录
-                    FileUtil.moveContent(new File(serviceDecompressDir), new File(targetDir), true);
-                }
-            } finally {
-//                删除临时解压目录
-                if (serviceDecompressDir != null) {
-                    FileUtil.del(serviceDecompressDir);
-                }
+            } else {
+                throw new UnsupportedOperationException(String.format("unsupported file type %s", suffix));
             }
-            return success;
+
+            logger.info("exec decompress cmd :{}", StrUtil.join(" ", command));
+            ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
+            success = execResult.getExecResult();
+            if (success) {
+                String targetDir = Constants.INSTALL_PATH + Constants.SLASH + instCmd.getNormalPkgDir();
+                FileUtil.mkdir(targetDir);
+//                    将临时目录，重命名为安装目录
+                FileUtil.moveContent(new File(serviceDecompressDir), new File(targetDir), true);
+
+//                写入本次安装的信息，用于下一次检测安装包是否发生变更
+                String md5 = EncryptionUtils.getMd5(
+                        String.format("%s-%s", downloadResult.getMd5(), BooleanUtil.isTrue(instCmd.getCreateDecompressDir()))
+                );
+                FileUtil.writeString(md5, new File(targetDir, ".pkg_meta.md5"), StandardCharsets.UTF_8);
+            }
+        } finally {
+//                删除临时解压目录
+            if (serviceDecompressDir != null) {
+                FileUtil.del(serviceDecompressDir);
+            }
         }
-        return decompressResult;
+        return success;
     }
 
     /**

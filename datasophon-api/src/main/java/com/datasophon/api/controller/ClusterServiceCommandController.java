@@ -71,20 +71,7 @@ public class ClusterServiceCommandController extends ApiController {
         return Result.success(result.getTotal(), result.getRecords());
     }
 
-    /**
-     * @deprecated 
-     * @see #generateGenericInstallCommand(Integer, String)
-     * 生成服务安装操作指令
-     */
-    @UserPermission
-    @RequestMapping("/generateCommand")
-    @Operation(deprecated = true)
-    @Deprecated
-    public Result generateCommand(Integer clusterId, String commandType, String serviceNames) {
-        CommandType command = EnumUtil.fromString(CommandType.class, commandType);
-        List<String> list = Arrays.asList(serviceNames.split(","));
-        return Result.success(clusterServiceCommandService.generateCommand(clusterId, command, list));
-    }
+
 
     @UserPermission
     @RequestMapping("/generateGenericInstallCommand")
@@ -92,24 +79,6 @@ public class ClusterServiceCommandController extends ApiController {
     public Result generateGenericInstallCommand(Integer clusterId, String serviceNames) {
         List<String> list = Arrays.asList(serviceNames.split(","));
         return Result.success(extRepoInstallService.generateGenericInstallCommand(clusterId, list));
-    }
-    
-    /**
-     * 生成服务实例操作指令
-     * @deprecated
-     * @see #generateAndExecSrvInstCmd
-     */
-    @RequestMapping("/generateServiceCommand")
-    @UserPermission
-    @Deprecated
-    public Result generateServiceCommand(Integer clusterId, String commandType, String serviceInstanceIds) {
-        CommandType command = EnumUtil.fromString(CommandType.class, commandType);
-        if (StringUtils.isNotBlank(serviceInstanceIds)) {
-            List<String> ids = Arrays.asList(serviceInstanceIds.split(","));
-            return clusterServiceCommandService.generateServiceCommand(clusterId, command, ids);
-        } else {
-            return Result.error(Status.NO_SERVICE_EXECUTE.getMsg());
-        }
     }
 
 
@@ -126,21 +95,7 @@ public class ClusterServiceCommandController extends ApiController {
             return Result.error(Status.NO_SERVICE_EXECUTE.getMsg());
         }
     }
-    
-    /**
-     * 生成服务角色实例操作指令
-     * @see #generateAndSrvRoleCmd
-     */
-    @RequestMapping("/generateServiceRoleCommand")
-    @UserPermission
-    @Deprecated
-    public Result generateServiceRoleCommand(Integer clusterId, String commandType, Integer serviceInstanceId,
-                                             String serviceRoleInstancesIds) {
-        CommandType command = EnumUtil.fromString(CommandType.class, commandType);
-        List<String> ids = Arrays.asList(serviceRoleInstancesIds.split(","));
-        return clusterServiceCommandService.generateServiceRoleCommand(clusterId, command, serviceInstanceId, ids);
-        
-    }
+
 
     @PostMapping("/generateAndSrvRoleCmd")
     @UserPermission
@@ -153,23 +108,6 @@ public class ClusterServiceCommandController extends ApiController {
         } else {
             return Result.error(Status.NO_SERVICE_EXECUTE.getMsg());
         }
-    }
-
-
-    /**
-     * 启动执行指令
-     */
-    @RequestMapping("/startExecuteCommand")
-    @UserPermission
-    public Result startExecuteCommand(Integer clusterId, String commandType, String commandIds) {
-        clusterServiceCommandService.startExecuteCommand(clusterId, commandType, commandIds);
-        return Result.success();
-    }
-    
-    @RequestMapping("/cancelCommand")
-    public Result cancelCommand(String commandId) {
-        clusterServiceCommandService.cancelCommand(commandId);
-        return Result.success();
     }
     
     /**

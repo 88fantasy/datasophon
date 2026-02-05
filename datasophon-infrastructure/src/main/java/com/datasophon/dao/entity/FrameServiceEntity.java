@@ -19,6 +19,7 @@ package com.datasophon.dao.entity;
 
 import java.io.Serializable;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -77,9 +78,15 @@ public class FrameServiceEntity implements Serializable {
     
     private String decompressPackageName;
 
-    @TableField(exist = false)
-    private Boolean installed;
     
     private Integer sortNum;
+
+
+    @TableField(exist = false)
+    private Boolean installed;
+
+    @Schema(description = "是否被选中")
+    @TableField(exist = false)
+    private Boolean selected;
     
 }

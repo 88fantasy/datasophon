@@ -5,6 +5,7 @@ import com.datasophon.api.dto.extrepo.DagIdDto;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
+import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
 import com.datasophon.api.service.extrepo.ExtRepoInstallService;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
@@ -96,7 +97,6 @@ public class ExtRepoController extends ApiController {
     }
 
 
-
     @PostMapping("/getDeployProgressDAG2")
     @Operation(summary = "获取部署进度DAG接口2")
     @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = InstallProgressDAG2.class))})
@@ -111,6 +111,26 @@ public class ExtRepoController extends ApiController {
     public Result redeploy(@RequestBody @Validated RunDagDto dto) {
         extRepoInstallService.redeploy(dto);
         return Result.success();
+    }
+
+    @PostMapping("/listNewestByDeployment")
+    @Operation(summary = "获取最新的服务列表(并更加部署清单对服务列表进行勾选)")
+    @ApiResponse(content = {@Content(mediaType = "application/json")})
+    public Result listNewestByDeployment(@RequestBody @Validated DeploymentDTO dto) {
+        return Result.success(extRepoInstallService.listNewestByDeployment(dto));
+    }
+
+    @PostMapping("/getServiceRoleListByDeployment")
+    @Operation(summary = "获取服务角色列表(并根据部署清单对host进行填充)")
+    @ApiResponse(content = {@Content(mediaType = "application/json")})
+    public Result getServiceRoleListByDeployment(@RequestBody @Validated ServiceRoleQueryDTO dto) {
+        return Result.success(extRepoInstallService.getServiceRoleListByDeployment(dto));
+    }
+    @PostMapping("/getNonMasterRoleListByDeployment")
+    @Operation(summary = "获取非master服务角色列表(并根据部署清单对host进行填充)")
+    @ApiResponse(content = {@Content(mediaType = "application/json")})
+    public Result getNonMasterRoleListByDeployment(@RequestBody @Validated DeploymentDTO dto) {
+        return Result.success(extRepoInstallService.getNonMasterRoleListByDeployment(dto));
     }
 
 

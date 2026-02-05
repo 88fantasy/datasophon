@@ -44,7 +44,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service("frameServiceService")
@@ -119,11 +118,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
         );
         for (FrameServiceEntity serviceEntity : list) {
             ClusterServiceInstanceEntity serviceInstance = map.get(serviceEntity.getServiceName());
-            if (Objects.nonNull(serviceInstance) && !serviceInstance.getServiceState().equals(ServiceState.WAIT_INSTALL)) {
-                serviceEntity.setInstalled(true);
-            } else {
-                serviceEntity.setInstalled(false);
-            }
+            serviceEntity.setInstalled(serviceInstance != null && !serviceInstance.getServiceState().equals(ServiceState.WAIT_INSTALL));
         }
     }
 
@@ -161,11 +156,6 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
         return lambdaQuery().in(FrameServiceEntity::getId, serviceIds).list();
     }
 
-    @Override
-    public List<FrameServiceEntity> listServices(String serviceIds) {
-        List<String> ids = Arrays.stream(serviceIds.split(",")).collect(Collectors.toList());
-        return this.lambdaQuery().in(FrameServiceEntity::getId, ids).list();
-    }
 
     @Override
     public List<FrameServiceEntity> listSimpleService(List<String> clusterFrames) {
@@ -177,6 +167,23 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
                 .select(FrameServiceEntity::getServiceName, FrameServiceEntity::getServiceVersion,
                     FrameServiceEntity::getFrameId, FrameServiceEntity::getFrameCode)
                 .list();
+    }
+
+    @Override
+    public FrameServiceEntity getNewestDefByName(String serviceName) {
+        List<FrameServiceEntity> services = this.lambdaQuery()
+                .eq(FrameServiceEntity::getServiceName, serviceName)
+                .list();
+        if(services.isEmpty()) {
+            return null;
+        }
+        FrameServiceEntity target = services.get(0);
+        for (FrameServiceEntity service : services) {
+            if(VersionUtil.compareVersions(service.getServiceVersion(), target.getServiceVersion()) > 0) {
+                target = service;
+            }
+        }
+        return target;
     }
 
 }

@@ -437,16 +437,14 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
 
     @Override
     public Result checkServiceDependency(Integer clusterId, List<Integer> serviceIds) {
-        //
-        List<ClusterServiceInstanceEntity> serviceInstanceList =
-                serviceInstanceService.listRunningServiceInstance(clusterId);
-        Map<String, ClusterServiceInstanceEntity> instanceMap =
-                serviceInstanceList.stream()
+        List<ClusterServiceInstanceEntity> serviceInstanceList = serviceInstanceService.listRunningServiceInstance(clusterId);
+        Map<String, ClusterServiceInstanceEntity> instanceMap = serviceInstanceList.stream()
                         .collect(
                                 Collectors.toMap(
                                         ClusterServiceInstanceEntity::getServiceName,
                                         e -> e,
-                                        (v1, v2) -> v1));
+                                        (v1, v2) -> v1)
+                        );
 
         List<FrameServiceEntity> list = frameService.listServices(serviceIds);
         Map<String, FrameServiceEntity> serviceMap =
