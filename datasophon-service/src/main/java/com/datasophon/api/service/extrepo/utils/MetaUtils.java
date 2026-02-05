@@ -65,7 +65,6 @@ public class MetaUtils {
     public static final String SERVICE_DDL = "service_ddl.json";
     private static final Logger log = LoggerFactory.getLogger(MetaUtils.class);
 
-    public static final String PACKAGES = "packages";
     /**
      * 对需要解压的文件，进行文件内容解压
      *

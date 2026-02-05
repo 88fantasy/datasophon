@@ -27,6 +27,7 @@ import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.ddl.DdlMetaService;
+import com.datasophon.api.service.extrepo.utils.MetaUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -80,13 +81,13 @@ public class LoadServiceMeta implements ApplicationRunner {
             FrameInfoEntity frameInfo = frameInfoService.saveFrameIfAbsent(frameCode);
             // analysis file
             for (File file : files) {
-                if (file.getName().endsWith(Constants.JSON)) {
+                if (file.getName().equals(MetaUtils.SERVICE_DDL)) {
                     String serviceName = file.getParentFile().getName();
                     String serviceDdl = FileReader.create(file).readString();
                     try {
                         ddlMetaService.loadServiceDdl(clusters, frameInfo, serviceName, serviceDdl);
                     } catch (Exception e) {
-                        logger.error("invalid service ddl file: {}", serviceName, e);
+                        logger.error("invalid service ddl file: {} {}", frameCode, serviceName, e);
                     }
                 }
             }

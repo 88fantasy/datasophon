@@ -100,7 +100,9 @@ public class InstallServiceHandler {
             boolean unpackPkg = needDecompressPkg(command, downloadResult);
             if (unpackPkg) {
                 goon = decompressPkg(command, downloadResult);
-                execResult.setExecOut("解压安装包失败，请查看日志");
+                if (!goon) {
+                    execResult.setExecOut("解压安装包失败，请查看日志");
+                }
             }
             if (goon) {
                 String normalPkgDir = PkgInstallPathUtils.getInstallHomeName(command);
@@ -145,15 +147,31 @@ public class InstallServiceHandler {
         if (!installHome.exists()) {
             return true;
         }
-        File metaFile = new File(installHome, ".pkg_meta.md5");
+        File metaFile = getMetaFile(command);
         if (!metaFile.exists()) {
             return true;
         }
         String content = FileUtil.readString(metaFile, StandardCharsets.UTF_8);
-        String md5 = EncryptionUtils.getMd5(
-                String.format("%s-%s", downloadResult.getMd5(), BooleanUtil.isTrue(command.getCreateDecompressDir()))
-        );
+        String md5 = getInstallMetaSign(downloadResult, command);
         return !md5.equalsIgnoreCase(content);
+    }
+
+    private File getMetaDir() {
+        File dir =  new File(Constants.INSTALL_PATH + Constants.SLASH + ".install_meta");
+        if (!dir.exists()) {
+            FileUtil.mkdir(dir);
+        }
+        return dir;
+    }
+
+    protected File getMetaFile(InstallServiceRoleCommand command) {
+        return new File(getMetaDir(), command.getNormalPkgDir() + ".md5");
+    }
+
+    protected String getInstallMetaSign(DownloadResult result, InstallServiceRoleCommand command) {
+        return EncryptionUtils.getMd5(
+                String.format("%s-%s", result.getMd5(), BooleanUtil.isTrue(command.getCreateDecompressDir()))
+        );
     }
 
     protected boolean decompressPkg(InstallServiceRoleCommand instCmd, DownloadResult downloadResult) {
@@ -203,10 +221,7 @@ public class InstallServiceHandler {
                 FileUtil.moveContent(new File(serviceDecompressDir), new File(targetDir), true);
 
 //                写入本次安装的信息，用于下一次检测安装包是否发生变更
-                String md5 = EncryptionUtils.getMd5(
-                        String.format("%s-%s", downloadResult.getMd5(), BooleanUtil.isTrue(instCmd.getCreateDecompressDir()))
-                );
-                FileUtil.writeString(md5, new File(targetDir, ".pkg_meta.md5"), StandardCharsets.UTF_8);
+                FileUtil.writeString(getInstallMetaSign(downloadResult, instCmd), getMetaFile(instCmd), StandardCharsets.UTF_8);
             }
         } finally {
 //                删除临时解压目录
