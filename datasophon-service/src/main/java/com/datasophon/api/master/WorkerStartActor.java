@@ -43,7 +43,6 @@ import com.datasophon.domain.host.enums.MANAGED;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -74,8 +73,8 @@ public class WorkerStartActor extends UntypedActor {
             ClusterInfoEntity cluster = clusterInfoService.getById(clusterId);
             logger.info("Host install set to 100%");
             if (CacheUtils.containsKey(cluster.getClusterCode() + Constants.HOST_MAP)) {
-                HashMap<String, HostInfo> map =
-                        (HashMap<String, HostInfo>) CacheUtils.get(cluster.getClusterCode() + Constants.HOST_MAP);
+                Map<String, HostInfo> map =
+                        (Map<String, HostInfo>) CacheUtils.get(cluster.getClusterCode() + Constants.HOST_MAP);
                 HostInfo hostInfo = map.get(hostname);
                 if (Objects.nonNull(hostInfo)) {
                     hostInfo.setProgress(Constants.ONE_HUNDRRD);

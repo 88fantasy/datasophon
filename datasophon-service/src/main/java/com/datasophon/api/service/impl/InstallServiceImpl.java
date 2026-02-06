@@ -119,10 +119,10 @@ public class InstallServiceImpl implements InstallService {
         String md5 = SecureUtil.md5(hosts);
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
-        HashMap<String, HostInfo> map = new HashMap<>();
+        Map<String, HostInfo> map = new HashMap<>();
         if (CacheUtils.containsKey(clusterCode + Constants.HOST_MAP) && md5.equals(CacheUtils.getString(clusterCode + Constants.HOST_MD5))) {
             logger.info("get host list from cache");
-            map = (HashMap<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
+            map = (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
         } else {
             logger.info("analysis host list");
             String[] hostsArr = hosts.split(",");
@@ -269,7 +269,7 @@ public class InstallServiceImpl implements InstallService {
         Map<String, HostInfo> map = (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
         List<HostInfo> list =
                 map.entrySet().stream()
-                        .sorted(Comparator.comparing(Map.Entry::getKey))
+                        .sorted(Map.Entry.comparingByKey())
                         .map(Map.Entry::getValue)
                         .filter(e -> e.getCheckResult().getCode() == 10001)
                         .collect(Collectors.toList());
@@ -329,13 +329,8 @@ public class InstallServiceImpl implements InstallService {
             } else {
                 ClusterHostDO clusterHost = hostService.getClusterHostByHostname(hostname);
                 if (Objects.nonNull(clusterHost)) {
-                    HostInfo hostInfo = new HostInfo();
-                    hostInfo.setHostname(hostname);
-                    hostInfo.setSshUser(clusterHost.getSshUser());
-                    hostInfo.setSshPort(clusterHost.getSshPort());
-                    hostInfo.setIp(clusterHost.getIp());
+                    HostInfo hostInfo = BeanUtil.toBean(clusterHost, HostInfo.class);
                     hostInfos.add(hostInfo);
-                    map.put(hostname, hostInfo);
                 } else {
                     throw new IllegalStateException(String.format("主机%s信息丢失, 可能是系统重启缓存丢失，请刷新页面重新操作", hostname));
                 }
@@ -344,15 +339,20 @@ public class InstallServiceImpl implements InstallService {
 
         for (HostInfo hostInfo : hostInfos) {
             ActorRef hostActor = ActorUtils.getLocalActor(DispatcherWorkerActor.class, "dispatcherWorkerActor-" + hostInfo.getHostname());
+            //            防止二次分发 @see dispatcherHostAgentList
+            String distributeAgentKey = clusterCode + Constants.UNDERLINE + Constants.START_DISTRIBUTE_AGENT;
+            CacheUtils.put(distributeAgentKey + Constants.UNDERLINE + hostInfo.getHostname(), true);
+
+            hostInfo.setCreateTime(new Date());
             hostInfo.setInstallState(InstallState.RUNNING);
             hostInfo.setInstallStateCode(InstallState.RUNNING.getValue());
             hostInfo.setErrMsg("");
             hostInfo.setProgress(0);
+            hostInfo.setManaged(false);
+            hostInfo.setCheckResult(new CheckResult(Status.CHECK_HOST_SUCCESS.getCode(), Status.CHECK_HOST_SUCCESS.getMsg()));
+            map.put(hostInfo.getHostname(), hostInfo);
 
             hostActor.tell(new DispatcherHostAgentCommand(hostInfo, clusterId, clusterInfo.getClusterFrame()), ActorRef.noSender());
-//            防止二次分发 @see dispatcherHostAgentList
-            String distributeAgentKey = clusterCode + Constants.UNDERLINE + Constants.START_DISTRIBUTE_AGENT;
-            CacheUtils.put(distributeAgentKey + Constants.UNDERLINE + hostInfo.getHostname(), true);
         }
         return Result.success();
     }

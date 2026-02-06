@@ -82,7 +82,9 @@ public class DispatcherWorkerActor extends TypedActor<DispatcherHostAgentCommand
     private void doWithSession(HostInfo hostInfo, Consumer<Session> task) throws JSchException {
         Session session = null;
         try {
-            session = JschUtils.getJSchSession(SSHAuthType.AUTO, hostInfo.getHostname(), hostInfo.getSshPort(), hostInfo.getSshUser(), hostInfo.getSshPassword());
+            Integer port = hostInfo.getSshPort();
+            port = port == null ? 22 : port;
+            session = JschUtils.getJSchSession(SSHAuthType.AUTO, hostInfo.getHostname(), port, hostInfo.getSshUser(), hostInfo.getSshPassword());
             task.accept(session);
         } finally {
             if(session != null) {
