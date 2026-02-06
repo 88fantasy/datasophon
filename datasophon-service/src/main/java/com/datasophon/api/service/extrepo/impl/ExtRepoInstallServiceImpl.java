@@ -550,10 +550,6 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
      */
     private void updateNode(NodeDefinition node) {
         ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
-        FrameServiceEntity serviceEntity = frameService.getNewestDefByName(serviceNode.getServiceName());
-        List<FrameServiceRoleEntity> srvRoles = frameServiceRoleService.getAllServiceRoleList(serviceEntity.getId());
-        Map<String, FrameServiceRoleEntity> srvRoleMap = CollectionUtil.toMap(srvRoles, new HashMap<>(), FrameServiceRoleEntity::getServiceRoleName);
-
         List<ServiceRoleInfo> roleInfoList = new ArrayList<>();
         if (serviceNode.getMasterRoles() != null) {
             roleInfoList.addAll(serviceNode.getMasterRoles());
@@ -562,24 +558,34 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             roleInfoList.addAll(serviceNode.getElseRoles());
         }
 
-        ServiceInfo serviceDef = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
-        CopyOptions cpOpt = CopyOptions.create().setIgnoreProperties(
-                ServiceRoleInfo::getClusterId, ServiceRoleInfo::getHostname, ServiceRoleInfo::getHostCommandId,
-                ServiceRoleInfo::getParentName, ServiceRoleInfo::getCommandType, ServiceRoleInfo::getServiceInstanceId,
-                ServiceRoleInfo::getFrameCode
-        );
-        for(ServiceRoleInfo oldOne : roleInfoList) {
-            FrameServiceRoleEntity frameServiceRoleEntity = srvRoleMap.get(oldOne.getName());
-            ServiceRoleInfo newOne = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
-            BeanUtil.copyProperties(newOne, oldOne, cpOpt);
+        if (!roleInfoList.isEmpty()) {
+            String frameCode = roleInfoList.get(0).getFrameCode();
 
-            oldOne.setCreateDecompressDir(serviceDef.getCreateDecompressDir());
-            oldOne.setDecompressPackageName(serviceEntity.getDecompressPackageName());
-            oldOne.setPackageName(serviceEntity.getPackageName());
-            oldOne.setArchInfoMap(ServicePkgNameUtils.getArchInfo(serviceEntity));
+            FrameServiceEntity serviceEntity = frameService.getNewestDefByName(frameCode, serviceNode.getServiceName());
+            List<FrameServiceRoleEntity> srvRoles = frameServiceRoleService.getAllServiceRoleList(serviceEntity.getId());
+            Map<String, FrameServiceRoleEntity> srvRoleMap = CollectionUtil.toMap(srvRoles, new HashMap<>(), FrameServiceRoleEntity::getServiceRoleName);
 
-            Optional.ofNullable(ServiceRoleStrategyContext.getServiceRoleHandler(newOne.getName()))
-                    .ifPresent(ha -> ha.handlerServiceRoleInfo(oldOne, oldOne.getHostname()));
+
+            ServiceInfo serviceDef = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
+            CopyOptions cpOpt = CopyOptions.create().setIgnoreProperties(
+                    ServiceRoleInfo::getClusterId, ServiceRoleInfo::getHostname, ServiceRoleInfo::getHostCommandId,
+                    ServiceRoleInfo::getParentName, ServiceRoleInfo::getCommandType, ServiceRoleInfo::getServiceInstanceId,
+                    ServiceRoleInfo::getFrameCode
+            );
+//            根据最新的ddl，更新配置信息
+            for(ServiceRoleInfo oldOne : roleInfoList) {
+                FrameServiceRoleEntity frameServiceRoleEntity = srvRoleMap.get(oldOne.getName());
+                ServiceRoleInfo newOne = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
+                BeanUtil.copyProperties(newOne, oldOne, cpOpt);
+
+                oldOne.setCreateDecompressDir(serviceDef.getCreateDecompressDir());
+                oldOne.setDecompressPackageName(serviceEntity.getDecompressPackageName());
+                oldOne.setPackageName(serviceEntity.getPackageName());
+                oldOne.setArchInfoMap(ServicePkgNameUtils.getArchInfo(serviceEntity));
+
+                Optional.ofNullable(ServiceRoleStrategyContext.getServiceRoleHandler(newOne.getName()))
+                        .ifPresent(ha -> ha.handlerServiceRoleInfo(oldOne, oldOne.getHostname()));
+            }
         }
 
         node.setStatus(NodeStatus.PENDING);

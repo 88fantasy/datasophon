@@ -17,12 +17,14 @@
 
 package com.datasophon.api.master.handler.service;
 
+import akka.actor.ActorSelection;
+import akka.pattern.Patterns;
+import akka.util.Timeout;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.SpringTool;
-import com.datasophon.common.Constants;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.enums.HookType;
 import com.datasophon.common.model.ArchInfo;
@@ -30,23 +32,15 @@ import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 
-import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
-import cn.hutool.core.io.FileUtil;
 
 public class ServiceInstallHandler extends ServiceHandler {
     
@@ -84,25 +78,9 @@ public class ServiceInstallHandler extends ServiceHandler {
         Map<String, ArchInfo> archInfoMap = serviceRoleInfo.getArchInfoMap();
         if (archInfoMap.containsKey(arch)) {
             String packageName = archInfoMap.get(arch).getPackageName();
-            String packageFilePath = Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + packageName;
-            String md5FilePath = packageFilePath + ".md5";
-            logger.info("package path: {}, md5FilePath: {}", packageFilePath, md5FilePath);
-            if(Constants.NEXUS_ENABLE) {
-                installServiceRoleCommand.setPackageName(packageName);
-                installServiceRoleCommand.setPackageMd5("");
-            } else {
-                if (FileUtil.exist(packageFilePath) && FileUtil.exist(md5FilePath)) {
-                    installServiceRoleCommand.setPackageName(packageName);
-                    installServiceRoleCommand.setPackageMd5(FileUtil.readString(md5FilePath, Charset.defaultCharset()));
-                } else {
-                    logger.error("file or md5 not exist!, package path: {}, md5FilePath: {}", packageFilePath, md5FilePath);
-                    execResult.setExecOut("file or md5 not exist !");
-                    return execResult;
-                }
-            }
-
+            installServiceRoleCommand.setPackageName(packageName);
         } else {
-            execResult.setExecOut("arch [" + arch + "] is undefined !");
+            execResult.setExecOut("未找到满足系统架构 [" + arch + "] 的安装包 !");
             return execResult;
         }
         

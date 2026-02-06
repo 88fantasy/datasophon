@@ -52,5 +52,5 @@ public interface FrameServiceService extends IService<FrameServiceEntity> {
 
     List<FrameServiceEntity> listSimpleService(List<String> clusterFrames);
 
-    FrameServiceEntity getNewestDefByName(String serviceName);
+    FrameServiceEntity getNewestDefByName(String frameCode, String serviceName);
 }

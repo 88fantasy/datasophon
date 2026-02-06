@@ -7,7 +7,7 @@ echo "INSTALL_HOME is : $INSTALL_HOME"
 ZOO_CFG="$INSTALL_HOME/conf/zoo.cfg"
 
 
-get_zookeeper_port() {
+get_zookeeper_vote_addr() {
     local config_file="$1"
 
     if [ ! -f "$config_file" ]; then
@@ -35,10 +35,14 @@ get_zookeeper_port() {
         return 1
     fi
 
-    port=$(echo "$server_config" | cut -d':' -f2)
+    port=$(echo "$server_config" | cut -d':' -f3)
+    host=$(echo "$server_config" | cut -d':' -f1)
 
     if [ -z "$port" ]; then
         return 1
+    fi
+    if [ -z "$host" ]; then
+       return 1;
     fi
 
     if ! [[ "$port" =~ ^[0-9]+$ ]]; then
@@ -46,7 +50,7 @@ get_zookeeper_port() {
     fi
 
     # 输出端口号
-    echo "$port"
+    echo "$host:$port"
     return 0
 }
 
@@ -55,14 +59,14 @@ get_zookeeper_port() {
 check_status() {
 #    优先使用端口检查
     if command -v netstat >/dev/null 2>&1; then
-        port=$(get_zookeeper_port "$ZOO_CFG")
+        addr=$(get_zookeeper_vote_addr "$ZOO_CFG")
         if [ -n "$port" ]; then
-            if netstat -ntlp 2>/dev/null | grep -q ":$port "; then
+            if netstat -ntlp 2>/dev/null | grep -q "$addr "; then
                         return 0
             fi
         fi
     fi
-    zk_pid=$(ps -ef | grep -v grep | grep "$INSTALL_HOME" | grep "org.apache.zookeeper.server.quorum.QuorumPeerMain" | awk '{print $2}' | head -1)
+    zk_pid=$(ps -ef | grep -v grep  | grep "org.apache.zookeeper.server.quorum.QuorumPeerMain" | awk '{print $2}' | head -1)
     if [ -n "$zk_pid" ]; then
         return 0
     else

@@ -259,8 +259,8 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
                 log.info("执行{}{}成功, 共{}个角色, 类型为{}", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName(), roles.size(), type.getName());
                 cb.onSuccess(NodeStatus.SUCCESS.name());
             } else {
-                String message = String.format("在%s %s %s %s失败", currentRole.getHostname(), currentRole.getCommandType().getCommandName(Constants.CN),
-                        currentRole.getParentName(), currentRole.getName());
+                String message = String.format("在%s %s %s %s失败, 原因：%s", currentRole.getHostname(), currentRole.getCommandType().getCommandName(Constants.CN),
+                        currentRole.getParentName(), currentRole.getName(), result.getExecOut());
                 throw new ServiceRoleExecException(message);
             }
         } catch (ServiceRoleExecException ex) {

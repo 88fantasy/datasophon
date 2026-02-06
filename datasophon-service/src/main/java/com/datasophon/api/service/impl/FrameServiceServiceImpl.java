@@ -170,9 +170,10 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
     }
 
     @Override
-    public FrameServiceEntity getNewestDefByName(String serviceName) {
+    public FrameServiceEntity getNewestDefByName(String frameCode, String serviceName) {
         List<FrameServiceEntity> services = this.lambdaQuery()
                 .eq(FrameServiceEntity::getServiceName, serviceName)
+                .eq(FrameServiceEntity::getFrameCode, frameCode)
                 .list();
         if(services.isEmpty()) {
             return null;
