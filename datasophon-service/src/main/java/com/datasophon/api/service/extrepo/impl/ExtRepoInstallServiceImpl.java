@@ -320,7 +320,9 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             if (hosts == null) {
                 continue;
             }
-            for (String hostname : hosts) {
+
+            for (int i = 0; i < hosts.size(); i++) {
+                String hostname = hosts.get(i);
                 ClusterServiceRoleInstanceEntity db = roleInstanceService.getOneServiceRole(serviceRole.getServiceRoleName(), hostname, cluster.getId());
 
                 CommandType roleCmdType = db == null ? CommandType.INSTALL_SERVICE : CommandType.UPGRADE_SERVICE;
@@ -329,6 +331,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                         serviceRole.getServiceRoleName(), serviceRole.getServiceRoleType(),
                         cache.get(hostname)
                 );
+                hostCommand.setSort(i);
                 hostCommandList.add(hostCommand);
             }
         }
@@ -367,6 +370,9 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
             List<ServiceRoleInfo> masterRoles = new ArrayList<>();
             List<ServiceRoleInfo> elseRoles = new ArrayList<>();
+
+            List<ClusterServiceCommandHostCommandEntity> hostCommands = context.getCmdHostList(cmd.getCommandId());
+            hostCommands.sort(Comparator.comparing(ClusterServiceCommandHostCommandEntity::getSort, Comparator.nullsLast(Comparator.naturalOrder())));
             for (ClusterServiceCommandHostCommandEntity hostCommand : context.getCmdHostList(cmd.getCommandId())) {
                 FrameServiceRoleEntity frameServiceRoleEntity = srvRoleMap.get(hostCommand.getServiceRoleName());
 
@@ -377,7 +383,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                 serviceRoleInfo.setHostCommandId(hostCommand.getHostCommandId());
 
                 serviceRoleInfo.setParentName(cmd.getServiceName());
-                serviceRoleInfo.setCommandType(CommandType.ofCode(cmd.getCommandType()));
+                serviceRoleInfo.setCommandType(CommandType.ofCode(hostCommand.getCommandType()));
                 serviceRoleInfo.setServiceInstanceId(cmd.getServiceInstanceId());
 
                 serviceRoleInfo.setPackageName(serviceEntity.getPackageName());
@@ -745,6 +751,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             );
             ClusterServiceCommandHostCommandEntity hostCommand = ProcessUtils.generateCommandHostCommandEntity(commandType,
                     command.getCommandId(), roleInstance.getServiceRoleName(), roleInstance.getRoleType(), commandHost);
+            hostCommand.setSort(0);
             hostCommands.add(hostCommand);
         }
         commandHostService.saveBatch(map.values());

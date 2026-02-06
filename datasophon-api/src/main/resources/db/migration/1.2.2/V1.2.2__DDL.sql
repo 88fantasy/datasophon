@@ -49,7 +49,7 @@ create table t_ddh_upload_temp_file_chunk
 CREATE TABLE t_ddh_dag_definition_entity
 (
     id             varchar(64)  NOT NULL COMMENT 'DAG唯一标识',
-    cluster_id     int(10)        DEFAULT NULL COMMENT '集群唯一标识',
+    cluster_id     int(10)               DEFAULT NULL COMMENT '集群唯一标识',
     dag_name       VARCHAR(255) NOT NULL COMMENT 'DAG名称',
     description    VARCHAR(1000) COMMENT 'DAG描述',
     status         VARCHAR(50)  NOT NULL DEFAULT 'PENDING' COMMENT 'DAG状态: PENDING/RUNNING/SUCCESS/FAILED',
@@ -88,3 +88,8 @@ CREATE TABLE t_ddh_edge_definition_entity
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT ='节点依赖关系表';
+
+
+
+alter table t_ddh_cluster_service_command_host_command
+    ADD COLUMN `sort` text NULL COMMENT '命令顺序' AFTER `command_type`;

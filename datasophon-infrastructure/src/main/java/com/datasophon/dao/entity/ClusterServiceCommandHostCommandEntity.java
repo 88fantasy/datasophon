@@ -75,5 +75,7 @@ public class ClusterServiceCommandHostCommandEntity implements Serializable {
     private Date createTime;
     
     private Integer commandType;
+
+    private Integer sort;
     
 }
