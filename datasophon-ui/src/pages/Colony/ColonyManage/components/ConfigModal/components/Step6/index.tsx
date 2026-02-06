@@ -238,7 +238,12 @@ const Index = ({
                 tableHeaderData.current.map((keyItem) => {
                     let flag = keyItem.hosts.includes(item.hostname)
                     obj[`${keyItem.serviceRoleName}`] = flag;
-                    if (flag) obj.checkedList = [keyItem.serviceRoleName]
+                    if (flag) {
+                        if (!obj.checkedList) {
+                            obj.checkedList = []
+                        }
+                        obj.checkedList.push(keyItem.serviceRoleName)
+                    }
                 });
                 resArr.push({
                     isChildSelected: false,
