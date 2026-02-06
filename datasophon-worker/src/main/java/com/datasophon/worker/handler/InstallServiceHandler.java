@@ -24,11 +24,12 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ServiceLoaderUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.digest.MD5;
+import com.alibaba.fastjson.JSONObject;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.storage.DownloadResult;
 import com.datasophon.common.storage.PackageStorageUtils;
-import com.datasophon.common.utils.EncryptionUtils;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
@@ -180,10 +181,11 @@ public class InstallServiceHandler {
     }
 
     protected String getInstallMetaSign(DownloadResult result, InstallServiceRoleCommand command) {
-        return EncryptionUtils.getMd5(
-                String.format("%s-%s", result.getMd5(), BooleanUtil.isTrue(command.getCreateDecompressDir()))
-        );
+//        mete表示会影响解压文件内容的配置项
+        PackageMeta meta = new PackageMeta(result, command);
+        return MD5.create().digestHex(JSONObject.toJSONString(meta), StandardCharsets.UTF_8);
     }
+
 
     protected boolean decompressPkg(InstallServiceRoleCommand instCmd, DownloadResult downloadResult) {
         String packageName = instCmd.getPackageName();
@@ -284,5 +286,28 @@ public class InstallServiceHandler {
 
     protected String getLinkName(InstallServiceRoleCommand command) {
         return Constants.INSTALL_PATH + Constants.SLASH + PkgInstallPathUtils.getLinkDirName(command);
+    }
+
+
+    @Data
+    protected static class PackageMeta {
+        private String md5;
+        private Object createDecompressDir;
+        private Object runAs;
+        private Object resourceStrategies;
+        private Object hooks;
+
+        protected PackageMeta() {
+        }
+
+
+        protected PackageMeta(DownloadResult result, InstallServiceRoleCommand command) {
+            md5 = result.getMd5();
+            createDecompressDir = command.getCreateDecompressDir();
+            runAs = command.getRunAs();
+            resourceStrategies = command.getResourceStrategies();
+            hooks = command.getHooks();
+        }
+
     }
 }

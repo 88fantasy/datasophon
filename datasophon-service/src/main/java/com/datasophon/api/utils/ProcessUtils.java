@@ -165,6 +165,7 @@ public class ProcessUtils {
             clusterServiceInstanceConfig.setUpdateTime(new Date());
             serviceInstanceConfigService.save(clusterServiceInstanceConfig);
         } else {
+            clusterServiceInstance.setNeedRestart(NeedRestart.NO);
             clusterServiceInstance.setServiceState(ServiceState.RUNNING);
             clusterServiceInstance.setServiceStateCode(ServiceState.RUNNING.getValue());
             serviceInstanceService.updateById(clusterServiceInstance);
@@ -371,8 +372,7 @@ public class ProcessUtils {
         String commandId = IdUtil.simpleUUID();
         commandEntity.setCommandId(commandId);
         commandEntity.setClusterId(clusterId);
-        commandEntity.setCommandName(commandType.getCommandName(PropertyUtils.getString(Constants.LOCALE_LANGUAGE))
-                                     + Constants.SPACE + serviceName);
+        commandEntity.setCommandName(commandType.getCommandName(PropertyUtils.getString(Constants.LOCALE_LANGUAGE)) + Constants.SPACE + serviceName);
         commandEntity.setCommandProgress(0);
         commandEntity.setCommandState(CommandState.RUNNING);
         commandEntity.setCommandType(commandType.getValue());

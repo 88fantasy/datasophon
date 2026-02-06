@@ -537,7 +537,6 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         for (NodeDefinition node : nodes) {
             if (!dto.isRestart() || !NodeStatus.SUCCESS.equals(node.getStatus())) {
                 updateNode(node);
-
             }
         }
 
