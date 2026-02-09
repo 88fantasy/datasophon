@@ -10,7 +10,8 @@ import { showMsgAfferRequest } from "../../../../../../../utils/util";
 import CommonBtnList from "../../../../../../../components/Common/CommonBtnList";
 import { Checkbox, message, Tag } from "antd";
 import { useConfigContext } from "../../configContext";
-import { clone, cloneDeep } from "lodash-es";
+import { clone, cloneDeep, noop } from "lodash-es";
+import { useStepImportManifestHook } from "../StepImportManifest/useStepImportManifestHook";
 
 
 
@@ -185,12 +186,35 @@ const Index = ({
         }))
     }, [changeheaderHost, getAllCheckedStatus, getCheckedStatus])
 
+
+    const {
+        invokeGetManifestData
+    } = useStepImportManifestHook({
+        formMapRef
+    })
+
     const getNonMasterRoleList = useCallback(async () => {
+
+        const invokeGetManifestDataRes = invokeGetManifestData()
+
         const params = {
             clusterId: clusterId,
             serviceIds: steps4Data.services?.map(val => val.id).join(",") || "",
         };
-        const res = await axiosPost(API.getNonMasterRoleList, params)
+
+        let api
+        if (invokeGetManifestDataRes) {
+            api = axiosJsonPost.bind(noop, API.getNonMasterRoleListByDeployment)
+            Object.assign(params, {
+                deployFileId: invokeGetManifestDataRes.data?.id,
+                contentDecodePasswd: invokeGetManifestDataRes.contentDecodePasswd,
+            })
+        } else {
+            api = axiosPost.bind(noop, API.getNonMasterRoleList)
+        }
+
+
+        const res = await api(params)
 
 
         if (res.code === 200) {
@@ -206,7 +230,7 @@ const Index = ({
         }
 
         return res
-    }, [clusterId, steps4Data.services])
+    }, [clusterId, invokeGetManifestData, steps4Data.services])
 
     const apiFn = useCallback(async (params, sort, filter) => {
         const res = await axiosPost(API.getAllHost, {

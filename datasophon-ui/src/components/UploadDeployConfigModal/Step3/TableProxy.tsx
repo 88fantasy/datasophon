@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import * as yaml from 'js-yaml';
 import CommonTable from "../../Common/CommonTable";
 import { sm4Decrypt } from "../../../utils/secretUtils";
+import { dataSource } from "../../../api/services";
 
 const Index = (props, ref) => {
 
@@ -16,48 +17,50 @@ const Index = (props, ref) => {
 
     const invokeInit = useCallback(async () => {
 
-        const yamlData = deployFileId && await new Promise((resolve) => {
-            const file = deployFileId?.[0]?.originFileObj;
-            const reader = new FileReader();
 
-            reader.onload = function (event) {
-                const yamlText = event.target.result;
+        const yamlData = deployFileId?.length &&
+            await new Promise((resolve) => {
+                const file = deployFileId?.[0]?.originFileObj;
+                const reader = new FileReader();
 
-                let content = yamlText
+                reader.onload = function (event) {
+                    const yamlText = event.target.result;
+
+                    let content = yamlText
 
 
-                try {
+                    try {
 
-                    // const keyBase64 = "E9+IV0ZpPTMKLzBnfeXPCQ==";
-                    // const key = Buffer.from(keyBase64, 'base64').toString('hex'); // 转为 hex 字符串
-                    content = sm4Decrypt(contentDecodePasswd, content)
-                } catch (error) {
-                    console.warn('解密失败', error)
+                        // const keyBase64 = "E9+IV0ZpPTMKLzBnfeXPCQ==";
+                        // const key = Buffer.from(keyBase64, 'base64').toString('hex'); // 转为 hex 字符串
+                        content = sm4Decrypt(contentDecodePasswd, content)
+                    } catch (error) {
+                        console.warn('解密失败', error)
+                    }
+
+                    try {
+
+
+                        content = yaml.load(content); // 使用 js-yaml 解析
+                        console.log('loadcontent', content)
+                        content = JSON.parse(JSON.stringify(content, null, 2));
+                    } catch (err) {
+                        console.warn('YAML 解析错误:', err);
+                        content = undefined
+                        // document.getElementById('output').textContent = '解析失败: ' + err.message;
+                    }
+
+                    resolve(content)
+                };
+
+
+                if (file) {
+
+                    console.log('file', file)
+                    reader.readAsText(file);
+
                 }
-
-                try {
-
-
-                    content = yaml.load(content); // 使用 js-yaml 解析
-                    console.log('loadcontent', content)
-                    content = JSON.parse(JSON.stringify(content, null, 2));
-                } catch (err) {
-                    console.warn('YAML 解析错误:', err);
-                    content = undefined
-                    // document.getElementById('output').textContent = '解析失败: ' + err.message;
-                }
-
-                resolve(content)
-            };
-
-
-            if (file) {
-
-                console.log('file', file)
-                reader.readAsText(file);
-
-            }
-        })
+            })
 
         try {
             if (yamlData?.app) {
@@ -65,6 +68,13 @@ const Index = (props, ref) => {
                     return {
                         ...preState,
                         dataSource: yamlData.app || []
+                    }
+                })
+            } else {
+                setState(preState => {
+                    return {
+                        ...preState,
+                        dataSource: []
                     }
                 })
             }

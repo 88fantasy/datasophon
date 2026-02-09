@@ -26,14 +26,17 @@ export default {
   getServiceList: path + "/frame/service/list", // 选择服务的列表
   listNewest: path + "/frame/service/listNewest", // 选择服务的列表
   listBasicFrameService: path + "/frame/service/listBasicFrameService", // 选择服务的列表
+  listNewestByDeployment: path + "/extrepo/listNewestByDeployment", // 选择服务的列表
   deleteService: path + "/frame/service/delete", // 删除框架服务
   getServiceConfigOption: path + "/service/install/getServiceConfigOption", // 查询服务配置
   getServiceConfigFromDdl: path + "/service/install/getServiceConfigFromDdl", // 查询服务配置
   getServiceRoleList: path + "/frame/service/role/getServiceRoleList", // 查询服务对应的服务角色
+  getServiceRoleListByDeployment: path + "/extrepo/getServiceRoleListByDeployment", // 查询服务对应的服务角色
   getAllHost: path + "/cluster/host/all", // 查询集群所有主机
   saveServiceRoleHostMapping:
     path + "/service/install/saveServiceRoleHostMapping", // 保存服务角色与主机对应关系
   getNonMasterRoleList: path + "/frame/service/role/getNonMasterRoleList", // 查询服务对应的非Master角色
+  getNonMasterRoleListByDeployment: path + "/extrepo/getNonMasterRoleListByDeployment", // 查询服务对应的非Master角色
   saveServiceConfig: path + "/service/install/saveServiceConfig", // 保存服务配置
   startExecuteCommand: path + "/cluster/service/command/startExecuteCommand", // 启动执行指令
   redeploy: path + "/extrepo/redeploy", // 启动执行指令
