@@ -88,7 +88,9 @@ const Index = forwardRef((props, ref) => {
                 invokeCancelUpdateProgress()
             } else {
                 if (![1, -1].includes(Number(res.data.state))) {
-                    invokeUpdateProgress(id)
+                    setTimeout(() => {
+                        invokeUpdateProgress(id)
+                    }, 2 * 1000)
                 }
             }
 
