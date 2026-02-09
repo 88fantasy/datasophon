@@ -2,12 +2,14 @@ import { pickControlPropsWithId, ProForm, ProFormItemRender, type ProColumns } f
 import CommonTable, { invokeGenOptionCol } from "../../../../../../../components/Common/CommonTable";
 import { API } from "../../../../../../../api";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { axiosPost } from "../../../../../../../api/request";
+import { axiosJsonPost, axiosPost } from "../../../../../../../api/request";
 import { useConfigContext } from "../../configContext";
 import { T_TYPE_INIT } from "../../stepType";
 import { sm4Decrypt } from "../../../../../../../utils/secretUtils";
 import * as yaml from 'js-yaml';
 import { valueFn } from "../../../../../../../utils/listUtils";
+import { noop } from "lodash-es";
+import { useStepImportManifestHook } from "../StepImportManifest/useStepImportManifestHook";
 
 
 
@@ -40,87 +42,48 @@ const Index = ({
 
 
 
-    const invokeInitYamlData = useCallback(async () => {
-
-        const stepImportManifestRef = formMapRef.current[index - 1]
-
-        const values = stepImportManifestRef?.current?.getFieldsValue() || {}
-        const deployFileId = values.deployFileId
-        const contentDecodePasswd = values.contentDecodePasswd
-        if (deployFileId) {
-
-
-            const yamlData = deployFileId && await new Promise((resolve) => {
-                const file = deployFileId?.[0]?.originFileObj;
-                const reader = new FileReader();
-
-                reader.onload = function (event) {
-                    const yamlText = event.target.result;
-
-                    let content = yamlText
-
-
-                    try {
-
-                        // const keyBase64 = "E9+IV0ZpPTMKLzBnfeXPCQ==";
-                        // const key = Buffer.from(keyBase64, 'base64').toString('hex'); // 转为 hex 字符串
-                        content = sm4Decrypt(contentDecodePasswd, content)
-                    } catch (error) {
-                        console.warn('解密失败', error)
-                    }
-
-                    try {
-
-
-                        content = yaml.load(content); // 使用 js-yaml 解析
-                        console.log('loadcontent', content)
-                        content = JSON.parse(JSON.stringify(content, null, 2));
-                    } catch (err) {
-                        console.warn('YAML 解析错误:', err);
-                        content = undefined
-                        // document.getElementById('output').textContent = '解析失败: ' + err.message;
-                    }
-
-                    resolve(content)
-                };
-
-
-                if (file) {
-
-                    console.log('file', file)
-                    reader.readAsText(file);
-
-                }
-            })
-
-            return yamlData
-        }
-
-
-    }, [formMapRef, index])
+    const {
+        invokeGetManifestData
+    } = useStepImportManifestHook({
+        formMapRef
+    })
 
     const invokeInit = useCallback(async () => {
 
 
-        const invokeInitYamlDataRes = await invokeInitYamlData()
+        const invokeGetManifestDataRes = invokeGetManifestData()
 
-        console.log('invokeInitYamlDataRes', invokeInitYamlDataRes)
-        const invokeInitYamlDataResMap = invokeInitYamlDataRes?.app?.reduce((pre, aft) => {
-            pre[aft.name] = aft
+        // console.log('invokeInitYamlDataRes', invokeInitYamlDataRes)
+        // const invokeInitYamlDataResMap = invokeInitYamlDataRes?.app?.reduce((pre, aft) => {
+        //     pre[aft.name] = aft
 
-            return pre
-        }, {})
+        //     return pre
+        // }, {})
 
 
         const params = {
             clusterId,
         }
 
-        if (type !== T_TYPE_INIT) {
-            params.newest = true
+        let api
+
+        if (type === T_TYPE_INIT) {
+            api = axiosPost.bind(noop, API.listBasicFrameService)
+        } else if (invokeGetManifestDataRes) {
+            api = axiosJsonPost.bind(noop, API.listNewestByDeployment)
+            Object.assign(params, {
+                deployFileId: invokeGetManifestDataRes.data?.id,
+                contentDecodePasswd: invokeGetManifestDataRes.contentDecodePasswd,
+            })
+
+        } else {
+            Object.assign(params, {
+                newest: true
+            })
+            api = axiosPost.bind(noop, API.listNewest)
         }
 
-        const res = await axiosPost(type === T_TYPE_INIT ? API.listBasicFrameService : API.listNewest, params)
+        const res = await api(params)
 
 
 
@@ -158,7 +121,7 @@ const Index = ({
         }
 
 
-    }, [clusterId, invokeInitYamlData, invokeUpdateFormData, type])
+    }, [clusterId, invokeGetManifestData, invokeUpdateFormData, type])
 
 
     const invokeValid = useCallback(async () => {
@@ -225,8 +188,7 @@ const Index = ({
 
     useEffect(() => {
         if (
-            current === index &&
-            !dataSource?.length
+            current === index
         ) {
             invokeInit()
         }
