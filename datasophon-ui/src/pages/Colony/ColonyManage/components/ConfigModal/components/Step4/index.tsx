@@ -32,7 +32,7 @@ const Index = ({
     const invokeUpdateFormData = useCallback((arr, source) => {
 
         arr = arr.filter(
-            (item) => item.installed
+            (item) => item.selected
         );
 
         formMapRef.current[index]?.current.setFieldsValue({
