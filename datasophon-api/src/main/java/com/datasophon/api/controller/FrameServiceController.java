@@ -20,6 +20,7 @@ package com.datasophon.api.controller;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.datasophon.api.dto.ddl.UpdateDdlDTO;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
@@ -162,9 +163,24 @@ public class FrameServiceController extends ApiController {
 
     @PostMapping("/updateDdl/{serviceId}")
     @Operation(summary = "更新service_ddl")
-    public Result delete(@PathVariable("serviceId") Integer serviceId, MultipartFile file) throws IOException {
+    public Result updateDdl(@PathVariable("serviceId") Integer serviceId, MultipartFile file) throws IOException {
         String content = IoUtil.read(file.getInputStream(), StandardCharsets.UTF_8);
         ddlMetaService.updateServiceDdl(serviceId, content);
         return Result.success();
+    }
+
+    @PostMapping("/updateDdl2/{serviceId}")
+    @Operation(summary = "更新service_ddl2")
+    public Result updateDdl2(@PathVariable("serviceId") Integer serviceId,@RequestBody UpdateDdlDTO dto) {
+        ddlMetaService.updateServiceDdl(serviceId, dto.getContent());
+        return Result.success();
+    }
+
+
+
+    @RequestMapping("/getServiceDdl/{serviceId}")
+    @Operation(summary = "查看serviceDdl定义")
+    public Result getServiceDdl(@PathVariable("serviceId") Integer serviceId) {
+        return Result.success(ddlMetaService.getServiceDdl(serviceId));
     }
 }

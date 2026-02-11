@@ -52,6 +52,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -369,6 +370,16 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             FileUtil.newFile(targetFile.getPath());
         }
         FileUtil.writeString(serviceDdl, targetFile, StandardCharsets.UTF_8);
+    }
+
+    @Override
+    public String getServiceDdl(Integer serviceId) {
+        FrameServiceEntity service = frameServiceService.getById(serviceId);
+        Objects.requireNonNull(service);
+        FrameInfoEntity frameInfo = frameInfoService.getById(service.getFrameId());
+        File metaDir = FileUtil.file(Constants.META_PATH);
+        File targetFile = PathUtils.join(metaDir.toPath(), frameInfo.getFrameCode(), service.getServiceName(), MetaUtils.SERVICE_DDL).toFile();
+        return FileUtil.readString(targetFile, StandardCharsets.UTF_8);
     }
 
 }
