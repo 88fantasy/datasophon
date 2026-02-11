@@ -108,6 +108,9 @@ const Index: React.FC = () => {
                                     total: data.length
                                 }
                             },
+                            scroll: {
+                                y: '50vh'
+                            },
                             columns,
                         }}
                     />

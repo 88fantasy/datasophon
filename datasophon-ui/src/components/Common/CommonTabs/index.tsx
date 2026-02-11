@@ -28,7 +28,6 @@ const Index = (props) => {
     }, [])
 
     const items = useMemo(() => {
-        console.log('memoTabItem')
         return memoTabItem
             .filter(Boolean)
             .map(val => {
