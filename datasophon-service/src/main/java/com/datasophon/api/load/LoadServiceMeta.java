@@ -106,7 +106,6 @@ public class LoadServiceMeta implements ApplicationRunner {
                 }
                 globalVariables.put(GlobalVariables.surroundKey(GlobalVariables.CLUSTER_CODE), cluster.getClusterFrame());
                 GlobalVariables.put(cluster.getId(), globalVariables);
-                ProcessUtils.createServiceActor(cluster);
             }
         }
     }

@@ -98,7 +98,7 @@ public class JschUtils {
             in = channel.getInputStream();
             String execOut = IoUtil.read(in, Charset.defaultCharset());
             // 去除尾部的换行符
-            if (execOut.length() > 0 && execOut.charAt(execOut.length() - 1) == '\n') {
+            if (!execOut.isEmpty() && execOut.charAt(execOut.length() - 1) == '\n') {
                 execOut = execOut.substring(0, execOut.length() - 1);
             }
             // 这里阻塞等待执行完成
@@ -325,6 +325,23 @@ public class JschUtils {
     }
 
 
+    public static ExecResult ensureRemotePathExists(Session session, String remotePath) {
+        ExecResult result = new ExecResult();
+        ChannelSftp channel = null;
+        try {
+            channel = (ChannelSftp) session.openChannel("sftp");
+            channel.connect(5 * 1000);
+            return ensureRemotePathExists(session.getHost(), channel, remotePath);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            result.setExecErrOut(e.getMessage());
+        }  finally {
+            if (channel != null && channel.isConnected()) {
+                channel.disconnect();
+            }
+        }
+        return result;
+    }
 
     private static ExecResult ensureRemotePathExists(String host, ChannelSftp channel, String remotePath) {
         if (remotePath == null || !remotePath.startsWith("/")) {

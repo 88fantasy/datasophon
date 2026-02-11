@@ -39,15 +39,7 @@ public class AlertActor extends TypedActor<String> {
     private static final String EXCEPTION = "exception";
     
     private static final String RESOLVED = "resolved";
-    
-    @Override
-    public void onReceive(Object msg) throws Throwable {
-        if (msg instanceof String) {
 
-        } else {
-            unhandled(msg);
-        }
-    }
 
     @Override
     protected void doOnReceive(String alertMessage) throws Throwable {

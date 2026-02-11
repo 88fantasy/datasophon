@@ -27,7 +27,6 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.JschUtils;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-import lombok.Builder;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
@@ -39,9 +38,6 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class MinaUtils {
     
@@ -146,16 +142,21 @@ public class MinaUtils {
     }
 
     @Data
-    @Builder
     public static class SessionCredential {
 
         private String host;
 
-        @Builder.Default
-        private int port = 22;
+        private Integer port = 22;
 
         private String username;
 
         private String password;
+
+        public SessionCredential(String host, Integer port,  String username, String password) {
+            this.host = host;
+            this.password = password;
+            this.port = port == null ? 22 : port;
+            this.username = username;
+        }
     }
 }

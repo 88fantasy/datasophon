@@ -195,10 +195,6 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
                 return Result.error(Status.CLUSTER_CODE_EXISTS.getMsg());
             }
         }
-        ClusterInfoEntity cluster = this.getById(clusterInfo.getId());
-        if (!cluster.getClusterCode().equals(clusterInfo.getClusterCode())) {
-            ProcessUtils.createServiceActor(clusterInfo);
-        }
         this.updateById(clusterInfo);
         return Result.success();
     }

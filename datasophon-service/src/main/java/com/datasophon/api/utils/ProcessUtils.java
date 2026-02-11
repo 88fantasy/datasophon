@@ -19,7 +19,6 @@ package com.datasophon.api.utils;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSelection;
-import akka.actor.Props;
 import akka.pattern.Patterns;
 import akka.util.Timeout;
 import cn.hutool.core.bean.BeanUtil;
@@ -34,9 +33,7 @@ import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.CancelCommandMap;
-import com.datasophon.api.master.MasterServiceActor;
 import com.datasophon.api.master.ServiceCommandActor;
-import com.datasophon.api.master.ServiceExecuteResultActor;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
 import com.datasophon.api.master.handler.service.ServiceHandler;
 import com.datasophon.api.master.handler.service.ServiceInstallHandler;
@@ -53,7 +50,6 @@ import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.api.service.ClusterZkService;
-import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
@@ -67,7 +63,6 @@ import com.datasophon.common.model.DAGGraph;
 import com.datasophon.common.model.ExternalLink;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceExecuteResultMessage;
 import com.datasophon.common.model.ServiceNode;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.model.StartWorkerMessage;
@@ -90,7 +85,6 @@ import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceWebuis;
 import com.datasophon.dao.entity.ClusterVariable;
 import com.datasophon.dao.entity.ClusterZk;
-import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.enums.AlertLevel;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.NeedRestart;
@@ -276,27 +270,6 @@ public class ProcessUtils {
         }
     }
 
-    public static void tellCommandActorResult(String serviceName, ExecuteServiceRoleCommand executeServiceRoleCommand,
-                                              ServiceExecuteState state) {
-        ActorRef serviceExecuteResultActor = ActorUtils.getLocalActor(ServiceExecuteResultActor.class,
-                ActorUtils.getActorRefName(ServiceExecuteResultActor.class));
-
-        ServiceExecuteResultMessage serviceExecuteResultMessage = new ServiceExecuteResultMessage();
-        serviceExecuteResultMessage.setServiceExecuteState(state);
-        serviceExecuteResultMessage.setDag(executeServiceRoleCommand.getDag());
-        serviceExecuteResultMessage.setServiceName(serviceName);
-        serviceExecuteResultMessage.setClusterCode(executeServiceRoleCommand.getClusterCode());
-        serviceExecuteResultMessage.setServiceRoleType(executeServiceRoleCommand.getServiceRoleType());
-        serviceExecuteResultMessage.setCommandType(executeServiceRoleCommand.getCommandType());
-        serviceExecuteResultMessage.setDag(executeServiceRoleCommand.getDag());
-        serviceExecuteResultMessage.setClusterId(executeServiceRoleCommand.getClusterId());
-        serviceExecuteResultMessage.setActiveTaskList(executeServiceRoleCommand.getActiveTaskList());
-        serviceExecuteResultMessage.setErrorTaskList(executeServiceRoleCommand.getErrorTaskList());
-        serviceExecuteResultMessage.setReadyToSubmitTaskList(executeServiceRoleCommand.getReadyToSubmitTaskList());
-        serviceExecuteResultMessage.setCompleteTaskList(executeServiceRoleCommand.getCompleteTaskList());
-
-        serviceExecuteResultActor.tell(serviceExecuteResultMessage, ActorRef.noSender());
-    }
 
     public static ClusterServiceCommandHostCommandEntity handleCommandResult(String hostCommandId, Boolean execResult,
                                                                              String execOut) {
@@ -529,31 +502,16 @@ public class ProcessUtils {
         }
     }
 
-    public static void createServiceActor(ClusterInfoEntity clusterInfo) {
-        FrameServiceService frameServiceService = SpringTool.getApplicationContext().getBean(FrameServiceService.class);
-
-        List<FrameServiceEntity> frameServiceList =
-                frameServiceService.getAllFrameServiceByFrameCode(clusterInfo.getClusterFrame());
-        for (FrameServiceEntity frameServiceEntity : frameServiceList) {
-            // create service actor
-            logger.info("create {} actor", clusterInfo.getClusterCode() + "-serviceActor-" + frameServiceEntity.getServiceName());
-            ActorUtils.actorSystem
-                    .actorOf(
-                            Props.create(MasterServiceActor.class).withDispatcher("my-forkjoin-dispatcher"),
-                            clusterInfo.getClusterCode() + "-serviceActor-" + frameServiceEntity.getServiceName()
-                    );
-        }
-    }
 
     public static String getExceptionMessage(Exception ex) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PrintStream pout = new PrintStream(out);
         ex.printStackTrace(pout);
-        String ret = new String(out.toByteArray());
+        String ret = out.toString();
         pout.close();
         try {
             out.close();
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         return ret;
     }

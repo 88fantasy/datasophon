@@ -24,6 +24,7 @@ import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.enums.HookType;
@@ -43,9 +44,9 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public class ServiceInstallHandler extends ServiceHandler {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ServiceInstallHandler.class);
-    
+
     @Override
     public ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception {
         ExecResult execResult = new ExecResult();
@@ -57,7 +58,7 @@ public class ServiceInstallHandler extends ServiceHandler {
         ClusterHostDO hostEntity = clusterHostService.getClusterHostByHostname(serviceRoleInfo.getHostname());
         if (Objects.nonNull(serviceRole)) {
             execResult.setExecResult(true);
-            execResult.setExecOut("already installed");
+            execResult.setExecOut(String.format("服务实例%s %s已经安装", serviceRole.getServiceName(), serviceRoleInfo.getName()));
             return execResult;
         }
         InstallServiceRoleCommand installServiceRoleCommand = new InstallServiceRoleCommand();
@@ -75,15 +76,14 @@ public class ServiceInstallHandler extends ServiceHandler {
         installServiceRoleCommand.setHooks(serviceRoleInfo.getMatchedHooks(HookType.PRE_INSTALL, HookType.POST_INSTALL));
 
         String arch = hostEntity.getCpuArchitecture();
-        Map<String, ArchInfo> archInfoMap = serviceRoleInfo.getArchInfoMap();
-        if (archInfoMap.containsKey(arch)) {
-            String packageName = archInfoMap.get(arch).getPackageName();
-            installServiceRoleCommand.setPackageName(packageName);
+        ArchInfo archInfo = ServicePkgNameUtils.getArchInfo(serviceRoleInfo, arch);
+        if (archInfo != null) {
+            installServiceRoleCommand.setPackageName(archInfo.getPackageName());
         } else {
             execResult.setExecOut("未找到满足系统架构 [" + arch + "] 的安装包 !");
             return execResult;
         }
-        
+
         ActorSelection actorSelection = ActorUtils.actorSystem.actorSelection(
                 "akka.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/installServiceActor");
         Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));

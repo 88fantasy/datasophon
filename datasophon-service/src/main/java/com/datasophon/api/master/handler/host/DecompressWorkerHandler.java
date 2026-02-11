@@ -23,6 +23,8 @@ import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.InstallState;
 import com.datasophon.common.model.HostInfo;
+import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.JschUtils;
 import com.jcraft.jsch.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,18 +35,20 @@ public class DecompressWorkerHandler implements DispatcherWorkerHandler {
     
     @Override
     public boolean handle(Session session, HostInfo hostInfo) {
-        String decompressResult = MinaUtils.execCmdWithResult(session, Constants.UNZIP_DDH_WORKER_CMD);
-        if (Constants.FAILED.equals(decompressResult)) {
-            logger.error("tar -zxvf datasophon-worker.tar.gz failed");
-            hostInfo.setErrMsg("tar -zxvf datasophon-worker.tar.gz failed");
+        ExecResult result = JschUtils.ensureRemotePathExists(session, Constants.INSTALL_PATH);
+        if (result.isSuccess()) {
+            result = MinaUtils.execCmd(session, Constants.UNZIP_DDH_WORKER_CMD);
+        }
+        if (!result.isSuccess()) {
+            logger.error("tar -zxvf datasophon-worker.tar.gz failed, {}", result.getExecResult());
+            hostInfo.setErrMsg("tar -zxvf datasophon-worker.tar.gz failed." + result.getExecResult());
             hostInfo.setMessage(MessageResolverUtils.getMessage("decompress.installation.package.fail"));
             CommonUtils.updateInstallState(InstallState.FAILED, hostInfo);
             return false;
         }
         logger.info("decompress datasophon-worker.tar.gz success");
         hostInfo.setProgress(50);
-        hostInfo.setMessage(MessageResolverUtils
-                .getMessage("installation.package.decompressed.success.and.modify.configuration.file"));
+        hostInfo.setMessage(MessageResolverUtils.getMessage("installation.package.decompressed.success.and.modify.configuration.file"));
         return true;
     }
 }

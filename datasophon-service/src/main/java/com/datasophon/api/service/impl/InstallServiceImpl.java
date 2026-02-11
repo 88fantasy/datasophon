@@ -406,12 +406,7 @@ public class InstallServiceImpl implements InstallService {
         List<ClusterHostDO> clusterHostList = hostService.getHostListByIds(clusterHostIdList);
         for (ClusterHostDO host : clusterHostList) {
             MinaUtils.doWithSession(
-                    MinaUtils.SessionCredential.builder()
-                            .host(host.getHostname())
-                            .port(host.getSshPort())
-                            .username(host.getSshUser())
-                            .password(host.getSshPassword())
-                            .build(),
+                    new MinaUtils.SessionCredential(host.getHostname(), host.getSshPort(), host.getSshUser(), host.getSshPassword()),
                     session -> {
                         logger.info("hostAgent command:{}", "service datasophon-worker " + commandType);
                         MinaUtils.execCmdWithResult(session, "service datasophon-worker " + commandType);

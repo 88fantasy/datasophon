@@ -6,6 +6,7 @@ import akka.util.Timeout;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.InstallServiceRoleCommand;
@@ -48,16 +49,15 @@ public class ServiceUpgradeHandler extends ServiceHandler {
 
 
         String arch = hostEntity.getCpuArchitecture();
-        Map<String, ArchInfo> archInfoMap = serviceRoleInfo.getArchInfoMap();
-        if (archInfoMap.containsKey(arch)) {
-            String packageName = archInfoMap.get(arch).getPackageName();
-            installServiceRoleCommand.setPackageName(packageName);
+        ArchInfo archInfo = ServicePkgNameUtils.getArchInfo(serviceRoleInfo, arch);
+        if (archInfo != null) {
+            installServiceRoleCommand.setPackageName(archInfo.getPackageName());
             log.info("在host {} {} {}, 使用架构{}", serviceRoleInfo.getHostname(), serviceRoleInfo.getCommandType().getCommandName(Constants.CN),
                     serviceRoleInfo.getName(), arch);
         } else {
             log.error("在host {} {} {}, 无法匹配架构{}", serviceRoleInfo.getHostname(), serviceRoleInfo.getCommandType().getCommandName(Constants.CN),
                     serviceRoleInfo.getName(), arch);
-            execResult.setExecOut("arch [" + arch + "] is undefined !");
+            execResult.setExecOut("未找到满足系统架构 [" + arch + "] 的安装包 !");
             return execResult;
         }
         
