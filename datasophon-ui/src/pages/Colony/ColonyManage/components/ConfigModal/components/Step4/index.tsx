@@ -31,9 +31,9 @@ const Index = ({
 
     const invokeUpdateFormData = useCallback((arr, source) => {
 
-        arr = arr.filter(
-            (item) => item.selected
-        );
+        // arr = arr.filter(
+        //     (item) => item.selected
+        // );
 
         formMapRef.current[index]?.current.setFieldsValue({
             services: arr,
