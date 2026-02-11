@@ -210,7 +210,7 @@ const Index = ({
                 manualRequest: true,
                 tableAlertRender: false,
                 rowSelection: {
-                    selectedRowKeys: selectedRows.map(val => val.id),
+                    selectedRowKeys: selectedRows.map(val => val.hostname),
                     onChange: (selectedRowKeys, selectedRows) => {
                         // console.log(selectedRowKeys, selectedRows);
                         setSelectedRows(selectedRows)
