@@ -105,11 +105,21 @@ const Index = (props, ref) => {
                     ]
                 }}
             />
-            <ProFormText
-                label="配置文件密码"
-                name="contentDecodePasswd"
-                rules={requireRules}
-            />
+            <ProFormDependency
+                name={['deployFileId']}
+            >
+                {
+                    ({ deployFileId }) => (
+                        <ProFormText
+                            label="配置文件密码"
+                            name="contentDecodePasswd"
+                            rules={requireRules}
+                        />
+                    )
+                }
+
+            </ProFormDependency>
+
             {
                 invokeRenderTable()
             }
