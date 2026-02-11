@@ -33,6 +33,7 @@ import com.datasophon.common.storage.PackageStorageUtils;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
+import com.datasophon.common.utils.ZipUtils;
 import com.datasophon.worker.strategy.resource.EmptyStrategy;
 import com.datasophon.worker.strategy.resource.ResourceStrategy;
 import com.datasophon.worker.utils.TaskConstants;
@@ -41,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -209,7 +211,7 @@ public class InstallServiceHandler {
             FileUtil.mkdir(new File(serviceDecompressDir));
 
             boolean needTrimDirName = !needParentDir;
-
+            ExecResult execResult = new ExecResult();
             if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
                 command.add("tar");
                 command.add("-zxf");
@@ -219,12 +221,21 @@ public class InstallServiceHandler {
                 if (needTrimDirName) {
                     command.add("--strip-components=1");
                 }
+                logger.info("exec decompress cmd :{}", StrUtil.join(" ", command));
+                execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
+            } else if ("zip".equals(suffix)) {
+                try {
+                    ZipUtils.unzip(sourceFile, serviceDecompressDir, needTrimDirName ? 1 : 0);
+                    execResult.setExecResult(true);
+                } catch (Exception e) {
+                    logger.error("解压文件{}失败，{}", sourceFile, e.getMessage(), e);
+                    execResult.setExecOut(String.format("解压文件%s失败，失败原因：%s，请检查ddl配置的文件解压结构是否正确", sourceFile, e.getMessage()));
+                }
             } else {
                 throw new UnsupportedOperationException(String.format("unsupported file type %s", suffix));
             }
 
-            logger.info("exec decompress cmd :{}", StrUtil.join(" ", command));
-            ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
+
             success = execResult.getExecResult();
             if (success) {
                 String targetDir = Constants.INSTALL_PATH + Constants.SLASH + instCmd.getNormalPkgDir();
