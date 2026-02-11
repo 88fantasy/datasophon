@@ -89,9 +89,9 @@ const Index = ({
 
 
         if (res.code === 200) {
-            res.data.map(val => {
-                val.installed = true
-            })
+            // res.data.map(val => {
+            //     val.installed = true
+            // })
 
 
             setDataSource(res.data.filter(item => {
@@ -105,7 +105,7 @@ const Index = ({
             const arr = res.data.filter(item => {
 
 
-                return item.installed
+                return item.selected
 
             })
             if (arr.length > 0) {

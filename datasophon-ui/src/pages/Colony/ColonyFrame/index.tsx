@@ -109,7 +109,7 @@ const Index: React.FC = () => {
                                 }
                             },
                             scroll: {
-                                y: '52vh'
+                                y: '50vh'
                             },
                             columns,
                         }}
