@@ -5,9 +5,6 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import { axiosJsonPost, axiosPost } from "../../../../../../../api/request";
 import { useConfigContext } from "../../configContext";
 import { T_TYPE_INIT } from "../../stepType";
-import { sm4Decrypt } from "../../../../../../../utils/secretUtils";
-import * as yaml from 'js-yaml';
-import { valueFn } from "../../../../../../../utils/listUtils";
 import { noop } from "lodash-es";
 import { useStepImportManifestHook } from "../StepImportManifest/useStepImportManifestHook";
 
@@ -94,14 +91,7 @@ const Index = ({
             // })
 
 
-            setDataSource(res.data.filter(item => {
-                let valid = true
-                // if (valid && invokeInitYamlDataRes?.app?.length) {
-                //     valid = invokeInitYamlDataResMap[item.serviceName]
-                // }
-
-                return valid
-            }))
+            setDataSource(res.data)
             const arr = res.data.filter(item => {
 
 
@@ -110,12 +100,12 @@ const Index = ({
             })
             if (arr.length > 0) {
                 setSelectedRows(arr)
+                invokeUpdateFormData(arr, res.data)
             }
 
 
 
 
-            invokeUpdateFormData(arr, res.data)
 
             // TODO:对比源代码补充
         }
@@ -233,6 +223,9 @@ const Index = ({
                         tableAlertRender: false,
                         scroll: {
                             y: '30vh'
+                        },
+                        options: {
+                            reload: false
                         },
                         rowSelection: {
                             selectedRowKeys: selectedRows.map(val => val.id),

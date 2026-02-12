@@ -170,6 +170,16 @@ const Index = ({
 
                             obj[item.serviceRoleName] = !obj[item.serviceRoleName]
 
+                            if (!obj.checkedList) {
+                                obj.checkedList = []
+                            }
+
+                            obj.checkedList = obj.checkedList.filter(item => item !== item.serviceRoleName)
+
+                            if (obj[item.serviceRoleName]) {
+                                obj.checkedList.push(item.serviceRoleName)
+                            }
+
                             return clone(preState)
 
                         })
@@ -292,6 +302,8 @@ const Index = ({
         ) {
             await getNonMasterRoleList()
             setHadInit(true)
+        } else {
+            setHadInit(false)
         }
     }, [current, getNonMasterRoleList, index])
 
@@ -312,6 +324,7 @@ const Index = ({
                 actionRef: actionRef,
                 search: false,
                 request: apiFn,
+                // manualRequest: true,
                 dataSource,
                 columns: invokeGenCol(),
                 className: 'mb-[20px]',
