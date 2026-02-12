@@ -91,14 +91,7 @@ const Index = ({
             // })
 
 
-            setDataSource(res.data.filter(item => {
-                let valid = true
-                // if (valid && invokeInitYamlDataRes?.app?.length) {
-                //     valid = invokeInitYamlDataResMap[item.serviceName]
-                // }
-
-                return valid
-            }))
+            setDataSource(res.data)
             const arr = res.data.filter(item => {
 
 
@@ -108,7 +101,6 @@ const Index = ({
             if (arr.length > 0) {
                 setSelectedRows(arr)
                 invokeUpdateFormData(arr, res.data)
-
             }
 
 

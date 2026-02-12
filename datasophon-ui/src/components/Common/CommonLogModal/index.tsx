@@ -5,7 +5,8 @@ import { CloseOutlined, FullscreenExitOutlined, FullscreenOutlined } from "@ant-
 
 const Index = ({
     api,
-    onCancelClickProxy
+    onCancelClickProxy,
+    options = {}
 }) => {
 
     const [logs, setLogs] = useState()
@@ -22,6 +23,11 @@ const Index = ({
     }, [api])
 
 
+    const onOkProxy = useCallback(() => {
+
+    }, [])
+
+
     useEffect(() => {
         invokeInit()
     }, [invokeInit])
@@ -33,6 +39,16 @@ const Index = ({
     }, [])
 
     const invokeRender = useCallback((full = false) => {
+
+        const mapOptions = {
+            minimap: { enabled: false },
+            readOnly: true,
+            wordWrap: 'on',         // 启用自动换行
+            automaticLayout: true,
+            ...options
+        }
+
+
         return (
             <>
 
@@ -55,27 +71,27 @@ const Index = ({
                     <CommonMonacoEditor
                         language="yaml"
                         value={logs}
-                        options={{
-                            minimap: { enabled: false },
-                            readOnly: true,
-                            wordWrap: 'on',         // 启用自动换行
-                            automaticLayout: true,
-                        }}
+                        options={mapOptions}
                     />
                 </div>
                 <div
                     className="mt-[10px] flex flex-col items-center"
 
                 >
+
                     <Button
-                        onClick={invokeInit}
+                        onClick={mapOptions.readOnly ? invokeInit : onOkProxy}
                     >
-                        刷新
+                        {
+                            mapOptions.readOnly ? '刷新' : '确定'
+                        }
                     </Button>
-                </div>
+
+
+                </div >
             </>
         )
-    }, [invokeInit, logs, onCancelClickProxy, onFullSceenClick])
+    }, [invokeInit, logs, onCancelClickProxy, onFullSceenClick, onOkProxy, options])
 
     return (
         <>
