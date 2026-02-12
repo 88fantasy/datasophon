@@ -91,6 +91,7 @@ const Index = forwardRef((props, ref) => {
     editorRef.current = editor
     monacoRef.current = monaco
 
+
     await invokeFormatDocument()
 
     const fnMap = {}

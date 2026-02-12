@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import CommonMonacoEditor from "../CommonMonacoEditor"
 import { Button } from "antd"
 import { CloseOutlined, FullscreenExitOutlined, FullscreenOutlined } from "@ant-design/icons"
@@ -6,11 +6,16 @@ import { CloseOutlined, FullscreenExitOutlined, FullscreenOutlined } from "@ant-
 const Index = ({
     api,
     onCancelClickProxy,
-    options = {}
+    options = {},
+    onOk,
+    language = 'yaml'
 }) => {
 
     const [logs, setLogs] = useState()
+    const fullCommonMonacoEditorRef = useRef()
+    const commonMonacoEditorRef = useRef()
     const [wrapperClassName, setWrapperClassName] = useState()
+    const [loading, setLoading] = useState()
 
     const invokeInit = useCallback(async () => {
         if (typeof api === 'function') {
@@ -23,22 +28,64 @@ const Index = ({
     }, [api])
 
 
-    const onOkProxy = useCallback(() => {
+    const onOkProxy = useCallback(async () => {
+        const currentRef = wrapperClassName ? fullCommonMonacoEditorRef : commonMonacoEditorRef
 
-    }, [])
+
+        const value = currentRef.current.editor.getValue()
+
+        setLoading(true)
+        const res = await onOk?.(value)
+        setLoading(false)
+
+        if (res !== false) {
+            onCancelClickProxy()
+        }
+    }, [onCancelClickProxy, onOk, wrapperClassName])
 
 
     useEffect(() => {
         invokeInit()
     }, [invokeInit])
 
-    const onFullSceenClick = useCallback(() => {
+    const onFullSceenClick = useCallback((e) => {
+        const {
+            full
+        } = e.currentTarget.dataset
+
+
+
+        if (!options.readOnly) {
+            let currentRef
+            if (full === '0') {
+                currentRef
+                    = commonMonacoEditorRef
+                setLogs(() => {
+                    return value
+                })
+            } else if (full === '1') {
+                currentRef = fullCommonMonacoEditorRef
+                // commonMonacoEditorRef.current.editor.setValue(value)
+
+            }
+            const value = currentRef.current.editor.getValue()
+            setLogs(() => {
+                return value
+            })
+        }
+
+
         setWrapperClassName(preState => {
             return preState ? '' : 'fixed h-[100vh] w-[100vw] left-0 top-0 p-[12px] bg-white '
         })
-    }, [])
 
-    const invokeRender = useCallback((full = false) => {
+    }, [options.readOnly])
+
+    const invokeRender = useCallback((obj = {}) => {
+
+        const {
+            full
+        } = obj
 
         const mapOptions = {
             minimap: { enabled: false },
@@ -53,14 +100,16 @@ const Index = ({
             <>
 
                 <div className="mb-[10px] flex justify-between items-center">
-                    <h3 className="text-[16px] font-bold ">日志</h3>
+                    <h3 className="text-[16px] font-bold ">{mapOptions.title || mapOptions.readOnly ? '日志' : logs ? '编辑' : '新建'}</h3>
                     <div className="text-[16px]">
                         {
                             full ? <FullscreenExitOutlined
                                 className="mr-[10px] cursor-pointer"
+                                data-full="1"
                                 onClick={onFullSceenClick}
                             /> : <FullscreenOutlined
                                 className="mr-[10px] cursor-pointer"
+                                data-full="0"
                                 onClick={onFullSceenClick}
                             />
                         }
@@ -69,21 +118,23 @@ const Index = ({
                 </div>
                 <div className="flex-1">
                     <CommonMonacoEditor
-                        language="yaml"
+                        language={language}
                         value={logs}
                         options={mapOptions}
+                        ref={full ? fullCommonMonacoEditorRef : commonMonacoEditorRef}
                     />
                 </div>
                 <div
                     className="mt-[10px] flex flex-col items-center"
-
                 >
 
                     <Button
                         onClick={mapOptions.readOnly ? invokeInit : onOkProxy}
+                        type={mapOptions.readOnly ? 'default' : 'primary'}
+                        loading={loading}
                     >
                         {
-                            mapOptions.readOnly ? '刷新' : '确定'
+                            mapOptions.readOnly ? '刷新' : '保存'
                         }
                     </Button>
 
@@ -91,7 +142,7 @@ const Index = ({
                 </div >
             </>
         )
-    }, [invokeInit, logs, onCancelClickProxy, onFullSceenClick, onOkProxy, options])
+    }, [invokeInit, language, loading, logs, onCancelClickProxy, onFullSceenClick, onOkProxy, options])
 
     return (
         <>
@@ -101,7 +152,9 @@ const Index = ({
             {
                 wrapperClassName && (
                     <div className={`${wrapperClassName} flex flex-col`}>
-                        {invokeRender(true)}
+                        {invokeRender({
+                            full: true
+                        })}
                     </div>
                 )
             }

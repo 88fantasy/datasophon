@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Tabs } from 'antd';
-import { axiosGet, axiosPost, axiosPostUpload } from '../../../api/request';
+import { axiosGet, axiosJsonPost, axiosPost, axiosPostUpload } from '../../../api/request';
 import { API } from '../../../api';
 import CommonTable, { invokeGenOptionCol, type GithubIssueItem } from '../../../components/Common/CommonTable';
 import type { ProColumns } from '@ant-design/pro-components';
-import { invokeGenerateElId } from '../../../utils/util';
+import { invokeGenerateElId, showMsgAfferRequest } from '../../../utils/util';
 import CommonTabs from '../../../components/Common/CommonTabs';
 import asyncHook from '../../../components/Common/CommonModal/asyncHook';
 
@@ -87,14 +87,35 @@ const Index: React.FC = () => {
                             return res
                         }
                     },
-                    // {
+                    {
 
-                    //     title: '编辑',
-                    //     onClick: async (text, record) => {
+                        title: '编辑',
+                        onClick: async (text, record) => {
+                            const modelApi = await showCommonLogModal()
+
+                            modelApi.default({
+                                language: 'json',
+                                options: {
+                                    readOnly: false
+                                },
+                                api: () => {
+                                    return axiosGet(`${API.getServiceDdl}/${record.id}`)
+                                },
+                                onOk: async (content) => {
+                                    const res = await axiosJsonPost(`${API.updateDdl2}/${record.id}`, {
+                                        content
+                                    })
 
 
-                    //     }
-                    // },
+                                    showMsgAfferRequest(res)
+
+
+                                    return res.code === 200
+                                }
+                            })
+
+                        }
+                    },
                 ])
             },
         ];
