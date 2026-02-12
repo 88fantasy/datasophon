@@ -506,7 +506,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${rm1}"
+      "defaultValue": "${YARN.rm1}"
     },
     {
       "name": "yarn.resourcemanager.hostname.rm2",
@@ -518,7 +518,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${rm2}"
+      "defaultValue": "${YARN.rm2}"
     },
     {
       "name": "yarn.resourcemanager.webapp.address.rm1",
@@ -530,7 +530,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${rm1}:8088"
+      "defaultValue": "${YARN.rm1}:8088"
     },
     {
       "name": "yarn.resourcemanager.webapp.address.rm2",
@@ -542,7 +542,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${rm2}:8088"
+      "defaultValue": "${YARN.rm2}:8088"
     },
     {
       "name": "yarn.resourcemanager.address.rm1",
@@ -554,7 +554,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${rm1}:8032"
+      "defaultValue": "${YARN.rm1}:8032"
     },
     {
       "name": "yarn.resourcemanager.address.rm2",
@@ -566,7 +566,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${rm2}:8032"
+      "defaultValue": "${YARN.rm2}:8032"
     },
     {
       "name": "yarn.resourcemanager.scheduler.address.rm1",
@@ -578,7 +578,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${rm1}:8030"
+      "defaultValue": "${YARN.rm1}:8030"
     },
     {
       "name": "yarn.resourcemanager.scheduler.address.rm2",
@@ -590,7 +590,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${rm2}:8030"
+      "defaultValue": "${YARN.rm2}:8030"
     },
     {
       "name": "yarn.resourcemanager.resource-tracker.address.rm1",
@@ -602,7 +602,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${rm1}:8031"
+      "defaultValue": "${YARN.rm1}:8031"
     },
     {
       "name": "yarn.resourcemanager.resource-tracker.address.rm2",
@@ -614,7 +614,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${rm2}:8031"
+      "defaultValue": "${YARN.rm2}:8031"
     },
     {
       "name": "yarn.resourcemanager.zk-address",
@@ -626,7 +626,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${zkUrls}"
+      "defaultValue": "${ZOOKEEPER.zkUrls}"
     },
     {
       "name": "yarn.resourcemanager.recovery.enabled",
@@ -672,7 +672,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://${historyserverHost}:19888/jobhistory/logs"
+      "defaultValue": "http://${YARN.HistoryServer.__host__}`:19888/jobhistory/logs"
     },
     {
       "name": "yarn.log-aggregation.retain-seconds",
@@ -759,7 +759,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${historyserverHost}:10020"
+      "defaultValue": "${YARN.HistoryServer.__host__}:10020"
     },
     {
       "name": "mapreduce.jobhistory.webapp.address",
@@ -770,7 +770,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${historyserverHost}:19888"
+      "defaultValue": "${YARN.HistoryServer.__host__}:19888"
     },
     {
       "name": "mapreduce.jobhistory.done-dir",
