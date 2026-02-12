@@ -82,6 +82,12 @@ const Index = ({
                 search: false,
 
             },
+            {
+                title: '错误信息',
+                dataIndex: 'errMsg',
+                ellipsis: true,
+                search: false,
+            },
         ]
     }, []);
 
