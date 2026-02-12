@@ -21,157 +21,129 @@ import com.datasophon.domain.host.enums.HostState;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 
-import com.alibaba.fastjson.JSONObject;
+public class AlertActor extends TypedActor<AlertMessage> {
 
-import akka.actor.UntypedActor;
-import cn.hutool.extra.spring.SpringUtil;
-
-public class AlertActor extends TypedActor<String> {
-    
     private static final String FIRING = "firing";
-    
+
     private static final String NODE = "node";
-    
+
     private static final String WARNING = "warning";
-    
+
     private static final String EXCEPTION = "exception";
-    
+
     private static final String RESOLVED = "resolved";
 
 
     @Override
-    protected void doOnReceive(String alertMessage) throws Throwable {
-        AlertMessage alertMes = JSONObject.parseObject(alertMessage, AlertMessage.class);
+    protected void doOnReceive(AlertMessage message) throws Throwable {
+        List<Alerts> alerts = message.getAlerts();
+        for (Alerts alertInfo : alerts) {
+            handleAlert(alertInfo);
+        }
+    }
+
+    private void handleAlert(Alerts alertInfo) {
+        String status = alertInfo.getStatus();
+        if (FIRING.equals(status)) {
+            handleFiringAlert(alertInfo);
+        }
+
+        if (RESOLVED.equals(status)) {
+            handleResolvedAlert(alertInfo);
+        }
+    }
+
+    private void handleFiringAlert(Alerts alertInfo) {
         AlertHistoryGateway alertHistoryGateway = getBean(AlertHistoryGateway.class);
         ClusterHostService hostService = getBean(ClusterHostService.class);
         ClusterAlertHistoryService alertHistoryService = getBean(ClusterAlertHistoryService.class);
         ClusterServiceInstanceService serviceInstanceService = getBean(ClusterServiceInstanceService.class);
         ClusterServiceRoleInstanceService roleInstanceService = getBean(ClusterServiceRoleInstanceService.class);
 
-        List<Alerts> alerts = alertMes.getAlerts();
-        for (Alerts alertInfo : alerts) {
-            AlertLabels labels = alertInfo.getLabels();
-            String alertname = labels.getAlertname();
-            int clusterId = labels.getClusterId();
-            String instance = labels.getInstance();
-            String status = alertInfo.getStatus();
-            String hostname = instance.split(":")[0];
-            String serviceRoleName = labels.getServiceRoleName();
-            if (FIRING.equals(status)) {
-                Boolean hasEnabledAlertHistory =
-                        alertHistoryGateway.hasEnabledAlertHistory(alertname, clusterId, hostname);
-                // 查询服务实例，服务角色实例
-                if (NODE.equals(serviceRoleName)) {
-                    ClusterHostDO clusterHost = hostService.getClusterHostByHostname(hostname);
-                    clusterHost.setHostState(
-                            EXCEPTION.equals(labels.getSeverity()) ? HostState.OFFLINE : HostState.EXISTS_ALARM);
-                    if (!hasEnabledAlertHistory) {
-                        ClusterAlertHistory clusterAlertHistory = ClusterAlertHistory.builder()
-                                .clusterId(clusterId)
-                                .alertGroupName(labels.getJob())
-                                .alertTargetName(alertname)
-                                .createTime(new Date())
-                                .updateTime(new Date())
-                                .alertLevel(WARNING.equals(labels.getSeverity()) ? AlertLevel.WARN
-                                        : AlertLevel.EXCEPTION)
-                                .alertInfo(alertInfo.getAnnotations().getDescription())
-                                .alertAdvice(alertInfo.getAnnotations().getSummary())
-                                .hostname(hostname)
-                                .isEnabled(1)
-                                .build();
-                        alertHistoryService.save(clusterAlertHistory);
-                    }
-                    hostService.updateById(clusterHost);
-                } else {
-                    ClusterServiceRoleInstanceEntity roleInstance =
-                            roleInstanceService.getOneServiceRole(serviceRoleName, hostname, clusterId);
-                    if (Objects.nonNull(roleInstance)) {
-                        ClusterServiceInstanceEntity serviceInstance =
-                                serviceInstanceService.getById(roleInstance.getServiceId());
-                        serviceInstance.setServiceState(ServiceState.EXISTS_ALARM);
-                        roleInstance.setServiceRoleState(ServiceRoleState.EXISTS_ALARM);
-                        if (!hasEnabledAlertHistory) {
-                            ClusterAlertHistory clusterAlertHistory = ClusterAlertHistory.builder()
-                                    .clusterId(clusterId)
-                                    .alertGroupName(labels.getJob())
-                                    .alertTargetName(alertname)
-                                    .serviceInstanceId(serviceInstance.getId())
-                                    .serviceRoleInstanceId(roleInstance.getId())
-                                    .createTime(new Date())
-                                    .updateTime(new Date())
-                                    .alertLevel(WARNING.equals(labels.getSeverity()) ? AlertLevel.WARN
-                                            : AlertLevel.EXCEPTION)
-                                    .alertInfo(alertInfo.getAnnotations().getDescription())
-                                    .alertAdvice(alertInfo.getAnnotations().getSummary())
-                                    .hostname(hostname)
-                                    .isEnabled(1)
-                                    .build();
+        AlertLabels labels = alertInfo.getLabels();
+        String alertName = labels.getAlertname();
+        int clusterId = labels.getClusterId();
+        String instance = labels.getInstance();
+        String hostname = instance.split(":")[0];
+        String serviceRoleName = labels.getServiceRoleName();
 
-                            alertHistoryService.save(clusterAlertHistory);
-                        }
-                        if (EXCEPTION.equals(labels.getSeverity())) {
-                            serviceInstance.setServiceState(ServiceState.EXISTS_EXCEPTION);
-                            roleInstance.setServiceRoleState(ServiceRoleState.STOP);
-                        }
-                        serviceInstanceService.updateById(serviceInstance);
-                        roleInstanceService.updateById(roleInstance);
-                    }
-                }
+        boolean hasEnabledAlertHistory = alertHistoryGateway.hasEnabledAlertHistory(alertName, clusterId, hostname);
+        // 查询服务实例，服务角色实例
+        if (NODE.equals(serviceRoleName)) {
+            ClusterHostDO clusterHost = hostService.getClusterHostByHostname(hostname);
+            clusterHost.setHostState(EXCEPTION.equals(labels.getSeverity()) ? HostState.OFFLINE : HostState.EXISTS_ALARM);
+            hostService.updateById(clusterHost);
 
+            if (!hasEnabledAlertHistory) {
+                addAlertHistory(alertInfo);
             }
-            if (RESOLVED.equals(status)) {
-                AlertHistory alertHistory =
-                        alertHistoryGateway.getEnabledAlertHistory(alertname, clusterId, hostname);
-                if (Objects.nonNull(alertHistory)) {
-                    boolean nodeHasWarnAlertList = alertHistoryGateway.nodeHasWarnAlertList(hostname,
-                            serviceRoleName, alertHistory.getId());
+        } else {
+            ClusterServiceRoleInstanceEntity roleInstance = roleInstanceService.getOneServiceRole(serviceRoleName, hostname, clusterId);
+            if (roleInstance == null) {
+                return;
+            }
+            roleInstance.setServiceRoleState(EXCEPTION.equals(labels.getSeverity()) ? ServiceRoleState.STOP: ServiceRoleState.EXISTS_ALARM);
+            roleInstanceService.updateById(roleInstance);
 
-                    if (EXCEPTION.equals(labels.getSeverity())) {// 异常告警处理
-                        if (NODE.equals(serviceRoleName)) {
-                            // 置为正常
-                            ClusterHostDO clusterHost = hostService.getClusterHostByHostname(hostname);
-                            clusterHost.setHostState(
-                                    nodeHasWarnAlertList ? HostState.EXISTS_ALARM : HostState.RUNNING);
-                            hostService.updateById(clusterHost);
-                        } else {
-                            // 查询服务角色实例
-                            ClusterServiceRoleInstanceEntity roleInstance = roleInstanceService
-                                    .getOneServiceRole(labels.getServiceRoleName(), hostname, clusterId);
-                            if (roleInstance.getServiceRoleState() != ServiceRoleState.RUNNING) {
-                                roleInstance.setServiceRoleState(ServiceRoleState.RUNNING);
-                                if (nodeHasWarnAlertList) {
-                                    roleInstance.setServiceRoleState(ServiceRoleState.EXISTS_ALARM);
-                                }
-                                roleInstanceService.updateById(roleInstance);
-                            }
-                        }
-                    } else {
-                        // 警告告警处理
-                        if (NODE.equals(serviceRoleName)) {
-                            // 置为正常
-                            ClusterHostDO clusterHost = hostService.getClusterHostByHostname(hostname);
-                            clusterHost.setHostState(
-                                    nodeHasWarnAlertList ? HostState.EXISTS_ALARM : HostState.RUNNING);
-                            hostService.updateById(clusterHost);
-                        } else {
-                            // 查询服务角色实例
-                            ClusterServiceRoleInstanceEntity roleInstance = roleInstanceService
-                                    .getOneServiceRole(labels.getServiceRoleName(), hostname, clusterId);
-                            if (roleInstance.getServiceRoleState() != ServiceRoleState.RUNNING) {
-                                if (nodeHasWarnAlertList) {
-                                    roleInstance.setServiceRoleState(ServiceRoleState.EXISTS_ALARM);
-                                } else {
-                                    roleInstance.setServiceRoleState(ServiceRoleState.RUNNING);
-                                }
-                                roleInstanceService.updateById(roleInstance);
-                            }
-                        }
-                    }
-                    alertHistoryGateway.updateAlertHistoryToDisabled(alertHistory.getId());
-                }
+            ClusterServiceInstanceEntity serviceInstance = serviceInstanceService.getById(roleInstance.getServiceId());
+            serviceInstance.setServiceState(EXCEPTION.equals(labels.getSeverity()) ? ServiceState.EXISTS_EXCEPTION : ServiceState.EXISTS_ALARM);
+            serviceInstanceService.updateById(serviceInstance);
+
+            if (!hasEnabledAlertHistory) {
+                addAlertHistory(alertInfo);
             }
         }
     }
+
+    private void addAlertHistory(Alerts alertInfo) {
+        ClusterAlertHistoryService alertHistoryService = getBean(ClusterAlertHistoryService.class);
+        AlertLabels labels = alertInfo.getLabels();
+        String alertName = labels.getAlertname();
+        int clusterId = labels.getClusterId();
+        String instance = labels.getInstance();
+        String hostname = instance.split(":")[0];
+        ClusterAlertHistory clusterAlertHistory = ClusterAlertHistory.builder()
+                .clusterId(clusterId)
+                .alertGroupName(labels.getJob())
+                .alertTargetName(alertName)
+                .createTime(new Date())
+                .updateTime(new Date())
+                .alertLevel(WARNING.equals(labels.getSeverity()) ? AlertLevel.WARN : AlertLevel.EXCEPTION)
+                .alertInfo(alertInfo.getAnnotations().getDescription())
+                .alertAdvice(alertInfo.getAnnotations().getSummary())
+                .hostname(hostname)
+                .isEnabled(1)
+                .build();
+        alertHistoryService.save(clusterAlertHistory);
+    }
+
+    private void handleResolvedAlert(Alerts alertInfo) {
+        AlertHistoryGateway alertHistoryGateway = getBean(AlertHistoryGateway.class);
+        ClusterHostService hostService = getBean(ClusterHostService.class);
+        ClusterServiceRoleInstanceService roleInstanceService = getBean(ClusterServiceRoleInstanceService.class);
+
+        AlertLabels labels = alertInfo.getLabels();
+        String hostname = labels.getInstance().split(":")[0];
+        AlertHistory alertHistory = alertHistoryGateway.getEnabledAlertHistory(labels.getAlertname(), labels.getClusterId(), hostname);
+        if (alertHistory == null) {
+            return;
+        }
+
+        boolean nodeHasWarnAlertList = alertHistoryGateway.nodeHasWarnAlertList(hostname, labels.getServiceRoleName(), alertHistory.getId());
+        if (NODE.equals(labels.getServiceRoleName())) {
+            ClusterHostDO clusterHost = hostService.getClusterHostByHostname(hostname);
+            clusterHost.setHostState(nodeHasWarnAlertList ? HostState.EXISTS_ALARM : HostState.RUNNING);
+            hostService.updateById(clusterHost);
+        } else {
+            ClusterServiceRoleInstanceEntity roleInstance = roleInstanceService.getOneServiceRole(labels.getServiceRoleName(), hostname, labels.getClusterId());
+            if (roleInstance.getServiceRoleState() != ServiceRoleState.RUNNING) {
+                roleInstance.setServiceRoleState(nodeHasWarnAlertList ? ServiceRoleState.EXISTS_ALARM : ServiceRoleState.RUNNING);
+                roleInstanceService.updateById(roleInstance);
+            }
+        }
+        alertHistoryGateway.updateAlertHistoryToDisabled(alertHistory.getId());
+    }
+
+
 }
