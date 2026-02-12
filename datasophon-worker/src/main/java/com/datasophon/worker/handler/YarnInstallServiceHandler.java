@@ -20,6 +20,9 @@ public class YarnInstallServiceHandler extends InstallServiceHandler {
 
     private Logger logger;
 
+//    优先hadoop执行
+    public static final int ORDER = HadoopInstallServiceHandler.ORDER - 100;
+
     @Override
     public void init(InstallServiceRoleCommand command){
         super.init(command);
@@ -58,6 +61,10 @@ public class YarnInstallServiceHandler extends InstallServiceHandler {
 
 
 
+    @Override
+    public int getOrder() {
+        return ORDER;
+    }
 
 
 }

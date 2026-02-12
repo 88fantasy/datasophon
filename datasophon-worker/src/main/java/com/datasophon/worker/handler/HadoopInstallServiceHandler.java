@@ -14,7 +14,7 @@ public class HadoopInstallServiceHandler extends InstallServiceHandler {
 
     private static final String HADOOP = "hadoop";
 
-
+    public static final int ORDER = 1000;
     @Override
     public boolean match(InstallServiceRoleCommand command) {
         return command.getNormalPkgDir().contains(HADOOP);
@@ -53,5 +53,8 @@ public class HadoopInstallServiceHandler extends InstallServiceHandler {
         return result;
     }
 
-
+    @Override
+    public int getOrder() {
+        return ORDER;
+    }
 }
