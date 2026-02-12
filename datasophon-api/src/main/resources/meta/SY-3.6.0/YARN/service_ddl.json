@@ -672,7 +672,7 @@
       "value":"",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://${YARN.HistoryServer.__host__}`:19888/jobhistory/logs"
+      "defaultValue": "http://${YARN.HistoryServer.__host__}:19888/jobhistory/logs"
     },
     {
       "name": "yarn.log-aggregation.retain-seconds",
