@@ -144,7 +144,7 @@ public class OlapUtils {
         // 加载驱动
         Class.forName("com.mysql.cj.jdbc.Driver");
         //获取安装路径
-        String feUniConfPath = workPath + "fe/conf/fe.uni.conf";
+        String feUniConfPath = workPath + "/fe/conf/fe.uni.conf";
         logger.info("doris fe配置路径 = {}", feUniConfPath);
         String password = getUniPassword(feUniConfPath);
         try {
