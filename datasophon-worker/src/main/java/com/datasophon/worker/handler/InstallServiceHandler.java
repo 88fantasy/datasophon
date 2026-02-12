@@ -42,7 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -124,27 +123,10 @@ public class InstallServiceHandler {
                 ExecResult chmodResult = ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir);
                 logger.info("chmod {} {}", normalPkgDir, chmodResult.getExecResult() ? "success" : "fail");
 
-                if (CollUtil.isNotEmpty(command.getResourceStrategies())) {
-                    logger.info("开始执行资源策略，总共需要执行{}个策略", command.getResourceStrategies().size());
-                    for (int i = 0; i < command.getResourceStrategies().size(); i++) {
-                        Map<String, Object> strategy = command.getResourceStrategies().get(i);
-                        String type = (String) strategy.get(ResourceStrategy.TYPE_KEY);
-                        Class<? extends ResourceStrategy> clazz = cache.getOrDefault(type, EmptyStrategy.class);
-                        ResourceStrategy rs = BeanUtil.toBean(strategy, clazz, CopyOptions.create().ignoreError());
-                        rs.setLogger(logger);
-                        rs.setFrameCode(frameCode);
-                        rs.setService(serviceName);
-                        rs.setServiceRole(serviceRoleName);
-                        rs.setBasePath(PkgInstallPathUtils.getInstallHome(command));
-                        rs.setVariables(command.getVariables());
-                        ExecResult exec = rs.exec();
-                        if (!exec.getExecResult()) {
-                            logger.error("执行第{}个资源策略失败, {}", i + 1, exec.getExecOut());
-                            return exec;
-                        }
-                    }
+                execResult = execResourceStrategies(command, logger);
+                if (!execResult.isSuccess()) {
+                    return execResult;
                 }
-                execResult.setExecResult(true);
             }
         } catch (Exception e) {
             logger.error("安装服务{} {}失败,  {}", command.getServiceName(), command.getServiceRoleName(), e.getMessage(), e);
@@ -153,7 +135,7 @@ public class InstallServiceHandler {
         return execResult;
     }
 
-    private boolean needDecompressPkg(InstallServiceRoleCommand command, DownloadResult downloadResult) {
+    protected boolean needDecompressPkg(InstallServiceRoleCommand command, DownloadResult downloadResult) {
         if (downloadResult.isChange()) {
             return true;
         }
@@ -267,6 +249,29 @@ public class InstallServiceHandler {
         }
     }
 
+    protected ExecResult execResourceStrategies(InstallServiceRoleCommand command, Logger logger) {
+        if (CollUtil.isNotEmpty(command.getResourceStrategies())) {
+            logger.info("开始执行资源策略，总共需要执行{}个策略", command.getResourceStrategies().size());
+            for (int i = 0; i < command.getResourceStrategies().size(); i++) {
+                Map<String, Object> strategy = command.getResourceStrategies().get(i);
+                String type = (String) strategy.get(ResourceStrategy.TYPE_KEY);
+                Class<? extends ResourceStrategy> clazz = cache.getOrDefault(type, EmptyStrategy.class);
+                ResourceStrategy rs = BeanUtil.toBean(strategy, clazz, CopyOptions.create().ignoreError());
+                rs.setLogger(logger);
+                rs.setFrameCode(frameCode);
+                rs.setService(serviceName);
+                rs.setServiceRole(serviceRoleName);
+                rs.setBasePath(PkgInstallPathUtils.getInstallHome(command));
+                rs.setVariables(command.getVariables());
+                ExecResult exec = rs.exec();
+                if (!exec.getExecResult()) {
+                    logger.error("执行第{}个资源策略失败, {}", i + 1, exec.getExecOut());
+                    return exec;
+                }
+            }
+        }
+        return ExecResult.success();
+    }
 
     public ExecResult createLink(InstallServiceRoleCommand command) {
         String appLinkHome = getLinkName(command);
@@ -304,9 +309,6 @@ public class InstallServiceHandler {
     protected static class PackageMeta {
         private String md5;
         private Object createDecompressDir;
-        private Object runAs;
-        private Object resourceStrategies;
-        private Object hooks;
 
         protected PackageMeta() {
         }
@@ -315,9 +317,6 @@ public class InstallServiceHandler {
         protected PackageMeta(DownloadResult result, InstallServiceRoleCommand command) {
             md5 = result.getMd5();
             createDecompressDir = command.getCreateDecompressDir();
-            runAs = command.getRunAs();
-            resourceStrategies = command.getResourceStrategies();
-            hooks = command.getHooks();
         }
 
     }

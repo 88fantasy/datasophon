@@ -59,7 +59,7 @@ public class InstallServiceActor extends HookTypedActor<InstallServiceRoleComman
 
 
     private ExecResult doInstall(InstallServiceRoleCommand command, Logger log) {
-        logger.info("Start install package {}", command.getPackageName());
+        logger.info("开始安装软件包{}", command.getPackageName());
         String normalPkgDir = PkgInstallPathUtils.getInstallHomeName(command);
         command.setNormalPkgDir(normalPkgDir);
 
