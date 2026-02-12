@@ -68,7 +68,7 @@ public class StartWorkerHandler implements DispatcherWorkerHandler {
         if (StringUtils.isBlank(updateCommonPropertiesResult) || "failed".equals(updateCommonPropertiesResult)) {
             logger.error("common.properties update failed");
             hostInfo.setErrMsg("common.properties update failed");
-            hostInfo.setMessage(MessageResolverUtils.getMessage("modify.configuration.file.fail"));
+            hostInfo.setMessage("修改配置文件失败");
             CommonUtils.updateInstallState(InstallState.FAILED, hostInfo);
         } else {
             // osType
@@ -91,7 +91,7 @@ public class StartWorkerHandler implements DispatcherWorkerHandler {
             MinaUtils.execCmdWithResult(session,
                     "\\cp " + installPath + "/datasophon-worker/script/datasophon-env.sh /etc/profile.d/");
             MinaUtils.execCmdWithResult(session, ". /etc/profile.d/datasophon-env.sh");
-            hostInfo.setMessage(MessageResolverUtils.getMessage("start.host.management.agent"));
+            hostInfo.setMessage("开始启动worker");
             MinaUtils.execCmdWithResult(session, "service datasophon-worker restart");
             hostInfo.setProgress(75);
             hostInfo.setCreateTime(new Date());

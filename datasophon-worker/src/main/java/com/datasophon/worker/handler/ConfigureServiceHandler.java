@@ -20,6 +20,7 @@ package com.datasophon.worker.handler;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.common.Constants;
@@ -185,9 +186,9 @@ public class ConfigureServiceHandler {
                         ex.getTemplateName(), e.getMessage(), e);
             } else if (e instanceof TemplateException) {
                 TemplateException ex = (TemplateException) e;
-                logger.error("生成服务{} {}的配置失败, \n\t出错行数{}， \n\t出错列数{}, \n\t原因:{}, \n\t出错细节：\n",
+                logger.error("生成服务{} {}的配置失败, \n\t模板名称{},\n\t出错行数{}， \n\t出错列数{}, \n\t原因:{}, \n\t出错细节：\n",
                         srvRoleResource.getServiceName(), srvRoleResource.getServiceRoleName(),
-                        ex.getLineNumber(), ex.getLineNumber(), ex.getMessage(), e
+                        ex.getTemplateSourceName(), ex.getLineNumber(), ex.getColumnNumber(), ex.getMessage(), e
                 );
             } else {
                 logger.error("生成服务{} {}的配置失败, {}", srvRoleResource.getServiceName(), srvRoleResource.getServiceRoleName(), e.getMessage(), e);
@@ -254,6 +255,10 @@ public class ConfigureServiceHandler {
                 break;
         }
         logger.info("config {} set value to {}", config.getName(), config.getValue());
+        if (!"map".equals(config.getConfigType())) {
+            String refName = StrUtil.isBlank(config.getKey()) ? config.getName() : config.getKey();
+            logger.warn("配置项{}的configType不是‘map’，最终的变量名为itemList[$index].{}", config.getName(), refName);
+        }
     }
 
     private void createPath(ServiceConfig config, RunAs runAs) {

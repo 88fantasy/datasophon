@@ -36,12 +36,10 @@ public class UploadWorkerHandler implements DispatcherWorkerHandler {
     public boolean handle(Session session, HostInfo hostInfo) {
         boolean uploadFile = MinaUtils.uploadFile(session, Constants.MASTER_MANAGE_PACKAGE_PATH, Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + Constants.WORKER_PACKAGE_NAME);
         if (uploadFile) {
-            hostInfo.setMessage(
-                    MessageResolverUtils.getMessage("distribution.successful.and.starts.md5.authentication"));
+            hostInfo.setMessage("同步worker安装包成功");
             hostInfo.setProgress(25);
         } else {
-            hostInfo.setMessage(
-                    MessageResolverUtils.getMessage("distributed.host.management.agent.installation.package.fail"));
+            hostInfo.setMessage("同步worker安装包失败");
             hostInfo.setErrMsg("dispatcher host agent to " + hostInfo.getHostname() + " failed");
             CommonUtils.updateInstallState(InstallState.FAILED, hostInfo);
         }

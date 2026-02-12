@@ -40,12 +40,12 @@ public class CheckWorkerMd5Handler implements DispatcherWorkerHandler {
         if (!md5.equals(checkWorkerMd5Result)) {
             logger.error("worker package md5 check failed");
             hostInfo.setErrMsg("worker package md5 check failed");
-            hostInfo.setMessage(MessageResolverUtils.getMessage("md5.check.failed"));
+            hostInfo.setMessage("校验安装包MD5失败");
             CommonUtils.updateInstallState(InstallState.FAILED, hostInfo);
             return false;
         }
         hostInfo.setProgress(35);
-        hostInfo.setMessage(MessageResolverUtils.getMessage("md5.verification.successful.and.installation.package.decompressed"));
+        hostInfo.setMessage("校验安装包MD5成功，开始解压安装包");
         return true;
     }
 }

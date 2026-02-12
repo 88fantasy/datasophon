@@ -42,13 +42,13 @@ public class DecompressWorkerHandler implements DispatcherWorkerHandler {
         if (!result.isSuccess()) {
             logger.error("tar -zxvf datasophon-worker.tar.gz failed, {}", result.getExecResult());
             hostInfo.setErrMsg("tar -zxvf datasophon-worker.tar.gz failed." + result.getExecResult());
-            hostInfo.setMessage(MessageResolverUtils.getMessage("decompress.installation.package.fail"));
+            hostInfo.setMessage("解压安装包失败");
             CommonUtils.updateInstallState(InstallState.FAILED, hostInfo);
             return false;
         }
         logger.info("decompress datasophon-worker.tar.gz success");
         hostInfo.setProgress(50);
-        hostInfo.setMessage(MessageResolverUtils.getMessage("installation.package.decompressed.success.and.modify.configuration.file"));
+        hostInfo.setMessage("解压安装包成功");
         return true;
     }
 }

@@ -53,7 +53,7 @@ public class DispatcherWorkerActor extends TypedActor<DispatcherHostAgentCommand
         HostInfo hostInfo = command.getHostInfo();
         String localIp = HostUtils.getLocalIp();
         logger.info("start dispatcher host agent :{}， ip: {}", hostInfo.getHostname(), hostInfo.getIp());
-        hostInfo.setMessage(MessageResolverUtils.getMessage("distributed.host.management.agent.installation.package"));
+        hostInfo.setMessage("开始分发worker agent安装包");
 
         doWithSession(hostInfo, session -> {
             try {
@@ -71,8 +71,8 @@ public class DispatcherWorkerActor extends TypedActor<DispatcherHostAgentCommand
                 handlerChain.handle(session, hostInfo);
             } catch (Throwable e) {
                 logger.error("dispatcher manage node host agent {} failed", hostInfo.getHostname(), e);
-                hostInfo.setErrMsg(e.getMessage());
-                hostInfo.setMessage(MessageResolverUtils.getMessage("dispatcher manage node host agent failed"));
+                hostInfo.setErrMsg("安装worker失败,原因：" + e.getMessage());
+                hostInfo.setMessage("安装worker失败");
                 CommonUtils.updateInstallState(InstallState.FAILED, hostInfo);
             }
         });
