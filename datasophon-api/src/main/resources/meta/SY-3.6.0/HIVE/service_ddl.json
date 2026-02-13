@@ -4,7 +4,9 @@
   "description": "离线数据仓库",
   "version": "3.1.3",
   "sortNum": 5,
-  "dependencies":["HDFS"],
+  "dependencies": [
+    "HDFS"
+  ],
   "packageName": "apache-hive-3.1.3-bin.tar.gz",
   "decompressPackageName": "apache-hive-3.1.3-bin",
   "roles": [
@@ -20,27 +22,38 @@
       "logFile": "logs/hivemetastore.out",
       "jmxPort": 12000,
       "sortNum": 2,
-      "resourceStrategies":[{
-        "type": "sh",
-        "commands": [["mkdir", "logs"]]
-      },{
-        "type": "download",
-        "from": "script/control_hive.sh",
-        "to": "control_hive.sh",
-        "md5": "11f36c034dbbca447fc6b16308169572"
-      },{
-        "type": "link",
-        "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
-        "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
-      },{
-        "type": "link",
-        "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
+      "resourceStrategies": [
+        {
+          "type": "sh",
+          "commands": [
+            [
+              "mkdir",
+              "logs"
+            ]
+          ]
+        },
+        {
+          "type": "download",
+          "from": "script/control_hive.sh",
+          "to": "control_hive.sh",
+          "md5": "11f36c034dbbca447fc6b16308169572"
+        },
+        {
+          "type": "link",
+          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
+          "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
+        },
+        {
+          "type": "link",
+          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
           "target": "jmx/metastore.yaml"
-      },{
-        "type": "link",
-        "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
-        "target": "lib/mysql-connector-java-8.0.28.jar"
-      }],
+        },
+        {
+          "type": "link",
+          "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+          "target": "lib/mysql-connector-java-8.0.28.jar"
+        }
+      ],
       "startRunner": {
         "timeout": "60",
         "program": "control_hive.sh",
@@ -61,7 +74,8 @@
         "timeout": "60",
         "program": "control_hive.sh",
         "args": [
-          "status","hivemetastore"
+          "status",
+          "hivemetastore"
         ]
       },
       "restartRunner": {
@@ -85,27 +99,38 @@
       "logFile": "logs/hiveserver2.out",
       "jmxPort": 11000,
       "sortNum": 1,
-      "resourceStrategies":[{
-        "type": "sh",
-        "commands": [["mkdir", "logs"]]
-      },{
-        "type": "download",
-        "from": "script/control_hive.sh",
-        "to": "control_hive.sh",
-        "md5": "11f36c034dbbca447fc6b16308169572"
-      },{
-        "type": "link",
-        "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
-        "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
-      },{
-        "type": "link",
-        "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
-        "target": "jmx/hiveserver2.yaml"
-      },{
-        "type": "link",
-        "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
-        "target": "lib/mysql-connector-java-8.0.28.jar"
-      }],
+      "resourceStrategies": [
+        {
+          "type": "sh",
+          "commands": [
+            [
+              "mkdir",
+              "logs"
+            ]
+          ]
+        },
+        {
+          "type": "download",
+          "from": "script/control_hive.sh",
+          "to": "control_hive.sh",
+          "md5": "11f36c034dbbca447fc6b16308169572"
+        },
+        {
+          "type": "link",
+          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
+          "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
+        },
+        {
+          "type": "link",
+          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
+          "target": "jmx/hiveserver2.yaml"
+        },
+        {
+          "type": "link",
+          "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+          "target": "lib/mysql-connector-java-8.0.28.jar"
+        }
+      ],
       "startRunner": {
         "timeout": "60",
         "program": "control_hive.sh",
@@ -224,7 +249,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
+      "value": "com.mysql.cj.jdbc.Driver",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "com.mysql.cj.jdbc.Driver"
@@ -235,7 +260,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
+      "value": "hive",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "hive"
@@ -246,7 +271,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
+      "value": "fI5sQ4yQ4fP5",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "fI5sQ4yQ4fP5"
@@ -257,10 +282,10 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
+      "value": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/hive?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${mysqlHostPort}/hive?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/hive?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true"
     },
     {
       "name": "hive.server2.enable.doAs",
@@ -268,17 +293,18 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
+      "value": "false",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "false"
-    },{
+    },
+    {
       "name": "hive.metastore.schema.verification",
       "label": "是否验证schema",
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
+      "value": "true",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "true"
@@ -289,7 +315,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
+      "value": "/user/hive/warehouse",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "/user/hive/warehouse"
@@ -300,7 +326,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
+      "value": "9083",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "9083"
@@ -311,10 +337,10 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "",
+      "value": "thrift://${HIVE.HiveMetaStore.__host__}:9083",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "thrift://${metastoreHost}:9083"
+      "defaultValue": "thrift://${HIVE.HiveMetaStore.__host__}:9083"
     },
     {
       "name": "hive.server2.map.fair.scheduler.queue",
@@ -348,7 +374,11 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "yarn",
-      "selectValue" : ["local", "classic", "yarn"]
+      "selectValue": [
+        "local",
+        "classic",
+        "yarn"
+      ]
     },
     {
       "name": "hive.execution.engine",
@@ -360,7 +390,11 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "mr",
-      "selectValue" : ["mr", "tez", "spark"]
+      "selectValue": [
+        "mr",
+        "tez",
+        "spark"
+      ]
     },
     {
       "name": "hive.merge.mapfiles",
@@ -524,7 +558,8 @@
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "hiveserver2"
-    },{
+    },
+    {
       "name": "hive.zookeeper.quorum",
       "label": "zk地址",
       "configType": "ha",
@@ -532,11 +567,12 @@
       "description": "",
       "required": false,
       "type": "input",
-      "value": "${zkUrls}",
+      "value": "${ZOOKEEPER.zkUrls}",
       "configurableInWizard": true,
       "hidden": true,
-      "defaultValue": "${zkUrls}"
-    },{
+      "defaultValue": "${ZOOKEEPER.zkUrls}"
+    },
+    {
       "name": "hive.zookeeper.client.port",
       "label": "zk端口",
       "configType": "ha",
@@ -548,7 +584,8 @@
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "2181"
-    },{
+    },
+    {
       "name": "hive.server2.thrift.bind.host",
       "label": "hive.server2.thrift.bind.host",
       "configType": "ha",
@@ -560,7 +597,8 @@
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "${host}"
-    },{
+    },
+    {
       "name": "hive.server2.thrift.port",
       "label": "hiveserver2 thrift端口",
       "configType": "ha",
@@ -616,10 +654,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "${HIVE_HOME}",
+      "value": "${ROOT.HIVE.INSTALL_PATH}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${HIVE_HOME}"
+      "defaultValue": "${ROOT.HIVE.INSTALL_PATH}"
     },
     {
       "name": "custom.hive.site.xml",
@@ -640,10 +678,10 @@
       "configType": "custom",
       "required": false,
       "type": "multipleWithKey",
-      "value": [{"HIVE_AUX_JARS_PATH":"${INSTALL_PATH}/hive/auxlibs"}],
+      "value": [],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": []
     }
   ]
 }

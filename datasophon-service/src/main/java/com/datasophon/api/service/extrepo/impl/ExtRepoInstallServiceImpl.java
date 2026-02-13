@@ -458,6 +458,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         if (state == CommandState.FAILED) {
             if (Arrays.asList(CommandState.RUNNING, CommandState.WAIT).contains(cmd.getCommandState())) {
                 cmd.setCommandState(state);
+                cmd.setCommandProgress(100);
                 commandService.updateById(cmd);
                 List<String> cmdHostList = commandHostService.lambdaQuery()
                         .in(ClusterServiceCommandHostEntity::getCommandState, Arrays.asList(CommandState.WAIT, CommandState.RUNNING))
@@ -471,10 +472,12 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                     hostCommandService.lambdaUpdate()
                             .in(ClusterServiceCommandHostCommandEntity::getCommandHostId, cmdHostList)
                             .set(ClusterServiceCommandHostCommandEntity::getCommandState, state)
+                            .set(ClusterServiceCommandHostCommandEntity::getCommandProgress, 100)
                             .update();
                     commandHostService.lambdaUpdate()
                             .in(ClusterServiceCommandHostEntity::getCommandHostId, cmdHostList)
                             .set(ClusterServiceCommandHostEntity::getCommandState, state)
+                            .set(ClusterServiceCommandHostEntity::getCommandProgress, 100)
                             .update();
                 }
             }
@@ -485,6 +488,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                 return;
             }
             cmd.setCommandState(state);
+            cmd.setCommandProgress(0);
             commandService.updateById(cmd);
             List<String> cmdHostList = commandHostService.lambdaQuery()
                     .eq(ClusterServiceCommandHostEntity::getCommandId, cmdId)
@@ -497,10 +501,12 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                 hostCommandService.lambdaUpdate()
                         .in(ClusterServiceCommandHostCommandEntity::getCommandHostId, cmdHostList)
                         .set(ClusterServiceCommandHostCommandEntity::getCommandState, state)
+                        .set(ClusterServiceCommandHostCommandEntity::getCommandProgress, 0)
                         .update();
                 commandHostService.lambdaUpdate()
                         .in(ClusterServiceCommandHostEntity::getCommandHostId, cmdHostList)
                         .set(ClusterServiceCommandHostEntity::getCommandState, state)
+                        .set(ClusterServiceCommandHostEntity::getCommandProgress, 0)
                         .update();
             }
         }
