@@ -116,7 +116,7 @@ public class NexusStorage implements PackageStorage {
             lock.lock();
             DownloadResult result = new DownloadResult();
             result.setMd5(remoteResourceMd5.get());
-            File file = Paths.get(Constants.INSTALL_PATH, resourceName).toFile();
+            File file = Paths.get(Constants.MASTER_MANAGE_PACKAGE_PATH, resourceName).toFile();
             boolean needDownload;
             if (!file.exists()) {
                 needDownload = true;
