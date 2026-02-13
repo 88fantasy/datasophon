@@ -23,17 +23,20 @@ import com.datasophon.worker.handler.ServiceHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StopServiceActor  extends HookTypedActor<ServiceRoleOperateCommand> {
-    
+public class StopServiceActor extends HookTypedActor<ServiceRoleOperateCommand> {
+
     private static final Logger logger = LoggerFactory.getLogger(StopServiceActor.class);
 
     @Override
     protected void doOnReceive(ServiceRoleOperateCommand command) throws Throwable {
-        logger.info("start to stop service role {}", command.getServiceRoleName());
-        ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-        ExecResult stopResult = serviceHandler.stop(command.getStopRunner(), command.getStatusRunner(), command, command.getRunAs());
-        getSender().tell(stopResult, getSelf());
+        doWithTellResult(command.getCommandType(), command, () -> {
+            logger.info("start to stop service role {}", command.getServiceRoleName());
+            ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
+            ExecResult stopResult = serviceHandler.stop(command.getStopRunner(), command.getStatusRunner(), command, command.getRunAs());
 
-        logger.info("service role {} stop result {}", command.getServiceRoleName(), stopResult.getExecResult() ? "success" : "failed");
+            logger.info("service role {} stop result {}", command.getServiceRoleName(), stopResult.getExecResult() ? "success" : "failed");
+            return stopResult;
+        });
+
     }
 }

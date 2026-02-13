@@ -1,7 +1,9 @@
 package com.datasophon.worker.actor;
 
 import akka.actor.UntypedActor;
+import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleResource;
+import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.HookType;
 import com.datasophon.common.function.ThrowableSupplier;
 import com.datasophon.common.model.HookConfig;
@@ -77,12 +79,25 @@ public abstract class HookTypedActor<T> extends UntypedActor {
 
     protected abstract void doOnReceive(T message) throws Throwable;
 
+
     protected void onError(Object message, Throwable throwable) throws Throwable {
         log.error("{} receive messageType: {}, but handle fail, ", this.getClass().getSimpleName(), message == null ? "null" : message.getClass().getSimpleName(), throwable);
         throw throwable;
     }
 
-
+    protected void doWithTellResult(CommandType commandType, ServiceRoleResource resource, ThrowableSupplier<ExecResult> task) {
+        Logger logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(resource.getServiceName(), resource.getServiceRoleName(), StartServiceActor.class));
+        ExecResult result = null;
+        try {
+            result = task.get();
+        } catch (Throwable throwable) {
+            String hint = commandType == null ? "处理" : commandType.getCommandName(Constants.CN);
+            logger.error("{}服务{} {}失败，原因: {}", hint, resource.getServiceName(), resource.getServiceRoleName(), throwable.getMessage(), throwable);
+            result = ExecResult.error(String.format("%s服务%s %s失败，原因: %s", hint, resource.getServiceName(), resource.getServiceRoleName(), throwable.getMessage()));
+        } finally {
+            getSender().tell(result, getSelf());
+        }
+    }
 
     protected ExecResult invokeHook(List<HookConfig> hooks, HookType type, ServiceRoleResource resource, Map<String, String> globalVariables) {
         ExecResult result = ExecResult.success();
@@ -100,7 +115,7 @@ public abstract class HookTypedActor<T> extends UntypedActor {
                             hook.getType(), i, hook.getAction());
                     log.info("{}.{} invoke {} hook, index:{}, action: {}", resource.getServiceName(), resource.getServiceRoleName(),
                             hook.getType(), i, hook.getAction());
-                    result =  HookUtils.invokeHook(hook, ctx);
+                    result = HookUtils.invokeHook(hook, ctx);
                     log.info("{}.{} invoke {} hook {}, index:{}, action: {}", resource.getServiceName(), resource.getServiceRoleName(),
                             hook.getType(), result.isSuccess() ? "success" : "fail", i, hook.getAction());
 

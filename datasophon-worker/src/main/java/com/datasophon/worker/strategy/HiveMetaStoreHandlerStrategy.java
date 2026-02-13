@@ -128,7 +128,7 @@ public class HiveMetaStoreHandlerStrategy extends AbstractHandlerStrategy implem
                 props.put(name, value);
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(String.format("解析文件%s失败，%s", hiveSitePath, e.getMessage()), e);
         }
         return props;
     }

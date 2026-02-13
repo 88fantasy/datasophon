@@ -30,10 +30,12 @@ public class ConfigureServiceActor extends HookTypedActor<GenerateServiceConfigC
 
     @Override
     protected void doOnReceive(GenerateServiceConfigCommand command) throws Throwable {
-        logger.info("start configure {}", command.getServiceName());
-        ConfigureServiceHandler serviceHandler = new ConfigureServiceHandler(command.getServiceName(), command.getServiceRoleName());
-        ExecResult startResult = serviceHandler.configure(command, command);
-        getSender().tell(startResult, getSelf());
-        logger.info("{} configure result {}", command.getServiceName(), startResult.getExecResult() ? "success" : "failed");
+        doWithTellResult(null, command, ()-> {
+            logger.info("start configure {}", command.getServiceName());
+            ConfigureServiceHandler serviceHandler = new ConfigureServiceHandler(command.getServiceName(), command.getServiceRoleName());
+            ExecResult result = serviceHandler.configure(command, command);
+            logger.info("{} configure result {}", command.getServiceName(), result.getExecResult() ? "success" : "failed");
+            return result;
+        });
     }
 }

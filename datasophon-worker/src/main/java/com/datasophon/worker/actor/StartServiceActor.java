@@ -23,22 +23,18 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.strategy.ServiceRoleStrategy;
 import com.datasophon.worker.strategy.ServiceRoleStrategyContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
 
+@Slf4j
 public class StartServiceActor extends HookTypedActor<ServiceRoleOperateCommand> {
-
-    private static final Logger logger = LoggerFactory.getLogger(StartServiceActor.class);
-
 
     @Override
     protected void doOnReceive(ServiceRoleOperateCommand command) throws Throwable {
-        ExecResult startResult = new ExecResult();
-        try {
-            logger.info("start to start service role {}", command.getServiceRoleName());
-            startResult = invokeFunctions(
+        doWithTellResult(command.getCommandType(), command, ()-> {
+            log.info("start to start service role {}", command.getServiceRoleName());
+            ExecResult startResult = invokeFunctions(
                     () -> invokeHook(command.getHooks(), HookType.PRE_START, command, command.getVariables()),
                     () -> {
                         ServiceRoleStrategy serviceRoleHandler = ServiceRoleStrategyContext.getServiceRoleHandler(command.getServiceRoleName());
@@ -52,9 +48,9 @@ public class StartServiceActor extends HookTypedActor<ServiceRoleOperateCommand>
                     },
                     () -> invokeHook(command.getHooks(), HookType.POST_START, command, command.getVariables())
             );
-            logger.info("service role {} start result {}", command.getServiceRoleName(), startResult.getExecResult() ? "success" : "failed");
-        } finally {
-            getSender().tell(startResult, getSelf());
-        }
+            log.info("service role {} start result {}", command.getServiceRoleName(), startResult.getExecResult() ? "success" : "failed");
+            return startResult;
+        });
     }
+
 }
