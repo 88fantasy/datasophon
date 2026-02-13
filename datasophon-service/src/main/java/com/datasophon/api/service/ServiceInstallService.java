@@ -41,7 +41,6 @@ public interface ServiceInstallService {
     Result getServiceRoleDeployOverview(Integer clusterId);
 
     
-    void downloadPackage(String packageName, HttpServletResponse response) throws IOException;
 
     void downloadResource(String frameCode, String serviceRoleName,
                           String resource, HttpServletResponse response) throws IOException;
