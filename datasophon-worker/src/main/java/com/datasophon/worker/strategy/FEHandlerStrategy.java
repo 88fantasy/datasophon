@@ -87,6 +87,8 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                         sqlExecCommand.setWorkerPath(workPath);
                         ActorUtils.getRemoteActor(command.getManagerHost(), "masterNodeProcessingActor")
                                 .tell(sqlExecCommand, ActorRef.noSender());
+
+                        logger.info("MasterNodeProcessingActor send message: {}", JSONUtil.toJsonStr(command));
                         logger.info("slave fe start success");
                     } catch (Exception e) {
                         logger.error("add slave fe failed {}", ThrowableUtils.getStackTrace(e));

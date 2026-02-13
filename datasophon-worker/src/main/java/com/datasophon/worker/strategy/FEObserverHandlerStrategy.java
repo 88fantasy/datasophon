@@ -72,6 +72,8 @@ public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implement
                     sqlExecCommand.setOpsType(OlapOpsType.ADD_FE_OBSERVER);
                     ActorUtils.getRemoteActor(command.getManagerHost(), "masterNodeProcessingActor")
                             .tell(sqlExecCommand, ActorRef.noSender());
+
+                    logger.info("MasterNodeProcessingActor send message: {}", JSONUtil.toJsonStr(command));
                 } catch (Exception e) {
                     logger.error("add fe observer failed {}", ThrowableUtils.getStackTrace(e));
                 }

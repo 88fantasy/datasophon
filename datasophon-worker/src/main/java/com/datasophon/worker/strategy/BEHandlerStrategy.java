@@ -17,6 +17,7 @@
 
 package com.datasophon.worker.strategy;
 
+import cn.hutool.json.JSONUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.OlapOpsType;
 import com.datasophon.common.command.OlapSqlExecCommand;
@@ -58,6 +59,8 @@ public class BEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                     sqlExecCommand.setOpsType(OlapOpsType.ADD_BE);
                     ActorUtils.getRemoteActor(command.getManagerHost(), "masterNodeProcessingActor")
                             .tell(sqlExecCommand, ActorRef.noSender());
+
+                    logger.info("MasterNodeProcessingActor send message: {}", JSONUtil.toJsonStr(command));
                 } catch (Exception e) {
                     logger.error("add backend failed {}", ThrowableUtils.getStackTrace(e));
                 }
