@@ -26,6 +26,8 @@ public class GlobalVariables {
 
     public static final String PORT = "__port__";
 
+    public static final String WEB_PORT = "__webPort__";
+
     public static final String CLUSTER_CODE = "__frameCode__";
 
     // cluster variable
@@ -92,7 +94,8 @@ public class GlobalVariables {
         globalVariables.put("${ROOT.Mysql." + GlobalVariables.HOST_IP + "}", split[0]);
         globalVariables.put("${ROOT.Mysql." + GlobalVariables.PORT + "}", split[1]);
         globalVariables.put("${ROOT.Rustfs." + GlobalVariables.HOST_IP + "}", getProperty("rustfs.ip"));
-        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.PORT + "}", getProperty("rustfs.port", "9000"));
+        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.WEB_PORT + "}", getProperty("rustfs.webPort", "9041"));
+        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.PORT + "}", getProperty("rustfs.port", "9040"));
         globalVariables.put("${ROOT.Rustfs.access_key}", getProperty("rustfs.access_key"));
         globalVariables.put("${ROOT.Rustfs.secret_key}", getProperty("rustfs.secret_key"));
         //读取系统变量并且进行注册
