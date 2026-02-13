@@ -89,8 +89,13 @@ public class HiveMetaStoreHandlerStrategy extends AbstractHandlerStrategy implem
             if (!ready) {
                 String initCmd = String.format("%s/bin/schematool -dbType mysql -initSchema", workPath);
                 logger.info("start to init hive schema:{}", initCmd);
-                ShellUtils.execShell(initCmd);
-                logger.info("hive初始化数据库成功");
+                ExecResult result = ShellUtils.execShell(initCmd);
+                if (result.isSuccess()) {
+                    logger.info("hive初始化数据库成功");
+                } else {
+                    logger.error("hive初始化数据库失败，原因：{}", result.getExecResult());
+                    return result;
+                }
             }
             con = DbUtil.use(new SimpleDataSource(url, username, password)).getConnection();
             // 修改表字段注解和表注解

@@ -282,10 +282,10 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/hive?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true",
+      "value": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/hive?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;allowPublicKeyRetrieval=true",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/hive?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/hive?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;allowPublicKeyRetrieval=true"
     },
     {
       "name": "hive.server2.enable.doAs",
