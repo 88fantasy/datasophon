@@ -4,7 +4,9 @@
   "description": "分布式资源调度与管理平台",
   "version": "3.3.6",
   "sortNum": 2,
-  "dependencies":["HDFS"],
+  "dependencies": [
+    "HDFS"
+  ],
   "packageName": "hadoop-3.3.6.tar.gz",
   "decompressPackageName": "hadoop-3.3.6",
   "arch": {
@@ -28,18 +30,19 @@
       "sortNum": 1,
       "logFile": "logs/hadoop-yarn-resourcemanager-${host}.log",
       "jmxPort": 9323,
-      "resourceStrategies":[{
-        "type": "download",
-        "from": "etc/hadoop/fair-scheduler.xml",
-        "to": "etc/hadoop/fair-scheduler.xml",
-        "md5": "de1428bdcb0c92a51354e46de3099f62"
-      },
+      "resourceStrategies": [
         {
-          "type": "sh",
-          "commands": [
-            ["cp", "/data/datasophon/datasophon-init/packages/spark-3.4.2-yarn-shuffle.jar", "share/hadoop/yarn/lib/"]
-          ]
-        }],
+          "type": "download",
+          "from": "etc/hadoop/fair-scheduler.xml",
+          "to": "etc/hadoop/fair-scheduler.xml",
+          "md5": "de1428bdcb0c92a51354e46de3099f62"
+        },
+        {
+          "type": "nexus",
+          "uri": "spark-3.4.2-yarn-shuffle.jar",
+          "to": "share/hadoop/yarn/lib/spark-3.4.2-yarn-shuffle.jar"
+        }
+      ],
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -89,12 +92,13 @@
       },
       "sortNum": 3,
       "logFile": "logs/hadoop-yarn-nodemanager-${host}.log",
-      "resourceStrategies":[{
-        "type": "sh",
-        "commands": [
-          ["cp", "/data/datasophon/datasophon-init/packages/spark-3.4.2-yarn-shuffle.jar", "share/hadoop/yarn/lib/"]
-        ]
-      }],
+      "resourceStrategies": [
+        {
+          "type": "nexus",
+          "uri": "spark-3.4.2-yarn-shuffle.jar",
+          "to": "share/hadoop/yarn/lib/spark-3.4.2-yarn-shuffle.jar"
+        }
+      ],
       "jmxPort": 9324,
       "startRunner": {
         "timeout": "60",
@@ -116,7 +120,8 @@
         "timeout": "60",
         "program": "control_hadoop.sh",
         "args": [
-          "status","nodemanager"
+          "status",
+          "nodemanager"
         ]
       }
     },
@@ -152,10 +157,12 @@
         "timeout": "60",
         "program": "control_hadoop.sh",
         "args": [
-          "status","historyserver"
+          "status",
+          "historyserver"
         ]
       }
-    },{
+    },
+    {
       "name": "YarnClient",
       "label": "YarnClient",
       "roleType": "client",
@@ -355,7 +362,6 @@
       "hidden": false,
       "defaultValue": "65536"
     },
-
     {
       "name": "yarn.scheduler.minimum-allocation-vcores",
       "label": "RM上每个容器请求的虚拟CPU核的最小分配数",
@@ -378,7 +384,6 @@
       "hidden": false,
       "defaultValue": "16"
     },
-
     {
       "name": "yarn.nodemanager.vmem-pmem-ratio",
       "label": "虚拟内存与物理内存之间的比率",
@@ -418,7 +423,7 @@
       "description": "开启yarn日志聚合",
       "required": true,
       "type": "switch",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": true
@@ -429,7 +434,7 @@
       "description": "选择资源调度器，容量调度器或公平调度器",
       "required": true,
       "type": "select",
-      "value":"",
+      "value": "",
       "selectValue": [
         "org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler",
         "org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler"
@@ -444,7 +449,7 @@
       "description": "指明公平调度器队列分配配置文件",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${HADOOP_HOME}/etc/hadoop/fair-scheduler.xml"
@@ -455,7 +460,7 @@
       "description": "是否允许队列间资源抢占",
       "required": true,
       "type": "switch",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": false
@@ -467,7 +472,7 @@
       "configType": "ha",
       "required": true,
       "type": "switch",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": true
@@ -479,7 +484,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "cluster-yarn1"
@@ -491,7 +496,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "rm1,rm2"
@@ -503,7 +508,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${YARN.rm1}"
@@ -515,7 +520,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${YARN.rm2}"
@@ -527,7 +532,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${YARN.rm1}:8088"
@@ -539,7 +544,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${YARN.rm2}:8088"
@@ -551,7 +556,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${YARN.rm1}:8032"
@@ -563,7 +568,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${YARN.rm2}:8032"
@@ -575,7 +580,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${YARN.rm1}:8030"
@@ -587,7 +592,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${YARN.rm2}:8030"
@@ -599,7 +604,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${YARN.rm1}:8031"
@@ -611,7 +616,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${YARN.rm2}:8031"
@@ -623,7 +628,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${ZOOKEEPER.zkUrls}"
@@ -635,7 +640,7 @@
       "configType": "ha",
       "required": true,
       "type": "switch",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": true
@@ -647,7 +652,7 @@
       "configType": "ha",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore"
@@ -658,7 +663,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "0.0.0.0:45454"
@@ -669,7 +674,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "http://${YARN.HistoryServer.__host__}:19888/jobhistory/logs"
@@ -680,7 +685,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "2592000"
@@ -691,7 +696,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "/tmp/logs"
@@ -702,7 +707,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "logs"
@@ -756,7 +761,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${YARN.HistoryServer.__host__}:10020"
@@ -767,7 +772,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${YARN.HistoryServer.__host__}:19888"
@@ -778,7 +783,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "/tmp/history/done"
@@ -789,7 +794,7 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value":"",
+      "value": "",
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "/tmp/history/done_intermediate"
@@ -801,10 +806,34 @@
       "required": true,
       "separator": ",",
       "type": "multiple",
-      "value":["${HADOOP_HOME}/etc/hadoop","${HADOOP_HOME}/share/hadoop/common/lib/*","${HADOOP_HOME}/share/hadoop/common/*","${HADOOP_HOME}/share/hadoop/hdfs","${HADOOP_HOME}/share/hadoop/hdfs/lib/*","${HADOOP_HOME}/share/hadoop/hdfs/*","${HADOOP_HOME}/share/hadoop/mapreduce/lib/*","${HADOOP_HOME}/share/hadoop/mapreduce/*","${HADOOP_HOME}/share/hadoop/yarn","${HADOOP_HOME}/share/hadoop/yarn/lib/*","${HADOOP_HOME}/share/hadoop/yarn/*"],
+      "value": [
+        "${HADOOP_HOME}/etc/hadoop",
+        "${HADOOP_HOME}/share/hadoop/common/lib/*",
+        "${HADOOP_HOME}/share/hadoop/common/*",
+        "${HADOOP_HOME}/share/hadoop/hdfs",
+        "${HADOOP_HOME}/share/hadoop/hdfs/lib/*",
+        "${HADOOP_HOME}/share/hadoop/hdfs/*",
+        "${HADOOP_HOME}/share/hadoop/mapreduce/lib/*",
+        "${HADOOP_HOME}/share/hadoop/mapreduce/*",
+        "${HADOOP_HOME}/share/hadoop/yarn",
+        "${HADOOP_HOME}/share/hadoop/yarn/lib/*",
+        "${HADOOP_HOME}/share/hadoop/yarn/*"
+      ],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ["${HADOOP_HOME}/etc/hadoop","${HADOOP_HOME}/share/hadoop/common/lib/*","${HADOOP_HOME}/share/hadoop/common/*","${HADOOP_HOME}/share/hadoop/hdfs","${HADOOP_HOME}/share/hadoop/hdfs/lib/*","${HADOOP_HOME}/share/hadoop/hdfs/*","${HADOOP_HOME}/share/hadoop/mapreduce/lib/*","${HADOOP_HOME}/share/hadoop/mapreduce/*","${HADOOP_HOME}/share/hadoop/yarn","${HADOOP_HOME}/share/hadoop/yarn/lib/*","${HADOOP_HOME}/share/hadoop/yarn/*"]
+      "defaultValue": [
+        "${HADOOP_HOME}/etc/hadoop",
+        "${HADOOP_HOME}/share/hadoop/common/lib/*",
+        "${HADOOP_HOME}/share/hadoop/common/*",
+        "${HADOOP_HOME}/share/hadoop/hdfs",
+        "${HADOOP_HOME}/share/hadoop/hdfs/lib/*",
+        "${HADOOP_HOME}/share/hadoop/hdfs/*",
+        "${HADOOP_HOME}/share/hadoop/mapreduce/lib/*",
+        "${HADOOP_HOME}/share/hadoop/mapreduce/*",
+        "${HADOOP_HOME}/share/hadoop/yarn",
+        "${HADOOP_HOME}/share/hadoop/yarn/lib/*",
+        "${HADOOP_HOME}/share/hadoop/yarn/*"
+      ]
     },
     {
       "name": "yarn.resourcemanager.principal",

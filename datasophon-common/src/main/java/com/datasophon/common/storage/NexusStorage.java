@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Map;
@@ -22,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * @author zhanghuangbin
@@ -98,14 +100,23 @@ public class NexusStorage implements PackageStorage {
 
     @Override
     public DownloadResult downloadPackageToLocal(String packageName) {
+        return doDownload(packageName, () -> readPackageMd5(packageName));
+    }
+
+    @Override
+    public DownloadResult downloadResourceToLocal(String resourceName) {
+        return doDownload(resourceName, () -> NexusFileUtils.getAssertMd5FromRawRepo(resourceName));
+    }
+
+
+    private DownloadResult doDownload(String resourceName, Supplier<String> remoteResourceMd5) {
         ensureNexusEnable();
-        Lock lock = LOCK_MAP.computeIfAbsent(packageName, k -> new ReentrantLock());
+        Lock lock = LOCK_MAP.computeIfAbsent(resourceName, k -> new ReentrantLock());
         try {
             lock.lock();
             DownloadResult result = new DownloadResult();
-            result.setMd5(readPackageMd5(packageName));
-
-            File file = new File(Constants.MASTER_MANAGE_PACKAGE_PATH, packageName);
+            result.setMd5(remoteResourceMd5.get());
+            File file = Paths.get(Constants.INSTALL_PATH, resourceName).toFile();
             boolean needDownload;
             if (!file.exists()) {
                 needDownload = true;
@@ -114,8 +125,8 @@ public class NexusStorage implements PackageStorage {
                 needDownload = !md5.equalsIgnoreCase(result.getMd5());
             }
             if (needDownload) {
-                String path = "packages/" + packageName;
-                log.info("download package: {}, path is {}", packageName, path);
+                String path = "packages/" + resourceName;
+                log.info("download package: {}, path is {}", resourceName, path);
                 if (file.exists()) {
                     file.delete();
                 }
@@ -123,20 +134,19 @@ public class NexusStorage implements PackageStorage {
                 try (FileOutputStream out = new FileOutputStream(file)) {
                     NexusFileUtils.downStream(NexusFileUtils.getNexusRawObjectUrl(path), out);
                 } catch (FileNotFoundException e) {
-                    throw new IllegalStateException(String.format("package %s does not exists at %s", packageName, NexusFileUtils.getNexusRawObjectUrl(path)), e);
+                    throw new IllegalStateException(String.format("package %s does not exists at %s", resourceName, NexusFileUtils.getNexusRawObjectUrl(path)), e);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             } else {
-                log.info("package {} exists, we do need to download", packageName);
+                log.info("package {} exists, we do need to download", resourceName);
             }
-
 
             result.setChange(needDownload);
             result.setTarget(file.getAbsolutePath());
             return result;
         } finally {
-            LOCK_MAP.remove(packageName);
+            LOCK_MAP.remove(resourceName);
             lock.unlock();
         }
     }

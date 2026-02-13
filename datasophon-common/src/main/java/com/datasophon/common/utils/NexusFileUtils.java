@@ -87,7 +87,7 @@ public class NexusFileUtils {
                 int status = response.getStatusLine().getStatusCode();
                 boolean isSuccess = status >= 200 && status < 300;
                 if (isSuccess) {
-                    try (InputStream in = response.getEntity().getContent()){
+                    try (InputStream in = response.getEntity().getContent()) {
                         IoUtil.copy(in, out);
                     }
                 } else {
@@ -325,6 +325,27 @@ public class NexusFileUtils {
                     return ExecResult.fail(body);
                 }
             }
+        }
+    }
+
+
+    public static String getAssertMd5FromRawRepo(String relativePathFromRawRepo) {
+        String group = null;
+        int idx = relativePathFromRawRepo.lastIndexOf("/");
+        if (idx != -1) {
+            group = relativePathFromRawRepo.substring(0, idx);
+        }
+        if (StrUtil.isBlank(group)) {
+            group = "/";
+        }
+        if (!group.startsWith("/")) {
+            group = "/" + group;
+        }
+        try {
+            Assert assertItem = getAssertFromRawRepo(group, relativePathFromRawRepo);
+            return assertItem == null ? null : assertItem.getMd5();
+        } catch (IOException e) {
+            return null;
         }
     }
 

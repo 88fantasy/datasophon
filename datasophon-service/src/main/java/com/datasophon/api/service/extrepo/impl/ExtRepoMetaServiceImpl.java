@@ -333,12 +333,15 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         progress.setState(5);
         progress.setStep(0);
 
-        Set<String> packageNames = vo.getFrameworks()
-                .stream()
-                .flatMap(f -> f.getServices().stream())
-                .map(ServiceMeta::getPackageName)
-                .collect(Collectors.toSet());
-        progress.setTotal(pkgPath == null ? 1 : packageNames.size() + 1);
+
+        if (pkgPath == null) {
+            progress.setTotal(1);
+        } else {
+            File pkgDir = MetaUtils.getPkgPath(pkgPath).toFile();
+            File[] files = pkgDir.listFiles();
+            progress.setStep(1 + (files == null ? 0 : files.length));
+        }
+
 
         File metaDir = FileUtil.file(Constants.META_PATH);
         if (metaDir != null && metaDir.exists()) {
@@ -357,16 +360,22 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
         if (pkgPath != null) {
             File pkgDir = MetaUtils.getPkgPath(pkgPath).toFile();
-            for (String pkg : packageNames) {
-                log.info("上传安装软件：{}/{}", pkgDir, pkg);
-                packageStorage.moveToStorage(new File(pkgDir, pkg), file-> "packages");
-                packageStorage.moveToStorage(new File(pkgDir, MetaUtils.getMd5FileName(pkg)), file-> "packages");
-                progress.setStep(progress.getStep() + 1);
+            File[] files = pkgDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    log.info("上传文件{}到nexus", file.getAbsolutePath());
+                    packageStorage.moveToStorage(file, f-> {
+                        String relativePath = PathUtils.relative(file, pkgDir.getAbsolutePath());
+                        return "packages/" + PathUtils.unixStyle(relativePath);
+                    });
+                    progress.setStep(progress.getStep() + 1);
+                }
             }
         }
 
         progress.setStep(progress.getTotal());
     }
+
 
 
     @Override
