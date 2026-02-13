@@ -333,33 +333,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
 
 
     @Override
-    public void downloadPackage(String packageName, HttpServletResponse response) throws IOException {
-        response.reset();
-        response.setContentType("application/octet-stream");
-        // 支持中文名称文件,需要对header进行单独设置，不然下载的文件名会出现乱码或者无法显示的情况
-        // 设置响应头，控制浏览器下载该文件
-        response.setHeader("Content-Disposition", "attachment;filename=" + packageName);
-        NexusUri nexusUri = Application.getNexusUri();
-
-        try (OutputStream out = response.getOutputStream()){
-            if (nexusUri.isEnabled()) {
-                String url = String.format("%s/repository/raw/%s", nexusUri.getUri(), packageName);
-                NexusFileUtils.downStream(url, out);
-            } else {
-                // 本地
-                File file = new File(Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + packageName);
-                response.addHeader("Content-Length", "" + file.length());
-
-                try (InputStream in = Files.newInputStream(file.toPath())){
-                    IoUtil.copy(in, response.getOutputStream());
-                }
-            }
-        } catch (FileNotFoundException exception) {
-            response.setStatus(404);
-        }
-    }
-
-    @Override
     public void downloadResource(String frameCode, String serviceRoleName, String resource,
                                  HttpServletResponse response) throws IOException {
         String metaPath = FileUtil.getAbsolutePath(META_PATH);

@@ -20,7 +20,6 @@ package com.datasophon.api.controller;
 import com.alibaba.fastjson.JSONArray;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.ServiceInstallService;
-import com.datasophon.common.model.HostServiceRoleMapping;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.utils.ConverterUtils;
@@ -99,16 +98,6 @@ public class ServiceInstallController extends ApiController {
     @RequestMapping("/getServiceRoleDeployOverview")
     public Result getServiceRoleDeployOverview(Integer clusterId) {
         return serviceInstallService.getServiceRoleDeployOverview(clusterId);
-    }
-
-    /**
-     * 下载安装包
-     */
-    @GetMapping("/downloadPackage")
-    public void downloadPackage(String packageName, String cpuArchitecture,
-                                HttpServletResponse response) throws IOException {
-
-        serviceInstallService.downloadPackage(packageName, response);
     }
 
     /**
