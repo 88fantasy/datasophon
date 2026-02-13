@@ -39,7 +39,7 @@
         },
         {
           "type": "nexus",
-          "uri": "spark-3.4.2-yarn-shuffle.jar",
+          "from": "spark-3.4.2-yarn-shuffle.jar",
           "to": "share/hadoop/yarn/lib/spark-3.4.2-yarn-shuffle.jar"
         }
       ],
@@ -95,7 +95,7 @@
       "resourceStrategies": [
         {
           "type": "nexus",
-          "uri": "spark-3.4.2-yarn-shuffle.jar",
+          "nexus": "spark-3.4.2-yarn-shuffle.jar",
           "to": "share/hadoop/yarn/lib/spark-3.4.2-yarn-shuffle.jar"
         }
       ],

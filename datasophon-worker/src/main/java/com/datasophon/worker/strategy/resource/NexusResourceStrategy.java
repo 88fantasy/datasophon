@@ -35,7 +35,7 @@ public class NexusResourceStrategy extends ResourceStrategy {
         try {
             PackageStorage storage = PackageStorageUtils.getStorage();
             DownloadResult result = storage.downloadResourceToLocal(fromPath);
-            FileUtil.copyFile(result.getTarget(), targetPath);
+            FileUtil.copy(result.getTarget(), targetPath, true);
             return ExecResult.success();
         } catch (Exception e) {
             logger.error("下载nexus资源包{}失败, 原因{}", fromPath, e.getMessage(), e);

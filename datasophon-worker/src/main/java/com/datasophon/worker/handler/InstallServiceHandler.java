@@ -257,7 +257,11 @@ public class InstallServiceHandler {
                 String type = (String) strategy.get(ResourceStrategy.TYPE_KEY);
                 Class<? extends ResourceStrategy> clazz = cache.getOrDefault(type, EmptyStrategy.class);
                 ResourceStrategy rs = BeanUtil.toBean(strategy, clazz, CopyOptions.create().ignoreError());
-                rs.setLogger(logger);
+
+                Logger rsLogger = LoggerFactory.getLogger(
+                        TaskConstants.createLoggerName(command.getServiceName(), command.getServiceRoleName(), rs.getClass())
+                );
+                rs.setLogger(rsLogger);
                 rs.setFrameCode(frameCode);
                 rs.setService(serviceName);
                 rs.setServiceRole(serviceRoleName);
