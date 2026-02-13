@@ -52,9 +52,11 @@ public class BEHandlerStartegy implements ServiceRoleStrategy {
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(roleInstanceEntity.getClusterId());
         String feMaster = globalVariables.get("${DORIS.feMaster}");
+        String rootPassword = globalVariables.get("${DORIS.root_password}");
+
         if (roleInstanceEntity.getServiceRoleState() == ServiceRoleState.RUNNING) {
             try {
-                List<ProcInfo> backends = OlapUtils.showBackends(feMaster);
+                List<ProcInfo> backends = OlapUtils.showBackends(feMaster, rootPassword);
                 resolveProcInfoAlert(roleInstanceEntity.getServiceRoleName(), backends, map);
             } catch (Exception e) {
                 logger.info("dorisBE service role check error. fe:" + feMaster, e);

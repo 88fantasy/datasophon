@@ -1,12 +1,14 @@
 package com.datasophon.api.master;
 
 import cn.hutool.json.JSONUtil;
+import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.common.command.OlapSqlExecCommand;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.OlapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class MasterNodeProcessingActor extends TypedActor<OlapSqlExecCommand> {
@@ -18,15 +20,17 @@ public class MasterNodeProcessingActor extends TypedActor<OlapSqlExecCommand> {
         logger.info("MasterNodeProcessingActor receive message: {}", JSONUtil.toJsonStr(command));
         ExecResult execResult = new ExecResult();
         String tip = command.getOpsType().getDesc();
+        Map<String, String> globalVariables = GlobalVariables.getVariables(command.getClusterId());
+        String rootPassword = globalVariables.get("${DORIS.root_password}");
         switch (command.getOpsType()) {
             case ADD_BE:
-                execResult = OlapUtils.addBackend(command.getFeMaster(), command.getHostName(), command.getWorkerPath());
+                execResult = OlapUtils.addBackend(command.getFeMaster(), command.getHostName(), rootPassword);
                 break;
             case ADD_FE_FOLLOWER:
-                execResult = OlapUtils.addFollower(command.getFeMaster(), command.getHostName(), command.getWorkerPath());
+                execResult = OlapUtils.addFollower(command.getFeMaster(), command.getHostName(), rootPassword);
                 break;
             case ADD_FE_OBSERVER:
-                execResult = OlapUtils.addObserver(command.getFeMaster(), command.getHostName(), command.getWorkerPath());
+                execResult = OlapUtils.addObserver(command.getFeMaster(), command.getHostName(), rootPassword);
                 break;
         }
         if (execResult.getExecResult()) {

@@ -17,7 +17,6 @@
 
 package com.datasophon.api.strategy;
 
-import cn.hutool.core.util.ObjUtil;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.ProcessUtils;
@@ -70,10 +69,11 @@ public class FEHandlerStrategy implements ServiceRoleStrategy {
   public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                       Map<String, ClusterServiceRoleInstanceEntity> map) {
     String feMaster = GlobalVariables.getValueByService(roleInstanceEntity.getClusterId(), roleInstanceEntity.getServiceName(),"feMaster");
+    String rootPassword = GlobalVariables.getValueByService(roleInstanceEntity.getClusterId(), roleInstanceEntity.getServiceName(),"root_password");
     if (roleInstanceEntity.getHostname().equals(feMaster)
         && roleInstanceEntity.getServiceRoleState() == ServiceRoleState.RUNNING) {
       try {
-        List<ProcInfo> frontends = OlapUtils.showFrontends(feMaster);
+        List<ProcInfo> frontends = OlapUtils.showFrontends(feMaster, rootPassword);
         resolveProcInfoAlert(roleInstanceEntity.getServiceRoleName(), frontends, map);
       } catch (Exception ignored) {
 

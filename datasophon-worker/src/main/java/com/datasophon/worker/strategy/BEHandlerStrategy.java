@@ -50,6 +50,7 @@ public class BEHandlerStrategy extends AbstractHandlerStrategy implements Servic
             if (startResult.getExecResult()) {
                 try {
                     OlapSqlExecCommand sqlExecCommand = new OlapSqlExecCommand();
+                    sqlExecCommand.setClusterId(command.getClusterId());
                     sqlExecCommand.setFeMaster(command.getMasterHost());
                     // 使用IP 否则应用侧使用时需要设置host
                     sqlExecCommand.setHostName(NetUtil.getLocalhostStr());

@@ -42,12 +42,12 @@ public class OlapUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(OlapUtils.class);
     
-    public static ExecResult addFollower(String feMaster, String hostname, String workPath) {
+    public static ExecResult addFollower(String feMaster, String hostname, String rootPassword) {
         ExecResult execResult = new ExecResult();
         String sql = "ALTER SYSTEM add FOLLOWER \"" + hostname + ":9010\";";
         logger.info("Add fe to cluster , the sql is {}", sql);
         try {
-            executeSql(feMaster, hostname, sql, workPath);
+            executeSql(feMaster, hostname, sql, rootPassword);
             execResult.setExecResult(true);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -57,12 +57,12 @@ public class OlapUtils {
         return execResult;
     }
     
-    public static ExecResult addObserver(String feMaster, String hostname, String workPath) {
+    public static ExecResult addObserver(String feMaster, String hostname, String rootPassword) {
         ExecResult execResult = new ExecResult();
         String sql = "ALTER SYSTEM add OBSERVER \"" + hostname + ":9010\";";
         logger.info("Add fe to cluster , the sql is {}", sql);
         try {
-            executeSql(feMaster, hostname, sql, workPath);
+            executeSql(feMaster, hostname, sql, rootPassword);
             execResult.setExecResult(true);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -72,13 +72,13 @@ public class OlapUtils {
         return execResult;
     }
     
-    public static ExecResult addBackend(String feMaster, String hostname, String workPath) {
+    public static ExecResult addBackend(String feMaster, String hostname, String rootPassword) {
         ExecResult execResult = new ExecResult();
         String sql = "ALTER SYSTEM add BACKEND  \"" + hostname + ":9050\";";
         logger.info("Add be to cluster , the sql is {}", sql);
         
         try {
-            executeSql(feMaster, hostname, sql, workPath);
+            executeSql(feMaster, hostname, sql, rootPassword);
             execResult.setExecResult(true);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -89,8 +89,8 @@ public class OlapUtils {
     }
     
     private static void executeSql(String feMaster, String hostname,
-                                   String sql, String workPath) throws ClassNotFoundException, SQLException {
-        Connection connection = getConnection(feMaster, workPath);
+                                   String sql, String rootPassword) throws ClassNotFoundException, SQLException {
+        Connection connection = getConnection(feMaster, rootPassword);
         Statement statement = connection.createStatement();
         if (Objects.nonNull(connection) && Objects.nonNull(statement)) {
             statement.executeUpdate(sql);
@@ -137,16 +137,15 @@ public class OlapUtils {
         return ShellUtils.execShell(sqlCommand);
     }
     
-    private static Connection getConnection(String feMaster, String workPath) throws ClassNotFoundException, SQLException {
+    private static Connection getConnection(String feMaster, String rootPassword) throws ClassNotFoundException, SQLException {
         Connection connection = null;
         String username = "root";
         String url = "jdbc:mysql://" + feMaster + ":9030";
         // 加载驱动
         Class.forName("com.mysql.cj.jdbc.Driver");
         //获取安装路径
-        String feUniConfPath = workPath + "/fe/conf/fe.uni.conf";
-        logger.info("doris fe配置路径 = {}", feUniConfPath);
-        String password = getUniPassword(feUniConfPath);
+        logger.info("doris fe配置密码 = {}", rootPassword);
+        String password = rootPassword;
         try {
             connection = DriverManager.getConnection(url, username, password);
         } catch (Exception e) {
@@ -165,33 +164,33 @@ public class OlapUtils {
         }
     }
     
-    public static List<ProcInfo> showFrontends(String feMaster) throws SQLException, ClassNotFoundException {
+    public static List<ProcInfo> showFrontends(String feMaster, String rootPassword) throws SQLException, ClassNotFoundException {
         String sql = "SHOW PROC '/frontends';";
         // logger.info("sql is {}", sql);
-        return executeQueryProcInfo(feMaster, sql, DOIRS_INSTALLED_PATH);
+        return executeQueryProcInfo(feMaster, sql, rootPassword);
     }
     
-    public static List<ProcInfo> listDeadFrontends(String feMaster) throws SQLException, ClassNotFoundException {
+    public static List<ProcInfo> listDeadFrontends(String feMaster, String rootPassword) throws SQLException, ClassNotFoundException {
         String sql = "SHOW PROC '/frontends';";
         // logger.info("sql is {}", sql);
-        return getDeadProcInfos(feMaster, sql, DOIRS_INSTALLED_PATH);
+        return getDeadProcInfos(feMaster, sql, rootPassword);
     }
     
-    public static List<ProcInfo> listDeadBackends(String feMaster) throws SQLException, ClassNotFoundException {
+    public static List<ProcInfo> listDeadBackends(String feMaster, String rootPassword) throws SQLException, ClassNotFoundException {
         String sql = "SHOW PROC '/frontends';";
         // logger.info("sql is {}",sql);
-        return getDeadProcInfos(feMaster, sql, DOIRS_INSTALLED_PATH);
+        return getDeadProcInfos(feMaster, sql, rootPassword);
     }
     
-    public static List<ProcInfo> showBackends(String feMaster) throws SQLException, ClassNotFoundException {
+    public static List<ProcInfo> showBackends(String feMaster, String rootPassword) throws SQLException, ClassNotFoundException {
         String sql = "SHOW PROC '/backends';";
         // logger.info("sql is {}",sql);
-        return executeQueryProcInfo(feMaster, sql, DOIRS_INSTALLED_PATH);
+        return executeQueryProcInfo(feMaster, sql, rootPassword);
     }
     
     public static List<ProcInfo> executeQueryProcInfo(String feMaster,
-                                                      String sql, String workPath) throws SQLException, ClassNotFoundException {
-        Connection connection = getConnection(feMaster, workPath);
+                                                      String sql, String rootPassword) throws SQLException, ClassNotFoundException {
+        Connection connection = getConnection(feMaster, rootPassword);
         Statement statement = connection.createStatement();
         ArrayList<ProcInfo> list = new ArrayList<>();
         if (Objects.nonNull(connection) && Objects.nonNull(statement)) {
@@ -209,8 +208,8 @@ public class OlapUtils {
     }
     
     public static List<ProcInfo> executeQuerySql(String feMaster,
-                                                 String sql, String workPath) throws SQLException, ClassNotFoundException {
-        Connection connection = getConnection(feMaster, workPath);
+                                                 String sql, String rootPassword) throws SQLException, ClassNotFoundException {
+        Connection connection = getConnection(feMaster, rootPassword);
         long start = System.currentTimeMillis();
         Statement statement = connection.createStatement();
         ArrayList<ProcInfo> list = new ArrayList<>();
@@ -227,8 +226,8 @@ public class OlapUtils {
     }
     
     private static List<ProcInfo> getDeadProcInfos(String feMaster,
-                                                   String sql, String workPath) throws SQLException, ClassNotFoundException {
-        List<ProcInfo> list = executeQueryProcInfo(feMaster, sql, workPath);
+                                                   String sql, String rootPassword) throws SQLException, ClassNotFoundException {
+        List<ProcInfo> list = executeQueryProcInfo(feMaster, sql, rootPassword);
         ArrayList<ProcInfo> deadList = new ArrayList<>();
         for (ProcInfo procInfo : list) {
             if (!procInfo.getAlive()) {
@@ -254,4 +253,5 @@ public class OlapUtils {
         }
         return root_password;
     }
+
 }

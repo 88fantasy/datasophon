@@ -65,6 +65,7 @@ public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implement
                 // add observer
                 try {
                     OlapSqlExecCommand sqlExecCommand = new OlapSqlExecCommand();
+                    sqlExecCommand.setClusterId(command.getClusterId());
                     sqlExecCommand.setFeMaster(command.getMasterHost());
                     sqlExecCommand.setHostName(NetUtil.getLocalhostStr());
                     sqlExecCommand.setWorkerPath(workPath);

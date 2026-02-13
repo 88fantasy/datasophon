@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -60,8 +61,7 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
         logger.info("FEHandlerStrategy start fe" + JSONUtil.toJsonStr(command));
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         String workPath = PkgInstallPathUtils.getInstallHome(command);
-//        FIXME 文件已经迁移到nexus，这里有bug
-        String feUniConfPath = "/data/datasophon/datasophon-init/packages/fe.uni.conf";
+        String feUniConfPath = workPath + "/fe/conf/fe.uni.conf";
         if (command.getCommandType() == CommandType.INSTALL_SERVICE) {
             if (command.isSlave()) {
                 logger.info("first start  fe");
@@ -80,6 +80,7 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                     // add follower
                     try {
                         OlapSqlExecCommand sqlExecCommand = new OlapSqlExecCommand();
+                        sqlExecCommand.setClusterId(command.getClusterId());
                         sqlExecCommand.setFeMaster(command.getMasterHost());
                         sqlExecCommand.setHostName(NetUtil.getLocalhostStr());
                         sqlExecCommand.setOpsType(OlapOpsType.ADD_FE_FOLLOWER);

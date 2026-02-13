@@ -60,10 +60,11 @@ public class FEObserverHandlerStartegy implements ServiceRoleStrategy {
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(roleInstanceEntity.getClusterId());
         String feMaster = globalVariables.get("${DORIS.feMaster}");
+        String rootPassword = globalVariables.get("${DORIS.root_password}");
         if (roleInstanceEntity.getHostname().equals(feMaster)
                 && roleInstanceEntity.getServiceRoleState() == ServiceRoleState.RUNNING) {
             try {
-                List<ProcInfo> frontends = OlapUtils.showFrontends(feMaster);
+                List<ProcInfo> frontends = OlapUtils.showFrontends(feMaster,rootPassword);
                 resolveProcInfoAlert(roleInstanceEntity.getServiceRoleName(), frontends, map);
             } catch (Exception e) {
                 

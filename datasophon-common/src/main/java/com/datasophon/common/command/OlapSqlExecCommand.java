@@ -6,6 +6,8 @@ import lombok.Data;
 
 @Data
 public class OlapSqlExecCommand implements Serializable {
+
+    private Integer clusterId;
     
     private OlapOpsType opsType;
     
@@ -14,4 +16,5 @@ public class OlapSqlExecCommand implements Serializable {
     private String hostName;
 
     private String workerPath;
+
 }
