@@ -80,15 +80,13 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                     // add follower
                     try {
                         OlapSqlExecCommand sqlExecCommand = new OlapSqlExecCommand();
-                        sqlExecCommand.setClusterId(command.getClusterId());
+                        sqlExecCommand.setVariables(command.getVariables());
                         sqlExecCommand.setFeMaster(command.getMasterHost());
                         sqlExecCommand.setHostName(NetUtil.getLocalhostStr());
                         sqlExecCommand.setOpsType(OlapOpsType.ADD_FE_FOLLOWER);
                         sqlExecCommand.setWorkerPath(workPath);
                         ActorUtils.getRemoteActor(command.getManagerHost(), "masterNodeProcessingActor")
                                 .tell(sqlExecCommand, ActorRef.noSender());
-
-                        logger.info("MasterNodeProcessingActor send message: {}", JSONUtil.toJsonStr(command));
                         logger.info("slave fe start success");
                     } catch (Exception e) {
                         logger.error("add slave fe failed {}", ThrowableUtils.getStackTrace(e));

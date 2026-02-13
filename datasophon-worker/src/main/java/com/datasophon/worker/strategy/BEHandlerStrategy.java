@@ -51,7 +51,7 @@ public class BEHandlerStrategy extends AbstractHandlerStrategy implements Servic
             if (startResult.getExecResult()) {
                 try {
                     OlapSqlExecCommand sqlExecCommand = new OlapSqlExecCommand();
-                    sqlExecCommand.setClusterId(command.getClusterId());
+                    sqlExecCommand.setVariables(command.getVariables());
                     sqlExecCommand.setFeMaster(command.getMasterHost());
                     // 使用IP 否则应用侧使用时需要设置host
                     sqlExecCommand.setHostName(NetUtil.getLocalhostStr());
@@ -59,8 +59,6 @@ public class BEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                     sqlExecCommand.setOpsType(OlapOpsType.ADD_BE);
                     ActorUtils.getRemoteActor(command.getManagerHost(), "masterNodeProcessingActor")
                             .tell(sqlExecCommand, ActorRef.noSender());
-
-                    logger.info("MasterNodeProcessingActor send message: {}", JSONUtil.toJsonStr(command));
                 } catch (Exception e) {
                     logger.error("add backend failed {}", ThrowableUtils.getStackTrace(e));
                 }

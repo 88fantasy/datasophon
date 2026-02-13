@@ -20,8 +20,8 @@ public class MasterNodeProcessingActor extends TypedActor<OlapSqlExecCommand> {
         logger.info("MasterNodeProcessingActor receive message: {}", JSONUtil.toJsonStr(command));
         ExecResult execResult = new ExecResult();
         String tip = command.getOpsType().getDesc();
-        Map<String, String> globalVariables = GlobalVariables.getVariables(command.getClusterId());
-        String rootPassword = globalVariables.get("${DORIS.root_password}");
+        Map<String, String> globalVariables = command.getVariables();
+        String rootPassword = globalVariables.getOrDefault("${DORIS.root_password}", "");
         switch (command.getOpsType()) {
             case ADD_BE:
                 execResult = OlapUtils.addBackend(command.getFeMaster(), command.getHostName(), rootPassword);
