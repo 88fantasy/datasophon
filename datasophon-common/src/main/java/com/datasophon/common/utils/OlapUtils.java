@@ -144,7 +144,7 @@ public class OlapUtils {
         // 加载驱动
         Class.forName("com.mysql.cj.jdbc.Driver");
         //获取安装路径
-        logger.info("doris fe配置密码 = {}", rootPassword);
+        //logger.info("doris fe配置密码 = {}", rootPassword);
         String password = rootPassword;
         try {
             connection = DriverManager.getConnection(url, username, password);
