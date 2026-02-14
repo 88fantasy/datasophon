@@ -17,7 +17,7 @@ public class HadoopInstallServiceHandler extends InstallServiceHandler {
     public static final int ORDER = 1000;
     @Override
     public boolean match(InstallServiceRoleCommand command) {
-        return command.getNormalPkgDir().contains(HADOOP);
+        return command.getServiceName().equalsIgnoreCase("hdfs");
     }
 
 

@@ -196,9 +196,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
      * @deprecated 解决完HADOOP_HOME后，可以去掉该方法的调用
      */
     @Deprecated
-    private void putServiceHomeToVariable(String frameCode,
-                                          List<ClusterInfoEntity> clusters, String serviceName,
-                                          String decompressPackageName) {
+    private void putServiceHomeToVariable(String frameCode, List<ClusterInfoEntity> clusters, String serviceName, String decompressPackageName) {
         for (ClusterInfoEntity cluster : clusters) {
             Integer clusterId = cluster.getId();
             if (cluster.getClusterFrame().equals(frameCode)) {
