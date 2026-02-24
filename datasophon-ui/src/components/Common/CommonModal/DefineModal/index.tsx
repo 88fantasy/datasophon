@@ -1,7 +1,9 @@
 // import { Modal } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { invokeGetModal } from "../modalInstance";
+import { Drawer } from "antd";
 // import { GlobalStyles } from 'styles/globalStyles';
+
 
 const Index = (initProps) => {
 
@@ -9,6 +11,11 @@ const Index = (initProps) => {
   const {
     Modal
   } = invokeGetModal()
+
+  const comType = {
+    Drawer,
+    Modal
+  }
 
 
   const {
@@ -101,8 +108,12 @@ const Index = (initProps) => {
     fnRef.current.onOk = fn
   }, [])
 
+
+  const Com = comType[config.comType] || Modal
+
+
   return (
-    <Modal
+    <Com
       data-component-CommonModal="true"
       open={state.visiable}
       width={'50vw'}
@@ -133,7 +144,7 @@ const Index = (initProps) => {
         })
       }
       {/* <GlobalStyles /> */}
-    </Modal>
+    </Com>
   )
 };
 

@@ -148,7 +148,7 @@ const Index = ({
         <>
             {
                 !wrapperClassName && (
-                    <div className="h-[70vh] flex flex-col">
+                    <div className="h-full flex flex-col">
                         {invokeRender()}
                     </div>
                 )
