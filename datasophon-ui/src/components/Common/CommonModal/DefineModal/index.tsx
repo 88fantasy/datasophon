@@ -114,7 +114,7 @@ const Index = (initProps) => {
 
   return (
     <Com
-      data-component-CommonModal="true"
+      data-component-commonmodal="true"
       open={state.visiable}
       width={'50vw'}
       destroyOnClose={true}
