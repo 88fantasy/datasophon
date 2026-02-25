@@ -163,9 +163,10 @@ public class ProcessUtils {
             clusterServiceInstance.setServiceStateCode(ServiceState.RUNNING.getValue());
             serviceInstanceService.updateById(clusterServiceInstance);
         }
+
+
         Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + clusterServiceInstance.getId());
         ClusterServiceInstanceRoleGroup roleGroup = roleGroupService.getById(roleGroupId);
-
         // save role instance
         ClusterServiceRoleInstanceEntity roleInstanceEntity = serviceRoleInstanceService
                 .getOneServiceRole(serviceRoleInfo.getName(), serviceRoleInfo.getHostname(), clusterInfo.getId());
@@ -191,26 +192,26 @@ public class ProcessUtils {
                 clusterZk.setZkServer(roleInstance.getHostname());
                 clusterZkService.save(clusterZk);
             }
-
-            ExternalLink externalLink = serviceRoleInfo.getExternalLink();
-            boolean externalLinkConfigDefined = externalLink != null
-                                        && StrUtil.isNotBlank(externalLink.getUrl())
-                                        && StrUtil.isNotBlank(externalLink.getName());
-            ClusterServiceRoleInstanceWebuis webui = webuisService.getRoleInstanceWebUi(roleInstance.getId());
-            if (externalLinkConfigDefined) {
-                if (webui == null) {
-                    webui = new ClusterServiceRoleInstanceWebuis();
-                }
-                webui.setWebUrl(externalLink.getUrl());
-                webui.setServiceInstanceId(clusterServiceInstance.getId());
-                webui.setServiceRoleInstanceId(roleInstance.getId());
-                webui.setName(externalLink.getName() + "(" + serviceRoleInfo.getHostname() + ")");
-                webuisService.saveOrUpdate(webui);
-            } else if (webui != null) {
-                webuisService.removeById(webui.getId());
-            }
+            roleInstanceEntity = roleInstance;
         }
 
+        ExternalLink externalLink = serviceRoleInfo.getExternalLink();
+        boolean externalLinkConfigDefined = externalLink != null
+                                            && StrUtil.isNotBlank(externalLink.getUrl())
+                                            && StrUtil.isNotBlank(externalLink.getName());
+        ClusterServiceRoleInstanceWebuis webui = webuisService.getRoleInstanceWebUi(roleInstanceEntity.getId());
+        if (externalLinkConfigDefined) {
+            if (webui == null) {
+                webui = new ClusterServiceRoleInstanceWebuis();
+            }
+            webui.setWebUrl(externalLink.getUrl());
+            webui.setServiceInstanceId(clusterServiceInstance.getId());
+            webui.setServiceRoleInstanceId(roleInstanceEntity.getId());
+            webui.setName(externalLink.getName() + "(" + serviceRoleInfo.getHostname() + ")");
+            webuisService.saveOrUpdate(webui);
+        } else if (webui != null) {
+            webuisService.removeById(webui.getId());
+        }
     }
 
     public static void saveHostInstallInfo(StartWorkerMessage message, String clusterCode,

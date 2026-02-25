@@ -308,7 +308,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "jdbc:mysql://${mysqlHostPort}/dolphinscheduler?useUnicode=true&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&useSSL=false"
+			"defaultValue": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/dolphinscheduler?useUnicode=true&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&useSSL=false"
 		},
 		{
 			"name": "username",
@@ -344,7 +344,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "${zkUrls}"
+			"defaultValue": "${ZOOKEEPER.zkUrls}"
 		},
 		{
 			"name": "data.basedir.path",
@@ -382,34 +382,34 @@
 			"description": "",
 			"required": true,
 			"type": "input",
-			"value": "",
+			"value": "${MINIO.minioAccessKey}",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "${minioAccessKey}"
+			"defaultValue": "${MINIO.minioAccessKey}"
 		}, {
 			"name": "resource.aws.secret.access.key",
 			"label": "resource.aws.secret.access.key",
 			"description": "",
 			"required": true,
 			"type": "input",
-			"value": "",
+      "value": "${MINIO.minioSecretKey}",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "${minioSecretKey}"
-		}, {
+      "defaultValue": "${MINIO.minioSecretKey}"
+    }, {
 			"name": "resource.aws.region",
 			"label": "resource.aws.region",
-			"description": "",
+      "description": "uschduler是定制开发的，存在bug，桶名错误地使用region字段，但是实际是桶名",
 			"required": true,
 			"type": "input",
-			"value": "",
+			"value": "dolphinscheduler",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "public"
+			"defaultValue": "dolphinscheduler"
 		}, {
 			"name": "resource.aws.s3.bucket.name",
 			"label": "resource.aws.s3.bucket.name",
-			"description": "",
+      "description": "无用处，uschduler是定制开发的，存在bug，桶名错误地使用region字段。",
 			"required": true,
 			"type": "input",
 			"value": "dolphinscheduler",
@@ -422,10 +422,10 @@
       "description": "",
       "required": true,
       "type": "input",
-      "value": "http://${minioHost}:${minioApiPort}",
+      "value": "http://${MINIO.MinioServer.__hostIp__}:${MINIO.minioApiPort}",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "http://${minioHost}:${minioApiPort}"
+      "defaultValue": "http://${MINIO.MinioServer.__hostIp__}:${MINIO.minioApiPort}"
 		}, {
 			"name": "resource.hdfs.root.user",
 			"label": "resource.hdfs.root.user",
