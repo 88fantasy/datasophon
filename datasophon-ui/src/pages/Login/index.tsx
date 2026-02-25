@@ -8,6 +8,7 @@ import { setAuthorization } from '../../utils/request';
 import { account } from '../../utils/account';
 import { VUE_APP_PUBLIC_PATH } from '../../config';
 import { showMsgAfferRequest } from '../../utils/util';
+import Logo from './Logo';
 
 interface LoginFormValues {
   username: string;
@@ -52,9 +53,10 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl p-8 sm:p-10 transition-all duration-300 hover:shadow-2xl">
+    <div className="h-[100vh] flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100  overflow-hidden">
+      <Logo />
+      <div className="flex-1 flex  items-center justify-center h-full bg-white">
+        <div className="w-[500px] bg-white p-8 sm:p-10 transition-all duration-300">
           <div className="text-center mb-8">
             <Title level={3} className="!mb-2">VOS登录</Title>
             <Text type="secondary">请输入您的账户信息</Text>
