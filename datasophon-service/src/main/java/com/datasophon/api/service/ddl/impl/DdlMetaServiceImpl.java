@@ -28,8 +28,6 @@ import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.common.Constants;
-import com.datasophon.common.enums.ArchType;
-import com.datasophon.common.model.ArchInfo;
 import com.datasophon.common.model.ConfigWriter;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
@@ -52,12 +50,10 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static com.datasophon.common.Constants.FRAMEWORK_TPL;
@@ -351,6 +347,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         serviceEntity.setConfigFileJson(JSONObject.toJSONString(configFileMap));
         serviceEntity.setConfigFileJsonMd5(SecureUtil.md5(serviceEntity.getConfigFileJson()));
         serviceEntity.setSortNum(serviceInfo.getSortNum());
+        serviceEntity.setType(serviceInfo.getType());
     }
 
 

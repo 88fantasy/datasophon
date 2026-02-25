@@ -1,0 +1,1 @@
+update t_ddh_cluster_service_command_host_command  t set t.sort = 0 where t.sort is null;

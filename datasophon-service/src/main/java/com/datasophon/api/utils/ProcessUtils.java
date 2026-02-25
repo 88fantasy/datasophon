@@ -32,7 +32,6 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.master.CancelCommandMap;
 import com.datasophon.api.master.ServiceCommandActor;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
 import com.datasophon.api.master.handler.service.ServiceHandler;
@@ -233,42 +232,6 @@ public class ProcessUtils {
         clusterHostService.save(clusterHostDO);
     }
 
-    public static void updateCommandStateToFailed(List<String> commandIds) {
-        for (String commandId : commandIds) {
-            logger.info("command id is {}", commandId);
-            // cancel worker and sub node
-            ClusterServiceCommandHostCommandService service =
-                    SpringTool.getApplicationContext().getBean(ClusterServiceCommandHostCommandService.class);
-            ActorRef commandActor = ActorUtils.getLocalActor(ServiceCommandActor.class, "commandActor");
-            List<ClusterServiceCommandHostCommandEntity> hostCommandList =
-                    service.getHostCommandListByCommandId(commandId);
-            for (ClusterServiceCommandHostCommandEntity hostCommandEntity : hostCommandList) {
-                if (hostCommandEntity.getCommandState() == CommandState.RUNNING) {
-                    logger.info("{} host command  set to cancel", hostCommandEntity.getCommandName());
-                    CancelCommandMap.put(hostCommandEntity.getHostCommandId(), hostCommandEntity.getCommandName());
-
-                    hostCommandEntity.setCommandState(CommandState.CANCEL);
-                    hostCommandEntity.setCommandProgress(100);
-                    service.updateByHostCommandId(hostCommandEntity);
-                    UpdateCommandHostMessage message = new UpdateCommandHostMessage();
-                    message.setCommandId(commandId);
-                    message.setCommandHostId(hostCommandEntity.getCommandHostId());
-                    message.setHostname(hostCommandEntity.getHostname());
-                    if (hostCommandEntity.getServiceRoleType() == RoleType.MASTER) {
-                        message.setServiceRoleType(ServiceRoleType.MASTER);
-                    } else {
-                        message.setServiceRoleType(ServiceRoleType.WORKER);
-                    }
-                    ActorUtils.actorSystem.scheduler().scheduleOnce(
-                            FiniteDuration.apply(3L, TimeUnit.SECONDS),
-                            commandActor,
-                            message,
-                            ActorUtils.actorSystem.dispatcher(),
-                            ActorRef.noSender());
-                }
-            }
-        }
-    }
 
 
     public static ClusterServiceCommandHostCommandEntity handleCommandResult(String hostCommandId, Boolean execResult,

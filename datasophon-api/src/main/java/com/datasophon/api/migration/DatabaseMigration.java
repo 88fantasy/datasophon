@@ -143,10 +143,10 @@ public class DatabaseMigration {
             if (!migration.isSuccess()) {
                 return new RuntimeException("Migration break at version  " + migration.getVersion());
             } else {
-                log.info("Migration success! version: " + migration.getVersion());
+                log.info("Migration success! version: {}", migration.getVersion());
             }
         }
-        log.info("The migration is complete , The latest database version is " + migrations.last().getVersion());
+        log.info("The migration is complete , The latest database version is {}", migrations.last().getVersion());
         return null;
     }
     
@@ -156,11 +156,11 @@ public class DatabaseMigration {
         if (runScript(ddlFile, true) && runScript(dmlFile, true)) {
             return true;
         }
-        log.error("Migration failure! version: " + migration.getVersion() + ". A rollback is about to be performed");
+        log.error("Migration failure! version: {}. A rollback is about to be performed", migration.getVersion());
         Resource rollbackFile = migration.getRollbackFile();
         if (rollbackFile != null) {
             runScript(rollbackFile, false);
-            log.info("The rollback script (" + rollbackFile.getFilename() + ") is successfully executed");
+            log.info("The rollback script ({}) is successfully executed", rollbackFile.getFilename());
         } else {
             log.warn("The rollback script does not exist. Skip execution");
         }

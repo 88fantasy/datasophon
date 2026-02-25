@@ -23,6 +23,7 @@ import com.datasophon.dao.enums.ServiceState;
 import java.io.Serializable;
 import java.util.Date;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import com.baomidou.mybatisplus.annotation.TableField;
@@ -54,9 +55,7 @@ public class ClusterServiceInstanceEntity implements Serializable {
      * 服务状态 1、待安装 2：正在运行  3：存在告警 4:存在异常
      */
     private ServiceState serviceState;
-    
-    @TableField(exist = false)
-    private Integer serviceStateCode;
+
     /**
      * 更新时间
      */
@@ -70,11 +69,23 @@ public class ClusterServiceInstanceEntity implements Serializable {
     
     private Integer frameServiceId;
     
-    @TableField(exist = false)
-    private String dashboardUrl;
-    
-    @TableField(exist = false)
-    private Integer alertNum;
+
     
     private Integer sortNum;
+
+
+
+    @TableField(exist = false)
+    private Integer serviceStateCode;
+
+
+    @TableField(exist = false)
+    private String dashboardUrl;
+
+    @TableField(exist = false)
+    private Integer alertNum;
+
+    @TableField(exist = false)
+    @Schema(description = "分类， ENVIRONMENT=基础环境, MIDDLEWARE=中间件, APPLICATION=应用")
+    private String catalog;
 }

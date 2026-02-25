@@ -55,5 +55,7 @@ public class ServiceInfo {
     private ExternalLink externalLink;
     
     private Integer sortNum;
+
+    private String type;
     
 }

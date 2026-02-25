@@ -39,12 +39,10 @@ public interface ClusterServiceInstanceService extends IService<ClusterServiceIn
     List<ClusterServiceInstanceEntity> getServiceInstanceByClusterId(Integer clusterId);
 
 
-    String getServiceConfigByClusterIdAndServiceName(Integer id, String node);
-    
+
     List<ClusterServiceInstanceEntity> listAll(Integer clusterId);
     
-    Result downloadClientConfig(Integer clusterId, String serviceName);
-    
+
     Result getServiceRoleType(Integer serviceInstanceId);
     
     Result configVersionCompare(Integer serviceInstanceId, Integer roleGroupId);
