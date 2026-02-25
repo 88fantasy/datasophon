@@ -30,6 +30,7 @@ import asyncHook from '../../components/Common/CommonModal/asyncHook';
 import bg1 from '../../assets/O1CN01O4etvp1DvpFLKfuWq_!!6000000000279-2-tps-609-606.png'
 import bg2 from '../../assets/O1CN018NxReL1shX85Yz6Cx_!!6000000005798-2-tps-884-496.png'
 import gobalEvent, { uiEvent } from '../../utils/gobalEvent';
+import artifactType, { getArtifactTypeLabelByValue } from '../../constants/artifactType';
 
 const showUserCenterModal = asyncHook(() => import('./components/UserCenterModal/api'))
 
@@ -159,20 +160,63 @@ const Index = () => {
     const defaultProps = useMemo(() => {
 
         // const menuProps = {}
+        let serviceRoutes = []
 
         if (serviceList) {
             // route
             const serviceRouteObj = memoServiceRouteObj
             // console.log('route.routes', serviceRouteObj)
+            const serviceListMap = {}
+            serviceList
+                // .filter(val => val.catalog)
+                .forEach(val => {
+                    if (!serviceListMap[val.catalog]) {
+                        serviceListMap[val.catalog] = []
+                    }
+                    serviceListMap[val.catalog].push(val)
+                })
 
-            const serviceRoutes = serviceList.map(val => {
-                return {
-                    name: val.serviceName,
-                    path: `${serviceRouteObj.path}/Instance/${val.id}`,
-                    originData: val
+            Object.keys(serviceListMap).forEach(k => {
+                let arr = []
+                const label = getArtifactTypeLabelByValue(k)
+                const val = serviceListMap[k].map(val => {
+                    return {
+                        name: val.serviceName,
+                        path: `${serviceRouteObj.path}/Instance/${val.id}`,
+                        originData: val
+                    }
+                })
+                if (artifactType.find(val => val.value === k)) {
+                    const obj = {
+                        name: label,
+                        path: `${serviceRouteObj.path}/${k}`,
+                        children: val
+                    }
+
+                    arr.push(obj)
+                } else {
+                    arr = val
+                    // arr.push()
                 }
+
+                serviceRoutes.push(...arr)
+                // val.forEach(v => {
+                //     if (v.catalog)
+                // })
             })
 
+            serviceRoutes.sort((a, b) => {
+                const hasChildrenA = a.children !== undefined;
+                const hasChildrenB = b.children !== undefined;
+
+                if (hasChildrenA && !hasChildrenB) {
+                    return -1; // A 排前面
+                }
+                if (!hasChildrenA && hasChildrenB) {
+                    return 1; // B 排前面
+                }
+                return 0; // 顺序不变
+            })
 
             serviceRoutes.unshift({
                 name: '总览',
@@ -260,7 +304,7 @@ const Index = () => {
     }, [clusterId, invokeCancelGetServiceList, invokeGetServiceListByClusterProxy])
 
     const onMenuClick = useCallback((obj: MenuDataItem) => {
-        console.log('obj', obj)
+        console.log('onMenuClick.obj', obj)
 
         let {
             path

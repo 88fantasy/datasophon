@@ -1,7 +1,7 @@
 import { Badge, Dropdown } from "antd"
 import { invokeGenPath, invokeGetRouteByPath } from "../../../utils/routerUtils"
 import { isEmpty, showComfirmModal, showMsgAfferRequest } from "../../../utils/util"
-import { AlertOutlined, MoreOutlined, ReloadOutlined } from "@ant-design/icons"
+import { AlertOutlined, DashboardOutlined, MoreOutlined, ReloadOutlined } from "@ant-design/icons"
 import { axiosJsonPost, axiosPost } from "../../../api/request"
 import { API } from "../../../api"
 import asyncHook from "../../../components/Common/CommonModal/asyncHook"
@@ -48,6 +48,11 @@ const invokeRenderDot = ({
 }) => {
 
     const isOverview = /Instance\/Overview/gi.test(item.path)
+
+
+    if (isOverview) {
+        return <DashboardOutlined />
+    }
 
 
     return isServiceManage &&
@@ -221,7 +226,7 @@ const invokeRenderMore = ({
                 }
 
 
-         
+
                 showMsgAfferRequest(res)
 
 
