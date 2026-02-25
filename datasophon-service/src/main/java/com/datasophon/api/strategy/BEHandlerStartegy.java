@@ -42,7 +42,7 @@ public class BEHandlerStartegy implements ServiceRoleStrategy {
     @Override
     public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
-        String feMaster = globalVariables.get("${DORIS.feMaster}");
+        String feMaster = globalVariables.get("${DORIS.DorisFE.__hostIp__}");
         logger.info("fe master is {}", feMaster);
         serviceRoleInfo.setMasterHost(feMaster);
     }
@@ -51,7 +51,7 @@ public class BEHandlerStartegy implements ServiceRoleStrategy {
     public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(roleInstanceEntity.getClusterId());
-        String feMaster = globalVariables.get("${DORIS.feMaster}");
+        String feMaster = globalVariables.get("${DORIS.DorisFE.__hostIp__}");
         String rootPassword = globalVariables.get("${DORIS.root_password}");
 
         if (roleInstanceEntity.getServiceRoleState() == ServiceRoleState.RUNNING) {

@@ -42,7 +42,7 @@ public class FEObserverHandlerStartegy implements ServiceRoleStrategy {
     @Override
     public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
-        String feMaster = globalVariables.get("${DORIS.feMaster}");
+        String feMaster = globalVariables.get("${DORIS.DorisFE.__hostIp__}");
         if (hostname.equals(feMaster)) {
             logger.info("fe master is {}", feMaster);
             serviceRoleInfo.setSortNum(1);
@@ -59,7 +59,7 @@ public class FEObserverHandlerStartegy implements ServiceRoleStrategy {
     public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(roleInstanceEntity.getClusterId());
-        String feMaster = globalVariables.get("${DORIS.feMaster}");
+        String feMaster = globalVariables.get("${DORIS.DorisFE.__hostIp__}");
         String rootPassword = globalVariables.get("${DORIS.root_password}");
         if (roleInstanceEntity.getHostname().equals(feMaster)
                 && roleInstanceEntity.getServiceRoleState() == ServiceRoleState.RUNNING) {
