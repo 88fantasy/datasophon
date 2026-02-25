@@ -47,6 +47,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.PropertyResolver;
 import org.springframework.stereotype.Service;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validator;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -54,6 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.datasophon.common.Constants.FRAMEWORK_TPL;
@@ -89,6 +92,9 @@ public class DdlMetaServiceImpl implements DdlMetaService {
 
     @Autowired
     private ClusterServiceRoleGroupConfigService roleGroupConfigService;
+
+    @Autowired
+    private Validator validator;
 
 
     private static final String HDFS = "HDFS";
@@ -160,6 +166,13 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         } else {
             serviceName = serviceInfo.getName();
         }
+        Set<ConstraintViolation<ServiceInfo>>  errors = validator.validate(serviceInfo);
+        if (!errors.isEmpty()) {
+            List<String> errorList = new ArrayList<>();
+            errors.forEach(e-> errorList.add(e.getMessage()));
+            throw new IllegalStateException(String.format("服务%s的ddl文件不规范，存在错误:\n%s", serviceName, StrUtil.join(";", errorList)));
+        }
+
 
         if (Objects.isNull(serviceInfo.getArch())) {
             // 新增架构判断, 兼容旧版本

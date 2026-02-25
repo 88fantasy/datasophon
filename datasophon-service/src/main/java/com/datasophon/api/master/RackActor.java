@@ -63,8 +63,7 @@ public class RackActor extends TypedActor<GenerateRackPropCommand> {
         ArrayList<ServiceConfig> serviceConfigs = new ArrayList<>();
         List<ClusterHostDO> hostList = hostService.list();
         for (ClusterHostDO clusterHostDO : hostList) {
-            ServiceConfig serviceConfig = ProcessUtils.createServiceConfig(clusterHostDO.getIp(),
-                    Constants.SLASH + clusterHostDO.getRack(), "input");
+            ServiceConfig serviceConfig = ProcessUtils.createServiceConfig(clusterHostDO.getIp(), Constants.SLASH + clusterHostDO.getRack(), "input");
             serviceConfigs.add(serviceConfig);
         }
         configFileMap.put(generators, serviceConfigs);
