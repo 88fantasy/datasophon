@@ -66,7 +66,6 @@ import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceRoleGroup;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
-import com.datasophon.dao.entity.ClusterVariable;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.FrameServiceRoleEntity;
 import com.datasophon.dao.enums.NeedRestart;
@@ -212,9 +211,8 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             String variableValue = String.valueOf(serviceConfig.getValue());
             // add to global variable
             if (Boolean.TRUE.equals(serviceConfig.getRegister())) {
-                addToGlobalVariable(clusterId, serviceName, variableName, variableValue);
+                ProcessUtils.generateClusterVariable(clusterId, serviceName, variableName, variableValue);
             }
-            GlobalVariables.putValue(clusterId, serviceName, variableName, variableValue);
         }
 
 
@@ -572,23 +570,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         return configFileMap;
     }
 
-    private void addToGlobalVariable(Integer clusterId, String serviceName, String variableName, String value) {
-        ClusterVariable clusterVariable = variableService.getVariableByVariableName(variableName, clusterId);
-        if (Objects.nonNull(clusterVariable)) {
-            if (!value.equals(clusterVariable.getVariableValue())) {
-                clusterVariable.setServiceName(serviceName);
-                clusterVariable.setVariableValue(value);
-                variableService.updateById(clusterVariable);
-            }
-        } else {
-            clusterVariable = new ClusterVariable();
-            clusterVariable.setClusterId(clusterId);
-            clusterVariable.setServiceName(serviceName);
-            clusterVariable.setVariableName(variableName);
-            clusterVariable.setVariableValue(value);
-            variableService.save(clusterVariable);
-        }
-    }
 
     private void buildConfig(
             List<ServiceConfig> list,

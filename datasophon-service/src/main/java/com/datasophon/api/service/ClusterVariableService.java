@@ -32,7 +32,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface ClusterVariableService extends IService<ClusterVariable> {
     
-    ClusterVariable getVariableByVariableName(String variableName, Integer clusterId);
+    ClusterVariable getVariableByVariableName( Integer clusterId, String serviceName, String variableName);
     
     List<ClusterVariable> getVariables(Integer clusterId, String serviceName);
 }

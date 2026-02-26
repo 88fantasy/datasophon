@@ -368,49 +368,11 @@ public class ProcessUtils {
         serviceRoleInstanceService.updateById(serviceRole);
     }
 
-    /**
-     * @deprecated 
-     * @see #generateClusterVariable(Integer, String, String, String) 
-     * @param globalVariables
-     * @param clusterId
-     * @param serviceName
-     * @param variableName
-     * @param value
-     */
-    @Deprecated
-    public static void generateClusterVariable(Map<String, String> globalVariables, Integer clusterId,
-                                               String serviceName, String variableName, String value) {
-        ClusterVariableService variableService = SpringTool.getApplicationContext().getBean(ClusterVariableService.class);
-        ClusterVariable clusterVariable = variableService.getVariableByVariableName(variableName, clusterId);
-        if (Objects.nonNull(clusterVariable)) {
-            logger.info("update variable {} value {} to {}", variableName, clusterVariable.getVariableValue(), value);
-            clusterVariable.setServiceName(serviceName);
-            clusterVariable.setVariableValue(value);
-            variableService.updateById(clusterVariable);
-        } else {
-            ClusterVariable newClusterVariable = new ClusterVariable();
-            newClusterVariable.setClusterId(clusterId);
-            newClusterVariable.setServiceName(serviceName);
-            newClusterVariable.setVariableName(variableName);
-            newClusterVariable.setVariableValue(value);
-            variableService.save(newClusterVariable);
-        }
-
-//        FIXME 历史代码原因，存入数据库，key不需要${}包裹，而存入GlobalVariables，需要${}包裹。
-//        需要修改的地方太多，只能采用这种蹩脚的兼容。
-//        如果globalVariables是通过GlobalVariables.getVariables获取，则需要加上${}
-        Map<String, String> map = GlobalVariables.getVariables(clusterId);
-        if (map == globalVariables) {
-            globalVariables.put(GlobalVariables.surroundKey(serviceName + "." + variableName), value);
-        } else {
-            globalVariables.put(variableName, value);
-        }
-    }
 
 
     public static void generateClusterVariable(Integer clusterId, String serviceName, String variableName, String value) {
         ClusterVariableService variableService = SpringTool.getApplicationContext().getBean(ClusterVariableService.class);
-        ClusterVariable clusterVariable = variableService.getVariableByVariableName(variableName, clusterId);
+        ClusterVariable clusterVariable = variableService.getVariableByVariableName(clusterId, serviceName, variableName);
         if (Objects.nonNull(clusterVariable)) {
             logger.info("update variable {} value {} to {}", variableName, clusterVariable.getVariableValue(), value);
             clusterVariable.setServiceName(serviceName);
