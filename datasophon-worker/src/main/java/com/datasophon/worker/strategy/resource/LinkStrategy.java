@@ -1,8 +1,10 @@
 package com.datasophon.worker.strategy.resource;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.ShellUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -26,6 +28,13 @@ public class LinkStrategy extends ResourceStrategy {
 
     @Override
     public ExecResult exec() {
+        if (StrUtil.isNotBlank(source)) {
+            source = PlaceholderUtils.replacePlaceholders(source, getVariables(), Constants.REGEX_VARIABLE);
+        }
+        if (StrUtil.isNotBlank(target)) {
+            target = PlaceholderUtils.replacePlaceholders(target, getVariables(), Constants.REGEX_VARIABLE);
+        }
+
         String realTarget = basePath + Constants.SLASH + target;
         if(target.startsWith(Constants.SLASH)){
             // 兼容绝对路径
