@@ -83,8 +83,8 @@ public class NexusStorage implements PackageStorage {
     @Override
     public String readPackageMd5(String packageName) {
         ensureNexusEnable();
-        String path = packageName.endsWith(".md5") ? packageName : packageName + ".md5";
-        path = "packages/" + path;
+        String fileName = packageName.endsWith(".md5") ? packageName : packageName + ".md5";
+        String path = "packages/" + fileName;
 
         log.info("read the md5 of package:{}", packageName);
         try {
@@ -92,7 +92,7 @@ public class NexusStorage implements PackageStorage {
             log.info("read the md5 of package:{}, content: {}", packageName, md5);
             return md5.replaceAll("\\s", "");
         } catch (FileNotFoundException e) {
-            throw new IllegalStateException(String.format("package %s does not exists at %s", packageName, NexusFileUtils.getNexusRawObjectUrl(path)), e);
+            throw new IllegalStateException(String.format("package %s does not exists at %s", fileName, NexusFileUtils.getNexusRawObjectUrl(path)), e);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

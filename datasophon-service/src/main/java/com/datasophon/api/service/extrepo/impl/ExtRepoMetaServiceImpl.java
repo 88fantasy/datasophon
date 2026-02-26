@@ -339,7 +339,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         } else {
             File pkgDir = MetaUtils.getPkgPath(pkgPath).toFile();
             File[] files = pkgDir.listFiles();
-            progress.setStep(1 + (files == null ? 0 : files.length));
+            progress.setTotal(1 + (files == null ? 0 : files.length));
         }
 
 
@@ -365,7 +365,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
                 for (File file : files) {
                     log.info("上传文件{}到nexus", file.getAbsolutePath());
                     packageStorage.moveToStorage(file, f-> {
-                        String relativePath = PathUtils.relative(file, pkgDir.getAbsolutePath());
+                        String relativePath = PathUtils.relative(file.getParent(), pkgDir.getAbsolutePath());
                         return "packages/" + PathUtils.unixStyle(relativePath);
                     });
                     progress.setStep(progress.getStep() + 1);
