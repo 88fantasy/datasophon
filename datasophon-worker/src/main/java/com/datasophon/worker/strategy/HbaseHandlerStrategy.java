@@ -47,14 +47,12 @@ public class HbaseHandlerStrategy extends AbstractHandlerStrategy implements Ser
             ArrayList<String> commands = new ArrayList<>();
             commands.add("sh");
             commands.add("./enable-hbase-plugin.sh");
-            if (!FileUtil.exist(PkgInstallPathUtils.getInstallHome(command)
-                                + "/ranger-hbase-plugin/success.id")) {
-                ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH + Constants.SLASH
-                        + command.getDecompressPackageName() + "/ranger-hbase-plugin", commands, 30L, logger);
+            String installHome = PkgInstallPathUtils.getInstallHome(command);
+            if (!FileUtil.exist(installHome + "/ranger-hbase-plugin/success.id")) {
+                ExecResult execResult = ShellUtils.execWithStatus(installHome + "/ranger-hbase-plugin", commands, 30L, logger);
                 if (execResult.getExecResult()) {
                     logger.info("enable ranger hbase plugin success");
-                    FileUtil.writeUtf8String("success", Constants.INSTALL_PATH + Constants.SLASH
-                            + command.getDecompressPackageName() + "/ranger-hbase-plugin/success.id");
+                    FileUtil.writeUtf8String("success", installHome + "/ranger-hbase-plugin/success.id");
                 } else {
                     logger.info("enable ranger hbase plugin failed");
                     return execResult;

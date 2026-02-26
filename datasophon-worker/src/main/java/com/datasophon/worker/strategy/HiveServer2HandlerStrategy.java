@@ -48,14 +48,12 @@ public class HiveServer2HandlerStrategy extends AbstractHandlerStrategy implemen
             ArrayList<String> commands = new ArrayList<>();
             commands.add("sh");
             commands.add("./enable-hive-plugin.sh");
-            if (!FileUtil.exist(PkgInstallPathUtils.getInstallHome(command)
-                    + "/ranger-hive-plugin/success.id")) {
-                ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH + Constants.SLASH
-                        + command.getDecompressPackageName() + "/ranger-hive-plugin", commands, 30L, logger);
+            String installHome = PkgInstallPathUtils.getInstallHome(command);
+            if (!FileUtil.exist(installHome + "/ranger-hive-plugin/success.id")) {
+                ExecResult execResult = ShellUtils.execWithStatus(installHome + "/ranger-hive-plugin", commands, 30L, logger);
                 if (execResult.getExecResult()) {
                     logger.info("enable ranger hive plugin success");
-                    FileUtil.writeUtf8String("success", Constants.INSTALL_PATH + Constants.SLASH
-                            + command.getDecompressPackageName() + "/ranger-hive-plugin/success.id");
+                    FileUtil.writeUtf8String("success", installHome + "/ranger-hive-plugin/success.id");
                 } else {
                     logger.info("enable ranger hive plugin failed");
                     return execResult;
