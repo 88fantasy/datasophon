@@ -142,7 +142,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "http://${flinkHistoryServerHost}:${historyserver.web.port}"
+			"defaultValue": "http://${flinkHistoryServerHost}:${FLINK..web.port}"
 		},
 		{
 			"name": "yarnRmHttpAddress",

@@ -68,6 +68,7 @@ import com.datasophon.common.model.StartWorkerMessage;
 import com.datasophon.common.model.UpdateCommandHostMessage;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.HostUtils;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.dao.entity.ClusterAlertHistory;
@@ -157,6 +158,8 @@ public class ProcessUtils {
             clusterServiceInstanceConfig.setCreateTime(new Date());
             clusterServiceInstanceConfig.setUpdateTime(new Date());
             serviceInstanceConfigService.save(clusterServiceInstanceConfig);
+
+
         } else {
             clusterServiceInstance.setNeedRestart(NeedRestart.NO);
             clusterServiceInstance.setServiceState(ServiceState.RUNNING);
@@ -212,6 +215,18 @@ public class ProcessUtils {
         } else if (webui != null) {
             webuisService.removeById(webui.getId());
         }
+
+
+        ProcessUtils.generateClusterVariable(
+                serviceRoleInfo.getClusterId(), GlobalVariables.ROOT,
+                String.format("%s.%s", serviceRoleInfo.getParentName(), GlobalVariables.INSTALL_PATH),
+                PkgInstallPathUtils.getInstallHome(serviceRoleInfo)
+        );
+        ProcessUtils.generateClusterVariable(
+                serviceRoleInfo.getClusterId(), serviceRoleInfo.getParentName(),
+                String.format("%s.%s", serviceRoleInfo.getServiceRoleName(), GlobalVariables.INSTALL_PATH),
+                PkgInstallPathUtils.getInstallHome(serviceRoleInfo)
+        );
     }
 
     public static void saveHostInstallInfo(StartWorkerMessage message, String clusterCode,

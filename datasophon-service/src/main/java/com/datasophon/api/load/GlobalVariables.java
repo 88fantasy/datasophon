@@ -20,6 +20,8 @@ public class GlobalVariables {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalVariables.class);
 
+    public static final String ROOT = "ROOT";
+
     public static final String HOST = "__host__";
 
     public static final String HOST_IP = "__hostIp__";
@@ -30,6 +32,7 @@ public class GlobalVariables {
 
     public static final String CLUSTER_CODE = "__frameCode__";
 
+    public static final String INSTALL_PATH = "INSTALL_PATH";
     // cluster variable
     //    notes: 必须保证clusterId对应的map，始终都同一个对象
 //    @see ProcessUtils#generateClusterVariable的说明
