@@ -308,7 +308,7 @@ const Index = forwardRef((props, ref) => {
                 >
                     {
                         pending ? '正在导入...' :
-                            memoStatus.status === 'exception' ? '重新导入' : '开始导入'
+                            /success|exception/.test(memoStatus.status) ? '重新导入' : '开始导入'
                     }
 
                 </Button>
