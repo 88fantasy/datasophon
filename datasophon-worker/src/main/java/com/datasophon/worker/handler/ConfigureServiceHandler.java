@@ -90,6 +90,12 @@ public class ConfigureServiceHandler {
                 Iterator<ServiceConfig> iterator = configs.iterator();
                 while (iterator.hasNext()) {
                     ServiceConfig config = iterator.next();
+                    if (!config.isRequired() && !Constants.CUSTOM.equals(config.getConfigType())) {
+                        logger.warn("配置项{}未启用, 忽略该值。", config.getName());
+                        iterator.remove();
+                        continue;
+                    }
+
                     if (StringUtils.isNotBlank(config.getType())) {
                         replacePlaceholder(config, paramMap);
                     }
@@ -110,10 +116,7 @@ public class ConfigureServiceHandler {
                         logger.info("Convert boolean and integer to string");
                         config.setValue(config.getValue().toString());
                     }
-                    if (!config.isRequired() && !Constants.CUSTOM.equals(config.getConfigType())) {
-                        logger.warn("remove config, key: {}", config.getName());
-                        iterator.remove();
-                    }
+
                     if ("dataDir".equals(config.getName())) {
                         String dataDir = (String) config.getValue();
                         if (Objects.nonNull(command.getMyid()) && StringUtils.isNotBlank(dataDir)) {
