@@ -304,7 +304,7 @@ const Index = () => {
     }, [clusterId, invokeCancelGetServiceList, invokeGetServiceListByClusterProxy])
 
     const onMenuClick = useCallback((obj: MenuDataItem) => {
-        console.log('onMenuClick.obj', obj)
+        // console.log('onMenuClick.obj', obj)
 
         let {
             path

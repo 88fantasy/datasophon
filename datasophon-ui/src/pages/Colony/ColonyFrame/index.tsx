@@ -33,7 +33,7 @@ const Index: React.FC = () => {
         const res = await axiosPost(API.getFrameList, {})
 
         if (res.code === 200) {
-            setState(res.data)
+            setState(res.data || [])
         }
     }, [])
 
