@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class CheckChunkDTO {
 
     @Schema(description = "附件ID")
-    private Long attachId;
+    private Integer attachId;
 
     @Schema(description = "分片索引 0base")
     private Integer chunkNo;

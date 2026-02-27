@@ -71,7 +71,7 @@ public class TempFileController extends ApiController {
     public Result uploadChunk(
             @NotNull(message = "分片不能为空") @RequestPart("chunk") MultipartFile chunk,
             @NotNull(message = "chunkNo不能为空") @Schema(description = "分片索引，0-base") Integer chunkNo,
-            @NotNull(message = "attachId不能为空") Long attachId,
+            @NotNull(message = "attachId不能为空") Integer attachId,
             String md5) {
         ChunkDTO info = new ChunkDTO();
         info.setChunk(chunk);
