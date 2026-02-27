@@ -24,4 +24,11 @@ public class InitDbParams {
     private MetaStorage metaStorage;
 
 
+    private String ddlPattern;
+
+    private String dmlPattern;
+
+    private String rollbackPattern;
+
+
 }

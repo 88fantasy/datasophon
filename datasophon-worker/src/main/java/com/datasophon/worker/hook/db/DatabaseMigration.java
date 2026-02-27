@@ -12,15 +12,15 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class DatabaseMigration {
@@ -56,14 +56,14 @@ public class DatabaseMigration {
         this.execConn = execConn;
     }
 
-    public TreeSet<Migration> getMigrations(String scriptPath, String resourceKey) throws SQLException {
-        TreeSet<Migration> migrations = getAllMigrations(scriptPath);
+    public TreeSet<Migration> getMigrations(InitDbParams params) throws SQLException {
+        TreeSet<Migration> migrations = getAllMigrations(params);
         if (migrations.isEmpty()) {
             return new TreeSet<>();
         }
 
         TreeSet<Migration> migrationHistories = new TreeSet<>(
-                JdbcConnectorUtils.queryList(metaConn, String.format(QUERY_HISTORY_SQL, MIGRATION_TABLE_NAME), resultSetHandler, resourceKey)
+                JdbcConnectorUtils.queryList(metaConn, String.format(QUERY_HISTORY_SQL, MIGRATION_TABLE_NAME), resultSetHandler, params.getResourceKey())
         );
         if (CollectionUtils.isEmpty(migrationHistories)) {
             return migrations;
@@ -74,42 +74,49 @@ public class DatabaseMigration {
     }
 
 
-    private TreeSet<Migration> getAllMigrations(String scriptPath) {
-        TreeSet<Migration> allMigrations = new TreeSet<>();
-        Resource[] resources = new Resource[0];
-
-        File home = new File(scriptPath);
+    private TreeSet<Migration> getAllMigrations(InitDbParams params) {
+        List<Resource> resources = new ArrayList<>();
+        File home = new File(params.getScriptPath());
         if (home.exists() && home.isDirectory()) {
             List<File> sqlFiles = FileUtil.loopFiles(home, pathname -> "sql".equals(FileUtil.getSuffix(pathname.getName())));
-            resources = sqlFiles.stream().map(FileSystemResource::new).toArray(Resource[]::new);
+            resources = sqlFiles.stream().map(FileSystemResource::new).filter(Migration::isMigrationFile).collect(Collectors.toList());
         }
 
+        Pattern ddlPattern = Pattern.compile(params.getDdlPattern());
+        Pattern dmlPattern = Pattern.compile(params.getDmlPattern());
+        Pattern rollbackPattern = Pattern.compile(params.getRollbackPattern());
 
-        Map<String, List<Resource>> resourceMap = Arrays.stream(resources)
-                .filter(Migration::isMigrationFile)
-                .collect(Collectors.groupingBy(
-                        r -> Objects.requireNonNull(r.getFilename()).substring(1, r.getFilename().indexOf(SPLIT))));
-
-        resourceMap.forEach((version, files) -> {
+        Map<String, Migration> map = new HashMap<>();
+        for (Resource resource : resources) {
+            String fileName = resource.getFilename();
             Resource ddl = null, dml = null, rollback = null;
-            for (Resource resource : files) {
-                String fileName = FileUtil.mainName(Objects.requireNonNull(resource.getFilename()));
-                if (fileName.startsWith(ScriptType.UPGRADE.getPrefix())) {
-                    String[] extracts = fileName.split(SPLIT);
-                    if ("DDL".equals(extracts[1])) {
-                        ddl = resource;
-                    } else if ("DML".equals(extracts[1])) {
-                        dml = resource;
-                    }
-                } else if (fileName.startsWith(ScriptType.ROLLBACK.getPrefix())) {
-                    rollback = resource;
-                }
+            String version = null;
+
+            if ((version = getVersion(fileName, ddlPattern)) != null) {
+                ddl = resource;
+            } else if ((version = getVersion(fileName, dmlPattern)) != null) {
+                dml = resource;
+            } else if ((version = getVersion(fileName, rollbackPattern)) != null) {
+                rollback = resource;
             }
-            if (ddl != null || dml != null) {
-                Migration migration = new Migration(version, ddl, dml, rollback);
-                if (!allMigrations.add(migration)) {
-                    throw new RuntimeException(String.format("resourceKey %s, Duplicate version %s", migration.getResourceKey(), migration.getVersion()));
-                }
+
+            if (version == null) {
+                continue;
+            }
+            Migration migration = map.computeIfAbsent(version, Migration::new);
+            if (ddl != null) {
+                migration.setUpgradeDDLFile(ddl);
+            } else if (dml != null) {
+                migration.setUpgradeDMLFile(dml);
+            } else {
+                migration.setRollbackFile(rollback);
+            }
+        }
+
+        TreeSet<Migration> allMigrations = new TreeSet<>();
+        map.values().forEach(migration-> {
+            if (!allMigrations.add(migration)) {
+                throw new RuntimeException(String.format("resourceKey %s, Duplicate version %s", migration.getResourceKey(), migration.getVersion()));
             }
         });
 
@@ -117,6 +124,13 @@ public class DatabaseMigration {
     }
 
 
+    private String getVersion(String fileName, Pattern pattern) {
+        Matcher matcher = pattern.matcher(fileName);
+        if (matcher.find()) {
+           return matcher.group("version");
+        }
+        return null;
+    }
     public Migration migrate(String resourceKey, TreeSet<Migration> migrations) throws SQLException {
         for (Migration migration : migrations) {
             logger.info("start migration, resourceKey: {}, version: {}", resourceKey, migration.getVersion());
@@ -211,7 +225,7 @@ public class DatabaseMigration {
         } finally {
             try {
                 if (!execConn.isClosed() && autoCommit != null) {
-                   execConn.setAutoCommit(autoCommit);
+                    execConn.setAutoCommit(autoCommit);
                 }
             } catch (SQLException e) {
 //                ignore

@@ -50,11 +50,8 @@ public class Migration implements Comparable<Migration> {
     
     private Resource rollbackFile;
     
-    public Migration(String version, Resource upgradeDDLFile, Resource upgradeDMLFile, Resource rollbackFile) {
+    public Migration(String version) {
         this.version = version;
-        this.upgradeDDLFile = upgradeDDLFile;
-        this.upgradeDMLFile = upgradeDMLFile;
-        this.rollbackFile = rollbackFile;
     }
     
     @Override
@@ -77,13 +74,7 @@ public class Migration implements Comparable<Migration> {
             return false;
         }
         String name = resource.getFilename();
-        if (!StringUtils.endsWithIgnoreCase(name, ".sql")) {
-            return false;
-        }
-        if (name == null || name.split(SPLIT).length != 2) {
-            return false;
-        }
-        return name.startsWith(ScriptType.ROLLBACK.getPrefix()) || name.startsWith(ScriptType.UPGRADE.getPrefix());
+        return StringUtils.endsWithIgnoreCase(name, ".sql");
     }
     
     @Override
