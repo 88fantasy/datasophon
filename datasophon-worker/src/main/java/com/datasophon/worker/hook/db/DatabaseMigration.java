@@ -29,17 +29,6 @@ public class DatabaseMigration {
 
     public static final String SPLIT = "__";
 
-    private static final String TABLE_CREATE_SQL = String.format(
-            "CREATE TABLE `%s`  (" +
-            "  `resource_key` varchar(128) NOT NULL," +
-            "  `version` varchar(128) NOT NULL," +
-            "  `execute_user` varchar(128) NOT NULL," +
-            "  `execute_date` timestamp NOT NULL," +
-            "  `success` int(1) NOT NULL," +
-            "  PRIMARY KEY (`resource_key`, `version`)" +
-            ")",
-            MIGRATION_TABLE_NAME
-    );
     private static final String QUERY_HISTORY_SQL = "select * from %s where resource_key = ? ";
 
 
@@ -73,7 +62,6 @@ public class DatabaseMigration {
             return new TreeSet<>();
         }
 
-        prepareMigrationTable(metaConn);
         TreeSet<Migration> migrationHistories = new TreeSet<>(
                 JdbcConnectorUtils.queryList(metaConn, String.format(QUERY_HISTORY_SQL, MIGRATION_TABLE_NAME), resultSetHandler, resourceKey)
         );
@@ -82,18 +70,6 @@ public class DatabaseMigration {
         } else {
             Migration lastMigration = migrationHistories.last();
             return (TreeSet<Migration>) migrations.tailSet(lastMigration, !lastMigration.isSuccess());
-        }
-    }
-
-    private void prepareMigrationTable(Connection connection) throws SQLException {
-        DatabaseMetaData meta = connection.getMetaData();
-        boolean found;
-        try (ResultSet rs = meta.getTables(connection.getCatalog(), connection.getSchema(), MIGRATION_TABLE_NAME, new String[]{"TABLE"})) {
-            found = rs.next();
-        }
-        if (!found) {
-            logger.info("create table {} at {}.{}", MIGRATION_TABLE_NAME, connection.getCatalog(), connection.getSchema());
-            JdbcConnectorUtils.executeUpdate(connection, TABLE_CREATE_SQL);
         }
     }
 

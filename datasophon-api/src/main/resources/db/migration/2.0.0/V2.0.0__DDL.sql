@@ -77,6 +77,19 @@ CREATE TABLE t_ddh_edge_definition_entity
 
 
 
+CREATE TABLE t_ddh_srv_db_migration_history
+(
+    resource_key varchar(128) NULL,
+    version      varchar(128) NULL,
+    execute_user varchar(128) NULL,
+    execute_date timestamp    NOT NULL,
+    success      int          NOT NULL
+)
+    ENGINE = InnoDB
+    DEFAULT CHARSET = utf8mb4
+    COMMENT ='服务数据库脚本升级记录';
+
+
 alter table t_ddh_cluster_service_command_host_command
     ADD COLUMN `sort` text NULL COMMENT '命令顺序' AFTER `command_type`;
 
