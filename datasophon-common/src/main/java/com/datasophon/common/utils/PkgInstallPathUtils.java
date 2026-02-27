@@ -1,6 +1,5 @@
 package com.datasophon.common.utils;
 
-import cn.hutool.core.io.FileUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleResource;
 import org.apache.commons.lang3.StringUtils;
@@ -17,7 +16,7 @@ public class PkgInstallPathUtils {
 
 
     public static String getInstallHomeName(ServiceRoleResource resource) {
-        return  FileUtil.getPrefix(resource.getPackageName()).toLowerCase();
+        return resource.getDecompressPackageName();
     }
 
     /**
