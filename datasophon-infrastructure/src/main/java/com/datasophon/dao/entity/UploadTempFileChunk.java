@@ -21,7 +21,7 @@ public class UploadTempFileChunk implements Serializable {
     private Integer id;
 
     @Schema(description = "附件ID")
-    private Long attachId;
+    private Integer attachId;
 
     @Schema(description = "分片序号")
     private Integer chunkNo;

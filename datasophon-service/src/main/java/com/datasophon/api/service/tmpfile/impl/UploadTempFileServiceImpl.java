@@ -122,9 +122,18 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
 
     @Override
     public UploadTempFile createShardUploadTask(BigFileDTO info) {
+        UploadTempFile db = BeanUtil.toBean(info, UploadTempFile.class);
+        db.setId(RandomUtils.nextInt(0, Integer.MAX_VALUE));
+        db.setByteDesc(FileUtil.readableFileSize(db.getByteCnt()));
+        db.setSuffix(FileUtil.getSuffix(db.getFileName()));
+        db.setCreateTime(new Date());
+        db.setStatus(0);
+
+
+        UploadTempFile existFile = null;
         File file = null;
         if (StrUtil.isNotBlank(info.getMd5())) {
-            UploadTempFile existFile = lambdaQuery()
+            existFile = lambdaQuery()
                     .eq(UploadTempFile::getMd5, info.getMd5())
                     .isNotNull(UploadTempFile::getPath)
                     .orderByDesc(UploadTempFile::getCreateTime)
@@ -135,12 +144,6 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
             }
         }
 
-        UploadTempFile db = BeanUtil.toBean(info, UploadTempFile.class);
-        db.setId(RandomUtils.nextInt(0, Integer.MAX_VALUE));
-        db.setByteDesc(FileUtil.readableFileSize(db.getByteCnt()));
-        db.setSuffix(FileUtil.getSuffix(db.getFileName()));
-        db.setCreateTime(new Date());
-        db.setStatus(0);
         if (file == null) {
             db.setUploadType(1);
             db.setChunk((int) (info.getByteCnt() % MAX_CHUNK_SIZE == 0 ? info.getByteCnt() / MAX_CHUNK_SIZE : (info.getByteCnt() / MAX_CHUNK_SIZE) + 1));
@@ -162,6 +165,28 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
             db.setPath(db.getId() + "/" + db.getFileName());
             db.setStatus(1);
             updateById(db);
+        } else if (existFile != null) {
+            File srcDir = new File(getSaveDir(), existFile.getId().toString());
+            FileUtil.copyContent(srcDir, attachDir, true);
+            List<UploadTempFileChunk> chunks = uploadTempFileChunkMapper.selectList(
+                    Wrappers.lambdaQuery(UploadTempFileChunk.class).eq(UploadTempFileChunk::getAttachId, existFile.getId())
+            );
+            String srcFileName = existFile.getFileName();
+            chunks.forEach(chunk-> {
+                File chunkFile = new File(attachDir, createChunkName(srcFileName, chunk.getChunkNo()));
+                if (chunkFile.exists()) {
+                    String newName = createChunkName(db.getFileName(), chunk.getChunkNo());
+                    if (!chunkFile.getName().equals(newName)) {
+                        FileUtil.rename(chunkFile, newName, true);
+                    }
+
+                    UploadTempFileChunk chunkDb = new UploadTempFileChunk();
+                    chunkDb.setChunkNo(chunk.getChunkNo());
+                    chunkDb.setMd5(chunk.getMd5());
+                    chunkDb.setAttachId(db.getId());
+                    uploadTempFileChunkMapper.insert(chunkDb);
+                }
+            });
         }
 
         return db;
