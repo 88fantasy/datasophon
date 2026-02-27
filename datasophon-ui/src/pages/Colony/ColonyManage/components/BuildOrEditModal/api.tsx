@@ -49,12 +49,12 @@ export default async function (config) {
           com: ProFormSelect,
           formItemProps: {
             rules: requireRules,
-            options: getFrameListRes.data.map(item => {
+            options: getFrameListRes.data?.map(item => {
               return {
                 label: item.frameCode,
                 value: item.frameCode
               }
-            })
+            }) || []
           },
         },
       ],
