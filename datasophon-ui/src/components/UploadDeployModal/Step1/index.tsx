@@ -5,6 +5,7 @@ import { memo, useState } from "react";
 import { API } from "../../../api";
 import { axiosJsonPost } from "../../../api/request";
 import { noop } from "antd/es/_util/warning";
+import { invokeMakeCommonProFormUploadButtonCustomRequest } from "../../../utils/uploadUtils";
 
 const Index = () => {
 
@@ -108,7 +109,8 @@ const Index = () => {
                                     ]
                                 }}
                                 fieldProps={{
-                                    onPreview: noop
+                                    onPreview: noop,
+                                    customRequest: invokeMakeCommonProFormUploadButtonCustomRequest.bind(noop, API.upload)
                                 }}
 
 

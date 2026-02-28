@@ -3,6 +3,7 @@ import { API } from "../../../api";
 import { noop } from "lodash-es";
 import TableProxy from "./TableProxy";
 import { forwardRef, memo, useCallback, useImperativeHandle, useRef } from "react";
+import { invokeMakeCommonProFormUploadButtonCustomRequest } from "../../../utils/uploadUtils";
 
 const Index = (props, ref) => {
 
@@ -67,7 +68,8 @@ const Index = (props, ref) => {
                 title='选择并上传部署清单'
                 action={API.upload}
                 fieldProps={{
-                    onPreview: noop
+                    onPreview: noop,
+                    customRequest: invokeMakeCommonProFormUploadButtonCustomRequest.bind(noop, API.upload)
                 }}
                 formItemProps={{
                     rules: [

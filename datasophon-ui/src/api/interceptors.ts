@@ -45,6 +45,40 @@ export const codeMessage = {
   504: "网关超时。",
 };
 
+export const errorCb = (error) => {
+  try {
+    // console.log("error", error);
+    const response = error?.response;
+
+    //     const { response } = error;
+    let errortext = codeMessage[response.status] || response.statusText;
+
+    errortext = `【HTTPCODE:${response.status || ""}】${errortext}`;
+
+    message.error(errortext);
+
+    if (response?.status === 401) {
+      message.error("登录已过期，请重新登录！");
+      account.clear();
+
+      setTimeout(() => {
+        invokeRelogin();
+      }, 2 * 1000);
+      // return true;
+    }
+
+    const data = {
+      code: response.status,
+      message: errortext,
+      msg: errortext,
+    };
+
+    return data;
+  } catch (error) {
+    // console.log("error", error);
+  }
+};
+
 // axios请求拦截
 axios.interceptors.request.use(
   (config) => {
@@ -62,7 +96,7 @@ axios.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 axios.interceptors.response.use(
@@ -72,32 +106,11 @@ axios.interceptors.response.use(
     return response;
   },
   (error) => {
-    // console.log("response", error);
-
-    const response = error?.response;
-
-    //     const { response } = error;
-    let errortext = codeMessage[response.status] || response.statusText;
-
-    errortext = `【HTTPCODE:${response.status || ""}】${errortext}`;
-
-    message.error(errortext);
-
-    if (response?.status === 401) {
-      account.clear();
-      invokeRelogin();
-      // return true;
-    }
-
-    const data = {
-      code: response.status,
-      message: errortext,
-      msg: errortext,
-    };
+    const data = errorCb(error);
 
     return Promise.resolve({
       data,
       ...data,
     });
-  }
+  },
 );
