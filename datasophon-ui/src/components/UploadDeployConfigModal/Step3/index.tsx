@@ -69,7 +69,7 @@ const Index = (props, ref) => {
                 action={API.upload}
                 fieldProps={{
                     onPreview: noop,
-                    customRequest: invokeMakeCommonProFormUploadButtonCustomRequest.bind(noop, API.upload)
+                    customRequest: invokeMakeCommonProFormUploadButtonCustomRequest
                 }}
                 formItemProps={{
                     rules: [

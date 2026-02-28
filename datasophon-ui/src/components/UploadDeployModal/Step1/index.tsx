@@ -110,7 +110,7 @@ const Index = () => {
                                 }}
                                 fieldProps={{
                                     onPreview: noop,
-                                    customRequest: invokeMakeCommonProFormUploadButtonCustomRequest.bind(noop, API.upload)
+                                    customRequest: invokeMakeCommonProFormUploadButtonCustomRequest
                                 }}
 
 
