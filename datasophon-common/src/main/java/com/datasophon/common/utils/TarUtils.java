@@ -89,7 +89,7 @@ public class TarUtils {
     }
 
 
-    public static List<String> getEntry(String tarFilePath) throws Exception {
+    public static List<String> getEntry(String tarFilePath) throws IOException {
         Path tarPath = Paths.get(tarFilePath);
         String fileName = tarPath.getFileName().toString().toLowerCase();
 

@@ -165,7 +165,8 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             });
 
             return new ValidateResultVO(errors.stream().map(e -> String.format("压缩包中缺少%s文件", e)).collect(Collectors.toList()));
-        } catch (Exception e) {
+        } catch (IOException e) {
+            log.info("解压文件{}失败, ");
             throw new BusinessException("IO异常" + e.getMessage(), e);
         }
     }

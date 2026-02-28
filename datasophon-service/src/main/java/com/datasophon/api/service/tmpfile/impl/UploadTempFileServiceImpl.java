@@ -22,7 +22,6 @@ import com.datasophon.dao.entity.UploadTempFileChunk;
 import com.datasophon.dao.mapper.UploadTempFileChunkMapper;
 import com.datasophon.dao.mapper.UploadTempFileMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -75,7 +74,6 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
         }
         try {
             UploadTempFile db = new UploadTempFile();
-            db.setId(RandomUtils.nextInt(0, Integer.MAX_VALUE));
             db.setFileName(file.getOriginalFilename());
             db.setContentType(file.getContentType());
             db.setByteCnt(file.getSize());
@@ -123,7 +121,6 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     @Override
     public UploadTempFile createShardUploadTask(BigFileDTO info) {
         UploadTempFile db = BeanUtil.toBean(info, UploadTempFile.class);
-        db.setId(RandomUtils.nextInt(0, Integer.MAX_VALUE));
         db.setByteDesc(FileUtil.readableFileSize(db.getByteCnt()));
         db.setSuffix(FileUtil.getSuffix(db.getFileName()));
         db.setCreateTime(new Date());
@@ -200,7 +197,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
 
         boolean uploaded = false;
         for (UploadTempFileChunk existChunk : chunks) {
-            Path path = PathUtils.join(getSaveDir().toPath(), existChunk.getId().toString(), createChunkName(existChunk.getChunkNo()));
+            Path path = PathUtils.join(getSaveDir().toPath(), existChunk.getAttachId().toString(), createChunkName(existChunk.getChunkNo()));
             if (path.toFile().exists()) {
                 FileUtil.copy(path.toFile(), chunkPath.toFile(), true);
                 uploaded = true;
