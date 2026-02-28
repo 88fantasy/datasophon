@@ -24,7 +24,6 @@ import com.datasophon.dao.mapper.UploadTempFileMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -106,7 +105,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
 
 
     private File getSaveDir() {
-        return new File(SystemUtils.getJavaIoTmpDir(), "ddp_upload");
+        return PathUtils.getTmpDir("ddp_upload");
     }
 
     private File createAttachSaveDir(UploadTempFile db) {

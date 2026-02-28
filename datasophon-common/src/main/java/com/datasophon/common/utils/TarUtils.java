@@ -6,7 +6,6 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.lang3.SystemUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -84,7 +83,7 @@ public class TarUtils {
     }
 
     public static String decompressToTemp(String zipFilePath) throws IOException {
-        String dest = Paths.get(SystemUtils.getJavaIoTmpDir().getAbsolutePath(), "ddp_unzip", RandomUtil.randomNumbers(12)).toString();
+        String dest = Paths.get(PathUtils.getTmpDir(), "ddp_unzip", RandomUtil.randomNumbers(12)).toString();
         decompress(zipFilePath, dest);
         return dest;
     }

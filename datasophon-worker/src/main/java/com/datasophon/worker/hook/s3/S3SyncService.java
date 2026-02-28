@@ -4,10 +4,10 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.nacos.common.utils.VersionUtils;
+import com.datasophon.common.utils.PathUtils;
 import com.datasophon.common.utils.ZipUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.SystemUtils;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -194,7 +194,7 @@ public class S3SyncService {
      */
     private void processZipFile(ZipFileInfo zipFile) {
         log.info("上传S3, 处理版本: {}", zipFile.getVersion());
-        String dest = Paths.get(SystemUtils.getJavaIoTmpDir().getAbsolutePath(), "ddp_unzip", RandomUtil.randomNumbers(12)).toString();
+        String dest = Paths.get(PathUtils.getTmpDir(), "ddp_unzip", RandomUtil.randomNumbers(12)).toString();
         try {
             ZipUtils.unzip(zipFile.getFilePath(), dest);
 
