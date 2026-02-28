@@ -9,6 +9,7 @@ import com.alibaba.fastjson.TypeReference;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.service.extrepo.ctx.MetaParseOption;
 import com.datasophon.api.service.extrepo.ctx.SrvParseCtx;
+import com.datasophon.common.model.ServiceInfo;
 import com.datasophon.common.utils.PathUtils;
 import com.datasophon.dao.model.extrepo.DeploymentModel;
 import com.datasophon.dao.model.extrepo.ExtRepoMetaFsModel;
@@ -222,15 +223,24 @@ public class MetaUtils {
 
 
         String content = FileUtil.readString(ddl, StandardCharsets.UTF_8);
-        JSONObject ddlInfo = JSONObject.parseObject(content);
-        meta.setPackageName(ddlInfo.getString("packageName"));
-        meta.setVersion(ddlInfo.getString("version"));
+        ServiceInfo serviceInfo = JSONObject.parseObject(content, new TypeReference<ServiceInfo>() {
+        });
 
-        if (!StringUtils.equals(meta.getName(), ddlInfo.getString("name"))) {
+        List<String> packageNames = new ArrayList<>();
+        if (serviceInfo.getArch() == null) {
+            packageNames.add(serviceInfo.getPackageName());
+        } else {
+            serviceInfo.getArch().values().forEach(arch-> {
+                packageNames.add(arch.getPackageName());
+            });
+        }
+        meta.setPackageNames(packageNames);
+        meta.setVersion(serviceInfo.getVersion());
+
+        if (!StringUtils.equals(meta.getName(), serviceInfo.getName())) {
             ctx.addError(String.format("框架%s服务%s ddl文件放置有误，name不一致", serviceDir.getParentFile().getName(), meta.getName()));
         }
-        meta.setDependencies(ddlInfo.getObject("dependencies", new TypeReference<List<String>>() {
-        }));
+        meta.setDependencies(serviceInfo.getDependencies());
         return Collections.singletonList(meta);
     }
 
@@ -247,12 +257,12 @@ public class MetaUtils {
         return Paths.get(root, "packages", "raw");
     }
 
-    public static Path getFileRelativePath(ServiceMeta meta) {
-        return PathUtils.join("packages", "raw", meta.getPackageName());
+    public static Path getFileRelativePath(String pkgName) {
+        return PathUtils.join("packages", "raw", pkgName);
     }
 
-    public static Path getMd5FileRelativePath(ServiceMeta meta) {
-        return PathUtils.join("packages", "raw", getMd5FileName(meta.getPackageName()));
+    public static Path getMd5FileRelativePath(String pkgName) {
+        return PathUtils.join("packages", "raw", getMd5FileName(pkgName));
     }
 
 

@@ -89,7 +89,6 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     private FrameServiceService frameServiceService;
 
 
-
     @Override
     public ValidateResultVO validMetaFile(InstallComponentDTO dto) {
         return unzipMetaFile(dto, unzipDir -> {
@@ -154,19 +153,21 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             List<String> fileNames = TarUtils.getEntry(pkgFile.getAbsolutePath());
             List<String> errors = new ArrayList<>();
             model.getFrameworks().stream().flatMap(f -> f.getServices().stream()).forEach(srv -> {
-                String filePath = PathUtils.unixStyle(MetaUtils.getFileRelativePath(srv));
-                if (!fileNames.contains(filePath)) {
-                    errors.add(filePath);
-                }
-                String md5Path = PathUtils.unixStyle(MetaUtils.getMd5FileRelativePath(srv));
-                if (!fileNames.contains(md5Path)) {
-                    errors.add(md5Path);
-                }
+                srv.getPackageNames().forEach(pkgName -> {
+                    String filePath = PathUtils.unixStyle(MetaUtils.getFileRelativePath(pkgName));
+                    if (!fileNames.contains(filePath)) {
+                        errors.add(filePath);
+                    }
+                    String md5Path = PathUtils.unixStyle(MetaUtils.getMd5FileRelativePath(pkgName));
+                    if (!fileNames.contains(md5Path)) {
+                        errors.add(md5Path);
+                    }
+                });
             });
 
             return new ValidateResultVO(errors.stream().map(e -> String.format("压缩包中缺少%s文件", e)).collect(Collectors.toList()));
         } catch (IOException e) {
-            log.info("解压文件{}失败, ");
+            log.info("解压文件{}失败, {}", pkgFile.getAbsolutePath(), e.getMessage(), e);
             throw new BusinessException("IO异常" + e.getMessage(), e);
         }
     }
@@ -276,7 +277,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         Set<String> packageNames = vo.getFrameworks()
                 .stream()
                 .flatMap(f -> f.getServices().stream())
-                .map(ServiceMeta::getPackageName)
+                .flatMap(s -> s.getPackageNames().stream())
                 .collect(Collectors.toSet());
         if (packageNames.isEmpty()) {
             return dir;
@@ -355,7 +356,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         if (StrUtil.isNotBlank(vo.getTemplate())) {
             File dir = PathUtils.join(metaUnzipPath, vo.getTemplate()).toFile();
             log.info("开始上传模板：{}", dir.getAbsolutePath());
-            packageStorage.moveToStorage(dir,true);
+            packageStorage.moveToStorage(dir, true);
         }
         progress.setStep(1);
 
@@ -365,7 +366,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             if (files != null) {
                 for (File file : files) {
                     log.info("上传文件{}到nexus", file.getAbsolutePath());
-                    packageStorage.moveToStorage(file, f-> {
+                    packageStorage.moveToStorage(file, f -> {
                         String relativePath = PathUtils.relative(file.getParent(), pkgDir.getAbsolutePath());
                         return "packages/" + PathUtils.unixStyle(relativePath);
                     });
@@ -376,7 +377,6 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
         progress.setStep(progress.getTotal());
     }
-
 
 
     @Override
@@ -401,9 +401,8 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     }
 
 
-
     @Override
-    public DeploymentDAG  buildDeploymentDAG(DeploymentDTO dto) {
+    public DeploymentDAG buildDeploymentDAG(DeploymentDTO dto) {
         File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId());
         if (deploymentFile == null) {
             throw new BusinessException("部署清单文件不存在");
@@ -427,7 +426,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             throw new BusinessException(String.format("服务: %s在框架中%s不存在", StrUtil.join(";", uninstall), clusterInfo.getClusterCode()));
         }
 
-        DAG<String, DeploymentDAG.SrvNodeVO, Integer> dag = context.buildDeployDAG(model.getApp(), t-> {
+        DAG<String, DeploymentDAG.SrvNodeVO, Integer> dag = context.buildDeployDAG(model.getApp(), t -> {
             DeploySrvModel srvModel = t.unwrap();
             return BeanUtil.toBean(srvModel, DeploymentDAG.SrvNodeVO.class);
         });
@@ -442,7 +441,6 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         });
         return result;
     }
-
 
 
 }

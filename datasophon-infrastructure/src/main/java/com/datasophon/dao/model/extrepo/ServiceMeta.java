@@ -17,7 +17,7 @@ public class ServiceMeta {
 
     private String version;
 
-    private String packageName;
+    private List<String> packageNames;
 
     private String script;
 
