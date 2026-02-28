@@ -5,6 +5,7 @@ import { API } from '../api';
 import axios from 'axios';
 import { message } from 'antd';
 import { noop } from 'lodash-es';
+import { errorCb } from '../api/interceptors';
 
 
 export const CHUNK_SIZE = 5 * 1024 * 1024; // 2MB per chunk
@@ -310,13 +311,6 @@ export const invokeMakePartUploadRequest = async (options) => {
                     // 计算分片 MD5
                     const chunkMd5 = await computeChunkMD5Base64(chunk);
 
-                    try {
-
-                    } catch (error) {
-
-                    }
-
-
                     // 上传分片
                     await uploadChunk({
                         chunk,
@@ -386,31 +380,36 @@ export const invokeMakePartUploadRequest = async (options) => {
 }
 
 
-export const invokeMakeCommonProFormUploadButtonCustomRequest = async (api, options) => {
-    const {
-        file,
-        onProgress,
-        onSuccess,
-        onError,
-        signal
-    } = options
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
+export const invokeMakeCommonProFormUploadButtonCustomRequest = async (options, obj) => {
 
-        // 使用你封装好的 request 工具
-        const res = await axios.post(api, formData, {
-            signal,
-            onUploadProgress: (progressEvent) => {
-                const currentChunkUploaded = progressEvent.loaded;
-                const percent = (currentChunkUploaded / file.size) * 100;
-                onProgress?.({ percent }, file);
+
+
+    const bakError = options.onError
+
+    if (!bakError.inject) {
+        function errorCb(...args) {
+            try {
+                const error = args[0]
+                errorCb({
+                    response: {
+                        ...error,
+                        statusText: error.message
+                    }
+                })
+            } catch (error) {
+
             }
-        })
-        onSuccess(res);
-    } catch (error) {
-        // 如果全局拦截器没处理，可以在这里捕获
-        onError(error);
+
+            bakError(...args)
+        }
+
+        errorCb.inject = 1
+        options.onError = errorCb
+
+
     }
 
+
+
+    return obj?.defaultRequest(options)
 }
