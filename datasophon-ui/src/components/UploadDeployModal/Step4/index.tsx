@@ -221,9 +221,6 @@ const Index = forwardRef((props, ref) => {
             pkgFileId
         } = secondFormRefValues
 
-        console.log('invokeInit', meteFileId,
-            contentDecodePasswd, pkgFileId, secondFormRefValues)
-
         setState(preState => {
             return {
                 ...preState,
@@ -231,10 +228,11 @@ const Index = forwardRef((props, ref) => {
             }
         })
 
-        if (invokeValidFile({
+        const invokeValidFileRes = await invokeValidFile({
             firstFormRefValues,
             secondFormRefValues
-        })) {
+        })
+        if (invokeValidFileRes) {
             return
         }
 

@@ -8,7 +8,7 @@ import { invokeMapValue } from "../../../../../../../utils/listUtils";
 import { axiosJsonPost, axiosPost } from "../../../../../../../api/request";
 import { showMsgAfferRequest } from "../../../../../../../utils/util";
 import CommonBtnList from "../../../../../../../components/Common/CommonBtnList";
-import { Checkbox, message, Tag } from "antd";
+import { Checkbox, message, Tag, Tooltip } from "antd";
 import { useConfigContext } from "../../configContext";
 import { clone, cloneDeep, noop } from "lodash-es";
 import { useStepImportManifestHook } from "../StepImportManifest/useStepImportManifestHook";
@@ -155,12 +155,15 @@ const Index = ({
                             checked={getAllCheckedStatus(item.serviceRoleName)}
                             indeterminate={getCheckedStatus(item.serviceRoleName)}
                         >
-                            {item.serviceRoleName}
+                            <Tooltip title={item.serviceRoleName}>
+                                {item.serviceRoleName}
+                            </Tooltip>
                         </Checkbox>
 
                     );
                 },
                 dataIndex: item.serviceRoleName,
+                minWidth: `120px`,
                 render: (text, row, index, actionRef) => {
 
                     const onChange = () => {
