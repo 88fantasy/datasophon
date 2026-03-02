@@ -331,6 +331,7 @@ const Index = () => {
 
     const onLogoutClick = useCallback(() => {
         account.clear()
+        axiosPost(API.loginOut)
         invokeRelogin()
     }, [])
 
