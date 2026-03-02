@@ -15,14 +15,9 @@ public class NexusUtilsTaskTest {
 
     @Test
     public void  upload() throws IOException {
-        System.setProperty("devMode", "local");
-        File workspace = new File("./");
-        String path = PathUtils.join(workspace.getAbsolutePath(), "../conf/common.properties").toFile().getAbsolutePath();
-        System.setProperty("commonPropertiesLocation", path);
+        PropertiesPathUtils.resetPropertyFile();
 
-        File dir = new File("D:\\Desktop\\VOS集成测试\\temp");
-
-
+        File dir = new File("D:\\Desktop\\VOS集成测试\\软件包");
         for (File file : dir.listFiles()) {
             NexusFileUtils.uploadFileToRawRepo("/packages/", file);
         }

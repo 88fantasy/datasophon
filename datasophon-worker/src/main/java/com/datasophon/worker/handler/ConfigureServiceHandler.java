@@ -256,6 +256,29 @@ public class ConfigureServiceHandler {
                 String joinValue = String.join(config.getSeparator(), valueList);
                 config.setValue(joinValue);
                 break;
+
+            case Constants.MULTIPLE_WITH_MAP:
+//                忽略异常值
+                if (config.getValue() == null || config.getValue() instanceof String) {
+                    break;
+                }
+                List<JSONObject> list = (List<JSONObject>) config.getValue();
+                for (JSONObject item : list) {
+                    Set<String> keys = item.keySet();
+                    for (String oldKey : keys) {
+                        String newKey = PlaceholderUtils.replacePlaceholders(oldKey, paramMap, Constants.REGEX_VARIABLE);
+                        Object targetValue = item.get(oldKey);
+                        if (targetValue instanceof String) {
+                            targetValue = PlaceholderUtils.replacePlaceholders((String) targetValue, paramMap, Constants.REGEX_VARIABLE);
+                        } else if (targetValue instanceof JSONObject) {
+                            String json = ((JSONObject)targetValue).toJSONString();
+                            json = PlaceholderUtils.replacePlaceholders(json, paramMap, Constants.REGEX_VARIABLE);
+                            targetValue = JSONObject.parse(json);
+                        }
+                        item.remove(oldKey);
+                        item.put(newKey, targetValue);
+                    }
+                }
         }
         logger.info("config {} set value to {}", config.getName(), config.getValue());
         if (!"map".equals(config.getConfigType())) {
@@ -292,8 +315,20 @@ public class ConfigureServiceHandler {
     }
 
     private void addToCustomList(Iterator<ServiceConfig> iterator, ArrayList<ServiceConfig> customConfList, ServiceConfig config) {
-        List<JSONObject> list = (List<JSONObject>) config.getValue();
         iterator.remove();
+
+//        部分ddl的value值乱写，导致转换失败，这段代码是为了去除value: "", value: null两个值
+        if (config.getValue() == null) {
+            return;
+        }
+        if (config.getValue() instanceof String) {
+            if (StrUtil.isBlank(config.getValue().toString())) {
+                return;
+            }
+        }
+
+
+        List<JSONObject> list = (List<JSONObject>) config.getValue();
         for (JSONObject json : list) {
             if (Objects.nonNull(json)) {
                 Set<String> set = json.keySet();

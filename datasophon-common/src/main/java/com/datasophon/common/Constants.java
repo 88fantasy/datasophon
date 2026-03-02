@@ -95,6 +95,7 @@ public final class Constants {
     public static final String INPUT = "input";
     public static final String SERVICE_ROLE_JMX_MAP = "service_role_jmx_port";
     public static final String MULTIPLE = "multiple";
+    public static final String MULTIPLE_WITH_MAP = "multipleWithMap";
     public static final String STRING_ARRAY = "stringArray";
     public static final String NUMBER = "number";
     public static final String CLUSTER_STATE = "cluster_state";
