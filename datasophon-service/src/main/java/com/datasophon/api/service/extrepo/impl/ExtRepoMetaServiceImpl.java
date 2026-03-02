@@ -18,6 +18,7 @@ import com.datasophon.api.service.extrepo.ctx.MetaParseOption;
 import com.datasophon.api.service.extrepo.ctx.SrvDependenciesContext;
 import com.datasophon.api.service.extrepo.utils.MetaUtils;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
+import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
@@ -34,7 +35,7 @@ import com.datasophon.dao.model.extrepo.DeploySrvModel;
 import com.datasophon.dao.model.extrepo.DeploymentModel;
 import com.datasophon.dao.model.extrepo.ExtRepoMetaFsModel;
 import com.datasophon.dao.model.extrepo.FrameworkMeta;
-import com.datasophon.dao.model.extrepo.ServiceMeta;
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +88,9 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
     @Autowired
     private FrameServiceService frameServiceService;
+
+    @Autowired
+    private TransactionalUtils transactionalUtils;
 
 
     @Override
@@ -202,49 +206,52 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     private void doImportCmp(InstallComponentDTO dto, ImportCompProgressVO progress) {
         log.info("【导入第三方软件源】 进度ID:{}, 线程：{}, 开始执行", progress.getProgressId(), Thread.currentThread().getName());
         String error = null;
-        String metaUnzipPath = null;
-        String pkgUnzipPath = null;
-        try {
-            log.info("【导入第三方软件源】 进度ID:{}，开始解析meta数据", progress.getProgressId());
-//            解析元数据
-            File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId());
-            metaUnzipPath = unpackMetaFile(metaFile, dto, progress);
 
-            MetaParseOption option = new MetaParseOption();
-            option.setRoot(metaUnzipPath);
-            ExtRepoMetaFsModel vo = MetaUtils.parseRepoMeta(option);
-            progress.setStep(9);
-            log.info("【导入第三方软件源】 进度ID:{}，解析meta数据成功，metaUnzipPath: {}, 解析到{}个服务", progress.getProgressId(),
-                    metaUnzipPath, vo.getFrameworks().stream().mapToLong(fw -> fw.getServices().size()).sum());
+        PathPair pathPair = new PathPair();
+        try {
+            transactionalUtils.doInNewTx(()-> {
+                log.info("【导入第三方软件源】 进度ID:{}，开始解析meta数据", progress.getProgressId());
+//            解析元数据
+                File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId());
+                String metaUnzipPath = unpackMetaFile(metaFile, dto, progress);
+                pathPair.setMetaUnzipPath(metaUnzipPath);
+
+                MetaParseOption option = new MetaParseOption();
+                option.setRoot(metaUnzipPath);
+                ExtRepoMetaFsModel vo = MetaUtils.parseRepoMeta(option);
+                progress.setStep(9);
+                log.info("【导入第三方软件源】 进度ID:{}，解析meta数据成功，metaUnzipPath: {}, 解析到{}个服务", progress.getProgressId(),
+                        metaUnzipPath, vo.getFrameworks().stream().mapToLong(fw -> fw.getServices().size()).sum());
 
 //            解压安装包
-            if (dto.getPkgFileId() != null) {
-                log.info("【导入第三方软件源】 进度ID:{}，开始解压软件安装包", progress.getProgressId());
-                File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
-                pkgUnzipPath = decompressPkgFile(pkgFile, vo, progress);
-                log.info("【导入第三方软件源】 进度ID:{}，解压软件安装包成功, 解压路径{}", progress.getProgressId(), pkgUnzipPath);
-            }
-
+                String pkgUnzipPath = null;
+                if (dto.getPkgFileId() != null) {
+                    log.info("【导入第三方软件源】 进度ID:{}，开始解压软件安装包", progress.getProgressId());
+                    File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
+                    pkgUnzipPath = decompressPkgFile(pkgFile, vo, progress);
+                    pathPair.setPkgUnzipPath(pkgUnzipPath);
+                    log.info("【导入第三方软件源】 进度ID:{}，解压软件安装包成功, 解压路径{}", progress.getProgressId(), pkgUnzipPath);
+                }
 
 //            保存数据
-            saveFrameInfo(metaUnzipPath, vo, progress);
-            log.info("【导入第三方软件源】 进度ID:{}，更新meta数据成功", progress.getProgressId());
+                saveFrameInfo(metaUnzipPath, vo, progress);
+                log.info("【导入第三方软件源】 进度ID:{}，更新meta数据成功", progress.getProgressId());
 
 //            移动文件
-            moveFiles(metaUnzipPath, vo, pkgUnzipPath, progress);
-            log.info("【导入第三方软件源】 进度ID:{}，移动安装安装文件成功", progress.getProgressId());
+                moveFiles(metaUnzipPath, vo, pkgUnzipPath, progress);
+                log.info("【导入第三方软件源】 进度ID:{}，移动安装安装文件成功", progress.getProgressId());
+            });
         } catch (Exception e) {
             error = "导入组件失败," + e.getMessage();
             log.error("import comp(meta: {}, pkg:{}) fail: ", dto.getMeteFileId(), dto.getPkgFileId(), e);
         } finally {
-            if (metaUnzipPath != null) {
+            if (pathPair.getMetaUnzipPath() != null) {
 //                meta文件中包含了很大敏感信息，必须保证删除掉
-                FileUtil.del(new File(metaUnzipPath));
+                FileUtil.del(new File(pathPair.getMetaUnzipPath()));
             }
-            if (pkgUnzipPath != null) {
-                String finalPkgDir = pkgUnzipPath;
+            if (pathPair.getPkgUnzipPath() != null) {
 //                异步删除安装包的解压目录
-                CompletableFuture.runAsync(() -> FileUtil.del(new File(finalPkgDir)));
+                CompletableFuture.runAsync(() -> FileUtil.del(new File(pathPair.getPkgUnzipPath())));
             }
             if (StringUtils.isNoneBlank(error)) {
                 progress.setState(-1);
@@ -254,6 +261,12 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             }
             progress.setExpire(LocalDateTime.now().plusMinutes(5));
         }
+    }
+
+    @Data
+    private static class PathPair {
+        private String metaUnzipPath;
+        private String pkgUnzipPath;
     }
 
     private String unpackMetaFile(File metaFile, InstallComponentDTO dto, ImportCompProgressVO progress) throws IOException {
