@@ -172,7 +172,10 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             errors.forEach(e-> errorList.add(e.getMessage()));
             throw new IllegalStateException(String.format("服务%s的ddl文件不规范，存在错误:\n%s", serviceName, StrUtil.join(";", errorList)));
         }
-
+//        @see ServiceInstallHandler#createLink
+        if (StringUtils.lowerCase(serviceName).equals(serviceInfo.getDecompressPackageName())) {
+            throw new IllegalStateException(String.format("服务名称%s不能和解压文件名%s一致(忽略大小写)。", serviceName, serviceInfo.getDecompressPackageName()));
+        }
 
         if (Objects.isNull(serviceInfo.getArch())) {
             // 新增架构判断, 兼容旧版本

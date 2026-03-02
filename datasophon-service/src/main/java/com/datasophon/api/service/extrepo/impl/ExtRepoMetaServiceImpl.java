@@ -142,34 +142,36 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
     @Override
     public ValidateResultVO validatePkgFile(InstallComponentDTO dto) {
-        ExtRepoMetaFsModel model = unzipMetaFile(dto, unzipDir -> {
-            MetaParseOption option = new MetaParseOption();
-            option.setRoot(unzipDir);
-            return MetaUtils.parseRepoMeta(option);
-        });
-
-        File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
-        try {
-            List<String> fileNames = TarUtils.getEntry(pkgFile.getAbsolutePath());
-            List<String> errors = new ArrayList<>();
-            model.getFrameworks().stream().flatMap(f -> f.getServices().stream()).forEach(srv -> {
-                srv.getPackageNames().forEach(pkgName -> {
-                    String filePath = PathUtils.unixStyle(MetaUtils.getFileRelativePath(pkgName));
-                    if (!fileNames.contains(filePath)) {
-                        errors.add(filePath);
-                    }
-                    String md5Path = PathUtils.unixStyle(MetaUtils.getMd5FileRelativePath(pkgName));
-                    if (!fileNames.contains(md5Path)) {
-                        errors.add(md5Path);
-                    }
-                });
-            });
-
-            return new ValidateResultVO(errors.stream().map(e -> String.format("压缩包中缺少%s文件", e)).collect(Collectors.toList()));
-        } catch (IOException e) {
-            log.info("解压文件{}失败, {}", pkgFile.getAbsolutePath(), e.getMessage(), e);
-            throw new BusinessException("IO异常" + e.getMessage(), e);
-        }
+//        ExtRepoMetaFsModel model = unzipMetaFile(dto, unzipDir -> {
+//            MetaParseOption option = new MetaParseOption();
+//            option.setRoot(unzipDir);
+//            return MetaUtils.parseRepoMeta(option);
+//        });
+//
+//        File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
+//        try {
+//            List<String> fileNames = TarUtils.getEntry(pkgFile.getAbsolutePath());
+//            List<String> errors = new ArrayList<>();
+//            model.getFrameworks().stream().flatMap(f -> f.getServices().stream()).forEach(srv -> {
+//                srv.getPackageNames().forEach(pkgName -> {
+//                    String filePath = PathUtils.unixStyle(MetaUtils.getFileRelativePath(pkgName));
+//                    if (!fileNames.contains(filePath)) {
+//                        errors.add(filePath);
+//                    }
+//                    String md5Path = PathUtils.unixStyle(MetaUtils.getMd5FileRelativePath(pkgName));
+//                    if (!fileNames.contains(md5Path)) {
+//                        errors.add(md5Path);
+//                    }
+//                });
+//            });
+//
+//            return new ValidateResultVO(errors.stream().map(e -> String.format("压缩包中缺少%s文件", e)).collect(Collectors.toList()));
+//        } catch (IOException e) {
+//            log.info("解压文件{}失败, {}", pkgFile.getAbsolutePath(), e.getMessage(), e);
+//            throw new BusinessException("IO异常" + e.getMessage(), e);
+//        }
+//        pms并不会将全部文件导出，不检查文件是否存在
+        return new ValidateResultVO(new ArrayList<>(0));
     }
 
 
@@ -270,36 +272,38 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     private String decompressPkgFile(File pkgFile, ExtRepoMetaFsModel vo, ImportCompProgressVO progress) throws IOException {
         progress.setState(3);
         progress.setStep(0);
+        progress.setTotal(10);
 
         String dir = TarUtils.decompressToTemp(pkgFile.getAbsolutePath());
-        progress.setStep(9);
+        progress.setStep(10);
 
-        Set<String> packageNames = vo.getFrameworks()
-                .stream()
-                .flatMap(f -> f.getServices().stream())
-                .flatMap(s -> s.getPackageNames().stream())
-                .collect(Collectors.toSet());
-        if (packageNames.isEmpty()) {
-            return dir;
-        }
-
-        File pkgDir = MetaUtils.getPkgPath(dir).toFile();
-        if (!pkgDir.exists() || pkgDir.isFile()) {
-            throw new BusinessException("安装包目录不存在");
-        }
-
-        List<String> errors = new ArrayList<>();
-        for (String pkgName : packageNames) {
-            File pkg = new File(pkgDir, pkgName);
-            File pkgMd5 = new File(pkgDir, MetaUtils.getMd5FileName(pkgName));
-            if (!pkg.exists() || !pkgMd5.exists()) {
-                errors.add(String.format("安装包%s或者其md5文件不存在", pkgName));
-            }
-        }
-
-        if (!errors.isEmpty()) {
-            throw new BusinessException(errors);
-        }
+//        不在检查文件是否存在
+//        Set<String> packageNames = vo.getFrameworks()
+//                .stream()
+//                .flatMap(f -> f.getServices().stream())
+//                .flatMap(s -> s.getPackageNames().stream())
+//                .collect(Collectors.toSet());
+//        if (packageNames.isEmpty()) {
+//            return dir;
+//        }
+//
+//        File pkgDir = MetaUtils.getPkgPath(dir).toFile();
+//        if (!pkgDir.exists() || pkgDir.isFile()) {
+//            throw new BusinessException("安装包目录不存在");
+//        }
+//
+//        List<String> errors = new ArrayList<>();
+//        for (String pkgName : packageNames) {
+//            File pkg = new File(pkgDir, pkgName);
+//            File pkgMd5 = new File(pkgDir, MetaUtils.getMd5FileName(pkgName));
+//            if (!pkg.exists() || !pkgMd5.exists()) {
+//                errors.add(String.format("安装包%s或者其md5文件不存在", pkgName));
+//            }
+//        }
+//
+//        if (!errors.isEmpty()) {
+//            throw new BusinessException(errors);
+//        }
         return dir;
     }
 
