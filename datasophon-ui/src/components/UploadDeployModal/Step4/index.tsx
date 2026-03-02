@@ -1,4 +1,4 @@
-import { Button, Progress, Tooltip, type ProgressProps } from "antd"
+import { Button, message, Progress, Tooltip, type ProgressProps } from "antd"
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import { axiosJsonPost } from "../../../api/request";
 import { API } from "../../../api";
@@ -107,6 +107,101 @@ const Index = forwardRef((props, ref) => {
     }, [formMapRef, index, invokeCancelUpdateProgress])
 
 
+    const invokeValidFile = useCallback(async ({
+        firstFormRefValues,
+        secondFormRefValues
+    }) => {
+
+        const {
+            contentDecodePasswd
+        } = firstFormRefValues
+        let {
+            meteFileId,
+        } = firstFormRefValues
+
+        let {
+            pkgFileId
+        } = secondFormRefValues
+
+
+        const arr = []
+
+
+        let res = ''
+
+
+        meteFileId = meteFileId[0]?.response?.data.id
+
+        pkgFileId = pkgFileId?.[0]?.response?.data?.id
+
+
+        if (
+            meteFileId &&
+            contentDecodePasswd
+        ) {
+
+
+            arr.push(
+                axiosJsonPost(API.validMetaFile, {
+                    meteFileId,
+                    contentDecodePasswd
+                }),
+            )
+        }
+
+
+        if (pkgFileId) {
+            arr.push(
+                axiosJsonPost(API.validatePkgFile, {
+                    pkgFileId,
+                    meteFileId,
+                    contentDecodePasswd
+                })
+            )
+        }
+
+
+        const arrRes = await Promise.all(arr)
+
+
+        arrRes.forEach(val => {
+            if (val.code === 200) {
+                const msg = val.data?.errors?.join(',')
+
+                if (msg) {
+                    res += `${msg},`
+                }
+
+            } else {
+                res += `${val.msg || ''},`
+            }
+        })
+
+
+        res = res.replace(/,$/, '')
+
+
+        if (res) {
+
+            res = `校验失败：${res}`
+
+            setState(preState => {
+                return {
+                    ...preState,
+                    queryProgressRes: {
+                        error: res,
+                        state: -1
+                    }
+                }
+            })
+        }
+
+
+
+        return res
+
+
+    }, [])
 
 
     const invokeInit = useCallback(async () => {
@@ -129,12 +224,27 @@ const Index = forwardRef((props, ref) => {
         console.log('invokeInit', meteFileId,
             contentDecodePasswd, pkgFileId, secondFormRefValues)
 
+        setState(preState => {
+            return {
+                ...preState,
+                queryProgressRes: undefined
+            }
+        })
+
+        if (invokeValidFile({
+            firstFormRefValues,
+            secondFormRefValues
+        })) {
+            return
+        }
+
 
         if (
             meteFileId &&
             // pkgFileId &&
             contentDecodePasswd
         ) {
+
 
 
             const res = await axiosJsonPost(
@@ -162,7 +272,7 @@ const Index = forwardRef((props, ref) => {
             }
         }
 
-    }, [formMapRef, invokeUpdateProgress])
+    }, [formMapRef, invokeUpdateProgress, invokeValidFile])
 
 
     const memoStatus = useMemo(() => {
