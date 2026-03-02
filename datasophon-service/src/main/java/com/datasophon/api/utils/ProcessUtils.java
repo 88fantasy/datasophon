@@ -592,6 +592,7 @@ public class ProcessUtils {
         serviceConfig.setLabel(configName);
         serviceConfig.setValue(configValue);
         serviceConfig.setRequired(true);
+        serviceConfig.setEnabled(true);
         serviceConfig.setHidden(false);
         serviceConfig.setType(type);
         return serviceConfig;

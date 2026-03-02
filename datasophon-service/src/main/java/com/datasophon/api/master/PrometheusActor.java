@@ -141,6 +141,7 @@ public class PrometheusActor extends UntypedActor {
                         serviceConfig.setName(roleEntry.getKey() + Constants.UNDERLINE + hostname);
                         serviceConfig.setValue(hostname + ":" + ServiceRoleJmxMap.get(jmxKey));
                         serviceConfig.setRequired(true);
+                        serviceConfig.setEnabled(true);
                         serviceConfigs.add(serviceConfig);
                     }
                 }
@@ -196,6 +197,7 @@ public class PrometheusActor extends UntypedActor {
             masterConfig.setName("master_" + CacheUtils.get(Constants.HOSTNAME));
             masterConfig.setValue(CacheUtils.get(Constants.HOSTNAME) + ":8586");
             masterConfig.setRequired(true);
+            masterConfig.setEnabled(true);
             masterServiceConfigs.add(masterConfig);
 
             for (ClusterHostDO clusterHostDO : hostList) {
@@ -203,12 +205,14 @@ public class PrometheusActor extends UntypedActor {
                 serviceConfig.setName("worker_" + clusterHostDO.getHostname());
                 serviceConfig.setValue(clusterHostDO.getHostname() + ":8585");
                 serviceConfig.setRequired(true);
+                serviceConfig.setEnabled(true);
                 workerServiceConfigs.add(serviceConfig);
 
                 ServiceConfig nodeServiceConfig = new ServiceConfig();
                 nodeServiceConfig.setName("node_" + clusterHostDO.getHostname());
                 nodeServiceConfig.setValue(clusterHostDO.getHostname() + ":9100");
                 nodeServiceConfig.setRequired(true);
+                nodeServiceConfig.setEnabled(true);
                 nodeServiceConfigs.add(nodeServiceConfig);
             }
 
@@ -266,6 +270,7 @@ public class PrometheusActor extends UntypedActor {
             feServiceConfig.setName("feList");
             feServiceConfig.setValue(feList);
             feServiceConfig.setRequired(true);
+            feServiceConfig.setEnabled(true);
             feServiceConfig.setConfigType("map");
 
             ServiceConfig beServiceConfig = new ServiceConfig();
@@ -273,6 +278,7 @@ public class PrometheusActor extends UntypedActor {
             beServiceConfig.setValue(beList);
             beServiceConfig.setConfigType("map");
             beServiceConfig.setRequired(true);
+            beServiceConfig.setEnabled(true);
             serviceConfigs.add(feServiceConfig);
             serviceConfigs.add(beServiceConfig);
             configFileMap.put(generators, serviceConfigs);

@@ -90,7 +90,7 @@ public class ConfigureServiceHandler {
                 Iterator<ServiceConfig> iterator = configs.iterator();
                 while (iterator.hasNext()) {
                     ServiceConfig config = iterator.next();
-                    if (!config.isRequired() && !Constants.CUSTOM.equals(config.getConfigType())) {
+                    if (!config.isEnabled()) {
                         logger.warn("配置项{}未启用, 忽略该值。", config.getName());
                         iterator.remove();
                         continue;

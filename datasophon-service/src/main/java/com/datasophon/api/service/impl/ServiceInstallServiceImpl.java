@@ -530,12 +530,14 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             serviceConfig.setName("worker_" + clusterHostDO.getHostname());
             serviceConfig.setValue(clusterHostDO.getHostname() + ":8585");
             serviceConfig.setRequired(true);
+            serviceConfig.setEnabled(true);
             workerServiceConfigs.add(serviceConfig);
 
             ServiceConfig nodeServiceConfig = new ServiceConfig();
             nodeServiceConfig.setName("node_" + clusterHostDO.getHostname());
             nodeServiceConfig.setValue(clusterHostDO.getHostname() + ":9100");
             nodeServiceConfig.setRequired(true);
+            nodeServiceConfig.setEnabled(true);
             nodeServiceConfigs.add(nodeServiceConfig);
         }
         configFileMap.put(workerGenerators, workerServiceConfigs);
@@ -563,6 +565,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
                     config.setValue(map.get(config.getName()).getValue());
                     config.setHidden(newConfig.isHidden());
                     config.setRequired(newConfig.isRequired());
+                    config.setEnabled(newConfig.isEnabled());
                 }
             }
             configFileMap.put(generators, serviceConfigs);

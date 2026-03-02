@@ -82,6 +82,7 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
             for (ServiceConfig serviceConfig : serviceConfigs) {
                 if ("ha".equals(serviceConfig.getConfigType())) {
                     serviceConfig.setRequired(true);
+                    serviceConfig.setEnabled(true);
                     serviceConfig.setHidden(false);
                     if (Constants.INPUT.equals(serviceConfig.getType())) {
                         String value = PlaceholderUtils.replacePlaceholders((String) serviceConfig.getValue(),
@@ -95,6 +96,7 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
             for (ServiceConfig serviceConfig : serviceConfigs) {
                 if ("ha".equals(serviceConfig.getConfigType())) {
                     serviceConfig.setRequired(false);
+                    serviceConfig.setEnabled(false);
                     serviceConfig.setHidden(true);
                 }
             }

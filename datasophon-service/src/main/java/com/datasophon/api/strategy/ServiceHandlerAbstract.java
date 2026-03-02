@@ -93,6 +93,7 @@ public abstract class ServiceHandlerAbstract {
         if (map.containsKey(serviceConfig.getName())) {
             ServiceConfig config = map.get(serviceConfig.getName());
             config.setRequired(true);
+            config.setEnabled(true);
             config.setHidden(false);
             if (Constants.INPUT.equals(config.getType())) {
                 String value = PlaceholderUtils.replacePlaceholders((String) config.getValue(), globalVariables,
@@ -101,6 +102,7 @@ public abstract class ServiceHandlerAbstract {
             }
         } else {
             serviceConfig.setRequired(true);
+            serviceConfig.setEnabled(true);
             serviceConfig.setHidden(false);
             if (Constants.INPUT.equals(serviceConfig.getType())) {
                 String value = PlaceholderUtils.replacePlaceholders((String) serviceConfig.getValue(), globalVariables,

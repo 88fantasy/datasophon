@@ -118,6 +118,7 @@ public class ClusterYarnQueueServiceImpl extends ServiceImpl<ClusterYarnQueueMap
         config.setValue(queueList);
         config.setConfigType("map");
         config.setRequired(true);
+        config.setEnabled(true);
         serviceConfigs.add(config);
         
         configFileMap.put(generators, serviceConfigs);

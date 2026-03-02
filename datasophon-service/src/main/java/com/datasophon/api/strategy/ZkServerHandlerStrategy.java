@@ -81,6 +81,7 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
                     if (map.containsKey(serviceConfig.getName())) {
                         ServiceConfig config = map.get(serviceConfig.getName());
                         config.setRequired(true);
+                        config.setEnabled(true);
                         config.setHidden(false);
                         String value = PlaceholderUtils.replacePlaceholders((String) serviceConfig.getValue(),
                                 globalVariables, Constants.REGEX_VARIABLE);
@@ -88,6 +89,7 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
                         config.setValue(value);
                     } else {
                         serviceConfig.setRequired(true);
+                        serviceConfig.setEnabled(true);
                         serviceConfig.setHidden(false);
                         String value = PlaceholderUtils.replacePlaceholders((String) serviceConfig.getValue(),
                                 globalVariables, Constants.REGEX_VARIABLE);
@@ -135,6 +137,7 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
                 serviceConfig.setValue(HostUtils.getIp(server) + ":2888:3888");
                 serviceConfig.setHidden(false);
                 serviceConfig.setRequired(true);
+                serviceConfig.setEnabled(true);
                 serviceConfig.setType("input");
                 serviceConfig.setDefaultValue("");
                 serviceConfig.setConfigType("zkserver");

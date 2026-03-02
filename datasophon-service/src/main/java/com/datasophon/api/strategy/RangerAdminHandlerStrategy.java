@@ -140,16 +140,19 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
                 if ("permission".equals(parameter.getConfigType())) {
                     parameter.setHidden(false);
                     parameter.setRequired(true);
+                    parameter.setEnabled(true);
                 }
                 if ("dfs.permissions.enabled".equals(parameter.getName())) {
                     parameter.setHidden(false);
                     parameter.setRequired(true);
+                    parameter.setEnabled(true);
                     parameter.setValue(true);
                     
                 }
                 if ("rangerAdminUrl".equals(parameter.getName())) {
                     parameter.setHidden(false);
                     parameter.setRequired(true);
+                    parameter.setEnabled(true);
                     parameter.setValue(rangerAdminUrl);
                 }
                 if (!map.containsKey(name)) {

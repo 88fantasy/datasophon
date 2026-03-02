@@ -36,6 +36,8 @@ public class ServiceConfig implements Serializable {
     private String description;
     
     private boolean required;
+
+    private boolean enabled;
     
     private String type;
     
