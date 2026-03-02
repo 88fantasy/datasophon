@@ -9,6 +9,7 @@ const Index = (props, ref) => {
     const {
         formMapRef,
         index,
+        clusterId
     } = props
 
 
@@ -25,9 +26,10 @@ const Index = (props, ref) => {
 
         if (data) {
 
-            const validMetaFileRes = await axiosJsonPost(API.validMetaFile, {
-                meteFileId: data.id,
-                contentDecodePasswd: validateFieldsRes.contentDecodePasswd
+            const validMetaFileRes = await axiosJsonPost(API.validDeploymentFile, {
+                deployFileId: data.id,
+                contentDecodePasswd: validateFieldsRes.contentDecodePasswd || '',
+                clusterId
             })
 
             let msg = ''
@@ -52,7 +54,7 @@ const Index = (props, ref) => {
 
         return res
 
-    }, [formMapRef, index])
+    }, [clusterId, formMapRef, index])
 
 
     useImperativeHandle(ref, () => {
