@@ -60,4 +60,5 @@ export default {
   refreshQueues: path + "/cluster/yarn/queue/refreshQueues", // 刷新队列到Yarn
   refreshQueuesYARN: path + "/cluster/queue/capacity/refreshToYarn",
   checkServiceDependency: path + "/service/install/checkServiceDependency",
+  validDeploymentFile:path + "/extrepo/validDeploymentFile",
 };

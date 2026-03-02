@@ -73,6 +73,7 @@ const Index = (props) => {
             title: '上传部署清单',
             ref: stepImportManifestRef,
             render: StepImportManifest,
+            clusterId
         }
 
         const step1Obj = {

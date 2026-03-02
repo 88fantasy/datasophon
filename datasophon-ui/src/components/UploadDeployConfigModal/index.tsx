@@ -6,6 +6,7 @@ import { axiosJsonPost } from "../../api/request";
 import { API } from "../../api";
 import { requireRules, showMsgAfferRequest } from "../../utils/util";
 import { invokeGenPath } from "../../utils/routerUtils";
+import { message } from "antd";
 
 
 const Index = (props) => {
@@ -22,6 +23,34 @@ const Index = (props) => {
             const validateFieldsRes = await formRef.current.validateFields()
 
             if (validateFieldsRes) {
+
+                const body = {
+                    clusterId: record.id,
+                    deployFileId: validateFieldsRes.deployFileId[0]?.response?.data.id,
+                    contentDecodePasswd: validateFieldsRes.contentDecodePasswd || ''
+                }
+
+
+                const validMetaFileRes = await axiosJsonPost(API.validDeploymentFile, body)
+
+                let msg = ''
+                if (validMetaFileRes.code === 200) {
+                    msg = validMetaFileRes.data?.errors?.join(',')
+                } else {
+                    msg = validMetaFileRes.msg
+                }
+
+
+                if (msg) {
+                    msg = `校验失败：${msg}`
+                }
+
+
+                if (msg) {
+                    message.warning(msg)
+                    return false
+                }
+
 
                 const res = await axiosJsonPost(
                     API.deploy,
