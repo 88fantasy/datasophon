@@ -97,6 +97,7 @@
         "description": "集群ID",
         "configType": "map",
         "required": true,
+        "enabled": true,
         "type": "input",
         "value": "${clusterId}",
         "configurableInWizard": false,

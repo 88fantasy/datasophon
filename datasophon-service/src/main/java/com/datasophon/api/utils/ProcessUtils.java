@@ -93,7 +93,6 @@ import com.datasophon.dao.enums.ServiceRoleState;
 import com.datasophon.dao.enums.ServiceState;
 import com.datasophon.domain.host.enums.HostState;
 import com.datasophon.domain.host.enums.MANAGED;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.concurrent.Await;
@@ -105,6 +104,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -551,21 +551,38 @@ public class ProcessUtils {
         for (JSONObject fileJson : map.keySet()) {
             Generators generators = fileJson.toJavaObject(Generators.class);
             List<ServiceConfig> serviceConfigs = map.get(fileJson).toJavaList(ServiceConfig.class);
-            // replace variable
-            replaceVariable(serviceConfigs, clusterId);
+            Map<String, String> variables = createMergeVariables(clusterId, config.getServiceName(), serviceConfigs);
+            replaceVariable(serviceConfigs, variables);
             configFileMap.put(generators, serviceConfigs);
         }
     }
 
-    private static void replaceVariable(List<ServiceConfig> serviceConfigs, Integer clusterId) {
-        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
+
+    public static Map<String, String> createMergeVariables(Integer clusterId, String serviceName, List<ServiceConfig> serviceConfigs) {
+        Map<String, String> variables = new HashMap<>(GlobalVariables.getVariables(clusterId));
+        serviceConfigs.forEach(config-> {
+            String name = config.getName();
+//                如果存在占位符，则忽略(即不支持递归占位符)。如果全局变量，也忽略(有可能已经被系统特殊逻辑处理）
+            if (name.contains("${") || config.getRegister()) {
+                return;
+            }
+            if (config.getValue() instanceof String) {
+                variables.putIfAbsent(String.format("${%s.%s}", serviceName, name), config.getValue().toString());
+                variables.putIfAbsent(String.format("${%s}", name), config.getValue().toString());
+            }
+        });
+        return variables;
+    }
+
+    private static void replaceVariable(List<ServiceConfig> serviceConfigs,Map<String, String>  variables) {
         for (ServiceConfig serviceConfig : serviceConfigs) {
-            String name = PlaceholderUtils.replacePlaceholders(serviceConfig.getName(), globalVariables, Constants.REGEX_VARIABLE);
+            serviceConfig.setOriginalName(serviceConfig.getOriginalName());
+            String name = PlaceholderUtils.replacePlaceholders(serviceConfig.getName(), variables, Constants.REGEX_VARIABLE);
             serviceConfig.setName(name);
             if (Constants.INPUT.equals(serviceConfig.getType())) {
                 Object value = serviceConfig.getValue();
                 if (value != null && String.class.isAssignableFrom(value.getClass())) {
-                    String value1 = PlaceholderUtils.replacePlaceholders((String) value, globalVariables, Constants.REGEX_VARIABLE);
+                    String value1 = PlaceholderUtils.replacePlaceholders((String) value, variables, Constants.REGEX_VARIABLE);
                     serviceConfig.setValue(value1);
                 }
             }
@@ -574,17 +591,38 @@ public class ProcessUtils {
                 if (value2 != null) {
                     List<String> valueList = value2.toJavaList(String.class);
                     List<Object> tmpList = valueList.stream()
-                            .map(val-> PlaceholderUtils.replacePlaceholdersRecursive(val, globalVariables, Constants.REGEX_VARIABLE))
+                            .map(val-> PlaceholderUtils.replacePlaceholdersRecursive(val, variables, Constants.REGEX_VARIABLE))
                             .collect(Collectors.toList());
                     serviceConfig.setValue(new JSONArray(tmpList));
+                }
+            }
+            if (Constants.MULTIPLE_WITH_MAP.equals(serviceConfig.getType())) {
+//                忽略异常值
+                if (serviceConfig.getValue() == null || serviceConfig.getValue() instanceof String) {
+                    break;
+                }
+                List<JSONObject> list = (List<JSONObject>) serviceConfig.getValue();
+                for (JSONObject item : list) {
+                    Set<String> keys = item.keySet();
+                    for (String oldKey : keys) {
+                        String newKey = PlaceholderUtils.replacePlaceholders(oldKey, variables, Constants.REGEX_VARIABLE);
+                        Object targetValue = item.get(oldKey);
+                        if (targetValue instanceof String) {
+                            targetValue = PlaceholderUtils.replacePlaceholders((String) targetValue, variables, Constants.REGEX_VARIABLE);
+                        } else if (targetValue instanceof JSONObject) {
+                            String json = ((JSONObject)targetValue).toJSONString();
+                            json = PlaceholderUtils.replacePlaceholders(json, variables, Constants.REGEX_VARIABLE);
+                            targetValue = JSONObject.parse(json);
+                        }
+                        item.remove(oldKey);
+                        item.put(newKey, targetValue);
+                    }
                 }
             }
         }
     }
 
-    public static List<ServiceConfig> getServiceConfig(ClusterServiceRoleGroupConfig config) {
-        return JSONObject.parseArray(config.getConfigJson(), ServiceConfig.class);
-    }
+
 
     public static ServiceConfig createServiceConfig(String configName, Object configValue, String type) {
         ServiceConfig serviceConfig = new ServiceConfig();
@@ -651,26 +689,7 @@ public class ProcessUtils {
                 .collect(Collectors.toMap(ServiceConfig::getName, serviceConfig -> serviceConfig, (v1, v2) -> v1));
     }
 
-    public static void syncUserToHosts(List<ClusterHostDO> hostList, String username, String mainGroup,
-                                       String otherGroup, String operate) {
-        for (ClusterHostDO hostEntity : hostList) {
-            ActorRef execCmdActor = ActorUtils.getRemoteActor(hostEntity.getHostname(), "executeCmdActor");
-            ExecuteCmdCommand command = new ExecuteCmdCommand();
-            ArrayList<String> commands = new ArrayList<>();
-            commands.add(operate);
-            commands.add(username);
-            if (StringUtils.isNotBlank(mainGroup)) {
-                commands.add("-g");
-                commands.add(mainGroup);
-            }
-            if (StringUtils.isNotBlank(otherGroup)) {
-                commands.add("-G");
-                commands.add(otherGroup);
-            }
-            command.setCommands(commands);
-            execCmdActor.tell(command, ActorRef.noSender());
-        }
-    }
+
 
     public static void recoverAlert(ClusterServiceRoleInstanceEntity roleInstanceEntity) {
         ClusterServiceRoleInstanceService roleInstanceService =

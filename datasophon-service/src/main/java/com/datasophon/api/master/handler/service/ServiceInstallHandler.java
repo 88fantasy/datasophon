@@ -17,87 +17,29 @@
 
 package com.datasophon.api.master.handler.service;
 
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
-import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
-import com.datasophon.api.service.host.ClusterHostService;
-import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.api.utils.SpringTool;
-import com.datasophon.common.command.InstallServiceRoleCommand;
-import com.datasophon.common.enums.HookType;
-import com.datasophon.common.model.ArchInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
-public class ServiceInstallHandler extends ServiceHandler {
+public class ServiceInstallHandler extends ServiceUpgradeHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(ServiceInstallHandler.class);
 
     @Override
     public ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception {
-        ExecResult execResult = new ExecResult();
-        ClusterServiceRoleInstanceService roleInstanceService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
-        ClusterHostService clusterHostService = SpringTool.getApplicationContext().getBean(ClusterHostService.class);
-        ClusterServiceRoleInstanceEntity serviceRole = roleInstanceService.getOneServiceRole(serviceRoleInfo.getName(),
-                serviceRoleInfo.getHostname(), serviceRoleInfo.getClusterId());
-        ClusterHostDO hostEntity = clusterHostService.getClusterHostByHostname(serviceRoleInfo.getHostname());
+        ClusterServiceRoleInstanceService roleInstanceService = SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
+        ClusterServiceRoleInstanceEntity serviceRole = roleInstanceService.getOneServiceRole(serviceRoleInfo.getName(), serviceRoleInfo.getHostname(), serviceRoleInfo.getClusterId());
         if (Objects.nonNull(serviceRole)) {
-            execResult.setExecResult(true);
-            execResult.setExecOut(String.format("服务实例%s %s已经安装", serviceRole.getServiceName(), serviceRoleInfo.getName()));
-            return execResult;
-        }
-        InstallServiceRoleCommand installServiceRoleCommand = new InstallServiceRoleCommand();
-        installServiceRoleCommand.setFrameCode(serviceRoleInfo.getFrameCode());
-        installServiceRoleCommand.setServiceName(serviceRoleInfo.getParentName());
-        installServiceRoleCommand.setServiceRoleName(serviceRoleInfo.getName());
-        installServiceRoleCommand.setServiceRoleType(serviceRoleInfo.getRoleType());
-        installServiceRoleCommand.setPackageName(serviceRoleInfo.getPackageName());
-        installServiceRoleCommand.setDecompressPackageName(serviceRoleInfo.getDecompressPackageName());
-        installServiceRoleCommand.setCreateDecompressDir(serviceRoleInfo.getCreateDecompressDir());
-        installServiceRoleCommand.setRunAs(serviceRoleInfo.getRunAs());
-        installServiceRoleCommand.setServiceRoleType(serviceRoleInfo.getRoleType());
-        installServiceRoleCommand.setResourceStrategies(serviceRoleInfo.getResourceStrategies());
-        installServiceRoleCommand.setVariables(GlobalVariables.getVariables(serviceRoleInfo.getClusterId()));
-        installServiceRoleCommand.setHooks(serviceRoleInfo.getMatchedHooks(HookType.PRE_INSTALL, HookType.POST_INSTALL));
-
-        String arch = hostEntity.getCpuArchitecture();
-        ArchInfo archInfo = ServicePkgNameUtils.getArchInfo(serviceRoleInfo, arch);
-        if (archInfo != null) {
-            installServiceRoleCommand.setPackageName(archInfo.getPackageName());
-        } else {
-            execResult.setExecOut("未找到满足系统架构 [" + arch + "] 的安装包 !");
-            return execResult;
+            logger.info("服务实例{} {}已经安装, 忽略安装动作", serviceRole.getServiceName(), serviceRoleInfo.getName());
+            return ExecResult.success(String.format("服务实例%s %s已经安装", serviceRole.getServiceName(), serviceRoleInfo.getName()));
         }
 
-        ActorSelection actorSelection = ActorUtils.actorSystem.actorSelection(
-                "akka.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/installServiceActor");
-        Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-        Future<Object> future = Patterns.ask(actorSelection, installServiceRoleCommand, timeout);
-        try {
-            ExecResult installResult = (ExecResult) Await.result(future, timeout.duration());
-            if (Objects.nonNull(installResult) && installResult.getExecResult()) {
-                if (Objects.nonNull(getNext())) {
-                    return getNext().handlerRequest(serviceRoleInfo);
-                }
-            }
-            return installResult;
-        } catch (Exception e) {
-            return new ExecResult();
-        }
+        return super.handlerRequest(serviceRoleInfo);
     }
 }

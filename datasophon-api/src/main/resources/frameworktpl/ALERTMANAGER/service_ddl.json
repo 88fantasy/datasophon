@@ -79,6 +79,7 @@
       "description": "DDH管理端地址",
       "configType": "map",
       "required": true,
+      "enabled": true,
       "type": "input",
       "value": "",
       "configurableInWizard": true,

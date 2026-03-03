@@ -1,6 +1,7 @@
 package com.datasophon.api.master;
 
 import cn.hutool.extra.spring.SpringUtil;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.api.dag.AsyncNodeTask;
 import com.datasophon.api.dag.DAGListener;
@@ -220,7 +221,8 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
                     successCount++;
                 }
 
-                ExecResult firstError = null; ExecResult lastResult = null;
+                ExecResult firstError = null;
+                ExecResult lastResult = null;
                 ServiceStatusHandler handler = new ServiceStatusHandler();
 //                对延迟执行后置逻辑的进程，执行后置逻辑
                 for (int i = 0; i < successCount; i++) {
@@ -293,6 +295,7 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
         }
         return sortedRoles;
     }
+
     private ExecResult execServiceRole(ServiceRoleInfo serviceRoleInfo) {
         ClusterServiceRoleInstanceService roleInstanceService = SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
 
@@ -345,7 +348,6 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
     }
 
 
-
     private Map<Generators, List<ServiceConfig>> createConfigFileMap(ServiceRoleInfo serviceRoleInfo) {
         log.info("服务{}{}创建ConfigFileMap", serviceRoleInfo.getParentName(), serviceRoleInfo.getServiceRoleName());
         ClusterServiceRoleGroupConfigService roleGroupConfigService = getBean(ClusterServiceRoleGroupConfigService.class);
@@ -353,23 +355,28 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
 
         ClusterServiceRoleInstanceEntity serviceRoleInstance = roleInstanceService.getOneServiceRole(serviceRoleInfo.getName(), serviceRoleInfo.getHostname(), serviceRoleInfo.getClusterId());
 
-        HashMap<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
+
+        ClusterServiceRoleGroupConfig config = null;
         if (Arrays.asList(INSTALL_SERVICE, UPGRADE_SERVICE).contains(serviceRoleInfo.getCommandType())) {
             Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + serviceRoleInfo.getServiceInstanceId());
             if (roleGroupId == null) {
                 throw new BusinessException("缓存已经失效，请重新安装");
             }
-            ClusterServiceRoleGroupConfig config = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
-            ProcessUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
+            config = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
         } else if (serviceRoleInstance.getNeedRestart() == NeedRestart.YES) {
-            ClusterServiceRoleGroupConfig config = roleGroupConfigService.getConfigByRoleGroupId(serviceRoleInstance.getRoleGroupId());
+            config = roleGroupConfigService.getConfigByRoleGroupId(serviceRoleInstance.getRoleGroupId());
+        }
+
+        Map<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
+        if (config != null) {
             ProcessUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
+            Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
+            for (Generators generators : configFileMap.keySet()) {
+                String outputDirectory = generators.getOutputDirectory();
+                generators.setOutputDirectory(PlaceholderUtils.replacePlaceholders(outputDirectory, globalVariables, Constants.REGEX_VARIABLE));
+            }
         }
-        Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
-        for (Generators generators : configFileMap.keySet()) {
-            String outputDirectory = generators.getOutputDirectory();
-            generators.setOutputDirectory(PlaceholderUtils.replacePlaceholders(outputDirectory, globalVariables, Constants.REGEX_VARIABLE));
-        }
+
 
         log.info("服务{}{}创建ConfigFileMap成功，总共需要{}个Generators", serviceRoleInfo.getParentName(), serviceRoleInfo.getServiceRoleName(), configFileMap.size());
         return configFileMap;
@@ -384,7 +391,6 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
         String serviceName = roleInfo.getParentName();
         return "true".equals(GlobalVariables.getValueByService(clusterId, serviceName, "enable" + serviceName + "Plugin"));
     }
-
 
 
     private ExecResult doServiceAction(ServiceRoleInfo srvInfo, Callable<ExecResult> callable) {
@@ -406,6 +412,7 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
 
     /**
      * 获取服务执行后的后置执行逻辑块
+     *
      * @param serviceRoleInfo
      * @return
      */
