@@ -603,7 +603,7 @@ public class ProcessUtils {
                 }
                 List<JSONObject> list = (List<JSONObject>) serviceConfig.getValue();
                 for (JSONObject item : list) {
-                    Set<String> keys = item.keySet();
+                    Set<String> keys = new HashSet<>(item.keySet());
                     for (String oldKey : keys) {
                         String newKey = PlaceholderUtils.replacePlaceholders(oldKey, variables, Constants.REGEX_VARIABLE);
                         Object targetValue = item.get(oldKey);

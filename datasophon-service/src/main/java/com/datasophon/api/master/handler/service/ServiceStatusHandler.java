@@ -29,6 +29,8 @@ import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.ServiceRoleType;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.concurrent.Await;
@@ -38,10 +40,13 @@ import scala.concurrent.duration.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class ServiceStatusHandler extends ServiceHandler {
     
     private static final Logger logger = LoggerFactory.getLogger(ServiceStatusHandler.class);
-    
+
+    private boolean quickCheck = false;
     @Override
     public ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception {
         logger.info("start to check service status {} in {}", serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
@@ -60,6 +65,10 @@ public class ServiceStatusHandler extends ServiceHandler {
         cmd.setMasterHost(serviceRoleInfo.getMasterHost());
         cmd.setManagerHost(CacheUtils.getString(Constants.HOSTNAME));
         cmd.setVariables(GlobalVariables.getVariables(serviceRoleInfo.getClusterId()));
+
+        if (quickCheck) {
+            cmd.setTimes(3);
+        }
         
         logger.info("service master host is {}", serviceRoleInfo.getMasterHost());
         

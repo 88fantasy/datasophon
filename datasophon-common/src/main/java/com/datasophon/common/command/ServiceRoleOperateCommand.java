@@ -58,6 +58,8 @@ public class ServiceRoleOperateCommand extends BaseCommand implements Serializab
 
     private Map<String,String> variables;
 
+    private Integer times;
+
     private boolean checkStatus = true;
     
     public ServiceRoleOperateCommand() {

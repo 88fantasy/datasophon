@@ -20,7 +20,7 @@ public class ServiceStatusActor extends HookTypedActor<ServiceRoleOperateCommand
         ExecResult result = new ExecResult();
         try {
             ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-            int times = PropertyUtils.getInt("times");
+            int times = command.getTimes() == null ? PropertyUtils.getInt("times") : Math.max(command.getTimes(), 1);
             int count = 0;
             while (count < times) {
                 count++;

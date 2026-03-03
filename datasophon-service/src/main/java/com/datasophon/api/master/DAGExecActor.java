@@ -224,11 +224,13 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
                 ExecResult firstError = null;
                 ExecResult lastResult = null;
                 ServiceStatusHandler handler = new ServiceStatusHandler();
+//                如果只有部分节点安装成功，则快速检查状态(即检查次数可以减少)
+                handler.setQuickCheck(successCount != roles.size());
 //                对延迟执行后置逻辑的进程，执行后置逻辑
                 for (int i = 0; i < successCount; i++) {
                     ServiceRoleInfo role = roleList.get(i);
                     if (DELAY_ACTION_COMMAND_TYPES.contains(role.getCommandType())) {
-                        log.info("{} {} {}成功，开始检查状态", role.getCommandType().getCommandName(Constants.CN), role.getParentName(), role.getName());
+                        log.info("主机{} {} {} {}成功，开始检查状态", role.getHostname(), role.getCommandType().getCommandName(Constants.CN), role.getParentName(), role.getName());
                         currentRole = role;
                         lastResult = handler.handlerRequest(role);
                         if (!lastResult.isSuccess()) {
@@ -243,11 +245,15 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
                         ProcessUtils.handleCommandResult(role.getHostCommandId(), lastResult.getExecResult(), lastResult.getExecOut());
                     }
                 }
+//                如果已经成功安装的服务状态检查存在问题，则取第一个错误的信息作为输出
                 if (firstError != null) {
                     result = firstError;
                 } else {
-                    if (lastResult != null) {
-                        result = lastResult;
+//                    如果全部节点都安装成功，取最后一个执行结果作为判断条件，否则取第一个安装失败的结果用于判断条件(即默认情况）
+                    if (successCount == roleList.size()) {
+                        if (lastResult != null) {
+                            result = lastResult;
+                        }
                     }
                 }
                 if (successCount < roleList.size() || firstError != null) {

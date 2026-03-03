@@ -313,6 +313,7 @@ public class InstallServiceHandler {
     protected static class PackageMeta {
         private String md5;
         private Object createDecompressDir;
+        private String decompressPackageName;
 
         protected PackageMeta() {
         }
@@ -321,6 +322,7 @@ public class InstallServiceHandler {
         protected PackageMeta(DownloadResult result, InstallServiceRoleCommand command) {
             md5 = result.getMd5();
             createDecompressDir = command.getCreateDecompressDir();
+            decompressPackageName = command.getDecompressPackageName();
         }
 
     }

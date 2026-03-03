@@ -47,6 +47,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -264,7 +265,8 @@ public class ConfigureServiceHandler {
                 }
                 List<JSONObject> list = (List<JSONObject>) config.getValue();
                 for (JSONObject item : list) {
-                    Set<String> keys = item.keySet();
+//                    create a copy set to prevent ConcurrentModificationException
+                    Set<String> keys = new HashSet<>(item.keySet());
                     for (String oldKey : keys) {
                         String newKey = PlaceholderUtils.replacePlaceholders(oldKey, paramMap, Constants.REGEX_VARIABLE);
                         Object targetValue = item.get(oldKey);
