@@ -387,7 +387,7 @@ export const invokeMakeCommonProFormUploadButtonCustomRequest = async (options, 
     const bakError = options.onError
 
     if (!bakError.inject) {
-        function errorCb(...args) {
+        function cb(...args) {
             try {
                 const error = args[0]
                 errorCb({
@@ -403,10 +403,8 @@ export const invokeMakeCommonProFormUploadButtonCustomRequest = async (options, 
             bakError(...args)
         }
 
-        errorCb.inject = 1
-        options.onError = errorCb
-
-
+        cb.inject = 1
+        options.onError = cb
     }
 
 
