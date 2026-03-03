@@ -576,7 +576,7 @@ public class ProcessUtils {
 
     private static void replaceVariable(List<ServiceConfig> serviceConfigs,Map<String, String>  variables) {
         for (ServiceConfig serviceConfig : serviceConfigs) {
-            serviceConfig.setOriginalName(serviceConfig.getOriginalName());
+            serviceConfig.setOriginalName(serviceConfig.getName());
             String name = PlaceholderUtils.replacePlaceholders(serviceConfig.getName(), variables, Constants.REGEX_VARIABLE);
             serviceConfig.setName(name);
             if (Constants.INPUT.equals(serviceConfig.getType())) {

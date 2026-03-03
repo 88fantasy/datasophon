@@ -58,13 +58,13 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) {
         ExecResult startResult = new ExecResult();
-        logger.info("FEHandlerStrategy start fe" + JSONUtil.toJsonStr(command));
+        logger.info("FEHandlerStrategy start fe, command type is {}", command.getCommandType());
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         String workPath = PkgInstallPathUtils.getInstallHome(command);
         String feUniConfPath = workPath + "/fe/conf/fe.uni.conf";
         if (command.getCommandType() == CommandType.INSTALL_SERVICE) {
             if (command.isSlave()) {
-                logger.info("first start  fe");
+                logger.info("第一次启动FE, 当前角色为follower");
                 ArrayList<String> commands = new ArrayList<>();
                 commands.add("--helper");
                 commands.add(command.getMasterHost() + ":9010");
@@ -95,6 +95,7 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                     logger.error("slave fe start failed");
                 }
             } else {
+                logger.info("第一次启动FE, 当前角色为master");
                 startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(), command, command.getRunAs());
                 // fe leader安装成功,初始化登录账号
                 if (startResult.getExecResult()){
