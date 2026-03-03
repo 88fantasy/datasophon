@@ -278,6 +278,8 @@ const Index = (props) => {
         const res = await axiosJsonPost(API.redeploy, params)
 
         showMsgAfferRequest(res)
+
+        window.location.reload()
     }, [])
 
     const invokeInit = useCallback(async (update) => {
