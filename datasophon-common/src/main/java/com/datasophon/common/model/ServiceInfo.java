@@ -61,7 +61,11 @@ public class ServiceInfo {
     private Map<String, ArchInfo> arch;
     
     private ExternalLink externalLink;
-    
+
+    /**
+     * @deprecated
+     */
+    @Deprecated
     private Integer sortNum;
 
     private String type;

@@ -118,7 +118,7 @@ public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServic
     public List<ClusterServiceInstanceEntity> listAll(Integer clusterId) {
         List<ClusterServiceInstanceEntity> list = lambdaQuery()
                 .eq(ClusterServiceInstanceEntity::getClusterId, clusterId)
-                .orderByAsc(ClusterServiceInstanceEntity::getSortNum)
+                .orderByAsc(ClusterServiceInstanceEntity::getServiceName)
                 .list();
         for (ClusterServiceInstanceEntity serviceInstance : list) {
             FrameServiceEntity frameService = frameServiceService.lambdaQuery()

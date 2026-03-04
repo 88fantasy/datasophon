@@ -53,6 +53,7 @@ public class FrameInfoServiceImpl extends ServiceImpl<FrameInfoMapper, FrameInfo
                         FrameServiceEntity::getServiceName, FrameServiceEntity::getServiceVersion,
                         FrameServiceEntity::getServiceDesc)
                 .in(FrameServiceEntity::getFrameId, frameInfoIds)
+                .orderByAsc(FrameServiceEntity::getServiceName)
                 .list()
                 .stream()
                 .collect(Collectors.groupingBy(FrameServiceEntity::getFrameId));

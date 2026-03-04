@@ -64,7 +64,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
         FrameInfoEntity frameInfo = frameInfoMapper.getFrameInfoByFrameCode(clusterInfo.getClusterFrame());
         List<FrameServiceEntity> list = this.lambdaQuery()
                 .eq(FrameServiceEntity::getFrameId, frameInfo.getId())
-                .orderByAsc(FrameServiceEntity::getSortNum)
+                .orderByAsc(FrameServiceEntity::getServiceName)
                 .list();
         setInstalled(clusterId, list);
         return list;
@@ -77,7 +77,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
         List<FrameServiceEntity> list = this.lambdaQuery()
                 .eq(FrameServiceEntity::getFrameId, frameInfo.getId())
                 .in(FrameServiceEntity::getServiceName, Arrays.asList("ALERTMANAGER", "GRAFANA", "PROMETHEUS"))
-                .orderByAsc(FrameServiceEntity::getSortNum)
+                .orderByAsc(FrameServiceEntity::getServiceName)
                 .list();
         setInstalled(clusterId, list);
         return list;
@@ -90,7 +90,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
 
         List<FrameServiceEntity> list = this.lambdaQuery()
                 .eq(FrameServiceEntity::getFrameId, frameInfo.getId())
-                .orderByAsc(FrameServiceEntity::getSortNum)
+                .orderByAsc(FrameServiceEntity::getServiceName)
                 .list();
         if (!Boolean.FALSE.equals(newest)) {
             Map<String, FrameServiceEntity> existEntity = new HashMap<>();
@@ -105,7 +105,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
                 }
             });
             list = new ArrayList<>(existEntity.values());
-            list.sort(Comparator.nullsLast(Comparator.comparing(FrameServiceEntity::getSortNum, Comparator.naturalOrder())));
+            list.sort(Comparator.comparing(FrameServiceEntity::getServiceName));
         }
         setInstalled(clusterId, list);
         return list;
