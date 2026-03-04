@@ -112,9 +112,9 @@ public abstract class HookTypedActor<T> extends UntypedActor {
                 HookContext ctx = HookUtils.createContext(hook, resource, globalVariables);
                 if (HookUtils.isHookEnable(hook.getCondition(), ctx.getAllInfoAsMap())) {
                     logger.info("开始执行服务{} {}第{}个Hook，类型: {}, 动作：{}", resource.getServiceName(), resource.getServiceRoleName(),
-                            hook.getType(), i, hook.getAction());
+                            i, hook.getType(), hook.getAction());
                     log.info("{}.{} invoke {} hook, index:{}, action: {}", resource.getServiceName(), resource.getServiceRoleName(),
-                            hook.getType(), i, hook.getAction());
+                            i, hook.getType(),  hook.getAction());
                     result = HookUtils.invokeHook(hook, ctx);
                     log.info("{}.{} invoke {} hook {}, index:{}, action: {}", resource.getServiceName(), resource.getServiceRoleName(),
                             hook.getType(), result.isSuccess() ? "success" : "fail", i, hook.getAction());

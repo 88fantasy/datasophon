@@ -34,7 +34,7 @@ public class S3SyncHookAction implements HookAction {
     }
 
     @Override
-    public ExecResult invoke(HookContext context) throws Exception {
+    public ExecResult invoke(HookContext context) {
         Logger logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(context.getServiceName(), context.getServiceRoleName(), S3SyncHookAction.class));
 
         S3SyncParams params = createSyncParams(context);
@@ -45,11 +45,15 @@ public class S3SyncHookAction implements HookAction {
             S3SyncService service = new S3SyncService(params, client);
             service.createBucketIfAbsent(params.getBucket());
 
-            List<ZipFileInfo> zipFiles = service.getUnsyncedVersion(params.getResourcePath(), params.getMetaObjectName());
-            if (zipFiles.isEmpty()) {
-                logger.info("{} migrate nothing to s3: {}/{}", context.getServiceName(), params.getEndpoint(), params.getBucket());
+            if (params.getResourcePath() == null) {
+                logger.info("resource path is empty, {} migrate nothing to s3: {}/{}", context.getServiceName(), params.getEndpoint(), params.getBucket());
             } else {
-                service.sync(zipFiles, params.getMetaObjectName());
+                List<ZipFileInfo> zipFiles = service.getUnsyncedVersion(params.getResourcePath(), params.getMetaObjectName());
+                if (zipFiles.isEmpty()) {
+                    logger.info("{} migrate nothing to s3: {}/{}", context.getServiceName(), params.getEndpoint(), params.getBucket());
+                } else {
+                    service.sync(zipFiles, params.getMetaObjectName());
+                }
             }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -69,6 +73,7 @@ public class S3SyncHookAction implements HookAction {
         params.setAccessKey(PlaceholderUtils.replacePlaceholders(params.getAccessKey(), globalVariables, Constants.REGEX_VARIABLE));
         params.setSecretKey(PlaceholderUtils.replacePlaceholders(params.getSecretKey(), globalVariables, Constants.REGEX_VARIABLE));
         params.setEndpoint(PlaceholderUtils.replacePlaceholders(params.getEndpoint(), globalVariables, Constants.REGEX_VARIABLE));
+        params.setBucket(PlaceholderUtils.replacePlaceholders(params.getBucket(), globalVariables, Constants.REGEX_VARIABLE));
         params.setResourcePath(getResourcePath(params.getResourcePath(), context));
 
         if (StrUtil.isBlank(params.getMetaObjectName())) {
@@ -99,7 +104,7 @@ public class S3SyncHookAction implements HookAction {
 
     private String getResourcePath(String resourcePath, HookContext context) {
         if (StrUtil.isBlank(resourcePath)) {
-            resourcePath = context.getPath() + "/oss/migration";
+            resourcePath = null;
         } else {
             resourcePath = PlaceholderUtils.replacePlaceholders(resourcePath, context.getGlobalVariables(), Constants.REGEX_VARIABLE);
             if (!resourcePath.startsWith("/")) {
