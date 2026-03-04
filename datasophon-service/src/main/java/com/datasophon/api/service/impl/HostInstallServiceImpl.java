@@ -33,7 +33,7 @@ import com.datasophon.api.master.HostCheckActor;
 import com.datasophon.api.master.HostConnectActor;
 import com.datasophon.api.master.WorkerStartActor;
 import com.datasophon.api.service.ClusterInfoService;
-import com.datasophon.api.service.InstallService;
+import com.datasophon.api.service.HostInstallService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.MessageResolverUtils;
 import com.datasophon.api.utils.MinaUtils;
@@ -74,10 +74,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-@Service("installService")
-public class InstallServiceImpl implements InstallService {
+@Service("hostInstallService")
+public class HostInstallServiceImpl implements HostInstallService {
 
-    private static final Logger logger = LoggerFactory.getLogger(InstallServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(HostInstallServiceImpl.class);
 
     @Autowired
     InstallStepMapper stepMapper;

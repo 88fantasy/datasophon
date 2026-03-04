@@ -18,6 +18,7 @@ import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
+import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
@@ -28,6 +29,7 @@ import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.common.Constants;
+import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.model.ConfigWriter;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
@@ -37,9 +39,11 @@ import com.datasophon.common.utils.PathUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
+import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.FrameServiceRoleEntity;
+import com.datasophon.dao.enums.NeedRestart;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -86,6 +90,9 @@ public class DdlMetaServiceImpl implements DdlMetaService {
 
     @Autowired
     private ClusterServiceInstanceService serviceInstanceService;
+
+    @Autowired
+    private ClusterServiceRoleInstanceService clusterServiceRoleInstanceService;
 
     @Autowired
     private ClusterServiceInstanceRoleGroupService roleGroupService;
@@ -321,34 +328,38 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         // 查询集群的服务实例
         for (ClusterInfoEntity cluster : clusters) {
             ClusterServiceInstanceEntity serviceInstance = serviceInstanceService.getServiceInstanceByClusterIdAndServiceName(cluster.getId(), serviceName);
-            if (Objects.nonNull(serviceInstance)) {
-                ClusterServiceRoleGroupConfig config = roleGroupService.getRoleGroupConfigByServiceId(serviceInstance.getId());
-                String configJson = config.getConfigJson();
-                List<ServiceConfig> serviceConfigs = JSONArray.parseArray(configJson, ServiceConfig.class);
-                ProcessUtils.addAll(serviceConfigs, parameters);
-                // 更新服务实例的配置
-                config.setConfigJson(JSONObject.toJSONString(serviceConfigs));
-                roleGroupConfigService.updateById(config);
+            if (serviceInstance == null) {
+                continue;
             }
+
+
+            ClusterServiceRoleGroupConfig config = roleGroupService.getRoleGroupConfigByServiceId(serviceInstance.getId());
+            updateServiceRoleGroupConfig(config, parameters);
+
+            Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + serviceInstance.getId());
+            if (roleGroupId != null) {
+                ClusterServiceRoleGroupConfig cacheConfig = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
+                if (cacheConfig != null && !config.getId().equals(cacheConfig.getId())) {
+                    updateServiceRoleGroupConfig(config, parameters);
+                }
+            }
+
+            clusterServiceRoleInstanceService.lambdaUpdate()
+                    .eq(ClusterServiceRoleInstanceEntity::getServiceId, serviceInstance.getId())
+                    .eq(ClusterServiceRoleInstanceEntity::getRoleGroupId, config.getRoleGroupId())
+                    .set(ClusterServiceRoleInstanceEntity::getNeedRestart, NeedRestart.YES)
+                    .update();
         }
     }
 
-    private void buildFrameServiceRole(
-            String frameCode,
-            FrameServiceEntity serviceEntity,
-            ServiceRoleInfo serviceRole,
-            String serviceRoleJson,
-            String serviceRoleJsonMd5,
-            FrameServiceRoleEntity role) {
-        role.setServiceId(serviceEntity.getId());
-        role.setServiceRoleName(serviceRole.getName());
-        role.setCardinality(serviceRole.getCardinality());
-        role.setFrameCode(frameCode);
-        role.setServiceRoleJson(serviceRoleJson);
-        role.setServiceRoleType(CommonUtils.convertRoleType(serviceRole.getRoleType().getName()));
-        role.setJmxPort(serviceRole.getJmxPort());
-        role.setServiceRoleJsonMd5(serviceRoleJsonMd5);
-        role.setLogFile(serviceRole.getLogFile());
+
+    private void updateServiceRoleGroupConfig(ClusterServiceRoleGroupConfig config, List<ServiceConfig> parameters) {
+        String configJson = config.getConfigJson();
+        List<ServiceConfig> serviceConfigs = JSONArray.parseArray(configJson, ServiceConfig.class);
+        ProcessUtils.addAll(serviceConfigs, parameters);
+        // 更新服务实例的配置
+        config.setConfigJson(JSONObject.toJSONString(serviceConfigs));
+        roleGroupConfigService.updateById(config);
     }
 
     private void buildServiceEntity(FrameInfoEntity frameInfo, String serviceName, String serviceDdl,
