@@ -26,7 +26,12 @@ public class ShellStrategy extends ResourceStrategy {
     public ExecResult exec() {
         for (List<String> command : commands) {
             ExecResult result = ShellUtils.exec(basePath, command, 60L);
-            logger.info("执行命令：{}，执行结果： {}，详细信息：{} ", command, result.isSuccess() ? "success" : "fail", result.getErrorTraceMessage());
+            if (result.isSuccess()) {
+                logger.info("执行命令：{}，执行结果：success，详细信息：{} ", command, result.getErrorTraceMessage());
+            } else {
+                logger.error("执行命令：{}，执行结果： fail，详细信息：{} ", command, result.getErrorTraceMessage());
+            }
+
             if (!result.isSuccess()) {
                 return result;
             }

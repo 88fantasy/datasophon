@@ -17,6 +17,7 @@
 
 package com.datasophon.common.utils;
 
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
@@ -27,11 +28,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -61,10 +64,15 @@ public class ShellUtils {
 
 
     public static ExecResult exec(String workPath, List<String> command, long timeout) {
-        Process process = null;
+        if (CollectionUtils.isEmpty(command)) {
+            throw new IllegalArgumentException("Command must not be null or empty");
+        }
         ExecResult result = new ExecResult();
-        StringBuilder sb = new StringBuilder();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Process process = null;
+        Thread outputReader = null;
         try {
+            ProcessBuilder processBuilder = new ProcessBuilder();
             processBuilder.directory(new File(workPath));
             processBuilder.command(command);
             processBuilder.redirectErrorStream(true);
@@ -72,33 +80,42 @@ public class ShellUtils {
             logger.info("exec cmd: {}, workspace: {}", StrUtil.join(" ", command), workPath);
             process = processBuilder.start();
 
-            BufferedReader br = null;
-            try {
-                br = new BufferedReader(new InputStreamReader(new BufferedInputStream(process.getInputStream())));
-                String line;
-                while ((line = br.readLine()) != null) {
-                    sb.append(line);
-                    sb.append(System.lineSeparator());
+            Process finalProcess = process;
+            outputReader = new Thread(() -> IoUtil.copy(finalProcess.getInputStream(), out));
+            outputReader.setDaemon(true);
+            outputReader.start();
+
+            boolean finished = process.waitFor(timeout, TimeUnit.SECONDS);
+            if (!finished) {
+                logger.warn("Process timeout after {} seconds, destroying process for cmd: {}", timeout, StrUtil.join(" ", command));
+                process.destroy();
+                if (!process.waitFor(3, TimeUnit.SECONDS)) {
+                    process.destroyForcibly(); // 强制终止
                 }
-                if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '\n') {
-                    sb.setLength(sb.length() - 1);
-                }
-            } catch (IOException e) {
-                logger.error("exec cmd: {} fail, workspace: {}", StrUtil.join(" ", command), workPath, e);
-            } finally {
-                IOUtils.closeQuietly(br);
             }
-            String execOut = sb.toString();
-            boolean execResult = process.waitFor(timeout, TimeUnit.SECONDS);
-            result.setExecResult(execResult && process.exitValue() == 0);
-            result.setExecOut(execOut);
+
+            boolean execResult = finished && process.exitValue() == 0;
+            result.setExecResult(execResult);
+            result.setExecOut(new String(out.toByteArray(), Charset.defaultCharset()));
             logger.info("exec cmd {} {}", String.join(" ", command), result.isSuccess() ? "success" : "fail");
             return result;
         } catch (Exception e) {
-            result.setExecOut(e.getMessage());
+            result.setExecErrOut(e.getMessage());
             logger.error("exec cmd fail, cmd: {}, message: {}", String.join(" ", command), e.getMessage(), e);
+            return result;
+        } finally {
+            if (process != null) {
+                if (process.isAlive()) {
+                    process.destroyForcibly();
+                }
+                IOUtils.closeQuietly(process.getInputStream());
+                IOUtils.closeQuietly(process.getErrorStream());
+                IOUtils.closeQuietly(process.getOutputStream());
+            }
+            if (outputReader != null && outputReader.isAlive()) {
+                outputReader.interrupt();
+            }
         }
-        return result;
     }
 
 

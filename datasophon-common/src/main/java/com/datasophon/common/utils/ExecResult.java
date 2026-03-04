@@ -25,6 +25,9 @@ import java.io.Serializable;
 @Setter
 public class ExecResult implements Serializable {
 
+
+    private static final long serialVersionUID = -6542233431946706943L;
+
     private boolean execResult = false;
 
     /**
