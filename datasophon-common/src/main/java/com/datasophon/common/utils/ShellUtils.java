@@ -30,25 +30,20 @@ import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class ShellUtils {
-    
+
     private static ProcessBuilder processBuilder = new ProcessBuilder();
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ShellUtils.class);
-    
+
     public static Process exec(List<String> command) {
         Process process = null;
         try {
@@ -86,14 +81,6 @@ public class ShellUtils {
             outputReader.start();
 
             boolean finished = process.waitFor(timeout, TimeUnit.SECONDS);
-            if (!finished) {
-                logger.warn("Process timeout after {} seconds, destroying process for cmd: {}", timeout, StrUtil.join(" ", command));
-                process.destroy();
-                if (!process.waitFor(3, TimeUnit.SECONDS)) {
-                    process.destroyForcibly(); // 强制终止
-                }
-            }
-
             boolean execResult = finished && process.exitValue() == 0;
             result.setExecResult(execResult);
             result.setExecOut(new String(out.toByteArray(), Charset.defaultCharset()));
@@ -104,20 +91,12 @@ public class ShellUtils {
             logger.error("exec cmd fail, cmd: {}, message: {}", String.join(" ", command), e.getMessage(), e);
             return result;
         } finally {
-            if (process != null) {
-                if (process.isAlive()) {
-                    process.destroyForcibly();
-                }
-                IOUtils.closeQuietly(process.getInputStream());
-                IOUtils.closeQuietly(process.getErrorStream());
-                IOUtils.closeQuietly(process.getOutputStream());
-            }
+            destroy(process, false);
             if (outputReader != null && outputReader.isAlive()) {
                 outputReader.interrupt();
             }
         }
     }
-
 
     /**
      * @param pathOrCommand 脚本路径或者命令
@@ -154,7 +133,7 @@ public class ShellUtils {
                 result.setExecOut("call shell failed. error code is :" + exitValue);
                 logger.error("exec command {}, cmd out is : {} {},exitValue:{}", pathOrCommand, System.lineSeparator(), execOut, exitValue);
             }
-            
+
         } catch (Exception e) {
             result.setExecOut(e.getMessage());
             logger.error(e.getMessage(), e);
@@ -162,55 +141,6 @@ public class ShellUtils {
         return result;
     }
 
-    public static ExecResult shellForExp(String command, Map<String, String> expects){
-        logger.info("command:{}", command);
-        ExecResult result = new ExecResult();
-        StringBuilder stringBuffer = new StringBuilder();
-        try {
-            // 执行脚本
-            Process ps = Runtime.getRuntime().exec(new String[]{"sh", "-c", command});
-            // 只能接收脚本echo打印的数据，并且是echo打印的最后一次数据
-            OutputStream os = ps.getOutputStream();
-            BufferedInputStream in = new BufferedInputStream(ps.getInputStream());
-            BufferedReader br = new BufferedReader(new InputStreamReader(in));
-            String line;
-            while ((line = br.readLine()) != null) {
-                stringBuffer.append(line);
-                stringBuffer.append(System.lineSeparator());
-                if (Objects.nonNull(expects)) {
-                    for(Map.Entry<String, String> entry : expects.entrySet()) {
-                        if(line.contains(entry.getKey())) {
-                            os.write(entry.getValue().getBytes());
-                            os.write('\n'); //输入换行执行
-                            os.flush();
-                            break;
-                        }
-                    }
-                }
-            }
-            // 去除尾部的换行符
-            if (stringBuffer.length() > 0 && stringBuffer.charAt(stringBuffer.length() - 1) == '\n') {
-                stringBuffer.setLength(stringBuffer.length() - 1);
-            }
-            in.close();
-            br.close();
-            os.close();
-            String execOut = stringBuffer.toString();
-            int exitValue = ps.waitFor();
-            if (0 == exitValue) {
-                logger.info("{} command exec out is : {}{},exitValue:{}", command, System.lineSeparator(), execOut, exitValue);
-                result.setExecResult(true);
-                result.setExecOut(execOut);
-            } else {
-                result.setExecOut("call shell failed. error code is :" + exitValue);
-                logger.error("{} command exec out is : {}{},exitValue:{}", command, System.lineSeparator(), execOut, exitValue);
-            }
-        } catch (Exception e) {
-            result.setExecOut(e.getMessage());
-            logger.error(e.getMessage(), e);
-        }
-        return result;
-    }
 
     // 获取cpu架构 arm或x86
     public static String getCpuArchitecture() {
@@ -236,7 +166,7 @@ public class ShellUtils {
         }
         return null;
     }
-    
+
     public static ExecResult execWithStatus(String workPath, List<String> command, long timeout) {
         Process process = null;
         ExecResult result = new ExecResult();
@@ -261,7 +191,7 @@ public class ShellUtils {
         }
         return result;
     }
-    
+
     public static ExecResult execWithStatus(String workPath, List<String> command, long timeout, Logger logger) {
         logger.info("exec cmd, workdir: {}, commands {}", workPath, StrUtil.join(" ", command));
         Process process = null;
@@ -290,7 +220,7 @@ public class ShellUtils {
 
     public static void getOutput(String workPath, List<String> command, Process process, Logger logger) {
         ExecutorService getOutputLogService = Executors.newSingleThreadExecutor();
-        
+
         getOutputLogService.submit(() -> {
             BufferedReader inReader = null;
             try {
@@ -309,7 +239,7 @@ public class ShellUtils {
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             } finally {
-                closeQuietly(inReader);
+                IoUtil.close(inReader);
             }
             BufferedReader errorReader = null;
             try {
@@ -328,16 +258,14 @@ public class ShellUtils {
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             } finally {
-                closeQuietly(errorReader);
+                IoUtil.close(errorReader);
             }
         });
         getOutputLogService.shutdown();
     }
-    
+
     public static void getOutput(Process process) {
-        
         ExecutorService getOutputLogService = Executors.newSingleThreadExecutor();
-        
         getOutputLogService.submit(() -> {
             BufferedReader inReader = null;
             try {
@@ -352,47 +280,34 @@ public class ShellUtils {
             } catch (Exception e) {
                 logger.error(e.getMessage(), e);
             } finally {
-                closeQuietly(inReader);
+                IoUtil.close(inReader);
             }
         });
         getOutputLogService.shutdown();
     }
-    
-    public static String getError(Process process) {
-        String errput = null;
-        BufferedReader reader = null;
-        try {
-            if (process != null) {
-                StringBuffer stringBuffer = new StringBuffer();
-                reader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-                while (reader.read() != -1) {
-                    stringBuffer.append("\n" + reader.readLine());
-                }
-                errput = stringBuffer.toString();
-            }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+
+
+    public static void destroy(Process process, boolean force) {
+        if (process == null) {
+            return;
         }
-        closeQuietly(reader);
-        return errput;
-    }
-    
-    public static void closeQuietly(Reader reader) {
-        try {
-            if (reader != null) {
-                reader.close();
+
+        boolean stop = false;
+        if (!force) {
+            process.destroy();
+            try {
+                stop = process.waitFor(3, TimeUnit.SECONDS);
+            } catch (InterruptedException ignore) {
             }
-        } catch (IOException ioe) {
-            logger.error(ioe.getMessage(), ioe);
         }
-    }
-    
-    public static void destroy(Process process) {
-        if (process != null) {
+        if (!stop) {
             process.destroyForcibly();
         }
+        IOUtils.closeQuietly(process.getInputStream());
+        IOUtils.closeQuietly(process.getErrorStream());
+        IOUtils.closeQuietly(process.getOutputStream());
     }
-    
+
     public static void addChmod(String path, String chmod) {
         ArrayList<String> command = new ArrayList<>();
         command.add("chmod");
@@ -401,7 +316,7 @@ public class ShellUtils {
         command.add(path);
         execWithStatus(Constants.INSTALL_PATH, command, 60, logger);
     }
-    
+
     public static void addChown(String path, String user, String group) {
         ArrayList<String> command = new ArrayList<>();
         command.add("chown");
