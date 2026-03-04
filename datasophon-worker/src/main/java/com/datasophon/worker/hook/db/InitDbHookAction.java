@@ -20,9 +20,9 @@ import java.util.TreeSet;
  */
 public class InitDbHookAction implements HookAction {
 
-    public static final String DDL_PATTERN = "^V\\d+(?<version>(\\.\\d+)*)__DDL\\.sql$";
-    public static final String DML_PATTERN = "^V\\d+(?<version>(\\.\\d+)*)__DML\\.sql$";
-    public static final String ROLLBACK_PATTERN = "^R\\d+(?<version>(\\.\\d+)*)\\.sql$";
+    public static final String DDL_PATTERN = "^V(?<version>\\d+(\\.\\d+)*)__DDL\\.sql$";
+    public static final String DML_PATTERN = "^V(?<version>\\d+(\\.\\d+)*)__DML\\.sql$";
+    public static final String ROLLBACK_PATTERN = "^R(?<version>\\d+(\\.\\d+)*)\\.sql$";
 
 
     @Override
@@ -91,10 +91,10 @@ public class InitDbHookAction implements HookAction {
             params.setDdlPattern(DDL_PATTERN);
         }
         if (StrUtil.isBlank(params.getDmlPattern())) {
-            params.setDdlPattern(DML_PATTERN);
+            params.setDmlPattern(DML_PATTERN);
         }
         if (StrUtil.isBlank(params.getRollbackPattern())) {
-            params.setDdlPattern(ROLLBACK_PATTERN);
+            params.setRollbackPattern(ROLLBACK_PATTERN);
         }
         return params;
     }

@@ -98,6 +98,11 @@ public class InstallServiceHandler {
         try {
             logger.info("开始下载安装包{}....", command.getPackageName());
             DownloadResult downloadResult = PackageStorageUtils.getStorage().downloadPackageToLocal(command.getPackageName());
+            if (downloadResult.isChange()) {
+                logger.info("下载安装包{}完毕....", command.getPackageName());
+            } else {
+                logger.info("安装包{}没有变更，无需下载", command.getPackageName());
+            }
 
             boolean goon = true;
             boolean unpackPkg = needDecompressPkg(command, downloadResult);
@@ -105,7 +110,8 @@ public class InstallServiceHandler {
                 logger.info("开始解压安装包{}->{}", command.getPackageName(), command.getNormalPkgDir());
                 goon = decompressPkg(command, downloadResult);
                 if (!goon) {
-                    execResult.setExecOut("解压安装包失败，请查看日志");
+                    logger.error("解压安装包{}失败，请查看解压命令的输出提示信息", command.getPackageName());
+                    execResult.setExecOut(String.format("解压安装包%s失败，请查看日志", command.getPackageName()));
                 }
             } else {
                 logger.info("安装包{}没有变更，无需解压", command.getPackageName());

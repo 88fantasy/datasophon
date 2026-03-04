@@ -225,7 +225,7 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
                 ExecResult lastResult = null;
                 ServiceStatusHandler handler = new ServiceStatusHandler();
 //                如果只有部分节点安装成功，则快速检查状态(即检查次数可以减少)
-                handler.setQuickCheck(successCount != roles.size());
+                handler.setQuickCheck(successCount != roleList.size());
 //                对延迟执行后置逻辑的进程，执行后置逻辑
                 for (int i = 0; i < successCount; i++) {
                     ServiceRoleInfo role = roleList.get(i);

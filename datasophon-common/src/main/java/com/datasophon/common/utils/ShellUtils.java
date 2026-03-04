@@ -58,7 +58,50 @@ public class ShellUtils {
         }
         return process;
     }
-    
+
+
+    public static ExecResult exec(String workPath, List<String> command, long timeout) {
+        Process process = null;
+        ExecResult result = new ExecResult();
+        StringBuilder sb = new StringBuilder();
+        try {
+            processBuilder.directory(new File(workPath));
+            processBuilder.command(command);
+            processBuilder.redirectErrorStream(true);
+
+            logger.info("exec cmd: {}, workspace: {}", StrUtil.join(" ", command), workPath);
+            process = processBuilder.start();
+
+            BufferedReader br = null;
+            try {
+                br = new BufferedReader(new InputStreamReader(new BufferedInputStream(process.getInputStream())));
+                String line;
+                while ((line = br.readLine()) != null) {
+                    sb.append(line);
+                    sb.append(System.lineSeparator());
+                }
+                if (sb.length() > 0 && sb.charAt(sb.length() - 1) == '\n') {
+                    sb.setLength(sb.length() - 1);
+                }
+            } catch (IOException e) {
+                logger.error("exec cmd: {} fail, workspace: {}", StrUtil.join(" ", command), workPath, e);
+            } finally {
+                IOUtils.closeQuietly(br);
+            }
+            String execOut = sb.toString();
+            boolean execResult = process.waitFor(timeout, TimeUnit.SECONDS);
+            result.setExecResult(execResult && process.exitValue() == 0);
+            result.setExecOut(execOut);
+            logger.info("exec cmd {} {}", String.join(" ", command), result.isSuccess() ? "success" : "fail");
+            return result;
+        } catch (Exception e) {
+            result.setExecOut(e.getMessage());
+            logger.error("exec cmd fail, cmd: {}, message: {}", String.join(" ", command), e.getMessage(), e);
+        }
+        return result;
+    }
+
+
     /**
      * @param pathOrCommand 脚本路径或者命令
      * @return

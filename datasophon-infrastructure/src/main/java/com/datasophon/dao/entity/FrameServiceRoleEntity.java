@@ -70,5 +70,8 @@ public class FrameServiceRoleEntity implements Serializable {
     private List<String> hosts;
 
     private String logFile;
+
+
+    private Integer sort;
     
 }

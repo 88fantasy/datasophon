@@ -25,8 +25,11 @@ public class ShellStrategy extends ResourceStrategy {
     @Override
     public ExecResult exec() {
         for (List<String> command : commands) {
-            ExecResult result = ShellUtils.execWithStatus(basePath, command, 60L);
-            logger.info(" {} result {} ", command, result.getExecResult() ? "success" : "fail");
+            ExecResult result = ShellUtils.exec(basePath, command, 60L);
+            logger.info("执行命令：{}，执行结果： {}，详细信息：{} ", command, result.isSuccess() ? "success" : "fail", result.getErrorTraceMessage());
+            if (!result.isSuccess()) {
+                return result;
+            }
         }
         return ExecResult.success();
     }

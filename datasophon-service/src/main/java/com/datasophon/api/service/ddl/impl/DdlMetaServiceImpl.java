@@ -224,7 +224,8 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     private void saveFrameServiceRole(String frameCode, String serviceName, ServiceInfo serviceInfo, FrameServiceEntity serviceEntity) {
         List<ServiceRoleInfo> serviceRoles = serviceInfo.getRoles();
 
-        for (ServiceRoleInfo serviceRole : serviceRoles) {
+        for (int i = 0; i < serviceRoles.size(); i++) {
+            ServiceRoleInfo serviceRole = serviceRoles.get(i);
             serviceRole.setParentName(serviceName);
             String key = String.format("%s_%s_%s", frameCode, serviceName, serviceRole.getName());
             log.info("put {} {} {} service role info into cache", frameCode, serviceName, serviceRole.getName());
@@ -237,14 +238,20 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             String serviceRoleJsonMd5 = SecureUtil.md5(serviceRoleJson);
             // 持久化服务角色元信息至数据库
             FrameServiceRoleEntity role = roleService.getServiceRoleByServiceIdAndServiceRoleName(serviceEntity.getId(), serviceRole.getName());
-            if (Objects.isNull(role)) {
+            if (role == null) {
                 role = new FrameServiceRoleEntity();
-                buildFrameServiceRole(frameCode, serviceEntity, serviceRole, serviceRoleJson, serviceRoleJsonMd5, role);
-                roleService.save(role);
-            } else if (!role.getServiceRoleJsonMd5().equals(serviceRoleJsonMd5)) {
-                buildFrameServiceRole(frameCode, serviceEntity, serviceRole, serviceRoleJson, serviceRoleJsonMd5, role);
-                roleService.updateById(role);
             }
+            role.setServiceId(serviceEntity.getId());
+            role.setServiceRoleName(serviceRole.getName());
+            role.setCardinality(serviceRole.getCardinality());
+            role.setFrameCode(frameCode);
+            role.setServiceRoleJson(serviceRoleJson);
+            role.setServiceRoleType(CommonUtils.convertRoleType(serviceRole.getRoleType().getName()));
+            role.setJmxPort(serviceRole.getJmxPort());
+            role.setServiceRoleJsonMd5(serviceRoleJsonMd5);
+            role.setLogFile(serviceRole.getLogFile());
+            role.setSort(i);
+            roleService.saveOrUpdate(role);
         }
         log.info("put {} {} service info into cache", frameCode, serviceName);
         ServiceInfoMap.put(frameCode + Constants.UNDERLINE + serviceName, serviceInfo);
