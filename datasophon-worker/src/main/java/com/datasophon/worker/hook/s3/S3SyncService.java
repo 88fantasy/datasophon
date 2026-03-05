@@ -65,6 +65,8 @@ public class S3SyncService {
                     setDefaultBucketPolicy(bucketName);
                 }
                 return create;
+            } else if (e.statusCode() == 403) {
+                throw new RuntimeException(String.format("检查存储桶%s状态时发生错误, 原因: 无权限。异常信息：%s", bucketName, e.getMessage()), e);
             } else {
                 throw new RuntimeException(String.format("检查存储桶%s状态时发生错误: %s", bucketName, e.getMessage()), e);
             }
