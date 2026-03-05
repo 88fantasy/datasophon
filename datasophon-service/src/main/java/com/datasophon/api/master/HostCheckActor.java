@@ -32,6 +32,7 @@ import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.enums.ServiceRoleState;
 import com.datasophon.domain.host.enums.HostState;
 import com.datasophon.domain.host.enums.MANAGED;
 import org.apache.commons.lang3.StringUtils;
@@ -59,7 +60,7 @@ public class HostCheckActor extends TypedActor<HostCheckCommand> {
         logger.info("start to check host info");
         ClusterInfoService clusterInfoService = getBean(ClusterInfoService.class);
         // 获取当前安装并且正在运行的集群
-        Result result = clusterInfoService.runningClusterList();
+        Result result = clusterInfoService.getClusterList();
         List<ClusterInfoEntity> clusterList = (List<ClusterInfoEntity>) result.getData();
 
 
@@ -88,7 +89,7 @@ public class HostCheckActor extends TypedActor<HostCheckCommand> {
 
             checkHostByPingPong(clusterHostDO);
             if (!HostState.OFFLINE.equals(clusterHostDO.getHostState())) {
-                if (prometheusInstance != null) {
+                if (prometheusInstance != null && ServiceRoleState.RUNNING.equals(prometheusInstance.getServiceRoleState())) {
                     String promUrl = "http://" + prometheusInstance.getHostname() + ":9090/api/v1/query";
                     checkHostByPrometheus(clusterHostDO, promUrl);
                 }
