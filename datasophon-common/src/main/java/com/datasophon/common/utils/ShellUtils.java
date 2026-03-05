@@ -40,22 +40,8 @@ import java.util.concurrent.TimeUnit;
 
 public class ShellUtils {
 
-    private static ProcessBuilder processBuilder = new ProcessBuilder();
 
     private static final Logger logger = LoggerFactory.getLogger(ShellUtils.class);
-
-    public static Process exec(List<String> command) {
-        Process process = null;
-        try {
-            String[] commands = new String[command.size()];
-            command.toArray(commands);
-            processBuilder.command(commands);
-            process = processBuilder.start();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return process;
-    }
 
 
     public static ExecResult exec(String workPath, List<String> command, long timeout) {
@@ -154,7 +140,7 @@ public class ShellUtils {
                 BufferedReader br = new BufferedReader(new InputStreamReader(in));
                 String line;
                 while ((line = br.readLine()) != null) {
-                    logger.info("脚本返回的数据如下： " + line);
+                    logger.info("脚本返回的数据如下： {}", line);
                     stringBuffer.append(line);
                 }
                 in.close();
@@ -162,7 +148,7 @@ public class ShellUtils {
                 return stringBuffer.toString();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
         }
         return null;
     }
@@ -171,6 +157,7 @@ public class ShellUtils {
         Process process = null;
         ExecResult result = new ExecResult();
         try {
+            ProcessBuilder processBuilder = new ProcessBuilder();
             processBuilder.directory(new File(workPath));
             processBuilder.command(command);
             processBuilder.redirectErrorStream(true);
@@ -197,6 +184,7 @@ public class ShellUtils {
         Process process = null;
         ExecResult result = new ExecResult();
         try {
+            ProcessBuilder processBuilder = new ProcessBuilder();
             processBuilder.directory(new File(workPath));
             processBuilder.command(command);
             processBuilder.redirectErrorStream(true);
@@ -226,7 +214,7 @@ public class ShellUtils {
             try {
                 inReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 String line;
-                StringBuffer stringBuffer = new StringBuffer();
+                StringBuilder stringBuffer = new StringBuilder();
                 while ((line = inReader.readLine()) != null) {
                     stringBuffer.append(line);
                     stringBuffer.append(System.lineSeparator());
@@ -245,7 +233,7 @@ public class ShellUtils {
             try {
                 errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
                 String line;
-                StringBuffer stringBuffer = new StringBuffer();
+                StringBuilder stringBuffer = new StringBuilder();
                 while ((line = errorReader.readLine()) != null) {
                     stringBuffer.append(line);
                     stringBuffer.append(System.lineSeparator());
@@ -291,6 +279,9 @@ public class ShellUtils {
         if (process == null) {
             return;
         }
+        IOUtils.closeQuietly(process.getInputStream());
+        IOUtils.closeQuietly(process.getErrorStream());
+        IOUtils.closeQuietly(process.getOutputStream());
 
         boolean stop = false;
         if (!force) {
@@ -303,9 +294,6 @@ public class ShellUtils {
         if (!stop) {
             process.destroyForcibly();
         }
-        IOUtils.closeQuietly(process.getInputStream());
-        IOUtils.closeQuietly(process.getErrorStream());
-        IOUtils.closeQuietly(process.getOutputStream());
     }
 
     public static void addChmod(String path, String chmod) {

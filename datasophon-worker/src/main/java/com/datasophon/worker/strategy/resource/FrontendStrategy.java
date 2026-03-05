@@ -30,6 +30,7 @@ public class FrontendStrategy extends ResourceStrategy {
 
     @Override
     public ExecResult exec() {
+        logger.info("开始执行资源策略:{}...", type());
         ExecResult execResult = new ExecResult();
         if (StringUtils.isNotEmpty(meta)) {
             String metaUrl = variables.get(meta);

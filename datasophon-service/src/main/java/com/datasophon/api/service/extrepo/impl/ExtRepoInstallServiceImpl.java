@@ -140,6 +140,8 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
     @Autowired
     private ClusterServiceCommandService commandService;
 
+    @Autowired
+    private ClusterServiceInstanceService serviceInstanceService;
 
     @Autowired
     private ClusterServiceRoleInstanceService roleInstanceService;
@@ -404,9 +406,9 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
                 if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())) {
                     masterRoles.add(serviceRoleInfo);
-                } else  if (ServiceRoleType.WORKER.equals(serviceRoleInfo.getRoleType())){
+                } else if (ServiceRoleType.WORKER.equals(serviceRoleInfo.getRoleType())) {
                     workerRoles.add(serviceRoleInfo);
-                } else if (ServiceRoleType.CLIENT.equals(serviceRoleInfo.getRoleType())){
+                } else if (ServiceRoleType.CLIENT.equals(serviceRoleInfo.getRoleType())) {
                     clientRoles.add(serviceRoleInfo);
                 }
             }
@@ -558,6 +560,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
     /**
      * 更新节点的状态以及配置
+     *
      * @param node
      */
     private void updateNode(NodeDefinition node) {
@@ -569,27 +572,46 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         if (serviceNode.getWorkerRoles() != null) {
             roleInfoList.addAll(serviceNode.getWorkerRoles());
         }
-        if (serviceNode.getClientRoles()!= null) {
+        if (serviceNode.getClientRoles() != null) {
             roleInfoList.addAll(serviceNode.getClientRoles());
         }
         if (!roleInfoList.isEmpty()) {
             String frameCode = roleInfoList.get(0).getFrameCode();
+            Integer clusterId = roleInfoList.get(0).getClusterId();
 
             FrameServiceEntity serviceEntity = frameService.getNewestDefByName(frameCode, serviceNode.getServiceName());
             List<FrameServiceRoleEntity> srvRoles = frameServiceRoleService.getAllServiceRoleList(serviceEntity.getId());
             Map<String, FrameServiceRoleEntity> srvRoleMap = CollectionUtil.toMap(srvRoles, new HashMap<>(), FrameServiceRoleEntity::getServiceRoleName);
+            Map<String, ClusterServiceRoleInstanceEntity> roleInstanceMap = new HashMap<>();
+            ClusterServiceInstanceEntity srvInstance = serviceInstanceService.getServiceInstanceByClusterIdAndServiceName(clusterId, serviceNode.getServiceName());
+            if (srvInstance != null) {
+                List<ClusterServiceRoleInstanceEntity> instances = roleInstanceService.getServiceRoleInstanceListByServiceId(srvInstance.getId());
+                instances.forEach(instance-> {
+                    roleInstanceMap.put(String.format("%s-%s", instance.getHostname(), instance.getServiceRoleName()), instance);
+                });
+            }
 
 
             ServiceInfo serviceDef = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
             CopyOptions cpOpt = CopyOptions.create().setIgnoreProperties(
                     ServiceRoleInfo::getClusterId, ServiceRoleInfo::getHostname, ServiceRoleInfo::getHostCommandId,
                     ServiceRoleInfo::getParentName, ServiceRoleInfo::getCommandType, ServiceRoleInfo::getServiceInstanceId,
-                    ServiceRoleInfo::getFrameCode
+                    ServiceRoleInfo::getFrameCode, ServiceRoleInfo::getRoleType
             );
 //            根据最新的ddl，更新配置信息
-            for(ServiceRoleInfo oldOne : roleInfoList) {
+            for (ServiceRoleInfo oldOne : roleInfoList) {
                 FrameServiceRoleEntity frameServiceRoleEntity = srvRoleMap.get(oldOne.getName());
                 ServiceRoleInfo newOne = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
+                if (!newOne.getRoleType().equals(oldOne.getRoleType())) {
+                    throw new BusinessException(String.format("服务%s %s的角色类型发生变更，请重新执行%s操作", serviceNode.getServiceName(),
+                            oldOne.getName(), serviceNode.getCommandType().getCommandName(Constants.CN)));
+                }
+                if (CommandType.INSTALL_SERVICE.equals(oldOne.getCommandType())) {
+                    if (roleInstanceMap.containsKey(String.format("%s-%s", oldOne.getHostname(), oldOne.getName()))) {
+                        oldOne.setCommandType(CommandType.UPGRADE_SERVICE);
+                    }
+                }
+
                 BeanUtil.copyProperties(newOne, oldOne, cpOpt);
 
                 oldOne.setCreateDecompressDir(serviceDef.getCreateDecompressDir());
@@ -730,9 +752,9 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
         DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
-        List<SimpleServiceResource>  resources = frameService.listServices(serviceFrameworkIds)
+        List<SimpleServiceResource> resources = frameService.listServices(serviceFrameworkIds)
                 .stream()
-                .map(s-> new SimpleServiceResource(s.getServiceName(), s.getServiceVersion()))
+                .map(s -> new SimpleServiceResource(s.getServiceName(), s.getServiceVersion()))
                 .collect(Collectors.toList());
         DAG<String, DAGNode, Integer> dag = ctx.buildDeployDAG(resources, t -> {
             SimpleServiceResource srvModel = t.unwrap();
@@ -803,9 +825,9 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
         DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
-        List<SimpleServiceResource>  resources = frameService.listServices(serviceFrameworkIds)
+        List<SimpleServiceResource> resources = frameService.listServices(serviceFrameworkIds)
                 .stream()
-                .map(s-> new SimpleServiceResource(s.getServiceName(), s.getServiceVersion()))
+                .map(s -> new SimpleServiceResource(s.getServiceName(), s.getServiceVersion()))
                 .collect(Collectors.toList());
         DAG<String, DAGNode, Integer> dag = ctx.buildDeployDAG(resources, t -> {
             SimpleServiceResource srvModel = t.unwrap();
@@ -833,7 +855,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
     @Override
     public void generateAndExecSrvRoleCommands(Integer clusterId, CommandType commandType, Map<Integer, List<Integer>> instanceIdMap) {
-        instanceIdMap.forEach((instId, roleInstIds)-> generateAndExecSrvRoleCmd(clusterId, commandType, instId, roleInstIds));
+        instanceIdMap.forEach((instId, roleInstIds) -> generateAndExecSrvRoleCmd(clusterId, commandType, instId, roleInstIds));
     }
 
     @Override
@@ -841,7 +863,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         DeploymentModel model = doParseDeploymentFile(dto);
         List<String> serviceList = model.getApp().stream().map(DeploySrvModel::getName).collect(Collectors.toList());
         List<FrameServiceEntity> list = frameService.listNewest(dto.getClusterId(), true);
-        list.forEach(et-> et.setSelected(serviceList.contains(et.getServiceName())));
+        list.forEach(et -> et.setSelected(serviceList.contains(et.getServiceName())));
         return list;
     }
 
@@ -849,7 +871,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
     public List<FrameServiceRoleEntity> getServiceRoleListByDeployment(ServiceRoleQueryDTO dto) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
         List<Integer> ids = IdUtils.toIdList(dto.getServiceIds());
-        List<FrameServiceRoleEntity> list =  frameServiceRoleService.lambdaQuery()
+        List<FrameServiceRoleEntity> list = frameServiceRoleService.lambdaQuery()
                 .eq(FrameServiceRoleEntity::getFrameCode, clusterInfo.getClusterFrame())
                 .eq(Objects.nonNull(dto.getServiceRoleType()), FrameServiceRoleEntity::getServiceRoleType, dto.getServiceRoleType())
                 .in(!ids.isEmpty(), FrameServiceRoleEntity::getServiceId, ids)
@@ -862,8 +884,8 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         DeploymentModel model = doParseDeploymentFile(dto);
 
         Map<String, DeploySrvRoleModel> map = new HashMap<>();
-        model.getApp().forEach(app-> {
-            app.getRoles().forEach(role-> {
+        model.getApp().forEach(app -> {
+            app.getRoles().forEach(role -> {
                 map.put(app.getName() + "_" + role.getName(), role);
             });
         });

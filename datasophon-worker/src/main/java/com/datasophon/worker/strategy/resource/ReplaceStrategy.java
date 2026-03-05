@@ -31,6 +31,7 @@ public class ReplaceStrategy extends ResourceStrategy {
 
     @Override
     public ExecResult exec() {
+        logger.info("开始执行资源策略:{}...", type());
         File file = new File(basePath + Constants.SLASH + source);
         if (file.exists()) {
             List<String> lines = FileUtil.readLines(file, Charset.defaultCharset())

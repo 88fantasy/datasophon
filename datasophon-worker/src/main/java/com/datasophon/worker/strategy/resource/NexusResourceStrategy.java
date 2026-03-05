@@ -29,6 +29,7 @@ public class NexusResourceStrategy extends ResourceStrategy {
 
     @Override
     public ExecResult exec() {
+        logger.info("开始执行资源策略:{}...", type());
         String fromPath = PlaceholderUtils.replacePlaceholders(from, getVariables(), Constants.REGEX_VARIABLE);
         String toPath = PlaceholderUtils.replacePlaceholders(to, getVariables(), Constants.REGEX_VARIABLE);
         String targetPath = toPath.startsWith("/") ? toPath : PathUtils.join(basePath, toPath).toString();

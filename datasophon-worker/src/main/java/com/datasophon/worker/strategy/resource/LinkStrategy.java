@@ -28,6 +28,7 @@ public class LinkStrategy extends ResourceStrategy {
 
     @Override
     public ExecResult exec() {
+        logger.info("开始执行资源策略:{}...", type());
         if (StrUtil.isNotBlank(source)) {
             source = PlaceholderUtils.replacePlaceholders(source, getVariables(), Constants.REGEX_VARIABLE);
         }

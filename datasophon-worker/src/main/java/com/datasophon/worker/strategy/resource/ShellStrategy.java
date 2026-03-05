@@ -24,6 +24,7 @@ public class ShellStrategy extends ResourceStrategy {
 
     @Override
     public ExecResult exec() {
+        logger.info("开始执行资源策略:{}...", type());
         for (List<String> command : commands) {
             ExecResult result = ShellUtils.exec(basePath, command, 60L);
             if (result.isSuccess()) {

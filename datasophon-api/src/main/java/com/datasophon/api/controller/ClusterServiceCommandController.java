@@ -146,8 +146,9 @@ public class ClusterServiceCommandController extends ApiController {
     @RequestMapping("/delete")
     public Result delete(@RequestBody Integer[] ids) {
         clusterServiceCommandService.removeByIds(Arrays.asList(ids));
-        
         return Result.success();
     }
-    
+
+
+
 }
