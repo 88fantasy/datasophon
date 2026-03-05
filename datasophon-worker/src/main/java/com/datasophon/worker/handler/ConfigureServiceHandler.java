@@ -220,8 +220,7 @@ public class ConfigureServiceHandler {
         logger.info("start to execute ranger admin setup.sh");
         ArrayList<String> commands = new ArrayList<>();
         commands.add(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + "setup.sh");
-        ExecResult execResult = ShellUtils
-                .execWithStatus(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName, commands, 300L);
+        ExecResult execResult = ShellUtils.exec(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName, commands, 300L);
 
         ArrayList<String> globalCommand = new ArrayList<>();
         globalCommand.add(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + "set_globals.sh");

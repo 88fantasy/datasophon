@@ -52,7 +52,7 @@ public class UnixUtils {
             commands.add("-G");
             commands.add(otherGroups);
         }
-        return ShellUtils.execWithStatus(Constants.INSTALL_PATH, commands, TIME_OUT);
+        return ShellUtils.exec(Constants.INSTALL_PATH, commands, TIME_OUT);
     }
     
     public static ExecResult delUnixUser(String username) {

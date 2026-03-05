@@ -26,7 +26,7 @@ public class ExecuteCmdActor extends HookTypedActor<ExecuteCmdCommand> {
 
     @Override
     protected void doOnReceive(ExecuteCmdCommand command) throws Throwable {
-        ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command.getCommands(), 60L);
+        ExecResult execResult = ShellUtils.exec(Constants.INSTALL_PATH, command.getCommands(), 60L);
         getSender().tell(execResult, getSelf());
     }
 }

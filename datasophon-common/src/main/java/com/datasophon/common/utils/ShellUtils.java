@@ -43,7 +43,13 @@ public class ShellUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(ShellUtils.class);
 
-
+    /**
+     * 执行命令，不使用shell执行
+     * @param workPath
+     * @param commandParts
+     * @param timeout
+     * @return
+     */
     public static ExecResult exec(String workPath, List<String> commandParts, long timeout) {
         if (CollectionUtils.isEmpty(commandParts)) {
             throw new IllegalArgumentException("Command must not be null or empty");
@@ -204,6 +210,15 @@ public class ShellUtils {
         return null;
     }
 
+    /**
+     * @deprecated
+     * @see #exec(String, List, long)
+     * @param workPath
+     * @param command
+     * @param timeout
+     * @return
+     */
+    @Deprecated
     public static ExecResult execWithStatus(String workPath, List<String> command, long timeout) {
         Process process = null;
         ExecResult result = new ExecResult();
