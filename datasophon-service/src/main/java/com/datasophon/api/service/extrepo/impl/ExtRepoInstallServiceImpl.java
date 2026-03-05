@@ -6,6 +6,7 @@ import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.lang.Pair;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.api.dag.model.DagDefinition;
@@ -32,6 +33,7 @@ import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
 import com.datasophon.api.service.extrepo.ctx.ExecDAGBuilderContext;
 import com.datasophon.api.service.extrepo.ctx.SimpleServiceResource;
 import com.datasophon.api.service.extrepo.utils.MetaUtils;
+import com.datasophon.api.service.extrepo.utils.ServiceNodeExecUtils;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
@@ -645,10 +647,9 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             InstallProgressDAG2.Node resultNode = BeanUtil.toBean(node, InstallProgressDAG2.Node.class);
             ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
 
-
             String cmdId = serviceNode.getCommandId();
             resultNode.setCommandId(cmdId);
-            List<InstallProgressDAG2.SrvRole> roles = createSrvRole(cmdId);
+            List<InstallProgressDAG2.SrvRole> roles = createSrvRole(cmdId, serviceNode);
             resultNode.setRoles(roles);
             resultNodes.add(resultNode);
         }
@@ -668,35 +669,39 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
     }
 
 
-    private List<InstallProgressDAG2.SrvRole> createSrvRole(String cmdId) {
+    private List<InstallProgressDAG2.SrvRole> createSrvRole(String cmdId, ServiceNode serviceNode) {
         List<ClusterServiceCommandHostCommandEntity> hostCmdList = hostCommandService.lambdaQuery()
                 .eq(ClusterServiceCommandHostCommandEntity::getCommandId, cmdId)
                 .list();
+        Map<String, ClusterServiceCommandHostCommandEntity> map = CollectionUtil.toMap(hostCmdList, new HashMap<>(),
+                ClusterServiceCommandHostCommandEntity::getHostCommandId);
         List<InstallProgressDAG2.SrvRole> roles = new ArrayList<>();
-        hostCmdList.stream()
-                .collect(Collectors.groupingBy(ClusterServiceCommandHostCommandEntity::getServiceRoleName))
-                .forEach((roleName, list) -> {
-                    InstallProgressDAG2.SrvRole role = new InstallProgressDAG2.SrvRole();
-                    role.setRoleName(roleName);
 
-                    List<InstallProgressDAG2.HostCmd> cmds = list.stream()
-                            .sorted(Comparator.comparing(ClusterServiceCommandHostCommandEntity::getCreateTime))
-                            .map(hostCmd -> {
-                                InstallProgressDAG2.HostCmd cmd = BeanUtil.toBean(hostCmd, InstallProgressDAG2.HostCmd.class, CopyOptions.create().setIgnoreProperties("commandState"));
-                                if (hostCmd.getCommandState() != null) {
-                                    cmd.setCommandState(hostCmd.getCommandState().name());
-                                    cmd.setCommandStateName(hostCmd.getCommandState().getDesc());
-                                }
-                                return cmd;
-                            })
-                            .collect(Collectors.toList());
-                    role.setCmdList(cmds);
 
-                    roles.add(role);
-                });
-
+        ServiceNodeExecUtils.getSortedRoleInfo(serviceNode.getCommandType(), serviceNode.getMasterRoles()).forEach(pair-> roles.add(newRole(pair, map)));
+        ServiceNodeExecUtils.getSortedRoleInfo(serviceNode.getCommandType(), serviceNode.getClientRoles()).forEach(pair-> roles.add(newRole(pair, map)));
+        ServiceNodeExecUtils.getSortedRoleInfo(serviceNode.getCommandType(), serviceNode.getWorkerRoles()).forEach(pair-> roles.add(newRole(pair, map)));
         return roles;
     }
+
+    private InstallProgressDAG2.SrvRole newRole(Pair<String, List<ServiceRoleInfo>> pair, Map<String, ClusterServiceCommandHostCommandEntity> map) {
+        InstallProgressDAG2.SrvRole role = new InstallProgressDAG2.SrvRole();
+        role.setRoleName(pair.getKey());
+        role.setCmdList(new ArrayList<>());
+        pair.getValue().forEach(serviceRole -> {
+            ClusterServiceCommandHostCommandEntity hostCmd = map.get(serviceRole.getHostCommandId());
+            if (hostCmd != null) {
+                InstallProgressDAG2.HostCmd cmd = BeanUtil.toBean(hostCmd, InstallProgressDAG2.HostCmd.class, CopyOptions.create().setIgnoreProperties("commandState"));
+                if (hostCmd.getCommandState() != null) {
+                    cmd.setCommandState(hostCmd.getCommandState().name());
+                    cmd.setCommandStateName(hostCmd.getCommandState().getDesc());
+                }
+                role.getCmdList().add(cmd);
+            }
+        });
+        return role;
+    }
+
 
     @Override
     public String generateGenericInstallCommand(Integer clusterId, List<String> serviceNames) {
