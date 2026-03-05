@@ -301,6 +301,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 //        保存commandHost的相关数据
         List<ClusterServiceCommandHostEntity> hostEntityList = new ArrayList<>();
         List<FrameServiceRoleEntity> serviceRoleList = frameServiceRoleService.getServiceRoleList(cluster.getId(), Collections.singletonList(frameService.getId()), null);
+        serviceRoleList.sort(Comparator.comparing(FrameServiceRoleEntity::getSortNum));
         Set<String> hostnames = new HashSet<>();
         for (FrameServiceRoleEntity serviceRole : serviceRoleList) {
             hostnames.addAll(serviceRoleHostMap.getOrDefault(serviceRole.getServiceRoleName(), new ArrayList<>(0)));
@@ -315,6 +316,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 //        保存每一台主机每一个角色需要执行的命令
         Map<String, ClusterServiceCommandHostEntity> cache = CollectionUtil.toMap(hostEntityList, new HashMap<>(), ClusterServiceCommandHostEntity::getHostname);
         List<ClusterServiceCommandHostCommandEntity> hostCommandList = new ArrayList<>();
+
         for (FrameServiceRoleEntity serviceRole : serviceRoleList) {
             List<String> hosts = serviceRoleHostMap.get(serviceRole.getServiceRoleName());
             if (hosts == null) {
@@ -369,7 +371,8 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             Map<String, FrameServiceRoleEntity> srvRoleMap = CollectionUtil.toMap(srvRoles, new HashMap<>(), FrameServiceRoleEntity::getServiceRoleName);
 
             List<ServiceRoleInfo> masterRoles = new ArrayList<>();
-            List<ServiceRoleInfo> elseRoles = new ArrayList<>();
+            List<ServiceRoleInfo> workerRoles = new ArrayList<>();
+            List<ServiceRoleInfo> clientRoles = new ArrayList<>();
 
             List<ClusterServiceCommandHostCommandEntity> hostCommands = context.getCmdHostList(cmd.getCommandId());
             hostCommands.sort(Comparator.comparing(ClusterServiceCommandHostCommandEntity::getSort, Comparator.nullsLast(Comparator.naturalOrder())));
@@ -401,13 +404,16 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
                 if (ServiceRoleType.MASTER.equals(serviceRoleInfo.getRoleType())) {
                     masterRoles.add(serviceRoleInfo);
-                } else {
-                    elseRoles.add(serviceRoleInfo);
+                } else  if (ServiceRoleType.WORKER.equals(serviceRoleInfo.getRoleType())){
+                    workerRoles.add(serviceRoleInfo);
+                } else if (ServiceRoleType.CLIENT.equals(serviceRoleInfo.getRoleType())){
+                    clientRoles.add(serviceRoleInfo);
                 }
             }
 
             serviceNode.setMasterRoles(masterRoles);
-            serviceNode.setElseRoles(elseRoles);
+            serviceNode.setWorkerRoles(workerRoles);
+            serviceNode.setClientRoles(clientRoles);
 
             NodeDefinitionEntity node = new NodeDefinitionEntity();
             node.setNodeName(info.getName());
@@ -560,10 +566,12 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         if (serviceNode.getMasterRoles() != null) {
             roleInfoList.addAll(serviceNode.getMasterRoles());
         }
-        if (serviceNode.getElseRoles() != null) {
-            roleInfoList.addAll(serviceNode.getElseRoles());
+        if (serviceNode.getWorkerRoles() != null) {
+            roleInfoList.addAll(serviceNode.getWorkerRoles());
         }
-
+        if (serviceNode.getClientRoles()!= null) {
+            roleInfoList.addAll(serviceNode.getClientRoles());
+        }
         if (!roleInfoList.isEmpty()) {
             String frameCode = roleInfoList.get(0).getFrameCode();
 

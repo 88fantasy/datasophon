@@ -50,8 +50,11 @@ public class DAGServiceServiceImpl implements DAGService {
     @Override
     public int updateDagStatus(String dagId, DagStatus status) {
         DagDefinitionEntity dag = dagDefinitionEntityMapper.selectById(dagId);
-        if (DagStatus.RUNNING.equals(status) && dag.getStartedTime() == null) {
-            dag.setStartedTime(LocalDateTime.now());
+        if (DagStatus.RUNNING.equals(status)) {
+            if (dag.getStartedTime() == null) {
+                dag.setStartedTime(LocalDateTime.now());
+            }
+            dag.setCompletedTime(null);
         }
         if (Arrays.asList(DagStatus.CANCEL, DagStatus.FAILED, DagStatus.SUCCESS).contains(status) && dag.getCompletedTime() == null) {
             dag.setCompletedTime(LocalDateTime.now());

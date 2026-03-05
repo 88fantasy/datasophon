@@ -257,7 +257,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             role.setJmxPort(serviceRole.getJmxPort());
             role.setServiceRoleJsonMd5(serviceRoleJsonMd5);
             role.setLogFile(serviceRole.getLogFile());
-            role.setSort(i);
+            role.setSortNum(serviceRole.getSortNum());
             roleService.saveOrUpdate(role);
         }
         log.info("put {} {} service info into cache", frameCode, serviceName);

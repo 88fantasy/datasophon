@@ -61,7 +61,7 @@ public class FrameServiceRoleServiceImpl extends ServiceImpl<FrameServiceRoleMap
         List<FrameServiceRoleEntity> list = this.lambdaQuery()
                 .eq(Objects.nonNull(serviceRoleType), FrameServiceRoleEntity::getServiceRoleType, serviceRoleType)
                 .in(FrameServiceRoleEntity::getServiceId, serviceIds)
-                .orderByAsc(FrameServiceRoleEntity::getSort)
+                .orderByAsc(FrameServiceRoleEntity::getSortNum)
                 .list();
         // 校验是否已安装依赖的服务
         // 校验是否已安装Prometheus,Grafana,AlertManager
@@ -109,6 +109,7 @@ public class FrameServiceRoleServiceImpl extends ServiceImpl<FrameServiceRoleMap
         List<FrameServiceRoleEntity> list = this.lambdaQuery()
                 .ne(FrameServiceRoleEntity::getServiceRoleType, RoleType.MASTER)
                 .in(FrameServiceRoleEntity::getServiceId, ids)
+                .orderByAsc(FrameServiceRoleEntity::getSortNum)
                 .list();
         ClusterInfoEntity clusterInfo = clusterInfoMapper.selectById(clusterId);
         String key = clusterInfo.getClusterCode() + Constants.UNDERLINE + Constants.SERVICE_ROLE_HOST_MAPPING;
@@ -148,13 +149,17 @@ public class FrameServiceRoleServiceImpl extends ServiceImpl<FrameServiceRoleMap
                 frameServiceMapper.getServiceByFrameCodeAndServiceName(clusterInfoEntity.getClusterFrame(), serviceName);
         List<FrameServiceRoleEntity> list = this.lambdaQuery()
                 .eq(FrameServiceRoleEntity::getServiceId, frameServiceEntity.getId())
+                .orderByAsc(FrameServiceRoleEntity::getSortNum)
                 .list();
         return Result.success(list);
     }
 
     @Override
     public List<FrameServiceRoleEntity> getAllServiceRoleList(Integer frameServiceId) {
-        return this.lambdaQuery().eq(FrameServiceRoleEntity::getServiceId, frameServiceId).list();
+        return this.lambdaQuery()
+                .eq(FrameServiceRoleEntity::getServiceId, frameServiceId)
+                .orderByAsc(FrameServiceRoleEntity::getSortNum)
+                .list();
     }
 
     @Override

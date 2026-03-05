@@ -563,7 +563,7 @@ public class ProcessUtils {
         serviceConfigs.forEach(config-> {
             String name = config.getName();
 //                如果存在占位符，则忽略(即不支持递归占位符)。如果全局变量，也忽略(有可能已经被系统特殊逻辑处理）
-            if (name.contains("${") || config.getRegister()) {
+            if (name.contains("${") || Boolean.TRUE.equals(config.getRegister())) {
                 return;
             }
             if (config.getValue() instanceof String) {

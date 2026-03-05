@@ -77,15 +77,12 @@ public class RepoDAG {
     }
 
 
-    public void exec(AsyncNodeTask task) {
+    public void exec(AsyncNodeTask task, boolean restart) {
        doExec(task, false);
     }
 
-    public void resume(AsyncNodeTask task) {
-        doExec(task, true);
-    }
 
-    public void exec(NodeTask task) {
+    public void exec(NodeTask task, boolean restart) {
         AsyncNodeTask wrappedTask = (node, callback) -> {
             try {
                 String result = task.exec(node);
@@ -94,7 +91,7 @@ public class RepoDAG {
                 callback.onFailure(e);
             }
         };
-        exec(wrappedTask);
+        doExec(wrappedTask, restart);
     }
 
     private void doExec(AsyncNodeTask task, boolean restart) {

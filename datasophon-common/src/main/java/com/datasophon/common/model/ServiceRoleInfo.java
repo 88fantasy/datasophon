@@ -28,14 +28,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Data
-public class ServiceRoleInfo implements Serializable, Comparable<ServiceRoleInfo>, ServiceRoleResource {
-    
-    private Integer id;
-    
+public class ServiceRoleInfo implements Serializable, ServiceRoleResource {
+
+
     private String name;
     
     private ServiceRoleType roleType;
@@ -94,14 +92,6 @@ public class ServiceRoleInfo implements Serializable, Comparable<ServiceRoleInfo
     private RunAs runAs;
 
     private List<HookConfig> hooks;
-    
-    @Override
-    public int compareTo(ServiceRoleInfo serviceRoleInfo) {
-        if (Objects.nonNull(serviceRoleInfo.getSortNum()) && Objects.nonNull(this.getSortNum())) {
-            return this.sortNum - serviceRoleInfo.getSortNum();
-        }
-        return 0;
-    }
 
     @Override
     public String getServiceName() {

@@ -88,7 +88,7 @@ public class ServiceUpgradeHandler extends ServiceHandler {
             configs.forEach(config-> {
                 String name = config.getOriginalName();
 //                如果存在占位符，则忽略(即不支持递归占位符)。
-                if (name.contains("${") || config.getRegister()) {
+                if (name.contains("${") || Boolean.TRUE.equals(config.getRegister())) {
                     return;
                 }
                 if (config.getValue() instanceof String) {

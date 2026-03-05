@@ -84,6 +84,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
+      "register": false,
       "defaultValue": "${ROOT.VosManager.__hostIp__}:${ROOT.VosManager.__port__}"
     }
   ]

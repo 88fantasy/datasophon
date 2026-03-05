@@ -85,6 +85,7 @@
       "value": "15",
       "configurableInWizard": true,
       "hidden": false,
+      "register": false,
       "defaultValue": "15"
     },
     {
@@ -98,6 +99,7 @@
       "value": "15",
       "configurableInWizard": true,
       "hidden": false,
+      "register": false,
       "defaultValue": "15"
     }
   ]

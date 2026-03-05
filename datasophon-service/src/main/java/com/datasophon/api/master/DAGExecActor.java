@@ -1,15 +1,13 @@
 package com.datasophon.api.master;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.extra.spring.SpringUtil;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.datasophon.api.dag.AsyncNodeTask;
 import com.datasophon.api.dag.DAGListener;
-import com.datasophon.api.dag.NodeExecutionCallback;
+import com.datasophon.api.dag.NodeTask;
 import com.datasophon.api.dag.RepoDAG;
 import com.datasophon.api.dag.model.NodeDefinition;
 import com.datasophon.api.dag.repo.DAGRepository;
-import com.datasophon.api.dag.repo.SimpleDAGRepository;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.handler.service.ServiceStatusHandler;
@@ -40,8 +38,7 @@ import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.NeedRestart;
 import com.datasophon.dao.enums.ServiceRoleState;
-import com.datasophon.dao.enums.dag.DagStatus;
-import com.datasophon.dao.enums.dag.NodeStatus;
+import javafx.util.Pair;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -73,24 +70,40 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
     protected void doOnReceive(DAGExecCommand message) {
         RepoDAG dag = createMultiServiceDAG(message);
 
-        AsyncNodeTask task = (nodeDef, callback) -> {
+        NodeTask task = (nodeDef) -> {
 //            单个服务的安装
             ServiceNode serviceNode = JSONObject.parseObject((String) nodeDef.getNodeConfig(), ServiceNode.class);
-            log.info("命令行ID:{}， 准备执行{}{}, 创建DAG对象", serviceNode.getCommandId(), serviceNode.getCommandType().getCommandName(Constants.CN),
-                    serviceNode.getServiceName());
-            RepoDAG singleSrvDAG = createSingleServiceExecDAG(serviceNode, callback);
-            log.info("命令行ID:{}, 开始执行{}{}", serviceNode.getCommandId(), serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName());
-            singleSrvDAG.exec((node, cb) -> {
-                List<ServiceRoleInfo> roles = (List<ServiceRoleInfo>) node.getNodeConfig();
-                doExecServiceRoles(serviceNode, roles, cb);
-            });
+
+
+            List<Pair<String, List<ServiceRoleInfo>>> tasks = new ArrayList<>();
+            if (STOP_SERVICE.equals(serviceNode.getCommandType())) {
+                tasks.add(new Pair<>("worker", serviceNode.getWorkerRoles()));
+                tasks.add(new Pair<>("client", serviceNode.getClientRoles()));
+                tasks.add(new Pair<>("master", serviceNode.getMasterRoles()));
+            } else {
+                tasks.add(new Pair<>("master", serviceNode.getMasterRoles()));
+                tasks.add(new Pair<>("client", serviceNode.getClientRoles()));
+                tasks.add(new Pair<>("worker", serviceNode.getWorkerRoles()));
+            }
+
+            for (Pair<String, List<ServiceRoleInfo>> pair : tasks) {
+                List<ServiceRoleInfo> roles = pair.getValue();
+                if (CollectionUtil.isEmpty(roles)) {
+                    log.info("执行命令, ID:{}，{}不存在的{}角色， 无需操作", serviceNode.getCommandId(), serviceNode.getServiceName(), pair.getKey());
+                } else {
+                    log.info("执行命令, ID:{}， 准备{}{}的{}角色",
+                            serviceNode.getCommandId(),
+                            serviceNode.getCommandType().getCommandName(Constants.CN),
+                            serviceNode.getServiceName(),
+                            pair.getKey()
+                    );
+                    doExecServiceRoles(serviceNode, roles);
+                }
+            }
+            return String.format("%s %s成功", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName());
         };
 
-        if (message.isRestart()) {
-            dag.resume(task);
-        } else {
-            dag.exec(task);
-        }
+        dag.exec(task, message.isRestart());
     }
 
 
@@ -104,7 +117,7 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
         dag.registerListener(new DAGListener() {
             @Override
             public void onNodeFail(NodeDefinition node, Throwable throwable) {
-                boolean ignore = throwable != null && throwable.getCause() instanceof ServiceRoleExecException;
+                boolean ignore = throwable instanceof ServiceRoleExecException && throwable.getCause() == null;
                 if (!ignore) {
                     ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
                     log.info("更新{}{}的状态为{}", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName(), CommandState.FAILED);
@@ -146,56 +159,12 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
 
 
     /**
-     * 创建单个软件的安装dag图，要求：
-     * 1. master进程先执行
-     * 2. 其他类型worker,client后执行
-     *
-     * @param serviceNode
-     * @param callback
-     * @return
-     */
-    private RepoDAG createSingleServiceExecDAG(ServiceNode serviceNode, NodeExecutionCallback callback) {
-        List<Object> tasks = new ArrayList<>();
-        if (!serviceNode.getMasterRoles().isEmpty()) {
-            tasks.add(serviceNode.getMasterRoles());
-        }
-        if (!serviceNode.getElseRoles().isEmpty()) {
-            tasks.add(serviceNode.getElseRoles());
-        }
-
-        List<int[]> edges = new ArrayList<>(0);
-        if (tasks.size() == 2) {
-//                master任务先执行
-            edges.add(new int[]{0, 1});
-        }
-        DAGRepository simpleRepo = new SimpleDAGRepository(tasks, edges);
-        RepoDAG singleSrvDAG = new RepoDAG(simpleRepo);
-//        注册监听器，当单个软件安装完成后，通知其他软件执行
-        singleSrvDAG.registerListener(new DAGListener() {
-
-            @Override
-            public void onCompleted(RepoDAG dag, DagStatus status, Throwable throwable) {
-                if (DagStatus.SUCCESS.equals(status)) {
-                    callback.onSuccess(String.format("%s%s成功", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName()));
-                } else {
-                    String message = String.format("%s%s失败，原因：%s", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName(), throwable == null ? "执行结果：" + status.name() : throwable.getMessage());
-                    callback.onFailure(new RuntimeException(message, throwable));
-                }
-            }
-        });
-        log.info("创建服务安装dag成功");
-        return singleSrvDAG;
-    }
-
-
-    /**
      * 安装单个服务的一个roleType的所有进程
      *
      * @param serviceNode
      * @param roles
-     * @param cb
      */
-    private void doExecServiceRoles(ServiceNode serviceNode, List<ServiceRoleInfo> roles, NodeExecutionCallback cb) {
+    private void doExecServiceRoles(ServiceNode serviceNode, List<ServiceRoleInfo> roles) {
         ServiceRoleInfo currentRole = null;
         try {
             List<String> sortedRoles = getSortedRoleNames(serviceNode.getCommandType(), roles);
@@ -265,23 +234,34 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
             if (result == null || result.isSuccess()) {
                 ServiceRoleType type = roles.get(0).getRoleType();
                 log.info("执行{}{}成功, 共{}个角色, 类型为{}", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName(), roles.size(), type.getName());
-                cb.onSuccess(NodeStatus.SUCCESS.name());
+
             } else {
                 String message = String.format("在%s %s %s %s失败, 原因：%s", currentRole.getHostname(), currentRole.getCommandType().getCommandName(Constants.CN),
                         currentRole.getParentName(), currentRole.getName(), result.getExecOut());
                 throw new ServiceRoleExecException(message);
             }
         } catch (ServiceRoleExecException ex) {
-            cb.onFailure(ex);
+            throw ex;
         } catch (Throwable throwable) {
             if (currentRole != null) {
-                log.error("在{}{}{}失败，原因：{}", currentRole.getHostname(), currentRole.getCommandType().getCommandName(Constants.CN), currentRole.getParentName(), throwable.getMessage());
-                String message = String.format("在%s%s%s失败，原因：%s", currentRole.getHostname(), currentRole.getCommandType().getCommandName(Constants.CN), currentRole.getParentName(), throwable.getMessage());
-                cb.onFailure(new RuntimeException(message, throwable));
+                log.error("在{}{}{}失败，原因：{}, ", currentRole.getHostname(), currentRole.getCommandType().getCommandName(Constants.CN),
+                        currentRole.getParentName(), throwable.getMessage(), throwable);
             } else {
-                log.error("执行{}{}失败, 共{}个角色, 错误原因：{}", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName(), roles.size(), throwable.getMessage());
-                cb.onFailure(throwable);
+                log.error("执行{}{}失败, 共{}个角色, 错误原因：{}", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName(),
+                        roles.size(), throwable.getMessage(), throwable);
             }
+
+            String message = getString(serviceNode, throwable, currentRole);
+            throw new ServiceRoleExecException(message, throwable);
+        }
+    }
+
+    private static String getString(ServiceNode serviceNode, Throwable throwable, ServiceRoleInfo currentRole) {
+        String tmpMsg = throwable instanceof NullPointerException ? "对象空指针" : throwable.getMessage();
+        if (currentRole != null) {
+            return String.format("在%s%s%s失败，原因：%s", currentRole.getHostname(), currentRole.getCommandType().getCommandName(Constants.CN), currentRole.getParentName(), tmpMsg);
+        } else {
+            return String.format("%s%s失败，原因：%s", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName(), tmpMsg);
         }
     }
 
@@ -444,11 +424,18 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
     }
 
 
+    @Data
     public static class ServiceRoleExecException extends RuntimeException {
+
 
         public ServiceRoleExecException(String message) {
             super(message);
         }
+
+        public ServiceRoleExecException(String message, Throwable cause) {
+            super(message, cause);
+        }
+
     }
 
     @Data

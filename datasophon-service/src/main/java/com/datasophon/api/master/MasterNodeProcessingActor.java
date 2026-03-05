@@ -17,7 +17,6 @@ public class MasterNodeProcessingActor extends TypedActor<OlapSqlExecCommand> {
 
     @Override
     protected void doOnReceive(OlapSqlExecCommand command) throws Throwable {
-        logger.info("MasterNodeProcessingActor receive message: {}", JSONUtil.toJsonStr(command));
         ExecResult execResult = new ExecResult();
         String tip = command.getOpsType().getDesc();
         Map<String, String> globalVariables = command.getVariables();

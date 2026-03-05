@@ -98,4 +98,4 @@ alter table t_ddh_frame_service
     add column `type` varchar(50) null comment '服务分类,ENVIRONMENT=基础环境, MIDDLEWARE=中间件, APPLICATION=应用';
 
 
-alter table t_ddh_frame_service_role  ADD COLUMN `sort` text NULL COMMENT '顺序' AFTER `log_file`;
+alter table t_ddh_frame_service_role  ADD COLUMN `sort_num` text NULL COMMENT '顺序' AFTER `log_file`;
