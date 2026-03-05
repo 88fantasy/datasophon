@@ -44,10 +44,13 @@ public class ShellUtils {
     private static final Logger logger = LoggerFactory.getLogger(ShellUtils.class);
 
 
-    public static ExecResult exec(String workPath, List<String> command, long timeout) {
-        if (CollectionUtils.isEmpty(command)) {
+    public static ExecResult exec(String workPath, List<String> commandParts, long timeout) {
+        if (CollectionUtils.isEmpty(commandParts)) {
             throw new IllegalArgumentException("Command must not be null or empty");
         }
+
+        List<String> args = formatArgs(commandParts);
+
         ExecResult result = new ExecResult();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Process process = null;
@@ -55,10 +58,10 @@ public class ShellUtils {
         try {
             ProcessBuilder processBuilder = new ProcessBuilder();
             processBuilder.directory(new File(workPath));
-            processBuilder.command(command);
+            processBuilder.command(args);
             processBuilder.redirectErrorStream(true);
 
-            logger.info("exec cmd: {}, workspace: {}", StrUtil.join(" ", command), workPath);
+            logger.info("exec cmd: {}, workspace: {}", StrUtil.join(" ", args), workPath);
             process = processBuilder.start();
 
             Process finalProcess = process;
@@ -70,11 +73,11 @@ public class ShellUtils {
             boolean execResult = finished && process.exitValue() == 0;
             result.setExecResult(execResult);
             result.setExecOut(new String(out.toByteArray(), Charset.defaultCharset()));
-            logger.info("exec cmd {} {}", String.join(" ", command), result.isSuccess() ? "success" : "fail");
+            logger.info("exec cmd {} {}", String.join(" ", args), result.isSuccess() ? "success" : "fail");
             return result;
         } catch (Exception e) {
             result.setExecErrOut(e.getMessage());
-            logger.error("exec cmd fail, cmd: {}, message: {}", String.join(" ", command), e.getMessage(), e);
+            logger.error("exec cmd fail, cmd: {}, message: {}", String.join(" ", args), e.getMessage(), e);
             return result;
         } finally {
             destroy(process, false);
@@ -82,6 +85,54 @@ public class ShellUtils {
                 outputReader.interrupt();
             }
         }
+    }
+
+
+    /**
+     * 将命令列表拼接成字符串，再按命令行参数规则分割。
+     * 支持双引号包裹的带空格参数（例如：echo "hello world" 解析为 [echo, hello world]）。
+     *
+     * @param commands 原始命令列表（例如 ["echo", "\"hello world\""]）
+     * @return 解析后的参数列表
+     */
+    private static List<String> formatArgs(List<String> commands) {
+        // 1. 用单个空格拼接所有元素
+        String joined = String.join(" ", commands);
+        List<String> result = new ArrayList<>();
+        int length = joined.length();
+        int i = 0;
+
+        while (i < length) {
+            // 跳过前导空格
+            while (i < length && joined.charAt(i) == ' ') {
+                i++;
+            }
+            if (i >= length) {
+                break;
+            }
+
+            char current = joined.charAt(i);
+            if (current == '"') {
+                // 处理双引号包裹的参数：找到下一个双引号，中间内容作为参数（不含引号）
+                i++; // 跳过左引号
+                int start = i;
+                while (i < length && joined.charAt(i) != '"') {
+                    i++;
+                }
+                String arg = joined.substring(start, i);
+                result.add(arg);
+                i++; // 跳过右引号
+            } else {
+                // 处理普通参数：直到遇到空格为止
+                int start = i;
+                while (i < length && joined.charAt(i) != ' ') {
+                    i++;
+                }
+                String arg = joined.substring(start, i);
+                result.add(arg);
+            }
+        }
+        return result;
     }
 
     /**
