@@ -72,16 +72,13 @@ public class FreemakerUtils {
 
     private static final NacosRestTemplate nacosRestTemplate = NamingHttpClientManager.getInstance().getNacosRestTemplate();
 
-    public static void generateConfigFile(Generators generators,
-                                          List<ServiceConfig> configs,
+    public static void generateConfigFile(Generators generators, List<ServiceConfig> configs,
                                           String serviceInstallHome) throws IOException, TemplateException {
         generateConfigFile(generators, configs, serviceInstallHome, null);
     }
 
-    public static void generateConfigFile(Generators generators,
-                                          List<ServiceConfig> configs,
-                                          String serviceInstallHome,
-                                          String extPath) throws IOException, TemplateException {
+    public static void generateConfigFile(Generators generators, List<ServiceConfig> configs,
+                                          String serviceInstallHome, String extPath) throws IOException, TemplateException {
         Configuration config = initConfiguration(extPath);
 
 //        获取模板的名称
@@ -411,31 +408,6 @@ public class FreemakerUtils {
         processOut(generators, template, data, "prometheus");
     }
 
-    public static void generatePromScrapeConfig(Generators generators, List<ServiceConfig> configs,
-                                                String serviceName) throws IOException, TemplateException {
-        // 创建核心配置对象
-        Configuration config = new Configuration(Configuration.getVersion());
-        // 设置加载的目录
-        // ""代表当前包
-        config.setClassForTemplateLoading(FreemakerUtils.class, "/templates");
-        // 得到模板对象
-        Template template = config.getTemplate("scrape.ftl");
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("itemList", configs);
-        // 3.产生输出
-        processOut(generators, template, data, serviceName);
-    }
-
-    public static void generateYaml(Generators generators, List<ServiceConfig> configs,
-                                    String servicename) {
-        Map<String, Object> configMap = new LinkedHashMap<>();
-        configs.parallelStream().forEach(serviceConfig -> {
-            String key = StringUtils.isEmpty(serviceConfig.getKey()) ? serviceConfig.getName() : serviceConfig.getKey();
-            configMap.put(key, serviceConfig.getValue());
-        });
-        processYaml(generators, configMap, servicename);
-    }
 
 
     private static void processOut(Generators generators, Template template, Map<String, Object> data,
@@ -463,25 +435,6 @@ public class FreemakerUtils {
         return file;
     }
 
-    private static void writeToYaml(Map<String, Object> data,
-                                    String outputFile) {
-        String yaml = YamlParser.flattenedMapToYaml(data);
-        File file = new File(outputFile);
-        if (!file.exists()) {
-            FileUtil.mkParentDirs(file);
-        }
-        FileUtil.writeUtf8String(yaml, file);
-    }
-
-    private static void processYaml(Generators generators, Map<String, Object> data,
-                                    String decompressPackageName) {
-        String packagePath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH;
-        String outputDirectory = generators.getOutputDirectory();
-        for (String outPutDir : generators.getOutputDirectory().split(StrUtil.COMMA)) {
-            String outputFile = (outputDirectory.startsWith(Constants.SLASH) ? "" : packagePath) + outPutDir + Constants.SLASH + generators.getFilename();
-            writeToYaml(data, outputFile);
-        }
-    }
 
 
 }
