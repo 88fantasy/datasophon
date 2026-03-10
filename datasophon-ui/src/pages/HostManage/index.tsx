@@ -248,7 +248,7 @@ const Index = () => {
 
         const items = [
             {
-                label: '启动主机服务',
+                label: '启动节点上的服务',
                 onClick: invokePreClick.bind(noop, async () => {
 
 
@@ -260,7 +260,7 @@ const Index = () => {
                 }),
             },
             {
-                label: '停止主机服务',
+                label: '停止节点上的服务',
                 onClick: invokePreClick.bind(noop, async () => {
                     const res = await showComfirmModal()
                     if (res) {
@@ -269,7 +269,7 @@ const Index = () => {
                 }),
             },
             {
-                label: '启动主机Worker',
+                label: '启动Worker',
                 onClick: invokePreClick.bind(noop, async () => {
                     const res = await showComfirmModal()
 
@@ -282,7 +282,7 @@ const Index = () => {
                 }),
             },
             {
-                label: '停止主机Worker',
+                label: '停止Worker',
                 onClick: invokePreClick.bind(noop, async () => {
                     const res = await showComfirmModal()
 
