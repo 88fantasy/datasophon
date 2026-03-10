@@ -53,6 +53,7 @@ export default {
   getHostCommandLog:
     path + "/cluster/service/command/host/command/getHostCommandLog", // 查询主机上服务角色指令3日志
   getQueueList: path + "/cluster/yarn/queue/list", // 队列列表
+  getScheduleLog: path + "/log/getScheduleLog", // 队列列表
   getCapacityList: path + "/cluster/queue/capacity/list", // 容量队列列表
   saveQueue: path + "/cluster/yarn/queue/save", // 队列保存
   deleteQueue: path + "/cluster/yarn/queue/delete", // 队列删除
@@ -60,5 +61,5 @@ export default {
   refreshQueues: path + "/cluster/yarn/queue/refreshQueues", // 刷新队列到Yarn
   refreshQueuesYARN: path + "/cluster/queue/capacity/refreshToYarn",
   checkServiceDependency: path + "/service/install/checkServiceDependency",
-  validDeploymentFile:path + "/extrepo/validDeploymentFile",
+  validDeploymentFile: path + "/extrepo/validDeploymentFile",
 };
