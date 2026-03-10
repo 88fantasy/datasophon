@@ -367,10 +367,7 @@ const Index = (props) => {
         const modelApi = await showCommonLogModal()
         modelApi.default({
             api: () => {
-                return axiosGet(API.getScheduleLog, {
-                    dagId: getRouteQuery('dagId'),
-
-                })
+                return axiosGet(API.getScheduleLog)
             }
         })
     }, [])
