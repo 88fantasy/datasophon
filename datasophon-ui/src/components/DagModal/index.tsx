@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { axiosJsonPost } from "../../api/request"
+import { axiosGet, axiosJsonPost, axiosPost } from "../../api/request"
 import { API } from "../../api"
 import DataProcessingDagNode from "./DataProcessingDagNode"
 import {
@@ -17,7 +17,12 @@ import { AntVDagreLayout, DagreLayout } from "@antv/layout"
 import { blue, gold, green, grey, red } from "@ant-design/colors"
 import { T_CANCEL, T_FAILED, T_PENDING, T_RUNNING, T_SUCCESS } from "./status"
 import { Button } from "antd"
+import asyncHook from "../Common/CommonModal/asyncHook"
 // import layout from '@antv/layout'
+
+
+const showCommonLogModal = asyncHook(() =>
+    import("../../components/Common/CommonLogModal/api"))
 
 
 DataProcessingDagNode.invokeInit()
@@ -358,6 +363,19 @@ const Index = (props) => {
     }, [updateAnimate])
 
 
+    const onLogClick = useCallback(async () => {
+        const modelApi = await showCommonLogModal()
+        modelApi.default({
+            api: () => {
+                return axiosGet(API.getScheduleLog, {
+                    dagId: getRouteQuery('dagId'),
+
+                })
+            }
+        })
+    }, [])
+
+
     useEffect(() => {
         return () => {
             invokeCancelUpdateTimeoutIdRef()
@@ -380,7 +398,12 @@ const Index = (props) => {
     return (
         <div className="h-[100vh] w-[100vh]">
             <div id={containerRef.current}></div>
-            <div className="fixed top-[20px] right-[20px]">
+            <div className="fixed top-[20px] right-[20px] flex gap-[10px]">
+                <Button
+                    onClick={onLogClick}
+                >
+                    调度日志
+                </Button>
                 <Button
                     type="primary"
                     onClick={onRedeployClick}
