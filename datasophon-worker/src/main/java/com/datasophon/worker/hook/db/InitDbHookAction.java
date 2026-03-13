@@ -20,9 +20,9 @@ import java.util.TreeSet;
  */
 public class InitDbHookAction implements HookAction {
 
-    public static final String DDL_PATTERN = "^V(?<version>\\d+(\\.\\d+)*)__DDL\\.sql$";
-    public static final String DML_PATTERN = "^V(?<version>\\d+(\\.\\d+)*)__DML\\.sql$";
-    public static final String ROLLBACK_PATTERN = "^R(?<version>\\d+(\\.\\d+)*)\\.sql$";
+    public static final String DDL_PATTERN = ".*[Vv](?<version>\\d+(\\.\\d+)*)__DDL\\.sql$";
+    public static final String DML_PATTERN = ".*[Vv](?<version>\\d+(\\.\\d+)*)__DML\\.sql$";
+    public static final String ROLLBACK_PATTERN = ".*R(?<version>\\d+(\\.\\d+)*)\\.sql$";
 
 
     @Override
