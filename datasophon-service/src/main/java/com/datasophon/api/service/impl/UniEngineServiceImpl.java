@@ -7,7 +7,12 @@ import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.api.service.UniEngineService;
 import com.datasophon.common.Constants;
-import com.datasophon.common.model.uni.*;
+import com.datasophon.common.model.uni.DorisDatasource;
+import com.datasophon.common.model.uni.EngineInfo;
+import com.datasophon.common.model.uni.HiveDatasource;
+import com.datasophon.common.model.uni.KafkaDatasource;
+import com.datasophon.common.model.uni.MysqlDatasource;
+import com.datasophon.common.model.uni.PaimonDatasource;
 import com.datasophon.common.utils.PasswordSupport;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.Result;
@@ -42,9 +47,7 @@ public class UniEngineServiceImpl implements UniEngineService {
 
     @Override
     public Result getEngineInfo() {
-
-        Result result = clusterInfoService.getClusterList();
-        List<ClusterInfoEntity> clusterList = (List<ClusterInfoEntity>) result.getData();
+        List<ClusterInfoEntity> clusterList = clusterInfoService.getClusterList();
         if (CollectionUtils.isEmpty(clusterList)) {
             return Result.error("vos集群列表为空");
         }

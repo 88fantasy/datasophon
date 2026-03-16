@@ -11,6 +11,7 @@ import com.datasophon.api.dto.upload.CheckChunkDTO;
 import com.datasophon.api.dto.upload.ChunkDTO;
 import com.datasophon.api.dto.upload.MergeChunkDTO;
 import com.datasophon.api.exceptions.BusinessException;
+import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.exceptions.ServiceException;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.utils.TransactionalUtils;
@@ -70,7 +71,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     public UploadTempFile upload(MultipartFile file) {
         String originalFileName = file.getOriginalFilename();
         if (StringUtils.isBlank(originalFileName)) {
-            throw new BusinessException("文件名不能为空");
+            throw new BusinessHintException("文件名不能为空");
         }
         try {
             UploadTempFile db = new UploadTempFile();
@@ -170,10 +171,10 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     public UploadTempFileChunk isChunkUploaded(CheckChunkDTO dto) {
         UploadTempFile db = getById(dto.getAttachId());
         if (db == null) {
-            throw new BusinessException("任务不存在");
+            throw new BusinessHintException("任务不存在");
         }
         if (dto.getChunkNo() >= db.getChunk()) {
-            throw new BusinessException("chunkNo大于任务的分片数");
+            throw new BusinessHintException("chunkNo大于任务的分片数");
         }
         UploadTempFileChunk chunk = uploadTempFileChunkMapper.selectOne(
                 Wrappers.lambdaQuery(UploadTempFileChunk.class)
@@ -225,10 +226,10 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     public UploadTempFileChunk uploadChunk(ChunkDTO info) {
         UploadTempFile db = getById(info.getAttachId());
         if (db == null) {
-            throw new BusinessException("任务不存在");
+            throw new BusinessHintException("任务不存在");
         }
         if (info.getChunkNo() >= db.getChunk()) {
-            throw new BusinessException("chunkNo大于任务的分片数");
+            throw new BusinessHintException("chunkNo大于任务的分片数");
         }
         UploadTempFileChunk chunk = uploadTempFileChunkMapper.selectOne(
                 Wrappers.lambdaQuery(UploadTempFileChunk.class)
@@ -269,13 +270,13 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     public MergeProgressVO mergeChunk(MergeChunkDTO vo) {
         UploadTempFile db = getById(vo.getAttachId());
         if (db == null) {
-            throw new BusinessException("任务不存在");
+            throw new BusinessHintException("任务不存在");
         }
         long count = uploadTempFileChunkMapper.selectCount(
                 Wrappers.lambdaQuery(UploadTempFileChunk.class).eq(UploadTempFileChunk::getAttachId, db.getId())
         );
         if (db.getChunk() != count) {
-            throw new BusinessException("已经上传的分片数量尚未达到要求");
+            throw new BusinessHintException("已经上传的分片数量尚未达到要求");
         }
 //        已经上传完成，直接返回
         if (db.getStatus() == 1) {
@@ -303,7 +304,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     public MergeProgressVO queryMergeProgress(Integer attachId) {
         UploadTempFile db = getById(attachId);
         if (db == null) {
-            throw new BusinessException("任务不存在");
+            throw new BusinessHintException("任务不存在");
         }
         MergeProgressVO vo = map.get(attachId);
         if (vo != null) {

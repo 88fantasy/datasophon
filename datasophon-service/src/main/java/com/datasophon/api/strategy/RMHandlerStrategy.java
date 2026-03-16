@@ -72,8 +72,7 @@ public class RMHandlerStrategy extends ServiceHandlerAbstract implements Service
     for (ServiceConfig config : list) {
       if ("yarn.resourcemanager.scheduler.class".equals(config.getName())) {
         ClusterYarnScheduler scheduler = schedulerService.getScheduler(clusterId);
-        if ("org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler"
-            .equals(config.getValue())) {
+        if ("org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler".equals(config.getValue())) {
           if ("capacity".equals(scheduler.getScheduler())) {
             scheduler.setScheduler("fair");
             schedulerService.updateById(scheduler);

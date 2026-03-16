@@ -28,10 +28,10 @@ import com.datasophon.common.command.PingCommand;
 import com.datasophon.common.model.HostInfo;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PromInfoUtils;
-import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.ServiceRoleState;
 import com.datasophon.domain.host.enums.HostState;
 import com.datasophon.domain.host.enums.MANAGED;
@@ -60,15 +60,14 @@ public class HostCheckActor extends TypedActor<HostCheckCommand> {
         logger.info("start to check host info");
         ClusterInfoService clusterInfoService = getBean(ClusterInfoService.class);
         // 获取当前安装并且正在运行的集群
-        Result result = clusterInfoService.getClusterList();
-        List<ClusterInfoEntity> clusterList = (List<ClusterInfoEntity>) result.getData();
-
-
-        for (ClusterInfoEntity clusterInfoEntity : clusterList) {
-            try {
-                checkCluster(clusterInfoEntity, hostCheckCommand.getHostInfo());
-            } catch (Exception ex) {
-                logger.error("检查集群{}状态失败，{}", clusterInfoEntity.getClusterName(), ex.getMessage(), ex);
+        List<ClusterInfoEntity> clusterList = clusterInfoService.getReadyClusterList();
+        for (ClusterInfoEntity cluster : clusterList) {
+            if (ClusterArchType.physical.equals(cluster.getArchType())) {
+                try {
+                    checkCluster(cluster, hostCheckCommand.getHostInfo());
+                } catch (Exception ex) {
+                    logger.error("检查集群{}状态失败，{}", cluster.getClusterName(), ex.getMessage(), ex);
+                }
             }
         }
     }

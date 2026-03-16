@@ -164,26 +164,6 @@ public class AppConfiguration implements WebMvcConfigurer {
     return StringUtils.removeEnd(pathPrefix, "/");
   }
 
-//  @Override
-//  public void addViewControllers(ViewControllerRegistry registry) {
-//    // 排除的文件扩展名
-//    String excludedPatterns = ".*\\.(js|css|map|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$";
-//
-//    // 捕获所有请求，但排除API、静态资源和某些已知路径
-//    registry.addViewController("/{path:^(?!api$|static$|swagger$|webjars$|v2$|v3$).*$}/**")
-//        .setViewName("forward:/index.html");
-//  }
-
-  /**
-   * Turn off suffix-based content negotiation
-   *
-   * @param configurer configurer
-   */
-//  @Override
-//  public void configureContentNegotiation(final ContentNegotiationConfigurer configurer) {
-//    configurer.favorPathExtension(false);
-//  }
-
 
 
 

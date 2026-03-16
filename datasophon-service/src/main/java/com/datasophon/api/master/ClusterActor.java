@@ -17,6 +17,7 @@
 
 package com.datasophon.api.master;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.datasophon.api.service.ClusterInfoService;
@@ -24,7 +25,10 @@ import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.api.service.k8s.K8sClusterConfigService;
+import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.vo.k8s.K8sClusterStatus;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.ClusterCommand;
 import com.datasophon.common.enums.ClusterCommandType;
@@ -32,16 +36,18 @@ import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.Result;
-import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.entity.k8s.K8sClusterConfig;
+import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.ClusterState;
 import com.datasophon.dao.enums.ServiceRoleState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -61,31 +67,55 @@ public class ClusterActor extends TypedActor<ClusterCommand> {
     @Override
     protected void doOnReceive(ClusterCommand clusterCommand) throws Throwable {
         if (ClusterCommandType.CHECK.equals(clusterCommand.getCommandType())) {
-            execCheckCmd();
+            execCheckCmd(clusterCommand);
         } else if (ClusterCommandType.DELETE.equals(clusterCommand.getCommandType())) {
             execDeleteCmd(clusterCommand);
         }
     }
 
 
-    private void execCheckCmd() {
+    private void execCheckCmd(ClusterCommand cmd) {
         ClusterServiceRoleInstanceService roleInstanceService = getBean(ClusterServiceRoleInstanceService.class);
         ClusterInfoService clusterInfoService = getBean(ClusterInfoService.class);
+        K8sService k8sService = getBean(K8sService.class);
+        K8sClusterConfigService k8sClusterConfigService = getBean(K8sClusterConfigService.class);
         // 获取所有集群
-        List<ClusterInfoEntity> clusterList = (List<ClusterInfoEntity>) clusterInfoService.getClusterList().getData();
-
-        for (ClusterInfoEntity clusterInfoEntity : clusterList) {
-            // 获取集群上正在运行的服务
-            List<ClusterServiceRoleInstanceEntity> roleInstanceList = roleInstanceService.getServiceRoleInstanceListByClusterId(clusterInfoEntity.getId());
-            if (roleInstanceList.isEmpty()) {
-                continue;
+        List<ClusterInfoEntity> clusterList = new ArrayList<>();
+        if (cmd.getClusterId() != null) {
+            ClusterInfoEntity clusterInfo = clusterInfoService.getById(cmd.getClusterId());
+            if (clusterInfo != null) {
+                clusterList.add(clusterInfo);
             }
+        } else {
+            clusterList.addAll(clusterInfoService.getReadyClusterList());
+        }
+        for (ClusterInfoEntity cluster : clusterList) {
+            if (ClusterArchType.physical.equals(cluster.getArchType())) {
+                // 获取集群上正在运行的服务
+                List<ClusterServiceRoleInstanceEntity> roleInstanceList = roleInstanceService.getServiceRoleInstanceListByClusterId(cluster.getId());
+                if (roleInstanceList.isEmpty()) {
+                    continue;
+                }
 
-            if (!ClusterState.NEED_CONFIG.equals(clusterInfoEntity.getClusterState())) {
                 if (roleInstanceList.stream().allMatch(roleInstance -> ServiceRoleState.STOP.equals(roleInstance.getServiceRoleState()))) {
-                    clusterInfoService.updateClusterState(clusterInfoEntity.getId(), ClusterState.STOP.getValue());
+                    clusterInfoService.updateClusterState(cluster.getId(), ClusterState.STOP.getValue());
                 } else {
-                    clusterInfoService.updateClusterState(clusterInfoEntity.getId(), ClusterState.RUNNING.getValue());
+                    clusterInfoService.updateClusterState(cluster.getId(), ClusterState.RUNNING.getValue());
+                }
+            } else {
+                K8sClusterConfig config = k8sClusterConfigService.getByClusterId(cluster.getId());
+                try {
+                    K8sClusterStatus status = k8sService.getState(config);
+
+                    ClusterState state = ClusterState.STOP;
+                    if (CollectionUtil.isNotEmpty(status.getNodes())) {
+                        state = status.getNodes().stream().anyMatch(node -> K8sService.READY.equals(node.getStatus())) ? ClusterState.RUNNING : ClusterState.STOP;
+                    }
+
+                    clusterInfoService.updateClusterState(cluster.getId(), state.getValue());
+                } catch (Exception e) {
+                    logger.error("check cluster:{} status fail, {}", cluster.getClusterName(), e.getMessage(), e);
+                    clusterInfoService.updateClusterState(cluster.getId(), ClusterState.STOP.getValue());
                 }
             }
         }
@@ -93,8 +123,7 @@ public class ClusterActor extends TypedActor<ClusterCommand> {
 
     private void execDeleteCmd(ClusterCommand clusterCommand) {
         ClusterInfoService clusterInfoService = getBean(ClusterInfoService.class);
-
-
+        K8sClusterConfigService k8sClusterConfigService = getBean(K8sClusterConfigService.class);
         Integer clusterId = clusterCommand.getClusterId();
         if (clusterId == null) {
             return;
@@ -104,21 +133,20 @@ public class ClusterActor extends TypedActor<ClusterCommand> {
             return;
         }
 
-        boolean success = moveConfigPath(clusterInfo);
-        if (!success) {
-            return;
-        }
-
-        success = deleteServiceInstance(clusterId);
-        if (!success) {
-            return;
+        if (ClusterArchType.physical.equals(clusterInfo.getArchType())) {
+            boolean success = backupServiceConfigFiles(clusterInfo);
+            if (!success) {
+               return;
+            }
+            deletePhysicalClusterComponents(clusterInfo.getId());
+        } else {
+            k8sClusterConfigService.removeByClusterId(clusterId);
         }
 
         clusterInfoService.removeById(clusterId);
     }
 
-
-    private boolean moveConfigPath(ClusterInfoEntity clusterInfo) {
+    private boolean backupServiceConfigFiles(ClusterInfoEntity clusterInfo) {
         ClusterServiceRoleInstanceService clusterServiceRoleInstanceService = getBean(ClusterServiceRoleInstanceService.class);
 
         // 检查服务实例配置与目录
@@ -208,7 +236,7 @@ public class ClusterActor extends TypedActor<ClusterCommand> {
         }
     }
 
-    private boolean deleteServiceInstance(Integer clusterId) {
+    private boolean deletePhysicalClusterComponents(Integer clusterId) {
         ClusterHostService clusterHostService = getBean(ClusterHostService.class);
         ClusterServiceInstanceService clusterServiceInstanceService = getBean(ClusterServiceInstanceService.class);
 
@@ -221,8 +249,7 @@ public class ClusterActor extends TypedActor<ClusterCommand> {
         }
 
         if (success) {
-            List<ClusterHostDO> hostList = clusterHostService.getHostListByClusterId(clusterId);
-            clusterHostService.deleteHosts(hostList.stream().map(h -> String.valueOf(h.getId())).collect(Collectors.joining(Constants.COMMA)));
+            clusterHostService.removeHostByClusterId(clusterId);
         }
 
         return success;

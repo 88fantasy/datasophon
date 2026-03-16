@@ -15,7 +15,7 @@ import com.datasophon.api.dag.model.NodeDefinition;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
-import com.datasophon.api.exceptions.BusinessException;
+import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.DAGExecActor;
 import com.datasophon.api.service.ClusterInfoService;
@@ -171,7 +171,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
     private DeploymentModel doParseDeploymentFile(DeploymentDTO dto) {
         File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId());
         if (deploymentFile == null) {
-            throw new BusinessException("部署清单文件不存在");
+            throw new BusinessHintException("部署清单文件不存在");
         }
         String content = MetaUtils.decodeFile(deploymentFile, dto.getContentDecodePasswd());
         DeploymentModel model = MetaUtils.parseDeploymentFile(content);
@@ -526,10 +526,10 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
     public void redeploy(RunDagDto dto) {
         DagDefinition def = dagService.getDagById(dto.getDagId());
         if (!Arrays.asList(DagStatus.PENDING, DagStatus.FAILED, DagStatus.CANCEL).contains(def.getStatus())) {
-            throw new BusinessException(String.format("当前任务的状态为%s，不允许重复运行", def.getStatus().name()));
+            throw new BusinessHintException(String.format("当前任务的状态为%s，不允许重复运行", def.getStatus().name()));
         }
         if (def.getCreatedTime().plusDays(1).isBefore(LocalDateTime.now())) {
-            throw new BusinessException("任务已经过期, 不允许在运行");
+            throw new BusinessHintException("任务已经过期, 不允许在运行");
         }
         List<NodeDefinition> nodes = dagService.getNodesByDagId(dto.getDagId(), true);
         if (nodes.isEmpty()) {
@@ -543,7 +543,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                 serviceNode.getMasterRoles().forEach(role -> {
                     Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + role.getServiceInstanceId());
                     if (roleGroupId == null) {
-                        throw new BusinessException("系统已经重启，内存缓存数据已经丢失，当前任务无法恢复，请重新上传部署清单安装");
+                        throw new BusinessHintException("系统已经重启，内存缓存数据已经丢失，当前任务无法恢复，请重新上传部署清单安装");
                     }
                 });
             }
@@ -605,7 +605,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                 FrameServiceRoleEntity frameServiceRoleEntity = srvRoleMap.get(oldOne.getName());
                 ServiceRoleInfo newOne = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
                 if (!newOne.getRoleType().equals(oldOne.getRoleType())) {
-                    throw new BusinessException(String.format("服务%s %s的角色类型发生变更，请重新执行%s操作", serviceNode.getServiceName(),
+                    throw new BusinessHintException(String.format("服务%s %s的角色类型发生变更，请重新执行%s操作", serviceNode.getServiceName(),
                             oldOne.getName(), serviceNode.getCommandType().getCommandName(Constants.CN)));
                 }
                 if (CommandType.INSTALL_SERVICE.equals(oldOne.getCommandType())) {

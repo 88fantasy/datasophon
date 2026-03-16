@@ -17,10 +17,10 @@
 
 package com.datasophon.api.controller;
 
+import cn.hutool.core.util.ArrayUtil;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.UniEngineService;
-import com.datasophon.common.Constants;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,77 +29,77 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
-
 @RestController
 @RequestMapping("cluster")
 public class ClusterInfoController extends ApiController {
-    
+
     @Autowired
     private ClusterInfoService clusterInfoService;
 
     @Autowired
     private UniEngineService uniEngineService;
-    
+
     /**
      * 列表
      */
     @RequestMapping("/list")
     public Result list() {
-        return clusterInfoService.getClusterList();
+        return Result.success(clusterInfoService.getClusterList());
     }
-    
+
     /**
      * 配置好的集群列表
      */
     @RequestMapping("/runningClusterList")
     public Result runningClusterList() {
-        return clusterInfoService.runningClusterList();
+        return Result.success(clusterInfoService.runningClusterList());
     }
-    
+
     /**
      * 信息
      */
     @RequestMapping("/info/{id}")
     public Result info(@PathVariable("id") Integer id) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(id);
-        
-        return Result.success().put(Constants.DATA, clusterInfo);
+        return Result.success(clusterInfo);
     }
-    
+
     /**
      * 保存
      */
     @RequestMapping("/save")
     @UserPermission
     public Result save(@RequestBody ClusterInfoEntity clusterInfo) {
-        return clusterInfoService.saveCluster(clusterInfo);
+        return Result.success(clusterInfoService.saveCluster(clusterInfo));
     }
-    
+
     @RequestMapping("/updateClusterState")
     public Result updateClusterState(Integer clusterId, Integer clusterState) {
-        
-        return clusterInfoService.updateClusterState(clusterId, clusterState);
+        clusterInfoService.updateClusterState(clusterId, clusterState);
+        return Result.success();
     }
-    
+
     /**
      * 修改
      */
     @RequestMapping("/update")
     @UserPermission
     public Result update(@RequestBody ClusterInfoEntity clusterInfo) {
-        return clusterInfoService.updateCluster(clusterInfo);
-        
+        clusterInfoService.updateCluster(clusterInfo);
+        return Result.success();
     }
-    
+
     /**
      * 删除
      */
     @RequestMapping("/delete")
     @UserPermission
     public Result delete(@RequestBody Integer[] ids) {
-        clusterInfoService.deleteCluster(Arrays.asList(ids));
-        
+        if (ArrayUtil.isNotEmpty(ids)) {
+            clusterInfoService.deleteCluster(ids[0]);
+        }
+
+
         return Result.success();
     }
 
@@ -110,5 +110,5 @@ public class ClusterInfoController extends ApiController {
     public Result engineInfo() {
         return uniEngineService.getEngineInfo();
     }
-    
+
 }
