@@ -22,10 +22,10 @@ import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
-import com.datasophon.common.Constants;
 import com.datasophon.common.model.DAG;
+import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.storage.PackageStorage;
-import com.datasophon.common.storage.PackageStorageUtils;
+import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.utils.PathUtils;
 import com.datasophon.common.utils.TarUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -361,15 +361,12 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             progress.setTotal(1 + (files == null ? 0 : files.length));
         }
 
+        MetaStorage metaStorage = StorageUtils.getMetaStorage();
+        log.info("开始上传meta信息....");
+        metaStorage.moveToStorage(PathUtils.join(metaUnzipPath, vo.getMeta()).toFile(), true);
 
-        File metaDir = FileUtil.file(Constants.META_PATH);
-        if (metaDir != null && metaDir.exists()) {
-            if (StrUtil.isNotBlank(vo.getMeta())) {
-                FileUtil.copy(PathUtils.join(metaUnzipPath, vo.getMeta()).toFile(), metaDir.getParentFile(), true);
-            }
-        }
 
-        PackageStorage packageStorage = PackageStorageUtils.getStorage();
+        PackageStorage packageStorage = StorageUtils.getPackageStorage();
         if (StrUtil.isNotBlank(vo.getTemplate())) {
             File dir = PathUtils.join(metaUnzipPath, vo.getTemplate()).toFile();
             log.info("开始上传模板：{}", dir.getAbsolutePath());

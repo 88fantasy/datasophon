@@ -23,11 +23,13 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
@@ -40,8 +42,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -203,12 +207,7 @@ public class NexusFileUtils {
                 .build()) {
 
             HttpPost post = new HttpPost(url);
-
-            // Basic Auth
-            String auth = Base64.getEncoder().encodeToString(
-                    (username + ":" + password).getBytes(StandardCharsets.UTF_8)
-            );
-            post.setHeader("Authorization", "Basic " + auth);
+            prepareAuth(post);
 
             // 构建 multipart/form-data（流式，不加载到内存）
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
@@ -292,15 +291,10 @@ public class NexusFileUtils {
                 .setSocketTimeout(600000)      // 上传超时 10分钟
                 .build();
 
-        try (CloseableHttpClient httpClient = HttpClients.custom()
-                .setDefaultRequestConfig(config)
-                .build()) {
+        try (CloseableHttpClient httpClient = newLongTimeClient()) {
 
             HttpPost post = new HttpPost(url);
-
-            // Basic Auth
-            String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
-            post.setHeader("Authorization", "Basic " + auth);
+            prepareAuth(post);
 
             // 构建 multipart/form-data（流式，不加载到内存）
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
@@ -329,6 +323,56 @@ public class NexusFileUtils {
     }
 
 
+    public static ExecResult uploadFileToRawRepo(String path, String fileName, String content) throws IOException {
+        path = StrUtil.isBlank(path) ? "/" : path;
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        if (!"/".equals(path) && path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+
+        Assert nexusAssert = getAssertFromRawRepo(path, String.format("%s/%s", path, fileName));
+        if (nexusAssert != null) {
+            deleteAssertFromRawRepo(nexusAssert.getId());
+        }
+
+
+        String url = String.format("http://%s:%s/service/rest/internal/ui/upload/%s", Constants.NEXUS_IP, Constants.NEXUS_PORT, RepositoriesType.RAW.getDesc());
+        try (CloseableHttpClient httpClient = newLongTimeClient()) {
+            HttpPost post = new HttpPost(url);
+            prepareAuth(post);
+
+            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+            StringBody contentBody = new StringBody(content, ContentType.create("text/plain", StandardCharsets.UTF_8));
+            builder.addPart("asset0", contentBody);
+
+            // 根据仓库类型添加额外参数
+            builder.addTextBody("asset0.filename", fileName, ContentType.TEXT_PLAIN);
+            builder.addTextBody("directory", path, ContentType.TEXT_PLAIN);
+
+            HttpEntity entity = builder.build();
+            post.setEntity(entity);
+
+            log.info("开始上传 {} 到 {}", fileName, url);
+
+            try (CloseableHttpResponse response = httpClient.execute(post)) {
+                int status = response.getStatusLine().getStatusCode();
+                String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                if (status == 200) {
+                    return ExecResult.success(body);
+                } else {
+                    return ExecResult.fail(body);
+                }
+            }
+        }
+    }
+
+
+    private static void prepareAuth(HttpEntityEnclosingRequestBase req) {
+        String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
+        req.setHeader("Authorization", "Basic " + auth);
+    }
     public static String getAssertMd5FromRawRepo(String relativePathFromRawRepo) {
         String group = null;
         int idx = relativePathFromRawRepo.lastIndexOf("/");
@@ -357,9 +401,7 @@ public class NexusFileUtils {
 
 
         try (CloseableHttpClient httpClient = HttpClients.custom().build()) {
-
             HttpGet get = new HttpGet(url);
-
             // Basic Auth
             String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
             get.setHeader("Authorization", "Basic " + auth);
@@ -454,5 +496,82 @@ public class NexusFileUtils {
     @Data
     public static class Checksum {
         private String md5;
+    }
+
+    public static List<Component> listMatchedItem(String repo, String namePattern) throws IOException {
+        String encodedFolder = encodePath(namePattern);
+        String nameParam = StrUtil.EMPTY.equals(encodedFolder) ? "*" : encodedFolder;
+        String baseUrl = String.format("http://%s:%s/service/rest/v1/search?repository=%s&name=%s",
+                Constants.NEXUS_IP, Constants.NEXUS_PORT, repo, nameParam
+        );
+
+
+        List<Component> components = new ArrayList<>();
+        try (CloseableHttpClient httpClient = HttpClients.custom().build()) {
+            String continuationToken = null;
+            do {
+                String url = baseUrl;
+                if (StrUtil.isNotBlank(continuationToken)) {
+                    url += "&continuationToken=" + continuationToken;
+                }
+                HttpGet get = new HttpGet(url);
+
+                // Basic Auth
+                String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
+                get.setHeader("Authorization", "Basic " + auth);
+
+                try (CloseableHttpResponse response = httpClient.execute(get)) {
+                    int status = response.getStatusLine().getStatusCode();
+                    String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                    if (status == 200) {
+                        ObjectMapper mapper = getMapper();
+                        ComponentResponse resp = mapper.readValue(body, ComponentResponse.class);
+                        components.addAll(resp.getItems());
+                        continuationToken = resp.getContinuationToken();
+                    } else {
+                        throw new IllegalStateException(String.format("request url: %s fail, status: %s, response %s", url, status, body));
+                    }
+                }
+            } while (StrUtil.isNotBlank(continuationToken));
+        }
+        return components;
+    }
+
+    /**
+     * 对路径进行 URL 编码，保留斜杠分隔符
+     * 例如：输入 "releases/app/v1.0" 输出 "releases/app/v1.0"（各部分编码后重组）
+     */
+    private static String encodePath(String path) {
+        if (StrUtil.isBlank(path) || path.equals("/")) {
+            return "";
+        }
+        String[] parts = path.split("/");
+        StringBuilder encoded = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            if (i > 0) {
+                encoded.append("/");
+            }
+            try {
+                encoded.append(URLEncoder.encode(parts[i], StandardCharsets.UTF_8.toString()));
+            } catch (Exception e) {
+                encoded.append(parts[i]);
+            }
+        }
+        return encoded.toString();
+    }
+
+    @Data
+    public static class ComponentResponse {
+        private List<Component> items;
+        private String continuationToken;
+    }
+
+    @Data
+    public static class Component {
+        private String id;
+        private String repository;
+        private String format;
+        private String name;
+        private String downloadUrl;
     }
 }

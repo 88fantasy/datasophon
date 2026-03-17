@@ -1,4 +1,4 @@
-package com.datasophon.common.storage;
+package com.datasophon.common.storage.vo;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

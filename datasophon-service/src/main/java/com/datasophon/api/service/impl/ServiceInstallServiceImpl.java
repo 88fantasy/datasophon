@@ -19,7 +19,6 @@
 
 package com.datasophon.api.service.impl;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson.JSONArray;
@@ -53,6 +52,9 @@ import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.model.uni.NexusUri;
+import com.datasophon.common.storage.MetaStorage;
+import com.datasophon.common.storage.StorageUtils;
+import com.datasophon.common.storage.vo.ServiceMetaItem;
 import com.datasophon.common.utils.CollectionUtils;
 import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.IOUtils;
@@ -80,7 +82,6 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -98,8 +99,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.datasophon.common.Constants.META_PATH;
 
 @Service("serviceInstallService")
 @Transactional
@@ -332,31 +331,25 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
 
     @Override
     public void downloadResource(String frameCode, String serviceRoleName, String resource,
-                                 HttpServletResponse response) throws IOException {
-        String metaPath = FileUtil.getAbsolutePath(META_PATH);
+                                 HttpServletResponse response) throws Exception {
         FrameServiceRoleEntity entity = frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(frameCode, serviceRoleName);
         ServiceRoleInfo roleInfo = JSONObject.parseObject(entity.getServiceRoleJson(), ServiceRoleInfo.class);
 
-        OutputStream out = null;
-        // 通过文件路径获得File对象
-        File file = new File(metaPath + Constants.SLASH + frameCode + Constants.SLASH + roleInfo.getParentName() + Constants.SLASH + resource);
-        try (FileInputStream fis = new FileInputStream(file)) {
-            response.reset();
-            response.setContentType("application/octet-stream");
-            response.addHeader("Content-Length", "" + file.length());
-            // 支持中文名称文件,需要对header进行单独设置，不然下载的文件名会出现乱码或者无法显示的情况
-            // 设置响应头，控制浏览器下载该文件
-            response.setHeader("Content-Disposition", "attachment;filename=" + file.getName());
-            // 通过response获取ServletOutputStream对象(out)
-            out = response.getOutputStream();
-            int length = 0;
-            byte[] buffer = new byte[1024];
-            while ((length = fis.read(buffer)) != -1) {
-                // 4.写到输出流(out)中
-                out.write(buffer, 0, length);
-            }
-            out.flush();
-            out.close();
+        ServiceMetaItem item = new ServiceMetaItem();
+        item.setServiceName(roleInfo.getServiceName());
+        item.setType(MetaStorage.VOS_DDL);
+        item.setFramework(roleInfo.getFrameCode());
+        MetaStorage metaStorage = StorageUtils.getMetaStorage();
+
+        int idx = resource.lastIndexOf("/");
+        String fileName = idx == -1 ? resource : resource.substring(idx + 1);
+        try {
+            metaStorage.downResource(item, resource, ()-> {
+                response.reset();
+                response.setContentType("application/octet-stream");
+                response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+                return response.getOutputStream();
+            });
         } catch (FileNotFoundException ex) {
             response.setStatus(404);
         }

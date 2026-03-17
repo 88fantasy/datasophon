@@ -20,16 +20,14 @@
 package com.datasophon.api.load;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.file.FileReader;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.ddl.DdlMetaService;
-import com.datasophon.api.service.extrepo.utils.MetaUtils;
-import com.datasophon.api.utils.ProcessUtils;
-import com.datasophon.common.Constants;
+import com.datasophon.common.storage.MetaStorage;
+import com.datasophon.common.storage.StorageUtils;
+import com.datasophon.common.storage.vo.ServiceMetaItem;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterVariable;
 import com.datasophon.dao.entity.FrameInfoEntity;
@@ -41,11 +39,10 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static com.datasophon.common.Constants.META_PATH;
+import java.util.stream.Collectors;
 
 @Component
 public class LoadServiceMeta implements ApplicationRunner {
@@ -70,28 +67,23 @@ public class LoadServiceMeta implements ApplicationRunner {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void run(ApplicationArguments args) {
-        File[] ddps = FileUtil.ls(META_PATH);
-        // load global variable, 加载 frame
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
         loadGlobalVariables(clusters);
 
-        for (File path : ddps) {
-            List<File> files = FileUtil.loopFiles(path);
-            String frameCode = path.getName();
+        MetaStorage metaStorage =  StorageUtils.getMetaStorage();
+        List<ServiceMetaItem> metaItems = metaStorage.listService(MetaStorage.VOS_DDL);
+        Map<String, List<ServiceMetaItem>> groupedMap = metaItems.stream().collect(Collectors.groupingBy(ServiceMetaItem::getFramework));
+        groupedMap.forEach((frameCode, items)-> {
             FrameInfoEntity frameInfo = frameInfoService.saveFrameIfAbsent(frameCode);
-            // analysis file
-            for (File file : files) {
-                if (file.getName().equals(MetaUtils.SERVICE_DDL)) {
-                    String serviceName = file.getParentFile().getName();
-                    String serviceDdl = FileReader.create(file).readString();
-                    try {
-                        ddlMetaService.loadServiceDdl(clusters, frameInfo, serviceName, serviceDdl);
-                    } catch (Exception e) {
-                        logger.error("invalid service ddl file: {} {}", frameCode, serviceName, e);
-                    }
+            for (ServiceMetaItem item : items) {
+                try {
+                    String serviceDdl = metaStorage.getServiceDdL(item);
+                    ddlMetaService.loadServiceDdl(clusters, frameInfo, item.getServiceName(), serviceDdl);
+                } catch (Exception e) {
+                    logger.error("invalid service ddl file: {} {}", frameCode, item.getServiceName(), e);
                 }
             }
-        }
+        });
     }
 
 

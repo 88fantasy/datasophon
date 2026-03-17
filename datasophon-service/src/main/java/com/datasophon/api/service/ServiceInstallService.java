@@ -43,7 +43,7 @@ public interface ServiceInstallService {
     
 
     void downloadResource(String frameCode, String serviceRoleName,
-                          String resource, HttpServletResponse response) throws IOException;
+                          String resource, HttpServletResponse response) throws Exception;
 
 
     void downloadTemplate(String templateName, HttpServletResponse response) throws IOException;

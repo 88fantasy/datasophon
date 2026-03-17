@@ -26,14 +26,13 @@ import com.datasophon.api.master.handler.host.InstallJDKHandler;
 import com.datasophon.api.master.handler.host.StartWorkerHandler;
 import com.datasophon.api.master.handler.host.UploadWorkerHandler;
 import com.datasophon.api.utils.CommonUtils;
-import com.datasophon.api.utils.MessageResolverUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.DispatcherHostAgentCommand;
 import com.datasophon.common.enums.InstallState;
 import com.datasophon.common.enums.SSHAuthType;
 import com.datasophon.common.model.HostInfo;
 import com.datasophon.common.storage.PackageStorage;
-import com.datasophon.common.storage.PackageStorageUtils;
+import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.JschUtils;
 import com.jcraft.jsch.JSchException;
@@ -57,7 +56,7 @@ public class DispatcherWorkerActor extends TypedActor<DispatcherHostAgentCommand
 
         doWithSession(hostInfo, session -> {
             try {
-                PackageStorage packageStorage = PackageStorageUtils.getStorage();
+                PackageStorage packageStorage = StorageUtils.getPackageStorage();
                 packageStorage.downloadPackageToLocal(Constants.WORKER_PACKAGE_NAME);
 
                 DispatcherWorkerHandlerChain handlerChain = new DispatcherWorkerHandlerChain();

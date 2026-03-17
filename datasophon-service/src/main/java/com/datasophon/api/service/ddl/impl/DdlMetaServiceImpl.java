@@ -1,13 +1,13 @@
 package com.datasophon.api.service.ddl.impl;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.file.FileReader;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
+import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigFileMap;
 import com.datasophon.api.load.ServiceConfigMap;
@@ -23,7 +23,6 @@ import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.ddl.DdlMetaService;
-import com.datasophon.api.service.extrepo.utils.MetaUtils;
 import com.datasophon.api.utils.CommonUtils;
 import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.api.utils.ProcessUtils;
@@ -35,7 +34,9 @@ import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
-import com.datasophon.common.utils.PathUtils;
+import com.datasophon.common.storage.MetaStorage;
+import com.datasophon.common.storage.StorageUtils;
+import com.datasophon.common.storage.vo.ServiceMetaItem;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
@@ -54,8 +55,10 @@ import org.springframework.stereotype.Service;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import java.io.File;
-import java.nio.charset.StandardCharsets;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +67,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.datasophon.common.Constants.FRAMEWORK_TPL;
-import static com.datasophon.common.Constants.META_PATH;
 
 /**
  * @author zhanghuangbin
@@ -110,52 +112,28 @@ public class DdlMetaServiceImpl implements DdlMetaService {
 
     public void initFramework(FrameInfoEntity entity) {
         Objects.requireNonNull(entity);
+        log.info("使用框架模板{}初始化框架{}", FileUtil.file(FRAMEWORK_TPL).getAbsolutePath(), entity.getFrameCode());
 
-        String frameCode = entity.getFrameCode();
-        File[] ddps = FileUtil.ls(META_PATH);
-        File target = null;
-        if (ddps != null) {
-            for (File ddp : ddps) {
-                if (ddp.getName().equals(frameCode)) {
-                    target = ddp;
-                    break;
-                }
-            }
+        File tplDir = FileUtil.file(FRAMEWORK_TPL);
+        MetaStorage metaStorage = StorageUtils.getMetaStorage();
+        try {
+            metaStorage.moveToStorage(tplDir, relative-> entity.getFrameCode() + "/" + MetaStorage.VOS_DDL + "/" + relative);
+        } catch (IOException e) {
+            throw new BusinessException(String.format("初始化框架失败，%s", e.getMessage()), e);
         }
-        if (target == null) {
-            target = new File(FileUtil.file(META_PATH), frameCode);
-            FileUtil.mkdir(target);
-        }
-
-        log.info("使用框架模板{}初始化框架{}", FileUtil.file(FRAMEWORK_TPL).getAbsolutePath(), frameCode);
-
-        File[] srvCmps = FileUtil.ls(FRAMEWORK_TPL);
-        List<String> installingCmp = new ArrayList<>();
-        for (File srvCmp : srvCmps) {
-            File targetDdp = new File(target, srvCmp.getName());
-            if (targetDdp.exists()) {
-                continue;
-            }
-            log.info("add service component {} to framework {}", srvCmp.getName(), frameCode);
-            FileUtil.copy(srvCmp, target, false);
-            installingCmp.add(srvCmp.getName());
-        }
-        if (!installingCmp.isEmpty()) {
-            List<ClusterInfoEntity> clusters = clusterInfoService.list();
-            for (String cmp : installingCmp) {
-                List<File> files = FileUtil.loopFiles(new File(target, cmp));
-                // analysis file
-                for (File file : files) {
-                    if (file.getName().endsWith(Constants.JSON)) {
-                        String serviceName = file.getParentFile().getName();
-                        String serviceDdl = FileReader.create(file).readString();
-                        try {
-                            loadServiceDdl(clusters, entity, serviceName, serviceDdl);
-                        } catch (Exception e) {
-                            log.error("invalid service ddl file: {}/{}", frameCode, serviceName, e);
-                        }
-                    }
-                }
+        List<String> installingCmp = Arrays.stream(Objects.requireNonNull(tplDir.listFiles(File::isDirectory)))
+                .map(File::getName)
+                .collect(Collectors.toList());
+        List<ClusterInfoEntity> clusters = clusterInfoService.list();
+        for (String cmp : installingCmp) {
+            ServiceMetaItem item = new ServiceMetaItem();
+            item.setServiceName(cmp);
+            item.setType(MetaStorage.VOS_DDL);
+            item.setFramework(entity.getFrameCode());
+            try {
+                loadServiceDdl(clusters, entity, cmp, metaStorage.getServiceDdL(item));
+            } catch (Exception e) {
+                log.error("invalid service ddl file: {}/{}", entity.getFrameCode(), cmp, e);
             }
         }
     }
@@ -392,13 +370,18 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         Objects.requireNonNull(service);
         FrameInfoEntity frameInfo = frameInfoService.getById(service.getFrameId());
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
-        FrameServiceEntity entity = loadServiceDdl(clusters, frameInfo, service.getServiceName(), serviceDdl);
-        File metaDir = FileUtil.file(Constants.META_PATH);
-        File targetFile = PathUtils.join(metaDir.toPath(), frameInfo.getFrameCode(), entity.getServiceName(), MetaUtils.SERVICE_DDL).toFile();
-        if (!targetFile.exists()) {
-            FileUtil.newFile(targetFile.getPath());
+        loadServiceDdl(clusters, frameInfo, service.getServiceName(), serviceDdl);
+
+        ServiceMetaItem item = new ServiceMetaItem();
+        item.setServiceName(service.getServiceName());
+        item.setType(MetaStorage.VOS_DDL);
+        item.setFramework(frameInfo.getFrameCode());
+        MetaStorage metaStorage =  StorageUtils.getMetaStorage();
+        try {
+            metaStorage.saveServiceDdl(item, serviceDdl);
+        } catch (IOException e) {
+            throw new IllegalStateException(String.format("IO异常，%s", e.getMessage()), e);
         }
-        FileUtil.writeString(serviceDdl, targetFile, StandardCharsets.UTF_8);
     }
 
     @Override
@@ -406,9 +389,17 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         FrameServiceEntity service = frameServiceService.getById(serviceId);
         Objects.requireNonNull(service);
         FrameInfoEntity frameInfo = frameInfoService.getById(service.getFrameId());
-        File metaDir = FileUtil.file(Constants.META_PATH);
-        File targetFile = PathUtils.join(metaDir.toPath(), frameInfo.getFrameCode(), service.getServiceName(), MetaUtils.SERVICE_DDL).toFile();
-        return FileUtil.readString(targetFile, StandardCharsets.UTF_8);
+
+        ServiceMetaItem item = new ServiceMetaItem();
+        item.setServiceName(service.getServiceName());
+        item.setType(MetaStorage.VOS_DDL);
+        item.setFramework(frameInfo.getFrameCode());
+        MetaStorage metaStorage =  StorageUtils.getMetaStorage();
+        try {
+            return metaStorage.getServiceDdL(item);
+        } catch (FileNotFoundException e) {
+            throw new IllegalArgumentException(String.format("服务%s的定义不存在", service.getServiceName()));
+        }
     }
 
 }

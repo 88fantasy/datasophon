@@ -28,8 +28,8 @@ import cn.hutool.crypto.digest.MD5;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.InstallServiceRoleCommand;
-import com.datasophon.common.storage.DownloadResult;
-import com.datasophon.common.storage.PackageStorageUtils;
+import com.datasophon.common.storage.StorageUtils;
+import com.datasophon.common.storage.vo.DownloadResult;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
@@ -97,7 +97,7 @@ public class InstallServiceHandler {
         ExecResult execResult = new ExecResult();
         try {
             logger.info("开始下载安装包{}....", command.getPackageName());
-            DownloadResult downloadResult = PackageStorageUtils.getStorage().downloadPackageToLocal(command.getPackageName());
+            DownloadResult downloadResult = StorageUtils.getPackageStorage().downloadPackageToLocal(command.getPackageName());
             if (downloadResult.isChange()) {
                 logger.info("下载安装包{}完毕....", command.getPackageName());
             } else {

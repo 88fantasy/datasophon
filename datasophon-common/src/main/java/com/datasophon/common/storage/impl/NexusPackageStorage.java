@@ -1,9 +1,11 @@
-package com.datasophon.common.storage;
+package com.datasophon.common.storage.impl;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.uni.NexusUri;
+import com.datasophon.common.storage.PackageStorage;
+import com.datasophon.common.storage.vo.DownloadResult;
 import com.datasophon.common.utils.NexusFileUtils;
 import com.datasophon.common.utils.PathUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +31,7 @@ import java.util.function.Supplier;
  * @author zhanghuangbin
  */
 @Slf4j
-public class NexusStorage implements PackageStorage {
+public class NexusPackageStorage implements PackageStorage {
 
     private static final Map<String, ReentrantLock> LOCK_MAP = new ConcurrentHashMap<>();
 

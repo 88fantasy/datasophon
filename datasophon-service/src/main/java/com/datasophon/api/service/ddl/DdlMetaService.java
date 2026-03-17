@@ -5,7 +5,6 @@ import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author zhanghuangbin
@@ -20,6 +19,7 @@ public interface DdlMetaService {
 
 
     void updateServiceDdl(Integer serviceId, String serviceDdl);
+
 
     String getServiceDdl(Integer serviceId);
 }

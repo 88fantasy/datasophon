@@ -114,7 +114,7 @@ public class ServiceInstallController extends ApiController {
     @GetMapping("/downloadResource")
     public void downloadResource(String frameCode, String serviceRoleName,
                                  String resource,
-                                 HttpServletResponse response) throws IOException {
+                                 HttpServletResponse response) throws Exception {
         
         serviceInstallService.downloadResource(frameCode, serviceRoleName, resource, response);
     }
