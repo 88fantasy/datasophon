@@ -9,7 +9,7 @@ import java.util.List;
  * @date 2025/11/7
  */
 @Data
-public class ServiceMeta {
+public class VosDdLServiceMeta {
 
     private String ddl;
 
@@ -18,9 +18,6 @@ public class ServiceMeta {
     private String version;
 
     private List<String> packageNames;
-
-    private String script;
-
 
 
     private String frameCode;

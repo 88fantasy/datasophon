@@ -57,6 +57,7 @@ import com.datasophon.common.model.ServiceNode;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.IdUtils;
+import com.datasophon.common.utils.YamlUtils;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
@@ -174,7 +175,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             throw new BusinessHintException("部署清单文件不存在");
         }
         String content = MetaUtils.decodeFile(deploymentFile, dto.getContentDecodePasswd());
-        DeploymentModel model = MetaUtils.parseDeploymentFile(content);
+        DeploymentModel model = YamlUtils.parseYaml(content, DeploymentModel.class);
 
         return model;
     }

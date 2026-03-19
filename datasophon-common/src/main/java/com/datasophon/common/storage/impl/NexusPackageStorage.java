@@ -3,7 +3,6 @@ package com.datasophon.common.storage.impl;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.datasophon.common.Constants;
-import com.datasophon.common.model.uni.NexusUri;
 import com.datasophon.common.storage.PackageStorage;
 import com.datasophon.common.storage.vo.DownloadResult;
 import com.datasophon.common.utils.NexusFileUtils;
@@ -31,14 +30,10 @@ import java.util.function.Supplier;
  * @author zhanghuangbin
  */
 @Slf4j
-public class NexusPackageStorage implements PackageStorage {
+public class NexusPackageStorage extends NexusStorageSupport implements PackageStorage {
 
     private static final Map<String, ReentrantLock> LOCK_MAP = new ConcurrentHashMap<>();
 
-    @Override
-    public boolean isEnabled() {
-        return getNexusUri().isEnabled();
-    }
 
     @Override
     public void moveToStorage(File src, boolean includeDir) throws IOException {
@@ -153,29 +148,4 @@ public class NexusPackageStorage implements PackageStorage {
         }
     }
 
-
-    private void ensureDirValid(File dir) {
-        if (!dir.exists()) {
-            throw new IllegalStateException(dir.getAbsolutePath() + " not exists");
-        }
-        if (!dir.isDirectory()) {
-            throw new IllegalArgumentException(dir.getAbsolutePath() + " is not dir");
-        }
-    }
-
-    private void ensureNexusEnable() {
-        NexusUri registry = getNexusUri();
-        if (!registry.isEnabled()) {
-            throw new IllegalStateException("datasophon require an nexus available, but nexus is disabled");
-        }
-    }
-
-    private static NexusUri getNexusUri() {
-        NexusUri uri = new NexusUri();
-        uri.setEnabled(Constants.NEXUS_ENABLE);
-        uri.setUri(String.format("http://%s:%s", Constants.NEXUS_IP, Constants.NEXUS_PORT));
-        uri.setUser(Constants.NEXUS_USERNAME);
-        uri.setPassword(Constants.NEXUS_PASSWORD);
-        return uri;
-    }
 }

@@ -17,6 +17,7 @@
 
 package com.datasophon.common.utils;
 
+import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.Constants;
@@ -31,8 +32,11 @@ import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,8 +47,27 @@ public class ShellUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(ShellUtils.class);
 
+
+    /**
+     * 执行 shell 命令（通过 sh -c 包装）
+     *
+     * @param workPath        工作目录（可为 null 或空，表示不切换目录）
+     * @param commandParts    命令及其参数列表，例如 ["mkdir", "-p", "tmp"]
+     * @param timeoutInSecond 超时时间（秒）
+     * @return 执行结果封装对象
+     */
+    public static ExecResult execWithBash(String workPath, List<String> commandParts, long timeoutInSecond) {
+        if (CollectionUtils.isEmpty(commandParts)) {
+            throw new IllegalArgumentException("Command must not be null or empty");
+        }
+        String cmd = String.join(" ", commandParts);
+        return exec(workPath, Arrays.asList("bash", "-c", cmd), timeoutInSecond);
+    }
+
+
     /**
      * 执行命令，不使用shell执行
+     *
      * @param workPath
      * @param commandParts
      * @param timeout
@@ -63,7 +86,11 @@ public class ShellUtils {
         Thread outputReader = null;
         try {
             ProcessBuilder processBuilder = new ProcessBuilder();
-            processBuilder.directory(new File(workPath));
+
+            if (StrUtil.isNotBlank(workPath)) {
+                processBuilder.directory(new File(workPath));
+            }
+
             processBuilder.command(args);
             processBuilder.redirectErrorStream(true);
 
@@ -71,19 +98,37 @@ public class ShellUtils {
             process = processBuilder.start();
 
             Process finalProcess = process;
-            outputReader = new Thread(() -> IoUtil.copy(finalProcess.getInputStream(), out));
+            outputReader = new Thread(() -> {
+                try {
+                    IoUtil.copy(finalProcess.getInputStream(), out);
+                } catch (IORuntimeException ignore) {
+
+                }
+            });
             outputReader.setDaemon(true);
             outputReader.start();
 
-            boolean finished = process.waitFor(timeout, TimeUnit.SECONDS);
+            boolean finished;
+            if (timeout <= 0) {
+                process.waitFor();
+                finished = true;
+            } else {
+                finished = process.waitFor(timeout, TimeUnit.SECONDS);
+            }
             boolean execResult = finished && process.exitValue() == 0;
+            String message = new String(out.toByteArray(), Charset.defaultCharset());
+            if (!execResult) {
+                message = String.format("%s\nCommand timed out after %s seconds", message, timeout);
+            }
             result.setExecResult(execResult);
-            result.setExecOut(new String(out.toByteArray(), Charset.defaultCharset()));
+            result.setExecOut(message);
             logger.info("exec cmd {} {}", String.join(" ", args), result.isSuccess() ? "success" : "fail");
             return result;
         } catch (Exception e) {
-            result.setExecErrOut(e.getMessage());
             logger.error("exec cmd fail, cmd: {}, message: {}", String.join(" ", args), e.getMessage(), e);
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            result.setExecErrOut(sw.toString());
             return result;
         } finally {
             destroy(process, false);
@@ -211,12 +256,12 @@ public class ShellUtils {
     }
 
     /**
-     * @deprecated
-     * @see #exec(String, List, long)
      * @param workPath
      * @param command
      * @param timeout
      * @return
+     * @see #exec(String, List, long)
+     * @deprecated
      */
     @Deprecated
     public static ExecResult execWithStatus(String workPath, List<String> command, long timeout) {

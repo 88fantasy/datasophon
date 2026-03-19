@@ -1,5 +1,6 @@
 package com.datasophon.api.service.ddl.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -8,6 +9,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
 import com.datasophon.api.exceptions.BusinessException;
+import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigFileMap;
 import com.datasophon.api.load.ServiceConfigMap;
@@ -23,6 +25,7 @@ import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.ddl.DdlMetaService;
+import com.datasophon.api.service.k8s.FrameK8sServiceService;
 import com.datasophon.api.utils.CommonUtils;
 import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.api.utils.ProcessUtils;
@@ -34,9 +37,11 @@ import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
+import com.datasophon.common.model.k8s.K8sServiceInfo;
 import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.storage.vo.ServiceMetaItem;
+import com.datasophon.common.utils.YamlUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
@@ -44,6 +49,7 @@ import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.FrameServiceRoleEntity;
+import com.datasophon.dao.entity.k8s.FrameK8sServiceEntity;
 import com.datasophon.dao.enums.NeedRestart;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -51,6 +57,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.PropertyResolver;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
@@ -105,13 +113,26 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     @Autowired
     private Validator validator;
 
+    @Autowired
+    private FrameK8sServiceService frameK8sServiceService;
+
 
     private static final String HDFS = "HDFS";
 
     private static final String HADOOP = "HADOOP";
 
-    public void initFramework(FrameInfoEntity entity) {
-        Objects.requireNonNull(entity);
+
+    /**
+     * 内存数据无法回滚，在新的事务提交，防止外部事务回滚
+     * @return
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public FrameInfoEntity initFramework(String frameCode) {
+        FrameInfoEntity exists = frameInfoService.getByFrameCode(frameCode);
+        if (exists != null) {
+           return exists;
+        }
+        FrameInfoEntity entity = frameInfoService.saveFrameIfAbsent(frameCode);
         log.info("使用框架模板{}初始化框架{}", FileUtil.file(FRAMEWORK_TPL).getAbsolutePath(), entity.getFrameCode());
 
         File tplDir = FileUtil.file(FRAMEWORK_TPL);
@@ -131,16 +152,17 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             item.setType(MetaStorage.VOS_DDL);
             item.setFramework(entity.getFrameCode());
             try {
-                loadServiceDdl(clusters, entity, cmp, metaStorage.getServiceDdL(item));
+                loadServiceVosDdl(clusters, entity, cmp, metaStorage.getServiceDdL(item));
             } catch (Exception e) {
                 log.error("invalid service ddl file: {}/{}", entity.getFrameCode(), cmp, e);
             }
         }
+        return entity;
     }
 
 
     @Override
-    public FrameServiceEntity loadServiceDdl(List<ClusterInfoEntity> clusters, FrameInfoEntity frameInfo, String serviceName, String serviceDdl) {
+    public FrameServiceEntity loadServiceVosDdl(List<ClusterInfoEntity> clusters, FrameInfoEntity frameInfo, String serviceName, String serviceDdl) {
         ServiceInfo serviceInfo = JSONObject.parseObject(serviceDdl, new TypeReference<ServiceInfo>() {
         });
 
@@ -187,6 +209,8 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         saveFrameServiceRole(frameInfo.getFrameCode(), serviceName, serviceInfo, serviceEntity);
         return serviceEntity;
     }
+
+
 
 
     /**
@@ -363,14 +387,64 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     }
 
 
+    @Override
+    public FrameK8sServiceEntity loadServiceK8sDdl(FrameInfoEntity frameInfo, String serviceName, String serviceDdl) {
+        K8sServiceInfo serviceInfo = YamlUtils.parseYaml(serviceDdl, K8sServiceInfo.class);
+
+        if (StrUtil.isNotBlank(serviceName)) {
+            if (!serviceName.equals(serviceInfo.getName())) {
+                throw new BusinessHintException(String.format("服务名称%s与ddl定义的不一致", serviceName));
+            }
+        } else {
+            serviceName = serviceInfo.getName();
+        }
+        List<String> supportArtifacts = new ArrayList<>();
+        if (serviceInfo.getArtifact() != null) {
+            if (CollectionUtil.isNotEmpty(serviceInfo.getArtifact().getHelm())) {
+                supportArtifacts.add("helm");
+            }
+            if (CollectionUtil.isNotEmpty(serviceInfo.getArtifact().getYaml())) {
+                supportArtifacts.add("yaml");
+            }
+        }
+        if (supportArtifacts.isEmpty()) {
+            throw new BusinessHintException("服务%s的manifest文件不规范，artifact字段，至少支持一种部署方式");
+        }
+
+        Set<ConstraintViolation<K8sServiceInfo>>  errors = validator.validate(serviceInfo);
+        if (!errors.isEmpty()) {
+            List<String> errorList = new ArrayList<>();
+            errors.forEach(e-> errorList.add(e.getMessage()));
+            throw new BusinessHintException(String.format("服务%s的manifest文件不规范，存在错误:\n%s", serviceName, StrUtil.join(";", errorList)));
+        }
+
+        FrameK8sServiceEntity entity = frameK8sServiceService.lambdaQuery()
+                .eq(FrameK8sServiceEntity::getFrameId, frameInfo.getId())
+                .eq(FrameK8sServiceEntity::getServiceName, serviceName)
+                .one();
+        if (entity == null) {
+            entity = new FrameK8sServiceEntity();
+            entity.setServiceName(serviceName);
+            entity.setFrameId(frameInfo.getId());
+        }
+        entity.setServiceDesc(serviceInfo.getDescription());
+        entity.setDependencies(serviceInfo.getDependencies());
+        entity.setArtifact(JSONObject.toJSONString(serviceInfo.getArtifact()));
+        entity.setManifestJson(JSONObject.toJSONString(serviceInfo));
+        entity.setSupportArtifacts(supportArtifacts);
+        entity.setSupportArtifacts(supportArtifacts);
+        frameK8sServiceService.saveOrUpdate(entity);
+
+        return entity;
+    }
 
     @Override
-    public void updateServiceDdl(Integer serviceId, String serviceDdl) {
+    public void updateServiceVosDdl(Integer serviceId, String serviceDdl) {
         FrameServiceEntity service = frameServiceService.getById(serviceId);
         Objects.requireNonNull(service);
         FrameInfoEntity frameInfo = frameInfoService.getById(service.getFrameId());
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
-        loadServiceDdl(clusters, frameInfo, service.getServiceName(), serviceDdl);
+        loadServiceVosDdl(clusters, frameInfo, service.getServiceName(), serviceDdl);
 
         ServiceMetaItem item = new ServiceMetaItem();
         item.setServiceName(service.getServiceName());
@@ -385,7 +459,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     }
 
     @Override
-    public String getServiceDdl(Integer serviceId) {
+    public String getServiceVosDdl(Integer serviceId) {
         FrameServiceEntity service = frameServiceService.getById(serviceId);
         Objects.requireNonNull(service);
         FrameInfoEntity frameInfo = frameInfoService.getById(service.getFrameId());

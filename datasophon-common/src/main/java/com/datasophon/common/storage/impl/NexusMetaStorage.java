@@ -3,7 +3,6 @@ package com.datasophon.common.storage.impl;
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.function.ThrowableSupplier;
-import com.datasophon.common.model.uni.NexusUri;
 import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.storage.vo.ServiceMetaItem;
 import com.datasophon.common.utils.NexusFileUtils;
@@ -27,20 +26,16 @@ import java.util.function.Function;
  * @author zhanghuangbin
  */
 @Slf4j
-public class NexusMetaStorage implements MetaStorage {
+public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage {
 
     public final static String REPO = "raw";
-
-    @Override
-    public boolean isEnabled() {
-        return getNexusUri().isEnabled();
-    }
 
     @Override
     public List<ServiceMetaItem> listService(String type) {
         validType(type);
         try {
-            List<NexusFileUtils.Component> components = NexusFileUtils.listMatchedItem(REPO, String.format("/meta/*/%s/*/service_ddl.json", type));
+            String ddlName = VOS_DDL.equals(type) ? Constants.SERVICE_DDL : Constants.MANIFEST_DDL;
+            List<NexusFileUtils.Component> components = NexusFileUtils.listMatchedItem(REPO, String.format("/meta/*/%s/*/%s", type, ddlName));
             List<ServiceMetaItem> items = new ArrayList<>();
             for (NexusFileUtils.Component component : components) {
                 ServiceMetaItem item = new ServiceMetaItem();
@@ -108,14 +103,6 @@ public class NexusMetaStorage implements MetaStorage {
     }
 
 
-    private NexusUri getNexusUri() {
-        NexusUri uri = new NexusUri();
-        uri.setEnabled(Constants.NEXUS_ENABLE);
-        uri.setUri(String.format("http://%s:%s", Constants.NEXUS_IP, Constants.NEXUS_PORT));
-        uri.setUser(Constants.NEXUS_USERNAME);
-        uri.setPassword(Constants.NEXUS_PASSWORD);
-        return uri;
-    }
 
     private void validType(String type) {
         if (!Arrays.asList(VOS_DDL, K8S).contains(type)) {
@@ -123,20 +110,5 @@ public class NexusMetaStorage implements MetaStorage {
         }
     }
 
-    private void ensureDirValid(File dir) {
-        if (!dir.exists()) {
-            throw new IllegalStateException(dir.getAbsolutePath() + " not exists");
-        }
-        if (!dir.isDirectory()) {
-            throw new IllegalArgumentException(dir.getAbsolutePath() + " is not dir");
-        }
-    }
-
-    private void ensureNexusEnable() {
-        NexusUri registry = getNexusUri();
-        if (!registry.isEnabled()) {
-            throw new IllegalStateException("datasophon require an nexus available, but nexus is disabled");
-        }
-    }
 
 }

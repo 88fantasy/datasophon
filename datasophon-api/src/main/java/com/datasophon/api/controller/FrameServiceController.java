@@ -165,14 +165,14 @@ public class FrameServiceController extends ApiController {
     @Operation(summary = "更新service_ddl")
     public Result updateDdl(@PathVariable("serviceId") Integer serviceId, MultipartFile file) throws IOException {
         String content = IoUtil.read(file.getInputStream(), StandardCharsets.UTF_8);
-        ddlMetaService.updateServiceDdl(serviceId, content);
+        ddlMetaService.updateServiceVosDdl(serviceId, content);
         return Result.success();
     }
 
     @PostMapping("/updateDdl2/{serviceId}")
     @Operation(summary = "更新service_ddl2")
     public Result updateDdl2(@PathVariable("serviceId") Integer serviceId,@RequestBody UpdateDdlDTO dto) {
-        ddlMetaService.updateServiceDdl(serviceId, dto.getContent());
+        ddlMetaService.updateServiceVosDdl(serviceId, dto.getContent());
         return Result.success();
     }
 
@@ -181,6 +181,6 @@ public class FrameServiceController extends ApiController {
     @RequestMapping("/getServiceDdl/{serviceId}")
     @Operation(summary = "查看serviceDdl定义")
     public Result getServiceDdl(@PathVariable("serviceId") Integer serviceId) {
-        return Result.success(ddlMetaService.getServiceDdl(serviceId));
+        return Result.success(ddlMetaService.getServiceVosDdl(serviceId));
     }
 }

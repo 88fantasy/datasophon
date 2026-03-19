@@ -53,9 +53,9 @@ public final class Constants {
     public static final String WORKER_PATH = INSTALL_PATH + "/datasophon-worker";
     public static final String SHELL_SCRIPT_PATH = "/scripts";
     
-    public static final String META_PATH = "meta";
     public static final String FRAMEWORK_TPL = "frameworktpl";
     public static final String SERVICE_DDL = "service_ddl.json";
+    public static final String MANIFEST_DDL = "manifest.yaml";
 
     public static final String CLUSTER_ID = "cluster_id";
     public static final String MANAGED = "managed";

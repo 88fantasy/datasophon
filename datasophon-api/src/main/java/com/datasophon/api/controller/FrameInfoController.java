@@ -20,14 +20,13 @@ package com.datasophon.api.controller;
 import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.FrameInfoEntity;
-
-import java.util.Arrays;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Arrays;
 
 @RestController
 @RequestMapping("frame")
@@ -41,7 +40,7 @@ public class FrameInfoController extends ApiController {
      */
     @RequestMapping("/list")
     public Result list() {
-        return frameInfoService.getAllClusterFrame();
+        return Result.success(frameInfoService.getAllClusterFrame());
     }
     
     /**

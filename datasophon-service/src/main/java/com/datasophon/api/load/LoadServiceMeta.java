@@ -39,6 +39,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,15 +71,30 @@ public class LoadServiceMeta implements ApplicationRunner {
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
         loadGlobalVariables(clusters);
 
+        Map<String, FrameInfoEntity> frameworkCache = new HashMap<>();
+
         MetaStorage metaStorage =  StorageUtils.getMetaStorage();
-        List<ServiceMetaItem> metaItems = metaStorage.listService(MetaStorage.VOS_DDL);
-        Map<String, List<ServiceMetaItem>> groupedMap = metaItems.stream().collect(Collectors.groupingBy(ServiceMetaItem::getFramework));
-        groupedMap.forEach((frameCode, items)-> {
-            FrameInfoEntity frameInfo = frameInfoService.saveFrameIfAbsent(frameCode);
+        List<ServiceMetaItem> vosDdlItems = metaStorage.listService(MetaStorage.VOS_DDL);
+        Map<String, List<ServiceMetaItem>> groupeVosDdldMap = vosDdlItems.stream().collect(Collectors.groupingBy(ServiceMetaItem::getFramework));
+        groupeVosDdldMap.forEach((frameCode, items)-> {
+            FrameInfoEntity frameInfo = frameworkCache.computeIfAbsent(frameCode, c-> frameInfoService.saveFrameIfAbsent(frameCode));
             for (ServiceMetaItem item : items) {
                 try {
                     String serviceDdl = metaStorage.getServiceDdL(item);
-                    ddlMetaService.loadServiceDdl(clusters, frameInfo, item.getServiceName(), serviceDdl);
+                    ddlMetaService.loadServiceVosDdl(clusters, frameInfo, item.getServiceName(), serviceDdl);
+                } catch (Exception e) {
+                    logger.error("invalid service ddl file: {} {}", frameCode, item.getServiceName(), e);
+                }
+            }
+        });
+        List<ServiceMetaItem> k8sItems = metaStorage.listService(MetaStorage.K8S);
+        Map<String, List<ServiceMetaItem>> groupedK8sMap = k8sItems.stream().collect(Collectors.groupingBy(ServiceMetaItem::getFramework));
+        groupedK8sMap.forEach((frameCode, items)-> {
+            FrameInfoEntity frameInfo = frameworkCache.computeIfAbsent(frameCode, c-> frameInfoService.saveFrameIfAbsent(frameCode));
+            for (ServiceMetaItem item : items) {
+                try {
+                    String serviceDdl = metaStorage.getServiceDdL(item);
+                    ddlMetaService.loadServiceK8sDdl(frameInfo, item.getServiceName(), serviceDdl);
                 } catch (Exception e) {
                     logger.error("invalid service ddl file: {} {}", frameCode, item.getServiceName(), e);
                 }

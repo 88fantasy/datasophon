@@ -158,6 +158,16 @@
             <artifactId>kubernetes-client</artifactId>
             <version>6.13.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java</artifactId>
+            <version>3.3.6</version> </dependency>
+        <!-- 推荐同时引入传输层依赖，以获得更好的稳定性 -->
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-httpclient5</artifactId>
+            <version>3.3.6</version>
+        </dependency>
     </dependencies>
 
 </project>

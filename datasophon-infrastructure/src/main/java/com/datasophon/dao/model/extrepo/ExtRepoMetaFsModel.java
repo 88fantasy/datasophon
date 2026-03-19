@@ -12,10 +12,6 @@ import java.util.List;
 @Data
 public class ExtRepoMetaFsModel {
 
-
-    private String sample;
-
-
     private String template;
 
     private String meta;

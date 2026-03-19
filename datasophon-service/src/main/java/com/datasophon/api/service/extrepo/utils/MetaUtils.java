@@ -9,18 +9,19 @@ import com.alibaba.fastjson.TypeReference;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.service.extrepo.ctx.MetaParseOption;
 import com.datasophon.api.service.extrepo.ctx.SrvParseCtx;
+import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceInfo;
+import com.datasophon.common.model.k8s.K8sServiceInfo;
+import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.utils.PathUtils;
-import com.datasophon.dao.model.extrepo.DeploymentModel;
+import com.datasophon.common.utils.YamlUtils;
 import com.datasophon.dao.model.extrepo.ExtRepoMetaFsModel;
 import com.datasophon.dao.model.extrepo.FrameworkMeta;
-import com.datasophon.dao.model.extrepo.ServiceMeta;
+import com.datasophon.dao.model.extrepo.K8sDdLServiceMeta;
+import com.datasophon.dao.model.extrepo.VosDdLServiceMeta;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.Constructor;
-import org.yaml.snakeyaml.introspector.PropertyUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,8 +63,6 @@ public class MetaUtils {
             "config/meta/**/service_ddl.json"
     );
 
-    public static final String SAMPLE = "cluster-sample.yml";
-    public static final String SERVICE_DDL = "service_ddl.json";
     private static final Logger log = LoggerFactory.getLogger(MetaUtils.class);
 
     /**
@@ -147,10 +146,7 @@ public class MetaUtils {
         }
 
         List<String> errors = new ArrayList<>();
-        File sample = base.resolve(SAMPLE).toFile();
-        if (sample.exists()) {
-            vo.setSample(PathUtils.relative(sample, root));
-        }
+
 
         File tpl = base.resolve("template").toFile();
         if (tpl.exists() && tpl.isDirectory()) {
@@ -185,42 +181,51 @@ public class MetaUtils {
         FrameworkMeta meta = new FrameworkMeta();
         meta.setFrameCode(frameDir.getName());
 
-        File[] services = frameDir.listFiles();
-        if (services == null) {
-            return meta;
-        }
-        for (File serviceDir : services) {
-            if (!serviceDir.isDirectory()) {
-                continue;
+        File vosDdlDir = new File(frameDir, MetaStorage.VOS_DDL);
+        if (vosDdlDir.exists()) {
+            File[] services = vosDdlDir.listFiles();
+            if (services != null) {
+                for (File serviceDir : services) {
+                    if (!serviceDir.isDirectory()) {
+                        continue;
+                    }
+                    List<VosDdLServiceMeta> vosDdLServiceMeta = parseVosDdlServiceMeta(new SrvParseCtx(option, meta.getFrameCode(), errors), serviceDir);
+                    meta.getVosDdlServices().addAll(vosDdLServiceMeta);
+                }
             }
-            List<ServiceMeta> serviceMeta = parseServiceMeta(new SrvParseCtx(option, meta.getFrameCode(), errors), serviceDir);
-            meta.getServices().addAll(serviceMeta);
         }
+        File k8sDdlDir = new File(frameDir, MetaStorage.K8S);
+        if (k8sDdlDir.exists()) {
+            File[] services = k8sDdlDir.listFiles();
+            if (services != null) {
+                for (File serviceDir : services) {
+                    if (!serviceDir.isDirectory()) {
+                        continue;
+                    }
+                    List<K8sDdLServiceMeta> vosDdLServiceMeta = parseK8sDdlServiceMeta(new SrvParseCtx(option, meta.getFrameCode(), errors), serviceDir);
+                    meta.getK8sDdLServices().addAll(vosDdLServiceMeta);
+                }
+            }
+        }
+
+
         return meta;
     }
 
 
-    private static List<ServiceMeta> parseServiceMeta(SrvParseCtx ctx, File serviceDir) {
+    private static List<VosDdLServiceMeta> parseVosDdlServiceMeta(SrvParseCtx ctx, File serviceDir) {
         String root = ctx.getOption().getRoot();
-        Path currentPath = getSrvPath(ctx, serviceDir.getName());
+        Path currentPath = PathUtils.join(getConfPath(ctx.getOption().getRoot()), "meta", ctx.getFramework(), MetaStorage.VOS_DDL, serviceDir.getName());
 
-        File ddl = currentPath.resolve(SERVICE_DDL).toFile();
+        File ddl = currentPath.resolve(Constants.SERVICE_DDL).toFile();
         if (!ddl.exists()) {
             return Collections.emptyList();
         }
 
-        ServiceMeta meta = new ServiceMeta();
+        VosDdLServiceMeta meta = new VosDdLServiceMeta();
         meta.setFrameCode(ctx.getFramework());
         meta.setName(serviceDir.getName());
         meta.setDdl(PathUtils.relative(ddl, root));
-
-
-
-        File script = currentPath.resolve("script").toFile();
-        if (script.exists() && script.isDirectory()) {
-            meta.setScript(PathUtils.relative(script, root));
-        }
-
 
         String content = FileUtil.readString(ddl, StandardCharsets.UTF_8);
         ServiceInfo serviceInfo = JSONObject.parseObject(content, new TypeReference<ServiceInfo>() {
@@ -244,9 +249,31 @@ public class MetaUtils {
         return Collections.singletonList(meta);
     }
 
-    private static Path getSrvPath(SrvParseCtx ctx, String srv) {
-        return PathUtils.join(getConfPath(ctx.getOption().getRoot()), "meta", ctx.getFramework(), srv);
+
+    private static List<K8sDdLServiceMeta> parseK8sDdlServiceMeta(SrvParseCtx ctx, File serviceDir) {
+        String root = ctx.getOption().getRoot();
+        Path currentPath = PathUtils.join(getConfPath(ctx.getOption().getRoot()), "meta", ctx.getFramework(), MetaStorage.K8S, serviceDir.getName());
+
+        File ddl = currentPath.resolve(Constants.MANIFEST_DDL).toFile();
+        if (!ddl.exists()) {
+            return Collections.emptyList();
+        }
+
+        K8sDdLServiceMeta meta = new K8sDdLServiceMeta();
+        meta.setFrameCode(ctx.getFramework());
+        meta.setName(serviceDir.getName());
+        meta.setManifest(PathUtils.relative(ddl, root));
+
+        String content = FileUtil.readString(ddl, StandardCharsets.UTF_8);
+        K8sServiceInfo serviceInfo = YamlUtils.parseYaml(content, K8sServiceInfo.class);
+
+        meta.setVersion(serviceInfo.getVersion());
+        if (!StringUtils.equals(meta.getName(), serviceInfo.getName())) {
+            ctx.addError(String.format("框架%s服务%s ddl文件放置有误，name不一致", serviceDir.getParentFile().getName(), meta.getName()));
+        }
+        return Collections.singletonList(meta);
     }
+
 
     public static Path getConfPath(String root) {
         return Paths.get(root, "config");
@@ -255,6 +282,10 @@ public class MetaUtils {
 
     public static Path getPkgPath(String root) {
         return Paths.get(root, "packages", "raw");
+    }
+
+    public static Path getImagePath(String root) {
+        return Paths.get(root, "images");
     }
 
     public static Path getFileRelativePath(String pkgName) {
@@ -271,12 +302,5 @@ public class MetaUtils {
     }
 
 
-    public static DeploymentModel parseDeploymentFile(String content) {
-        Constructor constructor = new Constructor(DeploymentModel.class);
-        PropertyUtils propertyUtils = new PropertyUtils();
-        propertyUtils.setSkipMissingProperties(true);
-        constructor.setPropertyUtils(propertyUtils);
-        return new Yaml(constructor).loadAs(content, DeploymentModel.class);
-    }
 
 }

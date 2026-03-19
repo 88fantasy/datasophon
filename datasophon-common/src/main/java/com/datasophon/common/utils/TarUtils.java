@@ -1,5 +1,6 @@
 package com.datasophon.common.utils;
 
+import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.RandomUtil;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -7,9 +8,12 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -108,5 +112,26 @@ public class TarUtils {
         return paths;
     }
 
+
+    public static String  readEntryContent(String tarFilePath, String target) throws IOException {
+        try (FileInputStream fis = new FileInputStream(tarFilePath);
+             TarArchiveInputStream tarInputStream = new TarArchiveInputStream(fis)) {
+
+            TarArchiveEntry entry;
+            while ((entry = tarInputStream.getNextTarEntry()) != null) {
+                // 跳过目录
+                if (entry.isDirectory()) {
+                    continue;
+                }
+
+                // 匹配目标文件（注意：路径分隔符可能与操作系统有关，TAR 内部通常使用 "/")
+                if (entry.getName().equals(target)) {
+                   return IoUtil.read(tarInputStream, StandardCharsets.UTF_8);
+                }
+            }
+        }
+
+        throw new FileNotFoundException("File not found in TAR: " + target);
+    }
 
 }

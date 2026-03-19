@@ -1,5 +1,6 @@
 package com.datasophon.common.storage;
 
+import com.datasophon.common.Constants;
 import com.datasophon.common.function.ThrowableSupplier;
 import com.datasophon.common.storage.vo.ServiceMetaItem;
 
@@ -28,7 +29,7 @@ public interface MetaStorage {
     default String getServiceDdL(ServiceMetaItem item) throws FileNotFoundException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
-            downResource(item, "service_ddl.json", () -> out);
+            downResource(item, VOS_DDL.equals(item.getType()) ? Constants.SERVICE_DDL : Constants.MANIFEST_DDL, () -> out);
         } catch (FileNotFoundException e) {
             throw e;
         } catch (Exception e) {

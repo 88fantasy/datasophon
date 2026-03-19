@@ -1,6 +1,7 @@
 package com.datasophon.api.service.extrepo.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
@@ -17,20 +18,25 @@ import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
 import com.datasophon.api.service.extrepo.ctx.MetaParseOption;
 import com.datasophon.api.service.extrepo.ctx.SrvDependenciesContext;
 import com.datasophon.api.service.extrepo.utils.MetaUtils;
+import com.datasophon.api.service.k8s.FrameK8sServiceService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.model.DAG;
+import com.datasophon.common.storage.HelmStorage;
+import com.datasophon.common.storage.ImageStorage;
 import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.storage.PackageStorage;
 import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.utils.PathUtils;
 import com.datasophon.common.utils.TarUtils;
+import com.datasophon.common.utils.YamlUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
+import com.datasophon.dao.entity.k8s.FrameK8sServiceEntity;
 import com.datasophon.dao.model.extrepo.DeploySrvModel;
 import com.datasophon.dao.model.extrepo.DeploymentModel;
 import com.datasophon.dao.model.extrepo.ExtRepoMetaFsModel;
@@ -50,6 +56,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -92,6 +99,9 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     @Autowired
     private TransactionalUtils transactionalUtils;
 
+    @Autowired
+    private FrameK8sServiceService frameK8sServiceService;
+
 
     @Override
     public ValidateResultVO validMetaFile(InstallComponentDTO dto) {
@@ -100,18 +110,29 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             option.setRoot(unzipDir);
             ExtRepoMetaFsModel model = MetaUtils.parseRepoMeta(option);
 
-
             SrvDependenciesContext ctx = new SrvDependenciesContext();
             List<String> frames = model.getFrameworks().stream().map(FrameworkMeta::getFrameCode).collect(Collectors.toList());
+            List<FrameInfoEntity> frameDbs = frameInfoService.lambdaQuery().in(FrameInfoEntity::getFrameCode, frames).list();
+
             List<FrameServiceEntity> installedSrv = frameServiceService.listSimpleService(frames);
             ctx.addService(installedSrv);
-            model.getFrameworks().stream().flatMap(f -> f.getServices().stream()).forEach(srv -> ctx.addService(srv.getFrameCode(), srv.getName()));
+            model.getFrameworks().stream()
+                    .flatMap(f -> f.getVosDdlServices().stream())
+                    .forEach(srv -> ctx.addVosService(srv.getFrameCode(), srv.getName()));
 
             List<String> errors = new ArrayList<>();
-            model.getFrameworks().stream().flatMap(f -> f.getServices().stream()).forEach(srv -> {
-                errors.addAll(ctx.validDependency(srv));
+            model.getFrameworks().stream().flatMap(f -> f.getVosDdlServices().stream()).forEach(srv -> {
+                errors.addAll(ctx.validVosDdlDependency(srv));
             });
 
+            Map<Integer, FrameInfoEntity> map = CollectionUtil.toMap(frameDbs, new HashMap<>(), FrameInfoEntity::getId);
+            List<FrameK8sServiceEntity> installedK8sSrv = frameK8sServiceService.listSimpleService(frameDbs.stream().map(FrameInfoEntity::getId).collect(Collectors.toList()));
+            installedK8sSrv.forEach(srv -> ctx.addK8sService(map.get(srv.getFrameId()).getFrameCode(), srv.getServiceName()));
+
+            model.getFrameworks().stream().flatMap(f -> f.getK8sDdLServices().stream()).forEach(srv -> ctx.addK8sService(srv.getFrameCode(), srv.getName()));
+            model.getFrameworks().stream().flatMap(f -> f.getK8sDdLServices().stream()).forEach(srv -> {
+                errors.addAll(ctx.validK8sDependency(srv));
+            });
             return new ValidateResultVO(errors);
         });
     }
@@ -209,7 +230,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
         PathPair pathPair = new PathPair();
         try {
-            transactionalUtils.doInNewTx(()-> {
+            transactionalUtils.doInNewTx(() -> {
                 log.info("【导入第三方软件源】 进度ID:{}，开始解析meta数据", progress.getProgressId());
 //            解析元数据
                 File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId());
@@ -221,7 +242,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
                 ExtRepoMetaFsModel vo = MetaUtils.parseRepoMeta(option);
                 progress.setStep(9);
                 log.info("【导入第三方软件源】 进度ID:{}，解析meta数据成功，metaUnzipPath: {}, 解析到{}个服务", progress.getProgressId(),
-                        metaUnzipPath, vo.getFrameworks().stream().mapToLong(fw -> fw.getServices().size()).sum());
+                        metaUnzipPath, vo.getFrameworks().stream().mapToLong(fw -> fw.getVosDdlServices().size()).sum());
 
 //            解压安装包
                 String pkgUnzipPath = null;
@@ -239,6 +260,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
 //            移动文件
                 moveFiles(metaUnzipPath, vo, pkgUnzipPath, progress);
+
                 log.info("【导入第三方软件源】 进度ID:{}，移动安装安装文件成功", progress.getProgressId());
             });
         } catch (Exception e) {
@@ -323,23 +345,32 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
     private void saveFrameInfo(String unzipDir, ExtRepoMetaFsModel vo, ImportCompProgressVO progress) {
         progress.setState(4);
-        progress.setTotal(vo.getFrameworks().stream().mapToLong(f -> f.getServices().size()).sum());
+
+        long total = vo.getFrameworks().stream().mapToLong(f -> f.getVosDdlServices().size()).sum()
+                     + vo.getFrameworks().stream().mapToLong(f -> f.getK8sDdLServices().size()).sum();
+        progress.setTotal(total);
         progress.setStep(0);
 
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
         vo.getFrameworks().forEach(framework -> {
-            boolean exists = frameInfoService.exists(framework.getFrameCode());
-            FrameInfoEntity db = frameInfoService.saveFrameIfAbsent(framework.getFrameCode());
-            if (!exists) {
-                ddlMetaService.initFramework(db);
-            }
-
-            framework.getServices().forEach(srv -> {
+            FrameInfoEntity db = ddlMetaService.initFramework(framework.getFrameCode());
+            framework.getVosDdlServices().forEach(srv -> {
                 String ddl = FileUtil.readString(Paths.get(unzipDir, srv.getDdl()).toFile(), StandardCharsets.UTF_8);
                 try {
-                    ddlMetaService.loadServiceDdl(clusters, db, srv.getName(), ddl);
+                    ddlMetaService.loadServiceVosDdl(clusters, db, srv.getName(), ddl);
                 } catch (Exception e) {
                     throw new BusinessException(String.format("解析服务%s的定义失败，%s。请检测service_ddl.json是否符合定义", srv.getName(), e.getMessage()), e);
+                }
+
+                progress.setStep(progress.getStep() + 1);
+            });
+
+            framework.getK8sDdLServices().forEach(srv -> {
+                String ddl = FileUtil.readString(Paths.get(unzipDir, srv.getManifest()).toFile(), StandardCharsets.UTF_8);
+                try {
+                    ddlMetaService.loadServiceK8sDdl(db, srv.getName(), ddl);
+                } catch (Exception e) {
+                    throw new BusinessException(String.format("解析服务%s的定义失败，%s。请检测manifest.yaml是否符合定义", srv.getName(), e.getMessage()), e);
                 }
 
                 progress.setStep(progress.getStep() + 1);
@@ -374,22 +405,75 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         }
         progress.setStep(1);
 
-        if (pkgPath != null) {
-            File pkgDir = MetaUtils.getPkgPath(pkgPath).toFile();
-            File[] files = pkgDir.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    log.info("上传文件{}到nexus", file.getAbsolutePath());
-                    packageStorage.moveToStorage(file, f -> {
-                        String relativePath = PathUtils.relative(file.getParent(), pkgDir.getAbsolutePath());
-                        return "packages/" + PathUtils.unixStyle(relativePath);
-                    });
-                    progress.setStep(progress.getStep() + 1);
-                }
-            }
+        if (pkgPath == null) {
+            return;
         }
 
+        File pkgDir = MetaUtils.getPkgPath(pkgPath).toFile();
+        File[] rawPkgFiles = pkgDir.listFiles();
+        if (rawPkgFiles != null) {
+            log.info("开始上传软件安装包(非k8s版)...");
+            for (File file : rawPkgFiles) {
+                log.info("上传文件{}到nexus", file.getAbsolutePath());
+                packageStorage.moveToStorage(file, f -> {
+                    String relativePath = PathUtils.relative(file.getParent(), pkgDir.getAbsolutePath());
+                    return "packages/" + PathUtils.unixStyle(relativePath);
+                });
+                progress.setStep(progress.getStep() + 1);
+            }
+        }
         progress.setStep(progress.getTotal());
+        log.info("【导入第三方软件源】 进度ID:{}，上传安装包到nexus成功", progress.getProgressId());
+
+
+
+        File imageDir = MetaUtils.getImagePath(pkgPath).toFile();
+        File[] imageFiles = imageDir.listFiles();
+        if (imageFiles == null || imageFiles.length == 0) {
+            return;
+        }
+        progress.setState(6);
+        progress.setStep(0);
+        progress.setTotal(imageFiles.length);
+        ImageStorage imageStorage = StorageUtils.getImageStorage();
+        log.info("开始上传镜像文件...");
+        imageStorage.pushImages(imageDir, file-> {
+            log.info("上传文件{}到nexus的k8s镜像仓库", file.getAbsolutePath());
+            progress.setStep(progress.getStep() + 1);
+        });
+        progress.setStep(progress.getTotal());
+        log.info("【导入第三方软件源】 进度ID:{}，上传镜像包成功", progress.getProgressId());
+
+
+        long total = vo.getFrameworks().stream()
+                .flatMap(f->f.getK8sDdLServices().stream())
+                .mapToLong(s-> s.getCharts().size())
+                .sum();
+        if (total > 0) {
+            progress.setState(7);
+            progress.setTotal(total);
+            progress.setStep(0);
+
+            HelmStorage helmStorage = StorageUtils.getHelmStorage();
+            List<String> charts = vo.getFrameworks().stream()
+                    .flatMap(f->f.getK8sDdLServices().stream())
+                    .flatMap(s-> s.getCharts().stream())
+                    .collect(Collectors.toList());
+            for (String chart : charts) {
+                File file =MetaUtils.getImagePath(pkgPath).resolve(chart).toFile();
+                if (file.exists()) {
+                    log.info("上传文件{}到nexus的helm仓库", file.getAbsolutePath());
+                    try {
+                        helmStorage.pushHelm(file);
+                    } catch (IOException e) {
+                        throw new IllegalStateException(String.format("上传helm包%s到helm仓库失败, %s", chart, e.getMessage()), e);
+                    }
+                }
+                progress.setStep(progress.getStep() + 1);
+            }
+            progress.setStep(progress.getTotal());
+            log.info("【导入第三方软件源】 进度ID:{}，上传helm包成功", progress.getProgressId());
+        }
     }
 
 
@@ -422,7 +506,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             throw new BusinessException("部署清单文件不存在");
         }
         String content = MetaUtils.decodeFile(deploymentFile, dto.getContentDecodePasswd());
-        DeploymentModel model = MetaUtils.parseDeploymentFile(content);
+        DeploymentModel model = YamlUtils.parseYaml(content, DeploymentModel.class);
 
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());

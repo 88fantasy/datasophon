@@ -1,0 +1,63 @@
+package com.datasophon.common.storage.impl;
+
+import com.datasophon.common.k8s.client.DockerClientWrapper;
+import com.datasophon.common.k8s.client.DockerClientWrapperImpl;
+import com.datasophon.common.k8s.vo.ImageManifest;
+import com.datasophon.common.model.uni.NexusUri;
+import com.datasophon.common.storage.ImageStorage;
+import com.github.dockerjava.api.model.AuthConfig;
+import com.github.dockerjava.api.model.Identifier;
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.List;
+
+/**
+ * @author zhanghuangbin
+ */
+@Slf4j
+public class NexusImageStorage extends NexusStorageSupport implements ImageStorage {
+
+
+    @Override
+    public void pushImages(File dir, PushCallback cb) throws IOException {
+        ensureNexusEnable();
+        ensureDirValid(dir);
+        DockerClientWrapper client = newClient();
+        Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
+                cb.onNextEntry(path.toFile());
+                if (path.toFile().getName().endsWith(".tar")) {
+
+                    log.info("push image {} to image repo", path);
+                    List<ImageManifest> manifests = client.load(path.toFile());
+                    manifests.forEach(manifest-> client.push(Identifier.fromCompoundString(manifest.getFullTag())));
+                }
+
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                throw exc;
+            }
+        });
+    }
+
+
+    private DockerClientWrapper newClient() {
+        NexusUri uri =getNexusUri();
+        AuthConfig config = new AuthConfig()
+                .withUsername(uri.getUser())
+                .withPassword(uri.getPassword())
+                .withRegistryAddress(uri.getUri() + "/image");
+        return new DockerClientWrapperImpl(config);
+    }
+}

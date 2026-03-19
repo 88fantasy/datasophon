@@ -16,7 +16,7 @@ public class ImportCompProgressVO {
     @Schema(description = "进度ID,用于后续查询进度")
     private Integer progressId;
 
-    @Schema(description = "状态 0初始化 1表示成功 -1表示失败 -2表示进度对象不存在 2表示解析元数据 3解压安装包 4保存数据 5上传安装包到nexus")
+    @Schema(description = "状态 0初始化 1表示成功 -1表示失败 -2表示进度对象不存在 2表示解析元数据 3解压安装包 4保存数据 5上传安装包到nexus 6上传镜像到nexus 7上传helm包到nexus")
     private int state;
 
     @Schema(description = "失败原因")

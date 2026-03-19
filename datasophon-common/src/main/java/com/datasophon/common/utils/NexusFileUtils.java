@@ -26,7 +26,9 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
+import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
@@ -373,6 +375,7 @@ public class NexusFileUtils {
         String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
         req.setHeader("Authorization", "Basic " + auth);
     }
+
     public static String getAssertMd5FromRawRepo(String relativePathFromRawRepo) {
         String group = null;
         int idx = relativePathFromRawRepo.lastIndexOf("/");
@@ -393,6 +396,28 @@ public class NexusFileUtils {
         }
     }
 
+
+    public static ExecResult uploadChartToHelmRepo(File file) throws IOException {
+        String url = String.format("http://%s:%s/repository/%s/%s", Constants.NEXUS_IP, Constants.NEXUS_PORT, RepositoriesType.HELM.getDesc(), file.getName());
+        try (CloseableHttpClient httpClient = newLongTimeClient()) {
+            HttpPut request = new HttpPut(url);
+            prepareAuth(request);
+
+            FileEntity fileEntity = new FileEntity(file, ContentType.APPLICATION_OCTET_STREAM);
+            request.setEntity(fileEntity);
+            log.info("开始上传 {} 到 {}", file.getName(), url);
+
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                int status = response.getStatusLine().getStatusCode();
+                String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+                if (status == 200) {
+                    return ExecResult.success(body);
+                } else {
+                    return ExecResult.fail(body);
+                }
+            }
+        }
+    }
 
     private static Assert getAssertFromRawRepo(String group, String name) throws IOException {
         String url = String.format("http://%s:%s/service/rest/v1/search/assets?repository=raw&format=raw&group=%s&name=%s",

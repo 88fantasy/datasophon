@@ -2,9 +2,6 @@ package com.datasophon.common.enums;
 
 import lombok.Getter;
 
-import java.util.Arrays;
-import java.util.Optional;
-
 @Getter
 public enum RepositoriesType {
     APT("apt"),
@@ -17,7 +14,10 @@ public enum RepositoriesType {
 
     YUM("yum"),
 
-    RAW("raw");
+    RAW("raw"),
+
+
+    ;
 
     private final String desc;
 
