@@ -102,6 +102,10 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
         });
     }
 
+    @Override
+    public void removeVosDdl(String frameCode, String serviceName) {
+        NexusFileUtils.removeFolderFromRawRepo(String.format("/meta/%s/%s/%s", frameCode, VOS_DDL, serviceName));
+    }
 
 
     private void validType(String type) {

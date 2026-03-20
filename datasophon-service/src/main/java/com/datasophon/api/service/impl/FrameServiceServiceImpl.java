@@ -20,14 +20,21 @@ package com.datasophon.api.service.impl;
 import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.service.ClusterServiceInstanceService;
+import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
+import com.datasophon.api.service.ddl.DdlMetaService;
 import com.datasophon.common.Constants;
+import com.datasophon.common.storage.MetaStorage;
+import com.datasophon.common.storage.PackageStorage;
+import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
+import com.datasophon.dao.entity.FrameServiceRoleEntity;
 import com.datasophon.dao.enums.ServiceState;
 import com.datasophon.dao.mapper.ClusterInfoMapper;
 import com.datasophon.dao.mapper.FrameInfoMapper;
@@ -35,7 +42,11 @@ import com.datasophon.dao.mapper.FrameServiceMapper;
 import org.apache.hadoop.util.VersionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,16 +59,25 @@ import java.util.stream.Collectors;
 
 @Service("frameServiceService")
 public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, FrameServiceEntity> implements FrameServiceService {
-    
+
     @Autowired
     FrameInfoMapper frameInfoMapper;
 
     @Autowired
     ClusterInfoMapper clusterInfoMapper;
-    
+
     @Autowired
     ClusterServiceInstanceService serviceInstanceService;
-    
+
+
+    @Autowired
+    private FrameServiceRoleService frameServiceRoleService;
+
+    @Autowired
+    private ClusterServiceInstanceService clusterServiceInstanceService;
+    @Autowired
+    private DdlMetaService ddlMetaService;
+
     @Override
     public List<FrameServiceEntity> getFrameServiceList(Integer clusterId) {
         ClusterInfoEntity clusterInfo = clusterInfoMapper.selectById(clusterId);
@@ -94,7 +114,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
                 .list();
         if (!Boolean.FALSE.equals(newest)) {
             Map<String, FrameServiceEntity> existEntity = new HashMap<>();
-            list.forEach(newVal-> {
+            list.forEach(newVal -> {
                 FrameServiceEntity old = existEntity.get(newVal.getServiceName());
                 if (old == null) {
                     existEntity.put(newVal.getServiceName(), newVal);
@@ -114,7 +134,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
     private void setInstalled(Integer clusterId, List<FrameServiceEntity> list) {
         List<ClusterServiceInstanceEntity> serviceInstances = serviceInstanceService.getServiceInstanceByClusterId(clusterId);
         Map<String, ClusterServiceInstanceEntity> map = serviceInstances.stream().collect(
-                Collectors.toMap(ClusterServiceInstanceEntity::getServiceName, a->a, (a,b)-> a.getUpdateTime().after(b.getUpdateTime()) ? a : b)
+                Collectors.toMap(ClusterServiceInstanceEntity::getServiceName, a -> a, (a, b) -> a.getUpdateTime().after(b.getUpdateTime()) ? a : b)
         );
         for (FrameServiceEntity serviceEntity : list) {
             ClusterServiceInstanceEntity serviceInstance = map.get(serviceEntity.getServiceName());
@@ -128,7 +148,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
         Collection<FrameServiceEntity> list = this.listByIds(serviceIds);
         return Result.success(list);
     }
-    
+
     @Override
     public FrameServiceEntity getServiceByFrameIdAndServiceName(Integer frameId, String serviceName) {
         return this.lambdaQuery()
@@ -165,7 +185,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
         return lambdaQuery()
                 .in(FrameServiceEntity::getFrameCode, clusterFrames)
                 .select(FrameServiceEntity::getServiceName, FrameServiceEntity::getServiceVersion,
-                    FrameServiceEntity::getFrameId, FrameServiceEntity::getFrameCode)
+                        FrameServiceEntity::getFrameId, FrameServiceEntity::getFrameCode)
                 .list();
     }
 
@@ -175,16 +195,47 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
                 .eq(FrameServiceEntity::getServiceName, serviceName)
                 .eq(FrameServiceEntity::getFrameCode, frameCode)
                 .list();
-        if(services.isEmpty()) {
+        if (services.isEmpty()) {
             return null;
         }
         FrameServiceEntity target = services.get(0);
         for (FrameServiceEntity service : services) {
-            if(VersionUtil.compareVersions(service.getServiceVersion(), target.getServiceVersion()) > 0) {
+            if (VersionUtil.compareVersions(service.getServiceVersion(), target.getServiceVersion()) > 0) {
                 target = service;
             }
         }
         return target;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean removeById(Serializable id) {
+        final FrameServiceEntity serviceEntity = getById(id);
+        if (serviceEntity == null) {
+            throw new BusinessHintException("Service 组件不存在。");
+        }
+        final boolean exists = clusterServiceInstanceService.lambdaQuery()
+                .eq(ClusterServiceInstanceEntity::getFrameServiceId, serviceEntity.getId())
+                .exists();
+        if (exists) {
+            throw new BusinessHintException("Service 组件正在使用中。");
+        }
+        // 删除配置
+        frameServiceRoleService.lambdaUpdate().eq(FrameServiceRoleEntity::getServiceId, id).remove();
+        boolean success = super.removeById(id);
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+               new Thread(()-> {
+                   PackageStorage packageStorage = StorageUtils.getPackageStorage();
+                   packageStorage.deletePackage(serviceEntity.getPackageName());
+
+                   MetaStorage metaStorage = StorageUtils.getMetaStorage();
+                   metaStorage.removeVosDdl(serviceEntity.getFrameCode(), serviceEntity.getServiceName());
+               }).start();
+            }
+        });
+        return success;
+    }
 }

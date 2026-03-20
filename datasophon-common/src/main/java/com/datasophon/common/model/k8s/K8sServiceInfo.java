@@ -4,6 +4,7 @@ import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -20,7 +21,7 @@ public class K8sServiceInfo {
 
     private String description;
 
-    private List<String> dependencies;
+    private List<String> dependencies = new ArrayList<>(0);
 
     @NotNull(message = "artifact不能为null")
     private K8sArtifact artifact;

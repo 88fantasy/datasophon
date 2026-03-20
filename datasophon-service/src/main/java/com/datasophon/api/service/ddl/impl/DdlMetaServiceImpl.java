@@ -138,7 +138,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         File tplDir = FileUtil.file(FRAMEWORK_TPL);
         MetaStorage metaStorage = StorageUtils.getMetaStorage();
         try {
-            metaStorage.moveToStorage(tplDir, relative-> entity.getFrameCode() + "/" + MetaStorage.VOS_DDL + "/" + relative);
+            metaStorage.moveToStorage(tplDir, relative-> "meta/" + entity.getFrameCode() + "/" + MetaStorage.VOS_DDL + "/" + relative);
         } catch (IOException e) {
             throw new BusinessException(String.format("初始化框架失败，%s", e.getMessage()), e);
         }
@@ -432,7 +432,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         entity.setArtifact(JSONObject.toJSONString(serviceInfo.getArtifact()));
         entity.setManifestJson(JSONObject.toJSONString(serviceInfo));
         entity.setSupportArtifacts(supportArtifacts);
-        entity.setSupportArtifacts(supportArtifacts);
+        entity.setServiceVersion(serviceInfo.getVersion());
         frameK8sServiceService.saveOrUpdate(entity);
 
         return entity;

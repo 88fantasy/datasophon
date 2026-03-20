@@ -14,10 +14,11 @@ public interface ImageStorage {
     void pushImages(File dir, PushCallback cb) throws IOException;
 
 
-    @FunctionalInterface
     interface PushCallback {
 
-        void onNextEntry(File file);
+        default void onEntryStart(File file) {}
+
+        default void onEntryCompleted(File file){};
     }
 
 }

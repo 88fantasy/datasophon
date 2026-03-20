@@ -26,4 +26,6 @@ public interface PackageStorage {
     DownloadResult downloadPackageToLocal(String packageName);
 
     DownloadResult downloadResourceToLocal(String resourceName);
+
+    void deletePackage(String packageName);
 }

@@ -15,7 +15,7 @@ import java.util.List;
  */
 
 @Data
-@TableName("t_ddh_frame_k8s_service")
+@TableName(value = "t_ddh_frame_k8s_service", autoResultMap = true)
 public class FrameK8sServiceEntity implements Serializable {
 
     @TableId

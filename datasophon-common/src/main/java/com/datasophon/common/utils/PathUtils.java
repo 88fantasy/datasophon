@@ -53,8 +53,5 @@ public class PathUtils {
         return path.replaceAll("\\\\", "/");
     }
 
-    public static String unixStyle(Path path) {
-        return path.toString().replaceAll("\\\\", "/");
-    }
 
 }

@@ -272,7 +272,7 @@ public class NexusFileUtils {
             path = path.substring(0, path.length() - 1);
         }
 
-        Assert nexusAssert = getAssertFromRawRepo(path, String.format("%s/%s", path, file.getName()));
+        Assert nexusAssert = getAssert(RepositoriesType.RAW.getDesc(), path, String.format("%s/%s", path, file.getName()));
         if (nexusAssert != null) {
             String md5 = SecureUtil.md5(file);
             if (md5.equals(nexusAssert.getMd5())) {
@@ -280,7 +280,7 @@ public class NexusFileUtils {
                 return ExecResult.success("already exists, we do not need to upload");
             } else {
                 log.warn("file {} exists, but content change, we delete it", file.getAbsolutePath());
-                deleteAssertFromRawRepo(nexusAssert.getId());
+                deleteAssert(nexusAssert.getId());
             }
         }
 
@@ -324,7 +324,6 @@ public class NexusFileUtils {
         }
     }
 
-
     public static ExecResult uploadFileToRawRepo(String path, String fileName, String content) throws IOException {
         path = StrUtil.isBlank(path) ? "/" : path;
         if (!path.startsWith("/")) {
@@ -334,9 +333,9 @@ public class NexusFileUtils {
             path = path.substring(0, path.length() - 1);
         }
 
-        Assert nexusAssert = getAssertFromRawRepo(path, String.format("%s/%s", path, fileName));
+        Assert nexusAssert = getAssert(RepositoriesType.RAW.getDesc(), path, String.format("%s/%s", path, fileName));
         if (nexusAssert != null) {
-            deleteAssertFromRawRepo(nexusAssert.getId());
+            deleteAssert(nexusAssert.getId());
         }
 
 
@@ -370,13 +369,17 @@ public class NexusFileUtils {
         }
     }
 
-
-    private static void prepareAuth(HttpEntityEnclosingRequestBase req) {
-        String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
-        req.setHeader("Authorization", "Basic " + auth);
+    public static String getAssertMd5FromRawRepo(String relativePathFromRawRepo) {
+        String group = getGroupOfRaw(relativePathFromRawRepo);
+        try {
+            Assert assertItem = getAssert(RepositoriesType.RAW.getDesc(), group, relativePathFromRawRepo);
+            return assertItem == null ? null : assertItem.getMd5();
+        } catch (IOException e) {
+            return null;
+        }
     }
 
-    public static String getAssertMd5FromRawRepo(String relativePathFromRawRepo) {
+    private static String getGroupOfRaw(String relativePathFromRawRepo) {
         String group = null;
         int idx = relativePathFromRawRepo.lastIndexOf("/");
         if (idx != -1) {
@@ -388,12 +391,45 @@ public class NexusFileUtils {
         if (!group.startsWith("/")) {
             group = "/" + group;
         }
+        return group;
+    }
+
+    public static void removeFileFromRawRepo(String relativePathFromRawRepo) {
         try {
-            Assert assertItem = getAssertFromRawRepo(group, relativePathFromRawRepo);
-            return assertItem == null ? null : assertItem.getMd5();
+            String group = getGroupOfRaw(relativePathFromRawRepo);
+            Assert assertItem = getAssert(RepositoriesType.RAW.getDesc(), group, relativePathFromRawRepo);
+            if (assertItem != null) {
+                log.info("remove nexus file: {}", assertItem.getDownloadUrl());
+                deleteAssert(assertItem.getId());
+            }
         } catch (IOException e) {
-            return null;
+            log.warn("remove file: {} fail, {}", relativePathFromRawRepo, e.getMessage(), e);
         }
+    }
+
+    public static void removeFolderFromRawRepo(String folder) {
+        String baseUrl = String.format("http://%s:%s//service/rest/v1/components?repository=%s",
+                Constants.NEXUS_IP, Constants.NEXUS_PORT, RepositoriesType.RAW.getDesc()
+        );
+        try {
+            List<Component> components = doListMatchedItem(baseUrl);
+            for (Component comp : components) {
+                if(comp.getName().startsWith(folder)) {
+                    for (Assert asset : comp.getAssets()) {
+                        log.info("remove nexus file: {}", asset.getDownloadUrl());
+                        deleteAssert(asset.getId());
+                    }
+                }
+            }
+        } catch (IOException e) {
+            log.warn("remove file: {} fail, {}", folder, e.getMessage(), e);
+        }
+
+    }
+
+    private static void prepareAuth(HttpEntityEnclosingRequestBase req) {
+        String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
+        req.setHeader("Authorization", "Basic " + auth);
     }
 
 
@@ -419,11 +455,12 @@ public class NexusFileUtils {
         }
     }
 
-    private static Assert getAssertFromRawRepo(String group, String name) throws IOException {
-        String url = String.format("http://%s:%s/service/rest/v1/search/assets?repository=raw&format=raw&group=%s&name=%s",
-                Constants.NEXUS_IP, Constants.NEXUS_PORT, group, name
-        );
 
+
+    private static Assert getAssert(String repo, String group, String name) throws IOException {
+        String url = String.format("http://%s:%s/service/rest/v1/search/assets?repository=%s&format=raw&group=%s&name=%s",
+                Constants.NEXUS_IP, Constants.NEXUS_PORT,  repo, group, name
+        );
 
         try (CloseableHttpClient httpClient = HttpClients.custom().build()) {
             HttpGet get = new HttpGet(url);
@@ -449,8 +486,8 @@ public class NexusFileUtils {
     }
 
 
-    private static void deleteAssertFromRawRepo(String id) throws IOException {
-        String url = String.format("http://%s:%s/service/rest/v1/assets/%s", Constants.NEXUS_IP, Constants.NEXUS_PORT, id);
+    private static void deleteAssert(String assertId) throws IOException {
+        String url = String.format("http://%s:%s/service/rest/v1/assets/%s", Constants.NEXUS_IP, Constants.NEXUS_PORT, assertId);
         try (CloseableHttpClient httpClient = HttpClients.custom().build()) {
             HttpDelete deleteAction = new HttpDelete(url);
             String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
@@ -513,6 +550,8 @@ public class NexusFileUtils {
         private String format;
         private Checksum checksum;
 
+        private String downloadUrl;
+
         public String getMd5() {
             return checksum == null ? null : checksum.getMd5();
         }
@@ -529,8 +568,11 @@ public class NexusFileUtils {
         String baseUrl = String.format("http://%s:%s/service/rest/v1/search?repository=%s&name=%s",
                 Constants.NEXUS_IP, Constants.NEXUS_PORT, repo, nameParam
         );
+        return doListMatchedItem(baseUrl);
+    }
 
 
+    private static  List<Component> doListMatchedItem(String baseUrl) throws IOException {
         List<Component> components = new ArrayList<>();
         try (CloseableHttpClient httpClient = HttpClients.custom().build()) {
             String continuationToken = null;
@@ -598,5 +640,6 @@ public class NexusFileUtils {
         private String format;
         private String name;
         private String downloadUrl;
+        private List<Assert> assets;
     }
 }

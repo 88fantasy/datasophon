@@ -25,6 +25,5 @@ public class K8sDdLServiceMeta {
 
     private List<String> charts = new ArrayList<>();
 
-    private List<String> yamlDefs = new ArrayList<>();
 
 }

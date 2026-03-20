@@ -80,7 +80,7 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
     @Override
     public String readPackageMd5(String packageName) {
         ensureNexusEnable();
-        String fileName = packageName.endsWith(".md5") ? packageName : packageName + ".md5";
+        String fileName = getPkgMd5FileName(packageName);
         String path = "packages/" + fileName;
 
         log.info("read the md5 of package:{}", packageName);
@@ -95,6 +95,10 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
         }
     }
 
+    private String getPkgMd5FileName(String packageName) {
+        return packageName.endsWith(".md5") ? packageName : packageName + ".md5";
+    }
+
     @Override
     public DownloadResult downloadPackageToLocal(String packageName) {
         return doDownload(packageName, () -> readPackageMd5(packageName));
@@ -103,6 +107,20 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
     @Override
     public DownloadResult downloadResourceToLocal(String resourceName) {
         return doDownload(resourceName, () -> NexusFileUtils.getAssertMd5FromRawRepo(resourceName));
+    }
+
+    @Override
+    public void deletePackage(String packageName) {
+        File pkgFile = Paths.get(Constants.MASTER_MANAGE_PACKAGE_PATH, packageName).toFile();
+        if (pkgFile.exists()) {
+            pkgFile.delete();
+        }
+        File md5File = Paths.get(Constants.MASTER_MANAGE_PACKAGE_PATH, getPkgMd5FileName(packageName)).toFile();
+        if (md5File.exists()) {
+            md5File.delete();
+        }
+        NexusFileUtils.removeFileFromRawRepo("/packages/" + packageName);
+        NexusFileUtils.removeFileFromRawRepo("/packages/" + getPkgMd5FileName(packageName));
     }
 
 

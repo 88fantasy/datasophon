@@ -53,4 +53,6 @@ public interface MetaStorage {
 
 
     void moveToStorage(File dir, Function<String, String> relativePathHandler) throws IOException;
+
+    void removeVosDdl(String frameCode, String serviceName);
 }

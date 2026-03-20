@@ -17,19 +17,12 @@
 
 package com.datasophon.api.controller;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.datasophon.api.dto.ddl.UpdateDdlDTO;
-import com.datasophon.api.service.ClusterServiceInstanceService;
-import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.ddl.DdlMetaService;
-import com.datasophon.common.Constants;
 import com.datasophon.common.utils.Result;
-import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
-import com.datasophon.dao.entity.FrameServiceRoleEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +33,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -53,11 +45,7 @@ public class FrameServiceController extends ApiController {
     @Autowired
     private FrameServiceService frameServiceService;
     
-    @Autowired
-    private FrameServiceRoleService frameServiceRoleService;
-    
-    @Autowired
-    private ClusterServiceInstanceService clusterServiceInstanceService;
+
     @Autowired
     private DdlMetaService ddlMetaService;
     
@@ -130,32 +118,6 @@ public class FrameServiceController extends ApiController {
      */
     @RequestMapping("/delete/{id}")
     public Result delete(@PathVariable("id") Integer id) {
-        final FrameServiceEntity serviceEntity = frameServiceService.getById(id);
-        if (serviceEntity == null) {
-            return Result.error("Service 组件不存在。");
-        }
-        // 已经安装为服务，无法删除
-        final List<ClusterServiceInstanceEntity> roleEntities = clusterServiceInstanceService.list(
-                Wrappers.<ClusterServiceInstanceEntity>lambdaQuery()
-                        .eq(ClusterServiceInstanceEntity::getFrameServiceId, serviceEntity.getId()));
-        if (roleEntities != null && !roleEntities.isEmpty()) {
-            return Result.error("Service 组件正在使用中。");
-        }
-        
-        // delete /packages 下的软件包
-//        FIXME
-        File targetPackageFile = new File(Constants.MASTER_MANAGE_PACKAGE_PATH, serviceEntity.getPackageName());
-        FileUtil.del(targetPackageFile);
-        log.info("delete package file to: {}", targetPackageFile.getAbsolutePath());
-        File targetPackageFileMd5 =
-                new File(Constants.MASTER_MANAGE_PACKAGE_PATH, serviceEntity.getPackageName() + ".md5");
-        FileUtil.del(targetPackageFileMd5);
-        log.info("delete package md5 file to: {}", targetPackageFileMd5.getAbsolutePath());
-        
-        // 删除配置
-        frameServiceRoleService.remove(Wrappers.<FrameServiceRoleEntity>lambdaQuery()
-                .eq(FrameServiceRoleEntity::getServiceId, id));
-        // 删除主服务
         frameServiceService.removeById(id);
         return Result.success();
     }

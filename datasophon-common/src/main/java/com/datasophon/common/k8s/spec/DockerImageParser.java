@@ -97,7 +97,7 @@ public class DockerImageParser {
         for (OciManifestRef ref : index.getManifests()) {
             String tag = null;
             if (ref.getAnnotations() != null) {
-                tag = ref.getAnnotations().get("org.opencontainers.image.ref.name");
+                tag = ref.getAnnotations().get("io.containerd.image.name");
             }
             if (tag == null) {
                 continue;

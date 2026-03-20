@@ -437,9 +437,12 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         progress.setTotal(imageFiles.length);
         ImageStorage imageStorage = StorageUtils.getImageStorage();
         log.info("开始上传镜像文件...");
-        imageStorage.pushImages(imageDir, file-> {
-            log.info("上传文件{}到nexus的k8s镜像仓库", file.getAbsolutePath());
-            progress.setStep(progress.getStep() + 1);
+        imageStorage.pushImages(imageDir, new ImageStorage.PushCallback() {
+            @Override
+            public void onEntryCompleted(File file) {
+                log.info("上传文件{}到nexus的k8s镜像仓库", file.getAbsolutePath());
+                progress.setStep(progress.getStep() + 1);
+            }
         });
         progress.setStep(progress.getTotal());
         log.info("【导入第三方软件源】 进度ID:{}，上传镜像包成功", progress.getProgressId());
@@ -455,22 +458,23 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             progress.setStep(0);
 
             HelmStorage helmStorage = StorageUtils.getHelmStorage();
-            List<String> charts = vo.getFrameworks().stream()
-                    .flatMap(f->f.getK8sDdLServices().stream())
-                    .flatMap(s-> s.getCharts().stream())
-                    .collect(Collectors.toList());
-            for (String chart : charts) {
-                File file =MetaUtils.getImagePath(pkgPath).resolve(chart).toFile();
-                if (file.exists()) {
-                    log.info("上传文件{}到nexus的helm仓库", file.getAbsolutePath());
-                    try {
-                        helmStorage.pushHelm(file);
-                    } catch (IOException e) {
-                        throw new IllegalStateException(String.format("上传helm包%s到helm仓库失败, %s", chart, e.getMessage()), e);
-                    }
-                }
-                progress.setStep(progress.getStep() + 1);
-            }
+
+            vo.getFrameworks().forEach(frame-> {
+                frame.getK8sDdLServices().forEach(srv-> {
+                    srv.getCharts().forEach(chart-> {
+                        File file = Paths.get(metaUnzipPath).resolve(srv.getManifest()).getParent().resolve(chart).toFile();
+                        if (file.exists()) {
+                            log.info("上传文件{}到nexus的helm仓库", file.getAbsolutePath());
+                            try {
+                                helmStorage.pushHelm(file);
+                            } catch (IOException e) {
+                                throw new IllegalStateException(String.format("上传helm包%s到helm仓库失败, %s", chart, e.getMessage()), e);
+                            }
+                        }
+                        progress.setStep(progress.getStep() + 1);
+                    });
+                });
+            });
             progress.setStep(progress.getTotal());
             log.info("【导入第三方软件源】 进度ID:{}，上传helm包成功", progress.getProgressId());
         }

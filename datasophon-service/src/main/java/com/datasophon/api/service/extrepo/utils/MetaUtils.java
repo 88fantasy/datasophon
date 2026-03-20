@@ -243,7 +243,7 @@ public class MetaUtils {
         meta.setVersion(serviceInfo.getVersion());
 
         if (!StringUtils.equals(meta.getName(), serviceInfo.getName())) {
-            ctx.addError(String.format("框架%s服务%s ddl文件放置有误，name不一致", serviceDir.getParentFile().getName(), meta.getName()));
+            ctx.addError(String.format("框架%s服务%s ddl文件放置有误，name不一致", ctx.getFramework(), meta.getName()));
         }
         meta.setDependencies(serviceInfo.getDependencies());
         return Collections.singletonList(meta);
@@ -269,7 +269,12 @@ public class MetaUtils {
 
         meta.setVersion(serviceInfo.getVersion());
         if (!StringUtils.equals(meta.getName(), serviceInfo.getName())) {
-            ctx.addError(String.format("框架%s服务%s ddl文件放置有误，name不一致", serviceDir.getParentFile().getName(), meta.getName()));
+            ctx.addError(String.format("框架%s服务%s ddl文件放置有误，name不一致", ctx.getFramework(), meta.getName()));
+        }
+
+        meta.setDependencies(serviceInfo.getDependencies() == null ? new ArrayList<>(0) : serviceInfo.getDependencies());
+        if (serviceInfo.getArtifact() != null) {
+            meta.getCharts().addAll(serviceInfo.getArtifact().getHelm());
         }
         return Collections.singletonList(meta);
     }

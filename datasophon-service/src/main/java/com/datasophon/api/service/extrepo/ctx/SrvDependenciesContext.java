@@ -52,7 +52,7 @@ public class SrvDependenciesContext {
     public List<String> validDependency(Set<String> srvSet, String code, String srvName, List<String> dependencies) {
         Set<String> lackSrv = new HashSet<>();
 
-        Optional.of(dependencies)
+        Optional.ofNullable(dependencies)
                 .orElse(new ArrayList<>(0))
                 .forEach(dep -> {
                     if (!srvSet.contains(generateKey(code, dep))) {

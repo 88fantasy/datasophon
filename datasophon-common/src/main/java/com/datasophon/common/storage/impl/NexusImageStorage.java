@@ -6,7 +6,6 @@ import com.datasophon.common.k8s.vo.ImageManifest;
 import com.datasophon.common.model.uni.NexusUri;
 import com.datasophon.common.storage.ImageStorage;
 import com.github.dockerjava.api.model.AuthConfig;
-import com.github.dockerjava.api.model.Identifier;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -33,14 +32,17 @@ public class NexusImageStorage extends NexusStorageSupport implements ImageStora
         Files.walkFileTree(dir.toPath(), new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
-                cb.onNextEntry(path.toFile());
+                cb.onEntryStart(path.toFile());
                 if (path.toFile().getName().endsWith(".tar")) {
 
-                    log.info("push image {} to image repo", path);
+                    log.info("load image {} to local repo", path);
                     List<ImageManifest> manifests = client.load(path.toFile());
-                    manifests.forEach(manifest-> client.push(Identifier.fromCompoundString(manifest.getFullTag())));
+                    manifests.forEach(manifest->{
+                        log.info("push image {} to repo", manifest.getFullTag());
+                        client.push(manifest.getFullTag());
+                    });
                 }
-
+                cb.onEntryCompleted(path.toFile());
                 return FileVisitResult.CONTINUE;
             }
 
