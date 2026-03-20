@@ -56,6 +56,14 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>${basedir}/target</directory>
+            <includes>
+                <include>release.txt</include>
+            </includes>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>0600</fileMode>
+        </fileSet>
+        <fileSet>
             <directory>${basedir}/../datasophon-common/src/main/resources</directory>
             <includes>
                 <include>**/*.properties</include>
