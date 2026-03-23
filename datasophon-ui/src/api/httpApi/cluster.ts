@@ -55,4 +55,6 @@ export default {
   clusterGroupSave: path + "/cluster/group/save",
   clusterServiceInstanceDelete: path + "/cluster/service/instance/delete",
   clusterYarnSchedulerInfo: path + "/cluster/yarn/scheduler/info",
+  clusterK8sConfigTestConnection: path + "/cluster/k8sConfig/testConnection",
+  saveOrUpdateK8sConfig: path + "/cluster/k8sConfig/saveOrUpdateConfig",
 };

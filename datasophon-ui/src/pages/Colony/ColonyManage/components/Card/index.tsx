@@ -12,6 +12,7 @@ import { useParams } from "react-router-dom";
 import { useCallback, useMemo } from "react";
 import asyncHook from "../../../../../components/Common/CommonModal/asyncHook";
 import { T_TYPE_INIT } from "../ConfigModal/stepType";
+import { T_K8S, T_PHYSICAL } from "../../../../../constants/clusterType";
 
 const showAuthModal = asyncHook(() =>
     import("../AuthModal/api"));
@@ -22,6 +23,7 @@ const showConfigModal = asyncHook(() =>
 
 const showUploadDeployModal = asyncHook(() => import('../../../../../components/UploadDeployModal/api'))
 const showUploadDeployConfigModal = asyncHook(() => import('../../../../../components/UploadDeployConfigModal/api'))
+const showConfigModalK8s = asyncHook(() => import('../ConfigModalK8s/api'))
 
 
 const Index = ({
@@ -173,7 +175,13 @@ const Index = ({
                 label: '初始化',
                 disabled: clusterStateCode === 2,
                 onClick: async () => {
-                    const modelApi = await showConfigModal()
+                    let showModalApi = showConfigModal
+
+                    if (val.archType === T_K8S) {
+                        showModalApi = showConfigModalK8s
+                    }
+
+                    const modelApi = await showModalApi()
                     modelApi.default({
                         record: val,
                         type: T_TYPE_INIT,
@@ -181,6 +189,7 @@ const Index = ({
                             invokeInit()
                         }
                     })
+
                 }
             },
             {

@@ -7,6 +7,7 @@ import { requireRules } from "../../../../../utils/util";
 import { axiosPost } from "../../../../../api/request";
 import { API } from "../../../../../api";
 import asyncHook from "../../../../../components/Common/CommonModal/asyncHook";
+import clusterTypeOptions from "../../../../../constants/clusterType";
 
 
 const showFormModal = asyncHook(() =>
@@ -57,6 +58,16 @@ export default async function (config) {
             }) || []
           },
         },
+        {
+          title: '集群类型',
+          dataIndex: 'archType',
+          com: ProFormSelect,
+          formItemProps: {
+            rules: requireRules,
+            options: clusterTypeOptions
+          },
+        },
+        
       ],
       apiConfig: {
         add: API.saveColony,
