@@ -7,6 +7,8 @@ import type { ProColumns } from '@ant-design/pro-components';
 import { invokeGenerateElId, showMsgAfferRequest } from '../../../utils/util';
 import CommonTabs from '../../../components/Common/CommonTabs';
 import asyncHook from '../../../components/Common/CommonModal/asyncHook';
+import { mapEmptyValueFn } from '../../../utils/listUtils';
+import TableProxy from './TableProxy';
 
 
 
@@ -121,6 +123,98 @@ const Index: React.FC = () => {
         ];
     }, [invokeInit])
 
+    const k8sColumns: ProColumns[] = useMemo(() => {
+        return [
+            {
+                dataIndex: 'index',
+                title: '序号',
+                valueType: 'indexBorder',
+                width: 48,
+            },
+            {
+                title: '服务',
+                dataIndex: 'serviceName',
+                search: false,
+                ellipsis: true,
+            },
+            {
+                title: '版本',
+                dataIndex: 'serviceVersion',
+                search: false,
+                ellipsis: true,
+            },
+            {
+                title: '描述',
+                dataIndex: 'serviceDesc',
+                ellipsis: true,
+                search: false,
+            },
+            {
+                title: '依赖',
+                dataIndex: 'dependencies',
+                ellipsis: true,
+                search: false,
+                render: (text, record) => {
+                    if (Array.isArray(record.dependencies)) {
+                        text = record.dependencies.join(',')
+                    }
+
+                    return mapEmptyValueFn(text)
+                },
+            },
+            {
+                title: '制品信息',
+                dataIndex: 'artifact',
+                ellipsis: true,
+                search: false,
+            },
+            {
+                title: '支持的制品类型',
+                dataIndex: 'supportArtifacts',
+                ellipsis: true,
+                search: false,
+                render: (text, record) => {
+                    if (Array.isArray(record.supportArtifacts)) {
+                        text = record.supportArtifacts.join(',')
+                    }
+
+                    return mapEmptyValueFn(text)
+                },
+            },
+            {
+                title: '定义的内容',
+                dataIndex: 'manifestJson',
+                ellipsis: true,
+                search: false,
+            },
+            {
+                title: '操作',
+                valueType: 'option',
+                key: 'option',
+                width: 120,
+                render: invokeGenOptionCol([
+                    {
+
+                        title: '删除',
+                        titleKey: 'serviceName',
+                        onClick: async (text, record) => {
+
+                            const res = await axiosGet(API.deleteService + "/" + record.id)
+
+
+                            if (res.code === 200) {
+                                await invokeInit()
+                                setKey(invokeGenerateElId())
+                            }
+
+                            return res
+                        }
+                    }
+                ])
+            },
+        ];
+    }, [invokeInit])
+
 
     const memoTabItem = useMemo(() => {
         return (state || []).map((item) => {
@@ -128,27 +222,21 @@ const Index: React.FC = () => {
                 key: String(item.id),
                 label: item.frameCode,
                 children: (
-                    <CommonTable
-                        tableProps={{
-                            search: false,
-                            request: async (params, sort, filter) => {
-                                // console.log(params, sort, filter);
-                                const data = item.frameServiceList || []
-                                return {
-                                    data,
-                                    total: data.length
-                                }
-                            },
-                            scroll: {
-                                y: '50vh'
-                            },
-                            columns,
-                        }}
+
+
+
+
+                    <TableProxy
+                        {
+                        ...item
+                        }
+                        columns={columns}
+                        k8sColumns={k8sColumns}
                     />
                 )
             }
         })
-    }, [columns, state])
+    }, [columns, k8sColumns, state])
 
     // const onChange = (e) => {
     //     replaceRouter({
@@ -191,13 +279,8 @@ const Index: React.FC = () => {
     }, [])
 
     return state && (
-        // <Tabs
-        //     key={key}
-        //     activeKey={activeKey || memoTabItem[0]?.key}
-        //     items={memoTabItem}
-        //     onChange={onChange}
-        // />
         <CommonTabs
+            bindUrl={true}
             memoTabItem={memoTabItem}
             tabBarExtraContent={tabBarExtraContent}
             key={key}
