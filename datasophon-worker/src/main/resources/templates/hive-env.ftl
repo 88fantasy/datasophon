@@ -27,7 +27,7 @@ if [ -z "${r"${HIVE_HOME"}}" ]; then
 fi
 
 # add hive depends tez support
-export TEZ_JARS="/opt/datasophon/tez"
+export TEZ_JARS="/data/install_datasophon/tez"
 if [ -d "$TEZ_JARS" ]; then
   for f in $TEZ_JARS/*.jar; do
     if [ "$HIVE_CLASSPATH" ]; then

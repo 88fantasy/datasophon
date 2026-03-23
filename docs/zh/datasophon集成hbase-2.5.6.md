@@ -1,9 +1,9 @@
 ### 1、上传安装包
 
-将编译好的安装包hbase-2.5.6.tar.gz和md5文件hbase-2.5.6.tar.gz.md5放到安装包目录/opt/datasophon/DDP/packages下
+将编译好的安装包hbase-2.5.6.tar.gz和md5文件hbase-2.5.6.tar.gz.md5放到安装包目录/data/install_datasophon/packages下
 
 ```shell
-scp hbase-2.5.6.tar.gz hbase-2.5.6.tar.gz.md5 /opt/datasophon/DDP/packages
+scp hbase-2.5.6.tar.gz hbase-2.5.6.tar.gz.md5 /data/install_datasophon/packages
 ```
 
 ### 2、修改源码HBASE的service_ddl.json，重新打包api包
@@ -503,16 +503,16 @@ export JAVA_HOME=/usr/local/jdk1.8.0_333
 CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
 export JAVA_HOME CLASSPATH
 
-export SPARK_HOME=/opt/datasophon/spark-3.1.3
+export SPARK_HOME=/data/install_datasophon/spark-3.1.3
 export PYSPARK_ALLOW_INSECURE_GATEWAY=1
-export HIVE_HOME=/opt/datasophon/hive-3.1.0
+export HIVE_HOME=/data/install_datasophon/hive-3.1.0
 
-export KAFKA_HOME=/opt/datasophon/kafka-2.4.1
-export HBASE_HOME=/opt/datasophon/hbase-2.5.6
-export HBASE_PID_PATH_MK=/opt/datasophon/hbase-2.5.6/pid
-export FLINK_HOME=/opt/datasophon/flink-1.15.2
-export HADOOP_HOME=/opt/datasophon/hadoop-3.3.3
-export HADOOP_CONF_DIR=/opt/datasophon/hadoop-3.3.3/etc/hadoop
+export KAFKA_HOME=/data/install_datasophon/kafka-2.4.1
+export HBASE_HOME=/data/install_datasophon/hbase-2.5.6
+export HBASE_PID_PATH_MK=/data/install_datasophon/hbase-2.5.6/pid
+export FLINK_HOME=/data/install_datasophon/flink-1.15.2
+export HADOOP_HOME=/data/install_datasophon/hadoop-3.3.3
+export HADOOP_CONF_DIR=/data/install_datasophon/hadoop-3.3.3/etc/hadoop
 export PATH=$PATH:$JAVA_HOME/bin:$SPARK_HOME/bin:$HADOOP_HOME/bin:$HIVE_HOME/bin:$FLINK_HOME/bin:$KAFKA_HOME/bin:$HBASE_HOME/bin
 
 ```

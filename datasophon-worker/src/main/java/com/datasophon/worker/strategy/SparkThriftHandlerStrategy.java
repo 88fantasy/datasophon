@@ -4,6 +4,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
@@ -25,7 +26,7 @@ public class SparkThriftHandlerStrategy extends AbstractHandlerStrategy implemen
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) throws SQLException, ClassNotFoundException {
         ExecResult startResult = new ExecResult();
-        String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
+        String workPath = PkgInstallPathUtils.getInstallHome(command);
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             // hdfs jars
@@ -41,7 +42,7 @@ public class SparkThriftHandlerStrategy extends AbstractHandlerStrategy implemen
             }
         }
         startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs());
+                command, command.getRunAs(), command.isCheckStatus());
         return startResult;
     }
 }

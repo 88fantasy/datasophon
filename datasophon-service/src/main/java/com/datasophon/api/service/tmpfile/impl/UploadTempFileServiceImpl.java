@@ -3,25 +3,27 @@ package com.datasophon.api.service.tmpfile.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.dto.upload.BigFileDTO;
+import com.datasophon.api.dto.upload.CheckChunkDTO;
 import com.datasophon.api.dto.upload.ChunkDTO;
 import com.datasophon.api.dto.upload.MergeChunkDTO;
 import com.datasophon.api.exceptions.BusinessException;
+import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.exceptions.ServiceException;
-import com.datasophon.api.service.extrepo.utils.PathUtils;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.api.vo.tmpfile.MergeProgressVO;
 import com.datasophon.common.utils.FileUtils;
+import com.datasophon.common.utils.PathUtils;
 import com.datasophon.dao.entity.UploadTempFile;
 import com.datasophon.dao.entity.UploadTempFileChunk;
 import com.datasophon.dao.mapper.UploadTempFileChunkMapper;
 import com.datasophon.dao.mapper.UploadTempFileMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +48,6 @@ import java.util.function.Function;
 
 /**
  * @author zhanghuangbin
- * @date 2025/11/5
  */
 @Service("uploadTempFileService")
 @Transactional(rollbackFor = Exception.class)
@@ -60,16 +61,17 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     @Autowired
     private TransactionalUtils transactionalUtils;
 
-    private final Map<Long, MergeProgressVO> map = new ConcurrentHashMap<>();
+    private final Map<Integer, MergeProgressVO> map = new ConcurrentHashMap<>();
 
     private static final String CHUNK_SUFFIX = ".chunk.tmp";
 
+    private static final long MAX_CHUNK_SIZE = 100L * 1024 * 1024;
 
     @Override
     public UploadTempFile upload(MultipartFile file) {
         String originalFileName = file.getOriginalFilename();
         if (StringUtils.isBlank(originalFileName)) {
-            throw new BusinessException("文件名不能为空");
+            throw new BusinessHintException("文件名不能为空");
         }
         try {
             UploadTempFile db = new UploadTempFile();
@@ -83,13 +85,13 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
             db.setUploadType(0);
             save(db);
 
-            File ddhTmpDir = getSaveDir();
-            String filePath = saveFileToDisk(file, ddhTmpDir, db.getId());
+            File attachDir = createAttachSaveDir(db);
+            File destFile = new File(attachDir, file.getOriginalFilename());
+            file.transferTo(destFile.toPath());
 
-            String md5 = FileUtils.md5(new File(ddhTmpDir, filePath));
+            String md5 = FileUtils.md5(destFile);
             db.setMd5(md5);
-
-            db.setPath(filePath);
+            db.setPath(getAttachPath(db));
             db.setStatus(1);
             updateById(db);
 
@@ -102,17 +104,19 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
 
 
     private File getSaveDir() {
-        return new File(SystemUtils.getJavaIoTmpDir(), "ddp_upload");
+        return PathUtils.getTmpDir("ddp_upload");
     }
 
-    private String saveFileToDisk(MultipartFile file, File ddhTmpDir, Long attachId) throws IOException {
-        File attachDir = new File(ddhTmpDir, attachId.toString());
+    private File createAttachSaveDir(UploadTempFile db) {
+        File attachDir = new File(getSaveDir(), db.getId().toString());
         if (!attachDir.exists() && !attachDir.mkdirs()) {
             throw new ServiceException(500, "创建文件存储目录失败: " + attachDir.getAbsolutePath());
         }
-        File destFile = new File(attachDir, file.getOriginalFilename());
-        file.transferTo(destFile.toPath());
-        return attachId + "/" + file.getOriginalFilename();
+        return attachDir;
+    }
+
+    private String getAttachPath(UploadTempFile db) {
+        return db.getId() + "/" + db.getFileName();
     }
 
     @Override
@@ -122,24 +126,110 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
         db.setSuffix(FileUtil.getSuffix(db.getFileName()));
         db.setCreateTime(new Date());
         db.setStatus(0);
-        db.setUploadType(1);
+
+        File file = null;
+        if (StrUtil.isNotBlank(info.getMd5())) {
+            List<UploadTempFile> files =  lambdaQuery()
+                    .eq(UploadTempFile::getMd5, info.getMd5())
+//                    优先查找已经上传完毕的文件
+                    .isNotNull(UploadTempFile::getPath)
+                    .orderByDesc(UploadTempFile::getCreateTime)
+                    .list();
+            for (UploadTempFile tmp : files) {
+                file = doGetTempFile(tmp);
+                if (file != null) {
+                    break;
+                }
+            }
+        }
+
+        if (file == null) {
+            db.setUploadType(1);
+            db.setChunk((int) (info.getByteCnt() % MAX_CHUNK_SIZE == 0 ? info.getByteCnt() / MAX_CHUNK_SIZE : (info.getByteCnt() / MAX_CHUNK_SIZE) + 1));
+            db.setChunkSize(MAX_CHUNK_SIZE);
+        } else {
+            db.setUploadType(2);
+        }
         save(db);
 
-        File attachDir = new File(getSaveDir(), db.getId().toString());
-        if (!attachDir.exists() && !attachDir.mkdirs()) {
-            throw new ServiceException(500, "创建文件存储目录失败: " + attachDir.getAbsolutePath());
+
+        File attachDir = createAttachSaveDir(db);
+        if (file != null) {
+//            秒传，则拷贝文件
+            File destFile = new File(attachDir, db.getFileName());
+            FileUtil.copyFile(file, destFile);
+            db.setMd5(info.getMd5());
+            db.setPath(getAttachPath(db));
+            db.setStatus(1);
+            updateById(db);
         }
+
         return db;
+    }
+
+    @Override
+    public UploadTempFileChunk isChunkUploaded(CheckChunkDTO dto) {
+        UploadTempFile db = getById(dto.getAttachId());
+        if (db == null) {
+            throw new BusinessHintException("任务不存在");
+        }
+        if (dto.getChunkNo() >= db.getChunk()) {
+            throw new BusinessHintException("chunkNo大于任务的分片数");
+        }
+        UploadTempFileChunk chunk = uploadTempFileChunkMapper.selectOne(
+                Wrappers.lambdaQuery(UploadTempFileChunk.class)
+                        .eq(UploadTempFileChunk::getAttachId, dto.getAttachId())
+                        .eq(UploadTempFileChunk::getChunkNo, dto.getChunkNo())
+        );
+
+
+        Path chunkPath = PathUtils.join(getSaveDir().toPath(), dto.getAttachId().toString(), createChunkName(dto.getChunkNo()));
+        if (chunk != null && chunk.getMd5().equalsIgnoreCase(dto.getMd5())) {
+            if (chunkPath.toFile().exists()) {
+                return chunk;
+            }
+        }
+
+
+        List<UploadTempFileChunk> chunks = uploadTempFileChunkMapper.selectList(
+                Wrappers.lambdaQuery(UploadTempFileChunk.class)
+                        .eq(UploadTempFileChunk::getMd5, dto.getMd5())
+        );
+
+        boolean uploaded = false;
+        for (UploadTempFileChunk existChunk : chunks) {
+            Path path = PathUtils.join(getSaveDir().toPath(), existChunk.getAttachId().toString(), createChunkName(existChunk.getChunkNo()));
+            if (path.toFile().exists()) {
+                FileUtil.copy(path.toFile(), chunkPath.toFile(), true);
+                uploaded = true;
+                break;
+            }
+        }
+
+        if (uploaded) {
+            if (chunk == null) {
+                chunk = new UploadTempFileChunk();
+                chunk.setAttachId(db.getId());
+                chunk.setChunkNo(dto.getChunkNo());
+                chunk.setMd5(dto.getMd5());
+                uploadTempFileChunkMapper.insert(chunk);
+            } else {
+                chunk.setMd5(db.getMd5());
+                uploadTempFileChunkMapper.updateById(chunk);
+            }
+        }
+
+        return chunk;
     }
 
     @Override
     public UploadTempFileChunk uploadChunk(ChunkDTO info) {
         UploadTempFile db = getById(info.getAttachId());
         if (db == null) {
-            throw new BusinessException("任务不存在");
+            throw new BusinessHintException("任务不存在");
         }
         if (info.getChunkNo() >= db.getChunk()) {
-            throw new BusinessException("chunkNo大于任务的分片数");
+            throw new BusinessHintException("chunkNo大于任务的分片数");
         }
         UploadTempFileChunk chunk = uploadTempFileChunkMapper.selectOne(
                 Wrappers.lambdaQuery(UploadTempFileChunk.class)
@@ -152,7 +242,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
         }
 
 
-        Path chunkPath = PathUtils.join(getSaveDir().toPath(), db.getId().toString(), createChunkName(db.getFileName(), info.getChunkNo()));
+        Path chunkPath = PathUtils.join(getSaveDir().toPath(), db.getId().toString(), createChunkName(info.getChunkNo()));
         log.info("chunk of attach {}  write chunk file to {}", db.getId(), chunkPath);
         try {
             info.getChunk().transferTo(chunkPath);
@@ -160,12 +250,9 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
             throw new BusinessException("IO异常," + e.getMessage(), e);
         }
 
-
-        if (chunk == null) {
-            chunk = BeanUtil.toBean(info, UploadTempFileChunk.class);
-        }
+        chunk = BeanUtil.toBean(info, UploadTempFileChunk.class);
         chunk.setMd5(FileUtils.md5(chunkPath.toFile()));
-        if (StringUtils.isNotBlank(info.getMd5()) && chunk.getMd5().equalsIgnoreCase(info.getMd5())) {
+        if (StringUtils.isNotBlank(info.getMd5()) && !chunk.getMd5().equalsIgnoreCase(info.getMd5())) {
             throw new BusinessException("文件MD5不一致");
         }
 
@@ -174,7 +261,8 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     }
 
 
-    private String createChunkName(String fileName, Integer chunkNo) {
+
+    private String createChunkName(Integer chunkNo) {
         return chunkNo + CHUNK_SUFFIX;
     }
 
@@ -182,13 +270,13 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     public MergeProgressVO mergeChunk(MergeChunkDTO vo) {
         UploadTempFile db = getById(vo.getAttachId());
         if (db == null) {
-            throw new BusinessException("任务不存在");
+            throw new BusinessHintException("任务不存在");
         }
         long count = uploadTempFileChunkMapper.selectCount(
                 Wrappers.lambdaQuery(UploadTempFileChunk.class).eq(UploadTempFileChunk::getAttachId, db.getId())
         );
         if (db.getChunk() != count) {
-            throw new BusinessException("已经上传的分片数量尚未达到要求");
+            throw new BusinessHintException("已经上传的分片数量尚未达到要求");
         }
 //        已经上传完成，直接返回
         if (db.getStatus() == 1) {
@@ -213,10 +301,10 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     }
 
     @Override
-    public MergeProgressVO queryMergeProgress(Long attachId) {
+    public MergeProgressVO queryMergeProgress(Integer attachId) {
         UploadTempFile db = getById(attachId);
         if (db == null) {
-            throw new BusinessException("任务不存在");
+            throw new BusinessHintException("任务不存在");
         }
         MergeProgressVO vo = map.get(attachId);
         if (vo != null) {
@@ -260,20 +348,21 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
             throw e;
         } finally {
             progress.setError(error);
-            progress.setState(StringUtils.isBlank(error) ? -1 : 1);
+            progress.setState(StringUtils.isBlank(error) ? 1 : -1);
             progress.setExpire(LocalDateTime.now().plusMinutes(1));
         }
 
 //        异步删除分片文件
-        CompletableFuture.runAsync(() ->  {
-           File[] files = attachDir.listFiles();
-           if (files != null) {
-               for (File file : files) {
-                   if (file.getName().endsWith(CHUNK_SUFFIX)) {
-                      FileUtil.del(file);
-                   }
+        CompletableFuture.runAsync(() -> {
+            uploadTempFileChunkMapper.delete(Wrappers.lambdaQuery(UploadTempFileChunk.class).eq(UploadTempFileChunk::getAttachId, db.getId()));
+            File[] files = attachDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.getName().endsWith(CHUNK_SUFFIX)) {
+                        FileUtil.del(file);
+                    }
                 }
-           }
+            }
         });
     }
 
@@ -291,7 +380,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
         }
         try (FileOutputStream fos = new FileOutputStream(mergedFile)) {
             for (int i = 0; i < db.getChunk(); i++) {
-                File chunkFile = new File(attachDir, createChunkName(db.getFileName(), i));
+                File chunkFile = new File(attachDir, createChunkName(i));
                 try {
                     FileUtil.writeToStream(chunkFile, fos);
                 } catch (IORuntimeException ex) {
@@ -307,16 +396,23 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
 
     private void doCalMd5(UploadTempFile db, File attachDir) {
         MergeProgressVO progress = map.get(db.getId());
-        db.setMd5(FileUtils.md5(new ChunkIterator(db, i -> new File(attachDir, createChunkName(db.getFileName(), i))), progress::plusMd5));
+        db.setMd5(FileUtils.md5(new ChunkIterator(db, i -> new File(attachDir, createChunkName(i))), progress::plusMd5));
     }
 
     @Override
-    public File getTempFile(Long attachId) {
+    public File getTempFile(Integer attachId) {
         UploadTempFile db = getById(attachId);
+        return doGetTempFile(db);
+    }
+
+    private File doGetTempFile(UploadTempFile db) {
         if (db == null) {
             return null;
         }
-        File file = Paths.get(getSaveDir().getAbsolutePath(),  db.getId().toString(), db.getFileName()).toFile();
+        if (db.getPath() == null) {
+            return null;
+        }
+        File file = Paths.get(getSaveDir().getAbsolutePath(), db.getPath()).toFile();
         if (file.exists()) {
             return file;
         }
@@ -325,8 +421,8 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
 
     @Override
     public void clearProgressCache() {
-        Set<Long> keys = map.keySet();
-        for (Long key : keys) {
+        Set<Integer> keys = map.keySet();
+        for (Integer key : keys) {
             MergeProgressVO pg = map.get(key);
             if (pg != null && pg.isTimeout()) {
                 map.remove(key);

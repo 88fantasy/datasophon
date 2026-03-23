@@ -93,6 +93,7 @@ public abstract class ServiceHandlerAbstract {
         if (map.containsKey(serviceConfig.getName())) {
             ServiceConfig config = map.get(serviceConfig.getName());
             config.setRequired(true);
+            config.setEnabled(true);
             config.setHidden(false);
             if (Constants.INPUT.equals(config.getType())) {
                 String value = PlaceholderUtils.replacePlaceholders((String) config.getValue(), globalVariables,
@@ -101,6 +102,7 @@ public abstract class ServiceHandlerAbstract {
             }
         } else {
             serviceConfig.setRequired(true);
+            serviceConfig.setEnabled(true);
             serviceConfig.setHidden(false);
             if (Constants.INPUT.equals(serviceConfig.getType())) {
                 String value = PlaceholderUtils.replacePlaceholders((String) serviceConfig.getValue(), globalVariables,
@@ -110,39 +112,33 @@ public abstract class ServiceHandlerAbstract {
             rackConfigs.add(serviceConfig);
         }
     }
-    
-    public boolean isEnableKerberos(Integer clusterId, Map<String, String> globalVariables, boolean enableKerberos,
-                                    ServiceConfig config, String serviceName) {
-        if ((Boolean) config.getValue()) {
-            enableKerberos = true;
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
-                    "${enable" + serviceName + "Kerberos}",
-                    "true");
-        } else {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
-                    "${enable" + serviceName + "Kerberos}",
-                    "false");
+
+    /**
+     * TODO 将废弃
+     * @return
+     */
+    public boolean decideEnableKerberos(Integer clusterId, boolean defaultVal, ServiceConfig config, String serviceName) {
+        boolean enableKerberos = defaultVal;
+        if (config.getValue() != null) {
+            enableKerberos = Boolean.TRUE.equals(config.getValue());
         }
+        ProcessUtils.generateClusterVariable(clusterId, serviceName, "enable" + serviceName + "Kerberos", enableKerberos ? "true" : "false");
         return enableKerberos;
     }
     
-    public boolean isEnableHA(Integer clusterId, Map<String, String> globalVariables, boolean enableHA,
-                              ServiceConfig config, String serviceName) {
-        if ((Boolean) config.getValue()) {
-            enableHA = true;
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
-                    "${enable" + serviceName + "HA}", "true");
-        } else {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName,
-                    "${enable" + serviceName + "HA}", "false");
+    public boolean decideEnableHA(Integer clusterId, boolean defaultVal, ServiceConfig config, String serviceName) {
+        boolean enableHA = defaultVal;
+        if (config.getValue() != null) {
+            enableHA = Boolean.TRUE.equals(config.getValue());
         }
+        ProcessUtils.generateClusterVariable(clusterId, serviceName, "enable" + serviceName + "HA",  enableHA ? "true" : "false");
         return enableHA;
     }
     
-    public boolean isEnableRack(boolean enableRack, ServiceConfig config) {
-        if ((Boolean) config.getValue()) {
-            enableRack = true;
+    public boolean isEnableRack(ServiceConfig config, boolean defaultVal) {
+        if (config.getValue() == null) {
+            return defaultVal;
         }
-        return enableRack;
+        return (boolean) config.getValue();
     }
 }

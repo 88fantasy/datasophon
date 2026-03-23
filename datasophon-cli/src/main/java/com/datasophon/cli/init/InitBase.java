@@ -1,6 +1,6 @@
 package com.datasophon.cli.init;
 
-import com.datasophon.cli.base.ClusterConfig;
+import com.datasophon.common.model.ClusterConfig;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.base.JschExecutor;
 import com.datasophon.cli.base.LocalExecutor;
@@ -17,9 +17,12 @@ public abstract class InitBase implements Runnable, InitNodeHandler {
     
     @CommandLine.Option(arity = "1", names = {"-c", "--config"}, description = "配置文件")
     String configFilePath;
+
+    @CommandLine.Option(names = {"-pwd", "password"}, description = "密钥", required = true)
+    String password;
     
     public ClusterConfig getConfig() {
-        return CliUtil.getConfig(configFilePath);
+        return CliUtil.getConfig(configFilePath, password);
     }
 
     @Override

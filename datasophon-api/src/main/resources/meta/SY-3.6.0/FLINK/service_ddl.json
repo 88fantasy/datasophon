@@ -1,319 +1,403 @@
 {
-  "name": "FLINK",
-  "label": "Flink",
-  "description": "实时计算引擎",
-  "version": "1.16.2",
-  "sortNum": 6,
-  "dependencies":[],
-  "packageName": "flink-1.16.2-3.4.0.tar.gz",
-  "decompressPackageName": "flink-1.16.2",
-  "roles": [
-    {
-      "name": "FlinkClient",
-      "label": "FlinkClient",
-      "roleType": "client",
-      "runAs": {
-        "user": "hive",
-        "group": "hadoop"
-      },
-      "cardinality": "1+",
-      "logFile": "log/flink-hive-client-${host}.log",
-      "resourceStrategies":[
+    "name": "FLINK",
+    "type": "MIDDLEWARE",
+    "label": "Flink",
+    "description": "实时计算引擎",
+    "version": "1.16.2",
+    "sortNum": 14,
+    "packageName": "flink-1.16.2-3.4.0.tar.gz",
+    "decompressPackageName": "flink-1.16.2",
+    "createDecompressDir": false,
+    "dependencies": [
+        "YARN"
+    ],
+    "roles": [
         {
-          "type": "link",
-          "source": "/opt/datasophon/flink-1.16.2/opt/flink-s3-fs-hadoop-1.16.2.jar",
-          "target": "plugins/s3-fs-hadoop/flink-s3-fs-hadoop-1.16.2.jar"
+            "name": "FlinkClient",
+            "label": "FlinkClient",
+            "roleType": "client",
+            "cardinality": "1+",
+            "logFile": "log/flink-hive-client-${host}.log",
+            "serverPorts": [
+            ],
+            "runAs": {
+                "user": "hive",
+                "group": "hadoop"
+            },
+            "resourceStrategies": [
+                {
+                    "type": "link",
+                    "source": "/data/install_datasophon/flink/opt/flink-s3-fs-hadoop-1.16.2.jar",
+                    "target": "plugins/s3-fs-hadoop/flink-s3-fs-hadoop-1.16.2.jar"
+                },
+                {
+                    "line": 19,
+                    "text": "export JAVA_HOME=/usr/local/jdk1.8.0_333",
+                    "type": "append_line",
+                    "source": "bin/config.sh"
+                },
+                {
+                    "line": 20,
+                    "text": "export HADOOP_CLASSPATH=`/data/install_datasophon/hadoop classpath`",
+                    "type": "append_line",
+                    "source": "bin/config.sh"
+                }
+            ],
+            "startRunner": {
+                "timeout": "60",
+                "args": [
+                ]
+            },
+            "stopRunner": {
+                "timeout": "60",
+                "args": [
+                ]
+            },
+            "statusRunner": {
+                "timeout": "60",
+                "args": [
+                ]
+            },
+            "restartRunner": {
+                "timeout": "60",
+                "args": [
+                ]
+            },
+            "externalLink": {
+                "url": ""
+            },
+            "hooks": [
+            ]
         },
         {
-          "type": "append_line",
-          "source": "bin/config.sh",
-          "line": 19,
-          "text": "export JAVA_HOME=/usr/local/jdk1.8.0_333"
-        },
-        {
-          "type": "append_line",
-          "source": "bin/config.sh",
-          "line": 20,
-          "text": "export HADOOP_CLASSPATH=`/opt/datasophon/hadoop/bin/hadoop classpath`"
+            "name": "FlinkHistory",
+            "label": "FlinkHistory",
+            "roleType": "worker",
+            "cardinality": "1",
+            "logFile": "log/flink-hive-historyserver-1-${host}.log",
+            "serverPorts": [
+            ],
+            "runAs": {
+                "user": "hive",
+                "group": "hadoop"
+            },
+            "resourceStrategies": [
+                {
+                    "to": "control_history.sh",
+                    "md5": "172259bf4c1fddf6a69135d799edb77f",
+                    "from": "script/control_history.sh",
+                    "type": "download",
+                    "templateId": "2026858332670971906"
+                },
+                {
+                    "type": "link",
+                    "source": "/data/install_datasophon/flink/opt/flink-s3-fs-hadoop-1.16.2.jar",
+                    "target": "plugins/s3-fs-hadoop/flink-s3-fs-hadoop-1.16.2.jar"
+                },
+                {
+                    "line": 19,
+                    "text": "export JAVA_HOME=/usr/local/jdk1.8.0_333",
+                    "type": "append_line",
+                    "source": "bin/config.sh"
+                },
+                {
+                    "line": 20,
+                    "text": "export HADOOP_CLASSPATH=`/data/install_datasophon/hadoop classpath`",
+                    "type": "append_line",
+                    "source": "bin/config.sh"
+                }
+            ],
+            "startRunner": {
+                "timeout": "60",
+                "program": "control_history.sh",
+                "args": [
+                    "start"
+                ]
+            },
+            "stopRunner": {
+                "timeout": "600",
+                "program": "control_history.sh",
+                "args": [
+                    "stop"
+                ]
+            },
+            "statusRunner": {
+                "timeout": "60",
+                "program": "control_history.sh",
+                "args": [
+                    "status"
+                ]
+            },
+            "restartRunner": {
+                "timeout": "60",
+                "program": "control_history.sh",
+                "args": [
+                    "restart"
+                ]
+            },
+            "externalLink": {
+                "name": "History UI",
+                "label": "History UI",
+                "url": "http://${host}:8082"
+            },
+            "hooks": [
+                {
+                    "type": "PRE_INSTALL",
+                    "action": "s3Sync",
+                    "params": {
+                        "bucket": "public",
+                        "endpoint": "http://${MINIO.MinioServer.__host__}:${MINIO.minioApiPort}/",
+                        "accessKey": "${MINIO.minioAccessKey}",
+                        "secretKey": "${MINIO.minioSecretKey}",
+                        "resourcePath": "minio/"
+                    }
+                }
+            ]
         }
-      ]
-    },
-    {
-      "name": "FlinkHistory",
-      "label": "FlinkHistory",
-      "roleType": "worker",
-      "runAs": {
-        "user": "hive",
-        "group": "hadoop"
-      },
-      "cardinality": "1",
-      "logFile": "log/flink-hive-historyserver-1-${host}.log",
-      "resourceStrategies":[{
-        "type": "download",
-        "from": "script/control_history.sh",
-        "to": "control_history.sh",
-        "md5": "5c45caf5e57d8f203f9936d830b835bb"
-      },{
-          "type": "link",
-          "source": "/opt/datasophon/flink-1.16.2/opt/flink-s3-fs-hadoop-1.16.2.jar",
-          "target": "plugins/s3-fs-hadoop/flink-s3-fs-hadoop-1.16.2.jar"
-        },
-        {
-          "type": "append_line",
-          "source": "bin/config.sh",
-          "line": 19,
-          "text": "export JAVA_HOME=/usr/local/jdk1.8.0_333"
-        },
-        {
-          "type": "append_line",
-          "source": "bin/config.sh",
-          "line": 20,
-          "text": "export HADOOP_CLASSPATH=`/opt/datasophon/hadoop/bin/hadoop classpath`"
-        }],
-      "startRunner": {
-        "timeout": "60",
-        "program": "control_history.sh",
-        "args": ["start"]
-      },
-      "stopRunner": {
-        "timeout": "600",
-        "program": "control_history.sh",
-        "args": ["stop"]
-      },
-      "statusRunner": {
-        "timeout": "60",
-        "program": "control_history.sh",
-        "args": ["status"]
-      },
-      "restartRunner": {
-        "timeout": "60",
-        "program": "control_history.sh",
-        "args": ["restart"]
-      },
-      "externalLink": {
-        "name": "History UI",
-        "label": "History UI",
-        "url": "http://${host}:8082"
-      }
-    }
-  ],
-  "configWriter": {
-    "generators": [
-      {
-        "filename": "flink-conf.yaml",
-        "configFormat": "custom",
-        "templateName": "properties3.ftl",
-        "outputDirectory": "conf",
-        "includeParams": [
-          "jobmanager.memory.process.size",
-          "taskmanager.memory.process.size",
-          "state.backend",
-          "state.checkpoints.dir",
-          "state.savepoints.dir",
-          "state.backend.incremental",
-          "jobmanager.archive.fs.dir",
-          "historyserver.web.port",
-          "historyserver.archive.fs.dir",
-          "historyserver.web.tmpdir",
-          "classloader.check-leaked-classloader",
-          "fs.allowed-fallback-filesystems",
-          "s3.access-key",
-          "s3.secret-key",
-          "s3.endpoint",
-          "s3.path.style.access",
-          "custom.flink.conf.yaml"
+    ],
+    "configWriter": {
+        "generators": [
+            {
+                "filename": "flink-conf.yaml",
+                "configFormat": "custom",
+                "outputDirectory": "conf",
+                "templateType": "DEFAULT",
+                "templateId": 2003734318654230529,
+                "templateName": "properties3.ftl",
+                "includeParams": [
+                    "jobmanager.memory.process.size",
+                    "taskmanager.memory.process.size",
+                    "state.backend",
+                    "state.checkpoints.dir",
+                    "state.savepoints.dir",
+                    "state.backend.incremental",
+                    "jobmanager.archive.fs.dir",
+                    "historyserver.web.port",
+                    "historyserver.archive.fs.dir",
+                    "historyserver.web.tmpdir",
+                    "classloader.check-leaked-classloader",
+                    "fs.allowed-fallback-filesystems",
+                    "s3.access-key",
+                    "s3.secret-key",
+                    "s3.endpoint",
+                    "s3.path.style.access",
+                    "custom.flink.conf.yaml"
+                ]
+            }
         ]
-      }
-    ]
-  },
-  "parameters": [
-    {
-      "name": "jobmanager.memory.process.size",
-      "label": "jobmanager进程内存大小",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "1600m"
     },
-    {
-      "name": "taskmanager.memory.process.size",
-      "label": "taskmanager进程内存大小",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "1728m"
-    },
-    {
-      "name": "state.backend",
-      "label": "状态持久化",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "rocksdb"
-    },
-    {
-      "name": "state.checkpoints.dir",
-      "label": "状态检查点持久化目录",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "s3://public/capacity/basic/ustream/flink/checkpoints/"
-    },
-    {
-      "name": "state.savepoints.dir",
-      "label": "状态保存点持久化目录",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "s3://public/capacity/basic/ustream/flink/savepoints/"
-    },
-    {
-      "name": "state.backend.incremental",
-      "label": "开启增量快照",
-      "description": "",
-      "required": true,
-      "type": "switch",
-      "value": true,
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": true
-    },
-    {
-      "name": "jobmanager.archive.fs.dir",
-      "label": "作业存档目录",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "s3://public/capacity/basic/ustream/flink/completed-jobs/"
-    },
-    {
-      "name": "historyserver.web.port",
-      "label": "HistoryServer页面端口",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "8082"
-    },
-    {
-      "name": "historyserver.archive.fs.dir",
-      "label": "监视目录列表(以逗号分隔的)",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "s3://public/capacity/basic/ustream/flink/completed-jobs/"
-    },
-    {
-      "name": "historyserver.web.tmpdir",
-      "label": "HistoryServer临时目录",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "/tmp/flink-web-history"
-    },
-    {
-      "name": "classloader.check-leaked-classloader",
-      "label": "禁用classloader.check",
-      "description": "禁用classloader.check",
-      "required": true,
-      "type": "switch",
-      "value": false,
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": false
-    },
-    {
-      "name": "fs.allowed-fallback-filesystems",
-      "label": "保存点模式",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "s3"
-    },
-    {
-      "name": "s3.access-key",
-      "label": "S3帐号",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "${minioAccessKey}"
-    },
-    {
-      "name": "s3.secret-key",
-      "label": "S3密钥",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "${minioSecretKey}"
-    },
-    {
-      "name": "s3.endpoint",
-      "label": "S3地址",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "http://${minioHost}:${minioApiPort}"
-    },
-    {
-      "name": "s3.path.style.access",
-      "label": "启用路径样式",
-      "description": "",
-      "required": true,
-      "type": "switch",
-      "value": true,
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": true
-    },
-    {
-      "name": "custom.flink.conf.yaml",
-      "label": "自定义配置flink-conf.yaml",
-      "description": "自定义配置",
-      "configType": "custom",
-      "required": false,
-      "type": "multipleWithKey",
-      "value": [],
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": ""
+    "parameters": [
+        {
+            "name": "jobmanager.memory.process.size",
+            "value": "1600m",
+            "description": "",
+            "label": "jobmanager进程内存大小",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "1600m",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "taskmanager.memory.process.size",
+            "value": "1728m",
+            "description": "",
+            "label": "taskmanager进程内存大小",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "1728m",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "state.backend",
+            "value": "rocksdb",
+            "description": "",
+            "label": "状态持久化",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "rocksdb",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "state.checkpoints.dir",
+            "value": "s3://public/capacity/basic/ustream/flink/checkpoints/",
+            "description": "",
+            "label": "状态检查点持久化目录",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "s3://public/capacity/basic/ustream/flink/checkpoints/",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "state.savepoints.dir",
+            "value": "s3://public/capacity/basic/ustream/flink/savepoints/",
+            "description": "",
+            "label": "状态保存点持久化目录",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "s3://public/capacity/basic/ustream/flink/savepoints/",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "state.backend.incremental",
+            "value": true,
+            "description": "",
+            "label": "开启增量快照",
+            "hidden": false,
+            "required": true,
+            "type": "switch",
+            "defaultValue": true,
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "jobmanager.archive.fs.dir",
+            "value": "s3://public/capacity/basic/ustream/flink/completed-jobs/",
+            "description": "",
+            "label": "作业存档目录",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "s3://public/capacity/basic/ustream/flink/completed-jobs/",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "historyserver.web.port",
+            "value": "8082",
+            "description": "",
+            "label": "HistoryServer页面端口",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "8082",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "historyserver.archive.fs.dir",
+            "value": "s3://public/capacity/basic/ustream/flink/completed-jobs/",
+            "description": "",
+            "label": "监视目录列表(以逗号分隔的)",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "s3://public/capacity/basic/ustream/flink/completed-jobs/",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "historyserver.web.tmpdir",
+            "value": "/tmp/flink-web-history",
+            "description": "",
+            "label": "HistoryServer临时目录",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "/tmp/flink-web-history",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "classloader.check-leaked-classloader",
+            "value": false,
+            "description": "禁用classloader.check",
+            "label": "禁用classloader.check",
+            "hidden": false,
+            "required": true,
+            "type": "switch",
+            "defaultValue": false,
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "fs.allowed-fallback-filesystems",
+            "value": "s3",
+            "description": "",
+            "label": "保存点模式",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "s3",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "s3.access-key",
+            "value": "${MINIO.minioAccessKey}",
+            "description": "",
+            "label": "S3帐号",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "${MINIO.minioAccessKey}",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "s3.secret-key",
+            "value": "${MINIO.minioSecretKey}",
+            "description": "",
+            "label": "S3密钥",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "${MINIO.minioSecretKey}",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "s3.endpoint",
+            "value": "http://${MINIO.MinioServer.__hostIp__}:${MINIO.minioApiPort}",
+            "description": "",
+            "label": "S3地址",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "http://${MINIO.MinioServer.__hostIp__}:${MINIO.minioApiPort}",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "s3.path.style.access",
+            "value": true,
+            "description": "",
+            "label": "启用路径样式",
+            "hidden": false,
+            "required": true,
+            "type": "switch",
+            "defaultValue": true,
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "custom.flink.conf.yaml",
+            "value": [
+            ],
+            "description": "自定义配置",
+            "label": "自定义配置flink-conf.yaml",
+            "hidden": false,
+            "required": false,
+            "configType": "custom",
+            "type": "multipleWithKey",
+            "defaultValue": [
+            ],
+            "configurableInWizard": true,
+            "register": false
+        }
+    ],
+    "arch": {
+        "common": {
+            "packageName": "flink-1.16.2-3.4.0.tar.gz"
+        }
     }
-  ]
 }

@@ -50,8 +50,7 @@ public class HadoopUtils {
         serviceRoleInfo.setName("ResourceManager");
         serviceRoleInfo.setParentName("YARN");
         serviceRoleInfo.setConfigFileMap(configFileMap);
-        serviceRoleInfo
-                .setDecompressPackageName(PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "YARN"));
+        serviceRoleInfo.setDecompressPackageName(PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "YARN"));
         serviceRoleInfo.setHostname(roleInstanceEntity.getHostname());
         ServiceConfigureHandler configureHandler = new ServiceConfigureHandler();
         ExecResult execResult = configureHandler.handlerRequest(serviceRoleInfo);

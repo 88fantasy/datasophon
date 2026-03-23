@@ -48,13 +48,13 @@ public class Krb5KdcHandlerStrategy extends AbstractHandlerStrategy implements S
             if (execResult.getExecResult()) {
                 logger.info("init kdc database success");
                 startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                        command.getDecompressPackageName(), command.getRunAs());
+                        command, command.getRunAs(), command.isCheckStatus());
             } else {
                 logger.info("init kdc database failed");
             }
         } else {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+                    command, command.getRunAs(), command.isCheckStatus());
         }
         return startResult;
     }

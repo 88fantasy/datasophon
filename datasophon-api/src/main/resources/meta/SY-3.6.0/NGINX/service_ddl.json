@@ -95,9 +95,8 @@
         "outputDirectory": "bin",
         "templateName": "nginx-configure.ftl",
         "includeParams": [
-          "nginxBasePath",
-          "nginxInstallPath",
-          "nginxModules"
+          "nginxModules",
+          "nginxBasePath"
         ]
       },
       {
@@ -170,10 +169,10 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "/opt/datasophon/nginx-1.26.2",
+      "value": "/data/install_datasophon/nginx-1.26.2",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "/opt/datasophon/nginx-1.26.2"
+      "defaultValue": "/data/install_datasophon/nginx-1.26.2"
     },
     {
       "name": "nginxInstallPath",
@@ -183,10 +182,10 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "/opt/datasophon/nginx-1.26.2/nginx",
+      "value": "/data/install_datasophon/nginx-1.26.2/nginx",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "/opt/datasophon/nginx-1.26.2/nginx"
+      "defaultValue": "/data/install_datasophon/nginx-1.26.2/nginx"
     },
     {
       "name": "nginxModules",
@@ -197,15 +196,15 @@
       "type": "multiple",
       "separator": ",",
       "value": [
-        "--http-log-path=/opt/datasophon/nginx-1.26.2/nginx/logs/access/access.log",
-        "--error-log-path=/opt/datasophon/nginx-1.26.2/nginx/logs/error/error.log",
-        "--lock-path=/opt/datasophon/nginx-1.26.2/nginx/sbin/nginx.lock",
-        "--pid-path=/opt/datasophon/nginx-1.26.2/nginx/sbin/nginx.pid",
-        "--http-client-body-temp-path=/opt/datasophon/nginx-1.26.2/nginx/temp/body",
-        "--http-fastcgi-temp-path=/opt/datasophon/nginx-1.26.2/nginx/temp/fastcgi",
-        "--http-proxy-temp-path=/opt/datasophon/nginx-1.26.2/nginx/temp/proxy",
-        "--http-scgi-temp-path=/opt/datasophon/nginx-1.26.2/nginx/temp/scgi",
-        "--http-uwsgi-temp-path=/opt/datasophon/nginx-1.26.2/nginx/temp/uwsgi",
+        "--http-log-path=/data/install_datasophon/nginx-1.26.2/nginx/logs/access/access.log",
+        "--error-log-path=/data/install_datasophon/nginx-1.26.2/nginx/logs/error/error.log",
+        "--lock-path=/data/install_datasophon/nginx-1.26.2/nginx/sbin/nginx.lock",
+        "--pid-path=/data/install_datasophon/nginx-1.26.2/nginx/sbin/nginx.pid",
+        "--http-client-body-temp-path=/data/install_datasophon/nginx-1.26.2/nginx/temp/body",
+        "--http-fastcgi-temp-path=/data/install_datasophon/nginx-1.26.2/nginx/temp/fastcgi",
+        "--http-proxy-temp-path=/data/install_datasophon/nginx-1.26.2/nginx/temp/proxy",
+        "--http-scgi-temp-path=/data/install_datasophon/nginx-1.26.2/nginx/temp/scgi",
+        "--http-uwsgi-temp-path=/data/install_datasophon/nginx-1.26.2/nginx/temp/uwsgi",
         "--with-debug",
         "--with-pcre-jit",
         "--with-http_ssl_module",
@@ -229,15 +228,15 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": [
-        "--http-log-path=/opt/datasophon/nginx-1.26.2/nginx/logs/access/access.log",
-        "--error-log-path=/opt/datasophon/nginx-1.26.2/nginx/logs/error/error.log",
-        "--lock-path=/opt/datasophon/nginx-1.26.2/nginx/sbin/nginx.lock",
-        "--pid-path=/opt/datasophon/nginx-1.26.2/nginx/sbin/nginx.pid",
-        "--http-client-body-temp-path=/opt/datasophon/nginx-1.26.2/nginx/temp/body",
-        "--http-fastcgi-temp-path=/opt/datasophon/nginx-1.26.2/nginx/temp/fastcgi",
-        "--http-proxy-temp-path=/opt/datasophon/nginx-1.26.2/nginx/temp/proxy",
-        "--http-scgi-temp-path=/opt/datasophon/nginx-1.26.2/nginx/temp/scgi",
-        "--http-uwsgi-temp-path=/opt/datasophon/nginx-1.26.2/nginx/temp/uwsgi",
+        "--http-log-path=/data/install_datasophon/nginx-1.26.2/nginx/logs/access/access.log",
+        "--error-log-path=/data/install_datasophon/nginx-1.26.2/nginx/logs/error/error.log",
+        "--lock-path=/data/install_datasophon/nginx-1.26.2/nginx/sbin/nginx.lock",
+        "--pid-path=/data/install_datasophon/nginx-1.26.2/nginx/sbin/nginx.pid",
+        "--http-client-body-temp-path=/data/install_datasophon/nginx-1.26.2/nginx/temp/body",
+        "--http-fastcgi-temp-path=/data/install_datasophon/nginx-1.26.2/nginx/temp/fastcgi",
+        "--http-proxy-temp-path=/data/install_datasophon/nginx-1.26.2/nginx/temp/proxy",
+        "--http-scgi-temp-path=/data/install_datasophon/nginx-1.26.2/nginx/temp/scgi",
+        "--http-uwsgi-temp-path=/data/install_datasophon/nginx-1.26.2/nginx/temp/uwsgi",
         "--with-debug",
         "--with-pcre-jit",
         "--with-http_ssl_module",
@@ -334,10 +333,10 @@
       "required": true,
       "type": "input",
       "configType": "map",
-      "value": "/opt/datasophon/juicefs/appweb",
+      "value": "/data/install_datasophon/juicefs/appweb",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "/opt/datasophon/juicefs/appweb"
+      "defaultValue": "/data/install_datasophon/juicefs/appweb"
     },
     {
       "name": "nginxAppConf",
@@ -347,22 +346,10 @@
       "type": "multipleWithMap",
       "configType": "map",
       "value": [
-        {
-          "appName":"gateway",
-          "appPort":"8002",
-          "appUrl":"/gw/",
-          "metaInfo": "    proxy_set_header        X-Real-IP $remote_addr ;\n    proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for ;\n    proxy_set_header        Host  $http_host;"
-        }
       ],
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": [
-        {
-          "appName":"gateway",
-          "appPort":"8002",
-          "appUrl":"/gw/",
-          "metaInfo": "    proxy_set_header        X-Real-IP $remote_addr ;\n    proxy_set_header        X-Forwarded-For $proxy_add_x_forwarded_for ;\n    proxy_set_header        Host  $http_host;"
-        }
       ]
     }
   ]

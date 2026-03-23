@@ -92,6 +92,7 @@ public class ClusterQueueCapacityServiceImpl extends ServiceImpl<ClusterQueueCap
     config.setValue(queueList);
     config.setConfigType("map");
     config.setRequired(true);
+    config.setEnabled(true);
 
     serviceConfigs.add(config);
 

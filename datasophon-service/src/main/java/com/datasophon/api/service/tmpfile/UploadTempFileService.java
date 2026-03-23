@@ -2,6 +2,7 @@ package com.datasophon.api.service.tmpfile;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.datasophon.api.dto.upload.BigFileDTO;
+import com.datasophon.api.dto.upload.CheckChunkDTO;
 import com.datasophon.api.dto.upload.ChunkDTO;
 import com.datasophon.api.dto.upload.MergeChunkDTO;
 import com.datasophon.dao.entity.UploadTempFile;
@@ -31,6 +32,7 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
      */
     UploadTempFile createShardUploadTask(BigFileDTO info);
 
+
     /**
      * 上传分片
      * @param info
@@ -39,6 +41,7 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
     UploadTempFileChunk uploadChunk(ChunkDTO info);
 
 
+    UploadTempFileChunk isChunkUploaded(CheckChunkDTO dto);
     /**
      * 合并分片
      * @param vo
@@ -51,9 +54,9 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
      * @param attachId
      * @return
      */
-    MergeProgressVO queryMergeProgress(Long attachId);
+    MergeProgressVO queryMergeProgress(Integer attachId);
 
-    File getTempFile(Long attachId);
+    File getTempFile(Integer attachId);
 
     /**
      * 清理缓存

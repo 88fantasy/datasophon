@@ -50,10 +50,11 @@ public interface Executor {
     
     /**
      * 创建目录
+     * TODO 不支持软链接目录创建目录（废弃）
      * @param destDir 目标目录路径
      * @return
      */
-    ExecResult createDir(String destDir);
+    /*ExecResult createDir(String destDir);*/
     
     /**
      * 读取文件内容

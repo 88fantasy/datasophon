@@ -17,14 +17,14 @@
 
 package com.datasophon.dao.entity;
 
-import java.io.Serializable;
-
-import lombok.Data;
-import lombok.experimental.Accessors;
-
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import lombok.experimental.Accessors;
+
+import java.io.Serializable;
 
 @TableName("t_ddh_frame_service")
 @Data
@@ -77,9 +77,17 @@ public class FrameServiceEntity implements Serializable {
     
     private String decompressPackageName;
 
+
+    @Deprecated
+    private Integer sortNum;
+
+    private String type;
+
     @TableField(exist = false)
     private Boolean installed;
-    
-    private Integer sortNum;
+
+    @Schema(description = "是否被选中")
+    @TableField(exist = false)
+    private Boolean selected;
     
 }

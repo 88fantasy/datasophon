@@ -6,3 +6,4 @@ com.datasophon.worker.strategy.resource.EmptyStrategy
 com.datasophon.worker.strategy.resource.LinkStrategy
 com.datasophon.worker.strategy.resource.ShellStrategy
 com.datasophon.worker.strategy.resource.ExecShellStrategy
+com.datasophon.worker.strategy.resource.NexusResourceStrategy

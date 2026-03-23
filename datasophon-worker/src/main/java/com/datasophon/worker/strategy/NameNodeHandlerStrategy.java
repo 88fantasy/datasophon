@@ -22,6 +22,7 @@ import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.utils.KerberosUtils;
@@ -39,7 +40,7 @@ public class NameNodeHandlerStrategy extends AbstractHandlerStrategy implements 
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) {
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-        String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
+        String workPath = PkgInstallPathUtils.getInstallHome(command);
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             if (command.isSlave()) {
                 // 执行hdfs namenode -bootstrapStandby
@@ -107,7 +108,7 @@ public class NameNodeHandlerStrategy extends AbstractHandlerStrategy implements 
             }
         }
         ExecResult startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs());
+                command, command.getRunAs(), command.isCheckStatus());
         
         return startResult;
     }

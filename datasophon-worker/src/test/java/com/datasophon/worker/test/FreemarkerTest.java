@@ -110,6 +110,7 @@ public class FreemarkerTest {
         serviceConfig.setName("worker_1");
         serviceConfig.setValue("yc1:8585");
         serviceConfig.setRequired(true);
+        serviceConfig.setEnabled(true);
         workerServiceConfigs.add(serviceConfig);
 
         ServiceConfig nodeServiceConfig = new ServiceConfig();

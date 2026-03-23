@@ -1,370 +1,454 @@
 {
-  "name": "ELASTICSEARCH",
-  "label": "ElasticSearch",
-  "description": "高性能搜索引擎",
-  "version": "7.17.4",
-  "sortNum": 11,
-  "dependencies": [],
-  "packageName": "elasticsearch-7.17.4.tar.gz",
-  "decompressPackageName": "elasticsearch-7.17.4",
-  "arch":{
-      "x86_64": {
-        "packageName": "elasticsearch-7.17.4-x86_64.tar.gz",
-      },
-      "aarch64": {
-        "packageName": "elasticsearch-7.17.4-arm_64.tar.gz",
-      },
+    "name": "ELASTICSEARCH",
+    "type": "MIDDLEWARE",
+    "label": "ElasticSearch",
+    "description": "高性能搜索引擎",
+    "version": "7.17.4",
+    "sortNum": 12,
+    "packageName": "elasticsearch-7.17.4-x86_64.tar.gz",
+    "decompressPackageName": "elasticsearch-7.17.4",
+    "createDecompressDir": false,
+    "dependencies": [
+    ],
+    "roles": [
+        {
+            "name": "ElasticSearch",
+            "label": "ElasticSearch",
+            "sortNum": 1,
+            "roleType": "master",
+            "cardinality": "1+",
+            "logFile": "logs/ddp_es.log",
+            "serverPorts": [
+            ],
+            "runAs": {
+                "user": "elastic",
+                "group": "elastic"
+            },
+            "resourceStrategies": [
+                {
+                    "to": "config/certs/elastic-certificates.p12",
+                    "md5": "328c66921c2c7f9377b45527645b6fa1",
+                    "from": "config/certs/elastic-certificates.p12",
+                    "type": "download",
+                    "templateId": "2003757699642494977"
+                },
+                {
+                    "to": "config/certs/elastic-stack-ca.p12",
+                    "md5": "461ff145aede3ee4378736a2909cea41",
+                    "from": "config/certs/elastic-stack-ca.p12",
+                    "type": "download",
+                    "templateId": "2003757734723653633"
+                },
+                {
+                    "to": "control_es.sh",
+                    "md5": "dd40cb085d3f4199f14fc74b666a1fdd",
+                    "from": "script/control_es.sh",
+                    "type": "download",
+                    "templateId": "2003757981428420609"
+                }
+            ],
+            "startRunner": {
+                "timeout": "60",
+                "program": "bin/elasticsearch",
+                "args": [
+                    "-d",
+                    "-p",
+                    "pid/elasticsearch.pid"
+                ]
+            },
+            "stopRunner": {
+                "timeout": "600",
+                "program": "control_es.sh",
+                "args": [
+                    "stop",
+                    "elasticsearch"
+                ]
+            },
+            "statusRunner": {
+                "timeout": "60",
+                "program": "control_es.sh",
+                "args": [
+                    "status",
+                    "elasticsearch"
+                ]
+            },
+            "restartRunner": {
+                "timeout": "60",
+                "program": "control_es.sh",
+                "args": [
+                    "restart",
+                    "elasticsearch"
+                ]
+            },
+            "externalLink": {
+            },
+            "hooks": [
+            ]
+        },
+        {
+            "name": "EsExporter",
+            "label": "EsExporter",
+            "sortNum": 2,
+            "roleType": "master",
+            "cardinality": "1",
+            "logFile": "elasticsearch-exporter/logs/es_exporter-${ELASTICSEARCH.ElasticSearch.__hostIp__}.out",
+            "serverPorts": [
+            ],
+            "jmxPort": 9114,
+            "runAs": {
+            },
+            "resourceStrategies": [
+                {
+                    "to": "elasticsearch-exporter/control_es_exporter.sh",
+                    "md5": "cab3260eed94bcc8d614def8123a1825",
+                    "from": "script/control_es_exporter.sh",
+                    "type": "download",
+                    "templateId": "2003758507066986497"
+                }
+            ],
+            "startRunner": {
+                "timeout": "60",
+                "program": "elasticsearch-exporter/control_es_exporter.sh",
+                "args": [
+                    "start",
+                    "es_exporter"
+                ]
+            },
+            "stopRunner": {
+                "timeout": "600",
+                "program": "elasticsearch-exporter/control_es_exporter.sh",
+                "args": [
+                    "stop",
+                    "es_exporter"
+                ]
+            },
+            "statusRunner": {
+                "timeout": "60",
+                "program": "elasticsearch-exporter/control_es_exporter.sh",
+                "args": [
+                    "status",
+                    "es_exporter"
+                ]
+            },
+            "restartRunner": {
+                "timeout": "60",
+                "program": "elasticsearch-exporter/control_es_exporter.sh",
+                "args": [
+                    "restart",
+                    "es_exporter"
+                ]
+            },
+            "externalLink": {
+            },
+            "hooks": [
+            ]
+        }
+    ],
+    "configWriter": {
+        "generators": [
+            {
+                "filename": "elasticsearch.yml",
+                "configFormat": "properties3",
+                "outputDirectory": "config",
+                "templateType": "CUSTOM",
+                "includeParams": [
+                    "cluster.name",
+                    "node.name",
+                    "node.master",
+                    "network.host",
+                    "http.port",
+                    "transport.tcp.port",
+                    "transport.tcp.compress",
+                    "discovery.seed_hosts",
+                    "discovery.zen.minimum_master_nodes",
+                    "cluster.initial_master_nodes",
+                    "http.cors.enabled",
+                    "http.cors.allow-origin",
+                    "path.data",
+                    "xpack.security.enabled",
+                    "xpack.security.transport.ssl.enabled",
+                    "xpack.security.transport.ssl.verification_mode",
+                    "xpack.security.transport.ssl.keystore.path",
+                    "xpack.security.transport.ssl.truststore.path",
+                    "custom.elasticsearch.yml"
+                ]
+            },
+            {
+                "filename": "jvm.options",
+                "configFormat": "custom",
+                "outputDirectory": "",
+                "templateType": "DEFAULT",
+                "templateId": 2003724231525076993,
+                "templateName": "jvm.options.ftl",
+                "includeParams": [
+                    "heapSize"
+                ]
+            }
+        ]
     },
-  "roles": [
-    {
-      "name": "ElasticSearch",
-      "label": "ElasticSearch",
-      "roleType": "master",
-      "cardinality": "1+",
-      "logFile": "logs/ddp_es.log",
-      "runAs": {
-        "user": "elastic",
-        "group": "elastic"
-      },
-      "sortNum": 1,
-      "resourceStrategies":[{
-        "type": "sh",
-        "commands": [
-          ["mkdir", "config/certs"],
-          ["cp", "/opt/datasophon/DDP/packages/elastic-certificates.p12","config/certs/"],
-          ["cp", "/opt/datasophon/DDP/packages/elastic-stack-ca.p12","config/certs/"]
-        ]
-      }
-      ],
-      "startRunner": {
-        "timeout": "60",
-        "program": "bin/elasticsearch",
-        "args": [
-          "-d",
-          "-p",
-          "pid/elasticsearch.pid"
-        ]
-      },
-      "stopRunner": {
-        "timeout": "600",
-        "program": "control_es.sh",
-        "args": [
-          "stop",
-          "elasticsearch"
-        ]
-      },
-      "statusRunner": {
-        "timeout": "60",
-        "program": "control_es.sh",
-        "args": [
-          "status",
-          "elasticsearch"
-        ]
-      },
-      "restartRunner": {
-        "timeout": "60",
-        "program": "control_es.sh",
-        "args": [
-          "restart",
-          "elasticsearch"
-        ]
-      }
-    },
-    {
-      "name": "EsExporter",
-      "label": "EsExporter",
-      "roleType": "master",
-      "cardinality": "1",
-      "logFile": "elasticsearch-exporter/logs/es_exporter-${host}.out",
-      "jmxPort": 9114,
-      "sortNum": 2,
-      "startRunner": {
-        "timeout": "60",
-        "program": "elasticsearch-exporter/control_es_exporter.sh",
-        "args": [
-          "start",
-          "es_exporter"
-        ]
-      },
-      "stopRunner": {
-        "timeout": "600",
-        "program": "elasticsearch-exporter/control_es_exporter.sh",
-        "args": [
-          "stop",
-          "es_exporter"
-        ]
-      },
-      "statusRunner": {
-        "timeout": "60",
-        "program": "elasticsearch-exporter/control_es_exporter.sh",
-        "args": [
-          "status",
-          "es_exporter"
-        ]
-      },
-      "restartRunner": {
-        "timeout": "60",
-        "program": "elasticsearch-exporter/control_es_exporter.sh",
-        "args": [
-          "restart",
-          "es_exporter"
-        ]
-      }
+    "parameters": [
+        {
+            "name": "cluster.name",
+            "value": "ddp_es",
+            "description": "集群名称",
+            "label": "集群名称",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "ddp_es",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "node.name",
+            "value": "${host}",
+            "description": "",
+            "label": "节点名称",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "${host}",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "node.master",
+            "value": true,
+            "description": "是不是有资格竞选主节点",
+            "label": "是否竞选主节点",
+            "hidden": false,
+            "required": true,
+            "type": "switch",
+            "defaultValue": true,
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "network.host",
+            "value": "${host}",
+            "description": "",
+            "label": "节点地址",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "${host}",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "http.port",
+            "value": "9200",
+            "description": "对外提供服务的端口",
+            "label": "对外服务端口",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "9200",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "transport.tcp.port",
+            "value": "9300",
+            "description": "",
+            "label": "集群通信端口",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "9300",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "transport.tcp.compress",
+            "value": false,
+            "description": "设置是否压缩tcp传输时的数据，默认为false，不压缩",
+            "label": "数据传输是否压缩",
+            "hidden": false,
+            "required": true,
+            "type": "switch",
+            "defaultValue": false,
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "discovery.seed_hosts",
+            "key": "",
+            "value": "${ELASTICSEARCH.seedHosts}",
+            "description": "",
+            "label": "服务发现种子主机",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "${ELASTICSEARCH.seedHosts}",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "discovery.zen.minimum_master_nodes",
+            "value": "2",
+            "description": "",
+            "label": "discovery.zen.minimum_master_nodes",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "2",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "cluster.initial_master_nodes",
+            "key": "",
+            "value": "${ELASTICSEARCH.initMasterNodes}",
+            "description": "",
+            "label": "初始主节点",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "${ELASTICSEARCH.initMasterNodes}",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "http.cors.enabled",
+            "value": true,
+            "description": "",
+            "label": "是否可跨域",
+            "hidden": false,
+            "required": true,
+            "type": "switch",
+            "defaultValue": true,
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "http.cors.allow-origin",
+            "value": "\\\"*\\\"",
+            "description": "",
+            "label": "支持的跨域范围",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "\\\"*\\\"",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "path.data",
+            "value": [
+                "/data/es"
+            ],
+            "description": "",
+            "label": "数据存储目录",
+            "hidden": false,
+            "required": true,
+            "separator": ",",
+            "configType": "path",
+            "type": "multiple",
+            "defaultValue": [
+                "/data/es"
+            ],
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "xpack.security.enabled",
+            "value": true,
+            "description": "",
+            "label": "xpack安全认证开关",
+            "hidden": false,
+            "required": true,
+            "type": "switch",
+            "defaultValue": true,
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "xpack.security.transport.ssl.enabled",
+            "value": true,
+            "description": "",
+            "label": "xpack.ssl安全认证开关",
+            "hidden": false,
+            "required": true,
+            "type": "switch",
+            "defaultValue": true,
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "xpack.security.transport.ssl.verification_mode",
+            "value": "certificate",
+            "description": "",
+            "label": "xpack.ssl安全认证模式",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "certificate",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "xpack.security.transport.ssl.keystore.path",
+            "value": "certs/elastic-certificates.p12",
+            "description": "",
+            "label": "xpack.ssl.keystore密钥路径",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "certs/elastic-certificates.p12",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "xpack.security.transport.ssl.truststore.path",
+            "value": "certs/elastic-certificates.p12",
+            "description": "",
+            "label": "xpack.ssl.truststore密钥路径",
+            "hidden": false,
+            "required": true,
+            "type": "input",
+            "defaultValue": "certs/elastic-certificates.p12",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "heapSize",
+            "value": "2g",
+            "description": "",
+            "label": "ES堆内存大小",
+            "hidden": true,
+            "required": true,
+            "configType": "map",
+            "type": "input",
+            "defaultValue": "2g",
+            "configurableInWizard": true,
+            "register": false
+        },
+        {
+            "name": "custom.elasticsearch.yml",
+            "value": [
+                {
+                    "ingest.geoip.downloader.enabled": "false"
+                }
+            ],
+            "description": "自定义配置",
+            "label": "自定义配置elasticsearch.yml",
+            "hidden": false,
+            "required": false,
+            "configType": "custom",
+            "type": "multipleWithKey",
+            "defaultValue": [
+                {
+                    "ingest.geoip.downloader.enabled": "false"
+                }
+            ],
+            "configurableInWizard": true,
+            "register": false
+        }
+    ],
+    "arch": {
+        "common": {
+            "packageName": "elasticsearch-7.17.4-x86_64.tar.gz"
+        }
     }
-  ],
-  "configWriter": {
-    "generators": [
-      {
-        "filename": "elasticsearch.yml",
-        "configFormat": "properties3",
-        "outputDirectory": "config",
-        "includeParams": [
-          "cluster.name",
-          "node.name",
-          "node.master",
-          "network.host",
-          "http.port",
-          "transport.tcp.port",
-          "transport.tcp.compress",
-          "discovery.seed_hosts",
-          "discovery.zen.minimum_master_nodes",
-          "cluster.initial_master_nodes",
-          "gateway.recover_after_nodes",
-          "http.cors.enabled",
-          "http.cors.allow-origin",
-          "path.data",
-          "xpack.security.enabled",
-          "xpack.security.transport.ssl.enabled",
-          "xpack.security.transport.ssl.verification_mode",
-          "xpack.security.transport.ssl.keystore.path",
-          "xpack.security.transport.ssl.truststore.path",
-          "custom.elasticsearch.yml"
-        ]
-      },
-      {
-        "filename": "jvm.options",
-        "configFormat": "custom",
-        "outputDirectory": "",
-        "templateName": "jvm.options.ftl",
-        "includeParams": [
-          "heapSize"
-        ]
-      }
-    ]
-  },
-  "parameters": [
-    {
-      "name": "cluster.name",
-      "label": "集群名称",
-      "description": "集群名称",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "ddp_es"
-    },{
-      "name": "node.name",
-      "label": "节点名称",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "${host}"
-    },{
-      "name": "node.master",
-      "label": "是否竞选主节点",
-      "description": "是不是有资格竞选主节点",
-      "required": true,
-      "type": "switch",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": true
-    },{
-      "name": "network.host",
-      "label": "节点地址",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "${host}"
-    },{
-      "name": "http.port",
-      "label": "对外服务端口",
-      "description": "对外提供服务的端口",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "9200"
-    },{
-      "name": "transport.tcp.port",
-      "label": "集群通信端口",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "9300"
-    },{
-      "name": "transport.tcp.compress",
-      "label": "数据传输是否压缩",
-      "description": "设置是否压缩tcp传输时的数据，默认为false，不压缩",
-      "required": true,
-      "type": "switch",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": false
-    },{
-      "name": "discovery.seed_hosts",
-      "label": "服务发现种子主机",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "${seedHosts}"
-    },{
-      "name": "discovery.zen.minimum_master_nodes",
-      "label": "discovery.zen.minimum_master_nodes",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "2"
-    },{
-      "name": "cluster.initial_master_nodes",
-      "label": "初始主节点",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "${initMasterNodes}"
-    },{
-      "name": "http.cors.enabled",
-      "label": "是否可跨域",
-      "description": "",
-      "required": true,
-      "type": "switch",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": true
-    },{
-      "name": "http.cors.allow-origin",
-      "label": "支持的跨域范围",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "\"*\""
-    },
-    {
-      "name": "path.data",
-      "label": "数据存储目录",
-      "description": "",
-      "configType": "path",
-      "separator": ",",
-      "required": true,
-      "type": "multiple",
-      "value": ["/data/es"],
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": ""
-    },
-    {
-      "name": "xpack.security.enabled",
-      "label": "xpack安全认证开关",
-      "description": "",
-      "required": true,
-      "type": "switch",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": true
-    },
-    {
-      "name": "xpack.security.transport.ssl.enabled",
-      "label": "xpack.ssl安全认证开关",
-      "description": "",
-      "required": true,
-      "type": "switch",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": true
-    },
-    {
-      "name": "xpack.security.transport.ssl.verification_mode",
-      "label": "xpack.ssl安全认证模式",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "certificate"
-    },
-    {
-      "name": "xpack.security.transport.ssl.keystore.path",
-      "label": "xpack.ssl.keystore密钥路径",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "certs/elastic-certificates.p12"
-    },
-    {
-      "name": "xpack.security.transport.ssl.truststore.path",
-      "label": "xpack.ssl.truststore密钥路径",
-      "description": "",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": "certs/elastic-certificates.p12"
-    },
-    {
-      "name": "heapSize",
-      "label": "ES堆内存大小",
-      "description": "",
-      "configType": "map",
-      "required": true,
-      "type": "input",
-      "value": "",
-      "configurableInWizard": true,
-      "hidden": true,
-      "defaultValue": "2g"
-    },
-    {
-      "name": "custom.elasticsearch.yml",
-      "label": "自定义配置elasticsearch.yml",
-      "description": "自定义配置",
-      "configType": "custom",
-      "required": false,
-      "type": "multipleWithKey",
-      "value": [{"ingest.geoip.downloader.enabled":"false"}],
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": ""
-    }
-  ]
 }

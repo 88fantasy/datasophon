@@ -14,7 +14,7 @@ touch control_zeppelin.sh
 tar czf zeppelin-0.10.1.tar.gz zeppelin-0.10.1
 md5sum zeppelin-0.10.1.tar.gz
 echo 'c2e7f95d459777683c966a1d087754de' > zeppelin-0.10.1.tar.gz.md5
-cp ./zeppelin-0.10.1.tar.gz ./zeppelin-0.10.1.tar.gz.md5 /opt/datasophon/DDP/packages/
+cp ./zeppelin-0.10.1.tar.gz ./zeppelin-0.10.1.tar.gz.md5 /data/install_datasophon/packages/
 ```
 
 control_zeppeline.sh：
@@ -82,7 +82,7 @@ cd ZEPPELINE
 touch service_ddl.json
 
 # 各worker元数据目录
-cd /opt/datasophon/datasophon-worker/conf/templates
+cd /data/install_datasophon/datasophon-worker/conf/templates
 touch zeppelin-env.ftl
 touch zeppelin-site.ftl
 ```
@@ -1056,7 +1056,7 @@ zeppelin-site.ftl
 各节点worker重启
 
 ```shell
-sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker debug
+sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker debug
 ```
 
 主节点重启api

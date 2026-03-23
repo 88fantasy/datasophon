@@ -17,21 +17,23 @@
 
 package com.datasophon.common.model;
 
+import com.datasophon.common.command.ServiceRoleResource;
 import com.datasophon.common.enums.CommandType;
+import com.datasophon.common.enums.HookType;
 import com.datasophon.common.enums.ServiceRoleType;
-
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import lombok.Data;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Data
-public class ServiceRoleInfo implements Serializable, Comparable<ServiceRoleInfo> {
-    
-    private Integer id;
-    
+public class ServiceRoleInfo implements Serializable, ServiceRoleResource {
+
+
     private String name;
     
     private ServiceRoleType roleType;
@@ -88,12 +90,22 @@ public class ServiceRoleInfo implements Serializable, Comparable<ServiceRoleInfo
     private Integer serviceInstanceId;
     
     private RunAs runAs;
-    
+
+    private List<HookConfig> hooks;
+
     @Override
-    public int compareTo(ServiceRoleInfo serviceRoleInfo) {
-        if (Objects.nonNull(serviceRoleInfo.getSortNum()) && Objects.nonNull(this.getSortNum())) {
-            return this.sortNum - serviceRoleInfo.getSortNum();
-        }
-        return 0;
+    public String getServiceName() {
+        return parentName;
+    }
+
+    @Override
+    public String getServiceRoleName() {
+        return name;
+    }
+
+    public List<HookConfig> getMatchedHooks(HookType...types) {
+        List<HookType> typeList = Arrays.asList(types);
+        List<HookConfig> tmp = hooks == null ? new ArrayList<>(0) : hooks;
+        return tmp.stream().filter(hook-> typeList.contains(hook.getType())).collect(Collectors.toList());
     }
 }

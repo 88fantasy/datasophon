@@ -36,7 +36,7 @@
 			"externalLink": {
 				"name": "Amoro UI",
 				"label": "Amoro UI",
-				"url": "http://${host}:${amoroHttpPort}"
+				"url": "http://${host}:${AMORO.amoroHttpPort}"
 			}
 		}
 	],
@@ -171,7 +171,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "${zkUrls}"
+      "defaultValue": "${ZOOKEEPER.zkUrls}"
 		},
 		{
 			"name": "javaHome",
@@ -219,7 +219,7 @@
 			"value": "",
 			"configurableInWizard": true,
 			"hidden": false,
-			"defaultValue": "jdbc:hive2://${kyuubiServerHost}:10009"
+			"defaultValue": "jdbc:hive2://${KYUUBI.KyuubiServer.__host__}:10009"
 		},
 		{
 			"name": "amoroTerminalJdbcUser",

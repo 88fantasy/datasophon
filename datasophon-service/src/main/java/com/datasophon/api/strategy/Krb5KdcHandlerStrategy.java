@@ -17,19 +17,16 @@
 
 package com.datasophon.api.strategy;
 
-import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.utils.ProcessUtils;
 
 import java.util.List;
-import java.util.Map;
 
 public class Krb5KdcHandlerStrategy implements ServiceRoleStrategy {
     
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
         if (!hosts.isEmpty()) {
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${kdcHost}", hosts.get(0));
+            ProcessUtils.generateClusterVariable(clusterId, serviceName, "kdcHost", hosts.get(0));
         }
     }
 

@@ -1,34 +1,47 @@
 package com.datasophon.api.service.extrepo.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.CryptoException;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
 import com.datasophon.api.exceptions.BusinessException;
-import com.datasophon.api.load.LoadServiceMeta;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.FrameServiceService;
+import com.datasophon.api.service.ddl.DdlMetaService;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
 import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
 import com.datasophon.api.service.extrepo.ctx.MetaParseOption;
 import com.datasophon.api.service.extrepo.ctx.SrvDependenciesContext;
 import com.datasophon.api.service.extrepo.utils.MetaUtils;
-import com.datasophon.api.service.extrepo.utils.PathUtils;
+import com.datasophon.api.service.k8s.FrameK8sServiceService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
+import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
-import com.datasophon.common.Constants;
-import com.datasophon.common.utils.ZipUtils;
+import com.datasophon.common.model.DAG;
+import com.datasophon.common.storage.HelmStorage;
+import com.datasophon.common.storage.ImageStorage;
+import com.datasophon.common.storage.MetaStorage;
+import com.datasophon.common.storage.PackageStorage;
+import com.datasophon.common.storage.StorageUtils;
+import com.datasophon.common.utils.PathUtils;
+import com.datasophon.common.utils.TarUtils;
+import com.datasophon.common.utils.YamlUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
+import com.datasophon.dao.entity.k8s.FrameK8sServiceEntity;
+import com.datasophon.dao.model.extrepo.DeploySrvModel;
 import com.datasophon.dao.model.extrepo.DeploymentModel;
 import com.datasophon.dao.model.extrepo.ExtRepoMetaFsModel;
 import com.datasophon.dao.model.extrepo.FrameworkMeta;
-import com.datasophon.dao.model.extrepo.ServiceMeta;
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,12 +49,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.crypto.BadPaddingException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -68,8 +83,9 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     @Autowired
     private FrameInfoService frameInfoService;
 
+
     @Autowired
-    private LoadServiceMeta loadServiceMeta;
+    private DdlMetaService ddlMetaService;
 
     @Autowired
     private ClusterInfoService clusterInfoService;
@@ -80,6 +96,11 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     @Autowired
     private FrameServiceService frameServiceService;
 
+    @Autowired
+    private TransactionalUtils transactionalUtils;
+
+    @Autowired
+    private FrameK8sServiceService frameK8sServiceService;
 
 
     @Override
@@ -89,18 +110,29 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             option.setRoot(unzipDir);
             ExtRepoMetaFsModel model = MetaUtils.parseRepoMeta(option);
 
-
             SrvDependenciesContext ctx = new SrvDependenciesContext();
             List<String> frames = model.getFrameworks().stream().map(FrameworkMeta::getFrameCode).collect(Collectors.toList());
+            List<FrameInfoEntity> frameDbs = frameInfoService.lambdaQuery().in(FrameInfoEntity::getFrameCode, frames).list();
+
             List<FrameServiceEntity> installedSrv = frameServiceService.listSimpleService(frames);
             ctx.addService(installedSrv);
-            model.getFrameworks().stream().flatMap(f -> f.getServices().stream()).forEach(srv -> ctx.addService(srv.getFrameCode(), srv.getName()));
+            model.getFrameworks().stream()
+                    .flatMap(f -> f.getVosDdlServices().stream())
+                    .forEach(srv -> ctx.addVosService(srv.getFrameCode(), srv.getName()));
 
             List<String> errors = new ArrayList<>();
-            model.getFrameworks().stream().flatMap(f -> f.getServices().stream()).forEach(srv -> {
-                errors.addAll(ctx.validDependency(srv));
+            model.getFrameworks().stream().flatMap(f -> f.getVosDdlServices().stream()).forEach(srv -> {
+                errors.addAll(ctx.validVosDdlDependency(srv));
             });
 
+            Map<Integer, FrameInfoEntity> map = CollectionUtil.toMap(frameDbs, new HashMap<>(), FrameInfoEntity::getId);
+            List<FrameK8sServiceEntity> installedK8sSrv = frameK8sServiceService.listSimpleService(frameDbs.stream().map(FrameInfoEntity::getId).collect(Collectors.toList()));
+            installedK8sSrv.forEach(srv -> ctx.addK8sService(map.get(srv.getFrameId()).getFrameCode(), srv.getServiceName()));
+
+            model.getFrameworks().stream().flatMap(f -> f.getK8sDdLServices().stream()).forEach(srv -> ctx.addK8sService(srv.getFrameCode(), srv.getName()));
+            model.getFrameworks().stream().flatMap(f -> f.getK8sDdLServices().stream()).forEach(srv -> {
+                errors.addAll(ctx.validK8sDependency(srv));
+            });
             return new ValidateResultVO(errors);
         });
     }
@@ -113,10 +145,15 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         }
         String unzipDir = null;
         try {
-            unzipDir = ZipUtils.unzipToTemp(metaFile.getAbsolutePath(), dto.getUnzipPasswd());
+            unzipDir = TarUtils.decompressToTemp(metaFile.getAbsolutePath());
             MetaUtils.decodeMatchedFiles(unzipDir, dto.getContentDecodePasswd());
 
             return mapper.apply(unzipDir);
+        } catch (CryptoException e) {
+            if (e.getCause() instanceof BadPaddingException) {
+                throw new BusinessException("密码错误");
+            }
+            throw e;
         } catch (IOException e) {
             throw new BusinessException("IO异常" + e.getMessage(), e);
         } finally {
@@ -130,31 +167,36 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
     @Override
     public ValidateResultVO validatePkgFile(InstallComponentDTO dto) {
-        ExtRepoMetaFsModel model = unzipMetaFile(dto, unzipDir -> {
-            MetaParseOption option = new MetaParseOption();
-            option.setRoot(unzipDir);
-            return MetaUtils.parseRepoMeta(option);
-        });
-
-        File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
-        try {
-            List<String> fileNames = ZipUtils.getZipEntry(pkgFile.getAbsolutePath(), null);
-            List<String> errors = new ArrayList<>();
-            model.getFrameworks().stream().flatMap(f -> f.getServices().stream()).forEach(srv -> {
-                String filePath = PathUtils.unixStyle(MetaUtils.getFileRelativePath(srv));
-                if (!fileNames.contains(filePath)) {
-                    errors.add(filePath);
-                }
-                String md5Path = PathUtils.unixStyle(MetaUtils.getMd5FileRelativePath(srv));
-                if (!fileNames.contains(md5Path)) {
-                    errors.add(md5Path);
-                }
-            });
-
-            return new ValidateResultVO(errors.stream().map(e -> String.format("压缩包中缺少%s文件", e)).collect(Collectors.toList()));
-        } catch (Exception e) {
-            throw new BusinessException("IO异常" + e.getMessage(), e);
-        }
+//        ExtRepoMetaFsModel model = unzipMetaFile(dto, unzipDir -> {
+//            MetaParseOption option = new MetaParseOption();
+//            option.setRoot(unzipDir);
+//            return MetaUtils.parseRepoMeta(option);
+//        });
+//
+//        File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
+//        try {
+//            List<String> fileNames = TarUtils.getEntry(pkgFile.getAbsolutePath());
+//            List<String> errors = new ArrayList<>();
+//            model.getFrameworks().stream().flatMap(f -> f.getServices().stream()).forEach(srv -> {
+//                srv.getPackageNames().forEach(pkgName -> {
+//                    String filePath = PathUtils.unixStyle(MetaUtils.getFileRelativePath(pkgName));
+//                    if (!fileNames.contains(filePath)) {
+//                        errors.add(filePath);
+//                    }
+//                    String md5Path = PathUtils.unixStyle(MetaUtils.getMd5FileRelativePath(pkgName));
+//                    if (!fileNames.contains(md5Path)) {
+//                        errors.add(md5Path);
+//                    }
+//                });
+//            });
+//
+//            return new ValidateResultVO(errors.stream().map(e -> String.format("压缩包中缺少%s文件", e)).collect(Collectors.toList()));
+//        } catch (IOException e) {
+//            log.info("解压文件{}失败, {}", pkgFile.getAbsolutePath(), e.getMessage(), e);
+//            throw new BusinessException("IO异常" + e.getMessage(), e);
+//        }
+//        pms并不会将全部文件导出，不检查文件是否存在
+        return new ValidateResultVO(new ArrayList<>(0));
     }
 
 
@@ -165,10 +207,13 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         if (metaFile == null) {
             throw new BusinessException("元信息文件不存在");
         }
-        File pkg = uploadTempFileService.getTempFile(dto.getPkgFileId());
-        if (pkg == null) {
-            throw new BusinessException("安装包文件不存在");
+        if (dto.getPkgFileId() != null) {
+            File pkg = uploadTempFileService.getTempFile(dto.getPkgFileId());
+            if (pkg == null) {
+                throw new BusinessException("安装包文件不存在");
+            }
         }
+
 
         int progressId = RandomUtil.randomInt(1, Integer.MAX_VALUE);
         ImportCompProgressVO progress = new ImportCompProgressVO(progressId);
@@ -182,49 +227,57 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     private void doImportCmp(InstallComponentDTO dto, ImportCompProgressVO progress) {
         log.info("【导入第三方软件源】 进度ID:{}, 线程：{}, 开始执行", progress.getProgressId(), Thread.currentThread().getName());
         String error = null;
-        String metaUnzipPath = null;
-        String pkgUnzipPath = null;
-        try {
-            log.info("【导入第三方软件源】 进度ID:{}，开始解析meta数据", progress.getProgressId());
-//            解析元数据
-            File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId());
-            metaUnzipPath = unpackMetaFile(metaFile, dto, progress);
 
-            MetaParseOption option = new MetaParseOption();
-            option.setRoot(metaUnzipPath);
-            ExtRepoMetaFsModel vo = MetaUtils.parseRepoMeta(option);
-            progress.setStep(9);
-            log.info("【导入第三方软件源】 进度ID:{}，解析meta数据成功，metaUnzipPath: {}, 解析到{}个服务", progress.getProgressId(),
-                    metaUnzipPath, vo.getFrameworks().stream().mapToLong(fw -> fw.getServices().size()).sum());
+        PathPair pathPair = new PathPair();
+        try {
+            transactionalUtils.doInNewTx(() -> {
+                log.info("【导入第三方软件源】 进度ID:{}，开始解析meta数据", progress.getProgressId());
+//            解析元数据
+                File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId());
+                String metaUnzipPath = unpackMetaFile(metaFile, dto, progress);
+                pathPair.setMetaUnzipPath(metaUnzipPath);
+
+                MetaParseOption option = new MetaParseOption();
+                option.setRoot(metaUnzipPath);
+                ExtRepoMetaFsModel vo = MetaUtils.parseRepoMeta(option);
+                progress.setStep(9);
+                log.info("【导入第三方软件源】 进度ID:{}，解析meta数据成功，metaUnzipPath: {}, 解析到{}个服务", progress.getProgressId(),
+                        metaUnzipPath, vo.getFrameworks().stream().mapToLong(fw -> fw.getVosDdlServices().size()).sum());
 
 //            解压安装包
-            log.info("【导入第三方软件源】 进度ID:{}，开始解压软件安装包", progress.getProgressId());
-            File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
-            pkgUnzipPath = decompressPkgFile(pkgFile, vo, progress);
-            log.info("【导入第三方软件源】 进度ID:{}，解压软件安装包成功, 解压路径{}", progress.getProgressId(), pkgUnzipPath);
+                String pkgUnzipPath = null;
+                if (dto.getPkgFileId() != null) {
+                    log.info("【导入第三方软件源】 进度ID:{}，开始解压软件安装包", progress.getProgressId());
+                    File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
+                    pkgUnzipPath = decompressPkgFile(pkgFile, vo, progress);
+                    pathPair.setPkgUnzipPath(pkgUnzipPath);
+                    log.info("【导入第三方软件源】 进度ID:{}，解压软件安装包成功, 解压路径{}", progress.getProgressId(), pkgUnzipPath);
+                }
 
 //            保存数据
-            saveFrameInfo(metaUnzipPath, vo, progress);
-            log.info("【导入第三方软件源】 进度ID:{}，更新meta数据成功", progress.getProgressId());
+                saveFrameInfo(metaUnzipPath, vo, progress);
+                log.info("【导入第三方软件源】 进度ID:{}，更新meta数据成功", progress.getProgressId());
 
 //            移动文件
-            moveFiles(metaUnzipPath, vo, pkgUnzipPath, progress);
-            log.info("【导入第三方软件源】 进度ID:{}，移动安装安装文件成功", progress.getProgressId());
+                moveFiles(metaUnzipPath, vo, pkgUnzipPath, progress);
+
+                log.info("【导入第三方软件源】 进度ID:{}，移动安装安装文件成功", progress.getProgressId());
+            });
         } catch (Exception e) {
             error = "导入组件失败," + e.getMessage();
             log.error("import comp(meta: {}, pkg:{}) fail: ", dto.getMeteFileId(), dto.getPkgFileId(), e);
         } finally {
-            if (metaUnzipPath != null) {
+            if (pathPair.getMetaUnzipPath() != null) {
 //                meta文件中包含了很大敏感信息，必须保证删除掉
-                FileUtil.del(new File(metaUnzipPath));
+                FileUtil.del(new File(pathPair.getMetaUnzipPath()));
             }
-            if (pkgUnzipPath != null) {
-                String finalPkgDir = pkgUnzipPath;
+            if (pathPair.getPkgUnzipPath() != null) {
 //                异步删除安装包的解压目录
-                CompletableFuture.runAsync(() -> FileUtil.del(new File(finalPkgDir)));
+                CompletableFuture.runAsync(() -> FileUtil.del(new File(pathPair.getPkgUnzipPath())));
             }
             if (StringUtils.isNoneBlank(error)) {
                 progress.setState(-1);
+                progress.setError(error);
             } else {
                 progress.setState(1);
             }
@@ -232,10 +285,16 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         }
     }
 
+    @Data
+    private static class PathPair {
+        private String metaUnzipPath;
+        private String pkgUnzipPath;
+    }
+
     private String unpackMetaFile(File metaFile, InstallComponentDTO dto, ImportCompProgressVO progress) throws IOException {
         progress.setState(2);
         progress.setTotal(10);
-        String unzipDir = ZipUtils.unzipToTemp(metaFile.getAbsolutePath(), dto.getUnzipPasswd());
+        String unzipDir = TarUtils.decompressToTemp(metaFile.getAbsolutePath());
         progress.setStep(5);
         //      解密文件的内容
         MetaUtils.decodeMatchedFiles(unzipDir, dto.getContentDecodePasswd());
@@ -248,94 +307,179 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     private String decompressPkgFile(File pkgFile, ExtRepoMetaFsModel vo, ImportCompProgressVO progress) throws IOException {
         progress.setState(3);
         progress.setStep(0);
+        progress.setTotal(10);
 
-        String dir = ZipUtils.unzipToTemp(pkgFile.getAbsolutePath(), null);
-        progress.setStep(9);
+        String dir = TarUtils.decompressToTemp(pkgFile.getAbsolutePath());
+        progress.setStep(10);
 
-        Set<String> packageNames = vo.getFrameworks()
-                .stream()
-                .flatMap(f -> f.getServices().stream())
-                .map(ServiceMeta::getPackageName)
-                .collect(Collectors.toSet());
-        if (packageNames.isEmpty()) {
-            return dir;
-        }
-
-        File pkgDir = MetaUtils.getPkgPath(dir).toFile();
-        if (!pkgDir.exists() || pkgDir.isFile()) {
-            throw new BusinessException("安装包目录不存在");
-        }
-
-        List<String> errors = new ArrayList<>();
-        for (String pkgName : packageNames) {
-            File pkg = new File(pkgDir, pkgName);
-            File pkgMd5 = new File(pkgDir, MetaUtils.getMd5FileName(pkgName));
-            if (!pkg.exists() || !pkgMd5.exists()) {
-                errors.add(String.format("安装包%s或者其md5文件不存在", pkgName));
-            }
-        }
-
-        if (!errors.isEmpty()) {
-            throw new BusinessException(errors);
-        }
+//        不在检查文件是否存在
+//        Set<String> packageNames = vo.getFrameworks()
+//                .stream()
+//                .flatMap(f -> f.getServices().stream())
+//                .flatMap(s -> s.getPackageNames().stream())
+//                .collect(Collectors.toSet());
+//        if (packageNames.isEmpty()) {
+//            return dir;
+//        }
+//
+//        File pkgDir = MetaUtils.getPkgPath(dir).toFile();
+//        if (!pkgDir.exists() || pkgDir.isFile()) {
+//            throw new BusinessException("安装包目录不存在");
+//        }
+//
+//        List<String> errors = new ArrayList<>();
+//        for (String pkgName : packageNames) {
+//            File pkg = new File(pkgDir, pkgName);
+//            File pkgMd5 = new File(pkgDir, MetaUtils.getMd5FileName(pkgName));
+//            if (!pkg.exists() || !pkgMd5.exists()) {
+//                errors.add(String.format("安装包%s或者其md5文件不存在", pkgName));
+//            }
+//        }
+//
+//        if (!errors.isEmpty()) {
+//            throw new BusinessException(errors);
+//        }
         return dir;
     }
 
 
     private void saveFrameInfo(String unzipDir, ExtRepoMetaFsModel vo, ImportCompProgressVO progress) {
         progress.setState(4);
-        progress.setTotal(vo.getFrameworks().stream().mapToLong(f -> f.getServices().size()).sum());
+
+        long total = vo.getFrameworks().stream().mapToLong(f -> f.getVosDdlServices().size()).sum()
+                     + vo.getFrameworks().stream().mapToLong(f -> f.getK8sDdLServices().size()).sum();
+        progress.setTotal(total);
         progress.setStep(0);
 
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
         vo.getFrameworks().forEach(framework -> {
-            FrameInfoEntity db = frameInfoService.saveClusterFrame(framework.getFrameCode());
-
-            framework.getServices().forEach(srv -> {
+            FrameInfoEntity db = ddlMetaService.initFramework(framework.getFrameCode());
+            framework.getVosDdlServices().forEach(srv -> {
                 String ddl = FileUtil.readString(Paths.get(unzipDir, srv.getDdl()).toFile(), StandardCharsets.UTF_8);
-                loadServiceMeta.parseServiceDdl(db.getFrameCode(), clusters, db, srv.getName(), ddl);
+                try {
+                    ddlMetaService.loadServiceVosDdl(clusters, db, srv.getName(), ddl);
+                } catch (Exception e) {
+                    throw new BusinessException(String.format("解析服务%s的定义失败，%s。请检测service_ddl.json是否符合定义", srv.getName(), e.getMessage()), e);
+                }
+
+                progress.setStep(progress.getStep() + 1);
+            });
+
+            framework.getK8sDdLServices().forEach(srv -> {
+                String ddl = FileUtil.readString(Paths.get(unzipDir, srv.getManifest()).toFile(), StandardCharsets.UTF_8);
+                try {
+                    ddlMetaService.loadServiceK8sDdl(db, srv.getName(), ddl);
+                } catch (Exception e) {
+                    throw new BusinessException(String.format("解析服务%s的定义失败，%s。请检测manifest.yaml是否符合定义", srv.getName(), e.getMessage()), e);
+                }
+
                 progress.setStep(progress.getStep() + 1);
             });
         });
     }
 
 
-    private void moveFiles(String metaUnzipPath, ExtRepoMetaFsModel vo, String pkgPath, ImportCompProgressVO progress) {
+    private void moveFiles(String metaUnzipPath, ExtRepoMetaFsModel vo, String pkgPath, ImportCompProgressVO progress) throws IOException {
         progress.setState(5);
         progress.setStep(0);
 
-        Set<String> packageNames = vo.getFrameworks()
-                .stream()
-                .flatMap(f -> f.getServices().stream())
-                .map(ServiceMeta::getPackageName)
-                .collect(Collectors.toSet());
-        progress.setTotal(packageNames.size() + 1);
 
-        File metaDir = FileUtil.file(Constants.META_PATH);
-        if (metaDir != null && metaDir.exists()) {
-            vo.getFrameworks().stream().flatMap(fw -> fw.getServices().stream()).forEach(srv -> {
-                String targetSrvDir = PathUtils.join(metaDir.toPath(), srv.getFrameCode(), srv.getName()).toString();
-                FileUtil.copy(new File(metaUnzipPath, srv.getDdl()), new File(targetSrvDir, MetaUtils.SERVICE_DDL), true);
-                if (StringUtils.isNotBlank(srv.getScript())) {
-                    FileUtil.copy(new File(metaUnzipPath, srv.getScript()), new File(targetSrvDir), true);
-                }
+        if (pkgPath == null) {
+            progress.setTotal(1);
+        } else {
+            File pkgDir = MetaUtils.getPkgPath(pkgPath).toFile();
+            File[] files = pkgDir.listFiles();
+            progress.setTotal(1 + (files == null ? 0 : files.length));
+        }
 
-//                FIXME copy template dir
-            });
+        MetaStorage metaStorage = StorageUtils.getMetaStorage();
+        log.info("开始上传meta信息....");
+        metaStorage.moveToStorage(PathUtils.join(metaUnzipPath, vo.getMeta()).toFile(), true);
+
+
+        PackageStorage packageStorage = StorageUtils.getPackageStorage();
+        if (StrUtil.isNotBlank(vo.getTemplate())) {
+            File dir = PathUtils.join(metaUnzipPath, vo.getTemplate()).toFile();
+            log.info("开始上传模板：{}", dir.getAbsolutePath());
+            packageStorage.moveToStorage(dir, true);
         }
         progress.setStep(1);
 
-        if (packageNames.isEmpty()) {
+        if (pkgPath == null) {
             return;
         }
 
         File pkgDir = MetaUtils.getPkgPath(pkgPath).toFile();
-        packageNames.forEach(pkg -> {
-            FileUtil.move(new File(pkgDir, pkg), new File(Constants.MASTER_MANAGE_PACKAGE_PATH, pkg), true);
-            FileUtil.move(new File(pkgDir, MetaUtils.getMd5FileName(pkg)), new File(Constants.MASTER_MANAGE_PACKAGE_PATH, MetaUtils.getMd5FileName(pkg)), true);
-            progress.setStep(progress.getStep() + 1);
+        File[] rawPkgFiles = pkgDir.listFiles();
+        if (rawPkgFiles != null) {
+            log.info("开始上传软件安装包(非k8s版)...");
+            for (File file : rawPkgFiles) {
+                log.info("上传文件{}到nexus", file.getAbsolutePath());
+                packageStorage.moveToStorage(file, f -> {
+                    String relativePath = PathUtils.relative(file.getParent(), pkgDir.getAbsolutePath());
+                    return "packages/" + PathUtils.unixStyle(relativePath);
+                });
+                progress.setStep(progress.getStep() + 1);
+            }
+        }
+        progress.setStep(progress.getTotal());
+        log.info("【导入第三方软件源】 进度ID:{}，上传安装包到nexus成功", progress.getProgressId());
+
+
+
+        File imageDir = MetaUtils.getImagePath(pkgPath).toFile();
+        File[] imageFiles = imageDir.listFiles();
+        if (imageFiles == null || imageFiles.length == 0) {
+            return;
+        }
+        progress.setState(6);
+        progress.setStep(0);
+        progress.setTotal(imageFiles.length);
+        ImageStorage imageStorage = StorageUtils.getImageStorage();
+        log.info("开始上传镜像文件...");
+        imageStorage.pushImages(imageDir, new ImageStorage.PushCallback() {
+            @Override
+            public void onEntryCompleted(File file) {
+                log.info("上传文件{}到nexus的k8s镜像仓库", file.getAbsolutePath());
+                progress.setStep(progress.getStep() + 1);
+            }
         });
+        progress.setStep(progress.getTotal());
+        log.info("【导入第三方软件源】 进度ID:{}，上传镜像包成功", progress.getProgressId());
+
+
+        long total = vo.getFrameworks().stream()
+                .flatMap(f->f.getK8sDdLServices().stream())
+                .mapToLong(s-> s.getCharts().size())
+                .sum();
+        if (total > 0) {
+            progress.setState(7);
+            progress.setTotal(total);
+            progress.setStep(0);
+
+            HelmStorage helmStorage = StorageUtils.getHelmStorage();
+
+            vo.getFrameworks().forEach(frame-> {
+                frame.getK8sDdLServices().forEach(srv-> {
+                    srv.getCharts().forEach(chart-> {
+                        File file = Paths.get(metaUnzipPath).resolve(srv.getManifest()).getParent().resolve(chart).toFile();
+                        if (file.exists()) {
+                            log.info("上传文件{}到nexus的helm仓库", file.getAbsolutePath());
+                            try {
+                                helmStorage.pushHelm(file);
+                            } catch (IOException e) {
+                                throw new IllegalStateException(String.format("上传helm包%s到helm仓库失败, %s", chart, e.getMessage()), e);
+                            }
+                        }
+                        progress.setStep(progress.getStep() + 1);
+                    });
+                });
+            });
+            progress.setStep(progress.getTotal());
+            log.info("【导入第三方软件源】 进度ID:{}，上传helm包成功", progress.getProgressId());
+        }
     }
+
 
     @Override
     public ImportCompProgressVO queryProgress(Integer progressId) {
@@ -359,7 +503,6 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     }
 
 
-
     @Override
     public DeploymentDAG buildDeploymentDAG(DeploymentDTO dto) {
         File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId());
@@ -367,7 +510,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             throw new BusinessException("部署清单文件不存在");
         }
         String content = MetaUtils.decodeFile(deploymentFile, dto.getContentDecodePasswd());
-        DeploymentModel model = MetaUtils.parseDeploymentFile(content);
+        DeploymentModel model = YamlUtils.parseYaml(content, DeploymentModel.class);
 
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
@@ -385,11 +528,21 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             throw new BusinessException(String.format("服务: %s在框架中%s不存在", StrUtil.join(";", uninstall), clusterInfo.getClusterCode()));
         }
 
-
-        DeploymentDAG dag = context.buildDAG(model.getApp(), false);
-        return dag;
+        DAG<String, DeploymentDAG.SrvNodeVO, Integer> dag = context.buildDeployDAG(model.getApp(), t -> {
+            DeploySrvModel srvModel = t.unwrap();
+            return BeanUtil.toBean(srvModel, DeploymentDAG.SrvNodeVO.class);
+        });
+        DeploymentDAG result = new DeploymentDAG();
+        dag.getNodes().values().forEach(node -> result.getNodes().add(node));
+        dag.getEdges().forEach(edge -> {
+            DeploymentDAG.EdgeVO vo = new DeploymentDAG.EdgeVO();
+            vo.setId(edge.getEdge());
+            vo.setStart(dag.getNode(edge.getStart()).getId());
+            vo.setEnd(dag.getNode(edge.getEnd()).getId());
+            result.getEdge().add(vo);
+        });
+        return result;
     }
-
 
 
 }

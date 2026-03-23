@@ -17,12 +17,18 @@
 
 package com.datasophon.api.master;
 
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.date.DateUtil;
+import com.alibaba.fastjson.JSONArray;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.api.service.k8s.K8sClusterConfigService;
+import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.vo.k8s.K8sClusterStatus;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.ClusterCommand;
 import com.datasophon.common.enums.ClusterCommandType;
@@ -30,178 +36,222 @@ import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.Result;
-import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.entity.k8s.K8sClusterConfig;
+import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.ClusterState;
 import com.datasophon.dao.enums.ServiceRoleState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.alibaba.fastjson.JSONArray;
-
-import akka.actor.UntypedActor;
-
-import cn.hutool.core.date.DateUtil;
-import cn.hutool.extra.spring.SpringUtil;
-
 /**
  * 节点状态监测
  */
-public class ClusterActor extends UntypedActor {
-    
+public class ClusterActor extends TypedActor<ClusterCommand> {
+
     private static final Logger logger = LoggerFactory.getLogger(ClusterActor.class);
-    
+
     private static final String DEPRECATED = "Deprecated";
-    
+
+
     @Override
-    public void onReceive(Object msg) throws Throwable {
-        if (msg instanceof ClusterCommand) {
-            logger.info("start to check cluster info");
-            ClusterServiceRoleInstanceService roleInstanceService =
-                    SpringUtil.getBean(ClusterServiceRoleInstanceService.class);
-            ClusterInfoService clusterInfoService =
-                    SpringUtil.getBean(ClusterInfoService.class);
-            
-            // Host or cluster
-            final ClusterCommand clusterCommand = (ClusterCommand) msg;
-            
-            if (ClusterCommandType.CHECK.equals(clusterCommand.getCommandType())) {
-                // 获取所有集群
-                Result result = clusterInfoService.getClusterList();
-                List<ClusterInfoEntity> clusterList = (List<ClusterInfoEntity>) result.getData();
-                
-                for (ClusterInfoEntity clusterInfoEntity : clusterList) {
-                    // 获取集群上正在运行的服务
-                    int clusterId = clusterInfoEntity.getId();
-                    List<ClusterServiceRoleInstanceEntity> roleInstanceList =
-                            roleInstanceService.getServiceRoleInstanceListByClusterId(clusterId);
-                    if (!ClusterState.NEED_CONFIG.equals(clusterInfoEntity.getClusterState())) {
-                        if (!roleInstanceList.isEmpty()) {
-                            if (roleInstanceList.stream().allMatch(
-                                    roleInstance -> ServiceRoleState.STOP.equals(roleInstance.getServiceRoleState()))) {
-                                clusterInfoService.updateClusterState(clusterId, ClusterState.STOP.getValue());
-                            } else {
-                                clusterInfoService.updateClusterState(clusterId, ClusterState.RUNNING.getValue());
-                            }
-                        }
-                        
-                    }
-                }
-                
-            } else if (ClusterCommandType.DELETE.equals(clusterCommand.getCommandType())) {
-                Integer clusterId = clusterCommand.getClusterId();
-                if (Objects.nonNull(clusterId)) {
-                    ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
-                    if (Objects.nonNull(clusterInfo)) {
-                        ClusterHostService clusterHostService = SpringUtil.getBean(ClusterHostService.class);
-                        ClusterServiceInstanceService clusterServiceInstanceService =
-                                SpringUtil.getBean(ClusterServiceInstanceService.class);
-                        ClusterServiceRoleInstanceService clusterServiceRoleInstanceService =
-                                SpringUtil.getBean(ClusterServiceRoleInstanceService.class);
-                        ClusterServiceRoleGroupConfigService clusterServiceRoleGroupConfigService =
-                                SpringUtil.getBean(ClusterServiceRoleGroupConfigService.class);
-                        
-                        // 检查服务实例配置与目录
-                        List<ClusterServiceRoleInstanceEntity> roleInstanceList =
-                                clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterId(clusterId);
-                        for (ClusterServiceRoleInstanceEntity roleInstance : roleInstanceList) {
-                            String roleName = roleInstance.getServiceRoleName();
-                            String hostname = roleInstance.getHostname();
-                            ClusterServiceRoleGroupConfig config = clusterServiceRoleGroupConfigService
-                                    .getConfigByRoleGroupId(roleInstance.getRoleGroupId());
-                            Map<Generators, List<ServiceConfig>> configFileMap = new ConcurrentHashMap<>();
-                            ProcessUtils.generateConfigFileMap(configFileMap, config, clusterId);
-                            for (Map.Entry<Generators, List<ServiceConfig>> configFile : configFileMap.entrySet()) {
-                                List<ServiceConfig> serviceConfigs = configFile.getValue().stream()
-                                        .filter(c -> Constants.PATH.equals(c.getConfigType()))
-                                        .peek(c -> {
-                                            if (Constants.INPUT.equals(c.getType())) {
-                                                String oldPath = (String) c.getValue();
-                                                if (!oldPath.contains(DEPRECATED)) {
-                                                    String newPath = String.format("%s_%s_%s_%s", oldPath, DEPRECATED,
-                                                            clusterId, DateUtil.today());
-                                                    c.setValue(newPath);
-                                                    c.setConfigType(Constants.MV_PATH);
-                                                }
-                                            } else if (Constants.MULTIPLE.equals(c.getType())) {
-                                                JSONArray value = (JSONArray) c.getValue();
-                                                List<String> oldPaths = value.toJavaList(String.class);
-                                                List<String> newPaths = oldPaths.stream()
-                                                        .map(path -> !path.contains(DEPRECATED)
-                                                                ? String.format("%s_%s_%s_%s", path, DEPRECATED,
-                                                                        clusterId, DateUtil.today())
-                                                                : path)
-                                                        .collect(Collectors.toList());
-                                                c.setValue(newPaths);
-                                                c.setConfigType(Constants.MV_PATH);
-                                            }
-                                        })
-                                        .filter(c -> Constants.MV_PATH.equals(c.getConfigType()))
-                                        .collect(Collectors.toList());
-                                if (!serviceConfigs.isEmpty()) {
-                                    configFileMap.replace(configFile.getKey(), serviceConfigs);
-                                } else {
-                                    configFileMap.remove(configFile.getKey());
-                                }
-                            }
-                            
-                            if (!configFileMap.isEmpty()) {
-                                // 分发重命名命令
-                                ExecResult execResult = new ExecResult();
-                                try {
-                                    logger.info(
-                                            "start to uninstall {} in host {}",
-                                            roleName,
-                                            hostname);
-                                    execResult = ProcessUtils.configServiceRoleInstance(clusterInfo, configFileMap,
-                                            roleInstance);
-                                    if (Objects.nonNull(execResult) && execResult.getExecResult()) {
-                                        logger.info(
-                                                "{} uninstall success in {}",
-                                                roleName,
-                                                hostname);
-                                    } else {
-                                        logger.info(
-                                                "{} uninstall failed in {}",
-                                                roleName,
-                                                hostname);
-                                        return;
-                                    }
-                                    
-                                } catch (Exception e) {
-                                    logger.info(
-                                            "{} uninstall failed in {}",
-                                            roleName,
-                                            hostname);
-                                    logger.error(ProcessUtils.getExceptionMessage(e));
-                                    return;
-                                }
-                            }
-                        }
-                        List<ClusterServiceInstanceEntity> serviceInstanceList =
-                                clusterServiceInstanceService.listAll(clusterId);
-                        if (serviceInstanceList.stream().allMatch(instance -> clusterServiceInstanceService
-                                .delServiceInstance(instance.getId()).isSuccess())) {
-                            List<ClusterHostDO> hostList = clusterHostService.getHostListByClusterId(clusterId);
-                            clusterHostService.deleteHosts(hostList.stream().map(h -> String.valueOf(h.getId()))
-                                    .collect(Collectors.joining(Constants.COMMA)));
-                            clusterInfoService.removeById(clusterId);
-                        }
-                    }
-                }
+    protected void doOnReceive(ClusterCommand clusterCommand) throws Throwable {
+        if (ClusterCommandType.CHECK.equals(clusterCommand.getCommandType())) {
+            execCheckCmd(clusterCommand);
+        } else if (ClusterCommandType.DELETE.equals(clusterCommand.getCommandType())) {
+            execDeleteCmd(clusterCommand);
+        }
+    }
+
+
+    private void execCheckCmd(ClusterCommand cmd) {
+        ClusterServiceRoleInstanceService roleInstanceService = getBean(ClusterServiceRoleInstanceService.class);
+        ClusterInfoService clusterInfoService = getBean(ClusterInfoService.class);
+        K8sService k8sService = getBean(K8sService.class);
+        K8sClusterConfigService k8sClusterConfigService = getBean(K8sClusterConfigService.class);
+        // 获取所有集群
+        List<ClusterInfoEntity> clusterList = new ArrayList<>();
+        if (cmd.getClusterId() != null) {
+            ClusterInfoEntity clusterInfo = clusterInfoService.getById(cmd.getClusterId());
+            if (clusterInfo != null) {
+                clusterList.add(clusterInfo);
             }
         } else {
-            unhandled(msg);
+            clusterList.addAll(clusterInfoService.getReadyClusterList());
         }
+        for (ClusterInfoEntity cluster : clusterList) {
+            if (ClusterArchType.physical.equals(cluster.getArchType())) {
+                // 获取集群上正在运行的服务
+                List<ClusterServiceRoleInstanceEntity> roleInstanceList = roleInstanceService.getServiceRoleInstanceListByClusterId(cluster.getId());
+                if (roleInstanceList.isEmpty()) {
+                    continue;
+                }
+
+                if (roleInstanceList.stream().allMatch(roleInstance -> ServiceRoleState.STOP.equals(roleInstance.getServiceRoleState()))) {
+                    clusterInfoService.updateClusterState(cluster.getId(), ClusterState.STOP.getValue());
+                } else {
+                    clusterInfoService.updateClusterState(cluster.getId(), ClusterState.RUNNING.getValue());
+                }
+            } else {
+                K8sClusterConfig config = k8sClusterConfigService.getByClusterId(cluster.getId());
+                try {
+                    K8sClusterStatus status = k8sService.getState(config);
+
+                    ClusterState state = ClusterState.STOP;
+                    if (CollectionUtil.isNotEmpty(status.getNodes())) {
+                        state = status.getNodes().stream().anyMatch(node -> K8sService.READY.equals(node.getStatus())) ? ClusterState.RUNNING : ClusterState.STOP;
+                    }
+
+                    clusterInfoService.updateClusterState(cluster.getId(), state.getValue());
+                } catch (Exception e) {
+                    logger.error("check cluster:{} status fail, {}", cluster.getClusterName(), e.getMessage(), e);
+                    clusterInfoService.updateClusterState(cluster.getId(), ClusterState.STOP.getValue());
+                }
+            }
+        }
+    }
+
+    private void execDeleteCmd(ClusterCommand clusterCommand) {
+        ClusterInfoService clusterInfoService = getBean(ClusterInfoService.class);
+        K8sClusterConfigService k8sClusterConfigService = getBean(K8sClusterConfigService.class);
+        Integer clusterId = clusterCommand.getClusterId();
+        if (clusterId == null) {
+            return;
+        }
+        ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
+        if (clusterInfo == null) {
+            return;
+        }
+
+        if (ClusterArchType.physical.equals(clusterInfo.getArchType())) {
+            boolean success = backupServiceConfigFiles(clusterInfo);
+            if (!success) {
+               return;
+            }
+            deletePhysicalClusterComponents(clusterInfo.getId());
+        } else {
+            k8sClusterConfigService.removeByClusterId(clusterId);
+        }
+
+        clusterInfoService.removeById(clusterId);
+    }
+
+    private boolean backupServiceConfigFiles(ClusterInfoEntity clusterInfo) {
+        ClusterServiceRoleInstanceService clusterServiceRoleInstanceService = getBean(ClusterServiceRoleInstanceService.class);
+
+        // 检查服务实例配置与目录
+        List<ClusterServiceRoleInstanceEntity> roleInstanceList = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterId(clusterInfo.getId());
+        if (roleInstanceList.isEmpty()) {
+            return true;
+        }
+
+        for (ClusterServiceRoleInstanceEntity roleInstance : roleInstanceList) {
+            boolean goon = doMoveRoleConfigPath(clusterInfo, roleInstance);
+            if (!goon) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private boolean doMoveRoleConfigPath(ClusterInfoEntity clusterInfo, ClusterServiceRoleInstanceEntity roleInstance) {
+        Map<Generators, List<ServiceConfig>> tempConfigMap = new ConcurrentHashMap<>();
+        ClusterServiceRoleGroupConfig config = getBean(ClusterServiceRoleGroupConfigService.class).getConfigByRoleGroupId(roleInstance.getRoleGroupId());
+        ProcessUtils.generateConfigFileMap(tempConfigMap, config, clusterInfo.getId());
+
+        Map<Generators, List<ServiceConfig>> configFileMap = new ConcurrentHashMap<>();
+        tempConfigMap.forEach(((generators, configs) -> {
+            List<ServiceConfig> serviceConfigs = configs.stream()
+                    .filter(c -> Constants.PATH.equals(c.getConfigType()))
+                    .peek(c -> {
+                        if (Constants.INPUT.equals(c.getType())) {
+                            String oldPath = (String) c.getValue();
+                            String newPath = getPathNewName(oldPath, clusterInfo.getId());
+                            if (newPath != null) {
+                                c.setValue(newPath);
+                                c.setConfigType(Constants.MV_PATH);
+                            }
+                            return;
+                        }
+                        if (Constants.MULTIPLE.equals(c.getType())) {
+                            JSONArray value = (JSONArray) c.getValue();
+                            List<String> oldPaths = value.toJavaList(String.class);
+                            List<String> newPaths = oldPaths.stream()
+                                    .map(path -> getPathNewName(path, clusterInfo.getId()))
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.toList());
+                            if (!newPaths.isEmpty()) {
+                                c.setValue(newPaths);
+                                c.setConfigType(Constants.MV_PATH);
+                            }
+                        }
+                    })
+                    .filter(c -> Constants.MV_PATH.equals(c.getConfigType()))
+                    .collect(Collectors.toList());
+            if (!serviceConfigs.isEmpty()) {
+                configFileMap.put(generators, serviceConfigs);
+            }
+        }));
+
+        boolean success = true;
+        if (!configFileMap.isEmpty()) {
+            String roleName = roleInstance.getServiceRoleName();
+            String hostname = roleInstance.getHostname();
+            try {
+                logger.info("start to uninstall {} in host {}", roleName, hostname);
+                ExecResult execResult = ProcessUtils.configServiceRoleInstance(clusterInfo, configFileMap, roleInstance);
+
+                success = Objects.nonNull(execResult) && execResult.getExecResult();
+                if (success) {
+                    logger.info("{} uninstall success in {}", roleName, hostname);
+                } else {
+                    logger.info("{} uninstall failed in {}", roleName, hostname);
+                }
+            } catch (Exception e) {
+                logger.error("{} uninstall failed in {}, ", roleName, hostname, e);
+                success = false;
+            }
+        }
+
+        return success;
+    }
+
+
+    private String getPathNewName(String path, Integer clusterId) {
+        if (!path.contains(DEPRECATED)) {
+            return String.format("%s_%s_%s_%s", path, DEPRECATED, clusterId, DateUtil.today());
+        } else {
+            return null;
+        }
+    }
+
+    private boolean deletePhysicalClusterComponents(Integer clusterId) {
+        ClusterHostService clusterHostService = getBean(ClusterHostService.class);
+        ClusterServiceInstanceService clusterServiceInstanceService = getBean(ClusterServiceInstanceService.class);
+
+        List<ClusterServiceInstanceEntity> serviceInstanceList = clusterServiceInstanceService.listAll(clusterId);
+
+        boolean success = true;
+        for (ClusterServiceInstanceEntity instance : serviceInstanceList) {
+            Result result = clusterServiceInstanceService.delServiceInstance(instance.getId());
+            success = success && result.isSuccess();
+        }
+
+        if (success) {
+            clusterHostService.removeHostByClusterId(clusterId);
+        }
+
+        return success;
     }
 }

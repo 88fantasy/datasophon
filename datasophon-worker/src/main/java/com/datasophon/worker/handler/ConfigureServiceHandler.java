@@ -20,32 +20,40 @@ package com.datasophon.worker.handler;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.common.Constants;
+import com.datasophon.common.command.GenerateServiceConfigCommand;
+import com.datasophon.common.command.ServiceRoleResource;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.RunAs;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.utils.FreemakerUtils;
 import com.datasophon.worker.utils.TaskConstants;
+import freemarker.template.TemplateException;
+import freemarker.template.TemplateNotFoundException;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.math.BigDecimal;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Data
 public class ConfigureServiceHandler {
@@ -63,59 +71,40 @@ public class ConfigureServiceHandler {
     public ConfigureServiceHandler(String serviceName, String serviceRoleName) {
         this.serviceName = serviceName;
         this.serviceRoleName = serviceRoleName;
-        String loggerName = String.format("%s-%s-%s", TaskConstants.TASK_LOG_LOGGER_NAME, serviceName, serviceRoleName);
+        String loggerName = TaskConstants.createLoggerName(serviceName, serviceRoleName, ConfigureServiceHandler.class);
         logger = LoggerFactory.getLogger(loggerName);
     }
 
-    public ExecResult configure(Map<Generators, List<ServiceConfig>> cofigFileMap,
-                                String decompressPackageName,
-                                Integer clusterId,
-                                Integer myid,
-                                String serviceRoleName,
-                                RunAs runAs) {
+    public ExecResult configure(ServiceRoleResource srvRoleResource, GenerateServiceConfigCommand command) {
         ExecResult execResult = new ExecResult();
         try {
+            String pkgInstallHome = PkgInstallPathUtils.getInstallHomeName(srvRoleResource);
+            Map<String, String> paramMap = getExtraParams(srvRoleResource, command);
+//            软件安装路径的相关变量
 
-            String hostName = InetAddress.getLocalHost().getHostName();
-            String ip = InetAddress.getLocalHost().getHostAddress();
-            HashMap<String, String> paramMap = new HashMap<>();
-            paramMap.put("${clusterId}", String.valueOf(clusterId));
-            paramMap.put("${host}", hostName);
-            paramMap.put("${ip}", ip);
-            paramMap.put("${user}", "root");
-            paramMap.put("${myid}", String.valueOf(myid));
-
-            logger.info("Start to configure service role {}", serviceRoleName);
+            Map<Generators, List<ServiceConfig>> cofigFileMap = command.getCofigFileMap();
+            logger.info("开始生成服务{} {}的配置文件", srvRoleResource.getServiceName(), srvRoleResource.getServiceRoleName());
             for (Generators generators : cofigFileMap.keySet()) {
+                logger.info("开始生成配置文件: {}, 当前模板为{}", generators.getFilename(), generators.getTemplateName());
                 List<ServiceConfig> configs = cofigFileMap.get(generators);
-                String dataDir = "";
                 ArrayList<ServiceConfig> customConfList = CollUtil.newArrayList();
                 Iterator<ServiceConfig> iterator = configs.iterator();
                 while (iterator.hasNext()) {
                     ServiceConfig config = iterator.next();
-                    if (StringUtils.isNotBlank(config.getType())) {
-                        switch (config.getType()) {
-                            case Constants.INPUT:
-                                Object value = config.getValue();
-                                if (String.class.isAssignableFrom(value.getClass())) {
-                                    String value1 = PlaceholderUtils.replacePlaceholders((String) value,
-                                            paramMap, Constants.REGEX_VARIABLE);
-                                    config.setValue(value1);
-                                }
+                    if (!config.isEnabled()) {
+                        logger.warn("配置项{}未启用, 忽略该值。", config.getName());
+                        iterator.remove();
+                        continue;
+                    }
 
-                                break;
-                            case Constants.MULTIPLE:
-                                conventToStr(config);
-                                break;
-                            default:
-                                break;
-                        }
+                    if (StringUtils.isNotBlank(config.getType())) {
+                        replacePlaceholder(config, paramMap);
                     }
                     if (Constants.PATH.equals(config.getConfigType())) {
-                        createPath(config, runAs);
+                        createPath(config, command.getRunAs());
                     }
                     if (Constants.MV_PATH.equals(config.getConfigType())) {
-                        movePath(config, runAs);
+                        movePath(config, command.getRunAs());
                     }
                     if (Constants.CUSTOM.equals(config.getConfigType())) {
                         addToCustomList(iterator, customConfList, config);
@@ -128,12 +117,13 @@ public class ConfigureServiceHandler {
                         logger.info("Convert boolean and integer to string");
                         config.setValue(config.getValue().toString());
                     }
-                    if (!config.isRequired() && !Constants.CUSTOM.equals(config.getConfigType())) {
-                        iterator.remove();
-                    }
+
                     if ("dataDir".equals(config.getName())) {
-                        logger.info("Find dataDir : {}", config.getValue());
-                        dataDir = (String) config.getValue();
+                        String dataDir = (String) config.getValue();
+                        if (Objects.nonNull(command.getMyid()) && StringUtils.isNotBlank(dataDir)) {
+                            logger.info("write myid: {} to dataDir : {}", command.getMyid(), dataDir);
+                            FileUtil.writeUtf8String(command.getMyid() + "", dataDir + Constants.SLASH + "myid");
+                        }
                     }
                     if ("TrinoCoordinator".equals(serviceRoleName) && "coordinator".equals(config.getName())) {
                         logger.info("Start config trino coordinator");
@@ -143,29 +133,24 @@ public class ConfigureServiceHandler {
                         serviceConfig.setValue("false");
                         customConfList.add(serviceConfig);
                     }
-                    if ("fe_priority_networks".equals(config.getName())
-                            || "be_priority_networks".equals(config.getName())) {
+                    if ("fe_priority_networks".equals(config.getName()) || "be_priority_networks".equals(config.getName())) {
                         config.setName("priority_networks");
                     }
 
                     if ("KyuubiServer".equals(serviceRoleName) && "sparkHome".equals(config.getName())) {
                         // add hive-site.xml link in kerberos module
-                        final String targetPath =
-                                Constants.INSTALL_PATH + File.separator + decompressPackageName + "/conf/hive-site.xml";
+                        final String targetPath = Constants.INSTALL_PATH + File.separator + pkgInstallHome + "/conf/hive-site.xml";
                         if (!FileUtil.exist(targetPath)) {
                             logger.info("Add hive-site.xml link");
-                            ExecResult result = ShellUtils
-                                    .execShell("ln -s " + config.getValue() + "/conf/hive-site.xml " + targetPath);
+                            ExecResult result = ShellUtils.execShell("ln -s " + config.getValue() + "/conf/hive-site.xml " + targetPath);
                             if (!result.getExecResult()) {
-                                logger.warn("Add hive-site.xml link failed,msg: " + result.getExecErrOut());
+                                logger.warn("Add hive-site.xml link failed,msg: {}", result.getExecErrOut());
                             }
                         }
                     }
                 }
 
-                if (Objects.nonNull(myid) && StringUtils.isNotBlank(dataDir)) {
-                    FileUtil.writeUtf8String(myid + "", dataDir + Constants.SLASH + "myid");
-                }
+
 
                 if ("node.properties".equals(generators.getFilename())) {
                     ServiceConfig serviceConfig = new ServiceConfig();
@@ -177,55 +162,130 @@ public class ConfigureServiceHandler {
                 configs.addAll(customConfList);
                 if (!configs.isEmpty()) {
                     // extra app, package: META, templates
-                    File extTemplateDir =
-                            new File(Constants.INSTALL_PATH + File.separator + decompressPackageName, "templates");
+                    File extTemplateDir = new File(Constants.INSTALL_PATH + File.separator + pkgInstallHome, "templates");
                     if (extTemplateDir.exists() && extTemplateDir.isDirectory()) {
                         // 3rd app, load ext templates
                         logger.info("Add ext app template path: {} to loader path.", extTemplateDir.getAbsolutePath());
-                        FreemakerUtils.generateConfigFile(generators, configs, decompressPackageName,
-                                extTemplateDir.getAbsolutePath());
+                        FreemakerUtils.generateConfigFile(generators, configs, pkgInstallHome, extTemplateDir.getAbsolutePath());
                     } else {
-                        FreemakerUtils.generateConfigFile(generators, configs, decompressPackageName);
+                        FreemakerUtils.generateConfigFile(generators, configs, pkgInstallHome);
                     }
                 } else if (!generators.getFilename().endsWith(SH)) {
-                    String packagePath =
-                            Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH;
-                    String outputFile =
-                            packagePath + generators.getOutputDirectory() + Constants.SLASH + generators.getFilename();
+                    String packagePath = Constants.INSTALL_PATH + Constants.SLASH + pkgInstallHome + Constants.SLASH;
+                    String outputFile = packagePath + generators.getOutputDirectory() + Constants.SLASH + generators.getFilename();
                     FileUtil.writeUtf8String("", outputFile);
                 }
                 execResult.setExecOut("configure success");
-                logger.info("configure success");
+                logger.info("生成配置文件{}成功!", generators.getFilename());
             }
-            if (RANGER_ADMIN.equals(serviceRoleName) && !setupRangerAdmin(decompressPackageName)) {
+            if (RANGER_ADMIN.equals(serviceRoleName) && !setupRangerAdmin(pkgInstallHome)) {
                 return execResult;
             }
             execResult.setExecResult(true);
         } catch (Exception e) {
             execResult.setExecErrOut(e.getMessage());
-            logger.error("load app config template error!", e);
+            if (e instanceof TemplateNotFoundException) {
+                TemplateNotFoundException ex = (TemplateNotFoundException) e;
+                logger.error("生成服务{} {}的配置失败, 模板{}不存在, 信息：{}", srvRoleResource.getServiceName(), srvRoleResource.getServiceRoleName(),
+                        ex.getTemplateName(), e.getMessage(), e);
+            } else if (e instanceof TemplateException) {
+                TemplateException ex = (TemplateException) e;
+                logger.error("生成服务{} {}的配置失败, \n\t模板名称{},\n\t出错行数{}， \n\t出错列数{}, \n\t原因:{}, \n\t出错细节：\n",
+                        srvRoleResource.getServiceName(), srvRoleResource.getServiceRoleName(),
+                        ex.getTemplateSourceName(), ex.getLineNumber(), ex.getColumnNumber(), ex.getMessage(), e
+                );
+            } else {
+                logger.error("生成服务{} {}的配置失败, {}", srvRoleResource.getServiceName(), srvRoleResource.getServiceRoleName(), e.getMessage(), e);
+            }
         }
         return execResult;
+    }
+
+    private Map<String, String> getExtraParams(ServiceRoleResource srvRoleResource, GenerateServiceConfigCommand command) throws UnknownHostException {
+        String hostName = InetAddress.getLocalHost().getHostName();
+        String ip = InetAddress.getLocalHost().getHostAddress();
+        Map<String, String> extraParams = new HashMap<>();
+        extraParams.put("${clusterId}", String.valueOf(command.getClusterId()));
+        extraParams.put("${host}", hostName);
+        extraParams.put("${ip}", ip);
+        extraParams.put("${user}", "root");
+        extraParams.put("${myid}", String.valueOf(command.getMyid()));
+        extraParams.put(PkgInstallPathUtils.getRoleInstallHomeKey(srvRoleResource), PkgInstallPathUtils.getInstallHome(srvRoleResource));
+        extraParams.put(PkgInstallPathUtils.getInstallHomeKey(srvRoleResource), PkgInstallPathUtils.getInstallHome(srvRoleResource));
+
+        return extraParams;
     }
 
     private boolean setupRangerAdmin(String decompressPackageName) {
         logger.info("start to execute ranger admin setup.sh");
         ArrayList<String> commands = new ArrayList<>();
         commands.add(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + "setup.sh");
-        ExecResult execResult = ShellUtils
-                .execWithStatus(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName, commands, 300L);
+        ExecResult execResult = ShellUtils.exec(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName, commands, 300L);
 
         ArrayList<String> globalCommand = new ArrayList<>();
-        globalCommand.add(
-                Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + "set_globals.sh");
-        ShellUtils.execWithStatus(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName, globalCommand,
-                300L, logger);
+        globalCommand.add(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + "set_globals.sh");
+        ShellUtils.execWithStatus(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName, globalCommand, 300L, logger);
         if (execResult.getExecResult()) {
             logger.info("ranger admin setup success");
             return true;
         }
         logger.info("ranger admin setup failed");
         return false;
+    }
+
+
+    private void replacePlaceholder(ServiceConfig config, Map<String, String> paramMap) {
+        logger.info("handle config value, key: {}", config.getName());
+        switch (config.getType()) {
+            case Constants.INPUT:
+                Object tempVal = config.getValue();
+                if (String.class.isAssignableFrom(tempVal.getClass())) {
+                    String value = PlaceholderUtils.replacePlaceholders((String) tempVal, paramMap, Constants.REGEX_VARIABLE);
+                    config.setValue(value);
+                }
+                break;
+            case Constants.MULTIPLE:
+                if (config.getSeparator() == null) {
+                    throw new IllegalStateException(String.format("配置项%s配置有误, 类型为multiple要求分割符(separator)不能为空。", config.getName()));
+                }
+                JSONArray value2 = (JSONArray) config.getValue();
+                List<String> valueList = value2.toJavaList(String.class);
+                valueList = valueList.stream()
+                        .map(val -> PlaceholderUtils.replacePlaceholdersRecursive(val, paramMap, Constants.REGEX_VARIABLE))
+                        .collect(Collectors.toList());
+                String joinValue = String.join(config.getSeparator(), valueList);
+                config.setValue(joinValue);
+                break;
+
+            case Constants.MULTIPLE_WITH_MAP:
+//                忽略异常值
+                if (config.getValue() == null || config.getValue() instanceof String) {
+                    break;
+                }
+                List<JSONObject> list = (List<JSONObject>) config.getValue();
+                for (JSONObject item : list) {
+//                    create a copy set to prevent ConcurrentModificationException
+                    Set<String> keys = new HashSet<>(item.keySet());
+                    for (String oldKey : keys) {
+                        String newKey = PlaceholderUtils.replacePlaceholders(oldKey, paramMap, Constants.REGEX_VARIABLE);
+                        Object targetValue = item.get(oldKey);
+                        if (targetValue instanceof String) {
+                            targetValue = PlaceholderUtils.replacePlaceholders((String) targetValue, paramMap, Constants.REGEX_VARIABLE);
+                        } else if (targetValue instanceof JSONObject) {
+                            String json = ((JSONObject)targetValue).toJSONString();
+                            json = PlaceholderUtils.replacePlaceholders(json, paramMap, Constants.REGEX_VARIABLE);
+                            targetValue = JSONObject.parse(json);
+                        }
+                        item.remove(oldKey);
+                        item.put(newKey, targetValue);
+                    }
+                }
+        }
+        logger.info("config {} set value to {}", config.getName(), config.getValue());
+        if (!"map".equals(config.getConfigType())) {
+            String refName = StrUtil.isBlank(config.getKey()) ? config.getName() : config.getKey();
+            logger.warn("配置项{}的configType不是‘map’，在模板中，需要通过key值为: itemList[$index].{} 使用", config.getName(), refName);
+        }
     }
 
     private void createPath(ServiceConfig config, RunAs runAs) {
@@ -255,10 +315,21 @@ public class ConfigureServiceHandler {
         }
     }
 
-    private void addToCustomList(Iterator<ServiceConfig> iterator, ArrayList<ServiceConfig> customConfList,
-                                 ServiceConfig config) {
-        List<JSONObject> list = (List<JSONObject>) config.getValue();
+    private void addToCustomList(Iterator<ServiceConfig> iterator, ArrayList<ServiceConfig> customConfList, ServiceConfig config) {
         iterator.remove();
+
+//        部分ddl的value值乱写，导致转换失败，这段代码是为了去除value: "", value: null两个值
+        if (config.getValue() == null) {
+            return;
+        }
+        if (config.getValue() instanceof String) {
+            if (StrUtil.isBlank(config.getValue().toString())) {
+                return;
+            }
+        }
+
+
+        List<JSONObject> list = (List<JSONObject>) config.getValue();
         for (JSONObject json : list) {
             if (Objects.nonNull(json)) {
                 Set<String> set = json.keySet();
@@ -272,16 +343,6 @@ public class ConfigureServiceHandler {
                 }
             }
         }
-    }
-
-    private String conventToStr(ServiceConfig config) {
-        JSONArray value = (JSONArray) config.getValue();
-        List<String> strs = value.toJavaList(String.class);
-        logger.info("size is :{}", strs.size());
-        String joinValue = String.join(config.getSeparator(), strs);
-        config.setValue(joinValue);
-        logger.info("config set value to {}", config.getValue());
-        return joinValue;
     }
 
     private void conventArray(ServiceConfig config) {

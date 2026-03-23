@@ -1,5 +1,6 @@
 package com.datasophon.dao.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,13 +20,10 @@ import static com.baomidou.mybatisplus.annotation.IdType.ASSIGN_ID;
 @TableName("t_ddh_upload_temp_file")
 public class UploadTempFile implements Serializable {
 
-    /**
-     * 这里比较特殊，全局的生成策略不一致。
-     * 使用雪花算法，保证顺序性同时，防止通过id遍历越权
-     */
-    @TableId(type = ASSIGN_ID)
+
+    @TableId
     @Schema(description = "主键")
-    private Long id;
+    private Integer id;
 
     @Schema(description = "文件名")
     private String fileName;
@@ -54,12 +52,15 @@ public class UploadTempFile implements Serializable {
     @Schema(description = "文件md5")
     private String md5;
 
-    @Schema(description = "上传方式 0整体上传 1分片上传")
+    @Schema(description = "上传方式 0整体上传 1分片上传 2秒传")
     private Integer uploadType;
 
     @Schema(description = "分片大小")
     private Integer chunk;
 
 
+    @Schema(description = "分片大小")
+    @TableField(exist = false)
+    private Long chunkSize;
 
 }

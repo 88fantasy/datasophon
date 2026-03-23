@@ -74,10 +74,10 @@ public class JschExecutor implements Executor {
         return JschUtils.sendDir(session, srcDir, destDir, 5, isVisual);
     }
     
-    @Override
+    /*@Override
     public ExecResult createDir(String destDir) {
         return JschUtils.createDir(session, destDir, 5);
-    }
+    }*/
     
     @Override
     public ExecResult getFileString(String path) {

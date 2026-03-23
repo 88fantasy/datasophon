@@ -14,7 +14,7 @@ chmod -R 755 ./openldap-2.4.44-22.el7
 tar czf openldap-2.4.44-22.el7.tar.gz openldap-2.4.44-22.el7
 md5sum openldap-2.4.44-22.el7.tar.gz
 echo '146e20ea21a85be1182f88627f69b7e8' > openldap-2.4.44-22.el7.tar.gz.md5
-cp ./openldap-2.4.44-22.el7.tar.gz ./openldap-2.4.44-22.el7.tar.gz.md5 /opt/datasophon/DDP/packages/
+cp ./openldap-2.4.44-22.el7.tar.gz ./openldap-2.4.44-22.el7.tar.gz.md5 /data/install_datasophon/packages/
 ```
 
 add-memberof.ldif
@@ -373,7 +373,7 @@ map.put("OpenldapServer", new OpenldapHandlerStrategy());
 各节点worker重启
 
 ```shell
-sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker debug
+sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker debug
 ```
 
 主节点重启api
@@ -390,8 +390,8 @@ systemctl disable slapd
 yum -y remove openldap-servers openldap-clients
 rm -rf /var/lib/ldap
 rm -rf /etc/openldap/slapd.d
-rm -rf /opt/datasophon/openldap-2.4.44-22.el7
-rm -rf /opt/datasophon/openldap
+rm -rf /data/install_datasophon/openldap-2.4.44-22.el7
+rm -rf /data/install_datasophon/openldap
 ```
 
 ### 5、用户操作命令

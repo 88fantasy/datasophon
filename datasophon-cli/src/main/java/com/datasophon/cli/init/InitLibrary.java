@@ -1,11 +1,14 @@
 package com.datasophon.cli.init;
 
+import com.datasophon.cli.base.BatchExecutor;
 import com.datasophon.cli.base.Executor;
+import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
-
-import picocli.CommandLine;
 import lombok.extern.slf4j.Slf4j;
+import picocli.CommandLine;
+
+import java.util.Arrays;
 
 /**
  * 初始化插件
@@ -24,8 +27,11 @@ public class InitLibrary extends InitBase {
     public boolean doRun(Executor executor) {
         this.executor = executor;
         OsType osType = executor.getOs();
+        ArchType archType = executor.getArch();
         if(OsType.isCentos(osType)) {
-            installLibxsltDevel();
+            if(archType == ArchType.X86_64) {
+                installLibxsltDevel();
+            }
             installPsmisc();
             installPerlJson();
             initJavaPolicy();
@@ -34,7 +40,7 @@ public class InitLibrary extends InitBase {
             installGcc();
             installOpenssl();
             installLibtool();
-            initChmodDev();
+            //initChmodDev();
             initCleanBuff();
             sourceProfile();
             telnet();
@@ -42,16 +48,19 @@ public class InitLibrary extends InitBase {
             installPsmisc();
             initJavaPolicy();
             initTmpPid();
-            initChmodDev();
+            //initChmodDev();
             initCleanBuff();
             sourceProfile();
             libpamCracklib();
             policycoreutils();
             telnet();
         }
+        installNginxModule();
         return true;
     }
-    
+
+
+
     private void installLibxsltDevel() {
         log.info("install libxslt-devel");
         OsType osType = executor.getOs();
@@ -245,7 +254,11 @@ public class InitLibrary extends InitBase {
         executor.execShell("systemctl restart ntpd.service");
         log.info("enable ntp finished.");
     }
-    
+
+    /**
+     * 2. Hdfs /dev/null取消不足，取消此方法
+     */
+    @Deprecated
     private void initChmodDev() {
         log.info("init chmod dev null.");
         executor.execShell("rm -rf /dev/null && mknod -m 0666 /dev/null c 1 3");
@@ -339,5 +352,21 @@ public class InitLibrary extends InitBase {
         }
         log.info("install policycoreutils finished.");
     }
-    
+
+
+    private void installNginxModule() {
+        BatchExecutor batchExecutor = new BatchExecutor(executor);
+        batchExecutor.installSoftware(
+                Arrays.asList(
+                        "geoip geoip-devel",
+                        "gd gd-devel",
+                        "make"
+                ),
+                Arrays.asList(
+                        "libgeoip-dev",
+                        "libgd-dev",
+                        "make"
+                )
+        );
+    }
 }

@@ -31,7 +31,7 @@ public interface ClusterServiceInstanceRoleGroupService
         extends
             IService<ClusterServiceInstanceRoleGroup> {
     
-    ClusterServiceInstanceRoleGroup getRoleGroupByServiceInstanceId(Integer id);
+    ClusterServiceInstanceRoleGroup getDefaultRoleGroupByServiceInstanceId(Integer id);
     
     Result saveRoleGroup(Integer serviceInstanceId, Integer roleGroupId, String roleGroupName);
     

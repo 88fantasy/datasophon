@@ -1,0 +1,3 @@
+com.datasophon.worker.hook.db.InitDbHookAction
+com.datasophon.worker.hook.resource.ResourceStrategyHookAction
+com.datasophon.worker.hook.s3.S3SyncHookAction

@@ -58,9 +58,7 @@ public class WorkerApplicationServer {
     private static final Logger logger = LoggerFactory.getLogger(WorkerApplicationServer.class);
     
     private static final String USER_DIR = "user.dir";
-    
-    private static final String MASTER_HOST = "masterHost";
-    
+
     private static final String WORKER = "worker";
     
     private static final String SH = "sh";
@@ -72,7 +70,7 @@ public class WorkerApplicationServer {
     public static void main(String[] args) throws UnknownHostException {
         String hostname = InetAddress.getLocalHost().getHostName();
         String workDir = System.getProperty(USER_DIR);
-        String masterHost = PropertyUtils.getString(MASTER_HOST);
+        String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
         String cpuArchitecture = ShellUtils.getCpuArchitecture();
         
         CacheUtils.put(Constants.HOSTNAME, hostname);

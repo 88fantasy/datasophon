@@ -37,7 +37,7 @@ public class KerberosUtils {
         
         // get kerberos keytab
         String downloadUrl =
-                "http://" + masterHost + ":" + masterPort + "/ddh/cluster/kerberos/downloadKeytab?clusterId="
+                "http://" + masterHost + ":" + masterPort + "/ddh/api/cluster/kerberos/downloadKeytab?clusterId="
                         + clusterId + "&principal=" + principal + "&keytabName=" + keytabName + "&hostname=" + hostname;
         
         String dest = "/etc/security/keytab/";

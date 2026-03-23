@@ -17,14 +17,21 @@
 
 package com.datasophon.common.command;
 
-import java.io.Serializable;
-
 import lombok.Data;
 
+import java.io.Serializable;
+
+/**
+ * 没有使用
+ * @deprecated
+ *
+ */
 @Data
+@Deprecated
 public class ServiceCheckCommand extends BaseCommand implements Serializable {
     
     private Integer serviceRoleInstanceId;
     
     private Long deliveryId;
+
 }

@@ -23,6 +23,7 @@ import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
@@ -48,7 +49,7 @@ public class ApisixHandlerStrategy extends AbstractHandlerStrategy implements Se
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) {
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-        String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
+        String workPath = PkgInstallPathUtils.getInstallHome(command);
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             OsType os = ShellUtils.getOs();
             ArchType arch = ShellUtils.getArch();
@@ -80,24 +81,10 @@ public class ApisixHandlerStrategy extends AbstractHandlerStrategy implements Se
             if (!execResult.getExecResult()) {
                 return execResult;
             }
-
-//            logger.info("link config to /usr/local/apisix/conf/config.yaml");
-//            commands.clear();
-//            if (Objects.nonNull(command.getRunAs()) && StringUtils.isNotBlank(command.getRunAs().getUser())) {
-//                commands.add("sudo");
-//                commands.add("-u");
-//                commands.add(command.getRunAs().getUser());
-//            }
-//            commands.add("/bin/hdfs");
-//            commands.add("dfs");
-//            commands.add("-put");
-//            commands.add("./share/tez.tar.gz");
-//            commands.add(tezLibParentDir);
-//            execResult = ShellUtils.execWithStatus(workPath, commands, 90, logger);
-//            logger.info("upload tez.tar.gz to {} output: {}", tezLibParentDir, execResult.getExecOut());
         }
         // 启动前需要先删除配置备份文件,否则会启动失败
         if (CommandType.INSTALL_SERVICE.equals(command.getCommandType())
+                || CommandType.UPGRADE_SERVICE.equals(command.getCommandType())
                 || CommandType.START_SERVICE.equals(command.getCommandType())
                 || CommandType.START_WITH_CONFIG.equals(command.getCommandType())
                 || CommandType.RESTART_SERVICE.equals(command.getCommandType())
@@ -112,7 +99,7 @@ public class ApisixHandlerStrategy extends AbstractHandlerStrategy implements Se
             logger.info("delete bak config file : {}", execResult.getExecOut());
         }
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs());
+                command, command.getRunAs(), command.isCheckStatus());
     }
 
 

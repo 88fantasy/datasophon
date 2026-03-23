@@ -12,7 +12,7 @@ tar czf flume-1.11.0.tar.gz flume-1.11.0
 md5sum flume-1.11.0.tar.gz
 echo '0a96bbd5dca673835503fa2ac5ba5335' > flume-1.11.0.tar.gz.md5
 # 将安装包拷贝到各worker节点目录
-cp ./flume-1.11.0.tar.gz ./flume-1.11.0.tar.gz.md5 /opt/datasophon/DDP/packages/
+cp ./flume-1.11.0.tar.gz ./flume-1.11.0.tar.gz.md5 /data/install_datasophon/packages/
 ```
 
 ### 2、新增元数据文件
@@ -65,7 +65,7 @@ datasophon页面搭建flume服务
 
 ```shell
 yum -y install nc
-cd /opt/datasophon/flume-1.11.0/
+cd /data/install_datasophon/flume-1.11.0/
 vim netcat.conf
 ```
 

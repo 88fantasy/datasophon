@@ -10,15 +10,15 @@
 ### 将hive3.1.3.tar.gz和hive3.1.3.tar.gz.md5上传到DataSophon的安装包中
 
 ```shell
-cp ./hive3.1.3.tar.gz /opt/datasophon/DDP/packages/
-cp ./hive3.1.3.tar.gz.md5 /opt/datasophon/DDP/packages/
+cp ./hive3.1.3.tar.gz /data/install_datasophon/packages/
+cp ./hive3.1.3.tar.gz.md5 /data/install_datasophon/packages/
 ```
 
 ### 将spark-3.3.4.tar.gz和spark-3.3.4.tar.gz.md5上传到DataSophon的安装包中
 
 ```shell
-cp ./spark-3.3.4.tar.gz /opt/datasophon/DDP/packages/
-cp ./spark-3.3.4.tar.gz.md5 /opt/datasophon/DDP/packages/
+cp ./spark-3.3.4.tar.gz /data/install_datasophon/packages/
+cp ./spark-3.3.4.tar.gz.md5 /data/install_datasophon/packages/
 ```
 
 ### hive3.1.3安装包是经过改动适配的，并在里面补充了相关兼容性jar来适配（hive on spark）模式，spark3.3.4.tar.gz安装包改动较小也可自行在网络下载
@@ -45,14 +45,14 @@ cp ./spark-3.3.4.tar.gz.md5 /opt/datasophon/DDP/packages/
 
 ```shell
 vim /etc/profile.d/datasophon-env.sh
-export SPARK_HOME=/opt/datasophon/spark-3.3.4
-export HIVE_HOME=/opt/datasophon/hive-3.1.3
+export SPARK_HOME=/data/install_datasophon/spark-3.3.4
+export HIVE_HOME=/data/install_datasophon/hive-3.1.3
 ```
 
 ### 各节点worker重启
 
 ```shell
-sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
+sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
 
 sh bin/datasophon-worker.sh restart worker
 ```
@@ -60,7 +60,7 @@ sh bin/datasophon-worker.sh restart worker
 ### 主节点重启api
 
 ```shell
-sh /opt/datasophon/datasophon-manager-1.2.1/bin/datasophon-api.sh restart api
+sh /data/install_datasophon/datasophon-manager-1.2.1/bin/datasophon-api.sh restart api
 ```
 
 ### 在datasophon中安装的hive3.1.3服务和spark3.3.4服务
@@ -125,11 +125,11 @@ hadoop fs -mkdir /spark-logs
 ### 配置spark3.3.4，将hadoop相关的xml文件拷贝到spark-3.3.4的conf目录下
 
 ```shell 不想拷贝文件的话可以直接通过创建软链接的方式
-cd  /opt/datasophon/spark-3.3.4/conf/
-ln -s /opt/datasophon/hive-3.1.3/conf/hive-site.xml   hive-site.xml
-ln -s /opt/datasophon/hadoop-3.3.3/etc/hadoop/yarn-site.xml  yarn-site.xml
-ln -s /opt/datasophon/hadoop-3.3.3/etc/hadoop/core-site.xml  core-site.xml
-ln -s /opt/datasophon/hadoop-3.3.3/etc/hadoop/hdfs-site.xml hdfs-site.xml
+cd  /data/install_datasophon/spark-3.3.4/conf/
+ln -s /data/install_datasophon/hive-3.1.3/conf/hive-site.xml   hive-site.xml
+ln -s /data/install_datasophon/hadoop-3.3.3/etc/hadoop/yarn-site.xml  yarn-site.xml
+ln -s /data/install_datasophon/hadoop-3.3.3/etc/hadoop/core-site.xml  core-site.xml
+ln -s /data/install_datasophon/hadoop-3.3.3/etc/hadoop/hdfs-site.xml hdfs-site.xml
 ```
 
 ### 如果涉及到hdfs目录权限问题可以简单粗暴的将目录权限设置为777

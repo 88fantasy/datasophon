@@ -68,7 +68,7 @@ scrape_configs:
      labels:
        job: hadoop-hdfs-namenode
        host: ${ip}
-       __path__: /opt/datasophon/hadoop/logs/hadoop-hdfs-namenode-*.log
+       __path__: /data/install_datasophon/hadoop/logs/hadoop-hdfs-namenode-*.log
    pipeline_stages:
    - multiline:
        firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -94,7 +94,7 @@ scrape_configs:
      labels:
        job: zookeeper-server
        host: ${ip}
-       __path__: /opt/datasophon/zookeeper/logs/zookeeper-*-server-*.out
+       __path__: /data/install_datasophon/zookeeper/logs/zookeeper-*-server-*.out
    pipeline_stages:
    - multiline:
        firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -122,7 +122,7 @@ scrape_configs:
      labels:
        job: hadoop-hdfs-datanode
        host: ${ip}
-       __path__: /opt/datasophon/hadoop/logs/hadoop-hdfs-datanode-*.log
+       __path__: /data/install_datasophon/hadoop/logs/hadoop-hdfs-datanode-*.log
    pipeline_stages:
    - multiline:
        firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -148,7 +148,7 @@ scrape_configs:
      labels:
        job: hadoop-hdfs-httpfs
        host: ${ip}
-       __path__: /opt/datasophon/hadoop/logs/hadoop-hdfs-httpfs-*.log
+       __path__: /data/install_datasophon/hadoop/logs/hadoop-hdfs-httpfs-*.log
    pipeline_stages:
    - multiline:
        firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -174,7 +174,7 @@ scrape_configs:
      labels:
        job: hadoop-hdfs-journalnode
        host: ${ip}
-       __path__: /opt/datasophon/hadoop/logs/hadoop-hdfs-journalnode-*.log
+       __path__: /data/install_datasophon/hadoop/logs/hadoop-hdfs-journalnode-*.log
    pipeline_stages:
    - multiline:
        firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -200,7 +200,7 @@ scrape_configs:
      labels:
        job: hadoop-hdfs-zkfc
        host: ${ip}
-       __path__: /opt/datasophon/hadoop/logs/hadoop-hdfs-zkfc-*.log
+       __path__: /data/install_datasophon/hadoop/logs/hadoop-hdfs-zkfc-*.log
    pipeline_stages:
    - multiline:
        firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -226,7 +226,7 @@ scrape_configs:
      labels:
        job: hadoop-mapred-historyserver
        host: ${ip}
-       __path__: /opt/datasophon/hadoop/logs/hadoop-mapred-historyserver-*.log
+       __path__: /data/install_datasophon/hadoop/logs/hadoop-mapred-historyserver-*.log
    pipeline_stages:
    - multiline:
        firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -252,7 +252,7 @@ scrape_configs:
      labels:
        job: hadoop-yarn-nodemanager
        host: ${ip}
-       __path__: /opt/datasophon/hadoop/logs/hadoop-yarn-nodemanager-*.log
+       __path__: /data/install_datasophon/hadoop/logs/hadoop-yarn-nodemanager-*.log
    pipeline_stages:
    - multiline:
        firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -278,7 +278,7 @@ scrape_configs:
      labels:
        job: hadoop-yarn-resourcemanager
        host: ${ip}
-       __path__: /opt/datasophon/hadoop/logs/hadoop-yarn-resourcemanager-*.log
+       __path__: /data/install_datasophon/hadoop/logs/hadoop-yarn-resourcemanager-*.log
    pipeline_stages:
    - multiline:
        firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -304,7 +304,7 @@ scrape_configs:
      labels:
        job: doris-be-info
        host: ${ip}
-       __path__: /opt/datasophon/doris/be/log/be.INFO
+       __path__: /data/install_datasophon/doris/be/log/be.INFO
    pipeline_stages:
    - multiline:
        firstline: '^[A-Z]\d{8} \d{2}:\d{2}:\d{2}\.\d{6}'
@@ -329,7 +329,7 @@ scrape_configs:
      labels:
        job: doris-be-warn
        host: ${ip}
-       __path__: /opt/datasophon/doris/be/log/be.WARNING
+       __path__: /data/install_datasophon/doris/be/log/be.WARNING
    pipeline_stages:
    - multiline:
        firstline: '^[A-Z]\d{8} \d{2}:\d{2}:\d{2}\.\d{6}'
@@ -354,7 +354,7 @@ scrape_configs:
      labels:
        job: kyuubi-server
        host: ${ip}
-       __path__: /opt/datasophon/kyuubi/logs/kyuubi-*-org.apache.kyuubi.server.KyuubiServer-*.out
+       __path__: /data/install_datasophon/kyuubi/logs/kyuubi-*-org.apache.kyuubi.server.KyuubiServer-*.out
    pipeline_stages:
    - multiline:
        firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -380,7 +380,7 @@ scrape_configs:
      labels:
        job: ds-api-server
        host: ${ip}
-       __path__: /opt/datasophon/uscheduler/api-server/logs/dolphinscheduler-api.log
+       __path__: /data/install_datasophon/uscheduler/api-server/logs/dolphinscheduler-api.log
    pipeline_stages:
    - multiline:
        firstline: '^\[[A-Z]*\] \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -406,7 +406,7 @@ scrape_configs:
      labels:
        job: ds-master-server
        host: ${ip}
-       __path__: /opt/datasophon/uscheduler/master-server/logs/dolphinscheduler-master.log
+       __path__: /data/install_datasophon/uscheduler/master-server/logs/dolphinscheduler-master.log
    pipeline_stages:
    - multiline:
        firstline: '^\[[A-Z]*\] \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -432,7 +432,7 @@ scrape_configs:
      labels:
        job: ds-worker-server
        host: ${ip}
-       __path__: /opt/datasophon/uscheduler/worker-server/logs/dolphinscheduler-worker.log
+       __path__: /data/install_datasophon/uscheduler/worker-server/logs/dolphinscheduler-worker.log
    pipeline_stages:
    - multiline:
        firstline: '^\[[A-Z]*\] \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -459,7 +459,7 @@ scrape_configs:
      labels:
        job: ustream
        host: ${ip}
-       __path__: /opt/datasophon/ustream/logs/ustream.log
+       __path__: /data/install_datasophon/ustream/logs/ustream.log
    pipeline_stages:
    - multiline:
        firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
@@ -486,7 +486,7 @@ scrape_configs:
      labels:
        job: elasticsearch-deprecation
        host: ${ip}
-       __path__: /opt/datasophon/elasticsearch/logs/ddp_es_deprecation.log
+       __path__: /data/install_datasophon/elasticsearch/logs/ddp_es_deprecation.log
    pipeline_stages:
    - multiline:
        firstline: '^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2},\d{3}\]'
@@ -512,7 +512,7 @@ scrape_configs:
      labels:
        job: elasticsearch-gc
        host: ${ip}
-       __path__: /opt/datasophon/elasticsearch/logs/gc.log
+       __path__: /data/install_datasophon/elasticsearch/logs/gc.log
    pipeline_stages:
    - multiline:
        firstline: '^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2},\d{3}\+\d{4}\]'
@@ -537,7 +537,7 @@ scrape_configs:
      labels:
        job: elasticsearch-es
        host: ${ip}
-       __path__: /opt/datasophon/elasticsearch/logs/ddp_es.log
+       __path__: /data/install_datasophon/elasticsearch/logs/ddp_es.log
    pipeline_stages:
    - multiline:
        firstline: '^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2},\d{3}\]'
@@ -563,7 +563,7 @@ scrape_configs:
      labels:
        job: elasticsearch-indexing-slowlog
        host: ${ip}
-       __path__: /opt/datasophon/elasticsearch/logs/ddp_es_index_indexing_slowlog.log
+       __path__: /data/install_datasophon/elasticsearch/logs/ddp_es_index_indexing_slowlog.log
    pipeline_stages:
    - multiline:
        firstline: '^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2},\d{3}\]'
@@ -589,7 +589,7 @@ scrape_configs:
      labels:
        job: elasticsearch-search-slowlog
        host: ${ip}
-       __path__: /opt/datasophon/elasticsearch/logs/ddp_es_index_search_slowlog.log
+       __path__: /data/install_datasophon/elasticsearch/logs/ddp_es_index_search_slowlog.log
    pipeline_stages:
    - multiline:
        firstline: '^\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2},\d{3}\]'
@@ -615,7 +615,7 @@ scrape_configs:
      labels:
        job: doris-fe-info
        host: ${ip}
-       __path__: /opt/datasophon/doris/fe/log/fe.INFO
+       __path__: /data/install_datasophon/doris/fe/log/fe.INFO
    pipeline_stages:
    - multiline:
        firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}'
@@ -641,7 +641,7 @@ scrape_configs:
      labels:
        job: doris-fe-warn
        host: ${ip}
-       __path__: /opt/datasophon/doris/fe/log/fe.WARNING
+       __path__: /data/install_datasophon/doris/fe/log/fe.WARNING
    pipeline_stages:
    - multiline:
        firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}'

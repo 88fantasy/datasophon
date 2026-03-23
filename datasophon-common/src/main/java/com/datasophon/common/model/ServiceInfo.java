@@ -17,32 +17,40 @@
 
 package com.datasophon.common.model;
 
+import lombok.Data;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 
-import lombok.Data;
-
 @Data
 public class ServiceInfo {
-    
+
+    @NotBlank(message = "name字段不能为空")
     private String name;
     
     private String label;
-    
+
+    @NotBlank(message = "version字段不能为空")
     private String version;
     
     private String description;
-    
+
+    @NotEmpty(message = "roles字段不能为空")
     private List<ServiceRoleInfo> roles;
     
     private List<ServiceConfig> parameters;
-    
+
+    @NotNull(message = "dependencies字段不能为空")
     private List<String> dependencies;
     
     private ConfigWriter configWriter;
     
     private String packageName;
-    
+
+    @NotEmpty(message = "decompressPackageName字段不能为空")
     private String decompressPackageName;
 
     /**
@@ -53,7 +61,13 @@ public class ServiceInfo {
     private Map<String, ArchInfo> arch;
     
     private ExternalLink externalLink;
-    
+
+    /**
+     * @deprecated
+     */
+    @Deprecated
     private Integer sortNum;
+
+    private String type;
     
 }

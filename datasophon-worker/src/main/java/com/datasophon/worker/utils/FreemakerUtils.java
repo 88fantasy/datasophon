@@ -36,6 +36,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.model.AlertItem;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
+import com.datasophon.common.utils.PropertyUtils;
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.cache.FileTemplateLoader;
 import freemarker.cache.MultiTemplateLoader;
@@ -71,16 +72,13 @@ public class FreemakerUtils {
 
     private static final NacosRestTemplate nacosRestTemplate = NamingHttpClientManager.getInstance().getNacosRestTemplate();
 
-    public static void generateConfigFile(Generators generators,
-                                          List<ServiceConfig> configs,
-                                          String decompressPackageName) throws IOException, TemplateException {
-        generateConfigFile(generators, configs, decompressPackageName, null);
+    public static void generateConfigFile(Generators generators, List<ServiceConfig> configs,
+                                          String serviceInstallHome) throws IOException, TemplateException {
+        generateConfigFile(generators, configs, serviceInstallHome, null);
     }
 
-    public static void generateConfigFile(Generators generators,
-                                          List<ServiceConfig> configs,
-                                          String decompressPackageName,
-                                          String extPath) throws IOException, TemplateException {
+    public static void generateConfigFile(Generators generators, List<ServiceConfig> configs,
+                                          String serviceInstallHome, String extPath) throws IOException, TemplateException {
         Configuration config = initConfiguration(extPath);
 
 //        获取模板的名称
@@ -98,7 +96,7 @@ public class FreemakerUtils {
             logger.debug("generate config file from tpl {}, content is: {}", tplName, content);
         }
 
-        writeContent(generators, configs, decompressPackageName, content);
+        writeContent(generators, configs, serviceInstallHome, content);
 
     }
 
@@ -106,18 +104,28 @@ public class FreemakerUtils {
         // 创建核心配置对象
         Configuration config = new Configuration(Configuration.getVersion());
         List<TemplateLoader> loaderList = new ArrayList<>();
+
+        String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
+        String masterPort = PropertyUtils.getString(Constants.MASTER_WEB_PORT);
 //       安装包的模板优先
         if (StringUtils.isNotBlank(extPath) && new File(extPath).exists()) {
             // 如果 三方的 package 中存在 templates 模版，则直接加载
             loaderList.add(new FileTemplateLoader(new File(extPath)));
         }
+        //      master的下发的模板优先
+        loaderList.add(new RemoteTemplateLoader(String.format("http://%s:%s", masterHost, masterPort)));
         loaderList.add(new ClassTemplateLoader(FreemakerUtils.class, "/templates"));
-        config.setTemplateLoader(new MultiTemplateLoader(loaderList.toArray(new TemplateLoader[0])));
+
+
+        MultiTemplateLoader loader = new MultiTemplateLoader(loaderList.toArray(new TemplateLoader[0]));
+        loader.setSticky(false);
+        config.setTemplateLoader(loader);
         return config;
     }
 
     /**
      * 获取模板名
+     *
      * @param generators
      * @return
      */
@@ -155,6 +163,7 @@ public class FreemakerUtils {
      * TODO 改为SPI实现
      * 渲染模板。
      * 注意保留public，方便写单元测试代码
+     *
      * @param generators
      * @param template
      * @param configs
@@ -174,7 +183,6 @@ public class FreemakerUtils {
     }
 
 
-
     public static String renderCustomConfigFormat(Template template, List<ServiceConfig> configs) throws TemplateException, IOException {
         Map<String, Object> data = new HashMap<>();
 
@@ -183,7 +191,7 @@ public class FreemakerUtils {
         data.put("host", InetAddress.getLocalHost().getHostName());
 
 //        “map”为自定义属性
-        configs.stream().filter(e -> "map".equals(e.getConfigType())).forEach(config-> {
+        configs.stream().filter(e -> "map".equals(e.getConfigType())).forEach(config -> {
 //            阮伟儿自定义的属性，优先级高于name
             if (StrUtil.isNotBlank(config.getKey())) {
                 data.put(config.getKey(), config.getValue());
@@ -228,17 +236,18 @@ public class FreemakerUtils {
 
     /**
      * TODO 改为SPI实现
+     *
      * @param generators
      * @param configs
-     * @param decompressPackageName
+     * @param serviceInstallHome
      * @param content
      * @throws UnknownHostException
      */
-    private static void writeContent(Generators generators, List<ServiceConfig> configs, String decompressPackageName, String content) throws UnknownHostException {
+    private static void writeContent(Generators generators, List<ServiceConfig> configs, String serviceInstallHome, String content) throws UnknownHostException {
         String protocol = generators.getType();
 //        默认写文件
         if (protocol == null) {
-            writeContentToFile(generators, decompressPackageName, content);
+            writeContentToFile(generators, serviceInstallHome, content);
             return;
         }
 
@@ -249,7 +258,6 @@ public class FreemakerUtils {
 
         throw new IllegalArgumentException(String.format("unknown type:%s, 请检查service-ddl.json文件的filename属性为%s的generators的配置属性", protocol, generators.getFilename()));
     }
-
 
 
     private static void writeContentToFile(Generators generators, String decompressPackageName, String content) {
@@ -279,7 +287,7 @@ public class FreemakerUtils {
         data.put("ip", InetAddress.getLocalHost().getHostAddress());
         data.put("host", InetAddress.getLocalHost().getHostName());
 
-        configs.stream().filter(e -> "map".equals(e.getConfigType())).forEach(config-> {
+        configs.stream().filter(e -> "map".equals(e.getConfigType())).forEach(config -> {
 //            阮伟儿自定义的属性，优先级高于name
             if (StrUtil.isNotBlank(config.getKey())) {
                 data.put(config.getKey(), config.getValue());
@@ -316,8 +324,6 @@ public class FreemakerUtils {
         publishConfig(properties, content, group, filename, dataType);
         logger.info("成功生成配置文件{}，写入nacos: url:{}:{}, namespace {}, group: {} 成功", generators.getFilename(), host, port, profile, group);
     }
-
-
 
 
     public static String parseValue(Map<String, Object> data, String str) {
@@ -402,31 +408,6 @@ public class FreemakerUtils {
         processOut(generators, template, data, "prometheus");
     }
 
-    public static void generatePromScrapeConfig(Generators generators, List<ServiceConfig> configs,
-                                                String serviceName) throws IOException, TemplateException {
-        // 创建核心配置对象
-        Configuration config = new Configuration(Configuration.getVersion());
-        // 设置加载的目录
-        // ""代表当前包
-        config.setClassForTemplateLoading(FreemakerUtils.class, "/templates");
-        // 得到模板对象
-        Template template = config.getTemplate("scrape.ftl");
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("itemList", configs);
-        // 3.产生输出
-        processOut(generators, template, data, serviceName);
-    }
-
-    public static void generateYaml(Generators generators, List<ServiceConfig> configs,
-                                    String servicename) {
-        Map<String, Object> configMap = new LinkedHashMap<>();
-        configs.parallelStream().forEach(serviceConfig -> {
-            String key = StringUtils.isEmpty(serviceConfig.getKey()) ? serviceConfig.getName() : serviceConfig.getKey();
-            configMap.put(key, serviceConfig.getValue());
-        });
-        processYaml(generators, configMap, servicename);
-    }
 
 
     private static void processOut(Generators generators, Template template, Map<String, Object> data,
@@ -454,25 +435,6 @@ public class FreemakerUtils {
         return file;
     }
 
-    private static void writeToYaml(Map<String, Object> data,
-                                    String outputFile) {
-        String yaml = YamlParser.flattenedMapToYaml(data);
-        File file = new File(outputFile);
-        if (!file.exists()) {
-            FileUtil.mkParentDirs(file);
-        }
-        FileUtil.writeUtf8String(yaml, file);
-    }
-
-    private static void processYaml(Generators generators, Map<String, Object> data,
-                                    String decompressPackageName) {
-        String packagePath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH;
-        String outputDirectory = generators.getOutputDirectory();
-        for (String outPutDir : generators.getOutputDirectory().split(StrUtil.COMMA)) {
-            String outputFile = (outputDirectory.startsWith(Constants.SLASH) ? "" : packagePath) + outPutDir + Constants.SLASH + generators.getFilename();
-            writeToYaml(data, outputFile);
-        }
-    }
 
 
 }

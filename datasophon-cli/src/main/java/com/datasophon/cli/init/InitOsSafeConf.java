@@ -644,7 +644,7 @@ public class InitOsSafeConf extends InitBase {
             sourceFile = confFilePath + confFileName;
             backupFile = confBackupPath + "/" + confFileName + ".bak-" + DATE_TIME;
             if (!executor.exists(confBackupPath).getExecResult()) {
-                ExecResult exec = executor.createDir(confBackupPath);
+                ExecResult exec = executor.execShell(String.format("mkdir -p %s",confBackupPath));
                 if (!exec.getExecResult()) {
                     log.error("create dir {} failed, abort, please check!", confBackupPath);
                     System.exit(1);

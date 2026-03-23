@@ -8,8 +8,8 @@ Dinky 下载地址: https://github.com/DataLinkDC/dinky/releases/tag/v1.0.1
 这里以Flink1.16版本为例
 wget https://github.com/DataLinkDC/dinky/releases/download/v1.0.1/dinky-release-1.16-1.0.1.tar.gz
 
-mv dinky-release-1.16-1.0.1.tar.gz  /opt/datasophon/DDP/packages
-cd /opt/datasophon/DDP/packages
+mv dinky-release-1.16-1.0.1.tar.gz  /data/install_datasophon/packages
+cd /data/install_datasophon/packages
 
 md5sum dinky-release-1.16-1.0.1.tar.gz
 56b6d1fdd2c356b4f794ef1a9e514898 dinky-release-1.16-1.0.1.tar.gz
@@ -22,7 +22,7 @@ echo 56b6d1fdd2c356b4f794ef1a9e514898 > dinky-release-1.16-1.0.1.tar.gz.md5
 在每个节点的datasophon-worker配置目录下添加配置模板
 
 ```
-cd  /opt/datasophon/datasophon-worker/conf/templates
+cd  /data/install_datasophon/datasophon-worker/conf/templates
 vim dinky.ftl
 
 spring:
@@ -33,11 +33,11 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
 分发ftl(如果在当前节点安装dinky的话就不用分发)
-scp dinky.ftl datasophon02:/opt/datasophon/datasophon-worker/conf/templates
-scp dinky.ftl datasophon03:/opt/datasophon/datasophon-worker/conf/templates
+scp dinky.ftl datasophon02:/data/install_datasophon/datasophon-worker/conf/templates
+scp dinky.ftl datasophon03:/data/install_datasophon/datasophon-worker/conf/templates
 
 重启所有work节点
-sh  /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
+sh  /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
 ```
 
 ## 3.准备配置文件service_ddl.json
@@ -45,7 +45,7 @@ sh  /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
 进入datasophon-manager-1.2.1中
 
 ```
-cd /opt/datasophon-manager-1.2.1/conf/meta/DDP-1.2.1
+cd /data/install_datasophon-manager-1.2.1/conf/meta/DDP-1.2.1
 
 mkdir DINKY && cd DINKY
 
@@ -180,7 +180,7 @@ vim service_ddl.json
 **重启datasophon-manager的api**
 
 ```
-sh /opt/datasophon-manager-1.2.1/bin/datasophon-api.sh restart api
+sh /data/install_datasophon-manager-1.2.1/bin/datasophon-api.sh restart api
 ```
 
 ## 4.安装Dinky
@@ -192,7 +192,7 @@ sh /opt/datasophon-manager-1.2.1/bin/datasophon-api.sh restart api
 ```
 mysql -u root -p -e "create database dinky"
 
-mysql -u root -p -D dinky < /opt/datasophon/dinky/sql/dinky-mysql.sql
+mysql -u root -p -D dinky < /data/install_datasophon/dinky/sql/dinky-mysql.sql
 ```
 
 ## 5.Dinky集成grafana监控
@@ -200,7 +200,7 @@ mysql -u root -p -D dinky < /opt/datasophon/dinky/sql/dinky-mysql.sql
 ### 5.1 datasophon1.2.1默认存在，可跳过
 
 ```
-cd /opt/datasophon/prometheus
+cd /data/install_datasophon/prometheus
 
 vim prometheus.yml 检查是否有dinky配置文件  如果没有添加
 
@@ -210,7 +210,7 @@ vim prometheus.yml 检查是否有dinky配置文件  如果没有添加
        - configs/dinky.json
 
 
- cd /opt/datasophon/prometheus/configs
+ cd /data/install_datasophon/prometheus/configs
  vim dinky.json  检查是否有dinky的配置文件  如果没有添加
 
 [

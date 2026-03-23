@@ -17,11 +17,12 @@
 
 package com.datasophon.api.load;
 
-import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ServiceRoleJmxMap {
     
-    private static HashMap<String, String> map = new HashMap<String, String>();
+    private static final Map<String, String> map = new ConcurrentHashMap<>();
     
     public static void put(String key, String value) {
         map.put(key, value);

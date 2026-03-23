@@ -1,10 +1,11 @@
 package com.datasophon.api.controller;
 
+import com.datasophon.api.dto.IntegerIdDTO;
+import com.datasophon.api.dto.upload.CheckChunkDTO;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.common.utils.Result;
 import com.datasophon.api.dto.upload.BigFileDTO;
 import com.datasophon.api.dto.upload.ChunkDTO;
-import com.datasophon.api.dto.LongIdDTO;
 import com.datasophon.api.dto.upload.MergeChunkDTO;
 import com.datasophon.dao.entity.UploadTempFile;
 import com.datasophon.dao.entity.UploadTempFileChunk;
@@ -70,7 +71,7 @@ public class TempFileController extends ApiController {
     public Result uploadChunk(
             @NotNull(message = "分片不能为空") @RequestPart("chunk") MultipartFile chunk,
             @NotNull(message = "chunkNo不能为空") @Schema(description = "分片索引，0-base") Integer chunkNo,
-            @NotNull(message = "attachId不能为空") Long attachId,
+            @NotNull(message = "attachId不能为空") Integer attachId,
             String md5) {
         ChunkDTO info = new ChunkDTO();
         info.setChunk(chunk);
@@ -78,6 +79,13 @@ public class TempFileController extends ApiController {
         info.setAttachId(attachId);
         info.setMd5(md5);
         return Result.success(uploadTempFileService.uploadChunk(info));
+    }
+
+    @PostMapping("/isChunkUploaded")
+    @Operation(summary = "分片是否已经上传")
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = UploadTempFileChunk.class))})
+    public Result mergeChunk(@RequestBody @Validated CheckChunkDTO vo) {
+        return Result.success(uploadTempFileService.isChunkUploaded(vo));
     }
 
     @PostMapping("/mergeChunk")
@@ -91,7 +99,7 @@ public class TempFileController extends ApiController {
     @PostMapping("/queryMergeProgress")
     @Operation(summary = "查询合并进度")
     @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = MergeProgressVO.class))})
-    public Result queryMergeProgress(@RequestBody @Validated LongIdDTO id) {
+    public Result queryMergeProgress(@RequestBody @Validated IntegerIdDTO id) {
         return Result.success(uploadTempFileService.queryMergeProgress(id.getId()));
     }
 }

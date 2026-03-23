@@ -18,25 +18,24 @@
 package com.datasophon.worker.handler;
 
 import com.datasophon.common.Constants;
+import com.datasophon.common.command.ServiceRoleResource;
 import com.datasophon.common.model.RunAs;
 import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.FileUtils;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.utils.TaskConstants;
-
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import lombok.Data;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Data
 public class ServiceHandler {
@@ -50,69 +49,81 @@ public class ServiceHandler {
     public ServiceHandler(String serviceName, String serviceRoleName) {
         this.serviceName = serviceName;
         this.serviceRoleName = serviceRoleName;
-        String loggerName = String.format("%s-%s-%s", TaskConstants.TASK_LOG_LOGGER_NAME, serviceName, serviceRoleName);
+        String loggerName = TaskConstants.createLoggerName(serviceName, serviceRoleName, ServiceHandler.class);
         logger = LoggerFactory.getLogger(loggerName);
     }
-    
-    public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, String decompressPackageName,
-                            RunAs runAs) {
-        ExecResult statusResult = execRunner(statusRunner, decompressPackageName, null);
+
+
+
+    public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, ServiceRoleResource resource,
+                            RunAs runAs, boolean checkStatus) {
+        logger.info("开始执行服务{} {}的启动命令", resource.getServiceName(), resource.getServiceRoleName());
+        String linkName = PkgInstallPathUtils.getLinkDirName(resource);
+        ExecResult statusResult = execRunner(statusRunner, linkName, null);
         if (statusResult.getExecResult()) {
-            logger.info("{} already started", decompressPackageName);
+            logger.info("服务{} {} 已经处于运行状态，无需执行启动命令", resource.getServiceName(), resource.getServiceRoleName());
             ExecResult execResult = new ExecResult();
             execResult.setExecResult(true);
             return execResult;
         }
+
         // start service
-        ExecResult startResult = execRunner(startRunner, decompressPackageName, runAs);
+        ExecResult startResult = execRunner(startRunner, linkName, runAs);
+
         // check start result
-        if (startResult.getExecResult()) {
+        if (startResult.getExecResult() && checkStatus) {
             int times = PropertyUtils.getInt("times");
             int count = 0;
             while (count < times) {
                 logger.info("check start result at times {}", count + 1);
-                ExecResult result = execRunner(statusRunner, decompressPackageName, runAs);
+                ExecResult result = execRunner(statusRunner, linkName, runAs);
                 if (result.getExecResult()) {
-                    logger.info("start success in {}", decompressPackageName);
+                    logger.info("服务{} {}启动成功", resource.getServiceName(), resource.getServiceRoleName());
                     break;
                 } else {
                     try {
                         Thread.sleep(5 * 1000);
-                    } catch (InterruptedException e) {
-                        logger.error(e.getMessage(), e);
+                    } catch (InterruptedException ignored) {
+
                     }
                 }
                 count++;
             }
             if (count == times) {
-                logger.info(" start {} timeout", decompressPackageName);
+                logger.error("服务{} {}启动超时，请查看应用的启动日志", resource.getServiceName(), resource.getServiceRoleName());
                 startResult.setExecResult(false);
             }
         }
+
         return startResult;
     }
+
+    public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, ServiceRoleResource resource, RunAs runAs) {
+        return start(startRunner, statusRunner, resource, runAs, true);
+    }
     
-    public ExecResult stop(ServiceRoleRunner runner, ServiceRoleRunner statusRunner, String decompressPackageName,
+    public ExecResult stop(ServiceRoleRunner runner, ServiceRoleRunner statusRunner, ServiceRoleResource resource,
                            RunAs runAs) {
-        ExecResult statusResult = execRunner(statusRunner, decompressPackageName, runAs);
+        String linkName = PkgInstallPathUtils.getLinkDirName(resource);
+        ExecResult statusResult = execRunner(statusRunner, linkName, runAs);
         ExecResult execResult = new ExecResult();
         if (statusResult.getExecResult()) {
-            execResult = execRunner(runner, decompressPackageName, runAs);
+            execResult = execRunner(runner, linkName, runAs);
             // 检测是否停止成功
             if (execResult.getExecResult()) {
                 int times = PropertyUtils.getInt("times");
                 int count = 0;
                 while (count < times) {
                     logger.info("check stop result at times {}", count + 1);
-                    ExecResult result = execRunner(statusRunner, decompressPackageName, runAs);
+                    ExecResult result = execRunner(statusRunner, linkName, runAs);
                     if (!result.getExecResult()) {
-                        logger.info("stop success in {}", decompressPackageName);
+                        logger.info("服务{} {}关闭成功", resource.getServiceName(), resource.getServiceRoleName());
                         break;
                     } else {
                         try {
                             Thread.sleep(5 * 1000);
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            Thread.currentThread().interrupt();
                         }
                     }
                     count++;
@@ -122,23 +133,23 @@ public class ServiceHandler {
                 }
             }
         } else {// 已经是停止状态，直接返回
-            logger.info("{} already stopped", decompressPackageName);
+            logger.info("服务{} {}已经停止，无需执行停止命令", resource.getServiceName(), resource.getServiceRoleName());
             execResult.setExecResult(true);
         }
         return execResult;
     }
     
-    public ExecResult reStart(ServiceRoleRunner runner, String decompressPackageName) {
-        ExecResult result = execRunner(runner, decompressPackageName, null);
+    public ExecResult restart(ServiceRoleRunner runner, ServiceRoleResource resource) {
+        ExecResult result = execRunner(runner, PkgInstallPathUtils.getLinkDirName(resource), null);
         return result;
     }
     
-    public ExecResult status(ServiceRoleRunner runner, String decompressPackageName) {
-        ExecResult result = execRunner(runner, decompressPackageName, null);
+    public ExecResult status(ServiceRoleRunner runner, ServiceRoleResource resource) {
+        ExecResult result = execRunner(runner, PkgInstallPathUtils.getLinkDirName(resource), null);
         return result;
     }
     
-    public ExecResult execRunner(ServiceRoleRunner runner, String decompressPackageName, RunAs runAs) {
+    public ExecResult execRunner(ServiceRoleRunner runner, String installHome, RunAs runAs) {
         String shell = runner.getProgram();
         List<String> args = runner.getArgs();
         long timeout = Long.parseLong(runner.getTimeout());
@@ -153,7 +164,7 @@ public class ServiceHandler {
             logger.info("do not use sh");
         } else {
             File shellFile = new File(
-                    Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + shell);
+                    Constants.INSTALL_PATH + Constants.SLASH + installHome + Constants.SLASH + shell);
             if (shellFile.exists()) {
                 try {
                     // 读取第一行，检查采用的 shell 是哪个，bash、sh ？
@@ -176,7 +187,7 @@ public class ServiceHandler {
         command.add(shell);
         command.addAll(args);
         logger.info("execute shell command : {}", command);
-        return ShellUtils.execWithStatus(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName, command,
+        return ShellUtils.execWithStatus(Constants.INSTALL_PATH + Constants.SLASH + installHome, command,
                 timeout, logger);
     }
     

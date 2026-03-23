@@ -7,7 +7,9 @@ import com.datasophon.common.utils.ShellUtils;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author ruanzhiming
@@ -27,11 +29,16 @@ public class ExecShellStrategy extends ResourceStrategy {
 
     @Override
     public ExecResult exec() {
+        logger.info("开始执行资源策略:{}...", type());
+        Map<String, String> variables = new HashMap<>(this.variables);
+        variables.put("${" + this.getService() + "." + this.getServiceRole() + ".INSTALL_PATH}", basePath);
+        variables.put("${ROOT." + this.getService() + ".INSTALL_PATH}", basePath);
         for (String command : commands) {
-            command = PlaceholderUtils.replacePlaceholders(command, this.variables, Constants.REGEX_VARIABLE);
+            command = PlaceholderUtils.replacePlaceholdersRecursive(command, variables, Constants.REGEX_VARIABLE);
 
             ExecResult result = ShellUtils.execShell(command);
             logger.info(" {} result {} ", command, result.getExecResult() ? "success" : "fail");
+            return result;
         }
         return ExecResult.success();
     }

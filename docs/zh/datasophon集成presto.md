@@ -23,7 +23,7 @@ echo '84666ba9ef9b9024fa7c385af0823101' > presto-0.283.tar.gz.md5
 将两个文件拷贝进对应文件夹中：
 
 ```shell
-cp ./presto-0.283.tar.gz ./presto-0.283.tar.gz.md5 /opt/datasophon/DDP/packages
+cp ./presto-0.283.tar.gz ./presto-0.283.tar.gz.md5 /data/install_datasophon/packages
 ```
 
 ### 2、编写presto元数据
@@ -295,7 +295,7 @@ vim service_ddl.json
 ```
 
 ```shell
-cd /opt/datasophon/datasophon-worker/conf/templates
+cd /data/install_datasophon/datasophon-worker/conf/templates
 vim presto.jvm.config.ftl
 ```
 
@@ -339,7 +339,7 @@ if ("PrestoCoordinator".equals(serviceRoleName) && "coordinator".equals(config.g
 }
 ```
 
-将重新打包的 datasophon-worker-1.1.2.jar 文件替换到每个worker节点的 /opt/datasophon/datasophon-worker/lib
+将重新打包的 datasophon-worker-1.1.2.jar 文件替换到每个worker节点的 /data/install_datasophon/datasophon-worker/lib
 1.2.0版本worker包名为datasophon-worker-1.1.3.jar，需要上传后改名
 
 ### 4、重启
@@ -347,7 +347,7 @@ if ("PrestoCoordinator".equals(serviceRoleName) && "coordinator".equals(config.g
 各节点worker重启
 
 ```shell
-sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
+sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
 ```
 
 主节点重启api
@@ -365,7 +365,7 @@ sh /opt/apps/datasophon/datasophon-manager-1.1.2/bin/datasophon-api.sh restart a
 
 ```shell
 pwd
-/opt/datasophon/presto
+/data/install_datasophon/presto
 mkdir jmx
 cd jmx
 vim prometheus_config.yml
@@ -392,7 +392,7 @@ rules:
 
 ![image](https://github.com/datavane/datasophon/assets/62798940/16b9dd5d-8957-45b6-b0fc-163e47d49a25)
 
-#### 5.2 修改presto启动脚本 /opt/datasophon/presto/bin/launcher.py
+#### 5.2 修改presto启动脚本 /data/install_datasophon/presto/bin/launcher.py
 
 ![image](https://github.com/datavane/datasophon/assets/62798940/820fda3d-860d-4817-a687-ffa37cf5f6a3)
 
@@ -629,9 +629,9 @@ def build_java_execution(options, daemon):
         config_properties = load_properties(options.config_path)
         if config_properties['coordinator'] == 'true':
             print 'coordinator true'
-            command += ['-javaagent:/opt/datasophon/presto/jmx/jmx_prometheus_javaagent-0.16.1.jar=7778:/opt/datasophon/presto/jmx/prometheus_config.yml']
+            command += ['-javaagent:/data/install_datasophon/presto/jmx/jmx_prometheus_javaagent-0.16.1.jar=7778:/data/install_datasophon/presto/jmx/prometheus_config.yml']
         else:
-            command += ['-javaagent:/opt/datasophon/presto/jmx/jmx_prometheus_javaagent-0.16.1.jar=7779:/opt/datasophon/presto/jmx/prometheus_config.yml']
+            command += ['-javaagent:/data/install_datasophon/presto/jmx/jmx_prometheus_javaagent-0.16.1.jar=7779:/data/install_datasophon/presto/jmx/prometheus_config.yml']
     command += [main_class]
     if options.verbose:
         print(command)
@@ -876,7 +876,7 @@ if __name__ == '__main__':
 #### 5.3 修改Prometheus配置文件
 
 ```shell
-vim /opt/datasophon/prometheus/prometheus.yml
+vim /data/install_datasophon/prometheus/prometheus.yml
 ```
 
 新增presto配置
@@ -892,7 +892,7 @@ vim /opt/datasophon/prometheus/prometheus.yml
      - configs/prestoworker.json
 ```
 
-在 /opt/datasophon/prometheus/configs 目录新增 prestocoordinator.json 和 prestoworker.json 配置文件
+在 /data/install_datasophon/prometheus/configs 目录新增 prestocoordinator.json 和 prestoworker.json 配置文件
 
 ```shell
 [
@@ -1889,7 +1889,7 @@ vim /opt/datasophon/prometheus/prometheus.yml
 
 #### 5.6 集成告警
 
-在 /opt/datasophon/prometheus/alert_rules 目录中添加presto告警配置文件 presto.yml
+在 /data/install_datasophon/prometheus/alert_rules 目录中添加presto告警配置文件 presto.yml
 
 ```shell
 groups:

@@ -17,73 +17,75 @@
 
 package com.datasophon.worker.actor;
 
-import com.datasophon.common.Constants;
+import cn.hutool.core.util.ServiceLoaderUtil;
 import com.datasophon.common.command.InstallServiceRoleCommand;
-import com.datasophon.common.enums.ServiceRoleType;
+import com.datasophon.common.enums.HookType;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.ShellUtils;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.worker.handler.InstallServiceHandler;
-
-import org.apache.commons.lang3.StringUtils;
-
-import java.io.File;
-import java.util.ArrayList;
-
+import com.datasophon.worker.utils.TaskConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import akka.actor.UntypedActor;
+import java.util.Comparator;
+import java.util.List;
 
-public class InstallServiceActor extends UntypedActor {
-    
+public class InstallServiceActor extends HookTypedActor<InstallServiceRoleCommand> {
+
     private static final Logger logger = LoggerFactory.getLogger(InstallServiceActor.class);
-    
+
     @Override
-    public void onReceive(Object msg) throws Throwable {
-        if (msg instanceof InstallServiceRoleCommand) {
-            InstallServiceRoleCommand command = (InstallServiceRoleCommand) msg;
-            ExecResult installResult = new ExecResult();
-            InstallServiceHandler serviceHandler = new InstallServiceHandler(command.getFrameCode(),
-                    command.getServiceName(), command.getServiceRoleName());
-            
-            logger.info("Start install package {}", command.getPackageName());
-            if (command.getDecompressPackageName().contains("kerberos")) {
-                ArrayList<String> commands = new ArrayList<>();
-                commands.add("yum");
-                commands.add("install");
-                commands.add("-y");
-                if (ServiceRoleType.MASTER == command.getServiceRoleType()) {
-                    logger.info("Start to {}", commands);
-                    commands.add("krb5-server");
-                    commands.add("krb5-workstation");
-                    commands.add("krb5-libs");
-                } else {
-                    logger.info("Start to {}", commands);
-                    commands.add("krb5-workstation");
-                    commands.add("krb5-libs");
-                }
-                ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, commands, 180, logger);
-                if (execResult.getExecResult()) {
-                    installResult = serviceHandler.install(command);
-                }
-            } else {
-                installResult = serviceHandler.install(command);
-                if(installResult.getExecResult()) {
-                    // 其他服务创建软连接
-                    String appHome = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
-                    String appLinkHome =
-                            Constants.INSTALL_PATH + Constants.SLASH + StringUtils.lowerCase(command.getServiceName());
-                    if (!new File(appLinkHome).exists()) {
-                        ShellUtils.execShell("ln -s " + appHome + " " + appLinkHome);
-                        logger.info("Create symbolic dir: {}", appLinkHome);
-                    }
-                }
-            }
+    protected void doOnReceive(InstallServiceRoleCommand command) throws Throwable {
+        ExecResult installResult = new ExecResult();
+
+        Logger log = LoggerFactory.getLogger(TaskConstants.createLoggerName(command.getServiceName(), command.getServiceRoleName(), InstallServiceActor.class));
+        try {
+            log.info("开始安装服务:{} {}", command.getServiceName(), command.getServiceRoleName());
+            installResult = invokeFunctions(
+                    () -> invokeHook(command.getHooks(), HookType.PRE_INSTALL, command, command.getVariables()),
+                    () -> doInstall(command, log),
+                    () -> invokeHook(command.getHooks(), HookType.POST_INSTALL, command, command.getVariables())
+            );
+        } catch (Exception e) {
+            installResult = ExecResult.error(String.format("安装%s失败，%s", command.getServiceName(), e.getMessage()));
+            logger.error("安装{}{}失败, {}", command.getServiceName(), command.getServiceRoleName(), e.getMessage(), e);
+            log.error("安装{}{}失败, {}", command.getServiceName(), command.getServiceRoleName(), e.getMessage(), e);
+        } finally {
             getSender().tell(installResult, getSelf());
-            logger.info("Install {} {}", command.getPackageName(),
-                    installResult.getExecResult() ? "success" : "failed");
-        } else {
-            unhandled(msg);
+            logger.info("Install {} {}, message: {}", command.getPackageName(), installResult.getExecResult() ? "success" : "failed", installResult.getExecOut());
+            log.info("安装 {} {}, 信息: {}", command.getPackageName(), installResult.getExecResult() ? "成功" : "失败", installResult.getExecOut());
         }
     }
+
+
+    private ExecResult doInstall(InstallServiceRoleCommand command, Logger log) {
+        logger.info("开始安装软件包{}", command.getPackageName());
+        String normalPkgDir = PkgInstallPathUtils.getInstallHomeName(command);
+        command.setNormalPkgDir(normalPkgDir);
+
+        InstallServiceHandler serviceHandler = getInstallHandler(command);
+        ExecResult installResult = serviceHandler.install(command);
+        if (installResult.getExecResult()) {
+            installResult = serviceHandler.createLink(command);
+        }
+
+        return installResult;
+    }
+
+
+    private InstallServiceHandler getInstallHandler(InstallServiceRoleCommand command) {
+        List<InstallServiceHandler> handlers = ServiceLoaderUtil.loadList(InstallServiceHandler.class);
+        handlers.sort(Comparator.comparing(InstallServiceHandler::getOrder));
+        for (InstallServiceHandler handler : handlers) {
+            handler.init(command);
+            if (handler.match(command)) {
+                return handler;
+            }
+        }
+//        兜底安装逻辑
+        InstallServiceHandler handler = new InstallServiceHandler();
+        handler.init(command);
+        return handler;
+    }
+
 }

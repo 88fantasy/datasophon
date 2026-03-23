@@ -12,9 +12,9 @@ import java.util.List;
 @Data
 public class ExtRepoMetaFsModel {
 
+    private String template;
 
-    private String sample;
-
+    private String meta;
 
     private List<FrameworkMeta> frameworks = new ArrayList<>();
 

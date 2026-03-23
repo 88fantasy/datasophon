@@ -48,5 +48,13 @@ public class NexusRegistry {
         private String packagesTarName;
     }
 
+
+    public NexusUri getNexusUri() {
+        NexusUri uri = new NexusUri();
+        uri.setUri(String.format("http://%s:%s", getHost().getIp(), getConfig().getWebPort()));
+        uri.setUser(getConfig().getUser());
+        uri.setPassword(getConfig().getPassword());
+        return uri;
+    }
     
 }

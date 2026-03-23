@@ -17,25 +17,30 @@
 
 package com.datasophon.api.controller;
 
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.EnumUtil;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.ClusterServiceCommandService;
+import com.datasophon.api.service.dag.DAGService;
+import com.datasophon.api.service.extrepo.ExtRepoInstallService;
 import com.datasophon.common.enums.CommandType;
+import com.datasophon.common.utils.ConverterUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
-
+import com.datasophon.dao.entity.dag.DagDefinitionEntity;
+import io.swagger.v3.oas.annotations.Operation;
 import org.apache.commons.lang3.StringUtils;
-
-import java.util.Arrays;
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import cn.hutool.core.util.EnumUtil;
+import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping("cluster/service/command")
@@ -43,7 +48,14 @@ public class ClusterServiceCommandController extends ApiController {
     
     @Autowired
     private ClusterServiceCommandService clusterServiceCommandService;
-    
+
+
+    @Autowired
+    private ExtRepoInstallService extRepoInstallService;
+
+    @Autowired
+    private DAGService dagService;
+
     /**
      * 查询集群服务指令列表
      */
@@ -51,61 +63,51 @@ public class ClusterServiceCommandController extends ApiController {
     public Result list(Integer clusterId, Integer page, Integer pageSize) {
         return clusterServiceCommandService.getServiceCommandlist(clusterId, page, pageSize);
     }
-    
-    /**
-     * 生成服务安装操作指令
-     */
-    @UserPermission
-    @RequestMapping("/generateCommand")
-    public Result generateCommand(Integer clusterId, String commandType, String serviceNames) {
-        CommandType command = EnumUtil.fromString(CommandType.class, commandType);
-        List<String> list = Arrays.asList(serviceNames.split(","));
-        return Result.success(clusterServiceCommandService.generateCommand(clusterId, command, list));
+
+
+    @RequestMapping("/findDagByPage")
+    public Result findDagByPage(Integer clusterId, Integer page, Integer pageSize) {
+        IPage<DagDefinitionEntity>  result = dagService.findDagByPage(clusterId, page, pageSize);
+        return Result.success(result.getTotal(), result.getRecords());
     }
-    
-    /**
-     * 生成服务实例操作指令
-     */
-    @RequestMapping("/generateServiceCommand")
+
+
+
     @UserPermission
-    public Result generateServiceCommand(Integer clusterId, String commandType, String serviceInstanceIds) {
+    @RequestMapping("/generateGenericInstallCommand")
+    @Operation(summary = "生成通用安装命令")
+    public Result generateGenericInstallCommand(Integer clusterId, String serviceNames) {
+        List<String> list = Arrays.asList(serviceNames.split(","));
+        return Result.success(extRepoInstallService.generateGenericInstallCommand(clusterId, list));
+    }
+
+
+
+    @PostMapping("/generateAndExecSrvInstCmd")
+    @UserPermission
+    @Operation(summary = "执行服务通用操作(启停,不含安装)")
+    public Result generateAndExecSrvInstCmd(Integer clusterId, String commandType, String serviceInstanceIds) {
         CommandType command = EnumUtil.fromString(CommandType.class, commandType);
         if (StringUtils.isNotBlank(serviceInstanceIds)) {
-            List<String> ids = Arrays.asList(serviceInstanceIds.split(","));
-            return clusterServiceCommandService.generateServiceCommand(clusterId, command, ids);
+            List<Integer> ids = ConverterUtils.convertIds(serviceInstanceIds, Integer::parseInt);
+            return Result.success(extRepoInstallService.generateAndExecSrvInstCmd(clusterId, command, ids));
         } else {
             return Result.error(Status.NO_SERVICE_EXECUTE.getMsg());
         }
-        
     }
-    
-    /**
-     * 生成服务角色实例操作指令
-     */
-    @RequestMapping("/generateServiceRoleCommand")
+
+
+    @PostMapping("/generateAndSrvRoleCmd")
     @UserPermission
-    public Result generateServiceRoleCommand(Integer clusterId, String commandType, Integer serviceInstanceId,
+    public Result generateAndSrvRoleCmd(Integer clusterId, String commandType, Integer serviceInstanceId,
                                              String serviceRoleInstancesIds) {
-        CommandType command = EnumUtil.fromString(CommandType.class, commandType);
-        List<String> ids = Arrays.asList(serviceRoleInstancesIds.split(","));
-        return clusterServiceCommandService.generateServiceRoleCommand(clusterId, command, serviceInstanceId, ids);
-        
-    }
-    
-    /**
-     * 启动执行指令
-     */
-    @RequestMapping("/startExecuteCommand")
-    @UserPermission
-    public Result startExecuteCommand(Integer clusterId, String commandType, String commandIds) {
-        clusterServiceCommandService.startExecuteCommand(clusterId, commandType, commandIds);
-        return Result.success();
-    }
-    
-    @RequestMapping("/cancelCommand")
-    public Result cancelCommand(String commandId) {
-        clusterServiceCommandService.cancelCommand(commandId);
-        return Result.success();
+        List<Integer> ids = ConverterUtils.convertIds(serviceRoleInstancesIds, Integer::parseInt);
+        if (CollectionUtil.isNotEmpty(ids)) {
+            CommandType command = EnumUtil.fromString(CommandType.class, commandType);
+            return Result.success(extRepoInstallService.generateAndExecSrvRoleCmd(clusterId, command, serviceInstanceId, ids));
+        } else {
+            return Result.error(Status.NO_SERVICE_EXECUTE.getMsg());
+        }
     }
     
     /**
@@ -144,8 +146,9 @@ public class ClusterServiceCommandController extends ApiController {
     @RequestMapping("/delete")
     public Result delete(@RequestBody Integer[] ids) {
         clusterServiceCommandService.removeByIds(Arrays.asList(ids));
-        
         return Result.success();
     }
-    
+
+
+
 }

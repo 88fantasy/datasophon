@@ -19,13 +19,10 @@ package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
-import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.dao.entity.ClusterInfoEntity;
-import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,13 +32,13 @@ public class HBaseHandlerStrategy extends ServiceHandlerAbstract implements Serv
     
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
         boolean enableKerberos = false;
         Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
         for (ServiceConfig config : list) {
             if ("enableKerberos".equals(config.getName())) {
-                enableKerberos = isEnableKerberos(clusterId, globalVariables, enableKerberos, config, "HBASE");
+                enableKerberos = decideEnableKerberos(clusterId, enableKerberos, config, "HBASE");
             }
         }
         String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + "HBASE" + Constants.CONFIG;

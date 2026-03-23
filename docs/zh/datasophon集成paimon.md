@@ -32,9 +32,9 @@ mv flink-1.16.3-bin-scala_2.12.tgz flink-1.16.3
 - 
 
 ```shell
-cp paimon-flink-1.16-0.7-20231201.002224-11.jar  /opt/datasophon/flink-1.16.3/lib
-cp flink-sql-connector-hive-3.1.2_2.12-1.16.2.jar  /opt/datasophon/flink-1.16.3/lib
-****解决乱七八糟的类找不到的问题：cp /opt/datasophon/hadoop-3.3.3/share/hadoop/mapreduce/hadoop-mapreduce-client-core-3.3.3.jar /opt/datasophon/flink-1.16.3/lib
+cp paimon-flink-1.16-0.7-20231201.002224-11.jar  /data/install_datasophon/flink-1.16.3/lib
+cp flink-sql-connector-hive-3.1.2_2.12-1.16.2.jar  /data/install_datasophon/flink-1.16.3/lib
+****解决乱七八糟的类找不到的问题：cp /data/install_datasophon/hadoop-3.3.3/share/hadoop/mapreduce/hadoop-mapreduce-client-core-3.3.3.jar /data/install_datasophon/flink-1.16.3/lib
 ```
 
 ### 检查环境变量
@@ -43,7 +43,7 @@ cp flink-sql-connector-hive-3.1.2_2.12-1.16.2.jar  /opt/datasophon/flink-1.16.3/
 cat /etc/profile.d/datasophon-env.sh
 	xxxx
 	...
-	export FLINK_HOME=/opt/datasophon/flink-1.16.3
+	export FLINK_HOME=/data/install_datasophon/flink-1.16.3
 	export HADOOP_CLASSPATH=`hadoop classpath`
 检查环境变量是否跟自己flink版本一致，如有修改最后记得source一下并分发到各节点
 
@@ -61,7 +61,7 @@ md5sum flink-1.16.3.tar.gz | awk '{print $1}' >flink-1.16.3.tar.gz.md5
 各节点worker重启
 
 ```shell
-sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
+sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
 ```
 
 主节点重启api
@@ -73,7 +73,7 @@ sh /opt/module/datasophon-manager-1.2.0/bin/datasophon-api.sh restart api
 ### 测试：以 Yarn-Session模式为例
 
 ```shell
-vim /opt/datasophon/flink-1.16.3/conf/sql-client-init.sql
+vim /data/install_datasophon/flink-1.16.3/conf/sql-client-init.sql
 ```
 
 ```shell
@@ -86,7 +86,7 @@ CREATE CATALOG hive_catalog WITH (
     'type' = 'paimon',
     'metastore' = 'hive',
 'uri' = 'thrift://ddp1:9083',
-'hive-conf-dir' = '/opt/datasophon/hive/conf',
+'hive-conf-dir' = '/data/install_datasophon/hive/conf',
     'warehouse' = 'hdfs://ddp1:8020/paimon/hive'
 );
 
@@ -110,7 +110,7 @@ SET 'sql-client.execution.result-mode' = 'tableau';
 解压hive-3.1.0安装包
 
 ```shell
-cp paimon-hive-connector-3.1-0.7-20231201.002224-11.jar /opt/datasophon/hive-3.1.0/auxlibs
+cp paimon-hive-connector-3.1-0.7-20231201.002224-11.jar /data/install_datasophon/hive-3.1.0/auxlibs
 
 （不推荐用add jar，MR 引擎运行 join 语句会报异常）
 ```
@@ -142,7 +142,7 @@ FROM test.test_paimon;
 ### Spark：spark-3.2.2集成paimon
 
 ```shell
-cp paimon-spark-3.2-0.7-20231201.002224-11.jar /opt/datasophon/spark-3.2.2/jars 
+cp paimon-spark-3.2-0.7-20231201.002224-11.jar /data/install_datasophon/spark-3.2.2/jars 
 ```
 
 剩余步骤同flink集成，不做赘述

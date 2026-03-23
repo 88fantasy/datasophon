@@ -18,7 +18,7 @@
 package com.datasophon.api.controller;
 
 import com.datasophon.api.security.UserPermission;
-import com.datasophon.api.service.InstallService;
+import com.datasophon.api.service.HostInstallService;
 import com.datasophon.common.utils.Result;
 
 import javax.validation.constraints.Max;
@@ -41,14 +41,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class HostInstallController extends ApiController {
     
     @Autowired
-    private InstallService installService;
+    private HostInstallService hostInstallService;
     
     /**
      * 获取安装步骤
      */
     @GetMapping("/getInstallStep")
     public Result getInstallStep(Integer type) {
-        return installService.getInstallStep(type);
+        return hostInstallService.getInstallStep(type);
     }
     
     /**
@@ -63,7 +63,7 @@ public class HostInstallController extends ApiController {
                                    @RequestParam @NotNull(message = "SSH端口必填") @Min(value = 1, message = "非法的SSH端口") @Max(value = 65535, message = "非法的SSH端口") Integer sshPort,
                                    @RequestParam Integer page,
                                    @RequestParam Integer pageSize) {
-        return installService.analysisHostList(clusterId, hosts, sshUser, sshPass, sshPort, page, pageSize);
+        return hostInstallService.analysisHostList(clusterId, hosts, sshUser, sshPass, sshPort, page, pageSize);
     }
     
     /**
@@ -72,7 +72,7 @@ public class HostInstallController extends ApiController {
     @PostMapping("/getHostCheckStatus")
     @UserPermission
     public Result getHostCheckStatus(Integer clusterId, String sshUser, Integer sshPort) {
-        return installService.getHostCheckStatus(clusterId, sshUser, sshPort);
+        return hostInstallService.getHostCheckStatus(clusterId, sshUser, sshPort);
     }
     
     /**
@@ -81,7 +81,7 @@ public class HostInstallController extends ApiController {
     @PostMapping("/rehostCheck")
     @UserPermission
     public Result rehostCheck(Integer clusterId, String hostnames, String sshUser, Integer sshPort) {
-        return installService.rehostCheck(clusterId, hostnames, sshUser, sshPort);
+        return hostInstallService.rehostCheck(clusterId, hostnames, sshUser, sshPort);
     }
     
     /**
@@ -90,7 +90,7 @@ public class HostInstallController extends ApiController {
     @PostMapping("/hostCheckCompleted")
     @UserPermission
     public Result hostCheckCompleted(Integer clusterId) {
-        return installService.hostCheckCompleted(clusterId);
+        return hostInstallService.hostCheckCompleted(clusterId);
     }
     
     /**
@@ -99,12 +99,12 @@ public class HostInstallController extends ApiController {
     @PostMapping("/dispatcherHostAgentList")
     @UserPermission
     public Result dispatcherHostAgentList(Integer clusterId, Integer installStateCode, Integer page, Integer pageSize) {
-        return installService.dispatcherHostAgentList(clusterId, installStateCode, page, pageSize);
+        return hostInstallService.dispatcherHostAgentList(clusterId, installStateCode, page, pageSize);
     }
     
     @PostMapping("/dispatcherHostAgentCompleted")
     public Result dispatcherHostAgentCompleted(Integer clusterId) {
-        return installService.dispatcherHostAgentCompleted(clusterId);
+        return hostInstallService.dispatcherHostAgentCompleted(clusterId);
     }
     
     /**
@@ -112,7 +112,7 @@ public class HostInstallController extends ApiController {
      */
     @PostMapping("/cancelDispatcherHostAgent")
     public Result cancelDispatcherHostAgent(Integer clusterId, String hostname, Integer installStateCode) {
-        return installService.cancelDispatcherHostAgent(clusterId, hostname, installStateCode);
+        return hostInstallService.cancelDispatcherHostAgent(clusterId, hostname, installStateCode);
     }
     
     /**
@@ -124,7 +124,7 @@ public class HostInstallController extends ApiController {
      */
     @PostMapping("/reStartDispatcherHostAgent")
     public Result reStartDispatcherHostAgent(Integer clusterId, String hostnames) {
-        return installService.reStartDispatcherHostAgent(clusterId, hostnames);
+        return hostInstallService.reStartDispatcherHostAgent(clusterId, hostnames);
     }
     
     /**
@@ -137,7 +137,7 @@ public class HostInstallController extends ApiController {
     public Result generateHostAgentCommand(
                                            @RequestParam String clusterHostIds,
                                            @RequestParam String commandType) throws Exception {
-        return installService.generateHostAgentCommand(clusterHostIds, commandType);
+        return hostInstallService.generateHostAgentCommand(clusterHostIds, commandType);
     }
     
     /**
@@ -150,7 +150,7 @@ public class HostInstallController extends ApiController {
     public Result generateHostServiceCommand(
                                              @RequestParam String clusterHostIds,
                                              @RequestParam String commandType) throws Exception {
-        return installService.generateHostServiceCommand(clusterHostIds, commandType);
+        return hostInstallService.generateHostServiceCommand(clusterHostIds, commandType);
     }
     
 }

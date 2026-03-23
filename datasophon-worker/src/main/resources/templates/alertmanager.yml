@@ -8,7 +8,7 @@ receivers:
 - name: 'web.hook'
   webhook_configs:
   - send_resolved: true
-    url: 'http://${apiUrl}/ddh/cluster/alert/history/save'
+    url: 'http://${apiUrl}/ddh/api/cluster/alert/history/save'
 inhibit_rules:
   - source_match:
       severity: 'critical'

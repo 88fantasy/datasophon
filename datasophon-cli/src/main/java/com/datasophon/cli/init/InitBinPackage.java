@@ -23,8 +23,8 @@ public class InitBinPackage extends InitBase {
     @CommandLine.Option(names = {"-i", "--initPath"}, description = "initPath", required = true)
     private String initPath;
 
-    @CommandLine.Option(names = {"-d", "--installDataDir"}, description = "安装数据目录", required = true)
-    private String installDataDir;
+    @CommandLine.Option(names = {"-in", "installPath"}, description = "安装路径", required = true)
+    String installPath;
 
     @CommandLine.Option(names = {"-pf", "initPathOverwriteForce"}, description = "initPath目录存在是否覆盖")
     boolean initPathOverwriteForce = false;
@@ -49,35 +49,38 @@ public class InitBinPackage extends InitBase {
             throw new CommandLine.ExecutionException(new CommandLine(this), "local dir not found : " + initPath);
         }
 
-        File installPathF = new File(Constants.INSTALL_PATH);
-        if(!FileUtil.exist(installDataDir)) {
-            ShellUtils.execShell(String.format("mkdir -p %s", installDataDir));
-        }
-        if(!installPathF.exists()) {
-            ShellUtils.execShell(String.format("ln -s %s %s", installDataDir, Constants.INSTALL_PATH));
+        File installPathF = new File(installPath);
+        if(!FileUtil.exist(installPathF)) {
+            ShellUtils.execShell(String.format("mkdir -p %s", installPath));
         }
 
         File installPackagePathF = new File(Constants.MASTER_MANAGE_PACKAGE_PATH);
         if(!installPackagePathF.exists()) {
-            ShellUtils.execShell(String.format("mkdir -p %s/DDP", Constants.INSTALL_PATH));
-            ShellUtils.execShell(String.format("ln -s %s/packages %s", initPath, Constants.MASTER_MANAGE_PACKAGE_PATH));
+            ShellUtils.execShell(String.format("mkdir -p %s", Constants.MASTER_MANAGE_PACKAGE_PATH));
         }
 
         // 制品库基础包
         if(enableRegistry) {
-            String registryRawFullDir = String.format("%s/packages/raw", registryPath);
+            String registryRawFullDir = String.format("%s/packages/raw/packages", registryPath);
             String initPackagesFullDir = String.format("%s/packages", initPath);
             if(!FileUtil.exist(registryRawFullDir)) {
                 throw new CommandLine.ExecutionException(new CommandLine(this), "local dir not found : " + registryRawFullDir);
             }
             if(!FileUtil.exist(initPackagesFullDir)) {
-                throw new CommandLine.ExecutionException(new CommandLine(this), "local dir not found : " + initPackagesFullDir);
+                ShellUtils.execShell(String.format("mkdir -p %s", initPackagesFullDir));
+                ShellUtils.execShell(String.format("cp -rf %s/* %s", registryRawFullDir, initPackagesFullDir));
+            } else if (initPathOverwriteForce) {
+                ShellUtils.execShell(String.format("cp -rf %s/* %s", registryRawFullDir, initPackagesFullDir));
+            } else {
+                log.info("本地{}目录已存在,且overwrite={},跳过", initPackagesFullDir, initPathOverwriteForce);
             }
-            ShellUtils.execShell(String.format("cp -rf %s/jdk-* %s", registryRawFullDir, initPackagesFullDir));
-            ShellUtils.execShell(String.format("cp -rf %s/nexus-* %s", registryRawFullDir, initPackagesFullDir));
-            ShellUtils.execShell(String.format("cp -rf %s/rustfs-* %s", registryRawFullDir, initPackagesFullDir));
+            //ShellUtils.execShell(String.format("cp -rf %s/jdk-* %s", registryRawFullDir, initPackagesFullDir));
+            //ShellUtils.execShell(String.format("cp -rf %s/nexus-* %s", registryRawFullDir, initPackagesFullDir));
+            //ShellUtils.execShell(String.format("cp -rf %s/rustfs-* %s", registryRawFullDir, initPackagesFullDir));
+            // 导入全部raw
+
             // 强制覆盖
-            initPathOverwriteForce = true;
+            //initPathOverwriteForce = true;
         }
 
         // 远程datasophon-init
@@ -96,19 +99,14 @@ public class InitBinPackage extends InitBase {
             if (execResult.getExecResult()) {
                 log.info("{} distribution sucess.", initPath);
             } else {
-                log.info("{} distribution fail.", initPath);
-                flag = false;
+                throw new CommandLine.ExecutionException(new CommandLine(this), String.format("%s 分发资源包失败.", initPath));
             }
         }
-        if(!executor.exists(installDataDir).getExecResult()) {
-            executor.execShell(String.format("mkdir -p %s", installDataDir));
-        }
-        if(!executor.exists(Constants.INSTALL_PATH).getExecResult()) {
-            executor.execShell(String.format("ln -s %s %s", installDataDir, Constants.INSTALL_PATH));
+        if(!executor.exists(installPath).getExecResult()) {
+            executor.execShell(String.format("mkdir -p %s", installPath));
         }
         if(!executor.exists(Constants.MASTER_MANAGE_PACKAGE_PATH).getExecResult()) {
-            executor.execShell(String.format("mkdir -p %s/DDP", Constants.INSTALL_PATH));
-            executor.execShell(String.format("ln -s %s/packages %s", initPath, Constants.MASTER_MANAGE_PACKAGE_PATH));
+            ShellUtils.execShell(String.format("mkdir -p %s", Constants.MASTER_MANAGE_PACKAGE_PATH));
         }
         return flag;
     }

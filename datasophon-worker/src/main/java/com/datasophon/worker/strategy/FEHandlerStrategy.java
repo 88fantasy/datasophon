@@ -33,6 +33,7 @@ import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.OlapUtils;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ThrowableUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.utils.ActorUtils;
@@ -44,6 +45,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -56,13 +58,13 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) {
         ExecResult startResult = new ExecResult();
-        logger.info("FEHandlerStrategy start fe" + JSONUtil.toJsonStr(command));
+        logger.info("FEHandlerStrategy start fe, command type is {}", command.getCommandType());
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-        String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
-        String feUniConfPath = "/data/datasophon/datasophon-init/packages/fe.uni.conf";
+        String workPath = PkgInstallPathUtils.getInstallHome(command);
+        String feUniConfPath = workPath + "/fe/conf/fe.uni.conf";
         if (command.getCommandType() == CommandType.INSTALL_SERVICE) {
             if (command.isSlave()) {
-                logger.info("first start  fe");
+                logger.info("第一次启动FE, 当前角色为follower");
                 ArrayList<String> commands = new ArrayList<>();
                 commands.add("--helper");
                 commands.add(command.getMasterHost() + ":9010");
@@ -73,11 +75,12 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                 startRunner.setArgs(commands);
                 startRunner.setTimeout("600");
                 startResult = serviceHandler.start(startRunner, command.getStatusRunner(),
-                        command.getDecompressPackageName(), command.getRunAs());
+                        command, command.getRunAs());
                 if (startResult.getExecResult()) {
                     // add follower
                     try {
                         OlapSqlExecCommand sqlExecCommand = new OlapSqlExecCommand();
+                        sqlExecCommand.setVariables(command.getVariables());
                         sqlExecCommand.setFeMaster(command.getMasterHost());
                         sqlExecCommand.setHostName(NetUtil.getLocalhostStr());
                         sqlExecCommand.setOpsType(OlapOpsType.ADD_FE_FOLLOWER);
@@ -92,8 +95,8 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                     logger.error("slave fe start failed");
                 }
             } else {
-                startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                        command.getDecompressPackageName(), command.getRunAs());
+                logger.info("第一次启动FE, 当前角色为master");
+                startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(), command, command.getRunAs());
                 // fe leader安装成功,初始化登录账号
                 if (startResult.getExecResult()){
                     String password = OlapUtils.getUniPassword(feUniConfPath);
@@ -101,8 +104,7 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                 }
             }
         } else {
-            startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+            startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(), command, command.getRunAs());
         }
         return startResult;
     }

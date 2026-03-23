@@ -48,7 +48,7 @@ public class RangerAdminHandlerStrategy extends AbstractHandlerStrategy implemen
             }
         }
         startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs());
+                command, command.getRunAs(), command.isCheckStatus());
         
         return startResult;
     }

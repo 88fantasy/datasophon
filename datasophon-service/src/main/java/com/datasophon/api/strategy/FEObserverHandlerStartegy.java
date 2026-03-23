@@ -22,7 +22,6 @@ import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.model.ProcInfo;
-import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.OlapUtils;
 import com.datasophon.dao.entity.ClusterHostDO;
@@ -42,8 +41,8 @@ public class FEObserverHandlerStartegy implements ServiceRoleStrategy {
     
     @Override
     public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-        Map<String, String> globalVariables = GlobalVariables.get(serviceRoleInfo.getClusterId());
-        String feMaster = globalVariables.get("${feMaster}");
+        Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
+        String feMaster = globalVariables.get("${DORIS.DorisFE.__hostIp__}");
         if (hostname.equals(feMaster)) {
             logger.info("fe master is {}", feMaster);
             serviceRoleInfo.setSortNum(1);
@@ -59,12 +58,13 @@ public class FEObserverHandlerStartegy implements ServiceRoleStrategy {
     @Override
     public void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                         Map<String, ClusterServiceRoleInstanceEntity> map) {
-        Map<String, String> globalVariables = GlobalVariables.get(roleInstanceEntity.getClusterId());
-        String feMaster = globalVariables.get("${feMaster}");
+        Map<String, String> globalVariables = GlobalVariables.getVariables(roleInstanceEntity.getClusterId());
+        String feMaster = globalVariables.get("${DORIS.DorisFE.__hostIp__}");
+        String rootPassword = globalVariables.get("${DORIS.root_password}");
         if (roleInstanceEntity.getHostname().equals(feMaster)
                 && roleInstanceEntity.getServiceRoleState() == ServiceRoleState.RUNNING) {
             try {
-                List<ProcInfo> frontends = OlapUtils.showFrontends(feMaster);
+                List<ProcInfo> frontends = OlapUtils.showFrontends(feMaster,rootPassword);
                 resolveProcInfoAlert(roleInstanceEntity.getServiceRoleName(), frontends, map);
             } catch (Exception e) {
                 

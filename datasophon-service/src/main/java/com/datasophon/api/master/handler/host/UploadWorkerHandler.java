@@ -23,6 +23,7 @@ import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.InstallState;
 import com.datasophon.common.model.HostInfo;
+import com.datasophon.common.utils.NexusFileUtils;
 import com.jcraft.jsch.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,18 +34,12 @@ public class UploadWorkerHandler implements DispatcherWorkerHandler {
     
     @Override
     public boolean handle(Session session, HostInfo hostInfo) {
-        boolean uploadFile = MinaUtils.uploadFile(session,
-                Constants.INSTALL_PATH,
-                Constants.MASTER_MANAGE_PACKAGE_PATH +
-                        Constants.SLASH +
-                        Constants.WORKER_PACKAGE_NAME);
+        boolean uploadFile = MinaUtils.uploadFile(session, Constants.MASTER_MANAGE_PACKAGE_PATH, Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + Constants.WORKER_PACKAGE_NAME);
         if (uploadFile) {
-            hostInfo.setMessage(
-                    MessageResolverUtils.getMessage("distribution.successful.and.starts.md5.authentication"));
+            hostInfo.setMessage("同步worker安装包成功");
             hostInfo.setProgress(25);
         } else {
-            hostInfo.setMessage(
-                    MessageResolverUtils.getMessage("distributed.host.management.agent.installation.package.fail"));
+            hostInfo.setMessage("同步worker安装包失败");
             hostInfo.setErrMsg("dispatcher host agent to " + hostInfo.getHostname() + " failed");
             CommonUtils.updateInstallState(InstallState.FAILED, hostInfo);
         }

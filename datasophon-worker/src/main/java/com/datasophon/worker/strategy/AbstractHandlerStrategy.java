@@ -36,7 +36,7 @@ public class AbstractHandlerStrategy {
     public AbstractHandlerStrategy(String serviceName, String serviceRoleName) {
         this.serviceName = serviceName;
         this.serviceRoleName = serviceRoleName;
-        String loggerName = String.format("%s-%s-%s", TaskConstants.TASK_LOG_LOGGER_NAME, serviceName, serviceRoleName);
+        String loggerName = TaskConstants.createLoggerName(serviceName, serviceRoleName, this.getClass());
         logger = LoggerFactory.getLogger(loggerName);
     }
     

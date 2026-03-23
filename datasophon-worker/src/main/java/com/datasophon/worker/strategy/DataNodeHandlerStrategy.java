@@ -21,6 +21,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.utils.KerberosUtils;
@@ -47,8 +48,7 @@ public class DataNodeHandlerStrategy extends AbstractHandlerStrategy implements 
             if (!FileUtil.exist("/etc/security/keytab/dn.service.keytab")) {
                 KerberosUtils.downloadKeytabFromMaster("dn/" + hostname, "dn.service.keytab");
             }
-            String hadoopConfDir =
-                    Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName() + "/etc/hadoop/";
+            String hadoopConfDir = PkgInstallPathUtils.getInstallHome(command) + "/etc/hadoop/";
             if (!FileUtil.exist(hadoopConfDir + "ssl-server.xml")) {
                 ShellUtils.execShell(
                         "cp " + hadoopConfDir + "ssl-server.xml.template " + hadoopConfDir + "ssl-server.xml");
@@ -69,10 +69,10 @@ public class DataNodeHandlerStrategy extends AbstractHandlerStrategy implements 
                 }
             }
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+                    command, command.getRunAs(), command.isCheckStatus());
         } else {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+                    command, command.getRunAs(), command.isCheckStatus());
         }
         return startResult;
     }

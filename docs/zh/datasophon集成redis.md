@@ -30,7 +30,7 @@ redis-server
 tar czf redis-7.2.3.tar.gz redis-7.2.3
 md5sum redis-7.2.3.tar.gz
 echo 'd20743bd570ab78efaf0a9aa3b28caf5' > redis-7.2.3.tar.gz.md5
-cp ./redis-7.2.3.tar.gz ./redis-7.2.3.tar.gz.md5 /opt/datasophon/DDP/packages/
+cp ./redis-7.2.3.tar.gz ./redis-7.2.3.tar.gz.md5 /data/install_datasophon/packages/
 ```
 
 ### 2、元数据文件
@@ -246,7 +246,7 @@ service_ddl.json：
 **各worker节点元数据：**
 
 ```shell
-cd /opt/datasophon/datasophon-worker/conf/templates
+cd /data/install_datasophon/datasophon-worker/conf/templates
 touch redis-cluster.ftl
 touch redis-control.ftl
 touch redis-master.ftl
@@ -261,10 +261,10 @@ redis-cluster.ftl：
 # 在这里替换为你的Redis Master和Worker节点的主机和端口（空格分隔）
 REDIS_MASTERS="${RedisMasterAddr}"
 REDIS_WORKERS="${RedisSlaveAddr}"
-COMMAND_CREATE_CLUSTER="echo yes | /opt/datasophon/redis/redis-cli --cluster create "
-COMMAND_ADD_NODE="/opt/datasophon/redis/redis-cli --cluster add-node "
+COMMAND_CREATE_CLUSTER="echo yes | /data/install_datasophon/redis/redis-cli --cluster create "
+COMMAND_ADD_NODE="/data/install_datasophon/redis/redis-cli --cluster add-node "
 
-CONTROL_SCRIPT="/opt/datasophon/redis/control_redis.sh"
+CONTROL_SCRIPT="/data/install_datasophon/redis/control_redis.sh"
 
 create_cluster_command() {
     local master_list="$1"
@@ -355,12 +355,12 @@ redis-control.ftl：
 #!/bin/bash
 
 # 定义启动和停止命令
-START_MASTER="/opt/datasophon/redis/redis-server /opt/datasophon/redis/cluster/conf/redis-master.conf"
-START_SLAVE="/opt/datasophon/redis/redis-server /opt/datasophon/redis/cluster/conf/redis-slave.conf"
-STOP_MASTER="/opt/datasophon/redis/redis-cli -p ${redisMasterPort} shutdown"
-STOP_SLAVE="/opt/datasophon/redis/redis-cli -p ${redisSlavePort} shutdown"
-STATUS_MASTER="/opt/datasophon/redis/redis-cli -p ${redisMasterPort} ping"
-STATUS_SLAVE="/opt/datasophon/redis/redis-cli -p ${redisSlavePort} ping"
+START_MASTER="/data/install_datasophon/redis/redis-server /data/install_datasophon/redis/cluster/conf/redis-master.conf"
+START_SLAVE="/data/install_datasophon/redis/redis-server /data/install_datasophon/redis/cluster/conf/redis-slave.conf"
+STOP_MASTER="/data/install_datasophon/redis/redis-cli -p ${redisMasterPort} shutdown"
+STOP_SLAVE="/data/install_datasophon/redis/redis-cli -p ${redisSlavePort} shutdown"
+STATUS_MASTER="/data/install_datasophon/redis/redis-cli -p ${redisMasterPort} ping"
+STATUS_SLAVE="/data/install_datasophon/redis/redis-cli -p ${redisSlavePort} ping"
 
 # 启动Master
 start_master() {
@@ -457,15 +457,15 @@ bind 0.0.0.0
 daemonize yes
 protected-mode no
 port ${redisMasterPort}
-logfile "/opt/datasophon/redis/cluster/log/cluster-master.log"
-pidfile /opt/datasophon/redis/cluster/pid/cluster-master.pid
-dir /opt/datasophon/redis/cluster
+logfile "/data/install_datasophon/redis/cluster/log/cluster-master.log"
+pidfile /data/install_datasophon/redis/cluster/pid/cluster-master.pid
+dir /data/install_datasophon/redis/cluster
 dbfilename dump-master.rdb
 appendonly yes
 appendfilename "appendonly-master.aof"
 
 cluster-enabled yes
-cluster-config-file /opt/datasophon/redis/cluster/conf/nodes-master.conf
+cluster-config-file /data/install_datasophon/redis/cluster/conf/nodes-master.conf
 cluster-node-timeout 5000
 
 <#list itemList as item>
@@ -480,15 +480,15 @@ bind 0.0.0.0
 daemonize yes
 protected-mode no
 port ${redisSlavePort}
-logfile "/opt/datasophon/redis/cluster/log/cluster-slave.log"
-pidfile /opt/datasophon/redis/cluster/pid/cluster-slave.pid
-dir /opt/datasophon/redis/cluster
+logfile "/data/install_datasophon/redis/cluster/log/cluster-slave.log"
+pidfile /data/install_datasophon/redis/cluster/pid/cluster-slave.pid
+dir /data/install_datasophon/redis/cluster
 dbfilename dump-slave.rdb
 appendonly yes
 appendfilename "appendonly-slave.aof"
 
 cluster-enabled yes
-cluster-config-file /opt/datasophon/redis/cluster/conf/nodes-slave.conf
+cluster-config-file /data/install_datasophon/redis/cluster/conf/nodes-slave.conf
 cluster-node-timeout 5000
 
 <#list itemList as item>
@@ -632,7 +632,7 @@ map.put("RedisWorker", new RedisHandlerStrategy("REDIS", "RedisWorker"));
 各节点worker重启
 
 ```shell
-sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker debug
+sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker debug
 ```
 
 主节点重启api

@@ -22,6 +22,7 @@ import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
@@ -40,21 +41,19 @@ public class HiveServer2HandlerStrategy extends AbstractHandlerStrategy implemen
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) {
         ExecResult startResult = new ExecResult();
-        final String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
+        final String workPath = PkgInstallPathUtils.getInstallHome(command);
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         if (command.getEnableRangerPlugin()) {
             logger.info("start to enable hive hdfs plugin");
             ArrayList<String> commands = new ArrayList<>();
             commands.add("sh");
             commands.add("./enable-hive-plugin.sh");
-            if (!FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName()
-                    + "/ranger-hive-plugin/success.id")) {
-                ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH + Constants.SLASH
-                        + command.getDecompressPackageName() + "/ranger-hive-plugin", commands, 30L, logger);
+            String installHome = PkgInstallPathUtils.getInstallHome(command);
+            if (!FileUtil.exist(installHome + "/ranger-hive-plugin/success.id")) {
+                ExecResult execResult = ShellUtils.execWithStatus(installHome + "/ranger-hive-plugin", commands, 30L, logger);
                 if (execResult.getExecResult()) {
                     logger.info("enable ranger hive plugin success");
-                    FileUtil.writeUtf8String("success", Constants.INSTALL_PATH + Constants.SLASH
-                            + command.getDecompressPackageName() + "/ranger-hive-plugin/success.id");
+                    FileUtil.writeUtf8String("success", installHome + "/ranger-hive-plugin/success.id");
                 } else {
                     logger.info("enable ranger hive plugin failed");
                     return execResult;
@@ -94,7 +93,7 @@ public class HiveServer2HandlerStrategy extends AbstractHandlerStrategy implemen
         }
         
         startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs());
+                command, command.getRunAs(),command.isCheckStatus());
         return startResult;
     }
 }

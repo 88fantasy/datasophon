@@ -17,12 +17,15 @@
 
 package com.datasophon.api.service.impl;
 
+import akka.actor.ActorRef;
+import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.PrometheusActor;
 import com.datasophon.api.master.alert.AlertActor;
 import com.datasophon.api.service.ClusterAlertHistoryService;
 import com.datasophon.api.service.ClusterInfoService;
-import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.GeneratePrometheusConfigCommand;
 import com.datasophon.common.utils.Result;
@@ -30,23 +33,17 @@ import com.datasophon.dao.entity.ClusterAlertHistory;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.mapper.ClusterAlertHistoryMapper;
-
 import com.datasophon.dao.mapper.ClusterServiceRoleInstanceMapper;
-import scala.concurrent.duration.FiniteDuration;
-
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
+import com.datasophon.domain.alert.model.AlertMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import scala.concurrent.duration.FiniteDuration;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-
-import akka.actor.ActorRef;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service("clusterAlertHistoryService")
 @Transactional
@@ -65,12 +62,10 @@ public class ClusterAlertHistoryServiceImpl extends ServiceImpl<ClusterAlertHist
     @Override
     public void saveAlertHistory(String alertMessage) {
         logger.warn("Receive Alert Message : {}", alertMessage);
+        AlertMessage message = JSONObject.parseObject(alertMessage, AlertMessage.class);
         ActorRef alertActor = ActorUtils.getLocalActor(AlertActor.class, "alertActor");
-        ActorUtils.actorSystem.scheduler().scheduleOnce(FiniteDuration.apply(
-                2L, TimeUnit.SECONDS),
-                alertActor, alertMessage,
-                ActorUtils.actorSystem.dispatcher(),
-                ActorRef.noSender());
+        ActorUtils.actorSystem.scheduler().scheduleOnce(FiniteDuration.apply(2L, TimeUnit.SECONDS), alertActor,
+                message, ActorUtils.actorSystem.dispatcher(), ActorRef.noSender());
     }
     
     @Override

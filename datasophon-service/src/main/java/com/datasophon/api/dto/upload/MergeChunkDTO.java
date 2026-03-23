@@ -11,7 +11,7 @@ import lombok.Data;
 public class MergeChunkDTO {
 
     @Schema(description = "附件ID")
-    private Long attachId;
+    private Integer attachId;
 
     @Schema(description = "md5")
     private String md5;

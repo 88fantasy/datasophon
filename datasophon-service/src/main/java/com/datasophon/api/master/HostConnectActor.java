@@ -19,8 +19,6 @@
 
 package com.datasophon.api.master;
 
-import akka.actor.UntypedActor;
-import cn.hutool.core.util.ObjectUtil;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.command.HostCheckCommand;
@@ -30,53 +28,36 @@ import com.datasophon.common.utils.HostUtils;
 import com.jcraft.jsch.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Option;
 
-public class HostConnectActor extends UntypedActor {
-    
+public class HostConnectActor extends TypedActor<HostCheckCommand> {
+
     private static final Logger logger = LoggerFactory.getLogger(HostConnectActor.class);
-    
+
     @Override
-    public void preRestart(Throwable reason, Option<Object> message) throws Exception {
-        logger.info("or restart because {}", reason.getMessage());
-        super.preRestart(reason, message);
-    }
-    
-    @Override
-    public void onReceive(Object message) throws Throwable {
-        if (message instanceof HostCheckCommand) {
-            String localIp = HostUtils.getLocalIp();
-            String localHostName = HostUtils.getLocalHostName();
-            logger.info("datasophon manager install hostname and ip :" + localHostName + ",", localIp);
-            HostCheckCommand hostCheckCommand = (HostCheckCommand) message;
-            HostInfo hostInfo = hostCheckCommand.getHostInfo();
-            logger.info("start host check:{}", hostInfo.getHostname());
-            if (hostInfo.getIp().equals(localIp)) {
-                logger.info("datasophon manager node doesn't need to be checked");
-                hostInfo.setCheckResult(
-                        new CheckResult(
-                                Status.CHECK_HOST_SUCCESS.getCode(),
-                                Status.CHECK_HOST_SUCCESS.getMsg()));
-            } else {
-                Session session =
-                        MinaUtils.openConnection(
-                                hostInfo.getHostname(), hostInfo.getSshPort(), hostInfo.getSshUser(), hostInfo.getSshPassword());
-                if (ObjectUtil.isNotNull(session)) {
-                    hostInfo.setCheckResult(
-                            new CheckResult(
-                                    Status.CHECK_HOST_SUCCESS.getCode(),
-                                    Status.CHECK_HOST_SUCCESS.getMsg()));
-                } else {
-                    hostInfo.setCheckResult(
-                            new CheckResult(
-                                    Status.CONNECTION_FAILED.getCode(),
-                                    Status.CONNECTION_FAILED.getMsg()));
+    protected void doOnReceive(HostCheckCommand hostCheckCommand) {
+        String localIp = HostUtils.getLocalIp();
+        String localHostName = HostUtils.getLocalHostName();
+        logger.info("datasophon manager install hostname and ip : {}, {}", localHostName, localIp);
+        HostInfo hostInfo = hostCheckCommand.getHostInfo();
+        logger.info("start host check:{}", hostInfo.getHostname());
+        if (hostInfo.getIp().equals(localIp)) {
+            logger.info("datasophon manager node doesn't need to be checked");
+            hostInfo.setCheckResult(new CheckResult(Status.CHECK_HOST_SUCCESS.getCode(), Status.CHECK_HOST_SUCCESS.getMsg()));
+        } else {
+            Session session = null;
+            Status status = Status.CONNECTION_FAILED;
+            try {
+                session = MinaUtils.openConnection(hostInfo.getHostname(), hostInfo.getSshPort(), hostInfo.getSshUser(), hostInfo.getSshPassword());
+                if (session != null) {
+                    status = Status.CHECK_HOST_SUCCESS;
                 }
+            } catch (Exception e) {
+                logger.warn("connect {}@{}:{} fail, {}", hostInfo.getSshUser(), hostInfo.getHostname(), hostInfo.getSshPort(), e.getMessage());
+            } finally {
                 MinaUtils.closeConnection(session);
             }
-            logger.info("end host check:{}", hostInfo.getHostname());
-        } else {
-            unhandled(message);
+            hostInfo.setCheckResult(new CheckResult(status.getCode(), status.getMsg()));
         }
+        logger.info("end host check:{}", hostInfo.getHostname());
     }
 }

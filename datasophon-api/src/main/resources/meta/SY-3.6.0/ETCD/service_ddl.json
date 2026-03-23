@@ -6,7 +6,15 @@
   "sortNum": 90,
   "dependencies":[],
   "packageName": "etcd-v3.5.13-linux-amd64.tar.gz",
-  "decompressPackageName": "etcd-v3.5.13-linux-amd64",
+  "decompressPackageName": "etcd-v3.5.13-linux",
+  "arch":{
+    "x86_64": {
+      "packageName": "etcd-v3.5.13-linux-amd64.tar.gz"
+    },
+    "aarch64": {
+      "packageName": "etcd-v3.5.13-linux-arm64.tar.gz"
+    }
+  },
   "roles": [
     {
       "name": "Etcd",

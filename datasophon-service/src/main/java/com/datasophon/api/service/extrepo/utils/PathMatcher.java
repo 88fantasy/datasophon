@@ -29,7 +29,7 @@ public class PathMatcher {
         }
         AntPathMatcher matcher = new AntPathMatcher();
         for (String pattern : patterns) {
-            if (matcher.matchStart(pattern, relative)) {
+            if (matcher.match(pattern, relative)) {
                 return true;
             }
         }

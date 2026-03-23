@@ -17,39 +17,33 @@
 
 package com.datasophon.api.service.impl;
 
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.service.ClusterVariableService;
-import com.datasophon.common.Constants;
 import com.datasophon.dao.entity.ClusterVariable;
 import com.datasophon.dao.mapper.ClusterVariableMapper;
-
-import java.util.List;
-import java.util.Objects;
-
 import org.springframework.stereotype.Service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import java.util.List;
 
 @Service("clusterVariableService")
 public class ClusterVariableServiceImpl extends ServiceImpl<ClusterVariableMapper, ClusterVariable>
         implements
-            ClusterVariableService {
-    
+        ClusterVariableService {
+
     @Override
-    public ClusterVariable getVariableByVariableName(String variableName, Integer clusterId) {
-        List<ClusterVariable> list = this.list(new QueryWrapper<ClusterVariable>()
-                .eq(Constants.VARIABLE_NAME, variableName).eq(Constants.CLUSTER_ID, clusterId));
-        if (Objects.nonNull(list) && list.size() >= 1) {
-            return list.get(0);
-        }
-        return null;
+    public ClusterVariable getVariableByVariableName(Integer clusterId, String serviceName, String variableName) {
+        return lambdaQuery()
+                .eq(ClusterVariable::getServiceName, serviceName)
+                .eq(ClusterVariable::getVariableName, variableName)
+                .eq(ClusterVariable::getClusterId, clusterId)
+                .one();
     }
-    
+
     @Override
     public List<ClusterVariable> getVariables(Integer clusterId, String serviceName) {
-        return this.list(new LambdaQueryWrapper<ClusterVariable>()
+        return lambdaQuery()
+                .eq(ClusterVariable::getServiceName, serviceName)
                 .eq(ClusterVariable::getClusterId, clusterId)
-                .eq(ClusterVariable::getServiceName, serviceName));
+                .list();
     }
 }

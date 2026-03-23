@@ -17,7 +17,7 @@
 
 package com.datasophon.api.master.handler.host;
 
-import com.datasophon.api.load.ConfigBean;
+import com.datasophon.api.load.Application;
 import com.datasophon.api.utils.CommonUtils;
 import com.datasophon.api.utils.MessageResolverUtils;
 import com.datasophon.api.utils.MinaUtils;
@@ -51,14 +51,14 @@ public class StartWorkerHandler implements DispatcherWorkerHandler {
     
     @Override
     public boolean handle(Session session, HostInfo hostInfo) throws UnknownHostException {
-        ConfigBean configBean = SpringTool.getApplicationContext().getBean(ConfigBean.class);
+        String serverPort = Application.getProperty("server.port", "8081");
         String installPath = Constants.INSTALL_PATH;
         String localHostName = InetAddress.getLocalHost().getHostName();
         String updateCommonPropertiesResult = MinaUtils.execCmdWithResult(session,
                 Constants.UPDATE_COMMON_CMD +
                         localHostName +
                         Constants.SPACE +
-                        configBean.getServerPort() +
+                        serverPort +
                         Constants.SPACE +
                         this.clusterFrame +
                         Constants.SPACE +
@@ -68,7 +68,7 @@ public class StartWorkerHandler implements DispatcherWorkerHandler {
         if (StringUtils.isBlank(updateCommonPropertiesResult) || "failed".equals(updateCommonPropertiesResult)) {
             logger.error("common.properties update failed");
             hostInfo.setErrMsg("common.properties update failed");
-            hostInfo.setMessage(MessageResolverUtils.getMessage("modify.configuration.file.fail"));
+            hostInfo.setMessage("修改配置文件失败");
             CommonUtils.updateInstallState(InstallState.FAILED, hostInfo);
         } else {
             // osType
@@ -90,8 +90,8 @@ public class StartWorkerHandler implements DispatcherWorkerHandler {
             MinaUtils.execCmdWithResult(session, addServiceCmd);
             MinaUtils.execCmdWithResult(session,
                     "\\cp " + installPath + "/datasophon-worker/script/datasophon-env.sh /etc/profile.d/");
-            MinaUtils.execCmdWithResult(session, "source /etc/profile.d/datasophon-env.sh");
-            hostInfo.setMessage(MessageResolverUtils.getMessage("start.host.management.agent"));
+            MinaUtils.execCmdWithResult(session, ". /etc/profile.d/datasophon-env.sh");
+            hostInfo.setMessage("开始启动worker");
             MinaUtils.execCmdWithResult(session, "service datasophon-worker restart");
             hostInfo.setProgress(75);
             hostInfo.setCreateTime(new Date());

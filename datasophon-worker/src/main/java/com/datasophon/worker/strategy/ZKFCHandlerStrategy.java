@@ -17,10 +17,10 @@
 
 package com.datasophon.worker.strategy;
 
-import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 
@@ -36,7 +36,7 @@ public class ZKFCHandlerStrategy extends AbstractHandlerStrategy implements Serv
     public ExecResult handler(ServiceRoleOperateCommand command) {
         ExecResult startResult = new ExecResult();
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-        String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
+        String workPath = PkgInstallPathUtils.getInstallHome(command);
         if (!command.isSlave() && command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             logger.info("start to execute hdfs zkfc -formatZK");
             
@@ -50,13 +50,13 @@ public class ZKFCHandlerStrategy extends AbstractHandlerStrategy implements Serv
             if (execResult.getExecResult()) {
                 logger.info("zkfc format success");
                 startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                        command.getDecompressPackageName(), command.getRunAs());
+                        command, command.getRunAs(), command.isCheckStatus());
             } else {
                 logger.info("zkfc format failed");
             }
         } else {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+                    command, command.getRunAs(), command.isCheckStatus());
         }
         return startResult;
     }

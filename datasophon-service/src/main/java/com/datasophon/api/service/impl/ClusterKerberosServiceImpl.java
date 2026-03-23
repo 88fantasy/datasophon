@@ -99,7 +99,7 @@ public class ClusterKerberosServiceImpl implements ClusterKerberosService {
                                     Integer clusterId,
                                     String keytabFilePath,
                                     String principal) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         String kadminPrincipal = globalVariables.get("${kadminPrincipal}");
         String kadminPassword = globalVariables.get("${kadminPassword}");
         String listPrinc = "kadmin -p" + kadminPrincipal + " -w" + kadminPassword + " -q \"listprincs\"";

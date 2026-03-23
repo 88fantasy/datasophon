@@ -16,7 +16,7 @@ shift
 
 echo "Begin $startStop ......"
 
-export SPARK_HOME3=${SPARK_HOME3:-/opt/datasophon/spark3}
+export SPARK_HOME3=${SPARK_HOME3:-/data/install_datasophon/spark3}
 export JAVA_HOME=/usr/local/jdk1.8.0_333
 export STOP_TIMEOUT=10
 

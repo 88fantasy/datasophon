@@ -19,6 +19,9 @@
 
 package com.datasophon.api.strategy;
 
+import akka.actor.ActorRef;
+import akka.pattern.Patterns;
+import akka.util.Timeout;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.master.ActorUtils;
@@ -32,7 +35,8 @@ import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
@@ -42,55 +46,40 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import akka.actor.ActorRef;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
-
 public class NameNodeHandlerStrategy extends ServiceHandlerAbstract implements ServiceRoleStrategy {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(NameNodeHandlerStrategy.class);
-    
+
     private static final String ENABLE_RACK = "enableRack";
-    
+
     private static final String ENABLE_KERBEROS = "enableKerberos";
-    
+
     private static final String ACTIVE = "active";
-    
+
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        
-        ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${nn1}", hosts.get(0));
-        ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${nn2}", hosts.get(1));
+        ProcessUtils.generateClusterVariable(clusterId, serviceName, "nn1", hosts.get(0));
+        ProcessUtils.generateClusterVariable(clusterId, serviceName, "nn2", hosts.get(1));
     }
-    
+
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
-        
+
         boolean enableRack = false;
         boolean enableKerberos = false;
         Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
-        
-        String key =
-                clusterInfo.getClusterFrame() + Constants.UNDERLINE + "HDFS" + Constants.CONFIG;
+
+        String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + "HDFS" + Constants.CONFIG;
         List<ServiceConfig> configs = ServiceConfigMap.get(key);
-        
+
         for (ServiceConfig config : list) {
             if (ENABLE_RACK.equals(config.getName())) {
-                if ((Boolean) config.getValue()) {
-                    enableRack = isEnableRack(enableRack, config);
-                }
+                enableRack = isEnableRack(config, enableRack);
             }
             if (ENABLE_KERBEROS.equals(config.getName())) {
-                enableKerberos =
-                        isEnableKerberos(
-                                clusterId, globalVariables, enableKerberos, config, "HDFS");
+                enableKerberos = decideEnableKerberos(clusterId, enableKerberos, config, "HDFS");
             }
         }
         List<ServiceConfig> rackConfigs = new ArrayList<>();
@@ -101,7 +90,7 @@ public class NameNodeHandlerStrategy extends ServiceHandlerAbstract implements S
             removeConfigWithRack(list, map, configs);
         }
         list.addAll(rackConfigs);
-        
+
         ArrayList<ServiceConfig> kbConfigs = new ArrayList<>();
         if (enableKerberos) {
             addConfigWithKerberos(globalVariables, map, configs, kbConfigs);
@@ -110,39 +99,34 @@ public class NameNodeHandlerStrategy extends ServiceHandlerAbstract implements S
         }
         list.addAll(kbConfigs);
     }
-    
+
     @Override
     public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-        Map<String, String> globalVariables = GlobalVariables.get(serviceRoleInfo.getClusterId());
-        if (hostname.equals(globalVariables.get("${nn2}"))) {
+        String nn2 = GlobalVariables.getValueByService(serviceRoleInfo.getClusterId(), serviceRoleInfo.getServiceName(), "nn2");
+        if (hostname.equals(nn2)) {
             logger.info("set to slave namenode");
             serviceRoleInfo.setSlave(true);
             serviceRoleInfo.setSortNum(5);
         }
     }
-    
+
     @Override
     public void handlerServiceRoleCheck(
-                                        ClusterServiceRoleInstanceEntity roleInstanceEntity,
-                                        Map<String, ClusterServiceRoleInstanceEntity> map) {
-        Map<String, String> globalVariable = GlobalVariables.get(roleInstanceEntity.getClusterId());
-        String nn2 = globalVariable.get("${nn2}");
-        String commandLine =
-                globalVariable.get("${HADOOP_HOME}") + "/bin/hdfs haadmin -getServiceState nn1";
-        if (nn2.equals(roleInstanceEntity.getHostname())) {
-            commandLine =
-                    globalVariable.get("${HADOOP_HOME}") + "/bin/hdfs haadmin -getServiceState nn2";
+            ClusterServiceRoleInstanceEntity roleInstanceEntity,
+            Map<String, ClusterServiceRoleInstanceEntity> map) {
+        String nn2 = GlobalVariables.getValueByService(roleInstanceEntity.getClusterId(), roleInstanceEntity.getServiceName(), "nn2");
+//    TODO 使用 {ROOT.XXServiceName.INSTALL_PATH}
+        String hadoopHome = GlobalVariables.getValue(roleInstanceEntity.getClusterId(), "HADOOP_HOME");
+        String commandLine = hadoopHome + "/bin/hdfs haadmin -getServiceState nn1";
+        if (roleInstanceEntity.getHostname().equals(nn2)) {
+            commandLine = hadoopHome + "/bin/hdfs haadmin -getServiceState nn2";
         }
         getNMState(roleInstanceEntity, commandLine);
     }
-    
-    private void getNMState(
-                            ClusterServiceRoleInstanceEntity roleInstanceEntity, String commandLine) {
-        ClusterServiceRoleInstanceWebuisService webuisService =
-                SpringTool.getApplicationContext()
-                        .getBean(ClusterServiceRoleInstanceWebuisService.class);
-        ActorRef execCmdActor =
-                ActorUtils.getRemoteActor(roleInstanceEntity.getHostname(), "nMStateActor");
+
+    private void getNMState(ClusterServiceRoleInstanceEntity roleInstanceEntity, String commandLine) {
+        ClusterServiceRoleInstanceWebuisService webuisService = SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceWebuisService.class);
+        ActorRef execCmdActor = ActorUtils.getRemoteActor(roleInstanceEntity.getHostname(), "nMStateActor");
         ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
         cmdCommand.setCommandLine(commandLine);
         Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));

@@ -24,6 +24,7 @@ import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ThrowableUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.utils.ActorUtils;
@@ -46,7 +47,7 @@ public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implement
         ExecResult startResult = new ExecResult();
         logger.info("FEObserverHandlerStrategy start fe observer" + JSONUtil.toJsonStr(command));
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-        String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
+        String workPath = PkgInstallPathUtils.getInstallHome(command);
         if (command.getCommandType() == CommandType.INSTALL_SERVICE) {
             logger.info("first start  fe observer");
             ArrayList<String> commands = new ArrayList<>();
@@ -59,11 +60,12 @@ public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implement
             startRunner.setArgs(commands);
             startRunner.setTimeout("60");
             startResult = serviceHandler.start(startRunner, command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+                    command, command.getRunAs());
             if (startResult.getExecResult()) {
                 // add observer
                 try {
                     OlapSqlExecCommand sqlExecCommand = new OlapSqlExecCommand();
+                    sqlExecCommand.setVariables(command.getVariables());
                     sqlExecCommand.setFeMaster(command.getMasterHost());
                     sqlExecCommand.setHostName(NetUtil.getLocalhostStr());
                     sqlExecCommand.setWorkerPath(workPath);
@@ -79,7 +81,7 @@ public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implement
             }
         } else {
             startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                    command.getDecompressPackageName(), command.getRunAs());
+                    command, command.getRunAs());
         }
         return startResult;
     }

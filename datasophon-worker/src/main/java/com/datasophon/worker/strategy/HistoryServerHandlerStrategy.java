@@ -22,6 +22,7 @@ import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.utils.KerberosUtils;
@@ -45,7 +46,7 @@ public class HistoryServerHandlerStrategy extends AbstractHandlerStrategy implem
                 KerberosUtils.downloadKeytabFromMaster("jhs/" + hostname, "jhs.service.keytab");
             }
         }
-        String hadoopHome = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
+        String hadoopHome = PkgInstallPathUtils.getInstallHome(command);
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             // create tmp
             ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir -p /tmp/history");
@@ -54,6 +55,6 @@ public class HistoryServerHandlerStrategy extends AbstractHandlerStrategy implem
             ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chmod -R 777 /tmp/logs");
         }
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs());
+                command, command.getRunAs(), command.isCheckStatus());
     }
 }

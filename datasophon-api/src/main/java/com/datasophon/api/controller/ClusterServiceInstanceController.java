@@ -67,16 +67,7 @@ public class ClusterServiceInstanceController extends ApiController {
         
         return Result.success().put("clusterServiceInstance", clusterServiceInstance);
     }
-    
-    /**
-     * 信息
-     */
-    @RequestMapping("/downloadClientConfig")
-    public Result downloadClientConfig(Integer clusterId, String serviceName) {
-        
-        return clusterServiceInstanceService.downloadClientConfig(clusterId, serviceName);
-    }
-    
+
     /**
      * 保存
      */

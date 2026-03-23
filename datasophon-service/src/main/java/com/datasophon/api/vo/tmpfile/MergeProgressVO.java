@@ -44,6 +44,7 @@ public class MergeProgressVO {
         merge = 0;
         md5 = 0;
         this.total = total;
+        createTime = LocalDateTime.now();
     }
 
     public void plusMerge(long plus) {

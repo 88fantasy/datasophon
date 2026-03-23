@@ -3,11 +3,14 @@ package com.datasophon.cli.init;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
 import com.datasophon.cli.base.Executor;
+import com.datasophon.common.Constants;
 import com.datasophon.common.utils.MetaUtils;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
+
+import java.io.File;
 
 @Slf4j
 @Accessors(chain = true)
@@ -32,9 +35,6 @@ public class InitRegistryDecode extends InitBase {
 
     @CommandLine.Option(names = {"-pn", "--packagesTarName"}, description = "安装包名", required = true)
     String packagesTarName;
-
-    @CommandLine.Option(names = {"-p", "--password"}, description = "密码", required = true)
-    String password;
     
     @Override
     public String name() {
@@ -51,6 +51,7 @@ public class InitRegistryDecode extends InitBase {
         String configTarFullName = String.format("%s/%s", registryPath, configTarName);
         String packagesTarFullName = String.format("%s/%s", registryPath, packagesTarName);
         String configFullDir = String.format("%s/config", registryPath);
+        String commonPropertiesPath = String.format("%s/common.properties", configFullDir);
         String packagesFullDir = String.format("%s/packages", registryPath);
 
         if (!FileUtil.exist(registryPath)) {
@@ -70,12 +71,14 @@ public class InitRegistryDecode extends InitBase {
                 throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + configFullDir);
             }
             try {
-                log.info("{}解密", configFullDir);
-                MetaUtils.decodeMatchedFiles(configFullDir, password);
+                log.info("{}解密, password:{}", commonPropertiesPath, password);
+                MetaUtils.decodeFile(FileUtil.file(commonPropertiesPath), password);
             } catch (Exception e) {
-                throw new RuntimeException(configFullDir + "解密失败", e);
+                executor.execShell(String.format("rm -rf %s/config", registryPath));
+                throw new RuntimeException(String.format("解密失败, configFullDir:%s, password:%s", configFullDir, password), e);
             }
-            executor.execShell(String.format("cp -rf %s/*  %s/conf", configFullDir, datasophonHomePath));
+            executor.execShell(String.format("cp %s/common.properties   %s/conf", configFullDir, datasophonHomePath));
+            executor.execShell(String.format("cp -r %s/datasophon-init/cluster-sample.yml  %s/datasophon-init/config", configFullDir, datasophonHomePath));
             log.info("{}处理完成", configFullDir);
         } else {
             log.info("{}已存在,跳过解密", configFullDir);

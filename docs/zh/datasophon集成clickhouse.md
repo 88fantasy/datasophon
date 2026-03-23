@@ -1852,7 +1852,7 @@ worker打包替换旧包
 各节点worker重启
 
 ```shell
-sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker debug
+sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker debug
 ```
 
 主节点重启api
@@ -1871,8 +1871,8 @@ rm -rf /usr/bin/clickhouse*
 rm -rf /var/log/clickhouse-server
 rm -rf /var/lib/clickhouse
 rm -rf /var/run/clickhouse-server
-rm -rf /opt/datasophon/clickhouse-23.9.1.1854
-rm -rf /opt/datasophon/clickhouse
+rm -rf /data/install_datasophon/clickhouse-23.9.1.1854
+rm -rf /data/install_datasophon/clickhouse
 ```
 
 ### 6、配置样例

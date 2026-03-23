@@ -19,7 +19,9 @@ public enum OsType {
 
     UBUNTU_22_04_1_LTS("Ubuntu-22.04.1-LTS"),
 
-    KYLIN_V10("KylinV10"),
+    CENTOS_V10("centos-V10"),
+
+    KYLIN_V10("kylin-V10"),
 
     OTHER("other"),
 
@@ -46,6 +48,7 @@ public enum OsType {
         String desc = osType.getDesc();
         return desc.startsWith("centos")
                 || desc.startsWith("openEuler")
+                || desc.startsWith("kylin")
                 || desc.startsWith("other"); // 默认识别不到的系统都是centos
     }
 

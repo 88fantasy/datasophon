@@ -32,9 +32,10 @@ public class DownloadStrategy extends ResourceStrategy {
 
     @Override
     public ExecResult exec() {
+        logger.info("开始执行资源策略:{}...", DOWNLOAD_TYPE);
         File file = new File(basePath + Constants.SLASH + to);
         if (file.exists() && FileUtils.md5(file).equals(md5)) {
-            logger.info("resource {}  existed", to);
+            logger.info("资源 {} 已经存在, 无需下载", to);
             return ExecResult.success();
         }
         
@@ -47,9 +48,9 @@ public class DownloadStrategy extends ResourceStrategy {
                 .put("resource", from)
                 .build());
         
-        String url = "http://" + masterHost + ":" + masterPort
-                + "/ddh/service/install/downloadResource?" + params;
-        HttpUtil.downloadFile(url, file, 300);
+        String url = "http://" + masterHost + ":" + masterPort + "/ddh/api/service/install/downloadResource?" + params;
+//        超时时间为30,约定资源不应该很大
+        HttpUtil.downloadFile(url, file, 30 * 1000);
         if(file.exists()){
             ShellUtils.execShell(String.format("chmod 755 %s", basePath + Constants.SLASH + to));
         }

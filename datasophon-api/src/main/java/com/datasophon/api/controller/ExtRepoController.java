@@ -1,14 +1,17 @@
 package com.datasophon.api.controller;
 
 import com.datasophon.api.dto.IntegerIdDTO;
+import com.datasophon.api.dto.extrepo.DagIdDto;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
-import com.datasophon.api.dto.extrepo.DeploymentProgressDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
+import com.datasophon.api.dto.extrepo.RunDagDto;
+import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
 import com.datasophon.api.service.extrepo.ExtRepoInstallService;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
-import com.datasophon.api.vo.extrepo.InstallProgressDAG;
+import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
+import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.utils.Result;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,8 +25,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 /**
  * @author zhanghuangbin
@@ -80,19 +81,56 @@ public class ExtRepoController extends ApiController {
     }
 
 
+    @PostMapping("/validDeploymentFile")
+    @Operation(summary = "校验部署文件")
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ValidateResultVO.class))})
+    public Result validDeploymentFile(@RequestBody @Validated DeploymentDTO dto) {
+        return Result.success(extRepoInstallService.validDeploymentFile(dto));
+    }
+
+
     @PostMapping("/deploy")
     @Operation(summary = "部署应用")
-    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = List.class))})
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = InstallResult.class))})
     public Result deploy(@RequestBody @Validated DeploymentDTO dto) {
         return Result.success(extRepoInstallService.deploy(dto));
     }
 
 
-   @PostMapping("/getDeployProgressDAG")
-    @Operation(summary = "获取部署进度DAG")
-    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = InstallProgressDAG.class))})
-    public Result getDeployProgressDAG(@RequestBody @Validated DeploymentProgressDTO dto) {
-        return Result.success(extRepoInstallService.getDeployProgressDAG(dto.getClusterId(), dto.getCmdIds()));
+    @PostMapping("/getDeployProgressDAG2")
+    @Operation(summary = "获取部署进度DAG接口2")
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = InstallProgressDAG2.class))})
+    public Result getDeployProgressDAG2(@RequestBody @Validated DagIdDto dto) {
+        return Result.success(extRepoInstallService.getDeployProgressDAG2(dto.getDagId()));
+    }
+
+
+    @PostMapping("/redeploy")
+    @Operation(summary = "重新运行dag")
+    @ApiResponse(content = {@Content(mediaType = "application/json")})
+    public Result redeploy(@RequestBody @Validated RunDagDto dto) {
+        extRepoInstallService.redeploy(dto);
+        return Result.success();
+    }
+
+    @PostMapping("/listNewestByDeployment")
+    @Operation(summary = "获取最新的服务列表(并更加部署清单对服务列表进行勾选)")
+    @ApiResponse(content = {@Content(mediaType = "application/json")})
+    public Result listNewestByDeployment(@RequestBody @Validated DeploymentDTO dto) {
+        return Result.success(extRepoInstallService.listNewestByDeployment(dto));
+    }
+
+    @PostMapping("/getServiceRoleListByDeployment")
+    @Operation(summary = "获取服务角色列表(并根据部署清单对host进行填充)")
+    @ApiResponse(content = {@Content(mediaType = "application/json")})
+    public Result getServiceRoleListByDeployment(@RequestBody @Validated ServiceRoleQueryDTO dto) {
+        return Result.success(extRepoInstallService.getServiceRoleListByDeployment(dto));
+    }
+    @PostMapping("/getNonMasterRoleListByDeployment")
+    @Operation(summary = "获取非master服务角色列表(并根据部署清单对host进行填充)")
+    @ApiResponse(content = {@Content(mediaType = "application/json")})
+    public Result getNonMasterRoleListByDeployment(@RequestBody @Validated DeploymentDTO dto) {
+        return Result.success(extRepoInstallService.getNonMasterRoleListByDeployment(dto));
     }
 
 

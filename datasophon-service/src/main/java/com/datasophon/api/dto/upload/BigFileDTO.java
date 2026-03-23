@@ -24,8 +24,8 @@ public class BigFileDTO {
     @NotNull(message = "文件总大小不能为空")
     private Long byteCnt;
 
-    @Schema(description = "分片数量")
-    @NotNull(message = "分片数量不能为空")
-    private Integer chunk;
+    @Schema(description = "文件MD5, 可以为空，如果不为空，则检查文件是否已经存在，则uploadType为2，表示秒传，不需要后续上传")
+    private String md5;
+
 
 }

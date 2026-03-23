@@ -21,6 +21,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 
 import java.io.File;
@@ -28,6 +29,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.alibaba.fastjson.JSONObject;
@@ -47,8 +49,8 @@ public class UstreamMasterHandlerStrategy extends AbstractHandlerStrategy implem
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) {
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-        String workPath = Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName();
-        if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
+        String workPath = PkgInstallPathUtils.getInstallHome(command);
+        if (Arrays.asList(CommandType.INSTALL_SERVICE, CommandType.UPGRADE_SERVICE).contains(command.getCommandType())) {
             // 判断数据库是否已经初始化
             boolean ready = true;
             String applicaitonPath = workPath + Constants.SLASH + "conf/application.yaml";
@@ -71,19 +73,14 @@ public class UstreamMasterHandlerStrategy extends AbstractHandlerStrategy implem
                     String password = datsource.getString("password");
                     logger.info("database info is using  {}  on {} ", username, url);
                     con = DbUtil.use(new SimpleDataSource(url, username, password)).getConnection();
-                    List<String> entityList = SqlExecutor.query(con, "SHOW TABLES", new RsHandler<List<String>>() {
-                        
-                        @Override
-                        public List<String> handle(ResultSet rs) throws SQLException {
-                            final List<String> result = new ArrayList<>();
-                            while (rs.next()) {
-                                result.add(rs.getString(1));
-                            }
-                            return result;
+                    List<String> entityList = SqlExecutor.query(con, "SHOW TABLES", (RsHandler<List<String>>) rs -> {
+                        final List<String> result = new ArrayList<>();
+                        while (rs.next()) {
+                            result.add(rs.getString(1));
                         }
+                        return result;
                     });
-                    if (entityList.stream().noneMatch(s -> s.equals("ustream_project")
-                            || s.equals("ustream_job_config") || s.equals("ustream_job_info"))) {
+                    if (entityList.stream().noneMatch(s -> s.equals("ustream_project") || s.equals("ustream_job_config") || s.equals("ustream_job_info"))) {
                         ready = false;
                     }
                     if (!ready) {
@@ -100,7 +97,7 @@ public class UstreamMasterHandlerStrategy extends AbstractHandlerStrategy implem
             }
         }
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs());
+                command, command.getRunAs(), command.isCheckStatus());
     }
     
 }

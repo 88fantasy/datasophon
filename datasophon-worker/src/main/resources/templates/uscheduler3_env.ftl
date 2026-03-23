@@ -35,17 +35,17 @@ export REGISTRY_TYPE=${r"${REGISTRY_TYPE"}:-zookeeper}
 export REGISTRY_ZOOKEEPER_CONNECT_STRING=${r"${REGISTRY_ZOOKEEPER_CONNECT_STRING"}:-${zkUrls}}
 
 # Tasks related configurations, need to change the configuration if you use the related tasks.
-export HADOOP_HOME=${r"${HADOOP_HOME"}:-/opt/datasophon/hadoop}
-export HADOOP_CONF_DIR=${r"${HADOOP_CONF_DIR"}:-/opt/datasophon/hadoop/etc/hadoop}
-export SPARK_HOME1=${r"${SPARK_HOME1"}:-/opt/datasophon/spark1}
-export SPARK_HOME2=${r"${SPARK_HOME2"}:-/opt/datasophon/spark2}
-export SPARK_HOME3=${r"${SPARK_HOME3"}:-/opt/datasophon/spark3}
+export HADOOP_HOME=${r"${HADOOP_HOME"}:-/data/install_datasophon/hadoop}
+export HADOOP_CONF_DIR=${r"${HADOOP_CONF_DIR"}:-/data/install_datasophon/hadoop/etc/hadoop}
+export SPARK_HOME1=${r"${SPARK_HOME1"}:-/data/install_datasophon/spark1}
+export SPARK_HOME2=${r"${SPARK_HOME2"}:-/data/install_datasophon/spark2}
+export SPARK_HOME3=${r"${SPARK_HOME3"}:-/data/install_datasophon/spark3}
 export PYTHON_HOME=${r"${PYTHON_HOME"}:-/usr/bin/python2.7}
-export HIVE_HOME=${r"${HIVE_HOME"}:-/opt/datasophon/hive}
-export FLINK_HOME=${r"${FLINK_HOME"}:-/opt/datasophon/flink}
-export DATAX_HOME=${r"${DATAX_HOME"}:-/opt/datasophon/usync}
-export DATASOURCEX_HOME=${r"${USCHEDULER_HOME"}:-/opt/datasophon/uscheduler/executor/datasourcex}
-export EXECUTOR=${r"${USCHEDULER_HOME"}:-/opt/datasophon/uscheduler/executor}
+export HIVE_HOME=${r"${HIVE_HOME"}:-/data/install_datasophon/hive}
+export FLINK_HOME=${r"${FLINK_HOME"}:-/data/install_datasophon/flink}
+export DATAX_HOME=${r"${DATAX_HOME"}:-/data/install_datasophon/usync}
+export DATASOURCEX_HOME=${r"${USCHEDULER_HOME"}:-/data/install_datasophon/uscheduler/executor/datasourcex}
+export EXECUTOR=${r"${USCHEDULER_HOME"}:-/data/install_datasophon/uscheduler/executor}
 export SPARK_SQL_EXECUTOR=$EXECUTOR/spark-sql-executor.jar
 export SPARK_QUALITY_V2_JAR=$EXECUTOR/chinaunicom-quality.jar
 export SPARK_SHELL_EXECUTOR=$EXECUTOR/spark-shell-executor.jar

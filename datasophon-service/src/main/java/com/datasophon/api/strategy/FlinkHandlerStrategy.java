@@ -22,7 +22,6 @@ import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 
@@ -35,20 +34,20 @@ public class FlinkHandlerStrategy extends ServiceHandlerAbstract implements Serv
     
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
         boolean enableJM2HA = false;
         boolean enableKerberos = false;
         Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
         for (ServiceConfig serviceConfig : list) {
             if ("enableKerberos".equals(serviceConfig.getName())) {
-                enableKerberos = isEnableKerberos(clusterId, globalVariables, enableKerberos, serviceConfig, "FLINK");
+                enableKerberos = decideEnableKerberos(clusterId, enableKerberos, serviceConfig, "FLINK");
             }
         }
         
         for (ServiceConfig config : list) {
             if ("enableJMHA".equals(config.getName())) {
-                enableJM2HA = isEnableHA(clusterId, globalVariables, enableJM2HA, config, "FLINK");
+                enableJM2HA = decideEnableHA(clusterId, enableJM2HA, config, "FLINK");
             }
         }
         String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + "FLINK" + Constants.CONFIG;

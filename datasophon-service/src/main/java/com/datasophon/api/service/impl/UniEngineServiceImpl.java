@@ -1,7 +1,5 @@
 package com.datasophon.api.service.impl;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.setting.yaml.YamlUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.api.service.ClusterInfoService;
@@ -15,7 +13,6 @@ import com.datasophon.common.model.uni.HiveDatasource;
 import com.datasophon.common.model.uni.KafkaDatasource;
 import com.datasophon.common.model.uni.MysqlDatasource;
 import com.datasophon.common.model.uni.PaimonDatasource;
-import com.datasophon.common.utils.LazyTask;
 import com.datasophon.common.utils.PasswordSupport;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.Result;
@@ -48,28 +45,9 @@ public class UniEngineServiceImpl implements UniEngineService {
     @Autowired
     ClusterInfoService clusterInfoService;
 
-    private JSONObject clusterSampleConfig;
-
-    private final LazyTask loadCfgTask = LazyTask.of(() -> {
-        String initPath = PropertyUtils.getString("INIT_HOME");
-        String clusterSamplePath = String.format("%s/config/cluster-sample.yml", initPath);
-        if (!FileUtil.exist(clusterSamplePath)) {
-            throw new RuntimeException("clusterSamplePath is not exist. Please set INIT_HOME in common.properties");
-        }
-        this.clusterSampleConfig = YamlUtil.loadByPath(clusterSamplePath, JSONObject.class);
-        logger.info("{} load success.", clusterSamplePath);
-    });
-
-    private void init() {
-        loadCfgTask.exec();
-    }
-
     @Override
     public Result getEngineInfo() {
-        init();
-
-        Result result = clusterInfoService.getClusterList();
-        List<ClusterInfoEntity> clusterList = (List<ClusterInfoEntity>) result.getData();
+        List<ClusterInfoEntity> clusterList = clusterInfoService.getClusterList();
         if (CollectionUtils.isEmpty(clusterList)) {
             return Result.error("vos集群列表为空");
         }
@@ -127,11 +105,10 @@ public class UniEngineServiceImpl implements UniEngineService {
 
     public MysqlDatasource getMysqlDatasource() {
         MysqlDatasource mysqlDatasource = new MysqlDatasource();
-        JSONObject mysqlInfo = clusterSampleConfig.getJSONObject("global").getJSONObject("mysql");
-        mysqlDatasource.setHost(mysqlInfo.getJSONObject("host").getString("ip"));
-        mysqlDatasource.setPort("3306");
-        mysqlDatasource.setUserName("root");
-        mysqlDatasource.setPassword(mysqlInfo.getString("password"));
+        mysqlDatasource.setHost(PropertyUtils.getString("datasource.ip"));
+        mysqlDatasource.setPort(PropertyUtils.getString("datasource.port"));
+        mysqlDatasource.setUserName(PropertyUtils.getString("datasource.username"));
+        mysqlDatasource.setPassword(PropertyUtils.getString("datasource.password"));
         JSONObject mysqlOther = new JSONObject();
         mysqlOther.put("allowPublicKeyRetrieval", true);
         mysqlOther.put("useSSL", false);

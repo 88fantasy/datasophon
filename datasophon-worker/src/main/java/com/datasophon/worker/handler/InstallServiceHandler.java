@@ -21,48 +21,46 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.StreamProgress;
-import cn.hutool.core.lang.Console;
 import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ServiceLoaderUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpUtil;
+import cn.hutool.crypto.digest.MD5;
+import com.alibaba.fastjson.JSONObject;
 import com.datasophon.common.Constants;
-import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.InstallServiceRoleCommand;
+import com.datasophon.common.storage.StorageUtils;
+import com.datasophon.common.storage.vo.DownloadResult;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.FileUtils;
-import com.datasophon.common.utils.PropertyUtils;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
+import com.datasophon.common.utils.ZipUtils;
 import com.datasophon.worker.strategy.resource.EmptyStrategy;
 import com.datasophon.worker.strategy.resource.ResourceStrategy;
 import com.datasophon.worker.utils.TaskConstants;
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Slf4j
 @Data
 public class InstallServiceHandler {
 
-    private static final String HADOOP = "hadoop";
 
     public static final Map<String, Class<? extends ResourceStrategy>> cache = new ConcurrentHashMap<>();
 
-    private String frameCode;
+    protected String frameCode;
 
-    private String serviceName;
+    protected String serviceName;
 
-    private String serviceRoleName;
+    protected String serviceRoleName;
 
     private Logger logger;
 
@@ -73,183 +71,265 @@ public class InstallServiceHandler {
         }
     }
 
-    public InstallServiceHandler(String frameCode, String serviceName, String serviceRoleName) {
-        this.frameCode = frameCode;
-        this.serviceName = serviceName;
-        this.serviceRoleName = serviceRoleName;
-        String loggerName = String.format("%s-%s-%s-%s", TaskConstants.TASK_LOG_LOGGER_NAME, frameCode, serviceName, serviceRoleName);
-        logger = LoggerFactory.getLogger(loggerName);
+
+    public void init(InstallServiceRoleCommand command) {
+        this.frameCode = command.getFrameCode();
+        this.serviceName = command.getServiceName();
+        this.serviceRoleName = command.getServiceRoleName();
+        logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(serviceName, serviceRoleName, InstallServiceHandler.class));
+    }
+
+    public boolean match(InstallServiceRoleCommand command) {
+        return true;
+    }
+
+
+    public int getOrder() {
+        return Integer.MAX_VALUE;
     }
 
     public ExecResult install(InstallServiceRoleCommand command) {
+        String linkName = getLinkName(command);
+        if (command.getNormalPkgDir().equals(linkName)) {
+            throw new IllegalStateException(String.format("软件%s安装目录和软链目录名字一致，无法解压", command.getServiceName()));
+        }
+
         ExecResult execResult = new ExecResult();
         try {
-            String destDir = Constants.INSTALL_PATH + Constants.SLASH + "DDP/packages" + Constants.SLASH;
-            String packageName = command.getPackageName();
-            String packagePath = destDir + packageName;
-            String decompressPackageName = command.getDecompressPackageName();
-            Boolean createDecompressDir = command.getCreateDecompressDir();
-
-            boolean installPkgChange = isFileContentChange(packagePath, command.getPackageMd5());
-            Boolean needDownLoad = !Objects.equals(PropertyUtils.getString(Constants.MASTER_HOST), CacheUtils.get(Constants.HOSTNAME)) && installPkgChange;
-
-            if (Boolean.TRUE.equals(needDownLoad)) {
-                downloadPkg(packageName, packagePath);
+            logger.info("开始下载安装包{}....", command.getPackageName());
+            DownloadResult downloadResult = StorageUtils.getPackageStorage().downloadPackageToLocal(command.getPackageName());
+            if (downloadResult.isChange()) {
+                logger.info("下载安装包{}完毕....", command.getPackageName());
+            } else {
+                logger.info("安装包{}没有变更，无需下载", command.getPackageName());
             }
 
-            boolean result = decompressPkg(packageName, decompressPackageName, createDecompressDir, destDir, installPkgChange);
-            if (result) {
-                if (Objects.nonNull(command.getRunAs())) {
-                    ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getUser() + ":" + command.getRunAs().getGroup() + " " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-                    logger.info("chown {} {}", decompressPackageName, chownResult.getExecResult() ? "success" : "fail");
+            boolean goon = true;
+            boolean unpackPkg = needDecompressPkg(command, downloadResult);
+            if (unpackPkg) {
+                logger.info("开始解压安装包{}->{}", command.getPackageName(), command.getNormalPkgDir());
+                goon = decompressPkg(command, downloadResult);
+                if (!goon) {
+                    logger.error("解压安装包{}失败，请查看解压命令的输出提示信息", command.getPackageName());
+                    execResult.setExecOut(String.format("解压安装包%s失败，请查看日志", command.getPackageName()));
                 }
-                ExecResult chmodResult = ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-                logger.info("chmod {} {}", decompressPackageName, chmodResult.getExecResult() ? "success" : "fail");
-
-                if (CollUtil.isNotEmpty(command.getResourceStrategies())) {
-                    for (Map<String, Object> strategy : command.getResourceStrategies()) {
-                        String type = (String) strategy.get(ResourceStrategy.TYPE_KEY);
-                        Class<? extends ResourceStrategy> clazz = cache.getOrDefault(type, EmptyStrategy.class);
-                        ResourceStrategy rs = BeanUtil.toBean(strategy, clazz, CopyOptions.create().ignoreError());
-                        rs.setLogger(logger);
-                        rs.setFrameCode(frameCode);
-                        rs.setService(serviceName);
-                        rs.setServiceRole(serviceRoleName);
-                        rs.setBasePath(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-                        rs.setVariables(command.getVariables());
-                        ExecResult exec = rs.exec();
-                        if (!exec.getExecResult()) {
-                            return exec;
-                        }
+            } else {
+                logger.info("安装包{}没有变更，无需解压", command.getPackageName());
+            }
+            if (goon) {
+                String normalPkgDir = PkgInstallPathUtils.getInstallHomeName(command);
+                if (command.getRunAs() != null && command.getRunAs().hasOwner()) {
+                    ExecResult chownResult = ShellUtils.execShell(" chown -R " + command.getRunAs().getOwner() + " " + Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir);
+                    if (chownResult.isSuccess()) {
+                        logger.info("chown {} success", normalPkgDir);
+                    } else {
+                        logger.warn("chown {} fail", normalPkgDir);
                     }
                 }
+                ExecResult chmodResult = ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir);
+                logger.info("chmod {} {}", normalPkgDir, chmodResult.getExecResult() ? "success" : "fail");
 
-                if (decompressPackageName.contains(Constants.PROMETHEUS)) {
-                    String alertPath = Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + "alert_rules";
-                    ShellUtils.execShell("sed -i \"s/clusterIdValue/" + PropertyUtils.getString("clusterId") + "/g\" `grep clusterIdValue -rl " + alertPath + "`");
+                execResult = execResourceStrategies(command, logger);
+                if (!execResult.isSuccess()) {
+                    return execResult;
                 }
-                if (decompressPackageName.contains(HADOOP)) {
-                    changeHadoopInstallPathPerm(decompressPackageName);
-                }
-                execResult.setExecResult(true);
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            execResult.setExecErrOut(e.getMessage());
+            logger.error("安装服务{} {}失败,  {}", command.getServiceName(), command.getServiceRoleName(), e.getMessage(), e);
+            execResult.setExecOut(e.getMessage());
         }
         return execResult;
     }
 
-    private Boolean isFileContentChange(String packagePath, String packageMd5) {
-        boolean needDownLoad = true;
-        logger.info("Remote package md5 is {}", packageMd5);
-        if (FileUtil.exist(packagePath)) {
-            // check md5
-            String md5 = FileUtils.md5(new File(packagePath));
+    protected boolean needDecompressPkg(InstallServiceRoleCommand command, DownloadResult downloadResult) {
+        if (downloadResult.isChange()) {
+            return true;
+        }
+        File installHome = new File(Constants.INSTALL_PATH + Constants.SLASH + command.getNormalPkgDir());
+        if (!installHome.exists()) {
+            return true;
+        }
+        File metaFile = getMetaFile(command);
+        if (!metaFile.exists()) {
+            return true;
+        }
+        String content = FileUtil.readString(metaFile, StandardCharsets.UTF_8);
+        String md5 = getInstallMetaSign(downloadResult, command);
+        return !md5.equalsIgnoreCase(content);
+    }
 
-            logger.info("Local md5 is {}", md5);
+    private File getMetaDir() {
+        File dir = new File(Constants.INSTALL_PATH + Constants.SLASH + ".install_meta");
+        if (!dir.exists()) {
+            FileUtil.mkdir(dir);
+        }
+        return dir;
+    }
 
-            if (StringUtils.isNotBlank(md5) && packageMd5.trim().equals(md5.trim())) {
-                needDownLoad = false;
+    protected File getMetaFile(InstallServiceRoleCommand command) {
+        return new File(getMetaDir(), command.getNormalPkgDir() + ".md5");
+    }
+
+    protected String getInstallMetaSign(DownloadResult result, InstallServiceRoleCommand command) {
+//        mete表示会影响解压文件内容的配置项
+        PackageMeta meta = new PackageMeta(result, command);
+        return MD5.create().digestHex(JSONObject.toJSONString(meta), StandardCharsets.UTF_8);
+    }
+
+
+    protected boolean decompressPkg(InstallServiceRoleCommand instCmd, DownloadResult downloadResult) {
+        String packageName = instCmd.getPackageName();
+        String decompressPackageName = instCmd.getDecompressPackageName();
+
+        String sourceFile = downloadResult.getTarget();
+        String suffix = FileUtil.getSuffix(packageName);
+        boolean success;
+//           安装软件的临时解压目录
+        String serviceDecompressDir = null;
+        try {
+            ArrayList<String> command = new ArrayList<>();
+
+            boolean needParentDir = BooleanUtil.isTrue(instCmd.getCreateDecompressDir());
+
+            String baseTempDir = Constants.INSTALL_PATH + Constants.SLASH + "temp";
+            serviceDecompressDir = baseTempDir + Constants.SLASH + decompressPackageName;
+            checkIfPathOutOfBox(baseTempDir, serviceDecompressDir);
+
+            FileUtil.del(serviceDecompressDir);
+            FileUtil.mkdir(new File(serviceDecompressDir));
+
+            boolean needTrimDirName = !needParentDir;
+            ExecResult execResult = new ExecResult();
+            if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
+                command.add("tar");
+                command.add("-zxf");
+                command.add(sourceFile);
+                command.add("-C");
+                command.add(serviceDecompressDir);
+                if (needTrimDirName) {
+                    command.add("--strip-components=1");
+                }
+                logger.info("exec decompress cmd :{}", StrUtil.join(" ", command));
+                execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
+            } else if ("zip".equals(suffix)) {
+                try {
+                    ZipUtils.unzip(sourceFile, serviceDecompressDir, needTrimDirName ? 1 : 0);
+                    execResult.setExecResult(true);
+                } catch (Exception e) {
+                    logger.error("解压文件{}失败，{}", sourceFile, e.getMessage(), e);
+                    execResult.setExecOut(String.format("解压文件%s失败，失败原因：%s，请检查ddl配置的文件解压结构是否正确", sourceFile, e.getMessage()));
+                }
+            } else {
+                throw new UnsupportedOperationException(String.format("unsupported file type %s", suffix));
+            }
+
+
+            success = execResult.getExecResult();
+            if (success) {
+                String targetDir = Constants.INSTALL_PATH + Constants.SLASH + instCmd.getNormalPkgDir();
+                FileUtil.mkdir(targetDir);
+//                    将临时目录，重命名为安装目录
+                FileUtil.moveContent(new File(serviceDecompressDir), new File(targetDir), true);
+
+//                写入本次安装的信息，用于下一次检测安装包是否发生变更
+                FileUtil.writeString(getInstallMetaSign(downloadResult, instCmd), getMetaFile(instCmd), StandardCharsets.UTF_8);
+            }
+        } finally {
+//                删除临时解压目录
+            if (serviceDecompressDir != null) {
+                FileUtil.del(serviceDecompressDir);
             }
         }
-        return needDownLoad;
+        return success;
     }
 
-    private void downloadPkg(String packageName, String packagePath) {
-        String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
-        String masterPort = PropertyUtils.getString(Constants.MASTER_WEB_PORT);
-        String downloadUrl = "http://" + masterHost + ":" + masterPort + "/ddh/service/install/downloadPackage?packageName=" + packageName;
-
-        logger.info("download url is {}", downloadUrl);
-
-        HttpUtil.downloadFile(downloadUrl, FileUtil.file(packagePath), new StreamProgress() {
-
-            @Override
-            public void start() {
-                Console.log("start to install。。。。");
-            }
-
-            @Override
-            public void progress(long progressSize, long l1) {
-                Console.log("installed：{} / {} ", FileUtil.readableFileSize(progressSize), FileUtil.readableFileSize(l1));
-            }
-
-            @Override
-            public void finish() {
-                Console.log("install success！");
-            }
-        });
-        logger.info("download package {} success", packageName);
-    }
-
-    private boolean decompressPkg(String packageName, String decompressPackageName, Boolean createDecompressDir, String destDir, boolean installPkgChange) {
-        boolean decompressResult = true;
-        boolean needParentDir = BooleanUtil.isTrue(createDecompressDir);
-        // ~/ 开头的包，解压到当前目录下
-
-        boolean fileExist = FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-        if (!fileExist || installPkgChange) {
-            String sourceFile = destDir + packageName;
-            logger.info("Start to decompress {}", sourceFile);
-            String suffix = FileUtil.getSuffix(sourceFile);
-            String prefix = packageName.substring(0, packageName.length() - suffix.length() - 1);
-            boolean success = false;
-
-            try {
-
-                ArrayList<String> command = new ArrayList<>();
-                String decompressDir = needParentDir ? Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName : Constants.INSTALL_PATH;
-                if(needParentDir && !FileUtil.exist(decompressDir)){
-                    FileUtil.mkdir(decompressDir);
-                }
-                if ("tar.gz".equals(suffix) || "tgz".equals(suffix)) {
-                    command.add("tar");
-                    command.add("-zxvf");
-                    command.add(sourceFile);
-                    command.add("-C");
-                    command.add(decompressDir);
-
-                    if (installPkgChange) {
-                        command.add("--overwrite");
-                    }
-                } else if ("zip".equals(suffix)) {
-                    command.add("unzip");
-                    if (installPkgChange) {
-                        command.add("-o");
-                    }
-                    command.add("-d");
-                    command.add(decompressDir);
-                    command.add(sourceFile);
-                }
-
-                log.info("exec decompress cmd :{}", StrUtil.join(" ", command));
-                ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, command, 120, logger);
-                success = execResult.getExecResult();
-                if (success) {
-                    // 自动重命名
-                    if (FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + prefix)) {
-                        FileUtil.move(new File(Constants.INSTALL_PATH + Constants.SLASH + prefix), new File(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName), false);
-                    }
-                }
-            } finally {
-                if (!success) {
-                    FileUtil.del(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-                }
-            }
-            return success;
+    /**
+     * 检查是否越权，防止innerDir存在 ../../之类的路径，造成越权
+     *
+     * @param baseTempDir
+     * @param innerDir
+     */
+    protected void checkIfPathOutOfBox(String baseTempDir, String innerDir) {
+        if (!Paths.get(innerDir).startsWith(Paths.get(baseTempDir))) {
+            throw new SecurityException(String.format("can operation dir %s out of %s", innerDir, baseTempDir));
         }
-        return decompressResult;
     }
 
-    private void changeHadoopInstallPathPerm(String decompressPackageName) {
-        ShellUtils.execShell(" chown -R  root:hadoop " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-        ShellUtils.execShell(" chmod 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName);
-        ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/etc");
-        ShellUtils.execShell(" chmod 6050 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/bin/container-executor");
-        ShellUtils.execShell(" chmod 400 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/etc/hadoop/container-executor.cfg");
-        ShellUtils.execShell(" chown -R yarn:hadoop " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/logs/userlogs");
-        ShellUtils.execShell(" chmod 775 " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + "/logs/userlogs");
-        ShellUtils.execShell(" ln -s " + Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + " " + Constants.INSTALL_PATH + Constants.SLASH + "hadoop");
+    protected ExecResult execResourceStrategies(InstallServiceRoleCommand command, Logger logger) {
+        if (CollUtil.isNotEmpty(command.getResourceStrategies())) {
+            logger.info("开始执行资源策略，总共需要执行{}个策略", command.getResourceStrategies().size());
+            for (int i = 0; i < command.getResourceStrategies().size(); i++) {
+                Map<String, Object> strategy = command.getResourceStrategies().get(i);
+                String type = (String) strategy.get(ResourceStrategy.TYPE_KEY);
+                Class<? extends ResourceStrategy> clazz = cache.getOrDefault(type, EmptyStrategy.class);
+                ResourceStrategy rs = BeanUtil.toBean(strategy, clazz, CopyOptions.create().ignoreError());
+
+                Logger rsLogger = LoggerFactory.getLogger(
+                        TaskConstants.createLoggerName(command.getServiceName(), command.getServiceRoleName(), rs.getClass())
+                );
+                rs.setLogger(rsLogger);
+                rs.setFrameCode(frameCode);
+                rs.setService(serviceName);
+                rs.setServiceRole(serviceRoleName);
+                rs.setBasePath(PkgInstallPathUtils.getInstallHome(command));
+                rs.setVariables(command.getVariables());
+                ExecResult exec = rs.exec();
+                if (!exec.getExecResult()) {
+                    logger.error("执行第{}个资源策略失败, {}", i + 1, exec.getExecOut());
+                    return exec;
+                }
+            }
+        }
+        return ExecResult.success();
+    }
+
+    public ExecResult createLink(InstallServiceRoleCommand command) {
+        String appLinkHome = getLinkName(command);
+        if (appLinkHome == null) {
+            logger.info("服务{} {}无需创建软链...", command.getServiceName(), command.getServiceRoleName());
+            return ExecResult.success();
+        }
+
+        logger.info("安装服务{} {}成功，准备创建软链...", command.getServiceName(), command.getServiceRoleName());
+        String appHome = Constants.INSTALL_PATH + Constants.SLASH + command.getNormalPkgDir();
+        return doCreateLink(appLinkHome, appHome);
+    }
+
+    protected ExecResult doCreateLink(String linkPath, String targetPath) {
+        File linkFile = new File(linkPath);
+        if (linkFile.exists()) {
+            if (Files.isSymbolicLink(linkFile.toPath())) {
+                ShellUtils.execShell("unlink " + linkPath);
+            } else {
+                throw new IllegalStateException(String.format(" %s exist but  not a link file, it is that true?", linkPath));
+            }
+        }
+        ExecResult execResult = ShellUtils.execShell("ln -s " + targetPath + " " + linkPath);
+        logger.info("创建软链：{} -> {} {}", linkPath, targetPath, execResult.isSuccess() ? "成功" : "失败");
+        return execResult;
+    }
+
+
+    protected String getLinkName(InstallServiceRoleCommand command) {
+        return Constants.INSTALL_PATH + Constants.SLASH + PkgInstallPathUtils.getLinkDirName(command);
+    }
+
+
+    @Data
+    protected static class PackageMeta {
+        private String md5;
+        private Object createDecompressDir;
+        private String decompressPackageName;
+
+        protected PackageMeta() {
+        }
+
+
+        protected PackageMeta(DownloadResult result, InstallServiceRoleCommand command) {
+            md5 = result.getMd5();
+            createDecompressDir = command.getCreateDecompressDir();
+            decompressPackageName = command.getDecompressPackageName();
+        }
+
     }
 }

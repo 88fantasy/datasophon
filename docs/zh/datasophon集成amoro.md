@@ -28,7 +28,7 @@ touch service_ddl.json
 各worker节点新增：
 
 ```shell
-cd /opt/datasophon/datasophon-worker/conf/templates
+cd /data/install_datasophon/datasophon-worker/conf/templates
 touch amoro-config-yaml.ftl
 ```
 
@@ -48,7 +48,7 @@ touch amoro-config-yaml.ftl
 各节点worker重启
 
 ```shell
-sh /opt/datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
+sh /data/install_datasophon/datasophon-worker/bin/datasophon-worker.sh restart worker
 ```
 
 主节点重启api

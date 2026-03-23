@@ -1,6 +1,7 @@
 package com.datasophon.cli.init;
 
 import com.datasophon.cli.base.Executor;
+import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
@@ -22,13 +23,13 @@ public class InitRustfs extends InitBase {
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
 
-    @CommandLine.Option(names = {"-i", "--installPath"}, description = "installPath", required = true)
+    @CommandLine.Option(names = {"-in", "installPath"}, description = "安装路径", required = true)
     String installPath;
 
-    @CommandLine.Option(names = {"-x", "--x86Tar"}, description = "x86_64包", required = true)
+    @CommandLine.Option(names = {"-x", "--x86Tar"}, description = "x86_64包", required = false)
     String x86Tar;
 
-    @CommandLine.Option(names = {"-a", "--aarch64Tar"}, description = "aarch64包", required = true)
+    @CommandLine.Option(names = {"-a", "--aarch64Tar"}, description = "aarch64包", required = false)
     String aarch64Tar;
 
     @CommandLine.Option(names = {"-wh", "--webHost"}, description = "webHost", required = true)
@@ -75,8 +76,8 @@ public class InitRustfs extends InitBase {
             }
             executor.execShell(String.format("tar xvz -f %s -C %s", tarPath, installPath));
             executor.execShell(String.format("mv %s/rustfs-* %s", installPath, home));
-            executor.createDir(dataPath);
-            executor.createDir(logsPath);
+            executor.execShell(String.format("mkdir -p %s", dataPath));
+            executor.execShell(String.format("mkdir -p %s", logsPath));
         }
 
         if(!checkStart(executor)) {
@@ -89,8 +90,7 @@ public class InitRustfs extends InitBase {
             log.info("rusfs install sucess. path:{}", home);
             return true;
         } else {
-            log.info("rusfs install failed.");
-            return false;
+            throw new CommandLine.ExecutionException(new CommandLine(this), String.format("rusfs install failed. path:%s", home));
         }
     }
 

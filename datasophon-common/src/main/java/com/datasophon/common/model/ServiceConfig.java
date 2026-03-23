@@ -24,7 +24,9 @@ import lombok.Data;
 
 @Data
 public class ServiceConfig implements Serializable {
-    
+
+    private String originalName;
+
     private String name;
     
     private Object value;
@@ -36,6 +38,8 @@ public class ServiceConfig implements Serializable {
     private String description;
     
     private boolean required;
+
+    private boolean enabled;
     
     private String type;
     
@@ -62,5 +66,6 @@ public class ServiceConfig implements Serializable {
     private boolean configWithHA;
     
     private String separator;
-    
+
+    private Boolean register;
 }

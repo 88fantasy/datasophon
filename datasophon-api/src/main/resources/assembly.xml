@@ -56,6 +56,14 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>${basedir}/target</directory>
+            <includes>
+                <include>release.txt</include>
+            </includes>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>0600</fileMode>
+        </fileSet>
+        <fileSet>
             <directory>${basedir}/../datasophon-common/src/main/resources</directory>
             <includes>
                 <include>**/*.properties</include>
@@ -94,24 +102,15 @@
             <!-- Linux 脚本，需要打包为 unix 格式，否则换行可能有问题 -->
             <lineEnding>unix</lineEnding>
         </fileSet>
-        <!--拷贝脚本文件到scripts目录下面-->
-        <fileSet>
-            <directory>${basedir}/../scripts</directory>
-            <includes>
-                <include>*.sh</include>
-            </includes>
-            <fileMode>0755</fileMode>
-            <directoryMode>0755</directoryMode>
-            <filtered>true</filtered>
-            <outputDirectory>scripts</outputDirectory>
-            <!-- Linux 脚本，需要打包为 unix 格式，否则换行可能有问题 -->
-            <lineEnding>unix</lineEnding>
-        </fileSet>
 
 
         <fileSet>
             <directory>${basedir}/../datasophon-api/src/main/resources/meta</directory>
             <outputDirectory>conf/meta</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${basedir}/../datasophon-api/src/main/resources/frameworktpl</directory>
+            <outputDirectory>conf/frameworktpl</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>${basedir}/../jmx</directory>

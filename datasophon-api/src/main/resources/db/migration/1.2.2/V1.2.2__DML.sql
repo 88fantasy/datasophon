@@ -9,3 +9,4 @@ INSERT INTO `t_ddh_cluster_service_dashboard` (`id`, `service_name`, `dashboard_
 INSERT INTO `t_ddh_cluster_service_dashboard` (`id`, `service_name`, `dashboard_url`) VALUES (88, 'RESEARCH', 'http://${grafanaHost}:3000/d/9IFafKA4z/jmx-dashboard-basic?orgId=1&var-job=researchplatform&kiosk');
 INSERT INTO `t_ddh_cluster_service_dashboard` (`id`, `service_name`, `dashboard_url`) VALUES (89, 'OPERATION', 'http://${grafanaHost}:3000/d/9IFafKA4z/jmx-dashboard-basic?orgId=1&var-job=operationbrainserver&kiosk');
 INSERT INTO `t_ddh_cluster_service_dashboard` (`id`, `service_name`, `dashboard_url`) VALUES (90, 'USCHEDULER', 'http://${grafanaHost}:3000/d/X_NPpJOVk/dolphinscheduler?orgId=1&refresh=1m&kiosk');
+

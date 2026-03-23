@@ -17,14 +17,9 @@
 
 package com.datasophon.api.service;
 
-import com.datasophon.common.enums.CommandType;
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
-
-import java.util.List;
-import java.util.Map;
-
-import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
  * 集群服务操作指令表
@@ -35,23 +30,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface ClusterServiceCommandService extends IService<ClusterServiceCommandEntity> {
 
-    String generateCommand(Integer clusterId, CommandType commandType, List<String> serviceNames);
-    
+
     Result getServiceCommandlist(Integer clusterId, Integer page, Integer pageSize);
     
-    Result generateServiceCommand(Integer clusterId, CommandType command, List<String> ids);
-    
-    Result generateServiceRoleCommands(Integer clusterId, CommandType commandType,
-                                       Map<Integer, List<String>> instanceIdMap);
-    
-    Result generateServiceRoleCommand(Integer clusterId, CommandType command, Integer serviceIntanceId,
-                                      List<String> ids);
-    
-    void startExecuteCommand(Integer clusterId, String commandType, String commandIds);
-    
-    void cancelCommand(String commandId);
-    
-    ClusterServiceCommandEntity getLastRestartCommand(Integer id);
-    
+
     ClusterServiceCommandEntity getCommandById(String commandId);
+
 }

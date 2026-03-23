@@ -42,10 +42,10 @@ public class MetaUtils {
 
     /**
      * 需要解密文件内容的文件
+     * cluster-sample.yml不需要解密输出文件
      */
     private static final List<String> ENCRYPT_FILES = Arrays.asList(
             "**/config/common.properties",
-            "**/config/datasophon-init/cluster-sample.yml",
             "**/config/application.conf",
             "**/config/datasophon.conf",
             "**/meta/**/service_ddl.json"
@@ -113,6 +113,17 @@ public class MetaUtils {
     }
 
     /**
+     * 解密文件内容，并返回bytes
+     * @param file
+     * @param cipherKey
+     */
+    public static byte[] decodeContext(File file, String cipherKey) {
+        String context = FileUtil.readString(file, StandardCharsets.UTF_8);
+        byte[] encryptedBytes = Base64.decode(context);
+        return SmUtil.sm4(Base64.decode(cipherKey)).decrypt(encryptedBytes);
+    }
+
+    /**
      * 加密文件内容,并覆盖原文件
      *
      * @param file
@@ -123,12 +134,5 @@ public class MetaUtils {
         String base64 = Base64.encode(sm4Bytes);
         FileUtil.writeString(base64, file, StandardCharsets.UTF_8);
         log.info("encode file: {}", file.getName());
-    }
-
-    public static void main(String[] args) throws IOException {
-        //encodeFile(new File("/Users/liushumin/_tmp/cluster-sample.yml"), "5bWx3KT7vM7pJUjBf9GtSA==");
-        //decodeFile(new File("/Users/liushumin/_tmp/cluster-sample.yml"), "5bWx3KT7vM7pJUjBf9GtSA==");
-        encodeMatchedFiles("/Users/liushumin/_tmp/config", "5bWx3KT7vM7pJUjBf9GtSA==");
-        //decodeMatchedFiles("/Users/liushumin/_tmp/config", "5bWx3KT7vM7pJUjBf9GtSA==");
     }
 }

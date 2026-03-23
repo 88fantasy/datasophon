@@ -33,10 +33,11 @@ import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
-import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.CookieLocaleResolver;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -112,14 +113,18 @@ public class AppConfiguration implements WebMvcConfigurer {
     InterceptorRegistration loginRegistration = registry.addInterceptor(loginHandlerInterceptor)
         .addPathPatterns(getPathPrefix() + "/**")
         .excludePathPatterns(
-            getPathPrefix() + "/login", "/error",
+             "/error",
             "/grafana/**",
-            "/cluster/alert/history/save",
-            "/cluster/kerberos/downloadKeytab",
             "/index.html",
             "/",
             "/static/**"
-        );
+        )
+        .excludePathPatterns(getRealExcludeUrl(
+                "/login",
+                "/cluster/alert/history/save",
+                "/cluster/kerberos/downloadKeytab",
+                "/service/install/download*"
+        ));
     if (enableOpenApi) {
       loginRegistration.excludePathPatterns(
           "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
@@ -127,7 +132,26 @@ public class AppConfiguration implements WebMvcConfigurer {
       );
     }
 
-    registry.addInterceptor(basicValidRequestInterceptor).addPathPatterns("/**");
+      InterceptorRegistration basicValidRegistration = registry
+              .addInterceptor(basicValidRequestInterceptor)
+              .addPathPatterns("/**");
+      if (enableOpenApi) {
+          basicValidRegistration.excludePathPatterns(
+                  "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
+                  "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico"
+          );
+      }
+  }
+
+  private String[] getRealExcludeUrl(String...urls) {
+      List<String> result = new ArrayList<>(urls.length);
+      for (String url : urls) {
+          if (!url.startsWith("/")) {
+              url = "/" + url;
+          }
+          result.add(getPathPrefix() + url);
+      }
+      return result.toArray(new String[0]);
   }
 
   //Add request url prefix
@@ -140,24 +164,7 @@ public class AppConfiguration implements WebMvcConfigurer {
     return StringUtils.removeEnd(pathPrefix, "/");
   }
 
-//  @Override
-//  public void addViewControllers(ViewControllerRegistry registry) {
-//    // 排除的文件扩展名
-//    String excludedPatterns = ".*\\.(js|css|map|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$";
-//
-//    // 捕获所有请求，但排除API、静态资源和某些已知路径
-//    registry.addViewController("/{path:^(?!api$|static$|swagger$|webjars$|v2$|v3$).*$}/**")
-//        .setViewName("forward:/index.html");
-//  }
 
-  /**
-   * Turn off suffix-based content negotiation
-   *
-   * @param configurer configurer
-   */
-//  @Override
-//  public void configureContentNegotiation(final ContentNegotiationConfigurer configurer) {
-//    configurer.favorPathExtension(false);
-//  }
+
 
 }

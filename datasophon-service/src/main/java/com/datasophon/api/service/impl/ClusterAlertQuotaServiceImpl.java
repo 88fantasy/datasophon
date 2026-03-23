@@ -118,9 +118,9 @@ public class ClusterAlertQuotaServiceImpl extends ServiceImpl<ClusterAlertQuotaM
       alertQuota.setQuotaState(QuotaState.RUNNING);
     }
 
-    if (alertQuotaList.size() > 0) {
+    if (!alertQuotaList.isEmpty()) {
       logger.info("start alert size is {}", alertQuotaList.size());
-      this.updateBatchById(alertQuotaList);
+      updateBatchById(alertQuotaList);
     }
     HashMap<Generators, List<AlertItem>> configFileMap = new HashMap<>();
     for (Map.Entry<String, List<ClusterAlertQuota>> entry : map.entrySet()) {

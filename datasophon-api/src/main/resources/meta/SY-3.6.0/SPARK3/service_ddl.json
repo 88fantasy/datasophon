@@ -4,7 +4,9 @@
   "description": "分布式计算系统",
   "version": "3.4.2",
   "sortNum": 7,
-  "dependencies":["HIVE"],
+  "dependencies": [
+    "HIVE"
+  ],
   "packageName": "spark-3.4.2-bin-hadoop3.tgz",
   "decompressPackageName": "spark-3.4.2-bin-hadoop3",
   "roles": [
@@ -18,15 +20,31 @@
       },
       "cardinality": "1+",
       "logFile": "logs/hadoop-${user}-datanode-${host}.log",
-      "resourceStrategies":[{
-        "type": "sh",
-        "commands": [
-          ["mkdir", "logs"],
-          ["cp", "/opt/datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar", "jars/"],
-          ["cp", "/opt/datasophon/DDP/packages/iceberg-spark-runtime-3.4_2.12-1.3.1.jar", "jars/"],
-          ["cp", "/opt/datasophon/DDP/packages/spark-doris-connector-3.4_2.12-1.3.2.jar", "jars/"]
-      ]
-      }
+      "resourceStrategies": [
+        {
+          "type": "sh",
+          "commands": [
+            [
+              "mkdir",
+              "logs"
+            ],
+            [
+              "cp",
+              "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+              "jars/"
+            ]
+          ]
+        },
+        {
+          "type": "nexus",
+          "from": "iceberg-spark-runtime-3.4_2.12-1.3.1.jar",
+          "to": "jars/iceberg-spark-runtime-3.4_2.12-1.3.1.jar"
+        },
+        {
+          "type": "nexus",
+          "from": "spark-doris-connector-3.4_2.12-1.3.2.jar",
+          "to": "jars/spark-doris-connector-3.4_2.12-1.3.2.jar"
+        }
       ]
     },
     {
@@ -39,30 +57,40 @@
       },
       "cardinality": "1",
       "logFile": "logs/spark-hive-org.apache.spark.sql.hive.thriftserver.HiveThriftServer2-1-${host}.out",
-      "resourceStrategies":[{
-        "type": "download",
-        "from": "script/control_spark_thrift.sh",
-        "to": "control_spark_thrift.sh"
-      }],
+      "resourceStrategies": [
+        {
+          "type": "download",
+          "from": "script/control_spark_thrift.sh",
+          "to": "control_spark_thrift.sh"
+        }
+      ],
       "startRunner": {
         "timeout": "60",
         "program": "control_spark_thrift.sh",
-        "args": ["start"]
+        "args": [
+          "start"
+        ]
       },
       "stopRunner": {
         "timeout": "600",
         "program": "control_spark_thrift.sh",
-        "args": ["stop"]
+        "args": [
+          "stop"
+        ]
       },
       "statusRunner": {
         "timeout": "60",
         "program": "control_spark_thrift.sh",
-        "args": ["status"]
+        "args": [
+          "status"
+        ]
       },
       "restartRunner": {
         "timeout": "60",
         "program": "control_spark_thrift.sh",
-        "args": ["restart"]
+        "args": [
+          "restart"
+        ]
       }
     }
   ],
@@ -114,7 +142,8 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "${HADOOP_HOME}/etc/hadoop"
-    },{
+    },
+    {
       "name": "YARN_CONF_DIR",
       "label": "Yarn配置文件目录",
       "description": "",
@@ -134,12 +163,16 @@
       "required": false,
       "type": "multipleWithKey",
       "value": [
-        {"SPARK_CLASSPATH":"${INSTALL_PATH}/spark3/carbonlib/*"},
-        {"HIVE_HOME":"${INSTALL_PATH}/hive"}
+        {
+          "SPARK_CLASSPATH": "${ROOT.VosManager.INSTALL_PATH}/spark3/carbonlib/*"
+        },
+        {
+          "HIVE_HOME": "${ROOT.VosManager.INSTALL_PATH}/hive"
+        }
       ],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": []
     },
     {
       "name": "custom.spark.defaults.conf",
@@ -149,19 +182,37 @@
       "required": false,
       "type": "multipleWithKey",
       "value": [
-        {"spark.sql.hive.metastore.jars":"/opt/datasophon/hive/lib/*"},
-        {"spark.sql.hive.metastore.version":"3.1.3"},
-        {"spark.yarn.jars":"hdfs:///spark3/jars/*.jar"},
-        {"spark.port.maxRetries":"100"},
-        {"spark.sql.catalog.hive_catalog":"org.apache.iceberg.spark.SparkCatalog"},
-        {"spark.sql.catalog.hive_catalog.type":"hive"},
-        {"spark.sql.catalog.hive_catalog.uri":"${hive.metastore.uris}"},
-        {"spark.sql.extensions":"org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"},
-        {"spark.sql.warehouse.dir":"/user/hive/warehouse"}
+        {
+          "spark.sql.hive.metastore.jars": "/data/install_datasophon/hive/lib/*"
+        },
+        {
+          "spark.sql.hive.metastore.version": "3.1.3"
+        },
+        {
+          "spark.yarn.jars": "hdfs:///spark3/jars/*.jar"
+        },
+        {
+          "spark.port.maxRetries": "100"
+        },
+        {
+          "spark.sql.catalog.hive_catalog": "org.apache.iceberg.spark.SparkCatalog"
+        },
+        {
+          "spark.sql.catalog.hive_catalog.type": "hive"
+        },
+        {
+          "spark.sql.catalog.hive_catalog.uri": "${hive.metastore.uris}"
+        },
+        {
+          "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
+        },
+        {
+          "spark.sql.warehouse.dir": "/user/hive/warehouse"
+        }
       ],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ""
+      "defaultValue": []
     }
   ]
 }

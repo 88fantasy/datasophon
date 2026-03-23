@@ -18,45 +18,39 @@
 package com.datasophon.worker.actor;
 
 import com.datasophon.common.command.ServiceRoleOperateCommand;
+import com.datasophon.common.enums.HookType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.strategy.ServiceRoleStrategy;
 import com.datasophon.worker.strategy.ServiceRoleStrategyContext;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+@Slf4j
+public class StartServiceActor extends HookTypedActor<ServiceRoleOperateCommand> {
 
-import akka.actor.UntypedActor;
-
-public class StartServiceActor extends UntypedActor {
-    
-    private static final Logger logger = LoggerFactory.getLogger(StartServiceActor.class);
-    
     @Override
-    public void onReceive(Object msg) throws Throwable {
-        if (msg instanceof ServiceRoleOperateCommand) {
-            ServiceRoleOperateCommand command = (ServiceRoleOperateCommand) msg;
-            logger.info("start to start service role {}", command.getServiceRoleName());
-            ExecResult startResult = new ExecResult();
-            ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
-            
-            ServiceRoleStrategy serviceRoleHandler =
-                    ServiceRoleStrategyContext.getServiceRoleHandler(command.getServiceRoleName());
-            if (Objects.nonNull(serviceRoleHandler)) {
-                startResult = serviceRoleHandler.handler(command);
-            } else {
-                startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                        command.getDecompressPackageName(), command.getRunAs());
-            }
-            
-            getSender().tell(startResult, getSelf());
-            logger.info("service role {} start result {}", command.getServiceRoleName(),
-                    startResult.getExecResult() ? "success" : "failed");
-        } else {
-            unhandled(msg);
-        }
-        
+    protected void doOnReceive(ServiceRoleOperateCommand command) throws Throwable {
+        doWithTellResult(command.getCommandType(), command, ()-> {
+            log.info("start to start service role {}", command.getServiceRoleName());
+            ExecResult startResult = invokeFunctions(
+                    () -> invokeHook(command.getHooks(), HookType.PRE_START, command, command.getVariables()),
+                    () -> {
+                        ServiceRoleStrategy serviceRoleHandler = ServiceRoleStrategyContext.getServiceRoleHandler(command.getServiceRoleName());
+                        if (Objects.nonNull(serviceRoleHandler)) {
+                            return serviceRoleHandler.handler(command);
+                        } else {
+                            ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
+                            return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(), command,
+                                    command.getRunAs(), command.isCheckStatus());
+                        }
+                    },
+                    () -> invokeHook(command.getHooks(), HookType.POST_START, command, command.getVariables())
+            );
+            log.info("service role {} start result {}", command.getServiceRoleName(), startResult.getExecResult() ? "success" : "failed");
+            return startResult;
+        });
     }
+
 }

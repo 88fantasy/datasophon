@@ -2,6 +2,7 @@ package com.datasophon.worker.strategy.resource;
 
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.worker.utils.JuicefsUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -29,18 +30,21 @@ public class FrontendStrategy extends ResourceStrategy {
 
     @Override
     public ExecResult exec() {
+        logger.info("开始执行资源策略:{}...", type());
         ExecResult execResult = new ExecResult();
         if (StringUtils.isNotEmpty(meta)) {
             String metaUrl = variables.get(meta);
             if (StringUtils.isEmpty(metaUrl)) {
+                logger.error("{} {} 的变量{}未找到juicefs元数据地址", service, serviceRole, meta);
                 execResult.setExecErrOut("缺少juicefs元数据地址");
                 return execResult;
             }
+            metaUrl = PlaceholderUtils.replacePlaceholders(metaUrl, variables, Constants.REGEX_VARIABLE);
             try {
                 JuicefsUtil.installFrontend(logger, metaUrl, basePath + Constants.SLASH + source, target);
                 execResult.setExecResult(true);
-            } catch (IOException e) {
-                logger.error("上传失败: " + e.getMessage(), e);
+            } catch (Throwable e) {
+                logger.error("上传{}到{}失败: {}", source, target, e.getMessage(), e);
                 execResult.setExecErrOut(e.getMessage());
             }
         } else {

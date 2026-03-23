@@ -22,6 +22,7 @@ import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
@@ -46,14 +47,12 @@ public class HbaseHandlerStrategy extends AbstractHandlerStrategy implements Ser
             ArrayList<String> commands = new ArrayList<>();
             commands.add("sh");
             commands.add("./enable-hbase-plugin.sh");
-            if (!FileUtil.exist(Constants.INSTALL_PATH + Constants.SLASH + command.getDecompressPackageName()
-                    + "/ranger-hbase-plugin/success.id")) {
-                ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH + Constants.SLASH
-                        + command.getDecompressPackageName() + "/ranger-hbase-plugin", commands, 30L, logger);
+            String installHome = PkgInstallPathUtils.getInstallHome(command);
+            if (!FileUtil.exist(installHome + "/ranger-hbase-plugin/success.id")) {
+                ExecResult execResult = ShellUtils.execWithStatus(installHome + "/ranger-hbase-plugin", commands, 30L, logger);
                 if (execResult.getExecResult()) {
                     logger.info("enable ranger hbase plugin success");
-                    FileUtil.writeUtf8String("success", Constants.INSTALL_PATH + Constants.SLASH
-                            + command.getDecompressPackageName() + "/ranger-hbase-plugin/success.id");
+                    FileUtil.writeUtf8String("success", installHome + "/ranger-hbase-plugin/success.id");
                 } else {
                     logger.info("enable ranger hbase plugin failed");
                     return execResult;
@@ -75,7 +74,7 @@ public class HbaseHandlerStrategy extends AbstractHandlerStrategy implements Ser
             ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chmod 777 /hbase");
         }
         startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command.getDecompressPackageName(), command.getRunAs());
+                command, command.getRunAs(), command.isCheckStatus());
         
         return startResult;
         

@@ -7,6 +7,14 @@
   "dependencies": [],
   "packageName": "alertmanager-0.23.0.tar.gz",
   "decompressPackageName": "alertmanager-0.23.0",
+  "arch":{
+    "x86_64": {
+      "packageName": "alertmanager-0.23.0.tar.gz"
+    },
+    "aarch64": {
+      "packageName": "alertmanager-0.23.0-arm.tar.gz"
+    }
+  },
   "roles": [
     {
       "name": "AlertManager",
@@ -82,7 +90,7 @@
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${apiHost}:${apiPort}"
+      "defaultValue": "${ROOT.VosManager.__hostIp__}:${ROOT.VosManager.__port__}"
     }
   ]
 }

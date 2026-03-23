@@ -1,15 +1,5 @@
 package com.datasophon.worker.utils;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.collections.list.GrowthList;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -17,8 +7,12 @@ import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 public class YamlParser {
 
     private static final Logger logger = LoggerFactory.getLogger(YamlParser.class);
@@ -282,33 +276,6 @@ public class YamlParser {
         return true;
     }
 
-
-    public static void main(String[] args) throws IOException {
-//        File file = new File(YamlParser.class.getResource("/").getFile() + "test.yml");
-//        String content = Files.toString(file, Charsets.UTF_8);
-//        Map<String, Object> a= YamlParser.yamlToFlattenedMap(content);
-//        System.out.println(a);
-//
-//        Map<String, Object> b = YamlParser.yamlToMultilayerMap(content);
-//        System.out.println(b);
-
-        Map<String, Object> b = new LinkedHashMap<>();
-        b.put("apisix.node_listen", 9080);
-        b.put("etcd.host", Arrays.asList("http://127.0.0.1:2379", "http://127.0.0.2:2379"));
-
-        Map<String,String> adminKey = new LinkedHashMap<>();
-        adminKey.put("name", "admin");
-        adminKey.put("key", "edd1c9f034335f136f87ad84b625c8f1");
-        adminKey.put("role", "admin");
-        b.put("apisix.admin_key", Collections.singletonList(adminKey));
-
-
-        String c = YamlParser.multilayerMapToYaml(b);
-        System.out.println(c);
-        String d = YamlParser.flattenedMapToYaml(b);
-        System.out.println(d);
-
-    }
 
 
 

@@ -58,7 +58,7 @@ public class InitRegistryUpload extends InitBase {
 
         log.info("制品库开始上传,url:{}", baseUrl);
         long ts = System.currentTimeMillis();
-        Pair<Map<String, String>, Map<String, String>> result = NexusFileUtils.repositoryUploadBatch(packagesFullDir, baseUrl, username, password);
+        Pair<Map<String, String>, Map<String, String>> result = NexusFileUtils.repositoryUploadBatch(packagesFullDir, baseUrl, username, password, true);
         log.info("制品库上传完成,耗时:{}s.成功数量:{}, 失败数量:{}.", (System.currentTimeMillis() - ts) / 1000.0, result.getLeft().size(), result.getRight().size());
         return true;
     }

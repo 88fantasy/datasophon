@@ -38,16 +38,16 @@ import static com.datasophon.common.Constants.GRAFANA_PATH;
 @Service("clusterServiceDashboardService")
 public class ClusterServiceDashboardServiceImpl
         extends
-            ServiceImpl<ClusterServiceDashboardMapper, ClusterServiceDashboard>
+        ServiceImpl<ClusterServiceDashboardMapper, ClusterServiceDashboard>
         implements
-            ClusterServiceDashboardService {
-    
+        ClusterServiceDashboardService {
+
     @Value("${datasophon.proxy-grafana.enable:false}")
     private boolean proxy;
-    
+
     @Value("${server.servlet.context-path}")
     private String contextPath;
-    
+
     @Override
     public Result getDashboardUrl(Integer clusterId) {
         ClusterServiceDashboard dashboard = getOne(new QueryWrapper<ClusterServiceDashboard>().eq(Constants.SERVICE_NAME, "TOTAL"));
@@ -57,13 +57,13 @@ public class ClusterServiceDashboardServiceImpl
             return Result.error("缺少集群总览");
         }
     }
-    
+
     @Override
     public String getGrafanaHost(Integer clusterId) {
-        Map<String, String> globalVariables = GlobalVariables.get(clusterId);
-        return globalVariables.get("${grafanaHost}") + ":3000";
+        String host = GlobalVariables.getValue(clusterId, "GRAFANA.Grafana.__hostIp__");
+        return host + ":3000";
     }
-    
+
     @Override
     public String getDashboardUrl(Integer clusterId, ClusterServiceDashboard dashboard) {
         String url = dashboard.getDashboardUrl();
@@ -74,7 +74,7 @@ public class ClusterServiceDashboardServiceImpl
             }
             return contextPath + GRAFANA_PATH + "/" + clusterId + url;
         } else {
-            Map<String, String> globalVariables = GlobalVariables.get(clusterId);
+            Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
             return PlaceholderUtils.replacePlaceholders(dashboard.getDashboardUrl(), globalVariables,
                     Constants.REGEX_VARIABLE);
         }

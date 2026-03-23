@@ -17,22 +17,15 @@
 
 package com.datasophon.api.strategy;
 
-import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.host.ClusterHostService;
-import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SpringTool;
-import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.dao.entity.ClusterHostDO;
-import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class EtcdHandlerStrategy implements ServiceRoleStrategy {
     
@@ -44,14 +37,13 @@ public class EtcdHandlerStrategy implements ServiceRoleStrategy {
             // 保存etcdNodeList到全局变量
             ClusterHostService clusterHostService = SpringTool.getApplicationContext().getBean(ClusterHostService.class);
             List<ClusterHostDO> hs = clusterHostService.lambdaQuery().in(ClusterHostDO::getHostname, hosts).list();
-            Map<String, String> globalVariables = GlobalVariables.get(clusterId);
             // initial-cluster
             String etcdNodeList = hs.stream().map(s -> s.getHostname() + "=http://" + s.getIp() + ":2380").collect(Collectors.joining(","));
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${etcd-node-list}", etcdNodeList);
+            ProcessUtils.generateClusterVariable(clusterId, serviceName, "etcd-node-list", etcdNodeList);
 
             // advertise-client-urls
             String advertiseClientUrls = hs.stream().map(s -> "http://" + s.getIp() + ":2379").collect(Collectors.joining(","));
-            ProcessUtils.generateClusterVariable(globalVariables, clusterId, serviceName, "${etcd-advertise-client-urls}", advertiseClientUrls);
+            ProcessUtils.generateClusterVariable(clusterId, serviceName, "etcd-advertise-client-urls", advertiseClientUrls);
         }
     }
 

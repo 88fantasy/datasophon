@@ -1318,10 +1318,10 @@
       "required": true,
       "configType": "map",
       "type": "input",
-      "value": "jdbc:mysql://${feMaster}:9030/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
+      "value": "jdbc:mysql://${DORIS.feMaster}:9030/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "jdbc:mysql://${feMaster}:9030/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
+      "defaultValue": "jdbc:mysql://${DORIS.feMaster}:9030/operation?useSSL=false&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true"
     },
     {
       "name": "operationRedisDcMode",

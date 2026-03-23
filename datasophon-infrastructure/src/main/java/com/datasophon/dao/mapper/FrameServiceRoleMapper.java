@@ -17,11 +17,10 @@
 
 package com.datasophon.dao.mapper;
 
-import com.datasophon.dao.entity.FrameServiceRoleEntity;
-
-import org.apache.ibatis.annotations.Mapper;
-
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.datasophon.dao.entity.FrameServiceRoleEntity;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 框架服务角色表
@@ -32,5 +31,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 @Mapper
 public interface FrameServiceRoleMapper extends BaseMapper<FrameServiceRoleEntity> {
-    
+
+
+
+    String getServiceName(@Param("frameCode") String frameCode, @Param("serviceRoleName")String serviceRoleName);
 }

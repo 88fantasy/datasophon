@@ -52,12 +52,10 @@ public class TaskLogFilter extends Filter<ILoggingEvent> {
     @Override
     public FilterReply decide(ILoggingEvent event) {
         FilterReply filterReply = FilterReply.DENY;
-        if ((event.getLoggerName().startsWith(TaskConstants.TASK_LOG_LOGGER_NAME))
-                || event.getLevel().isGreaterOrEqual(level)) {
+        if ((event.getLoggerName().startsWith(TaskConstants.TASK_LOG_LOGGER_NAME)) || event.getLevel().isGreaterOrEqual(level)) {
             filterReply = FilterReply.ACCEPT;
         }
-        logger.debug("task log filter, thread name:{}, loggerName:{}, filterReply:{}, level:{}", event.getThreadName(),
-                event.getLoggerName(), filterReply.name(), level);
+        logger.debug("task log filter, thread name:{}, loggerName:{}, filterReply:{}, level:{}", event.getThreadName(), event.getLoggerName(), filterReply.name(), level);
         return filterReply;
     }
 }
