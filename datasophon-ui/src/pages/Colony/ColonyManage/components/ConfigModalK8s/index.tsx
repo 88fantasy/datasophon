@@ -33,13 +33,6 @@ const Index = ({
         const clusterId = record?.id
         values.clusterId = clusterId
 
-        // const value = commonMonacoEditorRef.current.editor.getValue()
-
-        // if (!value) {
-        //     return showMsgAfferRequest('kubeConfig kubeConfig',)
-        // }
-
-        // values.kubeConfig = value
 
         const res = await axiosJsonPost(API.saveOrUpdateK8sConfig, values);
 
@@ -141,6 +134,7 @@ const Index = ({
                             <ProFormItemRender
                                 label="配置文件"
                                 name="kubeConfig"
+                                rules={requireRules}
                             >
 
                                 {
