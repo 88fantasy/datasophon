@@ -43,7 +43,6 @@ const Index = ({
             res = k8sColumns
         }
 
-        console.log('res', res)
 
         return res
     }, [columns, k8sColumns, state])
