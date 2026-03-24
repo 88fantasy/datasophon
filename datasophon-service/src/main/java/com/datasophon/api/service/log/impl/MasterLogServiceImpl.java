@@ -22,7 +22,7 @@ public class MasterLogServiceImpl implements MasterLogService {
         String path = Constants.MASTER_INSTALL_HOME + "/logs/datasophon-api.log";
         File file = new File(path);
         if (file.exists()) {
-            ExecResult result = ShellUtils.exec(Constants.MASTER_INSTALL_HOME, Arrays.asList("tail", "-n", rows + ""), 5);
+            ExecResult result = ShellUtils.exec(Constants.MASTER_INSTALL_HOME, Arrays.asList("tail", "-n", rows + "", path), 5);
             if (!result.isSuccess()) {
                 throw new BusinessException(String.format("获取日志失败, %s", result.getErrorTraceMessage()));
             }
