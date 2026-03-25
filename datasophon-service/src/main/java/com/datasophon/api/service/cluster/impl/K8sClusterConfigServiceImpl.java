@@ -1,4 +1,4 @@
-package com.datasophon.api.service.k8s.impl;
+package com.datasophon.api.service.cluster.impl;
 
 import akka.actor.ActorRef;
 import cn.hutool.core.bean.BeanUtil;
@@ -8,15 +8,15 @@ import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.ClusterActor;
 import com.datasophon.api.service.ClusterInfoService;
-import com.datasophon.api.service.k8s.K8sClusterConfigService;
+import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.common.command.ClusterCommand;
 import com.datasophon.common.enums.ClusterCommandType;
 import com.datasophon.dao.entity.ClusterInfoEntity;
-import com.datasophon.dao.entity.k8s.K8sClusterConfig;
+import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.k8s.K8sAuthType;
-import com.datasophon.dao.mapper.k8s.K8sClusterConfigMapper;
+import com.datasophon.dao.mapper.cluster.K8sClusterConfigMapper;
 import io.fabric8.kubernetes.client.Config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

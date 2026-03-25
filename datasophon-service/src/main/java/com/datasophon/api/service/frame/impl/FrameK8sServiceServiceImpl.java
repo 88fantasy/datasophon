@@ -1,10 +1,10 @@
-package com.datasophon.api.service.k8s.impl;
+package com.datasophon.api.service.frame.impl;
 
 import cn.hutool.core.collection.CollectionUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.datasophon.api.service.k8s.FrameK8sServiceService;
-import com.datasophon.dao.entity.k8s.FrameK8sServiceEntity;
-import com.datasophon.dao.mapper.k8s.FrameK8sServiceMapper;
+import com.datasophon.api.service.frame.FrameK8sServiceService;
+import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
+import com.datasophon.dao.mapper.frame.FrameK8sServiceMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

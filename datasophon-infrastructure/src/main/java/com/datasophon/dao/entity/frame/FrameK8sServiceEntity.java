@@ -1,4 +1,4 @@
-package com.datasophon.dao.entity.k8s;
+package com.datasophon.dao.entity.frame;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;

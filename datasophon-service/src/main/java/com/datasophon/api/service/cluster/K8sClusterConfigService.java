@@ -1,7 +1,7 @@
-package com.datasophon.api.service.k8s;
+package com.datasophon.api.service.cluster;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.datasophon.dao.entity.k8s.K8sClusterConfig;
+import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 
 /**
  * @author zhanghuangbin

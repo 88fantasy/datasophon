@@ -1,12 +1,12 @@
-package com.datasophon.api.controller.k8s;
+package com.datasophon.api.controller.cluster;
 
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.security.UserPermission;
-import com.datasophon.api.service.k8s.K8sClusterConfigService;
+import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.api.vo.k8s.K8sConnectionResult;
 import com.datasophon.common.utils.Result;
-import com.datasophon.dao.entity.k8s.K8sClusterConfig;
+import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;

@@ -1,7 +1,7 @@
-package com.datasophon.dao.mapper.k8s;
+package com.datasophon.dao.mapper.cluster;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.datasophon.dao.entity.k8s.K8sClusterConfig;
+import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

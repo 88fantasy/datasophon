@@ -19,7 +19,7 @@ package com.datasophon.api.vo.frameinfo;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.datasophon.dao.entity.FrameServiceEntity;
-import com.datasophon.dao.entity.k8s.FrameK8sServiceEntity;
+import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 import lombok.Data;
 
 import java.io.Serializable;

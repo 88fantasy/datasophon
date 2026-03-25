@@ -3,7 +3,7 @@ package com.datasophon.api.service.ddl;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
-import com.datasophon.dao.entity.k8s.FrameK8sServiceEntity;
+import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 
 import java.util.List;
 

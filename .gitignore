@@ -44,3 +44,12 @@ node/
 *.flattened-pom.xml
 /static
 logs
+
+AGENTS.md
+CLAUDE.md
+openspec
+.opencode
+.claude/commands/opsx
+.claude/skills/
+.github/skills/
+.github/prompts

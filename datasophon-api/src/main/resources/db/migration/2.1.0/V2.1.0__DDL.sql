@@ -34,3 +34,36 @@ create table `t_ddh_frame_k8s_service`
 ) DEFAULT CHARSET=utf8mb4 COMMENT = 'K8s集群框架定义';
 
 
+
+create table `t_ddh_k8s_cluster_namespace`
+(
+    `id`        int(11)      NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `cluster_id` int(11)      DEFAULT NULL COMMENT '集群 ID',
+    `state`     tinyint(4)   DEFAULT NULL COMMENT '管理状态 -1未知状态(即vos之前管理过这个数据，但是，后来找不到了) 0->namespace的状态为inactive 1namespace的状态为active',
+    `namespace` varchar(100) DEFAULT NULL COMMENT '名空间的信息',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4 COMMENT = 'k8s 集群名空间信息';
+
+create table `t_ddh_k8s_service_instance`
+(
+    `id`           int(11)      NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `cluster_id`   int(11)      DEFAULT NULL COMMENT '集群',
+    `namespace_id` int(11)      DEFAULT NULL COMMENT '名空间 ID',
+    `service_id`   int(11)      DEFAULT NULL COMMENT '服务 ID',
+    `state`        tinyint(4)   DEFAULT NULL COMMENT '管理状态 -1 未知状态 0 初始化 1 受控',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4 COMMENT = 'k8s 服务实例信息';
+
+create table `t_ddh_k8s_service_instance_values`
+(
+    `id`           int(11)      NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `cluster_id`   int(11)      DEFAULT NULL COMMENT '集群',
+    `namespace_id` int(11)      DEFAULT NULL COMMENT '名空间 ID',
+    `service_id`   int(11)      DEFAULT NULL COMMENT '服务 ID',
+    `instance_id`  int(11)      DEFAULT NULL COMMENT '实例 ID',
+    `values`       text         DEFAULT NULL COMMENT 'yaml 的文本',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4 COMMENT = 'k8s 服务实例变量信息';

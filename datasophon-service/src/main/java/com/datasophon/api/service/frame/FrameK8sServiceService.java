@@ -1,7 +1,7 @@
-package com.datasophon.api.service.k8s;
+package com.datasophon.api.service.frame;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.datasophon.dao.entity.k8s.FrameK8sServiceEntity;
+import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 
 import java.util.List;
 

@@ -6,10 +6,11 @@ import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.api.vo.k8s.K8sClusterStatus;
 import com.datasophon.api.vo.k8s.K8sConnectionResult;
+import com.datasophon.api.vo.k8s.K8sNamespace;
 import com.datasophon.common.function.ThrowableMapper;
 import com.datasophon.common.k8s.client.K8sClientFactory;
 import com.datasophon.common.k8s.config.ClientOptions;
-import com.datasophon.dao.entity.k8s.K8sClusterConfig;
+import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import io.fabric8.kubernetes.api.model.Namespace;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeCondition;
@@ -95,6 +96,22 @@ public class K8sServiceImpl implements K8sService {
             result.setInfo(String.format("测试连接性失败，原因： %s", message));
         }
         return result;
+    }
+
+
+    @Override
+    public List<K8sNamespace> listNamespaces(K8sClusterConfig config) {
+        return exec(newOptions(config), client -> {
+            List<Namespace> namespaces = client.namespaces().list().getItems();
+            return namespaces.stream()
+                    .map(ns-> {
+                        K8sNamespace namespace = new K8sNamespace();
+                        namespace.setName(ns.getMetadata().getName());
+                        namespace.setStatus("Active".equals(ns.getStatus().getPhase()) ? "active" : "inactive");
+                        return namespace;
+                    })
+                    .collect(Collectors.toList());
+        }, "获取 K8s 命名空间列表及状态");
     }
 
 
