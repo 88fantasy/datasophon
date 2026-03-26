@@ -22,7 +22,7 @@ import akka.actor.UntypedActor;
 import cn.hutool.core.util.ObjectUtil;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
-import com.datasophon.api.service.extrepo.ExtRepoInstallService;
+import com.datasophon.api.service.extrepo.VosProductInstallService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SpringTool;
@@ -120,8 +120,8 @@ public class WorkerStartActor extends UntypedActor {
                                               boolean needRestart) {
         ClusterServiceRoleInstanceService roleInstanceService =
                 SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
-        ExtRepoInstallService extRepoInstallService =
-                SpringTool.getApplicationContext().getBean(ExtRepoInstallService.class);
+        VosProductInstallService vosProductActionService =
+                SpringTool.getApplicationContext().getBean(VosProductInstallService.class);
         
         List<ClusterServiceRoleInstanceEntity> serviceRoleList = null;
         // 启动服务
@@ -154,7 +154,7 @@ public class WorkerStartActor extends UntypedActor {
                                 ClusterServiceRoleInstanceEntity::getServiceId,
                                 mapping(ClusterServiceRoleInstanceEntity::getId, toList())));
         try {
-            extRepoInstallService.generateAndExecSrvRoleCommands(clusterId, commandType, serviceRoleMap);
+            vosProductActionService.generateAndExecSrvRoleCommands(clusterId, commandType, serviceRoleMap);
             logger.info("Auto-start services successful");
         } catch (Exception e) {
             logger.info("Some service auto-start failed, please check logs of the services that failed to start.", e);

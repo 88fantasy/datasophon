@@ -6,11 +6,9 @@ import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Pair;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.api.dag.model.DagDefinition;
-import com.datasophon.api.dag.model.EdgeDefinition;
 import com.datasophon.api.dag.model.NodeDefinition;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
@@ -18,30 +16,22 @@ import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.DAGExecActor;
-import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.ClusterServiceCommandHostService;
 import com.datasophon.api.service.ClusterServiceCommandService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.FrameServiceRoleService;
-import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.ServiceInstallService;
-import com.datasophon.api.service.dag.DAGService;
-import com.datasophon.api.service.extrepo.ExtRepoInstallService;
+import com.datasophon.api.service.extrepo.VosProductInstallService;
 import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
 import com.datasophon.api.service.extrepo.ctx.ExecDAGBuilderContext;
 import com.datasophon.api.service.extrepo.ctx.SimpleServiceResource;
-import com.datasophon.api.service.extrepo.utils.MetaUtils;
-import com.datasophon.api.service.extrepo.utils.ServiceNodeExecUtils;
 import com.datasophon.api.service.host.ClusterHostService;
-import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.ServicePkgNameUtils;
-import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.api.vo.extrepo.DAGNode;
-import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
 import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.Constants;
@@ -57,7 +47,6 @@ import com.datasophon.common.model.ServiceNode;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.IdUtils;
-import com.datasophon.common.utils.YamlUtils;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceCommandEntity;
@@ -67,27 +56,20 @@ import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.FrameServiceRoleEntity;
-import com.datasophon.dao.entity.dag.DagDefinitionEntity;
 import com.datasophon.dao.entity.dag.NodeDefinitionEntity;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.RoleType;
 import com.datasophon.dao.enums.ServiceState;
-import com.datasophon.dao.enums.dag.DagStatus;
 import com.datasophon.dao.enums.dag.NodeStatus;
-import com.datasophon.dao.mapper.dag.DagDefinitionEntityMapper;
 import com.datasophon.dao.model.extrepo.DeploySrvModel;
 import com.datasophon.dao.model.extrepo.DeploySrvRoleModel;
 import com.datasophon.dao.model.extrepo.DeploymentModel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.io.File;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -105,23 +87,11 @@ import java.util.stream.Collectors;
 
 /**
  * @author zhanghuangbin
- * @date 2025/11/18
  */
-@Service("extRepoInstallService")
-@Transactional(rollbackFor = Exception.class)
-public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
+@Component("vosProductInstallService")
+@Slf4j
+public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport implements VosProductInstallService {
 
-    private static final Logger log = LoggerFactory.getLogger(ExtRepoInstallServiceImpl.class);
-
-    @Autowired
-    private UploadTempFileService uploadTempFileService;
-
-
-    @Autowired
-    private ClusterInfoService clusterInfoService;
-
-    @Autowired
-    private FrameServiceService frameService;
 
     @Autowired
     private ServiceInstallService serviceInstallService;
@@ -152,38 +122,16 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
     @Autowired
     private ClusterHostService clusterHostService;
 
-    @Autowired
-    private DAGService dagService;
-
-
-    @Autowired
-    private DagDefinitionEntityMapper dagDefinitionEntityMapper;
-
-    @Autowired
-    private TransactionalUtils transactionalUtils;
 
     @Override
-    public ValidateResultVO validDeploymentFile(DeploymentDTO dto) {
-        DeploymentModel model = doParseDeploymentFile(dto);
-        return validateDeploymentModel(model, dto);
-    }
-
-
-    private DeploymentModel doParseDeploymentFile(DeploymentDTO dto) {
-        File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId());
-        if (deploymentFile == null) {
-            throw new BusinessHintException("部署清单文件不存在");
-        }
-        String content = MetaUtils.decodeFile(deploymentFile, dto.getContentDecodePasswd());
-        DeploymentModel model = YamlUtils.parseYaml(content, DeploymentModel.class);
-
-        return model;
-    }
-
-    private ValidateResultVO validateDeploymentModel(DeploymentModel model, DeploymentDTO dto) {
+    public ValidateResultVO validateDeploymentModel(DeploymentModel model, DeploymentDTO dto) {
         List<String> errors = new ArrayList<>();
-        Set<String> deployHosts = model.getApp()
+        List<DeploySrvModel> apps = model.getApp()
                 .stream()
+                .filter(app -> app.getDeployType().equals("PHYSICAL"))
+                .collect(Collectors.toList());
+
+        Set<String> deployHosts = apps.stream()
                 .flatMap(app -> app.getRoles().stream())
                 .flatMap(role -> role.getDeployHosts().stream())
                 .collect(Collectors.toSet());
@@ -197,7 +145,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
         DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
-        model.getApp().forEach(app -> {
+        apps.forEach(app -> {
             FrameServiceEntity entity = ctx.getSrvEntity(app);
             if (entity == null) {
                 errors.add(String.format("服务%s %s不存在", app.getName(), app.getVersion()));
@@ -216,7 +164,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         if (errors.isEmpty()) {
             ValidateResultVO vo = new ValidateResultVO();
             List<ValidateResultVO.DeploySrvRoleModel> roles = new ArrayList<>();
-            model.getApp().forEach(app -> {
+            apps.forEach(app -> {
                 app.getRoles().forEach(role -> {
                     ValidateResultVO.DeploySrvRoleModel tmp = new ValidateResultVO.DeploySrvRoleModel();
                     tmp.setServiceName(app.getName());
@@ -232,7 +180,6 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             return new ValidateResultVO(errors);
         }
     }
-
 
     @Override
     public InstallResult deploy(DeploymentDTO dto) {
@@ -289,7 +236,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
                 invokeCommands(dagId, false, commandIds);
             }
         });
-        return new InstallResult(dagId, commandIds);
+        return new InstallResult(dagId);
     }
 
 
@@ -523,24 +470,15 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         }
     }
 
+
     @Override
     public void redeploy(RunDagDto dto) {
-        DagDefinition def = dagService.getDagById(dto.getDagId());
-        if (!Arrays.asList(DagStatus.PENDING, DagStatus.FAILED, DagStatus.CANCEL).contains(def.getStatus())) {
-            throw new BusinessHintException(String.format("当前任务的状态为%s，不允许重复运行", def.getStatus().name()));
-        }
-        if (def.getCreatedTime().plusDays(1).isBefore(LocalDateTime.now())) {
-            throw new BusinessHintException("任务已经过期, 不允许在运行");
-        }
         List<NodeDefinition> nodes = dagService.getNodesByDagId(dto.getDagId(), true);
-        if (nodes.isEmpty()) {
-            return;
-        }
         List<String> commandIds = new ArrayList<>();
         for (NodeDefinition node : nodes) {
             ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
 
-            if (!dto.isRestart() || !node.getStatus().equals(NodeStatus.SUCCESS)) {
+            if (dto.isRestart() && !node.getStatus().equals(NodeStatus.SUCCESS)) {
                 serviceNode.getMasterRoles().forEach(role -> {
                     Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + role.getServiceInstanceId());
                     if (roleGroupId == null) {
@@ -552,7 +490,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         }
 
         for (NodeDefinition node : nodes) {
-            if (!dto.isRestart() || !NodeStatus.SUCCESS.equals(node.getStatus())) {
+            if (dto.isRestart() && !NodeStatus.SUCCESS.equals(node.getStatus())) {
                 updateNode(node);
             }
         }
@@ -589,7 +527,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
             ClusterServiceInstanceEntity srvInstance = serviceInstanceService.getServiceInstanceByClusterIdAndServiceName(clusterId, serviceNode.getServiceName());
             if (srvInstance != null) {
                 List<ClusterServiceRoleInstanceEntity> instances = roleInstanceService.getServiceRoleInstanceListByServiceId(srvInstance.getId());
-                instances.forEach(instance-> {
+                instances.forEach(instance -> {
                     roleInstanceMap.put(String.format("%s-%s", instance.getHostname(), instance.getServiceRoleName()), instance);
                 });
             }
@@ -634,77 +572,6 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
 
 
     @Override
-    public InstallProgressDAG2 getDeployProgressDAG2(String dagId) {
-        DagDefinitionEntity def = dagDefinitionEntityMapper.selectById(dagId);
-        InstallProgressDAG2 result = BeanUtil.toBean(def, InstallProgressDAG2.class);
-
-        List<NodeDefinition> nodes = dagService.getNodesByDagId(dagId, true);
-        if (nodes.isEmpty()) {
-            return result;
-        }
-        result.setClusterId(def.getClusterId());
-        List<InstallProgressDAG2.Node> resultNodes = new ArrayList<>();
-        for (NodeDefinition node : nodes) {
-            InstallProgressDAG2.Node resultNode = BeanUtil.toBean(node, InstallProgressDAG2.Node.class);
-            ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
-
-            String cmdId = serviceNode.getCommandId();
-            resultNode.setCommandId(cmdId);
-            List<InstallProgressDAG2.SrvRole> roles = createSrvRole(cmdId, serviceNode);
-            resultNode.setRoles(roles);
-            resultNodes.add(resultNode);
-        }
-        result.setNodes(resultNodes);
-
-        List<InstallProgressDAG2.EdgeVO> edges = new ArrayList<>();
-        for (EdgeDefinition edgeDef : dagService.getEdgesByDagId(dagId)) {
-            InstallProgressDAG2.EdgeVO edge = new InstallProgressDAG2.EdgeVO();
-            edge.setId(edgeDef.getId());
-            edge.setStart(edgeDef.getFromNodeId());
-            edge.setEnd(edgeDef.getToNodeId());
-            edges.add(edge);
-        }
-        result.setEdges(edges);
-
-        return result;
-    }
-
-
-    private List<InstallProgressDAG2.SrvRole> createSrvRole(String cmdId, ServiceNode serviceNode) {
-        List<ClusterServiceCommandHostCommandEntity> hostCmdList = hostCommandService.lambdaQuery()
-                .eq(ClusterServiceCommandHostCommandEntity::getCommandId, cmdId)
-                .list();
-        Map<String, ClusterServiceCommandHostCommandEntity> map = CollectionUtil.toMap(hostCmdList, new HashMap<>(),
-                ClusterServiceCommandHostCommandEntity::getHostCommandId);
-        List<InstallProgressDAG2.SrvRole> roles = new ArrayList<>();
-
-
-        ServiceNodeExecUtils.getSortedRoleInfo(serviceNode.getCommandType(), serviceNode.getMasterRoles()).forEach(pair-> roles.add(newRole(pair, map)));
-        ServiceNodeExecUtils.getSortedRoleInfo(serviceNode.getCommandType(), serviceNode.getClientRoles()).forEach(pair-> roles.add(newRole(pair, map)));
-        ServiceNodeExecUtils.getSortedRoleInfo(serviceNode.getCommandType(), serviceNode.getWorkerRoles()).forEach(pair-> roles.add(newRole(pair, map)));
-        return roles;
-    }
-
-    private InstallProgressDAG2.SrvRole newRole(Pair<String, List<ServiceRoleInfo>> pair, Map<String, ClusterServiceCommandHostCommandEntity> map) {
-        InstallProgressDAG2.SrvRole role = new InstallProgressDAG2.SrvRole();
-        role.setRoleName(pair.getKey());
-        role.setCmdList(new ArrayList<>());
-        pair.getValue().forEach(serviceRole -> {
-            ClusterServiceCommandHostCommandEntity hostCmd = map.get(serviceRole.getHostCommandId());
-            if (hostCmd != null) {
-                InstallProgressDAG2.HostCmd cmd = BeanUtil.toBean(hostCmd, InstallProgressDAG2.HostCmd.class, CopyOptions.create().setIgnoreProperties("commandState"));
-                if (hostCmd.getCommandState() != null) {
-                    cmd.setCommandState(hostCmd.getCommandState().name());
-                    cmd.setCommandStateName(hostCmd.getCommandState().getDesc());
-                }
-                role.getCmdList().add(cmd);
-            }
-        });
-        return role;
-    }
-
-
-    @Override
     public String generateGenericInstallCommand(Integer clusterId, List<String> serviceNames) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
@@ -728,14 +595,8 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         return dagId;
     }
 
-
     @Override
     public String generateAndExecSrvInstCmd(Integer clusterId, CommandType commandType, List<Integer> serviceInstanceIds) {
-        if (Arrays.asList(CommandType.UPGRADE_SERVICE, CommandType.INSTALL_SERVICE).contains(commandType)) {
-            throw new UnsupportedOperationException(String.format("command %s is not support", commandType));
-        }
-
-
         List<Integer> serviceFrameworkIds = new ArrayList<>();
         List<String> commandIds = new ArrayList<>();
         serviceInstanceIds.forEach(instId -> {
@@ -873,6 +734,7 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         return list;
     }
 
+
     @Override
     public List<FrameServiceRoleEntity> getServiceRoleListByDeployment(ServiceRoleQueryDTO dto) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
@@ -917,5 +779,4 @@ public class ExtRepoInstallServiceImpl implements ExtRepoInstallService {
         setHosts(list, dto);
         return list;
     }
-
 }

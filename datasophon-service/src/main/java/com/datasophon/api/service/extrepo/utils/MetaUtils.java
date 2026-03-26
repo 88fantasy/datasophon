@@ -60,7 +60,9 @@ public class MetaUtils {
      * 需要解密文件内容的文件
      */
     private static final List<String> ENCRYPT_FILES = Arrays.asList(
-            "config/meta/**/service_ddl.json"
+            "config/meta/**/vos_ddl/**/service_ddl.json",
+            "config/meta/**/k8s/**/manifest.yaml",
+            "config/meta/**/k8s/**/values.yaml"
     );
 
     private static final Logger log = LoggerFactory.getLogger(MetaUtils.class);
@@ -290,15 +292,7 @@ public class MetaUtils {
     }
 
     public static Path getImagePath(String root) {
-        return Paths.get(root, "images");
-    }
-
-    public static Path getFileRelativePath(String pkgName) {
-        return PathUtils.join("packages", "raw", pkgName);
-    }
-
-    public static Path getMd5FileRelativePath(String pkgName) {
-        return PathUtils.join("packages", "raw", getMd5FileName(pkgName));
+        return Paths.get(root, "packages","images");
     }
 
 

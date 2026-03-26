@@ -19,6 +19,12 @@ public class DeploySrvModel implements ServiceResource<DeploySrvModel>{
 
     private String desc;
 
+    private String deployType;
+
+    private String metaFileType;
+
+    private String namespace;
+
     private List<DeploySrvRoleModel> roles;
 
 

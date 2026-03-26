@@ -2,25 +2,35 @@ package com.datasophon.api.service.extrepo;
 
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
+import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
 import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.enums.CommandType;
-import com.datasophon.dao.model.extrepo.DeploymentModel;
 
 import java.util.List;
 
 /**
  * @author zhanghuangbin
+ * @date 2025/11/18
  */
-public interface ExtRepoInstallService {
+public interface ExtRepoInstallDelegateService {
 
-    ValidateResultVO validateDeploymentModel(DeploymentModel model, DeploymentDTO dto);
+    ValidateResultVO validDeploymentFile(DeploymentDTO dto);
 
     InstallResult deploy(DeploymentDTO dto);
 
+
     void redeploy(RunDagDto dto);
+
+
+    InstallProgressDAG2 getDeployProgressDAG2(String dagId);
+
 
     String generateGenericInstallCommand(Integer clusterId, List<String> serviceNames);
 
-    String generateAndExecSrvInstCmd(Integer clusterId, CommandType commandType, List<Integer> serviceInstanceIds);
+    String generateAndExecSrvInstCmd(Integer clusterId, CommandType command, List<Integer> ids);
+
+
+
+
 }

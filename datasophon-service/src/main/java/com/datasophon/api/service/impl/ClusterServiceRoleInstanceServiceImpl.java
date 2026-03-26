@@ -35,7 +35,8 @@ import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
-import com.datasophon.api.service.extrepo.ExtRepoInstallService;
+import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
+import com.datasophon.api.service.extrepo.VosProductInstallService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.GetLogCommand;
@@ -93,7 +94,10 @@ public class ClusterServiceRoleInstanceServiceImpl
 
 
     @Autowired
-    private ExtRepoInstallService extRepoInstallService;
+    private ExtRepoInstallDelegateService extRepoInstallDelegateService;
+
+    @Autowired
+    private VosProductInstallService vosProductActionService;
 
     @Autowired
     private ClusterServiceInstanceRoleGroupService roleGroupService;
@@ -247,7 +251,7 @@ public class ClusterServiceRoleInstanceServiceImpl
                 .eq(Constants.NEET_RESTART, NeedRestart.YES));
         if (Objects.nonNull(list) && !list.isEmpty()) {
             List<Integer> ids = list.stream().map(ClusterServiceRoleInstanceEntity::getId).collect(Collectors.toList());
-            extRepoInstallService.generateAndExecSrvRoleCmd(roleGroup.getClusterId(), CommandType.RESTART_SERVICE, roleGroup.getServiceInstanceId(), ids);
+            vosProductActionService.generateAndExecSrvRoleCmd(roleGroup.getClusterId(), CommandType.RESTART_SERVICE, roleGroup.getServiceInstanceId(), ids);
         } else {
             return Result.error(Status.ROLE_GROUP_HAS_NO_OUTDATED_SERVICE.getMsg());
         }

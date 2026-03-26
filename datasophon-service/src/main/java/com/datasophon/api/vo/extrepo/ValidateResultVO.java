@@ -19,6 +19,9 @@ public class ValidateResultVO {
     @Schema(description = "部署进程清单")
     private List<DeploySrvRoleModel> roles;
 
+    @Schema(description = "部署的K8S服务")
+    private List<DeployK8sServiceModel> k8sServices;
+
 
     public ValidateResultVO() {
     }
@@ -47,5 +50,22 @@ public class ValidateResultVO {
         @Schema(description = "部署主机")
         private List<String> deployHosts;
     }
+
+
+    @Data
+    public static class DeployK8sServiceModel {
+
+        @Schema(description = "服务名")
+        private String serviceName;
+
+        @Schema(description = "服务版本")
+        private String version;
+
+        @Schema(description = "名空间")
+        private String namespace;
+
+
+    }
+
 
 }

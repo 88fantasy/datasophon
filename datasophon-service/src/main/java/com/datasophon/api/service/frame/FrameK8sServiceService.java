@@ -11,4 +11,7 @@ import java.util.List;
 public interface FrameK8sServiceService extends IService<FrameK8sServiceEntity> {
 
     List<FrameK8sServiceEntity> listSimpleService(List<Integer> frameIds);
+
+
+    List<FrameK8sServiceEntity> getByFrameCode(String clusterFrame);
 }

@@ -24,7 +24,8 @@ import com.datasophon.api.enums.Status;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.ClusterServiceCommandService;
 import com.datasophon.api.service.dag.DAGService;
-import com.datasophon.api.service.extrepo.ExtRepoInstallService;
+import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
+import com.datasophon.api.service.extrepo.VosProductInstallService;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ConverterUtils;
 import com.datasophon.common.utils.Result;
@@ -51,7 +52,10 @@ public class ClusterServiceCommandController extends ApiController {
 
 
     @Autowired
-    private ExtRepoInstallService extRepoInstallService;
+    private ExtRepoInstallDelegateService extRepoInstallDelegateService;
+
+    @Autowired
+    private VosProductInstallService vosProductActionService;
 
     @Autowired
     private DAGService dagService;
@@ -78,7 +82,7 @@ public class ClusterServiceCommandController extends ApiController {
     @Operation(summary = "生成通用安装命令")
     public Result generateGenericInstallCommand(Integer clusterId, String serviceNames) {
         List<String> list = Arrays.asList(serviceNames.split(","));
-        return Result.success(extRepoInstallService.generateGenericInstallCommand(clusterId, list));
+        return Result.success(extRepoInstallDelegateService.generateGenericInstallCommand(clusterId, list));
     }
 
 
@@ -90,7 +94,7 @@ public class ClusterServiceCommandController extends ApiController {
         CommandType command = EnumUtil.fromString(CommandType.class, commandType);
         if (StringUtils.isNotBlank(serviceInstanceIds)) {
             List<Integer> ids = ConverterUtils.convertIds(serviceInstanceIds, Integer::parseInt);
-            return Result.success(extRepoInstallService.generateAndExecSrvInstCmd(clusterId, command, ids));
+            return Result.success(extRepoInstallDelegateService.generateAndExecSrvInstCmd(clusterId, command, ids));
         } else {
             return Result.error(Status.NO_SERVICE_EXECUTE.getMsg());
         }
@@ -104,7 +108,7 @@ public class ClusterServiceCommandController extends ApiController {
         List<Integer> ids = ConverterUtils.convertIds(serviceRoleInstancesIds, Integer::parseInt);
         if (CollectionUtil.isNotEmpty(ids)) {
             CommandType command = EnumUtil.fromString(CommandType.class, commandType);
-            return Result.success(extRepoInstallService.generateAndExecSrvRoleCmd(clusterId, command, serviceInstanceId, ids));
+            return Result.success(vosProductActionService.generateAndExecSrvRoleCmd(clusterId, command, serviceInstanceId, ids));
         } else {
             return Result.error(Status.NO_SERVICE_EXECUTE.getMsg());
         }
