@@ -427,6 +427,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             entity.setServiceName(serviceName);
             entity.setFrameId(frameInfo.getId());
         }
+        entity.setType(serviceInfo.getType());
         entity.setServiceDesc(serviceInfo.getDescription());
         entity.setDependencies(serviceInfo.getDependencies());
         entity.setArtifact(JSONObject.toJSONString(serviceInfo.getArtifact()));

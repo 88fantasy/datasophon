@@ -21,6 +21,8 @@ public class K8sServiceInfo {
 
     private String description;
 
+    private String type;
+
     private List<String> dependencies = new ArrayList<>(0);
 
     @NotNull(message = "artifact不能为null")

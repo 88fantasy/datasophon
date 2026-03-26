@@ -47,5 +47,8 @@ public class FrameK8sServiceEntity implements Serializable {
     @Schema(description = "定义的内容")
     private String manifestJson;
 
+    @Schema(description = "分类， ENVIRONMENT=基础环境, MIDDLEWARE=中间件, APPLICATION=应用")
+    private String type;
+
 
 }

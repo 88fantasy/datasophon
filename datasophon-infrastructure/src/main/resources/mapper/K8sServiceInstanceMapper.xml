@@ -28,6 +28,7 @@
             b.namespace AS namespace,
             a.service_id AS service_id,
             c.service_name AS service_name,
+            c.type as catalog,
             a.state
         FROM
             t_ddh_k8s_service_instance a

@@ -21,6 +21,9 @@ public class K8sServiceInstanceVO {
     @Schema(description = "名空间")
     private String namespace;
 
+    @Schema(description = "分类， ENVIRONMENT=基础环境, MIDDLEWARE=中间件, APPLICATION=应用")
+    private String catalog;
+
     @Schema(description = "服务ID")
     private Integer serviceId;
 
