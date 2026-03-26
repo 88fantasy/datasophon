@@ -23,8 +23,22 @@ const Index = ({
 
         const res = await axiosJsonPost(API.clusterK8sConfigTestConnection, values)
 
+        // if (res.data?.success) {
+        //     onCancelClickProxy()
+        // } else {
+        //     showMsgAfferRequest({
+        //         msg: res.data.message
+        //     })
+        // }
 
-        showMsgAfferRequest(res)
+
+        if (res.data?.info) {
+            showMsgAfferRequest({
+                msg: res.data.info
+            })
+        } else {
+            showMsgAfferRequest(res)
+        }
     }, [record?.id]);
 
 
@@ -35,6 +49,12 @@ const Index = ({
 
 
         const res = await axiosJsonPost(API.saveOrUpdateK8sConfig, values);
+
+
+
+
+
+
 
         showMsgAfferRequest(res);
 
