@@ -38,4 +38,7 @@ public class K8sClusterNamespaceController extends ApiController {
         List<K8sClusterNamespace> namespaces = k8sClusterNamespaceService.listAndUpdateNamespaceByClusterId(clusterId);
         return Result.success(namespaces);
     }
+
+
+
 }

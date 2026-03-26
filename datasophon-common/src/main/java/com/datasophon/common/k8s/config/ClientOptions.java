@@ -20,9 +20,5 @@ public class ClientOptions {
 
     private String password;
 
-    private boolean fastFail;
-
-    private String namespace;
-
 
 }

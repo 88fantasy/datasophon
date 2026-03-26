@@ -1,8 +1,14 @@
 package com.datasophon.api.service.k8s;
 
+import com.datasophon.api.dto.instance.K8sServiceInstanceQueryDTO;
 import com.datasophon.api.vo.k8s.K8sClusterStatus;
+import com.datasophon.api.vo.k8s.K8sConfigMapInfo;
 import com.datasophon.api.vo.k8s.K8sConnectionResult;
+import com.datasophon.api.vo.k8s.K8sDeploymentInfo;
+import com.datasophon.api.vo.k8s.K8sIngressInfo;
 import com.datasophon.api.vo.k8s.K8sNamespace;
+import com.datasophon.api.vo.k8s.K8sPodInfo;
+import com.datasophon.api.vo.k8s.K8sServiceInfo;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 
 import java.util.List;
@@ -13,6 +19,22 @@ import java.util.List;
 public interface K8sService {
 
     String READY = "Ready";
+
+    String VOS_ORG = "ltszyl.com/vos-";
+
+    String MANGED_BY_LABEL = VOS_ORG + "managed-by";
+
+    String MANGED_BY_LABEL_VALUE = "vos";
+
+    String SRV_INST_ID_LABEL = VOS_ORG + "service-instance-id";
+
+
+    String POD_TYPE = "pod";
+    String DEPLOYMENT_TYPE = "deployment";
+    String SERVICE_TYPE = "service";
+    String INGRESS_TYPE = "ingress";
+    String CONFIGMAP_TYPE = "configmap";
+
 
     K8sClusterStatus getState(K8sClusterConfig config);
 
@@ -26,4 +48,61 @@ public interface K8sService {
      * @return 命名空间名称到状态的映射 (active/inactive)
      */
     List<K8sNamespace> listNamespaces(K8sClusterConfig config);
+
+
+    /**
+     * 获取指定命名空间可管理的 K8s 资源类型
+     *
+     * @param config    K8s 集群配置
+     * @param namespace 命名空间
+     * @return 命名空间可管理的资源类型列表
+     */
+    List<String> getResourceTypes(K8sClusterConfig config, K8sServiceInstanceQueryDTO namespace);
+
+    /**
+     * 获取 Deployment 资源列表
+     *
+     * @param config    K8s 集群配置
+     * @param query     查询条件
+     * @return Deployment 资源列表
+     */
+    List<K8sDeploymentInfo> listDeployments(K8sClusterConfig config, K8sServiceInstanceQueryDTO query);
+
+    /**
+     * 获取 Pod 资源列表
+     *
+     * @param config    K8s 集群配置
+     * @param query     查询条件
+     * @return Pod 资源列表
+     */
+    List<K8sPodInfo> listPods(K8sClusterConfig config, K8sServiceInstanceQueryDTO query);
+
+
+    /**
+     * 获取 Service 资源列表
+     *
+     * @param config    K8s 集群配置
+     * @param query     查询条件
+     * @return Service 资源列表
+     */
+    List<K8sServiceInfo> listServices(K8sClusterConfig config, K8sServiceInstanceQueryDTO query);
+
+    /**
+     * 获取 Ingress 资源列表
+     *
+     * @param config    K8s 集群配置
+     * @param query     查询条件
+     * @return Ingress 资源列表
+     */
+    List<K8sIngressInfo> listIngresses(K8sClusterConfig config, K8sServiceInstanceQueryDTO query);
+
+    /**
+     * 获取 ConfigMap 资源列表
+     *
+     * @param config    K8s 集群配置
+     * @param query     查询条件
+     * @return ConfigMap 资源列表
+     */
+    List<K8sConfigMapInfo> listConfigMaps(K8sClusterConfig config, K8sServiceInstanceQueryDTO query);
+
 }

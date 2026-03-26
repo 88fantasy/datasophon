@@ -9,15 +9,15 @@ import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.ClusterActor;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
-import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.common.command.ClusterCommand;
 import com.datasophon.common.enums.ClusterCommandType;
+import com.datasophon.common.k8s.config.ClientOptions;
+import com.datasophon.common.k8s.config.KubeConfigParser;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.k8s.K8sAuthType;
 import com.datasophon.dao.mapper.cluster.K8sClusterConfigMapper;
-import io.fabric8.kubernetes.client.Config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,8 +34,6 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
     @Autowired
     private ClusterInfoService clusterInfoService;
 
-    @Autowired
-    private K8sService k8sService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -44,8 +42,18 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
         if (cluster == null || !ClusterArchType.k8s.equals(cluster.getArchType())) {
             throw new BusinessHintException("集群不存在或者或者集群架构不是k8s");
         }
-        String host = K8sAuthType.config_file.equals(config.getType()) ? Config.fromKubeconfig(config.getKubeConfig()).getMasterUrl() : config.getServerHost();
-        String cert = K8sAuthType.config_file.equals(config.getType()) ? Config.fromKubeconfig(config.getKubeConfig()).getCaCertData() : config.getServerCert();
+        String host;
+        String cert;
+        if (K8sAuthType.config_file.equals(config.getType())) {
+            KubeConfigParser parser = new KubeConfigParser();
+            ClientOptions options = parser.parse(config.getKubeConfig());
+            host = options.getServerName();
+            cert = options.getServerCert();
+        } else {
+            host = config.getServerHost();
+            cert = config.getServerCert();
+        }
+
         K8sClusterConfig db = getByClusterId(config.getClusterId());
         if (db == null) {
             db = BeanUtil.toBean(config, K8sClusterConfig.class);
@@ -72,6 +80,15 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
     @Override
     public K8sClusterConfig getByClusterId(Integer clusterId) {
         return lambdaQuery().eq(K8sClusterConfig::getClusterId, clusterId).one();
+    }
+
+    @Override
+    public K8sClusterConfig getInitConfig(Integer clusterId) {
+        K8sClusterConfig config = getByClusterId(clusterId);
+        if (config == null) {
+            throw new BusinessHintException("集群未初始化");
+        }
+        return config;
     }
 
     @Override

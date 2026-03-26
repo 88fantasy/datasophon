@@ -56,9 +56,9 @@ public class ExecResult implements Serializable {
 
     public String getErrorTraceMessage() {
         if (execErrOut != null) {
-            return execErrOut;
+            return "堆栈信息：" + execErrOut;
         }
-        return execOut;
+        return "错误信息:" + execOut;
     }
 
     public static ExecResult success(String out) {

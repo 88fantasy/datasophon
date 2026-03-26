@@ -61,7 +61,12 @@ public class ShellUtils {
             throw new IllegalArgumentException("Command must not be null or empty");
         }
         String cmd = String.join(" ", commandParts);
-        return exec(workPath, Arrays.asList("bash", "-c", cmd), timeoutInSecond);
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (osName.contains("windows")) {
+            return exec(workPath, Arrays.asList("cmd", "/c", cmd), timeoutInSecond);
+        } else {
+            return exec(workPath, Arrays.asList("bash", "-c", cmd), timeoutInSecond);
+        }
     }
 
 

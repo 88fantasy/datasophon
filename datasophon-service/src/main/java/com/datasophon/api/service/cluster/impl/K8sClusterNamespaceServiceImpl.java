@@ -2,6 +2,7 @@ package com.datasophon.api.service.cluster.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.datasophon.api.dto.instance.K8sNamespaceIdentityDTO;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
@@ -94,7 +95,7 @@ public class K8sClusterNamespaceServiceImpl extends ServiceImpl<K8sClusterNamesp
         // 4.3 需要设置为未知状态的命名空间（数据库中有，K8s 中没有）
         for (K8sClusterNamespace ns : dbNamespaces) {
             if (!k8sNamespaceSet.contains(ns.getNamespace())) {
-                if (isRef(ns.getId())) {
+                if (!isRef(ns.getId())) {
                     toDelete.add(ns.getId());
                 } else {
                     ns.setState(-1);
@@ -120,6 +121,15 @@ public class K8sClusterNamespaceServiceImpl extends ServiceImpl<K8sClusterNamesp
                 .eq(K8sClusterNamespace::getClusterId, clusterId)
                 .list();
     }
+
+    @Override
+    public K8sClusterNamespace getNamespace(K8sNamespaceIdentityDTO query) {
+        return lambdaQuery()
+                .eq(K8sClusterNamespace::getClusterId, query.getClusterId())
+                .eq(K8sClusterNamespace::getNamespace, query.getNamespace())
+                .one();
+    }
+
 
     private boolean isRef(Integer nsId) {
         // 检查 K8sServiceInstance 是否引用了该命名空间

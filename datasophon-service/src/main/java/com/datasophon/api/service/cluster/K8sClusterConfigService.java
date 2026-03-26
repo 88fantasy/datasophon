@@ -13,5 +13,7 @@ public interface K8sClusterConfigService extends IService<K8sClusterConfig> {
 
     K8sClusterConfig getByClusterId(Integer clusterId);
 
+    K8sClusterConfig getInitConfig(Integer clusterId);
+
     void removeByClusterId(Integer clusterId);
 }

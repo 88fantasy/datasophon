@@ -12,4 +12,8 @@ import org.springframework.stereotype.Service;
 @Service("k8sServiceInstanceValuesService")
 public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceInstanceValuesMapper, K8sServiceInstanceValues> implements K8sServiceInstanceValuesService {
 
+    @Override
+    public K8sServiceInstanceValues getByInstanceId(Integer instanceId) {
+        return lambdaQuery().eq(K8sServiceInstanceValues::getInstanceId, instanceId).orderByAsc(K8sServiceInstanceValues::getVersion).one();
+    }
 }

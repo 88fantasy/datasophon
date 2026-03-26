@@ -51,7 +51,7 @@ create table `t_ddh_k8s_service_instance`
     `cluster_id`   int(11)      DEFAULT NULL COMMENT '集群',
     `namespace_id` int(11)      DEFAULT NULL COMMENT '名空间 ID',
     `service_id`   int(11)      DEFAULT NULL COMMENT '服务 ID',
-    `state`        tinyint(4)   DEFAULT NULL COMMENT '管理状态 -1 未知状态 0 初始化 1 受控',
+    `state`        tinyint(4)   DEFAULT NULL COMMENT '管理状态 0初始化 1成功 2失败',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT = 'k8s 服务实例信息';
@@ -64,6 +64,7 @@ create table `t_ddh_k8s_service_instance_values`
     `service_id`   int(11)      DEFAULT NULL COMMENT '服务 ID',
     `instance_id`  int(11)      DEFAULT NULL COMMENT '实例 ID',
     `values`       text         DEFAULT NULL COMMENT 'yaml 的文本',
+    `version`      int          DEFAULT 1 COMMENT '版本',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT = 'k8s 服务实例变量信息';

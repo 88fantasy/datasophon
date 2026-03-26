@@ -109,7 +109,7 @@ public class ClusterActor extends TypedActor<ClusterCommand> {
 
                     ClusterState state = ClusterState.STOP;
                     if (CollectionUtil.isNotEmpty(status.getNodes())) {
-                        state = status.getNodes().stream().anyMatch(node -> K8sService.READY.equals(node.getStatus())) ? ClusterState.RUNNING : ClusterState.STOP;
+                        state = status.getNodes().stream().anyMatch(node -> "True".equals(node.getStatus())) ? ClusterState.RUNNING : ClusterState.STOP;
                     }
 
                     clusterInfoService.updateClusterState(cluster.getId(), state.getValue());

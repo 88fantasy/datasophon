@@ -30,4 +30,7 @@ public class K8sServiceInstanceValues implements Serializable {
 
     @Schema(description = "yaml的文本")
     private String values;
+
+    @Schema(description = "版本")
+    private Integer version;
 }
