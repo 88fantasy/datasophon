@@ -27,9 +27,12 @@ public class HelmClient {
         if (StrUtil.isNotBlank(path)) {
             return path;
         }
-        ExecResult result = ShellUtils.exec(null, Collections.singletonList("command -v helm"), -1);
-        if (result.isSuccess()) {
-            return result.getExecOut();
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (!osName.contains("window")) {
+            ExecResult result = ShellUtils.exec(null, Collections.singletonList("command -v helm"), -1);
+            if (result.isSuccess()) {
+                return result.getExecOut().trim();
+            }
         }
         return null;
     }

@@ -52,19 +52,38 @@ public class ShellUtils {
      * 执行 shell 命令（通过 sh -c 包装）
      *
      * @param workPath        工作目录（可为 null 或空，表示不切换目录）
-     * @param commandParts    命令及其参数列表，例如 ["mkdir", "-p", "tmp"]
+     * @param processCmdArgs    命令及其参数列表，例如 ["mkdir", "-p", "tmp"]
      * @param timeoutInSecond 超时时间（秒）
      * @return 执行结果封装对象
      */
-    public static ExecResult execWithBash(String workPath, List<String> commandParts, long timeoutInSecond) {
-        if (CollectionUtils.isEmpty(commandParts)) {
+    public static ExecResult execWithBash(String workPath, List<String> processCmdArgs, long timeoutInSecond) {
+        if (CollectionUtils.isEmpty(processCmdArgs)) {
             throw new IllegalArgumentException("Command must not be null or empty");
         }
-        String cmd = String.join(" ", commandParts);
         String osName = System.getProperty("os.name").toLowerCase();
         if (osName.contains("windows")) {
-            return exec(workPath, Arrays.asList("cmd", "/c", cmd), timeoutInSecond);
+            List<String> targets = new ArrayList<>();
+            targets.add("cmd");
+            targets.add("/c");
+            targets.addAll(processCmdArgs);
+            return exec(workPath, targets, timeoutInSecond);
         } else {
+            StringBuilder sb = new StringBuilder();
+            boolean first = true;
+            for (String command : processCmdArgs) {
+                if (first) {
+                    first = false;
+                } else {
+                    sb.append(" ");
+                }
+                if (command.contains(" ")) {
+                    String escape = "\"" + command.replace("\"", "\\\"") + "\"";
+                    sb.append(escape);
+                } else {
+                    sb.append(command);
+                }
+            }
+            String cmd = sb.toString();
             return exec(workPath, Arrays.asList("bash", "-c", cmd), timeoutInSecond);
         }
     }
@@ -74,16 +93,15 @@ public class ShellUtils {
      * 执行命令，不使用shell执行
      *
      * @param workPath
-     * @param commandParts
+     * @param processCmdArgs
      * @param timeout
      * @return
      */
-    public static ExecResult exec(String workPath, List<String> commandParts, long timeout) {
-        if (CollectionUtils.isEmpty(commandParts)) {
+    public static ExecResult exec(String workPath, List<String> processCmdArgs, long timeout) {
+        if (CollectionUtils.isEmpty(processCmdArgs)) {
             throw new IllegalArgumentException("Command must not be null or empty");
         }
 
-        List<String> args = formatArgs(commandParts);
 
         ExecResult result = new ExecResult();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -96,10 +114,10 @@ public class ShellUtils {
                 processBuilder.directory(new File(workPath));
             }
 
-            processBuilder.command(args);
+            processBuilder.command(processCmdArgs);
             processBuilder.redirectErrorStream(true);
 
-            logger.info("exec cmd: {}, workspace: {}", StrUtil.join(" ", args), workPath);
+            logger.info("exec cmd: {}, workspace: {}", StrUtil.join(" ", processCmdArgs), workPath);
             process = processBuilder.start();
 
             Process finalProcess = process;
@@ -127,10 +145,10 @@ public class ShellUtils {
             }
             result.setExecResult(execResult);
             result.setExecOut(message);
-            logger.info("exec cmd {} {}", String.join(" ", args), result.isSuccess() ? "success" : "fail");
+            logger.info("exec cmd {} {}", String.join(" ", processCmdArgs), result.isSuccess() ? "success" : "fail");
             return result;
         } catch (Exception e) {
-            logger.error("exec cmd fail, cmd: {}, message: {}", String.join(" ", args), e.getMessage(), e);
+            logger.error("exec cmd fail, cmd: {}, message: {}", String.join(" ", processCmdArgs), e.getMessage(), e);
             StringWriter sw = new StringWriter();
             e.printStackTrace(new PrintWriter(sw));
             result.setExecErrOut(sw.toString());
@@ -143,53 +161,6 @@ public class ShellUtils {
         }
     }
 
-
-    /**
-     * 将命令列表拼接成字符串，再按命令行参数规则分割。
-     * 支持双引号包裹的带空格参数（例如：echo "hello world" 解析为 [echo, hello world]）。
-     *
-     * @param commands 原始命令列表（例如 ["echo", "\"hello world\""]）
-     * @return 解析后的参数列表
-     */
-    private static List<String> formatArgs(List<String> commands) {
-        // 1. 用单个空格拼接所有元素
-        String joined = String.join(" ", commands);
-        List<String> result = new ArrayList<>();
-        int length = joined.length();
-        int i = 0;
-
-        while (i < length) {
-            // 跳过前导空格
-            while (i < length && joined.charAt(i) == ' ') {
-                i++;
-            }
-            if (i >= length) {
-                break;
-            }
-
-            char current = joined.charAt(i);
-            if (current == '"') {
-                // 处理双引号包裹的参数：找到下一个双引号，中间内容作为参数（不含引号）
-                i++; // 跳过左引号
-                int start = i;
-                while (i < length && joined.charAt(i) != '"') {
-                    i++;
-                }
-                String arg = joined.substring(start, i);
-                result.add(arg);
-                i++; // 跳过右引号
-            } else {
-                // 处理普通参数：直到遇到空格为止
-                int start = i;
-                while (i < length && joined.charAt(i) != ' ') {
-                    i++;
-                }
-                String arg = joined.substring(start, i);
-                result.add(arg);
-            }
-        }
-        return result;
-    }
 
     /**
      * @param pathOrCommand 脚本路径或者命令

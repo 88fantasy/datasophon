@@ -45,7 +45,7 @@ import java.util.TimeZone;
 @Data
 public class KubectlClient implements AutoCloseable {
 
-    private static ObjectMapper MAPPER;
+    private final ObjectMapper mapper;
 
     private final String kubectlPath;
     private final String kubeConfig;
@@ -57,19 +57,6 @@ public class KubectlClient implements AutoCloseable {
 
     private final File tempDir;
 
-    static {
-        JsonMapper.Builder builder = JsonMapper.builder();
-        builder.defaultDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
-        builder.defaultLocale(Locale.CHINA);
-        builder.defaultTimeZone(TimeZone.getTimeZone("GMT+8"));
-
-        builder.disable(MapperFeature.DEFAULT_VIEW_INCLUSION);
-        builder.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        builder.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-        builder.enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN);
-
-        MAPPER = builder.build();
-    }
 
     public static String detectKubectlPath() {
         String path = PropertyUtils.getString("kubectl.install_path");
@@ -110,6 +97,17 @@ public class KubectlClient implements AutoCloseable {
         this.username = options.getUsername();
         this.password = options.getPassword();
         this.serverName = options.getServerName();
+
+        JsonMapper.Builder builder = JsonMapper.builder();
+        builder.defaultDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
+        builder.defaultLocale(Locale.CHINA);
+        builder.defaultTimeZone(TimeZone.getTimeZone("GMT+8"));
+
+        builder.disable(MapperFeature.DEFAULT_VIEW_INCLUSION);
+        builder.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        builder.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        builder.enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN);
+        mapper = builder.build();
     }
 
     /**
@@ -126,7 +124,7 @@ public class KubectlClient implements AutoCloseable {
         if (StrUtil.isNotBlank(kubeConfig)) {
             commandParts.add("--kubeconfig");
 //            路径可能存在空格
-            commandParts.add(String.format("\"%s\"", kubeConfig));
+            commandParts.add(String.format("%s", kubeConfig));
         } else {
             if (StrUtil.isNotBlank(token)) {
                 commandParts.add("--token");
@@ -140,7 +138,7 @@ public class KubectlClient implements AutoCloseable {
             // 如果有证书，添加证书支持
             if (StrUtil.isNotBlank(serverCert)) {
                 commandParts.add("--certificate-authority");
-                commandParts.add(String.format("\"%s\"", serverCert));
+                commandParts.add(String.format("%s", serverCert));
             } else {
                 commandParts.add("--insecure-skip-tls-verify=true");
             }
@@ -179,7 +177,7 @@ public class KubectlClient implements AutoCloseable {
      * @return 版本字符串
      */
     public String getVersion() throws KubectlException {
-        ExecResult result = execute(Collections.singletonList("version"), 30);
+        ExecResult result = execute(Collections.singletonList("version"), 5);
         if (!result.isSuccess()) {
             throw new KubectlException("获取 K8s 版本失败：" + result.getExecOut());
         }
@@ -303,10 +301,10 @@ public class KubectlClient implements AutoCloseable {
      * 解析 K8s 资源列表 JSON
      */
     private <T> K8sResourceList<T> parseResourceList(String content, Class<T> resourceClass) throws KubectlException {
-        TypeFactory tf = MAPPER.getTypeFactory();
+        TypeFactory tf = mapper.getTypeFactory();
         JavaType type = tf.constructParametricType(K8sResourceList.class, resourceClass);
         try {
-            return MAPPER.readValue(content, type);
+            return mapper.readValue(content, type);
         } catch (JsonProcessingException e) {
            throw new KubectlException(String.format("解析结果错误失败，%s", e.getMessage()), e);
         }
@@ -340,7 +338,8 @@ public class KubectlClient implements AutoCloseable {
     @Override
     public void close() {
         if (tempDir != null) {
-            FileUtil.del(tempDir);
+//            FIXME　
+//            FileUtil.del(tempDir);
         }
     }
 }
