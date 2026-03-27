@@ -51,4 +51,15 @@ public class FrameK8sServiceEntity implements Serializable {
     private String type;
 
 
+    @Schema(description = "是否被选中")
+    @TableField(exist = false)
+    private Boolean selected;
+
+    @Schema(description = "部署清单采用的部署方式")
+    @TableField(exist = false)
+    private String metaFileType;
+
+    @Schema(description = "部署的名空间")
+    @TableField(exist = false)
+    private String namespace;
 }

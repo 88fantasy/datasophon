@@ -21,4 +21,5 @@ public interface K8sServiceInstanceService extends IService<K8sServiceInstance> 
 
 
 
+    K8sServiceInstance createIfAbsent(Integer clusterId, Integer namespaceId, Integer serviceId);
 }

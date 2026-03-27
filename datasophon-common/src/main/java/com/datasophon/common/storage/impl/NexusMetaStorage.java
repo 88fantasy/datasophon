@@ -2,16 +2,16 @@ package com.datasophon.common.storage.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.Constants;
-import com.datasophon.common.function.ThrowableSupplier;
 import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.storage.vo.ServiceMetaItem;
 import com.datasophon.common.utils.NexusFileUtils;
 import com.datasophon.common.utils.PathUtils;
+import com.datasophon.common.utils.nexus.NexusFacade;
+import com.datasophon.common.utils.nexus.vo.Component;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,9 +35,9 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
         validType(type);
         try {
             String ddlName = VOS_DDL.equals(type) ? Constants.SERVICE_DDL : Constants.MANIFEST_DDL;
-            List<NexusFileUtils.Component> components = NexusFileUtils.listMatchedItem(REPO, String.format("/meta/*/%s/*/%s", type, ddlName));
+            List<Component> components = NexusFacade.getCommonClient().listMatchedItem(REPO, String.format("/meta/*/%s/*/%s", type, ddlName));
             List<ServiceMetaItem> items = new ArrayList<>();
-            for (NexusFileUtils.Component component : components) {
+            for (Component component : components) {
                 ServiceMetaItem item = new ServiceMetaItem();
                 item.setType(type);
                 item.setDownloadUrl(component.getDownloadUrl());
@@ -69,7 +69,7 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
     }
 
     @Override
-    public void downResource(ServiceMetaItem item, String relativePath, ThrowableSupplier<OutputStream> supplier) throws Exception {
+    public void downResource(ServiceMetaItem item, String relativePath, OutputStreamSupplier supplier) throws IOException {
         String downloadUrl = item.getDownloadUrl();
         if (StrUtil.isBlank(downloadUrl)) {
             downloadUrl = String.format("/meta/%s/%s/%s/%s", item.getFramework(), item.getType(), item.getServiceName(), relativePath);
@@ -103,8 +103,8 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
     }
 
     @Override
-    public void removeVosDdl(String frameCode, String serviceName) {
-        NexusFileUtils.removeFolderFromRawRepo(String.format("/meta/%s/%s/%s", frameCode, VOS_DDL, serviceName));
+    public void removeMeta(String frameCode, String serviceName, String type) {
+        NexusFileUtils.removeFolderFromRawRepo(String.format("/meta/%s/%s/%s", frameCode, type, serviceName));
     }
 
 

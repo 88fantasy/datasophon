@@ -10,7 +10,6 @@ import com.datasophon.api.vo.k8s.K8sIngressInfo;
 import com.datasophon.api.vo.k8s.K8sPodInfo;
 import com.datasophon.api.vo.k8s.K8sServiceInfo;
 import com.datasophon.common.utils.Result;
-import com.datasophon.dao.entity.instance.K8sServiceInstanceValues;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -50,7 +49,7 @@ public class K8sServiceController extends ApiController {
     @PostMapping("listResourceType")
     @Operation(summary = "查询服务实例的资源类型列表")
     @ApiResponse(
-            content = {@Content(mediaType = "application/json", schema = @Schema(implementation = List.class))}
+            content = {@Content(mediaType = "application/json", schema = @Schema(implementation = String[].class))}
     )
     public Result listResourceType(@RequestBody K8sServiceInstanceQueryDTO query) {
         List<String> resourceTypes = k8sServiceInstanceService.listResourceType(query);
@@ -67,7 +66,6 @@ public class K8sServiceController extends ApiController {
                     K8sServiceInfo[].class,
                     K8sIngressInfo[].class,
                     K8sConfigMapInfo[].class,
-                    K8sServiceInstanceValues.class
             }))}
     )
     public Result listResource(@RequestBody K8sServiceInstanceQueryDTO query) {

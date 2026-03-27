@@ -64,6 +64,9 @@ public class ValidateResultVO {
         @Schema(description = "名空间")
         private String namespace;
 
+        @Schema(description = "部署的方式")
+        private String metaFileType;
+
 
     }
 

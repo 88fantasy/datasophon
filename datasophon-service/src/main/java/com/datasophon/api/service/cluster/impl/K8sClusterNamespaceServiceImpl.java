@@ -130,6 +130,21 @@ public class K8sClusterNamespaceServiceImpl extends ServiceImpl<K8sClusterNamesp
                 .one();
     }
 
+    @Override
+    public K8sClusterNamespace createIfAbsent(K8sNamespaceIdentityDTO identity) {
+        // 1. 根据 clusterId 和 namespace 查询 K8sClusterNamespace 对象，如果不存在则创建
+        K8sClusterNamespace namespace = getNamespace(identity);
+
+        if (namespace == null) {
+            namespace = new K8sClusterNamespace();
+            namespace.setClusterId(identity.getClusterId());
+            namespace.setNamespace(identity.getNamespace());
+            namespace.setState(0); // 默认设置为 active 状态
+            save(namespace);
+        }
+        return namespace;
+    }
+
 
     private boolean isRef(Integer nsId) {
         // 检查 K8sServiceInstance 是否引用了该命名空间

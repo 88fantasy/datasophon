@@ -7,7 +7,6 @@ import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
-import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
 import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.entity.cluster.K8sClusterNamespace;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
 
-import static com.datasophon.api.service.instance.K8sServiceInstanceValuesService.VOS_VALUES_TYPE;
 import static com.datasophon.api.service.k8s.K8sService.CONFIGMAP_TYPE;
 import static com.datasophon.api.service.k8s.K8sService.DEPLOYMENT_TYPE;
 import static com.datasophon.api.service.k8s.K8sService.INGRESS_TYPE;
@@ -42,8 +40,6 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
     @Autowired
     private K8sClusterConfigService k8sClusterConfigService;
 
-    @Autowired
-    private K8sServiceInstanceValuesService k8sServiceInstanceValuesService;
 
     @Override
     public List<K8sServiceInstanceVO> queryInstanceList(K8sNamespaceIdentityDTO query) {
@@ -64,17 +60,15 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
         K8sClusterConfig config = k8sClusterConfigService.getInitConfig(ns.getClusterId());
 
         List<String> types = k8sService.getResourceTypes(config, query);
-        types.add(VOS_VALUES_TYPE);
         return types;
     }
 
     @Override
     public Object listResource(K8sServiceInstanceQueryDTO query) {
-//        K8sServiceInstance instance = getById(query.getInstanceId());
-//        Objects.requireNonNull(instance);
+        K8sServiceInstance instance = getById(query.getInstanceId());
+        Objects.requireNonNull(instance);
 
-//        K8sClusterNamespace ns = k8sClusterNamespaceService.getById(instance.getNamespaceId());
-        K8sClusterNamespace ns = k8sClusterNamespaceService.getById(1);
+        K8sClusterNamespace ns = k8sClusterNamespaceService.getById(instance.getNamespaceId());
         query.setNamespace(ns.getNamespace());
         K8sClusterConfig config = k8sClusterConfigService.getInitConfig(ns.getClusterId());
 
@@ -90,11 +84,29 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
                 return k8sService.listIngresses(config, query);
             case CONFIGMAP_TYPE:
                 return k8sService.listConfigMaps(config, query);
-            case VOS_VALUES_TYPE:
-                k8sServiceInstanceValuesService.getByInstanceId(query.getInstanceId());
             default:
                 throw new BusinessHintException("不支持的资源类型：" + query.getResourceType());
         }
+    }
+
+    @Override
+    public K8sServiceInstance createIfAbsent(Integer clusterId, Integer namespaceId, Integer serviceId) {
+        // 2. 根据 serviceId 查询服务实例，如果不存在则创建
+        K8sServiceInstance instance =lambdaQuery()
+                .eq(K8sServiceInstance::getClusterId, clusterId)
+                .eq(K8sServiceInstance::getNamespaceId, namespaceId)
+                .eq(K8sServiceInstance::getServiceId, serviceId)
+                .one();
+
+        if (instance == null) {
+            instance = new K8sServiceInstance();
+            instance.setClusterId(clusterId);
+            instance.setNamespaceId(namespaceId);
+            instance.setServiceId(serviceId);
+            instance.setState(0); // 初始化状态
+            save(instance);
+        }
+        return instance;
     }
 
 

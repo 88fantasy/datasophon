@@ -1,10 +1,12 @@
 package com.datasophon.common.utils;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -30,6 +32,20 @@ public class PathUtils {
             FileUtil.mkdir(file);
         }
         return file;
+    }
+
+    public static File createTmpFile(String subDir, String suffix) {
+        File tmpDir = getTmpDir(subDir);
+        File tmpFile = new File(tmpDir, RandomUtil.randomString(12) + suffix);
+        if (!tmpFile.exists()) {
+            try {
+                tmpFile.createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        tmpFile.deleteOnExit();
+        return tmpFile;
     }
 
     public static Path join(String root, String... others) {

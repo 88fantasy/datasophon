@@ -8,6 +8,7 @@ import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
+import com.datasophon.api.service.extrepo.K8sProductInstallService;
 import com.datasophon.api.service.extrepo.VosProductInstallService;
 import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
@@ -15,6 +16,7 @@ import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
 import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.utils.Result;
+import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -44,6 +46,9 @@ public class ExtRepoController extends ApiController {
 
     @Autowired
     private VosProductInstallService vosProductActionService;
+
+    @Autowired
+    private K8sProductInstallService k8sProductInstallService;
 
     @PostMapping("/validMetaFile")
     @Operation(summary = "校验meta文件是否正确")
@@ -122,12 +127,27 @@ public class ExtRepoController extends ApiController {
         return Result.success(vosProductActionService.listNewestByDeployment(dto));
     }
 
+
+    @PostMapping("/k8s/listNewestByDeployment")
+    @Operation(summary = "获取最新的K8s服务列表(并更加部署清单对服务列表进行勾选)")
+    @ApiResponse(content = {
+            @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = FrameK8sServiceEntity[].class))
+        }
+    )
+    public Result listK8sNewestByDeployment(@RequestBody @Validated DeploymentDTO dto) {
+        return Result.success(k8sProductInstallService.listNewestByDeployment(dto));
+    }
+
+
     @PostMapping("/getServiceRoleListByDeployment")
     @Operation(summary = "获取服务角色列表(并根据部署清单对host进行填充)")
     @ApiResponse(content = {@Content(mediaType = "application/json")})
     public Result getServiceRoleListByDeployment(@RequestBody @Validated ServiceRoleQueryDTO dto) {
         return Result.success(vosProductActionService.getServiceRoleListByDeployment(dto));
     }
+
     @PostMapping("/getNonMasterRoleListByDeployment")
     @Operation(summary = "获取非master服务角色列表(并根据部署清单对host进行填充)")
     @ApiResponse(content = {@Content(mediaType = "application/json")})

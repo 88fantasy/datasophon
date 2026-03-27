@@ -30,13 +30,18 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import lombok.Data;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TimeZone;
 
 /**
@@ -65,7 +70,7 @@ public class KubectlClient implements AutoCloseable {
         }
         String osName = System.getProperty("os.name").toLowerCase();
         if (!osName.contains("window")) {
-            ExecResult result = ShellUtils.exec(null, Collections.singletonList("command -v kubectl"), -1);
+            ExecResult result = ShellUtils.exec(null, Arrays.asList("command", "-v", "kubectl"), -1);
             if (result.isSuccess()) {
                 return result.getExecOut().trim();
             }
@@ -76,9 +81,11 @@ public class KubectlClient implements AutoCloseable {
     public KubectlClient(ClientOptions options) {
         this.kubectlPath = detectKubectlPath();
         this.tempDir = PathUtils.getTmpDir("sensitive/" + RandomUtil.randomString(12));
-        tempDir.setExecutable(true, true);
-        tempDir.setReadable(true, true);
-        tempDir.setWritable(true, true);
+        try {
+            Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwx------");
+            Files.setPosixFilePermissions(tempDir.toPath(), permissions);
+        } catch (IOException ignore) {}
+
         if (StrUtil.isNotBlank(options.getKubeConfig())) {
             File config = new File(tempDir, "kubeConfig.yaml");
             FileUtil.writeString(options.getKubeConfig(), config, StandardCharsets.UTF_8);

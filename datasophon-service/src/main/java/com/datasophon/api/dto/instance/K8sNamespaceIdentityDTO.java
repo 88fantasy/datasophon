@@ -2,6 +2,7 @@ package com.datasophon.api.dto.instance;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotBlank;
 
@@ -9,6 +10,7 @@ import javax.validation.constraints.NotBlank;
  * @author zhanghuangbin
  */
 @Data
+@NoArgsConstructor
 public class K8sNamespaceIdentityDTO {
 
     @NotBlank(message = "集群ID不能为空")
@@ -19,4 +21,8 @@ public class K8sNamespaceIdentityDTO {
     @Schema(description = "名空间")
     private String namespace;
 
+    public K8sNamespaceIdentityDTO(Integer clusterId, String namespace) {
+        this.clusterId = clusterId;
+        this.namespace = namespace;
+    }
 }

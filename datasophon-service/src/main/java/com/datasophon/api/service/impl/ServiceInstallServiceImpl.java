@@ -19,7 +19,6 @@
 
 package com.datasophon.api.service.impl;
 
-import cn.hutool.core.io.IoUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -27,7 +26,6 @@ import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.ServiceException;
-import com.datasophon.api.load.Application;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.service.ClusterInfoService;
@@ -51,7 +49,6 @@ import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.model.ServiceRoleInfo;
-import com.datasophon.common.model.uni.NexusUri;
 import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.storage.vo.ServiceMetaItem;
@@ -59,7 +56,6 @@ import com.datasophon.common.utils.CollectionUtils;
 import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.IOUtils;
 import com.datasophon.common.utils.NexusFileUtils;
-import com.datasophon.common.utils.PathUtils;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterHostDO;
@@ -80,15 +76,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -357,39 +346,14 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
 
     @Override
     public void downloadTemplate(String templateName, HttpServletResponse response) throws IOException {
-        InputStream inputStream = null;
-        OutputStream out = null;
         try {
-            NexusUri registry = Application.getNexusUri();
-            if (registry.isEnabled()) {
-                String url = String.format("%s/repository/raw/template/%s", registry.getUri(), templateName);
-                logger.info("download template from nexus, url is {}", url);
-                try {
-                    inputStream = NexusFileUtils.downStream(url, registry.getUser(), registry.getPassword());
-                } catch (FileNotFoundException e) {
-                    response.setStatus(404);
-                    return;
-                }
-            } else {
-                Path path = PathUtils.join(Paths.get(Constants.INIT_HOME), "template", templateName);
-                logger.info("download template from local storage, path is: {}", path);
-                File file = path.toFile();
-                if (!file.exists()) {
-                    response.setStatus(404);
-                    return;
-                }
-                inputStream = new BufferedInputStream(Files.newInputStream(file.toPath()));
-                response.addHeader("Content-Length", "" + file.length());
-            }
-
+            String url = NexusFileUtils.getNexusRawObjectUrl(String.format("/template/%s", templateName));
             response.reset();
             response.setContentType("application/octet-stream");
             response.setHeader("Content-Disposition", "attachment;filename=" + templateName.replaceAll("/", "_"));
-            out = response.getOutputStream();
-            IoUtil.copy(inputStream, response.getOutputStream());
+            NexusFileUtils.downStream(url, response.getOutputStream());
         } finally {
-            IOUtils.closeQuietly(inputStream);
-            IOUtils.closeQuietly(out);
+            IOUtils.closeQuietly(response.getOutputStream());
         }
 
     }

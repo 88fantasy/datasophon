@@ -232,7 +232,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
                    packageStorage.deletePackage(serviceEntity.getPackageName());
 
                    MetaStorage metaStorage = StorageUtils.getMetaStorage();
-                   metaStorage.removeVosDdl(serviceEntity.getFrameCode(), serviceEntity.getServiceName());
+                   metaStorage.removeVosMeta(serviceEntity.getFrameCode(), serviceEntity.getServiceName());
                }).start();
             }
         });

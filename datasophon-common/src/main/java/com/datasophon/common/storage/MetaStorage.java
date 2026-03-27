@@ -1,7 +1,6 @@
 package com.datasophon.common.storage;
 
 import com.datasophon.common.Constants;
-import com.datasophon.common.function.ThrowableSupplier;
 import com.datasophon.common.storage.vo.ServiceMetaItem;
 
 import java.io.ByteArrayOutputStream;
@@ -40,7 +39,7 @@ public interface MetaStorage {
 
     void saveServiceDdl(ServiceMetaItem item, String content) throws IOException;
 
-    void downResource(ServiceMetaItem item, String relativePath, ThrowableSupplier<OutputStream> supplier) throws FileNotFoundException, Exception;
+    void downResource(ServiceMetaItem item, String relativePath, OutputStreamSupplier supplier) throws FileNotFoundException, IOException;
 
     default void moveToStorage(File dir, boolean includeDir) throws IOException {
         moveToStorage(dir, relative -> {
@@ -54,5 +53,17 @@ public interface MetaStorage {
 
     void moveToStorage(File dir, Function<String, String> relativePathHandler) throws IOException;
 
-    void removeVosDdl(String frameCode, String serviceName);
+    default void removeVosMeta(String frameCode, String serviceName) {
+        removeMeta(frameCode, serviceName, VOS_DDL);
+    }
+
+    default void removeK8sMeta(String frameCode, String serviceName) {
+        removeMeta(frameCode, serviceName, K8S);
+    }
+
+    void removeMeta(String frameCode, String serviceName, String type);
+
+    interface OutputStreamSupplier {
+        OutputStream get() throws IOException;
+    }
 }

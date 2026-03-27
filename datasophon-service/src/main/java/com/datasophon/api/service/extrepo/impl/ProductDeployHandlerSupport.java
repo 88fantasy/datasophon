@@ -6,7 +6,6 @@ import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.ClusterServiceCommandHostService;
 import com.datasophon.api.service.ClusterServiceCommandService;
-import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.dag.DAGService;
 import com.datasophon.api.service.extrepo.utils.MetaUtils;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
@@ -30,8 +29,7 @@ public class ProductDeployHandlerSupport {
     @Autowired
     protected ClusterInfoService clusterInfoService;
 
-    @Autowired
-    protected FrameServiceService frameService;
+
 
 
     @Autowired

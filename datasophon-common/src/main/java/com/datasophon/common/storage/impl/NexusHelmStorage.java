@@ -1,7 +1,7 @@
 package com.datasophon.common.storage.impl;
 
 import com.datasophon.common.storage.HelmStorage;
-import com.datasophon.common.utils.NexusFileUtils;
+import com.datasophon.common.utils.nexus.NexusFacade;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -18,6 +18,12 @@ public class NexusHelmStorage extends NexusStorageSupport implements HelmStorage
     public void pushHelm(File chart) throws IOException {
         ensureNexusEnable();
         ensureFileValid(chart);
-        NexusFileUtils.uploadChartToHelmRepo(chart);
+        NexusFacade.getHelmClient().uploadChartToHelmRepo(chart);
+    }
+
+    @Override
+    public void removeHelm(String chartName) throws IOException {
+        ensureNexusEnable();
+//        TODO
     }
 }

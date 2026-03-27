@@ -1,4 +1,4 @@
-package com.datasophon.common.model.uni;
+package com.datasophon.common.utils.nexus.vo;
 
 import lombok.Data;
 
@@ -15,9 +15,5 @@ public class NexusUri {
     private String password;
 
     private String uri;
-
-    private String ip;
-
-    private Integer port;
 
 }

@@ -30,4 +30,7 @@ public class DeploymentDTO {
     @Schema(description = "服务ID列表")
     private String serviceIds;
 
+    @Schema(description = "当前选中的服务ID")
+    private Integer selectedServiceId;
+
 }

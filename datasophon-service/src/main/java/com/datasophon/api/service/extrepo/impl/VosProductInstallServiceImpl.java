@@ -22,6 +22,7 @@ import com.datasophon.api.service.ClusterServiceCommandService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.FrameServiceRoleService;
+import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.api.service.extrepo.VosProductInstallService;
 import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
@@ -122,6 +123,8 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
     @Autowired
     private ClusterHostService clusterHostService;
 
+    @Autowired
+    private FrameServiceService frameService;
 
     @Override
     public ValidateResultVO validateDeploymentModel(DeploymentModel model, DeploymentDTO dto) {
