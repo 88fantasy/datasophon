@@ -27,4 +27,6 @@ public class K8sServiceInfo {
 
     @NotNull(message = "artifact不能为null")
     private K8sArtifact artifact;
+
+    private String runtime;
 }

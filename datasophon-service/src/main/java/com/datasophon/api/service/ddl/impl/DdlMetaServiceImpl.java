@@ -1,6 +1,5 @@
 package com.datasophon.api.service.ddl.impl;
 
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
@@ -400,10 +399,10 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         }
         List<String> supportArtifacts = new ArrayList<>();
         if (serviceInfo.getArtifact() != null) {
-            if (CollectionUtil.isNotEmpty(serviceInfo.getArtifact().getHelm())) {
+            if (StrUtil.isNotBlank(serviceInfo.getArtifact().getHelm())) {
                 supportArtifacts.add("helm");
             }
-            if (CollectionUtil.isNotEmpty(serviceInfo.getArtifact().getYaml())) {
+            if (StrUtil.isNotBlank(serviceInfo.getArtifact().getYaml())) {
                 supportArtifacts.add("yaml");
             }
         }
@@ -428,6 +427,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             entity.setFrameId(frameInfo.getId());
         }
         entity.setType(serviceInfo.getType());
+        entity.setRuntime(serviceInfo.getRuntime());
         entity.setServiceDesc(serviceInfo.getDescription());
         entity.setDependencies(serviceInfo.getDependencies());
         entity.setArtifact(JSONObject.toJSONString(serviceInfo.getArtifact()));

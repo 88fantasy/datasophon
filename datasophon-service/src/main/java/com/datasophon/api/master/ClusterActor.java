@@ -17,6 +17,7 @@
 
 package com.datasophon.api.master;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.datasophon.api.service.ClusterInfoService;
@@ -106,12 +107,10 @@ public class ClusterActor extends TypedActor<ClusterCommand> {
                 try {
                     K8sClusterStatus status = k8sService.getState(config);
 
-//                    FIXME
                     ClusterState state = ClusterState.STOP;
-//                    if (CollectionUtil.isNotEmpty(status.getNodes())) {
-//                        state = status.getNodes().stream().anyMatch(node -> "True".equals(node.getStatus())) ? ClusterState.RUNNING : ClusterState.STOP;
-//                    }
-                    state = ClusterState.RUNNING;
+                    if (CollectionUtil.isNotEmpty(status.getNodes())) {
+                        state = status.getNodes().stream().anyMatch(node -> "True".equals(node.getStatus())) ? ClusterState.RUNNING : ClusterState.STOP;
+                    }
 
                     clusterInfoService.updateClusterState(cluster.getId(), state.getValue());
                 } catch (Exception e) {

@@ -51,6 +51,10 @@ public class FrameK8sServiceEntity implements Serializable {
     private String type;
 
 
+    @Schema(description = "运行时的values.yaml位置")
+    private String runtime;
+
+
     @Schema(description = "是否被选中")
     @TableField(exist = false)
     private Boolean selected;
@@ -62,4 +66,5 @@ public class FrameK8sServiceEntity implements Serializable {
     @Schema(description = "部署的名空间")
     @TableField(exist = false)
     private String namespace;
+
 }

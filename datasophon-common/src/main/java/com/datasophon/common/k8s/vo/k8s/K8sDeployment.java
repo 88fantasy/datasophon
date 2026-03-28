@@ -101,7 +101,7 @@ public class K8sDeployment {
         private String nodeSelector;
         private String affinity;
         private String tolerations;
-        private String volumes;
+        private List<PodVolume> volumes;
         private String runtimeClassName;
         private String priorityClassName;
         private Integer priority;
@@ -110,6 +110,11 @@ public class K8sDeployment {
         private Boolean hostIPC;
         @JsonProperty("securityContext")
         private PodSecurityContext securityContext;
+    }
+
+    @Data
+    public static class PodVolume {
+        private String name;
     }
 
     @Data
@@ -142,8 +147,6 @@ public class K8sDeployment {
         private Probe startupProbe;
         @JsonProperty("lifecycle")
         private Lifecycle lifecycle;
-        @JsonProperty("securityContext")
-        private ContainerSecurityContext securityContext;
         @JsonProperty("stdin")
         private Boolean stdin;
         @JsonProperty("stdinOnce")
@@ -288,14 +291,7 @@ public class K8sDeployment {
         private TCPSocket tcpSocket;
     }
 
-    @Data
-    public static class ContainerSecurityContext {
-        private Boolean privileged;
-        private String capabilities;
-        private Boolean runAsNonRoot;
-        private Boolean readOnlyRootFilesystem;
-        private Boolean allowPrivilegeEscalation;
-    }
+
 
     @Data
     public static class ResourceRequirements {
@@ -338,7 +334,23 @@ public class K8sDeployment {
         @JsonProperty("observedGeneration")
         private Long observedGeneration;
         private Long collisionCount;
-        private String conditions;
+        private List<DeploymentCondition> conditions;
         private String unavailableNodes;
+    }
+
+    @Data
+    public static class DeploymentCondition {
+        @JsonProperty("type")
+        private String type;
+        @JsonProperty("status")
+        private String status;
+        @JsonProperty("reason")
+        private String reason;
+        @JsonProperty("message")
+        private String message;
+        @JsonProperty("lastUpdateTime")
+        private String lastUpdateTime;
+        @JsonProperty("lastTransitionTime")
+        private String lastTransitionTime;
     }
 }

@@ -30,18 +30,13 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import lombok.Data;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.TimeZone;
 
 /**
@@ -81,10 +76,10 @@ public class KubectlClient implements AutoCloseable {
     public KubectlClient(ClientOptions options) {
         this.kubectlPath = detectKubectlPath();
         this.tempDir = PathUtils.getTmpDir("sensitive/" + RandomUtil.randomString(12));
-        try {
-            Set<PosixFilePermission> permissions = PosixFilePermissions.fromString("rwx------");
-            Files.setPosixFilePermissions(tempDir.toPath(), permissions);
-        } catch (IOException ignore) {}
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (!osName.contains("window")) {
+            ShellUtils.exec(null, Arrays.asList("chmod", "-R",  "0700", tempDir.getAbsolutePath()), -1);
+        }
 
         if (StrUtil.isNotBlank(options.getKubeConfig())) {
             File config = new File(tempDir, "kubeConfig.yaml");
@@ -313,7 +308,7 @@ public class KubectlClient implements AutoCloseable {
         try {
             return mapper.readValue(content, type);
         } catch (JsonProcessingException e) {
-           throw new KubectlException(String.format("解析结果错误失败，%s", e.getMessage()), e);
+            throw new KubectlException(String.format("解析结果错误失败，%s", e.getMessage()), e);
         }
     }
 

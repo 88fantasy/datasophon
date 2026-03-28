@@ -1,7 +1,7 @@
 package com.datasophon.api.service.instance.impl;
 
-import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.dto.instance.K8sNamespaceIdentityDTO;
 import com.datasophon.api.dto.instance.K8sServiceInstanceValuesSaveDTO;
@@ -24,6 +24,7 @@ import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 import com.datasophon.dao.entity.instance.K8sServiceInstance;
 import com.datasophon.dao.entity.instance.K8sServiceInstanceValues;
 import com.datasophon.dao.mapper.instance.K8sServiceInstanceValuesMapper;
+import org.eclipse.jetty.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -80,20 +81,18 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
 
         // 3. 根据 artifactType 获取对应的文件内容
         if ("helm".equals(artifactType)) {
-            List<String> helmCharts = artifact.getHelm();
-            if (CollectionUtil.isEmpty(helmCharts)) {
+            if (StringUtil.isEmpty(artifact.getHelm())) {
                 throw new BusinessException("服务未配置 helm chart 信息");
             }
             // 获取第一个 chart 的 values.yaml
-            String chartName = helmCharts.get(0);
+            String chartName = artifact.getHelm();
             return getHelmValuesYaml(item, chartName);
         } else if ("yaml".equals(artifactType)) {
-            List<String> yamlFiles = artifact.getYaml();
-            if (CollectionUtil.isEmpty(yamlFiles)) {
+            if (StrUtil.isEmpty(artifact.getYaml())) {
                 throw new BusinessException("服务未配置 yaml 文件信息");
             }
             // 获取第一个 yaml 文件
-            String yamlFile = yamlFiles.get(0);
+            String yamlFile = artifact.getYaml();
             return getYamlFileContent(item, yamlFile);
         } else {
             throw new BusinessException("不支持的 artifact 类型：" + artifactType);

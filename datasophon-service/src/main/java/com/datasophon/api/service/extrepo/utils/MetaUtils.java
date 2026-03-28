@@ -3,6 +3,7 @@ package com.datasophon.api.service.extrepo.utils;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SmUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
@@ -83,8 +84,10 @@ public class MetaUtils {
                 try {
                     String relative = PathUtils.unixStyle(PathUtils.relative(path.toString(), dir));
                     if (matcher.isMatch(relative)) {
-                        String plainText = MetaUtils.decodeFile(path.toFile(), cipherKey);
-                        FileUtil.writeString(plainText, path.toFile(), StandardCharsets.UTF_8);
+                        if (path.toFile().length() > 0) {
+                            String plainText = MetaUtils.decodeFile(path.toFile(), cipherKey);
+                            FileUtil.writeString(plainText, path.toFile(), StandardCharsets.UTF_8);
+                        }
                     }
                 } catch (IORuntimeException ex) {
                     log.error("handle encoded file:{} fail, {}", path, ex.getMessage());
@@ -111,6 +114,9 @@ public class MetaUtils {
      * @param cipherKey
      */
     public static String decodeFile(File file, String cipherKey) {
+        if (file.length() == 0) {
+            return null;
+        }
         String cipherText = FileUtil.readString(file, StandardCharsets.UTF_8);
         boolean isRaw = false;
 //        测试环境，有可能上传不加密的文件，则不需要解密，这段代码方便调试
@@ -275,8 +281,8 @@ public class MetaUtils {
         }
 
         meta.setDependencies(serviceInfo.getDependencies() == null ? new ArrayList<>(0) : serviceInfo.getDependencies());
-        if (serviceInfo.getArtifact() != null) {
-            meta.getCharts().addAll(serviceInfo.getArtifact().getHelm());
+        if (serviceInfo.getArtifact() != null && StrUtil.isNotBlank(serviceInfo.getArtifact().getHelm())) {
+            meta.getCharts().add(serviceInfo.getArtifact().getHelm());
         }
         return Collections.singletonList(meta);
     }

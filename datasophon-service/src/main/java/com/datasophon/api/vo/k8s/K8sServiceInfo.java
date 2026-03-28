@@ -62,7 +62,7 @@ public class K8sServiceInfo {
         private Integer port;
 
         @Schema(description = "目标端口")
-        private Integer targetPort;
+        private String targetPort;
 
         @Schema(description = "节点端口")
         private Integer nodePort;

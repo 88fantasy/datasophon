@@ -50,6 +50,7 @@ public class CommonNexusClient {
         try (CloseableHttpClient client = newLongTimeClient()) {
             String realUrl = url.startsWith("http") ? url : String.format("%s%s", uri.getUri(), url);
             HttpGet req = new HttpGet(realUrl);
+            prepareAuth(req);
             log.info("开始下载 {}", realUrl);
             try (CloseableHttpResponse response = client.execute(req)) {
                 int status = response.getStatusLine().getStatusCode();
@@ -203,7 +204,7 @@ public class CommonNexusClient {
 
     protected List<Component> doListMatchedItem(String baseUrl) throws IOException {
         List<Component> components = new ArrayList<>();
-        try (CloseableHttpClient httpClient = HttpClients.custom().build()) {
+        try (CloseableHttpClient httpClient = newClient()) {
             String continuationToken = null;
             do {
                 String url = baseUrl;
@@ -212,9 +213,7 @@ public class CommonNexusClient {
                 }
                 HttpGet get = new HttpGet(url);
 
-                // Basic Auth
-                String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
-                get.setHeader("Authorization", "Basic " + auth);
+                prepareAuth(get);
 
                 try (CloseableHttpResponse response = httpClient.execute(get)) {
                     int status = response.getStatusLine().getStatusCode();

@@ -31,6 +31,8 @@ create table `t_ddh_frame_k8s_service`
     `manifest_json`     text          DEFAULT NULL COMMENT '定义的内容',
     `manifest_json_md5` text          DEFAULT NULL COMMENT '定义md5',
     `type` varchar(50) null comment '服务分类,ENVIRONMENT=基础环境, MIDDLEWARE=中间件, APPLICATION=应用',
+    `runtime` varchar(100) null comment '运行时的values.yaml位置',
+
     PRIMARY KEY (`id`)
 ) DEFAULT CHARSET=utf8mb4 COMMENT = 'K8s集群框架定义';
 

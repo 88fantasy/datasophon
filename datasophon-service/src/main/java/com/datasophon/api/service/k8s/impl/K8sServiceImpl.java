@@ -51,24 +51,24 @@ public class K8sServiceImpl implements K8sService {
 
             String version = client.getVersion();
             state.setK8sVersion(version);
-//            K8sResourceList<com.datasophon.common.k8s.vo.k8s.K8sNode> nodesResult = client.getNodes();
-//            for (com.datasophon.common.k8s.vo.k8s.K8sNode node : nodesResult.getItems()) {
-//                String name = node.getMetadata() != null ? node.getMetadata().getName() : null;
-//                K8sClusterStatus.NodeInfo info = new K8sClusterStatus.NodeInfo();
-//                info.setName(name);
-//
-//                String status = "Unknown";
-//                if (node.getStatus() != null && node.getStatus().getConditions() != null) {
-//                    for (com.datasophon.common.k8s.vo.k8s.K8sNode.NodeCondition condition : node.getStatus().getConditions()) {
-//                        if (READY.equals(condition.getType())) {
-//                            status = condition.getStatus();
-//                            break;
-//                        }
-//                    }
-//                }
-//                info.setStatus(status);
-//                state.getNodes().add(info);
-//            }
+            K8sResourceList<com.datasophon.common.k8s.vo.k8s.K8sNode> nodesResult = client.getNodes();
+            for (com.datasophon.common.k8s.vo.k8s.K8sNode node : nodesResult.getItems()) {
+                String name = node.getMetadata() != null ? node.getMetadata().getName() : null;
+                K8sClusterStatus.NodeInfo info = new K8sClusterStatus.NodeInfo();
+                info.setName(name);
+
+                String status = "Unknown";
+                if (node.getStatus() != null && node.getStatus().getConditions() != null) {
+                    for (com.datasophon.common.k8s.vo.k8s.K8sNode.NodeCondition condition : node.getStatus().getConditions()) {
+                        if (READY.equals(condition.getType())) {
+                            status = condition.getStatus();
+                            break;
+                        }
+                    }
+                }
+                info.setStatus(status);
+                state.getNodes().add(info);
+            }
 
             K8sResourceList<com.datasophon.common.k8s.vo.k8s.K8sNamespace> nsResult = client.getNamespaces();
             for (com.datasophon.common.k8s.vo.k8s.K8sNamespace ns : nsResult.getItems()) {
@@ -339,7 +339,7 @@ public class K8sServiceImpl implements K8sService {
                     K8sServiceInfo.PortInfo portInfo = new K8sServiceInfo.PortInfo();
                     portInfo.setName(port.getName());
                     portInfo.setPort(port.getPort());
-                    portInfo.setTargetPort(port.getTargetPort() != null ? port.getTargetPort() : null);
+                    portInfo.setTargetPort(port.getTargetPort());
                     portInfo.setNodePort(port.getNodePort() != null ? port.getNodePort() : null);
                     portInfo.setProtocol(port.getProtocol());
                     portInfos.add(portInfo);

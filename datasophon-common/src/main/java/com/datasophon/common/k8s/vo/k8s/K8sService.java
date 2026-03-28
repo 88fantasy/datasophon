@@ -54,13 +54,23 @@ public class K8sService {
         private Boolean publishNotReadyAddresses;
     }
 
+    /**
+     *  {
+     *         "appProtocol": "http",
+     *             "name": "http",
+     *             "nodePort": 32379,
+     *             "port": 80,
+     *             "protocol": "TCP",
+     *             "targetPort": "http"
+     *     },
+     */
     @Data
     public static class ServicePort {
         private String name;
         private String protocol;
         private int port;
         @JsonProperty("targetPort")
-        private Integer targetPort;
+        private String targetPort;
         @JsonProperty("nodePort")
         private Integer nodePort;
         @JsonProperty("appProtocol")

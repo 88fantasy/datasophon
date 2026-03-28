@@ -23,7 +23,7 @@ public class NexusFacade {
         uri.setPort(Constants.NEXUS_PORT);
         uri.setUri(String.format("http://%s:%s", uri.getIp(), uri.getPort()));
         uri.setUser(Constants.NEXUS_USERNAME);
-        uri.setPassword(Constants.PASSWORD);
+        uri.setPassword(Constants.NEXUS_PASSWORD);
         return uri;
     }
 
