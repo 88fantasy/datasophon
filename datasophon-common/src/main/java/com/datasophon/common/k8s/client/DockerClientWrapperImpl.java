@@ -89,7 +89,7 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
             client.tagImageCmd(dto.getOldTag(), repo, version).exec();
 
             if (dto.isRemoveOldTag()) {
-                client.removeImageCmd(dto.getOldTag());
+                client.removeImageCmd(dto.getOldTag()).exec();
             }
             return finalTag;
         } catch (IOException e) {
@@ -122,10 +122,10 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
             String[] parts = tag.split("/");
             if (tag.startsWith("docker.io")) {
                 if ("library".equals(parts[1])) {
-                    return address +  DEFAULT_ORG + "/" + parts[2];
+                    return address + DEFAULT_ORG + "/" + parts[2];
                 }
             }
-            return address +  parts[1] + "/" + parts[2];
+            return address + parts[1] + "/" + parts[2];
         } else if (count == 3) {
 //            count == 3, 只有nexus私库有这个问题，当作正常值
             int i;

@@ -273,7 +273,7 @@ public class KubectlClient implements AutoCloseable {
      * @return Ingress 列表
      */
     public K8sResourceList<K8sIngress> getIngresses(String namespace, String labelSelector) throws KubectlException {
-        List<String> args = new ArrayList<>(Arrays.asList("get", "ingresses", "-n", namespace, "--api-version", "networking.k8s.io/v1"));
+        List<String> args = new ArrayList<>(Arrays.asList("get", "ingresses", "-n", namespace));
         if (StrUtil.isNotBlank(labelSelector)) {
             args.add("-l");
             args.add(labelSelector);
