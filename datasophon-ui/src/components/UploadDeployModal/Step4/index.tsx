@@ -19,7 +19,10 @@ const stateMap = {
     2: '解析元数据',
     3: '解压安装包',
     4: '保存数据',
-    5: '上传安装包到nexus'
+    5: '上传安装包到nexus',
+    6: '上传镜像到nexus',
+    7: '上传helm包到nexus',
+
 }
 const Index = forwardRef((props, ref) => {
 

@@ -153,7 +153,11 @@ const Index = ({
                 onClick: () => {
                     // console.log('edit')
 
-                    window.open(invokeGenPath(`/Cluster/${val.id}/ServiceManage/Instance/Overview`))
+
+                    let clusterId = [val.id, val.archType]
+                    clusterId = clusterId.join('_')
+
+                    window.open(invokeGenPath(`/Cluster/${clusterId}/ServiceManage/Instance/Overview`))
                 }
             },
             {

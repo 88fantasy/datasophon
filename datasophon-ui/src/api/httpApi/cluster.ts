@@ -57,4 +57,8 @@ export default {
   clusterYarnSchedulerInfo: path + "/cluster/yarn/scheduler/info",
   clusterK8sConfigTestConnection: path + "/cluster/k8sConfig/testConnection",
   saveOrUpdateK8sConfig: path + "/cluster/k8sConfig/saveOrUpdateConfig",
+  k8sNamespaceListByClusterId: path + "/cluster/k8sNamespace/listByClusterId",
+  k8sInstanceQueryInstanceList: path + "/cluster/k8sInstance/queryInstanceList",
+  k8sInstanceListResource: path + "/cluster/k8sInstance/listResource",
+  k8sInstanceListResourceType: path + "/cluster/k8sInstance/listResourceType",
 };

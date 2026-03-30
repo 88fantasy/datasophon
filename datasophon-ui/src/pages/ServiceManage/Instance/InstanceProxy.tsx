@@ -1,15 +1,18 @@
 "use client";
 import { useParams } from "react-router"
-import { ClusterGlobalContext, useClusterGlobalContext } from "../../../context/clusterGlobalContext"
 import { lazy, memo, Suspense, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { cloneDeep } from "lodash-es"
 import { ProxyContext } from "../../../context/proxyContext";
 import CommonTabs from "../../../components/Common/CommonTabs";
 import { useInstanceHooks } from "../../../hooks/useInstanceHooks";
 import { API } from "../../../api";
-import { axiosPost } from "../../../api/request";
+import { axiosJsonPost, axiosPost } from "../../../api/request";
 import { Button, Dropdown, Space } from "antd";
 import { DownOutlined } from "@ant-design/icons";
+import { useClusterFromParams } from "../../../hooks/useClusterFromParams";
+import { T_K8S, T_PHYSICAL } from "../../../constants/clusterType";
+import { isEmpty } from "../../../utils/util";
+import resourceType from "../../../constants/resourceType";
 // import Overview from "./Overview";
 
 const Overview = lazy(() => import('./Overview'));
@@ -17,6 +20,7 @@ const Instance = lazy(() => import('./Instance'));
 const Setting = lazy(() => import('./Setting'));
 const SourceSetting = lazy(() => import('./SourceSetting'));
 const Queue = lazy(() => import('./Queue'));
+const K8s = lazy(() => import('./K8s'));
 
 
 
@@ -29,21 +33,49 @@ const Index = () => {
         obj
     } = useInstanceHooks(ProxyContext)
 
+    const {
+        memoCluster
+    } = useClusterFromParams()
+
     const [webUis, setWebUis] = useState([])
+    const [hadInit, setHadInit] = useState(false)
+    const [k8sInstanceListResourceType, setK8sInstanceListResourceType] = useState([])
 
     const memoTabItem = useMemo(() => {
+
+
+
+        let k8sArr = []
+
+
+        if (memoCluster.archType === T_K8S) {
+            k8sArr.push(
+                ...resourceType.map(item => ({
+                    label: item.label,
+                    key: item.value,
+                    props: {
+                        resourceType: item.value
+                    },
+                    asyncChildren: K8s
+                }))
+            )
+        }
+
+        k8sArr = k8sArr.filter(val => k8sInstanceListResourceType.includes(val.key))
+
         return [
             obj.dashboardUrl && {
                 label: '概览',
                 key: 'Overview',
                 asyncChildren: Overview
             },
-            {
+            (memoCluster.archType === T_PHYSICAL || isEmpty(memoCluster.archType)) && {
                 label: '实例',
                 key: 'Instance',
                 asyncChildren: Instance
 
             },
+            ...k8sArr,
             {
                 label: '配置',
                 key: 'Setting',
@@ -56,7 +88,7 @@ const Index = () => {
                 asyncChildren: Queue
             },
         ].filter(Boolean)
-    }, [obj.dashboardUrl, obj.serviceName])
+    }, [k8sInstanceListResourceType, memoCluster.archType, obj.dashboardUrl, obj.serviceName])
 
 
     const tabBarExtraContent = useMemo(() => {
@@ -90,13 +122,26 @@ const Index = () => {
 
 
     const getWebUis = useCallback(async () => {
-        const res = await axiosPost(API.getWebUis, {
-            serviceInstanceId: instanceId,
-        })
-        if (res.code === 200) {
-            setWebUis(res.data || []);
+
+        if (memoCluster.archType === T_K8S) {
+            const res = await axiosJsonPost(API.k8sInstanceListResourceType, {
+                instanceId,
+            })
+            if (res.code === 200) {
+                setK8sInstanceListResourceType(res.data || []);
+            }
+        } else {
+            const res = await axiosPost(API.getWebUis, {
+                serviceInstanceId: instanceId,
+            })
+            if (res.code === 200) {
+                setWebUis(res.data || []);
+            }
         }
-    }, [instanceId])
+
+        setHadInit(true)
+
+    }, [instanceId, memoCluster.archType])
 
 
     useEffect(() => {
@@ -104,12 +149,13 @@ const Index = () => {
     }, [getWebUis])
 
 
-    return (
+    return hadInit && (
         // <div className="h-[78vh] flex flex-col">
         <CommonTabs
             // className="flex-1"
             memoTabItem={memoTabItem}
             tabBarExtraContent={tabBarExtraContent}
+            bindUrl={true}
         />
         // </div>
     )
