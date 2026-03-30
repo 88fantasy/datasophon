@@ -139,7 +139,7 @@ public class K8sClusterNamespaceServiceImpl extends ServiceImpl<K8sClusterNamesp
             namespace = new K8sClusterNamespace();
             namespace.setClusterId(identity.getClusterId());
             namespace.setNamespace(identity.getNamespace());
-            namespace.setState(0); // 默认设置为 active 状态
+            namespace.setState(-1); // 默认设置为 待新建状态
             save(namespace);
         }
         return namespace;

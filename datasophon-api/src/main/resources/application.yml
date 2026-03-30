@@ -56,6 +56,8 @@ mybatis-plus:
       column-underline: true
       logic-delete-value: -1
       logic-not-delete-value: 0
+      table-format: "`%s`"
+      column-format: "`%s`"
     banner: false
   #原生配置
   configuration:

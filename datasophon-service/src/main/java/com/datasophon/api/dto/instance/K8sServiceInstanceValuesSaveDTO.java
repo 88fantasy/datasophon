@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 
 /**
@@ -14,12 +15,12 @@ public class K8sServiceInstanceValuesSaveDTO implements Serializable {
 
 
     @Schema(description = "集群")
-    @NotBlank(message = "集群不能为空")
+    @NotNull(message = "集群不能为空")
     private Integer clusterId;
 
 
     @Schema(description = "服务ID")
-    @NotBlank(message = "服务ID不能为空")
+    @NotNull(message = "服务ID不能为空")
     private Integer serviceId;
 
 

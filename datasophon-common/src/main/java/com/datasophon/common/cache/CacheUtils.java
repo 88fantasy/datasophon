@@ -20,6 +20,8 @@ package com.datasophon.common.cache;
 import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
 
+import java.util.function.Function;
+
 /**
  * Cache工具类
  */
@@ -62,5 +64,22 @@ public class CacheUtils {
         Object data = cache.get(key);
         return (String) data;
     }
-    
+
+
+    /**
+     * 线程不安全，但是勉强够用
+     * @param key
+     * @param function
+     * @return
+     * @param <T>
+     */
+    public static <T> T computeIfAbsent(String key, Function<String, T> function) {
+        if (containsKey(key)) {
+            return (T) get(key);
+        }else {
+            final T t = function.apply(key);
+            cache.put(key, t);
+            return t;
+        }
+    }
 }

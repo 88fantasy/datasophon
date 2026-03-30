@@ -10,7 +10,7 @@ import java.io.Serializable;
  * @author zhanghuangbin
  */
 @Data
-@TableName("t_ddh_k8s_service_instance_Values")
+@TableName("t_ddh_k8s_service_instance_values")
 public class K8sServiceInstanceValues implements Serializable {
 
     private Integer id;

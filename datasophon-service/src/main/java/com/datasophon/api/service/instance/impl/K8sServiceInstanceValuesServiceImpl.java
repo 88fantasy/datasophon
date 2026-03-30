@@ -12,12 +12,13 @@ import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.frame.FrameK8sServiceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
+import com.datasophon.api.vo.instance.K8sServiceInstanceValuesVO;
+import com.datasophon.common.k8s.spec.helm.HelmParser;
 import com.datasophon.common.model.k8s.K8sArtifact;
 import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.storage.vo.ServiceMetaItem;
 import com.datasophon.common.utils.PathUtils;
-import com.datasophon.common.utils.TarUtils;
 import com.datasophon.common.utils.YamlUtils;
 import com.datasophon.dao.entity.cluster.K8sClusterNamespace;
 import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
@@ -30,12 +31,11 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -69,7 +69,7 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
     }
 
     @Override
-    public String getValueFromRepo(Integer serviceId, String artifactType) {
+    public K8sServiceInstanceValuesVO getValueFromRepo(Integer serviceId, String artifactType) {
         // 1. 根据 serviceId 查询 FrameK8sServiceEntity 对象
         FrameK8sServiceEntity entity = frameK8sServiceService.getById(serviceId);
         // 2. 解析 artifact 字段
@@ -86,14 +86,23 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
             }
             // 获取第一个 chart 的 values.yaml
             String chartName = artifact.getHelm();
-            return getHelmValuesYaml(item, chartName);
+            String defaultVal = getHelmValuesYaml(item, chartName);
+
+            K8sServiceInstanceValuesVO values = new K8sServiceInstanceValuesVO();
+            values.setValues(defaultVal);
+
+            values.setDeltaValues(getYamlFileContent(item, entity.getRuntime(), false));
+            return values;
         } else if ("yaml".equals(artifactType)) {
             if (StrUtil.isEmpty(artifact.getYaml())) {
                 throw new BusinessException("服务未配置 yaml 文件信息");
             }
             // 获取第一个 yaml 文件
             String yamlFile = artifact.getYaml();
-            return getYamlFileContent(item, yamlFile);
+            K8sServiceInstanceValuesVO values = new K8sServiceInstanceValuesVO();
+            values.setValues(getYamlFileContent(item, yamlFile, true));
+            values.setDeltaValues(getYamlFileContent(item, entity.getRuntime(), false));
+            return values;
         } else {
             throw new BusinessException("不支持的 artifact 类型：" + artifactType);
         }
@@ -124,6 +133,7 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
         instanceValues.setVersion(maxVersion + 1);
 
         save(instanceValues);
+
         return instanceValues;
     }
 
@@ -150,12 +160,12 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
             try (OutputStream out = Files.newOutputStream(tmp.toPath())) {
                 storage.downResource(item, chartName, () -> out);
             }
-            extractDir = TarUtils.decompressToTemp(tmp.getAbsolutePath());
-            Path valuesPath = Paths.get(extractDir, "values.yaml");
-            if (!valuesPath.toFile().exists()) {
+            extractDir = HelmParser.unzip(tmp);
+            File valueFile = HelmParser.getValueFile(extractDir);
+            if (!valueFile.exists()) {
                 throw new BusinessException("chart 中未找到 values.yaml 文件");
             }
-            return FileUtil.readString(tmp, StandardCharsets.UTF_8);
+            return FileUtil.readString(valueFile, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new BusinessException("读取 helm chart 失败：" + e.getMessage(), e);
         } finally {
@@ -164,15 +174,29 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
         }
     }
 
+
     /**
      * 从 raw repo 获取 yaml 文件内容
      */
-    private String getYamlFileContent(ServiceMetaItem item, String yamlFile) {
+    private String getYamlFileContent(ServiceMetaItem item, String yamlFile, boolean required) {
+        if (yamlFile == null) {
+            return null;
+        }
         try {
             MetaStorage storage = StorageUtils.getMetaStorage();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             storage.downResource(item, yamlFile, () -> out);
-            return new String(out.toByteArray(), StandardCharsets.UTF_8);
+
+            byte[] bytes = out.toByteArray();
+            if (bytes.length == 0) {
+                return null;
+            }
+            return new String(bytes, StandardCharsets.UTF_8);
+        } catch (FileNotFoundException e) {
+            if (required) {
+                throw new BusinessException("读取 yaml 文件失败：" + e.getMessage(), e);
+            }
+            return null;
         } catch (IOException e) {
             throw new BusinessException("读取 yaml 文件失败：" + e.getMessage(), e);
         }

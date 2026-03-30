@@ -16,18 +16,18 @@ import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.DAGExecActor;
-import com.datasophon.api.service.ClusterServiceCommandHostCommandService;
-import com.datasophon.api.service.ClusterServiceCommandHostService;
-import com.datasophon.api.service.ClusterServiceCommandService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.ServiceInstallService;
+import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
+import com.datasophon.api.service.cmd.ClusterServiceCommandHostService;
+import com.datasophon.api.service.cmd.ClusterServiceCommandService;
 import com.datasophon.api.service.extrepo.VosProductInstallService;
-import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
-import com.datasophon.api.service.extrepo.ctx.ExecDAGBuilderContext;
 import com.datasophon.api.service.extrepo.ctx.SimpleServiceResource;
+import com.datasophon.api.service.extrepo.ctx.VosProductCmdSrvMappingContext;
+import com.datasophon.api.service.extrepo.ctx.VosProductDeployDAGBuildContext;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.ProcessUtils;
@@ -50,13 +50,13 @@ import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.IdUtils;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
-import com.datasophon.dao.entity.ClusterServiceCommandEntity;
-import com.datasophon.dao.entity.ClusterServiceCommandHostCommandEntity;
-import com.datasophon.dao.entity.ClusterServiceCommandHostEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.FrameServiceRoleEntity;
+import com.datasophon.dao.entity.cmd.ClusterServiceCommandEntity;
+import com.datasophon.dao.entity.cmd.ClusterServiceCommandHostCommandEntity;
+import com.datasophon.dao.entity.cmd.ClusterServiceCommandHostEntity;
 import com.datasophon.dao.entity.dag.NodeDefinitionEntity;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.RoleType;
@@ -129,10 +129,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
     @Override
     public ValidateResultVO validateDeploymentModel(DeploymentModel model, DeploymentDTO dto) {
         List<String> errors = new ArrayList<>();
-        List<DeploySrvModel> apps = model.getApp()
-                .stream()
-                .filter(app -> app.getDeployType().equals("PHYSICAL"))
-                .collect(Collectors.toList());
+        List<DeploySrvModel> apps = getTargetApps(model);
 
         Set<String> deployHosts = apps.stream()
                 .flatMap(app -> app.getRoles().stream())
@@ -147,7 +144,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
 
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
-        DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
+        VosProductDeployDAGBuildContext ctx = new VosProductDeployDAGBuildContext(serviceList);
         apps.forEach(app -> {
             FrameServiceEntity entity = ctx.getSrvEntity(app);
             if (entity == null) {
@@ -184,15 +181,24 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
         }
     }
 
+    private List<DeploySrvModel> getTargetApps(DeploymentModel model) {
+        return model.getApp()
+                .stream()
+                .filter(app -> app.getDeployType().equalsIgnoreCase("physical"))
+                .collect(Collectors.toList());
+    }
+
+
     @Override
     public InstallResult deploy(DeploymentDTO dto) {
         DeploymentModel model = doParseDeploymentFile(dto);
+        List<DeploySrvModel> apps = getTargetApps(model);
         log.debug("解析到配置\n：{}", JSONObject.toJSONString(model, true));
-        log.info("完成解析部署文件, 需要部署{}个应用", model.getApp().size());
+        log.info("完成解析部署VOS格式的制品文件, 需要部署VOS格式的制品{}个应用", apps.size());
 
 //        保存serviceRole和host的映射
         List<ServiceRoleHostMapping> hostMappings = new ArrayList<>();
-        model.getApp().stream()
+        apps.stream()
                 .flatMap(app -> app.getRoles().stream())
                 .forEach(role -> {
                     ServiceRoleHostMapping hostMapping = new ServiceRoleHostMapping();
@@ -205,33 +211,33 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
 
 
 //        保存应用的启动配置
-        model.getApp().forEach(app -> {
+        apps.forEach(app -> {
             List<ServiceConfig> configs = serviceInstallService.getServiceConfigFromDdl(dto.getClusterId(), app.getName());
             serviceInstallService.saveServiceConfig(dto.getClusterId(), app.getName(), configs, -1);
         });
-        log.info("保存部署配置项成功");
+        log.info("保存部署VOS格式的制品配置项成功");
 
 
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
         Map<String, FrameServiceEntity> srvDefMap = CollectionUtil.toMap(serviceList, new HashMap<>(), srv -> srv.getServiceName() + ":" + srv.getServiceVersion());
-        List<String> commandIds = new ArrayList<>(model.getApp().size());
-        model.getApp().forEach(srv -> {
+        List<String> commandIds = new ArrayList<>(apps.size());
+        apps.forEach(srv -> {
             String cmdId = doGenerateInstallCmd(clusterInfo, srvDefMap.get(srv.getName() + ":" + srv.getVersion()));
             commandIds.add(cmdId);
         });
         log.info("保存安装命令成功, 共需要安装{}个应用", commandIds.size());
 
 
-        DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
-        DAG<String, DAGNode, Integer> dag = ctx.buildDeployDAG(model.getApp(), t -> {
+        VosProductDeployDAGBuildContext ctx = new VosProductDeployDAGBuildContext(serviceList);
+        DAG<String, DAGNode, Integer> dag = ctx.buildDeployDAG(apps, t -> {
             DeploySrvModel srvModel = t.unwrap();
             DAGNode node = new DAGNode();
             node.setName(srvModel.getName());
             node.setVersion(srvModel.getVersion());
             return node;
         });
-        String dagId = saveDAG(clusterInfo.getId(), "部署", commandIds, dag);
+        String dagId = saveDAG(clusterInfo.getId(), "部署VOS格式的制品", commandIds, dag);
 //        必须等待事务提交，否则，有概率查询不到保存的命令
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
@@ -304,7 +310,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
 
 
-        ExecDAGBuilderContext context = new ExecDAGBuilderContext();
+        VosProductCmdSrvMappingContext context = new VosProductCmdSrvMappingContext();
         context.setSrvCmd(commandService.lambdaQuery().in(ClusterServiceCommandEntity::getCommandId, commandIds).list());
         context.setCmdHost(hostCommandService.lambdaQuery().in(ClusterServiceCommandHostCommandEntity::getCommandId, commandIds).list());
 //        将服务依赖的dag重构成节点安装服务的dag
@@ -485,7 +491,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
                 serviceNode.getMasterRoles().forEach(role -> {
                     Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + role.getServiceInstanceId());
                     if (roleGroupId == null) {
-                        throw new BusinessHintException("系统已经重启，内存缓存数据已经丢失，当前任务无法恢复，请重新上传部署清单安装");
+                        throw new BusinessHintException("系统已经重启，内存缓存数据已经丢失，当前任务无法恢复，请重新上传部署VOS格式的制品清单安装");
                     }
                 });
             }
@@ -578,7 +584,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
     public String generateGenericInstallCommand(Integer clusterId, List<String> serviceNames) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
-        DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
+        VosProductDeployDAGBuildContext ctx = new VosProductDeployDAGBuildContext(serviceList);
         List<String> commandIds = new ArrayList<>(serviceNames.size());
 
         List<SimpleServiceResource> resources = new ArrayList<>();
@@ -594,7 +600,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
             SimpleServiceResource resource = rs.unwrap();
             return BeanUtil.toBean(resource, DAGNode.class);
         });
-        String dagId = saveDAG(clusterId, "部署", commandIds, dag);
+        String dagId = saveDAG(clusterId, "部署VOS格式的制品", commandIds, dag);
         return dagId;
     }
 
@@ -621,7 +627,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
 
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
-        DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
+        VosProductDeployDAGBuildContext ctx = new VosProductDeployDAGBuildContext(serviceList);
         List<SimpleServiceResource> resources = frameService.listServices(serviceFrameworkIds)
                 .stream()
                 .map(s -> new SimpleServiceResource(s.getServiceName(), s.getServiceVersion()))
@@ -694,7 +700,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
 
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
-        DeploymentDAGBuildContext ctx = new DeploymentDAGBuildContext(clusterInfo, serviceList);
+        VosProductDeployDAGBuildContext ctx = new VosProductDeployDAGBuildContext(serviceList);
         List<SimpleServiceResource> resources = frameService.listServices(serviceFrameworkIds)
                 .stream()
                 .map(s -> new SimpleServiceResource(s.getServiceName(), s.getServiceVersion()))
@@ -731,7 +737,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
     @Override
     public List<FrameServiceEntity> listNewestByDeployment(DeploymentDTO dto) {
         DeploymentModel model = doParseDeploymentFile(dto);
-        List<String> serviceList = model.getApp().stream().map(DeploySrvModel::getName).collect(Collectors.toList());
+        List<String> serviceList = getTargetApps(model).stream().map(DeploySrvModel::getName).collect(Collectors.toList());
         List<FrameServiceEntity> list = frameService.listNewest(dto.getClusterId(), true);
         list.forEach(et -> et.setSelected(serviceList.contains(et.getServiceName())));
         return list;
@@ -755,7 +761,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
         DeploymentModel model = doParseDeploymentFile(dto);
 
         Map<String, DeploySrvRoleModel> map = new HashMap<>();
-        model.getApp().forEach(app -> {
+        getTargetApps(model).forEach(app -> {
             app.getRoles().forEach(role -> {
                 map.put(app.getName() + "_" + role.getName(), role);
             });

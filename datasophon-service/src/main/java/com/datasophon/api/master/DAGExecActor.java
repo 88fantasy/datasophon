@@ -11,11 +11,11 @@ import com.datasophon.api.dag.repo.DAGRepository;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.handler.service.ServiceStatusHandler;
-import com.datasophon.api.service.ClusterServiceCommandHostCommandService;
-import com.datasophon.api.service.ClusterServiceCommandHostService;
-import com.datasophon.api.service.ClusterServiceCommandService;
 import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
+import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
+import com.datasophon.api.service.cmd.ClusterServiceCommandHostService;
+import com.datasophon.api.service.cmd.ClusterServiceCommandService;
 import com.datasophon.api.service.dag.DAGService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SpringTool;
@@ -30,11 +30,11 @@ import com.datasophon.common.model.ServiceNode;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PlaceholderUtils;
-import com.datasophon.dao.entity.ClusterServiceCommandEntity;
-import com.datasophon.dao.entity.ClusterServiceCommandHostCommandEntity;
-import com.datasophon.dao.entity.ClusterServiceCommandHostEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.entity.cmd.ClusterServiceCommandEntity;
+import com.datasophon.dao.entity.cmd.ClusterServiceCommandHostCommandEntity;
+import com.datasophon.dao.entity.cmd.ClusterServiceCommandHostEntity;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.NeedRestart;
 import com.datasophon.dao.enums.ServiceRoleState;
@@ -203,7 +203,7 @@ public class DAGExecActor extends TypedActor<DAGExecCommand> {
                         currentRole = role;
                         lastResult = handler.handlerRequest(role);
                         if (!lastResult.isSuccess()) {
-                            log.info("主机{}, {} {}状态检查返回失败，执行返回信息为：{}", role.getHostname(), role.getParentName(), role.getName(), result.getExecOut());
+                            log.info("主机{}, {} {}状态检查返回失败，执行返回信息为：{}", role.getHostname(), role.getParentName(), role.getName(), lastResult.getExecOut());
                             if (firstError == null) {
                                 firstError = lastResult;
                             }

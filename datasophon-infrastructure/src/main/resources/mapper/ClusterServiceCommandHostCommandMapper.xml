@@ -18,7 +18,7 @@
 
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.datasophon.dao.mapper.ClusterServiceCommandHostCommandMapper">
+<mapper namespace="com.datasophon.dao.mapper.cmd.ClusterServiceCommandHostCommandMapper">
 
     <select id="getHostCommandTotalProgressByHostnameAndCommandHostId" resultType="java.lang.Integer">
         SELECT

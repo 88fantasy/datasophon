@@ -2,7 +2,7 @@ package com.datasophon.common.k8s.client;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.datasophon.common.k8s.dto.ReTagDTO;
-import com.datasophon.common.k8s.spec.DockerImageParser;
+import com.datasophon.common.k8s.spec.docker.DockerImageParser;
 import com.datasophon.common.k8s.vo.ImageManifest;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;

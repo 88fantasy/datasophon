@@ -1,12 +1,8 @@
 package com.datasophon.api.service.extrepo;
 
-import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
-import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
-
-import java.util.List;
 
 /**
  * 软件外部源的元数据业务逻辑处理类
@@ -27,7 +23,6 @@ public interface ExtRepoMetaService {
     void clearProgressCache();
 
 
-    DeploymentDAG buildDeploymentDAG(DeploymentDTO dto);
 
 
 

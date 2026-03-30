@@ -1,12 +1,10 @@
 package com.datasophon.api.service.extrepo.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.CryptoException;
-import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.service.ClusterInfoService;
@@ -14,17 +12,14 @@ import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.ddl.DdlMetaService;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
-import com.datasophon.api.service.extrepo.ctx.DeploymentDAGBuildContext;
 import com.datasophon.api.service.extrepo.ctx.MetaParseOption;
 import com.datasophon.api.service.extrepo.ctx.SrvDependenciesContext;
 import com.datasophon.api.service.extrepo.utils.MetaUtils;
 import com.datasophon.api.service.frame.FrameK8sServiceService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.utils.TransactionalUtils;
-import com.datasophon.api.vo.extrepo.DeploymentDAG;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
-import com.datasophon.common.model.DAG;
 import com.datasophon.common.storage.HelmStorage;
 import com.datasophon.common.storage.ImageStorage;
 import com.datasophon.common.storage.MetaStorage;
@@ -32,13 +27,10 @@ import com.datasophon.common.storage.PackageStorage;
 import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.utils.PathUtils;
 import com.datasophon.common.utils.TarUtils;
-import com.datasophon.common.utils.YamlUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
-import com.datasophon.dao.model.extrepo.DeploySrvModel;
-import com.datasophon.dao.model.extrepo.DeploymentModel;
 import com.datasophon.dao.model.extrepo.ExtRepoMetaFsModel;
 import com.datasophon.dao.model.extrepo.FrameworkMeta;
 import lombok.Data;
@@ -500,48 +492,6 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
                 importCmpMap.remove(key);
             }
         }
-    }
-
-
-    @Override
-    public DeploymentDAG buildDeploymentDAG(DeploymentDTO dto) {
-        File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId());
-        if (deploymentFile == null) {
-            throw new BusinessException("部署清单文件不存在");
-        }
-        String content = MetaUtils.decodeFile(deploymentFile, dto.getContentDecodePasswd());
-        DeploymentModel model = YamlUtils.parseYaml(content, DeploymentModel.class);
-
-        ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
-        List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
-        DeploymentDAGBuildContext context = new DeploymentDAGBuildContext(clusterInfo, serviceList);
-
-
-        List<String> uninstall = new ArrayList<>();
-        model.getApp().forEach(app -> {
-            FrameServiceEntity entity = context.getSrvEntity(app);
-            if (entity == null) {
-                uninstall.add(app.getName() + "(" + app.getVersion() + ")");
-            }
-        });
-        if (!uninstall.isEmpty()) {
-            throw new BusinessException(String.format("服务: %s在框架中%s不存在", StrUtil.join(";", uninstall), clusterInfo.getClusterCode()));
-        }
-
-        DAG<String, DeploymentDAG.SrvNodeVO, Integer> dag = context.buildDeployDAG(model.getApp(), t -> {
-            DeploySrvModel srvModel = t.unwrap();
-            return BeanUtil.toBean(srvModel, DeploymentDAG.SrvNodeVO.class);
-        });
-        DeploymentDAG result = new DeploymentDAG();
-        dag.getNodes().values().forEach(node -> result.getNodes().add(node));
-        dag.getEdges().forEach(edge -> {
-            DeploymentDAG.EdgeVO vo = new DeploymentDAG.EdgeVO();
-            vo.setId(edge.getEdge());
-            vo.setStart(dag.getNode(edge.getStart()).getId());
-            vo.setEnd(dag.getNode(edge.getEnd()).getId());
-            result.getEdge().add(vo);
-        });
-        return result;
     }
 
 

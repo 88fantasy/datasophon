@@ -23,6 +23,7 @@ public class GlobalVariables {
     public static final String ROOT = "ROOT";
 
     public static final String HOST = "__host__";
+    public static final String NAMESPACE = "__namespace__";
 
     public static final String HOST_IP = "__hostIp__";
 

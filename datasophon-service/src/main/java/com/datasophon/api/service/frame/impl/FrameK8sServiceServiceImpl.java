@@ -63,26 +63,32 @@ public class FrameK8sServiceServiceImpl extends ServiceImpl<FrameK8sServiceMappe
 
     @Override
     public List<FrameK8sServiceEntity> getByFrameCode(String clusterFrame) {
-        FrameInfoEntity frameInfo =  frameInfoService.getByFrameCode(clusterFrame);
+        FrameInfoEntity frameInfo = frameInfoService.getByFrameCode(clusterFrame);
         if (frameInfo == null) {
             return new ArrayList<>(0);
         }
         return lambdaQuery()
                 .eq(FrameK8sServiceEntity::getFrameId, frameInfo.getId())
+                .select(FrameK8sServiceEntity::getId,
+                        FrameK8sServiceEntity::getFrameId,
+                        FrameK8sServiceEntity::getServiceName,
+                        FrameK8sServiceEntity::getServiceVersion,
+                        FrameK8sServiceEntity::getServiceDesc,
+                        FrameK8sServiceEntity::getDependencies,
+                        FrameK8sServiceEntity::getType,
+                        FrameK8sServiceEntity::getSupportArtifacts
+                )
                 .list();
     }
 
     @Override
     public List<FrameK8sServiceEntity> listNewest(Integer clusterId) {
         ClusterInfoEntity clusterInfo = clusterInfoMapper.selectById(clusterId);
-        if (clusterInfo == null || clusterInfo.getFrameId() == null) {
+        if (clusterInfo == null) {
             return Collections.emptyList();
         }
 
-        List<FrameK8sServiceEntity> list = this.lambdaQuery()
-                .eq(FrameK8sServiceEntity::getFrameId, clusterInfo.getFrameId())
-                .orderByAsc(FrameK8sServiceEntity::getServiceName)
-                .list();
+        List<FrameK8sServiceEntity> list = getByFrameCode(clusterInfo.getClusterFrame());
 
         // 对于每一个服务，只保留最新版本
         Map<String, FrameK8sServiceEntity> existEntity = new HashMap<>();

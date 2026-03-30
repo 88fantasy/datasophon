@@ -3,7 +3,7 @@ package com.datasophon.common.k8s.client;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.common.Constants;
 import com.datasophon.common.PropertiesPathUtils;
-import com.datasophon.common.k8s.spec.DockerImageParser;
+import com.datasophon.common.k8s.spec.docker.DockerImageParser;
 import com.datasophon.common.k8s.vo.ImageManifest;
 import com.datasophon.common.model.uni.NexusUri;
 import com.github.dockerjava.api.model.AuthConfig;

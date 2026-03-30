@@ -67,7 +67,28 @@ create table `t_ddh_k8s_service_instance_values`
     `service_id`   int(11)      DEFAULT NULL COMMENT '服务 ID',
     `instance_id`  int(11)      DEFAULT NULL COMMENT '实例 ID',
     `values`       text         DEFAULT NULL COMMENT 'yaml 的文本',
+    `delta_values` text          COMMENT '用户新增的配置项，yaml',
     `version`      int          DEFAULT 1 COMMENT '版本',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT = 'k8s 服务实例变量信息';
+
+create table `t_ddh_cluster_k8s_service_command`
+(
+    `command_id`        varchar(100)  NOT NULL COMMENT '主键',
+    `create_by`         varchar(50)   DEFAULT NULL COMMENT '创建人',
+    `command_name`      varchar(100)  DEFAULT NULL COMMENT '命令名称',
+    `command_state`     tinyint(4)    DEFAULT NULL COMMENT '命令状态 0:待运行 1:正在运行 2:成功 3:失败 4:取消',
+    `command_progress`  int(11)       DEFAULT NULL COMMENT '命令进度',
+    `cluster_id`        int(11)       DEFAULT NULL COMMENT '集群 id',
+    `service_name`      varchar(100)  DEFAULT NULL COMMENT '服务名称',
+    `service_instance_id` int(11)     DEFAULT NULL COMMENT '服务实例 ID',
+    `command_type`      int(11)       DEFAULT NULL COMMENT '命令类型',
+    `namespace`         varchar(100)  DEFAULT NULL COMMENT '部署的名空间',
+    `create_time`       datetime      DEFAULT NULL COMMENT '创建时间',
+    `end_time`          datetime      DEFAULT NULL COMMENT '结束时间',
+    PRIMARY KEY (`command_id`) USING BTREE
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4 COMMENT = 'k8s 服务命令执行记录';
+
+

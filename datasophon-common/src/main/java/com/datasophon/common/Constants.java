@@ -63,7 +63,6 @@ public final class Constants {
     public static final String CONFIG = "_config";
     public static final String SERVICE_ROLE_HOST_MAPPING = "service_role_host_mapping";
     public static final String UNDERLINE = "_";
-    public static final String HOST_SERVICE_ROLE_MAPPING = "host_service_role_mapping";
     public static final String DETAILS_USER_ID = "user_id";
     public static final String MASTER = "master";
     public static final String CONFIG_FILE = "_config_file";
@@ -78,7 +77,6 @@ public final class Constants {
     public static final String CHECK_WORKER_MD5_CMD =
             "md5sum " + MASTER_MANAGE_PACKAGE_PATH + "/datasophon-worker.tar.gz | awk '{print $1}'";
     public static final String CREATE_TIME = "create_time";
-    public static final String COMMAND_TYPE = "command_type";
     public static final String SERVICE_ROLE_NAME = "service_role_name";
     public static final String FRAME_CODE_1 = "frame_code";
     public static final String UPDATE_COMMON_CMD = "sh " + INSTALL_PATH + "/datasophon-worker/script/sed_common.sh ";
