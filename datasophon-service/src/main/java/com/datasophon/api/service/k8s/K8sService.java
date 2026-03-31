@@ -114,4 +114,22 @@ public interface K8sService {
      */
     K8sNamespace createIfAbsent(K8sClusterConfig config, String namespaceName);
 
+    /**
+     * 重启 Deployment
+     *
+     * @param config    K8s 集群配置
+     * @param deployments     查询条件
+     * @return 重启结果信息
+     */
+    void restartDeployment(K8sClusterConfig config, List<K8sDeploymentInfo> deployments);
+
+    /**
+     * 缩放 Deployment 副本数
+     *
+     * @param config    K8s 集群配置
+     * @param deployments     Deployment 列表
+     * @param replicas  目标副本数
+     */
+    void scaleDeployments(K8sClusterConfig config, List<K8sDeploymentInfo> deployments, int replicas);
+
 }

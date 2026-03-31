@@ -9,8 +9,10 @@ import com.datasophon.api.dag.model.NodeDefinition;
 import com.datasophon.api.dag.repo.DAGRepository;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.exceptions.BusinessHintException;
-import com.datasophon.api.master.handler.k8s.InstallServiceHandler;
+import com.datasophon.api.master.handler.k8s.ApplyServiceHandler;
+import com.datasophon.api.master.handler.k8s.RestartServiceHandler;
 import com.datasophon.api.master.handler.k8s.ServiceHandler;
+import com.datasophon.api.master.handler.k8s.StopServiceHandler;
 import com.datasophon.api.service.cmd.ClusterK8sServiceCommandService;
 import com.datasophon.api.service.dag.DAGService;
 import com.datasophon.common.Constants;
@@ -89,11 +91,15 @@ public class K8SDAGExecActor extends TypedActor<DAGExecCommand> {
         switch (type) {
             case INSTALL_SERVICE:
             case UPGRADE_SERVICE:
-                handler = new InstallServiceHandler();
-                break;
             case START_SERVICE:
+                handler = new ApplyServiceHandler(type);
+                break;
             case STOP_SERVICE:
+                handler = new StopServiceHandler();
+                break;
             case RESTART_SERVICE:
+                handler = new RestartServiceHandler();
+                break;
             default:
                 throw new BusinessException(String.format("unknown cmd type: %s of srv %s in namespace %s",
                         type.getCommandName(Constants.CN), serviceNode.getServiceName(), serviceNode.getNamespace()));

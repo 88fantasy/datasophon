@@ -26,5 +26,4 @@ public class K8sServiceNode {
     private Integer valueId;
 
 
-
 }

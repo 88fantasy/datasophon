@@ -1,5 +1,6 @@
 package com.datasophon.dao.entity.instance;
 
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -13,6 +14,7 @@ import java.io.Serializable;
 @TableName("t_ddh_k8s_service_instance_values")
 public class K8sServiceInstanceValues implements Serializable {
 
+    @TableId
     private Integer id;
 
     @Schema(description = "集群")

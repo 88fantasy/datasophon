@@ -12,6 +12,7 @@ import com.datasophon.api.service.frame.FrameK8sServiceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
 import com.datasophon.api.service.k8s.K8sService;
+import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.k8s.client.HelmClient;
 import com.datasophon.common.k8s.client.HelmifyClient;
 import com.datasophon.common.k8s.config.ClientOptions;
@@ -36,13 +37,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Collections;
 
 /**
  * @author zhanghuangbin
  */
 @Slf4j
-public class InstallServiceHandler extends ServiceHandler {
+public class ApplyServiceHandler extends ServiceHandler {
 
     private final K8sService k8sService;
 
@@ -52,8 +54,10 @@ public class InstallServiceHandler extends ServiceHandler {
     private final FrameK8sServiceService frameK8sServiceService;
     private final K8sServiceInstanceValuesService k8sServiceInstanceValuesService;
 
+    private final CommandType commandType;
 
-    public InstallServiceHandler() {
+    public ApplyServiceHandler(CommandType commandType) {
+        this.commandType = commandType;
         k8sService = SpringUtil.getBean(K8sService.class);
         namespaceService = SpringUtil.getBean(K8sClusterNamespaceService.class);
         instanceService = SpringUtil.getBean(K8sServiceInstanceService.class);
@@ -64,22 +68,26 @@ public class InstallServiceHandler extends ServiceHandler {
 
     @Override
     public ExecResult handlerRequest(K8sServiceNode serviceNode) throws Exception {
-        return doInstallServiceNode(serviceNode);
+        return doInstallServiceNode(BeanUtil.toBean(serviceNode, K8sServiceNode.class));
     }
 
     private ExecResult doInstallServiceNode(K8sServiceNode serviceNode) throws IOException {
         // 步骤 1: 检查并创建 namespace
         String chartPath = null;
         try {
+//            填充缺省的值
+            fillNodeFields(serviceNode);
+
             ensureNamespaceExists(serviceNode);
             K8sServiceInstance instance = instanceService.getById(serviceNode.getServiceInstanceId());
             FrameK8sServiceEntity serviceDef = frameK8sServiceService.getById(instance.getServiceId());
+            K8sServiceInstanceValues values = k8sServiceInstanceValuesService.getById(serviceNode.getValueId());
 
-            chartPath = downloadOrGenerateChart(serviceNode, serviceDef);
+            chartPath = downloadOrGenerateChart(serviceNode, serviceDef, values);
 
-            HelmReleaseVO result = applyHelmChart(serviceNode, chartPath, serviceDef, instance);
+            HelmReleaseVO result = applyHelmChart(serviceNode, chartPath, serviceDef, instance, values);
             if (!result.getInfo().getStatus().equalsIgnoreCase("deployed")) {
-               return ExecResult.error(String.format("安装%s失败，原因：%s", serviceNode.getServiceName(), result.getInfo().getNotes()));
+                return ExecResult.error(String.format("安装%s失败，原因：%s", serviceNode.getServiceName(), result.getInfo().getNotes()));
             }
             // 步骤 4: 更新服务实例状态
             updateServiceInstance(serviceNode, instance, result.getVersion());
@@ -88,6 +96,17 @@ public class InstallServiceHandler extends ServiceHandler {
         } finally {
             FileUtil.del(chartPath);
         }
+    }
+
+    private void fillNodeFields(K8sServiceNode serviceNode) {
+        if (!Arrays.asList(CommandType.INSTALL_SERVICE, CommandType.UPGRADE_SERVICE).contains(commandType)) {
+            K8sServiceInstance instance = instanceService.getById(serviceNode.getServiceInstanceId());
+            serviceNode.setMetaFileType(instance.getLastMetaFileType());
+
+            K8sServiceInstanceValues values = k8sServiceInstanceValuesService.getNewestValuesByInstanceId(serviceNode.getServiceInstanceId());
+            serviceNode.setValueId(values.getId());
+        }
+
     }
 
 
@@ -118,14 +137,14 @@ public class InstallServiceHandler extends ServiceHandler {
     /**
      * @param serviceNode 服务节点信息
      * @param serviceDef
+     * @param values
      * @return yaml 内容
      */
-    private String downloadOrGenerateChart(K8sServiceNode serviceNode, FrameK8sServiceEntity serviceDef) {
+    private String downloadOrGenerateChart(K8sServiceNode serviceNode, FrameK8sServiceEntity serviceDef, K8sServiceInstanceValues values) {
         String metaFileType = serviceNode.getMetaFileType();
         if ("helm".equals(metaFileType)) {
             return downloadHelmChart(serviceDef);
         } else if ("yaml".equals(metaFileType)) {
-            K8sServiceInstanceValues values = k8sServiceInstanceValuesService.getById(serviceNode.getValueId());
             return generateChart(serviceDef, values);
         } else {
             throw new IllegalArgumentException("不支持的 metaFileType: " + serviceNode.getMetaFileType());
@@ -159,21 +178,17 @@ public class InstallServiceHandler extends ServiceHandler {
         }
     }
 
-    private HelmReleaseVO applyHelmChart(K8sServiceNode serviceNode, String chartPath, FrameK8sServiceEntity serviceDef, K8sServiceInstance instance) throws IOException {
+    private HelmReleaseVO applyHelmChart(K8sServiceNode serviceNode, String chartPath, FrameK8sServiceEntity serviceDef, K8sServiceInstance instance, K8sServiceInstanceValues values) throws IOException {
         ClientOptions options = BeanUtil.toBean(config, ClientOptions.class);
         options.setServerName(config.getServerHost());
 
         File tempValueFile = null;
         try (HelmClient client = new HelmClient(options)) {
             UpgradeParams params = new UpgradeParams();
-            if (serviceNode.getMetaFileType().equals("helm")) {
-                ServiceMetaItem item = frameK8sServiceService.getServiceMetaItem(serviceDef.getId());
-                MetaStorage metaStorage = StorageUtils.getMetaStorage();
-                K8sArtifact artifact = JSONObject.parseObject(serviceDef.getArtifact(), K8sArtifact.class);
-                tempValueFile = PathUtils.createTmpFile("sensitive/" + RandomUtil.randomString(12), artifact.getHelm());
-                try (OutputStream out = Files.newOutputStream(tempValueFile.toPath())) {
-                    metaStorage.downResource(item, artifact.getHelm(), () -> out);
-                }
+
+            if (serviceNode.getMetaFileType().equals("helm") && StrUtil.isNotBlank(values.getDeltaValues())) {
+                tempValueFile = PathUtils.createTmpFile("sensitive/" + RandomUtil.randomString(12), serviceDef.getRuntime());
+                FileUtil.writeString(values.getDeltaValues(), tempValueFile, StandardCharsets.UTF_8);
             }
 
             params.setReleaseName(serviceDef.getServiceName() + "_" + instance.getServiceId());

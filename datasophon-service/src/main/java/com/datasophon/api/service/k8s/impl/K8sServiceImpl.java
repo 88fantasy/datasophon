@@ -120,7 +120,7 @@ public class K8sServiceImpl implements K8sService {
 
     @Override
     public List<K8sNamespace> listNamespaces(K8sClusterConfig config) {
-        return exec(newOptions(config), this::doListNamespaces, "获取 K8s 命名空间列表及状态");
+        return exec(newOptions(config), this::doListNamespaces, "获取 K8s 集群命名空间列表及状态");
     }
 
 
@@ -485,13 +485,7 @@ public class K8sServiceImpl implements K8sService {
                 }
             }
             // 2. namespace 不存在，创建它
-            List<String> args = java.util.Arrays.asList("create", "namespace", namespaceName);
-            com.datasophon.common.utils.ExecResult result = client.execute(args, 30);
-
-            // namespace 已存在时返回 1，但这不是错误
-            if (!result.isSuccess() && !result.getExecOut().contains("already exists")) {
-                log.warn("namespace {}已经存在, output={}", namespaceName, result.getExecOut());
-            }
+            client.createNamespace(namespaceName);
             log.info("K8s namespace '{}' created in cluster {}", namespaceName, config.getClusterId());
             // 3. 返回新创建的 namespace 信息
             K8sNamespace namespace = new K8sNamespace();
@@ -501,11 +495,39 @@ public class K8sServiceImpl implements K8sService {
         }, "确保 K8s namespace 存在");
     }
 
+    @Override
+    public void restartDeployment(K8sClusterConfig config, List<K8sDeploymentInfo> deployments) {
+        exec(newOptions(config), client -> {
+            for (K8sDeploymentInfo deployment : deployments) {
+               try {
+                   client.restartDeployment(deployment.getNamespace(), deployment.getName());
+               } catch (Exception e) {
+                   throw new KubectlException(String.format("重启deployment/%s失败, %s", deployment.getName(), e.getMessage()), e);
+               }
+            }
+            return null;
+        }, "重启 Deployment");
+    }
+
+    @Override
+    public void scaleDeployments(K8sClusterConfig config, List<K8sDeploymentInfo> deployments, int replicas) {
+        exec(newOptions(config), client -> {
+            for (K8sDeploymentInfo deployment : deployments) {
+               try {
+                   client.scaleDeployment(deployment.getNamespace(), deployment.getName(), replicas);
+               } catch (Exception e) {
+                   throw new KubectlException(String.format("缩放 deployment/%s 到%d 副本失败，%s", deployment.getName(), replicas, e.getMessage()), e);
+               }
+            }
+            return null;
+        }, "缩放 Deployment 副本数");
+    }
+
     private <T> T exec(ClientOptions options, ThrowableMapper<KubectlClient, T> consumer, String actionHint) {
         try (KubectlClient client = new KubectlClient(options)) {
             return consumer.accept(client);
         } catch (Exception e) {
-            throw new BusinessException(String.format("%s失败，%s", StrUtil.isBlank(actionHint) ? "请求K8S集群接口" : actionHint, e.getMessage()), e);
+            throw new BusinessException(String.format("%s 失败，%s", StrUtil.isBlank(actionHint) ? "请求 K8S 集群接口" : actionHint, e.getMessage()), e);
         }
     }
 }

@@ -26,6 +26,14 @@ public interface K8sServiceInstanceService extends IService<K8sServiceInstance> 
         return result.get(0).getServiceName();
     }
 
+    default K8sServiceInstanceVO getVoById(Integer instanceId) {
+        List<K8sServiceInstanceVO> result = listByIds(Collections.singletonList(instanceId));
+        if (result.isEmpty()) {
+            return null;
+        }
+        return result.get(0);
+    }
+
     List<String> listResourceType(K8sServiceInstanceQueryDTO query);
 
     Object listResource(K8sServiceInstanceQueryDTO query);

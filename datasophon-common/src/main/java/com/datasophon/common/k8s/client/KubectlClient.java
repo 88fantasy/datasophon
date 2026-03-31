@@ -118,7 +118,7 @@ public class KubectlClient implements AutoCloseable {
      * @param subCommandParts kubectl 子命令及其参数（不包含 kubectl 路径本身）
      * @return 执行结果
      */
-    public ExecResult execute(List<String> subCommandParts, int timeoutSeconds) {
+    private ExecResult execute(List<String> subCommandParts, int timeoutSeconds) {
         List<String> commandParts = new ArrayList<>();
         commandParts.add(kubectlPath);
 
@@ -299,6 +299,62 @@ public class KubectlClient implements AutoCloseable {
         return parseResourceList(jsonNode, K8sConfigMap.class);
     }
 
+
+    /**
+     * 重启指定的 Deployment
+     *
+     * @param namespace     命名空间
+     * @param deploymentName Deployment 名称
+     */
+    public void restartDeployment(String namespace, String deploymentName) {
+        List<String> args = Arrays.asList(
+            "rollout",
+            "restart",
+            "deployment/" + deploymentName,
+            "-n",
+            namespace
+        );
+        ExecResult result = execute(args, -1);
+        if (!result.isSuccess()) {
+            throw new KubectlException(
+                String.format("restart deployment %s in namespace %s failed, %s",
+                    deploymentName, namespace, result.getErrorTraceMessage())
+            );
+        }
+    }
+
+    public void createNamespace(String namespace) {
+        List<String> args = Arrays.asList("create", "namespace", namespace);
+        ExecResult result = execute(args, -1);
+        // namespace 已存在时返回 1，但这不是错误
+        if (!result.isSuccess() && !result.getExecOut().contains("already exists")) {
+            throw new KubectlException(String.format("create namespace %s fail, %s", namespace, result.getErrorTraceMessage()));
+        }
+    }
+
+    /**
+     * 缩放指定的 Deployment
+     *
+     * @param namespace     命名空间
+     * @param deploymentName Deployment 名称
+     * @param replicas      副本数
+     */
+    public void scaleDeployment(String namespace, String deploymentName, int replicas) {
+        List<String> args = Arrays.asList(
+            "scale",
+            "deployment/" + deploymentName,
+            "--replicas=" + replicas,
+            "-n",
+            namespace
+        );
+        ExecResult result = execute(args, -1);
+        if (!result.isSuccess()) {
+            throw new KubectlException(
+                String.format("scale deployment %s to %d replicas in namespace %s failed, %s",
+                    deploymentName, replicas, namespace, result.getErrorTraceMessage())
+            );
+        }
+    }
     /**
      * 解析 K8s 资源列表 JSON
      */
@@ -344,4 +400,7 @@ public class KubectlClient implements AutoCloseable {
 //            FileUtil.del(tempDir);
         }
     }
+
+
+
 }
