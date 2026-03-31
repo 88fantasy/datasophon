@@ -14,7 +14,6 @@ public interface K8sClusterNamespaceService extends IService<K8sClusterNamespace
     List<K8sClusterNamespace> listAndUpdateNamespaceByClusterId(Integer clusterId);
 
 
-
     K8sClusterNamespace getNamespace(K8sNamespaceIdentityDTO query);
 
     K8sClusterNamespace createIfAbsent(K8sNamespaceIdentityDTO namespace);

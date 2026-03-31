@@ -434,9 +434,13 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
     private String createNodeConfig(K8sCommandNode info) {
         ClusterK8sServiceCommandEntity cmd = info.getCmd();
         FrameK8sServiceEntity service = info.getService();
+
         K8sServiceNode node = new K8sServiceNode();
+        node.setClusterId(cmd.getClusterId());
         node.setCommandId(cmd.getCommandId());
         node.setCommandType(CommandType.ofCode(cmd.getCommandType()));
+
+
         node.setServiceName(service.getServiceName());
         node.setServiceInstanceId(cmd.getServiceInstanceId());
         node.setNamespace(cmd.getNamespace());

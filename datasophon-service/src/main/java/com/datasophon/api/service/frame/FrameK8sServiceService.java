@@ -21,4 +21,6 @@ public interface FrameK8sServiceService extends IService<FrameK8sServiceEntity> 
     ServiceMetaItem getServiceMetaItem(Integer serviceId);
 
     boolean removeById(Integer serviceId);
+
+
 }

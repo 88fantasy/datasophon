@@ -22,11 +22,11 @@ public interface K8sService {
 
     String VOS_ORG = "ltszyl.com/vos-";
 
-    String MANGED_BY_LABEL = VOS_ORG + "managed-by";
+    String MANGED_BY_LABEL = "app.kubernetes.io/managed-by";
 
-    String MANGED_BY_LABEL_VALUE = "vos";
+    String MANGED_BY_LABEL_VALUE = "Helm";
 
-    String SRV_INST_ID_LABEL = VOS_ORG + "service-instance-id";
+    String SRV_INST_ID_LABEL = "app.kubernetes.io/instance";
 
 
     String POD_TYPE = "pod";
@@ -104,5 +104,14 @@ public interface K8sService {
      * @return ConfigMap 资源列表
      */
     List<K8sConfigMapInfo> listConfigMaps(K8sClusterConfig config, K8sServiceInstanceQueryDTO query);
+
+    /**
+     * 确保 K8s namespace 存在，如果不存在则创建
+     *
+     * @param config        K8s 集群配置
+     * @param namespaceName namespace 名称
+     * @return 创建或获取的 namespace 信息
+     */
+    K8sNamespace createIfAbsent(K8sClusterConfig config, String namespaceName);
 
 }

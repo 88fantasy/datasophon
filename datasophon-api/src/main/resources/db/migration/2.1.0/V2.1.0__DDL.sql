@@ -70,6 +70,7 @@ create table `t_ddh_k8s_service_instance_values`
     `values`       text         DEFAULT NULL COMMENT 'yaml 的文本',
     `delta_values` text          COMMENT '用户新增的配置项，yaml',
     `version`      int          DEFAULT 1 COMMENT '版本',
+    `meta_file_type` varchar(100) DEFAULT NULL COMMENT '最近一次部署方式 helm, yaml',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT = 'k8s 服务实例变量信息';

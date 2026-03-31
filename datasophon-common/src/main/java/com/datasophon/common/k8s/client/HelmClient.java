@@ -1,26 +1,56 @@
 package com.datasophon.common.k8s.client;
 
+import cn.hutool.core.codec.Base64;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import com.datasophon.common.k8s.dto.ChartInstallParameter;
+import com.datasophon.common.k8s.config.ClientOptions;
+import com.datasophon.common.k8s.dto.UpgradeParams;
+import com.datasophon.common.k8s.exception.HelmException;
+import com.datasophon.common.k8s.vo.helm.HelmReleaseVO;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PathUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 
 /**
  * Helm 命令封装客户端
  */
+@Slf4j
 @Data
-public class HelmClient {
+public class HelmClient implements AutoCloseable{
 
     private final String helmPath;
+
+
+    private final String kubeConfig;
+    private final String token;
     private final String username;
     private final String password;
+    private final String serverCert;
+    private final String serverName;
+
+    private final File tempDir;
+
+    private final ObjectMapper mapper;
 
     public static String detectHelmPath() {
         String path = PropertyUtils.getString("helm.install_path");
@@ -37,168 +67,212 @@ public class HelmClient {
         return null;
     }
 
+    public HelmClient(ClientOptions options) {
+        this.helmPath = detectHelmPath();
+        this.tempDir = PathUtils.getTmpDir("sensitive/" + RandomUtil.randomString(12));
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (!osName.contains("window")) {
+            ShellUtils.exec(null, Arrays.asList("chmod", "-R", "0700", tempDir.getAbsolutePath()), -1);
+        }
+
+        if (StrUtil.isNotBlank(options.getKubeConfig())) {
+            File config = new File(tempDir, "kubeConfig.yaml");
+            FileUtil.writeString(options.getKubeConfig(), config, StandardCharsets.UTF_8);
+            this.kubeConfig = config.getAbsolutePath();
+        } else {
+            this.kubeConfig = null;
+        }
+        if (StrUtil.isNotBlank(options.getServerCert())) {
+            File cert = new File(tempDir, "ca.cert");
+            Base64.decodeToFile(options.getServerCert(), cert);
+            this.serverCert = cert.getAbsolutePath();
+        } else {
+            this.serverCert = null;
+        }
+        this.token = options.getToken();
+        this.username = options.getUsername();
+        this.password = options.getPassword();
+        this.serverName = options.getServerName();
+
+        JsonMapper.Builder builder = JsonMapper.builder();
+        builder.defaultDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
+        builder.defaultLocale(Locale.CHINA);
+        builder.defaultTimeZone(TimeZone.getTimeZone("GMT+8"));
+
+        builder.disable(MapperFeature.DEFAULT_VIEW_INCLUSION);
+        builder.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        builder.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        builder.enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN);
+        mapper = builder.build();
+    }
 
     /**
-     * 执行 Helm 命令的基础方法
+     * 执行 helm 命令的基础方法
      *
-     * @param subCommandParts Helm 子命令及其参数（不包含 helm 路径本身）
+     * @param subCommandParts helm 子命令及其参数（不包含 helm 路径本身）
      * @return 执行结果
      */
-    public ExecResult execute(String workPath, List<String> subCommandParts, int timeoutSeconds)  {
-        // 构建完整命令参数列表
+    public ExecResult execute(List<String> subCommandParts, int timeoutSeconds) {
         List<String> commandParts = new ArrayList<>();
-        commandParts.add(helmPath);          // 添加 helm 可执行文件路径
+        commandParts.add(helmPath);
+
+        // 添加认证参数
+        if (StrUtil.isNotBlank(kubeConfig)) {
+            commandParts.add("--kubeconfig");
+            commandParts.add(kubeConfig);
+        } else {
+            if (StrUtil.isNotBlank(token)) {
+                commandParts.add("--kube-token");
+                commandParts.add(token);
+            } else if (StrUtil.isNotBlank(username) && StrUtil.isNotBlank(password)) {
+                commandParts.add("--kube-username");
+                commandParts.add(username);
+                commandParts.add("--kube-password");
+                commandParts.add(password);
+            }
+            if (StrUtil.isNotBlank(serverCert)) {
+                commandParts.add("--kube-ca-file");
+                commandParts.add(serverCert);
+            }
+            if (StrUtil.isNotBlank(serverName)) {
+                commandParts.add("--kube-apiserver");
+                commandParts.add(serverName);
+            }
+        }
+        subCommandParts.add("-o");
+        subCommandParts.add("json");
         commandParts.addAll(subCommandParts);
 
-        return ShellUtils.execWithBash(workPath, commandParts, timeoutSeconds);
+        return ShellUtils.execWithBash(null, commandParts, timeoutSeconds);
     }
 
+    /**
+     * 执行 helm 命令并返回执行结果
+     *
+     * @param subCommandParts helm 子命令及其参数
+     * @return 执行结果
+     * @throws HelmException 命令执行失败
+     */
+    public ExecResult executeWithResult(List<String> subCommandParts, int timeoutSeconds) throws HelmException {
+        ExecResult result = execute(subCommandParts, timeoutSeconds);
+        if (!result.isSuccess()) {
+            throw new HelmException("helm 命令执行失败：" + result.getErrorTraceMessage());
+        }
+        return result;
+    }
 
     /**
-     * 安装或升级一个 release（helm upgrade --install）
+     * 构建 helm upgrade 命令参数
      *
-     * @return 执行结果
+     * @param params upgrade 参数
+     * @return 命令参数列表
      */
-    public ExecResult upgradeInstall(String workspace, ChartInstallParameter parameter, int timeout) {
+    private List<String> buildUpgradeCommand(UpgradeParams params) {
         List<String> args = new ArrayList<>();
         args.add("upgrade");
-        args.add("--install");
-        args.add(parameter.getReleaseName());
-        args.add(parameter.getReleaseName());
-        args.add(parameter.getChart());
-        args.add("--namespace");
-        args.add(parameter.getNamespace());
+        args.add(params.getReleaseName());
+        args.add(params.getChartPath());
 
-        if (parameter.getValuesFiles() != null) {
-            for (String file : parameter.getValuesFiles()) {
+        // 添加 values 文件
+        if (params.getValuesFiles() != null) {
+            for (String valuesFile : params.getValuesFiles()) {
                 args.add("--values");
-                args.add(file);
+                args.add(valuesFile);
             }
         }
-        if (parameter.getSetValues() != null) {
-            for (String set : parameter.getSetValues()) {
+
+        // 添加 set 参数
+        if (params.getSetValues() != null) {
+            for (String setValue : params.getSetValues()) {
                 args.add("--set");
-                args.add(set);
+                args.add(setValue);
             }
         }
 
-        if (parameter.getExtraParameters() != null) {
-            args.addAll(parameter.getExtraParameters());
-        }
 
-        return execute(workspace, args, timeout);
-    }
-
-    /**
-     * 卸载 release
-     *
-     * @param releaseName release 名称
-     * @param namespace   命名空间
-     */
-    public ExecResult uninstall(String releaseName, String namespace, int timeout) {
-        List<String> args = Arrays.asList("uninstall", releaseName, "--namespace", namespace);
-        return execute(null, args, timeout);
-    }
-
-    /**
-     * 列出 releases
-     *
-     * @param namespace 命名空间（如果为 null 则列出所有命名空间）
-     * @return 执行结果（stdout 包含列表信息）
-     */
-    public ExecResult list(String namespace) {
-        List<String> args = new ArrayList<>();
-        args.add("list");
-        if (namespace != null) {
+        // 命名空间
+        if (StrUtil.isNotBlank(params.getNamespace())) {
             args.add("--namespace");
-            args.add(namespace);
-        } else {
-            args.add("--all-namespaces");
+            args.add(params.getNamespace());
         }
-        return execute(null, args, -1);
-    }
 
-    /**
-     * 获取 release 状态
-     *
-     * @param releaseName release 名称
-     * @param namespace   命名空间
-     */
-    public ExecResult status(String releaseName, String namespace) {
-        List<String> args = Arrays.asList("status", releaseName, "--namespace", namespace);
-        return execute(null, args, -1);
-    }
+        // 超时
+        args.add("--timeout");
+        args.add(params.getTimeoutSeconds() + "s");
 
-    /**
-     * 获取 release 的 values
-     *
-     * @param releaseName release 名称
-     * @param namespace   命名空间
-     */
-    public ExecResult getValues(String releaseName, String namespace) {
-        List<String> args = Arrays.asList("get", "values", releaseName, "--namespace", namespace);
-        return execute(null, args, -1);
-    }
-
-    /**
-     * 测试 release（helm test）
-     *
-     * @param releaseName release 名称
-     * @param namespace   命名空间
-     */
-    public ExecResult test(String releaseName, String namespace) {
-        List<String> args = Arrays.asList("test", releaseName, "--namespace", namespace);
-        return execute(null, args, -1);
-    }
-
-    /**
-     * 添加 Helm 仓库
-     *
-     * @param repoName 仓库名称
-     * @param repoUrl  仓库 URL
-     */
-    public ExecResult repoAdd(String repoName, String repoUrl) {
-        List<String> args = new ArrayList<>();
-        args.add("repo");
-        args.add("add");
-        args.add(repoName);
-        args.add(repoUrl);
-        if (username != null) {
-            args.add("--username");
-            args.add(username);
-            args.add("--password");
-            args.add(password);
+        // install 选项
+        if (params.isInstall()) {
+            args.add("--install");
         }
-        return execute(null, args, -1);
-    }
 
-    /**
-     * 更新 Helm 仓库
-     */
-    public ExecResult repoUpdate(int timeout) {
-        List<String> args = new ArrayList<>();
-        args.add("repo");
-        args.add("update");
-        if (username != null) {
-            args.add("--username");
-            args.add(username);
-            args.add("--password");
-            args.add(password);
+        // wait
+        if (params.isWait()) {
+            args.add("--wait");
         }
-        return execute(null, args, timeout);
+        if (params.isWaitForJob()) {
+            args.add("--wait-for-jobs");
+        }
+
+        // description
+        if (StrUtil.isNotBlank(params.getDescription())) {
+            args.add("--description");
+            args.add(params.getDescription());
+        }
+
+        return args;
     }
 
     /**
-     * 拉取 chart（helm pull）
+     * 升级 Helm release
      *
-     * @param chartRef chart 引用（如 repo/chart）
-     * @param destDir  目标目录
+     * @param params upgrade 参数
+     * @return Helm Release VO
+     * @throws HelmException 命令执行失败
      */
-    public ExecResult pull(String chartRef, String destDir) {
-        List<String> args = Arrays.asList("pull", chartRef, "--destination", destDir);
-        return execute(null, args, -1);
+    public HelmReleaseVO upgrade(UpgradeParams params) throws HelmException {
+        if (StrUtil.isBlank(params.getReleaseName())) {
+            throw new HelmException("releaseName 不能为空");
+        }
+        if (StrUtil.isBlank(params.getChartPath())) {
+            throw new HelmException("chartPath 不能为空");
+        }
+
+        List<String> command = buildUpgradeCommand(params);
+        log.info("执行 helm upgrade: release={}, chart={}", params.getReleaseName(), params.getChartPath());
+        ExecResult result = executeWithResult(command, params.getTimeoutSeconds());
+        try {
+            return mapper.readValue(result.getExecOut(), HelmReleaseVO.class);
+        } catch (Exception e) {
+            throw new HelmException("解析 helm upgrade 响应失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 简化的 upgrade 方法 - 基本参数
+     *
+     * @param releaseName    release 名称
+     * @param chartPath      chart 路径
+     * @param namespace      命名空间
+     * @param timeoutSeconds 超时时间（秒）
+     * @return Helm Release VO
+     * @throws HelmException 命令执行失败
+     */
+    public HelmReleaseVO upgrade(String releaseName, String chartPath, String namespace, int timeoutSeconds) throws HelmException {
+        UpgradeParams params = new UpgradeParams();
+        params.setReleaseName(releaseName);
+        params.setChartPath(chartPath);
+        params.setNamespace(namespace);
+        params.setTimeoutSeconds(timeoutSeconds);
+        params.setWait(true);
+        return upgrade(params);
     }
 
 
-
+    @Override
+    public void close() {
+        if (tempDir != null) {
+//            FIXME　
+//            FileUtil.del(tempDir);
+        }
+    }
 }

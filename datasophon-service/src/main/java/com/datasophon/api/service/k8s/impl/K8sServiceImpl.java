@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.api.dto.instance.K8sServiceInstanceQueryDTO;
 import com.datasophon.api.exceptions.BusinessException;
+import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.api.vo.k8s.K8sClusterStatus;
 import com.datasophon.api.vo.k8s.K8sConfigMapInfo;
@@ -24,6 +25,7 @@ import com.datasophon.common.k8s.vo.k8s.K8sPod;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -39,6 +41,10 @@ import java.util.stream.Collectors;
 @Service("k8sService")
 @Slf4j
 public class K8sServiceImpl implements K8sService {
+
+
+    @Autowired
+    private K8sServiceInstanceService k8sServiceInstanceService;
 
     @Override
     public K8sClusterStatus getState(K8sClusterConfig config) {
@@ -114,30 +120,29 @@ public class K8sServiceImpl implements K8sService {
 
     @Override
     public List<K8sNamespace> listNamespaces(K8sClusterConfig config) {
-        return exec(newOptions(config), client -> {
-            K8sResourceList<com.datasophon.common.k8s.vo.k8s.K8sNamespace> nsResult = client.getNamespaces();
-            List<K8sNamespace> result = new ArrayList<>();
-            for (com.datasophon.common.k8s.vo.k8s.K8sNamespace ns : nsResult.getItems()) {
-                K8sNamespace namespace = new K8sNamespace();
-                namespace.setName(ns.getMetadata() != null ? ns.getMetadata().getName() : null);
-                String phase = ns.getStatus() != null ? ns.getStatus().getPhase() : "";
-                namespace.setStatus("Active".equals(phase) ? "active" : "inactive");
-                result.add(namespace);
-            }
-            return result;
-        }, "获取 K8s 命名空间列表及状态");
+        return exec(newOptions(config), this::doListNamespaces, "获取 K8s 命名空间列表及状态");
+    }
+
+
+    private List<K8sNamespace> doListNamespaces(KubectlClient client) {
+        K8sResourceList<com.datasophon.common.k8s.vo.k8s.K8sNamespace> nsResult = client.getNamespaces();
+        List<K8sNamespace> result = new ArrayList<>();
+        for (com.datasophon.common.k8s.vo.k8s.K8sNamespace ns : nsResult.getItems()) {
+            K8sNamespace namespace = new K8sNamespace();
+            namespace.setName(ns.getMetadata() != null ? ns.getMetadata().getName() : null);
+            String phase = ns.getStatus() != null ? ns.getStatus().getPhase() : "";
+            namespace.setStatus("Active".equals(phase) ? "active" : "inactive");
+            result.add(namespace);
+        }
+        return result;
     }
 
     @Override
     public List<String> getResourceTypes(K8sClusterConfig config, K8sServiceInstanceQueryDTO query) {
         return exec(newOptions(config), client -> {
             String namespace = query.getNamespace();
-            String instanceId = String.valueOf(query.getInstanceId());
 
-            // 构建 label 选择器：managed-by=vos 且 service-instance-id={instanceId}
-            String labelSelector = String.format("%s=%s,%s=%s",
-                    MANGED_BY_LABEL, MANGED_BY_LABEL_VALUE,
-                    SRV_INST_ID_LABEL, instanceId);
+            String labelSelector = buildLabelSelector(query.getInstanceId());
 
             List<String> resourceTypes = new ArrayList<>();
 
@@ -174,10 +179,7 @@ public class K8sServiceImpl implements K8sService {
     public List<K8sDeploymentInfo> listDeployments(K8sClusterConfig config, K8sServiceInstanceQueryDTO query) {
         return exec(newOptions(config), client -> {
             String namespace = query.getNamespace();
-            String instanceId = String.valueOf(query.getInstanceId());
-            String labelSelector = String.format("%s=%s,%s=%s",
-                    MANGED_BY_LABEL, MANGED_BY_LABEL_VALUE,
-                    SRV_INST_ID_LABEL, instanceId);
+            String labelSelector = buildLabelSelector(query.getInstanceId());
 
             K8sResourceList<K8sDeployment> deploymentsResult = client.getDeployments(namespace, labelSelector);
             List<K8sDeploymentInfo> result = new ArrayList<>();
@@ -187,6 +189,13 @@ public class K8sServiceImpl implements K8sService {
             return result;
         }, "获取 Deployment 资源列表");
     }
+
+
+    private String buildLabelSelector(Integer instanceId) {
+        String serviceName = k8sServiceInstanceService.getServiceName(instanceId);
+        return String.format("%s=%s,%s=%s", MANGED_BY_LABEL, MANGED_BY_LABEL_VALUE, SRV_INST_ID_LABEL, serviceName + "_" + instanceId);
+    }
+
 
     private K8sDeploymentInfo deploymentToInfo(K8sDeployment deployment) {
         K8sDeploymentInfo info = new K8sDeploymentInfo();
@@ -239,10 +248,7 @@ public class K8sServiceImpl implements K8sService {
     public List<K8sPodInfo> listPods(K8sClusterConfig config, K8sServiceInstanceQueryDTO query) {
         return exec(newOptions(config), client -> {
             String namespace = query.getNamespace();
-            String instanceId = String.valueOf(query.getInstanceId());
-            String labelSelector = String.format("%s=%s,%s=%s",
-                    MANGED_BY_LABEL, MANGED_BY_LABEL_VALUE,
-                    SRV_INST_ID_LABEL, instanceId);
+            String labelSelector = buildLabelSelector(query.getInstanceId());
 
             K8sResourceList<K8sPod> podsResult = client.getPods(namespace, labelSelector);
             List<K8sPodInfo> result = new ArrayList<>();
@@ -294,10 +300,7 @@ public class K8sServiceImpl implements K8sService {
     public List<K8sServiceInfo> listServices(K8sClusterConfig config, K8sServiceInstanceQueryDTO query) {
         return exec(newOptions(config), client -> {
             String namespace = query.getNamespace();
-            String instanceId = String.valueOf(query.getInstanceId());
-            String labelSelector = String.format("%s=%s,%s=%s",
-                    MANGED_BY_LABEL, MANGED_BY_LABEL_VALUE,
-                    SRV_INST_ID_LABEL, instanceId);
+            String labelSelector = buildLabelSelector(query.getInstanceId());
 
             K8sResourceList<com.datasophon.common.k8s.vo.k8s.K8sService> servicesResult = client.getServices(namespace, labelSelector);
             List<K8sServiceInfo> result = new ArrayList<>();
@@ -327,8 +330,8 @@ public class K8sServiceImpl implements K8sService {
 
             // LoadBalancer IP
             if (service.getStatus() != null && service.getStatus().getLoadBalancer() != null
-                    && service.getStatus().getLoadBalancer().getIngress() != null
-                    && !service.getStatus().getLoadBalancer().getIngress().isEmpty()) {
+                && service.getStatus().getLoadBalancer().getIngress() != null
+                && !service.getStatus().getLoadBalancer().getIngress().isEmpty()) {
                 info.setLoadBalancerIP(service.getStatus().getLoadBalancer().getIngress().get(0).getIp());
             }
 
@@ -365,10 +368,7 @@ public class K8sServiceImpl implements K8sService {
     public List<K8sIngressInfo> listIngresses(K8sClusterConfig config, K8sServiceInstanceQueryDTO query) {
         return exec(newOptions(config), client -> {
             String namespace = query.getNamespace();
-            String instanceId = String.valueOf(query.getInstanceId());
-            String labelSelector = String.format("%s=%s,%s=%s",
-                    MANGED_BY_LABEL, MANGED_BY_LABEL_VALUE,
-                    SRV_INST_ID_LABEL, instanceId);
+            String labelSelector = buildLabelSelector(query.getInstanceId());
 
             K8sResourceList<K8sIngress> ingressesResult = client.getIngresses(namespace, labelSelector);
             List<K8sIngressInfo> result = new ArrayList<>();
@@ -406,8 +406,8 @@ public class K8sServiceImpl implements K8sService {
 
         // 负载均衡地址
         if (ingress.getStatus() != null && ingress.getStatus().getLoadBalancer() != null
-                && ingress.getStatus().getLoadBalancer().getIngress() != null
-                && !ingress.getStatus().getLoadBalancer().getIngress().isEmpty()) {
+            && ingress.getStatus().getLoadBalancer().getIngress() != null
+            && !ingress.getStatus().getLoadBalancer().getIngress().isEmpty()) {
             K8sIngress.LoadBalancerIngress first =
                     ingress.getStatus().getLoadBalancer().getIngress().get(0);
             String lbAddress = first.getIp();
@@ -426,10 +426,7 @@ public class K8sServiceImpl implements K8sService {
     public List<K8sConfigMapInfo> listConfigMaps(K8sClusterConfig config, K8sServiceInstanceQueryDTO query) {
         return exec(newOptions(config), client -> {
             String namespace = query.getNamespace();
-            String instanceId = String.valueOf(query.getInstanceId());
-            String labelSelector = String.format("%s=%s,%s=%s",
-                    MANGED_BY_LABEL, MANGED_BY_LABEL_VALUE,
-                    SRV_INST_ID_LABEL, instanceId);
+            String labelSelector = buildLabelSelector(query.getInstanceId());
 
             K8sResourceList<K8sConfigMap> configMapsResult = client.getConfigMaps(namespace, labelSelector);
             List<K8sConfigMapInfo> result = new ArrayList<>();
@@ -476,6 +473,32 @@ public class K8sServiceImpl implements K8sService {
         ClientOptions options = BeanUtil.toBean(config, ClientOptions.class);
         options.setServerName(config.getServerHost());
         return options;
+    }
+
+    @Override
+    public K8sNamespace createIfAbsent(K8sClusterConfig config, String namespaceName) {
+        return exec(newOptions(config), client -> {
+            List<K8sNamespace> namespaces = doListNamespaces(client);
+            for (K8sNamespace ns : namespaces) {
+                if (namespaceName.equals(ns.getName())) {
+                    return ns;
+                }
+            }
+            // 2. namespace 不存在，创建它
+            List<String> args = java.util.Arrays.asList("create", "namespace", namespaceName);
+            com.datasophon.common.utils.ExecResult result = client.execute(args, 30);
+
+            // namespace 已存在时返回 1，但这不是错误
+            if (!result.isSuccess() && !result.getExecOut().contains("already exists")) {
+                log.warn("namespace {}已经存在, output={}", namespaceName, result.getExecOut());
+            }
+            log.info("K8s namespace '{}' created in cluster {}", namespaceName, config.getClusterId());
+            // 3. 返回新创建的 namespace 信息
+            K8sNamespace namespace = new K8sNamespace();
+            namespace.setName(namespaceName);
+            namespace.setStatus("active");
+            return namespace;
+        }, "确保 K8s namespace 存在");
     }
 
     private <T> T exec(ClientOptions options, ThrowableMapper<KubectlClient, T> consumer, String actionHint) {

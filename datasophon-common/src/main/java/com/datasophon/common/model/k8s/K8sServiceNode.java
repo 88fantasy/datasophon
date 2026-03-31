@@ -9,6 +9,8 @@ import lombok.Data;
 @Data
 public class K8sServiceNode {
 
+    private Integer clusterId;
+
     private String commandId;
 
     private CommandType commandType;
@@ -16,8 +18,6 @@ public class K8sServiceNode {
     private String serviceName;
 
     private Integer serviceInstanceId;
-
-    private String cmdNsId;
 
     private String namespace;
 

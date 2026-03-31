@@ -6,6 +6,7 @@ import com.datasophon.api.dto.instance.K8sServiceInstanceQueryDTO;
 import com.datasophon.dao.entity.instance.K8sServiceInstance;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -17,6 +18,13 @@ public interface K8sServiceInstanceService extends IService<K8sServiceInstance> 
 
     List<K8sServiceInstanceVO> listByIds(List<Integer> instanceIds);
 
+    default String getServiceName(Integer instanceId) {
+        List<K8sServiceInstanceVO> result = listByIds(Collections.singletonList(instanceId));
+        if (result.isEmpty()) {
+            return null;
+        }
+        return result.get(0).getServiceName();
+    }
 
     List<String> listResourceType(K8sServiceInstanceQueryDTO query);
 

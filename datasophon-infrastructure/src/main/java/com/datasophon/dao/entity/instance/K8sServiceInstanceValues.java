@@ -36,4 +36,7 @@ public class K8sServiceInstanceValues implements Serializable {
 
     @Schema(description = "版本")
     private Integer version;
+
+    @Schema(description = "部署清单采用的部署方式, helm, yaml")
+    private String metaFileType;
 }

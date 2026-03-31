@@ -1,7 +1,9 @@
 package com.datasophon.common.storage.impl;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.Constants;
+import com.datasophon.common.k8s.spec.helm.HelmParser;
 import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.storage.vo.ServiceMetaItem;
 import com.datasophon.common.utils.NexusFileUtils;
@@ -12,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -66,6 +70,30 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
     public void saveServiceDdl(ServiceMetaItem item, String content) throws IOException {
         String path = String.format("/meta/%s/%s/%s", item.getFramework(), item.getType(), item.getServiceName());
         NexusFileUtils.uploadFileToRawRepo(path, Constants.SERVICE_DDL, content);
+    }
+
+    @Override
+    public String getHelmValuesYaml(ServiceMetaItem item, String chartName) throws IOException {
+        File tmp = null;
+        String extractDir = null;
+        try {
+            tmp = PathUtils.createTmpFile("helm", "_" + chartName);
+            try (OutputStream out = Files.newOutputStream(tmp.toPath())) {
+                downResource(item, chartName, () -> out);
+            }
+            extractDir = HelmParser.unzip(tmp);
+            File valueFile = HelmParser.getValueFile(extractDir);
+            if (!valueFile.exists()) {
+                throw new IllegalStateException("chart 中未找到 values.yaml 文件");
+            }
+            if (valueFile.length() == 0) {
+                return null;
+            }
+            return FileUtil.readString(valueFile, StandardCharsets.UTF_8);
+        } finally {
+            FileUtil.del(tmp);
+            FileUtil.del(extractDir);
+        }
     }
 
     @Override

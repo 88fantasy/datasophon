@@ -13,7 +13,6 @@ import java.util.List;
  */
 public interface K8sServiceInstanceValuesService extends IService<K8sServiceInstanceValues> {
 
-    String VOS_VALUES_TYPE = "vos_values";
 
 
     List<K8sServiceInstanceValues> listSimpleByInstanceId(Integer instanceId);
@@ -24,4 +23,6 @@ public interface K8sServiceInstanceValuesService extends IService<K8sServiceInst
     K8sServiceInstanceValues save(K8sServiceInstanceValuesSaveDTO values);
 
     K8sServiceInstanceValues update(K8sServiceInstanceValuesUpdateDTO values);
+
+    K8sServiceInstanceValues getNewestValuesByInstanceId(Integer instanceId);
 }

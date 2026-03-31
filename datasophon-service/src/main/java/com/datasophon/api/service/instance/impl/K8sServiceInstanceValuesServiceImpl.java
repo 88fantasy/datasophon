@@ -1,7 +1,8 @@
 package com.datasophon.api.service.instance.impl;
 
-import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.dto.instance.K8sNamespaceIdentityDTO;
 import com.datasophon.api.dto.instance.K8sServiceInstanceValuesSaveDTO;
@@ -13,13 +14,10 @@ import com.datasophon.api.service.frame.FrameK8sServiceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
 import com.datasophon.api.vo.instance.K8sServiceInstanceValuesVO;
-import com.datasophon.common.k8s.spec.helm.HelmParser;
 import com.datasophon.common.model.k8s.K8sArtifact;
 import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.storage.vo.ServiceMetaItem;
-import com.datasophon.common.utils.PathUtils;
-import com.datasophon.common.utils.YamlUtils;
 import com.datasophon.dao.entity.cluster.K8sClusterNamespace;
 import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 import com.datasophon.dao.entity.instance.K8sServiceInstance;
@@ -29,13 +27,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.List;
 
 /**
@@ -64,7 +56,7 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
                         K8sServiceInstanceValues::getInstanceId,
                         K8sServiceInstanceValues::getVersion
 
-                ).orderByAsc(K8sServiceInstanceValues::getVersion)
+                ).orderByDesc(K8sServiceInstanceValues::getVersion)
                 .list();
     }
 
@@ -73,38 +65,33 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
         // 1. 根据 serviceId 查询 FrameK8sServiceEntity 对象
         FrameK8sServiceEntity entity = frameK8sServiceService.getById(serviceId);
         // 2. 解析 artifact 字段
-        K8sArtifact artifact = YamlUtils.parseYaml(entity.getArtifact(), K8sArtifact.class);
+        K8sArtifact artifact = JSONObject.parseObject(entity.getArtifact(), K8sArtifact.class);
         if (artifact == null) {
             throw new BusinessException("服务未配置 artifact 信息");
         }
         ServiceMetaItem item = frameK8sServiceService.getServiceMetaItem(serviceId);
-
         // 3. 根据 artifactType 获取对应的文件内容
-        if ("helm".equals(artifactType)) {
-            if (StringUtil.isEmpty(artifact.getHelm())) {
-                throw new BusinessException("服务未配置 helm chart 信息");
-            }
-            // 获取第一个 chart 的 values.yaml
-            String chartName = artifact.getHelm();
-            String defaultVal = getHelmValuesYaml(item, chartName);
-
+        try {
+            MetaStorage storage = StorageUtils.getMetaStorage();
             K8sServiceInstanceValuesVO values = new K8sServiceInstanceValuesVO();
-            values.setValues(defaultVal);
-
-            values.setDeltaValues(getYamlFileContent(item, entity.getRuntime(), false));
-            return values;
-        } else if ("yaml".equals(artifactType)) {
-            if (StrUtil.isEmpty(artifact.getYaml())) {
-                throw new BusinessException("服务未配置 yaml 文件信息");
+            if ("helm".equals(artifactType)) {
+                if (StringUtil.isEmpty(artifact.getHelm())) {
+                    throw new BusinessException("服务未配置 helm chart 信息");
+                }
+                values.setValues(storage.getHelmValuesYaml(item, artifact.getHelm()));
+            } else if ("yaml".equals(artifactType)) {
+                if (StrUtil.isEmpty(artifact.getYaml())) {
+                    throw new BusinessException("服务未配置 yaml 文件信息");
+                }
+                String yamlFile = artifact.getYaml();
+                values.setValues(storage.getResourceAsString(item, yamlFile, true));
+            } else {
+                throw new BusinessException("不支持的 artifact 类型：" + artifactType);
             }
-            // 获取第一个 yaml 文件
-            String yamlFile = artifact.getYaml();
-            K8sServiceInstanceValuesVO values = new K8sServiceInstanceValuesVO();
-            values.setValues(getYamlFileContent(item, yamlFile, true));
-            values.setDeltaValues(getYamlFileContent(item, entity.getRuntime(), false));
+            values.setDeltaValues(storage.getResourceAsString(item, entity.getRuntime(), false));
             return values;
-        } else {
-            throw new BusinessException("不支持的 artifact 类型：" + artifactType);
+        } catch (IOException e) {
+            throw new BusinessException(String.format("IO异常，%s", e.getMessage()), e);
         }
     }
 
@@ -123,13 +110,9 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
                 .orElse(0);
 
         // 4. 创建 K8sServiceInstanceValues 对象
-        K8sServiceInstanceValues instanceValues = new K8sServiceInstanceValues();
-        instanceValues.setClusterId(values.getClusterId());
+        K8sServiceInstanceValues instanceValues = BeanUtil.toBean(values, K8sServiceInstanceValues.class);
         instanceValues.setNamespaceId(namespace.getId());
-        instanceValues.setServiceId(values.getServiceId());
         instanceValues.setInstanceId(instance.getId());
-        instanceValues.setValues(values.getValues());
-        instanceValues.setDeltaValues(values.getDeltaValues());
         instanceValues.setVersion(maxVersion + 1);
 
         save(instanceValues);
@@ -148,58 +131,12 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
         return db;
     }
 
-    /**
-     * 从 helm chart 中获取 values.yaml 内容
-     */
-    private String getHelmValuesYaml(ServiceMetaItem item, String chartName) {
-        File tmp = null;
-        String extractDir = null;
-        try {
-            MetaStorage storage = StorageUtils.getMetaStorage();
-            tmp = PathUtils.createTmpFile("helm", "_" + chartName);
-            try (OutputStream out = Files.newOutputStream(tmp.toPath())) {
-                storage.downResource(item, chartName, () -> out);
-            }
-            extractDir = HelmParser.unzip(tmp);
-            File valueFile = HelmParser.getValueFile(extractDir);
-            if (!valueFile.exists()) {
-                throw new BusinessException("chart 中未找到 values.yaml 文件");
-            }
-            return FileUtil.readString(valueFile, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new BusinessException("读取 helm chart 失败：" + e.getMessage(), e);
-        } finally {
-            FileUtil.del(tmp);
-            FileUtil.del(extractDir);
-        }
-    }
-
-
-    /**
-     * 从 raw repo 获取 yaml 文件内容
-     */
-    private String getYamlFileContent(ServiceMetaItem item, String yamlFile, boolean required) {
-        if (yamlFile == null) {
-            return null;
-        }
-        try {
-            MetaStorage storage = StorageUtils.getMetaStorage();
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            storage.downResource(item, yamlFile, () -> out);
-
-            byte[] bytes = out.toByteArray();
-            if (bytes.length == 0) {
-                return null;
-            }
-            return new String(bytes, StandardCharsets.UTF_8);
-        } catch (FileNotFoundException e) {
-            if (required) {
-                throw new BusinessException("读取 yaml 文件失败：" + e.getMessage(), e);
-            }
-            return null;
-        } catch (IOException e) {
-            throw new BusinessException("读取 yaml 文件失败：" + e.getMessage(), e);
-        }
+    @Override
+    public K8sServiceInstanceValues getNewestValuesByInstanceId(Integer instanceId) {
+        return lambdaQuery()
+                .eq(K8sServiceInstanceValues::getInstanceId, instanceId)
+                .orderByDesc(K8sServiceInstanceValues::getVersion)
+                .one();
     }
 
 }

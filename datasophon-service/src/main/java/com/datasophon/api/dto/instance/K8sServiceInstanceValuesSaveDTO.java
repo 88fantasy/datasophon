@@ -34,4 +34,9 @@ public class K8sServiceInstanceValuesSaveDTO implements Serializable {
     @NotBlank(message = "部署名空间不能为空")
     private String namespace;
 
+
+    @Schema(description = "部署清单采用的部署方式, helm, yaml")
+    @NotBlank(message = "部署清单采用的部署方式")
+    private String metaFileType;
+
 }
