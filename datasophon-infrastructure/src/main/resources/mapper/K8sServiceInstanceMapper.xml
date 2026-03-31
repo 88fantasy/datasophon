@@ -38,4 +38,25 @@
             a.cluster_id = #{clusterId}
             AND b.namespace = #{namespace}
     </select>
+
+    <select id="selectByIds" resultType="com.datasophon.dao.vo.instance.K8sServiceInstanceVO">
+        SELECT
+            a.id,
+            a.cluster_id AS cluster_id,
+            a.namespace_id AS namespace_id,
+            b.namespace AS namespace,
+            a.service_id AS service_id,
+            c.service_name AS service_name,
+            c.type as catalog,
+            a.state
+        FROM
+            t_ddh_k8s_service_instance a
+            LEFT JOIN t_ddh_k8s_cluster_namespace b ON a.namespace_id = b.id
+            LEFT JOIN t_ddh_frame_k8s_service c ON a.service_id = c.id
+        WHERE
+            a.id IN
+            <foreach collection="instanceIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+    </select>
 </mapper>

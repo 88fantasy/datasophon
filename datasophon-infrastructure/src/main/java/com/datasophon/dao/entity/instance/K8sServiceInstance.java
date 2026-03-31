@@ -29,4 +29,8 @@ public class K8sServiceInstance implements Serializable {
 
     @Schema(description = "0初始化 1成功 2失败")
     private Integer state;
+
+    @Schema(description = "最近一次部署方式 helm, yaml")
+    private String lastMetaFileType;
+
 }

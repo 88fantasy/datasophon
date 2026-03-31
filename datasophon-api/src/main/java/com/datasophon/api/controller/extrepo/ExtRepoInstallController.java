@@ -5,7 +5,6 @@ import com.datasophon.api.dto.extrepo.DagIdDto;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
-import com.datasophon.api.service.extrepo.VosProductInstallService;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
 import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
@@ -33,9 +32,6 @@ public class ExtRepoInstallController extends ApiController {
 
     @Autowired
     private ExtRepoInstallDelegateService extRepoInstallDelegateService;
-
-    @Autowired
-    private VosProductInstallService vosProductActionService;
 
 
     @PostMapping("/validDeploymentFile")

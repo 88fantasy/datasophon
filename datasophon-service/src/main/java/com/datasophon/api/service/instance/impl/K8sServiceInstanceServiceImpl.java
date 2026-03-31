@@ -16,6 +16,7 @@ import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -48,6 +49,15 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
         }
         // 2. 使用@K8sServiceInstanceMapper 查询 K8sServiceInstanceVO 对象
         return baseMapper.selectInstanceList(query.getClusterId(), query.getNamespace());
+    }
+
+    @Override
+    public List<K8sServiceInstanceVO> listByIds(List<Integer> instanceIds) {
+        if (instanceIds == null || instanceIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        // 2. 使用@K8sServiceInstanceMapper#selectByIds 根据 IDs 查询 K8sServiceInstanceVO 对象
+        return baseMapper.selectByIds(instanceIds);
     }
 
     @Override

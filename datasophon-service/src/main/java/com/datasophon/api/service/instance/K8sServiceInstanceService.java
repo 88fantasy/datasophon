@@ -15,6 +15,9 @@ public interface K8sServiceInstanceService extends IService<K8sServiceInstance> 
 
     List<K8sServiceInstanceVO> queryInstanceList(K8sNamespaceIdentityDTO query);
 
+    List<K8sServiceInstanceVO> listByIds(List<Integer> instanceIds);
+
+
     List<String> listResourceType(K8sServiceInstanceQueryDTO query);
 
     Object listResource(K8sServiceInstanceQueryDTO query);

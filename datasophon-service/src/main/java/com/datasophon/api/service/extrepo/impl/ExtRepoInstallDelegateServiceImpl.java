@@ -11,22 +11,13 @@ import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.service.ClusterInfoService;
-import com.datasophon.api.service.ClusterServiceInstanceService;
-import com.datasophon.api.service.ClusterServiceRoleInstanceService;
-import com.datasophon.api.service.FrameServiceRoleService;
-import com.datasophon.api.service.FrameServiceService;
-import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
-import com.datasophon.api.service.cmd.ClusterServiceCommandHostService;
-import com.datasophon.api.service.cmd.ClusterServiceCommandService;
 import com.datasophon.api.service.dag.DAGService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallService;
 import com.datasophon.api.service.extrepo.utils.MetaUtils;
 import com.datasophon.api.service.extrepo.utils.ServiceNodeExecUtils;
-import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
-import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
 import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
@@ -74,37 +65,10 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
     @Autowired
     private ClusterInfoService clusterInfoService;
 
-    @Autowired
-    private FrameServiceService frameService;
-
-    @Autowired
-    private ServiceInstallService serviceInstallService;
-
-
-    @Autowired
-    private ClusterServiceInstanceService clusterServiceInstanceService;
-
-    @Autowired
-    private FrameServiceRoleService frameServiceRoleService;
-
-    @Autowired
-    private ClusterServiceCommandHostService commandHostService;
 
     @Autowired
     private ClusterServiceCommandHostCommandService hostCommandService;
 
-
-    @Autowired
-    private ClusterServiceCommandService commandService;
-
-    @Autowired
-    private ClusterServiceInstanceService serviceInstanceService;
-
-    @Autowired
-    private ClusterServiceRoleInstanceService roleInstanceService;
-
-    @Autowired
-    private ClusterHostService clusterHostService;
 
     @Autowired
     private DAGService dagService;
@@ -113,8 +77,6 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
     @Autowired
     private DagDefinitionEntityMapper dagDefinitionEntityMapper;
 
-    @Autowired
-    private TransactionalUtils transactionalUtils;
 
     @Autowired
     @Qualifier("vosProductInstallService")
