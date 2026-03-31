@@ -1,19 +1,24 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { API } from "../../../../api"
 import { useParams } from "react-router"
-import { axiosPost } from "../../../../api/request"
+import { axiosGet, axiosJsonPost, axiosPost } from "../../../../api/request"
 import { Menu, Select, Space, Spin, Tabs } from "antd";
 import { ProCard, ProForm } from "@ant-design/pro-components";
 import CommonTemplate from "../../../../components/Common/CommonTemplate";
 import { invokeFormatTemplateData, invokeHandleTemplateData } from "../../../../components/Common/CommonTemplate/utils";
 import { useInstanceHooks } from "../../../../hooks/useInstanceHooks";
 import { ProxyContext } from "../../../../context/proxyContext";
-import { showMsgAfferRequest } from "../../../../utils/util";
+import { isEmpty, showMsgAfferRequest } from "../../../../utils/util";
+import { useClusterFromParams } from "../../../../hooks/useClusterFromParams";
+import { T_K8S, T_PHYSICAL } from "../../../../constants/clusterType";
+import Helm from "./Helm";
 
 
 const Index = () => {
 
-    const { instanceId, clusterId } = useParams()
+    const { instanceId } = useParams()
+
+    const { clusterId, memoCluster } = useClusterFromParams()
     const {
         // serviceListMapRef,
         // instanceId,
@@ -31,35 +36,53 @@ const Index = () => {
 
     const versionOpts = useMemo(() => {
         return verSionList.map(val => {
-            return {
-                value: val,
-                label: val
+
+            if (typeof val === 'string') {
+                return {
+                    value: val,
+                    label: val
+                }
+            } else {
+                return {
+                    value: val.id,
+                    label: val.version
+                }
             }
+
+
         })
     }, [verSionList])
 
 
     const getServiceConfigOption = useCallback(async (obj) => {
+        if (memoCluster.archType === T_K8S) {
+            const targetId = obj?.version || obj?.id;
+
+            const res = await axiosGet(`${API.getK8sInstanceValuesById}/${targetId}`);
+
+            if (res.code === 200) {
+                setTemplateData(res.data);
+                originTemplateDataRef.current = res.data;
+            }
+
+            return res;
+        }
 
         const params = {
             serviceInstanceId: instanceId,
             page: 1,
             pageSize: 10000,
-            ...obj
+            ...obj,
         };
-        const res = await axiosPost(API.getConfigInfo, params)
-
-
+        const res = await axiosPost(API.getConfigInfo, params);
 
         if (res.code === 200) {
-            setTemplateData(
-                invokeHandleTemplateData(res.data)
-            )
-            originTemplateDataRef.current = res.data
+            setTemplateData(invokeHandleTemplateData(res.data));
+            originTemplateDataRef.current = res.data;
         }
 
-        return res
-    }, [instanceId])
+        return res;
+    }, [instanceId, memoCluster.archType]);
 
     const onVersionChange = useCallback((e) => {
         setCurrentVersion(e)
@@ -94,6 +117,10 @@ const Index = () => {
 
 
     const getConfigVersion = useCallback(async (roleGroupId = '') => {
+
+
+
+
         const params = {
             serviceInstanceId: instanceId,
             roleGroupId,
@@ -116,6 +143,26 @@ const Index = () => {
             }
         }
     }, [getServiceConfigOption, instanceId])
+
+    const listSimpleK8sInstanceValuesByInstanceId = useCallback(async () => {
+
+
+        const res = await axiosGet(`${API.listSimpleK8sInstanceValuesByInstanceId}/${instanceId}`);
+
+        if (res.code === 200) {
+            const options = res.data || []
+
+            setVerSionList(options);
+
+            if (options.length > 0) {
+                const version = options[0];
+
+                onVersionChange(version.id)
+            }
+        }
+
+        return res;
+    }, [instanceId, onVersionChange]);
 
     const getServiceRoleType = useCallback(async () => {
         const params = {
@@ -173,14 +220,56 @@ const Index = () => {
             getConfigVersion(currentId)
         }
 
-        console.log('saveParam', saveParam)
+        // console.log('saveParam', saveParam)
     }, [clusterId, currentId, getConfigVersion, obj.serviceName])
 
+
+
+
     const invokeInit = useCallback(async () => {
-        await getServiceRoleType()
+        if (memoCluster.archType === T_K8S) {
+            await listSimpleK8sInstanceValuesByInstanceId();
+        } else {
+            await getServiceRoleType();
+        }
 
         setHadInit(true)
-    }, [getServiceRoleType])
+    }, [listSimpleK8sInstanceValuesByInstanceId, getServiceRoleType, memoCluster.archType])
+
+
+    const invokeContentRender = useCallback(() => {
+        let res
+
+        if (templateData && (memoCluster.archType === T_PHYSICAL || isEmpty(memoCluster.archType))) {
+            res = (
+                <ProForm
+                    layout="horizontal"
+                    colon={false}
+                    labelCol={{ span: 8 }}
+                    labelAlign="left"
+                    onFinish={onFinish}
+                    submitter={{
+                        resetButtonProps: false
+                    }}
+
+                >
+                    <CommonTemplate
+                        templateData={templateData}
+                        className="152"
+                    />
+                </ProForm>
+            )
+        } else if (memoCluster.archType === T_K8S) {
+            // 
+            return (
+                <Helm
+                    record={templateData}
+                />
+            )
+        }
+
+        return res
+    }, [memoCluster.archType, onFinish, templateData])
 
     useEffect(() => {
         invokeInit()
@@ -190,45 +279,33 @@ const Index = () => {
     return (
         <div className="flex flex-1 min-h-[72vh] h-full w-full">
             {
-                !hadInit ? <Spin className="w-full flex" /> : <>
-                    <Menu
-                        className="w-[200px] h-full !border-none"
-                        items={memoRoleGroupList}
-                        selectedKeys={[currentId]}
-                        onClick={onMenuClick}
-                    />
-                    <div className="px-[20px] border-l border-[#f0f0f0] flex-1">
-                        <Space wrap className="!text-black mb-[20px]">
-                            版本:
-                            <Select
-                                className="w-[100px]"
-                                onChange={onVersionChange}
-                                options={versionOpts}
-                                value={currentVersion}
-                            />
-                        </Space>
+                !hadInit ? <Spin className="w-full flex" /> :
+                    <>
                         {
-                            templateData &&
-                            <ProForm
-                                layout="horizontal"
-                                colon={false}
-                                labelCol={{ span: 8 }}
-                                labelAlign="left"
-                                onFinish={onFinish}
-                                submitter={{
-                                    resetButtonProps: false
-                                }}
-
-                            >
-                                <CommonTemplate
-                                    templateData={templateData}
-                                    className="152"
+                            memoCluster.archType === T_PHYSICAL || isEmpty(memoCluster.archType) && (
+                                <Menu
+                                    className="w-[200px] h-full !border-none"
+                                    items={memoRoleGroupList}
+                                    selectedKeys={[currentId]}
+                                    onClick={onMenuClick}
                                 />
-                            </ProForm>
+                            )
                         }
 
-                    </div>
-                </>
+                        <div className="px-[20px] border-l border-[#f0f0f0] flex-1 flex flex-col">
+                            <Space wrap className="!text-black mb-[20px]">
+                                版本:
+                                <Select
+                                    className="w-[100px]"
+                                    onChange={onVersionChange}
+                                    options={versionOpts}
+                                    value={currentVersion}
+                                />
+                            </Space>
+                            {invokeContentRender()}
+
+                        </div>
+                    </>
 
             }
 

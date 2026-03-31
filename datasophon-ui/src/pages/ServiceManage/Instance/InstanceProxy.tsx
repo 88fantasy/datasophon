@@ -8,7 +8,6 @@ import { useInstanceHooks } from "../../../hooks/useInstanceHooks";
 import { API } from "../../../api";
 import { axiosJsonPost, axiosPost } from "../../../api/request";
 import { Button, Dropdown, Space } from "antd";
-import { DownOutlined } from "@ant-design/icons";
 import { useClusterFromParams } from "../../../hooks/useClusterFromParams";
 import { T_K8S, T_PHYSICAL } from "../../../constants/clusterType";
 import { isEmpty } from "../../../utils/util";

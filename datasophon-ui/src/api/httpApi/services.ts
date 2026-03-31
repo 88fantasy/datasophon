@@ -30,6 +30,9 @@ export default {
   deleteService: path + "/frame/service/delete", // 删除框架服务
   getServiceDdl: path + "/frame/service/getServiceDdl", // 删除框架服务
   updateDdl2: path + "/frame/service/updateDdl2", // 删除框架服务
+  listSimpleK8sInstanceValuesByInstanceId: path + "/frame/k8sInstanceValues/listSimpleByInstanceId", // 新增 k8s 实例值简化列表
+  getK8sInstanceValuesById: path + "/frame/k8sInstanceValues/getById", // 新增 k8s 实例值根据ID查询
+  updateK8sInstanceValues: path + "/frame/k8sInstanceValues/update", // 新增 k8s 实例值更新
   getServiceConfigOption: path + "/service/install/getServiceConfigOption", // 查询服务配置
   getServiceConfigFromDdl: path + "/service/install/getServiceConfigFromDdl", // 查询服务配置
   getServiceRoleList: path + "/frame/service/role/getServiceRoleList", // 查询服务对应的服务角色
