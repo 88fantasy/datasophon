@@ -17,6 +17,7 @@ import Step7 from './components/Step7';
 import Step8 from './components/Step8';
 import { ConfigContext } from './configContext';
 import { T_SETPS_TYPE_ADDSERVICE, T_SETPS_TYPE_INSTANCE, T_STEPS_TYPE_HOSTMANAGE } from './stepType';
+import { T_K8S } from '../../../../../constants/clusterType';
 
 
 
@@ -28,7 +29,8 @@ const Index = (props) => {
         onOkClickProxy,
         stepsType,
         steps4Data,
-        type
+        type,
+        memoCluster
     } = props
 
     const formMapRef = useRef([]);
@@ -126,40 +128,53 @@ const Index = (props) => {
 
         }
 
-        let arr = [
-            step1Obj,
-            step2Obj,
-            step3Obj,
-            step4Obj,
-            step5Obj,
-            step6Obj,
-            step7Obj,
-            step8Obj
-        ]
+        let arr = []
 
-        if (stepsType === T_STEPS_TYPE_HOSTMANAGE) {
+        if (memoCluster.archType === T_K8S) {
+            arr = [
+                stepImportManifestObj,
+                step4Obj,
+                step7Obj,
+                step8Obj
+            ]
+        } else {
             arr = [
                 step1Obj,
                 step2Obj,
                 step3Obj,
-            ]
-        } else if (stepsType === T_SETPS_TYPE_INSTANCE) {
-            arr = [
-                step5Obj,
-                step6Obj,
-                step7Obj,
-                step8Obj
-            ]
-        } else if (stepsType === T_SETPS_TYPE_ADDSERVICE) {
-            arr = [
-                stepImportManifestObj,
                 step4Obj,
                 step5Obj,
                 step6Obj,
                 step7Obj,
                 step8Obj
             ]
+
+            if (stepsType === T_STEPS_TYPE_HOSTMANAGE) {
+                arr = [
+                    step1Obj,
+                    step2Obj,
+                    step3Obj,
+                ]
+            } else if (stepsType === T_SETPS_TYPE_INSTANCE) {
+                arr = [
+                    step5Obj,
+                    step6Obj,
+                    step7Obj,
+                    step8Obj
+                ]
+            } else if (stepsType === T_SETPS_TYPE_ADDSERVICE) {
+                arr = [
+                    stepImportManifestObj,
+                    step4Obj,
+                    step5Obj,
+                    step6Obj,
+                    step7Obj,
+                    step8Obj
+                ]
+            }
         }
+
+
 
         return arr.map((val, index) => {
 
@@ -178,6 +193,7 @@ const Index = (props) => {
                         current={current}
                         formMapRef={formMapRef}
                         type={type}
+                        memoCluster={memoCluster}
                         // indexKey={'11'}
                         index={index}
                         key={index}
@@ -187,7 +203,7 @@ const Index = (props) => {
             return val
 
         })
-    }, [clusterId, current, record, steps4Data, stepsType, type])
+    }, [clusterId, current, memoCluster, record, steps4Data, stepsType, type])
 
     const invokeRenderSteps = useCallback(() => {
         return memoArr.map((val, index) => {

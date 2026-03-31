@@ -1,19 +1,17 @@
-import { useState, useCallback, useMemo, useEffect, useActionState, useRef, use } from 'react';
+import { useState, useCallback, useMemo, useEffect, useActionState, useRef, use, forwardRef, useImperativeHandle } from 'react';
 import { Button, message } from 'antd';
 import CommonMonacoEditor from '../../../../../components/Common/CommonMonacoEditor';
-import { axiosJsonPost } from '../../../../../api/request';
-import { API } from '../../../../../api';
 import EditorWrapper from './EditorWrapper';
-import { showMsgAfferRequest } from '../../../../../utils/util';
 import { mergeYamlFiles } from '../../../../../utils/yamlUtils';
+import { T_HELM } from '../../../../../components/Common/CommonLogModal/api';
 
 
 const Index = ({
     record,
-    onOkClickProxy
-}) => {
+    handleSave
+}, ref) => {
     const [middleEditorValue, setMiddleEditorValue] = useState(record.deltaValues || '');
-    const [defaultValue, setDefaultValue] = useState(record.value)
+    const [defaultValue, setDefaultValue] = useState(record.values)
     const [valuePath, setValuePath] = useState()
     const [loading, setLoading] = useState(false);
 
@@ -35,41 +33,50 @@ const Index = ({
         };
     }, []);
 
-
-    const handleSave = useCallback(async () => {
-        // if (typeof onConfirm === 'function') {
-        //     try {
-        //         await onConfirm({
-        //             path: selectedPath,
-        //             content: middleEditorValue,
-        //         });
-        //         message.success('保存成功');
-        //     } catch (error) {
-        //         console.error(error);
-        //         message.error('保存失败');
-        //     }
-        // }
-        const res = await axiosJsonPost(API.updateK8sInstanceValues, {
-            id: record.id,
-            deltaValues: middleEditorValue,
+    const onOkClickProxy = useCallback(() => {
+        handleSave?.({
+            record,
+            middleEditorValue
         })
+    }, [handleSave, middleEditorValue, record])
 
-        showMsgAfferRequest(res)
+    // const handleSave = useCallback(async () => {
+    //     // if (typeof onConfirm === 'function') {
+    //     //     try {
+    //     //         await onConfirm({
+    //     //             path: selectedPath,
+    //     //             content: middleEditorValue,
+    //     //         });
+    //     //         message.success('保存成功');
+    //     //     } catch (error) {
+    //     //         console.error(error);
+    //     //         message.error('保存失败');
+    //     //     }
+    //     // }
+    //     const res = await axiosJsonPost(API.updateK8sInstanceValues, {
+    //         id: record.id,
+    //         deltaValues: middleEditorValue,
+    //     })
+
+    //     showMsgAfferRequest(res)
 
 
-        if (res.code === 200) {
-            onOkClickProxy?.()
-        }
+    //     if (res.code === 200) {
+    //     }
 
-    }, [middleEditorValue, onOkClickProxy, record.id])
+    // }, [middleEditorValue, onOkClickProxy, record.id])
 
 
     const memoRightValue = useMemo(() => {
 
-        const finalValues = mergeYamlFiles(defaultValue || '', middleEditorValue)
 
-        return finalValues
-    }, [defaultValue, middleEditorValue])
+        if (record.metaFileType === T_HELM) {
+            return mergeYamlFiles(defaultValue || '', middleEditorValue)
+        } else {
+            return defaultValue
+        }
+
+    }, [defaultValue, middleEditorValue, record.metaFileType])
 
 
     useEffect(() => {
@@ -78,10 +85,16 @@ const Index = ({
 
 
     useEffect(() => {
-        setDefaultValue(record.value)
-    }, [record.value])
+        setDefaultValue(record.values || '')
+    }, [record.values])
 
-
+    useImperativeHandle(ref, () => {
+        return {
+            middleEditorValue,
+            defaultValue,
+            record
+        }
+    })
 
     return (
         <div className="flex-1 flex flex-col gap-4 ">
@@ -119,13 +132,16 @@ const Index = ({
                 </EditorWrapper>
             </div>
 
-            <div className='flex flex-row-reverse'>
-                <Button type="primary" onClick={handleSave} loading={loading}>
-                    保存
-                </Button>
-            </div>
+            {
+                handleSave && <div className='flex flex-row-reverse'>
+                    <Button type="primary" onClick={onOkClickProxy} loading={loading}>
+                        保存
+                    </Button>
+                </div>
+            }
+
         </div>
     );
 };
 
-export default Index;
+export default forwardRef(Index);

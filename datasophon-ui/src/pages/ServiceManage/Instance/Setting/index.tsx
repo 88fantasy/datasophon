@@ -25,7 +25,6 @@ const Index = () => {
         obj
     } = useInstanceHooks(ProxyContext)
     const originTemplateDataRef = useRef()
-    const [roleType, setRoleType] = useState({})
     const [roleGroupList, setRoleGroupList] = useState([])
     const [currentId, setCurrentId] = useState()
     const [verSionList, setVerSionList] = useState([])
@@ -37,7 +36,7 @@ const Index = () => {
     const versionOpts = useMemo(() => {
         return verSionList.map(val => {
 
-            if (typeof val === 'string') {
+            if (typeof val === 'string' || typeof val === 'number') {
                 return {
                     value: val,
                     label: val
@@ -261,9 +260,34 @@ const Index = () => {
             )
         } else if (memoCluster.archType === T_K8S) {
             // 
+
+            const handleSave = async ({ record, middleEditorValue }) => {
+                // if (typeof onConfirm === 'function') {
+                //     try {
+                //         await onConfirm({
+                //             path: selectedPath,
+                //             content: middleEditorValue,
+                //         });
+                //         message.success('保存成功');
+                //     } catch (error) {
+                //         console.error(error);
+                //         message.error('保存失败');
+                //     }
+                // }
+                const res = await axiosJsonPost(API.updateK8sInstanceValues, {
+                    id: record.id,
+                    deltaValues: middleEditorValue,
+                })
+
+                showMsgAfferRequest(res)
+
+
+            }
+
             return (
                 <Helm
-                    record={templateData}
+                    record={templateData || {}}
+                    handleSave={handleSave}
                 />
             )
         }

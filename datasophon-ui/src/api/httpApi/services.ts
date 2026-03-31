@@ -33,6 +33,10 @@ export default {
   listSimpleK8sInstanceValuesByInstanceId: path + "/frame/k8sInstanceValues/listSimpleByInstanceId", // 新增 k8s 实例值简化列表
   getK8sInstanceValuesById: path + "/frame/k8sInstanceValues/getById", // 新增 k8s 实例值根据ID查询
   updateK8sInstanceValues: path + "/frame/k8sInstanceValues/update", // 新增 k8s 实例值更新
+  listNewestByDeploymentK8s: path + "/extrepo/k8s/listNewestByDeployment", // k8s 部署列表中获取最新服务
+  saveServiceNamespaceMapping: path + "/extrepo/k8s/saveServiceNamespaceMapping", // k8s 命名空间映射保存
+  saveConfigValuesK8s: path + "/extrepo/k8s/saveConfigValues", // k8s 配置值保存
+  getValueFromRepo: path + "/frame/k8sInstanceValues/getValueFromRepo", // k8s 实例值从仓库获取
   getServiceConfigOption: path + "/service/install/getServiceConfigOption", // 查询服务配置
   getServiceConfigFromDdl: path + "/service/install/getServiceConfigFromDdl", // 查询服务配置
   getServiceRoleList: path + "/frame/service/role/getServiceRoleList", // 查询服务对应的服务角色

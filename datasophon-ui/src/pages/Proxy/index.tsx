@@ -576,7 +576,7 @@ const Index = () => {
         return invokeCancelGetServiceList()
     }, [invokeCancelGetServiceList])
 
-    
+
 
     return (
         <ProxyContext.Provider
@@ -611,7 +611,8 @@ const Index = () => {
                         })}
                         menuItemRender={menuRender.bind(noop, {
                             onMenuClick,
-                            onDeleteClick
+                            onDeleteClick,
+                            memoCluster
                             // onDele
                         })}
                         menuProps={memoMenuProps}

@@ -1,18 +1,15 @@
 import { ProCard, type ProColumns } from "@ant-design/pro-components";
-import type { GithubIssueItem } from "../../../../../../../components/Common/CommonTable";
-import CommonTable, { invokeGenOptionCol } from "../../../../../../../components/Common/CommonTable";
-import { invokePackProtableRequest } from "../../../../../../../utils/request";
 import { API } from "../../../../../../../api";
 import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { invokeMapValue } from "../../../../../../../utils/listUtils";
-import { axiosJsonPost, axiosPost } from "../../../../../../../api/request";
+import { axiosGet, axiosJsonPost, axiosPost } from "../../../../../../../api/request";
 import { isEmpty, showMsgAfferRequest } from "../../../../../../../utils/util";
-import CommonBtnList from "../../../../../../../components/Common/CommonBtnList";
 import { Checkbox, message, Tabs, Tag } from "antd";
 import { useConfigContext } from "../../configContext";
 import { clone, cloneDeep } from "lodash-es";
 import { invokeFormatTemplateData, invokeHandleTemplateData } from "../../../../../../../components/Common/CommonTemplate/utils";
 import CommonTemplate from "../../../../../../../components/Common/CommonTemplate";
+import { T_K8S } from "../../../../../../../constants/clusterType";
+import Helm from "../../../../../../ServiceManage/Instance/Setting/Helm";
 
 
 
@@ -35,16 +32,24 @@ const Index = ({
     formMapRef,
     record,
     index,
-    steps4Data
+    steps4Data,
+    memoCluster
 }, ref) => {
 
 
     if (!steps4Data) {
-        steps4Data = formMapRef.current[index - 3]?.current?.getFieldsValue() || {}
+        let pos = index - 3
+        if (memoCluster.archType === T_K8S) {
+            pos = index - 1
+        }
+
+        steps4Data = formMapRef.current[pos]?.current?.getFieldsValue() || {}
+
     }
 
 
     // const steps4Data = formMapRef.current[3]?.current?.getFieldsValue() || {}
+    const helmRef = useRef()
 
     const currentFormRef = formMapRef.current[index]
 
@@ -57,18 +62,38 @@ const Index = ({
 
     const invokeMapMemoTab = useCallback(() => {
         return steps4Data.services?.map(val => {
-            const key = val.serviceName
-            return {
-                key,
-                label: key,
-                value: key,
-                children: <CommonTemplate
+            let key
+            let label
+
+            let children
+
+            if (memoCluster.archType === T_K8S) {
+                label = val.serviceName
+                key = val.id
+                children = (
+                    <div className="h-[40vh] flex flex-col">
+                        <Helm
+                            record={templateMapRef.current[val.id]}
+                            ref={helmRef}
+                        />
+                    </div>
+                )
+            } else {
+                key = val.serviceName
+                children = <CommonTemplate
                     namePrefix={[key]}
                     templateData={templateMapRef.current[key] || []}
                 />
             }
+            return {
+                key,
+                label: label || key,
+                value: key,
+                originData: val,
+                children,
+            }
         })
-    }, [steps4Data.services])
+    }, [memoCluster.archType, steps4Data.services])
 
     const memoTabs = invokeMapMemoTab()
 
@@ -76,22 +101,39 @@ const Index = ({
 
         const reqArr = await Promise.all(
             memoTabs.map((item) => {
-                const params = {
-                    clusterId,
-                    serviceName: item.label,
-                };
-                return axiosPost(API.getServiceConfigFromDdl, params)
-                    .then(
+                if (memoCluster.archType === T_K8S) {
+                    return axiosGet(`${API.getValueFromRepo}/${item.originData?.id}`, {
+                        artifactType: item.originData?.metaFileType
+                    }).then(
                         (res) => {
                             if (res.code === 200) {
 
                                 return {
-                                    key: item.key,
-                                    data: invokeHandleTemplateData(res.data),
+                                    key: item.originData?.id,
+                                    data: res.data,
                                 }
                             }
                         }
                     );
+                } else {
+                    const params = {
+                        clusterId,
+                        serviceName: item.label,
+                    };
+                    return axiosPost(API.getServiceConfigFromDdl, params)
+                        .then(
+                            (res) => {
+                                if (res.code === 200) {
+
+                                    return {
+                                        key: item.key,
+                                        data: invokeHandleTemplateData(res.data),
+                                    }
+                                }
+                            }
+                        );
+                }
+
             })
         );
 
@@ -102,14 +144,47 @@ const Index = ({
         }, {})
 
         // setTemplateMap(res)
+        console.log('templateMapRef', templateMapRef.current)
 
         templateMapRef.current = res
+    }, [clusterId, memoCluster.archType, memoTabs])
+
+
+    const invokeGenerateGenericInstallCommand = useCallback(async () => {
+        let params = {
+            clusterId,
+            serviceNames: memoTabs.map(val => val.label),
+            //TODO:
+            commandType: 'INSTALL_SERVICE'
+        };
+
+
+        const generateCommandRes = await axiosPost(API.generateGenericInstallCommand, params)
+
+        if (generateCommandRes.code === 200) {
+            // params.commandIds = generateCommandRes.data
+
+            // delete params.servicenames;
+            params = {
+                dagId: generateCommandRes.data
+            }
+
+            const startExecuteCommandRes = await axiosJsonPost(API.redeploy, params)
+
+            return {
+                valid: startExecuteCommandRes.code === 200,
+                msg: startExecuteCommandRes.msg
+            }
+        } else {
+            return {
+                valid: false,
+                msg: generateCommandRes.msg
+            }
+        }
     }, [clusterId, memoTabs])
 
 
-    const invokeValid = useCallback(async () => {
-
-
+    const invokeSaveAsCommon = useCallback(async () => {
         const cpTemplateMap = cloneDeep(templateMapRef.current)
 
         const values = {}
@@ -205,40 +280,79 @@ const Index = ({
                 }
             }
 
+            return invokeGenerateGenericInstallCommand()
 
-            // console.log('memoTabs', memoTabs)
-            let params = {
-                clusterId,
-                serviceNames: memoTabs.map(val => val.value),
-                //TODO:
-                commandType: 'INSTALL_SERVICE'
-            };
+        }
+    }, [clusterId, currentFormRef, invokeGenerateGenericInstallCommand, memoTabs])
 
 
-            const generateCommandRes = await axiosPost(API.generateGenericInstallCommand, params)
+    const invokeSaveAsK8s = useCallback(async () => {
+        const cpTemplateMap = cloneDeep(templateMapRef.current)
 
-            if (generateCommandRes.code === 200) {
-                // params.commandIds = generateCommandRes.data
+        const currentValue = helmRef.current?.middleEditorValue
 
-                // delete params.servicenames;
-                params = {
-                    dagId: generateCommandRes.data
-                }
+        let key = activeKey
 
-                const startExecuteCommandRes = await axiosJsonPost(API.redeploy, params)
+        if (!key) {
+            key = memoTabs[0].key
+        }
 
-                return {
-                    valid: startExecuteCommandRes.code === 200,
-                    msg: startExecuteCommandRes.msg
-                }
-            } else {
-                return {
-                    valid: false,
-                    msg: generateCommandRes.msg
-                }
+        cpTemplateMap[key].deltaValues = currentValue
+
+        let res
+
+
+        const reqArr = await Promise.all(
+            memoTabs.map(tab => {
+
+
+
+                const saveParam = {
+                    clusterId,
+                    serviceId: tab.key,
+                    namespace: tab.originData.namespace,
+                    metaFileType: tab.originData.metaFileType,
+                    ...(cpTemplateMap[tab.key] || {}),
+                };
+                return axiosJsonPost(
+                    API.saveConfigValuesK8s,
+                    saveParam
+                )
+            })
+        )
+
+
+        for (const item of reqArr) {
+            if (item.code !== 200) {
+                res = item.msg
+                break
             }
 
         }
+
+        if (res) {
+            return {
+                valid: false,
+                msg: res
+            }
+        } else {
+            return invokeGenerateGenericInstallCommand()
+        }
+
+
+
+    }, [activeKey, clusterId, invokeGenerateGenericInstallCommand, memoTabs])
+
+    const invokeValid = useCallback(async () => {
+
+
+        if (memoCluster.archType === T_K8S) {
+            return await invokeSaveAsK8s()
+        } else {
+            return await invokeSaveAsCommon()
+        }
+
+
 
 
         // const params = {
@@ -249,17 +363,18 @@ const Index = ({
 
         // return res
 
-    }, [clusterId, currentFormRef, memoTabs])
+    }, [invokeSaveAsCommon, invokeSaveAsK8s, memoCluster.archType])
 
     const onTabChange = useCallback(async (key) => {
         setActiveKey(key)
     }, [])
 
 
-
     const invokeInit = useCallback(async () => {
+
         if (current === index) {
             await getServiceConfigOption()
+
             setHadInit(true)
             // currentRef.current = true
         }
@@ -269,15 +384,6 @@ const Index = ({
         invokeInit()
     }, [invokeInit])
 
-    // useEffect(() => {
-    //     if (
-    //         index === current
-    //     ) {
-    //         console.log('memoTabs', index, current, memoTabs)
-    //         setActiveKey(memoTabs[0]?.key)
-    //         currentRef.current = current
-    //     }
-    // }, [current, index, memoTabs])
 
 
     useImperativeHandle(ref, () => {

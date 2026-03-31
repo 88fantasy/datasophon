@@ -73,7 +73,8 @@ const invokeRenderMore = ({
     obj,
     item,
     dom,
-    isServiceManage
+    isServiceManage,
+    memoCluster
 }) => {
 
 
@@ -171,7 +172,8 @@ const invokeRenderMore = ({
 
                     modelApi.default({
                         stepsType: T_SETPS_TYPE_ADDSERVICE,
-                        clusterId
+                        clusterId,
+                        memoCluster
                     })
 
                     return
@@ -274,6 +276,7 @@ export const menuRender = (obj, item, dom) => {
 
     const {
         onMenuClick,
+        memoCluster
     } = obj
 
     // console.log('item', item)
@@ -363,7 +366,7 @@ export const menuRender = (obj, item, dom) => {
 
             </div>
             {
-                invokeRenderMore({ obj, item, dom, isServiceManage })
+                invokeRenderMore({ obj, item, dom, isServiceManage, memoCluster })
             }
         </div>
     )

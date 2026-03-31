@@ -60,7 +60,9 @@ const Index = () => {
     const [roleGroupName, setRoleGroupName] = useState({})
 
     const { instanceId } = useParams()
-    const { clusterId } = useClusterFromParams()
+    const { clusterId, memoCluster } = useClusterFromParams()
+
+
 
 
     const columns: ProColumns[] = useMemo(() => {
@@ -204,10 +206,11 @@ const Index = () => {
             clusterId,
             stepsType: T_SETPS_TYPE_INSTANCE,
             steps4Data,
+            memoCluster,
             record: {}
 
         })
-    }, [clusterId, instanceId, serviceListMapRef])
+    }, [clusterId, instanceId, memoCluster, serviceListMapRef])
 
     const onAddCharacterModalClick = useCallback(async () => {
         const modelApi = await showAddCharacterModal()
