@@ -64,8 +64,9 @@ public class HelmClient implements AutoCloseable{
                 return result.getExecOut().trim();
             }
         }
-        return null;
+        return "helm";
     }
+
 
     public HelmClient(ClientOptions options) {
         this.helmPath = detectHelmPath();
@@ -206,12 +207,12 @@ public class HelmClient implements AutoCloseable{
         }
 
         // wait
-        if (params.isWait()) {
-            args.add("--wait");
-        }
-        if (params.isWaitForJob()) {
-            args.add("--wait-for-jobs");
-        }
+//        if (params.isWait()) {
+//            args.add("--wait");
+//        }
+//        if (params.isWaitForJob()) {
+//            args.add("--wait-for-jobs");
+//        }
 
         // description
         if (StrUtil.isNotBlank(params.getDescription())) {
@@ -247,25 +248,7 @@ public class HelmClient implements AutoCloseable{
         }
     }
 
-    /**
-     * 简化的 upgrade 方法 - 基本参数
-     *
-     * @param releaseName    release 名称
-     * @param chartPath      chart 路径
-     * @param namespace      命名空间
-     * @param timeoutSeconds 超时时间（秒）
-     * @return Helm Release VO
-     * @throws HelmException 命令执行失败
-     */
-    public HelmReleaseVO upgrade(String releaseName, String chartPath, String namespace, int timeoutSeconds) throws HelmException {
-        UpgradeParams params = new UpgradeParams();
-        params.setReleaseName(releaseName);
-        params.setChartPath(chartPath);
-        params.setNamespace(namespace);
-        params.setTimeoutSeconds(timeoutSeconds);
-        params.setWait(true);
-        return upgrade(params);
-    }
+
 
 
     @Override

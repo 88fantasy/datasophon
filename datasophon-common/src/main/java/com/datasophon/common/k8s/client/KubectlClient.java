@@ -5,6 +5,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.k8s.config.ClientOptions;
+import com.datasophon.common.k8s.dto.UpdateDeploymentDTO;
 import com.datasophon.common.k8s.exception.KubectlException;
 import com.datasophon.common.k8s.vo.k8s.K8sConfigMap;
 import com.datasophon.common.k8s.vo.k8s.K8sDeployment;
@@ -321,6 +322,10 @@ public class KubectlClient implements AutoCloseable {
                     deploymentName, namespace, result.getErrorTraceMessage())
             );
         }
+    }
+
+    public void updateDeploymentImage(UpdateDeploymentDTO dto) {
+
     }
 
     public void createNamespace(String namespace) {

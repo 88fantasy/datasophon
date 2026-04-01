@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 /**
  * @author zhanghuangbin
  */
-public class HelmParser {
+public class HelmUtils {
 
     public static String unzip(File file) throws IOException {
         return TarUtils.decompressToTemp(file.getAbsolutePath());
@@ -23,5 +23,14 @@ public class HelmParser {
         }
         File file = files[0];
         return Paths.get(file.getAbsolutePath(), "values.yaml").toFile();
+    }
+
+    /**
+     * Helm 的 release name 必须遵循 Kubernetes DNS 子域名命名规范
+     * @param serviceName
+     * @return
+     */
+    public static String createReleaseName(String serviceName) {
+        return serviceName.toLowerCase();
     }
 }

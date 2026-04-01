@@ -3,7 +3,7 @@ package com.datasophon.common.storage.impl;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.Constants;
-import com.datasophon.common.k8s.spec.helm.HelmParser;
+import com.datasophon.common.k8s.spec.helm.HelmUtils;
 import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.storage.vo.ServiceMetaItem;
 import com.datasophon.common.utils.NexusFileUtils;
@@ -81,8 +81,8 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
             try (OutputStream out = Files.newOutputStream(tmp.toPath())) {
                 downResource(item, chartName, () -> out);
             }
-            extractDir = HelmParser.unzip(tmp);
-            File valueFile = HelmParser.getValueFile(extractDir);
+            extractDir = HelmUtils.unzip(tmp);
+            File valueFile = HelmUtils.getValueFile(extractDir);
             if (!valueFile.exists()) {
                 throw new IllegalStateException("chart 中未找到 values.yaml 文件");
             }

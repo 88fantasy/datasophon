@@ -15,6 +15,7 @@ import com.datasophon.common.k8s.client.HelmClient;
 import com.datasophon.common.k8s.client.HelmifyClient;
 import com.datasophon.common.k8s.config.ClientOptions;
 import com.datasophon.common.k8s.dto.UpgradeParams;
+import com.datasophon.common.k8s.spec.helm.HelmUtils;
 import com.datasophon.common.k8s.vo.helm.HelmReleaseVO;
 import com.datasophon.common.model.k8s.K8sArtifact;
 import com.datasophon.common.model.k8s.K8sServiceNode;
@@ -110,6 +111,7 @@ public class ApplyServiceHandler extends ServiceHandler {
                 logger.error("安装{}失败，原因：{}", serviceNode.getServiceName(), result.getInfo().getNotes());
                 return ExecResult.error(String.format("安装%s失败，原因：%s", serviceNode.getServiceName(), result.getInfo().getNotes()));
             }
+
 
             // 步骤 6: 更新服务实例状态
             updateServiceInstance(serviceNode, instance, result.getVersion());
@@ -261,7 +263,7 @@ public class ApplyServiceHandler extends ServiceHandler {
                 logger.info("Delta Values 已写入临时文件：{}", tempValueFile.getAbsolutePath());
             }
 
-            params.setReleaseName(serviceDef.getServiceName() + "_" + instance.getServiceId());
+            params.setReleaseName(HelmUtils.createReleaseName(serviceNode.getServiceName()));
             params.setChartPath(chartPath);
             params.setNamespace(serviceNode.getNamespace());
             if (tempValueFile != null) {

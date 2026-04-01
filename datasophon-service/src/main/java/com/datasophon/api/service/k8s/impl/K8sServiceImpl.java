@@ -18,6 +18,7 @@ import com.datasophon.common.function.ThrowableMapper;
 import com.datasophon.common.k8s.client.KubectlClient;
 import com.datasophon.common.k8s.config.ClientOptions;
 import com.datasophon.common.k8s.exception.KubectlException;
+import com.datasophon.common.k8s.spec.helm.HelmUtils;
 import com.datasophon.common.k8s.vo.k8s.K8sConfigMap;
 import com.datasophon.common.k8s.vo.k8s.K8sDeployment;
 import com.datasophon.common.k8s.vo.k8s.K8sIngress;
@@ -193,7 +194,7 @@ public class K8sServiceImpl implements K8sService {
 
     private String buildLabelSelector(Integer instanceId) {
         String serviceName = k8sServiceInstanceService.getServiceName(instanceId);
-        return String.format("%s=%s,%s=%s", MANGED_BY_LABEL, MANGED_BY_LABEL_VALUE, SRV_INST_ID_LABEL, serviceName + "_" + instanceId);
+        return String.format("%s=%s,%s=%s", MANGED_BY_LABEL, MANGED_BY_LABEL_VALUE, SRV_INST_ID_LABEL, HelmUtils.createReleaseName(serviceName));
     }
 
 
