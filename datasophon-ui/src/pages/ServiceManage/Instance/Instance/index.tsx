@@ -13,6 +13,7 @@ import asyncHook from '../../../../components/Common/CommonModal/asyncHook';
 import { useInstanceHooks } from '../../../../hooks/useInstanceHooks';
 import { ProxyContext } from '../../../../context/proxyContext';
 import { T_SETPS_TYPE_INSTANCE } from '../../../Colony/ColonyManage/components/ConfigModal/stepType';
+import { useClusterFromParams } from '../../../../hooks/useClusterFromParams';
 
 
 
@@ -58,7 +59,10 @@ const Index = () => {
     const [roleType, setRoleType] = useState({})
     const [roleGroupName, setRoleGroupName] = useState({})
 
-    const { clusterId, instanceId } = useParams()
+    const { instanceId } = useParams()
+    const { clusterId, memoCluster } = useClusterFromParams()
+
+
 
 
     const columns: ProColumns[] = useMemo(() => {
@@ -202,10 +206,11 @@ const Index = () => {
             clusterId,
             stepsType: T_SETPS_TYPE_INSTANCE,
             steps4Data,
+            memoCluster,
             record: {}
 
         })
-    }, [clusterId, instanceId, serviceListMapRef])
+    }, [clusterId, instanceId, memoCluster, serviceListMapRef])
 
     const onAddCharacterModalClick = useCallback(async () => {
         const modelApi = await showAddCharacterModal()

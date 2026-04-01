@@ -7,6 +7,8 @@ import { useConfigContext } from "../../configContext";
 import { T_TYPE_INIT } from "../../stepType";
 import { noop } from "lodash-es";
 import { useStepImportManifestHook } from "../StepImportManifest/useStepImportManifestHook";
+import { useClusterFromParams } from "../../../../../../../hooks/useClusterFromParams";
+import { T_K8S } from "../../../../../../../constants/clusterType";
 
 
 
@@ -17,13 +19,15 @@ const Index = ({
     formMapRef,
     record,
     index,
-    type
+    type,
+    memoCluster
 }, ref) => {
 
     const actionRef = useRef()
     const [selectedRows, setSelectedRows] = useState([])
     const [dataSource, setDataSource] = useState([])
     const { clusterId } = useConfigContext()
+
 
 
     const invokeUpdateFormData = useCallback((arr, source) => {
@@ -64,21 +68,36 @@ const Index = ({
 
         let api
 
-        if (type === T_TYPE_INIT) {
-            api = axiosPost.bind(noop, API.listBasicFrameService)
-        } else if (invokeGetManifestDataRes) {
-            api = axiosJsonPost.bind(noop, API.listNewestByDeployment)
-            Object.assign(params, {
-                deployFileId: invokeGetManifestDataRes.data?.id,
-                contentDecodePasswd: invokeGetManifestDataRes.contentDecodePasswd,
-            })
 
+        if (memoCluster.archType === T_K8S) {
+            if (type === T_TYPE_INIT) {
+
+            } else if (invokeGetManifestDataRes) {
+                api = axiosJsonPost.bind(noop, API.listNewestByDeploymentK8s)
+                Object.assign(params, {
+                    deployFileId: invokeGetManifestDataRes.data?.id,
+                    contentDecodePasswd: invokeGetManifestDataRes.contentDecodePasswd,
+                })
+            }
         } else {
-            Object.assign(params, {
-                newest: true
-            })
-            api = axiosPost.bind(noop, API.listNewest)
+            if (type === T_TYPE_INIT) {
+                api = axiosPost.bind(noop, API.listBasicFrameService)
+            } else if (invokeGetManifestDataRes) {
+                api = axiosJsonPost.bind(noop, API.listNewestByDeployment)
+                Object.assign(params, {
+                    deployFileId: invokeGetManifestDataRes.data?.id,
+                    contentDecodePasswd: invokeGetManifestDataRes.contentDecodePasswd,
+                })
+
+            } else {
+                Object.assign(params, {
+                    newest: true
+                })
+                api = axiosPost.bind(noop, API.listNewest)
+            }
         }
+
+
 
         const res = await api(params)
 
@@ -102,22 +121,19 @@ const Index = ({
                 setSelectedRows(arr)
                 invokeUpdateFormData(arr, res.data)
             }
-
-
-
-
-
-            // TODO:对比源代码补充
         }
 
 
-    }, [clusterId, invokeGetManifestData, invokeUpdateFormData, type])
+    }, [clusterId, invokeGetManifestData, invokeUpdateFormData, memoCluster, type])
 
 
     const invokeValid = useCallback(async () => {
-        const fieldValue = formMapRef.current[index]?.current.getFieldsValue()
-        const { services } = fieldValue
 
+        let res = {}
+
+        const fieldValue = formMapRef.current[index]?.current.getFieldsValue()
+
+        const { services } = fieldValue
 
         if (!services?.length) {
             return {
@@ -126,12 +142,29 @@ const Index = ({
             }
         }
 
-        const params = {
-            clusterId,
-            serviceIds: (services || []).map(val => val.id)
-        };
 
-        const res = await axiosPost(API.checkServiceDependency, params);
+        if (memoCluster.archType === T_K8S) {
+            const params = services.map(val => {
+                return {
+                    namespace: val.namespace,
+                    serviceName: val.serviceName,
+                    metaFileType: val.metaFileType
+                }
+            })
+
+
+            res = await axiosJsonPost(`${API.saveServiceNamespaceMapping}/${memoCluster.clusterId}`, params);
+        } else {
+
+
+            const params = {
+                clusterId,
+                serviceIds: (services || []).map(val => val.id)
+            };
+
+            res = await axiosPost(API.checkServiceDependency, params);
+
+        }
 
 
         // TODO: 测试
@@ -144,9 +177,42 @@ const Index = ({
             msg: res.msg
         }
 
-    }, [clusterId, formMapRef, index])
+    }, [clusterId, formMapRef, index, memoCluster.archType, memoCluster.clusterId])
 
     const columns: ProColumns[] = useMemo(() => {
+
+        if (memoCluster.archType === T_K8S) {
+            return [
+                {
+                    dataIndex: 'index',
+                    title: '序号',
+                    valueType: 'indexBorder',
+                    width: 48,
+                },
+                {
+                    dataIndex: 'serviceName',
+                    title: '服务名字',
+                },
+                {
+                    title: '服务版本',
+                    dataIndex: 'serviceVersion',
+                },
+                {
+                    title: '类型',
+                    dataIndex: 'type'
+                },
+                {
+                    title: '源文件类型',
+                    dataIndex: 'metaFileType'
+                },
+                {
+                    title: '命名空间',
+                    dataIndex: 'namespace'
+                },
+
+            ]
+        }
+
         return [
             {
                 dataIndex: 'index',
@@ -170,7 +236,7 @@ const Index = ({
                 search: false,
             },
         ]
-    }, []);
+    }, [memoCluster.archType]);
 
 
 

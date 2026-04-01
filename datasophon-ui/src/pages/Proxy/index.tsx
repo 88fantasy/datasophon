@@ -17,10 +17,9 @@ import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { account } from '../../utils/account';
 import { invokeRelogin } from '../../utils/authorityUtils';
 import { invokeGenPath, invokeGetRouteByPath, invokeHandlePath } from '../../utils/routerUtils';
-import { ClusterGlobalProvider } from '../../context/clusterGlobalContext';
 import { memo, use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { API } from '../../api';
-import { axiosPost } from '../../api/request';
+import { axiosGet, axiosJsonPost, axiosPost } from '../../api/request';
 import { clone, cloneDeep, isEqual, noop } from 'lodash-es';
 import { menuRender } from './components/menuRender';
 import { ProxyContext } from '../../context/proxyContext';
@@ -31,6 +30,9 @@ import bg1 from '../../assets/O1CN01O4etvp1DvpFLKfuWq_!!6000000000279-2-tps-609-
 import bg2 from '../../assets/O1CN018NxReL1shX85Yz6Cx_!!6000000005798-2-tps-884-496.png'
 import gobalEvent, { uiEvent } from '../../utils/gobalEvent';
 import artifactType, { getArtifactTypeLabelByValue } from '../../constants/artifactType';
+import { useClusterFromParams } from '../../hooks/useClusterFromParams';
+import { T_K8S, T_PHYSICAL } from '../../constants/clusterType';
+import { isEmpty } from '../../utils/util';
 
 const showUserCenterModal = asyncHook(() => import('./components/UserCenterModal/api'))
 
@@ -99,7 +101,10 @@ const onUserClick = async () => {
 
 const Index = () => {
 
-    const { clusterId, instanceId } = useParams()
+    const { instanceId } = useParams()
+
+    const { clusterId, memoCluster } = useClusterFromParams()
+
     const serviceListMapRef = useRef({})
     const timeoutIdRef = useRef()
     const matchRoute = useRef(invokeGetRouteByPath())
@@ -107,6 +112,8 @@ const Index = () => {
     const [runningClusterList, setRunningClusterList] = useState()
     const [dashboardUrl, setDashboardUrl] = useState()
     const [serviceList, setServiceList] = useState([])
+    const [k8sNamespaceList, setK8sNamespaceList] = useState([])
+    const [k8sInstanceListMap, setK8sInstanceListMap] = useState({})
 
     const [proCardBodyStyle, setProCardBodyStyle] = useState({})
 
@@ -162,9 +169,29 @@ const Index = () => {
         // const menuProps = {}
         let serviceRoutes = []
 
-        if (serviceList) {
+        const sortFn = (arr) => {
+
+            serviceRoutes.sort((a, b) => {
+                const hasChildrenA = a.children !== undefined;
+                const hasChildrenB = b.children !== undefined;
+
+                if (hasChildrenA && !hasChildrenB) {
+                    return -1; // A 排前面
+                }
+                if (!hasChildrenA && hasChildrenB) {
+                    return 1; // B 排前面
+                }
+                return 0; // 顺序不变
+            })
+
+        }
+
+
+        const serviceRouteObj = memoServiceRouteObj
+
+
+        if (serviceList && (isEmpty(memoCluster?.archType) || memoCluster?.archType === T_PHYSICAL)) {
             // route
-            const serviceRouteObj = memoServiceRouteObj
             // console.log('route.routes', serviceRouteObj)
             const serviceListMap = {}
             serviceList
@@ -205,37 +232,54 @@ const Index = () => {
                 // })
             })
 
-            serviceRoutes.sort((a, b) => {
-                const hasChildrenA = a.children !== undefined;
-                const hasChildrenB = b.children !== undefined;
 
-                if (hasChildrenA && !hasChildrenB) {
-                    return -1; // A 排前面
+
+        } else {
+            const arr = k8sNamespaceList.map(namespaceObj => {
+                const val = k8sInstanceListMap[namespaceObj.id]?.map(v => {
+                    return {
+                        name: v.serviceName,
+                        path: `${serviceRouteObj.path}/Instance/${v.id}`,
+                        originData: v
+                    }
+                })
+
+
+                const obj = {
+                    name: namespaceObj.namespace,
+                    path: `${serviceRouteObj.path}/${namespaceObj.id}`,
+                    children: val
                 }
-                if (!hasChildrenA && hasChildrenB) {
-                    return 1; // B 排前面
-                }
-                return 0; // 顺序不变
+
+
+                return obj
             })
 
-            serviceRoutes.unshift({
-                name: '总览',
-                path: `${serviceRouteObj.path}/Instance/Overview`,
-                originData: {
-                    serviceStateCode: -1,
-                    serviceList,
-                    clusterId,
+            serviceRoutes.push(...arr.filter(val => val.children?.length))
 
-                }
-            })
 
-            serviceRouteObj.routes = serviceRoutes
         }
+
+
+        sortFn(serviceRoutes)
+
+        serviceRoutes.unshift({
+            name: '总览',
+            path: `${serviceRouteObj.path}/Instance/Overview`,
+            originData: {
+                serviceStateCode: -1,
+                serviceList,
+                clusterId,
+
+            }
+        })
+
+        serviceRouteObj.routes = serviceRoutes
 
         return {
             route: cloneDeep(route),
         }
-    }, [clusterId, memoServiceRouteObj, route, serviceList])
+    }, [clusterId, k8sInstanceListMap, k8sNamespaceList, memoCluster, memoServiceRouteObj, route, serviceList])
 
 
 
@@ -270,6 +314,44 @@ const Index = () => {
         }
         return res
     }, [clusterId])
+
+
+    const invokeGetK8sInstanceList = useCallback(async (namespaceArr = []) => {
+
+
+        // 遍历每个 namespace，调用实例列表接口
+        const instanceMap = {}
+        for (const { namespace, id } of namespaceArr) {
+            const instanceRes = await axiosJsonPost(API.k8sInstanceQueryInstanceList, {
+                namespace,
+                clusterId
+            })
+            if (instanceRes.code === 200) {
+                instanceMap[id] = instanceRes.data
+
+
+                serviceListMapRef.current = instanceRes.data.reduce((acc, val) => {
+                    acc[val.id] = val
+                    return acc
+                }, {})
+            }
+        }
+        setK8sInstanceListMap(instanceMap)
+
+    }, [clusterId])
+
+    const invokeGetK8sNamespaceList = useCallback(async () => {
+        const namespaceRes = await axiosGet(`${API.k8sNamespaceListByClusterId}/${clusterId}`)
+
+
+        if (namespaceRes.code === 200 && namespaceRes.data) {
+            setK8sNamespaceList(namespaceRes.data)
+            await invokeGetK8sInstanceList(namespaceRes.data)
+
+        }
+    }, [clusterId, invokeGetK8sInstanceList])
+
+
 
     const invokeGetServiceList = useCallback(async (hadInit) => {
         const fn = async (forceUpdate) => {
@@ -351,38 +433,45 @@ const Index = () => {
         // })
     }, [clusterId])
 
-    const invokeGetRunningClusterList = useCallback(async () => {
-        const res = await axiosPost(API.runningClusterList, {})
-        if (res.code === 200) {
-            const arr = res.data.map(item => {
-                return {
-                    label: item.clusterName,
-                    value: item.id,
-                    originData: item
-                }
-            })
+    // const invokeGetRunningClusterList = useCallback(async () => {
+    //     const res = await axiosPost(API.runningClusterList, {})
+    //     if (res.code === 200) {
+    //         const arr = res.data.map(item => {
+    //             return {
+    //                 label: item.clusterName,
+    //                 value: item.id,
+    //                 originData: item
+    //             }
+    //         })
 
-            setRunningClusterList(arr)
-            await invokeGetDashboardUrl()
-        }
-    }, [invokeGetDashboardUrl])
+    //         setRunningClusterList(arr)
+    //         await invokeGetDashboardUrl()
+    //     }
+    // }, [invokeGetDashboardUrl])
 
 
 
     const invokeInit = useCallback(async () => {
 
         if (!hadInit) {
-            await invokeGetServiceList(hadInit)
-            if (!runningClusterList?.length) {
-                if (/Cluster\/\:clusterId\//gi.test(matchRoute.current.route.path)) {
-                    await invokeGetRunningClusterList()
-                }
+
+            if (memoCluster?.archType === T_K8S) {
+                await invokeGetK8sNamespaceList()
+            } else {
+                await invokeGetServiceList(hadInit)
             }
+            // if (!runningClusterList?.length) {
+            //     if (/Cluster\/\:clusterId\//gi.test(matchRoute.current.route.path)) {
+            //         await invokeGetRunningClusterList()
+            //     }
+            // }
+            await invokeGetDashboardUrl()
+
 
             setHadInit(true)
         }
 
-    }, [hadInit, invokeGetRunningClusterList, invokeGetServiceList, runningClusterList?.length])
+    }, [hadInit, memoCluster?.archType, invokeGetK8sNamespaceList, invokeGetServiceList, invokeGetDashboardUrl])
 
 
     const invokeGetServiceListMap = useCallback(() => {
@@ -488,13 +577,14 @@ const Index = () => {
     }, [invokeCancelGetServiceList])
 
 
+
     return (
         <ProxyContext.Provider
             value={{
                 setProCardBodyStyle,
                 invokeGetServiceListMap,
                 serviceListMapRef,
-                runningClusterList,
+                // runningClusterList,
                 dashboardUrl,
                 clusterId,
             }}
@@ -521,7 +611,8 @@ const Index = () => {
                         })}
                         menuItemRender={menuRender.bind(noop, {
                             onMenuClick,
-                            onDeleteClick
+                            onDeleteClick,
+                            memoCluster
                             // onDele
                         })}
                         menuProps={memoMenuProps}

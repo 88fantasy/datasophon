@@ -10,6 +10,7 @@ import { showComfirmModal } from '../../utils/util';
 import { axiosPost } from '../../api/request';
 import asyncHook from '../../components/Common/CommonModal/asyncHook';
 import { T_STEPS_TYPE_HOSTMANAGE } from '../Colony/ColonyManage/components/ConfigModal/stepType';
+import { useClusterFromParams } from '../../hooks/useClusterFromParams';
 
 
 
@@ -37,7 +38,7 @@ const Index = () => {
     const actionRef = useRef()
     const [selectedRows, setSelectedRows] = useState([])
 
-    const { clusterId } = useParams()
+    const { clusterId, memoCluster } = useClusterFromParams()
 
     const memoryRender = ({ usedKey, totalKey }, text, record) => {
         const usedMem = record[usedKey] ? record[usedKey] : 0;
@@ -202,7 +203,8 @@ const Index = () => {
         modelApi.default({
             clusterId,
             stepsType: T_STEPS_TYPE_HOSTMANAGE,
-            record: {}
+            record: {},
+            memoCluster
         })
     }
 

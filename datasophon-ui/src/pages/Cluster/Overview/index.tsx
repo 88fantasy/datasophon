@@ -1,5 +1,4 @@
 import { useContext, useEffect } from "react"
-import { useClusterGlobalContext } from "../../../context/clusterGlobalContext"
 import { ProxyContext } from "../../../context/proxyContext"
 
 const Index = () => {

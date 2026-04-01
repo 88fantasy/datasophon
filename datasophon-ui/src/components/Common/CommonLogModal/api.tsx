@@ -1,8 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
+import { invokeGenerateElId } from "../../../utils/util";
 import defineModalApi from "../CommonModal/DefineModal/api";
 
 // const defineModalApi = () => import('../CommonModal/DefineModal/api')
-import Index from ".";
+import Index from "./Log";
+
+
+export const T_LOG = invokeGenerateElId();
+export const T_VIEWER = invokeGenerateElId();
+export const T_HELM = invokeGenerateElId();
 
 export default async function (config) {
 

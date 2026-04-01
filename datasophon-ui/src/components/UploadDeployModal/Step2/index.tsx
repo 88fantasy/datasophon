@@ -2,10 +2,6 @@ import { ProCard, ProFormDependency, ProFormItem, ProFormText, ProFormUploadButt
 import { invokeGenerateElId, requireRules } from "../../../utils/util";
 import { Progress, type UploadFile } from "antd";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { API } from "../../../api";
-import { axiosJsonPost } from "../../../api/request";
-import { noop, set } from "lodash-es";
-import ChunkedUploader from "../../../utils/ChunkedUploader";
 import { CHUNK_SIZE, computeChunkMD5Base64, computeFileMD5, getUploadedChunks, invokeCreateUploadTask, invokeMakePartUploadRequest, invokeQueryMergeProgress, mergeFile, saveUploadedChunk, uploadChunk } from "../../../utils/uploadUtils";
 
 const Index = (props) => {
@@ -29,10 +25,6 @@ const Index = (props) => {
 
     const values = firstFormRef?.current?.getFieldsValue()
 
-
-    const {
-        contentDecodePasswd
-    } = values || {}
 
 
     let {

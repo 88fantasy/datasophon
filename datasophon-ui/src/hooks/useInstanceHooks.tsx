@@ -6,7 +6,7 @@ export const useInstanceHooks = (ctx) => {
 
     const { instanceId } = useParams()
 
-    const obj = serviceListMapRef.current[instanceId]
+    const obj = serviceListMapRef.current[instanceId] || {}
 
     return {
         instanceId,
