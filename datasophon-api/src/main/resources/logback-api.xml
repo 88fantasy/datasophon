@@ -47,6 +47,27 @@
             <charset>UTF-8</charset>
         </encoder>
     </appender>
+
+    <appender name="TASKLOGFILE" class="ch.qos.logback.classic.sift.SiftingAppender">
+        <filter class="com.datasophon.api.log.TaskLogFilter"/>
+        <Discriminator class="com.datasophon.api.log.TaskLogDiscriminator">
+            <key>taskAppId</key>
+            <logBase>${log.base}</logBase>
+        </Discriminator>
+        <sift>
+            <appender name="FILE-${taskAppId}" class="ch.qos.logback.core.FileAppender">
+                <file>${log.base}/${taskAppId}.log</file>
+                <encoder>
+                    <pattern>
+                        [%level] %date{yyyy-MM-dd HH:mm:ss} %logger{96}:[%line] - %msg%n
+                    </pattern>
+                    <charset>UTF-8</charset>
+                </encoder>
+                <append>true</append>
+            </appender>
+        </sift>
+    </appender>
+
     <!-- 文件 滚动日志 (仅error)-->
     <appender name="errorlog"  class="ch.qos.logback.core.rolling.RollingFileAppender">
         <!-- 当前日志输出路径、文件名 -->
@@ -81,6 +102,7 @@
         <appender-ref ref="STDOUT" />
         <appender-ref ref="APILOGFILE" />
         <appender-ref ref="errorlog" />
+        <appender-ref ref="TASKLOGFILE"/>
     </root>
 
 

@@ -1,6 +1,7 @@
 package com.datasophon.api.vo.extrepo;
 
-import com.datasophon.dao.enums.CommandState;
+import com.datasophon.dao.entity.cmd.ClusterK8sServiceCommandEntity;
+import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.RoleType;
 import com.datasophon.dao.enums.dag.DagStatus;
 import com.datasophon.dao.enums.dag.NodeStatus;
@@ -18,9 +19,7 @@ import java.util.List;
  * @date 2025/11/11
  */
 @Data
-public class InstallProgressDAG2 implements scala.Serializable {
-
-
+public class InstallProgressDAG implements scala.Serializable {
 
     @Schema(description = "dagId")
     private String id;
@@ -38,6 +37,9 @@ public class InstallProgressDAG2 implements scala.Serializable {
     private LocalDateTime completedTime;
 
     private Integer clusterId;
+
+    @Schema(description = "集群架构，物理机:physical K8S集群:k8s")
+    private ClusterArchType archType;
 
     @Schema(description = "安装节点")
     private List<Node> nodes;
@@ -77,10 +79,10 @@ public class InstallProgressDAG2 implements scala.Serializable {
         @Schema(description = "命令行ID")
         private String commandId;
 
-        @Schema(description = "命令行状态")
-        private CommandState commandState;
+        @Schema(description = "k8s服务信息(当集群是k8s时，有值)")
+        private ClusterK8sServiceCommandEntity k8s;
 
-        @Schema(description = "服务下的角色信息")
+        @Schema(description = "服务下的角色信息(当集群是physical时，有值)")
         private List<SrvRole> roles;
     }
 

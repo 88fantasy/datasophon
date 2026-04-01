@@ -1,9 +1,6 @@
 package com.datasophon.api.master.handler.k8s;
 
-import cn.hutool.extra.spring.SpringUtil;
 import com.datasophon.api.dto.instance.K8sServiceInstanceQueryDTO;
-import com.datasophon.api.service.instance.K8sServiceInstanceService;
-import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.api.vo.k8s.K8sDeploymentInfo;
 import com.datasophon.common.model.k8s.K8sServiceNode;
 import com.datasophon.common.utils.ExecResult;
@@ -13,32 +10,37 @@ import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 import java.util.List;
 
 /**
+ * K8s 服务重启处理器
+ * 负责重启 K8s 服务关联的所有 Deployment
+ *
  * @author zhanghuangbin
  */
 public class RestartServiceHandler extends ServiceHandler {
-
-    private final K8sService k8sService;
-
-
-    private final K8sServiceInstanceService instanceService;
-
-
-    public RestartServiceHandler() {
-        k8sService = SpringUtil.getBean(K8sService.class);
-        instanceService = SpringUtil.getBean(K8sServiceInstanceService.class);
-    }
+    
 
     @Override
     public ExecResult handlerRequest(K8sServiceNode serviceNode) throws Exception {
+        logger.info("开始重启 K8s 服务，服务名：{}, 服务实例 ID:{}", serviceNode.getServiceName(), serviceNode.getServiceInstanceId());
+
+        // 获取 K8s 集群配置
         K8sClusterConfig config = getK8sConfig(serviceNode.getClusterId());
+
+        // 获取服务实例信息
         K8sServiceInstanceVO vo = instanceService.getVoById(serviceNode.getServiceInstanceId());
 
+        // 构建查询条件
         K8sServiceInstanceQueryDTO query = new K8sServiceInstanceQueryDTO();
         query.setInstanceId(serviceNode.getServiceInstanceId());
         query.setNamespace(vo.getNamespace());
-        List<K8sDeploymentInfo> deployments = k8sService.listDeployments(config, query);
 
+        // 获取该服务关联的所有 Deployment
+        List<K8sDeploymentInfo> deployments = k8sService.listDeployments(config, query);
+        logger.info("找到 {} 个 Deployment 需要重启", deployments.size());
+
+        // 重启所有 Deployment
         k8sService.restartDeployment(config, deployments);
-        return ExecResult.success(String.format("重启服务%s成功", serviceNode.getServiceName()));
+        logger.info("服务{}重启成功", serviceNode.getServiceName());
+
+        return ExecResult.success(String.format("重启服务%s 成功", serviceNode.getServiceName()));
     }
 }

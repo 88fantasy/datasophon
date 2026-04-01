@@ -5,7 +5,7 @@ import com.datasophon.api.dto.extrepo.DagIdDto;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
-import com.datasophon.api.vo.extrepo.InstallProgressDAG2;
+import com.datasophon.api.vo.extrepo.InstallProgressDAG;
 import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
 import com.datasophon.common.utils.Result;
@@ -52,7 +52,7 @@ public class ExtRepoInstallController extends ApiController {
 
     @PostMapping("/getDeployProgressDAG2")
     @Operation(summary = "获取部署进度DAG接口2")
-    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = InstallProgressDAG2.class))})
+    @ApiResponse(content = {@Content(mediaType = "application/json", schema = @Schema(implementation = InstallProgressDAG.class))})
     public Result getDeployProgressDAG2(@RequestBody @Validated DagIdDto dto) {
         return Result.success(extRepoInstallDelegateService.getDeployProgressDAG2(dto.getDagId()));
     }

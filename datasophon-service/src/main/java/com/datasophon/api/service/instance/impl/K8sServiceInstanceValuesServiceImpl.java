@@ -102,12 +102,12 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
         K8sServiceInstance instance = k8sServiceInstanceService.createIfAbsent(values.getClusterId(), namespace.getId(), values.getServiceId());
 
         // 3. 获取当前最大 version
-        Integer maxVersion = lambdaQuery()
+        List<K8sServiceInstanceValues> list = lambdaQuery()
                 .eq(K8sServiceInstanceValues::getInstanceId, instance.getId())
                 .orderByDesc(K8sServiceInstanceValues::getVersion)
-                .oneOpt()
-                .map(K8sServiceInstanceValues::getVersion)
-                .orElse(0);
+                .last("limit 1")
+                .list();
+        Integer maxVersion = list.isEmpty() ? 0 : list.get(0).getVersion();
 
         // 4. 创建 K8sServiceInstanceValues 对象
         K8sServiceInstanceValues instanceValues = BeanUtil.toBean(values, K8sServiceInstanceValues.class);

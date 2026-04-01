@@ -3,7 +3,9 @@ package com.datasophon.dao.entity.cmd;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.jackson.annotation.WithEnumDescription;
+import com.datasophon.common.jackson.annotation.WithEnumSourceDescription;
 import com.datasophon.dao.enums.CommandState;
 import lombok.Data;
 
@@ -62,6 +64,7 @@ public class ClusterK8sServiceCommandEntity implements Serializable {
     /**
      * 命令类型
      */
+    @WithEnumSourceDescription(datasource = CommandType.class, valueMapping = "value", descMapping = "cnDesc")
     private Integer commandType;
 
 
@@ -76,7 +79,6 @@ public class ClusterK8sServiceCommandEntity implements Serializable {
     private Date createTime;
 
     private Date endTime;
-
 
 
 

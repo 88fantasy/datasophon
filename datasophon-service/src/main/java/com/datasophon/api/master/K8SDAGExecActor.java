@@ -25,6 +25,10 @@ import com.datasophon.dao.enums.CommandState;
 import lombok.extern.slf4j.Slf4j;
 
 /**
+ * K8s DAG 执行 Actor
+ * 负责处理基于 DAG（有向无环图）的 K8s 服务执行任务
+ * 支持安装、升级、启动、停止、重启等多种服务操作类型
+ *
  * @author zhanghuangbin
  */
 @Slf4j
@@ -36,7 +40,7 @@ public class K8SDAGExecActor extends TypedActor<DAGExecCommand> {
         RepoDAG dag = createMultiServiceDAG(message);
 
         NodeTask task = (nodeDef) -> {
-//            单个服务的安装
+            // 执行单个服务节点的任务
             K8sServiceNode serviceNode = JSONObject.parseObject((String) nodeDef.getNodeConfig(), K8sServiceNode.class);
             doExecServiceNode(serviceNode);
 
@@ -47,9 +51,17 @@ public class K8SDAGExecActor extends TypedActor<DAGExecCommand> {
     }
 
 
+    /**
+     * 创建多服务 DAG
+     * 从 DAGRepository 初始化 DAG，并注册节点执行监听器
+     * 监听器负责在节点执行成功、失败或取消时更新命令状态
+     *
+     * @param cmd DAG 执行命令
+     * @return 初始化完成的 RepoDAG 对象
+     */
     private RepoDAG createMultiServiceDAG(DAGExecCommand cmd) {
         String dagId = cmd.getDagId();
-        log.info("K8SDAGExecActor开始执行任务， id:{}", dagId);
+        log.info("K8SDAGExecActor 开始执行 DAG 任务，dagId:{}", dagId);
         DAGRepository repository = SpringUtil.getBean(DAGService.class);
         RepoDAG dag = new RepoDAG(repository);
         dag.init(dagId, false);
@@ -57,18 +69,21 @@ public class K8SDAGExecActor extends TypedActor<DAGExecCommand> {
         dag.registerListener(new DAGListener() {
             @Override
             public void onNodeSuccess(NodeDefinition node, String result) {
+                log.info("DAG 节点执行成功：{}, 结果：{}", node.getNodeName(), result);
                 K8sServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), K8sServiceNode.class);
                 updateCmdState(serviceNode, CommandState.SUCCESS);
             }
 
             @Override
             public void onNodeFail(NodeDefinition node, Throwable throwable) {
+                log.error("DAG 节点执行失败：{}, 错误：{}", node.getNodeName(), throwable.getMessage());
                 K8sServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), K8sServiceNode.class);
                 updateCmdState(serviceNode, CommandState.FAILED);
             }
 
             @Override
             public void onNodeCancel(NodeDefinition node, Throwable throwable) {
+                log.warn("DAG 节点执行取消：{}, 原因：{}", node.getNodeName(), throwable.getMessage());
                 K8sServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), K8sServiceNode.class);
                 updateCmdState(serviceNode, CommandState.CANCEL);
             }
@@ -76,6 +91,13 @@ public class K8SDAGExecActor extends TypedActor<DAGExecCommand> {
         return dag;
     }
 
+    /**
+     * 更新命令状态
+     * 根据服务节点信息更新数据库中对应命令的执行状态
+     *
+     * @param serviceNode  K8s 服务节点
+     * @param commandState 目标命令状态
+     */
     private void updateCmdState(K8sServiceNode serviceNode, CommandState commandState) {
         log.info("更新{}{}的状态为{}", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName(), commandState);
         ClusterK8sServiceCommandService commandService = getBean(ClusterK8sServiceCommandService.class);
@@ -85,6 +107,13 @@ public class K8SDAGExecActor extends TypedActor<DAGExecCommand> {
                 .update();
     }
 
+    /**
+     * 执行服务节点处理
+     * 根据命令类型路由到对应的 ServiceHandler 进行处理
+     * 支持安装、升级、启动、停止、重启等操作
+     *
+     * @param serviceNode K8s 服务节点
+     */
     private void doExecServiceNode(K8sServiceNode serviceNode) {
         CommandType type = serviceNode.getCommandType();
         ServiceHandler handler;
@@ -105,7 +134,7 @@ public class K8SDAGExecActor extends TypedActor<DAGExecCommand> {
                         type.getCommandName(Constants.CN), serviceNode.getServiceName(), serviceNode.getNamespace()));
         }
         try {
-            ExecResult result = handler.handlerRequest(serviceNode);
+            ExecResult result = handler.invoke(serviceNode);
             if (!result.isSuccess()) {
                 log.error("{}服务{}失败，{}", type.getCommandName(Constants.CN), serviceNode.getServiceName(), result.getErrorTraceMessage());
                 throw new BusinessHintException(String.format("%s服务%s失败，%s", type.getCommandName(Constants.CN), serviceNode.getServiceName(), result.getErrorTraceMessage()));
