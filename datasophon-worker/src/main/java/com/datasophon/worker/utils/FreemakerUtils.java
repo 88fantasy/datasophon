@@ -312,12 +312,12 @@ public class FreemakerUtils {
         createNacosNamespaceIfAbsent(properties);
 
         String filename = generators.getFilename();
-        String dataType = null;
-        int idx = filename.indexOf(".");
-        if (idx != -1) {
-            dataType = filename.substring(idx + 1);
+        String dataType = FileUtil.getSuffix(filename);
+        dataType = dataType == null ? null : dataType.toLowerCase();
+        if ("yml".equalsIgnoreCase(dataType)) {
+            dataType = "yaml";
         }
-        if (StrUtil.isBlank(dataType)) {
+        if (!ConfigType.isValidType(dataType)) {
             dataType = ConfigType.getDefaultType().getType();
         }
 
