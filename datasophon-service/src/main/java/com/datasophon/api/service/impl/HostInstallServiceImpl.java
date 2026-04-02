@@ -114,7 +114,7 @@ public class HostInstallServiceImpl implements HostInstallService {
             Integer sshPort, Integer page, Integer pageSize) {
         ProcessUtils.generateClusterVariable(clusterId, null, SSHUSER, sshUser);
 
-        List<HostInfo> list = new ArrayList<>();
+
         hosts = hosts.replace(" ", "");
         String md5 = SecureUtil.md5(hosts);
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
@@ -176,10 +176,14 @@ public class HostInstallServiceImpl implements HostInstallService {
             logger.info("put host list in cache");
         }
         // list
-        list = map.entrySet().stream()
-                .sorted(Comparator.comparing(Map.Entry::getKey))
+        List<HostInfo> list = map.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
                 .map(Map.Entry::getValue)
                 .collect(Collectors.toList());
+//        前端没有这个id会报错
+        for (int i = 0; i < list.size(); i++) {
+            list.get(i).setId(i + 1);
+        }
         Integer offset = (page - 1) * pageSize;
         List<HostInfo> result = getListPage(list, offset, pageSize);
         return Result.success(result).put(Constants.TOTAL, list.size());
