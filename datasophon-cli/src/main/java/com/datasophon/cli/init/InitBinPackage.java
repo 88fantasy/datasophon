@@ -20,20 +20,14 @@ import lombok.extern.slf4j.Slf4j;
 @CommandLine.Command(name = "bin_packages", description = "init bin packages")
 public class InitBinPackage extends InitBase {
     
-    @CommandLine.Option(names = {"-i", "--initPath"}, description = "initPath", required = true)
-    private String initPath;
+    @CommandLine.Option(names = {"-i", "--datasophonInitPath"}, description = "datasophonInitPath", required = true)
+    private String datasophonInitPath;
 
     @CommandLine.Option(names = {"-in", "installPath"}, description = "安装路径", required = true)
     String installPath;
 
     @CommandLine.Option(names = {"-pf", "initPathOverwriteForce"}, description = "initPath目录存在是否覆盖")
     boolean initPathOverwriteForce = false;
-
-    @CommandLine.Option(names = {"-e", "--enableRegistry"}, description = "是否启动制品库")
-    boolean enableRegistry = false;
-
-    @CommandLine.Option(names = {"-pp", "--registryPath"}, description = "制品安装包路径", required = true)
-    String registryPath;
     
     @Override
     public String name() {
@@ -44,9 +38,9 @@ public class InitBinPackage extends InitBase {
     public boolean doRun(Executor executor) {
         Boolean flag = true;
         // 本地datasophon-init
-        File initPathF = new File(initPath);
+        File initPathF = new File(datasophonInitPath);
         if (!initPathF.exists() || !initPathF.isDirectory()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "local dir not found : " + initPath);
+            throw new CommandLine.ExecutionException(new CommandLine(this), "local dir not found : " + datasophonInitPath);
         }
 
         File installPathF = new File(installPath);
@@ -54,52 +48,23 @@ public class InitBinPackage extends InitBase {
             ShellUtils.execShell(String.format("mkdir -p %s", installPath));
         }
 
-        File installPackagePathF = new File(Constants.MASTER_MANAGE_PACKAGE_PATH);
-        if(!installPackagePathF.exists()) {
-            ShellUtils.execShell(String.format("mkdir -p %s", Constants.MASTER_MANAGE_PACKAGE_PATH));
-        }
-
-        // 制品库基础包
-        if(enableRegistry) {
-            String registryRawFullDir = String.format("%s/packages/raw/packages", registryPath);
-            String initPackagesFullDir = String.format("%s/packages", initPath);
-            if(!FileUtil.exist(registryRawFullDir)) {
-                throw new CommandLine.ExecutionException(new CommandLine(this), "local dir not found : " + registryRawFullDir);
-            }
-            if(!FileUtil.exist(initPackagesFullDir)) {
-                ShellUtils.execShell(String.format("mkdir -p %s", initPackagesFullDir));
-                ShellUtils.execShell(String.format("cp -rf %s/* %s", registryRawFullDir, initPackagesFullDir));
-            } else if (initPathOverwriteForce) {
-                ShellUtils.execShell(String.format("cp -rf %s/* %s", registryRawFullDir, initPackagesFullDir));
-            } else {
-                log.info("本地{}目录已存在,且overwrite={},跳过", initPackagesFullDir, initPathOverwriteForce);
-            }
-            //ShellUtils.execShell(String.format("cp -rf %s/jdk-* %s", registryRawFullDir, initPackagesFullDir));
-            //ShellUtils.execShell(String.format("cp -rf %s/nexus-* %s", registryRawFullDir, initPackagesFullDir));
-            //ShellUtils.execShell(String.format("cp -rf %s/rustfs-* %s", registryRawFullDir, initPackagesFullDir));
-            // 导入全部raw
-
-            // 强制覆盖
-            //initPathOverwriteForce = true;
-        }
-
         // 远程datasophon-init
-        ExecResult remoteResult = executor.exists(initPath);
+        ExecResult remoteResult = executor.exists(datasophonInitPath);
         if(remoteResult.getExecResult() && !initPathOverwriteForce){
             log.info("远程datasophon-init目录已存在,且overwrite={},跳过)", initPathOverwriteForce);
         } else {
-            ExecResult createResult = executor.execShell(String.format("mkdir -p %s", initPath));
+            ExecResult createResult = executor.execShell(String.format("mkdir -p %s", datasophonInitPath));
             if (!createResult.getExecResult()) {
-                throw new CommandLine.ExecutionException(new CommandLine(this), "dist createDir fail : " + initPath);
+                throw new CommandLine.ExecutionException(new CommandLine(this), "dist createDir fail : " + datasophonInitPath);
             }
-            log.info("分发资源包路径:{} start", initPath);
+            log.info("分发资源包路径:{} start", datasophonInitPath);
             long ts = System.currentTimeMillis();
-            ExecResult execResult = executor.sendDir(initPath, initPath, true);
-            log.info("分发资源包路径:{} end,耗时:{}s", initPath, (System.currentTimeMillis() - ts) / 1000.0);
+            ExecResult execResult = executor.sendDir(datasophonInitPath, datasophonInitPath, true);
+            log.info("分发资源包路径:{} end,耗时:{}s", datasophonInitPath, (System.currentTimeMillis() - ts) / 1000.0);
             if (execResult.getExecResult()) {
-                log.info("{} distribution sucess.", initPath);
+                log.info("{} distribution sucess.", datasophonInitPath);
             } else {
-                throw new CommandLine.ExecutionException(new CommandLine(this), String.format("%s 分发资源包失败.", initPath));
+                throw new CommandLine.ExecutionException(new CommandLine(this), String.format("%s 分发资源包失败.", datasophonInitPath));
             }
         }
         if(!executor.exists(installPath).getExecResult()) {

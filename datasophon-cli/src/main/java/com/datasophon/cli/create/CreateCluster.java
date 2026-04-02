@@ -278,11 +278,8 @@ public class CreateCluster implements Runnable {
     
     private void initBinPackage(ClusterConfig config, List<Host> nodes) {
         InitBinPackage initBinPackage = new InitBinPackage();
-        initBinPackage.setInitPath(initPath);
         initBinPackage.setInstallPath(installPath);
         initBinPackage.setInitPathOverwriteForce(initPathOverwriteForce);
-        initBinPackage.setEnableRegistry(config.getGlobal().getRegistry().isEnable());
-        initBinPackage.setRegistryPath(config.getGlobal().getRegistry().getConfig().getRegistryPath());
         List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
         allNodesExec(workerNodes, initBinPackage);
 

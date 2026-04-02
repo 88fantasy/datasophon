@@ -24,4 +24,4 @@ fi
 source /etc/profile
 
 echo "制品包解压解密"
-java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar init registryDecode --enable --datasophonHomePath /data/datasophon -pwd ${PASSWORD} --initPath /data/datasophon/datasophon-init -pp /data -cn config.tar.gz -pn packages.tar.gz
+java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar init registryDecode --enable --datasophonHomePath /data/datasophon -pwd ${PASSWORD}  -pp /data/config -pn /data/packages

@@ -44,10 +44,10 @@ public class InitOfflineServer extends InitBase implements InitNodeHandler {
             log.info("enableRegistry:{}. offlineServer is not necessary.", enableRegistry);
             return true;
         }
-        String httpRootPath = String.format("%s/offline-repos", packagePath);
+        String httpRootPath = String.format("%s/os", packagePath);
         ArchType archType = executor.getArch();
         OsType osType = executor.getOs();
-        String repoOsSuffix = String.format("offline-repos/%s/%s", archType.getArch(), osType.getDesc());
+        String repoOsSuffix = String.format("os/%s/%s", archType.getArch(), osType.getDesc());
         String repoOsPath = String.format("%s/%s", packagePath, repoOsSuffix);
         if(!executor.exists(httpRootPath).getExecResult()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + httpRootPath);
