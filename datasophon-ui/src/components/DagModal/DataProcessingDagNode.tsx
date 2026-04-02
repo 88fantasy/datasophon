@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
     Graph,
     Node,
@@ -17,9 +17,10 @@ import { invokeGenerateElId } from "../../utils/util"
 import gobalEvent, { uiEvent } from "../../utils/gobalEvent"
 import { isEqual, noop } from "lodash-es"
 import asyncHook from '../../components/Common/CommonModal/asyncHook';
-import { axiosJsonPost, axiosPost } from "../../api/request"
+import { axiosGet, axiosJsonPost, axiosPost } from "../../api/request"
 import { API } from "../../api"
 import { invokeGenStatusDom } from "./status"
+import { T_K8S } from "../../constants/clusterType"
 
 const showCommonLogModal = asyncHook(() =>
     import("../../components/Common/CommonLogModal/api"))
@@ -225,16 +226,24 @@ const Index = (props) => {
         plusActionSelected: false,
     })
 
+
+
     const [nodeData, setNodeData] = useState(() => {
 
-        return node?.getData() || {}
+        return node?.getData()?.data || {}
     })
+
+    const archType = useMemo(() => {
+        return node?.getData()?.archType
+    }, [node])
+
+
 
 
 
     const { plusActionSelected } = state
     // const data = node?.getData() as ProcessingNodeData
-    const { nodeName, type, commandState, statusMsg, roles = [], clusterId } = nodeData
+    const { nodeName, type, commandState, statusMsg, k8s = [], roles = [], clusterId } = nodeData
 
 
     // 创建下游的节点和边
@@ -321,87 +330,218 @@ const Index = (props) => {
 
 
 
-    const invokeRenderRole = () => {
-        return roles.map(role => {
+    const invokeRenderChildren = () => {
+
+
+        const arr = archType === T_K8S ? k8s : roles
+
+
+
+        if (Array.isArray(arr)) {
+
+            return arr.map(role => {
+                const {
+                    roleName,
+                    cmdList,
+
+                } = role
+
+                return (
+                    <Card
+                        title={`服务${roleName}`}
+                        size="small"
+                        key={roleName}
+                        className="my-[2px]"
+                    >
+                        {
+                            cmdList.map(cmd => {
+                                const {
+                                    hostname,
+                                    serviceRoleType,
+                                    commandState,
+                                    commandProgress,
+                                    hostCommandId
+                                } = cmd
+
+                                console.log('commandState', commandState)
+                                const {
+                                    status
+                                } = invokeGenStatusDom({
+                                    val: commandState,
+                                })
+
+
+
+                                const onCmdClick = async (e) => {
+                                    e.stopPropagation()
+                                    if (hostCommandId && clusterId) {
+                                        const modelApi = await showCommonLogModal()
+                                        modelApi.default({
+                                            api: () => {
+                                                return axiosPost(API.getHostCommandLog, {
+                                                    hostCommandId,
+                                                    clusterId
+                                                })
+                                            }
+                                        })
+                                    } else {
+                                        console.warn('没有hostCommandId,clusterId hostCommandId:',
+                                            hostCommandId,
+                                            'clusterId:',
+                                            clusterId
+                                        )
+                                    }
+                                }
+
+                                return (
+                                    <div
+                                        key={cmd}
+                                        onClick={onCmdClick}
+                                        className="cursor-pointer"
+                                    >
+
+                                        <div>
+                                            {hostname} - {serviceRoleType}
+                                        </div>
+                                        <Progress
+                                            percent={commandProgress}
+                                            size="small"
+                                            status={status}
+                                        />
+                                    </div>
+                                )
+                            })
+                        }
+                    </Card>
+                )
+
+
+
+            })
+        } else {
             const {
                 roleName,
-                cmdList
-            } = role
+                serviceName,
+                cmdList,
+                commandId,
+                namespace,
+                commandProgress,
+                commandState,
+                commandName
+            } = arr
 
+            const onCmdClick = async (e) => {
+                e.stopPropagation()
+                if (commandId && clusterId) {
+                    const modelApi = await showCommonLogModal()
+                    modelApi.default({
+                        api: () => {
+                            return axiosGet(`${API.getK8sExecLog}/${commandId}`)
+                        }
+                    })
+                } else {
+                    console.warn('没有hostCommandId,clusterId hostCommandId:',
+                        commandId,
+                        'clusterId:',
+                        clusterId
+                    )
+                }
+            }
 
-
-
+            const {
+                status
+            } = invokeGenStatusDom({
+                val: commandState,
+            })
 
             return (
                 <Card
-                    title={`服务${roleName}`}
+                    title={`${commandName}`}
                     size="small"
-                    key={roleName}
+                    key={commandName}
                     className="my-[2px]"
                 >
-                    {
-                        cmdList.map(cmd => {
-                            const {
-                                hostname,
-                                serviceRoleType,
-                                commandState,
-                                commandProgress,
-                                hostCommandId
-                            } = cmd
+                    <div
+                        onClick={onCmdClick}
+                        className="cursor-pointer"
+                    >
 
-                            console.log('commandState', commandState)
-                            const {
-                                status
-                            } = invokeGenStatusDom({
-                                val: commandState,
-                            })
+                        <div>
+                            {namespace} - {serviceName}
+                        </div>
+                        <Progress
+                            percent={commandProgress}
+                            size="small"
+                            status={status}
+                        />
+                    </div>
+
+                    {/* {
+                            cmdList.map(cmd => {
+                                const {
+                                    hostname,
+                                    serviceRoleType,
+                                    commandState,
+                                    commandProgress,
+                                    hostCommandId
+                                } = cmd
+
+                                console.log('commandState', commandState)
+                                const {
+                                    status
+                                } = invokeGenStatusDom({
+                                    val: commandState,
+                                })
 
 
 
-                            const onCmdClick = async (e) => {
-                                e.stopPropagation()
-                                if (hostCommandId && clusterId) {
-                                    const modelApi = await showCommonLogModal()
-                                    modelApi.default({
-                                        api: () => {
-                                            return axiosPost(API.getHostCommandLog, {
-                                                hostCommandId,
-                                                clusterId
-                                            })
-                                        }
-                                    })
-                                } else {
-                                    console.warn('没有hostCommandId,clusterId hostCommandId:',
-                                        hostCommandId,
-                                        'clusterId:',
-                                        clusterId
-                                    )
+                                const onCmdClick = async (e) => {
+                                    e.stopPropagation()
+                                    if (hostCommandId && clusterId) {
+                                        const modelApi = await showCommonLogModal()
+                                        modelApi.default({
+                                            api: () => {
+                                                return axiosPost(API.getHostCommandLog, {
+                                                    hostCommandId,
+                                                    clusterId
+                                                })
+                                            }
+                                        })
+                                    } else {
+                                        console.warn('没有hostCommandId,clusterId hostCommandId:',
+                                            hostCommandId,
+                                            'clusterId:',
+                                            clusterId
+                                        )
+                                    }
                                 }
-                            }
 
-                            return (
-                                <div
-                                    key={cmd}
-                                    onClick={onCmdClick}
-                                    className="cursor-pointer"
-                                >
+                                return (
+                                    <div
+                                        key={cmd}
+                                        onClick={onCmdClick}
+                                        className="cursor-pointer"
+                                    >
 
-                                    <div>
-                                        {hostname} - {serviceRoleType}
+                                        <div>
+                                            {hostname} - {serviceRoleType}
+                                        </div>
+                                        <Progress
+                                            percent={commandProgress}
+                                            size="small"
+                                            status={status}
+                                        />
                                     </div>
-                                    <Progress
-                                        percent={commandProgress}
-                                        size="small"
-                                        status={status}
-                                    />
-                                </div>
-                            )
-                        })
-                    }
+                                )
+                            })
+                        } */}
                 </Card>
             )
-        })
+        }
+
     }
+
+
 
     const invokEestimateLabelHeight = useCallback(() => {
         // setTimeout(() => {
@@ -528,7 +668,7 @@ const Index = (props) => {
                 </div>
 
 
-                {invokeRenderRole()}
+                {invokeRenderChildren()}
             </div>
 
 

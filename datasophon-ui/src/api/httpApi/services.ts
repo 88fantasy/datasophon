@@ -60,6 +60,7 @@ export default {
   getHostCommandLog:
     path + "/cluster/service/command/host/command/getHostCommandLog", // 查询主机上服务角色指令3日志
   getQueueList: path + "/cluster/yarn/queue/list", // 队列列表
+  getK8sExecLog: path + "/log/getK8sExecLog", // 队列列表
   getScheduleLog: path + "/log/getScheduleLog", // 队列列表
   getCapacityList: path + "/cluster/queue/capacity/list", // 容量队列列表
   saveQueue: path + "/cluster/yarn/queue/save", // 队列保存

@@ -60,7 +60,8 @@ const invokeTransferData = (data) => {
     const {
         nodes = [],
         edges = [],
-        clusterId
+        clusterId,
+        archType
     } = data
 
 
@@ -77,8 +78,13 @@ const invokeTransferData = (data) => {
             id: val.id,
             shape: DataProcessingDagNode.shape,
             ports: invokeGenPort(val),
-            data: val,
-            type: 'OUTPUT'
+            data: {
+                data: val,
+                archType
+            },
+            type: 'OUTPUT',
+            archType
+
         }
         nodeMap[val.id] = val
         if (!nodeStatusMap[val.status]) {
