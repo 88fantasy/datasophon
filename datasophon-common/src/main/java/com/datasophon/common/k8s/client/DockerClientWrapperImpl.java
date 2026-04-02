@@ -1,8 +1,8 @@
 package com.datasophon.common.k8s.client;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.datasophon.common.k8s.dto.ReTagDTO;
 import com.datasophon.common.k8s.spec.docker.DockerImageParser;
+import com.datasophon.common.k8s.spec.docker.DockerTagUtils;
 import com.datasophon.common.k8s.vo.ImageManifest;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.async.ResultCallback;
@@ -27,7 +27,6 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
 
     private final AuthConfig auth;
 
-    private final String DEFAULT_ORG = "bigdata";
 
     public DockerClientWrapperImpl(AuthConfig auth) {
         this.auth = auth;
@@ -49,15 +48,11 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
                     ImageManifest newImage = BeanUtil.toBean(manifest, ImageManifest.class);
 
 //                    重新命名为私库的tag
-                    String newTag = manifest.getImage();
-                    if (!newTag.endsWith("-" + newImage.getArch())) {
-                        newTag = newTag + "-" + newImage.getArch();
-                    }
-                    newTag = normalTag(newTag);
-                    newImage.setImage(newTag);
+                    newImage.setImage(DockerTagUtils.normalTag(auth.getRegistryAddress(), manifest.getImage()));
+                    newImage.setVersion(DockerTagUtils.normalVersion(manifest.getVersion(), manifest.getArch()));
 
                     log.info("为镜像{}添加新的tag:{}", manifest.getFullTag(), newImage.getFullTag());
-                    client.tagImageCmd(manifest.getFullTag(), newTag, manifest.getVersion()).exec();
+                    client.tagImageCmd(manifest.getFullTag(), newImage.getImage(), newImage.getVersion()).exec();
 
 //                    删除原来的tag
                     log.info("删除镜像tag:{}", manifest.getFullTag());
@@ -71,79 +66,6 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
         }
     }
 
-    @Override
-    public String tag(ReTagDTO dto) {
-        try (DockerClient client = DockerClientFactory.newClient()) {
-            StringBuilder sb = new StringBuilder();
-            if (dto.getRepository() != null) {
-                sb.append(dto.getRepository());
-            }
-            if (sb.length() > 0) {
-                sb.append("/");
-            }
-            sb.append(dto.getNewTag());
-            String finalTag = sb.toString();
-            String repo = finalTag.split(":")[0];
-            String version = finalTag.split(":")[1];
-
-            client.tagImageCmd(dto.getOldTag(), repo, version).exec();
-
-            if (dto.isRemoveOldTag()) {
-                client.removeImageCmd(dto.getOldTag()).exec();
-            }
-            return finalTag;
-        } catch (IOException e) {
-            throw new IllegalStateException(String.format("IO异常，%s", e.getMessage()), e);
-        }
-    }
-
-    @Override
-    public String normalTag(String tag) {
-        String address = auth.getRegistryAddress();
-        int protocolIdx = address.indexOf("://");
-        if (protocolIdx != -1) {
-            address = address.substring(protocolIdx + 3);
-        }
-        if (!address.endsWith("/")) {
-            address += "/";
-        }
-
-        int count = 0;
-        for (int i = 0; i < tag.length(); i++) {
-            if (tag.charAt(i) == '/') {
-                count++;
-            }
-        }
-        if (count == 0) {
-            return address + DEFAULT_ORG + tag;
-        } else if (count == 1) {
-            return address + tag;
-        } else if (count == 2) {
-            String[] parts = tag.split("/");
-            if (tag.startsWith("docker.io")) {
-                if ("library".equals(parts[1])) {
-                    return address + DEFAULT_ORG + "/" + parts[2];
-                }
-            }
-            return address + parts[1] + "/" + parts[2];
-        } else if (count == 3) {
-//            count == 3, 只有nexus私库有这个问题，当作正常值
-            int i;
-            int cnt = 0;
-            for (i = tag.length() - 1; i >= 0; i--) {
-                if (tag.charAt(i) == '/') {
-                    cnt++;
-                }
-                if (cnt == count) {
-                    break;
-                }
-            }
-            String simpleTag = tag.substring(i + 1);
-            return address + simpleTag;
-        } else {
-            throw new IllegalArgumentException(String.format("tag %s do not matched the docker specification", tag));
-        }
-    }
 
 
     @Override

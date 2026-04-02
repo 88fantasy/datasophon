@@ -324,8 +324,33 @@ public class KubectlClient implements AutoCloseable {
         }
     }
 
+    /**
+     * 更新 Deployment 的容器镜像
+     *
+     * @param dto 更新参数
+     */
     public void updateDeploymentImage(UpdateDeploymentDTO dto) {
+        List<String> args = new ArrayList<>(Arrays.asList(
+            "set",
+            "image",
+            "deployment/" + dto.getDeployment(),
+            "-n",
+            dto.getNamespace()
+        ));
 
+        // 为每个容器镜像添加 --container 参数
+        for (UpdateDeploymentDTO.Image image : dto.getImages()) {
+            String imageRef = image.getNewImage() + ":" + image.getTag();
+            args.add(String.format("%s=%s", image.getContainerName(), imageRef));
+        }
+
+        ExecResult result = execute(args, -1);
+        if (!result.isSuccess()) {
+            throw new KubectlException(
+                String.format("update deployment %s image in namespace %s failed, %s",
+                    dto.getDeployment(), dto.getNamespace(), result.getErrorTraceMessage())
+            );
+        }
     }
 
     public void createNamespace(String namespace) {

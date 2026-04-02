@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.datasophon.common.Constants;
 import com.datasophon.common.PropertiesPathUtils;
 import com.datasophon.common.k8s.spec.docker.DockerImageParser;
+import com.datasophon.common.k8s.spec.docker.DockerTagUtils;
 import com.datasophon.common.k8s.vo.ImageManifest;
 import com.datasophon.common.model.uni.NexusUri;
 import com.github.dockerjava.api.model.AuthConfig;
@@ -20,7 +21,8 @@ import java.util.List;
 public class DockerClientWrapperTest {
 
 
-    private DockerClientWrapper client;
+    private DockerClientWrapperImpl client;
+
     @BeforeEach
     public void init() {
         PropertiesPathUtils.resetPropertyFile();
@@ -44,7 +46,7 @@ public class DockerClientWrapperTest {
 
     @Test
     public void test3() {
-        String tag = client.normalTag("docker.io/library/portal:3.3.0");
+        String tag = DockerTagUtils.normalTag("192.168.2.200:8091/image", "docker.io/library/portal:3.3.0");
         System.out.println(tag);
     }
 

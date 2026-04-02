@@ -132,4 +132,9 @@ public interface K8sService {
      */
     void scaleDeployments(K8sClusterConfig config, List<K8sDeploymentInfo> deployments, int replicas);
 
+    /**
+     *
+     * @param config
+     */
+    void updateDeploymentImage(K8sClusterConfig config, String namespace, String serviceName);
 }

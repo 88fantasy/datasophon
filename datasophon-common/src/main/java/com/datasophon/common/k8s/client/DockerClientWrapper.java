@@ -1,6 +1,5 @@
 package com.datasophon.common.k8s.client;
 
-import com.datasophon.common.k8s.dto.ReTagDTO;
 import com.datasophon.common.k8s.vo.ImageManifest;
 
 import java.io.File;
@@ -11,16 +10,9 @@ import java.util.List;
  */
 public interface DockerClientWrapper {
 
+
+
     List<ImageManifest> load(File file);
-
-    String tag(ReTagDTO dto);
-
-    /**
-     * 返回符合私库规范的tag
-     * @param tag
-     * @return
-     */
-    String normalTag(String tag);
 
     /**
      *

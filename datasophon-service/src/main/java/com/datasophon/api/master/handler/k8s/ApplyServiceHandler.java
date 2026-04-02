@@ -112,6 +112,8 @@ public class ApplyServiceHandler extends ServiceHandler {
                 return ExecResult.error(String.format("安装%s失败，原因：%s", serviceNode.getServiceName(), result.getInfo().getNotes()));
             }
 
+            k8sService.updateDeploymentImage(config, serviceNode.getNamespace(), serviceNode.getServiceName());
+            logger.info("服务：{} 执行修改镜像名任务成功", serviceNode.getServiceName());
 
             // 步骤 6: 更新服务实例状态
             updateServiceInstance(serviceNode, instance, result.getVersion());

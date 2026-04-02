@@ -22,7 +22,7 @@ public class UpdateDeploymentDTO {
 
         private String containerName;
 
-        private String repository;
+        private String newImage;
 
         private String tag;
     }

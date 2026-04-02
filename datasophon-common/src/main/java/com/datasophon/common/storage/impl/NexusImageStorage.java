@@ -37,7 +37,7 @@ public class NexusImageStorage extends NexusStorageSupport implements ImageStora
 
                     log.info("load image {} to local repo", path);
                     List<ImageManifest> manifests = client.load(path.toFile());
-                    manifests.forEach(manifest->{
+                    manifests.forEach(manifest -> {
                         log.info("push image {} to repo", manifest.getFullTag());
                         client.push(manifest.getFullTag());
                     });
@@ -54,12 +54,15 @@ public class NexusImageStorage extends NexusStorageSupport implements ImageStora
     }
 
 
-    private DockerClientWrapper newClient() {
-        NexusUri uri =getNexusUri();
-        AuthConfig config = new AuthConfig()
+    public static AuthConfig getAuthConfig() {
+        NexusUri uri = getNexusUri();
+        return new AuthConfig()
                 .withUsername(uri.getUser())
                 .withPassword(uri.getPassword())
                 .withRegistryAddress(uri.getUri() + "/image");
-        return new DockerClientWrapperImpl(config);
+    }
+
+    private DockerClientWrapper newClient() {
+        return new DockerClientWrapperImpl(getAuthConfig());
     }
 }
