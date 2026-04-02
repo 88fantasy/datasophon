@@ -66,7 +66,7 @@ public class DAGServiceServiceImpl implements DAGService {
     @Override
     public int markNodesPending(String dagId, boolean ignoreSuccess) {
         LambdaQueryWrapper<NodeDefinitionEntity> query = Wrappers.lambdaQuery(NodeDefinitionEntity.class)
-                .eq(NodeDefinitionEntity::getId, dagId);
+                .eq(NodeDefinitionEntity::getDagId, dagId);
 
         List<NodeDefinitionEntity> nodes = nodeDefinitionEntityMapper.selectList(query);
 
