@@ -24,6 +24,9 @@ const stateMap = {
     7: '上传helm包到nexus',
 
 }
+
+const steps = Object.keys(stateMap).filter(val => Number(val) >= 0).length
+
 const Index = forwardRef((props, ref) => {
 
     const {
@@ -303,7 +306,7 @@ const Index = forwardRef((props, ref) => {
             if (currentState === -1) {
                 currentState = state?.queryProgressRes?.preState
             }
-            return ((currentState || 1) - 1) / 5 * 100
+            return ((currentState || 1) - 1) / steps * 100
         }
 
     }, [state])
@@ -398,7 +401,7 @@ const Index = forwardRef((props, ref) => {
                     type="dashboard"
                     status={memoStatus.status}
                     percent={memoPrecent}
-                    steps={5}
+                    steps={steps}
                     railColor="rgba(0, 0, 0, 0.06)"
                     size={300}
                     format={format}
