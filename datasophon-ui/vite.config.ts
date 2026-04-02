@@ -24,7 +24,7 @@ export default defineConfig({
     proxy: {
       "^/ddh/dev-mock": {
         rewrite: (path) => {
-          // console.log('rewrite', path);
+          console.log('rewrite', path);
           return path.replace(/\/dev-mock/, "");
         },
         target: "http://192.168.2.48:8081/",

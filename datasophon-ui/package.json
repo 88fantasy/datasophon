@@ -8,7 +8,9 @@
     "build": "pnpm install && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "node deploy.sh.js"
+    "deploy": "node deploy.sh.js",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
     "@ant-design/colors": "^7.2.1",
@@ -51,20 +53,27 @@
   "devDependencies": {
     "@eslint/js": "^9.25.0",
     "@tailwindcss/vite": "^4.1.14",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/lodash-es": "^4.17.12",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react-swc": "^3.9.0",
+    "@vitest/coverage-v8": "^4.1.2",
+    "@vitest/ui": "^4.1.2",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "jsdom": "^29.0.1",
     "less": "^4.1.3",
     "postcss": "^8.5.5",
     "postcss-less": "^6.0.0",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vitest": "^4.1.2"
   },
   "packageManager": "pnpm@10.11.0+sha1.4048eeefd564ff1ab248fac3e2854d38245fe2f1"
 }
