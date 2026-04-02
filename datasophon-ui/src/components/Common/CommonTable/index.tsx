@@ -92,7 +92,7 @@ export const invokeGenOptionCol = (list, config) => {
                 return (
                     <a
                         {...val}
-                        onClick={val.onClick.bind(noop, ...args)}
+                        onClick={(val.onClick || noop).bind(noop, ...args)}
 
                     >
                         {val.title}
@@ -125,7 +125,9 @@ export const invokeGenOptionCol = (list, config) => {
         }
     }
 
-    return fn(list)
+    return (arr, ...args) => {
+        return fn(arr, ...args)
+    }
 }
 const Index = ({
     tableProps
