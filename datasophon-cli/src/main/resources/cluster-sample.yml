@@ -1,5 +1,4 @@
 global:
-  projectEnvId: 2039601807258730498
   offline: true
   osInfo:
     auto: true
@@ -8,46 +7,31 @@ global:
   registry:
     enable: true
     type: "nexus"
-    packages:
-      x86_64: "nexus-3.85.0-03-linux-x86_64.tar.gz"
     config:
       webPort: 8091
       user: "admin"
       password: "u4Gkp19TRcKKlTCLNA1pyA=="
+      dockerHttpPort: 8083
       repositories:
         - "yum"
         - "raw"
         - "apt"
+        - "docker"
+        - "helm"
       registryPath: "/data"
-    host:
-      projectEnvDetailId: 2001478085448630273
-      hostname: "app4"
-      user: "root"
-      ip: "192.168.2.200"
-      port: 22
-      password: "aKv6uT_QpkZ_EvKr3n"
+    node: "app1"
   yumServer:
-    host:
-      projectEnvDetailId: 2001478085448630272
-      hostname: "app3"
-      user: "root"
-      ip: "192.168.2.173"
-      port: 22
-      password: "aKv6uT_QpkZ_EvKr3n"
+    enable: true
+    node: "app3"
     listenPort: 4080
   nmapServer:
-    host:
-      projectEnvDetailId: 2001478085436047360
-      hostname: "app1"
-      user: "root"
-      ip: "192.168.2.230"
-      port: 22
-      password: "aKv6uT_QpkZ_EvKr3n"
+    enable: true
+    node: "app3"
   sshAuthType: "AUTO"
   mysql:
     enable: true
+    user: "root"
     password: "MjRm>Tk#ZjU3N)z6M=="
-    tarName: "mysql-8.0.28-1.el8.x86_64.rpm-bundle.tar"
     port: 3306
     appDbs:
       - account: "datasophon"
@@ -86,37 +70,85 @@ global:
       - account: "datart"
         password: "fI5sQ4yQ4fP5"
         dbName: "datart"
-    host:
-      projectEnvDetailId: 2001478085448630274
-      hostname: "app5"
-      user: "root"
-      ip: "192.168.2.202"
-      port: 22
-      password: "aKv6uT_QpkZ_EvKr3n"
+    node: "app5"
   ntpServer:
-    host:
-      projectEnvDetailId: 2001478085436047360
-      hostname: "app1"
-      user: "root"
-      ip: "192.168.2.230"
-      port: 22
-      password: "aKv6uT_QpkZ_EvKr3n"
+    enable: true
+    node: "app1"
   rustfs:
     enable: true
-    packages:
-      x86_64: "rustfs-linux-x86_64-musl-1.0.0.tar.gz"
     config:
       webPort: 9041
       apiPort: 9040
       user: "admin"
       password: "u4Gkp19TRcKKlTCLNA1pyA=="
-    host:
-      projectEnvDetailId: 2001478085448630272
-      hostname: "app3"
-      user: "root"
-      ip: "192.168.2.173"
-      port: 22
-      password: "aKv6uT_QpkZ_EvKr3n"
+      installType: "SNSD" #可选SNSD(单节点单盘模式)，SNMD(单节点多磁盘模式)，MNMD(多节点多磁盘)
+      volumes: "/data/rustfs0" #示例：/data/rustfs0[SNSD], /data/rustfs{0...3}[SNMD], http://node{1...4}:9040/data/rustfs{0...3}[MNMD]
+    nodes: ["app3"]
+kubernetes:
+  enable: true
+  baseServices:
+    namespaces: ["prod"]
+    masters: [ "app1" ]
+    nodes: [ "app2","app3","app4" ]
+    sealos:
+      enable: true
+    kubernetes:
+      enable: true
+    helm:
+      enable: true
+    calico:
+      enable: true
+    ingress:
+      enable: true
+  kuboard:
+    enable: true
+    nodes: ["app1"]
+    etcdNodes: ["app1", "app2", "app3"] #至少3个节点
+    config:
+      user: "admin"
+      password: "aKv6uT_QpkZ_E"
+  docker:
+    enable: true
+    nodes: ["app1"]
+  helm:
+    enable: true
+    nodes: ["app1"]
+
+packages:
+  os: "openEuler-22.03-LTS-SP3.tar.gz"
+  config: "config.tar.gz"
+  soft: "packages.tar.gz"
+  nexus:
+    x86_64: "nexus-3.85.0-03-linux-x86_64.tar.gz"
+    aarch64: "nexus-3.85.0-03-linux-aarch_64.tar.gz"
+  mysql:
+    x86_64: "mysql-8.0.28-1.el8.x86_64.rpm-bundle.tar"
+    aarch64: "mysql-8.0.28-1.el8.aarch64.rpm-bundle.tar"
+  rustfs:
+    x86_64: "rustfs-linux-x86_64-musl-1.0.0.tar.gz"
+    aarch64: "rustfs-linux-aarch64-musl-1.0.0.tar.gz"
+  sealos:
+    x86_64: "sealos_5.1.0_linux_amd64.tar.gz"
+    aarch64: "sealos_5.1.0_linux_arm64.tar.gz"
+  kubernetes:
+    x86_64: "kubernetes-v1.31.8-x86.tar",
+    aarch64: "kubernetes-v1.31.8-arm.tar"
+  helm:
+    x86_64: "helm-v4.0.1-x86.tar",
+    aarch64: "helm-v4.0.1-arm.tar"
+  calico:
+    x86_64: "calico-v3.28.1-x86.tar",
+    aarch64: "calico-v3.28.1-arm.tar"
+  ingress:
+    x86_64: "ingress-nginx-4.1.0-x86.tar",
+    aarch64: "ingress-nginx-4.1.0-arm.tar"
+  kuboard:
+    x86_64: "kuboard-v3-x86.tar"
+    aarch64: "kuboard-v3-arm.tar"
+  helmify:
+    x86_64: "helmify_Linux_arm64.tar.gz",
+    aarch64: "helmify_Linux_x86_64.tar.gz"
+
 nodes:
   - projectEnvDetailId: 2001478085436047360
     ip: "192.168.2.230"

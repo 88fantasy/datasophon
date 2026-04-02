@@ -1,6 +1,5 @@
 package com.datasophon.common.model.uni;
 
-import com.datasophon.common.model.Host;
 import lombok.Data;
 import lombok.Getter;
 
@@ -18,16 +17,7 @@ public class NexusRegistry {
 
     private Config config;
 
-    private Host host;
-
-    @Data
-    @Getter
-    public static class Package {
-
-        private String x86_64;
-
-        private String aarch64;
-    }
+    private String node;
 
     @Data
     @Getter
@@ -39,18 +29,11 @@ public class NexusRegistry {
 
         private String password;
 
+        private String dockerHttpPort;
+
         private List<String> repositories;
 
         private String registryPath;
-    }
-
-
-    public NexusUri getNexusUri() {
-        NexusUri uri = new NexusUri();
-        uri.setUri(String.format("http://%s:%s", getHost().getIp(), getConfig().getWebPort()));
-        uri.setUser(getConfig().getUser());
-        uri.setPassword(getConfig().getPassword());
-        return uri;
     }
     
 }

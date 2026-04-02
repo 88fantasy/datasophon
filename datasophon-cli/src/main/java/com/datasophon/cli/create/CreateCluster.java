@@ -19,6 +19,7 @@ import picocli.CommandLine;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -58,7 +59,9 @@ public class CreateCluster implements Runnable {
     private String initConfigYamlPath;
 
     private SSHAuthType sshAuthType;
-    
+
+    private Map<String, Host> globalNodes;
+
     @Override
     public void run() {
         if (!datasophonPath.startsWith("/") || !installPath.startsWith("/")) {
@@ -82,6 +85,7 @@ public class CreateCluster implements Runnable {
 
         ClusterConfig clusterConfig = CliUtil.getConfig(initConfigYamlPath, password);
         sshAuthType = clusterConfig.getGlobal().getSshAuthType();
+        globalNodes = clusterConfig.getNodes().stream().collect(Collectors.toMap(Host::getHostname, host -> host));
 
         if (action.equals("initALL")) {
             initALL(clusterConfig);
@@ -306,7 +310,7 @@ public class CreateCluster implements Runnable {
         NexusRegistry registry = config.getGlobal().getRegistry();
         if(registry.isEnable()) {
             initJdk.setEnableRegistry(registry.isEnable())
-                    .setRegistryIp(registry.getHost().getIp())
+                    .setRegistryIp(registry.getNode())
                     .setRegistryPort(registry.getConfig().getWebPort())
                     .setRegistryUsername(registry.getConfig().getUser())
                     .setRegistryPassword(registry.getConfig().getPassword());
@@ -321,7 +325,7 @@ public class CreateCluster implements Runnable {
         NexusRegistry registry = config.getGlobal().getRegistry();
         if(registry.isEnable()) {
             initJdk.setEnableRegistry(registry.isEnable())
-                    .setRegistryIp(registry.getHost().getIp())
+                    .setRegistryIp(registry.getNode())
                     .setRegistryPort(registry.getConfig().getWebPort())
                     .setRegistryUsername(registry.getConfig().getUser())
                     .setRegistryPassword(registry.getConfig().getPassword());
@@ -356,11 +360,11 @@ public class CreateCluster implements Runnable {
                 .setRepositories(registryConfig.getConfig().getRepositories())
                 .setX86Tar(registryConfig.getPackages().getX86_64())
                 .setAarch64Tar(registryConfig.getPackages().getAarch64())
-                .setWebHost(registryConfig.getHost().getIp())
+                .setWebHost(registryConfig.getNode())
                 .setWebPort(registryConfig.getConfig().getWebPort())
                 .setUsername(registryConfig.getConfig().getUser())
                 .setPassword(registryConfig.getConfig().getPassword());
-        singleNodesExec(registryConfig.getHost(), initRegistry);
+        singleNodesExec(globalNodes.get(registryConfig.getNode()), initRegistry);
     }
 
     private void initRegistryUpload(ClusterConfig config, List<Host> nodes) {
@@ -370,11 +374,10 @@ public class CreateCluster implements Runnable {
         initRegistryUpload.setEnableRegistry(registryConfig.isEnable())
                 .setType(registryConfig.getType())
                 .setRegistryPath(registryConfig.getConfig().getRegistryPath())
-                .setWebHost(registryConfig.getHost().getIp())
+                .setWebHost(registryConfig.getNode())
                 .setWebPort(registryConfig.getConfig().getWebPort())
                 .setUsername(registryConfig.getConfig().getUser())
-                .setPassword(registryConfig.getConfig().getPassword())
-                .setDisableUploadRegistry(disableUploadRegistry);
+                .setPassword(registryConfig.getConfig().getPassword());
         singleNodesExec(localNode, initRegistryUpload);
     }
 
@@ -386,12 +389,12 @@ public class CreateCluster implements Runnable {
             .setInstallPath(installPath)
             .setX86Tar(rustfs.getPackages().getX86_64())
             .setAarch64Tar(rustfs.getPackages().getAarch64())
-            .setWebHost(rustfs.getHost().getIp())
+            .setWebHost(rustfs.getNodes().get(0))
             .setWebPort(rustfs.getConfig().getWebPort())
             .setApiPort(rustfs.getConfig().getApiPort())
             .setUsername(rustfs.getConfig().getUser())
             .setPassword(rustfs.getConfig().getPassword());
-        singleNodesExec(rustfs.getHost(), initRustfs);
+        singleNodesExec(globalNodes.get(rustfs.getNodes().get(0)), initRustfs);
     }
     
     private void initOfflineServer(ClusterConfig config) {
@@ -400,10 +403,10 @@ public class CreateCluster implements Runnable {
         initYumServer.setConfigFilePath(initConfigYamlPath)
                         .setConfigPassword(password);
         initYumServer.setPackagePath(packagesPath)
-                .setServerIp(yumServer.getHost().getIp())
+                .setServerIp(yumServer.getNode())
                 .setServerPort(yumServer.getListenPort())
                 .setEnableRegistry(config.getGlobal().getRegistry().isEnable());
-        singleNodesExec(yumServer.getHost(), initYumServer);
+        singleNodesExec(globalNodes.get(yumServer.getNode()), initYumServer);
     }
     
     private void initOfflineNodes(ClusterConfig config, List<Host> nodes) {
@@ -411,12 +414,14 @@ public class CreateCluster implements Runnable {
         InitOfflineSlave initYumConf = new InitOfflineSlave();
         initYumConf.setConfigFilePath(initConfigYamlPath);
         initYumConf.setConfigPassword(password);
-        initYumConf.setServerIp(yumServer.getHost().getIp())
+        initYumConf.setServerIp(yumServer.getNode());
+        initYumConf.setConfigPassword(password);
+        initYumConf.setServerIp(yumServer.getNode())
                 .setServerPort(yumServer.getListenPort());
         NexusRegistry registry = config.getGlobal().getRegistry();
         if(registry.isEnable()) {
             initYumConf.setEnableRegistry(registry.isEnable())
-                    .setServerIp(registry.getHost().getIp())
+                    .setServerIp(registry.getNode())
                     .setServerPort(registry.getConfig().getWebPort())
                     .setRegistryUsername(registry.getConfig().getUser())
                     .setRegistryPassword(registry.getConfig().getPassword())
@@ -447,7 +452,7 @@ public class CreateCluster implements Runnable {
     }
     
     private void initNmap(ClusterConfig config) {
-        singleNodesExec(config.getGlobal().getNmapServer().getHost(), new InitNmap());
+        singleNodesExec(globalNodes.get(config.getGlobal().getNmapServer().getNode()), new InitNmap());
     }
     
     private void initNtpServer(ClusterConfig config) {
@@ -455,16 +460,15 @@ public class CreateCluster implements Runnable {
         GlobalConfig.NtpServer ntpServer = config.getGlobal().getNtpServer();
         initNtpServer.setConfigFilePath(initConfigYamlPath);
         initNtpServer.setConfigPassword(password);
-        singleNodesExec(ntpServer.getHost(), initNtpServer);
-    }
+        singleNodesExec(globalNodes.get(ntpServer.getNode()), initNtpServer);}
     
     private void initNtpSlave(ClusterConfig config, List<Host> nodes) {
         GlobalConfig.NtpServer ntpServer = config.getGlobal().getNtpServer();
         InitNtpSlave initNtpSlave = new InitNtpSlave();
         initNtpSlave.setConfigFilePath(initConfigYamlPath);
         initNtpSlave.setConfigPassword(password);
-        initNtpSlave.setNtpServerIp(ntpServer.getHost().getIp());
-        slavesNodesExec(ntpServer.getHost(), nodes, initNtpSlave);
+        initNtpSlave.setNtpServerIp(globalNodes.get(ntpServer.getNode()).getIp());
+        slavesNodesExec(globalNodes.get(ntpServer.getNode()), nodes, initNtpSlave);
     }
     
     private void initLibrary(ClusterConfig config, List<Host> nodes) {
@@ -481,16 +485,17 @@ public class CreateCluster implements Runnable {
                 .setPackagePath(packagesPath)
                 .setInstallPath(installPath)
                 .setPort(mysqlConfig.getPort())
-                .setTarName(mysqlConfig.getTarName());
+                .setX86Tar(config.getGlobal().getPackages().getMysql().getX86_64())
+                .setAarch64Tar(config.getGlobal().getPackages().getMysql().getAarch64());
         NexusRegistry registry = config.getGlobal().getRegistry();
         if(registry.isEnable()) {
             initMysql.setEnableRegistry(registry.isEnable())
-                    .setRegistryIp(registry.getHost().getIp())
+                    .setRegistryIp(registry.getNode())
                     .setRegistryPort(registry.getConfig().getWebPort())
                     .setRegistryUsername(registry.getConfig().getUser())
                     .setRegistryPassword(registry.getConfig().getPassword());
         }
-        singleNodesExec(mysqlConfig.getHost(), initMysql);
+        singleNodesExec(globalNodes.get(mysqlConfig.getNode()), initMysql);
     }
     
     private void initMysqlAppDb(ClusterConfig config) {
@@ -504,7 +509,7 @@ public class CreateCluster implements Runnable {
                     .setPassword(x.getPassword())
                     .setDbName(x.getDbName())
                     .setPort(mysqlConfig.getPort());
-            singleNodesExec(mysqlConfig.getHost(), initMysqlAppDb);
+            singleNodesExec(globalNodes.get(mysqlConfig.getNode()), initMysqlAppDb);
         });
     }
     

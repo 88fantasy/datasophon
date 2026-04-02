@@ -35,26 +35,14 @@ public class InitMysql extends InitBase implements InitNodeHandler {
     @CommandLine.Option(names = {"-in", "installPath"}, description = "安装路径", required = true)
     String installPath;
 
-    @CommandLine.Option(names = {"-t", "--tarName"}, description = "tar离线压缩包名", required = true)
-    String tarName;
+    @CommandLine.Option(names = {"-x", "--x86Tar"}, description = "x86_64包", required = true)
+    String x86Tar;
+
+    @CommandLine.Option(names = {"-a", "--aarch64Tar"}, description = "aarch64包", required = true)
+    String aarch64Tar;
 
     @CommandLine.Option(names = {"-mp", "--mysqlPort"}, description = "端口", required = true)
     Integer port;
-
-    @CommandLine.Option(names = {"-e", "--enableRegistry"}, description = "是否启动制品库")
-    boolean enableRegistry = false;
-
-    @CommandLine.Option(names = {"-ip", "--registryIp"}, description = "制品ip", required = true)
-    String registryIp;
-
-    @CommandLine.Option(names = {"-rport", "--registryPort"}, description = "制品端口", required = true)
-    String registryPort;
-
-    @CommandLine.Option(names = {"-u", "--registryUsername"}, description = "制品用户", required = true)
-    String registryUsername;
-
-    @CommandLine.Option(names = {"-rp", "--registryPassword"}, description = "制品密码", required = true)
-    String registryPassword;
     
     @Override
     public String name() {
@@ -63,6 +51,10 @@ public class InitMysql extends InitBase implements InitNodeHandler {
     
     @Override
     public boolean doRun(Executor executor) {
+        String tarName = x86Tar;
+        if (ArchType.AARCH64 == executor.getArch()) {
+            tarName = aarch64Tar;
+        }
         OsType osType = executor.getOs();
         String tarPath = String.format("%s/%s", packagePath, tarName);
         String httpRootPath = String.format("%s/tmp/mysql", installPath);

@@ -1,7 +1,9 @@
 package com.datasophon.common.model.uni;
 
-import com.datasophon.common.model.Host;
+import com.datasophon.common.enums.DiskType;
 import lombok.Data;
+
+import java.util.List;
 
 @Data
 public class Rustfs {
@@ -12,15 +14,7 @@ public class Rustfs {
 
     private Config config;
 
-    private Host host;
-
-    @Data
-    public static class Package {
-
-        private String x86_64;
-
-        private String aarch64;
-    }
+    private List<String> nodes;
 
     @Data
     public static class Config {
@@ -32,6 +26,10 @@ public class Rustfs {
         private String user;
 
         private String password;
+
+        private DiskType installType;
+
+        private String volumes;
     }
 
     

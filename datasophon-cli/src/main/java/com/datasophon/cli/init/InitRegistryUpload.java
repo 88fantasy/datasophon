@@ -38,6 +38,9 @@ public class InitRegistryUpload extends InitBase {
     @CommandLine.Option(names = {"-p", "--password"}, description = "password", required = true)
     String password;
 
+    @CommandLine.Option(names = {"-e", "--isSuccessDelete"}, description = "是否上传成功后删除文件")
+    boolean isSuccessDelete = false;
+
     @CommandLine.Option(names = {"-disu", "--disableUploadRegistry"}, description = "disableUploadRegistry")
     boolean disableUploadRegistry = false;
 
@@ -62,7 +65,7 @@ public class InitRegistryUpload extends InitBase {
         if(!disableUploadRegistry) {
             log.info("制品库开始上传,url:{}", baseUrl);
             long ts = System.currentTimeMillis();
-            Pair<Map<String, String>, Map<String, String>> result = NexusFileUtils.repositoryUploadBatch(packagesFullDir, baseUrl, username, password, false);
+            Pair<Map<String, String>, Map<String, String>> result = NexusFileUtils.repositoryUploadBatch(packagesFullDir, baseUrl, username, password, isSuccessDelete);
             log.info("制品库上传完成,耗时:{}s.成功数量:{}, 失败数量:{}.", (System.currentTimeMillis() - ts) / 1000.0, result.getLeft().size(), result.getRight().size());
         }
         return true;
