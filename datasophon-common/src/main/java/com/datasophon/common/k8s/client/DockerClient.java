@@ -1,5 +1,6 @@
 package com.datasophon.common.k8s.client;
 
+import com.datasophon.common.k8s.exception.DockerException;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
 import lombok.Data;
@@ -260,18 +261,4 @@ public class DockerClient  {
     }
 
 
-    /**
-     * Docker 命令执行异常
-     */
-    public static class DockerException extends RuntimeException {
-        private static final long serialVersionUID = 1L;
-
-        public DockerException(String message) {
-            super(message);
-        }
-
-        public DockerException(String message, Throwable cause) {
-            super(message, cause);
-        }
-    }
 }
