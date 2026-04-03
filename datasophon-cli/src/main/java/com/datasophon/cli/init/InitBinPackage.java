@@ -23,10 +23,10 @@ public class InitBinPackage extends InitBase {
     @CommandLine.Option(names = {"-i", "--datasophonInitPath"}, description = "datasophonInitPath", required = true)
     private String datasophonInitPath;
 
-    @CommandLine.Option(names = {"-in", "installPath"}, description = "安装路径", required = true)
+    @CommandLine.Option(names = {"-in", "--installPath"}, description = "安装路径", required = true)
     String installPath;
 
-    @CommandLine.Option(names = {"-pf", "initPathOverwriteForce"}, description = "initPath目录存在是否覆盖")
+    @CommandLine.Option(names = {"-pf", "--initPathOverwriteForce"}, description = "initPath目录存在是否覆盖")
     boolean initPathOverwriteForce = false;
     
     @Override

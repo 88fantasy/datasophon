@@ -3,14 +3,14 @@
 BASE_DIR=$(dirname $0)
 
 BASE_PATH=$(
-  cd ${BASE_DIR}
+  cd ${BASE_DIR}/..
   pwd
 )
-source "${BASE_PATH}/common-env.sh"
+source "${BASE_PATH}/bin/common-env.sh"
 
 if [ ! -d "INIT_LOG_PATH" ]; then
   mkdir -p $INIT_LOG_PATH
 fi
 
 source /etc/profile
-java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar create cluster -p /data/datasophon -pwd ${PASSWORD} -a initSingleNode > ${INIT_LOG_PATH}/initSingleNode.log
+java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar create cluster --enableRegistry -pwd ${PASSWORD} -p /data/datasophon -in /data/install_datasophon -a initSingleNode > ${INIT_LOG_PATH}/initSingleNode.log

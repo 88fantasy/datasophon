@@ -55,7 +55,8 @@ public class InitLibrary extends InitBase {
             policycoreutils();
             telnet();
         }
-        installNginxModule();
+        // TODO Nginx依赖缺失,报错就先临时关闭
+        //installNginxModule();
         return true;
     }
 

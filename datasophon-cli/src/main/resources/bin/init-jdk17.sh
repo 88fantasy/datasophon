@@ -23,17 +23,17 @@ echo "PACKAGES_PATH: ${PACKAGES_PATH}"
 JDK_FOLDER_PATH=/usr/local
 source /etc/profile
 mkdir -p ${JDK_FOLDER_PATH}
-JDK_PATH_NAME="jdk-17.0.12"
+JDK_PATH_NAME="jdk-17.0.1"
 BASH_PROFILE_PATH="/root/.bash_profile"
 BASHRC_PATH="/root/.bashrc"
 ETC_PROFILE_PATH="/etc/profile"
-JDK_TAR_NAME="jdk-17.0.12_linux-x64_bin.tar.gz"
+JDK_TAR_NAME="openjdk-17.0.1_linux-x64_bin.tar.gz"
 JAVA17_HOME="${JDK_FOLDER_PATH}/${JDK_PATH_NAME}"
 #JRE_HOME="${JDK_FOLDER_PATH}/${JDK_PATH_NAME}/jre"
 arch=$(arch)
 echo arch:$arch
 if [ $arch = "aarch64" ]; then
-  JDK_TAR_NAME="jdk-17.0.12_linux-aarch64_bin.tar.gz"
+  JDK_TAR_NAME="openjdk-17.0.1_linux-aarch64_bin.tar.gz"
 fi
 
 if [[ -d ${JAVA17_HOME} ]]; then
@@ -49,10 +49,10 @@ else
   eval $pid
   pid="sed -i '/source \/etc\/profile/d' /root/.bashrc"
   eval $pid
-  pid="sed -i '/source \/etc\/profile/d' /home/hadoop/.bash_profile"
-  eval $pid
-  pid="sed -i '/source \/etc\/profile/d' /home/hadoop/.bashrc"
-  eval $pid
+  #pid="sed -i '/source \/etc\/profile/d' /home/hadoop/.bash_profile"
+  #eval $pid
+  #pid="sed -i '/source \/etc\/profile/d' /home/hadoop/.bashrc"
+  #eval $pid
   echo "Prepare to Install JDK..."
   sleep 2s
   mkdir -p ${JDK_FOLDER_PATH}
@@ -66,14 +66,14 @@ else
   source ${BASH_PROFILE_PATH}
   source ${BASHRC_PATH}
   source ${ETC_PROFILE_PATH}
-  jdk2=$(grep -n "export JAVA17_HOME=.*" /home/hadoop/.bash_profile | cut -f1 -d':')
-  if [ -n "$jdk2" ]; then
-    echo "JDK HADOOP environment exists"
-  else
-    echo ${JAVA_SOURCE_ENV} >>/home/hadoop/.bash_profile
-    echo ${JAVA_SOURCE_ENV} >>/home/hadoop/.bashrc
-    echo "JDK HADOOP environment sets successfully"
-  fi
+  #jdk2=$(grep -n "export JAVA17_HOME=.*" /home/hadoop/.bash_profile | cut -f1 -d':')
+  #if [ -n "$jdk2" ]; then
+  #  echo "JDK HADOOP environment exists"
+  #else
+    #echo ${JAVA_SOURCE_ENV} >>/home/hadoop/.bash_profile
+    #echo ${JAVA_SOURCE_ENV} >>/home/hadoop/.bashrc
+  #  echo "JDK HADOOP environment sets skip"
+  #fi
   echo "JDK install successfully"
   source /etc/profile
 fi

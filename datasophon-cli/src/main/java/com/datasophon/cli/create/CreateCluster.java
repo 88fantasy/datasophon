@@ -25,20 +25,23 @@ import java.util.stream.Collectors;
 @CommandLine.Command(name = "cluster", description = "create cluster")
 public class CreateCluster implements Runnable {
     
-    @CommandLine.Option(names = {"-p", "datasophonPath"}, description = "datasophon绝对路径", required = true)
+    @CommandLine.Option(names = {"-p", "--datasophonPath"}, description = "datasophon绝对路径", required = true)
     String datasophonPath;
 
-    @CommandLine.Option(names = {"-in", "installPath"}, description = "安装路径", required = true)
+    @CommandLine.Option(names = {"-in", "--installPath"}, description = "安装路径", required = true)
     String installPath;
 
-    @CommandLine.Option(names = {"-pwd", "password"}, description = "密钥", required = true)
+    @CommandLine.Option(names = {"-pwd", "--password"}, description = "密钥", required = true)
     String password;
     
-    @CommandLine.Option(names = {"-a", "action"}, description = "执行动作", required = true)
+    @CommandLine.Option(names = {"-a", "--action"}, description = "执行动作", required = true)
     String action;
 
-    @CommandLine.Option(names = {"-if", "initPathOverwriteForce"}, description = "datasophon-init目录存在是否覆盖")
+    @CommandLine.Option(names = {"-if", "--initPathOverwriteForce"}, description = "datasophon-init目录存在是否覆盖")
     boolean initPathOverwriteForce = false;
+
+    @CommandLine.Option(names = {"-disu", "--disableUploadRegistry"}, description = "制品是否上传")
+    boolean disableUploadRegistry = false;
 
     @CommandLine.Option(names = {"-f", "--mysqlInstallForce"}, description = "mysql存在是否覆盖安装")
     boolean mysqlInstallForce = false;
@@ -279,6 +282,7 @@ public class CreateCluster implements Runnable {
     private void initBinPackage(ClusterConfig config, List<Host> nodes) {
         InitBinPackage initBinPackage = new InitBinPackage();
         initBinPackage.setInstallPath(installPath);
+        initBinPackage.setDatasophonInitPath(initPath);
         initBinPackage.setInitPathOverwriteForce(initPathOverwriteForce);
         List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
         allNodesExec(workerNodes, initBinPackage);
@@ -369,7 +373,8 @@ public class CreateCluster implements Runnable {
                 .setWebHost(registryConfig.getHost().getIp())
                 .setWebPort(registryConfig.getConfig().getWebPort())
                 .setUsername(registryConfig.getConfig().getUser())
-                .setPassword(registryConfig.getConfig().getPassword());
+                .setPassword(registryConfig.getConfig().getPassword())
+                .setDisableUploadRegistry(disableUploadRegistry);
         singleNodesExec(localNode, initRegistryUpload);
     }
 

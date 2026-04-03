@@ -74,7 +74,7 @@ public class InitRegistry extends InitBase {
         }
 
         if(!executor.exists(installPath).getExecResult()) {
-            throw new CommandLine.ExecutionException(new CommandLine(this), "dir not found : " + installPath);
+            executor.execShell(String.format("mkdir -p %s", installPath));
         }
         String home = String.format("%s/nexusDir", installPath);
         String nexusPath = String.format("%s/nexus", home);

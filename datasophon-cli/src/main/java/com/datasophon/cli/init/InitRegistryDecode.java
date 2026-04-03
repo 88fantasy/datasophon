@@ -25,11 +25,14 @@ public class InitRegistryDecode extends InitBase {
     @CommandLine.Option(names = {"-d", "--datasophonHomePath"}, description = "datasophonHomePath", required = true)
     private String datasophonHomePath;
 
-    @CommandLine.Option(names = {"-cn", "--config"}, description = "元数据包", required = true)
-    String configPath;
+    @CommandLine.Option(names = {"-cn", "--productConfigPath"}, description = "元数据包", required = true)
+    String productConfigPath;
 
-    @CommandLine.Option(names = {"-pn", "--packages"}, description = "安装包名", required = true)
-    String packagesPath;
+    @CommandLine.Option(names = {"-pn", "--productPackagesPath"}, description = "安装包名", required = true)
+    String productPackagesPath;
+
+    @CommandLine.Option(names = {"-de", "--decode"}, description = "是否解密cluster-sample.yml")
+    boolean isClusterSampleDecode = false;
     
     @Override
     public String name() {
@@ -42,18 +45,17 @@ public class InitRegistryDecode extends InitBase {
             log.info("enable is: {}, skip", enable);
             return true;
         }
-        String rawPackagesPath = String.format("%s/packages/raw/packages", packagesPath);
-        String rawOsPath = String.format("%s/packages/raw/os", packagesPath);
+        String rawPackagesPath = String.format("%s/raw/packages", productPackagesPath);
 
-        String commonPropertiesPath = String.format("%s/common.properties", configPath);
-        String clusterSamplePath = String.format("%s/cluster-sample.yml", configPath);
-        String datasophonInitPath = String.format("%s/datasophon-init", packagesPath);
+        String commonPropertiesPath = String.format("%s/common.properties", productConfigPath);
+        String clusterSamplePath = String.format("%s/datasophon-init/cluster-sample.yml", productConfigPath);
+        String datasophonInitPath = String.format("%s/datasophon-init", datasophonHomePath);
+        String datasophonInitPackagesPath = String.format("%s/packages", datasophonInitPath);
 
         checkPath(datasophonHomePath);
-        checkPath(configPath);
-        checkPath(packagesPath);
+        checkPath(productConfigPath);
+        checkPath(productPackagesPath);
         checkPath(rawPackagesPath);
-        checkPath(rawOsPath);
         checkPath(commonPropertiesPath);
         checkPath(clusterSamplePath);
         checkPath(datasophonInitPath);
@@ -63,16 +65,18 @@ public class InitRegistryDecode extends InitBase {
         if(Base64.isBase64(commonPropertiesStr)) {
             MetaUtils.decodeFile(FileUtil.file(commonPropertiesPath), password);
         }
-        // cluster-sample.yml不用解密
-        
-        /*String clusterSampleStr = FileUtil.readString(new File(clusterSamplePath), StandardCharsets.UTF_8);
-        if(Base64.isBase64(clusterSampleStr)) {
+
+        String clusterSampleStr = FileUtil.readString(new File(clusterSamplePath), StandardCharsets.UTF_8);
+        if(isClusterSampleDecode && Base64.isBase64(clusterSampleStr)) {
             MetaUtils.decodeFile(FileUtil.file(clusterSamplePath), password);
-        }*/
+        }
         executor.execShell(String.format("cp -f %s  %s/conf", commonPropertiesPath, datasophonHomePath));
         executor.execShell(String.format("cp -f %s  %s/config", clusterSamplePath, datasophonInitPath));
-        executor.execShell(String.format("cp -rf %s %s", rawPackagesPath, datasophonInitPath));
-        executor.execShell(String.format("cp -rf %s %s/packages", rawOsPath, datasophonInitPath));
+        if(!FileUtil.exist(datasophonInitPackagesPath)) {
+            executor.execShell(String.format("cp -rf %s %s", rawPackagesPath, datasophonInitPath));
+        } else {
+            log.info("{} is exist, skip", datasophonInitPackagesPath);
+        }
 
         log.info("制品包解密初始化完成");
         return true;

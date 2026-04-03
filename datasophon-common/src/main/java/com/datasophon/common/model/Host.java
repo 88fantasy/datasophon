@@ -20,5 +20,5 @@ public class Host {
     private String hostname;
 
     private Boolean isLocalhost = false;
-    
+
 }
