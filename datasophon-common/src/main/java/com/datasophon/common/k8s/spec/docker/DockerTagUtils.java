@@ -12,10 +12,6 @@ public class DockerTagUtils {
     public static String DEFAULT_ORG = "bigdata";
 
     public static String normalTag(String repository, String tag) {
-        int protocolIdx = repository.indexOf("://");
-        if (protocolIdx != -1) {
-            repository = repository.substring(protocolIdx + 3);
-        }
         if (!repository.endsWith("/")) {
             repository += "/";
         }
@@ -60,23 +56,15 @@ public class DockerTagUtils {
 
     public static String normalVersion(String version, String arch) {
         if (StrUtil.isBlank(version) || "latest".equalsIgnoreCase(version)) {
-            version = "latest";
+            return arch + "-latest";
         }
 
         // 如果标签已经包含架构后缀，则不重复添加
-        if (version.endsWith("-amd") || version.endsWith("-arm") || version.endsWith("-amd64") || version.endsWith("-arm64")) {
-            return version;
-        }
         for (String suffix : Arrays.asList("amd", "arm", "amd64", "amd64")) {
             if (version.endsWith("-" + suffix) || version.endsWith("_" + suffix)) {
                 return version;
             }
         }
-        if (Arrays.asList("amd", "arm", "amd64", "x86_64", "arm64", "aarch64").contains(arch)) {
-            return version + "-" + arch;
-        }
-
-        // 未知架构或不匹配时返回原标签
-        return version;
+        return version + "-" + arch;
     }
 }

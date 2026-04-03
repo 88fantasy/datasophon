@@ -35,6 +35,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -98,10 +99,23 @@ public class ShellUtils {
      * @return
      */
     public static ExecResult exec(String workPath, List<String> processCmdArgs, long timeout) {
+        return execWithStdin(workPath, processCmdArgs, null, timeout);
+    }
+
+
+    /**
+     * 执行命令，通过 stdin 传递输入
+     *
+     * @param workPath        工作目录（可为 null 或空，表示不切换目录）
+     * @param processCmdArgs  命令及其参数列表
+     * @param stdinInput      要通过 stdin 传递的输入内容
+     * @param timeout         超时时间（秒）
+     * @return 执行结果封装对象
+     */
+    public static ExecResult execWithStdin(String workPath, List<String> processCmdArgs, String stdinInput, long timeout) {
         if (CollectionUtils.isEmpty(processCmdArgs)) {
             throw new IllegalArgumentException("Command must not be null or empty");
         }
-
 
         ExecResult result = new ExecResult();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -119,6 +133,13 @@ public class ShellUtils {
 
             logger.info("exec cmd: {}, workspace: {}", StrUtil.join(" ", processCmdArgs), workPath);
             process = processBuilder.start();
+
+            // 通过 stdin 传递输入
+            if (stdinInput != null) {
+                process.getOutputStream().write(stdinInput.getBytes(StandardCharsets.UTF_8));
+                process.getOutputStream().flush();
+                process.getOutputStream().close();
+            }
 
             Process finalProcess = process;
             outputReader = new Thread(() -> {

@@ -2,12 +2,11 @@ package com.datasophon.common.k8s.client;
 
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.common.Constants;
-import com.datasophon.common.PropertiesPathUtils;
+import com.datasophon.common.k8s.config.DockerOptions;
 import com.datasophon.common.k8s.spec.docker.DockerImageParser;
 import com.datasophon.common.k8s.spec.docker.DockerTagUtils;
-import com.datasophon.common.k8s.vo.ImageManifest;
-import com.datasophon.common.model.uni.NexusUri;
-import com.github.dockerjava.api.model.AuthConfig;
+import com.datasophon.common.k8s.vo.docker.ImageManifest;
+import com.datasophon.common.k8s.vo.docker.LoadImageResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,22 +24,19 @@ public class DockerClientWrapperTest {
 
     @BeforeEach
     public void init() {
-        PropertiesPathUtils.resetPropertyFile();
-        NexusUri uri = new NexusUri();
-        uri.setEnabled(Constants.NEXUS_ENABLE);
-        uri.setUri(String.format("http://%s:%s", Constants.NEXUS_IP, Constants.NEXUS_PORT));
-        uri.setUser(Constants.NEXUS_USERNAME);
-        uri.setPassword(Constants.NEXUS_PASSWORD);
-        AuthConfig config = new AuthConfig()
-                .withUsername(uri.getUser())
-                .withPassword(uri.getPassword())
-                .withRegistryAddress(uri.getUri() + "/image/");
-        client =  new DockerClientWrapperImpl(config);
+        DockerOptions options  = new DockerOptions();
+        options.setInsecure(true);
+        options.setRepoHost(Constants.NEXUS_IP);
+        options.setRepoPort(Constants.NEXUS_PORT);
+        options.setUsername(Constants.NEXUS_USERNAME);
+        options.setPassword(Constants.NEXUS_PASSWORD);
+        options.setRepo("image");
+        client =  new DockerClientWrapperImpl(options);
     }
 
     @Test
-    public void test() {
-        List<ImageManifest> manifests = client.load(new File("D:\\Desktop\\VOS集成测试\\k8s测试数据\\images\\portal-3.3.1_image.tar"));
+    public void test() throws IOException {
+        List<LoadImageResult> manifests = client.load(new File("D:\\Desktop\\VOS集成测试\\k8s测试数据\\images\\portal-3.3.1_image.tar"));
         System.out.println(JSONObject.toJSONString(manifests));
     }
 

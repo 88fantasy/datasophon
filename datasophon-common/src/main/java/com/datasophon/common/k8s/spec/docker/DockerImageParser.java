@@ -3,7 +3,7 @@ package com.datasophon.common.k8s.spec.docker;
 
 import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson.JSONObject;
-import com.datasophon.common.k8s.vo.ImageManifest;
+import com.datasophon.common.k8s.vo.docker.ImageManifest;
 import com.datasophon.common.utils.TarUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,7 +67,7 @@ public class DockerImageParser {
                 String[] parts = splitRepoTag(repoTag);
                 ImageManifest im = new ImageManifest();
                 im.setImage(parts[0]);
-                im.setVersion(parts[1]);
+                im.setTag(parts[1]);
                 im.setOs(config.getOs());
                 im.setArch(config.getArchitecture());
                 result.add(im);
@@ -113,7 +113,7 @@ public class DockerImageParser {
                 String[] parts = splitRepoTag(tag);
                 ImageManifest im = new ImageManifest();
                 im.setImage(parts[0]);
-                im.setVersion(parts[1]);
+                im.setTag(parts[1]);
                 im.setOs(platform.getOs());
                 im.setArch(platform.getArchitecture());
                 result.add(im);

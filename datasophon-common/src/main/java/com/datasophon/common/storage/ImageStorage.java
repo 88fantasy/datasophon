@@ -1,24 +1,30 @@
 package com.datasophon.common.storage;
 
+import com.datasophon.common.k8s.vo.docker.LoadImageResult;
+
 import java.io.File;
-import java.io.IOException;
 
 /**
  * @author zhanghuangbin
  */
 public interface ImageStorage {
 
+    String REPO = "image";
+
     boolean isEnabled();
 
 
-    void pushImages(File dir, PushCallback cb) throws IOException;
+    void pushImages(File dir, PushCallback cb);
 
 
     interface PushCallback {
 
-        default void onEntryStart(File file) {}
+        default void onEntryLoad(File file, double progress){};
 
-        default void onEntryCompleted(File file){};
+        default void onEntryPush(LoadImageResult image, double progress){};
+
+        default void onManifest(String imageId, double progress ){};
+
     }
 
 }

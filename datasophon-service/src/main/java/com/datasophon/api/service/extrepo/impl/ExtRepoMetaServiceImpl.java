@@ -20,6 +20,7 @@ import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
+import com.datasophon.common.k8s.vo.docker.LoadImageResult;
 import com.datasophon.common.storage.HelmStorage;
 import com.datasophon.common.storage.ImageStorage;
 import com.datasophon.common.storage.MetaStorage;
@@ -418,7 +419,6 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         log.info("【导入第三方软件源】 进度ID:{}，上传安装包到nexus成功", progress.getProgressId());
 
 
-
         File imageDir = MetaUtils.getImagePath(pkgPath).toFile();
         File[] imageFiles = imageDir.listFiles();
         if (imageFiles == null || imageFiles.length == 0) {
@@ -426,23 +426,43 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         }
         progress.setState(6);
         progress.setStep(0);
-        progress.setTotal(imageFiles.length);
+        progress.setTotal(100);
         ImageStorage imageStorage = StorageUtils.getImageStorage();
         log.info("开始上传镜像文件...");
         imageStorage.pushImages(imageDir, new ImageStorage.PushCallback() {
+
             @Override
-            public void onEntryCompleted(File file) {
-                log.info("上传文件{}到nexus的k8s镜像仓库", file.getAbsolutePath());
-                progress.setStep(progress.getStep() + 1);
+            public void onEntryLoad(File file, double delta) {
+                log.info("【导入第三方软件源】进度 ID:{}，加载镜像文件：{}, 任务进度：{}%",
+                        progress.getProgressId(), file.getName(), (int) (delta * 100));
+                long step = (long) (delta * 0.3 * progress.getTotal());
+                progress.setStep((progress.getStep() + step));
+            }
+
+            @Override
+            public void onEntryPush(LoadImageResult image, double delta) {
+                log.info("【导入第三方软件源】进度 ID:{}，推送镜像：{}, 任务进度：{}%",
+                        progress.getProgressId(), image.getNewQualifierImage(), (int) (delta * 100));
+                long step = (long) (delta * 0.4 * progress.getTotal());
+                progress.setStep((progress.getStep() + step));
+            }
+
+            @Override
+            public void onManifest(String imageId, double delta) {
+                log.info("【导入第三方软件源】进度 ID:{}，上传镜像 manifest: {}, 任务进度：{}%",
+                        progress.getProgressId(), imageId, (int) (delta * 100));
+                long step = (long) (delta * 0.3 * progress.getTotal());
+                progress.setStep((progress.getStep() + step));
             }
         });
+        log.info("【导入第三方软件源】进度 ID:{}，完成所有镜像推送操作", progress.getProgressId());
         progress.setStep(progress.getTotal());
         log.info("【导入第三方软件源】 进度ID:{}，上传镜像包成功", progress.getProgressId());
 
 
         long total = vo.getFrameworks().stream()
-                .flatMap(f->f.getK8sDdLServices().stream())
-                .mapToLong(s-> s.getCharts().size())
+                .flatMap(f -> f.getK8sDdLServices().stream())
+                .mapToLong(s -> s.getCharts().size())
                 .sum();
         if (total > 0) {
             progress.setState(7);
@@ -451,9 +471,9 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
             HelmStorage helmStorage = StorageUtils.getHelmStorage();
 
-            vo.getFrameworks().forEach(frame-> {
-                frame.getK8sDdLServices().forEach(srv-> {
-                    srv.getCharts().forEach(chart-> {
+            vo.getFrameworks().forEach(frame -> {
+                frame.getK8sDdLServices().forEach(srv -> {
+                    srv.getCharts().forEach(chart -> {
                         File file = Paths.get(metaUnzipPath).resolve(srv.getManifest()).getParent().resolve(chart).toFile();
                         if (file.exists()) {
                             log.info("上传文件{}到nexus的helm仓库", file.getAbsolutePath());

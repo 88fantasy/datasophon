@@ -17,17 +17,13 @@ import com.datasophon.api.vo.k8s.K8sServiceInfo;
 import com.datasophon.common.function.ThrowableMapper;
 import com.datasophon.common.k8s.client.KubectlClient;
 import com.datasophon.common.k8s.config.ClientOptions;
-import com.datasophon.common.k8s.dto.UpdateDeploymentDTO;
 import com.datasophon.common.k8s.exception.KubectlException;
-import com.datasophon.common.k8s.spec.docker.DockerTagUtils;
 import com.datasophon.common.k8s.spec.helm.HelmUtils;
 import com.datasophon.common.k8s.vo.k8s.K8sConfigMap;
 import com.datasophon.common.k8s.vo.k8s.K8sDeployment;
 import com.datasophon.common.k8s.vo.k8s.K8sIngress;
-import com.datasophon.common.k8s.vo.k8s.K8sNode;
 import com.datasophon.common.k8s.vo.k8s.K8sPod;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
-import com.datasophon.common.storage.impl.NexusImageStorage;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -542,128 +538,7 @@ public class K8sServiceImpl implements K8sService {
         }, "缩放 Deployment 副本数");
     }
 
-    @Override
-    public void updateDeploymentImage(K8sClusterConfig config, String namespace, String serviceName) {
-        String repo = NexusImageStorage.getAuthConfig().getRegistryAddress();
-        exec(newOptions(config), client -> {
-            String labelSelector = buildLabelSelector(serviceName);
 
-            K8sResourceList<K8sNode> nodesResult = client.getNodes();
-
-            K8sResourceList<K8sDeployment> deploymentsResult = client.getDeployments(namespace, labelSelector);
-            List<UpdateDeploymentDTO> result = new ArrayList<>();
-            for (K8sDeployment deployment : deploymentsResult.getItems()) {
-                UpdateDeploymentDTO update = new UpdateDeploymentDTO();
-                update.setNamespace(namespace);
-                update.setDeployment(deployment.getMetadata().getName());
-
-                // 对于每一个 deployment，获取其容器，以及容器被调用到的节点。
-                // 如果节点是 amd，则为镜像的原来的镜像加上 (-amd 后缀，存在后缀则忽略），如果是 arm，则加上原来的镜像加上 (-arm 后缀，存在后缀则忽略）
-                List<UpdateDeploymentDTO.Image> images = new ArrayList<>();
-                if (deployment.getSpec() != null && deployment.getSpec().getTemplate() != null) {
-                    K8sDeployment.PodSpec podSpec = deployment.getSpec().getTemplate().getSpec();
-                    if (podSpec != null && podSpec.getContainers() != null) {
-                        // 获取节点架构信息
-                        String nodeName = podSpec.getNodeName();
-                        String architecture = getNodeArchitecture(nodesResult, nodeName);
-                        if (architecture == null) {
-                            continue;
-                        }
-
-                        for (K8sDeployment.Container container : podSpec.getContainers()) {
-                            UpdateDeploymentDTO.Image img = new UpdateDeploymentDTO.Image();
-                            img.setContainerName(container.getName());
-                            String image = container.getImage();
-
-                            // 根据架构调整镜像标签
-                            String[] imageParts = parseImageWithTag(image);
-                            String imageName = DockerTagUtils.normalTag(repo, imageParts[0]);
-                            String currentTag = DockerTagUtils.normalVersion(imageParts[1], architecture);
-                            img.setNewImage(imageName);
-                            img.setTag(currentTag);
-                            images.add(img);
-                        }
-                    }
-                }
-                update.setImages(images);
-                result.add(update);
-            }
-            for (UpdateDeploymentDTO update : result) {
-                client.updateDeploymentImage(update);
-            }
-
-            return null;
-        }, "校正镜像");
-
-    }
-
-    /**
-     * 获取节点的架构信息
-     */
-    private String getNodeArchitecture(K8sResourceList<K8sNode> nodesResult, String nodeName) {
-        if (StrUtil.isBlank(nodeName)) {
-            return null;
-        }
-        for (K8sNode node : nodesResult.getItems()) {
-            if (nodeName.equals(node.getMetadata().getName())) {
-                if (node.getStatus() != null && node.getStatus().getNodeInfo() != null) {
-                    return node.getStatus().getNodeInfo().getArchitecture();
-                }
-                break;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 解析镜像名和标签
-     *
-     * @param image 完整镜像名，如 nginx:1.19 或 nginx
-     * @return [镜像名，标签] 标签不存在时返回 "latest"
-     */
-    private String[] parseImageWithTag(String image) {
-        int colonIndex = image.lastIndexOf(':');
-        // 检查是否是端口号（如 registry.example.com:5000/nginx）
-        int slashIndex = image.lastIndexOf('/');
-        if (colonIndex > 0 && colonIndex > slashIndex) {
-            String tagName = image.substring(colonIndex + 1);
-            // 如果标签包含@sha256 等 digest，只取@之前的部分
-            int digestIndex = tagName.indexOf('@');
-            if (digestIndex > 0) {
-                tagName = tagName.substring(0, digestIndex);
-            }
-            return new String[]{image.substring(0, colonIndex), tagName};
-        }
-        return new String[]{image, "latest"};
-    }
-
-    /**
-     * 根据架构调整标签
-     *
-     * @param currentTag   当前标签
-     * @param architecture 架构 (amd64, arm64 等)
-     * @return 调整后的标签
-     */
-    private String adjustTagByArch(String currentTag, String architecture) {
-        if (StrUtil.isBlank(currentTag)) {
-            currentTag = "latest";
-        }
-
-        // 如果标签已经包含架构后缀，则不重复添加
-        if (currentTag.endsWith("-amd") || currentTag.endsWith("-arm") || currentTag.endsWith("-amd64") || currentTag.endsWith("-arm64")) {
-            return currentTag;
-        }
-
-        // 根据架构添加后缀
-        if ("amd64".equals(architecture) || "x86_64".equals(architecture)) {
-            return currentTag + "-amd";
-        } else if ("arm64".equals(architecture) || "aarch64".equals(architecture)) {
-            return currentTag + "-arm";
-        }
-
-        // 未知架构或不匹配时返回原标签
-        return currentTag;
-    }
 
     private <T> T exec(ClientOptions options, ThrowableMapper<KubectlClient, T> consumer, String actionHint) {
         try (KubectlClient client = new KubectlClient(options)) {

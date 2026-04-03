@@ -1,4 +1,4 @@
-package com.datasophon.common.k8s.vo;
+package com.datasophon.common.k8s.vo.docker;
 
 import lombok.Data;
 
@@ -10,7 +10,7 @@ public class ImageManifest {
 
     private String image;
 
-    private String version;
+    private String tag;
 
     private String os;
 
@@ -20,8 +20,8 @@ public class ImageManifest {
         return os + "/" + arch;
     }
 
-    public String getFullTag() {
-        return image + ":" + version;
+    public String getQualifierImage() {
+        return image + ":" + tag;
     }
 
 }

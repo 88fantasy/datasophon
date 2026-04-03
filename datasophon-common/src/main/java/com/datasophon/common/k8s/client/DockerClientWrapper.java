@@ -1,8 +1,9 @@
 package com.datasophon.common.k8s.client;
 
-import com.datasophon.common.k8s.vo.ImageManifest;
+import com.datasophon.common.k8s.vo.docker.LoadImageResult;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -11,8 +12,10 @@ import java.util.List;
 public interface DockerClientWrapper {
 
 
+    void login();
 
-    List<ImageManifest> load(File file);
+
+    List<LoadImageResult> load(File file) throws IOException;
 
     /**
      *
@@ -21,4 +24,5 @@ public interface DockerClientWrapper {
     void push(String imageId);
 
 
+    void createManifest(String oldTag, List<LoadImageResult> images);
 }

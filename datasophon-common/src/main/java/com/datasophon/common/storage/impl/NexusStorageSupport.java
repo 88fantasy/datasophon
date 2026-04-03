@@ -45,6 +45,8 @@ public abstract class NexusStorageSupport {
         uri.setUri(String.format("http://%s:%s", Constants.NEXUS_IP, Constants.NEXUS_PORT));
         uri.setUser(Constants.NEXUS_USERNAME);
         uri.setPassword(Constants.NEXUS_PASSWORD);
+        uri.setIp(Constants.NEXUS_IP);
+        uri.setPort(Constants.NEXUS_PORT);
         return uri;
     }
 }
