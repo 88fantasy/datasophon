@@ -147,7 +147,7 @@ class DockerClientTest {
                 DockerClient client = new DockerClient();
                 File mockFile = new File("/path/to/image.tar");
 
-                String result = client.load(mockFile, image.getPlatform());
+                String result = client.load(mockFile, null);
 
                 // load 方法返回去除 "Loaded image:" 前缀后的内容
                 Assertions.assertEquals(" myimage:latest\n", result);
@@ -168,7 +168,7 @@ class DockerClientTest {
                 DockerClient client = new DockerClient();
                 File mockFile = new File("/path/to/image.tar");
 
-                String result = client.load(mockFile, image.getPlatform());
+                String result = client.load(mockFile, null);
 
                 Assertions.assertEquals(" registry.example.com/myimage:v1.0\n", result);
             }
@@ -188,7 +188,7 @@ class DockerClientTest {
                 DockerClient client = new DockerClient();
                 File mockFile = new File("/path/to/image.tar");
 
-                DockerException exception = Assertions.assertThrows(DockerException.class, () -> client.load(mockFile, image.getPlatform()));
+                DockerException exception = Assertions.assertThrows(DockerException.class, () -> client.load(mockFile, null));
 
                 Assertions.assertTrue(exception.getMessage().contains("image.tar"));
                 Assertions.assertTrue(exception.getMessage().contains("失败"));
@@ -209,7 +209,7 @@ class DockerClientTest {
                 DockerClient client = new DockerClient();
                 File mockFile = new File("/path/to/image.tar");
 
-                DockerException exception = Assertions.assertThrows(DockerException.class, () -> client.load(mockFile, image.getPlatform()));
+                DockerException exception = Assertions.assertThrows(DockerException.class, () -> client.load(mockFile, null));
 
                 Assertions.assertTrue(exception.getMessage().contains("image.tar"));
                 Assertions.assertTrue(exception.getMessage().contains("失败"));
@@ -771,7 +771,7 @@ class DockerClientTest {
                         });
 
                 DockerClient client = new DockerClient();
-                client.load(new File("/path/to/image.tar"), image.getPlatform());
+                client.load(new File("/path/to/image.tar"), null);
             }
         }
 
