@@ -23,7 +23,9 @@ import lombok.Data;
 
 @Data
 public class StartWorkerMessage implements Serializable {
-    
+
+    private static final long serialVersionUID = 4197649708954689128L;
+
     private int coreNum;
     private double totalMem;
     private double totalDisk;
