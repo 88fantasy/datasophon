@@ -33,7 +33,8 @@ public class NexusImageStorage extends NexusStorageSupport implements ImageStora
                 .collect(Collectors.toList());
 
         List<LoadImageResult> results = new ArrayList<>();
-        DockerClientWrapper client = newClient();
+        DockerOptions options = newOptions();
+        DockerClientWrapper client = new DockerClientWrapperImpl(options);
         for(File file : files) {
            try {
                results.addAll(client.load(file));
@@ -67,7 +68,7 @@ public class NexusImageStorage extends NexusStorageSupport implements ImageStora
 
 
 
-    private DockerClientWrapper newClient() {
+    private DockerOptions newOptions() {
         NexusUri uri = getNexusUri();
         DockerOptions options  = new DockerOptions();
         options.setInsecure(true);
@@ -76,7 +77,7 @@ public class NexusImageStorage extends NexusStorageSupport implements ImageStora
         options.setUsername(uri.getUser());
         options.setPassword(uri.getPassword());
         options.setRepo(REPO);
-        return new DockerClientWrapperImpl(options);
+        return options;
     }
 
 

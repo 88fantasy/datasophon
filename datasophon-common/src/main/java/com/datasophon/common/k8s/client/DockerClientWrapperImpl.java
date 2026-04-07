@@ -60,6 +60,8 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
             LoadImageResult result = BeanUtil.toBean(manifest, LoadImageResult.class);
             result.setOldImage(manifest.getImage());
             result.setOldTag(manifest.getTag());
+            result.setOs(platform.getOs());
+            result.setArch(platform.getArch());
 
 //                    重新命名为私库的 tag
             result.setNewImage(DockerTagUtils.normalTag(options.getRepository(), manifest.getImage()));
@@ -86,11 +88,12 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
 
     @Override
     public void createManifest(String manifestName, List<LoadImageResult> images) {
+        String selfRepoManifestName = DockerTagUtils.normalTag(options.getRepository(), manifestName);
         DockerClient client = new DockerClient();
 
         // 删除已存在的 manifest
-        log.info("删除已存在的 manifest: {}", manifestName);
-        client.rmManifest(manifestName, true);
+        log.info("删除已存在的 manifest: {}", selfRepoManifestName);
+        client.rmManifest(selfRepoManifestName, true);
 
         // 收集所有新的镜像 tag
         List<String> tags = images.stream()
@@ -98,20 +101,20 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
                 .collect(Collectors.toList());
 
         // 创建 manifest
-        log.info("创建 manifest: {}, 包含镜像 tags: {}", manifestName, tags);
-        client.createManifest(manifestName, tags, true);
+        log.info("创建 manifest: {}, 包含镜像 tags: {}", selfRepoManifestName, tags);
+        client.createManifest(selfRepoManifestName, tags, true);
 
         // 为每个镜像添加架构标注
         for (LoadImageResult image : images) {
             String tag = image.getNewQualifierImage();
-            log.info("标注 manifest: {} 的镜像{}，arch={}, os={}", manifestName, tag, image.getArch(), image.getOs());
-            client.annotateManifest(manifestName, tag, image.getArch(), image.getOs());
+            log.info("标注 manifest: {} 的镜像{}，arch={}, os={}", selfRepoManifestName, tag, image.getArch(), image.getOs());
+            client.annotateManifest(selfRepoManifestName, tag, image.getArch(), image.getOs());
         }
 
         // 推送 manifest 到仓库
-        log.info("推送 manifest: {}", manifestName);
-        client.pushManifest(manifestName, true);
+        log.info("推送 manifest: {}", selfRepoManifestName);
+        client.pushManifest(selfRepoManifestName, true);
 
-        client.rmManifest(manifestName, false);
+        client.rmManifest(selfRepoManifestName, false);
     }
 }

@@ -9,24 +9,24 @@ public class DockerTagUtils {
 
     public static String DEFAULT_ORG = "bigdata";
 
-    public static String normalTag(String repository, String tag) {
+    public static String normalTag(String repository, String image) {
         if (!repository.endsWith("/")) {
             repository += "/";
         }
 
         int count = 0;
-        for (int i = 0; i < tag.length(); i++) {
-            if (tag.charAt(i) == '/') {
+        for (int i = 0; i < image.length(); i++) {
+            if (image.charAt(i) == '/') {
                 count++;
             }
         }
         if (count == 0) {
-            return repository + DEFAULT_ORG + tag;
+            return repository + DEFAULT_ORG + "/" + image;
         } else if (count == 1) {
-            return repository + tag;
+            return repository + image;
         } else if (count == 2) {
-            String[] parts = tag.split("/");
-            if (tag.startsWith("docker.io")) {
+            String[] parts = image.split("/");
+            if (image.startsWith("docker.io")) {
                 if ("library".equals(parts[1])) {
                     return repository + DEFAULT_ORG + "/" + parts[2];
                 }
@@ -36,18 +36,18 @@ public class DockerTagUtils {
 //            count == 3, 只有nexus私库有这个问题，当作正常值
             int i;
             int cnt = 0;
-            for (i = tag.length() - 1; i >= 0; i--) {
-                if (tag.charAt(i) == '/') {
+            for (i = image.length() - 1; i >= 0; i--) {
+                if (image.charAt(i) == '/') {
                     cnt++;
                 }
                 if (cnt == count) {
                     break;
                 }
             }
-            String simpleTag = tag.substring(i + 1);
+            String simpleTag = image.substring(i + 1);
             return repository + simpleTag;
         } else {
-            throw new IllegalArgumentException(String.format("tag %s do not matched the docker specification", tag));
+            throw new IllegalArgumentException(String.format("tag %s do not matched the docker specification", image));
         }
     }
 

@@ -124,7 +124,8 @@ public class DockerClient  {
     public void removeImage(String imageId) {
         List<String> args = Arrays.asList("rmi", imageId);
         ExecResult result = execute(args, 30);
-        if (!result.isSuccess()) {
+//        ignore error if image absent
+        if (!result.isSuccess() && !result.getExecOut().contains("No such image")) {
             throw new DockerException(String.format("删除镜像%s失败，%s", imageId, result.getErrorTraceMessage()));
         }
     }
@@ -189,7 +190,7 @@ public class DockerClient  {
         args.add(name);
         ExecResult result = execute(args, 30);
         if (!result.isSuccess()) {
-            if (ignoreErrorIfAbsent) {
+            if (ignoreErrorIfAbsent && result.getExecOut().contains("No such manifest")) {
                 // 忽略错误
                 return;
             }
