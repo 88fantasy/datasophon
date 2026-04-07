@@ -1,5 +1,6 @@
 package com.datasophon.common.k8s.client;
 
+import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.k8s.exception.DockerException;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
@@ -81,10 +82,15 @@ public class DockerClient  {
     /**
      * 加载镜像包
      *
-     * @param file 镜像 tar 包文件
+     * @param file     镜像 tar 包文件
+     * @param platform 镜像平台格式：os/arch
      */
-    public String load(File file) {
-        List<String> args = Arrays.asList("load", "-i", file.getAbsolutePath());
+    public String load(File file, String platform) {
+        List<String> args = new ArrayList<>(Arrays.asList("load", "-i", file.getAbsolutePath()));
+        if (StrUtil.isNotBlank(platform)) {
+            args.add("--platform");
+            args.add(platform);
+        }
         ExecResult result = execute(args, -1);
         if (!result.isSuccess()) {
             throw new DockerException(String.format("加载镜像%s失败，%s", file.getName(), result.getErrorTraceMessage()));

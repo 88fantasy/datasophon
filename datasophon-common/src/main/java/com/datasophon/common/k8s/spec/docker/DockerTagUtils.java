@@ -2,8 +2,6 @@ package com.datasophon.common.k8s.spec.docker;
 
 import cn.hutool.core.util.StrUtil;
 
-import java.util.Arrays;
-
 /**
  * @author zhanghuangbin
  */
@@ -54,17 +52,16 @@ public class DockerTagUtils {
     }
 
 
-    public static String normalVersion(String version, String arch) {
+    public static String normalVersion(String version, String os, String arch) {
         if (StrUtil.isBlank(version) || "latest".equalsIgnoreCase(version)) {
-            return arch + "-latest";
+            return os + "_" + arch + "-latest";
         }
 
-        // 如果标签已经包含架构后缀，则不重复添加
-        for (String suffix : Arrays.asList("amd", "arm", "amd64", "amd64")) {
-            if (version.endsWith("-" + suffix) || version.endsWith("_" + suffix)) {
-                return version;
-            }
+        String suffix = os + "_" + arch;
+        if (version.endsWith(suffix)) {
+            return version;
+        } else {
+            return version + "-" + suffix;
         }
-        return version + "-" + arch;
     }
 }

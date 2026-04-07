@@ -2,6 +2,8 @@ package com.datasophon.common.k8s.vo.docker;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * @author zhanghuangbin
  */
@@ -12,16 +14,18 @@ public class ImageManifest {
 
     private String tag;
 
-    private String os;
+    private List<ImagePlatform> platforms;
 
-    private String arch;
 
-    public String getPlatform() {
-        return os + "/" + arch;
-    }
+    @Data
+    public static class ImagePlatform {
+        private String os;
 
-    public String getQualifierImage() {
-        return image + ":" + tag;
+        private String arch;
+
+        public String getPlatform() {
+            return os + "/" + arch;
+        }
     }
 
 }

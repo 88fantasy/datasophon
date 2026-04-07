@@ -37,7 +37,7 @@ public class NexusImageStorage extends NexusStorageSupport implements ImageStora
         for(File file : files) {
            try {
                results.addAll(client.load(file));
-               cb.onEntryLoad(file, 1.0 / file.length());
+               cb.onEntryLoad(file, 1.0 / files.size());
            } catch (IOException e) {
                throw new IllegalStateException(String.format("load image %s failed", file.getName()), e);
            }

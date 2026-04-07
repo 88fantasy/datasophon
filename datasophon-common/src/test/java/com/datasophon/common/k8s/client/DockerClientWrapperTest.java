@@ -48,8 +48,8 @@ public class DockerClientWrapperTest {
 
     @Test
     public void test1() throws IOException {
-        DockerImageParser parser = new DockerImageParser();
-        List<ImageManifest> originalImages = parser.parseImage(new File("D:\\Desktop\\VOS集成测试\\k8s测试数据\\images\\portal-3.3.1_image.tar"));
+        DockerImageParser parser = new DockerImageParser(new File("D:\\Desktop\\VOS集成测试\\k8s测试数据\\images\\portal-3.3.1_image.tar"));
+        List<ImageManifest> originalImages = parser.parseImage();
         System.out.println(JSONObject.toJSONString(originalImages));
     }
 

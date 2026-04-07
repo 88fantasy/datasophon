@@ -29,30 +29,41 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
     }
 
     @Override
-    public void login()  {
+    public void login() {
         DockerClient client = new DockerClient();
         client.login(options.getRegistry(), options.getUsername(), options.getPassword());
     }
 
     @Override
     public List<LoadImageResult> load(File file) throws IOException {
-        DockerImageParser parser = new DockerImageParser();
-        List<ImageManifest> parsedImages  = parser.parseImage(file);
-        log.info("从文件{}中，解析出{}个镜像 tag", file.getName(), parsedImages.size());
+        DockerImageParser parser = new DockerImageParser(file);
+        List<ImageManifest> parsedImages = parser.parseImage();
+        if (parsedImages.isEmpty()) {
+            log.warn("从文件{}中，解析出0个镜像 tag", file.getName());
+            return new ArrayList<>(0);
+        }
+        for (ImageManifest image : parsedImages) {
+            if (image.getPlatforms().size() > 1) {
+                throw new IllegalStateException(String.format("镜像文件%s的镜像%s:%s存在多种架构。请使用加上--platform参数导出镜像", file.getName(), image.getImage(), image.getTag()));
+            }
+        }
 
+        log.info("从文件{}中，解析出{}个镜像 tag", file.getName(), parsedImages.size());
         DockerClient client = new DockerClient();
-        log.info("执行命令：docker load -i {}", file.getName());
-        client.load(file);
 
         List<LoadImageResult> results = new ArrayList<>();
         for (ImageManifest manifest : parsedImages) {
-            LoadImageResult result =  BeanUtil.toBean(manifest, LoadImageResult.class);
+            ImageManifest.ImagePlatform platform = manifest.getPlatforms().get(0);
+            log.info("执行命令：docker load -i {} --platform {}", file.getName(), platform.getPlatform());
+            client.load(file, platform.getPlatform());
+
+            LoadImageResult result = BeanUtil.toBean(manifest, LoadImageResult.class);
             result.setOldImage(manifest.getImage());
             result.setOldTag(manifest.getTag());
 
 //                    重新命名为私库的 tag
             result.setNewImage(DockerTagUtils.normalTag(options.getRepository(), manifest.getImage()));
-            result.setNewTag(DockerTagUtils.normalVersion(manifest.getTag(), manifest.getArch()));
+            result.setNewTag(DockerTagUtils.normalVersion(manifest.getTag(), platform.getOs(), platform.getArch()));
 
             log.info("为镜像{}添加新的 tag:{}", result.getOldQualifierImage(), result.getNewQualifierImage());
             client.tagImage(result.getOldQualifierImage(), result.getNewQualifierImage());

@@ -1,8 +1,10 @@
 package com.datasophon.common.k8s.spec.docker;
 
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.datasophon.common.k8s.exception.UnsupportedFormatException;
 import com.datasophon.common.k8s.vo.docker.ImageManifest;
 import com.datasophon.common.utils.TarUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class DockerImageParser {
@@ -21,22 +24,29 @@ public class DockerImageParser {
     public static final String INDEX_FILE = "index.json";
     public static final String MANIFEST_JSON = "manifest.json";
 
+    private final File tar;
+
+    public DockerImageParser(File tar) {
+        this.tar = tar;
+    }
+
     /**
      * 解析Docker save生成的tar包，提取所有镜像的标签和平台信息。
      *
-     * @param tar tar文件
      * @return 镜像清单列表（每个标签对应一个条目）
      */
-    public List<ImageManifest> parseImage(File tar) throws IOException {
+    public List<ImageManifest> parseImage() throws IOException {
         String unzipDir = null;
         try {
             unzipDir = TarUtils.decompressToTemp(tar.getAbsolutePath());
             File ociFile = new File(unzipDir, INDEX_FILE);
             File oldFormat = new File(unzipDir, MANIFEST_JSON);
-            if (ociFile.exists()) {
-                return parseOciFormat(unzipDir);
-            } else if (oldFormat.exists()) {
+
+//            优先使用旧格式
+            if (oldFormat.exists()) {
                 return parseDockerFormat(unzipDir);
+            } else if (ociFile.exists()) {
+                return parseOciFormat(unzipDir);
             }
             throw new UnsupportedFormatException(String.format("lack of %s and %s", INDEX_FILE, MANIFEST_JSON));
         } catch (UnsupportedFormatException e) {
@@ -48,6 +58,7 @@ public class DockerImageParser {
 
     /**
      * 解析旧docker格式
+     *
      * @param unzipDir
      * @return
      */
@@ -68,8 +79,11 @@ public class DockerImageParser {
                 ImageManifest im = new ImageManifest();
                 im.setImage(parts[0]);
                 im.setTag(parts[1]);
-                im.setOs(config.getOs());
-                im.setArch(config.getArchitecture());
+
+                ImageManifest.ImagePlatform platform = new ImageManifest.ImagePlatform();
+                platform.setOs(config.getOs());
+                platform.setArch(config.getArchitecture());
+                im.setPlatforms(CollectionUtil.newArrayList(platform));
                 result.add(im);
             }
         }
@@ -87,13 +101,15 @@ public class DockerImageParser {
 
     /**
      * 解析oci格式(新版）
+     *
      * @param unzipDir
      * @return
      */
     private List<ImageManifest> parseOciFormat(String unzipDir) {
         String content = FileUtil.readString(new File(unzipDir, INDEX_FILE), StandardCharsets.UTF_8);
-        List<ImageManifest> result = new ArrayList<>();
         OciIndex index = JSONObject.parseObject(content, OciIndex.class);
+
+        List<ImageManifest> result = new ArrayList<>();
         for (OciManifestRef ref : index.getManifests()) {
             String tag = null;
             if (ref.getAnnotations() != null) {
@@ -103,26 +119,49 @@ public class DockerImageParser {
                 continue;
             }
 
-            ImageHostPlatform platform = ref.getPlatform();
-            if (platform == null) {
-                String digest = ref.getDigest();
-                platform = parsePlatformFromOldFormat(unzipDir, digest);
+
+            List<ImageHostPlatform> platforms = new ArrayList<>();
+            if (ref.getPlatform() != null) {
+                platforms.add(ref.getPlatform());
+            } else {
+//                单架构
+//                vnd.docker.distribution.manifest.list.v
+                if (ref.getMediaType().contains("vnd.oci.image.manifest.v")) {
+                    String digest = ref.getDigest();
+                    ImageHostPlatform platform = parseSinglePlatform(unzipDir, digest);
+                    if (platform != null) {
+                        platforms.add(platform);
+                    }
+                } else if (ref.getMediaType().contains("vnd.docker.distribution.manifest.list.v")) {
+                    String digest = ref.getDigest();
+                    List<ImageHostPlatform> tempList = parseMultiPlatforms(unzipDir, digest);
+                    platforms.addAll(tempList);
+                } else {
+                    throw new UnsupportedFormatException(String.format("file: %s index.json: unsupported format of media type: %s", tar.getName(), ref.getMediaType()));
+                }
+            }
+            if (platforms.isEmpty()) {
+                throw new UnsupportedFormatException(String.format("文件: %s无法解析镜像%s的架构", tar.getName(), tag));
             }
 
-            if (platform != null) {
-                String[] parts = splitRepoTag(tag);
-                ImageManifest im = new ImageManifest();
-                im.setImage(parts[0]);
-                im.setTag(parts[1]);
-                im.setOs(platform.getOs());
-                im.setArch(platform.getArchitecture());
-                result.add(im);
-            }
+            String[] parts = splitRepoTag(tag);
+            ImageManifest im = new ImageManifest();
+            im.setImage(parts[0]);
+            im.setTag(parts[1]);
+
+            List<ImageManifest.ImagePlatform> pms = platforms.stream().map(p-> {
+                ImageManifest.ImagePlatform pm = new ImageManifest.ImagePlatform();
+                pm.setOs(p.getOs());
+                pm.setArch(p.getArchitecture());
+                return pm;
+            }).collect(Collectors.toList());
+            im.setPlatforms(pms);
+            result.add(im);
         }
         return result;
     }
 
-    private ImageHostPlatform parsePlatformFromOldFormat(String unzipDir, String digest) {
+    private ImageHostPlatform parseSinglePlatform(String unzipDir, String digest) {
         String content = readDigestFileContent(unzipDir, digest);
         if (content == null) {
             return null;
@@ -134,11 +173,29 @@ public class DockerImageParser {
                 return JSONObject.parseObject(configDigestContent, ImageHostPlatform.class);
             }
         } else if (manifest.getMediaType() != null && manifest.getMediaType().contains("image.index")) {
-            throw new UnsupportedFormatException(String.format("unsupported format of media type: image.index, sha256: %s", digest));
+            throw new UnsupportedFormatException(String.format("unsupported format of media type: %s, sha256: %s", manifest.getMediaType(), digest));
         }
         return null;
     }
 
+
+    private List<ImageHostPlatform> parseMultiPlatforms(String unzipDir, String digest) {
+        String content = readDigestFileContent(unzipDir, digest);
+        if (content == null) {
+            return new ArrayList<>(0);
+        }
+        List<ImageHostPlatform> result = new ArrayList<>();
+
+        OciIndex manifest = JSONObject.parseObject(content, OciIndex.class);
+        for (OciManifestRef ref : manifest.getManifests()) {
+            if (ref.getPlatform() != null) {
+                result.add(ref.getPlatform());
+            } else {
+                log.warn("file: {}，digest: {} can not parse platforms", tar.getName(), ref.getDigest());
+            }
+        }
+        return result;
+    }
 
 
     private String readDigestFileContent(String unzipDir, String digest) {
@@ -154,11 +211,4 @@ public class DockerImageParser {
     }
 
 
-    public static class UnsupportedFormatException extends RuntimeException {
-        private static final long serialVersionUID = -212885450196281161L;
-
-        public UnsupportedFormatException(String message) {
-            super(message);
-        }
-    }
 }
