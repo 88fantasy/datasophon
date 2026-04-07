@@ -125,6 +125,19 @@ public class NexusFileUtils {
                     for (File file : files) {
                         repositoryUploadFile(baseUrl, repositoriesType, null, null, file, username, password, uploadSucess, uploadFails, isSuccessDelete);
                     }
+                    String osArmPath = repoFile.getAbsolutePath() + Constants.SLASH + "os" + Constants.SLASH + ArchType.AARCH64.getArch();
+                    if(FileUtil.exist(osArmPath)) {
+                        for (File file : files) {
+                            repositoryUploadFile(baseUrl, repositoriesType, null, null, file, username, password, uploadSucess, uploadFails, isSuccessDelete);
+                        }
+                    }
+                    String osX86Path = repoFile.getAbsolutePath() + Constants.SLASH + "os" + Constants.SLASH + ArchType.X86_64.getArch();
+                    if(FileUtil.exist(osX86Path)) {
+                        for (File file : files) {
+                            repositoryUploadFile(baseUrl, repositoriesType, null, null, file, username, password, uploadSucess, uploadFails, isSuccessDelete);
+                        }
+                    }
+
                     break;
                 default:
                     log.info("不支持:{},跳过", repositoriesType.getDesc());

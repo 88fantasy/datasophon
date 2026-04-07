@@ -1,6 +1,7 @@
 package com.datasophon.api.master;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.lang.Pair;
 import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.api.dag.DAGListener;
@@ -38,7 +39,6 @@ import com.datasophon.dao.entity.cmd.ClusterServiceCommandHostEntity;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.NeedRestart;
 import com.datasophon.dao.enums.ServiceRoleState;
-import javafx.util.Pair;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 

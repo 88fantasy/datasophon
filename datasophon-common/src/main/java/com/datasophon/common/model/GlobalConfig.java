@@ -10,7 +10,9 @@ import java.util.List;
 
 @Data
 public class GlobalConfig {
-    
+
+    private Long projectEnvId;
+
     private boolean offline;
 
     private OsInfo osInfo;

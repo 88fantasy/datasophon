@@ -1,4 +1,5 @@
 global:
+  projectEnvId: 2039601807258730498
   offline: true
   osInfo:
     auto: true
@@ -18,8 +19,6 @@ global:
         - "raw"
         - "apt"
       registryPath: "/data"
-      configTarName: "config.tar.gz"
-      packagesTarName: "packages.tar.gz"
     host:
       projectEnvDetailId: 2001478085448630273
       hostname: "app4"
