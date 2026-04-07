@@ -8,6 +8,14 @@
   "dependencies":[],
   "packageName": "prometheus-2.17.2.tar.gz",
   "decompressPackageName": "prometheus-2.17.2",
+  "arch":{
+    "x86_64": {
+      "packageName": "prometheus-2.17.2.tar.gz"
+    },
+    "aarch64": {
+      "packageName": "prometheus-2.17.2-arm.tar.gz"
+    }
+  },
   "roles": [
     {
       "name": "Prometheus",
@@ -79,13 +87,11 @@
       "label": "Prometheus指标采集时间间隔",
       "description": "Prometheus指标采集时间间隔，单位秒",
       "required": true,
-      "enabled": true,
       "configType": "map",
       "type": "input",
       "value": "15",
       "configurableInWizard": true,
       "hidden": false,
-      "register": false,
       "defaultValue": "15"
     },
     {
@@ -93,13 +99,11 @@
       "label": "Prometheus指标计算时间间隔",
       "description": "Prometheus指标计算时间间隔，单位秒",
       "required": true,
-      "enabled": true,
       "configType": "map",
       "type": "input",
       "value": "15",
       "configurableInWizard": true,
       "hidden": false,
-      "register": false,
       "defaultValue": "15"
     }
   ]

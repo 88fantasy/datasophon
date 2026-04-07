@@ -28,20 +28,17 @@
       "cardinality": 1,
       "logFile": "data/log/grafana.log",
       "jmxPort": "3000",
-      "resourceStrategies": [
-        {
-          "type": "download",
-          "from": "script/control.sh",
-          "to": "control.sh",
-          "md5": "31179a30dd4d8c3314a25eb32ddc0c7f"
-        },
-        {
-          "type": "download",
-          "from": "data/grafana.db",
-          "to": "data/grafana.db",
-          "md5": "4841ba20b7940a44f85899d0083287cb"
-        }
-      ],
+      "resourceStrategies":[{
+        "type": "download",
+        "from": "script/control.sh",
+        "to": "control.sh",
+        "md5": "31179a30dd4d8c3314a25eb32ddc0c7f"
+      },{
+        "type": "download",
+        "from": "data/grafana.db",
+        "to": "data/grafana.db",
+        "md5": "4841ba20b7940a44f85899d0083287cb"
+      }],
       "startRunner": {
         "timeout": "60",
         "program": "control.sh",
@@ -82,33 +79,29 @@
     }
   ],
   "configWriter": {
-    "generators": [
-      {
-        "filename": "custom.ini",
-        "configFormat": "custom",
-        "outputDirectory": "conf",
-        "templateName": "grafana.ftl",
-        "conditionalOnProperty": "datasophon.proxy-grafana.enable",
-        "includeParams": [
+    "generators": [{
+       "filename": "custom.ini",
+       "configFormat": "custom",
+       "outputDirectory": "conf",
+       "templateName": "grafana.ftl",
+       "conditionalOnProperty": "datasophon.proxy-grafana.enable",
+       "includeParams": [
           "clusterId"
-        ]
-      }
-    ]
+       ]
+    }]
   },
   "parameters": [
-    {
-      "name": "clusterId",
-      "label": "集群ID",
-      "description": "集群ID",
-      "configType": "map",
-      "required": true,
-      "enabled": true,
-      "type": "input",
-      "value": "${clusterId}",
-      "configurableInWizard": false,
-      "hidden": true,
-      "register": false,
-      "defaultValue": "${clusterId}"
-    }
-  ]
+      {
+        "name": "clusterId",
+        "label": "集群ID",
+        "description": "集群ID",
+        "configType": "map",
+        "required": true,
+        "type": "input",
+        "value": "${clusterId}",
+        "configurableInWizard": false,
+        "hidden": true,
+        "defaultValue": "${clusterId}"
+      }
+    ]
 }
