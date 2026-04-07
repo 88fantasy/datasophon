@@ -81,6 +81,7 @@
   },
   "parameters": [
     {
+      "enabled": true,
       "name": "apiUrl",
       "label": "DDH管理端地址",
       "description": "DDH管理端地址",
