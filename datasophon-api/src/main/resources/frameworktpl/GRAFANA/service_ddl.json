@@ -92,6 +92,7 @@
   },
   "parameters": [
       {
+        "enabled": true,
         "name": "clusterId",
         "label": "集群ID",
         "description": "集群ID",

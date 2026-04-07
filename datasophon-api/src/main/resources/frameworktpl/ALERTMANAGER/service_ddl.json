@@ -4,6 +4,7 @@
   "description": "告警通知管理系统",
   "version": "0.23.0",
   "sortNum": 15,
+  "type": "ENVIRONMENT",
   "dependencies": [],
   "packageName": "alertmanager-0.23.0.tar.gz",
   "decompressPackageName": "alertmanager-0.23.0",
@@ -81,6 +82,7 @@
   },
   "parameters": [
     {
+      "enabled": true,
       "name": "apiUrl",
       "label": "DDH管理端地址",
       "description": "DDH管理端地址",

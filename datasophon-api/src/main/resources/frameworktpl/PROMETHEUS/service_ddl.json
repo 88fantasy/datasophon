@@ -83,6 +83,7 @@
   },
   "parameters": [
     {
+      "enabled": true,
       "name": "scrape_interval",
       "label": "Prometheus指标采集时间间隔",
       "description": "Prometheus指标采集时间间隔，单位秒",
@@ -95,6 +96,7 @@
       "defaultValue": "15"
     },
     {
+      "enabled": true,
       "name": "evaluation_interval",
       "label": "Prometheus指标计算时间间隔",
       "description": "Prometheus指标计算时间间隔，单位秒",
