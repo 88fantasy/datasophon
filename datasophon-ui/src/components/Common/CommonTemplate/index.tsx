@@ -109,16 +109,20 @@ const Index = ({
                         )
                     } else if (item.type === 'slider') {
 
+                        const fieldProps = {
+                            min: item.minValue,
+                            max: item.maxValue,
+                            marks: {
+                                0: String(item.minValue),
+                                [item.maxValue]: String(item.maxValue)
+                            }
+                        }
                         res = (
 
                             <ProFormSlider
                                 {...commonProps}
-                                min={item.minValue}
-                                max={item.maxValue}
-                                marks={{
-                                    0: String(item.minValue),
-                                    [item.maxValue]: String(item.maxValue)
-                                }}
+                                {...fieldProps}
+                                fieldProps={fieldProps}
 
                             />
 
