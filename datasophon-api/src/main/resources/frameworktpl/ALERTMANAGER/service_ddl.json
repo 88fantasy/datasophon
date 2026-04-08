@@ -8,6 +8,14 @@
   "dependencies": [],
   "packageName": "alertmanager-0.23.0.tar.gz",
   "decompressPackageName": "alertmanager-0.23.0",
+  "arch":{
+    "x86_64": {
+      "packageName": "alertmanager-0.23.0.tar.gz"
+    },
+    "aarch64": {
+      "packageName": "alertmanager-0.23.0-arm.tar.gz"
+    }
+  },
   "roles": [
     {
       "name": "AlertManager",
@@ -74,17 +82,16 @@
   },
   "parameters": [
     {
+      "enabled": true,
       "name": "apiUrl",
       "label": "DDH管理端地址",
       "description": "DDH管理端地址",
       "configType": "map",
       "required": true,
-      "enabled": true,
       "type": "input",
       "value": "",
       "configurableInWizard": true,
       "hidden": false,
-      "register": false,
       "defaultValue": "${ROOT.VosManager.__hostIp__}:${ROOT.VosManager.__port__}"
     }
   ]

@@ -6,7 +6,7 @@
   "sortNum": 80,
   "dependencies": [],
   "packageName": "nacos-server-2.4.3.tar.gz",
-  "decompressPackageName": "nacos",
+  "decompressPackageName": "nacos-2.4.3",
   "roles": [{
     "name": "NacosServer",
     "label": "NacosServer",
