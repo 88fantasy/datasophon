@@ -300,6 +300,8 @@ const Index = (props) => {
                 }}
                 submitter={{
                     render(props, dom) {
+                        console.log('props', props)
+                        console.log('dom', dom)
                         const {
                             step,
                             onSubmit
@@ -318,7 +320,32 @@ const Index = (props) => {
                                 </Button>
                             ]
                         } else {
-                            return dom
+                            const res = []
+                            dom.forEach((val, i) => {
+                                if (i === dom.length - 1) {
+                                    const onClick = val?.props?.onClick
+                                    res.push(
+                                        React.cloneElement(val, {
+                                            onClick: async (...args) => {
+                                                try {
+                                                    await props.form.validateFields();
+                                                    onClick?.(...args)
+                                                } catch (error) {
+                                                    // 🚨 这里捕获校验失败的异常
+                                                    console.warn('校验失败，字段:', error);
+                                                    message.warning(error.message);
+                                                }
+                                            }
+                                        })
+                                    )
+                                } else {
+                                    res.push(val)
+                                }
+                            })
+
+                            return res
+
+
                         }
 
                     },

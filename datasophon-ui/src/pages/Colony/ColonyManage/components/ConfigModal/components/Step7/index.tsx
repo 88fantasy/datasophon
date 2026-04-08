@@ -203,74 +203,41 @@ const Index = ({
 
 
 
+        try {
+            const currentValue = currentFormRef.current?.getFieldsValue()
 
-        const currentValue = currentFormRef.current?.getFieldsValue()
-
-        let res
+            let res
 
 
-        Object.assign(values, currentValue)
+            Object.assign(values, currentValue)
 
-        for (const tab of memoTabs) {
-            const serviceValue = values[tab.key]
-            const serviceTemplate = templateMapRef.current[tab.key]
-            for (const item of serviceTemplate) {
-                if (
-                    !item.hidden &&
-                    item.required &&
-                    // isEmpty(serviceValue?.[item.name])
-                    isEmpty(item.value) &&
-                    isEmpty(item.defaultValue) &&
-                    isEmpty(serviceValue[item.name])
+            for (const tab of memoTabs) {
+                const serviceValue = values[tab.key]
+                const serviceTemplate = templateMapRef.current[tab.key]
+                for (const item of serviceTemplate) {
+                    if (
+                        !item.hidden &&
+                        item.required &&
+                        // isEmpty(serviceValue?.[item.name])
+                        isEmpty(item.value) &&
+                        isEmpty(item.defaultValue) &&
+                        isEmpty(serviceValue[item.name])
 
-                ) {
-                    res = `${tab.key}.${item.label} 不能为空`
+                    ) {
+                        res = `${tab.key}.${item.label} 不能为空`
+                    }
+
+                    if (res) {
+
+                        break
+                    }
                 }
 
                 if (res) {
-
-                    break
-                }
-            }
-
-            if (res) {
-                break
-            }
-
-            values[tab.key] = invokeFormatTemplateData(serviceTemplate, serviceValue)
-        }
-
-        if (res) {
-            return {
-                valid: false,
-                msg: res
-            }
-        } else {
-            const reqArr = await Promise.all(
-                memoTabs.map(tab => {
-
-
-
-                    const saveParam = {
-                        clusterId: clusterId,
-                        serviceName: tab.key,
-                        serviceConfig: JSON.stringify(values[tab.key]),
-                        roleGroupId: "-1"
-                    };
-                    return axiosPost(
-                        API.saveServiceConfig,
-                        saveParam
-                    )
-                })
-            )
-
-
-            for (const item of reqArr) {
-                if (item.code !== 200) {
-                    res = item.msg
                     break
                 }
 
+                values[tab.key] = invokeFormatTemplateData(serviceTemplate, serviceValue)
             }
 
             if (res) {
@@ -278,11 +245,49 @@ const Index = ({
                     valid: false,
                     msg: res
                 }
+            } else {
+                const reqArr = await Promise.all(
+                    memoTabs.map(tab => {
+
+
+
+                        const saveParam = {
+                            clusterId: clusterId,
+                            serviceName: tab.key,
+                            serviceConfig: JSON.stringify(values[tab.key]),
+                            roleGroupId: "-1"
+                        };
+                        return axiosPost(
+                            API.saveServiceConfig,
+                            saveParam
+                        )
+                    })
+                )
+
+
+                for (const item of reqArr) {
+                    if (item.code !== 200) {
+                        res = item.msg
+                        break
+                    }
+
+                }
+
+                if (res) {
+                    return {
+                        valid: false,
+                        msg: res
+                    }
+                }
+
+                return invokeGenerateGenericInstallCommand()
+
             }
-
-            return invokeGenerateGenericInstallCommand()
-
+        } catch (error) {
+            message.error(error)
         }
+
+
     }, [clusterId, currentFormRef, invokeGenerateGenericInstallCommand, memoTabs])
 
 
