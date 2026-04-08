@@ -36,10 +36,12 @@ public class RestartServiceHandler extends ServiceHandler {
         // 获取该服务关联的所有 Deployment
         List<K8sDeploymentInfo> deployments = k8sService.listDeployments(config, query);
         logger.info("找到 {} 个 Deployment 需要重启", deployments.size());
+        updateCmdProgress(serviceNode, 10);
 
         // 重启所有 Deployment
         k8sService.restartDeployment(config, deployments);
         logger.info("服务{}重启成功", serviceNode.getServiceName());
+        updateCmdProgress(serviceNode, 80);
 
         return ExecResult.success(String.format("重启服务%s 成功", serviceNode.getServiceName()));
     }

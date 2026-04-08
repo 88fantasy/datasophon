@@ -45,7 +45,7 @@ public class K8sServiceImpl implements K8sService {
 
     private static final String READY = "Ready";
     private static final String MANGED_BY_LABEL = "app.kubernetes.io/managed-by";
-    private static final String MANGED_BY_LABEL_VALUE = "datasophon";
+    private static final String MANGED_BY_LABEL_VALUE = "Helm";
     private static final String SRV_INST_ID_LABEL = "app.kubernetes.io/instance";
     private static final String POD_TYPE = "pods";
     private static final String DEPLOYMENT_TYPE = "deployments";

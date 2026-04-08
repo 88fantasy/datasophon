@@ -10,6 +10,7 @@ import com.datasophon.api.dto.instance.K8sNamespaceIdentityDTO;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.frame.FrameK8sServiceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
+import com.datasophon.api.utils.HelmValueUtils;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.k8s.client.HelmClient;
 import com.datasophon.common.k8s.client.HelmifyClient;
@@ -36,8 +37,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * K8s 服务应用处理器
@@ -93,6 +97,7 @@ public class ApplyServiceHandler extends ServiceHandler {
 
             // 步骤 2: 确保 Namespace 存在
             ensureNamespaceExists(serviceNode);
+            updateCmdProgress(serviceNode, 10);
 
             // 步骤 3: 获取服务实例和服务定义
             K8sServiceInstance instance = instanceService.getById(serviceNode.getServiceInstanceId());
@@ -102,10 +107,12 @@ public class ApplyServiceHandler extends ServiceHandler {
             // 步骤 4: 下载或生成 Helm Chart
             chartPath = downloadOrGenerateChart(serviceNode, serviceDef, values);
             logger.info("Chart 已下载到路径：{}", chartPath);
+            updateCmdProgress(serviceNode, 20);
 
             // 步骤 5: 应用 Helm Chart
             HelmReleaseVO result = applyHelmChart(serviceNode, chartPath, serviceDef, instance, values);
             logger.info("Helm 发布结果，状态：{}", result.getInfo().getStatus());
+            updateCmdProgress(serviceNode, 80);
 
             if (!result.getInfo().getStatus().equalsIgnoreCase("deployed")) {
                 logger.error("安装{}失败，原因：{}", serviceNode.getServiceName(), result.getInfo().getNotes());
@@ -115,6 +122,7 @@ public class ApplyServiceHandler extends ServiceHandler {
             // 步骤 6: 更新服务实例状态
             updateServiceInstance(serviceNode, instance, result.getVersion());
             logger.info("服务{}安装成功，版本：{}", serviceNode.getServiceName(), result.getVersion());
+            updateCmdProgress(serviceNode, 90);
 
             return ExecResult.success(String.format("安装%s 成功", serviceNode.getServiceName()));
         } finally {
@@ -257,8 +265,7 @@ public class ApplyServiceHandler extends ServiceHandler {
             UpgradeParams params = new UpgradeParams();
 
             if (serviceNode.getMetaFileType().equals("helm") && StrUtil.isNotBlank(values.getDeltaValues())) {
-                tempValueFile = PathUtils.createTmpFile("sensitive/" + RandomUtil.randomString(12), serviceDef.getRuntime());
-                FileUtil.writeString(values.getDeltaValues(), tempValueFile, StandardCharsets.UTF_8);
+                tempValueFile = HelmValueUtils.writeHelmValueTempFile(values.getDeltaValues());
                 logger.info("Delta Values 已写入临时文件：{}", tempValueFile.getAbsolutePath());
             }
 
@@ -268,6 +275,10 @@ public class ApplyServiceHandler extends ServiceHandler {
             if (tempValueFile != null) {
                 params.setValuesFiles(Collections.singletonList(tempValueFile.getAbsolutePath()));
             }
+            Map<String, String> extraValues = HelmValueUtils.getExtraValues();
+            List<String> extraValueList = new ArrayList<>();
+            extraValues.forEach((k, v)-> extraValueList.add(k + "=" + v));
+            params.setSetValues(extraValueList);
 
             HelmReleaseVO result = client.upgrade(params);
             logger.info("Helm upgrade 完成，状态：{}", result.getInfo().getStatus());

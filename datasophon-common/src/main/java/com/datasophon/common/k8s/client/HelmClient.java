@@ -207,12 +207,12 @@ public class HelmClient implements AutoCloseable{
         }
 
         // wait
-//        if (params.isWait()) {
-//            args.add("--wait");
-//        }
-//        if (params.isWaitForJob()) {
-//            args.add("--wait-for-jobs");
-//        }
+        if (params.isWait()) {
+            args.add("--wait");
+        }
+        if (params.isWaitForJob()) {
+            args.add("--wait-for-jobs");
+        }
 
         // description
         if (StrUtil.isNotBlank(params.getDescription())) {

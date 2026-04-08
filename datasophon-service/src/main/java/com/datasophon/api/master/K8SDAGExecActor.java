@@ -24,6 +24,8 @@ import com.datasophon.dao.entity.cmd.ClusterK8sServiceCommandEntity;
 import com.datasophon.dao.enums.CommandState;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Date;
+
 /**
  * K8s DAG 执行 Actor
  * 负责处理基于 DAG（有向无环图）的 K8s 服务执行任务
@@ -104,6 +106,8 @@ public class K8SDAGExecActor extends TypedActor<DAGExecCommand> {
         commandService.lambdaUpdate()
                 .eq(ClusterK8sServiceCommandEntity::getCommandId, serviceNode.getCommandId())
                 .set(ClusterK8sServiceCommandEntity::getCommandState, commandState)
+                .set(ClusterK8sServiceCommandEntity::getCommandProgress, 100)
+                .set(ClusterK8sServiceCommandEntity::getEndTime, new Date())
                 .update();
     }
 

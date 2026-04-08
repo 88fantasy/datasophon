@@ -3,11 +3,14 @@ package com.datasophon.api.master.handler.k8s;
 import cn.hutool.extra.spring.SpringUtil;
 import com.datasophon.api.log.ExecLogConstant;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
+import com.datasophon.api.service.cmd.ClusterK8sServiceCommandService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.service.k8s.K8sService;
+import com.datasophon.common.Constants;
 import com.datasophon.common.model.k8s.K8sServiceNode;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
+import com.datasophon.dao.entity.cmd.ClusterK8sServiceCommandEntity;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +32,7 @@ public abstract class ServiceHandler {
 
     protected final K8sServiceInstanceService instanceService;
 
+    private final ClusterK8sServiceCommandService commandService;
 
     private ServiceHandler next;
 
@@ -42,6 +46,7 @@ public abstract class ServiceHandler {
         configService = SpringUtil.getBean(K8sClusterConfigService.class);
         k8sService = SpringUtil.getBean(K8sService.class);
         instanceService = SpringUtil.getBean(K8sServiceInstanceService.class);
+        commandService = SpringUtil.getBean(ClusterK8sServiceCommandService.class);
     }
 
     protected void init(K8sServiceNode node) {
@@ -118,5 +123,13 @@ public abstract class ServiceHandler {
         return next.handlerRequest(serviceNode);
     }
 
+
+    protected void updateCmdProgress(K8sServiceNode serviceNode, Integer progress) {
+        innerLogger.info("更新{}{}的进度为{}%", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName(), progress);
+        commandService.lambdaUpdate()
+                .eq(ClusterK8sServiceCommandEntity::getCommandId, serviceNode.getCommandId())
+                .set(ClusterK8sServiceCommandEntity::getCommandProgress, progress)
+                .update();
+    }
 
 }

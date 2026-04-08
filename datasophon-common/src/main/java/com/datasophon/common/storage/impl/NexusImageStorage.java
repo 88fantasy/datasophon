@@ -68,7 +68,7 @@ public class NexusImageStorage extends NexusStorageSupport implements ImageStora
 
 
 
-    private DockerOptions newOptions() {
+    public static DockerOptions newOptions() {
         NexusUri uri = getNexusUri();
         DockerOptions options  = new DockerOptions();
         options.setInsecure(true);
