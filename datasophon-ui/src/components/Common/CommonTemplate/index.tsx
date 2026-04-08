@@ -109,6 +109,14 @@ const Index = ({
                         )
                     } else if (item.type === 'slider') {
 
+                        if (isEmpty(item.minValue)) {
+                            item.minValue = 0
+                        }
+
+                        if (isEmpty(item.maxValue)) {
+                            item.minValue = 100
+                        }
+
                         const fieldProps = {
                             min: item.minValue,
                             max: item.maxValue,
@@ -123,6 +131,12 @@ const Index = ({
                                 {...commonProps}
                                 {...fieldProps}
                                 fieldProps={fieldProps}
+                                rules={[
+                                    {
+                                        required: item.required,
+                                        message: `${item.label}不能为空!`,
+                                    }
+                                ]}
 
                             />
 
