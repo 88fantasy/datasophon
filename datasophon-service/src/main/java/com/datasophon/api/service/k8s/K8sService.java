@@ -20,7 +20,6 @@ public interface K8sService {
 
     String READY = "Ready";
 
-    String VOS_ORG = "ltszyl.com/vos-";
 
     String MANGED_BY_LABEL = "app.kubernetes.io/managed-by";
 

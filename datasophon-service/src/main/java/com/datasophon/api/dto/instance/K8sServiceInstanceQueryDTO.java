@@ -18,6 +18,4 @@ public class K8sServiceInstanceQueryDTO {
     @Schema(description = "资源类型，pod, service，deployment等")
     private String resourceType;
 
-    @Schema(hidden = true)
-    private String namespace;
 }

@@ -66,7 +66,6 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
         Objects.requireNonNull(instance);
 
         K8sClusterNamespace ns = k8sClusterNamespaceService.getById(instance.getNamespaceId());
-        query.setNamespace(ns.getNamespace());
         K8sClusterConfig config = k8sClusterConfigService.getInitConfig(ns.getClusterId());
 
         List<String> types = k8sService.getResourceTypes(config, query);
@@ -79,7 +78,6 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
         Objects.requireNonNull(instance);
 
         K8sClusterNamespace ns = k8sClusterNamespaceService.getById(instance.getNamespaceId());
-        query.setNamespace(ns.getNamespace());
         K8sClusterConfig config = k8sClusterConfigService.getInitConfig(ns.getClusterId());
 
         // 根据 resourceType 调用 K8sService 中的对应方法

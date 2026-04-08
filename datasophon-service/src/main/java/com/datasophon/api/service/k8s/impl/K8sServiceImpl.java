@@ -25,6 +25,7 @@ import com.datasophon.common.k8s.vo.k8s.K8sIngress;
 import com.datasophon.common.k8s.vo.k8s.K8sPod;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
+import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -43,19 +44,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class K8sServiceImpl implements K8sService {
 
-    private static final String READY = "Ready";
-    private static final String MANGED_BY_LABEL = "app.kubernetes.io/managed-by";
-    private static final String MANGED_BY_LABEL_VALUE = "Helm";
-    private static final String SRV_INST_ID_LABEL = "app.kubernetes.io/instance";
-    private static final String POD_TYPE = "pods";
-    private static final String DEPLOYMENT_TYPE = "deployments";
-    private static final String SERVICE_TYPE = "services";
-    private static final String INGRESS_TYPE = "ingresses";
-    private static final String CONFIGMAP_TYPE = "configmaps";
-
 
     @Autowired
     private K8sServiceInstanceService k8sServiceInstanceService;
+
 
     @Override
     public K8sClusterStatus getState(K8sClusterConfig config) {
@@ -151,7 +143,7 @@ public class K8sServiceImpl implements K8sService {
     @Override
     public List<String> getResourceTypes(K8sClusterConfig config, K8sServiceInstanceQueryDTO query) {
         return exec(newOptions(config), client -> {
-            String namespace = query.getNamespace();
+            String namespace = getNamespaceByInstanceId(query.getInstanceId());
 
             String labelSelector = buildLabelSelector(query.getInstanceId());
 
@@ -189,7 +181,7 @@ public class K8sServiceImpl implements K8sService {
     @Override
     public List<K8sDeploymentInfo> listDeployments(K8sClusterConfig config, K8sServiceInstanceQueryDTO query) {
         return exec(newOptions(config), client -> {
-            String namespace = query.getNamespace();
+            String namespace = getNamespaceByInstanceId(query.getInstanceId());
             String labelSelector = buildLabelSelector(query.getInstanceId());
 
             K8sResourceList<K8sDeployment> deploymentsResult = client.getDeployments(namespace, labelSelector);
@@ -209,6 +201,17 @@ public class K8sServiceImpl implements K8sService {
 
     private String buildLabelSelector(String serviceName) {
         return String.format("%s=%s,%s=%s", MANGED_BY_LABEL, MANGED_BY_LABEL_VALUE, SRV_INST_ID_LABEL, HelmUtils.createReleaseName(serviceName));
+    }
+
+    /**
+     * 通过服务实例 ID 获取 Kubernetes 命名空间
+     *
+     * @param instanceId 服务实例 ID
+     * @return Kubernetes 命名空间名称
+     */
+    private String getNamespaceByInstanceId(Integer instanceId) {
+        K8sServiceInstanceVO instance = k8sServiceInstanceService.getVoById(instanceId);
+        return instance.getNamespace();
     }
 
 
@@ -262,7 +265,7 @@ public class K8sServiceImpl implements K8sService {
     @Override
     public List<K8sPodInfo> listPods(K8sClusterConfig config, K8sServiceInstanceQueryDTO query) {
         return exec(newOptions(config), client -> {
-            String namespace = query.getNamespace();
+            String namespace = getNamespaceByInstanceId(query.getInstanceId());
             String labelSelector = buildLabelSelector(query.getInstanceId());
 
             K8sResourceList<K8sPod> podsResult = client.getPods(namespace, labelSelector);
@@ -314,7 +317,7 @@ public class K8sServiceImpl implements K8sService {
     @Override
     public List<K8sServiceInfo> listServices(K8sClusterConfig config, K8sServiceInstanceQueryDTO query) {
         return exec(newOptions(config), client -> {
-            String namespace = query.getNamespace();
+            String namespace = getNamespaceByInstanceId(query.getInstanceId());
             String labelSelector = buildLabelSelector(query.getInstanceId());
 
             K8sResourceList<com.datasophon.common.k8s.vo.k8s.K8sService> servicesResult = client.getServices(namespace, labelSelector);
@@ -382,7 +385,7 @@ public class K8sServiceImpl implements K8sService {
     @Override
     public List<K8sIngressInfo> listIngresses(K8sClusterConfig config, K8sServiceInstanceQueryDTO query) {
         return exec(newOptions(config), client -> {
-            String namespace = query.getNamespace();
+            String namespace = getNamespaceByInstanceId(query.getInstanceId());
             String labelSelector = buildLabelSelector(query.getInstanceId());
 
             K8sResourceList<K8sIngress> ingressesResult = client.getIngresses(namespace, labelSelector);
@@ -440,7 +443,7 @@ public class K8sServiceImpl implements K8sService {
     @Override
     public List<K8sConfigMapInfo> listConfigMaps(K8sClusterConfig config, K8sServiceInstanceQueryDTO query) {
         return exec(newOptions(config), client -> {
-            String namespace = query.getNamespace();
+            String namespace = getNamespaceByInstanceId(query.getInstanceId());
             String labelSelector = buildLabelSelector(query.getInstanceId());
 
             K8sResourceList<K8sConfigMap> configMapsResult = client.getConfigMaps(namespace, labelSelector);

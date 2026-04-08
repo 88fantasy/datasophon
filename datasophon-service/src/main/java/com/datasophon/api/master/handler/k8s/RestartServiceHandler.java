@@ -31,7 +31,6 @@ public class RestartServiceHandler extends ServiceHandler {
         // 构建查询条件
         K8sServiceInstanceQueryDTO query = new K8sServiceInstanceQueryDTO();
         query.setInstanceId(serviceNode.getServiceInstanceId());
-        query.setNamespace(vo.getNamespace());
 
         // 获取该服务关联的所有 Deployment
         List<K8sDeploymentInfo> deployments = k8sService.listDeployments(config, query);
