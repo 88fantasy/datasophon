@@ -17,6 +17,7 @@ import com.datasophon.api.vo.k8s.K8sServiceInfo;
 import com.datasophon.common.function.ThrowableMapper;
 import com.datasophon.common.k8s.client.KubectlClient;
 import com.datasophon.common.k8s.config.ClientOptions;
+import com.datasophon.common.k8s.config.DockerOptions;
 import com.datasophon.common.k8s.exception.KubectlException;
 import com.datasophon.common.k8s.spec.helm.HelmUtils;
 import com.datasophon.common.k8s.vo.k8s.K8sConfigMap;
@@ -24,6 +25,8 @@ import com.datasophon.common.k8s.vo.k8s.K8sDeployment;
 import com.datasophon.common.k8s.vo.k8s.K8sIngress;
 import com.datasophon.common.k8s.vo.k8s.K8sPod;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
+import com.datasophon.common.k8s.vo.k8s.K8sSecret;
+import com.datasophon.common.storage.impl.NexusImageStorage;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +51,8 @@ public class K8sServiceImpl implements K8sService {
     @Autowired
     private K8sServiceInstanceService k8sServiceInstanceService;
 
+
+    private final String secretName = "nexus-registry-secret";
 
     @Override
     public K8sClusterStatus getState(K8sClusterConfig config) {
@@ -497,19 +502,44 @@ public class K8sServiceImpl implements K8sService {
     public K8sNamespace createIfAbsent(K8sClusterConfig config, String namespaceName) {
         return exec(newOptions(config), client -> {
             List<K8sNamespace> namespaces = doListNamespaces(client);
+            K8sNamespace exist = null;
             for (K8sNamespace ns : namespaces) {
                 if (namespaceName.equals(ns.getName())) {
-                    return ns;
+                    exist = ns;
+                    break;
                 }
             }
-            // 2. namespace 不存在，创建它
-            client.createNamespace(namespaceName);
-            log.info("K8s namespace '{}' created in cluster {}", namespaceName, config.getClusterId());
-            // 3. 返回新创建的 namespace 信息
-            K8sNamespace namespace = new K8sNamespace();
-            namespace.setName(namespaceName);
-            namespace.setStatus("active");
-            return namespace;
+            if (exist == null) {
+                // 2. namespace 不存在，创建它
+                client.createNamespace(namespaceName);
+                log.info("K8s namespace '{}' created in cluster {}", namespaceName, config.getClusterId());
+            }
+
+
+            // 3. 创建 nexus-registry-secret
+            K8sSecret sSecret = client.getSecret(namespaceName, secretName);
+            if (sSecret == null) {
+                DockerOptions options = NexusImageStorage.newOptions();
+                String dockerServer = String.format("%s:%s", options.getRepoHost(), options.getRepoPort());
+                client.createDockerRegistrySecret(namespaceName, secretName, dockerServer, options.getUsername(), options.getPassword());
+                log.info("nexus-registry-secret created in namespace {}", namespaceName);
+
+                // 4. 将凭据附加到 service_account 中
+                String serviceAccountName = "default";
+                client.attachSecretToServiceAccount(namespaceName, secretName, serviceAccountName);
+                log.info("nexus-registry-secret attached to serviceaccount {} in namespace {}", serviceAccountName, namespaceName);
+            }
+
+
+            // 5. 返回新创建的 namespace 信息
+            if (exist == null) {
+                K8sNamespace namespace = new K8sNamespace();
+                namespace.setName(namespaceName);
+                namespace.setStatus("active");
+                return namespace;
+            } else {
+                return exist;
+            }
         }, "确保 K8s namespace 存在");
     }
 
@@ -542,7 +572,6 @@ public class K8sServiceImpl implements K8sService {
     }
 
 
-
     private <T> T exec(ClientOptions options, ThrowableMapper<KubectlClient, T> consumer, String actionHint) {
         try (KubectlClient client = new KubectlClient(options)) {
             return consumer.accept(client);
@@ -550,4 +579,6 @@ public class K8sServiceImpl implements K8sService {
             throw new BusinessException(String.format("%s 失败，%s", StrUtil.isBlank(actionHint) ? "请求 K8S 集群接口" : actionHint, e.getMessage()), e);
         }
     }
+
+
 }

@@ -14,6 +14,7 @@ import com.datasophon.common.k8s.vo.k8s.K8sNamespace;
 import com.datasophon.common.k8s.vo.k8s.K8sNode;
 import com.datasophon.common.k8s.vo.k8s.K8sPod;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
+import com.datasophon.common.k8s.vo.k8s.K8sSecret;
 import com.datasophon.common.k8s.vo.k8s.K8sService;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PathUtils;
@@ -301,6 +302,31 @@ public class KubectlClient implements AutoCloseable {
     }
 
 
+
+    /**
+     * 获取指定的 Secret
+     *
+     * @param namespace     命名空间
+     * @param secretName    Secret 名称
+     * @return Secret 对象
+     */
+    public K8sSecret getSecret(String namespace, String secretName) throws KubectlException {
+        List<String> args = Arrays.asList("get", "secrets", secretName, "-n", namespace);
+        ExecResult result = execute(args, 30);
+        if (result.isSuccess()) {
+            try {
+                return mapper.readValue(result.getExecOut(), K8sSecret.class);
+            } catch (JsonProcessingException e) {
+                throw new KubectlException(String.format("解析 Secret 失败，%s", e.getMessage()), e);
+            }
+        } else if (StrUtil.trimToEmpty(result.getExecOut()).contains("not found")) {
+            return null;
+        } else {
+            throw new KubectlException("kubectl 命令执行失败：" + result.getErrorTraceMessage());
+        }
+    }
+
+
     /**
      * 重启指定的 Deployment
      *
@@ -359,6 +385,82 @@ public class KubectlClient implements AutoCloseable {
         // namespace 已存在时返回 1，但这不是错误
         if (!result.isSuccess() && !result.getExecOut().contains("already exists")) {
             throw new KubectlException(String.format("create namespace %s fail, %s", namespace, result.getErrorTraceMessage()));
+        }
+    }
+
+    /**
+     * 创建 docker-registry 类型的 Secret
+     *
+     * @param namespace     命名空间
+     * @param secretName    Secret 名称
+     * @param dockerServer  Docker 服务器地址
+     * @param username      用户名
+     * @param password      密码
+     */
+    public void createDockerRegistrySecret(String namespace, String secretName, String dockerServer, String username, String password) {
+        List<String> args = Arrays.asList(
+            "create",
+            "secret",
+            "docker-registry",
+            secretName,
+            "-n",
+            namespace,
+            "--docker-server=" + dockerServer,
+            "--docker-username=" + username,
+            "--docker-password=" + password
+        );
+        ExecResult result = execute(args, -1);
+        // secret 已存在时返回 1，但这不是错误
+        if (!result.isSuccess() && !result.getExecOut().contains("already exists")) {
+            throw new KubectlException(String.format("create docker-registry secret %s in namespace %s fail, %s", secretName, namespace, result.getErrorTraceMessage()));
+        }
+    }
+
+    /**
+     * 将 Secret 附加到指定的 ServiceAccount
+     *
+     * @param namespace     命名空间
+     * @param secretName    Secret 名称
+     * @param serviceAccountName ServiceAccount 名称
+     */
+    public void attachSecretToServiceAccount(String namespace, String secretName, String serviceAccountName) {
+        // 先获取当前 ServiceAccount 的 YAML
+        List<String> getArgs = Arrays.asList(
+            "get",
+            "serviceaccount",
+            serviceAccountName,
+            "-n",
+            namespace,
+            "-o",
+            "yaml"
+        );
+        ExecResult getResult = execute(getArgs, 30);
+        if (!getResult.isSuccess()) {
+            throw new KubectlException(String.format("get serviceaccount %s in namespace %s fail, %s", serviceAccountName, namespace, getResult.getErrorTraceMessage()));
+        }
+
+        String yaml = getResult.getExecOut();
+
+        // 检查 imagePullSecrets 是否已存在该 secret
+        if (yaml.contains("imagePullSecrets") && yaml.contains("name: " + secretName)) {
+            // secret 已经附加到 service account
+            return;
+        }
+
+        // 使用 patch 命令添加 imagePullSecrets
+        String patch = String.format("{\"imagePullSecrets\": [{\"name\": \"%s\"}]}", secretName);
+        List<String> patchArgs = Arrays.asList(
+            "patch",
+            "serviceaccount",
+            serviceAccountName,
+            "-n",
+            namespace,
+            "-p",
+            patch
+        );
+        ExecResult patchResult = execute(patchArgs, 30);
+        if (!patchResult.isSuccess()) {
+            throw new KubectlException(String.format("attach secret %s to serviceaccount %s in namespace %s fail, %s", secretName, serviceAccountName, namespace, patchResult.getErrorTraceMessage()));
         }
     }
 
