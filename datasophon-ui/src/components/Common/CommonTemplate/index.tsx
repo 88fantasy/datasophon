@@ -53,13 +53,20 @@ const Index = ({
                     )
                 }
 
+                let name = namePrefix ? [...namePrefix, item.name].filter(Boolean) : item.name
+
+                let key = name
+
+                if (Array.isArray(key)) {
+                    key = key.join('.')
+                }
 
                 const commonProps = {
                     tooltip: item.description,
                     label,
                     placeholder: item.placeholder,
-                    name: namePrefix ? [...namePrefix, item.name].filter(Boolean) : item.name,
-                    key: item.name,
+                    name,
+                    key,
                     initialValue: item.value || item.defaultValue
                 }
 
@@ -101,18 +108,18 @@ const Index = ({
                             />
                         )
                     } else if (item.type === 'slider') {
+
                         res = (
 
                             <ProFormSlider
                                 {...commonProps}
-                                fieldProps={{
-                                    min: item.minValue,
-                                    max: item.maxValue,
-                                    marks: {
-                                        0: item.minValue,
-                                        100: item.maxValue
-                                    },
+                                min={item.minValue}
+                                max={item.maxValue}
+                                marks={{
+                                    0: String(item.minValue),
+                                    [item.maxValue]: String(item.maxValue)
                                 }}
+
                             />
 
                         )
