@@ -45,13 +45,13 @@ public class InitJdk17 extends InitBase {
     public boolean doRun(Executor executor) {
         String jdkFolderPath = "/usr/local";
         executor.execShell("source /etc/profile");
-        String jdkPathName = "jdk-17.0.12";
+        String jdkPathName = "jdk-17.0.1";
         String bashProfilePath="/root/.bash_profile";
         String bashrcPath="/root/.bashrc";
         String etcProfilePath="/etc/profile";
-        String jdkTarName = "jdk-17.0.12_linux-x64_bin.tar.gz";
+        String jdkTarName = "openjdk-17.0.1_linux-x64_bin.tar.gz";
         if (ArchType.AARCH64.equals(executor.getArch())) {
-            jdkTarName = "jdk-17.0.12_linux-aarch64_bin.tar.gz";
+            jdkTarName = "openjdk-17.0.1_linux-aarch64_bin.tar.gz";
         }
         String javaBinPath = String.format("%s/%s/bin/java", jdkFolderPath, jdkPathName);
         if (executor.exists(javaBinPath).getExecResult()) {

@@ -54,10 +54,10 @@ else
   eval $pid
   pid="sed -i '/source \/etc\/profile/d' /root/.bashrc"
   eval $pid
-  pid="sed -i '/source \/etc\/profile/d' /home/hadoop/.bash_profile"
-  eval $pid
-  pid="sed -i '/source \/etc\/profile/d' /home/hadoop/.bashrc"
-  eval $pid
+  #pid="sed -i '/source \/etc\/profile/d' /home/hadoop/.bash_profile"
+  #eval $pid
+  #pid="sed -i '/source \/etc\/profile/d' /home/hadoop/.bashrc"
+  #eval $pid
   echo "Prepare to Install JDK..."
   sleep 2s
   mkdir -p ${JDK_FOLDER_PATH}

@@ -351,6 +351,7 @@ public class JschUtils {
         String normalizedPath = remotePath.equals("/") ? "/" : remotePath.endsWith("/") ? remotePath.substring(0, remotePath.length() -1) : remotePath;
         try {
             channel.stat(normalizedPath);
+            log.info("dir:{} is exist, host:{}", remotePath, host);
             return ExecResult.success();
         } catch (SftpException e) {
             if (e.id != ChannelSftp.SSH_FX_NO_SUCH_FILE) {
@@ -389,6 +390,8 @@ public class JschUtils {
     }
 
     private static ExecResult sendDirChannel(ChannelSftp channel, String localDirPath, String remoteDirPath, boolean isVisual) {
+        log.info("sendDirChannel localDirPath:{}, remoteDirPath:{} start", localDirPath, remoteDirPath);
+
         ExecResult result = new ExecResult();
         try {
             File src = new File(localDirPath);
@@ -398,22 +401,20 @@ public class JschUtils {
                     for (File file : files) {
                         if (file.isDirectory()) {
                             String newRemotePath = remoteDirPath + "/" + file.getName();
-                            if (file.isDirectory()) {
-                                try {
+                            try {
+                                channel.ls(newRemotePath);
+                            } catch (SftpException ex) {
+                                if (ex.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
+                                    channel.mkdir(newRemotePath);
                                     channel.ls(newRemotePath);
-                                } catch (SftpException ex) {
-                                    if (ex.id == ChannelSftp.SSH_FX_NO_SUCH_FILE) {
-                                        channel.mkdir(newRemotePath);
-                                        channel.ls(newRemotePath);
-                                    }
                                 }
-                                sendDirChannel(channel, file.getAbsolutePath(), newRemotePath, isVisual);
-                            } else {
-                                if (isVisual) {
-                                    log.info("transmit file:{}", file.getAbsolutePath());
-                                }
-                                channel.put(file.getAbsolutePath(), remoteDirPath + "/" + file.getName());
                             }
+                            sendDirChannel(channel, file.getAbsolutePath(), newRemotePath, isVisual);
+                        } else {
+                            if (isVisual) {
+                                log.info("transmit file:{}", file.getAbsolutePath());
+                            }
+                            channel.put(file.getAbsolutePath(), remoteDirPath + "/" + file.getName());
                         }
                     }
                 }
@@ -428,6 +429,7 @@ public class JschUtils {
             log.error(e.getMessage(), e);
             result.setExecErrOut(e.getMessage());
         }
+        log.info("sendDirChannel localDirPath:{}, remoteDirPath:{} end", localDirPath, remoteDirPath);
         return result;
     }
 

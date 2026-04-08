@@ -10,13 +10,13 @@ PASSWORD=$1
 BASE_DIR=$(dirname $0)
 
 BASE_PATH=$(
-  cd ${BASE_DIR}
+  cd ${BASE_DIR}/..
   pwd
 )
 
 echo "Bash Path: ${BASE_PATH}"
 
-source "${BASE_PATH}/common-env.sh"
+source "${BASE_PATH}/bin/common-env.sh"
 
 if [ ! -d "INIT_LOG_PATH" ]; then
   mkdir -p $INIT_LOG_PATH
