@@ -3,10 +3,10 @@
   "type": "MIDDLEWARE",
   "label": "UScheduler",
   "description": "数衍调度组件",
-  "version": "3.4.0",
   "sortNum": 30,
-  "packageName": "uscheduler3-3.0.2-3.4.0-bin.tar.gz",
-  "decompressPackageName": "uscheduler3-3.0.2-3.4.0",
+  "version": "3.0.2-3.11.0",
+  "packageName": "uscheduler3-3.0.2-3.11.0-bin.tar.gz",
+  "decompressPackageName": "uscheduler3-3.0.2-3.11.0",
   "createDecompressDir": false,
   "dependencies": [
     "SPARK3",
