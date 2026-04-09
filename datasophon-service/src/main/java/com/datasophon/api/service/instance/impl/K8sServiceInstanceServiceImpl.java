@@ -128,7 +128,7 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
     @Override
     public boolean removeInstanceId(Integer instanceId) {
         // 1. 获取服务实例信息
-        K8sServiceInstance instance = getById(instanceId);
+        K8sServiceInstanceVO instance = getVoById(instanceId);
         if (instance == null) {
             throw new BusinessHintException("实例不存在");
         }
@@ -137,6 +137,16 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
         K8sClusterNamespace ns = k8sClusterNamespaceService.getById(instance.getNamespaceId());
         K8sClusterConfig config = k8sClusterConfigService.getInitConfig(ns.getClusterId());
 
+        if (hasRunningPod(config, instance.getId())) {
+            throw new BusinessHintException(String.format("服务%s存在正在运行的Pod，请先停止服务后再删除实例", instance.getServiceName()));
+        }
+
+        k8sServiceInstanceValuesService.removeByInstanceId(instanceId);
+        // 5. 检查通过，删除服务实例
+        return removeById(instanceId);
+    }
+
+    private boolean hasRunningPod(K8sClusterConfig config, Integer instanceId) {
         // 3. 构建查询参数，用于检查 Pod 资源
         K8sServiceInstanceQueryDTO query = new K8sServiceInstanceQueryDTO();
         query.setInstanceId(instanceId);
@@ -147,14 +157,28 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
             // 检查是否有运行中的 Pod（状态为 Running 或 Pending）
             for (K8sPodInfo pod : pods) {
                 if (Arrays.asList(K8sService.Pending, K8sService.Running, K8sService.READY).contains(pod.getStatus())) {
-                    throw new BusinessHintException(String.format("存在正在运行的 Pod (%s)，请先停止服务后再删除实例", pod.getName()));
+                    return true;
                 }
             }
         }
+        return false;
+    }
 
-        k8sServiceInstanceValuesService.removeByInstanceId(instanceId);
-        // 5. 检查通过，删除服务实例
-        return removeById(instanceId);
+    @Override
+    public void removeByClusterId(Integer clusterId) {
+        lambdaUpdate().eq(K8sServiceInstance::getClusterId, clusterId).remove();
+    }
+
+    @Override
+    public boolean hasRunningInstance(Integer clusterId) {
+        K8sClusterConfig config = k8sClusterConfigService.getInitConfig(clusterId);
+        List<K8sServiceInstance> instances = lambdaQuery().eq(K8sServiceInstance::getClusterId, clusterId).list();
+        for (K8sServiceInstance instance : instances) {
+            if (hasRunningPod(config, instance.getId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
 

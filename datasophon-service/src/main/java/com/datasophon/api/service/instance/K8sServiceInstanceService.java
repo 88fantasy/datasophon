@@ -39,8 +39,11 @@ public interface K8sServiceInstanceService extends IService<K8sServiceInstance> 
     Object listResource(K8sServiceInstanceQueryDTO query);
 
 
-
     K8sServiceInstance createIfAbsent(Integer clusterId, Integer namespaceId, Integer serviceId);
 
     boolean removeInstanceId(Integer instanceId);
+
+    void removeByClusterId(Integer clusterId);
+
+    boolean hasRunningInstance(Integer clusterId);
 }

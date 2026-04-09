@@ -189,7 +189,7 @@ public class KubectlClient implements AutoCloseable {
         String output = result.getExecOut().trim();
         String[] lines = output.split("\\r?\\n");
         for (String line : lines) {
-            if (line.contains("Server Version:")) {
+            if (line.contains("Server")) {
                 return line.split(":")[1].trim();
             }
         }
@@ -311,7 +311,7 @@ public class KubectlClient implements AutoCloseable {
      * @return Secret 对象
      */
     public K8sSecret getSecret(String namespace, String secretName) throws KubectlException {
-        List<String> args = Arrays.asList("get", "secrets", secretName, "-n", namespace);
+        List<String> args = Arrays.asList("get", "secrets", secretName, "-n", namespace, "-o", "json");
         ExecResult result = execute(args, 30);
         if (result.isSuccess()) {
             try {

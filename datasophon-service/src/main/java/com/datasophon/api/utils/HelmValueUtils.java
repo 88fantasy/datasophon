@@ -26,7 +26,12 @@ public class HelmValueUtils {
 
 
     public static File writeHelmValueTempFile(String values) {
-        String value = PlaceholderUtils.replacePlaceholders(values, getExtraValues(), Constants.REGEX_VARIABLE);
+        Map<String, String> map = getExtraValues();
+        Map<String, String> formatMap = new HashMap<>();
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            formatMap.put("${" + entry.getKey() + "}", entry.getValue());
+        }
+        String value = PlaceholderUtils.replacePlaceholders(values, formatMap, Constants.REGEX_VARIABLE);
         File tempValueFile = PathUtils.createTmpFile("sensitive/" + RandomUtil.randomString(12), "value.yaml");
         FileUtil.writeString(value, tempValueFile, StandardCharsets.UTF_8);
         return tempValueFile;

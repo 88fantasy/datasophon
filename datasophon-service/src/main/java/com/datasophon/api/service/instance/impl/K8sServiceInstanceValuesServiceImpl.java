@@ -138,12 +138,18 @@ public class K8sServiceInstanceValuesServiceImpl extends ServiceImpl<K8sServiceI
         return lambdaQuery()
                 .eq(K8sServiceInstanceValues::getInstanceId, instanceId)
                 .orderByDesc(K8sServiceInstanceValues::getVersion)
+                .last("limit 1")
                 .one();
     }
 
     @Override
     public void removeByInstanceId(Integer instanceId) {
         lambdaUpdate().eq(K8sServiceInstanceValues::getInstanceId, instanceId).remove();
+    }
+
+    @Override
+    public void removeByClusterId(Integer clusterId) {
+        lambdaUpdate().eq(K8sServiceInstanceValues::getClusterId, clusterId).remove();
     }
 
 }

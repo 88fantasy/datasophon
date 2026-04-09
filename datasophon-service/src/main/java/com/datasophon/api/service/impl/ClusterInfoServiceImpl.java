@@ -36,6 +36,7 @@ import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterYarnSchedulerService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.api.utils.SecurityUtils;
 import com.datasophon.common.Constants;
@@ -99,6 +100,8 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
     @Autowired
     private ClusterServiceInstanceService clusterServiceInstanceService;
 
+    @Autowired
+    private K8sServiceInstanceService k8sServiceInstanceService;
 
     @Override
     public ClusterInfoEntity getClusterByClusterCode(String clusterCode) {
@@ -194,7 +197,7 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
         if (Objects.nonNull(list) && !list.isEmpty()) {
             ClusterInfoEntity clusterInfoEntity = list.get(0);
             if (!clusterInfoEntity.getId().equals(clusterInfo.getId())) {
-               throw new BusinessHintException(Status.CLUSTER_CODE_EXISTS.getMsg());
+                throw new BusinessHintException(Status.CLUSTER_CODE_EXISTS.getMsg());
             }
         }
         this.updateById(clusterInfo);
@@ -214,6 +217,11 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
                 List<ClusterServiceInstanceEntity> serviceInstanceList = clusterServiceInstanceService.listAll(clusterId);
                 canDelete = serviceInstanceList.stream().noneMatch(instance -> clusterServiceInstanceService.hasRunningRoleInstance(instance.getId()));
             }
+            if (!canDelete) {
+                throw new BusinessHintException(String.format("集群%s存在正在运行的实例，不能删除。请先停止所有的实例", clusterInfo.getClusterName()));
+            }
+        } else {
+            boolean canDelete = !k8sServiceInstanceService.hasRunningInstance(clusterId);
             if (!canDelete) {
                 throw new BusinessHintException(String.format("集群%s存在正在运行的实例，不能删除。请先停止所有的实例", clusterInfo.getClusterName()));
             }

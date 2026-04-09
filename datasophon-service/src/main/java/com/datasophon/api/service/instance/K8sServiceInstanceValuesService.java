@@ -27,4 +27,6 @@ public interface K8sServiceInstanceValuesService extends IService<K8sServiceInst
     K8sServiceInstanceValues getNewestValuesByInstanceId(Integer instanceId);
 
     void removeByInstanceId(Integer instanceId);
+
+    void removeByClusterId(Integer clusterId);
 }

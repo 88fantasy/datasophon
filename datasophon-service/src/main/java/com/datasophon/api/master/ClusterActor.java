@@ -25,7 +25,10 @@ import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
+import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.api.service.instance.K8sServiceInstanceService;
+import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
 import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.vo.k8s.K8sClusterStatus;
@@ -123,7 +126,7 @@ public class ClusterActor extends TypedActor<ClusterCommand> {
 
     private void execDeleteCmd(ClusterCommand clusterCommand) {
         ClusterInfoService clusterInfoService = getBean(ClusterInfoService.class);
-        K8sClusterConfigService k8sClusterConfigService = getBean(K8sClusterConfigService.class);
+
         Integer clusterId = clusterCommand.getClusterId();
         if (clusterId == null) {
             return;
@@ -140,10 +143,23 @@ public class ClusterActor extends TypedActor<ClusterCommand> {
             }
             deletePhysicalClusterComponents(clusterInfo.getId());
         } else {
-            k8sClusterConfigService.removeByClusterId(clusterId);
+            deleteK8sClusterComponents(clusterInfo.getId());
         }
 
         clusterInfoService.removeById(clusterId);
+    }
+
+    private void deleteK8sClusterComponents(Integer clusterId) {
+        K8sClusterConfigService k8sClusterConfigService = getBean(K8sClusterConfigService.class);
+        K8sServiceInstanceService k8sServiceInstanceService = getBean(K8sServiceInstanceService.class);
+        K8sServiceInstanceValuesService k8sServiceInstanceValuesService = getBean(K8sServiceInstanceValuesService.class);
+        K8sClusterNamespaceService k8sClusterNamespaceService = getBean(K8sClusterNamespaceService.class);
+
+
+        k8sServiceInstanceService.removeByClusterId(clusterId);
+        k8sServiceInstanceValuesService.removeByClusterId(clusterId);
+        k8sClusterNamespaceService.removeByClusterId(clusterId);
+        k8sClusterConfigService.removeByClusterId(clusterId);
     }
 
     private boolean backupServiceConfigFiles(ClusterInfoEntity clusterInfo) {

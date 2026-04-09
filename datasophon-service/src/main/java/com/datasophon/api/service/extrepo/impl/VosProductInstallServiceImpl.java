@@ -280,7 +280,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
 
         for (FrameServiceRoleEntity serviceRole : serviceRoleList) {
             List<String> hosts = serviceRoleHostMap.get(serviceRole.getServiceRoleName());
-            if (hosts == null) {
+            if (CollectionUtil.isEmpty(hosts)) {
                 continue;
             }
 

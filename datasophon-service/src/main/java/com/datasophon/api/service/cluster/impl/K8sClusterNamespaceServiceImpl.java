@@ -146,6 +146,7 @@ public class K8sClusterNamespaceServiceImpl extends ServiceImpl<K8sClusterNamesp
     }
 
 
+
     private boolean isRef(Integer nsId) {
         // 检查 K8sServiceInstance 是否引用了该命名空间
         Long instanceCount = k8sServiceInstanceService.lambdaQuery()
@@ -163,4 +164,10 @@ public class K8sClusterNamespaceServiceImpl extends ServiceImpl<K8sClusterNamesp
 
         return valuesCount > 0;
     }
+
+    @Override
+    public void removeByClusterId(Integer clusterId) {
+        lambdaUpdate().eq(K8sClusterNamespace::getClusterId, clusterId).remove();
+    }
+
 }

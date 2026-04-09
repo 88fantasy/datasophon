@@ -258,7 +258,7 @@ public class ApplyServiceHandler extends ServiceHandler {
     private HelmReleaseVO applyHelmChart(K8sServiceNode serviceNode, String chartPath, FrameK8sServiceEntity serviceDef, K8sServiceInstance instance, K8sServiceInstanceValues values) throws IOException {
         ClientOptions options = BeanUtil.toBean(config, ClientOptions.class);
         options.setServerName(config.getServerHost());
-        logger.info("应用 Helm Chart, Release 名称：{}, Namespace: {}", serviceDef.getServiceName() + "_" + instance.getServiceId(), serviceNode.getNamespace());
+        logger.info("应用 Helm Chart, Release 名称：{}, Namespace: {}", serviceDef.getServiceName(), serviceNode.getNamespace());
 
         File tempValueFile = null;
         try (HelmClient client = new HelmClient(options)) {
