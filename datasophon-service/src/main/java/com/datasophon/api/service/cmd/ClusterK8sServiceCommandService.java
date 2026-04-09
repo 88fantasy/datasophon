@@ -17,6 +17,7 @@
 
 package com.datasophon.api.service.cmd;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.datasophon.dao.entity.cmd.ClusterK8sServiceCommandEntity;
 
@@ -30,5 +31,17 @@ public interface ClusterK8sServiceCommandService extends IService<ClusterK8sServ
 
 
     ClusterK8sServiceCommandEntity getCommandById(String commandId);
+
+    /**
+     * 分页查询 K8s 服务命令
+     *
+     * @param clusterId 集群 ID
+     * @param serviceName 服务名称
+     * @param page 页码
+     * @param pageSize 每页大小
+     * @return 分页结果
+     */
+    IPage<ClusterK8sServiceCommandEntity> findCommandByPage(Integer clusterId, String serviceName, Integer page, Integer pageSize);
+
 
 }

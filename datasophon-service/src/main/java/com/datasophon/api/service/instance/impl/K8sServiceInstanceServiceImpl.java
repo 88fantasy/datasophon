@@ -7,7 +7,9 @@ import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
+import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
 import com.datasophon.api.service.k8s.K8sService;
+import com.datasophon.api.vo.k8s.K8sPodInfo;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.entity.cluster.K8sClusterNamespace;
 import com.datasophon.dao.entity.instance.K8sServiceInstance;
@@ -15,7 +17,9 @@ import com.datasophon.dao.mapper.instance.K8sServiceInstanceMapper;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -30,6 +34,7 @@ import static com.datasophon.api.service.k8s.K8sService.SERVICE_TYPE;
  * @author zhanghuangbin
  */
 @Service("k8sServiceInstanceService")
+@Transactional(rollbackFor = BusinessHintException.class)
 public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanceMapper, K8sServiceInstance> implements K8sServiceInstanceService {
 
     @Autowired
@@ -40,6 +45,9 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
 
     @Autowired
     private K8sClusterConfigService k8sClusterConfigService;
+
+    @Autowired
+    private K8sServiceInstanceValuesService k8sServiceInstanceValuesService;
 
 
     @Override
@@ -100,7 +108,7 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
     @Override
     public K8sServiceInstance createIfAbsent(Integer clusterId, Integer namespaceId, Integer serviceId) {
         // 2. 根据 serviceId 查询服务实例，如果不存在则创建
-        K8sServiceInstance instance =lambdaQuery()
+        K8sServiceInstance instance = lambdaQuery()
                 .eq(K8sServiceInstance::getClusterId, clusterId)
                 .eq(K8sServiceInstance::getNamespaceId, namespaceId)
                 .eq(K8sServiceInstance::getServiceId, serviceId)
@@ -115,6 +123,38 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
             save(instance);
         }
         return instance;
+    }
+
+    @Override
+    public boolean removeInstanceId(Integer instanceId) {
+        // 1. 获取服务实例信息
+        K8sServiceInstance instance = getById(instanceId);
+        if (instance == null) {
+            throw new BusinessHintException("实例不存在");
+        }
+
+        // 2. 获取 K8s 配置
+        K8sClusterNamespace ns = k8sClusterNamespaceService.getById(instance.getNamespaceId());
+        K8sClusterConfig config = k8sClusterConfigService.getInitConfig(ns.getClusterId());
+
+        // 3. 构建查询参数，用于检查 Pod 资源
+        K8sServiceInstanceQueryDTO query = new K8sServiceInstanceQueryDTO();
+        query.setInstanceId(instanceId);
+
+        // 4. 检查是否存在正在运行的 Pod
+        List<K8sPodInfo> pods = k8sService.listPods(config, query);
+        if (pods != null && !pods.isEmpty()) {
+            // 检查是否有运行中的 Pod（状态为 Running 或 Pending）
+            for (K8sPodInfo pod : pods) {
+                if (Arrays.asList(K8sService.Pending, K8sService.Running, K8sService.READY).contains(pod.getStatus())) {
+                    throw new BusinessHintException(String.format("存在正在运行的 Pod (%s)，请先停止服务后再删除实例", pod.getName()));
+                }
+            }
+        }
+
+        k8sServiceInstanceValuesService.removeByInstanceId(instanceId);
+        // 5. 检查通过，删除服务实例
+        return removeById(instanceId);
     }
 
 

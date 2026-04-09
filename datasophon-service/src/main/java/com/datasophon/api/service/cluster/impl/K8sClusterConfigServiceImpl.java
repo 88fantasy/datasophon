@@ -40,7 +40,8 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
     public K8sClusterConfig saveOrUpdateConfig(K8sClusterConfig config) {
         ClusterInfoEntity cluster = clusterInfoService.getById(config.getClusterId());
         if (cluster == null || !ClusterArchType.k8s.equals(cluster.getArchType())) {
-            throw new BusinessHintException("集群不存在或者或者集群架构不是k8s");
+            // K8sClusterConfigServiceImpl.java:64
+            throw new BusinessHintException("不能修改集群的 serverName");
         }
         String host;
         String cert;
@@ -61,6 +62,9 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
             db.setServerCert(cert);
             save(db);
         } else {
+            if (!db.getServerHost().equals(host)) {
+                throw new BusinessHintException("不能修改集群的serverName");
+            }
             BeanUtil.copyProperties(config, db, CopyOptions.create().setIgnoreProperties(K8sClusterConfig::getId));
             db.setServerHost(host);
             db.setServerCert(cert);

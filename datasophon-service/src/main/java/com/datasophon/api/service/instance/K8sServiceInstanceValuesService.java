@@ -25,4 +25,6 @@ public interface K8sServiceInstanceValuesService extends IService<K8sServiceInst
     K8sServiceInstanceValues update(K8sServiceInstanceValuesUpdateDTO values);
 
     K8sServiceInstanceValues getNewestValuesByInstanceId(Integer instanceId);
+
+    void removeByInstanceId(Integer instanceId);
 }

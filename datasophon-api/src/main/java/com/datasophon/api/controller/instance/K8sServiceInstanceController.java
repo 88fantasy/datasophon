@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,7 +31,7 @@ import java.util.List;
 @RestController
 @RequestMapping("cluster/k8sInstance")
 @Tag(name = "k8s服务管理")
-public class K8sServiceController extends ApiController {
+public class K8sServiceInstanceController extends ApiController {
 
 
     @Autowired
@@ -70,5 +71,12 @@ public class K8sServiceController extends ApiController {
     )
     public Result listResource(@RequestBody K8sServiceInstanceQueryDTO query) {
         return Result.success(k8sServiceInstanceService.listResource(query));
+    }
+
+    @PostMapping("removeInstanceId/{instanceId}")
+    @Operation(summary = "根据ID删除实例")
+    public Result removeInstanceId(@PathVariable Integer instanceId) {
+        k8sServiceInstanceService.removeInstanceId(instanceId);
+        return Result.success();
     }
 }

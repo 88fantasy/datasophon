@@ -20,6 +20,9 @@ public interface K8sService {
 
     String READY = "Ready";
 
+    String Pending = "Pending";
+
+    String Running = "Running";
 
     String MANGED_BY_LABEL = "app.kubernetes.io/managed-by";
 
