@@ -27,7 +27,7 @@
         "args": [
           "start",
           "-c",
-          "conf/apisix-config.yaml"
+          "/usr/local/apisix/conf/config.yaml"
         ]
       },
       "stopRunner": {
@@ -50,7 +50,7 @@
         "args": [
           "restart",
           "-c",
-          "conf/config.yaml"
+          "/usr/local/apisix/conf/config.yaml"
         ]
       }
     }

@@ -48,6 +48,8 @@ else
   echo "JDK environment already sets"
   pid="sed -i '/export JAVA_HOME/d' /etc/profile"
   eval $pid
+  pid="sed -i '/export JAVA8_HOME/d' /etc/profile"
+  eval $pid
   pid="sed -i '/export CLASSPATH/d' /etc/profile"
   eval $pid
   pid="sed -i '/source \/etc\/profile/d' /root/.bash_profile"
