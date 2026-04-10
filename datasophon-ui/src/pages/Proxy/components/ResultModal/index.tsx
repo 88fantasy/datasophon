@@ -301,7 +301,9 @@ const Index = (props, ref) => {
                 method: METHOD.POST,
                 params: (params) => {
                     params.clusterId = clusterId
-                    params.serviceName = serviceName
+                    if (serviceName) {
+                        params.serviceName = serviceName
+                    }
                     return params
                 }
             })
