@@ -70,21 +70,21 @@ const getPodColumns = (): ProColumns[] => [
         dataIndex: 'podIP',
         ellipsis: true,
     },
-    {
-        title: '操作',
-        valueType: 'option',
-        key: 'option',
-        width: 120,
-        render: invokeGenOptionCol([
-            {
-                title: '查看',
-                onClick: async (text, record, _, action) => {
-                    // TODO: 处理查看操作
-                    console.log('查看Pod:', record);
-                }
-            },
-        ])
-    },
+    // {
+    //     title: '操作',
+    //     valueType: 'option',
+    //     key: 'option',
+    //     width: 120,
+    //     render: invokeGenOptionCol([
+    //         {
+    //             title: '查看',
+    //             onClick: async (text, record, _, action) => {
+    //                 // TODO: 处理查看操作
+    //                 console.log('查看Pod:', record);
+    //             }
+    //         },
+    //     ])
+    // },
 ];
 
 // SERVICE 类型列定义
@@ -147,20 +147,20 @@ const getServiceColumns = (): ProColumns[] => [
         ellipsis: true,
         render: (text) => <Tag color="green">{text}</Tag>,
     },
-    {
-        title: '操作',
-        valueType: 'option',
-        key: 'option',
-        width: 120,
-        render: invokeGenOptionCol([
-            {
-                title: '查看',
-                onClick: async (text, record, _, action) => {
-                    console.log('查看Service:', record);
-                }
-            },
-        ])
-    },
+    // {
+    //     title: '操作',
+    //     valueType: 'option',
+    //     key: 'option',
+    //     width: 120,
+    //     render: invokeGenOptionCol([
+    //         {
+    //             title: '查看',
+    //             onClick: async (text, record, _, action) => {
+    //                 console.log('查看Service:', record);
+    //             }
+    //         },
+    //     ])
+    // },
 ];
 
 // DEPLOYMENT 类型列定义
@@ -237,20 +237,20 @@ const getDeploymentColumns = (): ProColumns[] => [
         dataIndex: 'strategy',
         ellipsis: true,
     },
-    {
-        title: '操作',
-        valueType: 'option',
-        key: 'option',
-        width: 120,
-        render: invokeGenOptionCol([
-            {
-                title: '查看',
-                onClick: async (text, record, _, action) => {
-                    console.log('查看Deployment:', record);
-                }
-            },
-        ])
-    },
+    // {
+    //     title: '操作',
+    //     valueType: 'option',
+    //     key: 'option',
+    //     width: 120,
+    //     render: invokeGenOptionCol([
+    //         {
+    //             title: '查看',
+    //             onClick: async (text, record, _, action) => {
+    //                 console.log('查看Deployment:', record);
+    //             }
+    //         },
+    //     ])
+    // },
 ];
 
 // INGRESS 类型列定义
@@ -300,20 +300,20 @@ const getIngressColumns = (): ProColumns[] => [
         ellipsis: true,
         render: (text) => <Tag color="green">{text}</Tag>,
     },
-    {
-        title: '操作',
-        valueType: 'option',
-        key: 'option',
-        width: 120,
-        render: invokeGenOptionCol([
-            {
-                title: '查看',
-                onClick: async (text, record, _, action) => {
-                    console.log('查看Ingress:', record);
-                }
-            },
-        ])
-    },
+    // {
+    //     title: '操作',
+    //     valueType: 'option',
+    //     key: 'option',
+    //     width: 120,
+    //     render: invokeGenOptionCol([
+    //         {
+    //             title: '查看',
+    //             onClick: async (text, record, _, action) => {
+    //                 console.log('查看Ingress:', record);
+    //             }
+    //         },
+    //     ])
+    // },
 ];
 
 // CONFIGMAP 类型列定义
@@ -339,20 +339,20 @@ const getConfigMapColumns = (): ProColumns[] => [
         dataIndex: 'age',
         ellipsis: true,
     },
-    {
-        title: '操作',
-        valueType: 'option',
-        key: 'option',
-        width: 120,
-        render: invokeGenOptionCol([
-            {
-                title: '查看',
-                onClick: async (text, record, _, action) => {
-                    console.log('查看ConfigMap:', record);
-                }
-            },
-        ])
-    },
+    // {
+    //     title: '操作',
+    //     valueType: 'option',
+    //     key: 'option',
+    //     width: 120,
+    //     render: invokeGenOptionCol([
+    //         {
+    //             title: '查看',
+    //             onClick: async (text, record, _, action) => {
+    //                 console.log('查看ConfigMap:', record);
+    //             }
+    //         },
+    //     ])
+    // },
 ];
 
 // 根据资源类型获取列
