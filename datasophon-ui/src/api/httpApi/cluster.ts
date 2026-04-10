@@ -61,4 +61,6 @@ export default {
   k8sInstanceQueryInstanceList: path + "/cluster/k8sInstance/queryInstanceList",
   k8sInstanceListResource: path + "/cluster/k8sInstance/listResource",
   k8sInstanceListResourceType: path + "/cluster/k8sInstance/listResourceType",
+  k8sInstanceRemoveInstanceId: path + "/cluster/k8sInstance/removeInstanceId",
+  k8sServiceCommandFindCommandByPage: path + "/cluster/k8sService/command/findCommandByPage",
 };

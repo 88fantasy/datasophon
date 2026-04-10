@@ -7,6 +7,7 @@ import type { ProColumns } from "@ant-design/pro-components";
 import { T_CANCEL, T_FAILED, T_PENDING, T_RUNNING, T_SUCCESS } from "../../../../components/DagModal/status";
 import { blue, gold, green, red } from "@ant-design/colors";
 import { invokeGenPath } from "../../../../utils/routerUtils";
+import { T_K8S } from "../../../../constants/clusterType";
 
 
 
@@ -20,7 +21,8 @@ const Index = (props, ref) => {
         clusterId,
         serviceInstanceId,
         alarmAll,
-        className
+        className,
+        memoCluster
     } = props
 
 
@@ -167,6 +169,30 @@ const Index = (props, ref) => {
 
     }, [])
 
+    const memoRequest = useMemo(() => {
+        // if (memoCluster?.archType === T_K8S) {
+        //     return invokePackProtableRequest({
+        //         api: API.k8sServiceCommandFindCommandByPage,
+        //         method: METHOD.GET,
+        //         params: (params) => {
+        //             params.clusterId = clusterId
+
+        //             return params
+        //         }
+        //     })
+        // } else {
+        return invokePackProtableRequest({
+            api: API.findDagByPage,
+            method: METHOD.GET,
+            params: (params) => {
+                params.clusterId = clusterId
+
+                return params
+            }
+        })
+        // }
+    }, [clusterId])
+
 
     const invokeCancelInvokeUpdateId = useCallback(() => {
         if (invokeUpdateId.current) {
@@ -174,6 +200,8 @@ const Index = (props, ref) => {
             invokeUpdateId.current = undefined
         }
     }, [])
+
+
 
     const invokeUpdateData = useCallback(() => {
         invokeCancelInvokeUpdateId()
@@ -206,15 +234,7 @@ const Index = (props, ref) => {
                 scroll: {
                     y: '44vh'
                 },
-                request: invokePackProtableRequest({
-                    api: API.findDagByPage,
-                    method: METHOD.GET,
-                    params: (params) => {
-                        params.clusterId = clusterId
-
-                        return params
-                    }
-                }),
+                request: memoRequest,
             }}
 
         />

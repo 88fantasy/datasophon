@@ -3,7 +3,6 @@ import { AlertOutlined, MoreOutlined, PartitionOutlined, SettingOutlined, Upload
 import { Dropdown, Tooltip } from "antd";
 import { noop } from "antd/es/_util/warning";
 import asyncHook from "../../../components/Common/CommonModal/asyncHook";
-import gobalEvent, { uiEvent } from "../../../utils/gobalEvent";
 
 
 const showResultModal = asyncHook(() =>
@@ -21,7 +20,8 @@ export const actionsRender = (props) => {
 
     const {
         clusterId,
-        invokeUpdateServiceList
+        invokeUpdateServiceList,
+        memoCluster
     } = props
 
     // console.log('item', item)
@@ -38,7 +38,7 @@ export const actionsRender = (props) => {
 
         modelApi.default({
             clusterId,
-
+            memoCluster
         })
     }
 
@@ -68,6 +68,7 @@ export const actionsRender = (props) => {
         const modelApi = await showUploadDeployConfigModal()
         modelApi.default({
             record,
+            memoCluster,
             onOk: () => {
                 invokeUpdateServiceList()
             }

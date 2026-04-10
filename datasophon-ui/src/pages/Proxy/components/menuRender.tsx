@@ -2,11 +2,14 @@ import { Badge, Dropdown } from "antd"
 import { invokeGenPath, invokeGetRouteByPath } from "../../../utils/routerUtils"
 import { isEmpty, showComfirmModal, showMsgAfferRequest } from "../../../utils/util"
 import { AlertOutlined, DashboardOutlined, MoreOutlined, ReloadOutlined } from "@ant-design/icons"
-import { axiosJsonPost, axiosPost } from "../../../api/request"
+import { axiosGet, axiosJsonPost, axiosPost } from "../../../api/request"
 import { API } from "../../../api"
 import asyncHook from "../../../components/Common/CommonModal/asyncHook"
 import { T_SETPS_TYPE_ADDSERVICE } from "../../Colony/ColonyManage/components/ConfigModal/stepType"
 import { gray, orange } from "@ant-design/colors"
+import { conversionSubmitValue } from "@ant-design/pro-components"
+import { T_K8S } from "../../../constants/clusterType"
+import { noop } from "lodash-es"
 
 const showConfigModal = asyncHook(() =>
     import("../../Colony/ColonyManage/components/ConfigModal/api"));
@@ -210,12 +213,16 @@ const invokeRenderMore = ({
                     )
 
                 } else if (obj.key === T_DELETE_SERVICE) {
-                    res = await axiosPost(
-                        API.clusterServiceInstanceDelete,
-                        {
+                    let api
+
+                    if (memoCluster.archType === T_K8S) {
+                        api = axiosJsonPost.bind(noop, `${API.k8sInstanceRemoveInstanceId}/${id}`)
+                    } else {
+                        api = axiosJsonPost.bind(noop, API.clusterServiceInstanceDelete, {
                             serviceInstanceId: id
-                        }
-                    )
+                        })
+                    }
+                    res = await api()
                 } else {
                     res = await axiosPost(
                         API.generateAndExecSrvInstCmd,
@@ -244,6 +251,8 @@ const invokeRenderMore = ({
 
                             modelApi.default({
                                 clusterId,
+                                memoCluster,
+                                serviceName: item.name
                             })
                         }
 

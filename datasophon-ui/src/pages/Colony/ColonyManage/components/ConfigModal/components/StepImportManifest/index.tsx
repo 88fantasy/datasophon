@@ -9,7 +9,8 @@ const Index = (props, ref) => {
     const {
         formMapRef,
         index,
-        clusterId
+        clusterId,
+        memoCluster
     } = props
 
 
@@ -66,7 +67,9 @@ const Index = (props, ref) => {
 
     return (
         <>
-            <Step3 />
+            <Step3
+                memoCluster={memoCluster}
+            />
         </>
     )
 }

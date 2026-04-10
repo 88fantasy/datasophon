@@ -3,13 +3,16 @@ import * as yaml from 'js-yaml';
 import CommonTable from "../../Common/CommonTable";
 import { sm4Decrypt } from "../../../utils/secretUtils";
 import { dataSource } from "../../../api/services";
+import { isEmpty } from "../../../utils/util";
+import { T_PHYSICAL } from "../../../constants/clusterType";
 
 const Index = (props, ref) => {
 
 
     const {
         deployFileId,
-        contentDecodePasswd
+        contentDecodePasswd,
+        memoCluster
     } = props
 
     const [state, setState] = useState({})
@@ -64,6 +67,9 @@ const Index = (props, ref) => {
 
         try {
             if (yamlData?.app) {
+                yamlData.app = yamlData.app.filter(val => {
+                    return memoCluster.archType.toUpperCase() == val.deployType || (memoCluster.archType === T_PHYSICAL && isEmpty(val.deployType))
+                })
                 setState(preState => {
                     return {
                         ...preState,
@@ -85,7 +91,7 @@ const Index = (props, ref) => {
         } catch (error) {
             console.warn('YAML 解析错误:', error);
         }
-    }, [contentDecodePasswd, deployFileId])
+    }, [contentDecodePasswd, deployFileId, memoCluster])
 
 
     const columns = useMemo(() => {

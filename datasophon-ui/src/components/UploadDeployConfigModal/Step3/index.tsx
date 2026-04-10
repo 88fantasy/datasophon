@@ -5,12 +5,13 @@ import TableProxy from "./TableProxy";
 import { forwardRef, memo, useCallback, useImperativeHandle, useRef } from "react";
 import { invokeMakeCommonProFormUploadButtonCustomRequest } from "../../../utils/uploadUtils";
 
-const Index = (props, ref) => {
+const Index = (props,) => {
 
     const {
         currentStep,
         formMapRef,
-        requireRules
+        requireRules,
+        memoCluster
     } = props
 
     // const tableProxyRef = useRef()
@@ -22,6 +23,7 @@ const Index = (props, ref) => {
             return (
                 <TableProxy
                     // ref={tableProxyRef}
+                    memoCluster={memoCluster}
                     deployFileId={deployFileId}
                     contentDecodePasswd={contentDecodePasswd}
                 />
@@ -37,7 +39,7 @@ const Index = (props, ref) => {
 
             </ProFormDependency>
         )
-    }, [])
+    }, [memoCluster])
 
 
     // const invokeValid = useCallback(() => {

@@ -3,7 +3,6 @@ import { Button, message } from 'antd';
 import CommonMonacoEditor from '../../../../../components/Common/CommonMonacoEditor';
 import EditorWrapper from './EditorWrapper';
 import { mergeYamlFiles } from '../../../../../utils/yamlUtils';
-import { T_HELM } from '../../../../../components/Common/CommonLogModal/api';
 
 
 const Index = ({
@@ -70,7 +69,7 @@ const Index = ({
     const memoRightValue = useMemo(() => {
 
 
-        if (record.metaFileType === T_HELM) {
+        if (/helm/.test(record.metaFileType)) {
             return mergeYamlFiles(defaultValue || '', middleEditorValue)
         } else {
             return defaultValue

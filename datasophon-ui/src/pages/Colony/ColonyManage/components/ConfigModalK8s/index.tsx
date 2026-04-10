@@ -32,7 +32,10 @@ const Index = ({
         // }
 
 
-        if (res.data?.info) {
+        if (
+            res.data?.info &&
+            res.data?.success === false
+        ) {
             showMsgAfferRequest({
                 msg: res.data.info
             })

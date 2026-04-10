@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react"
 import clusterType, { T_K8S, T_PHYSICAL } from "../../../../constants/clusterType"
 import { cloneDeep } from "lodash-es"
 import CommonTable from "../../../../components/Common/CommonTable"
+import { getRouteQuery } from "../../../../utils/routerUtils"
 
 
 const editTabKey = 'clusterTypeTab'
@@ -14,7 +15,7 @@ const Index = ({
     k8sColumns
 }) => {
 
-    const [state, setState] = useState(T_PHYSICAL)
+    const [state, setState] = useState(getRouteQuery(editTabKey) || T_PHYSICAL)
 
     const request = useCallback(async (params, sort, filter) => {
         // console.log(params, sort, filter);
@@ -44,7 +45,7 @@ const Index = ({
         }
 
 
-        return res
+        return res  
     }, [columns, k8sColumns, state])
 
     const memoTabList = useMemo(() => {

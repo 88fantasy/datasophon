@@ -607,7 +607,8 @@ const Index = () => {
                         avatarProps={memoAvatarProps}
                         actionsRender={actionsRender.bind(noop, {
                             clusterId,
-                            invokeUpdateServiceList
+                            invokeUpdateServiceList,
+                            memoCluster
                         })}
                         menuItemRender={menuRender.bind(noop, {
                             onMenuClick,
