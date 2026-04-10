@@ -61,7 +61,8 @@ public class InitOsSafeConf extends InitBase {
         setLoginTimeout();
         setHistoryRecordCount();
         setKeyFilePermission();
-        disabledSuToRoot();
+
+        //disabledSuToRoot(); // 不禁止su到root
 
         //密码策略
         String passwdConfFullPath = "/etc/pam.d/system-auth";
