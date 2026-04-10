@@ -176,7 +176,8 @@
           "bigdataAppNacosPassword",
           "bigdataDatasourceConnectCron",
           "bigdataProgressIsReceive",
-          "bigdataAppEnum"
+          "bigdataAppEnum",
+          "bigdataCalculateEngineConfigUrl"
         ]
       }
     ]
@@ -217,6 +218,18 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "http://${host}:7500/bigdata"
+    },
+    {
+      "name": "bigdataCalculateEngineConfigUrl",
+      "label": "获取vos配置接口",
+      "description": "获取vos配置接口",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "http://xxxx:8081/ddh/api/cluster/engineInfo"
     },
     {
       "name": "bigdataAppProfile",
