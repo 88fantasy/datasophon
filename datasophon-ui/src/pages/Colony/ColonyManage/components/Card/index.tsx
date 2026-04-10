@@ -3,13 +3,13 @@ import { ProCard, ProForm } from "@ant-design/pro-components"
 import { Button, Card, Col, Dropdown, Empty } from "antd"
 import { blue, gold, gray, red } from '@ant-design/colors';
 import { invokeRenderSimpleDetails } from "../../../../../components/Common/CommonDetails";
-import { showComfirmModal, showMsgAfferRequest } from "../../../../../utils/util";
+import { isEmpty, showComfirmModal, showMsgAfferRequest } from "../../../../../utils/util";
 import { axiosPostUpload } from "../../../../../api/request";
 import { API } from "../../../../../api";
 import { noop } from "lodash-es";
 import { invokeGenPath } from "../../../../../utils/routerUtils";
 import { useParams } from "react-router-dom";
-import { useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import asyncHook from "../../../../../components/Common/CommonModal/asyncHook";
 import { T_TYPE_INIT } from "../ConfigModal/stepType";
 import { T_K8S, T_PHYSICAL } from "../../../../../constants/clusterType";
@@ -119,18 +119,22 @@ const Index = ({
         const modelApi = await showUploadDeployConfigModal()
         modelApi.default({
             record,
+            memoCluster: {
+                archType: val.archType,
+                clusterId: record.id,
+            },
             onOk: () => {
                 invokeInit()
             }
         })
-    }, [invokeInit])
+    }, [invokeInit, val.archType])
 
 
 
     const actions = useMemo(() => {
 
         return [
-            {
+            (isEmpty(val.archType) || val.archType === T_PHYSICAL) && {
                 label: '授权',
                 onClick: async () => {
                     const modelApi = await showAuthModal()
@@ -160,7 +164,7 @@ const Index = ({
                     window.open(invokeGenPath(`/Cluster/${clusterId}/ServiceManage/Instance/Overview`))
                 }
             },
-            {
+            (isEmpty(val.archType) || val.archType === T_PHYSICAL) && {
                 label: '导入',
                 children: [
                     {
@@ -176,8 +180,8 @@ const Index = ({
                 disabled: clusterStateCode !== 2,
             },
             {
-                label: '初始化',
-                disabled: clusterStateCode === 2,
+                label: '配置',
+                disabled: (isEmpty(val.archType) || val.archType === T_PHYSICAL) && clusterStateCode === 2,
                 onClick: async () => {
                     let showModalApi = showConfigModal
 
@@ -199,7 +203,7 @@ const Index = ({
             {
                 label: '删除',
                 color: 'danger',
-                disabled: clusterStateCode === 2,
+                disabled: (isEmpty(val.archType) || val.archType === T_PHYSICAL) && clusterStateCode === 2,
                 onClick: async () => {
                     let res = await showComfirmModal({
                         content: '确定要删除该集群吗？',
@@ -220,46 +224,48 @@ const Index = ({
                     }
                 }
             }
-        ].map(v => {
-            const disbaled = v.disabled
+        ]
+            .filter(Boolean)
+            .map(v => {
+                const disbaled = v.disabled
 
-            let res = (
-                <Button
-                    color={v.disabled ? 'default' : v.color || 'primary'}
-                    variant="text"
-                    onClick={v.onClick}
-                    disabled={v.disabled}
-                    key={v.label}
-                    className="!p-[4px]"
-                >
-                    {v.label}
-                </Button>
-            )
-
-            if (v.children?.length && !disbaled) {
-                res = (
-                    <Dropdown
+                let res = (
+                    <Button
+                        color={v.disabled ? 'default' : v.color || 'primary'}
+                        variant="text"
+                        onClick={v.onClick}
                         disabled={v.disabled}
-                        menu={{
-                            items: v.children.map(val => {
-                                return {
-                                    ...val,
-                                    key: val.label,
-                                }
-                            }),
-                        }}
+                        key={v.label}
+                        className="!p-[4px]"
                     >
-                        {
-                            res
-                        }
-                    </Dropdown>
+                        {v.label}
+                    </Button>
                 )
-            }
+
+                if (v.children?.length && !disbaled) {
+                    res = (
+                        <Dropdown
+                            disabled={v.disabled}
+                            menu={{
+                                items: v.children.map(val => {
+                                    return {
+                                        ...val,
+                                        key: val.label,
+                                    }
+                                }),
+                            }}
+                        >
+                            {
+                                res
+                            }
+                        </Dropdown>
+                    )
+                }
 
 
-            return res
+                return res
 
-        })
+            })
     }, [clusterStateCode, invokeInit, onEditOrBuildClick, onImportClick, onImportDeployManifestClick, val])
 
 

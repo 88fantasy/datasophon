@@ -5,8 +5,10 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRe
 import { axiosPost } from "../../../../api/request";
 import { Input, Progress } from "antd";
 import { ExclamationCircleOutlined, LeftOutlined, ReconciliationFilled } from "@ant-design/icons";
-import { invokePackProtableRequest } from "../../../../utils/request";
+import { invokePackProtableRequest, METHOD } from "../../../../utils/request";
 import CommonMonacoEditor from "../../../../components/Common/CommonMonacoEditor";
+import { T_K8S } from "../../../../constants/clusterType";
+import { method } from "lodash-es";
 
 
 const Index = (props, ref) => {
@@ -17,7 +19,9 @@ const Index = (props, ref) => {
         record,
         clusterId,
         className = '',
-        y
+        y,
+        memoCluster,
+        serviceName
     } = props
 
     const [currentPage, setCurrentPage] = useState(1)
@@ -290,6 +294,52 @@ const Index = (props, ref) => {
         return res
     }, [invokeInit])
 
+    const memoRequest = useMemo(() => {
+        if (memoCluster?.archType === T_K8S) {
+            return invokePackProtableRequest({
+                api: API.k8sServiceCommandFindCommandByPage,
+                method: METHOD.POST,
+                params: (params) => {
+                    params.clusterId = clusterId
+                    if (serviceName) {
+                        params.serviceName = serviceName
+                    }
+                    return params
+                }
+            })
+        } else {
+            return invokePackProtableRequest({
+                api: () => {
+                    return currentPage === 1
+                        ? API.getServiceCommandlist
+                        : currentPage === 2
+                            ? API.getServiceHostList
+                            : API.getServiceRoleOrderList;
+
+                },
+                params: (params) => {
+                    // TODO:
+                    // const res = {
+                    //     clusterId,
+                    // }
+
+                    params.clusterId = clusterId
+                    const obj = stateRef.current[stateRef.current.length - 1]
+                    if (currentPage === 2) {
+                        params.commandId = obj.commandId
+                    } else if (currentPage === 3) {
+                        params.hostname = obj.hostname
+                        params.commandHostId = obj.commandHostId
+                    }
+
+
+
+                    return params
+                }
+            })
+        }
+    }, [clusterId, currentPage, memoCluster?.archType, serviceName])
+
 
     useEffect(() => {
 
@@ -321,35 +371,7 @@ const Index = (props, ref) => {
                                 x: '60vw',
                                 y: y || '50vh'
                             },
-                            request: invokePackProtableRequest({
-                                api: () => {
-                                    return currentPage === 1
-                                        ? API.getServiceCommandlist
-                                        : currentPage === 2
-                                            ? API.getServiceHostList
-                                            : API.getServiceRoleOrderList;
-
-                                },
-                                params: (params) => {
-                                    // TODO:
-                                    // const res = {
-                                    //     clusterId,
-                                    // }
-
-                                    params.clusterId = clusterId
-                                    const obj = stateRef.current[stateRef.current.length - 1]
-                                    if (currentPage === 2) {
-                                        params.commandId = obj.commandId
-                                    } else if (currentPage === 3) {
-                                        params.hostname = obj.hostname
-                                        params.commandHostId = obj.commandHostId
-                                    }
-
-
-
-                                    return params
-                                }
-                            }),
+                            request: memoRequest,
                         }}
 
                     /> :

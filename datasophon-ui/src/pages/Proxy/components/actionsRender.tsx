@@ -3,7 +3,7 @@ import { AlertOutlined, MoreOutlined, PartitionOutlined, SettingOutlined, Upload
 import { Dropdown, Tooltip } from "antd";
 import { noop } from "antd/es/_util/warning";
 import asyncHook from "../../../components/Common/CommonModal/asyncHook";
-import gobalEvent, { uiEvent } from "../../../utils/gobalEvent";
+import { T_K8S } from "../../../constants/clusterType";
 
 
 const showResultModal = asyncHook(() =>
@@ -21,7 +21,8 @@ export const actionsRender = (props) => {
 
     const {
         clusterId,
-        invokeUpdateServiceList
+        invokeUpdateServiceList,
+        memoCluster
     } = props
 
     // console.log('item', item)
@@ -38,7 +39,7 @@ export const actionsRender = (props) => {
 
         modelApi.default({
             clusterId,
-
+            memoCluster
         })
     }
 
@@ -68,6 +69,7 @@ export const actionsRender = (props) => {
         const modelApi = await showUploadDeployConfigModal()
         modelApi.default({
             record,
+            memoCluster,
             onOk: () => {
                 invokeUpdateServiceList()
             }
@@ -117,16 +119,19 @@ export const actionsRender = (props) => {
                 onClick={onDagListClick}
             />
         </Tooltip>,
-        <Dropdown
-            key="2"
 
-            menu={{
-                items: menuItems
-            }}
-        >
-            <UploadOutlined
-            />
-        </Dropdown>,
+        memoCluster.archType !== T_K8S && (
+            <Dropdown
+                key="2"
+
+                menu={{
+                    items: menuItems
+                }}
+            >
+                <UploadOutlined
+                />
+            </Dropdown>
+        ),
         <Tooltip
             key="1"
             title="安装并启动服务进度">
