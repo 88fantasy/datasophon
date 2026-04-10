@@ -63,12 +63,12 @@ public class InitRegistryDecode extends InitBase {
 
         String commonPropertiesStr = FileUtil.readString(new File(commonPropertiesPath), StandardCharsets.UTF_8);
         if(Base64.isBase64(commonPropertiesStr)) {
-            MetaUtils.decodeFile(FileUtil.file(commonPropertiesPath), password);
+            MetaUtils.decodeFile(FileUtil.file(commonPropertiesPath), configPassword);
         }
 
         String clusterSampleStr = FileUtil.readString(new File(clusterSamplePath), StandardCharsets.UTF_8);
         if(isClusterSampleDecode && Base64.isBase64(clusterSampleStr)) {
-            MetaUtils.decodeFile(FileUtil.file(clusterSamplePath), password);
+            MetaUtils.decodeFile(FileUtil.file(clusterSamplePath), configPassword);
         }
         executor.execShell(String.format("cp -f %s  %s/conf", commonPropertiesPath, datasophonHomePath));
         executor.execShell(String.format("cp -f %s  %s/config", clusterSamplePath, datasophonInitPath));
