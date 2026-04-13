@@ -158,14 +158,15 @@ export function invokeFormatTemplateData(data, values) {
     data
         .filter(val => !(!val.required && val.hidden))
         .map(val => {
+            const valuesVal = values[val.name]
             if (invokeMapShowMultiply(val)) {
-                val.value = invokeFormatMultiplyValue(val, values[val.name])
+                val.value = invokeFormatMultiplyValue(val, valuesVal)
             } else if (val.type === 'multipleWithKey') {
-                val.value = invokeFormatMultipleWithKeyValue(val.value)
+                val.value = invokeFormatMultipleWithKeyValue(valuesVal)
             } else if (val.type === 'multipleWithMap') {
-                val.value = invokeFormatMultipleWithMapValue(val.value)
+                val.value = invokeFormatMultipleWithMapValue(valuesVal)
             } else {
-                val.value = values[val.name]
+                val.value = valuesVal
             }
         })
 
