@@ -52,7 +52,7 @@ import cn.hutool.core.util.StrUtil;
 @ConditionalOnProperty(name = "datasophon.proxy-grafana.enable", havingValue = "true")
 public class GrafanaProxyConfiguration {
     
-    @Value("${datasophon.proxy-grafana.max-threads:32}")
+    @Value("${datasophon.proxy-grafana.max-threads:80}")
     String maxThreads;
     
     @Autowired

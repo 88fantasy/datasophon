@@ -38,7 +38,7 @@ public class InitRegistryUpload extends InitBase {
     @CommandLine.Option(names = {"-p", "--password"}, description = "password", required = true)
     String password;
 
-    @CommandLine.Option(names = {"-disu", "--disableUploadRegistry"}, description = "disableUploadRegistry", required = true)
+    @CommandLine.Option(names = {"-disu", "--disableUploadRegistry"}, description = "disableUploadRegistry")
     boolean disableUploadRegistry = false;
 
     @Override

@@ -30,6 +30,11 @@ redis:
     expire:
       authCode: 90
 
+calculate:
+  engine:
+    config:
+      url: ${bigdataCalculateEngineConfigUrl}
+
 ds:
   downloadPath: ${bigdataOutsideAccessUrl}/bigdata/bigdata
 

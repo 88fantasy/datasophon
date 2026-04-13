@@ -274,15 +274,19 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             serviceEntity = new FrameServiceEntity();
             buildServiceEntity(frameInfo, serviceName, serviceDdl, serviceInfo, serviceInfoMd5, serviceEntity, configFileMap);
             frameServiceService.save(serviceEntity);
-        } else if (!serviceEntity.getServiceJsonMd5().equals(serviceInfoMd5)) {
+        } else {
             String configMapStr = JSONObject.toJSONString(configFileMap);
             String configFileMapStrMd5 = SecureUtil.md5(configMapStr);
-            if (!configFileMapStrMd5.equals(serviceEntity.getConfigFileJsonMd5())) {
-                // update config
-                updateServiceInstanceConfig(frameInfo.getFrameCode(), serviceInfo.getName(), serviceInfo.getParameters());
+            boolean configChange = !configFileMapStrMd5.equals(serviceEntity.getConfigFileJsonMd5());
+            boolean needUpdate = configChange || !serviceEntity.getServiceJsonMd5().equals(serviceInfoMd5);
+            if (needUpdate) {
+                if (configChange) {
+                    // update config
+                    updateServiceInstanceConfig(frameInfo.getFrameCode(), serviceInfo.getName(), serviceInfo.getParameters());
+                }
+                buildServiceEntity(frameInfo, serviceName, serviceDdl, serviceInfo, serviceInfoMd5, serviceEntity, configFileMap);
+                frameServiceService.updateById(serviceEntity);
             }
-            buildServiceEntity(frameInfo, serviceName, serviceDdl, serviceInfo, serviceInfoMd5, serviceEntity, configFileMap);
-            frameServiceService.updateById(serviceEntity);
         }
 
         ServiceConfigMap.put(frameInfo.getFrameCode() + Constants.UNDERLINE + serviceInfo.getName() + Constants.CONFIG, allParameters);
