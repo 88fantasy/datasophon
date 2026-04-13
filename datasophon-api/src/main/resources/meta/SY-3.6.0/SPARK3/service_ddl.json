@@ -42,8 +42,8 @@
         },
         {
           "type": "nexus",
-          "from": "spark-doris-connector-3.4_2.12-1.3.2.jar",
-          "to": "jars/spark-doris-connector-3.4_2.12-1.3.2.jar"
+          "from": "spark-doris-connector-spark-3.4-25.2.0.jar",
+          "to": "jars/spark-doris-connector-spark-3.4-25.2.0.jar"
         }
       ]
     },
@@ -182,33 +182,23 @@
       "required": false,
       "type": "multipleWithKey",
       "value": [
-        {
-          "spark.sql.hive.metastore.jars": "/data/install_datasophon/hive/lib/*"
-        },
-        {
-          "spark.sql.hive.metastore.version": "3.1.3"
-        },
-        {
-          "spark.yarn.jars": "hdfs:///spark3/jars/*.jar"
-        },
-        {
-          "spark.port.maxRetries": "100"
-        },
-        {
-          "spark.sql.catalog.hive_catalog": "org.apache.iceberg.spark.SparkCatalog"
-        },
-        {
-          "spark.sql.catalog.hive_catalog.type": "hive"
-        },
-        {
-          "spark.sql.catalog.hive_catalog.uri": "${hive.metastore.uris}"
-        },
-        {
-          "spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
-        },
-        {
-          "spark.sql.warehouse.dir": "/user/hive/warehouse"
-        }
+        {"spark.sql.hive.metastore.jars": "/data/install_datasophon/lib/*"},
+        {"spark.sql.hive.metastore.version": "3.1.3"},
+        {"spark.yarn.jars": "hdfs:///spark3/jars/*.jar"},
+        {"spark.port.maxRetries": "100"},
+        {"spark.sql.catalogImplementation": "hive"},
+        {"spark.sql.uri": "${HIVE.hive.metastore.uris}"},
+        {"spark.sql.extensions": "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions,org.apache.paimon.spark.extensions.PaimonSparkSessionExtensions"},
+        {"spark.sql.warehouse.dir": "/user/hive/warehouse"},
+        {"spark.sql.catalog.paimon_catalog": "org.apache.paimon.spark.SparkCatalog"},
+        {"spark.sql.catalog.paimon_catalog.metastore": "hive"},
+        {"spark.sql.catalog.paimon_catalog.uri": "${HIVE.hive.metastore.uris}"},
+        {"spark.sql.catalog.paimon_catalog.warehouse": "hdfs:///user/hive/warehouse"},
+        {"spark.sql.catalog.doris_catalog": "org.apache.doris.spark.catalog.DorisTableCatalog"},
+        {"spark.sql.catalog.doris_catalog.doris.fenodes": "${DORIS.feMaster}:${DORIS.http_port}"},
+        {"spark.sql.catalog.doris_catalog.doris.query.port": "${DORIS.query_port}"},
+        {"spark.sql.catalog.doris_catalog.doris.user": "root"},
+        {"spark.sql.catalog.doris_catalog.doris.password": "${DORIS.root_password}"}
       ],
       "configurableInWizard": true,
       "hidden": false,

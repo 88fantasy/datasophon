@@ -379,7 +379,7 @@
       "type": "input",
       "defaultValue": "thrift://${HIVE.HiveMetaStore.__host__}:9083",
       "configurableInWizard": true,
-      "register": false
+      "register": true
     },
     {
       "enabled": true,

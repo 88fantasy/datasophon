@@ -16,3 +16,5 @@ datasophon:
     enable: true
   proxy-grafana:
     enable: true
+#    set it to properties value if prompt 'javax.servlet.ServletException: java.lang.IllegalStateException: Insufficient configured threads: required=xx < max=xx'
+    max-threads: 80

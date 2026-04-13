@@ -398,7 +398,7 @@ public class CreateCluster implements Runnable {
         GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
         InitOfflineServer initYumServer = new InitOfflineServer();
         initYumServer.setConfigFilePath(initConfigYamlPath)
-                        .setPassword(password);
+                        .setConfigPassword(password);
         initYumServer.setPackagePath(packagesPath)
                 .setServerIp(yumServer.getHost().getIp())
                 .setServerPort(yumServer.getListenPort())
@@ -410,7 +410,7 @@ public class CreateCluster implements Runnable {
         GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
         InitOfflineSlave initYumConf = new InitOfflineSlave();
         initYumConf.setConfigFilePath(initConfigYamlPath);
-        initYumConf.setPassword(password);
+        initYumConf.setConfigPassword(password);
         initYumConf.setServerIp(yumServer.getHost().getIp())
                 .setServerPort(yumServer.getListenPort());
         NexusRegistry registry = config.getGlobal().getRegistry();
@@ -441,7 +441,7 @@ public class CreateCluster implements Runnable {
         nodes.forEach(node -> {
             InitAllHost initAllHost = new InitAllHost();
             initAllHost.setConfigFilePath(initConfigYamlPath);
-            initAllHost.setPassword(password);
+            initAllHost.setConfigPassword(password);
             singleNodesExec(node, initAllHost);
         });
     }
@@ -454,7 +454,7 @@ public class CreateCluster implements Runnable {
         InitNtpServer initNtpServer = new InitNtpServer();
         GlobalConfig.NtpServer ntpServer = config.getGlobal().getNtpServer();
         initNtpServer.setConfigFilePath(initConfigYamlPath);
-        initNtpServer.setPassword(password);
+        initNtpServer.setConfigPassword(password);
         singleNodesExec(ntpServer.getHost(), initNtpServer);
     }
     
@@ -462,7 +462,7 @@ public class CreateCluster implements Runnable {
         GlobalConfig.NtpServer ntpServer = config.getGlobal().getNtpServer();
         InitNtpSlave initNtpSlave = new InitNtpSlave();
         initNtpSlave.setConfigFilePath(initConfigYamlPath);
-        initNtpSlave.setPassword(password);
+        initNtpSlave.setConfigPassword(password);
         initNtpSlave.setNtpServerIp(ntpServer.getHost().getIp());
         slavesNodesExec(ntpServer.getHost(), nodes, initNtpSlave);
     }
@@ -475,7 +475,7 @@ public class CreateCluster implements Runnable {
         InitMysql initMysql = new InitMysql();
         GlobalConfig.MysqlConfig mysqlConfig = config.getGlobal().getMysql();
         initMysql.setConfigFilePath(initConfigYamlPath)
-                .setPassword(password);
+                .setConfigPassword(password);
         initMysql.setPassword(mysqlConfig.getPassword())
                 .setForce(mysqlInstallForce)
                 .setPackagePath(packagesPath)
@@ -498,7 +498,7 @@ public class CreateCluster implements Runnable {
         mysqlConfig.getAppDbs().forEach(x -> {
             InitMysqlAppDb initMysqlAppDb = new InitMysqlAppDb();
             initMysqlAppDb.setConfigFilePath(initConfigYamlPath)
-                            .setPassword(password);
+                            .setConfigPassword(password);
             initMysqlAppDb.setRootPassword(mysqlConfig.getPassword())
                     .setAccount(x.getAccount())
                     .setPassword(x.getPassword())
