@@ -525,6 +525,23 @@ public class KubectlClient implements AutoCloseable {
         return StrUtil.isNotBlank(output);
     }
 
+    /**
+     * 批量删除指定的 Secret
+     *
+     * @param namespace  命名空间
+     * @param secretNames Secret 名称列表
+     */
+    public void deleteSecrets(String namespace, List<String> secretNames) throws KubectlException {
+        List<String> args = new ArrayList<>(Arrays.asList("delete", "secret", "-n", namespace));
+        args.addAll(secretNames);
+        args.add("--ignore-not-found=true");
+
+        ExecResult result = execute(args, 60);
+        if (!result.isSuccess()) {
+            throw new KubectlException(String.format("删除 secrets 失败，%s", result.getErrorTraceMessage()));
+        }
+    }
+
     @Override
     public void close() {
         if (tempDir != null) {

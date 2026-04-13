@@ -1,6 +1,7 @@
 package com.datasophon.api.master.handler.k8s;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
@@ -17,7 +18,9 @@ import com.datasophon.common.k8s.client.HelmifyClient;
 import com.datasophon.common.k8s.config.ClientOptions;
 import com.datasophon.common.k8s.dto.UpgradeParams;
 import com.datasophon.common.k8s.spec.helm.HelmUtils;
+import com.datasophon.common.k8s.vo.helm.HelmHistoryVO;
 import com.datasophon.common.k8s.vo.helm.HelmReleaseVO;
+import com.datasophon.common.k8s.vo.helm.HelmStatusVO;
 import com.datasophon.common.model.k8s.K8sArtifact;
 import com.datasophon.common.model.k8s.K8sServiceNode;
 import com.datasophon.common.storage.MetaStorage;
@@ -40,8 +43,11 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * K8s 服务应用处理器
@@ -110,7 +116,7 @@ public class ApplyServiceHandler extends ServiceHandler {
             updateCmdProgress(serviceNode, 20);
 
             // 步骤 5: 应用 Helm Chart
-            HelmReleaseVO result = applyHelmChart(serviceNode, chartPath, serviceDef, instance, values);
+            HelmReleaseVO result = applyHelmChart(serviceNode, chartPath, serviceDef, values);
             logger.info("Helm 发布结果，状态：{}", result.getInfo().getStatus());
             updateCmdProgress(serviceNode, 80);
 
@@ -139,7 +145,6 @@ public class ApplyServiceHandler extends ServiceHandler {
      */
     private void fillNodeFields(K8sServiceNode serviceNode) {
         if (!Arrays.asList(CommandType.INSTALL_SERVICE, CommandType.UPGRADE_SERVICE).contains(commandType)) {
-            logger.info("填充非安装/升级场景的节点字段，服务实例 ID:{}", serviceNode.getServiceInstanceId());
             K8sServiceInstance instance = instanceService.getById(serviceNode.getServiceInstanceId());
             serviceNode.setMetaFileType(instance.getLastMetaFileType());
 
@@ -250,18 +255,91 @@ public class ApplyServiceHandler extends ServiceHandler {
      * @param serviceNode K8s 服务节点
      * @param chartPath   Chart 文件路径
      * @param serviceDef  服务定义
-     * @param instance    服务实例
      * @param values      服务配置值
      * @return Helm 发布结果
      * @throws IOException IO 异常
      */
-    private HelmReleaseVO applyHelmChart(K8sServiceNode serviceNode, String chartPath, FrameK8sServiceEntity serviceDef, K8sServiceInstance instance, K8sServiceInstanceValues values) throws IOException {
+    private HelmReleaseVO applyHelmChart(K8sServiceNode serviceNode, String chartPath, FrameK8sServiceEntity serviceDef, K8sServiceInstanceValues values) throws IOException {
         ClientOptions options = BeanUtil.toBean(config, ClientOptions.class);
         options.setServerName(config.getServerHost());
         logger.info("应用 Helm Chart, Release 名称：{}, Namespace: {}", serviceDef.getServiceName(), serviceNode.getNamespace());
 
-        File tempValueFile = null;
         try (HelmClient client = new HelmClient(options)) {
+            deletePendingPreRelease(client, serviceNode);
+            return doApplyHelmChart(client, serviceNode, chartPath, values);
+        }
+    }
+
+    private void deletePendingPreRelease(HelmClient client, K8sServiceNode serviceNode) {
+        String namespace = serviceNode.getNamespace();
+        String serviceName = serviceNode.getServiceName();
+        String releaseName = HelmUtils.createReleaseName(serviceName);
+
+        try {
+            logger.info("开始清理 pending 状态的 release 历史，releaseName={}, namespace={}", releaseName, namespace);
+            // 获取该 release 的历史记录（按版本号降序排列）
+            List<HelmHistoryVO> history = client.history(releaseName, namespace);
+            if (history == null || history.isEmpty()) {
+                logger.info("release {} 没有找到历史记录", releaseName);
+                return;
+            }
+            history = new ArrayList<>(history);
+            history.sort(Comparator.comparing(HelmHistoryVO::getRevision).reversed());
+
+            // 从高版本开始删除，直到遇到第一个非 pending 状态
+            List<HelmHistoryVO> revisions = new ArrayList<>();
+            for (HelmHistoryVO entry : history) {
+                String status = entry.getStatus();
+                boolean isPending = "pending-upgrade".equalsIgnoreCase(status) || "pending-install".equalsIgnoreCase(status);
+
+                if (!isPending) {
+                    // 遇到第一个非 pending 状态，停止删除
+                    logger.info("release: {}, 遇到第一个非 pending 状态：{}, 版本：{}", releaseName, status, entry.getRevision());
+                    break;
+                }
+                revisions.add(entry);
+            }
+            logger.info("待删除的releaseName {}, 共{}个版本", releaseName, revisions.size());
+            if (!revisions.isEmpty()) {
+                k8sService.batchExec(config, k8sClient -> {
+                    for (HelmHistoryVO rev : revisions) {
+                        List<String> resources = new ArrayList<>();
+                        HelmStatusVO status = client.status(releaseName, namespace, rev.getRevision());
+                        Optional.ofNullable(status.getInfo().getResources())
+                                .orElse(new HashMap<>())
+                                .forEach((k, rs) -> {
+                                    if (CollectionUtil.isNotEmpty(rs)) {
+                                        rs.forEach(r -> {
+                                            if (!"Pod".equals(r.getKind())) {
+                                                resources.add(String.format("%s: %s", r.getKind(), r.getMetadata().getName()));
+                                            }
+                                        });
+                                    }
+                                });
+
+                        String key = String.format("sh.helm.release.v1.%s.v%s", releaseName, rev.getRevision());
+
+                        logger.info("删除Release: {}, revision: {}, revision的状态为：{}", releaseName, rev.getRevision(), rev.getStatus());
+                        k8sClient.deleteSecrets(namespace, Collections.singletonList(key));
+                        if (!resources.isEmpty()) {
+                            logger.warn("Release: {}, revision: {}, 请注意人工判断这些下列资源是否需要人工修改:\n {}\n", releaseName, rev.getRevision(), StrUtil.join("\n\t", resources));
+                        }
+                    }
+                    return null;
+                }, "删除Helm Release资源");
+                logger.info("清理 pending release 历史完成");
+            }
+        } catch (Exception e) {
+            logger.warn("清理 pending release 历史失败：{}", e.getMessage(), e);
+            // 不抛出异常，避免影响主流程
+        }
+    }
+
+
+    private HelmReleaseVO doApplyHelmChart(HelmClient client, K8sServiceNode serviceNode, String chartPath, K8sServiceInstanceValues values) {
+        File tempValueFile = null;
+
+        try {
             UpgradeParams params = new UpgradeParams();
 
             if (serviceNode.getMetaFileType().equals("helm") && StrUtil.isNotBlank(values.getDeltaValues())) {
@@ -277,7 +355,7 @@ public class ApplyServiceHandler extends ServiceHandler {
             }
             Map<String, String> extraValues = HelmValueUtils.getExtraValues();
             List<String> extraValueList = new ArrayList<>();
-            extraValues.forEach((k, v)-> extraValueList.add(k + "=" + v));
+            extraValues.forEach((k, v) -> extraValueList.add(k + "=" + v));
             params.setSetValues(extraValueList);
 
             HelmReleaseVO result = client.upgrade(params);

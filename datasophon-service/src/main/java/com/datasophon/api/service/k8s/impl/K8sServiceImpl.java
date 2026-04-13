@@ -571,6 +571,22 @@ public class K8sServiceImpl implements K8sService {
         }, "缩放 Deployment 副本数");
     }
 
+    @Override
+    public void deleteSecrets(K8sClusterConfig config, String namespace, List<String> secrets) {
+        exec(newOptions(config), client -> {
+            // 批量删除 secrets
+            if (!secrets.isEmpty()) {
+                client.deleteSecrets(namespace, secrets);
+                log.info("成功删除 {} 个 pending secrets", secrets.size());
+            }
+            return null;
+        }, "删除secrets");
+    }
+
+    @Override
+    public <T> T batchExec(K8sClusterConfig config, ThrowableMapper<KubectlClient, T> consumer, String actionHint) {
+        return exec(newOptions(config), consumer, actionHint);
+    }
 
     private <T> T exec(ClientOptions options, ThrowableMapper<KubectlClient, T> consumer, String actionHint) {
         try (KubectlClient client = new KubectlClient(options)) {

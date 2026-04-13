@@ -9,6 +9,8 @@ import com.datasophon.api.vo.k8s.K8sIngressInfo;
 import com.datasophon.api.vo.k8s.K8sNamespace;
 import com.datasophon.api.vo.k8s.K8sPodInfo;
 import com.datasophon.api.vo.k8s.K8sServiceInfo;
+import com.datasophon.common.function.ThrowableMapper;
+import com.datasophon.common.k8s.client.KubectlClient;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 
 import java.util.List;
@@ -64,8 +66,8 @@ public interface K8sService {
     /**
      * 获取 Deployment 资源列表
      *
-     * @param config    K8s 集群配置
-     * @param query     查询条件
+     * @param config K8s 集群配置
+     * @param query  查询条件
      * @return Deployment 资源列表
      */
     List<K8sDeploymentInfo> listDeployments(K8sClusterConfig config, K8sServiceInstanceQueryDTO query);
@@ -73,8 +75,8 @@ public interface K8sService {
     /**
      * 获取 Pod 资源列表
      *
-     * @param config    K8s 集群配置
-     * @param query     查询条件
+     * @param config K8s 集群配置
+     * @param query  查询条件
      * @return Pod 资源列表
      */
     List<K8sPodInfo> listPods(K8sClusterConfig config, K8sServiceInstanceQueryDTO query);
@@ -83,8 +85,8 @@ public interface K8sService {
     /**
      * 获取 Service 资源列表
      *
-     * @param config    K8s 集群配置
-     * @param query     查询条件
+     * @param config K8s 集群配置
+     * @param query  查询条件
      * @return Service 资源列表
      */
     List<K8sServiceInfo> listServices(K8sClusterConfig config, K8sServiceInstanceQueryDTO query);
@@ -92,8 +94,8 @@ public interface K8sService {
     /**
      * 获取 Ingress 资源列表
      *
-     * @param config    K8s 集群配置
-     * @param query     查询条件
+     * @param config K8s 集群配置
+     * @param query  查询条件
      * @return Ingress 资源列表
      */
     List<K8sIngressInfo> listIngresses(K8sClusterConfig config, K8sServiceInstanceQueryDTO query);
@@ -101,8 +103,8 @@ public interface K8sService {
     /**
      * 获取 ConfigMap 资源列表
      *
-     * @param config    K8s 集群配置
-     * @param query     查询条件
+     * @param config K8s 集群配置
+     * @param query  查询条件
      * @return ConfigMap 资源列表
      */
     List<K8sConfigMapInfo> listConfigMaps(K8sClusterConfig config, K8sServiceInstanceQueryDTO query);
@@ -119,8 +121,8 @@ public interface K8sService {
     /**
      * 重启 Deployment
      *
-     * @param config    K8s 集群配置
-     * @param deployments     查询条件
+     * @param config      K8s 集群配置
+     * @param deployments 查询条件
      * @return 重启结果信息
      */
     void restartDeployment(K8sClusterConfig config, List<K8sDeploymentInfo> deployments);
@@ -128,11 +130,19 @@ public interface K8sService {
     /**
      * 缩放 Deployment 副本数
      *
-     * @param config    K8s 集群配置
-     * @param deployments     Deployment 列表
-     * @param replicas  目标副本数
+     * @param config      K8s 集群配置
+     * @param deployments Deployment 列表
+     * @param replicas    目标副本数
      */
     void scaleDeployments(K8sClusterConfig config, List<K8sDeploymentInfo> deployments, int replicas);
 
+    /**
+     * @param config    K8s 集群配置
+     * @param namespace 命名空间
+     * @param secrets   secret names
+     */
+    void deleteSecrets(K8sClusterConfig config, String namespace, List<String> secrets);
+
+    <T> T batchExec(K8sClusterConfig config, ThrowableMapper<KubectlClient, T> consumer, String actionHint);
 
 }
