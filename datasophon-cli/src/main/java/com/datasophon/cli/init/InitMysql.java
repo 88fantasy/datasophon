@@ -71,7 +71,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         if(OsType.isUnbuntu(osType)) {
             isInstalled = executor.execShell("dpkg --list|grep mysql").getExecResult();
         } else {
-            isInstalled = executor.execShell("rpm -qa | grep mysql").getExecResult();
+            isInstalled = executor.execShell("rpm -qa | grep mysql-community-server").getExecResult();
         }
         if(isInstalled && !force) {
             log.info("exist mysql. force:{}", false);
