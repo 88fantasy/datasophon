@@ -6,6 +6,7 @@ import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.api.service.UniEngineService;
+import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.uni.DorisDatasource;
 import com.datasophon.common.model.uni.EngineInfo;
@@ -16,6 +17,7 @@ import com.datasophon.common.model.uni.PaimonDatasource;
 import com.datasophon.common.utils.PasswordSupport;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.Result;
+import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.ClusterVariable;
@@ -45,6 +47,9 @@ public class UniEngineServiceImpl implements UniEngineService {
     @Autowired
     ClusterInfoService clusterInfoService;
 
+    @Autowired
+    ClusterHostService clusterHostService;
+
     @Override
     public Result getEngineInfo() {
         List<ClusterInfoEntity> clusterList = clusterInfoService.getClusterList();
@@ -52,6 +57,7 @@ public class UniEngineServiceImpl implements UniEngineService {
             return Result.error("vos集群列表为空");
         }
         Integer clusterId = clusterList.get(0).getId();
+        Map<String, String> hostMaps = clusterHostService.getHostListByClusterId(clusterId).stream().collect(Collectors.toMap(ClusterHostDO::getHostname, ClusterHostDO::getIp));
 
         EngineInfo engineInfo = new EngineInfo();
         engineInfo.setClusterId(clusterId);
@@ -83,8 +89,8 @@ public class UniEngineServiceImpl implements UniEngineService {
         if (CollectionUtils.isNotEmpty(ustreamServers)) {
             Map<String, String> ustreamVars = getClusterVarsMap(clusterId, "USTREAM");
             engineInfo.setRealTimeSchedulerAddress(String.format("http://%s:%s", ustreamServers.get(0).getHostname(), "9112"));
-            engineInfo.setRealTimeSchedulerUserName(ustreamVars.getOrDefault("${loginUsername}", "admin"));
-            engineInfo.setRealTimeSchedulerUserPassword(ustreamVars.get("${loginPassword}"));
+            engineInfo.setRealTimeSchedulerUserName(ustreamVars.getOrDefault("${USTREAM.loginUsername}", "admin"));
+            engineInfo.setRealTimeSchedulerUserPassword(ustreamVars.getOrDefault("${USTREAM.loginPassword}", "y@iyTr18UID"));
             engineInfo.setEngineType("OFF_REAL_TIME_ENGINE");
             logger.info("UstreamServer get info success");
         } else {
@@ -95,20 +101,19 @@ public class UniEngineServiceImpl implements UniEngineService {
         engineInfo.setMysqlDatasource(getMysqlDatasource());
         engineInfo.setHiveDatasource(getHiveDatasource(clusterId));
         engineInfo.setPaimonDatasource(getPaimonDatasource(clusterId));
-        engineInfo.setDorisDatasource(getDorisDatasource(clusterId));
+        engineInfo.setDorisDatasource(getDorisDatasource(clusterId, hostMaps));
         engineInfo.setKafkaDatasource(getKafkaDatasource(clusterId));
 
         String data = JSON.toJSONString(engineInfo);
         return Result.success().put(Constants.DATA, PasswordSupport.encryptDbPassword(data));
 
     }
-
     public MysqlDatasource getMysqlDatasource() {
         MysqlDatasource mysqlDatasource = new MysqlDatasource();
-        mysqlDatasource.setHost(PropertyUtils.getString("datasource.ip"));
-        mysqlDatasource.setPort(PropertyUtils.getString("datasource.port"));
-        mysqlDatasource.setUserName(PropertyUtils.getString("datasource.username"));
-        mysqlDatasource.setPassword(PropertyUtils.getString("datasource.password"));
+        mysqlDatasource.setHost(PropertyUtils.getString("mysql.ip"));
+        mysqlDatasource.setPort(PropertyUtils.getString("mysql.port"));
+        mysqlDatasource.setUserName(PropertyUtils.getString("mysql.username"));
+        mysqlDatasource.setPassword(PropertyUtils.getString("mysql.password"));
         JSONObject mysqlOther = new JSONObject();
         mysqlOther.put("allowPublicKeyRetrieval", true);
         mysqlOther.put("useSSL", false);
@@ -131,11 +136,11 @@ public class UniEngineServiceImpl implements UniEngineService {
             hiveDatasource.setAuthentication("SIMPLE");
             hiveDatasource.setUserName("hive");
             hiveDatasource.setPassword("hive");
-            String dfsNameservices = hdfsVars.getOrDefault("${dfs.nameservices}", "");
+            String dfsNameservices = hdfsVars.getOrDefault("${HDFS.dfs.nameservices}", "");
             hiveDatasource.setDefaultFs(String.format("hdfs://%s", dfsNameservices));
-            hiveDatasource.setThriftUrls(hiveVars.getOrDefault("${hive.metastore.uris}", ""));
-            hiveDatasource.setWarehouse(hiveVars.getOrDefault("${hive.metastore.warehouse.dir}", ""));
-            String haNodes = hdfsVars.getOrDefault("${dfs.ha.namenodes.${dfs.nameservices}}", "");
+            hiveDatasource.setThriftUrls(hiveVars.getOrDefault("${HIVE.hive.metastore.uris}", ""));
+            hiveDatasource.setWarehouse(hiveVars.getOrDefault("${HIVE.hive.metastore.warehouse.dir}", ""));
+            String haNodes = hdfsVars.getOrDefault("${HDFS.dfs.ha.namenodes.${HDFS.dfs.nameservices}}", "");
             hiveDatasource.setHadoopConfig(getHadoopConfig(hdfsVars, haNodes, dfsNameservices));
             logger.info("hive get info success");
             return hiveDatasource;
@@ -147,7 +152,7 @@ public class UniEngineServiceImpl implements UniEngineService {
 
     public PaimonDatasource getPaimonDatasource(Integer clusterId) {
         List<ClusterServiceRoleInstanceEntity> sparkThriftServers = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(
-                clusterId, "SparkThriftServer");
+                clusterId, "Kyuubi");
 
         if (CollectionUtils.isNotEmpty(sparkThriftServers)) {
             PaimonDatasource paimonDatasource = new PaimonDatasource();
@@ -155,16 +160,16 @@ public class UniEngineServiceImpl implements UniEngineService {
             Map<String, String> hiveVars = getClusterVarsMap(clusterId, "HIVE");
 
             paimonDatasource.setHost(sparkThriftServers.get(0).getHostname());
-            paimonDatasource.setPort("10016");
+            paimonDatasource.setPort("10009");
             paimonDatasource.setUserName("hive");
             paimonDatasource.setPassword("hive");
             paimonDatasource.setStorageType("HDFS");
 
-            String dfsNameservices = hdfsVars.getOrDefault("${dfs.nameservices}", "");
+            String dfsNameservices = hdfsVars.getOrDefault("${HDFS.dfs.nameservices}", "");
             paimonDatasource.setDefaultFs(String.format("hdfs://%s", dfsNameservices));
-            paimonDatasource.setThriftUrls(hiveVars.getOrDefault("${hive.metastore.uris}", ""));
-            paimonDatasource.setWarehouse(hiveVars.getOrDefault("${hive.metastore.warehouse.dir}", ""));
-            String haNodes = hdfsVars.getOrDefault("${dfs.ha.namenodes.${dfs.nameservices}}", "");
+            paimonDatasource.setThriftUrls(hiveVars.getOrDefault("${HIVE.hive.metastore.uris}", ""));
+            paimonDatasource.setWarehouse(hiveVars.getOrDefault("${HIVE.hive.metastore.warehouse.dir}", ""));
+            String haNodes = hdfsVars.getOrDefault("${HDFS.dfs.ha.namenodes.${HDFS.dfs.nameservices}}", "");
             paimonDatasource.setHadoopConfig(getHadoopConfig(hdfsVars, haNodes, dfsNameservices));
             logger.info("paimon get info success");
             return paimonDatasource;
@@ -183,14 +188,14 @@ public class UniEngineServiceImpl implements UniEngineService {
         JSONObject hadoopConfigJson = new JSONObject();
         hadoopConfigJson.put("dfs.nameservices", dfsNameservices);
         hadoopConfigJson.put(String.format("dfs.ha.namenodes.%s", dfsNameservices), haNodes);
-        hadoopConfigJson.put(String.format("dfs.namenode.rpc-address.%s.%s", dfsNameservices, nn1), hdfsVars.getOrDefault(String.format("${dfs.namenode.rpc-address.${dfs.nameservices}.%s}", nn1), ""));
-        hadoopConfigJson.put(String.format("dfs.namenode.rpc-address.%s.%s", dfsNameservices, nn2), hdfsVars.getOrDefault(String.format("${dfs.namenode.rpc-address.${dfs.nameservices}.%s}", nn2), ""));
-        hadoopConfigJson.put(String.format("dfs.client.failover.proxy.provider.%s", dfsNameservices), hdfsVars.getOrDefault("${dfs.client.failover.proxy.provider.${dfs.nameservices}}", ""));
+        hadoopConfigJson.put(String.format("dfs.namenode.rpc-address.%s.%s", dfsNameservices, nn1), hdfsVars.getOrDefault(String.format("${HDFS.dfs.namenode.rpc-address.${HDFS.dfs.nameservices}.%s}", nn1), ""));
+        hadoopConfigJson.put(String.format("dfs.namenode.rpc-address.%s.%s", dfsNameservices, nn2), hdfsVars.getOrDefault(String.format("${HDFS.dfs.namenode.rpc-address.${HDFS.dfs.nameservices}.%s}", nn2), ""));
+        hadoopConfigJson.put(String.format("dfs.client.failover.proxy.provider.%s", dfsNameservices), hdfsVars.getOrDefault("${HDFS.dfs.client.failover.proxy.provider.${HDFS.dfs.nameservices}}", ""));
         return hadoopConfigJson.toJSONString();
 
     }
 
-    public DorisDatasource getDorisDatasource(Integer clusterId) {
+    public DorisDatasource getDorisDatasource(Integer clusterId, Map<String, String> hostMaps) {
         List<ClusterServiceRoleInstanceEntity> dorisFEs = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(
                 clusterId, "DorisFE");
         List<ClusterServiceRoleInstanceEntity> dorisBEs = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(
@@ -200,13 +205,13 @@ public class UniEngineServiceImpl implements UniEngineService {
             Map<String, String> dorisVars = getClusterVarsMap(clusterId, "DORIS");
             DorisDatasource dorisDatasource = new DorisDatasource();
             dorisDatasource.setHost(dorisFEs.get(0).getHostname());
-            dorisDatasource.setPort(dorisVars.getOrDefault("${query_port}", "9030"));
-            dorisDatasource.setWebPort(dorisVars.getOrDefault("${http_port}", "8030"));
+            dorisDatasource.setPort(dorisVars.getOrDefault("${DORIS.query_port}", "9030"));
+            dorisDatasource.setWebPort(dorisVars.getOrDefault("${DORIS.http_port}", "18030"));
             dorisDatasource.setUserName("root");
-            dorisDatasource.setPassword(dorisVars.getOrDefault("${root_password}", ""));
+            dorisDatasource.setPassword(dorisVars.getOrDefault("${DORIS.root_password}", "3ght%ed75BGk"));
 
-            String webserverPort = dorisVars.getOrDefault("${webserver_port}", "8040");
-            List<String> beHostPorts = dorisBEs.stream().map(x -> String.format("%s:%s", x.getHostname(), webserverPort)).collect(Collectors.toList());
+            String webserverPort = dorisVars.getOrDefault("${DORIS.webserver_port}", "18040");
+            List<String> beHostPorts = dorisBEs.stream().map(x -> String.format("%s:%s", hostMaps.getOrDefault(x.getHostname(), x.getHostname()), webserverPort)).collect(Collectors.toList());
             dorisDatasource.setBeHostPorts(beHostPorts);
             dorisDatasource.setBeHostPorts(beHostPorts);
             logger.info("doris get info success");
