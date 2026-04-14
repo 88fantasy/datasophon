@@ -3,6 +3,8 @@ package com.datasophon.api.service.k8s.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.api.dto.instance.K8sServiceInstanceQueryDTO;
+import com.datasophon.api.dto.log.K8sRuntimeEventQueryDTO;
+import com.datasophon.api.dto.log.K8sRuntimeLogQueryDTO;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.service.k8s.K8sService;
@@ -10,6 +12,7 @@ import com.datasophon.api.vo.k8s.K8sClusterStatus;
 import com.datasophon.api.vo.k8s.K8sConfigMapInfo;
 import com.datasophon.api.vo.k8s.K8sConnectionResult;
 import com.datasophon.api.vo.k8s.K8sDeploymentInfo;
+import com.datasophon.api.vo.k8s.K8sEventInfo;
 import com.datasophon.api.vo.k8s.K8sIngressInfo;
 import com.datasophon.api.vo.k8s.K8sNamespace;
 import com.datasophon.api.vo.k8s.K8sPodInfo;
@@ -22,6 +25,7 @@ import com.datasophon.common.k8s.exception.KubectlException;
 import com.datasophon.common.k8s.spec.helm.HelmUtils;
 import com.datasophon.common.k8s.vo.k8s.K8sConfigMap;
 import com.datasophon.common.k8s.vo.k8s.K8sDeployment;
+import com.datasophon.common.k8s.vo.k8s.K8sEvent;
 import com.datasophon.common.k8s.vo.k8s.K8sIngress;
 import com.datasophon.common.k8s.vo.k8s.K8sPod;
 import com.datasophon.common.k8s.vo.k8s.K8sResourceList;
@@ -586,6 +590,120 @@ public class K8sServiceImpl implements K8sService {
     @Override
     public <T> T batchExec(K8sClusterConfig config, ThrowableMapper<KubectlClient, T> consumer, String actionHint) {
         return exec(newOptions(config), consumer, actionHint);
+    }
+
+    @Override
+    public String getPodLog(K8sClusterConfig config, K8sRuntimeLogQueryDTO dto) {
+        return exec(newOptions(config), client -> {
+            String namespace = getNamespaceByInstanceId(dto.getInstanceId());
+            String podName = dto.getPodName();
+            String containerName = dto.getContainerName();
+            boolean previous = dto.isPrevious();
+
+            return client.getPodLog(namespace, podName, containerName, previous, dto.getLines());
+        }, "获取 K8s Pod 日志");
+    }
+
+    @Override
+    public List<K8sEventInfo> listDeploymentEvents(K8sClusterConfig config, K8sRuntimeEventQueryDTO query) {
+        return exec(newOptions(config), client -> {
+            String namespace = getNamespaceByInstanceId(query.getInstanceId());
+            String deploymentName = query.getDeployment();
+
+            List<K8sEvent> allEvents = new ArrayList<>();
+            // 1. 获取 Deployment 本身的事件：kubectl events --for=deployment/<name> -n <namespace>
+            List<K8sEvent> deploymentEvents = client.getEventOf(namespace, "deployment/" + deploymentName);
+            allEvents.addAll(deploymentEvents);
+            // 2. 获取 Deployment 关联的 Pods（通过 Deployment 的 label selector）
+            // 首先获取 Deployment 详情以获取其 selector
+            K8sDeployment deployment = client.getDeployment(namespace, deploymentName);
+
+            if (deployment != null) {
+                String labelSelector = null;
+                if (deployment.getSpec() != null && deployment.getSpec().getSelector() != null) {
+                    Map<String, String> matchLabels = deployment.getSpec().getSelector().getMatchLabels();
+                    if (matchLabels != null && !matchLabels.isEmpty()) {
+                        labelSelector = parseLabelSelector(matchLabels);
+                    }
+                }
+
+                // 通过 label selector 获取关联的 Pods
+                K8sResourceList<K8sPod> podsResult = client.getPods(namespace, labelSelector);
+                if (podsResult != null && podsResult.getItems() != null) {
+                    // 3. 获取每个 Pod 的事件
+                    for (K8sPod pod : podsResult.getItems()) {
+                        String podName = pod.getMetadata() != null ? pod.getMetadata().getName() : null;
+                        if (podName != null) {
+                            List<K8sEvent> podEvents = client.getEventOf(namespace, "pod/" + podName);
+                            allEvents.addAll(podEvents);
+                        }
+                    }
+                }
+            }
+
+
+            // 4. 转换为 K8sEventInfo
+            List<K8sEventInfo> eventInfos = new ArrayList<>();
+            for (K8sEvent event : allEvents) {
+                eventInfos.add(eventToInfo(event));
+            }
+
+            // 5. 按最后发生时间逆序排序（从新到旧）
+            eventInfos.sort((e1, e2) -> {
+                String t1 = e1.getLastTimestamp() != null ? e1.getLastTimestamp() : e1.getFirstTimestamp();
+                String t2 = e2.getLastTimestamp() != null ? e2.getLastTimestamp() : e2.getFirstTimestamp();
+                return t2 != null && t1 != null ? t2.compareTo(t1) : 0;
+            });
+
+            return eventInfos;
+        }, "获取 Deployment 及其关联 Pod 的事件");
+    }
+
+    /**
+     * 将标签选择器 JSON 转换为 key=value,key2=value2 格式
+     * 例如：{"app":"my-app","version":"v1"} -> app=my-app,version=v1
+     */
+    private String parseLabelSelector(Map<String, String> selector) {
+        if (selector == null || selector.isEmpty()) {
+            return null;
+        }
+        List<String> selectors = new ArrayList<>();
+        selector.forEach((k, v) -> selectors.add(k + "=" + v));
+        return String.join(",", selectors);
+    }
+
+    /**
+     * 将 K8sEvent 转换为 K8sEventInfo
+     */
+    private K8sEventInfo eventToInfo(K8sEvent event) {
+        K8sEventInfo info = new K8sEventInfo();
+        info.setName(event.getMetadata() != null ? event.getMetadata().getName() : null);
+        info.setNamespace(event.getMetadata() != null ? event.getMetadata().getNamespace() : null);
+        info.setAge(calculateAge(event.getMetadata() != null ? event.getMetadata().getCreationTimestamp() : null));
+        info.setType(event.getType());
+        info.setReason(event.getReason());
+        info.setMessage(event.getMessage());
+        info.setFirstTimestamp(event.getFirstTimestamp());
+        info.setLastTimestamp(event.getLastTimestamp());
+        info.setCount(event.getCount());
+        info.setReportingComponent(event.getReportingComponent());
+
+        // 关联对象信息
+        if (event.getInvolvedObject() != null) {
+            K8sEvent.InvolvedObject involvedObject = event.getInvolvedObject();
+            info.setInvolvedObjectKind(involvedObject.getKind());
+            info.setInvolvedObjectName(involvedObject.getName());
+            info.setInvolvedObjectNamespace(involvedObject.getNamespace());
+        }
+
+        // 事件来源
+        if (event.getSource() != null) {
+            K8sEvent.EventSource source = event.getSource();
+            info.setSourceComponent(source.getComponent());
+            info.setSourceHost(source.getHost());
+        }
+
+        return info;
     }
 
     private <T> T exec(ClientOptions options, ThrowableMapper<KubectlClient, T> consumer, String actionHint) {

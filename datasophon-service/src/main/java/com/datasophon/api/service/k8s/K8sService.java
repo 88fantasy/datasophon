@@ -1,10 +1,13 @@
 package com.datasophon.api.service.k8s;
 
 import com.datasophon.api.dto.instance.K8sServiceInstanceQueryDTO;
+import com.datasophon.api.dto.log.K8sRuntimeEventQueryDTO;
+import com.datasophon.api.dto.log.K8sRuntimeLogQueryDTO;
 import com.datasophon.api.vo.k8s.K8sClusterStatus;
 import com.datasophon.api.vo.k8s.K8sConfigMapInfo;
 import com.datasophon.api.vo.k8s.K8sConnectionResult;
 import com.datasophon.api.vo.k8s.K8sDeploymentInfo;
+import com.datasophon.api.vo.k8s.K8sEventInfo;
 import com.datasophon.api.vo.k8s.K8sIngressInfo;
 import com.datasophon.api.vo.k8s.K8sNamespace;
 import com.datasophon.api.vo.k8s.K8sPodInfo;
@@ -145,4 +148,20 @@ public interface K8sService {
 
     <T> T batchExec(K8sClusterConfig config, ThrowableMapper<KubectlClient, T> consumer, String actionHint);
 
+    /**
+     * 获取k8s日志
+     * @param config
+     * @param dto
+     * @return
+     */
+    String getPodLog(K8sClusterConfig config, K8sRuntimeLogQueryDTO dto);
+
+    /**
+     * 获取 Deployment 及其关联 Pod 的事件列表（按时间逆序）
+     *
+     * @param config         K8s 集群配置
+     * @param query  查询名字
+     * @return 事件列表（按时间逆序）
+     */
+    List<K8sEventInfo> listDeploymentEvents(K8sClusterConfig config, K8sRuntimeEventQueryDTO query);
 }
