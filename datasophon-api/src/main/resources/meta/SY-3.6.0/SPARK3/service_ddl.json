@@ -46,52 +46,6 @@
           "to": "jars/spark-doris-connector-spark-3.4-25.2.0.jar"
         }
       ]
-    },
-    {
-      "name": "SparkThriftServer",
-      "label": "SparkThriftServer",
-      "roleType": "worker",
-      "runAs": {
-        "user": "hive",
-        "group": "hadoop"
-      },
-      "cardinality": "1",
-      "logFile": "logs/spark-hive-org.apache.spark.sql.hive.thriftserver.HiveThriftServer2-1-${host}.out",
-      "resourceStrategies": [
-        {
-          "type": "download",
-          "from": "script/control_spark_thrift.sh",
-          "to": "control_spark_thrift.sh"
-        }
-      ],
-      "startRunner": {
-        "timeout": "60",
-        "program": "control_spark_thrift.sh",
-        "args": [
-          "start"
-        ]
-      },
-      "stopRunner": {
-        "timeout": "600",
-        "program": "control_spark_thrift.sh",
-        "args": [
-          "stop"
-        ]
-      },
-      "statusRunner": {
-        "timeout": "60",
-        "program": "control_spark_thrift.sh",
-        "args": [
-          "status"
-        ]
-      },
-      "restartRunner": {
-        "timeout": "60",
-        "program": "control_spark_thrift.sh",
-        "args": [
-          "restart"
-        ]
-      }
     }
   ],
   "configWriter": {
