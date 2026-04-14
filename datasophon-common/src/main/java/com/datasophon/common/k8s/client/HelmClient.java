@@ -7,7 +7,9 @@ import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.k8s.config.ClientOptions;
 import com.datasophon.common.k8s.dto.UpgradeParams;
 import com.datasophon.common.k8s.exception.HelmException;
+import com.datasophon.common.k8s.vo.helm.HelmHistoryVO;
 import com.datasophon.common.k8s.vo.helm.HelmReleaseVO;
+import com.datasophon.common.k8s.vo.helm.HelmStatusVO;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PathUtils;
 import com.datasophon.common.utils.PropertyUtils;
@@ -240,7 +242,7 @@ public class HelmClient implements AutoCloseable{
 
         List<String> command = buildUpgradeCommand(params);
         log.info("执行 helm upgrade: release={}, chart={}", params.getReleaseName(), params.getChartPath());
-        ExecResult result = executeWithResult(command, params.getTimeoutSeconds());
+        ExecResult result = executeWithResult(command, params.getTimeoutSeconds() + 1);
         try {
             return mapper.readValue(result.getExecOut(), HelmReleaseVO.class);
         } catch (Exception e) {
@@ -248,6 +250,113 @@ public class HelmClient implements AutoCloseable{
         }
     }
 
+    /**
+     * 列出指定 namespace 的 release 列表
+     *
+     * @param namespace 命名空间
+     * @param filter    过滤条件（如 pending, deployed, failed 等）
+     * @return release 列表
+     * @throws HelmException 命令执行失败
+     */
+    public List<HelmReleaseVO> list(String namespace, String filter) throws HelmException {
+        List<String> args = new ArrayList<>();
+        args.add("list");
+
+        if (StrUtil.isNotBlank(namespace)) {
+            args.add("--namespace");
+            args.add(namespace);
+        }
+
+        args.add("--all");
+        args.add("--output");
+        args.add("json");
+
+        ExecResult result = executeWithResult(args, 30);
+        try {
+            List<HelmReleaseVO> releases = mapper.readValue(result.getExecOut(), mapper.getTypeFactory().constructCollectionType(List.class, HelmReleaseVO.class));
+            if (StrUtil.isBlank(filter)) {
+                return releases;
+            }
+            // 过滤状态
+            List<HelmReleaseVO> filtered = new ArrayList<>();
+            for (HelmReleaseVO release : releases) {
+                if (release.getInfo() != null && filter.equalsIgnoreCase(release.getInfo().getStatus())) {
+                    filtered.add(release);
+                }
+            }
+            return filtered;
+        } catch (Exception e) {
+            throw new HelmException("解析 helm list 响应失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 查询指定 release 的历史记录
+     *
+     * @param releaseName release 名称
+     * @param namespace   命名空间
+     * @return 历史记录列表（按版本号降序排列）
+     * @throws HelmException 命令执行失败
+     */
+    public List<HelmHistoryVO> history(String releaseName, String namespace) throws HelmException {
+        if (StrUtil.isBlank(releaseName)) {
+            throw new IllegalArgumentException("releaseName 不能为空");
+        }
+
+        List<String> args = new ArrayList<>();
+        args.add("history");
+        args.add(releaseName);
+
+        if (StrUtil.isNotBlank(namespace)) {
+            args.add("--namespace");
+            args.add(namespace);
+        }
+
+        args.add("--output");
+        args.add("json");
+
+        ExecResult result = executeWithResult(args, 30);
+        try {
+            return mapper.readValue(result.getExecOut(), mapper.getTypeFactory().constructCollectionType(List.class, HelmHistoryVO.class));
+        } catch (Exception e) {
+            throw new HelmException("解析 helm history 响应失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 查询指定 release 的状态信息
+     *
+     * @param releaseName release 名称
+     * @param namespace   命名空间
+     * @param revision    修订版本号
+     * @return release 状态信息
+     * @throws HelmException 命令执行失败
+     */
+    public HelmStatusVO status(String releaseName, String namespace, Integer revision) throws HelmException {
+        List<String> args = new ArrayList<>();
+        args.add("status");
+        args.add(releaseName);
+
+        if (StrUtil.isNotBlank(namespace)) {
+            args.add("--namespace");
+            args.add(namespace);
+        }
+
+        if (revision != null) {
+            args.add("--revision");
+            args.add(revision.toString());
+        }
+
+        args.add("--output");
+        args.add("json");
+
+        ExecResult result = executeWithResult(args, 30);
+        try {
+            return mapper.readValue(result.getExecOut(), HelmStatusVO.class);
+        } catch (Exception e) {
+            throw new HelmException("解析 helm status 响应失败：" + e.getMessage());
+        }
+    }
 
 
 

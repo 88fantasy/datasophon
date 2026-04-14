@@ -9,6 +9,7 @@ import com.datasophon.common.k8s.dto.UpdateDeploymentDTO;
 import com.datasophon.common.k8s.exception.KubectlException;
 import com.datasophon.common.k8s.vo.k8s.K8sConfigMap;
 import com.datasophon.common.k8s.vo.k8s.K8sDeployment;
+import com.datasophon.common.k8s.vo.k8s.K8sEvent;
 import com.datasophon.common.k8s.vo.k8s.K8sIngress;
 import com.datasophon.common.k8s.vo.k8s.K8sNamespace;
 import com.datasophon.common.k8s.vo.k8s.K8sNode;
@@ -248,6 +249,29 @@ public class KubectlClient implements AutoCloseable {
         }
         String jsonNode = executeToJson(args, 30);
         return parseResourceList(jsonNode, K8sDeployment.class);
+    }
+
+    /**
+     * 获取指定命名空间中指定名称的 Deployment
+     *
+     * @param namespace     命名空间
+     * @param deploymentName Deployment 名称
+     * @return Deployment 对象，不存在时返回 null
+     */
+    public K8sDeployment getDeployment(String namespace, String deploymentName) throws KubectlException {
+        List<String> args = Arrays.asList("get", "deployment", deploymentName, "-n", namespace, "-o", "json");
+        ExecResult result = execute(args, 30);
+        if (!result.isSuccess()) {
+            if (StrUtil.trimToEmpty(result.getExecOut()).contains("not found")) {
+                return null;
+            }
+            throw new KubectlException("kubectl 命令执行失败：" + result.getErrorTraceMessage());
+        }
+        try {
+            return mapper.readValue(result.getExecOut(), K8sDeployment.class);
+        } catch (JsonProcessingException e) {
+            throw new KubectlException(String.format("解析 Deployment 失败，%s", e.getMessage()), e);
+        }
     }
 
     /**
@@ -524,6 +548,79 @@ public class KubectlClient implements AutoCloseable {
         String output = result.getExecOut().trim();
         return StrUtil.isNotBlank(output);
     }
+
+    /**
+     * 批量删除指定的 Secret
+     *
+     * @param namespace  命名空间
+     * @param secretNames Secret 名称列表
+     */
+    public void deleteSecrets(String namespace, List<String> secretNames) throws KubectlException {
+        List<String> args = new ArrayList<>(Arrays.asList("delete", "secret", "-n", namespace));
+        args.addAll(secretNames);
+        args.add("--ignore-not-found=true");
+
+        ExecResult result = execute(args, 60);
+        if (!result.isSuccess()) {
+            throw new KubectlException(String.format("删除 secrets 失败，%s", result.getErrorTraceMessage()));
+        }
+    }
+
+    /**
+     * 获取 Pod 日志
+     *
+     * @param namespace     命名空间
+     * @param podName       Pod 名称
+     * @param containerName 容器名称（可选，Pod 有多个容器时必填）
+     * @param previous      是否查看上一次运行终止时的日志
+     * @param lines         日志行数
+     * @return 日志内容
+     */
+    public String getPodLog(String namespace, String podName, String containerName, boolean previous, int lines) throws KubectlException {
+        List<String> args = new ArrayList<>(Arrays.asList("logs", podName, "-n", namespace));
+
+        if (StrUtil.isNotBlank(containerName)) {
+            args.add("-c");
+            args.add(containerName);
+        }
+
+        if (previous) {
+            args.add("--previous");
+        }
+
+        if (lines > 0) {
+            args.add("--tail");
+            args.add(String.valueOf(lines));
+        }
+
+        ExecResult result = execute(args, 60);
+        if (!result.isSuccess()) {
+            throw new KubectlException(String.format("获取 pod/%s 日志失败，%s", podName, result.getErrorTraceMessage()));
+        }
+
+        return result.getExecOut();
+    }
+
+    /**
+     * 获取 事件
+     * 对应命令：kubectl events --for=deployment/<deployment-name> -n <namespace>
+     *
+     * @param namespace      命名空间
+     * @param resourceName eg: pod/xxx
+     * @return 事件列表
+     */
+    public List<K8sEvent> getEventOf(String namespace, String resourceName) throws KubectlException {
+        List<String> args = Arrays.asList("events", "--for=" + resourceName, "-n", namespace);
+        String result = executeToJson(args, 30);
+        if (result.contains("No events found")) {
+            return new ArrayList<>(0);
+        }
+        K8sResourceList<K8sEvent> list = parseResourceList(result, K8sEvent.class);
+        return list.getItems() == null ? new ArrayList<>(0) : list.getItems();
+    }
+
+
+
 
     @Override
     public void close() {
