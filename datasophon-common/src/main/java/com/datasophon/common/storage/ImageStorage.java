@@ -9,7 +9,7 @@ import java.io.File;
  */
 public interface ImageStorage {
 
-    String REPO = "image";
+    String REPO = "docker";
 
     boolean isEnabled();
 
