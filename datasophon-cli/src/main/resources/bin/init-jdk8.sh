@@ -95,6 +95,12 @@ else
 
   echo "BCPROV Installed."
 
+  echo "jdk.tls.disabledAlgorithms init"
+  sed -i '/jdk.tls.disabledAlgorithms=/ s/, TLSv1//' ${JAVA_HOME}/jre/lib/security/java.security
+  sed -i '/jdk.tls.disabledAlgorithms=/ s/TLSv1,//' ${JAVA_HOME}/jre/lib/security/java.security
+  sed -i '/jdk.tls.disabledAlgorithms=/ s/, TLSv1.1//' ${JAVA_HOME}/jre/lib/security/java.security
+  sed -i '/jdk.tls.disabledAlgorithms=/ s/TLSv1.1,//' ${JAVA_HOME}/jre/lib/security/java.security
+
   echo "If you need to effect the environment variable in the current session, do it manually: "
   source ${BASH_PROFILE_PATH}
   source ${BASHRC_PATH}

@@ -57,6 +57,7 @@ public class InitJdk8 extends InitBase {
         ExecResult exec = executor.execShell("which java");
         String jdkAvailable = exec.getExecOut().trim();
         String javaBinPath = String.format("%s/%s/bin/java", jdkFolderPath, jdkPathName);
+        String JAVA_HOME = String.format("%s/%s", jdkFolderPath, jdkPathName);
         if (jdkAvailable.equals(javaBinPath)) {
             log.info("JDK installed. java path is {}", javaBinPath);
         } else {
@@ -89,6 +90,14 @@ public class InitJdk8 extends InitBase {
 
             executor.execShell(String.format("cp -a %s %s", javaBcprovJar, javaBcprovDir));
             log.info("BCPROV Installed.");
+
+
+            log.info("jdk.tls.disabledAlgorithms init");
+            executor.execShell(String.format("sed -i '/jdk.tls.disabledAlgorithms=/ s/, TLSv1//' %s/jre/lib/security/java.security", JAVA_HOME));
+            executor.execShell(String.format("sed -i '/jdk.tls.disabledAlgorithms=/ s/TLSv1,//' %s/jre/lib/security/java.security", JAVA_HOME));
+            executor.execShell(String.format("sed -i '/jdk.tls.disabledAlgorithms=/ s/, TLSv1.1//' %s/jre/lib/security/java.security", JAVA_HOME));
+            executor.execShell(String.format("sed -i '/jdk.tls.disabledAlgorithms=/ s/TLSv1.1,//' %s/jre/lib/security/java.security", JAVA_HOME));
+
             executor.execShell(String.format("source %s", bashProfilePath));
             executor.execShell(String.format("source %s", bashrcPath));
             executor.execShell(String.format("source %s", etcProfilePath));
