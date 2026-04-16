@@ -55,7 +55,12 @@ public class InitMysqlAppDb extends InitBase {
         executor.execShell(String.format("mysql -uroot  -P'%s'  -p'%s' -e \"CREATE USER '%s'@'%%' IDENTIFIED BY '%s';\"", port, rootPasswd, account, passwd));
         executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"ALTER USER '%s'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;\"", port, rootPasswd, account, passwd));
         executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"ALTER USER '%s'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';\"", port, rootPasswd, account, passwd));
-        executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"GRANT ALL PRIVILEGES ON %s.* TO '%s'@'%%';\"", port, rootPasswd, dbName, account));
+        if(account.equals("bigdata")) {
+            //需要访问hive等
+            executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"GRANT ALL PRIVILEGES ON %s.* TO '%s'@'%%';\"", port, rootPasswd, dbName, account));
+        } else {
+            executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"GRANT ALL PRIVILEGES ON *.* TO '%s'@'%%';\"", port, rootPasswd, account));
+        }
         executor.execShell(String.format("mysql -uroot -P'%s'  -p'%s' -e \"FLUSH PRIVILEGES;\"", port, rootPasswd));
     }
 }
