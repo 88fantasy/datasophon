@@ -141,6 +141,9 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
             throw new BusinessHintException(String.format("服务%s存在正在运行的Pod，请先停止服务后再删除实例", instance.getServiceName()));
         }
 
+
+        k8sService.uninstallRelease(config, instanceId);
+
         k8sServiceInstanceValuesService.removeByInstanceId(instanceId);
         // 5. 检查通过，删除服务实例
         return removeById(instanceId);

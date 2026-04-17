@@ -18,9 +18,10 @@ import com.datasophon.api.vo.k8s.K8sNamespace;
 import com.datasophon.api.vo.k8s.K8sPodInfo;
 import com.datasophon.api.vo.k8s.K8sServiceInfo;
 import com.datasophon.common.function.ThrowableMapper;
+import com.datasophon.common.k8s.client.HelmClient;
 import com.datasophon.common.k8s.client.KubectlClient;
 import com.datasophon.common.k8s.config.ClientOptions;
-import com.datasophon.common.k8s.config.DockerOptions;
+import com.datasophon.common.k8s.config.DockerRegistryOptions;
 import com.datasophon.common.k8s.exception.KubectlException;
 import com.datasophon.common.k8s.spec.helm.HelmUtils;
 import com.datasophon.common.k8s.vo.k8s.K8sConfigMap;
@@ -523,8 +524,8 @@ public class K8sServiceImpl implements K8sService {
             // 3. 创建 nexus-registry-secret
             K8sSecret sSecret = client.getSecret(namespaceName, secretName);
             if (sSecret == null) {
-                DockerOptions options = NexusImageStorage.newOptions();
-                String dockerServer = String.format("%s:%s", options.getRepoHost(), options.getRepoPort());
+                DockerRegistryOptions options = NexusImageStorage.newOptions();
+                String dockerServer = String.format("%s:%s", options.getHost(), options.getPort());
                 client.createDockerRegistrySecret(namespaceName, secretName, dockerServer, options.getUsername(), options.getPassword());
                 log.info("nexus-registry-secret created in namespace {}", namespaceName);
 
@@ -659,6 +660,8 @@ public class K8sServiceImpl implements K8sService {
         }, "获取 Deployment 及其关联 Pod 的事件");
     }
 
+
+
     /**
      * 将标签选择器 JSON 转换为 key=value,key2=value2 格式
      * 例如：{"app":"my-app","version":"v1"} -> app=my-app,version=v1
@@ -704,6 +707,17 @@ public class K8sServiceImpl implements K8sService {
         }
 
         return info;
+    }
+
+    @Override
+    public void uninstallRelease(K8sClusterConfig config, Integer instanceId) {
+        try (HelmClient client = new HelmClient(newOptions(config))){
+            K8sServiceInstanceVO instance = k8sServiceInstanceService.getVoById(instanceId);
+            String namespace = instance.getNamespace();
+            String releaseName = HelmUtils.createReleaseName(instance.getServiceName());
+            log.info("卸载helm release {}", releaseName);
+            client.uninstall(namespace, releaseName);
+        }
     }
 
     private <T> T exec(ClientOptions options, ThrowableMapper<KubectlClient, T> consumer, String actionHint) {

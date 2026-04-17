@@ -171,14 +171,14 @@ public class DockerImageParser {
             } else {
                 // 根据媒体类型判断镜像类型并解析平台信息
                 // 单架构镜像（application/vnd.oci.image.manifest.v1+json）
-                if (ref.getMediaType().contains("vnd.oci.image.manifest.v")) {
+                if (ref.getMediaType().contains("manifest.v")) {
                     String digest = ref.getDigest();
                     ImageHostPlatform platform = parseSinglePlatform(unzipDir, digest);
                     if (platform != null) {
                         platforms.add(platform);
                     }
                 // 多架构镜像列表（application/vnd.docker.distribution.manifest.list.v2+json）
-                } else if (ref.getMediaType().contains("vnd.docker.distribution.manifest.list.v")) {
+                } else if (ref.getMediaType().contains("manifest.list.v")) {
                     String digest = ref.getDigest();
                     List<ImageHostPlatform> tempList = parseMultiPlatforms(unzipDir, digest);
                     platforms.addAll(tempList);

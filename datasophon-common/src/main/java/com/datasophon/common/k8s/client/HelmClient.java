@@ -5,6 +5,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.k8s.config.ClientOptions;
+import com.datasophon.common.k8s.dto.UninstallParams;
 import com.datasophon.common.k8s.dto.UpgradeParams;
 import com.datasophon.common.k8s.exception.HelmException;
 import com.datasophon.common.k8s.vo.helm.HelmHistoryVO;
@@ -359,6 +360,66 @@ public class HelmClient implements AutoCloseable{
     }
 
 
+    /**
+     * 卸载 Helm release（保留历史记录）
+     *
+     * @param namespace 命名空间
+     * @param releaseName release 名称
+     * @throws HelmException 命令执行失败
+     */
+    public void uninstall(String namespace, String releaseName) throws HelmException {
+        UninstallParams params = new UninstallParams();
+        params.setNamespace(namespace);
+        params.setReleaseName(releaseName);
+        params.setKeepHistory(true);
+        uninstall(params);
+    }
+
+
+    /**
+     * 卸载 Helm release
+     *
+     * @param params 卸载参数
+     * @throws HelmException 命令执行失败
+     */
+    public void uninstall(UninstallParams params) throws HelmException {
+        if (StrUtil.isBlank(params.getReleaseName())) {
+            throw new HelmException("releaseName 不能为空");
+        }
+
+        List<String> args = new ArrayList<>();
+        args.add("uninstall");
+        args.add(params.getReleaseName());
+
+        // 命名空间
+        if (StrUtil.isNotBlank(params.getNamespace())) {
+            args.add("--namespace");
+            args.add(params.getNamespace());
+        }
+
+        // 保留 release 历史记录
+        if (params.isKeepHistory()) {
+            args.add("--keep-history");
+        }
+
+        // 超时
+        args.add("--timeout");
+        args.add(params.getTimeoutSeconds() + "s");
+
+        log.info("执行 helm uninstall: release={}, keepHistory={}", params.getReleaseName(), params.isKeepHistory());
+        ExecResult result = execute(args, params.getTimeoutSeconds());
+
+        // 如果执行失败，检查是否是因为 release 不存在
+        if (!result.isSuccess()) {
+            String errorMsg = result.getErrorTraceMessage();
+            // 如果 release 不存在，也认为执行成功
+            if (errorMsg.contains("release") && errorMsg.contains("not found")) {
+                log.info("helm release 不存在，视为已成功：{}", params.getReleaseName());
+                return;
+            }
+            throw new HelmException("helm 命令执行失败：" + errorMsg);
+        }
+    }
 
     @Override
     public void close() {
@@ -367,4 +428,6 @@ public class HelmClient implements AutoCloseable{
 //            FileUtil.del(tempDir);
         }
     }
+
+
 }

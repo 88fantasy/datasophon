@@ -3,6 +3,8 @@ package com.datasophon.api.utils;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.datasophon.common.Constants;
+import com.datasophon.common.k8s.config.DockerRegistryOptions;
+import com.datasophon.common.k8s.spec.docker.DockerTagUtils;
 import com.datasophon.common.storage.impl.NexusImageStorage;
 import com.datasophon.common.utils.PathUtils;
 import com.datasophon.common.utils.PlaceholderUtils;
@@ -19,8 +21,15 @@ public class HelmValueUtils {
 
 
     public static Map<String, String> getExtraValues() {
-        Map<String, String> map = new HashMap<>();
-        map.put("nexus.repository", NexusImageStorage.newOptions().getRepository());
+        Map < String, String> map = new HashMap<>();
+        DockerRegistryOptions options =  NexusImageStorage.newOptions();
+//        nexus的仓库名
+        map.put("nexus.repo", options.getRepo());
+//        镜像仓库地址，包括仓库名
+        map.put("nexus.imageRegistry", options.getImageRegistry());
+//        镜像仓库地址
+        map.put("nexus.registry", options.getRegistry());
+        map.put("repo.defaultOrg", DockerTagUtils.DEFAULT_ORG);
         return map;
     }
 

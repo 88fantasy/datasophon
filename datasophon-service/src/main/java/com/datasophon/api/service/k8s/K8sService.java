@@ -164,4 +164,11 @@ public interface K8sService {
      * @return 事件列表（按时间逆序）
      */
     List<K8sEventInfo> listDeploymentEvents(K8sClusterConfig config, K8sRuntimeEventQueryDTO query);
+
+    /**
+     * 删除与实例相关的资源
+     * @param config
+     * @param instanceId
+     */
+    void uninstallRelease(K8sClusterConfig config, Integer instanceId);
 }
