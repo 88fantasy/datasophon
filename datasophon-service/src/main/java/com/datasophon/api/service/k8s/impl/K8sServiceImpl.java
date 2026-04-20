@@ -299,12 +299,15 @@ public class K8sServiceImpl implements K8sService {
 
         // 计算重启次数
         int restartCount = 0;
+        List<String> containers = new ArrayList<>();
         if (pod.getStatus() != null && pod.getStatus().getContainerStatuses() != null) {
             for (K8sPod.ContainerStatus cs : pod.getStatus().getContainerStatuses()) {
                 restartCount += cs.getRestartCount();
+                containers.add(cs.getName());
             }
         }
         info.setRestartCount(restartCount);
+        info.setContainerNames(containers);
 
         // 设置就绪状态
         int readyContainers = 0;

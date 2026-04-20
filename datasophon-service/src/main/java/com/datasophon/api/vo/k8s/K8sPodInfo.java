@@ -3,6 +3,7 @@ package com.datasophon.api.vo.k8s;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,6 +40,9 @@ public class K8sPodInfo {
 
     @Schema(description = "标签")
     private Map<String, String> labels;
+
+    @Schema(description = "容器名称")
+    private List<String> containerNames;
 
 
 }
