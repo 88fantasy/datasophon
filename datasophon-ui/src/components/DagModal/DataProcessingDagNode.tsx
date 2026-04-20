@@ -382,12 +382,28 @@ const Index = (props) => {
                                         const modelApi = await showCommonLogModal()
                                         modelApi.default({
                                             archType,
-                                            api: () => {
-                                                return axiosPost(API.getHostCommandLog, {
-                                                    hostCommandId,
-                                                    clusterId
-                                                })
-                                            }
+                                            api: [
+                                                {
+                                                    label: '执行日志',
+                                                    api: () => {
+                                                        return axiosPost(API.getHostCommandLog, {
+                                                            hostCommandId,
+                                                            clusterId
+                                                        })
+                                                    },
+                                                },
+                                                {
+                                                    label: '运行日志',
+                                                    api: () => {
+                                                        return axiosJsonPost(`${API.getVosServiceRoleRuntimeLog}`, {
+                                                            serviceName: nodeName,
+                                                            clusterId,
+                                                            serviceRoleName: roleName
+                                                        })
+                                                    },
+
+                                                },
+                                            ]
                                         })
                                     } else {
                                         console.warn('没有hostCommandId,clusterId hostCommandId:',

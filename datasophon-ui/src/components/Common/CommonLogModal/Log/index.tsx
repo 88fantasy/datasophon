@@ -224,6 +224,7 @@ const Index = ({
                             }) :
                             (
                                 <CommonMonacoEditor
+                                    key={selectedTab}
                                     language={language}
                                     value={logs}
                                     options={mapOptions}

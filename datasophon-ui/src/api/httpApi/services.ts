@@ -65,6 +65,7 @@ export default {
   getK8sExecLog: path + "/log/getK8sExecLog", // 队列列表
   getK8sRuntimeLog: path + "/log/getK8sRuntimeLog", // 队列列表
   getK8sEvents: path + "/log/getK8sEvents", // 队列列表
+  getVosServiceRoleRuntimeLog: path + "/log/getVosServiceRoleRuntimeLog", // 队列列表
   getScheduleLog: path + "/log/getScheduleLog", // 队列列表
   getCapacityList: path + "/cluster/queue/capacity/list", // 容量队列列表
   saveQueue: path + "/cluster/yarn/queue/save", // 队列保存
