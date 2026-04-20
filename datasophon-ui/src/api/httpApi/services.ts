@@ -30,11 +30,13 @@ export default {
   deleteService: path + "/frame/service/delete", // 删除框架服务
   getServiceDdl: path + "/frame/service/getServiceDdl", // 删除框架服务
   updateDdl2: path + "/frame/service/updateDdl2", // 删除框架服务
-  listSimpleK8sInstanceValuesByInstanceId: path + "/frame/k8sInstanceValues/listSimpleByInstanceId", // 新增 k8s 实例值简化列表
+  listSimpleK8sInstanceValuesByInstanceId:
+    path + "/frame/k8sInstanceValues/listSimpleByInstanceId", // 新增 k8s 实例值简化列表
   getK8sInstanceValuesById: path + "/frame/k8sInstanceValues/getById", // 新增 k8s 实例值根据ID查询
   updateK8sInstanceValues: path + "/frame/k8sInstanceValues/update", // 新增 k8s 实例值更新
   listNewestByDeploymentK8s: path + "/extrepo/k8s/listNewestByDeployment", // k8s 部署列表中获取最新服务
-  saveServiceNamespaceMapping: path + "/extrepo/k8s/saveServiceNamespaceMapping", // k8s 命名空间映射保存
+  saveServiceNamespaceMapping:
+    path + "/extrepo/k8s/saveServiceNamespaceMapping", // k8s 命名空间映射保存
   saveConfigValuesK8s: path + "/extrepo/k8s/saveConfigValues", // k8s 配置值保存
   getValueFromRepo: path + "/frame/k8sInstanceValues/getValueFromRepo", // k8s 实例值从仓库获取
   getServiceConfigOption: path + "/service/install/getServiceConfigOption", // 查询服务配置
@@ -61,6 +63,8 @@ export default {
     path + "/cluster/service/command/host/command/getHostCommandLog", // 查询主机上服务角色指令3日志
   getQueueList: path + "/cluster/yarn/queue/list", // 队列列表
   getK8sExecLog: path + "/log/getK8sExecLog", // 队列列表
+  getK8sRuntimeLog: path + "/log/getK8sRuntimeLog", // 队列列表
+  getK8sEvents: path + "/log/getK8sEvents", // 队列列表
   getScheduleLog: path + "/log/getScheduleLog", // 队列列表
   getCapacityList: path + "/cluster/queue/capacity/list", // 容量队列列表
   saveQueue: path + "/cluster/yarn/queue/save", // 队列保存

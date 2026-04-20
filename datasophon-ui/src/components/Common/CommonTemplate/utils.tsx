@@ -1,5 +1,9 @@
 import { cloneDeep } from "lodash-es";
 
+const isPlainObject = (val: unknown): val is Record<string, unknown> => {
+    return Boolean(val && typeof val === 'object' && !Array.isArray(val));
+};
+
 export function invokeMapShowMultiply(item) {
     const inputStringArray =
         item.type === "input" && item.configType === "stringArray";
@@ -9,123 +13,66 @@ export function invokeMapShowMultiply(item) {
 
 export function invokeReFormatMultiplyValue(value) {
     if (Array.isArray(value)) {
-        value = value.map(v => {
-            if (!/Object/.test(Object.prototype.toString.call(v))) {
-                return {
-                    value: v
-                }
-            }
-        })
+        return value.filter(Boolean).map(v => isPlainObject(v) ? undefined : { value: v }).filter(Boolean);
     } else if (typeof value === 'string') {
-        value = value.split(/,|;/).map(val => {
-            return {
-                value: val
-            }
-        })
+        return value.split(/,|;/).map(val => ({ value: val }));
     }
-
-
-    return value
+    return value;
 }
 
 export function invokeFormatMultiplyValue(config, value) {
-    if (Array.isArray(value)) {
-        value = value.map(v => {
-            return v.value
-        })
-        if (config.type === 'input' && config.configType === "stringArray") {
-            value = value.join(',')
-        }
+    if (!Array.isArray(value)) return value;
 
+    const result = value.map(v => v.value);
+    if (config.type === 'input' && config.configType === "stringArray") {
+        return result.join(',');
     }
-
-    return value
+    return result;
 }
 export function invokeReMultipleWithKeyValue(value) {
-    if (Array.isArray(value)) {
-        value = value.map(v => {
-            if (/Object/.test(Object.prototype.toString.call(v))) {
-                const arr = Object.keys(v)
-                const key = arr[0]
-                return {
-                    key,
-                    value: v[key]
-                }
-            }
-        })
-    }
-
+    if (!Array.isArray(value)) return value;
 
     return value
-
+        .filter(isPlainObject)
+        .map(v => {
+            const key = Object.keys(v)[0];
+            return { key, value: v[key] };
+        });
 }
 
 export function invokeFormatMultipleWithKeyValue(value) {
+    if (!Array.isArray(value)) return value;
 
-    if (Array.isArray(value)) {
-        value = value.map((item) => {
-            if (
-                item &&
-                typeof item === 'object' &&
-                !Array.isArray(item)
-            ) {
-                const { key, value: val } = item;
-                if (key != null) {
-                    return { [key]: val };
-                }
-            }
-            return item;
-        });
-    }
-    return value;
+    return value
+        .filter(isPlainObject)
+        .map(({ key, value: val }) => (key != null ? { [String(key)]: val } : null))
+        .filter(Boolean);
 }
 
 export function invokeReMultipleWithMapValue(value) {
-    if (Array.isArray(value)) {
-        value = value.map(v => {
-            if (/Object/.test(Object.prototype.toString.call(v))) {
-                const res = []
-                for (const key in v) {
-                    res.push({
-                        key,
-                        value: v[key]
-                    })
-                }
-                return {
-                    items: res
-                }
-            }
-        })
-    }
+    if (!Array.isArray(value)) return value;
 
     return value
-
+        .filter(isPlainObject)
+        .map(v => ({
+            items: Object.entries(v).map(([key, val]) => ({ key, value: val }))
+        }));
 }
 
 export function invokeFormatMultipleWithMapValue(value) {
-    if (Array.isArray(value)) {
-        return value.map(item => {
-            if (
-                item &&
-                typeof item === 'object' &&
-                !Array.isArray(item) &&
-                Array.isArray(item.items)
-            ) {
-                const restored = {};
-                for (const kv of item.items) {
-                    // 确保 kv 是 { key, value } 结构
-                    if (kv && typeof kv === 'object' && kv.key !== undefined) {
-                        restored[kv.key] = kv.value;
-                    }
+    if (!Array.isArray(value)) return value;
+
+    return value
+        .filter(item => isPlainObject(item) && Array.isArray(item.items))
+        .map(item => {
+            const restored: Record<string, unknown> = {};
+            for (const kv of item.items) {
+                if (isPlainObject(kv) && kv.key !== undefined) {
+                    restored[String(kv.key)] = kv.value;
                 }
-                return restored;
             }
-            // 如果不符合结构，原样返回（或可选择过滤/报错）
-            return item;
+            return restored;
         });
-    }
-    // 非数组直接返回
-    return value;
 }
 
 
@@ -135,20 +82,20 @@ export function invokeHandleTemplateData(data) {
 
     data
         .filter(val => !val.hidden)
-        .map(val => {
+        .forEach(val => {
             if (invokeMapShowMultiply(val)) {
-                val.value = invokeReFormatMultiplyValue(val.value)
-                val.defaultValue = invokeReFormatMultiplyValue(val.defaultValue)
+                val.value = invokeReFormatMultiplyValue(val.value);
+                val.defaultValue = invokeReFormatMultiplyValue(val.defaultValue);
             } else if (val.type === 'multipleWithKey') {
-                val.value = invokeReMultipleWithKeyValue(val.value)
-                val.defaultValue = invokeReMultipleWithKeyValue(val.defaultValue)
+                val.value = invokeReMultipleWithKeyValue(val.value);
+                val.defaultValue = invokeReMultipleWithKeyValue(val.defaultValue);
             } else if (val.type === 'multipleWithMap') {
-                val.value = invokeReMultipleWithMapValue(val.value)
-                val.defaultValue = invokeReMultipleWithMapValue(val.defaultValue)
+                val.value = invokeReMultipleWithMapValue(val.value);
+                val.defaultValue = invokeReMultipleWithMapValue(val.defaultValue);
             }
-        })
+        });
 
-    return data
+    return data;
 }
 
 
@@ -157,18 +104,18 @@ export function invokeFormatTemplateData(data, values) {
 
     data
         .filter(val => !(!val.required && val.hidden))
-        .map(val => {
-            const valuesVal = values[val.name]
+        .forEach(val => {
+            const valuesVal = values[val.name];
             if (invokeMapShowMultiply(val)) {
-                val.value = invokeFormatMultiplyValue(val, valuesVal)
+                val.value = invokeFormatMultiplyValue(val, valuesVal);
             } else if (val.type === 'multipleWithKey') {
-                val.value = invokeFormatMultipleWithKeyValue(valuesVal)
+                val.value = invokeFormatMultipleWithKeyValue(valuesVal);
             } else if (val.type === 'multipleWithMap') {
-                val.value = invokeFormatMultipleWithMapValue(valuesVal)
+                val.value = invokeFormatMultipleWithMapValue(valuesVal);
             } else {
-                val.value = valuesVal
+                val.value = valuesVal;
             }
-        })
+        });
 
-    return data
+    return data;
 }

@@ -1,7 +1,24 @@
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import CommonMonacoEditor from "../../CommonMonacoEditor"
-import { Button } from "antd"
+import { Button, Cascader, Tabs } from "antd"
 import { CloseOutlined, FullscreenExitOutlined, FullscreenOutlined } from "@ant-design/icons"
+import { cloneDeep } from "lodash-es"
+import { invokeGenerateElId } from "../../../../utils/util"
+
+const invokeFindTab = (tabs, selectedTab) => {
+
+    if (!selectedTab) {
+        selectedTab = tabs[0]?.key || tabs[0]?.label
+    }
+
+    return tabs.find(val => {
+        if (Object.prototype.hasOwnProperty.call(val, 'key')) {
+            return val.key === selectedTab
+        } else {
+            return val.label === selectedTab
+        }
+    })
+}
 
 const Index = ({
     api,
@@ -14,18 +31,69 @@ const Index = ({
     const [logs, setLogs] = useState()
     const fullCommonMonacoEditorRef = useRef()
     const commonMonacoEditorRef = useRef()
+    const [cascaderValue, setCascaderValue] = useState()
     const [wrapperClassName, setWrapperClassName] = useState()
     const [loading, setLoading] = useState()
+    const [tabs, setTabs] = useState(() => {
+        if (Array.isArray(api)) {
+            return api.map(val => {
+                return {
+                    key: val.key || val.label,
+                    label: val.label,
+                    originData: val
+                }
+            })
+        }
+    })
 
-    const invokeInit = useCallback(async () => {
+    const [selectedTab, setSelectedTab] = useState(() => {
+        return tabs[0]?.key || tabs[0]?.label
+    })
+
+    const memoSelectedTab = useMemo(() => {
+        return invokeFindTab(tabs, selectedTab)
+    }, [selectedTab, tabs])
+
+    console.log('memoSelectedTab', memoSelectedTab)
+
+    const invokeInit = useCallback(async (key = selectedTab) => {
+        setLogs(undefined)
+
         if (typeof api === 'function') {
             const res = await api()
 
             if (res.code === 200) {
                 setLogs(res.data)
             }
+        } else if (Array.isArray(api)) {
+
+            if (invokeFindTab(tabs, key)?.originData?.children?.length && !cascaderValue) {
+                return
+            }
+
+            const apiObj = api.find(val => {
+                if (Object.prototype.hasOwnProperty.call(val, 'key')) {
+                    return val.key === key
+                } else {
+                    return val.label === key
+                }
+            })
+
+
+            if (apiObj && typeof apiObj.api === 'function') {
+                const res = await apiObj.api(cloneDeep(cascaderValue))
+
+                if (res.code === 200) {
+                    setLogs(res.data)
+                }
+            }
         }
-    }, [api])
+    }, [api, cascaderValue, selectedTab, tabs])
+
+    const onCascaderChange = useCallback(val => {
+        setCascaderValue(val)
+        // invokeInit()
+    }, [setCascaderValue])
 
 
     const onOkProxy = useCallback(async () => {
@@ -81,6 +149,17 @@ const Index = ({
 
     }, [options.readOnly])
 
+
+    console.log('{memoSelectedTab.originData.children', memoSelectedTab.originData.children)
+
+
+    const onTabClick = useCallback((key) => {
+        setCascaderValue(undefined)
+        invokeInit(key)
+        setSelectedTab(key)
+        setLogs(undefined)
+    }, [invokeInit, setCascaderValue])
+
     const invokeRender = useCallback((obj = {}) => {
 
         const {
@@ -116,13 +195,44 @@ const Index = ({
                         <CloseOutlined className="cursor-pointer" onClick={onCancelClickProxy} />
                     </div>
                 </div>
-                <div className="flex-1">
-                    <CommonMonacoEditor
-                        language={language}
-                        value={logs}
-                        options={mapOptions}
-                        ref={full ? fullCommonMonacoEditorRef : commonMonacoEditorRef}
+
+                {
+                    !!tabs && <Tabs
+                        items={tabs}
+                        onTabClick={onTabClick}
+                        activeKey={selectedTab}
                     />
+                }
+                {
+                    !!memoSelectedTab.originData?.children?.length && <Cascader
+                        rootClassName="!w-[500px]"
+                        key={selectedTab}
+                        value={cascaderValue}
+                        options={memoSelectedTab.originData.children}
+                        onChange={onCascaderChange}
+                        showCheckedStrategy={Cascader.SHOW_CHILD}
+                        className="!mb-[10px]"
+                        placeholder="请选择"
+                    />
+                }
+                <div className="flex-1">
+                    {
+                        memoSelectedTab?.originData?.logRender ?
+                            memoSelectedTab.originData.logRender({
+                                key: invokeGenerateElId(),
+                                logs
+                            }) :
+                            (
+                                <CommonMonacoEditor
+                                    language={language}
+                                    value={logs}
+                                    options={mapOptions}
+                                    ref={full ? fullCommonMonacoEditorRef : commonMonacoEditorRef}
+                                />
+                            )
+
+                    }
+
                 </div>
                 <div
                     className="mt-[10px] flex flex-col items-center"
@@ -142,7 +252,7 @@ const Index = ({
                 </div >
             </>
         )
-    }, [invokeInit, language, loading, logs, onCancelClickProxy, onFullSceenClick, onOkProxy, options])
+    }, [cascaderValue, invokeInit, language, loading, logs, memoSelectedTab.originData, onCancelClickProxy, onCascaderChange, onFullSceenClick, onOkProxy, onTabClick, options, selectedTab, tabs])
 
     return (
         <>
