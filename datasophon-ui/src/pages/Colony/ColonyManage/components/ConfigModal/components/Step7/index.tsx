@@ -332,7 +332,7 @@ const Index = ({
         if (res.code !== 200) {
             return {
                 valid: false,
-                msg: res
+                msg: res.msg
             }
         } else {
             return invokeGenerateGenericInstallCommand()
