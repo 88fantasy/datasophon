@@ -38,6 +38,7 @@ export default {
   saveServiceNamespaceMapping:
     path + "/extrepo/k8s/saveServiceNamespaceMapping", // k8s 命名空间映射保存
   saveConfigValuesK8s: path + "/extrepo/k8s/saveConfigValues", // k8s 配置值保存
+  saveConfigValueList: path + "/extrepo/k8s/saveConfigValueList", // k8s 配置值保存
   getValueFromRepo: path + "/frame/k8sInstanceValues/getValueFromRepo", // k8s 实例值从仓库获取
   getServiceConfigOption: path + "/service/install/getServiceConfigOption", // 查询服务配置
   getServiceConfigFromDdl: path + "/service/install/getServiceConfigFromDdl", // 查询服务配置
