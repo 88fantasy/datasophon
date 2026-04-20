@@ -304,38 +304,32 @@ const Index = ({
 
         cpTemplateMap[key].deltaValues = currentValue
 
-        let res
 
 
-        const reqArr = await Promise.all(
-            memoTabs.map(tab => {
+        const saveParam = memoTabs.map(tab => {
 
 
 
-                const saveParam = {
-                    clusterId,
-                    serviceId: tab.key,
-                    namespace: tab.originData.namespace,
-                    metaFileType: tab.originData.metaFileType,
-                    ...(cpTemplateMap[tab.key] || {}),
-                };
-                return axiosJsonPost(
-                    API.saveConfigValueList,
-                    saveParam
-                )
-            })
+            return {
+                clusterId,
+                serviceId: tab.key,
+                namespace: tab.originData.namespace,
+                metaFileType: tab.originData.metaFileType,
+                ...(cpTemplateMap[tab.key] || {}),
+            };
+
+        })
+
+
+
+        const res = await axiosJsonPost(
+            API.saveConfigValueList,
+            saveParam
         )
 
 
-        for (const item of reqArr) {
-            if (item.code !== 200) {
-                res = item.msg
-                break
-            }
 
-        }
-
-        if (res) {
+        if (res.code !== 200) {
             return {
                 valid: false,
                 msg: res
