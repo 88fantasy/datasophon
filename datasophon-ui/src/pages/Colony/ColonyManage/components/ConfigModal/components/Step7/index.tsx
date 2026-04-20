@@ -320,7 +320,7 @@ const Index = ({
                     ...(cpTemplateMap[tab.key] || {}),
                 };
                 return axiosJsonPost(
-                    API.saveConfigValuesK8s,
+                    API.saveConfigValueList,
                     saveParam
                 )
             })
