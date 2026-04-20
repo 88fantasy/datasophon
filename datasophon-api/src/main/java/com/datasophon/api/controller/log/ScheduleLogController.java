@@ -10,7 +10,6 @@ import com.datasophon.api.service.log.VosProductService;
 import com.datasophon.api.vo.k8s.K8sEventInfo;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.Result;
-import com.datasophon.dao.entity.instance.K8sServiceInstanceValues;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -50,7 +49,7 @@ public class ScheduleLogController extends ApiController {
         return Result.success(content);
     }
 
-    @RequestMapping("getVosServiceRoleRuntimeLog")
+    @PostMapping("getVosServiceRoleRuntimeLog")
     @Operation(summary = "获取Vos运行日志")
     public Result getVosServiceRoleRuntimeLog(@RequestBody ServiceRoleLogQueryDTO dto) throws Exception {
         dto.setLines(getRows(dto.getLines()));
