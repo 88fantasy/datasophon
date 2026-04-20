@@ -18,6 +18,7 @@ import com.datasophon.dao.mapper.cluster.K8sClusterNamespaceMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
  */
 @Service("k8sClusterNamespaceService")
 @Slf4j
+@Transactional(rollbackFor = Exception.class)
 public class K8sClusterNamespaceServiceImpl extends ServiceImpl<K8sClusterNamespaceMapper, K8sClusterNamespace> implements K8sClusterNamespaceService {
 
     @Autowired

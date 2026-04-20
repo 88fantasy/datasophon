@@ -101,9 +101,9 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
         String downloadUrl = item.getDownloadUrl();
         if (StrUtil.isBlank(downloadUrl)) {
             downloadUrl = String.format("/meta/%s/%s/%s/%s", item.getFramework(), item.getType(), item.getServiceName(), relativePath);
-            downloadUrl = NexusFileUtils.getNexusRawObjectUrl(downloadUrl);
+            downloadUrl = NexusFacade.getRawRepoClient().getNexusRawObjectUrl(downloadUrl);
         }
-        NexusFileUtils.downStream(downloadUrl, supplier.get());
+        NexusFacade.getCommonClient().download(downloadUrl, supplier.get());
     }
 
 

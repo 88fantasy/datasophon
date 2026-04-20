@@ -52,6 +52,7 @@ import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -70,6 +71,7 @@ import java.util.stream.Collectors;
  */
 @Component("k8SProductInstallService")
 @Slf4j
+@Transactional(rollbackFor = Exception.class)
 public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport implements K8sProductInstallService {
 
 
@@ -348,7 +350,11 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
     }
 
     @Override
-    public Integer saveConfigValues(K8sServiceInstanceValuesSaveDTO dto) {
+    public List<Integer> saveConfigValueList(List<K8sServiceInstanceValuesSaveDTO> list) {
+       return list.stream().map(this::saveConfigValues).collect(Collectors.toList());
+    }
+
+    private Integer saveConfigValues(K8sServiceInstanceValuesSaveDTO dto) {
         FrameK8sServiceEntity service = frameK8sServiceService.getById(dto.getServiceId());
         K8sServiceInstanceValues values = k8sServiceInstanceValuesService.save(dto);
         CacheUtils.put(getValueCacheKey(service.getServiceName()), values.getId());

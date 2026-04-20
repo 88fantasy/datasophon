@@ -44,6 +44,7 @@ create table `t_ddh_k8s_cluster_namespace`
     `cluster_id` int(11)      DEFAULT NULL COMMENT '集群 ID',
     `state`     tinyint(4)   DEFAULT NULL COMMENT '管理状态 -1 未知状态 (即 vos 之前管理过这个数据，但是，后来找不到了) 0->namespace 的状态为 inactive 1namespace 的状态为 active',
     `namespace` varchar(100) DEFAULT NULL COMMENT '名空间的信息',
+    UNIQUE KEY uk_cluster_ns (`cluster_id`, `namespace`),
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT = 'k8s 集群名空间信息';

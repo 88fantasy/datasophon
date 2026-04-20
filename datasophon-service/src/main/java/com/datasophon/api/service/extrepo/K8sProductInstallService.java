@@ -18,5 +18,7 @@ public interface K8sProductInstallService extends ExtRepoInstallService {
     void saveServiceNamespaceMapping(Integer clusterId, List<K8sProductDeployMapping> mappings);
 
 
-    Integer saveConfigValues(K8sServiceInstanceValuesSaveDTO  dto);
+
+
+    List<Integer> saveConfigValueList(List<K8sServiceInstanceValuesSaveDTO> list);
 }

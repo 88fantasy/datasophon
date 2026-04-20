@@ -612,7 +612,8 @@ public class KubectlClient implements AutoCloseable {
     public List<K8sEvent> getEventOf(String namespace, String resourceName) throws KubectlException {
         List<String> args = Arrays.asList("events", "--for=" + resourceName, "-n", namespace);
         String result = executeToJson(args, 30);
-        if (result.contains("No events found")) {
+//        no events
+        if (StrUtil.isBlank(result)) {
             return new ArrayList<>(0);
         }
         K8sResourceList<K8sEvent> list = parseResourceList(result, K8sEvent.class);
