@@ -398,7 +398,8 @@ const Index = (props) => {
                                                         return axiosJsonPost(`${API.getVosServiceRoleRuntimeLog}`, {
                                                             serviceName: nodeName,
                                                             clusterId,
-                                                            serviceRoleName: roleName
+                                                            serviceRoleName: roleName,
+                                                            host: hostname
                                                         })
                                                     },
 
