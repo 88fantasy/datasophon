@@ -29,7 +29,7 @@ public class NexusRegistry {
 
         private String password;
 
-        private String dockerHttpPort;
+        private Integer dockerHttpPort;
 
         private List<String> repositories;
 

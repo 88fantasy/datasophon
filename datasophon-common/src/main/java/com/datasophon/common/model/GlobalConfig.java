@@ -33,9 +33,9 @@ public class GlobalConfig {
 
     private NtpServer ntpServer;
 
-    private KubernetesConfig kubernetes;
+    private Kubernetes kubernetes;
 
-    private PackagesConfig packages;
+    private Packages packages;
 
     @Data
     public static class MysqlConfig {
@@ -92,12 +92,11 @@ public class GlobalConfig {
     }
 
     @Data
-    public static class KubernetesConfig {
+    public static class Kubernetes {
         private Boolean enable;
-        private BaseServices baseServices;
-        private KuboardConfig kuboard;
-        private DockerConfig docker;
-        private HelmConfig helm;
+        public BaseServices baseServices;
+        public Kuboard kuboardI;
+        public K8sTools k8sTools;
     }
 
     @Data
@@ -105,66 +104,42 @@ public class GlobalConfig {
         private List<String> namespaces;
         private List<String> masters;
         private List<String> nodes;
-        private SealosConfig sealos;
-        private KubernetesBaseConfig kubernetes;
-        private HelmBaseConfig helm;
-        private CalicoConfig calico;
-        private IngressConfig ingress;
+        private Enable sealos;
+        private Enable kubernetesI;
+        private Enable helmI;
+        private Enable calicoI;
+        private Enable ingressI;
     }
 
     @Data
-    public static class SealosConfig {
+    public static class Enable {
         private Boolean enable;
     }
 
     @Data
-    public static class KubernetesBaseConfig {
+    public static class Kuboard {
         private Boolean enable;
-    }
-
-    @Data
-    public static class HelmBaseConfig {
-        private Boolean enable;
-    }
-
-    @Data
-    public static class CalicoConfig {
-        private Boolean enable;
-    }
-
-    @Data
-    public static class IngressConfig {
-        private Boolean enable;
+        private List<String> nodes;
+        private List<String> etcdNodes;
+        private KuboardConfig config;
     }
 
     @Data
     public static class KuboardConfig {
-        private Boolean enable;
-        private List<String> nodes;
-        private List<String> etcdNodes;
-        private KuboardConfigDetail config;
-    }
-
-    @Data
-    public static class KuboardConfigDetail {
         private String user;
         private String password;
     }
 
     @Data
-    public static class DockerConfig {
-        private Boolean enable;
-        private List<String> nodes;
+    public static class K8sTools {
+        private boolean docker;
+        private boolean helm;
+        private boolean helmify;
+        private boolean kubectl;
     }
 
     @Data
-    public static class HelmConfig {
-        private Boolean enable;
-        private List<String> nodes;
-    }
-
-    @Data
-    public static class PackagesConfig {
+    public static class Packages {
         private String os;
         private String config;
         private String soft;
@@ -172,11 +147,14 @@ public class GlobalConfig {
         private Package mysql;
         private Package rustfs;
         private Package sealos;
-        private Package kubernetes;
-        private Package helm;
-        private Package calico;
-        private Package ingress;
-        private Package kuboard;
+        private Package kubernetesI;
+        private Package helmI;
+        private Package calicoI;
+        private Package ingressI;
+        private Package kuboardI;
+        private Package helmify;
         private Package docker;
+        private Package helm;
+        private Package kubectl;
     }
 }

@@ -3,6 +3,7 @@ package com.datasophon.cli.init;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.enums.ArchType;
+import com.datasophon.common.enums.RepositoriesType;
 import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -62,8 +63,8 @@ public class InitJdk8 extends InitBase {
             log.info("JDK installed. java path is {}", javaBinPath);
         } else {
             log.info("JDK not installed, start to install");
-            CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword,
-                    jdkTarName, String.format("%s/%s", packagePath, jdkTarName));
+            CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword,
+                    jdkTarName, String.format("%s/%s", packagePath, jdkTarName), true);
 
             executor.execShell("sed -i '/export JAVA_HOME/d' /etc/profile");
             executor.execShell("sed -i '/export JAVA8_HOME/d' /etc/profile");
@@ -85,8 +86,8 @@ public class InitJdk8 extends InitBase {
             String javaBcprovDir = javaHome + "/jre/lib/ext/";
             String javaBcprovJarName = "bcprov-jdk15on-1.68.jar";
             String javaBcprovJar = packagePath + "/" + javaBcprovJarName;
-            CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword,
-                    javaBcprovJarName, javaBcprovJar);
+            CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword,
+                    javaBcprovJarName, javaBcprovJar, true);
 
             executor.execShell(String.format("cp -a %s %s", javaBcprovJar, javaBcprovDir));
             log.info("BCPROV Installed.");

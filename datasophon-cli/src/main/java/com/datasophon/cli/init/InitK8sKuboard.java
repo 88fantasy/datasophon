@@ -5,6 +5,7 @@ import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
+import com.datasophon.common.enums.RepositoriesType;
 import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -20,17 +21,23 @@ import java.util.List;
 @CommandLine.Command(name = "kuboard", description = "init kuboard")
 public class InitK8sKuboard extends InitBase implements InitNodeHandler {
 
-    @CommandLine.Option(names = {"-kc", "--kubernetesCluster"}, description = "是否安装kubernetes集群")
-    boolean kubernetesCluster = true;
+    @CommandLine.Option(names = {"-kc", "--enableKubernetesCluster"}, description = "是否安装kubernetes集群")
+    boolean enableKubernetesCluster = true;
 
-    @CommandLine.Option(names = {"-ns", "--namespaces"}, description = "命名空间", required = false)
-    List<String> namespaces;
+    @CommandLine.Option(names = {"-ktx", "--kuboardX86Tar"}, description = "kubernetes包", required = false)
+    String kuboardX86Tar;
 
-    @CommandLine.Option(names = {"-kt", "--kt"}, description = "kubernetes包", required = true)
-    String kuboardTar;
+    @CommandLine.Option(names = {"-kta", "--kuboardArmTar"}, description = "kubernetes包", required = false)
+    String kuboardArmTar;
+
+    @CommandLine.Option(names = {"-et", "--etcds"}, description = "etcd节点", split = ",", required = true)
+    List<String> etcds;
 
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
+
+    @CommandLine.Option(names = {"-p", "--password"}, description = "kuboard密码", required = true)
+    String kuboardPassword;
 
     @Override
     public String name() {
@@ -39,19 +46,40 @@ public class InitK8sKuboard extends InitBase implements InitNodeHandler {
 
     @Override
     public boolean doRun(Executor executor) {
-        String kuboardPath = String.format("%s/%s", packagePath, kuboardTar);
-        if (isKubernetesCluster()) {
-            CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword, kuboardTar, kuboardPath);
-        } else {
+        if (!enableKubernetesCluster) {
             log.info("k8s集群安装未开启，跳过");
             return true;
         }
+
+        Boolean isX86 = true;
+        if (ArchType.AARCH64 == executor.getArch()) {
+            isX86 = false;
+        }
+        String kuboardPath = String.format("%s/%s", packagePath, isX86 ? kuboardX86Tar : kuboardArmTar);
+
         log.info("开始安装kuboard...");
-        String cmd = String.format("/usr/bin/sealos run kuboard-v3-x86.tar");
+        CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? kuboardX86Tar : kuboardArmTar, kuboardPath, true);
+        
+        // 执行打标签命令
+        for (String node : etcds) {
+            String labelCmd = String.format("/usr/bin/kubectl label nodes %s k8s.kuboard.cn/role=etcd", node);
+            executor.execShell(labelCmd);
+        }
+        
+        // 验证标签是否成功
+        for (String node : etcds) {
+            String checkCmd = String.format("/usr/bin/kubectl get nodes --show-labels | grep %s | grep k8s.kuboard.cn/role=etcd", node);
+            ExecResult result = executor.execShell(checkCmd);
+            if (!result.isSuccess()) {
+                log.error("节点 {} 打标签失败", node);
+                throw new CommandLine.ExecutionException(new CommandLine(this), "执行打标签失败。node:" + node);
+            }
+        }
+        
+        // 根据标签结果决定是否安装kuboard
+        String cmd = String.format("/usr/bin/sealos run %s", kuboardPath);
         if (!executor.execShell(cmd).isSuccess()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "安装kuboard失败");
-        } else {
-            log.info("成功安装kuboard");
         }
         log.info("k8s kuboard 安装成功");
         return true;

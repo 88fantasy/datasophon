@@ -70,19 +70,18 @@ public class Application implements ApplicationContextAware {
    * @deprecated
    */
   @Deprecated
-  public static NexusRegistry getNexus() {
+  /*public static NexusRegistry getNexus() {
     NexusRegistry nexusRegistry = new NexusRegistry();
     nexusRegistry.setEnable(Constants.NEXUS_ENABLE);
-    Host host = new Host();
     host.setIp(getProperty("nexus.ip"));
     NexusRegistry.Config config = new NexusRegistry.Config();
     config.setWebPort(getProperty("nexus.port"));
     config.setUser(getProperty("nexus.user"));
     config.setPassword(getProperty("nexus.password"));
-    nexusRegistry.setHost(host);
+    nexusRegistry.setNode(host);
     nexusRegistry.setConfig(config);
     return nexusRegistry;
-  }
+  }*/
 
 
   public static NexusUri getNexusUri() {

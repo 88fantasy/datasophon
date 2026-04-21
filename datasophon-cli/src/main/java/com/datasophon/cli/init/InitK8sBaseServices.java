@@ -3,6 +3,8 @@ package com.datasophon.cli.init;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.cli.util.CliUtil;
+import com.datasophon.common.enums.ArchType;
+import com.datasophon.common.enums.RepositoriesType;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +20,8 @@ import java.util.stream.Collectors;
 @CommandLine.Command(name = "k8sBaseServices", description = "init k8sBaseServices")
 public class InitK8sBaseServices extends InitBase implements InitNodeHandler {
 
-    @CommandLine.Option(names = {"-kc", "--kubernetesCluster"}, description = "是否安装kubernetes集群")
-    boolean kubernetesCluster = true;
+    @CommandLine.Option(names = {"-kc", "--enableKubernetesCluster"}, description = "是否安装kubernetes集群")
+    boolean enableKubernetesCluster = true;
 
     @CommandLine.Option(names = {"-ns", "--namespaces"}, description = "命名空间", required = false)
     List<String> namespaces;
@@ -33,32 +35,47 @@ public class InitK8sBaseServices extends InitBase implements InitNodeHandler {
     @CommandLine.Option(names = {"-s", "--sealos"}, description = "是否安装sealos", required = true)
     boolean sealos = true;
 
-    @CommandLine.Option(names = {"-sp", "sealosTar"}, description = "sealos包", required = true)
-    String sealosTar;
+    @CommandLine.Option(names = {"-spx", "--sealosX86Tar"}, description = "sealos包", required = true)
+    String sealosX86Tar;
+
+    @CommandLine.Option(names = {"-spa", "--sealosArmTar"}, description = "sealos包", required = true)
+    String sealosArmTar;
 
     @CommandLine.Option(names = {"-k", "--kubernetes"}, description = "是否安装kubernetes", required = true)
     boolean kubernetes = true;
 
-    @CommandLine.Option(names = {"-kt", "--kt"}, description = "kubernetes包", required = true)
-    String kubernetesTar;
+    @CommandLine.Option(names = {"-ktx", "--kubernetesX86Tar"}, description = "kubernetes包", required = true)
+    String kubernetesX86Tar;
+
+    @CommandLine.Option(names = {"-kta", "--kubernetesArmTar"}, description = "kubernetes包", required = true)
+    String kubernetesArmTar;
 
     @CommandLine.Option(names = {"-h", "--helm"}, description = "是否安装helm", required = true)
     boolean helm = true;
 
-    @CommandLine.Option(names = {"-h", "--helm"}, description = "helm包", required = true)
-    String helmTar;
+    @CommandLine.Option(names = {"-hx", "--helmTX86ar"}, description = "helm包", required = true)
+    String helmTX86ar;
+
+    @CommandLine.Option(names = {"-ha", "--helmArmTar"}, description = "helm包", required = true)
+    String helmArmTar;
 
     @CommandLine.Option(names = {"-c", "--calico"}, description = "是否安装calico", required = true)
     boolean calico = true;
 
-    @CommandLine.Option(names = {"-c", "--calico"}, description = "calico包", required = true)
-    String calicoTar;
+    @CommandLine.Option(names = {"-cx", "--calicoX86"}, description = "calico包", required = true)
+    String calicoX86Tar;
+
+    @CommandLine.Option(names = {"-c", "--calicoArm"}, description = "calico包", required = true)
+    String calicoArmTar;
 
     @CommandLine.Option(names = {"-c", "--ingress"}, description = "是否安装ingress", required = true)
     boolean ingress = true;
 
-    @CommandLine.Option(names = {"-c", "--ingress"}, description = "ingress包", required = true)
-    String ingressTar;
+    @CommandLine.Option(names = {"-c", "--ingressX86"}, description = "ingress包", required = true)
+    String ingressX86Tar;
+
+    @CommandLine.Option(names = {"-c", "--ingressArm"}, description = "ingress包", required = true)
+    String ingressArmTar;
 
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
@@ -70,26 +87,23 @@ public class InitK8sBaseServices extends InitBase implements InitNodeHandler {
 
     @Override
     public boolean doRun(Executor executor) {
+        Boolean isX86 = true;
+        if (ArchType.AARCH64 == executor.getArch()) {
+            isX86 = false;
+        }
+        String sealosPath = String.format("%s/%s", packagePath, isX86 ? sealosX86Tar : sealosArmTar);
+        String kubernetesPath = String.format("%s/%s", packagePath, isX86 ? kubernetesX86Tar : kubernetesArmTar);
+        String helmPath = String.format("%s/%s", packagePath, isX86 ? helmTX86ar : helmArmTar);
+        String calicoPath = String.format("%s/%s", packagePath, isX86 ? calicoX86Tar : calicoArmTar);
+        String ingressPath = String.format("%s/%s", packagePath, isX86 ? ingressX86Tar : ingressArmTar);
 
-        String sealosPath = String.format("%s/%s", packagePath, sealosTar);
-        String kubernetesPath = String.format("%s/%s", packagePath, kubernetesTar);
-        String helmPath = String.format("%s/%s", packagePath, helmTar);
-        String calicoPath = String.format("%s/%s", packagePath, calicoTar);
-        String ingressPath = String.format("%s/%s", packagePath, ingressTar);
+        if (!enableKubernetesCluster) {
+            log.info("k8s集群安装未开启，跳过");
+            return true;
+        }
 
         if (nodes.size() < 3) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "nodes节点不能少于3");
-        }
-
-        if (isKubernetesCluster()) {
-            CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword, sealosTar, sealosPath);
-            CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword, kubernetesTar, kubernetesPath);
-            CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword, helmTar, helmPath);
-            CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword, calicoTar, calicoPath);
-            CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword, ingressTar, ingressPath);
-        } else {
-            log.info("k8s集群安装未开启，跳过");
-            return true;
         }
 
         if (isSealos()) {
@@ -104,8 +118,18 @@ public class InitK8sBaseServices extends InitBase implements InitNodeHandler {
 
         if (isKubernetes()) {
             log.info("开始安装kubernetes...");
+            CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? sealosX86Tar : sealosArmTar, sealosPath, true);
+            CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? kubernetesX86Tar : kubernetesArmTar, kubernetesPath, true);
+            CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? helmTX86ar : helmArmTar, helmPath, true);
+            CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? calicoX86Tar : calicoArmTar, calicoPath, true);
+            CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? ingressX86Tar : ingressArmTar, ingressPath, true);
+
             String k8sCmd = String.format("/usr/bin/sealos run %s %s %s %s --masters %s --nodes %s",
-                    kubernetesTar, helmTar, calicoTar, ingressTar, masters, nodes);
+                    isX86 ? kubernetesX86Tar : kubernetesArmTar,
+                    isX86 ? helmTX86ar : helmArmTar,
+                    isX86 ? calicoX86Tar : calicoArmTar,
+                    isX86 ? ingressX86Tar : ingressArmTar,
+                    masters, nodes);
             if (!executor.execShell(k8sCmd).isSuccess()) {
                 throw new CommandLine.ExecutionException(new CommandLine(this), "安装kubernetes失败");
             }

@@ -139,6 +139,13 @@ public class NexusFileUtils {
                     }
 
                     break;
+                case DOCKER:
+                    String dockerPath = repoFile.getAbsolutePath();
+                    File[] dockerFiles = FileUtil.ls(dockerPath);
+                    for (File dockerFile : dockerFiles) {
+                        repositoryUploadFile(baseUrl, repositoriesType, null, null, dockerFile, username, password, uploadSucess, uploadFails, isSuccessDelete);
+                    }
+                    break;
                 default:
                     log.info("不支持:{},跳过", repositoriesType.getDesc());
             }
@@ -188,6 +195,11 @@ public class NexusFileUtils {
                     builder.addTextBody("directory", "/packages", ContentType.TEXT_PLAIN);
                     break;
                 case APT:
+                    break;
+                case DOCKER:
+                    // Docker镜像上传
+                    builder.addTextBody("asset0.filename", file.getName(), ContentType.TEXT_PLAIN);
+                    builder.addTextBody("directory", "/images", ContentType.TEXT_PLAIN);
                     break;
                 default:
                     log.info("不支持:{},跳过", repository);

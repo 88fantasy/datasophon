@@ -92,27 +92,30 @@ kubernetes:
     nodes: [ "app2","app3","app4" ]
     sealos:
       enable: true
-    kubernetes:
+    kubernetesI:
       enable: true
-    helm:
+    helmI:
       enable: true
-    calico:
+    calicoI:
       enable: true
-    ingress:
+    ingressI:
       enable: true
-  kuboard:
+  kuboardI:
     enable: true
     nodes: ["app1"]
     etcdNodes: ["app1", "app2", "app3"] #至少3个节点
     config:
       user: "admin"
-      password: "aKv6uT_QpkZ_E"
-  docker:
-    enable: true
-    nodes: ["app1"]
-  helm:
-    enable: true
-    nodes: ["app1"]
+      password: "Kuboard123" #默认密码
+  k8sTools:
+    docker:
+      enable: true
+    helm:
+      enable: true
+    helmify:
+        enable: true
+    kubectl:
+      enable: true
 
 packages:
   os: "openEuler-22.03-LTS-SP3.tar.gz"
@@ -130,24 +133,33 @@ packages:
   sealos:
     x86_64: "sealos_5.1.0_linux_amd64.tar.gz"
     aarch64: "sealos_5.1.0_linux_arm64.tar.gz"
-  kubernetes:
+  kubernetesI:
     x86_64: "kubernetes-v1.31.8-x86.tar",
     aarch64: "kubernetes-v1.31.8-arm.tar"
-  helm:
+  helmI:
     x86_64: "helm-v4.0.1-x86.tar",
     aarch64: "helm-v4.0.1-arm.tar"
-  calico:
+  calicoI:
     x86_64: "calico-v3.28.1-x86.tar",
     aarch64: "calico-v3.28.1-arm.tar"
-  ingress:
+  ingressI:
     x86_64: "ingress-nginx-4.1.0-x86.tar",
     aarch64: "ingress-nginx-4.1.0-arm.tar"
-  kuboard:
+  kuboardI:
     x86_64: "kuboard-v3-x86.tar"
     aarch64: "kuboard-v3-arm.tar"
   helmify:
     x86_64: "helmify_Linux_arm64.tar.gz",
     aarch64: "helmify_Linux_x86_64.tar.gz"
+  docker:
+    x86_64: "docker-x86-29.3.1.tgz",
+    aarch64: "docker-arm-29.3.1.tgz"
+  helm:
+    x86_64: "helm-v4.0.1-linux-amd64.tar.gz",
+    aarch64: "helm-v4.0.1-linux-arm64.tar.gz"
+  kubectl:
+    x86_64: "kubectl-x86",
+    aarch64: "kubectl-arm"
 
 nodes:
   - projectEnvDetailId: 2001478085436047360
@@ -156,7 +168,6 @@ nodes:
     password: "aKv6uT_QpkZ_EvKr3n"
     port: 22
     hostname: "app1"
-    isLocalhost: true
   - projectEnvDetailId: 2001478085444435968
     ip: "192.168.2.213"
     user: "root"

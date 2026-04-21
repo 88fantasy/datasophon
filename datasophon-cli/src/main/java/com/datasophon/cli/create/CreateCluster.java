@@ -2,22 +2,23 @@ package com.datasophon.cli.create;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
-import com.datasophon.common.model.ClusterConfig;
-import com.datasophon.common.model.GlobalConfig;
 import com.datasophon.cli.handler.InitNodeHandler;
 import com.datasophon.cli.handler.InitNodeHandlerChain;
 import com.datasophon.cli.init.*;
 import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.enums.SSHAuthType;
+import com.datasophon.common.model.ClusterConfig;
+import com.datasophon.common.model.GlobalConfig;
 import com.datasophon.common.model.Host;
 import com.datasophon.common.model.uni.NexusRegistry;
 import com.datasophon.common.model.uni.Rustfs;
+import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.ShellUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
 import picocli.CommandLine;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -62,6 +63,10 @@ public class CreateCluster implements Runnable {
 
     private Map<String, Host> globalNodes;
 
+    private Host localHost;
+
+    String localIP;
+
     @Override
     public void run() {
         if (!datasophonPath.startsWith("/") || !installPath.startsWith("/")) {
@@ -86,6 +91,16 @@ public class CreateCluster implements Runnable {
         ClusterConfig clusterConfig = CliUtil.getConfig(initConfigYamlPath, password);
         sshAuthType = clusterConfig.getGlobal().getSshAuthType();
         globalNodes = clusterConfig.getNodes().stream().collect(Collectors.toMap(Host::getHostname, host -> host));
+
+        //本地节点设置
+        localHost = clusterConfig.getNodes().get(0);
+        localIP = HostUtils.getLocalIp();
+        clusterConfig.getNodes().forEach( x -> {
+            if (x.getIp().equals(localIP)) {
+                localHost = x;
+                log.info("local host is:{}", localHost);
+            }
+        });
 
         if (action.equals("initALL")) {
             initALL(clusterConfig);
@@ -177,7 +192,18 @@ public class CreateCluster implements Runnable {
         
         log.info("安装mysql");
         initMysql(config);
-        
+
+        log.info("安装k8s集群");
+        if(config.getGlobal().getKubernetes().getEnable()) {
+            initK8SBaseServicess(config);
+            initK8SKuboard(config);
+            initK8sRegistryConf(config);
+            initDocker(config);
+            initKubectl(config);
+            initHelm(config);
+            initHelmify(config);
+        }
+
         log.info("初始化mysql数据库和账号密码");
         initMysqlAppDb(config);
         
@@ -288,7 +314,8 @@ public class CreateCluster implements Runnable {
         initBinPackage.setInstallPath(installPath);
         initBinPackage.setDatasophonInitPath(initPath);
         initBinPackage.setInitPathOverwriteForce(initPathOverwriteForce);
-        List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
+        initBinPackage.setEnableRegistry(config.getGlobal().getRegistry().isEnable());
+        List<Host> workerNodes = nodes.stream().filter( x -> !x.getIp().equals(localIP)).collect(Collectors.toList());
         allNodesExec(workerNodes, initBinPackage);
 
     }
@@ -300,7 +327,7 @@ public class CreateCluster implements Runnable {
     private void initTar(ClusterConfig config, List<Host> nodes) {
         InitTar initTar = new InitTar();
         initTar.setPackagePath(packagesPath);
-        List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
+        List<Host> workerNodes = nodes.stream().filter( x -> !x.getIp().equals(localIP)).collect(Collectors.toList());
         allNodesExec(workerNodes, initTar);
     }
 
@@ -315,7 +342,7 @@ public class CreateCluster implements Runnable {
                     .setRegistryUsername(registry.getConfig().getUser())
                     .setRegistryPassword(registry.getConfig().getPassword());
         }
-        List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
+        List<Host> workerNodes = nodes.stream().filter( x -> !x.getIp().equals(localIP)).collect(Collectors.toList());
         allNodesExec(workerNodes, initJdk);
     }
 
@@ -330,7 +357,7 @@ public class CreateCluster implements Runnable {
                     .setRegistryUsername(registry.getConfig().getUser())
                     .setRegistryPassword(registry.getConfig().getPassword());
         }
-        List<Host> workerNodes = nodes.stream().filter( x -> !x.getIsLocalhost()).collect(Collectors.toList());
+        List<Host> workerNodes = nodes.stream().filter( x -> !x.getIp().equals(localIP)).collect(Collectors.toList());
         allNodesExec(workerNodes, initJdk);
     }
     
@@ -368,7 +395,6 @@ public class CreateCluster implements Runnable {
     }
 
     private void initRegistryUpload(ClusterConfig config, List<Host> nodes) {
-        Host localNode = getLocalNode(nodes);
         NexusRegistry registryConfig = config.getGlobal().getRegistry();
         InitRegistryUpload initRegistryUpload = new InitRegistryUpload();
         initRegistryUpload.setEnableRegistry(registryConfig.isEnable())
@@ -378,7 +404,7 @@ public class CreateCluster implements Runnable {
                 .setWebPort(registryConfig.getConfig().getWebPort())
                 .setUsername(registryConfig.getConfig().getUser())
                 .setPassword(registryConfig.getConfig().getPassword());
-        singleNodesExec(localNode, initRegistryUpload);
+        singleNodesExec(localHost, initRegistryUpload);
     }
 
     private void initRustfs(ClusterConfig config) {
@@ -413,7 +439,6 @@ public class CreateCluster implements Runnable {
         GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
         InitOfflineSlave initYumConf = new InitOfflineSlave();
         initYumConf.setConfigFilePath(initConfigYamlPath);
-        initYumConf.setConfigPassword(password);
         initYumConf.setServerIp(yumServer.getNode());
         initYumConf.setConfigPassword(password);
         initYumConf.setServerIp(yumServer.getNode())
@@ -512,21 +537,185 @@ public class CreateCluster implements Runnable {
             singleNodesExec(globalNodes.get(mysqlConfig.getNode()), initMysqlAppDb);
         });
     }
-    
-    private void initHugePage(ClusterConfig config, List<Host> nodes) {
-        allNodesExec(nodes, new InitHugePage());
+
+    private void initK8SBaseServicess(ClusterConfig config) {
+        boolean KubernetesEnable = config.getGlobal().getKubernetes().getEnable();
+        GlobalConfig.BaseServices baseServices = config.getGlobal().getKubernetes().getBaseServices();
+        InitK8sBaseServices initK8sBaseServices = new InitK8sBaseServices();
+        initK8sBaseServices.setConfigFilePath(initConfigYamlPath)
+                .setConfigPassword(password);
+
+        initK8sBaseServices.setEnableKubernetesCluster(KubernetesEnable)
+                .setNamespaces(baseServices.getNamespaces())
+                .setMasters(baseServices.getMasters())
+                .setNodes(baseServices.getNodes())
+                .setSealos(baseServices.getSealos().getEnable())
+                .setSealosX86Tar(config.getGlobal().getPackages().getSealos().getX86_64())
+                .setSealosArmTar(config.getGlobal().getPackages().getSealos().getAarch64())
+                .setKubernetes(baseServices.getKubernetesI().getEnable())
+                .setKubernetesX86Tar(config.getGlobal().getPackages().getKubernetesI().getX86_64())
+                .setKubernetesArmTar(config.getGlobal().getPackages().getKubernetesI().getAarch64())
+                .setHelm(baseServices.getHelmI().getEnable())
+                .setHelmTX86ar(config.getGlobal().getPackages().getHelmI().getX86_64())
+                .setHelmArmTar(config.getGlobal().getPackages().getHelmI().getAarch64())
+                .setCalico(baseServices.getCalicoI().getEnable())
+                .setCalicoX86Tar(config.getGlobal().getPackages().getCalicoI().getX86_64())
+                .setCalicoArmTar(config.getGlobal().getPackages().getCalicoI().getAarch64())
+                .setIngress(baseServices.getIngressI().getEnable())
+                .setIngressX86Tar(config.getGlobal().getPackages().getIngressI().getX86_64())
+                .setIngressArmTar(config.getGlobal().getPackages().getIngressI().getAarch64())
+                .setPackagePath(packagesPath);
+
+        NexusRegistry registry = config.getGlobal().getRegistry();
+        if(registry.isEnable()) {
+            initK8sBaseServices.setEnableRegistry(registry.isEnable())
+                    .setRegistryIp(registry.getNode())
+                    .setRegistryPort(registry.getConfig().getWebPort())
+                    .setRegistryUsername(registry.getConfig().getUser())
+                    .setRegistryPassword(registry.getConfig().getPassword());
+        }
+        singleNodesExec(globalNodes.get(baseServices.getMasters().get(0)), initK8sBaseServices);
     }
 
-    /**
-     * 获取localhost, 默认第一个节点
-     * @return
-     */
-    private Host getLocalNode(List<Host> nodes) {
-        Host localNode = nodes.get(0);
-        List<Host> localNodes = nodes.stream().filter(Host::getIsLocalhost).collect(Collectors.toList());
-        if(CollectionUtils.isNotEmpty(localNodes)) {
-            localNode = localNodes.get(0);
+    private void initK8SKuboard(ClusterConfig config) {
+        GlobalConfig.Kuboard services = config.getGlobal().getKubernetes().getKuboardI();
+        InitK8sKuboard instance = new InitK8sKuboard();
+        instance.setConfigFilePath(initConfigYamlPath)
+                .setConfigPassword(password);
+
+        instance.setEnableKubernetesCluster(config.getGlobal().getKubernetes().getEnable())
+                .setKuboardX86Tar(config.getGlobal().getPackages().getKuboardI().getX86_64())
+                .setKuboardArmTar(config.getGlobal().getPackages().getKuboardI().getAarch64())
+                .setPackagePath(packagesPath);
+
+        NexusRegistry registry = config.getGlobal().getRegistry();
+        if(registry.isEnable()) {
+            instance.setEnableRegistry(registry.isEnable())
+                    .setRegistryIp(registry.getNode())
+                    .setRegistryPort(registry.getConfig().getWebPort())
+                    .setRegistryUsername(registry.getConfig().getUser())
+                    .setRegistryPassword(registry.getConfig().getPassword());
         }
-        return localNode;
+        singleNodesExec(globalNodes.get(services.getNodes().get(0)), instance);
+    }
+
+    private void initK8sRegistryConf(ClusterConfig config) {
+        GlobalConfig.BaseServices services = config.getGlobal().getKubernetes().getBaseServices();
+        InitK8sRegistryConf instance = new InitK8sRegistryConf();
+        instance.setConfigFilePath(initConfigYamlPath)
+                .setConfigPassword(password);
+
+        instance.setEnableKubernetesCluster(config.getGlobal().getKubernetes().getEnable())
+                .setDockerHttpPort(config.getGlobal().getRegistry().getConfig().getDockerHttpPort());
+
+        NexusRegistry registry = config.getGlobal().getRegistry();
+        if(registry.isEnable()) {
+            instance.setEnableRegistry(registry.isEnable())
+                    .setRegistryIp(registry.getNode())
+                    .setRegistryPort(registry.getConfig().getWebPort())
+                    .setRegistryUsername(registry.getConfig().getUser())
+                    .setRegistryPassword(registry.getConfig().getPassword());
+        }
+        List<Host> k8sNodes = new ArrayList<>();
+        k8sNodes.addAll(services.getMasters().stream().map(x -> globalNodes.get(x)).collect(Collectors.toList()));
+        k8sNodes.addAll(services.getNodes().stream().map(x -> globalNodes.get(x)).collect(Collectors.toList()));
+        allNodesExec(k8sNodes, instance);
+    }
+
+    private void initDocker(ClusterConfig config) {
+        GlobalConfig.BaseServices services = config.getGlobal().getKubernetes().getBaseServices();
+        InitDocker instance = new InitDocker();
+        instance.setConfigFilePath(initConfigYamlPath)
+                .setConfigPassword(password);
+
+        instance.setEnableKubernetesCluster(config.getGlobal().getKubernetes().getEnable())
+                .setPackagePath(packagesPath)
+                .setInstallPath(installPath)
+                .setX86Tar(config.getGlobal().getPackages().getDocker().getX86_64())
+                .setAarch64Tar(config.getGlobal().getPackages().getDocker().getAarch64())
+                .setDockerHttpPort(config.getGlobal().getRegistry().getConfig().getDockerHttpPort());
+
+        NexusRegistry registry = config.getGlobal().getRegistry();
+        if(registry.isEnable()) {
+            instance.setEnableRegistry(registry.isEnable())
+                    .setRegistryIp(registry.getNode())
+                    .setRegistryPort(registry.getConfig().getWebPort())
+                    .setRegistryUsername(registry.getConfig().getUser())
+                    .setRegistryPassword(registry.getConfig().getPassword());
+        }
+        singleNodesExec(localHost, instance);
+    }
+
+    private void initKubectl(ClusterConfig config) {
+        GlobalConfig.BaseServices services = config.getGlobal().getKubernetes().getBaseServices();
+        InitKubectl instance = new InitKubectl();
+        instance.setConfigFilePath(initConfigYamlPath)
+                .setConfigPassword(password);
+
+        instance.setEnableKubernetesCluster(config.getGlobal().getKubernetes().getEnable())
+                .setPackagePath(packagesPath)
+                .setInstallPath(installPath)
+                .setX86Tar(config.getGlobal().getPackages().getDocker().getX86_64())
+                .setAarch64Tar(config.getGlobal().getPackages().getDocker().getAarch64());
+
+        NexusRegistry registry = config.getGlobal().getRegistry();
+        if(registry.isEnable()) {
+            instance.setEnableRegistry(registry.isEnable())
+                    .setRegistryIp(registry.getNode())
+                    .setRegistryPort(registry.getConfig().getWebPort())
+                    .setRegistryUsername(registry.getConfig().getUser())
+                    .setRegistryPassword(registry.getConfig().getPassword());
+        }
+        singleNodesExec(localHost, instance);
+    }
+
+    private void initHelm(ClusterConfig config) {
+        GlobalConfig.BaseServices services = config.getGlobal().getKubernetes().getBaseServices();
+        InitHelm instance = new InitHelm();
+        instance.setConfigFilePath(initConfigYamlPath)
+                .setConfigPassword(password);
+
+        instance.setEnableKubernetesCluster(config.getGlobal().getKubernetes().getEnable())
+                .setPackagePath(packagesPath)
+                .setInstallPath(installPath)
+                .setX86Tar(config.getGlobal().getPackages().getDocker().getX86_64())
+                .setAarch64Tar(config.getGlobal().getPackages().getDocker().getAarch64());
+
+        NexusRegistry registry = config.getGlobal().getRegistry();
+        if(registry.isEnable()) {
+            instance.setEnableRegistry(registry.isEnable())
+                    .setRegistryIp(registry.getNode())
+                    .setRegistryPort(registry.getConfig().getWebPort())
+                    .setRegistryUsername(registry.getConfig().getUser())
+                    .setRegistryPassword(registry.getConfig().getPassword());
+        }
+        singleNodesExec(localHost, instance);
+    }
+
+    private void initHelmify(ClusterConfig config) {
+        GlobalConfig.BaseServices services = config.getGlobal().getKubernetes().getBaseServices();
+        InitHelmify instance = new InitHelmify();
+        instance.setConfigFilePath(initConfigYamlPath)
+                .setConfigPassword(password);
+
+        instance.setEnableKubernetesCluster(config.getGlobal().getKubernetes().getEnable())
+                .setPackagePath(packagesPath)
+                .setInstallPath(installPath)
+                .setX86Tar(config.getGlobal().getPackages().getDocker().getX86_64())
+                .setAarch64Tar(config.getGlobal().getPackages().getDocker().getAarch64());
+
+        NexusRegistry registry = config.getGlobal().getRegistry();
+        if(registry.isEnable()) {
+            instance.setEnableRegistry(registry.isEnable())
+                    .setRegistryIp(registry.getNode())
+                    .setRegistryPort(registry.getConfig().getWebPort())
+                    .setRegistryUsername(registry.getConfig().getUser())
+                    .setRegistryPassword(registry.getConfig().getPassword());
+        }
+        singleNodesExec(localHost, instance);
+    }
+
+    private void initHugePage(ClusterConfig config, List<Host> nodes) {
+        allNodesExec(nodes, new InitHugePage());
     }
 }

@@ -4,10 +4,11 @@ import cn.hutool.core.codec.Base64;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RuntimeUtil;
 import com.datasophon.cli.base.CliConstants;
-import com.datasophon.common.model.ClusterConfig;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.OsType;
+import com.datasophon.common.enums.RepositoriesType;
+import com.datasophon.common.model.ClusterConfig;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.MetaUtils;
 import com.datasophon.common.utils.NexusFileUtils;
@@ -17,13 +18,11 @@ import freemarker.template.Template;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.yaml.snakeyaml.Yaml;
-import picocli.CommandLine;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.Writer;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
@@ -95,10 +94,19 @@ public final class CliUtil {
         }
     }
 
-    public static void downRegistryFile(Executor executor, boolean enableRegistry, String registryIp, String registryPort, String registryUsername, String registryPassword,
-                                  String sourceName, String distPath){
+    public static void downRegistryFile(Executor executor, boolean enableRegistry, RepositoriesType repositoriesType, String registryIp, String registryPort, String registryUsername, String registryPassword,
+                                        String sourceName, String distPath, boolean isCheckExist){
+        if(isCheckExist) {
+            if (FileUtil.exist(distPath)) {
+                log.info("制品{}已经存在，跳过下载", distPath);
+                return;
+            }
+        }
         if(enableRegistry) {
             String url = String.format("http://%s:%s/repository/raw/packages/%s", registryIp, registryPort, sourceName);
+            if(repositoriesType == RepositoriesType.DOCKER) {
+                url = String.format("http://%s:%s/repository/docker/%s", registryIp, registryPort, sourceName);
+            }
             log.info("制品{}下载开始, url:{}", sourceName, url);
             InputStream inputStream = null;
             try {

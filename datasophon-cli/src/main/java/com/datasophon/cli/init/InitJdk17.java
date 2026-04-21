@@ -3,6 +3,7 @@ package com.datasophon.cli.init;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.enums.ArchType;
+import com.datasophon.common.enums.RepositoriesType;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -58,8 +59,8 @@ public class InitJdk17 extends InitBase {
             log.info("JDK installed. java path is {}", javaBinPath);
         } else {
             log.info("JDK not installed, start to install");
-            CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword,
-                    jdkTarName, String.format("%s/%s", packagePath, jdkTarName));
+            CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword,
+                    jdkTarName, String.format("%s/%s", packagePath, jdkTarName), true);
 
             executor.execShell("sed -i '/export JAVA17_HOME/d' /etc/profile");
             executor.execShell("sed -i '/export CLASSPATH/d' /etc/profile");

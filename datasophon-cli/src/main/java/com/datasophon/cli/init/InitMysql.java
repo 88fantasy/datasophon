@@ -6,6 +6,7 @@ import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
+import com.datasophon.common.enums.RepositoriesType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.NexusFileUtils;
 import lombok.Data;
@@ -58,7 +59,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         OsType osType = executor.getOs();
         String tarPath = String.format("%s/%s", packagePath, tarName);
         String httpRootPath = String.format("%s/tmp/mysql", installPath);
-        CliUtil.downRegistryFile(executor, enableRegistry, registryIp, registryPort, registryUsername, registryPassword, tarName, tarPath);
+        CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, tarName, tarPath, true);
         Boolean isInstalled;
         if(OsType.isUnbuntu(osType)) {
             isInstalled = executor.execShell("dpkg --list|grep mysql").getExecResult();

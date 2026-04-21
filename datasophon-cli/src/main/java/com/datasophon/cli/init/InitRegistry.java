@@ -4,13 +4,9 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.cli.base.Executor;
-import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.RepositoriesType;
-import com.datasophon.common.model.uni.request.AptRepository;
-import com.datasophon.common.model.uni.request.Eula;
-import com.datasophon.common.model.uni.request.RawRepository;
-import com.datasophon.common.model.uni.request.YumRepository;
+import com.datasophon.common.model.uni.request.*;
 import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -58,6 +54,9 @@ public class InitRegistry extends InitBase {
 
     @CommandLine.Option(names = {"-r", "--repositories"}, description = "repositories", split = ",", required = true)
     List<String> repositories;
+
+    @CommandLine.Option(names = {"-dp", "--dockerHttpPort"}, description = "http端口", required = true)
+    Integer dockerHttpPort;
 
     private String DISCLAIMER = "Use of Sonatype Nexus Repository - Community Edition is governed by the End User License Agreement at https://links.sonatype.com/products/nxrm/ce-eula. By returning the value from ‘accepted:false’ to ‘accepted:true’, you acknowledge that you have read and agree to the End User License Agreement at https://links.sonatype.com/products/nxrm/ce-eula.";
 
@@ -186,7 +185,12 @@ public class InitRegistry extends InitBase {
         eula.setAccepted(true);
         eula.setDisclaimer(DISCLAIMER);
 
-        try (HttpResponse response = HttpPost(url, JSONObject.toJSONString(eula))) {
+        try (HttpResponse response = HttpRequest.post(url)
+                .basicAuth(username, password)
+                .body(JSONObject.toJSONString(eula))
+                .contentType("application/json")
+                .timeout(30000)
+                .execute()) {
             if (response.getStatus() == 204) {
                 log.info("eula协议设置成功");
             } else {
@@ -211,6 +215,10 @@ public class InitRegistry extends InitBase {
                 case YUM:
                     yumRepoCreate(baseUrl, repo);
                     break;
+                case DOCKER:
+                    dockerCreate(baseUrl, repo);
+                case HELM:
+                    helmCreate(baseUrl, repo);
                 default:
 
             }
@@ -222,15 +230,7 @@ public class InitRegistry extends InitBase {
         YumRepository repositoryReq = new YumRepository();
         repositoryReq.setName(repoName);
 
-        try (HttpResponse response = HttpPost(url, JSONObject.toJSONString(repositoryReq))) {
-            if (response.getStatus() == 201) {
-                log.info("创建{}成功", repoName);
-            } else {
-                log.error("创建{}失败. url:{}, response.status:{}, response.body:{}", repoName, url, response.getStatus(), response.body());
-                return false;
-            }
-        }
-        return true;
+        return HttpPost(url, JSONObject.toJSONString(repositoryReq), repoName);
     }
 
     public boolean aptRepoCreate(String baseUrl, String repoName, String distribution) {
@@ -247,15 +247,7 @@ public class InitRegistry extends InitBase {
         aptSigning.setPassphrase("");
         repositoryReq.setAptSigning(aptSigning);
 
-        try (HttpResponse response = HttpPost(url, JSONObject.toJSONString(repositoryReq))) {
-            if (response.getStatus() == 201) {
-                log.info("创建{}成功", repoName);
-            } else {
-                log.error("创建{}失败. url:{}, response.status:{}, response.body:{}", repoName, url, response.getStatus(), response.body());
-                return false;
-            }
-        }
-        return true;
+        return HttpPost(url, JSONObject.toJSONString(repositoryReq), repoName);
     }
 
     public boolean rawRepoCreate(String baseUrl, String repoName) {
@@ -263,15 +255,22 @@ public class InitRegistry extends InitBase {
         RawRepository repositoryReq = new RawRepository();
         repositoryReq.setName(repoName);
 
-        try (HttpResponse response = HttpPost(url, JSONObject.toJSONString(repositoryReq))) {
-            if (response.getStatus() == 201) {
-                log.info("创建{}成功", repoName);
-            } else {
-                log.error("创建{}失败. url:{}, response.status:{}, response.body:{}", repoName, url, response.getStatus(), response.body());
-                return false;
-            }
-        }
-        return true;
+        return HttpPost(url, JSONObject.toJSONString(repositoryReq), repoName);
+    }
+
+    public boolean helmCreate(String baseUrl, String repoName) {
+        String url = String.format("%s/service/rest/v1/repositories/helm/hosted", baseUrl);
+        HelmRepository repositoryReq = new HelmRepository();
+        repositoryReq.setName(repoName);
+        return HttpPost(url, JSONObject.toJSONString(repositoryReq), repoName);
+    }
+
+    public boolean dockerCreate(String baseUrl, String repoName) {
+        String url = String.format("%s/service/rest/v1/repositories/docker/hosted", baseUrl);
+        DockerRepository repositoryReq = new DockerRepository();
+        repositoryReq.setName(repoName);
+        repositoryReq.getDocker().setHttpsPort(dockerHttpPort);
+        return HttpPost(url, JSONObject.toJSONString(repositoryReq), repoName);
     }
 
     /**
@@ -291,14 +290,22 @@ public class InitRegistry extends InitBase {
      * 405
      * Feature is disabled in High Availability
      */
-    private HttpResponse HttpPost(String url, String body) {
+    private boolean HttpPost(String url, String body, String repoName) {
         log.info("请求url:{}, body:{}", url, body);
-        return HttpRequest.post(url)
+        try (HttpResponse response = HttpRequest.post(url)
                 .basicAuth(username, password)
                 .body(body)
                 .contentType("application/json")
                 .timeout(30000)
-                .execute();
+                .execute()) {
+            if (response.getStatus() == 201) {
+                log.info("创建{}成功", repoName);
+            } else {
+                log.error("创建{}失败. url:{}, response.status:{}, response.body:{}", repoName, url, response.getStatus(), response.body());
+                return false;
+            }
+        }
+        return true;
     }
 
 
