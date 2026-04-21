@@ -21,7 +21,7 @@ public class StopServiceHandler extends ServiceHandler {
 
     @Override
     public ExecResult handlerRequest(K8sServiceNode serviceNode) throws Exception {
-        log.info("开始停止 K8s 服务，服务名：{}, 服务实例 ID:{}", serviceNode.getServiceName(), serviceNode.getServiceInstanceId());
+        logger.info("开始停止 K8s 服务，服务名：{}, 服务实例 ID:{}", serviceNode.getServiceName(), serviceNode.getServiceInstanceId());
 
         // 获取 K8s 集群配置
         K8sClusterConfig config = getK8sConfig(serviceNode.getClusterId());
@@ -34,12 +34,12 @@ public class StopServiceHandler extends ServiceHandler {
 
         // 获取该服务关联的所有 Deployment
         List<K8sDeploymentInfo> deployments = k8sService.listDeployments(config, query);
-        log.info("找到 {} 个 Deployment 需要停止", deployments.size());
+        logger.info("找到 {} 个 Deployment 需要停止", deployments.size());
         updateCmdProgress(serviceNode, 10);
 
         // 将所有 Deployment 的副本数缩容至 0
         k8sService.scaleDeployments(config, deployments, 0);
-        log.info("服务{}停止成功", serviceNode.getServiceName());
+        logger.info("服务{}停止成功", serviceNode.getServiceName());
         updateCmdProgress(serviceNode, 90);
 
         return ExecResult.success(String.format("停止%s 成功", serviceNode.getServiceName()));

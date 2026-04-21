@@ -11,6 +11,7 @@ import com.datasophon.common.k8s.exception.HelmException;
 import com.datasophon.common.k8s.vo.helm.HelmHistoryVO;
 import com.datasophon.common.k8s.vo.helm.HelmReleaseVO;
 import com.datasophon.common.k8s.vo.helm.HelmStatusVO;
+import com.datasophon.common.lang.VisibleForTesting;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PathUtils;
 import com.datasophon.common.utils.PropertyUtils;
@@ -29,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -59,13 +59,6 @@ public class HelmClient implements AutoCloseable {
         String path = PropertyUtils.getString("helm.install_path");
         if (StrUtil.isNotBlank(path)) {
             return path;
-        }
-        String osName = System.getProperty("os.name").toLowerCase();
-        if (!osName.contains("window")) {
-            ExecResult result = ShellUtils.exec(null, Collections.singletonList("command -v helm"), -1);
-            if (result.isSuccess()) {
-                return result.getExecOut().trim();
-            }
         }
         return "helm";
     }
@@ -116,6 +109,7 @@ public class HelmClient implements AutoCloseable {
      * @param subCommandParts helm 子命令及其参数（不包含 helm 路径本身）
      * @return 执行结果
      */
+    @VisibleForTesting
     ExecResult execute(List<String> subCommandParts, int timeoutSeconds) {
         List<String> commandParts = new ArrayList<>();
         commandParts.add(helmPath);
@@ -156,38 +150,23 @@ public class HelmClient implements AutoCloseable {
      * @return 执行结果
      * @throws HelmException 命令执行失败
      */
-    public ExecResult executeWithResult(List<String> subCommandParts, int timeoutSeconds) throws HelmException {
-        ExecResult result = execute(subCommandParts, timeoutSeconds);
-        if (!result.isSuccess()) {
+    @VisibleForTesting
+    ExecResult executeForJsonResult(List<String> subCommandParts, int timeoutSeconds, boolean checkError) throws HelmException {
+        List<String> commandParts = new ArrayList<>(subCommandParts);
+        commandParts.add("-o");
+        commandParts.add("json");
+        ExecResult result = execute(commandParts, timeoutSeconds);
+        if (checkError && !result.isSuccess()) {
             throw new HelmException("helm 命令执行失败：" + result.getErrorTraceMessage());
         }
         return result;
     }
 
-    /**
-     * 执行 helm 命令并返回执行结果
-     *
-     * @param subCommandParts helm 子命令及其参数
-     * @return 执行结果
-     * @throws HelmException 命令执行失败
-     */
+    @VisibleForTesting
     ExecResult executeForJsonResult(List<String> subCommandParts, int timeoutSeconds) throws HelmException {
-        List<String> commandParts = new ArrayList<>(subCommandParts);
-        commandParts.add("-o");
-        commandParts.add("json");
-        return execute(commandParts, timeoutSeconds);
+        return executeForJsonResult(subCommandParts, timeoutSeconds, true);
     }
 
-
-    private void checkError(ExecResult result, String ignoreErrorPattern) {
-        if (result.isSuccess()) {
-            return;
-        }
-        if (StrUtil.isNotBlank(ignoreErrorPattern) && StrUtil.trimToEmpty(result.getExecOut()).contains(ignoreErrorPattern)) {
-            return;
-        }
-        throw new HelmException("helm 命令执行失败：" + result.getErrorTraceMessage());
-    }
 
     private <T> T convert(ExecResult result, Class<T> clazz) {
         try {
@@ -211,6 +190,29 @@ public class HelmClient implements AutoCloseable {
         } catch (Exception e) {
             throw new HelmException("解析 helm 响应失败：" + e.getMessage() + "。响应体：\n" + result.getExecOut());
         }
+    }
+
+
+
+    /**
+     * 升级 Helm release
+     *
+     * @param params upgrade 参数
+     * @return Helm Release VO
+     * @throws HelmException 命令执行失败
+     */
+    public HelmReleaseVO upgrade(UpgradeParams params) throws HelmException {
+        if (StrUtil.isBlank(params.getReleaseName())) {
+            throw new HelmException("releaseName 不能为空");
+        }
+        if (StrUtil.isBlank(params.getChartPath())) {
+            throw new HelmException("chartPath 不能为空");
+        }
+
+        List<String> command = buildUpgradeCommand(params);
+        log.info("执行 helm upgrade: release={}, chart={}", params.getReleaseName(), params.getChartPath());
+        ExecResult result = executeForJsonResult(command, params.getTimeoutSeconds() + 1);
+        return convert(result, HelmReleaseVO.class);
     }
 
     /**
@@ -275,28 +277,6 @@ public class HelmClient implements AutoCloseable {
     }
 
     /**
-     * 升级 Helm release
-     *
-     * @param params upgrade 参数
-     * @return Helm Release VO
-     * @throws HelmException 命令执行失败
-     */
-    public HelmReleaseVO upgrade(UpgradeParams params) throws HelmException {
-        if (StrUtil.isBlank(params.getReleaseName())) {
-            throw new HelmException("releaseName 不能为空");
-        }
-        if (StrUtil.isBlank(params.getChartPath())) {
-            throw new HelmException("chartPath 不能为空");
-        }
-
-        List<String> command = buildUpgradeCommand(params);
-        log.info("执行 helm upgrade: release={}, chart={}", params.getReleaseName(), params.getChartPath());
-        ExecResult result = executeForJsonResult(command, params.getTimeoutSeconds() + 1);
-        checkError(result, null);
-        return convert(result, HelmReleaseVO.class);
-    }
-
-    /**
      * 列出指定 namespace 的 release 列表
      *
      * @param namespace 命名空间
@@ -316,7 +296,6 @@ public class HelmClient implements AutoCloseable {
         args.add("--all");
 
         ExecResult result = executeForJsonResult(args, 30);
-        checkError(result, null);
         List<HelmReleaseVO> releases = convertList(result, HelmReleaseVO.class);
         List<HelmReleaseVO> filtered = new ArrayList<>();
         for (HelmReleaseVO release : releases) {
@@ -348,8 +327,15 @@ public class HelmClient implements AutoCloseable {
             args.add("--namespace");
             args.add(namespace);
         }
-        ExecResult result = executeForJsonResult(args, 30);
-        checkError(result, "not found");
+        ExecResult result = executeForJsonResult(args, 30, false);
+
+        if (!result.isSuccess() && !StrUtil.trimToEmpty(result.getExecOut()).contains("not found")) {
+            throw new HelmException("helm 命令执行失败：" + result.getErrorTraceMessage());
+        }
+//        ignore not found error
+        if (!result.isSuccess()) {
+            return new ArrayList<>(0);
+        }
         return convertList(result, HelmHistoryVO.class);
     }
 
@@ -378,7 +364,6 @@ public class HelmClient implements AutoCloseable {
         }
 
         ExecResult result = executeForJsonResult(args, 30);
-        checkError(result, null);
         return convert(result, HelmStatusVO.class);
     }
 

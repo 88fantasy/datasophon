@@ -31,13 +31,6 @@ public class HelmifyClient implements AutoCloseable {
         if (StrUtil.isNotBlank(path)) {
             return path;
         }
-        String osName = System.getProperty("os.name").toLowerCase();
-        if (!osName.contains("window")) {
-            ExecResult result = ShellUtils.exec(null, Arrays.asList("command", "-v", "helmify"), -1);
-            if (result.isSuccess()) {
-                return result.getExecOut().trim();
-            }
-        }
         return "helmify";
     }
 

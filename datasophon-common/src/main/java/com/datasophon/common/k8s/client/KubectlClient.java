@@ -66,13 +66,6 @@ public class KubectlClient implements AutoCloseable {
         if (StrUtil.isNotBlank(path)) {
             return path;
         }
-        String osName = System.getProperty("os.name").toLowerCase();
-        if (!osName.contains("window")) {
-            ExecResult result = ShellUtils.exec(null, Arrays.asList("command", "-v", "kubectl"), -1);
-            if (result.isSuccess()) {
-                return result.getExecOut().trim();
-            }
-        }
         return "kubectl";
     }
 
@@ -610,7 +603,7 @@ public class KubectlClient implements AutoCloseable {
      * @return 事件列表
      */
     public List<K8sEvent> getEventOf(String namespace, String resourceName) throws KubectlException {
-        List<String> args = Arrays.asList("events", "--for=" + resourceName, "-n", namespace);
+        List<String> args = Arrays.asList("events", "--for=" + resourceName, "-n", namespace, "--chunk-size=20");
         String result = executeToJson(args, 30);
 //        no events
         if (StrUtil.isBlank(result)) {

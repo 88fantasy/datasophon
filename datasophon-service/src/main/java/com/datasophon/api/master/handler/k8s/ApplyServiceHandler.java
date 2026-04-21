@@ -358,6 +358,7 @@ public class ApplyServiceHandler extends ServiceHandler {
             extraValues.forEach((k, v) -> extraValueList.add(k + "=" + v));
             params.setSetValues(extraValueList);
 
+            logger.info("使用Helm, 开始安装 {}", serviceNode.getServiceName());
             HelmReleaseVO result = client.upgrade(params);
             logger.info("Helm upgrade 完成，状态：{}", result.getInfo().getStatus());
             return result;

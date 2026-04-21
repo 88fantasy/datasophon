@@ -163,7 +163,7 @@ public interface K8sService {
      * @param query  查询名字
      * @return 事件列表（按时间逆序）
      */
-    List<K8sEventInfo> listDeploymentEvents(K8sClusterConfig config, K8sRuntimeEventQueryDTO query);
+    List<K8sEventInfo> listK8sServiceInstanceEvents(K8sClusterConfig config, K8sRuntimeEventQueryDTO query);
 
     /**
      * 删除与实例相关的资源

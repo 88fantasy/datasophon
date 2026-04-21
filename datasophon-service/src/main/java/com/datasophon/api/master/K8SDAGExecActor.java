@@ -109,6 +109,7 @@ public class K8SDAGExecActor extends TypedActor<DAGExecCommand> {
                 .set(ClusterK8sServiceCommandEntity::getCommandProgress, 100)
                 .set(ClusterK8sServiceCommandEntity::getEndTime, new Date())
                 .update();
+
     }
 
     /**

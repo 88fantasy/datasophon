@@ -609,43 +609,18 @@ public class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    public List<K8sEventInfo> listDeploymentEvents(K8sClusterConfig config, K8sRuntimeEventQueryDTO query) {
+    public List<K8sEventInfo> listK8sServiceInstanceEvents(K8sClusterConfig config, K8sRuntimeEventQueryDTO query) {
         return exec(newOptions(config), client -> {
-            String namespace = getNamespaceByInstanceId(query.getInstanceId());
-            String deploymentName = query.getDeployment();
-
+            K8sServiceInstanceVO instance = k8sServiceInstanceService.getVoById(query.getInstanceId());
+            String namespace = instance.getNamespace();
+            String labelSelector = buildLabelSelector(query.getInstanceId());
+            K8sResourceList<K8sPod> podsResult = client.getPods(namespace, labelSelector);
             List<K8sEvent> allEvents = new ArrayList<>();
-            // 1. 获取 Deployment 本身的事件：kubectl events --for=deployment/<name> -n <namespace>
-            List<K8sEvent> deploymentEvents = client.getEventOf(namespace, "deployment/" + deploymentName);
-            allEvents.addAll(deploymentEvents);
-            // 2. 获取 Deployment 关联的 Pods（通过 Deployment 的 label selector）
-            // 首先获取 Deployment 详情以获取其 selector
-            K8sDeployment deployment = client.getDeployment(namespace, deploymentName);
 
-            if (deployment != null) {
-                String labelSelector = null;
-                if (deployment.getSpec() != null && deployment.getSpec().getSelector() != null) {
-                    Map<String, String> matchLabels = deployment.getSpec().getSelector().getMatchLabels();
-                    if (matchLabels != null && !matchLabels.isEmpty()) {
-                        labelSelector = parseLabelSelector(matchLabels);
-                    }
-                }
-
-                // 通过 label selector 获取关联的 Pods
-                K8sResourceList<K8sPod> podsResult = client.getPods(namespace, labelSelector);
-                if (podsResult != null && podsResult.getItems() != null) {
-                    // 3. 获取每个 Pod 的事件
-                    for (K8sPod pod : podsResult.getItems()) {
-                        String podName = pod.getMetadata() != null ? pod.getMetadata().getName() : null;
-                        if (podName != null) {
-                            List<K8sEvent> podEvents = client.getEventOf(namespace, "pod/" + podName);
-                            allEvents.addAll(podEvents);
-                        }
-                    }
-                }
+            for (K8sPod pod : podsResult.getItems()) {
+                List<K8sEvent> podEvents = client.getEventOf(namespace, "pod/" + pod.getMetadata().getName());
+                allEvents.addAll(podEvents);
             }
-
-
             // 4. 转换为 K8sEventInfo
             List<K8sEventInfo> eventInfos = new ArrayList<>();
             for (K8sEvent event : allEvents) {
@@ -663,20 +638,6 @@ public class K8sServiceImpl implements K8sService {
         }, "获取 Deployment 及其关联 Pod 的事件");
     }
 
-
-
-    /**
-     * 将标签选择器 JSON 转换为 key=value,key2=value2 格式
-     * 例如：{"app":"my-app","version":"v1"} -> app=my-app,version=v1
-     */
-    private String parseLabelSelector(Map<String, String> selector) {
-        if (selector == null || selector.isEmpty()) {
-            return null;
-        }
-        List<String> selectors = new ArrayList<>();
-        selector.forEach((k, v) -> selectors.add(k + "=" + v));
-        return String.join(",", selectors);
-    }
 
     /**
      * 将 K8sEvent 转换为 K8sEventInfo
