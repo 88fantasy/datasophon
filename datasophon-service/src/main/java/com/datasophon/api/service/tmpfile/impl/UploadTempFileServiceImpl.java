@@ -3,9 +3,11 @@ package com.datasophon.api.service.tmpfile.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.datasophon.api.dto.download.DownloadTaskDTO;
 import com.datasophon.api.dto.upload.BigFileDTO;
 import com.datasophon.api.dto.upload.CheckChunkDTO;
 import com.datasophon.api.dto.upload.ChunkDTO;
@@ -14,7 +16,10 @@ import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.exceptions.ServiceException;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
+import com.datasophon.api.service.tmpfile.comp.DownloaderFactory;
+import com.datasophon.api.service.tmpfile.comp.RemoteFileDownloader;
 import com.datasophon.api.utils.TransactionalUtils;
+import com.datasophon.api.vo.download.DownloadProgressVO;
 import com.datasophon.api.vo.tmpfile.MergeProgressVO;
 import com.datasophon.common.utils.FileUtils;
 import com.datasophon.common.utils.PathUtils;
@@ -36,15 +41,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 /**
  * @author zhanghuangbin
@@ -62,6 +64,11 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     private TransactionalUtils transactionalUtils;
 
     private final Map<Integer, MergeProgressVO> map = new ConcurrentHashMap<>();
+
+    /**
+     * 下载进度缓存
+     */
+    private final Map<String, DownloadProgressVO> downloadProgressMap = new ConcurrentHashMap<>();
 
     private static final String CHUNK_SUFFIX = ".chunk.tmp";
 
@@ -428,6 +435,113 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
                 map.remove(key);
             }
         }
+//        清理下载进度缓存
+        Set<String> downloadKeys = downloadProgressMap.keySet();
+        for (String key : downloadKeys) {
+            DownloadProgressVO pg = downloadProgressMap.get(key);
+            if (pg != null && pg.isTimeout()) {
+                downloadProgressMap.remove(key);
+                log.info("清理过期下载进度缓存：{}", key);
+            }
+        }
+    }
+
+    @Override
+    public DownloadProgressVO createDownloadTask(DownloadTaskDTO dto) {
+        String taskId = RandomUtil.randomString(12);
+        DownloadProgressVO progress = new DownloadProgressVO(taskId);
+        progress.setState(2); // 下载中
+        downloadProgressMap.put(taskId, progress);
+        // 异步执行下载
+        CompletableFuture.runAsync(() -> doDownload(dto, progress));
+        return progress;
+    }
+
+    @Override
+    public DownloadProgressVO queryProgress(String taskId) {
+        DownloadProgressVO progress = downloadProgressMap.get(taskId);
+        if (progress == null) {
+            progress = new DownloadProgressVO(taskId);
+            progress.setState(-3);
+            progress.setError("缓存已经过期");
+        }
+        return progress;
+    }
+
+    @Override
+    public void cancelDownload(String taskId) {
+        DownloadProgressVO progress = downloadProgressMap.get(taskId);
+        if (progress != null) {
+            progress.setState(3); // 取消中
+            progress.setCancel(true);
+            log.info("任务 {} 取消请求已发送", taskId);
+        } else {
+            log.warn("任务 {} 未找到取消标志，可能已完成或异常", taskId);
+        }
+    }
+
+    /**
+     * 执行下载
+     */
+    private void doDownload(DownloadTaskDTO dto, DownloadProgressVO progress) {
+        File saveDir = null;
+
+        try {
+            saveDir = new File(PathUtils.getTmpDir("ddp_download"), progress.getTaskId());
+            if (!saveDir.exists() && !saveDir.mkdirs()) {
+                throw new BusinessHintException("创建文件存储目录失败");
+            }
+
+            String url = dto.getUrl();
+            RemoteFileDownloader downloader = DownloaderFactory.getDownloader(url);
+            String fileName = downloader.determineFileName(dto);
+            File destFile = new File(saveDir, fileName);
+            log.info("使用下载器：{} 下载文件：{}", downloader.getClass().getSimpleName(), url);
+
+            downloader.download(url, destFile, progress);
+
+            // 下载完成，检查是否被取消
+            if (progress.isCancel()) {
+                return;
+            }
+
+            // 获取文件大小
+            long fileSize = destFile.length();
+            progress.setTotal(fileSize);
+            progress.setDownloaded(fileSize);
+            progress.setState(1); // 完成
+            progress.setExpire(LocalDateTime.now().plusMinutes(30));
+
+            // 下载成功后写入数据库
+            UploadTempFile tempFile = new UploadTempFile();
+            tempFile.setFileName(fileName);
+            tempFile.setCreateTime(new Date());
+            tempFile.setStatus(1);
+            tempFile.setUploadType(3); // 3 表示外部 URL 导入
+            tempFile.setByteCnt(fileSize);
+            tempFile.setByteDesc(FileUtil.readableFileSize(fileSize));
+            tempFile.setSuffix(FileUtil.getSuffix(destFile.getName()));
+            tempFile.setMd5(FileUtils.md5(destFile));
+            save(tempFile);
+
+            String path = String.format("%s/%s", tempFile.getId(), tempFile.getFileName());
+            File dest = PathUtils.getTmpDir("ddp_upload").toPath().resolve(path).toFile();
+            FileUtil.move(destFile, dest, true);
+            tempFile.setPath(path);
+            updateById(tempFile);
+            progress.setAttachId(tempFile.getId());
+
+            log.info("下载任务完成：url:{}, 文件大小：{} bytes", dto.getUrl(), fileSize);
+        } catch (IOException e) {
+            log.error("下载失败：{}", e.getMessage(), e);
+            progress.setState(-1);
+            progress.setError("下载失败：" + e.getMessage());
+        } finally {
+            FileUtil.del(saveDir);
+            if (progress.isCancel()) {
+                log.info("下载{}被取消", dto.getUrl());
+            }
+        }
     }
 
     @Override
@@ -447,32 +561,4 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
 
     }
 
-    private static class ChunkIterator implements Iterator<File> {
-
-        private int idx = 0;
-
-        private final int count;
-
-        private final Function<Integer, File> chunkLocator;
-
-        public ChunkIterator(UploadTempFile db, Function<Integer, File> chunkLocator) {
-            this.count = db.getChunk();
-            this.chunkLocator = chunkLocator;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return idx < count;
-        }
-
-        @Override
-        public File next() {
-            if (!hasNext()) {
-                throw new NoSuchElementException();
-            }
-            File file = chunkLocator.apply(idx);
-            idx++;
-            return file;
-        }
-    }
 }
