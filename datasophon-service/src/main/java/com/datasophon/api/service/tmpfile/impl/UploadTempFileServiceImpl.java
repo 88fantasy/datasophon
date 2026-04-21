@@ -495,6 +495,8 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
             String url = dto.getUrl();
             RemoteFileDownloader downloader = DownloaderFactory.getDownloader(url);
             String fileName = downloader.determineFileName(dto);
+            progress.setFileName(fileName);
+
             File destFile = new File(saveDir, fileName);
             log.info("使用下载器：{} 下载文件：{}", downloader.getClass().getSimpleName(), url);
 
@@ -502,6 +504,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
 
             // 下载完成，检查是否被取消
             if (progress.isCancel()) {
+                progress.setState(-2);
                 return;
             }
 

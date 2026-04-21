@@ -46,6 +46,9 @@ public class DownloadProgressVO {
     @Schema(description = "content type")
     private String contentType;
 
+    @Schema(description = "文件名称")
+    private String fileName;
+
     public DownloadProgressVO(String taskId) {
         this.taskId = taskId;
         this.state = 0;
