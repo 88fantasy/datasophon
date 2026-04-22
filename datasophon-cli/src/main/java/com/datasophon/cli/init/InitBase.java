@@ -21,19 +21,19 @@ public abstract class InitBase implements Runnable, InitNodeHandler {
     @CommandLine.Option(names = {"-pwd", "password"}, description = "密钥", required = true)
     String configPassword;
 
-    @CommandLine.Option(names = {"-e", "--enableRegistry"}, description = "是否启动制品库")
+    @CommandLine.Option(names = {"-enableR", "--enableRegistry"}, description = "是否启动制品库")
     boolean enableRegistry = false;
 
-    @CommandLine.Option(names = {"-ip", "--registryIp"}, description = "制品ip", required = false)
+    @CommandLine.Option(names = {"-rip", "--registryIp"}, description = "制品ip", required = false)
     String registryIp;
 
     @CommandLine.Option(names = {"-rport", "--registryPort"}, description = "制品端口", required = false)
     String registryPort;
 
-    @CommandLine.Option(names = {"-u", "--registryUsername"}, description = "制品用户", required = false)
+    @CommandLine.Option(names = {"-rusername", "--registryUsername"}, description = "制品用户", required = false)
     String registryUsername;
 
-    @CommandLine.Option(names = {"-rp", "--registryPassword"}, description = "制品密码", required = false)
+    @CommandLine.Option(names = {"-rpassword", "--registryPassword"}, description = "制品密码", required = false)
     String registryPassword;
     
     public ClusterConfig getConfig() {

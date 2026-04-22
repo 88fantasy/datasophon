@@ -18,15 +18,14 @@ global:
         - "apt"
         - "docker"
         - "helm"
-      registryPath: "/data"
-    node: "app1"
+    node: "app6"
   yumServer:
     enable: true
-    node: "app3"
+    node: "app6"
     listenPort: 4080
   nmapServer:
     enable: true
-    node: "app3"
+    node: "app6"
   sshAuthType: "AUTO"
   mysql:
     enable: true
@@ -70,10 +69,10 @@ global:
       - account: "datart"
         password: "fI5sQ4yQ4fP5"
         dbName: "datart"
-    node: "app5"
+    node: "app6"
   ntpServer:
     enable: true
-    node: "app1"
+    node: "app6"
   rustfs:
     enable: true
     config:
@@ -83,13 +82,13 @@ global:
       password: "u4Gkp19TRcKKlTCLNA1pyA=="
       installType: "SNSD" #可选SNSD(单节点单盘模式)，SNMD(单节点多磁盘模式)，MNMD(多节点多磁盘)
       volumes: "/data/rustfs0" #示例：/data/rustfs0[SNSD], /data/rustfs{0...3}[SNMD], http://node{1...4}:9040/data/rustfs{0...3}[MNMD]
-    nodes: ["app3"]
+    nodes: ["app6"]
 kubernetes:
   enable: true
   baseServices:
     namespaces: ["prod"]
-    masters: [ "app1" ]
-    nodes: [ "app2","app3","app4" ]
+    masters: [ "app2" ]
+    nodes: [ "app3","app4","app6" ]
     sealos:
       enable: true
     kubernetesI:
@@ -102,11 +101,8 @@ kubernetes:
       enable: true
   kuboardI:
     enable: true
-    nodes: ["app1"]
-    etcdNodes: ["app1", "app2", "app3"] #至少3个节点
-    config:
-      user: "admin"
-      password: "Kuboard123" #默认密码
+    nodes: ["app2"]
+    etcdNodes: ["app3", "app4", "app6"] #至少3个节点
   k8sTools:
     docker:
       enable: true
@@ -163,32 +159,26 @@ packages:
 
 nodes:
   - projectEnvDetailId: 2001478085436047360
-    ip: "192.168.2.230"
-    user: "root"
-    password: "aKv6uT_QpkZ_EvKr3n"
-    port: 22
-    hostname: "app1"
-  - projectEnvDetailId: 2001478085444435968
     ip: "192.168.2.213"
     user: "root"
     password: "aKv6uT_QpkZ_EvKr3n"
     port: 22
     hostname: "app2"
-  - projectEnvDetailId: 2001478085448630272
+  - projectEnvDetailId: 2001478085444435968
     ip: "192.168.2.173"
     user: "root"
     password: "aKv6uT_QpkZ_EvKr3n"
     port: 22
     hostname: "app3"
-  - projectEnvDetailId: 2001478085448630273
+  - projectEnvDetailId: 2001478085448630272
     ip: "192.168.2.200"
     user: "root"
     password: "aKv6uT_QpkZ_EvKr3n"
     port: 22
     hostname: "app4"
   - projectEnvDetailId: 2001478085448630274
-    ip: "192.168.2.202"
+    ip: "192.168.2.132"
     user: "root"
     password: "aKv6uT_QpkZ_EvKr3n"
     port: 22
-    hostname: "app5"
+    hostname: "app6"

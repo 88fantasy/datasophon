@@ -14,7 +14,7 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "mysql_app_db", description = "init mysql app db")
 public class InitMysqlAppDb extends InitBase {
     
-    @CommandLine.Option(names = {"-rp", "--rootPassword"}, description = "root密码", required = true)
+    @CommandLine.Option(names = {"-rootpwd", "--rootPassword"}, description = "root密码", required = true)
     String rootPassword;
     
     @CommandLine.Option(names = {"-a", "--account"}, description = "app名称,", required = true)

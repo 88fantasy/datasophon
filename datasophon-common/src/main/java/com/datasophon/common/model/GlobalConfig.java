@@ -121,13 +121,6 @@ public class GlobalConfig {
         private Boolean enable;
         private List<String> nodes;
         private List<String> etcdNodes;
-        private KuboardConfig config;
-    }
-
-    @Data
-    public static class KuboardConfig {
-        private String user;
-        private String password;
     }
 
     @Data

@@ -50,6 +50,9 @@ public class CreateCluster implements Runnable {
 
     @CommandLine.Option(names = {"-e", "--enableRegistry"}, description = "是否启动制品库")
     boolean enableRegistry = false;
+
+    @CommandLine.Option(names = {"-pn", "--productPackagesPath"}, description = "安装包名", required = true)
+    String productPackagesPath;
     
     private String initPath;
     
@@ -378,32 +381,44 @@ public class CreateCluster implements Runnable {
     }
 
     private void initRegistry(ClusterConfig config) {
-        NexusRegistry registryConfig = config.getGlobal().getRegistry();
+        NexusRegistry registry = config.getGlobal().getRegistry();
         InitRegistry initRegistry = new InitRegistry();
-        initRegistry.setEnableRegistry(registryConfig.isEnable())
-                .setType(registryConfig.getType())
-                .setPackagePath(packagesPath)
+        initRegistry.setPackagePath(packagesPath)
                 .setInstallPath(installPath)
-                .setRepositories(registryConfig.getConfig().getRepositories())
-                .setX86Tar(registryConfig.getPackages().getX86_64())
-                .setAarch64Tar(registryConfig.getPackages().getAarch64())
-                .setWebHost(registryConfig.getNode())
-                .setWebPort(registryConfig.getConfig().getWebPort())
-                .setUsername(registryConfig.getConfig().getUser())
-                .setPassword(registryConfig.getConfig().getPassword());
-        singleNodesExec(globalNodes.get(registryConfig.getNode()), initRegistry);
+                .setRepositories(registry.getConfig().getRepositories())
+                .setX86Tar(registry.getPackages().getX86_64())
+                .setAarch64Tar(registry.getPackages().getAarch64())
+                .setWebHost(registry.getNode())
+                .setWebPort(registry.getConfig().getWebPort())
+                .setUsername(registry.getConfig().getUser())
+                .setPassword(registry.getConfig().getPassword());
+        if(registry.isEnable()) {
+            initRegistry.setEnableRegistry(registry.isEnable())
+                    .setRegistryIp(registry.getNode())
+                    .setRegistryPort(registry.getConfig().getWebPort())
+                    .setRegistryUsername(registry.getConfig().getUser())
+                    .setRegistryPassword(registry.getConfig().getPassword());
+        }
+        singleNodesExec(globalNodes.get(registry.getNode()), initRegistry);
     }
 
     private void initRegistryUpload(ClusterConfig config, List<Host> nodes) {
-        NexusRegistry registryConfig = config.getGlobal().getRegistry();
+        NexusRegistry registry = config.getGlobal().getRegistry();
         InitRegistryUpload initRegistryUpload = new InitRegistryUpload();
-        initRegistryUpload.setEnableRegistry(registryConfig.isEnable())
-                .setType(registryConfig.getType())
-                .setRegistryPath(registryConfig.getConfig().getRegistryPath())
-                .setWebHost(registryConfig.getNode())
-                .setWebPort(registryConfig.getConfig().getWebPort())
-                .setUsername(registryConfig.getConfig().getUser())
-                .setPassword(registryConfig.getConfig().getPassword());
+        initRegistryUpload.setType(registry.getType())
+                .setWebHost(registry.getNode())
+                .setWebPort(registry.getConfig().getWebPort())
+                .setUsername(registry.getConfig().getUser())
+                .setPassword(registry.getConfig().getPassword())
+                .setDisableUploadRegistry(disableUploadRegistry)
+                        .setProductPackagesPath(productPackagesPath);
+        if(registry.isEnable()) {
+            initRegistryUpload.setEnableRegistry(registry.isEnable())
+                    .setRegistryIp(registry.getNode())
+                    .setRegistryPort(registry.getConfig().getWebPort())
+                    .setRegistryUsername(registry.getConfig().getUser())
+                    .setRegistryPassword(registry.getConfig().getPassword());
+        }
         singleNodesExec(localHost, initRegistryUpload);
     }
 
@@ -446,11 +461,10 @@ public class CreateCluster implements Runnable {
         NexusRegistry registry = config.getGlobal().getRegistry();
         if(registry.isEnable()) {
             initYumConf.setEnableRegistry(registry.isEnable())
-                    .setServerIp(registry.getNode())
-                    .setServerPort(registry.getConfig().getWebPort())
+                    .setRegistryIp(registry.getNode())
+                    .setRegistryPort(registry.getConfig().getWebPort())
                     .setRegistryUsername(registry.getConfig().getUser())
-                    .setRegistryPassword(registry.getConfig().getPassword())
-                    .setRegistryPath(registry.getConfig().getRegistryPath());
+                    .setRegistryPassword(registry.getConfig().getPassword());
         }
         allNodesExec(nodes, initYumConf);
     }

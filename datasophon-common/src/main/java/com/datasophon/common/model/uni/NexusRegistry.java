@@ -32,8 +32,6 @@ public class NexusRegistry {
         private Integer dockerHttpPort;
 
         private List<String> repositories;
-
-        private String registryPath;
     }
     
 }

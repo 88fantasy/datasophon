@@ -22,9 +22,6 @@ import java.util.List;
 @CommandLine.Command(name = "registry", description = "init registry")
 public class InitRegistry extends InitBase {
 
-    @CommandLine.Option(names = {"-e", "--enableRegistry"}, description = "是否启动制品库")
-    boolean enableRegistry = false;
-
     @CommandLine.Option(names = {"-t", "--type"}, description = "制品类型", required = false)
     String type = "nexus";
 

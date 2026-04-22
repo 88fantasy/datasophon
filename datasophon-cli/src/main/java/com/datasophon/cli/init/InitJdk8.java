@@ -22,21 +22,6 @@ public class InitJdk8 extends InitBase {
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
 
-    @CommandLine.Option(names = {"-e", "--enableRegistry"}, description = "是否启动制品库")
-    boolean enableRegistry = false;
-
-    @CommandLine.Option(names = {"-ip", "--registryIp"}, description = "制品ip", required = true)
-    String registryIp;
-
-    @CommandLine.Option(names = {"-port", "--registryPort"}, description = "制品端口", required = true)
-    String registryPort;
-
-    @CommandLine.Option(names = {"-u", "--registryUsername"}, description = "制品用户", required = true)
-    String registryUsername;
-
-    @CommandLine.Option(names = {"-p", "--registryPassword"}, description = "制品密码", required = true)
-    String registryPassword;
-
     private Executor executor;
     @Override
     public String name() {

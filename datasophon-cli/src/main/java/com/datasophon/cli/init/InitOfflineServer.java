@@ -19,9 +19,6 @@ import java.util.List;
 @CommandLine.Command(name = "offlineServer", description = "offlineServer")
 public class InitOfflineServer extends InitBase implements InitNodeHandler {
 
-    @CommandLine.Option(names = {"-er", "--enableRegistry"}, description = "是否启动制品库")
-    boolean enableRegistry = false;
-
     @CommandLine.Option(names = {"-p", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
 

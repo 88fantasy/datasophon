@@ -105,13 +105,13 @@ else
   source ${BASH_PROFILE_PATH}
   source ${BASHRC_PATH}
   source ${ETC_PROFILE_PATH}
-  jdk2=$(grep -n "export JAVA_HOME=.*" /home/hadoop/.bash_profile | cut -f1 -d':')
-  if [ -n "$jdk2" ]; then
-    echo "JDK HADOOP environment exists"
-  else
-    echo ${JAVA_SOURCE_ENV} >>/home/hadoop/.bash_profile
-    echo ${JAVA_SOURCE_ENV} >>/home/hadoop/.bashrc
-    echo "JDK HADOOP environment sets successfully"
+  #jdk2=$(grep -n "export JAVA_HOME=.*" /home/hadoop/.bash_profile | cut -f1 -d':')
+  #if [ -n "$jdk2" ]; then
+  #  echo "JDK HADOOP environment exists"
+  #else
+  #  echo ${JAVA_SOURCE_ENV} >>/home/hadoop/.bash_profile
+  #  echo ${JAVA_SOURCE_ENV} >>/home/hadoop/.bashrc
+  #  echo "JDK HADOOP environment sets successfully"
   fi
   echo "JDK install successfully"
   source /etc/profile

@@ -3,7 +3,6 @@ package com.datasophon.cli.create;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "create", subcommands = {
-        CreateConfig.class,
         CreateCluster.class
 })
 public class Create implements Runnable {
