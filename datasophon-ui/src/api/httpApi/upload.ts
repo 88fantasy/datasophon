@@ -17,4 +17,7 @@ export default {
   mergeChunk: path + "/tempfile/mergeChunk",
   queryMergeProgress: path + "/tempfile/queryMergeProgress",
   isChunkUploaded: path + "/tempfile/isChunkUploaded",
+  downloadFromUrl: path + "/tempfile/downloadFromUrl",
+  queryDownloadProgress: path + "/tempfile/queryDownloadProgress",
+  cancelDownload: path + "/tempfile/cancelDownload",
 };
