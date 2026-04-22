@@ -125,10 +125,6 @@ const Index = forwardRef((props, ref) => {
             meteFileId,
         } = firstFormRefValues
 
-        let {
-            pkgFileId
-        } = secondFormRefValues
-
 
         const arr = []
 
@@ -138,7 +134,6 @@ const Index = forwardRef((props, ref) => {
 
         meteFileId = meteFileId[0]?.response?.data.id
 
-        pkgFileId = pkgFileId?.[0]?.response?.data?.id
 
 
         if (
@@ -155,16 +150,6 @@ const Index = forwardRef((props, ref) => {
             )
         }
 
-
-        if (pkgFileId) {
-            arr.push(
-                axiosJsonPost(API.validatePkgFile, {
-                    pkgFileId,
-                    meteFileId,
-                    contentDecodePasswd
-                })
-            )
-        }
 
 
         const arrRes = await Promise.all(arr)
@@ -224,7 +209,8 @@ const Index = forwardRef((props, ref) => {
         } = firstFormRefValues
 
         const {
-            pkgFileId
+            pkgFileId,
+            attachId,
         } = secondFormRefValues
 
         setState(preState => {
@@ -258,7 +244,7 @@ const Index = forwardRef((props, ref) => {
                     // deployFileId: formRef.current?.getFieldsValue().deployFileId
                     contentDecodePasswd,
                     meteFileId: meteFileId[0]?.response?.data.id,
-                    pkgFileId: pkgFileId?.[0]?.response?.data?.id
+                    pkgFileId: attachId || pkgFileId?.[0]?.response?.data?.id
                 }
             )
 
