@@ -1,10 +1,12 @@
 package com.datasophon.api.service.tmpfile;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.datasophon.api.dto.download.DownloadTaskDTO;
 import com.datasophon.api.dto.upload.BigFileDTO;
 import com.datasophon.api.dto.upload.CheckChunkDTO;
 import com.datasophon.api.dto.upload.ChunkDTO;
 import com.datasophon.api.dto.upload.MergeChunkDTO;
+import com.datasophon.api.vo.download.DownloadProgressVO;
 import com.datasophon.dao.entity.UploadTempFile;
 import com.datasophon.dao.entity.UploadTempFileChunk;
 import com.datasophon.api.vo.tmpfile.MergeProgressVO;
@@ -40,7 +42,11 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
      */
     UploadTempFileChunk uploadChunk(ChunkDTO info);
 
-
+    /**
+     * 判断chunk是否已经上传
+     * @param dto
+     * @return
+     */
     UploadTempFileChunk isChunkUploaded(CheckChunkDTO dto);
     /**
      * 合并分片
@@ -56,6 +62,11 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
      */
     MergeProgressVO queryMergeProgress(Integer attachId);
 
+    /**
+     * 获取附件ID代表的临时文件
+     * @param attachId
+     * @return
+     */
     File getTempFile(Integer attachId);
 
     /**
@@ -67,4 +78,24 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
      * 清理临时文件
      */
     void removeTempFile();
+
+    /**
+     * 创建下载任务
+     * @param dto 下载请求
+     * @return 进度信息
+     */
+    DownloadProgressVO createDownloadTask(DownloadTaskDTO dto);
+
+    /**
+     * 查询下载进度
+     * @param taskId 任务 ID
+     * @return 进度信息
+     */
+    DownloadProgressVO queryProgress(String taskId);
+
+    /**
+     * 取消下载
+     * @param taskId 任务 ID
+     */
+    void cancelDownload(String taskId);
 }

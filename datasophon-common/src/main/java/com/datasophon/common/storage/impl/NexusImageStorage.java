@@ -3,7 +3,7 @@ package com.datasophon.common.storage.impl;
 import cn.hutool.core.io.FileUtil;
 import com.datasophon.common.k8s.client.DockerClientWrapper;
 import com.datasophon.common.k8s.client.DockerClientWrapperImpl;
-import com.datasophon.common.k8s.config.DockerOptions;
+import com.datasophon.common.k8s.config.DockerRegistryOptions;
 import com.datasophon.common.k8s.vo.docker.LoadImageResult;
 import com.datasophon.common.model.uni.NexusUri;
 import com.datasophon.common.storage.ImageStorage;
@@ -33,7 +33,7 @@ public class NexusImageStorage extends NexusStorageSupport implements ImageStora
                 .collect(Collectors.toList());
 
         List<LoadImageResult> results = new ArrayList<>();
-        DockerOptions options = newOptions();
+        DockerRegistryOptions options = newOptions();
         DockerClientWrapper client = new DockerClientWrapperImpl(options);
         for(File file : files) {
            try {
@@ -68,12 +68,12 @@ public class NexusImageStorage extends NexusStorageSupport implements ImageStora
 
 
 
-    public static DockerOptions newOptions() {
+    public static DockerRegistryOptions newOptions() {
         NexusUri uri = getNexusUri();
-        DockerOptions options  = new DockerOptions();
+        DockerRegistryOptions options  = new DockerRegistryOptions();
         options.setInsecure(true);
-        options.setRepoHost(uri.getIp());
-        options.setRepoPort(uri.getPort());
+        options.setHost(uri.getIp());
+        options.setPort(uri.getPort());
         options.setUsername(uri.getUser());
         options.setPassword(uri.getPassword());
         options.setRepo(REPO);

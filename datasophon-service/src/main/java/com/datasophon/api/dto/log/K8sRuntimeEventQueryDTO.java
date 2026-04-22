@@ -13,8 +13,5 @@ public class K8sRuntimeEventQueryDTO {
     private Integer instanceId;
 
 
-    @Schema(description = "deployment")
-    private String deployment;
-
 
 }

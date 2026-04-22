@@ -32,7 +32,7 @@ public class MergeProgressVO {
     private LocalDateTime expire;
 
     @Schema(description = "进度创建时间")
-    private LocalDateTime createTime;
+    private final LocalDateTime createTime = LocalDateTime.now();
 
 
     public MergeProgressVO() {
@@ -44,7 +44,6 @@ public class MergeProgressVO {
         merge = 0;
         md5 = 0;
         this.total = total;
-        createTime = LocalDateTime.now();
     }
 
     public void plusMerge(long plus) {
@@ -66,8 +65,9 @@ public class MergeProgressVO {
         return (md5 + merge) * 1.0 / (total * 2.0);
     }
 
+
     public boolean isTimeout() {
-//        已经到了过期时间或者距离创建时间已经过期了1天(不可一天都还没有处理完）
-        return expire != null && LocalDateTime.now().isAfter(expire) || LocalDateTime.now().plusDays(1).isAfter(createTime);
+        // 已经到了过期时间或者距离创建时间已经过期了 1 天
+        return (expire != null && expire.isBefore(LocalDateTime.now())) || createTime.plusDays(1).isBefore(LocalDateTime.now());
     }
 }

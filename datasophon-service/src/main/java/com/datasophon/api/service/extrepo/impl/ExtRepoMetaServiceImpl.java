@@ -420,8 +420,8 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
 
 
         File imageDir = MetaUtils.getImagePath(pkgPath).toFile();
-        File[] imageFiles = imageDir.listFiles();
-        if (imageFiles == null || imageFiles.length == 0) {
+        List<File> imageFiles = FileUtil.loopFiles(imageDir);
+        if (imageFiles.isEmpty()) {
             return;
         }
         progress.setState(6);

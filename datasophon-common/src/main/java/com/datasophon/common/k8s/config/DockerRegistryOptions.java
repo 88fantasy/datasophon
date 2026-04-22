@@ -9,7 +9,7 @@ import lombok.Data;
  * @author zhanghuangbin
  */
 @Data
-public class DockerOptions {
+public class DockerRegistryOptions {
 
     /**
      * 是否采用http
@@ -18,9 +18,12 @@ public class DockerOptions {
     /**
      *   地址
      */
-    private String repoHost;
+    private String host;
 
-    private Integer repoPort;
+    /**
+     * 端口
+     */
+    private Integer port;
 
     /**
      * nexus的仓库才会有值，harbor没有值
@@ -37,23 +40,28 @@ public class DockerOptions {
      */
     private String password;
 
-    public String getRepository() {
+
+    public String getRegistry() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(host);
+        if (port != null) {
+            sb.append(":").append(port);
+        } else {
+            sb.append(":").append(insecure ? "80" : "443");
+        }
+        return sb.toString();
+    }
+
+    /**
+     *  镜像仓库地址
+     *  查看文档：https://help.sonatype.com/en/docker-registry.html
+     */
+    public String getImageRegistry() {
         String repository = getRegistry();
         if (StrUtil.isNotBlank(repo)) {
             repository = repository + "/" + repo;
         }
         return repository;
-    }
-
-    public String getRegistry() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(repoHost);
-        if (repoPort != null) {
-            sb.append(":").append(repoPort);
-        } else {
-            sb.append(":").append(insecure ? "80" : "443");
-        }
-        return sb.toString();
     }
 
 }

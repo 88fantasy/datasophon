@@ -46,12 +46,14 @@ import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 import com.datasophon.dao.entity.instance.K8sServiceInstance;
 import com.datasophon.dao.entity.instance.K8sServiceInstanceValues;
 import com.datasophon.dao.enums.CommandState;
+import com.datasophon.dao.enums.dag.NodeStatus;
 import com.datasophon.dao.model.extrepo.DeploySrvModel;
 import com.datasophon.dao.model.extrepo.DeploymentModel;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -70,6 +72,7 @@ import java.util.stream.Collectors;
  */
 @Component("k8SProductInstallService")
 @Slf4j
+@Transactional(rollbackFor = Exception.class)
 public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport implements K8sProductInstallService {
 
 
@@ -216,6 +219,24 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
     public void redeploy(RunDagDto dto) {
         List<NodeDefinition> nodes = dagService.getNodesByDagId(dto.getDagId(), true);
         List<String> commandIds = new ArrayList<>();
+
+        K8sServiceNode srvNd = JSONObject.parseObject((String) nodes.get(0).getNodeConfig(), K8sServiceNode.class);
+        if (Arrays.asList(CommandType.INSTALL_SERVICE, CommandType.UPGRADE_SERVICE).contains(srvNd.getCommandType())) {
+            for (NodeDefinition node : nodes) {
+                if (dto.isRestart() && !NodeStatus.SUCCESS.equals(node.getStatus())) {
+                    K8sServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), K8sServiceNode.class);
+                    if (CacheUtils.containsKey(getValueCacheKey(serviceNode.getServiceName()))) {
+                        throw new BusinessHintException("系统已经重启，内存缓存数据已经丢失，当前任务无法恢复，请重新上传部署制品清单安装");
+                    }
+                }
+            }
+            for (NodeDefinition node : nodes) {
+                if (dto.isRestart() && !NodeStatus.SUCCESS.equals(node.getStatus())) {
+                    updateNode(node);
+                }
+            }
+        }
+
         for (NodeDefinition node : nodes) {
             K8sServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), K8sServiceNode.class);
             commandIds.add(serviceNode.getCommandId());
@@ -223,6 +244,14 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
 
         commandIds.forEach(cmd -> updateCommandState(cmd, CommandState.RUNNING, dto.isRestart()));
         invokeCommands(dto.getDagId(), dto.isRestart(), commandIds);
+    }
+
+    private void updateNode(NodeDefinition node) {
+        K8sServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), K8sServiceNode.class);
+        serviceNode.setValueId(CacheUtils.getInteger(getValueCacheKey(serviceNode.getServiceName())));
+        node.setStatus(NodeStatus.PENDING);
+        node.setNodeConfig(JSONObject.toJSONString(serviceNode));
+        dagService.updateNode(node);
     }
 
     @Override
@@ -348,14 +377,18 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
     }
 
     @Override
-    public Integer saveConfigValues(K8sServiceInstanceValuesSaveDTO dto) {
+    public List<Integer> saveConfigValueList(List<K8sServiceInstanceValuesSaveDTO> list) {
+        return list.stream().map(this::saveConfigValues).collect(Collectors.toList());
+    }
+
+    private Integer saveConfigValues(K8sServiceInstanceValuesSaveDTO dto) {
         FrameK8sServiceEntity service = frameK8sServiceService.getById(dto.getServiceId());
         K8sServiceInstanceValues values = k8sServiceInstanceValuesService.save(dto);
         CacheUtils.put(getValueCacheKey(service.getServiceName()), values.getId());
         return values.getId();
     }
 
-    private String getValueCacheKey(String  serviceName) {
+    private String getValueCacheKey(String serviceName) {
         return "k8sServiceValues_" + serviceName;
     }
 

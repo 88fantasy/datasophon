@@ -298,7 +298,7 @@ public class MetaUtils {
     }
 
     public static Path getImagePath(String root) {
-        return Paths.get(root, "packages","images");
+        return Paths.get(root, "packages","docker");
     }
 
 

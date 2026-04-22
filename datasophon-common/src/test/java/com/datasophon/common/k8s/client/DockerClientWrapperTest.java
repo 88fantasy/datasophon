@@ -2,7 +2,7 @@ package com.datasophon.common.k8s.client;
 
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.common.Constants;
-import com.datasophon.common.k8s.config.DockerOptions;
+import com.datasophon.common.k8s.config.DockerRegistryOptions;
 import com.datasophon.common.k8s.spec.docker.DockerImageParser;
 import com.datasophon.common.k8s.spec.docker.DockerTagUtils;
 import com.datasophon.common.k8s.vo.docker.ImageManifest;
@@ -24,10 +24,10 @@ public class DockerClientWrapperTest {
 
     @BeforeEach
     public void init() {
-        DockerOptions options  = new DockerOptions();
+        DockerRegistryOptions options  = new DockerRegistryOptions();
         options.setInsecure(true);
-        options.setRepoHost(Constants.NEXUS_IP);
-        options.setRepoPort(Constants.NEXUS_PORT);
+        options.setHost(Constants.NEXUS_IP);
+        options.setPort(Constants.NEXUS_PORT);
         options.setUsername(Constants.NEXUS_USERNAME);
         options.setPassword(Constants.NEXUS_PASSWORD);
         options.setRepo("image");

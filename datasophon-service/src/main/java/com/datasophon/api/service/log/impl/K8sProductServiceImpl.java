@@ -18,7 +18,6 @@ import com.datasophon.dao.entity.instance.K8sServiceInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -71,6 +70,6 @@ public class K8sProductServiceImpl implements K8sProductService {
 
         K8sClusterNamespace ns = k8sClusterNamespaceService.getById(instance.getNamespaceId());
         K8sClusterConfig config = k8sClusterConfigService.getInitConfig(ns.getClusterId());
-        return k8sService.listDeploymentEvents(config, query);
+        return k8sService.listK8sServiceInstanceEvents(config, query);
     }
 }

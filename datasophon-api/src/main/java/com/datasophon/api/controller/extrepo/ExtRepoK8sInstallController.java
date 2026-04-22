@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -56,16 +57,35 @@ public class ExtRepoK8sInstallController extends ApiController {
         return Result.success();
     }
 
+    /**
+     * @deprecated
+     * @see #saveConfigValueList(List)
+     * @param dto
+     * @return
+     */
     @PostMapping("saveConfigValues")
-    @Operation(summary = "保存配置 values")
+    @Operation(summary = "保存配置 values", deprecated = true, description = "该为调用saveConfigValueList方法")
     @ApiResponse(content = {
             @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = Integer.class))
     }
     )
+    @Deprecated
     public Result saveConfigValues(@RequestBody @Validated K8sServiceInstanceValuesSaveDTO dto) {
-        return Result.success(k8sProductInstallService.saveConfigValues(dto));
+        return Result.success(k8sProductInstallService.saveConfigValueList(Collections.singletonList(dto)).get(0));
+    }
+
+    @PostMapping("saveConfigValueList")
+    @Operation(summary = "保存配置 values")
+    @ApiResponse(content = {
+            @Content(
+                    mediaType = "application/json",
+                    array = @ArraySchema(schema = @Schema(implementation = Integer.class)))
+    }
+    )
+    public Result saveConfigValueList(@RequestBody @Validated List<K8sServiceInstanceValuesSaveDTO> list) {
+        return Result.success(k8sProductInstallService.saveConfigValueList(list));
     }
 
 }

@@ -47,7 +47,9 @@ public class K8sPod {
         private String nodeName;
         @JsonProperty("serviceAccountName")
         private String serviceAccountName;
+
         private String serviceAccount;
+
         @JsonProperty("containers")
         private List<Container> containers;
         @JsonProperty("initContainers")
@@ -62,10 +64,7 @@ public class K8sPod {
         private List<HostAlias> hostAliases;
         @JsonProperty("nodeSelector")
         private Map<String, String> nodeSelector;
-        @JsonProperty("affinity")
-        private Affinity affinity;
-        @JsonProperty("tolerations")
-        private List<Toleration> tolerations;
+
         @JsonProperty("volumes")
         private List<Volume> volumes;
         @JsonProperty("runtimeClassName")
@@ -80,8 +79,7 @@ public class K8sPod {
         private Boolean hostPID;
         @JsonProperty("hostIPC")
         private Boolean hostIPC;
-        @JsonProperty("securityContext")
-        private PodSecurityContext securityContext;
+
         @JsonProperty("imagePullSecrets")
         private List<LocalObjectReference> imagePullSecrets;
         @JsonProperty("enableServiceLinks")
@@ -394,16 +392,6 @@ public class K8sPod {
     }
 
     @Data
-    public static class Affinity {
-        @JsonProperty("nodeAffinity")
-        private NodeAffinity nodeAffinity;
-        @JsonProperty("podAffinity")
-        private PodAffinity podAffinity;
-        @JsonProperty("podAntiAffinity")
-        private PodAntiAffinity podAntiAffinity;
-    }
-
-    @Data
     public static class NodeAffinity {
         @JsonProperty("requiredDuringSchedulingIgnoredDuringExecution")
         private NodeSelector requiredDuringSchedulingIgnoredDuringExecution;
@@ -435,421 +423,20 @@ public class K8sPod {
         private NodeSelectorTerm preference;
     }
 
-    @Data
-    public static class PodAffinity {
-        @JsonProperty("requiredDuringSchedulingIgnoredDuringExecution")
-        private List<PodAffinityTerm> requiredDuringSchedulingIgnoredDuringExecution;
-        @JsonProperty("preferredDuringSchedulingIgnoredDuringExecution")
-        private List<WeightedPodAffinityTerm> preferredDuringSchedulingIgnoredDuringExecution;
-    }
 
-    @Data
-    public static class PodAffinityTerm {
-        private String labelSelector;
-        private List<String> namespaces;
-        private String topologyKey;
-        private String namespaceSelector;
-    }
-
-    @Data
-    public static class WeightedPodAffinityTerm {
-        private Integer weight;
-        private PodAffinityTerm podAffinityTerm;
-    }
-
-    @Data
-    public static class PodAntiAffinity {
-        @JsonProperty("requiredDuringSchedulingIgnoredDuringExecution")
-        private List<PodAffinityTerm> requiredDuringSchedulingIgnoredDuringExecution;
-        @JsonProperty("preferredDuringSchedulingIgnoredDuringExecution")
-        private List<WeightedPodAffinityTerm> preferredDuringSchedulingIgnoredDuringExecution;
-    }
-
-    @Data
-    public static class Toleration {
-        private String key;
-        private String operator;
-        private String value;
-        private String effect;
-        private Long tolerationSeconds;
-    }
 
     @Data
     public static class Volume {
         private String name;
-        @JsonProperty("configMap")
-        private ConfigMapVolumeSource configMap;
-        @JsonProperty("secret")
-        private SecretVolumeSource secret;
-        @JsonProperty("emptyDir")
-        private EmptyDirVolumeSource emptyDir;
-        @JsonProperty("hostPath")
-        private HostPathVolumeSource hostPath;
-        @JsonProperty("persistentVolumeClaim")
-        private PersistentVolumeClaimVolumeSource persistentVolumeClaim;
-        @JsonProperty("downwardAPI")
-        private DownwardAPIVolumeSource downwardAPI;
-        @JsonProperty("projected")
-        private ProjectedVolumeSource projected;
-        @JsonProperty("nfs")
-        private NFSVolumeSource nfs;
-        @JsonProperty("iscsi")
-        private ISCSIVolumeSource iscsi;
-        @JsonProperty("glusterfs")
-        private GlusterfsVolumeSource glusterfs;
-        @JsonProperty("rbd")
-        private RBDVolumeSource rbd;
-        @JsonProperty("flexVolume")
-        private FlexVolumeSource flexVolume;
-        @JsonProperty("cinder")
-        private CinderVolumeSource cinder;
-        @JsonProperty("cephfs")
-        private CephFSVolumeSource cephfs;
-        @JsonProperty("flocker")
-        private FlockerVolumeSource flocker;
-        @JsonProperty("fc")
-        private FCVolumeSource fc;
-        @JsonProperty("azureFile")
-        private AzureFileVolumeSource azureFile;
-        @JsonProperty("azureDisk")
-        private AzureDiskVolumeSource azureDisk;
-        @JsonProperty("vsphereVolume")
-        private VsphereVirtualDiskVolumeSource vsphereVolume;
-        @JsonProperty("quobyte")
-        private QuobyteVolumeSource quobyte;
-        @JsonProperty("photonPersistentDisk")
-        private PhotonPersistentDiskVolumeSource photonPersistentDisk;
-        @JsonProperty("portworxVolume")
-        private PortworxVolumeSource portworxVolume;
-        @JsonProperty("scaleIO")
-        private ScaleIOVolumeSource scaleIO;
-        @JsonProperty("storageos")
-        private StorageOSVolumeSource storageos;
-        @JsonProperty("csi")
-        private CSIVolumeSource csi;
-        @JsonProperty("ephemeral")
-        private EphemeralVolumeSource ephemeral;
-        @JsonProperty("image")
-        private ImageVolumeSource image;
     }
 
-    @Data
-    public static class ConfigMapVolumeSource {
-        private String name;
-        private List<KeyToPath> items;
-        private Boolean optional;
-        private Integer defaultMode;
-    }
-
-    @Data
-    public static class SecretVolumeSource {
-        private String secretName;
-        private List<KeyToPath> items;
-        private Boolean optional;
-        private Integer defaultMode;
-    }
-
-    @Data
-    public static class EmptyDirVolumeSource {
-        private String medium;
-        private String sizeLimit;
-    }
-
-    @Data
-    public static class HostPathVolumeSource {
-        private String path;
-        private String type;
-    }
-
-    @Data
-    public static class PersistentVolumeClaimVolumeSource {
-        private String claimName;
-        private Boolean readOnly;
-    }
-
-    @Data
-    public static class KeyToPath {
-        private String key;
-        private String path;
-        private Integer mode;
-    }
-
-    @Data
-    public static class DownwardAPIVolumeSource {
-        private List<KeyToPath> items;
-        private Integer defaultMode;
-    }
-
-    @Data
-    public static class ProjectedVolumeSource {
-        private List<VolumeProjection> sources;
-        private Integer defaultMode;
-    }
-
-    @Data
-    public static class VolumeProjection {
-        private SecretProjection secret;
-        private ConfigMapProjection configMap;
-        private DownwardAPIProjection downwardAPI;
-        private ServiceAccountTokenProjection serviceAccountToken;
-    }
-
-    @Data
-    public static class SecretProjection {
-        private String name;
-        private List<KeyToPath> items;
-        private Boolean optional;
-    }
-
-    @Data
-    public static class ConfigMapProjection {
-        private String name;
-        private List<KeyToPath> items;
-        private Boolean optional;
-    }
-
-    @Data
-    public static class DownwardAPIProjection {
-        private List<KeyToPath> items;
-    }
-
-    @Data
-    public static class ServiceAccountTokenProjection {
-        private String audience;
-        private Long expirationSeconds;
-        private String path;
-    }
-
-    @Data
-    public static class NFSVolumeSource {
-        private String server;
-        private String path;
-        private Boolean readOnly;
-    }
-
-    @Data
-    public static class ISCSIVolumeSource {
-        private String targetPortal;
-        private String iqn;
-        private Integer lun;
-        private String iscsiInterface;
-        private String fsType;
-        private Boolean readOnly;
-        private List<String> portals;
-    }
-
-    @Data
-    public static class GlusterfsVolumeSource {
-        private String endpoints;
-        private String path;
-        private Boolean readOnly;
-    }
-
-    @Data
-    public static class RBDVolumeSource {
-        private List<String> monitors;
-        private String image;
-        private String fsType;
-        private String pool;
-        private String user;
-        private String keyring;
-        private List<String> secretRef;
-        private Boolean readOnly;
-    }
-
-    @Data
-    public static class FlexVolumeSource {
-        private String driver;
-        private String fsType;
-        private Map<String, String> options;
-        private LocalObjectReference secretRef;
-        private Boolean readOnly;
-    }
-
-    @Data
-    public static class CinderVolumeSource {
-        private String volumeID;
-        private String fsType;
-        private Boolean readOnly;
-        private LocalObjectReference secretRef;
-    }
-
-    @Data
-    public static class CephFSVolumeSource {
-        private List<String> monitors;
-        private String path;
-        private String user;
-        private String secretFile;
-        private LocalObjectReference secretRef;
-        private Boolean readOnly;
-    }
-
-    @Data
-    public static class FlockerVolumeSource {
-        private String datasetName;
-        private String datasetUUID;
-    }
-
-    @Data
-    public static class FCVolumeSource {
-        private List<String> targetWWNs;
-        private Integer lun;
-        private String fsType;
-        private Boolean readOnly;
-        private String volumeName;
-    }
-
-    @Data
-    public static class AzureFileVolumeSource {
-        private String secretName;
-        private String shareName;
-        private Boolean readOnly;
-    }
-
-    @Data
-    public static class AzureDiskVolumeSource {
-        private String diskName;
-        private String diskURI;
-        private String cachingMode;
-        private String fsType;
-        private Boolean readOnly;
-        private String kind;
-    }
-
-    @Data
-    public static class VsphereVirtualDiskVolumeSource {
-        private String volumePath;
-        private String fsType;
-    }
-
-    @Data
-    public static class QuobyteVolumeSource {
-        private String registry;
-        private String volume;
-        private Boolean readOnly;
-        private String user;
-        private String group;
-        private String tenant;
-    }
-
-    @Data
-    public static class PhotonPersistentDiskVolumeSource {
-        private String pdID;
-        private String fsType;
-    }
-
-    @Data
-    public static class PortworxVolumeSource {
-        private String volumeID;
-        private String fsType;
-        private Boolean readOnly;
-    }
-
-    @Data
-    public static class ScaleIOVolumeSource {
-        private LocalObjectReference secretRef;
-        private String system;
-        private Boolean sslEnabled;
-        private String protectionDomain;
-        private String storagePool;
-        private String storageMode;
-        private String volumeName;
-        private String fsType;
-        private Boolean readOnly;
-    }
-
-    @Data
-    public static class StorageOSVolumeSource {
-        private String volumeName;
-        private String volumeNamespace;
-        private String fsType;
-        private Boolean readOnly;
-        private LocalObjectReference secretRef;
-    }
-
-    @Data
-    public static class CSIVolumeSource {
-        private String driver;
-        private Boolean readOnly;
-        private Map<String, String> volumeAttributes;
-        private LocalObjectReference nodePublishSecretRef;
-    }
-
-    @Data
-    public static class EphemeralVolumeSource {
-        private PersistentVolumeClaimTemplate volumeClaimTemplate;
-    }
-
-    @Data
-    public static class PersistentVolumeClaimTemplate {
-        private PersistentVolumeClaimSpec spec;
-    }
-
-    @Data
-    public static class PersistentVolumeClaimSpec {
-        private Map<String, String> accessModes;
-        private Map<String, String> resources;
-        private String volumeName;
-        private String storageClassName;
-        private String volumeMode;
-    }
-
-    @Data
-    public static class ImageVolumeSource {
-        private String reference;
-        private String pullPolicy;
-    }
 
     @Data
     public static class LocalObjectReference {
         private String name;
     }
 
-    @Data
-    public static class PodSecurityContext {
-        @JsonProperty("runAsUser")
-        private Long runAsUser;
-        @JsonProperty("runAsGroup")
-        private Long runAsGroup;
-        @JsonProperty("runAsNonRoot")
-        private Boolean runAsNonRoot;
-        @JsonProperty("fsGroup")
-        private Long fsGroup;
-        @JsonProperty("supplementalGroups")
-        private List<Long> supplementalGroups;
-        @JsonProperty("seccompProfile")
-        private SeccompProfile seccompProfile;
-        @JsonProperty("fsGroupChangePolicy")
-        private String fsGroupChangePolicy;
-        @JsonProperty("sysctls")
-        private List<Sysctl> sysctls;
-        @JsonProperty("seLinuxOptions")
-        private SELinuxOptions seLinuxOptions;
-        @JsonProperty("windowsOptions")
-        private WindowsSecurityContextOptions windowsOptions;
-    }
 
-    @Data
-    public static class Sysctl {
-        private String name;
-        private String value;
-    }
-
-    @Data
-    public static class SELinuxOptions {
-        private String level;
-        private String role;
-        private String type;
-        private String user;
-    }
-
-    @Data
-    public static class WindowsSecurityContextOptions {
-        private String gmsaCredentialSpec;
-        private String gmsaCredentialSpecName;
-        private String runAsUserName;
-        private String hostProcess;
-    }
 
     @Data
     public static class PodOS {

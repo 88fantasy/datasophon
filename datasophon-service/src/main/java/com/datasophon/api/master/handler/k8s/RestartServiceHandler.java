@@ -6,6 +6,7 @@ import com.datasophon.common.model.k8s.K8sServiceNode;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
@@ -15,6 +16,7 @@ import java.util.List;
  *
  * @author zhanghuangbin
  */
+@Slf4j
 public class RestartServiceHandler extends ServiceHandler {
     
 

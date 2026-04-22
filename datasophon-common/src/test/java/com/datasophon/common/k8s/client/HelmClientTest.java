@@ -316,7 +316,7 @@ class HelmClientTest {
                 options.setServerName("https://k8s.example.com");
                 HelmClient client = new HelmClient(options);
 
-                ExecResult result = client.executeWithResult(new ArrayList<>(Arrays.asList("list")), 30);
+                ExecResult result = client.execute(new ArrayList<>(Collections.singletonList("list")), 30);
 
                 Assertions.assertTrue(result.isSuccess());
                 Assertions.assertEquals("output\n", result.getExecOut());
@@ -340,7 +340,7 @@ class HelmClientTest {
                 HelmClient client = new HelmClient(options);
 
                 HelmException exception = Assertions.assertThrows(HelmException.class, () ->
-                        client.executeWithResult(new ArrayList<>(Arrays.asList("invalid")), 30));
+                        client.execute(new ArrayList<>(Collections.singletonList("invalid")), 30));
 
                 Assertions.assertTrue(exception.getMessage().contains("command failed"));
             }

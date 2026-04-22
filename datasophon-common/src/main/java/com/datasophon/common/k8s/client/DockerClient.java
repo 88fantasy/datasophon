@@ -3,6 +3,7 @@ package com.datasophon.common.k8s.client;
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.k8s.exception.DockerException;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import lombok.Data;
 
@@ -21,12 +22,9 @@ public class DockerClient  {
 
 
     public static String detectDockerPath() {
-        String osName = System.getProperty("os.name").toLowerCase();
-        if (!osName.contains("window")) {
-            ExecResult result = ShellUtils.exec(null, Arrays.asList("command", "-v", "docker"), -1);
-            if (result.isSuccess()) {
-                return result.getExecOut().trim();
-            }
+        String path = PropertyUtils.getString("docker.install_path");
+        if (StrUtil.isNotBlank(path)) {
+            return path;
         }
         return "docker";
     }
