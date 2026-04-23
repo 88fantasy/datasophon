@@ -1,20 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ~  Licensed to the Apache Software Foundation (ASF) under one or more
-  ~  contributor license agreements.  See the NOTICE file distributed with
-  ~  this work for additional information regarding copyright ownership.
-  ~  The ASF licenses this file to You under the Apache License, Version 2.0
-  ~  (the "License"); you may not use this file except in compliance with
-  ~  the License.  You may obtain a copy of the License at
-  ~
-  ~     http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~  Unless required by applicable law or agreed to in writing, software
-  ~  distributed under the License is distributed on an "AS IS" BASIS,
-  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~  See the License for the specific language governing permissions and
-  ~  limitations under the License.
-  -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -29,6 +13,7 @@
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
+        <skipDocker>true</skipDocker>
     </properties>
 
     <dependencies>
@@ -118,6 +103,10 @@
                                     </includes>
                                     <filtering>true</filtering>
                                 </resource>
+                                <resource>
+                                    <directory>${project.basedir}/k8s</directory>
+                                    <filtering>false</filtering>
+                                </resource>
                             </resources>
                         </configuration>
                     </execution>
@@ -151,6 +140,9 @@
     <profiles>
         <profile>
             <id>docker</id>
+            <properties>
+                <skipDocker>false</skipDocker>
+            </properties>
             <build>
                <plugins>
                     <plugin>
@@ -174,34 +166,91 @@
                             </execution>
                         </executions>
                     </plugin>
+                </plugins>
+            </build>
+        </profile>
 
+        <!-- Windows 下执行 build.bat -->
+        <profile>
+            <id>docker-windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <docker.arch>amd64</docker.arch>
+            </properties>
+            <build>
+                <plugins>
                     <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <version>0.45.1</version>
-                        <configuration>
-                            <images>
-                                <image>
-                                    <name>datasophon-k8s-agent:${project.version}</name>
-                                </image>
-                            </images>
-                        </configuration>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
                         <executions>
                             <execution>
-                                <id>build-docker-image</id>
+                                <id>docker-build-windows</id>
                                 <phase>package</phase>
                                 <goals>
-                                    <goal>build</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>save-docker-image</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>save</goal>
+                                    <goal>exec</goal>
                                 </goals>
                                 <configuration>
-                                    <saveFile>${project.build.directory}/${project.artifactId}-${project.version}-image.tar</saveFile>
+                                    <skip>${skipDocker}</skip>
+                                    <executable>cmd</executable>
+                                    <workingDirectory>${project.build.directory}</workingDirectory>
+                                    <arguments>
+                                        <argument>/c</argument>
+                                        <argument>${project.build.directory}/build.bat</argument>
+                                        <argument>${revision}</argument>
+                                        <argument>--proxy</argument>
+                                        <argument>http://localhost:7890</argument>
+                                        <argument>--arch</argument>
+                                        <argument>${docker.arch}</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- 非 Windows 下执行 build.sh -->
+        <profile>
+            <id>docker-unix</id>
+            <activation>
+                <os>
+                    <family>!windows</family>
+                </os>
+            </activation>
+            <properties>
+                <docker.arch>amd64</docker.arch>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>docker-build-unix</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>exec</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${skipDocker}</skip>
+                                    <executable>bash</executable>
+                                    <workingDirectory>${project.build.directory}</workingDirectory>
+                                    <arguments>
+                                        <argument>${project.build.directory}/build.sh</argument>
+                                        <argument>${revision}</argument>
+                                        <argument>--proxy</argument>
+                                        <argument>http://localhost:7890</argument>
+                                        <argument>--arch</argument>
+                                        <argument>${docker.arch}</argument>
+                                    </arguments>
                                 </configuration>
                             </execution>
                         </executions>
