@@ -1,0 +1,11 @@
+server:
+  port: 12552
+
+spring:
+  application:
+    name: datasophon-k8s-agent
+
+logging:
+  level:
+    root: INFO
+    com.datasophon.k8sagent: DEBUG

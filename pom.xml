@@ -35,6 +35,7 @@
         <module>datasophon-cli</module>
         <module>datasophon-ui</module>
         <module>datasophon-api</module>
+        <module>datasophon-k8s-agent</module>
     </modules>
 
     <properties>
@@ -94,6 +95,11 @@
                 <version>${spring.boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-test</artifactId>
+                <version>${spring.boot.version}</version>
             </dependency>
             <dependency>
                 <groupId>mysql</groupId>
