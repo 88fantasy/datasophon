@@ -104,7 +104,7 @@
                                     <filtering>true</filtering>
                                 </resource>
                                 <resource>
-                                    <directory>${project.basedir}/k8s</directory>
+                                    <directory>${project.basedir}/docker</directory>
                                     <filtering>false</filtering>
                                 </resource>
                             </resources>
