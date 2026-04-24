@@ -81,9 +81,6 @@ public final class CliUtil {
         if (!configFile.exists()) {
             throw new RuntimeException("config file not found, please check " + configFilePath);
         }
-        if (!Base64.isBase64(password)) {
-            throw new RuntimeException("password校验失败 : " + password);
-        }
         Yaml yaml = new Yaml();
         String content = FileUtil.readString(configFile, StandardCharsets.UTF_8);
         if(Base64.isBase64(content)) {

@@ -112,7 +112,7 @@ else
   #  echo ${JAVA_SOURCE_ENV} >>/home/hadoop/.bash_profile
   #  echo ${JAVA_SOURCE_ENV} >>/home/hadoop/.bashrc
   #  echo "JDK HADOOP environment sets successfully"
-  fi
+  #fi
   echo "JDK install successfully"
   source /etc/profile
 fi

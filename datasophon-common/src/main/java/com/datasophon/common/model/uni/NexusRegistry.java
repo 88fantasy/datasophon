@@ -13,8 +13,6 @@ public class NexusRegistry {
 
     private String type;
 
-    private Package packages;
-
     private Config config;
 
     private String node;

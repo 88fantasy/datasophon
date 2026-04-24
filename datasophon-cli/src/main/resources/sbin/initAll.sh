@@ -32,4 +32,4 @@ bash ${INIT_BIN_PATH}/init-registryDecode.sh ${PASSWORD} > ${INIT_LOG_PATH}/init
 
 source /etc/profile
 echo "ini create cluster"
-java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar create cluster --enableRegistry -pwd ${PASSWORD} --productPackagesPath /data/packages -p /data/datasophon -in /data/install_datasophon -a initALL > ${INIT_LOG_PATH}/initAll.log
+${JAVA_HOME}/bin/java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar create cluster --enableRegistry -cpwd ${PASSWORD} --productPackagesPath /data/packages -p /data/datasophon -in /data/install_datasophon -a initALL > ${INIT_LOG_PATH}/initAll.log

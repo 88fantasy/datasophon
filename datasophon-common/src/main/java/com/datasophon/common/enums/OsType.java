@@ -17,6 +17,8 @@ public enum OsType {
 
     OPENEULER_22_03_LTS_SP3("openEuler-22.03-LTS-SP3"),
 
+    OPENEULER_24_03_LTS("openEuler-24.03-LTS"),
+
     UBUNTU_22_04_1_LTS("Ubuntu-22.04.1-LTS"),
 
     CENTOS_V10("centos-V10"),

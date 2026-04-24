@@ -10,8 +10,6 @@ public class Rustfs {
 
     private boolean enable;
 
-    private Package packages;
-
     private Config config;
 
     private List<String> nodes;

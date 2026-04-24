@@ -52,7 +52,7 @@ public class InitOfflineSlave extends InitBase implements InitNodeHandler {
             }
         } else if (OsType.isCentos(osType)) {
             if(enableRegistry) {
-                repoOsSuffix = String.format("repository/yum/%s/%s/", archType.getArch(), "centos-V10");
+                repoOsSuffix = String.format("repository/yum/%s/%s/", archType.getArch(), osType.getDesc());
             }
             InitOfflineServer.yumRepoConfFile(executor, getUrl(repoOsSuffix));
             executor.execShell("yum clean all");

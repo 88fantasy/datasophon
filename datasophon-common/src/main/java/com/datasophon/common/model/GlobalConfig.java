@@ -48,8 +48,6 @@ public class GlobalConfig {
 
         private Integer port;
 
-        private Package packages;
-
         private List<MysqlAppDb> appDbs;
 
         private String node;
@@ -104,11 +102,11 @@ public class GlobalConfig {
         private List<String> namespaces;
         private List<String> masters;
         private List<String> nodes;
-        private Enable sealos;
-        private Enable kubernetesI;
-        private Enable helmI;
-        private Enable calicoI;
-        private Enable ingressI;
+        private Boolean sealos;
+        private Boolean kubernetesI;
+        private Boolean helmI;
+        private Boolean calicoI;
+        private Boolean ingressI;
     }
 
     @Data
@@ -119,16 +117,16 @@ public class GlobalConfig {
     @Data
     public static class Kuboard {
         private Boolean enable;
-        private List<String> nodes;
+        private String node;
         private List<String> etcdNodes;
     }
 
     @Data
     public static class K8sTools {
-        private boolean docker;
-        private boolean helm;
-        private boolean helmify;
-        private boolean kubectl;
+        private Boolean docker;
+        private Boolean helm;
+        private Boolean helmify;
+        private Boolean kubectl;
     }
 
     @Data

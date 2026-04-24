@@ -36,9 +36,6 @@ public class InitK8sKuboard extends InitBase implements InitNodeHandler {
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
 
-    @CommandLine.Option(names = {"-p", "--password"}, description = "kuboard密码", required = true)
-    String kuboardPassword;
-
     @Override
     public String name() {
         return "安装kuboard";
@@ -61,10 +58,9 @@ public class InitK8sKuboard extends InitBase implements InitNodeHandler {
         CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? kuboardX86Tar : kuboardArmTar, kuboardPath, true);
         
         // 执行打标签命令
-        for (String node : etcds) {
-            String labelCmd = String.format("/usr/bin/kubectl label nodes %s k8s.kuboard.cn/role=etcd", node);
-            executor.execShell(labelCmd);
-        }
+        String etcdsStr = String.join(" ", etcds);
+        String labelCmd = String.format("/usr/bin/kubectl label nodes %s k8s.kuboard.cn/role=etcd", etcdsStr);
+        executor.execShell(labelCmd);
         
         // 验证标签是否成功
         for (String node : etcds) {

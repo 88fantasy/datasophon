@@ -70,13 +70,13 @@ public class InitDocker extends InitBase implements InitNodeHandler {
         String softPath = String.format("%s/docker", installPath);
         executor.execShell(String.format("mkdir -p %s", softPath));
         executor.execShell(String.format("tar -xvf %s -C %s", tarPath, softPath));
-        executor.execShell(String.format("cp %s/* /usr/bin/", softPath));
+        executor.execShell(String.format("cp -rf %s/docker/* /usr/bin/", softPath));
 
         executor.writeLines(getDockerServiceConf(), "/etc/systemd/system/docker.service");
         executor.execShell("chmod +x /etc/systemd/system/docker.service");
 
         executor.writeLines(getDaemonConf(), "/etc/docker/daemon.json");
-        String base64 = executor.execShell(String.format("$(echo -n '%s:%s' | base64)", registryUsername, registryPassword)).getExecOut();
+        String base64 = executor.execShell(String.format("echo -n '%s:%s' | base64", registryUsername, registryPassword)).getExecOut();
         executor.writeLines(getAuthsConf(base64), "/root/.docker/config.json");
 
         executor.execShell("systemctl daemon-reload");
@@ -103,9 +103,41 @@ public class InitDocker extends InitBase implements InitNodeHandler {
     }
 
     private List<String> getDockerServiceConf(){
-        List<String> myconf = new ArrayList<>();
-        myconf.add("[Unit]");
-        return myconf;
+        List<String> conf = new ArrayList<>();
+        conf.add("[Unit]");
+        conf.add("Description=Docker Application Container Engine");
+        conf.add("Documentation=https://docs.docker.com");
+        conf.add("After=network-online.target firewalld.service");
+        conf.add("Wants=network-online.target");
+        conf.add("");
+        conf.add("[Service]");
+        conf.add("Type=notify");
+        conf.add("# the default is not to use systemd for cgroups because the delegate issues still");
+        conf.add("# exists and systemd currently does not support the cgroup feature set required");
+        conf.add("# for containers run by docker");
+        conf.add("ExecStart=/usr/bin/dockerd");
+        conf.add("ExecReload=/bin/kill -s HUP $MAINPID");
+        conf.add("# Having non-zero Limit*s causes performance problems due to accounting overhead");
+        conf.add("# in the kernel. We recommend using cgroups to do container-local accounting.");
+        conf.add("LimitNOFILE=infinity");
+        conf.add("LimitNPROC=infinity");
+        conf.add("LimitCORE=infinity");
+        conf.add("# Uncomment TasksMax if your systemd version supports it.");
+        conf.add("# Only systemd 226 and above support this version.");
+        conf.add("#TasksMax=infinity");
+        conf.add("TimeoutStartSec=0");
+        conf.add("# set delegate yes so that systemd does not reset the cgroups of docker containers");
+        conf.add("Delegate=yes");
+        conf.add("# kill only the docker process, not all processes in the cgroup");
+        conf.add("KillMode=process");
+        conf.add("# restart the docker process if it exits prematurely");
+        conf.add("Restart=on-failure");
+        conf.add("StartLimitBurst=3");
+        conf.add("StartLimitInterval=60s");
+        conf.add("");
+        conf.add("[Install]");
+        conf.add("WantedBy=multi-user.target");
+        return conf;
     }
 
 }

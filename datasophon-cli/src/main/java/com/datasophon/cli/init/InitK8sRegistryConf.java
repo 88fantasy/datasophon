@@ -37,8 +37,8 @@ public class InitK8sRegistryConf extends InitBase implements InitNodeHandler {
         String certsdPath = "/etc/containerd/certs.d";
         String configTomlPath = "/etc/containerd/config.toml";
         String hostPort = String.format("%s:%s", registryIp, dockerHttpPort);
-        String hostPortDir = String.format("%s:%s", certsdPath, hostPort);
-        String hostPortFilePath = String.format("%s:%s", certsdPath, hostPort);
+        String hostPortDir = String.format("%s/%s", certsdPath, hostPort);
+        String hostPortFilePath = String.format("%s/hosts.toml", certsdPath);
 
         if(!executor.exists(certsdPath).getExecResult()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + certsdPath);
@@ -67,11 +67,11 @@ public class InitK8sRegistryConf extends InitBase implements InitNodeHandler {
     }
 
     private List<String> getContainerdConf(){
-        List<String> myconf = new ArrayList<>();
-        myconf.add(String.format("         [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"%s:%s\".auth]", registryIp, dockerHttpPort));
-        myconf.add(String.format("          username = \"%s\"", registryUsername));
-        myconf.add(String.format("          password = \"%s\"", registryPassword));
-        return myconf;
+        List<String> conf = new ArrayList<>();
+        conf.add(String.format("         [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"%s:%s\".auth]", registryIp, dockerHttpPort));
+        conf.add(String.format("          username = \"%s\"", registryUsername));
+        conf.add(String.format("          password = \"%s\"", registryPassword));
+        return conf;
     }
 
 }
