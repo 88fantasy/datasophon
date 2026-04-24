@@ -1,0 +1,6 @@
+产品名称：VOS
+描述：产品部署平台k8s agent
+version：${project.version}
+
+git branch：${git.branch}
+commitId: ${git.commit.id}

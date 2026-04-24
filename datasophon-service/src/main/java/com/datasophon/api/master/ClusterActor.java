@@ -24,6 +24,7 @@ import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
+import com.datasophon.api.service.agent.K8sAgentDeployService;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.host.ClusterHostService;
@@ -143,10 +144,22 @@ public class ClusterActor extends TypedActor<ClusterCommand> {
             }
             deletePhysicalClusterComponents(clusterInfo.getId());
         } else {
+            boolean success = deleteK8sAgent(clusterId);
+            if (!success) {
+                return;
+            }
             deleteK8sClusterComponents(clusterInfo.getId());
         }
 
         clusterInfoService.removeById(clusterId);
+    }
+
+    private boolean deleteK8sAgent(Integer clusterId) {
+        K8sClusterConfigService k8sClusterConfigService = getBean(K8sClusterConfigService.class);
+        K8sClusterConfig config = k8sClusterConfigService.getInitConfig(clusterId);
+        K8sAgentDeployService k8sAgentDeployService = getBean(K8sAgentDeployService.class);
+        k8sAgentDeployService.undeployAgent(config);
+        return true;
     }
 
     private void deleteK8sClusterComponents(Integer clusterId) {

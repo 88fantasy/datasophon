@@ -105,11 +105,12 @@ public class CommonNexusClient {
             log.warn("remove file: {} fail, {}", folder, e.getMessage(), e);
         }
     }
+
     /**
      * 对路径进行 URL 编码，保留斜杠分隔符
      * 例如：输入 "releases/app/v1.0" 输出 "releases/app/v1.0"（各部分编码后重组）
      */
-    private  String encodePath(String path) {
+    protected String encodePath(String path) {
         if (StrUtil.isBlank(path) || path.equals("/")) {
             return "";
         }

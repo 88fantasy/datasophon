@@ -29,6 +29,10 @@ public class UpgradeParams {
      */
     private List<String> setValues;
 
+    /**
+     * set-file 参数列表（key=filepath 格式，从文件读取值）
+     */
+    private List<String> setFileValues;
 
     /**
      * 命名空间

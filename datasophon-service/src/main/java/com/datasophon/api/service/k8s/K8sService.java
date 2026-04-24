@@ -117,9 +117,9 @@ public interface K8sService {
      *
      * @param config        K8s 集群配置
      * @param namespaceName namespace 名称
-     * @return 创建或获取的 namespace 信息
+     * @return 是否创建
      */
-    K8sNamespace createIfAbsent(K8sClusterConfig config, String namespaceName);
+    boolean createIfAbsent(K8sClusterConfig config, String namespaceName);
 
     /**
      * 重启 Deployment

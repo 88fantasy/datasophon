@@ -6,11 +6,12 @@ import cn.hutool.core.bean.copier.CopyOptions;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.master.ClusterActor;
+import com.datasophon.api.master.DispatchK8sAgentActor;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
-import com.datasophon.common.command.ClusterCommand;
-import com.datasophon.common.enums.ClusterCommandType;
+import com.datasophon.api.service.k8s.K8sService;
+import com.datasophon.api.vo.k8s.K8sConnectionResult;
+import com.datasophon.common.command.DispatcherK8sAgentCommand;
 import com.datasophon.common.k8s.config.ClientOptions;
 import com.datasophon.common.k8s.config.KubeConfigParser;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -18,6 +19,7 @@ import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.k8s.K8sAuthType;
 import com.datasophon.dao.mapper.cluster.K8sClusterConfigMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 /**
  * @author zhanghuangbin
  */
+@Slf4j
 @Service("k8sClusterConfigService")
 public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMapper, K8sClusterConfig> implements K8sClusterConfigService {
 
@@ -34,6 +37,8 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
     @Autowired
     private ClusterInfoService clusterInfoService;
 
+    @Autowired
+    private K8sService k8sService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -71,11 +76,18 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
             updateById(db);
         }
 
+        K8sConnectionResult result = k8sService.testConnection(config);
+        if (!result.isSuccess()) {
+            throw new BusinessHintException(String.format("集群联调性测试失败，%s", result.getInfo()));
+        }
+
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                ActorRef hostActor = ActorUtils.getLocalActor(ClusterActor.class, "clusterActor-" + config.getClusterId());
-                hostActor.tell(new ClusterCommand(ClusterCommandType.CHECK, config.getClusterId()), ActorRef.noSender());
+                ActorRef hostActor = ActorUtils.getLocalActor(DispatchK8sAgentActor.class, "dispatchK8sAgentActor-" + config.getClusterId());
+                DispatcherK8sAgentCommand cmd = new DispatcherK8sAgentCommand();
+                cmd.setClusterId(cluster.getId());
+                hostActor.tell(cmd, ActorRef.noSender());
             }
         });
         return db;
@@ -97,6 +109,7 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
 
     @Override
     public void removeByClusterId(Integer clusterId) {
+        // 先获取集群配置，用于卸载 Agent
         lambdaUpdate().eq(K8sClusterConfig::getClusterId, clusterId).remove();
     }
 

@@ -21,6 +21,7 @@ public class K8sNamespaceIdentityDTO {
     @Schema(description = "名空间")
     private String namespace;
 
+
     public K8sNamespaceIdentityDTO(Integer clusterId, String namespace) {
         this.clusterId = clusterId;
         this.namespace = namespace;

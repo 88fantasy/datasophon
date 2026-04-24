@@ -15,6 +15,5 @@ public class ServiceMetaItem {
 
     private String type;
 
-    private String downloadUrl;
 
 }

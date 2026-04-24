@@ -35,10 +35,11 @@
         <module>datasophon-cli</module>
         <module>datasophon-ui</module>
         <module>datasophon-api</module>
+        <module>datasophon-k8s-agent</module>
     </modules>
 
     <properties>
-        <revision>2.0-SNAPSHOT</revision>
+        <revision>2.1-SNAPSHOT</revision>
         <akka.version>2.4.20</akka.version>
         <commons.httpclient>3.0.1</commons.httpclient>
         <commons.lang>3.12.0</commons.lang>
@@ -94,6 +95,11 @@
                 <version>${spring.boot.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-test</artifactId>
+                <version>${spring.boot.version}</version>
             </dependency>
             <dependency>
                 <groupId>mysql</groupId>

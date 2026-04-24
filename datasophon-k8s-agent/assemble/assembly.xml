@@ -1,0 +1,78 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+
+    <id>package</id>
+    <formats>
+        <format>tar.gz</format>
+    </formats>
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <baseDirectory>datasophon-k8s-agent</baseDirectory>
+
+    <dependencySets>
+        <dependencySet>
+            <useProjectArtifact>true</useProjectArtifact>
+            <outputDirectory>lib</outputDirectory>
+            <directoryMode>0755</directoryMode>
+            <fileMode>0755</fileMode>
+        </dependencySet>
+    </dependencySets>
+
+    <fileSets>
+        <!-- 拷贝 application.yaml 到 conf 目录 -->
+        <fileSet>
+            <directory>${basedir}/src/main/resources</directory>
+            <includes>
+                <include>application.yaml</include>
+            </includes>
+            <outputDirectory>conf</outputDirectory>
+            <fileMode>0755</fileMode>
+        </fileSet>
+
+        <!-- 拷贝 common.properties 到 conf 目录 -->
+        <fileSet>
+            <directory>${basedir}/../conf</directory>
+            <includes>
+                <include>common.properties</include>
+            </includes>
+            <outputDirectory>conf</outputDirectory>
+            <fileMode>0755</fileMode>
+        </fileSet>
+
+        <!-- 拷贝启动脚本到 bin 目录 -->
+        <fileSet>
+            <directory>${basedir}/build-resources/bin</directory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+            <fileMode>0755</fileMode>
+            <outputDirectory>bin</outputDirectory>
+            <lineEnding>unix</lineEnding>
+        </fileSet>
+
+        <!-- 拷贝 build-resources 下所有文件（排除 release.txt 和 bin 目录） -->
+        <fileSet>
+            <directory>${basedir}/build-resources</directory>
+            <includes>
+                <include>**/*</include>
+            </includes>
+            <excludes>
+                <exclude>release.txt</exclude>
+                <exclude>bin/**</exclude>
+            </excludes>
+            <fileMode>0755</fileMode>
+            <outputDirectory>/</outputDirectory>
+        </fileSet>
+
+<!--        拷贝release.txt -->
+        <fileSet>
+            <directory>${basedir}/target</directory>
+            <includes>
+                <include>release.txt</include>
+            </includes>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>0600</fileMode>
+        </fileSet>
+
+    </fileSets>
+</assembly>

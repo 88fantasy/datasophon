@@ -243,6 +243,14 @@ public class HelmClient implements AutoCloseable {
             }
         }
 
+        // 添加 set-file 参数
+        if (params.getSetFileValues() != null) {
+            for (String setFileValue : params.getSetFileValues()) {
+                args.add("--set-file");
+                args.add(setFileValue);
+            }
+        }
+
 
         // 命名空间
         if (StrUtil.isNotBlank(params.getNamespace())) {

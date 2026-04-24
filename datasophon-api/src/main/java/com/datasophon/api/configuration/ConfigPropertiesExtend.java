@@ -1,7 +1,5 @@
 package com.datasophon.api.configuration;
 
-import com.datasophon.common.utils.FileUtils;
-import com.datasophon.common.utils.PropertyUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.SpringApplication;
@@ -15,6 +13,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.util.CollectionUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -57,13 +56,13 @@ public class ConfigPropertiesExtend implements EnvironmentPostProcessor {
     }
     
     private Properties loadCustomProperties() {
-        Properties properties = new Properties();
-        File file = new File(FileUtils.concatPath(System.getProperty("user.dir"), PropertyUtils.CONFIG_HOME));
+        Properties properties =  new Properties();
+        String path = System.getProperty("commonPropertiesLocation");
+        File file = new File(path);
         try (InputStream inputStream = Files.newInputStream(file.toPath())) {
             properties.load(inputStream);
-        } catch (Exception e) {
-            System.err.println("Failed to load the datasophon configuration (config/datasophon.conf), use application-config.yml");
-            return new Properties();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         List<Object> removeKeys = new ArrayList<>();
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {

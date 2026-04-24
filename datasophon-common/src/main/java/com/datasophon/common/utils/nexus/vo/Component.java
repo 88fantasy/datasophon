@@ -13,6 +13,7 @@ public class Component {
     private String repository;
     private String format;
     private String name;
-    private String downloadUrl;
     private List<Assert> assets;
+
+    private String version;
 }

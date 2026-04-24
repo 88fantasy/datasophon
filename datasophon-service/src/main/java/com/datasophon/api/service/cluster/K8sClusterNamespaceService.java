@@ -16,7 +16,11 @@ public interface K8sClusterNamespaceService extends IService<K8sClusterNamespace
 
     K8sClusterNamespace getNamespace(K8sNamespaceIdentityDTO query);
 
-    K8sClusterNamespace createIfAbsent(K8sNamespaceIdentityDTO namespace);
+    default K8sClusterNamespace createIfAbsent(K8sNamespaceIdentityDTO namespace) {
+        return createIfAbsent(namespace, null);
+    }
+
+    K8sClusterNamespace createIfAbsent(K8sNamespaceIdentityDTO namespace, Integer state);
 
     void removeByClusterId(Integer clusterId);
 }

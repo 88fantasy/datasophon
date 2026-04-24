@@ -1,7 +1,6 @@
 package com.datasophon.common.storage.impl;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.k8s.spec.helm.HelmUtils;
 import com.datasophon.common.storage.MetaStorage;
@@ -44,7 +43,6 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
             for (Component component : components) {
                 ServiceMetaItem item = new ServiceMetaItem();
                 item.setType(type);
-                item.setDownloadUrl(component.getDownloadUrl());
                 try {
                     String name = component.getName();
                     if (name.startsWith("/")) {
@@ -98,11 +96,8 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
 
     @Override
     public void downResource(ServiceMetaItem item, String relativePath, OutputStreamSupplier supplier) throws IOException {
-        String downloadUrl = item.getDownloadUrl();
-        if (StrUtil.isBlank(downloadUrl)) {
-            downloadUrl = String.format("/meta/%s/%s/%s/%s", item.getFramework(), item.getType(), item.getServiceName(), relativePath);
-            downloadUrl = NexusFacade.getRawRepoClient().getNexusRawObjectUrl(downloadUrl);
-        }
+        String downloadUrl = String.format("/meta/%s/%s/%s/%s", item.getFramework(), item.getType(), item.getServiceName(), relativePath);
+        downloadUrl = NexusFacade.getRawRepoClient().getNexusRawObjectUrl(downloadUrl);
         NexusFacade.getCommonClient().download(downloadUrl, supplier.get());
     }
 
