@@ -83,8 +83,6 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     @Autowired
     private ClusterInfoService clusterInfoService;
 
-    @Autowired
-    private FrameServiceService frameService;
 
     @Autowired
     private FrameServiceService frameServiceService;

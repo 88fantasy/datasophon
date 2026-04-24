@@ -6,12 +6,12 @@ import cn.hutool.core.bean.copier.CopyOptions;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.master.ClusterActor;
+import com.datasophon.api.master.DispatchK8sAgentActor;
 import com.datasophon.api.service.ClusterInfoService;
-import com.datasophon.api.service.agent.K8sAgentDeployService;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
-import com.datasophon.common.command.ClusterCommand;
-import com.datasophon.common.enums.ClusterCommandType;
+import com.datasophon.api.service.k8s.K8sService;
+import com.datasophon.api.vo.k8s.K8sConnectionResult;
+import com.datasophon.common.command.DispatcherK8sAgentCommand;
 import com.datasophon.common.k8s.config.ClientOptions;
 import com.datasophon.common.k8s.config.KubeConfigParser;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -26,8 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.util.concurrent.CompletableFuture;
-
 /**
  * @author zhanghuangbin
  */
@@ -40,8 +38,7 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
     private ClusterInfoService clusterInfoService;
 
     @Autowired
-    private K8sAgentDeployService k8sAgentDeployService;
-
+    private K8sService k8sService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -79,20 +76,18 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
             updateById(db);
         }
 
+        K8sConnectionResult result = k8sService.testConnection(config);
+        if (!result.isSuccess()) {
+            throw new BusinessHintException(String.format("集群联调性测试失败，%s", result.getInfo()));
+        }
+
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                ActorRef hostActor = ActorUtils.getLocalActor(ClusterActor.class, "clusterActor-" + config.getClusterId());
-                hostActor.tell(new ClusterCommand(ClusterCommandType.CHECK, config.getClusterId()), ActorRef.noSender());
-
-                // 异步部署 K8s Agent
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        k8sAgentDeployService.deployAgent(config);
-                    } catch (Exception e) {
-                        log.error("异步部署 K8s Agent 失败：clusterId={}", config.getClusterId(), e);
-                    }
-                });
+                ActorRef hostActor = ActorUtils.getLocalActor(DispatchK8sAgentActor.class, "dispatchK8sAgentActor-" + config.getClusterId());
+                DispatcherK8sAgentCommand cmd = new DispatcherK8sAgentCommand();
+                cmd.setClusterId(cluster.getId());
+                hostActor.tell(cmd, ActorRef.noSender());
             }
         });
         return db;
@@ -115,19 +110,6 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
     @Override
     public void removeByClusterId(Integer clusterId) {
         // 先获取集群配置，用于卸载 Agent
-        K8sClusterConfig config = getByClusterId(clusterId);
-        if (config != null) {
-            // 同步卸载 Agent
-            try {
-                k8sAgentDeployService.undeployAgent(config);
-                log.info("已成功卸载 K8s Agent: clusterId={}", clusterId);
-            } catch (Exception e) {
-                log.error("卸载 K8s Agent 失败：clusterId={}", clusterId, e);
-                // 继续删除配置，不阻断删除流程
-            }
-        }
-
-        // 删除集群配置
         lambdaUpdate().eq(K8sClusterConfig::getClusterId, clusterId).remove();
     }
 

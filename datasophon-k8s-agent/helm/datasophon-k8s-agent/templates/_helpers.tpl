@@ -53,6 +53,21 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{/*
 Create the name of the service account to use
 */}}
+{{/*
+Build image repository path with optional registry prefix.
+If repository already starts with registry, or registry is empty, output repository as-is.
+Otherwise output registry/repository.
+*/}}
+{{- define "datasophon-k8s-agent.repository" -}}
+{{- $registry := .registry -}}
+{{- $repository := .repository -}}
+{{- if or (not $registry) (hasPrefix $registry $repository) -}}
+{{- $repository -}}
+{{- else -}}
+{{- printf "%s/%s" $registry $repository -}}
+{{- end -}}
+{{- end }}
+
 {{- define "datasophon-k8s-agent.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
 {{- default (include "datasophon-k8s-agent.fullname" .) .Values.serviceAccount.name }}

@@ -507,7 +507,7 @@ public class K8sServiceImpl implements K8sService {
     }
 
     @Override
-    public K8sNamespace createIfAbsent(K8sClusterConfig config, String namespaceName) {
+    public boolean createIfAbsent(K8sClusterConfig config, String namespaceName) {
         return exec(newOptions(config), client -> {
             List<K8sNamespace> namespaces = doListNamespaces(client);
             K8sNamespace exist = null;
@@ -540,14 +540,7 @@ public class K8sServiceImpl implements K8sService {
 
 
             // 5. 返回新创建的 namespace 信息
-            if (exist == null) {
-                K8sNamespace namespace = new K8sNamespace();
-                namespace.setName(namespaceName);
-                namespace.setStatus("active");
-                return namespace;
-            } else {
-                return exist;
-            }
+            return exist == null;
         }, "确保 K8s namespace 存在");
     }
 

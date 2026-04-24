@@ -74,7 +74,7 @@ public class KubectlClient implements AutoCloseable {
         this.tempDir = PathUtils.getTmpDir("sensitive/" + RandomUtil.randomString(12));
         String osName = System.getProperty("os.name").toLowerCase();
         if (!osName.contains("window")) {
-            ShellUtils.exec(null, Arrays.asList("chmod", "-R",  "0700", tempDir.getAbsolutePath()), -1);
+            ShellUtils.exec(null, Arrays.asList("chmod", "-R", "0700", tempDir.getAbsolutePath()), -1);
         }
 
         if (StrUtil.isNotBlank(options.getKubeConfig())) {
@@ -247,7 +247,7 @@ public class KubectlClient implements AutoCloseable {
     /**
      * 获取指定命名空间中指定名称的 Deployment
      *
-     * @param namespace     命名空间
+     * @param namespace      命名空间
      * @param deploymentName Deployment 名称
      * @return Deployment 对象，不存在时返回 null
      */
@@ -319,12 +319,11 @@ public class KubectlClient implements AutoCloseable {
     }
 
 
-
     /**
      * 获取指定的 Secret
      *
-     * @param namespace     命名空间
-     * @param secretName    Secret 名称
+     * @param namespace  命名空间
+     * @param secretName Secret 名称
      * @return Secret 对象
      */
     public K8sSecret getSecret(String namespace, String secretName) throws KubectlException {
@@ -347,22 +346,22 @@ public class KubectlClient implements AutoCloseable {
     /**
      * 重启指定的 Deployment
      *
-     * @param namespace     命名空间
+     * @param namespace      命名空间
      * @param deploymentName Deployment 名称
      */
     public void restartDeployment(String namespace, String deploymentName) {
         List<String> args = Arrays.asList(
-            "rollout",
-            "restart",
-            "deployment/" + deploymentName,
-            "-n",
-            namespace
+                "rollout",
+                "restart",
+                "deployment/" + deploymentName,
+                "-n",
+                namespace
         );
         ExecResult result = execute(args, -1);
         if (!result.isSuccess()) {
             throw new KubectlException(
-                String.format("restart deployment %s in namespace %s failed, %s",
-                    deploymentName, namespace, result.getErrorTraceMessage())
+                    String.format("restart deployment %s in namespace %s failed, %s",
+                            deploymentName, namespace, result.getErrorTraceMessage())
             );
         }
     }
@@ -374,11 +373,11 @@ public class KubectlClient implements AutoCloseable {
      */
     public void updateDeploymentImage(UpdateDeploymentDTO dto) {
         List<String> args = new ArrayList<>(Arrays.asList(
-            "set",
-            "image",
-            "deployment/" + dto.getDeployment(),
-            "-n",
-            dto.getNamespace()
+                "set",
+                "image",
+                "deployment/" + dto.getDeployment(),
+                "-n",
+                dto.getNamespace()
         ));
 
         // 为每个容器镜像添加 --container 参数
@@ -390,8 +389,8 @@ public class KubectlClient implements AutoCloseable {
         ExecResult result = execute(args, -1);
         if (!result.isSuccess()) {
             throw new KubectlException(
-                String.format("update deployment %s image in namespace %s failed, %s",
-                    dto.getDeployment(), dto.getNamespace(), result.getErrorTraceMessage())
+                    String.format("update deployment %s image in namespace %s failed, %s",
+                            dto.getDeployment(), dto.getNamespace(), result.getErrorTraceMessage())
             );
         }
     }
@@ -408,23 +407,23 @@ public class KubectlClient implements AutoCloseable {
     /**
      * 创建 docker-registry 类型的 Secret
      *
-     * @param namespace     命名空间
-     * @param secretName    Secret 名称
-     * @param dockerServer  Docker 服务器地址
-     * @param username      用户名
-     * @param password      密码
+     * @param namespace    命名空间
+     * @param secretName   Secret 名称
+     * @param dockerServer Docker 服务器地址
+     * @param username     用户名
+     * @param password     密码
      */
     public void createDockerRegistrySecret(String namespace, String secretName, String dockerServer, String username, String password) {
         List<String> args = Arrays.asList(
-            "create",
-            "secret",
-            "docker-registry",
-            secretName,
-            "-n",
-            namespace,
-            "--docker-server=" + dockerServer,
-            "--docker-username=" + username,
-            "--docker-password=" + password
+                "create",
+                "secret",
+                "docker-registry",
+                secretName,
+                "-n",
+                namespace,
+                "--docker-server=" + dockerServer,
+                "--docker-username=" + username,
+                "--docker-password=" + password
         );
         ExecResult result = execute(args, -1);
         // secret 已存在时返回 1，但这不是错误
@@ -436,20 +435,20 @@ public class KubectlClient implements AutoCloseable {
     /**
      * 将 Secret 附加到指定的 ServiceAccount
      *
-     * @param namespace     命名空间
-     * @param secretName    Secret 名称
+     * @param namespace          命名空间
+     * @param secretName         Secret 名称
      * @param serviceAccountName ServiceAccount 名称
      */
     public void attachSecretToServiceAccount(String namespace, String secretName, String serviceAccountName) {
         // 先获取当前 ServiceAccount 的 YAML
         List<String> getArgs = Arrays.asList(
-            "get",
-            "serviceaccount",
-            serviceAccountName,
-            "-n",
-            namespace,
-            "-o",
-            "yaml"
+                "get",
+                "serviceaccount",
+                serviceAccountName,
+                "-n",
+                namespace,
+                "-o",
+                "yaml"
         );
         ExecResult getResult = execute(getArgs, 30);
         if (!getResult.isSuccess()) {
@@ -464,16 +463,25 @@ public class KubectlClient implements AutoCloseable {
             return;
         }
 
+
         // 使用 patch 命令添加 imagePullSecrets
-        String patch = String.format("{\"imagePullSecrets\": [{\"name\": \"%s\"}]}", secretName);
+        String patch = String.format("{\n" +
+                                     "  \"imagePullSecrets\": [\n" +
+                                     "    {\n" +
+                                     "      \"name\": \"%s\"\n" +
+                                     "    }\n" +
+                                     "  ]\n" +
+                                     "}", secretName);
+        File patchFile = new File(tempDir, "patch-" + RandomUtil.randomString(12) + ".json");
+        FileUtil.writeString(patch, patchFile, StandardCharsets.UTF_8);
         List<String> patchArgs = Arrays.asList(
-            "patch",
-            "serviceaccount",
-            serviceAccountName,
-            "-n",
-            namespace,
-            "-p",
-            patch
+                "patch",
+                "serviceaccount",
+                serviceAccountName,
+                "-n",
+                namespace,
+                "--patch-file",
+                patchFile.getAbsolutePath()
         );
         ExecResult patchResult = execute(patchArgs, 30);
         if (!patchResult.isSuccess()) {
@@ -484,26 +492,27 @@ public class KubectlClient implements AutoCloseable {
     /**
      * 缩放指定的 Deployment
      *
-     * @param namespace     命名空间
+     * @param namespace      命名空间
      * @param deploymentName Deployment 名称
-     * @param replicas      副本数
+     * @param replicas       副本数
      */
     public void scaleDeployment(String namespace, String deploymentName, int replicas) {
         List<String> args = Arrays.asList(
-            "scale",
-            "deployment/" + deploymentName,
-            "--replicas=" + replicas,
-            "-n",
-            namespace
+                "scale",
+                "deployment/" + deploymentName,
+                "--replicas=" + replicas,
+                "-n",
+                namespace
         );
         ExecResult result = execute(args, -1);
         if (!result.isSuccess()) {
             throw new KubectlException(
-                String.format("scale deployment %s to %d replicas in namespace %s failed, %s",
-                    deploymentName, replicas, namespace, result.getErrorTraceMessage())
+                    String.format("scale deployment %s to %d replicas in namespace %s failed, %s",
+                            deploymentName, replicas, namespace, result.getErrorTraceMessage())
             );
         }
     }
+
     /**
      * 解析 K8s 资源列表 JSON
      */
@@ -545,7 +554,7 @@ public class KubectlClient implements AutoCloseable {
     /**
      * 批量删除指定的 Secret
      *
-     * @param namespace  命名空间
+     * @param namespace   命名空间
      * @param secretNames Secret 名称列表
      */
     public void deleteSecrets(String namespace, List<String> secretNames) throws KubectlException {
@@ -598,7 +607,7 @@ public class KubectlClient implements AutoCloseable {
      * 获取 事件
      * 对应命令：kubectl events --for=deployment/<deployment-name> -n <namespace>
      *
-     * @param namespace      命名空间
+     * @param namespace    命名空间
      * @param resourceName eg: pod/xxx
      * @return 事件列表
      */
@@ -614,8 +623,6 @@ public class KubectlClient implements AutoCloseable {
     }
 
 
-
-
     @Override
     public void close() {
         if (tempDir != null) {
@@ -623,7 +630,6 @@ public class KubectlClient implements AutoCloseable {
 //            FileUtil.del(tempDir);
         }
     }
-
 
 
 }

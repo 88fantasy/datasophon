@@ -133,7 +133,7 @@ public class K8sClusterNamespaceServiceImpl extends ServiceImpl<K8sClusterNamesp
     }
 
     @Override
-    public K8sClusterNamespace createIfAbsent(K8sNamespaceIdentityDTO identity) {
+    public K8sClusterNamespace createIfAbsent(K8sNamespaceIdentityDTO identity, Integer state) {
         // 1. 根据 clusterId 和 namespace 查询 K8sClusterNamespace 对象，如果不存在则创建
         K8sClusterNamespace namespace = getNamespace(identity);
 
@@ -141,7 +141,7 @@ public class K8sClusterNamespaceServiceImpl extends ServiceImpl<K8sClusterNamesp
             namespace = new K8sClusterNamespace();
             namespace.setClusterId(identity.getClusterId());
             namespace.setNamespace(identity.getNamespace());
-            namespace.setState(-1); // 默认设置为 待新建状态
+            namespace.setState(state == null ? -1 : state); // 默认设置为 待新建状态
             save(namespace);
         }
         return namespace;

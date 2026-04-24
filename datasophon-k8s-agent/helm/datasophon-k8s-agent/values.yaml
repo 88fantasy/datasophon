@@ -7,11 +7,12 @@ replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
+  registry: ""
   repository: datasophon-k8s-agent
   # This sets the pull policy for images.
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "2.0-SNAPSHOT"
+  tag: "2.1-SNAPSHOT"
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
@@ -92,7 +93,17 @@ affinity: {}
 
 # Configuration files mounted via ConfigMap
 config:
-  # application.yaml content, override via --set-file or custom values file
-  applicationYaml: ""
+  applicationYaml: |-
+    server:
+      port: 12552
+    
+    spring:
+      application:
+        name: datasophon-k8s-agent
+    
+    logging:
+      level:
+        root: INFO
+        com.datasophon.k8sagent: DEBUG
   # common.properties content, override via --set-file or custom values file
   commonProperties: ""

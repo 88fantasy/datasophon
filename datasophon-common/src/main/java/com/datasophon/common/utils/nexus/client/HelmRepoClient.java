@@ -1,5 +1,9 @@
 package com.datasophon.common.utils.nexus.client;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.core.util.VersionUtil;
+import com.datasophon.common.Constants;
+import com.datasophon.common.utils.nexus.vo.Component;
 import com.datasophon.common.utils.nexus.vo.ExecResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -12,6 +16,7 @@ import org.apache.http.util.EntityUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  * @author zhanghuangbin
@@ -20,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 public class HelmRepoClient extends CommonNexusClient {
 
 
-    private String repo;
+    private final String repo;
 
     public HelmRepoClient(String repo) {
         this.repo = repo;
@@ -47,5 +52,27 @@ public class HelmRepoClient extends CommonNexusClient {
             }
         }
     }
+
+    public Component getNewestComponent(String folder) throws IOException {
+        String encodedFolder = encodePath(folder);
+        String nameParam = StrUtil.EMPTY.equals(encodedFolder) ? "*" : encodedFolder;
+        String baseUrl = String.format("http://%s:%s/service/rest/v1/search?repository=%s&name=%s",
+                Constants.NEXUS_IP, Constants.NEXUS_PORT, repo, nameParam
+        );
+        List<Component> components = doListMatchedItem(baseUrl);
+        if (components.isEmpty()) {
+            return null;
+        }
+
+        Component component = components.get(0);
+        for (Component comp : components) {
+            if (VersionUtil.isGreaterThan(comp.getVersion(), component.getVersion())) {
+                component = comp;
+            }
+        }
+        return component;
+    }
+
+
 
 }

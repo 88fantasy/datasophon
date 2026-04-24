@@ -15,28 +15,13 @@
  *  limitations under the License.
  */
 
-package com.datasophon.api.service.agent;
+package com.datasophon.common.command;
 
-import com.datasophon.dao.entity.cluster.K8sClusterConfig;
+import lombok.Data;
 
-/**
- * K8s Agent 部署服务接口
- */
-public interface K8sAgentDeployService {
+@Data
+public class DispatcherK8sAgentCommand {
 
-    String NAMESPACE = "vos";
-
-    /**
-     * 部署 Agent 到 K8s 集群
-     * @param config K8s 集群配置
-     */
-    void deployAgent(K8sClusterConfig config);
-
-    /**
-     * 从 K8s 集群卸载 Agent
-     * @param config K8s 集群配置
-     */
-    void undeployAgent(K8sClusterConfig config);
-
+    private Integer clusterId;
 
 }
