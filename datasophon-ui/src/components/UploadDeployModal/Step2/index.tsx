@@ -331,7 +331,6 @@ const Index = (props: { current?: number; formMapRef: React.RefObject<any[]>; se
 
                             return new Promise<void>(async (resolve, reject) => {
                                 if (value?.length) {
-                                    console.log('value', value)
                                     // const status = value[0]?.status;
                                     setSubmitPending(true)
                                     setTimeout(async () => {
