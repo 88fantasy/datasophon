@@ -36,7 +36,7 @@ if not "%proxy%"=="" (
 )
 
 set "BUILDER_NAME=datasophon-build"
-set "image_name=datasophon-k8s-agent"
+set "image_name=vos/datasophon-k8s-agent"
 
 if "%arch%"=="all" (
     set "platform=linux/amd64,linux/arm64"

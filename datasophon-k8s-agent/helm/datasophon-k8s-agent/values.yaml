@@ -8,7 +8,7 @@ replicaCount: 1
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
   registry: ""
-  repository: datasophon-k8s-agent
+  repository: vos/datasophon-k8s-agent
   # This sets the pull policy for images.
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
@@ -44,6 +44,7 @@ service:
   type: NodePort
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 12552
+  nodePort: 32552
 
 
 
@@ -63,12 +64,12 @@ resources: {}
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
   httpGet:
-    path: /app/v1/health
-    port: http
+    path: /api/v1/health
+    port: 12552
 readinessProbe:
   httpGet:
-    path: /app/v1/ready
-    port: http
+    path: /api/v1/ready
+    port: 12552
 
 
 

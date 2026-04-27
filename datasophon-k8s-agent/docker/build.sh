@@ -28,7 +28,7 @@ if [ -n "$proxy" ]; then
   echo "use proxy: $proxy."
 fi
 
-image_name="datasophon-k8s-agent"
+image_name="vos/datasophon-k8s-agent"
 
 if [ "$arch" = "all" ]; then
   platform="linux/amd64,linux/arm64"
