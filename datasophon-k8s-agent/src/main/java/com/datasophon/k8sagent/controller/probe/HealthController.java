@@ -1,7 +1,6 @@
-package com.datasophon.k8sagent.controller;
+package com.datasophon.k8sagent.controller.probe;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,12 +22,12 @@ public class HealthController {
      * @return 健康状态
      */
     @GetMapping("/health")
-    public ResponseEntity<Map<String, Object>> health() {
+    public Map<String, Object> health() {
         Map<String, Object> status = new HashMap<>();
         status.put("status", "UP");
         status.put("component", "datasophon-k8s-agent");
         log.debug("Health check requested");
-        return ResponseEntity.ok(status);
+        return status;
     }
 
     /**
@@ -37,11 +36,11 @@ public class HealthController {
      * @return 就绪状态
      */
     @GetMapping("/ready")
-    public ResponseEntity<Map<String, Object>> ready() {
+    public Map<String, Object> ready() {
         Map<String, Object> status = new HashMap<>();
         status.put("ready", true);
         status.put("component", "datasophon-k8s-agent");
         log.debug("Ready check requested");
-        return ResponseEntity.ok(status);
+        return status;
     }
 }

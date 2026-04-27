@@ -546,7 +546,7 @@ Expected: All 4 tests PASS
  *  limitations under the License.
  */
 
-package com.datasophon.k8sagent.configuration;
+package com.datasophon.k8sagent.config;
 
 import com.datasophon.k8sagent.auth.K8sAgentAuthInterceptor;
 import org.springframework.context.annotation.Configuration;
