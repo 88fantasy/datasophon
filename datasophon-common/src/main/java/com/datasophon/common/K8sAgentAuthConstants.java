@@ -15,7 +15,7 @@
  *  limitations under the License.
  */
 
-package com.datasophon.common.utils;
+package com.datasophon.common;
 
 /**
  * K8s Agent Auth constants
@@ -27,6 +27,7 @@ public final class K8sAgentAuthConstants {
     }
 
     // Property keys (read from common.properties via PropertyUtils)
+    public static final String AGENT_NODE_PORT = "k8s.agent.nodePort";
     public static final String AUTH_ENABLED = "k8s.agent.auth.enabled";
     public static final String AUTH_PUBLIC_KEY = "k8s.agent.auth.public.key";
     public static final String AUTH_PRIVATE_KEY = "k8s.agent.auth.private.key";

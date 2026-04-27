@@ -37,7 +37,7 @@ public class K8sAgentWebConfiguration implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
-                .addPathPatterns("/api/v1/**")
-                .excludePathPatterns("/api/v1/health", "/api/v1/ready", "/error");
+                .addPathPatterns("/**")
+                .excludePathPatterns("/v1/health", "/v1/ready", "/error");
     }
 }

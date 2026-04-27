@@ -17,7 +17,7 @@
 
 package com.datasophon.k8sagent.auth;
 
-import com.datasophon.common.utils.K8sAgentAuthConstants;
+import com.datasophon.common.K8sAgentAuthConstants;
 import com.datasophon.common.utils.PropertyUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;

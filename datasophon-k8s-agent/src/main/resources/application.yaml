@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: datasophon-k8s-agent
+  mvc:
+    servlet:
+      path: /api
+
 
 logging:
   level:

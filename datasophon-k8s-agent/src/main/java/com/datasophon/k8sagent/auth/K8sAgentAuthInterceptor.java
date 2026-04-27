@@ -18,7 +18,7 @@
 package com.datasophon.k8sagent.auth;
 
 import com.alibaba.fastjson.JSONObject;
-import com.datasophon.common.utils.K8sAgentAuthConstants;
+import com.datasophon.common.K8sAgentAuthConstants;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.Result;
 import org.apache.commons.lang3.StringUtils;
