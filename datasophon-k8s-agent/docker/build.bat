@@ -56,6 +56,10 @@ if "%arch%"=="all" (
     ) else (
         echo BuildKit builder '%BUILDER_NAME%' does not exist.
         docker buildx create --name %BUILDER_NAME% --platform linux/amd64,linux/arm64 --use --bootstrap
+        if !ERRORLEVEL! neq 0 (
+            echo ERROR: Failed to create BuildKit builder.
+            exit /b !ERRORLEVEL!
+        )
     )
 
     docker buildx build ^
@@ -64,17 +68,29 @@ if "%arch%"=="all" (
         --progress plain ^
         --output type=oci,dest=./%image_name%-%tag%-image-all.tar ^
         -t %image_name%:%tag% .
+    if !ERRORLEVEL! neq 0 (
+        echo ERROR: Docker buildx build failed.
+        exit /b !ERRORLEVEL!
+    )
 ) else if not "%arch%"=="" (
     docker build ^
         --platform=!platform! ^
         --progress plain ^
         --output type=docker,dest=./%image_name%-%tag%-image-%arch%.tar ^
         -t %image_name%:%tag% .
+    if !ERRORLEVEL! neq 0 (
+        echo ERROR: Docker build failed.
+        exit /b !ERRORLEVEL!
+    )
 ) else (
     docker build ^
         --progress plain ^
         --output type=docker,dest=./%image_name%-%tag%-image-default.tar ^
         -t %image_name%:%tag% .
+    if !ERRORLEVEL! neq 0 (
+        echo ERROR: Docker build failed.
+        exit /b !ERRORLEVEL!
+    )
 )
 
 endlocal

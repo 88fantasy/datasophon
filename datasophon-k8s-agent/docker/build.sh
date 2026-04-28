@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 tag="${1:-latest}"
 shift 2>/dev/null || true
