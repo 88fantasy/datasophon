@@ -35,6 +35,10 @@ spring:
   messages:
     basename: i18n/messages
     encoding: UTF-8
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
 #mybatis
 mybatis-plus:
   mapper-locations: classpath*:/mapper/*.xml
@@ -66,6 +70,14 @@ logging:
   config: classpath:logback-api.xml
 
 
+# 在idea的启动参数，加上 -Dspringdoc.api-docs.enabled=true
+springdoc:
+  api-docs:
+    enabled: false
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.datasophon.api.controller
 
 
 
