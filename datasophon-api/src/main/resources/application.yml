@@ -70,6 +70,16 @@ logging:
   config: classpath:logback-api.xml
 
 
+datasophon:
+  migration:
+    enable: true
+  server:
+    path-prefix: /api
+  proxy-grafana:
+    enable: false
+#    max-threads: 32
+
+
 # 在idea的启动参数，加上 -Dspringdoc.api-docs.enabled=true
 springdoc:
   api-docs:
@@ -78,7 +88,4 @@ springdoc:
     - group: 'default'
       paths-to-match: '/**'
       packages-to-scan: com.datasophon.api.controller
-
-
-
 
