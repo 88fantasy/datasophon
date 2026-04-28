@@ -34,12 +34,11 @@ import com.datasophon.api.service.ClusterRackService;
 import com.datasophon.api.service.ClusterRoleUserService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterYarnSchedulerService;
-import com.datasophon.api.service.FrameServiceService;
-import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.api.utils.SecurityUtils;
 import com.datasophon.common.Constants;
+import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ClusterCommand;
 import com.datasophon.common.enums.ClusterCommandType;
 import com.datasophon.dao.entity.AlertGroupEntity;
@@ -54,10 +53,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -79,11 +80,6 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
     @Autowired
     private ClusterAlertGroupMapService groupMapService;
 
-    @Autowired
-    private FrameServiceService frameServiceService;
-
-    @Autowired
-    private ClusterHostService clusterHostService;
 
     @Autowired
     private ClusterYarnSchedulerService yarnSchedulerService;
@@ -110,7 +106,7 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
 
     @Override
     public ClusterInfoEntity saveCluster(ClusterInfoEntity clusterInfo) {
-        if (lambdaQuery().eq(ClusterInfoEntity::getClusterCode, clusterInfo.getClusterCode()).exists()) {
+        if (getBaseMapper().isDuplicate(clusterInfo, ClusterInfoEntity::getClusterCode)) {
             throw new BusinessHintException(Status.CLUSTER_CODE_EXISTS.getMsg());
         }
         clusterInfo.setCreateTime(new Date());
@@ -170,7 +166,7 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
     @Override
     public List<ClusterInfoEntity> getReadyClusterList() {
         return lambdaQuery()
-                .ne(ClusterInfoEntity::getClusterState, ClusterState.NEED_CONFIG)
+                .notIn(ClusterInfoEntity::getClusterState, Arrays.asList(ClusterState.NEED_CONFIG, ClusterState.DELETING))
                 .list();
     }
 
@@ -193,14 +189,20 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
 
     @Override
     public void updateCluster(ClusterInfoEntity clusterInfo) {
-        List<ClusterInfoEntity> list = this.list(new QueryWrapper<ClusterInfoEntity>().eq(Constants.CLUSTER_CODE, clusterInfo.getClusterCode()));
-        if (Objects.nonNull(list) && !list.isEmpty()) {
-            ClusterInfoEntity clusterInfoEntity = list.get(0);
-            if (!clusterInfoEntity.getId().equals(clusterInfo.getId())) {
-                throw new BusinessHintException(Status.CLUSTER_CODE_EXISTS.getMsg());
-            }
+        ClusterInfoEntity db = getById(clusterInfo.getId());
+        if (db == null) {
+            throw new BusinessHintException("对象空指针");
         }
-        this.updateById(clusterInfo);
+        if (getBaseMapper().isDuplicate(clusterInfo, ClusterInfoEntity::getClusterCode)) {
+            throw new BusinessHintException(Status.CLUSTER_CODE_EXISTS.getMsg());
+        }
+        if (db.getClusterCode().equals(clusterInfo.getClusterCode())) {
+            CacheUtils.removeKey(db.getClusterCode() + Constants.HOST_MAP);
+        }
+        clusterInfo.setClusterStateCode(db.getClusterState().getValue());
+        db.setClusterCode(clusterInfo.getClusterCode());
+        db.setClusterName(clusterInfo.getClusterName());
+        updateById(db);
     }
 
     @Override
@@ -209,10 +211,12 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
         if (clusterInfo == null) {
             return;
         }
+        if (ClusterState.DELETING.equals(clusterInfo.getClusterState())) {
+            throw new BusinessHintException("集群已经在删除中，不能重复删除");
+        }
 
         if (ClusterArchType.physical.equals(clusterInfo.getArchType())) {
             boolean canDelete = false;
-
             if (ClusterState.STOP.equals(clusterInfo.getClusterState())) {
                 List<ClusterServiceInstanceEntity> serviceInstanceList = clusterServiceInstanceService.listAll(clusterId);
                 canDelete = serviceInstanceList.stream().noneMatch(instance -> clusterServiceInstanceService.hasRunningRoleInstance(instance.getId()));
@@ -221,14 +225,21 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
                 throw new BusinessHintException(String.format("集群%s存在正在运行的实例，不能删除。请先停止所有的实例", clusterInfo.getClusterName()));
             }
         } else {
-            boolean canDelete = !k8sServiceInstanceService.hasRunningInstance(clusterId);
-            if (!canDelete) {
-                throw new BusinessHintException(String.format("集群%s存在正在运行的实例，不能删除。请先停止所有的实例", clusterInfo.getClusterName()));
+            if (!ClusterState.NEED_CONFIG.equals(clusterInfo.getClusterState())) {
+                boolean canDelete = !k8sServiceInstanceService.hasRunningInstance(clusterId);
+                if (!canDelete) {
+                    throw new BusinessHintException(String.format("集群%s存在正在运行的实例，不能删除。请先停止所有的实例", clusterInfo.getClusterName()));
+                }
             }
         }
-        ActorRef ref = ActorUtils.getLocalActor(ClusterActor.class, "clusterActor");
-        ref.tell(new ClusterCommand(ClusterCommandType.DELETE, clusterId), ActorRef.noSender());
         updateClusterState(clusterId, ClusterState.DELETING.getValue());
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                ActorRef ref = ActorUtils.getLocalActor(ClusterActor.class, "clusterActor");
+                ref.tell(new ClusterCommand(ClusterCommandType.DELETE, clusterId), ActorRef.noSender());
+            }
+        });
     }
 
 }
