@@ -64,8 +64,8 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
             result.setArch(platform.getArch());
 
 //                    重新命名为私库的 tag
-            result.setNewImage(DockerTagUtils.normalTag(options.getImageRegistry(), manifest.getImage()));
-            result.setNewTag(DockerTagUtils.normalVersion(manifest.getTag(), platform.getOs(), platform.getArch()));
+            result.setNewImage(DockerTagUtils.normalRepository(options.getImageRegistry(), manifest.getImage()));
+            result.setNewTag(DockerTagUtils.normalTag(manifest.getTag(), platform.getOs(), platform.getArch()));
 
             log.info("为镜像{}添加新的 tag:{}", result.getOldQualifierImage(), result.getNewQualifierImage());
             client.tagImage(result.getOldQualifierImage(), result.getNewQualifierImage());
@@ -88,7 +88,7 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
 
     @Override
     public void createManifest(String manifestName, List<LoadImageResult> images) {
-        String selfRepoManifestName = DockerTagUtils.normalTag(options.getImageRegistry(), manifestName);
+        String selfRepoManifestName = DockerTagUtils.normalRepository(options.getImageRegistry(), manifestName);
         DockerClient client = new DockerClient();
 
         // 删除已存在的 manifest

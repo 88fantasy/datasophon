@@ -57,6 +57,6 @@ public class ImportCompProgressVO {
     @JsonIgnore
     public boolean isTimeout() {
 //        已经到了过期时间或者距离创建时间已经过期了1天(不可一天都还没有处理完）
-        return (expire != null && LocalDateTime.now().isAfter(expire)) || LocalDateTime.now().plusDays(1).isAfter(createTime);
+        return (expire != null && LocalDateTime.now().isAfter(expire)) || LocalDateTime.now().isAfter(createTime.plusDays(1));
     }
 }

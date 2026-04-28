@@ -1,7 +1,7 @@
 package com.datasophon.api.service.tmpfile.comp;
 
 import cn.hutool.core.util.StrUtil;
-import com.datasophon.api.vo.download.DownloadProgressVO;
+import com.datasophon.api.vo.extrepo.DownloadProgressVO;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;

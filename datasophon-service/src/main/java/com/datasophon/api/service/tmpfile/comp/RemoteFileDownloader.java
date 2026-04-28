@@ -2,7 +2,7 @@ package com.datasophon.api.service.tmpfile.comp;
 
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.api.dto.download.DownloadTaskDTO;
-import com.datasophon.api.vo.download.DownloadProgressVO;
+import com.datasophon.api.vo.extrepo.DownloadProgressVO;
 
 import java.io.File;
 import java.io.IOException;

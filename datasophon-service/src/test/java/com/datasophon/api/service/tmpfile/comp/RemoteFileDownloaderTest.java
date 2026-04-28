@@ -1,11 +1,12 @@
 package com.datasophon.api.service.tmpfile.comp;
 
 import com.datasophon.api.dto.download.DownloadTaskDTO;
+import com.datasophon.api.vo.extrepo.DownloadProgressVO;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * RemoteFileDownloader 接口默认方法单元测试
@@ -24,7 +25,7 @@ class RemoteFileDownloaderTest {
         }
 
         @Override
-        public void download(String url, java.io.File destFile, com.datasophon.api.vo.download.DownloadProgressVO progress) {
+        public void download(String url, java.io.File destFile, DownloadProgressVO progress) {
             // 不需要实现
         }
     }

@@ -19,7 +19,7 @@ import com.datasophon.api.service.tmpfile.UploadTempFileService;
 import com.datasophon.api.service.tmpfile.comp.DownloaderFactory;
 import com.datasophon.api.service.tmpfile.comp.RemoteFileDownloader;
 import com.datasophon.api.utils.TransactionalUtils;
-import com.datasophon.api.vo.download.DownloadProgressVO;
+import com.datasophon.api.vo.extrepo.DownloadProgressVO;
 import com.datasophon.api.vo.tmpfile.MergeProgressVO;
 import com.datasophon.common.utils.FileUtils;
 import com.datasophon.common.utils.PathUtils;

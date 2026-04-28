@@ -6,10 +6,10 @@ import com.datasophon.api.dto.upload.BigFileDTO;
 import com.datasophon.api.dto.upload.CheckChunkDTO;
 import com.datasophon.api.dto.upload.ChunkDTO;
 import com.datasophon.api.dto.upload.MergeChunkDTO;
-import com.datasophon.api.vo.download.DownloadProgressVO;
+import com.datasophon.api.vo.extrepo.DownloadProgressVO;
+import com.datasophon.api.vo.tmpfile.MergeProgressVO;
 import com.datasophon.dao.entity.UploadTempFile;
 import com.datasophon.dao.entity.UploadTempFileChunk;
-import com.datasophon.api.vo.tmpfile.MergeProgressVO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;

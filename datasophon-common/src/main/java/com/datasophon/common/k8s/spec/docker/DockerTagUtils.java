@@ -7,11 +7,10 @@ import cn.hutool.core.util.StrUtil;
  */
 public class DockerTagUtils {
 
-    public static String DEFAULT_ORG = "bigdata";
 
-    public static String normalTag(String repository, String image) {
-        if (!repository.endsWith("/")) {
-            repository += "/";
+    public static String normalRepository(String registry, String image) {
+        if (!registry.endsWith("/")) {
+            registry += "/";
         }
 
         int count = 0;
@@ -21,17 +20,17 @@ public class DockerTagUtils {
             }
         }
         if (count == 0) {
-            return repository + DEFAULT_ORG + "/" + image;
+            return registry +  image;
         } else if (count == 1) {
-            return repository + image;
+            return registry + image;
         } else if (count == 2) {
             String[] parts = image.split("/");
             if (image.startsWith("docker.io")) {
                 if ("library".equals(parts[1])) {
-                    return repository + DEFAULT_ORG + "/" + parts[2];
+                    return registry +  parts[2];
                 }
             }
-            return repository + parts[1] + "/" + parts[2];
+            return registry + parts[1] + "/" + parts[2];
         } else if (count == 3) {
 //            count == 3, 只有nexus私库有这个问题，当作正常值
             int i;
@@ -45,14 +44,14 @@ public class DockerTagUtils {
                 }
             }
             String simpleTag = image.substring(i + 1);
-            return repository + simpleTag;
+            return registry + simpleTag;
         } else {
             throw new IllegalArgumentException(String.format("tag %s do not matched the docker specification", image));
         }
     }
 
 
-    public static String normalVersion(String version, String os, String arch) {
+    public static String normalTag(String version, String os, String arch) {
         if (StrUtil.isBlank(version) || "latest".equalsIgnoreCase(version)) {
             return os + "_" + arch + "-latest";
         }
