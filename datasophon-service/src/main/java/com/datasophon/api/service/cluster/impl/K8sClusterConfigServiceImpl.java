@@ -6,7 +6,7 @@ import cn.hutool.core.bean.copier.CopyOptions;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.master.DispatchK8sAgentActor;
+import com.datasophon.api.master.DispatcherK8sAgentActor;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.service.k8s.K8sService;
@@ -84,7 +84,7 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                ActorRef hostActor = ActorUtils.getLocalActor(DispatchK8sAgentActor.class, "dispatchK8sAgentActor-" + config.getClusterId());
+                ActorRef hostActor = ActorUtils.getLocalActor(DispatcherK8sAgentActor.class, "k8sAgentInstallActor-" + config.getClusterId());
                 DispatcherK8sAgentCommand cmd = new DispatcherK8sAgentCommand();
                 cmd.setClusterId(cluster.getId());
                 hostActor.tell(cmd, ActorRef.noSender());

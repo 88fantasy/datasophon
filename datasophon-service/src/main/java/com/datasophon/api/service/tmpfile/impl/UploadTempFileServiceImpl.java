@@ -510,10 +510,6 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
 
             // 获取文件大小
             long fileSize = destFile.length();
-            progress.setTotal(fileSize);
-            progress.setDownloaded(fileSize);
-            progress.setState(1); // 完成
-            progress.setExpire(LocalDateTime.now().plusMinutes(30));
 
             // 下载成功后写入数据库
             UploadTempFile tempFile = new UploadTempFile();
@@ -532,7 +528,12 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
             FileUtil.move(destFile, dest, true);
             tempFile.setPath(path);
             updateById(tempFile);
+
             progress.setAttachId(tempFile.getId());
+            progress.setTotal(fileSize);
+            progress.setDownloaded(fileSize);
+            progress.setState(1); // 完成
+            progress.setExpire(LocalDateTime.now().plusMinutes(30));
 
             log.info("下载任务完成：url:{}, 文件大小：{} bytes", dto.getUrl(), fileSize);
         } catch (IOException e) {

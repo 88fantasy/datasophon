@@ -81,6 +81,7 @@ public class ScpFileDownloader implements RemoteFileDownloader {
             int bytesRead;
             long totalRead = 0;
 
+            int turn = 1;
             while ((bytesRead = in.read(buffer)) != -1) {
                 if (progress.isCancel()) {
                     progress.setState(-2);
@@ -93,7 +94,8 @@ public class ScpFileDownloader implements RemoteFileDownloader {
                 progress.plusDownloaded(bytesRead);
 
 //                每100MB输出进度
-                if (totalRead % 100 * 1024 * 1024 == 0) {
+                if (totalRead > (100L * 1024 * 1024 * turn)) {
+                    turn++;
                     log.info("SCP 已经下载：{} bytes, 进度 {}%", totalRead, totalRead * 100 / fileSize);
                 }
             }
