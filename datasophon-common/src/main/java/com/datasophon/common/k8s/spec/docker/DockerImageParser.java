@@ -178,7 +178,9 @@ public class DockerImageParser {
                         platforms.add(platform);
                     }
                 // 多架构镜像列表（application/vnd.docker.distribution.manifest.list.v2+json）
-                } else if (ref.getMediaType().contains("manifest.list.v")) {
+                // 或 OCI 镜像索引（application/vnd.oci.image.index.v1+json）
+                } else if (ref.getMediaType().contains("manifest.list.v")
+                        || ref.getMediaType().contains("image.index.v")) {
                     String digest = ref.getDigest();
                     List<ImageHostPlatform> tempList = parseMultiPlatforms(unzipDir, digest);
                     platforms.addAll(tempList);

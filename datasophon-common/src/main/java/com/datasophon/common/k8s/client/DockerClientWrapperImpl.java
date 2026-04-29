@@ -42,11 +42,6 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
             log.warn("从文件{}中，解析出0个镜像 tag", file.getName());
             return new ArrayList<>(0);
         }
-        for (ImageManifest image : parsedImages) {
-            if (image.getPlatforms().size() > 1) {
-                throw new IllegalStateException(String.format("镜像文件%s的镜像%s:%s存在多种架构。请使用加上--platform参数导出镜像", file.getName(), image.getImage(), image.getTag()));
-            }
-        }
 
         log.info("从文件{}中，解析出{}个镜像 tag", file.getName(), parsedImages.size());
         DockerClient client = new DockerClient();

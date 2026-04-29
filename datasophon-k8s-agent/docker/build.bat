@@ -66,7 +66,7 @@ if "%arch%"=="all" (
         --builder %BUILDER_NAME% ^
         --platform=!platform! ^
         --progress plain ^
-        --output type=oci,dest=./%image_name%-%tag%-image-all.tar ^
+        --output type=oci,dest=./datasophon-k8s-agent-%tag%-image-all.tar ^
         -t %image_name%:%tag% .
     if !ERRORLEVEL! neq 0 (
         echo ERROR: Docker buildx build failed.
@@ -76,7 +76,7 @@ if "%arch%"=="all" (
     docker build ^
         --platform=!platform! ^
         --progress plain ^
-        --output type=docker,dest=./%image_name%-%tag%-image-%arch%.tar ^
+        --output type=docker,dest=./datasophon-k8s-agent-%tag%-image-%arch%.tar ^
         -t %image_name%:%tag% .
     if !ERRORLEVEL! neq 0 (
         echo ERROR: Docker build failed.
@@ -85,7 +85,7 @@ if "%arch%"=="all" (
 ) else (
     docker build ^
         --progress plain ^
-        --output type=docker,dest=./%image_name%-%tag%-image-default.tar ^
+        --output type=docker,dest=./datasophon-k8s-agent-%tag%-image-default.tar ^
         -t %image_name%:%tag% .
     if !ERRORLEVEL! neq 0 (
         echo ERROR: Docker build failed.
