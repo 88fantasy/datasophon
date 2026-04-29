@@ -67,7 +67,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
             isInstalled = executor.execShell("rpm -qa | grep mysql-community-server").getExecResult();
         }
         if(isInstalled && !force) {
-            log.info("exist mysql. force:{}", false);
+            log.info("mysql已安装, 是否覆盖:{}", false);
             checkStart(osType, executor);
             return true;
         }

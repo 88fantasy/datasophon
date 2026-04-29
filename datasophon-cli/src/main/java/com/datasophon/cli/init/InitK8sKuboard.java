@@ -36,6 +36,9 @@ public class InitK8sKuboard extends InitBase implements InitNodeHandler {
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
 
+    @CommandLine.Option(names = {"-kf", "--kubernetesForce"}, description = "存在是否覆盖安装")
+    boolean kubernetesForce = false;
+
     @Override
     public String name() {
         return "安装kuboard";
@@ -45,6 +48,11 @@ public class InitK8sKuboard extends InitBase implements InitNodeHandler {
     public boolean doRun(Executor executor) {
         if (!enableKubernetesCluster) {
             log.info("k8s集群安装未开启，跳过");
+            return true;
+        }
+        String prodOut = executor.execShell("kubectl get pods -n kuboard").getExecOut();
+        if(prodOut.contains("kuboard")) {
+            log.info("k8s集群kuboard pods已存在，跳过");
             return true;
         }
 
@@ -73,7 +81,7 @@ public class InitK8sKuboard extends InitBase implements InitNodeHandler {
         }
         
         // 根据标签结果决定是否安装kuboard
-        String cmd = String.format("/usr/bin/sealos run %s", kuboardPath);
+        String cmd = String.format("/usr/bin/sealos run %s --force=true", kuboardPath);
         if (!executor.execShell(cmd).isSuccess()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "安装kuboard失败");
         }

@@ -36,6 +36,9 @@ public class InitDocker extends InitBase implements InitNodeHandler {
 
     @CommandLine.Option(names = {"-dp", "--dockerHttpPort"}, description = "http端口", required = true)
     Integer dockerHttpPort;
+
+    @CommandLine.Option(names = {"-kf", "--kubernetesForce"}, description = "存在是否覆盖安装")
+    boolean kubernetesForce = false;
     
     @Override
     public String name() {
@@ -49,11 +52,19 @@ public class InitDocker extends InitBase implements InitNodeHandler {
             return true;
         }
 
-        Boolean isInstalled;
-        isInstalled = executor.execShell("docker version").getExecResult();
-        if(isInstalled) {
-            log.info("docker is installed");
-            return true;
+        String dockerInstalled = executor.execShell("docker version").getExecOut();
+        if (dockerInstalled.contains("API"))  {
+            if(kubernetesForce) {
+                log.info("dockerInstalled已安装,正在卸载");
+                executor.execShell("systemctl stop docker");
+                executor.execShell("rm -rf /var/lib/docker");
+                executor.execShell("rm -rf /etc/docker");
+                executor.execShell("rm -f /run/docker.sock");
+                executor.execShell("rm -f /usr/bin/docker*");
+            } else {
+                log.info("docker已安装,跳过");
+                return true;
+            }
         }
 
         String tarName = x86Tar;
@@ -74,14 +85,28 @@ public class InitDocker extends InitBase implements InitNodeHandler {
 
         executor.writeLines(getDockerServiceConf(), "/etc/systemd/system/docker.service");
         executor.execShell("chmod +x /etc/systemd/system/docker.service");
+        executor.execShell("systemctl enable docker.service");
 
+        executor.execShell("systemctl start docker");
+
+        executor.execShell("mkdir -p /etc/docker");
         executor.writeLines(getDaemonConf(), "/etc/docker/daemon.json");
         String base64 = executor.execShell(String.format("echo -n '%s:%s' | base64", registryUsername, registryPassword)).getExecOut();
         executor.writeLines(getAuthsConf(base64), "/root/.docker/config.json");
 
         executor.execShell("systemctl daemon-reload");
         executor.execShell("systemctl restart docker");
-        executor.execShell("systemctl enable docker.service");
+
+        if(!executor.execShell("systemctl status docker").isSuccess()) {
+            log.info("docker install fail.");
+            System.exit(1);
+        }
+
+        if(!executor.execShell(String.format("docker login %s:%s", registryIp, dockerHttpPort)).isSuccess()) {
+            log.info("docker login登录失败");
+            System.exit(1);
+        }
+
         log.info("docker install success");
         return true;
     }

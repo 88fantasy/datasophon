@@ -4,6 +4,7 @@ import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.RepositoriesType;
+import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +24,8 @@ public class InitK8sBaseServices extends InitBase{
     @CommandLine.Option(names = {"-kc", "--enableKubernetesCluster"}, description = "是否安装kubernetes集群")
     boolean enableKubernetesCluster = true;
 
-    @CommandLine.Option(names = {"-fk8s", "--forceK8s"}, description = "k8s存在是否覆盖安装")
-    boolean forceK8s = false;
+    @CommandLine.Option(names = {"-kf", "--kubernetesForce"}, description = "存在是否覆盖安装")
+    boolean kubernetesForce = false;
 
     @CommandLine.Option(names = {"-ns", "--namespaces"}, description = "命名空间", required = false)
     List<String> namespaces;
@@ -113,16 +114,28 @@ public class InitK8sBaseServices extends InitBase{
 
         boolean installed = executor.execShell("kubectl version").getExecResult();
         if (installed)  {
-            if(forceK8s) {
-                log.info("k8s集群安装已安装，先删除k8s集群");
-                executor.execShell(String.format("sealos delete --nodes %s", String.join(",", nodes)));
-                executor.execShell(String.format("sealos delete --nodes %s", String.join(",", masters)));
-                executor.execShell("sealos reset");
-                log.info("删除k8s集群完成");
-            } else {
-                log.info("k8s集群安装已安装，跳过");
-            }
+            if(kubernetesForce) {
+                log.info("k8s集群安装已安装。开始删除集群");
+                executor.execShell("helm uninstall ingress-nginx -n ingress-nginx");
+                executor.execShell("helm uninstall calico -n tigera-operator");
+                log.info(String.format("sealos delete --nodes %s --force=true", String.join(",", nodes)));
+                log.info(String.format("sealos delete --masters %s --force=true", String.join(",", masters)));
+                log.info("sealos reset --force=true");
 
+            } else {
+                log.info("k8s集群安装已安装。跳过");
+                return true;
+            }
+        }
+
+        String dockerInstalled = executor.execShell("docker version").getExecOut();
+        if (dockerInstalled.contains("API"))  {
+            log.info("dockerInstalled已安装,正在卸载");
+            executor.execShell("systemctl stop docker");
+            executor.execShell("rm -rf /var/lib/docker");
+            executor.execShell("rm -rf /etc/docker");
+            executor.execShell("rm -f /run/docker.sock");
+            executor.execShell("rm -f /usr/bin/docker*");
         }
 
         if (nodes.size() < 3) {
@@ -139,29 +152,24 @@ public class InitK8sBaseServices extends InitBase{
             }
         }
 
-        if (isKubernetes()) {
-            log.info("开始安装kubernetes...");
-            CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? sealosX86Tar : sealosArmTar, sealosPath, true);
-            CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? kubernetesX86Tar : kubernetesArmTar, kubernetesPath, true);
-            CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? helmTX86ar : helmArmTar, helmPath, true);
-            CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? calicoX86Tar : calicoArmTar, calicoPath, true);
-            CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? ingressX86Tar : ingressArmTar, ingressPath, true);
+        CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? sealosX86Tar : sealosArmTar, sealosPath, true);
+        CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? kubernetesX86Tar : kubernetesArmTar, kubernetesPath, true);
+        CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? helmTX86ar : helmArmTar, helmPath, true);
+        CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? calicoX86Tar : calicoArmTar, calicoPath, true);
+        CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, isX86 ? ingressX86Tar : ingressArmTar, ingressPath, true);
 
-            String k8sCmd = String.format("/usr/bin/sealos run %s %s %s %s --masters %s --nodes %s --port=%s",
-                    kubernetesPath,
-                    helmPath,
-                    calicoPath,
-                    ingressPath,
-                    String.join(",", masters), String.join(",", nodes),
-                    sshPort);
-            if(StringUtils.isNoneBlank(sshPasswd)){
-                k8sCmd = k8sCmd + " --passwd=" + sshPasswd;
-            }
-
-            if (!executor.execShell(k8sCmd).isSuccess()) {
-                throw new CommandLine.ExecutionException(new CommandLine(this), "安装kubernetes失败");
-            }
+        log.info("开始安装kubernetes...");
+        sealosInstall(executor, kubernetesPath, true);
+        try {
+            Thread.sleep(5 * 1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
+
+        log.info("安装k8s插件...");
+        sealosInstall(executor, calicoPath, false);
+        sealosInstall(executor, helmPath, false);
+        sealosInstall(executor, ingressPath, false);
 
         int count = 60;
         boolean ready = false;
@@ -200,6 +208,23 @@ public class InitK8sBaseServices extends InitBase{
             }
         }
         return true;
+    }
+
+    private void sealosInstall(Executor executor, String imagessPath, Boolean isKubernetes) {
+        String k8sCmd = String.format("/usr/bin/sealos run %s --port=%s --force=true ",
+                imagessPath,
+                sshPort);
+        if(isKubernetes) {
+            k8sCmd = String.format("%s --masters %s --nodes %s ", k8sCmd, String.join(",", masters), String.join(",", nodes));
+        }
+        if(StringUtils.isNoneBlank(sshPasswd)){
+            k8sCmd = String.format("%s --passwd=\"%s\"", k8sCmd, sshPasswd);
+        }
+        ExecResult execResult = executor.execShell(k8sCmd);
+        log.info("安装{}输出:{},安装状态:{}", imagessPath, execResult.getExecOut(), execResult.isSuccess());
+        if (!execResult.isSuccess()) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), imagessPath + "安装失败");
+        }
     }
 }
 

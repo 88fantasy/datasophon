@@ -42,7 +42,7 @@ public class CreateCluster implements Runnable {
     @CommandLine.Option(names = {"-if", "--initPathOverwriteForce"}, description = "datasophon-init目录存在是否覆盖")
     boolean initPathOverwriteForce = false;
 
-    @CommandLine.Option(names = {"-disu", "--disableUploadRegistry"}, description = "制品是否上传")
+    @CommandLine.Option(names = {"-disu", "--disableUploadRegistry"}, description = "是否禁止上传制品")
     boolean disableUploadRegistry = false;
 
     @CommandLine.Option(names = {"-f", "--mysqlInstallForce"}, description = "mysql存在是否覆盖安装")
@@ -54,8 +54,9 @@ public class CreateCluster implements Runnable {
     @CommandLine.Option(names = {"-oik", "--onlyInstallK8s"}, description = "是否只安装k8s")
     boolean onlyInstallK8s = false;
 
-    @CommandLine.Option(names = {"-fk8s", "--forceK8s"}, description = "k8s存在是否覆盖安装")
-    boolean forceK8s = false;
+    @CommandLine.Option(names = {"-kf", "--kubernetesForce"}, description = "k8s存在是否覆盖安装")
+    boolean kubernetesForce = false;
+
 
     @CommandLine.Option(names = {"-pn", "--productPackagesPath"}, description = "安装包名", required = true)
     String productPackagesPath;
@@ -152,6 +153,9 @@ public class CreateCluster implements Runnable {
             log.info("安装registry");
             initRegistry(config);
 
+            if(config.getGlobal().getKubernetes().getEnable()) {
+                initDocker(config);
+            }
             log.info("安装registryUpload");
             initRegistryUpload(config, nodes);
         }
@@ -207,13 +211,13 @@ public class CreateCluster implements Runnable {
         log.info("安装mysql");
         initMysql(config);
 
+        log.info("初始化mysql数据库和账号密码");
+        initMysqlAppDb(config);
+
         log.info("安装k8s集群");
         if(config.getGlobal().getKubernetes().getEnable()) {
             initK8s(config);
         }
-
-        log.info("初始化mysql数据库和账号密码");
-        initMysqlAppDb(config);
         
         log.info("关闭透明大页");
         initHugePage(config, nodes);
@@ -409,7 +413,8 @@ public class CreateCluster implements Runnable {
                 .setWebHost(registry.getNode())
                 .setWebPort(registry.getConfig().getWebPort())
                 .setUsername(registry.getConfig().getUser())
-                .setPassword(registry.getConfig().getPassword());
+                .setPassword(registry.getConfig().getPassword())
+                .setDockerHttpPort(initRegistry.getDockerHttpPort());
         if(registry.isEnable()) {
             initRegistry.setEnableRegistry(registry.isEnable())
                     .setRegistryIp(registry.getNode())
@@ -429,7 +434,8 @@ public class CreateCluster implements Runnable {
                 .setUsername(registry.getConfig().getUser())
                 .setPassword(registry.getConfig().getPassword())
                 .setDisableUploadRegistry(disableUploadRegistry)
-                        .setProductPackagesPath(productPackagesPath);
+                 .setProductPackagesPath(productPackagesPath)
+                .setDockerHttpPort(registry.getConfig().getDockerHttpPort());
         if(registry.isEnable()) {
             initRegistryUpload.setEnableRegistry(registry.isEnable())
                     .setRegistryIp(registry.getNode())
@@ -608,7 +614,7 @@ public class CreateCluster implements Runnable {
                 .setPackagePath(packagesPath)
                 .setSshPort(localHost.getPort())
                 .setSshPasswd(localHost.getPassword())
-                .setForceK8s(forceK8s);
+                .setKubernetesForce(kubernetesForce);
 
         NexusRegistry registry = config.getGlobal().getRegistry();
         if(registry.isEnable()) {
@@ -651,7 +657,8 @@ public class CreateCluster implements Runnable {
                 .setConfigPassword(password);
 
         instance.setEnableKubernetesCluster(config.getGlobal().getKubernetes().getEnable())
-                .setDockerHttpPort(config.getGlobal().getRegistry().getConfig().getDockerHttpPort());
+                 .setDockerHttpPort(config.getGlobal().getRegistry().getConfig().getDockerHttpPort());
+
 
         NexusRegistry registry = config.getGlobal().getRegistry();
         if(registry.isEnable()) {
@@ -678,6 +685,7 @@ public class CreateCluster implements Runnable {
                 .setInstallPath(installPath)
                 .setX86Tar(config.getGlobal().getPackages().getDocker().getX86_64())
                 .setAarch64Tar(config.getGlobal().getPackages().getDocker().getAarch64())
+                .setKubernetesForce(kubernetesForce)
                 .setDockerHttpPort(config.getGlobal().getRegistry().getConfig().getDockerHttpPort());
 
         NexusRegistry registry = config.getGlobal().getRegistry();

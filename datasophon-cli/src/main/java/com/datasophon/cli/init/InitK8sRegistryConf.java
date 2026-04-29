@@ -7,6 +7,9 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import picocli.CommandLine;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,11 +37,12 @@ public class InitK8sRegistryConf extends InitBase implements InitNodeHandler {
             return true;
         }
 
-        String certsdPath = "/etc/containerd/certs.d";
         String configTomlPath = "/etc/containerd/config.toml";
+
+        String certsdPath = "/etc/containerd/certs.d";
         String hostPort = String.format("%s:%s", registryIp, dockerHttpPort);
-        String hostPortDir = String.format("%s/%s", certsdPath, hostPort);
-        String hostPortFilePath = String.format("%s/hosts.toml", certsdPath);
+        String certsdHostPortDir = String.format("%s/%s", certsdPath, hostPort);
+        String certsdHostPortFilePath = String.format("%s/hosts.toml", certsdHostPortDir);
 
         if(!executor.exists(certsdPath).getExecResult()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + certsdPath);
@@ -47,12 +51,17 @@ public class InitK8sRegistryConf extends InitBase implements InitNodeHandler {
             throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + configTomlPath);
         }
 
-        executor.execShell(String.format("mkdir -p %s", hostPortDir));
-        executor.writeLines(getCertsConf(), hostPortFilePath);
-        executor.writeLines(getContainerdConf(), configTomlPath);
+        executor.execShell(String.format("mkdir -p %s", certsdHostPortDir));
+        executor.writeLines(getCertsConf(), certsdHostPortFilePath);
 
-
+        String configTomlContext = executor.getFileString(configTomlPath).getExecOut();
+        if(!configTomlContext.contains(hostPort)) {
+            configTomlContext = configTomlContext + getContainerdConf(hostPort);
+            InputStream in = new ByteArrayInputStream(configTomlContext.getBytes(StandardCharsets.UTF_8));
+            executor.writeFromStream(in, configTomlPath);
+        }
         executor.execShell("systemctl restart containerd");
+
         log.info("k8sRegistryConf init success");
         return true;
     }
@@ -66,12 +75,12 @@ public class InitK8sRegistryConf extends InitBase implements InitNodeHandler {
         return conf;
     }
 
-    private List<String> getContainerdConf(){
-        List<String> conf = new ArrayList<>();
-        conf.add(String.format("         [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"%s:%s\".auth]", registryIp, dockerHttpPort));
-        conf.add(String.format("          username = \"%s\"", registryUsername));
-        conf.add(String.format("          password = \"%s\"", registryPassword));
-        return conf;
+    private String getContainerdConf(String hostPort){
+        StringBuffer sb = new StringBuffer();
+        sb.append(String.format("\n          [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"%s\".auth]\n", hostPort));
+        sb.append(String.format("            username = \"%s\"\n", registryUsername));
+        sb.append(String.format("            password = \"%s\"\n", registryPassword));
+        return sb.toString();
     }
 
 }

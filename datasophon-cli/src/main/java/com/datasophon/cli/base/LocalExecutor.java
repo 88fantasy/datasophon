@@ -6,12 +6,14 @@ import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.ShellUtils;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class LocalExecutor implements Executor {
 
     @Override
@@ -81,6 +83,7 @@ public class LocalExecutor implements Executor {
 
     @Override
     public ExecResult writeLines(List<String> lines, String path) {
+        log.info("{}文件写入...", path);
         ExecResult execResult = new ExecResult();
         try {
             FileUtil.writeLines(lines, path, Charset.defaultCharset());
@@ -88,6 +91,7 @@ public class LocalExecutor implements Executor {
         } catch (IORuntimeException exception) {
             execResult.setExecErrOut(exception.getMessage());
         }
+        log.info("{}文件写入完成", path);
         return execResult;
     }
 

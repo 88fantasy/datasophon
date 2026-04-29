@@ -214,6 +214,7 @@ public class InitRegistry extends InitBase {
                     break;
                 case DOCKER:
                     dockerCreate(baseUrl, repo);
+                    realmsDocker(baseUrl);
                 case HELM:
                     helmCreate(baseUrl, repo);
                 default:
@@ -268,6 +269,32 @@ public class InitRegistry extends InitBase {
         repositoryReq.setName(repoName);
         repositoryReq.getDocker().setHttpsPort(dockerHttpPort);
         return HttpPost(url, JSONObject.toJSONString(repositoryReq), repoName);
+    }
+
+    /*
+        * 配置docker认证,必须开启，才能使用docker推拉镜像
+     */
+    public boolean realmsDocker(String baseUrl) {
+        String url = String.format("%s/service/rest/v1/security/realms/active", baseUrl);
+        List<String> realms = new ArrayList<>();
+        realms.add("DockerToken");
+        realms.add("NexusAuthenticatingRealm");
+
+        log.info("请求url:{}, body:{}", url, JSONObject.toJSONString(realms));
+        try (HttpResponse response = HttpRequest.put(url)
+                .basicAuth(username, password)
+                .body(JSONObject.toJSONString(realms))
+                .contentType("application/json")
+                .timeout(30000)
+                .execute()) {
+            if (response.getStatus() == 204) {
+                log.info("realms配置成功");
+            } else {
+                log.error("realms配置失败. url:{}, response.status:{}, response.body:{}", url, response.getStatus(), response.body());
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

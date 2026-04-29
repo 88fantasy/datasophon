@@ -272,6 +272,7 @@ public class JschUtils {
     }
     
     public static ExecResult sendInputStream(Session session, InputStream is, String path, int connectTimeout, boolean override) {
+        log.info("{}文件写入...", path);
         ChannelSftp channel = null;
         ExecResult result = new ExecResult();
         try {
@@ -299,6 +300,7 @@ public class JschUtils {
                 channel.exit();
             }
         }
+        log.info("{}文件写入完成", path);
         return result;
     }
     

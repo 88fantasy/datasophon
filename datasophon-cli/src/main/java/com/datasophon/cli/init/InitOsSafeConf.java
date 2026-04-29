@@ -339,7 +339,8 @@ public class InitOsSafeConf extends InitBase {
             log.info("successful, pass!");
         } else {
             log.error("reload failed, abort, please check!");
-            System.exit(1);
+            // openEuler 24.03 (LTS)不支持
+            //System.exit(1);
         }
     }
     

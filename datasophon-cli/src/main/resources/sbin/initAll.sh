@@ -32,4 +32,5 @@ bash ${INIT_BIN_PATH}/init-registryDecode.sh ${PASSWORD} > ${INIT_LOG_PATH}/init
 
 source /etc/profile
 echo "ini create cluster"
+# --onlyInstallK8s --initPathOverwriteForce --disableUploadRegistry --mysqlInstallForce --kubernetesForce
 ${JAVA_HOME}/bin/java -jar ${INIT_SBIN_PATH}/datasophon-cli-cli.jar create cluster --enableRegistry -cpwd ${PASSWORD} --productPackagesPath /data/packages -p /data/datasophon -in /data/install_datasophon -a initALL > ${INIT_LOG_PATH}/initAll.log

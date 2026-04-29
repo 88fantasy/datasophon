@@ -137,21 +137,19 @@ public class NexusFileUtils {
                             repositoryUploadFile(baseUrl, repositoriesType, null, null, file, username, password, uploadSucess, uploadFails, isSuccessDelete);
                         }
                     }
-
                     break;
                 case DOCKER:
-                    String dockerPath = repoFile.getAbsolutePath();
-                    File[] dockerFiles = FileUtil.ls(dockerPath);
-                    for (File dockerFile : dockerFiles) {
-                        repositoryUploadFile(baseUrl, repositoriesType, null, null, dockerFile, username, password, uploadSucess, uploadFails, isSuccessDelete);
+                    //单独命令推送
+                    break;
+                case HELM:
+                    String helmPath = repoFile.getAbsolutePath();
+                    File[] helmFiles = FileUtil.ls(helmPath);
+                    for (File helmFile : helmFiles) {
+                        repositoryUploadFile(baseUrl, repositoriesType, null, null, helmFile, username, password, uploadSucess, uploadFails, isSuccessDelete);
                     }
                     break;
                 default:
                     log.info("不支持:{},跳过", repositoriesType.getDesc());
-            }
-
-            if (repositoriesType == RepositoriesType.YUM || repositoriesType == RepositoriesType.APT) {
-
             }
         }
         return Pair.of(uploadSucess, uploadFails);
@@ -182,24 +180,31 @@ public class NexusFileUtils {
             // 构建 multipart/form-data（流式，不加载到内存）
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             FileBody fileBody = new FileBody(file, ContentType.DEFAULT_BINARY);
-            builder.addPart("asset0", fileBody);
 
             // 根据仓库类型添加额外参数
             switch (repository) {
                 case YUM:
+                    builder.addPart("asset0", fileBody);
                     builder.addTextBody("asset0.filename", file.getName(), ContentType.TEXT_PLAIN);
                     builder.addTextBody("directory", String.format("%s/%s", archType.getArch(), os.getDesc()), ContentType.TEXT_PLAIN);
                     break;
                 case RAW:
+                    builder.addPart("asset0", fileBody);
                     builder.addTextBody("asset0.filename", file.getName(), ContentType.TEXT_PLAIN);
                     builder.addTextBody("directory", "/packages", ContentType.TEXT_PLAIN);
                     break;
                 case APT:
+                    // APT包上传
+                    builder.addTextBody("asset0.filename", file.getName(), ContentType.TEXT_PLAIN);
+                    builder.addPart("asset0", new FileBody(file, ContentType.APPLICATION_OCTET_STREAM));
                     break;
                 case DOCKER:
                     // Docker镜像上传
-                    builder.addTextBody("asset0.filename", file.getName(), ContentType.TEXT_PLAIN);
-                    builder.addTextBody("directory", "/images", ContentType.TEXT_PLAIN);
+                    break;
+                case HELM:
+                    // Helm Chart上传
+                    url = String.format("%s/repository/%s/api/charts", baseUrl, repository.getDesc());
+                    builder.addBinaryBody("chart", file, ContentType.APPLICATION_OCTET_STREAM, file.getName());
                     break;
                 default:
                     log.info("不支持:{},跳过", repository);
@@ -209,7 +214,6 @@ public class NexusFileUtils {
             post.setEntity(entity);
 
             log.info("开始上传 {}", file.getAbsolutePath());
-
             try (CloseableHttpResponse response = httpClient.execute(post)) {
                 int status = response.getStatusLine().getStatusCode();
                 String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
