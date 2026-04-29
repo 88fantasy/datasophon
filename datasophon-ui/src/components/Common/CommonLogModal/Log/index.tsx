@@ -7,6 +7,12 @@ import { invokeGenerateElId } from "../../../../utils/util"
 
 const invokeFindTab = (tabs, selectedTab) => {
 
+
+    if (!tabs) {
+        return
+    }
+
+
     if (!selectedTab) {
         selectedTab = tabs[0]?.key || tabs[0]?.label
     }
@@ -47,14 +53,13 @@ const Index = ({
     })
 
     const [selectedTab, setSelectedTab] = useState(() => {
-        return tabs[0]?.key || tabs[0]?.label
+        return tabs?.[0]?.key || tabs?.[0]?.label
     })
 
     const memoSelectedTab = useMemo(() => {
         return invokeFindTab(tabs, selectedTab)
     }, [selectedTab, tabs])
 
-    console.log('memoSelectedTab', memoSelectedTab)
 
     const invokeInit = useCallback(async (key = selectedTab) => {
         setLogs(undefined)
@@ -150,7 +155,6 @@ const Index = ({
     }, [options.readOnly])
 
 
-    console.log('{memoSelectedTab.originData.children', memoSelectedTab.originData.children)
 
 
     const onTabClick = useCallback((key) => {
@@ -204,7 +208,7 @@ const Index = ({
                     />
                 }
                 {
-                    !!memoSelectedTab.originData?.children?.length && <Cascader
+                    !!memoSelectedTab?.originData?.children?.length && <Cascader
                         rootClassName="!w-[500px]"
                         key={selectedTab}
                         value={cascaderValue}
@@ -253,7 +257,7 @@ const Index = ({
                 </div >
             </>
         )
-    }, [cascaderValue, invokeInit, language, loading, logs, memoSelectedTab.originData, onCancelClickProxy, onCascaderChange, onFullSceenClick, onOkProxy, onTabClick, options, selectedTab, tabs])
+    }, [cascaderValue, invokeInit, language, loading, logs, memoSelectedTab, onCancelClickProxy, onCascaderChange, onFullSceenClick, onOkProxy, onTabClick, options, selectedTab, tabs])
 
     return (
         <>

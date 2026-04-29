@@ -6,7 +6,7 @@ import { axiosGet, axiosJsonPost, axiosPost } from "../../../api/request"
 import { API } from "../../../api"
 import asyncHook from "../../../components/Common/CommonModal/asyncHook"
 import { T_SETPS_TYPE_ADDSERVICE } from "../../Colony/ColonyManage/components/ConfigModal/stepType"
-import { gray, orange } from "@ant-design/colors"
+import { gray, orange, yellow } from "@ant-design/colors"
 import { conversionSubmitValue } from "@ant-design/pro-components"
 import { T_K8S } from "../../../constants/clusterType"
 import { noop } from "lodash-es"
@@ -33,6 +33,9 @@ const badgeColorMap = {
 }
 
 
+
+
+
 const T_ADD_SERVICE = 'ADD_SERVICE'
 const T_STARTALL = 'STARTALL'
 const T_STOPALL = 'STOPALL'
@@ -42,6 +45,12 @@ const T_STOP_SERVICE = 'STOP_SERVICE'
 const T_RESTART_SERVICE = 'RESTART_SERVICE'
 const T_DELETE_SERVICE = 'DELETE_SERVICE'
 
+
+const k8sBadgeColorMap = {
+    0: yellow[5],
+    1: 'green',
+    2: 'red',
+}
 
 const invokeRenderDot = ({
     obj,
@@ -57,6 +66,12 @@ const invokeRenderDot = ({
         return <DashboardOutlined />
     }
 
+    const isK8s = item.originData?.archType === T_K8S
+    let color: string
+    const colorMap = isK8s ? k8sBadgeColorMap : badgeColorMap
+
+    color = isEmpty(colorMap[item.originData?.serviceStateCode]) && !isOverview ? 'red' : colorMap[item.originData?.serviceStateCode]
+
 
     return isServiceManage &&
         <Badge
@@ -66,9 +81,7 @@ const invokeRenderDot = ({
             classNames={{
                 indicator: '!w-[8px] !h-[8px]'
             }}
-            color={
-                isEmpty(badgeColorMap[item.originData?.serviceStateCode]) && !isOverview ? 'red' : badgeColorMap[item.originData?.serviceStateCode]
-            }
+            color={color}
         />
 }
 

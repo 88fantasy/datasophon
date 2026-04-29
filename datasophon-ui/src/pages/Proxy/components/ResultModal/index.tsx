@@ -9,6 +9,7 @@ import { invokePackProtableRequest, METHOD } from "../../../../utils/request";
 import CommonMonacoEditor from "../../../../components/Common/CommonMonacoEditor";
 import { T_K8S } from "../../../../constants/clusterType";
 import { method } from "lodash-es";
+import { invokeShowLogs } from "../../../../components/DagModal/invokeShowLogs";
 
 
 const Index = (props, ref) => {
@@ -27,11 +28,8 @@ const Index = (props, ref) => {
     const [currentPage, setCurrentPage] = useState(1)
     const timeRef = useRef()
     const actionRef = useRef()
-    const [state, setState] = useState({})
     const stateRef = useRef([])
     const [logs, setLogs] = useState()
-    const [selectedRows, setSelectedRows] = useState([])
-    const [dataSource, setDataSource] = useState([])
 
 
 
@@ -81,6 +79,8 @@ const Index = (props, ref) => {
     // }
 
     const seeDetail = useCallback(async (record) => {
+
+
         if (timeRef.current) {
             clearTimeout(timeRef.current)
             timeRef.current = undefined
@@ -151,6 +151,16 @@ const Index = (props, ref) => {
                         {
                             title: record[key],
                             onClick: async (text, record, _, action) => {
+
+
+
+
+                                if (memoCluster.archType === T_K8S) {
+                                    return invokeShowLogs({
+                                        archType: memoCluster.archType,
+                                        ...record
+                                    })
+                                }
 
                                 if (
                                     currentPage !== 3

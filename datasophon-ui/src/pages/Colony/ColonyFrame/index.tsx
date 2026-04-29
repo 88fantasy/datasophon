@@ -199,7 +199,7 @@ const Index: React.FC = () => {
                         titleKey: 'serviceName',
                         onClick: async (text, record) => {
 
-                            const res = await axiosGet(API.deleteService + "/" + record.id)
+                            const res = await axiosGet(API.deleteK8sService + "/" + record.id)
 
 
                             if (res.code === 200) {

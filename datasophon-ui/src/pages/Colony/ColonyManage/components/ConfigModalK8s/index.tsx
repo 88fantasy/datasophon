@@ -96,7 +96,10 @@ const Index = ({
             onFinish={onFinishClick}
 
 
-            initialValues={{ type: T_CONFIG_FILE }}
+            initialValues={{
+                type: T_CONFIG_FILE,
+                ...record
+            }}
         >
             <ProFormSelect
                 name="type"
