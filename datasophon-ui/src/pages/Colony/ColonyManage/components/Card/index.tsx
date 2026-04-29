@@ -4,7 +4,7 @@ import { Button, Card, Col, Dropdown, Empty } from "antd"
 import { blue, gold, gray, red } from '@ant-design/colors';
 import { invokeRenderSimpleDetails } from "../../../../../components/Common/CommonDetails";
 import { isEmpty, showComfirmModal, showMsgAfferRequest } from "../../../../../utils/util";
-import { axiosPostUpload } from "../../../../../api/request";
+import { axiosGet, axiosPostUpload } from "../../../../../api/request";
 import { API } from "../../../../../api";
 import { noop } from "lodash-es";
 import { invokeGenPath } from "../../../../../utils/routerUtils";
@@ -184,9 +184,12 @@ const Index = ({
                 disabled: (isEmpty(val.archType) || val.archType === T_PHYSICAL) && clusterStateCode === 2,
                 onClick: async () => {
                     let showModalApi = showConfigModal
-
                     if (val.archType === T_K8S) {
                         showModalApi = showConfigModalK8s
+
+                        const res = await axiosGet(`${API.getConfigByClusterId}/${val.id}`)
+
+                        Object.assign(val, res.data || {})
                     }
 
                     const modelApi = await showModalApi()
@@ -212,7 +215,7 @@ const Index = ({
 
                     if (res) {
                         const params = JSON.stringify([val.id])
-                        res = axiosPostUpload(API.deleteColony, params)
+                        res = await axiosPostUpload(API.deleteColony, params)
 
                         showMsgAfferRequest(res)
 

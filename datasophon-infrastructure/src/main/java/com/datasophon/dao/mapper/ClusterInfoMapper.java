@@ -18,11 +18,9 @@
 package com.datasophon.dao.mapper;
 
 import com.datasophon.dao.entity.ClusterInfoEntity;
-
+import com.datasophon.utils.EnhanceBaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
  * 集群信息表
@@ -32,7 +30,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * @date 2022-03-15 17:36:08
  */
 @Mapper
-public interface ClusterInfoMapper extends BaseMapper<ClusterInfoEntity> {
+public interface ClusterInfoMapper extends EnhanceBaseMapper<ClusterInfoEntity> {
     
     ClusterInfoEntity getClusterByClusterCode(@Param("clusterCode") String clusterCode);
 }

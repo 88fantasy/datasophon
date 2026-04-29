@@ -25,13 +25,13 @@ import com.datasophon.api.service.agent.K8sAgentDeployService;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.k8s.K8sService;
 import com.datasophon.api.utils.HelmValueUtils;
-import com.datasophon.common.Constants;
 import com.datasophon.common.k8s.client.HelmClient;
 import com.datasophon.common.k8s.config.ClientOptions;
 import com.datasophon.common.k8s.dto.UninstallParams;
 import com.datasophon.common.k8s.dto.UpgradeParams;
 import com.datasophon.common.k8s.vo.helm.HelmReleaseVO;
 import com.datasophon.common.utils.PathUtils;
+import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.nexus.NexusFacade;
 import com.datasophon.common.utils.nexus.vo.Assert;
 import com.datasophon.common.utils.nexus.vo.Component;
@@ -150,12 +150,13 @@ public class K8sAgentDeployServiceImpl implements K8sAgentDeployService {
      */
     private void prepareParameter(UpgradeParams params) {
         // 读取 master 的 common.properties，通过 --set-file 传入 Helm Chart
-        String masterCommonProperties = Constants.MASTER_INSTALL_HOME + "/conf/common.properties";
-        params.setSetFileValues(Collections.singletonList("config.commonProperties=" + masterCommonProperties));
+        String path = PropertyUtils.getFunctionalPropertyFile().getAbsolutePath();
+        path = path.replaceAll("\\\\", "/");
+        params.setSetFileValues(Collections.singletonList("config.commonProperties=" + path));
 
         Map<String, String> helmValues = HelmValueUtils.getExtraValues();
         Map<String, String> extraValues = new HashMap<>(helmValues);
-        extraValues.put("image.registry", helmValues.get("nexus.imageRegistry") + "/" + helmValues.get("repo.defaultOrg"));
+        extraValues.put("image.registry", helmValues.get("nexus.imageRegistry"));
         List<String> extraValueList = new ArrayList<>();
         extraValues.forEach((k, v) -> extraValueList.add(k + "=" + v));
         params.setSetValues(extraValueList);

@@ -1,4 +1,4 @@
-package com.datasophon.api.vo.download;
+package com.datasophon.api.vo.extrepo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -76,6 +76,6 @@ public class DownloadProgressVO {
 
     public boolean isTimeout() {
         // 已经到了过期时间或者距离创建时间已经过期了 1 天
-        return (expire != null && expire.isBefore(LocalDateTime.now())) || createTime.plusDays(1).isBefore(LocalDateTime.now());
+        return (expire != null && expire.isBefore(LocalDateTime.now())) || LocalDateTime.now().isAfter(createTime.plusDays(1));
     }
 }

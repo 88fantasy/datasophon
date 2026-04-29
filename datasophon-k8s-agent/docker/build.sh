@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 tag="${1:-latest}"
 shift 2>/dev/null || true
@@ -28,7 +29,8 @@ if [ -n "$proxy" ]; then
   echo "use proxy: $proxy."
 fi
 
-image_name="datasophon-k8s-agent"
+
+image_name="vos/datasophon-k8s-agent"
 
 if [ "$arch" = "all" ]; then
   platform="linux/amd64,linux/arm64"
@@ -51,17 +53,17 @@ if [ "$arch" = "all" ]; then
    --builder ${BUILDER_NAME} \
    --platform=${platform} \
    --progress plain \
-   --output type=oci,dest=./${image_name}-${tag}-image-all.tar \
+   --output type=oci,dest=./datasophon-k8s-agent-${tag}-image-all.tar \
    -t ${image_name}:${tag} .
 elif [ -n "$arch" ]; then
   docker build \
    --platform=${platform} \
    --progress plain \
-   --output type=docker,dest=./${image_name}-${tag}-image-$arch.tar \
+   --output type=docker,dest=./datasophon-k8s-agent-${tag}-image-$arch.tar \
    -t ${image_name}:${tag} .
 else
   docker build \
    --progress plain \
-   --output type=docker,dest=./${image_name}-${tag}-image-default.tar \
+   --output type=docker,dest=./datasophon-k8s-agent-${tag}-image-default.tar \
    -t ${image_name}:${tag} .
 fi

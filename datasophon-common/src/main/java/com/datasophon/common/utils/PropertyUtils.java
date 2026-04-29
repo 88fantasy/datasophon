@@ -18,7 +18,6 @@
 package com.datasophon.common.utils;
 
 import cn.hutool.core.util.StrUtil;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +41,7 @@ public class PropertyUtils {
 
     public static final String CONFIG_HOME = "conf/common.properties";
 
+    private static final String FUNCTIONAL_FILE_PATH;
     /**
      * logger
      */
@@ -80,6 +80,7 @@ public class PropertyUtils {
                 IOUtils.closeQuietly(inputStream);
             }
         }
+        FUNCTIONAL_FILE_PATH = usedFileName;
         if (usedFileName == null) {
             logger.error("can not load common.properties from {}", StrUtil.join(",", propertyFiles));
             System.exit(1);
@@ -88,6 +89,10 @@ public class PropertyUtils {
         }
     }
 
+
+    public static File getFunctionalPropertyFile() {
+        return new File(FUNCTIONAL_FILE_PATH);
+    }
     /**
      * get property value
      *

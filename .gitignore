@@ -53,4 +53,5 @@ openspec
 .github/prompts
 .claude
 
-docs/superpowers
+/worktrees
+/.worktrees

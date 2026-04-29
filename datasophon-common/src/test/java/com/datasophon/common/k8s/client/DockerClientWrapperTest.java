@@ -42,7 +42,7 @@ public class DockerClientWrapperTest {
 
     @Test
     public void test3() {
-        String tag = DockerTagUtils.normalTag("192.168.2.200:8091/image", "docker.io/library/portal:3.3.0");
+        String tag = DockerTagUtils.normalRepository("192.168.2.200:8091/image", "docker.io/library/portal:3.3.0");
         System.out.println(tag);
     }
 

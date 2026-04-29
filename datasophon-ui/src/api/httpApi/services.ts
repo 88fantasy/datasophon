@@ -28,6 +28,7 @@ export default {
   listBasicFrameService: path + "/frame/service/listBasicFrameService", // 选择服务的列表
   listNewestByDeployment: path + "/extrepo/listNewestByDeployment", // 选择服务的列表
   deleteService: path + "/frame/service/delete", // 删除框架服务
+  deleteK8sService: path + "/frame/k8sService/delete", // 删除k8s制品服务
   getServiceDdl: path + "/frame/service/getServiceDdl", // 删除框架服务
   updateDdl2: path + "/frame/service/updateDdl2", // 删除框架服务
   listSimpleK8sInstanceValuesByInstanceId:

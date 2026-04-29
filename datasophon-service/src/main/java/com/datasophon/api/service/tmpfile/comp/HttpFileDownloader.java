@@ -2,8 +2,7 @@ package com.datasophon.api.service.tmpfile.comp;
 
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
-import com.datasophon.api.dto.download.DownloadTaskDTO;
-import com.datasophon.api.vo.download.DownloadProgressVO;
+import com.datasophon.api.vo.extrepo.DownloadProgressVO;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -14,7 +13,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 

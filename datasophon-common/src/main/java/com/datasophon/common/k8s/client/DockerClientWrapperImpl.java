@@ -42,11 +42,6 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
             log.warn("从文件{}中，解析出0个镜像 tag", file.getName());
             return new ArrayList<>(0);
         }
-        for (ImageManifest image : parsedImages) {
-            if (image.getPlatforms().size() > 1) {
-                throw new IllegalStateException(String.format("镜像文件%s的镜像%s:%s存在多种架构。请使用加上--platform参数导出镜像", file.getName(), image.getImage(), image.getTag()));
-            }
-        }
 
         log.info("从文件{}中，解析出{}个镜像 tag", file.getName(), parsedImages.size());
         DockerClient client = new DockerClient();
@@ -64,8 +59,8 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
             result.setArch(platform.getArch());
 
 //                    重新命名为私库的 tag
-            result.setNewImage(DockerTagUtils.normalTag(options.getImageRegistry(), manifest.getImage()));
-            result.setNewTag(DockerTagUtils.normalVersion(manifest.getTag(), platform.getOs(), platform.getArch()));
+            result.setNewImage(DockerTagUtils.normalRepository(options.getImageRegistry(), manifest.getImage()));
+            result.setNewTag(DockerTagUtils.normalTag(manifest.getTag(), platform.getOs(), platform.getArch()));
 
             log.info("为镜像{}添加新的 tag:{}", result.getOldQualifierImage(), result.getNewQualifierImage());
             client.tagImage(result.getOldQualifierImage(), result.getNewQualifierImage());
@@ -88,7 +83,7 @@ public class DockerClientWrapperImpl implements DockerClientWrapper {
 
     @Override
     public void createManifest(String manifestName, List<LoadImageResult> images) {
-        String selfRepoManifestName = DockerTagUtils.normalTag(options.getImageRegistry(), manifestName);
+        String selfRepoManifestName = DockerTagUtils.normalRepository(options.getImageRegistry(), manifestName);
         DockerClient client = new DockerClient();
 
         // 删除已存在的 manifest

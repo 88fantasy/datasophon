@@ -2,7 +2,7 @@ package com.datasophon.api.service.tmpfile.comp;
 
 import cn.hutool.core.io.FileUtil;
 import com.datasophon.api.dto.download.DownloadTaskDTO;
-import com.datasophon.api.vo.download.DownloadProgressVO;
+import com.datasophon.api.vo.extrepo.DownloadProgressVO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

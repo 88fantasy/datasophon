@@ -156,7 +156,10 @@ public class ClusterActor extends TypedActor<ClusterCommand> {
 
     private boolean deleteK8sAgent(Integer clusterId) {
         K8sClusterConfigService k8sClusterConfigService = getBean(K8sClusterConfigService.class);
-        K8sClusterConfig config = k8sClusterConfigService.getInitConfig(clusterId);
+        K8sClusterConfig config = k8sClusterConfigService.getByClusterId(clusterId);
+        if (config == null) {
+            return true;
+        }
         K8sAgentDeployService k8sAgentDeployService = getBean(K8sAgentDeployService.class);
         k8sAgentDeployService.undeployAgent(config);
         return true;

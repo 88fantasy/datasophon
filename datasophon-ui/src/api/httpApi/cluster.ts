@@ -63,4 +63,5 @@ export default {
   k8sInstanceListResourceType: path + "/cluster/k8sInstance/listResourceType",
   k8sInstanceRemoveInstanceId: path + "/cluster/k8sInstance/removeInstanceId",
   k8sServiceCommandFindCommandByPage: path + "/cluster/k8sService/command/findCommandByPage",
+  getConfigByClusterId: path + "/cluster/k8sConfig/getConfigByClusterId",
 };
