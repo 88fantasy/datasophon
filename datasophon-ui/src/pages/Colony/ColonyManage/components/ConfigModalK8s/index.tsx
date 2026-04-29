@@ -9,7 +9,8 @@ import CommonMonacoEditor from '../../../../../components/Common/CommonMonacoEdi
 
 const Index = ({
     onCancelClickProxy,
-    record
+    record,
+    getConfigByClusterIdRes
 }) => {
 
     const commonMonacoEditorRef = useRef()
@@ -98,6 +99,7 @@ const Index = ({
 
             initialValues={{
                 type: T_CONFIG_FILE,
+                ...getConfigByClusterIdRes,
                 ...record
             }}
         >

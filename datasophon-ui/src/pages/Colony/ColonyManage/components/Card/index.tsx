@@ -184,17 +184,18 @@ const Index = ({
                 disabled: (isEmpty(val.archType) || val.archType === T_PHYSICAL) && clusterStateCode === 2,
                 onClick: async () => {
                     let showModalApi = showConfigModal
+                    let getConfigByClusterIdRes = {}
                     if (val.archType === T_K8S) {
                         showModalApi = showConfigModalK8s
 
                         const res = await axiosGet(`${API.getConfigByClusterId}/${val.id}`)
-
-                        Object.assign(val, res.data || {})
+                        getConfigByClusterIdRes = res.data || {}
                     }
 
                     const modelApi = await showModalApi()
                     modelApi.default({
                         record: val,
+                        getConfigByClusterIdRes,
                         type: T_TYPE_INIT,
                         onOk: () => {
                             invokeInit()
