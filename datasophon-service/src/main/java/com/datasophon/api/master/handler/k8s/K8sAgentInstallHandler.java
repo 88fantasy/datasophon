@@ -117,7 +117,9 @@ public class K8sAgentInstallHandler extends K8sAgentHandler {
             }
             if (isPending) {
                 client.uninstall(NAMESPACE, RELEASE_NAME);
-                log.info("namespace {}, 存在pending 的agent, 直接卸载：{}", NAMESPACE, RELEASE_NAME);
+                log.warn("namespace {}, 存在pending 的agent, 直接卸载：{}", NAMESPACE, RELEASE_NAME);
+            } else {
+                log.info("namespace: {}, 没有pending的 {} agent, 无需清理", NAMESPACE, RELEASE_NAME);
             }
         } catch (Exception e) {
             log.warn("清理 pending release 历史失败：{}", e.getMessage(), e);
