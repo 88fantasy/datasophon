@@ -85,6 +85,7 @@ public class InitK8sKuboard extends InitBase implements InitNodeHandler {
         if (!executor.execShell(cmd).isSuccess()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "安装kuboard失败");
         }
+        log.info("访问地址：http://ip:30080, user: admin password: Kuboard123");
         log.info("k8s kuboard 安装成功");
         return true;
     }

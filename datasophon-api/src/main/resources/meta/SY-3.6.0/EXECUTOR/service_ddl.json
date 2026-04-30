@@ -26,68 +26,6 @@
       },
       "cardinality": "1+",
       "resourceStrategies": []
-    },
-    {
-      "name": "EasyflowServer",
-      "label": "EasyflowServer",
-      "sortNum": 2,
-      "roleType": "worker",
-      "cardinality": "1",
-      "logFile": "easyflow-web/easyflow-web.log",
-      "serverPorts": [],
-      "runAs": {
-        "user": "hive",
-        "group": "hadoop"
-      },
-      "resourceStrategies": [
-        {
-          "type": "sh",
-          "commands": [
-            [
-              "mkdir",
-              "-p",
-              "easyflow-web"
-            ]
-          ]
-        },
-        {
-          "to": "easyflow-web/control.sh",
-          "md5": "966967a623776f35d512a22d2a18d10a",
-          "from": "script/control_easyflow.sh",
-          "type": "download",
-          "templateId": "2026548620654071809"
-        }
-      ],
-      "startRunner": {
-        "timeout": "60",
-        "program": "easyflow-web/control.sh",
-        "args": [
-          "start"
-        ]
-      },
-      "stopRunner": {
-        "timeout": "600",
-        "program": "easyflow-web/control.sh",
-        "args": [
-          "stop"
-        ]
-      },
-      "statusRunner": {
-        "timeout": "60",
-        "program": "easyflow-web/control.sh",
-        "args": [
-          "status"
-        ]
-      },
-      "restartRunner": {
-        "timeout": "60",
-        "program": "easyflow-web/control.sh",
-        "args": [
-          "restart"
-        ]
-      },
-      "externalLink": {},
-      "hooks": []
     }
   ],
   "configWriter": {
