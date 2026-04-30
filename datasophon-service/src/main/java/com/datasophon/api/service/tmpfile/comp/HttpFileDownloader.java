@@ -84,6 +84,7 @@ public class HttpFileDownloader implements RemoteFileDownloader {
             int bytesRead;
             long totalRead = 0;
 
+            int turn = 1;
             while ((bytesRead = in.read(buffer)) != -1) {
                 if (progress.isCancel()) {
                     progress.setState(-2);
@@ -93,6 +94,12 @@ public class HttpFileDownloader implements RemoteFileDownloader {
 
                 out.write(buffer, 0, bytesRead);
                 totalRead += bytesRead;
+
+                if (totalRead > (100L * 1024 * 1024 * turn)) {
+                    turn++;
+                    log.info("http downloader 已经下载：{} bytes, 进度 {}%", totalRead, totalRead * 100 / contentLength);
+                }
+
                 progress.plusDownloaded(bytesRead);
             }
 

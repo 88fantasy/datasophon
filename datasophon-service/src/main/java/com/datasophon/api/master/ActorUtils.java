@@ -73,7 +73,7 @@ public class ActorUtils {
                 getActorRefName(MasterNodeProcessingActor.class));
         
         ActorRef clusterCheckActor =
-                actorSystem.actorOf(Props.create(ClusterActor.class), getActorRefName(ClusterActor.class));
+                actorSystem.actorOf(Props.create(ClusterStatusActor.class), getActorRefName(ClusterStatusActor.class));
         
         // 节点检测 5m 检测一次
         actorSystem.scheduler().schedule(

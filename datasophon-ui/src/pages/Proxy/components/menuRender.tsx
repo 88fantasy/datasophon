@@ -56,7 +56,8 @@ const invokeRenderDot = ({
     obj,
     item,
     dom,
-    isServiceManage
+    isServiceManage,
+    memoCluster
 }) => {
 
     const isOverview = /Instance\/Overview/gi.test(item.path)
@@ -66,11 +67,12 @@ const invokeRenderDot = ({
         return <DashboardOutlined />
     }
 
-    const isK8s = item.originData?.archType === T_K8S
+    const isK8s = memoCluster?.archType === T_K8S
     let color: string
     const colorMap = isK8s ? k8sBadgeColorMap : badgeColorMap
+    const mapState = item.originData?.serviceStateCode || item.originData?.state
 
-    color = isEmpty(colorMap[item.originData?.serviceStateCode]) && !isOverview ? 'red' : colorMap[item.originData?.serviceStateCode]
+    color = isEmpty(colorMap[mapState]) && !isOverview ? 'red' : colorMap[mapState]
 
 
     return isServiceManage &&
@@ -351,7 +353,7 @@ export const menuRender = (obj, item, dom) => {
         >
 
             {
-                invokeRenderDot({ obj, item, dom, isServiceManage })
+                invokeRenderDot({ obj, item, dom, isServiceManage, memoCluster })
             }
 
             <div className="flex-1 flex items-center justify-between overflow-hidden">

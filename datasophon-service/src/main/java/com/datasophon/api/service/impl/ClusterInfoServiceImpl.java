@@ -24,7 +24,7 @@ import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.master.ClusterActor;
+import com.datasophon.api.master.ClusterDeleteActor;
 import com.datasophon.api.service.AlertGroupService;
 import com.datasophon.api.service.ClusterAlertGroupMapService;
 import com.datasophon.api.service.ClusterInfoService;
@@ -236,7 +236,7 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                ActorRef ref = ActorUtils.getLocalActor(ClusterActor.class, "clusterActor");
+                ActorRef ref = ActorUtils.getLocalActor(ClusterDeleteActor.class, "clusterActor");
                 ref.tell(new ClusterCommand(ClusterCommandType.DELETE, clusterId), ActorRef.noSender());
             }
         });

@@ -59,6 +59,7 @@ public class CpFileDownloader implements RemoteFileDownloader {
                 progress.setTotal(fileSize);
                 log.info("源文件大小：{} bytes", fileSize);
 
+                int turn = 1;
                 try (InputStream in = Files.newInputStream(sourcePath);
                      FileOutputStream out = new FileOutputStream(destFile)) {
 
@@ -78,8 +79,9 @@ public class CpFileDownloader implements RemoteFileDownloader {
                         progress.plusDownloaded(bytesRead);
 
                         // 每 100MB 输出进度
-                        if (totalRead % (100 * 1024 * 1024) < BUFFER_SIZE) {
-                            log.info("CP 已下载：{} bytes, 进度 {}%", totalRead, totalRead * 100 / fileSize);
+                        if (totalRead > (100L * 1024 * 1024 * turn)) {
+                            turn++;
+                            log.info("cp downloader 已经下载：{} bytes, 进度 {}%", totalRead, totalRead * 100 / fileSize);
                         }
                     }
 
