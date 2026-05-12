@@ -78,7 +78,7 @@ public class InitLibrary extends InitBase {
             libExec = executor.execShell(checkCmd);
             if (!libExec.getExecResult()) {
                 log.info("libxslt-devel install failed.");
-                System.exit(1);
+                //System.exit(1);
             }
         }
         log.info("install libxslt-devel finished");
@@ -100,7 +100,7 @@ public class InitLibrary extends InitBase {
             psmiscExec = executor.execShell(checkCmd);
             if (!psmiscExec.getExecResult()) {
                 log.info("psmisc install failed.");
-                System.exit(1);
+                //System.exit(1);
             }
         }
         log.info("install psmisc finished");
@@ -122,7 +122,7 @@ public class InitLibrary extends InitBase {
             perlExec = executor.execShell(checkCmd);
             if (!perlExec.getExecResult()) {
                 log.info("perl-JSON install failed.");
-                System.exit(1);
+                //System.exit(1);
             }
         }
         log.info("install perl-JSON finished.");
@@ -168,7 +168,7 @@ public class InitLibrary extends InitBase {
                 log.info("xdg-utils install successfully.");
             } else {
                 log.error("xdg-utils install failed.");
-                System.exit(1);
+                //System.exit(1);
             }
         }
         log.info("install xdg-utils finished.");
@@ -193,7 +193,7 @@ public class InitLibrary extends InitBase {
                 log.info("gcc-c++ install successfully.");
             } else {
                 log.error("gcc-c++ install failed.");
-                System.exit(1);
+                //System.exit(1);
             }
         }
         log.info("install gcc-c++ finished.");
@@ -218,7 +218,7 @@ public class InitLibrary extends InitBase {
                 log.info("openssl-devel install successfully.");
             } else {
                 log.error("openssl-devel install failed.");
-                System.exit(1);
+                //System.exit(1);
             }
         }
         log.info("install openssl-devel finished.");
@@ -243,7 +243,7 @@ public class InitLibrary extends InitBase {
                 log.info("libtool install successfully.");
             } else {
                 log.error("libtool install failed.");
-                System.exit(1);
+                //System.exit(1);
             }
         }
         log.info("install libtool finished.");
@@ -323,7 +323,7 @@ public class InitLibrary extends InitBase {
                 log.info("libpam-cracklib install successfully.");
             } else {
                 log.error("libpam-cracklib install failed.");
-                System.exit(1);
+                //System.exit(1);
             }
         }
         log.info("install libpam-cracklib finished.");
@@ -348,7 +348,7 @@ public class InitLibrary extends InitBase {
                 log.info("policycoreutils install successfully.");
             } else {
                 log.error("policycoreutils install failed.");
-                System.exit(1);
+                //System.exit(1);
             }
         }
         log.info("install policycoreutils finished.");
