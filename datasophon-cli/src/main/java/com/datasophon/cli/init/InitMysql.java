@@ -62,9 +62,9 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, tarName, tarPath, true);
         Boolean isInstalled;
         if(OsType.isUnbuntu(osType)) {
-            isInstalled = executor.execShell("dpkg --list|grep mysql").getExecResult();
+            isInstalled = executor.execShell("dpkg --list|grep -E 'mysql-community-server|mariadb'").getExecResult();
         } else {
-            isInstalled = executor.execShell("rpm -qa | grep mysql-community-server").getExecResult();
+            isInstalled = executor.execShell("rpm -qa | grep -E 'mysql-community-server|mariadb'").getExecResult();
         }
         if(isInstalled && !force) {
             log.info("mysql已安装, 是否覆盖:{}", false);
@@ -85,12 +85,13 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         }
 
         if(OsType.isUnbuntu(osType)) {
-            ExecResult mysqlResult = executor.execShell("dpkg --list|grep mysql");
+            ExecResult mysqlResult = executor.execShell("dpkg --list|grep -E 'mysql-community-server|mariadb'");
             if (mysqlResult.getExecResult()) {
                 log.info("exist mysql");
                 log.info("开始卸载已存在的 mysql...............");
                 executor.execShell("systemctl stop mysql");
                 executor.execShell("apt remove mysql-common -y");
+                executor.execShell("apt remove mariadb -y");
                 executor.execShell("apt autoremove --purge mysql-server-8.0 -y");
                 executor.execShell("dpkg -P systemd-timesyncd");
                 executor.execShell("rm -rf /var/lib/mysql");
