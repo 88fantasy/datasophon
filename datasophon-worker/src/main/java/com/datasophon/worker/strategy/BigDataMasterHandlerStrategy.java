@@ -53,11 +53,12 @@ public class BigDataMasterHandlerStrategy extends AbstractHandlerStrategy implem
             // 判断数据库是否已经初始化
             boolean ready = true;
             String applicaitonPath = workPath + Constants.SLASH + "bigdata/conf/bootstrap.yaml";
-            String sqlPath = workPath + Constants.SLASH + "init/bigdata/chinaunicom_medical_mgmt_bigdata__baseline.sql";
-            logger.info("check if bigdata database is ready");
-            logger.info("applicationPath:{}, sqlPath:{}", applicaitonPath, sqlPath);
             File applicationFile = new File(applicaitonPath);
-            if (applicationFile.exists()) {
+            String sqlPath = workPath + Constants.SLASH + "init/bigdata/chinaunicom_medical_mgmt_bigdata__baseline.sql";
+            File sqlPathFile = new File(sqlPath);
+            logger.info("applicationPath:{} exist {}, sqlPath:{} exist {}", applicaitonPath, applicationFile.exists(), sqlPath, sqlPathFile.exists());
+            if (applicationFile.exists() && sqlPathFile.exists()) {
+                logger.info("check if bigdata database is ready");
                 JSONObject datsource = null;
                 try {
                     JSONObject prop = YamlUtil.loadByPath(applicaitonPath, JSONObject.class);
@@ -98,6 +99,8 @@ public class BigDataMasterHandlerStrategy extends AbstractHandlerStrategy implem
                 } finally {
                     DbUtil.close(con);
                 }
+            } else {
+                logger.info("applicationPath:{} exist {}, sqlPath:{} exist {}. 文件不存在，跳过数据库初始化", applicaitonPath, applicationFile.exists(), sqlPath, sqlPathFile.exists());
             }
         }
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(), command, command.getRunAs());
