@@ -482,7 +482,6 @@ public class CreateCluster implements Runnable {
         GlobalConfig.YumServer yumServer = config.getGlobal().getYumServer();
         InitOfflineSlave initYumConf = new InitOfflineSlave();
         initYumConf.setConfigFilePath(initConfigYamlPath);
-        initYumConf.setServerIp(yumServer.getNode());
         initYumConf.setConfigPassword(password);
         initYumConf.setServerIp(yumServer.getNode())
                 .setServerPort(yumServer.getListenPort());
@@ -494,6 +493,8 @@ public class CreateCluster implements Runnable {
                     .setRegistryPort(registry.getConfig().getWebPort())
                     .setRegistryUsername(registry.getConfig().getUser())
                     .setRegistryPassword(registry.getConfig().getPassword());
+            initYumConf.setServerIp(registry.getNode())
+                    .setServerPort(registry.getConfig().getWebPort());
         }
         allNodesExec(nodes, initYumConf);
     }
