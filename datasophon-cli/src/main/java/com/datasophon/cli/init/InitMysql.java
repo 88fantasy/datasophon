@@ -60,16 +60,16 @@ public class InitMysql extends InitBase implements InitNodeHandler {
         String tarPath = String.format("%s/%s", packagePath, tarName);
         String httpRootPath = String.format("%s/tmp/mysql", installPath);
         CliUtil.downRegistryFile(executor, enableRegistry, RepositoriesType.RAW, registryIp, registryPort, registryUsername, registryPassword, tarName, tarPath, true);
-        Boolean isInstalled;
-        if(OsType.isUnbuntu(osType)) {
-            isInstalled = executor.execShell("dpkg --list|grep -E 'mysql-community-server|mariadb'").getExecResult();
-        } else {
-            isInstalled = executor.execShell("rpm -qa | grep -E 'mysql-community-server|mariadb'").getExecResult();
+        String mysqlService = "mysqld";
+        if(OsType.isUnbuntu(osType)){
+            mysqlService = "mysql";
         }
-        if(isInstalled && !force) {
-            log.info("mysql已安装, 是否覆盖:{}", false);
-            checkStart(osType, executor);
-            return true;
+        ExecResult result = executor.execShell(String.format("systemctl status %s", mysqlService));
+        if(result.getExecResult()){
+            log.info("mysql has exist, 退出安装");
+            if(!force){
+                return true;
+            }
         }
 
         if(!executor.exists(tarPath).getExecResult()) {
