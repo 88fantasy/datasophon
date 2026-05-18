@@ -33,7 +33,7 @@ public class InitMysql extends InitBase implements InitNodeHandler {
     @CommandLine.Option(names = {"-pp", "--packagePath"}, description = "安装包目录", required = true)
     String packagePath;
 
-    @CommandLine.Option(names = {"-in", "installPath"}, description = "安装路径", required = true)
+    @CommandLine.Option(names = {"-in", "--installPath"}, description = "安装路径", required = true)
     String installPath;
 
     @CommandLine.Option(names = {"-x", "--x86Tar"}, description = "x86_64包", required = true)

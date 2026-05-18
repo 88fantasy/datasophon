@@ -3,6 +3,7 @@ package com.datasophon.cli.init;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.cli.util.CliUtil;
 import com.datasophon.common.enums.ArchType;
+import com.datasophon.common.enums.OsType;
 import com.datasophon.common.enums.RepositoriesType;
 import com.datasophon.common.utils.ExecResult;
 import lombok.Data;
@@ -101,6 +102,7 @@ public class InitK8sBaseServices extends InitBase{
         if (ArchType.AARCH64 == executor.getArch()) {
             isX86 = false;
         }
+        OsType osType = executor.getOs();
         String sealosPath = String.format("%s/%s", packagePath, isX86 ? sealosX86Tar : sealosArmTar);
         String kubernetesPath = String.format("%s/%s", packagePath, isX86 ? kubernetesX86Tar : kubernetesArmTar);
         String helmPath = String.format("%s/%s", packagePath, isX86 ? helmTX86ar : helmArmTar);
@@ -115,28 +117,37 @@ public class InitK8sBaseServices extends InitBase{
         boolean installed = executor.execShell("kubectl version").getExecResult();
         if (installed)  {
             if(kubernetesForce) {
+                // TODO 可能存在卸载不干净的情况或者延迟,不推荐使用删除集群
                 log.info("k8s集群安装已安装。开始删除集群");
-                executor.execShell("helm uninstall ingress-nginx -n ingress-nginx");
-                executor.execShell("helm uninstall calico -n tigera-operator");
+                /*
+                executor.execShell("kubectl delete deploy,sts,ds,svc,cm,secret,pvc --all -n kuboard");
+                executor.execShell("kubectl delete pods --all -n kuboard --force --grace-period=0");
+                executor.execShell("kubectl label nodes -l 'k8s.kuboard.cn/role=etcd' k8s.kuboard.cn/role-");
+                executor.execShell("helm uninstall ingress-nginx -n ingress-nginx --timeout 180s --no-hooks");
+                executor.execShell("helm uninstall calico -n tigera-operator --timeout 180s --no-hooks");
+                */
+
                 log.info(String.format("sealos delete --nodes %s --force=true", String.join(",", nodes)));
                 log.info(String.format("sealos delete --masters %s --force=true", String.join(",", masters)));
                 log.info("sealos reset --force=true");
-
             } else {
                 log.info("k8s集群安装已安装。跳过");
                 return true;
             }
         }
 
-        String dockerInstalled = executor.execShell("docker version").getExecOut();
-        if (dockerInstalled.contains("API"))  {
-            log.info("dockerInstalled已安装,正在卸载");
-            executor.execShell("systemctl stop docker");
-            executor.execShell("rm -rf /var/lib/docker");
-            executor.execShell("rm -rf /etc/docker");
-            executor.execShell("rm -f /run/docker.sock");
-            executor.execShell("rm -f /usr/bin/docker*");
+        log.info("docker必须卸载");
+        executor.execShell("systemctl stop docker");
+        executor.execShell("systemctl disable docker");
+        if(OsType.isUnbuntu(osType)) {
+            executor.execShell("apt remove -y docker*");
+        } else {
+            executor.execShell("yum remove -y docker*");
         }
+        executor.execShell("rm -rf /var/lib/docker");
+        executor.execShell("rm -rf /etc/docker");
+        executor.execShell("rm -f /run/docker.sock");
+        executor.execShell("rm -f /usr/bin/docker*");
 
         if (nodes.size() < 3) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "nodes节点不能少于3");

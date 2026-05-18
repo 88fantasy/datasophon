@@ -12,11 +12,11 @@ public class DockerRepository {
 
         @Data
         public static class Docker {
-                private boolean v1Enabled;
-                private boolean forceBasicAuth;
-                private String httpPort;
+                private boolean v1Enabled = true;
+                private boolean forceBasicAuth = false;
+                private Integer httpPort;
                 private Integer httpsPort;
                 private String subdomain;
-                private String pathEnabled;
+                private boolean pathEnabled = false;
         }
 }

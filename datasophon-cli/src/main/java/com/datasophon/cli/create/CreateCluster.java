@@ -414,7 +414,7 @@ public class CreateCluster implements Runnable {
                 .setWebPort(registry.getConfig().getWebPort())
                 .setUsername(registry.getConfig().getUser())
                 .setPassword(registry.getConfig().getPassword())
-                .setDockerHttpPort(initRegistry.getDockerHttpPort());
+                .setDockerHttpPort(registry.getConfig().getDockerHttpPort());
         if(registry.isEnable()) {
             initRegistry.setEnableRegistry(registry.isEnable())
                     .setRegistryIp(registry.getNode())

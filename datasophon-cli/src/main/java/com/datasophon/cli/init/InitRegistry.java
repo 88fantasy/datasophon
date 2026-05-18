@@ -15,6 +15,7 @@ import picocli.CommandLine;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Accessors(chain = true)
@@ -84,6 +85,9 @@ public class InitRegistry extends InitBase {
         }
         if (!executor.exists(tarPath).getExecResult()) {
             throw new CommandLine.ExecutionException(new CommandLine(this), "file not found : " + tarPath);
+        }
+        if (Objects.isNull(dockerHttpPort)) {
+            throw new CommandLine.ExecutionException(new CommandLine(this), "dockerHttpPort is null : " + dockerHttpPort);
         }
 
         if(executor.exists(nexusPath).getExecResult()) {
@@ -267,7 +271,8 @@ public class InitRegistry extends InitBase {
         String url = String.format("%s/service/rest/v1/repositories/docker/hosted", baseUrl);
         DockerRepository repositoryReq = new DockerRepository();
         repositoryReq.setName(repoName);
-        repositoryReq.getDocker().setHttpsPort(dockerHttpPort);
+
+        repositoryReq.getDocker().setHttpPort(dockerHttpPort);
         return HttpPost(url, JSONObject.toJSONString(repositoryReq), repoName);
     }
 
