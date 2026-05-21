@@ -29,7 +29,7 @@ import com.datasophon.common.utils.ThrowableUtils;
 import com.datasophon.worker.handler.ServiceHandler;
 import com.datasophon.worker.utils.ActorUtils;
 
-import akka.actor.ActorRef;
+import org.apache.pekko.actor.ActorRef;
 import cn.hutool.core.net.NetUtil;
 
 public class BEHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {

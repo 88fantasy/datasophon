@@ -19,8 +19,8 @@ package com.datasophon.worker.actor;
 
 import java.sql.SQLException;
 
-import akka.actor.SupervisorStrategy;
-import akka.japi.Function;
+import org.apache.pekko.actor.SupervisorStrategy;
+import org.apache.pekko.japi.Function;
 
 public class SupervisorFunction implements Function<Throwable, SupervisorStrategy.Directive> {
     

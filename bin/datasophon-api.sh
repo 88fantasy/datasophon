@@ -85,7 +85,8 @@ if [ "$command" = "api" ]; then
   CLASS=com.datasophon.api.DataSophonApplicationServer
   JMX="-javaagent:$DDH_HOME/jmx/jmx_prometheus_javaagent-0.16.1.jar=8586:$DDH_HOME/jmx/jmx_exporter_config.yaml"
   HEAP_OPTS="-Xms1g -Xmx1g -Xmn512m"
-  export DDH_OPTS="$HEAP_OPTS $DDH_OPTS $JMX"
+  OPENS_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+  export DDH_OPTS="$HEAP_OPTS $OPENS_OPTS $DDH_OPTS $JMX"
 else
   echo "Error: No command named \`$command' was found."
   exit 1

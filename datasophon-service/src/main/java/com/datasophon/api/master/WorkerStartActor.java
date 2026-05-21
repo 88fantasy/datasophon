@@ -17,8 +17,8 @@
 
 package com.datasophon.api.master;
 
-import akka.actor.ActorRef;
-import akka.actor.UntypedActor;
+import org.apache.pekko.actor.AbstractActor;
+import org.apache.pekko.actor.ActorRef;
 import cn.hutool.core.util.ObjectUtil;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
@@ -51,64 +51,64 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 
-public class WorkerStartActor extends UntypedActor {
-    
+public class WorkerStartActor extends AbstractActor {
+
     private static final Logger logger = LoggerFactory.getLogger(WorkerStartActor.class);
-    
+
     @Override
-    public void onReceive(Object message) throws Throwable {
-        if (message instanceof StartWorkerMessage) {
-            StartWorkerMessage msg = (StartWorkerMessage) message;
-            String hostname = msg.getHostname();
-            Integer clusterId = msg.getClusterId();
-            logger.info("Receive message when worker first start :{}", hostname);
-            
-            ClusterHostService clusterHostService =
-                    SpringTool.getApplicationContext().getBean(ClusterHostService.class);
-            ClusterInfoService clusterInfoService =
-                    SpringTool.getApplicationContext().getBean(ClusterInfoService.class);
-            
-            // is managed?
-            ClusterHostDO hostEntity = clusterHostService.getClusterHostByHostname(hostname);
-            ClusterInfoEntity cluster = clusterInfoService.getById(clusterId);
-            logger.info("Host install set to 100%");
-            if (CacheUtils.containsKey(cluster.getClusterCode() + Constants.HOST_MAP)) {
-                Map<String, HostInfo> map =
-                        (Map<String, HostInfo>) CacheUtils.get(cluster.getClusterCode() + Constants.HOST_MAP);
-                HostInfo hostInfo = map.get(hostname);
-                if (Objects.nonNull(hostInfo)) {
-                    hostInfo.setProgress(Constants.ONE_HUNDRRD);
-                    hostInfo.setInstallState(InstallState.SUCCESS);
-                    hostInfo.setInstallStateCode(InstallState.SUCCESS.getValue());
-                    hostInfo.setManaged(true);
-                }
+    public Receive createReceive() {
+        return receiveBuilder()
+                .match(StartWorkerMessage.class, this::handleStartWorker)
+                .match(WorkerServiceMessage.class, msg ->
+                        autoAddServiceOperatorNeeded(msg.getHostname(), msg.getClusterId(), msg.getCommandType(), true))
+                .matchAny(this::unhandled)
+                .build();
+    }
+
+    private void handleStartWorker(StartWorkerMessage msg) {
+        String hostname = msg.getHostname();
+        Integer clusterId = msg.getClusterId();
+        logger.info("Receive message when worker first start :{}", hostname);
+
+        ClusterHostService clusterHostService =
+                SpringTool.getApplicationContext().getBean(ClusterHostService.class);
+        ClusterInfoService clusterInfoService =
+                SpringTool.getApplicationContext().getBean(ClusterInfoService.class);
+
+        // is managed?
+        ClusterHostDO hostEntity = clusterHostService.getClusterHostByHostname(hostname);
+        ClusterInfoEntity cluster = clusterInfoService.getById(clusterId);
+        logger.info("Host install set to 100%");
+        if (CacheUtils.containsKey(cluster.getClusterCode() + Constants.HOST_MAP)) {
+            Map<String, HostInfo> map =
+                    (Map<String, HostInfo>) CacheUtils.get(cluster.getClusterCode() + Constants.HOST_MAP);
+            HostInfo hostInfo = map.get(hostname);
+            if (Objects.nonNull(hostInfo)) {
+                hostInfo.setProgress(Constants.ONE_HUNDRRD);
+                hostInfo.setInstallState(InstallState.SUCCESS);
+                hostInfo.setInstallStateCode(InstallState.SUCCESS.getValue());
+                hostInfo.setManaged(true);
             }
-            if (ObjectUtil.isNull(hostEntity)) {
-                // save to db
-                ProcessUtils.saveHostInstallInfo(msg, cluster.getClusterCode(), clusterHostService);
-                logger.info("Host install save to database");
-                // sync cluster user and group
-                // syncClusterUserAndGroup(clusterId, hostname);
-            } else {
-                hostEntity.setCpuArchitecture(msg.getCpuArchitecture());
-                hostEntity.setManaged(MANAGED.YES);
-                clusterHostService.updateById(hostEntity);
-            }
-            
-            // add to prometheus
-            ActorRef prometheusActor =
-                    ActorUtils.getLocalActor(PrometheusActor.class, ActorUtils.getActorRefName(PrometheusActor.class));
-            GenerateHostPrometheusConfig prometheusConfigCommand = new GenerateHostPrometheusConfig();
-            prometheusConfigCommand.setClusterId(cluster.getId());
-            prometheusActor.tell(prometheusConfigCommand, getSelf());
-            
-            // tell to worker what need to start
-            autoAddServiceOperatorNeeded(msg.getHostname(), cluster.getId(), CommandType.START_SERVICE, false);
-        } else if (message instanceof WorkerServiceMessage) {
-            WorkerServiceMessage msg = (WorkerServiceMessage) message;
-            // tell to worker what need to start/stop
-            autoAddServiceOperatorNeeded(msg.getHostname(), msg.getClusterId(), msg.getCommandType(), true);
         }
+        if (ObjectUtil.isNull(hostEntity)) {
+            // save to db
+            ProcessUtils.saveHostInstallInfo(msg, cluster.getClusterCode(), clusterHostService);
+            logger.info("Host install save to database");
+        } else {
+            hostEntity.setCpuArchitecture(msg.getCpuArchitecture());
+            hostEntity.setManaged(MANAGED.YES);
+            clusterHostService.updateById(hostEntity);
+        }
+
+        // add to prometheus
+        ActorRef prometheusActor =
+                ActorUtils.getLocalActor(PrometheusActor.class, ActorUtils.getActorRefName(PrometheusActor.class));
+        GenerateHostPrometheusConfig prometheusConfigCommand = new GenerateHostPrometheusConfig();
+        prometheusConfigCommand.setClusterId(cluster.getId());
+        prometheusActor.tell(prometheusConfigCommand, getSelf());
+
+        // tell to worker what need to start
+        autoAddServiceOperatorNeeded(msg.getHostname(), cluster.getId(), CommandType.START_SERVICE, false);
     }
     
     /**

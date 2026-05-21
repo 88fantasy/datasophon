@@ -1,6 +1,6 @@
 package com.datasophon.api.master;
 
-import akka.actor.UntypedActor;
+import org.apache.pekko.actor.AbstractActor;
 import com.datasophon.api.utils.SpringTool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.Assert;
@@ -15,8 +15,7 @@ import java.lang.reflect.Type;
  * @author zhanghuangbin
  */
 @Slf4j
-public abstract class TypedActor<T> extends UntypedActor {
-
+public abstract class TypedActor<T> extends AbstractActor {
 
     private final Class<T> clazz;
 
@@ -51,29 +50,38 @@ public abstract class TypedActor<T> extends UntypedActor {
         log.info("{} service actor stopped after handle message", getSelf().path().toString());
     }
 
-
     @Override
-    public void onReceive(Object message) throws Throwable {
-        try {
-            boolean match = message != null && clazz.isAssignableFrom(message.getClass());
-            if (match) {
-                doOnReceive((T) message);
-            } else {
-                unhandled(message);
-            }
-        } catch (Throwable throwable) {
-            onError(message, throwable);
-        }
+    public Receive createReceive() {
+        return receiveBuilder()
+            .matchAny(message -> {
+                try {
+                    boolean match = message != null && clazz.isAssignableFrom(message.getClass());
+                    if (match) {
+                        doOnReceive((T) message);
+                    } else {
+                        unhandled(message);
+                    }
+                } catch (Throwable throwable) {
+                    onError(message, throwable);
+                }
+            })
+            .build();
     }
-
 
     protected abstract void doOnReceive(T message) throws Throwable;
 
-    protected void onError(Object message, Throwable throwable) throws Throwable {
-        log.error("{} receive messageType: {}, but handle fail, ", this.getClass().getSimpleName(), message == null ? "null" : message.getClass().getSimpleName(), throwable);
-        throw throwable;
+    protected void onError(Object message, Throwable throwable) {
+        log.error("{} receive messageType: {}, but handle fail, ",
+                this.getClass().getSimpleName(),
+                message == null ? "null" : message.getClass().getSimpleName(), throwable);
+        if (throwable instanceof RuntimeException) {
+            throw (RuntimeException) throwable;
+        }
+        if (throwable instanceof Error) {
+            throw (Error) throwable;
+        }
+        throw new RuntimeException(throwable);
     }
-
 
     protected <E> E getBean(Class<E> clazz) {
         return SpringTool.getApplicationContext().getBean(clazz);

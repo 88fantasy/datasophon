@@ -68,7 +68,7 @@ export DDH_LOG_DIR=$DDH_HOME/logs
 export DDH_CONF_DIR=$DDH_HOME/conf
 export DDH_LIB_JARS=$DDH_HOME/lib/*
 
-export DDH_OPTS="-server -Xms512m -Xmx512m -Dddh.home=$DDH_HOME"
+export DDH_OPTS="-server -Xms512m -Xmx512m -Dddh.home=$DDH_HOME --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
 export STOP_TIMEOUT=5
 
 if [ ! -d "$DDH_LOG_DIR" ]; then

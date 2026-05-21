@@ -1,6 +1,6 @@
 package com.datasophon.api.service.cluster.impl;
 
-import akka.actor.ActorRef;
+import org.apache.pekko.actor.ActorRef;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;

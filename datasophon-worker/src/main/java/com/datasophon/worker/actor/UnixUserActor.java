@@ -25,27 +25,27 @@ import com.datasophon.worker.utils.UnixUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import akka.actor.UntypedActor;
+import org.apache.pekko.actor.AbstractActor;
 
-public class UnixUserActor extends UntypedActor {
-    
+public class UnixUserActor extends AbstractActor {
+
     private static final Logger logger = LoggerFactory.getLogger(UnixUserActor.class);
-    
+
     @Override
-    public void onReceive(Object msg) throws Throwable {
-        if (msg instanceof CreateUnixUserCommand) {
-            CreateUnixUserCommand command = (CreateUnixUserCommand) msg;
-            ExecResult execResult =
-                    UnixUtils.createUnixUser(command.getUsername(), command.getMainGroup(), command.getOtherGroups());
-            logger.info("create unix user {}", execResult.getExecResult() ? "success" : "failed");
-            getSender().tell(execResult, getSelf());
-        } else if (msg instanceof DelUnixUserCommand) {
-            DelUnixUserCommand command = (DelUnixUserCommand) msg;
-            ExecResult execResult = UnixUtils.delUnixUser(command.getUsername());
-            logger.info("del unix user {}", execResult.getExecResult() ? "success" : "failed");
-            getSender().tell(execResult, getSelf());
-        } else {
-            unhandled(msg);
-        }
+    public Receive createReceive() {
+        return receiveBuilder()
+                .match(CreateUnixUserCommand.class, command -> {
+                    ExecResult execResult =
+                            UnixUtils.createUnixUser(command.getUsername(), command.getMainGroup(), command.getOtherGroups());
+                    logger.info("create unix user {}", execResult.getExecResult() ? "success" : "failed");
+                    getSender().tell(execResult, getSelf());
+                })
+                .match(DelUnixUserCommand.class, command -> {
+                    ExecResult execResult = UnixUtils.delUnixUser(command.getUsername());
+                    logger.info("del unix user {}", execResult.getExecResult() ? "success" : "failed");
+                    getSender().tell(execResult, getSelf());
+                })
+                .matchAny(this::unhandled)
+                .build();
     }
 }

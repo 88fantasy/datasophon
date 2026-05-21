@@ -4,6 +4,7 @@ import org.apache.commons.collections.list.GrowthList;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
@@ -87,7 +88,7 @@ public class YamlParser {
     }
 
     private static Yaml createYaml() {
-        return new Yaml(new Constructor());
+        return new Yaml(new Constructor(new LoaderOptions()));
     }
 
     @SuppressWarnings("unchecked")

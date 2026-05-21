@@ -17,11 +17,11 @@
 
 package com.datasophon.api.master;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSelection;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
-import akka.util.Timeout;
+import org.apache.pekko.actor.ActorRef;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.actor.ActorSystem;
+import org.apache.pekko.actor.Props;
+import org.apache.pekko.util.Timeout;
 import com.datasophon.api.master.alert.ServiceRoleCheckActor;
 import com.datasophon.common.command.ClusterCommand;
 import com.datasophon.common.command.HostCheckCommand;
@@ -35,12 +35,12 @@ import org.slf4j.LoggerFactory;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -53,7 +53,7 @@ public class ActorUtils {
     
     public static final String DATASOPHON = "datasophon";
     
-    public static final String AKKA_REMOTE_NETTY_TCP_HOSTNAME = "akka.remote.netty.tcp.hostname";
+    public static final String AKKA_REMOTE_NETTY_TCP_HOSTNAME = "pekko.remote.classic.netty.tcp.hostname";
     
     private static Random rand;
 
@@ -76,31 +76,25 @@ public class ActorUtils {
                 actorSystem.actorOf(Props.create(ClusterStatusActor.class), getActorRefName(ClusterStatusActor.class));
         
         // 节点检测 5m 检测一次
-        actorSystem.scheduler().schedule(
-                FiniteDuration.apply(30L, TimeUnit.SECONDS),
-                FiniteDuration.apply(300L, TimeUnit.SECONDS),
-                hostCheckActor,
-                new HostCheckCommand(),
-                actorSystem.dispatcher(),
-                ActorRef.noSender());
+        actorSystem.scheduler().scheduleWithFixedDelay(
+                java.time.Duration.of(30, ChronoUnit.SECONDS),
+                java.time.Duration.of(300, ChronoUnit.SECONDS),
+                () -> hostCheckActor.tell(new HostCheckCommand(), ActorRef.noSender()),
+                actorSystem.dispatcher());
 
-        // 服务检测 30 检测一次
-        actorSystem.scheduler().schedule(
-                FiniteDuration.apply(15L, TimeUnit.SECONDS),
-                FiniteDuration.apply(30L, TimeUnit.SECONDS),
-                serviceRoleCheckActor,
-                new ServiceRoleCheckCommand(),
-                actorSystem.dispatcher(),
-                ActorRef.noSender());
-        
+        // 服务检测 30s 检测一次
+        actorSystem.scheduler().scheduleWithFixedDelay(
+                java.time.Duration.of(15, ChronoUnit.SECONDS),
+                java.time.Duration.of(30, ChronoUnit.SECONDS),
+                () -> serviceRoleCheckActor.tell(new ServiceRoleCheckCommand(), ActorRef.noSender()),
+                actorSystem.dispatcher());
+
         // 集群检测 1m 检测一次
-        actorSystem.scheduler().schedule(
-                FiniteDuration.apply(30L, TimeUnit.SECONDS),
-                FiniteDuration.apply(60L, TimeUnit.SECONDS),
-                clusterCheckActor,
-                new ClusterCommand(ClusterCommandType.CHECK),
-                actorSystem.dispatcher(),
-                ActorRef.noSender());
+        actorSystem.scheduler().scheduleWithFixedDelay(
+                java.time.Duration.of(30, ChronoUnit.SECONDS),
+                java.time.Duration.of(60, ChronoUnit.SECONDS),
+                () -> clusterCheckActor.tell(new ClusterCommand(ClusterCommandType.CHECK), ActorRef.noSender()),
+                actorSystem.dispatcher());
         
         rand = SecureRandom.getInstanceStrong();
     }
@@ -139,7 +133,7 @@ public class ActorUtils {
     }
     
     public static ActorRef getRemoteActor(String hostname, String actorName) {
-        String actorPath = "akka.tcp://datasophon@" + hostname + ":2552/user/worker/" + actorName;
+        String actorPath = "pekko.tcp://datasophon@" + hostname + ":2552/user/worker/" + actorName;
         ActorSelection actorSelection = actorSystem.actorSelection(actorPath);
         Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
         Future<ActorRef> future = actorSelection.resolveOne(timeout);
@@ -159,7 +153,7 @@ public class ActorUtils {
     public static void shutdown() {
         if (actorSystem != null) {
             try {
-                actorSystem.shutdown();
+                actorSystem.terminate();
             } catch (Exception ignore) {
             }
             actorSystem = null;

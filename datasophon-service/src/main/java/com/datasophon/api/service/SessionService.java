@@ -20,7 +20,7 @@ package com.datasophon.api.service;
 import com.datasophon.dao.entity.SessionEntity;
 import com.datasophon.dao.entity.UserInfoEntity;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 

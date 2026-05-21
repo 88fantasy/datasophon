@@ -17,9 +17,9 @@
 
 package com.datasophon.api.utils;
 
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.pattern.Patterns;
+import org.apache.pekko.util.Timeout;
 import cn.hutool.core.util.StrUtil;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.load.ServiceInfoMap;
@@ -165,7 +165,7 @@ public class CheckUtils {
                 ServiceInfoMap.get(frameCode + Constants.UNDERLINE + roleInstanceEntity.getServiceName());
 
         ActorSelection execCmdActor = ActorUtils.actorSystem.actorSelection(
-                "akka.tcp://datasophon@" + roleInstanceEntity.getHostname() + ":2552/user/worker/executeCmdActor");
+                "pekko.tcp://datasophon@" + roleInstanceEntity.getHostname() + ":2552/user/worker/executeCmdActor");
         ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
         ArrayList<String> commandList = new ArrayList<>();
         if(serviceRoleInfo.getStatusRunner() == null

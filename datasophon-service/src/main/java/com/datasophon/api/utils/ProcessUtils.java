@@ -17,10 +17,10 @@
 
 package com.datasophon.api.utils;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import org.apache.pekko.actor.ActorRef;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.pattern.Patterns;
+import org.apache.pekko.util.Timeout;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
@@ -416,9 +416,9 @@ public class ProcessUtils {
         // 更新namenode节点的whitelist白名单
         for (ClusterServiceRoleInstanceEntity namenode : namenodes) {
             ActorSelection actorSelection = ActorUtils.actorSystem.actorSelection(
-                    "akka.tcp://datasophon@" + namenode.getHostname() + ":2552/user/worker/fileOperateActor");
+                    "pekko.tcp://datasophon@" + namenode.getHostname() + ":2552/user/worker/fileOperateActor");
             ActorSelection execCmdActor = ActorUtils.actorSystem.actorSelection(
-                    "akka.tcp://datasophon@" + namenode.getHostname() + ":2552/user/worker/executeCmdActor");
+                    "pekko.tcp://datasophon@" + namenode.getHostname() + ":2552/user/worker/executeCmdActor");
             Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
             FileOperateCommand fileOperateCommand = new FileOperateCommand();
             fileOperateCommand.setLines(list);

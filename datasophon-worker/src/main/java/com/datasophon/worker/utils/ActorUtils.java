@@ -6,10 +6,10 @@ import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSelection;
-import akka.actor.ActorSystem;
-import akka.util.Timeout;
+import org.apache.pekko.actor.ActorRef;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.actor.ActorSystem;
+import org.apache.pekko.util.Timeout;
 
 public class ActorUtils {
     
@@ -20,7 +20,7 @@ public class ActorUtils {
     }
     
     public static ActorRef getRemoteActor(String hostname, String actorName) {
-        String actorPath = "akka.tcp://datasophon@" + hostname + ":2551/user/" + actorName;
+        String actorPath = "pekko.tcp://datasophon@" + hostname + ":2551/user/" + actorName;
         ActorSelection actorSelection = actorSystem.actorSelection(actorPath);
         Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
         Future<ActorRef> future = actorSelection.resolveOne(timeout);

@@ -10,7 +10,7 @@ import lombok.Data;
  */
 @Data
 @AllArgsConstructor
-public class InstallResult implements scala.Serializable {
+public class InstallResult implements java.io.Serializable {
 
 
     @Schema(description = "dagId")

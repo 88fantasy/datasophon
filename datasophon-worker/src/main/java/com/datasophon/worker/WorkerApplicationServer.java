@@ -44,14 +44,14 @@ import com.alibaba.fastjson.JSONObject;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSelection;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
-import akka.event.EventStream;
-import akka.remote.AssociatedEvent;
-import akka.remote.AssociationErrorEvent;
-import akka.remote.DisassociatedEvent;
+import org.apache.pekko.actor.ActorRef;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.actor.ActorSystem;
+import org.apache.pekko.actor.Props;
+import org.apache.pekko.event.EventStream;
+import org.apache.pekko.remote.AssociatedEvent;
+import org.apache.pekko.remote.AssociationErrorEvent;
+import org.apache.pekko.remote.DisassociatedEvent;
 
 public class WorkerApplicationServer {
     
@@ -127,7 +127,7 @@ public class WorkerApplicationServer {
     }
     
     private static ActorSystem initActor(String hostname) {
-        Config config = ConfigFactory.parseString("akka.remote.netty.tcp.hostname=" + hostname);
+        Config config = ConfigFactory.parseString("pekko.remote.classic.netty.tcp.hostname=" + hostname);
         ActorSystem system =
                 ActorSystem.create(Constants.DATASOPHON, config.withFallback(ConfigFactory.load()));
         system.actorOf(Props.create(WorkerActor.class), WORKER);
@@ -151,7 +151,7 @@ public class WorkerApplicationServer {
                                      ActorSystem system) {
         ActorSelection workerStartActor =
                 system.actorSelection(
-                        "akka.tcp://datasophon@" + masterHost + ":2551/user/workerStartActor");
+                        "pekko.tcp://datasophon@" + masterHost + ":2551/user/workerStartActor");
         ExecResult result = ShellUtils.execShell(workDir + "/script/host-info-collect.sh");
         if (!result.getExecResult()) {
             logger.error("host info collect error:{}", result.getExecErrOut());

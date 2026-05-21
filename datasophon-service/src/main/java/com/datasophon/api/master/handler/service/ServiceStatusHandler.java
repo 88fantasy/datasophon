@@ -17,9 +17,9 @@
 
 package com.datasophon.api.master.handler.service;
 
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.pattern.Patterns;
+import org.apache.pekko.util.Timeout;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.common.Constants;
@@ -81,7 +81,7 @@ public class ServiceStatusHandler extends ServiceHandler {
             return invokeNext(serviceRoleInfo, ExecResult.success());
         } else {
             ActorSelection startActor = ActorUtils.actorSystem.actorSelection(
-                    "akka.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/serviceStatusActor");
+                    "pekko.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/serviceStatusActor");
             Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
             Future<Object> startFuture = Patterns.ask(startActor, cmd, timeout);
             try {

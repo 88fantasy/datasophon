@@ -1,4 +1,4 @@
-FROM openjdk:8
+FROM eclipse-temurin:17-jre
 LABEL "author"="88fantasy"
 RUN mkdir /datasophon
 COPY ./bin/ /datasophon/bin/

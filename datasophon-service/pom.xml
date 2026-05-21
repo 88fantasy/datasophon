@@ -10,10 +10,6 @@
 
     <artifactId>datasophon-service</artifactId>
 
-    <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
-    </properties>
     <dependencies>
 
         <dependency>
@@ -46,20 +42,16 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.11</artifactId>
+            <groupId>org.apache.pekko</groupId>
+            <artifactId>pekko-actor_2.13</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-slf4j_2.11</artifactId>
+            <groupId>org.apache.pekko</groupId>
+            <artifactId>pekko-slf4j_2.13</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-remote_2.11</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-persistence_2.11</artifactId>
+            <groupId>org.apache.pekko</groupId>
+            <artifactId>pekko-remote_2.13</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.sshd</groupId>

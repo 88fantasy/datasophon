@@ -17,7 +17,7 @@
 
 package com.datasophon.api.service.impl;
 
-import akka.actor.ActorRef;
+import org.apache.pekko.actor.ActorRef;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;

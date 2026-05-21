@@ -40,31 +40,30 @@
 
     <properties>
         <revision>2.1-SNAPSHOT</revision>
-        <akka.version>2.4.20</akka.version>
+        <pekko.version>1.0.3</pekko.version>
         <commons.httpclient>3.0.1</commons.httpclient>
         <commons.lang>3.12.0</commons.lang>
         <druid.version>1.2.24</druid.version>
         <fastjson.version>1.2.83</fastjson.version>
         <hutool.version>5.8.40</hutool.version>
-        <java.version>1.8</java.version>
+        <java.version>17</java.version>
         <junit.version>4.12</junit.version>
-        <logback.version>1.2.9</logback.version>
+        <!-- logback managed by Spring Boot 3 BOM -->
         <maven-checkstyle-plugin.version>3.1.2</maven-checkstyle-plugin.version>
-        <maven-compiler-plugin.version>3.10.0</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
         <mybatis-plus.version>3.5.9</mybatis-plus.version>
-        <mybatis.spring.version>2.0.1</mybatis.spring.version>
+        <mybatis.spring.version>3.0.3</mybatis.spring.version>
         <mybatis-plus-join>1.5.2</mybatis-plus-join>
-        <mysql.connector.version>8.0.28</mysql.connector.version>
+        <mysql.connector.version>8.2.0</mysql.connector.version>
         <org.apache.sshd.version>2.9.3</org.apache.sshd.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <spring.boot.version>2.6.1</spring.boot.version>
-        <spring.version>5.3.13</spring.version>
+        <spring.boot.version>3.4.5</spring.boot.version>
         <versions-maven-plugin.version>2.14.2</versions-maven-plugin.version>
         <flyway.version>9.20.0</flyway.version>
         <h2.version>2.1.214</h2.version>
-        <lombok.version>1.18.24</lombok.version>
+        <lombok.version>1.18.34</lombok.version>
         <guava.version>31.1-jre</guava.version>
         <junit.version>5.9.0</junit.version>
         <org.freemarker.verion>2.3.30</org.freemarker.verion>
@@ -75,12 +74,11 @@
         <jsch.version>0.2.19</jsch.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <eddsa.version>0.3.0</eddsa.version>
-        <mockito-core.version>2.23.4</mockito-core.version>
         <spotless.version>2.27.2</spotless.version>
         <spotless.scalafmt.version>3.4.3</spotless.scalafmt.version>
         <spotless.ratchetFrom>origin/dev</spotless.ratchetFrom>
-        <mockito-junit-jupiter.version>4.5.1</mockito-junit-jupiter.version>
-        <bytebuddy.version>1.12.10</bytebuddy.version>
+        <mockito-junit-jupiter.version>5.12.0</mockito-junit-jupiter.version>
+        <bytebuddy.version>1.14.18</bytebuddy.version>
         <snakeyaml.version>1.29</snakeyaml.version>
         <hadoop.version>3.3.6</hadoop.version>
         <bc.version>1.78.1</bc.version>
@@ -102,13 +100,13 @@
                 <version>${spring.boot.version}</version>
             </dependency>
             <dependency>
-                <groupId>mysql</groupId>
-                <artifactId>mysql-connector-java</artifactId>
+                <groupId>com.mysql</groupId>
+                <artifactId>mysql-connector-j</artifactId>
                 <version>${mysql.connector.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.baomidou</groupId>
-                <artifactId>mybatis-plus-boot-starter</artifactId>
+                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
                 <version>${mybatis-plus.version}</version>
             </dependency>
             <dependency>
@@ -137,30 +135,21 @@
                 <version>${commons.httpclient}</version>
             </dependency>
             <dependency>
-                <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-actor_2.11</artifactId>
-                <version>${akka.version}</version>
+                <groupId>org.apache.pekko</groupId>
+                <artifactId>pekko-actor_2.13</artifactId>
+                <version>${pekko.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-remote_2.11</artifactId>
-                <version>${akka.version}</version>
+                <groupId>org.apache.pekko</groupId>
+                <artifactId>pekko-remote_2.13</artifactId>
+                <version>${pekko.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-slf4j_2.11</artifactId>
-                <version>${akka.version}</version>
+                <groupId>org.apache.pekko</groupId>
+                <artifactId>pekko-slf4j_2.13</artifactId>
+                <version>${pekko.version}</version>
             </dependency>
-            <dependency>
-                <groupId>com.typesafe.akka</groupId>
-                <artifactId>akka-persistence_2.11</artifactId>
-                <version>${akka.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-                <version>${logback.version}</version>
-            </dependency>
+            <!-- logback-classic version managed by Spring Boot 3 BOM -->
             <dependency>
                 <groupId>cn.hutool</groupId>
                 <artifactId>hutool-all</artifactId>
@@ -201,11 +190,7 @@
                 <artifactId>commons-compress</artifactId>
                 <version>${commons-compress.version}</version>
             </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>${jackson-annotations.version}</version>
-            </dependency>
+            <!-- jackson-annotations version managed by Spring Boot 3 BOM -->
             <dependency>
                 <groupId>org.apache.ant</groupId>
                 <artifactId>ant</artifactId>
@@ -226,11 +211,7 @@
                 <artifactId>eddsa</artifactId>
                 <version>${eddsa.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.yaml</groupId>
-                <artifactId>snakeyaml</artifactId>
-                <version>${snakeyaml.version}</version>
-            </dependency>
+            <!-- snakeyaml version managed by Spring Boot 3 BOM -->
 
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
@@ -372,12 +353,6 @@
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
-                <artifactId>mockito-core</artifactId>
-                <version>${mockito-core.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.mockito</groupId>
                 <artifactId>mockito-junit-jupiter</artifactId>
                 <version>${mockito-junit-jupiter.version}</version>
                 <scope>test</scope>
@@ -420,12 +395,6 @@
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-inline</artifactId>
-            <version>${mockito-junit-jupiter.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
             <version>${mockito-junit-jupiter.version}</version>
             <scope>test</scope>
@@ -449,7 +418,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
+                <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <skipTests>true</skipTests>
                 </configuration>
@@ -458,10 +427,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.6.2</version>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <release>${java.version}</release>
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>

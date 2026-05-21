@@ -26,25 +26,25 @@ import com.datasophon.worker.utils.FreemakerUtils;
 import java.util.HashMap;
 import java.util.List;
 
-import akka.actor.UntypedActor;
+import org.apache.pekko.actor.AbstractActor;
 
-public class AlertConfigActor extends UntypedActor {
-    
+public class AlertConfigActor extends AbstractActor {
+
     @Override
-    public void onReceive(Object message) throws Throwable, Throwable {
-        if (message instanceof GenerateAlertConfigCommand) {
-            GenerateAlertConfigCommand command = (GenerateAlertConfigCommand) message;
-            ExecResult execResult = new ExecResult();
-            HashMap<Generators, List<AlertItem>> configFileMap = command.getConfigFileMap();
-            for (Generators generators : configFileMap.keySet()) {
-                List<AlertItem> alertItems = configFileMap.get(generators);
-                FreemakerUtils.generatePromAlertFile(generators, alertItems,
-                        generators.getFilename().replace(".yml", "").toUpperCase());
-            }
-            execResult.setExecResult(true);
-            getSender().tell(execResult, getSelf());
-        } else {
-            unhandled(message);
-        }
+    public Receive createReceive() {
+        return receiveBuilder()
+                .match(GenerateAlertConfigCommand.class, command -> {
+                    ExecResult execResult = new ExecResult();
+                    HashMap<Generators, List<AlertItem>> configFileMap = command.getConfigFileMap();
+                    for (Generators generators : configFileMap.keySet()) {
+                        List<AlertItem> alertItems = configFileMap.get(generators);
+                        FreemakerUtils.generatePromAlertFile(generators, alertItems,
+                                generators.getFilename().replace(".yml", "").toUpperCase());
+                    }
+                    execResult.setExecResult(true);
+                    getSender().tell(execResult, getSelf());
+                })
+                .matchAny(this::unhandled)
+                .build();
     }
 }

@@ -17,9 +17,9 @@
 
 package com.datasophon.api.service.impl;
 
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.pattern.Patterns;
+import org.apache.pekko.util.Timeout;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -192,7 +192,7 @@ public class ClusterServiceRoleInstanceServiceImpl
         logger.info("start to get {} log from {}", serviceRole.getServiceRoleName(), roleInstance.getHostname());
 
         ActorSelection configActor = ActorUtils.actorSystem
-                .actorSelection("akka.tcp://datasophon@" + roleInstance.getHostname() + ":2552/user/worker/logActor");
+                .actorSelection("pekko.tcp://datasophon@" + roleInstance.getHostname() + ":2552/user/worker/logActor");
         Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
         Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
         ExecResult logResult = (ExecResult) Await.result(logFuture, timeout.duration());

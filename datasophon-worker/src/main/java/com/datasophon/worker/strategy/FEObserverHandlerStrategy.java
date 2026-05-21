@@ -31,7 +31,7 @@ import com.datasophon.worker.utils.ActorUtils;
 
 import java.util.ArrayList;
 
-import akka.actor.ActorRef;
+import org.apache.pekko.actor.ActorRef;
 
 import cn.hutool.core.net.NetUtil;
 import cn.hutool.json.JSONUtil;

@@ -11,8 +11,7 @@
     <artifactId>datasophon-k8s-agent</artifactId>
 
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <maven.compiler.release>17</maven.compiler.release>
         <skipDocker>true</skipDocker>
     </properties>
 
@@ -61,7 +60,7 @@
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-inline</artifactId>
+            <artifactId>mockito-core</artifactId>
             <version>${mockito-junit-jupiter.version}</version>
             <scope>test</scope>
         </dependency>

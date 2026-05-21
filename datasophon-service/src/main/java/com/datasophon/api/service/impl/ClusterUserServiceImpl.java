@@ -17,9 +17,9 @@
 
 package com.datasophon.api.service.impl;
 
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.pattern.Patterns;
+import org.apache.pekko.util.Timeout;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.enums.Status;
@@ -99,7 +99,7 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         // sync to all hosts
         for (ClusterHostDO clusterHost : hostList) {
             ActorSelection unixUserActor = ActorUtils.actorSystem.actorSelection(
-                    "akka.tcp://datasophon@" + clusterHost.getHostname() + ":2552/user/worker/unixUserActor");
+                    "pekko.tcp://datasophon@" + clusterHost.getHostname() + ":2552/user/worker/unixUserActor");
             
             CreateUnixUserCommand createUnixUserCommand = new CreateUnixUserCommand();
             createUnixUserCommand.setUsername(username);
@@ -174,7 +174,7 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         // sync to all hosts
         for (ClusterHostDO clusterHost : hostList) {
             ActorSelection unixUserActor = ActorUtils.actorSystem.actorSelection(
-                    "akka.tcp://datasophon@" + clusterHost.getHostname() + ":2552/user/worker/unixUserActor");
+                    "pekko.tcp://datasophon@" + clusterHost.getHostname() + ":2552/user/worker/unixUserActor");
             DelUnixUserCommand createUnixUserCommand = new DelUnixUserCommand();
             Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
             createUnixUserCommand.setUsername(clusterUser.getUsername());
@@ -210,7 +210,7 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
             otherGroup = otherGroupList.stream().map(ClusterGroup::getGroupName).collect(Collectors.joining(","));
         }
         ActorSelection unixUserActor = ActorUtils.actorSystem
-                .actorSelection("akka.tcp://datasophon@" + hostname + ":2552/user/worker/unixUserActor");
+                .actorSelection("pekko.tcp://datasophon@" + hostname + ":2552/user/worker/unixUserActor");
         
         CreateUnixUserCommand createUnixUserCommand = new CreateUnixUserCommand();
         createUnixUserCommand.setUsername(clusterUser.getUsername());

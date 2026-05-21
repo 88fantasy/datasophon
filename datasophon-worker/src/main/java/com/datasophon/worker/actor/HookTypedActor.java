@@ -1,6 +1,6 @@
 package com.datasophon.worker.actor;
 
-import akka.actor.UntypedActor;
+import org.apache.pekko.actor.AbstractActor;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleResource;
 import com.datasophon.common.enums.CommandType;
@@ -25,8 +25,7 @@ import java.util.Map;
  * @author zhanghuangbin
  */
 @Slf4j
-public abstract class HookTypedActor<T> extends UntypedActor {
-
+public abstract class HookTypedActor<T> extends AbstractActor {
 
     private final Class<T> clazz;
 
@@ -61,28 +60,37 @@ public abstract class HookTypedActor<T> extends UntypedActor {
         log.info("{} service actor stopped after handle message", getSelf().path().toString());
     }
 
-
     @Override
-    public void onReceive(Object message) throws Throwable {
-        try {
-            boolean match = message != null && clazz.isAssignableFrom(message.getClass());
-            if (match) {
-                doOnReceive((T) message);
-            } else {
-                unhandled(message);
-            }
-        } catch (Throwable throwable) {
-            onError(message, throwable);
-        }
+    public Receive createReceive() {
+        return receiveBuilder()
+            .matchAny(message -> {
+                try {
+                    boolean match = message != null && clazz.isAssignableFrom(message.getClass());
+                    if (match) {
+                        doOnReceive((T) message);
+                    } else {
+                        unhandled(message);
+                    }
+                } catch (Throwable throwable) {
+                    onError(message, throwable);
+                }
+            })
+            .build();
     }
-
 
     protected abstract void doOnReceive(T message) throws Throwable;
 
-
-    protected void onError(Object message, Throwable throwable) throws Throwable {
-        log.error("{} receive messageType: {}, but handle fail, ", this.getClass().getSimpleName(), message == null ? "null" : message.getClass().getSimpleName(), throwable);
-        throw throwable;
+    protected void onError(Object message, Throwable throwable) {
+        log.error("{} receive messageType: {}, but handle fail, ",
+                this.getClass().getSimpleName(),
+                message == null ? "null" : message.getClass().getSimpleName(), throwable);
+        if (throwable instanceof RuntimeException) {
+            throw (RuntimeException) throwable;
+        }
+        if (throwable instanceof Error) {
+            throw (Error) throwable;
+        }
+        throw new RuntimeException(throwable);
     }
 
     protected void doWithTellResult(CommandType commandType, ServiceRoleResource resource, ThrowableSupplier<ExecResult> task) {
@@ -105,7 +113,6 @@ public abstract class HookTypedActor<T> extends UntypedActor {
 
         int i = -1;
         try {
-
             Logger logger = LoggerFactory.getLogger(TaskConstants.createLoggerName(resource.getServiceName(), resource.getServiceRoleName(), HookTypedActor.class));
             for (i = 0; i < hookList.size(); i++) {
                 HookConfig hook = hookList.get(i);
@@ -114,11 +121,10 @@ public abstract class HookTypedActor<T> extends UntypedActor {
                     logger.info("开始执行服务{} {}第{}个Hook，类型: {}, 动作：{}", resource.getServiceName(), resource.getServiceRoleName(),
                             i, hook.getType(), hook.getAction());
                     log.info("{}.{} invoke {} hook, index:{}, action: {}", resource.getServiceName(), resource.getServiceRoleName(),
-                            i, hook.getType(),  hook.getAction());
+                            i, hook.getType(), hook.getAction());
                     result = HookUtils.invokeHook(hook, ctx);
                     log.info("{}.{} invoke {} hook {}, index:{}, action: {}", resource.getServiceName(), resource.getServiceRoleName(),
                             hook.getType(), result.isSuccess() ? "success" : "fail", i, hook.getAction());
-
                     logger.info("执行服务{}.{} 第{}个Hook {}，信息: {}", resource.getServiceName(), resource.getServiceRoleName(), i, result.isSuccess() ? "成功" : "失败", result.getExecOut());
                     if (!result.isSuccess()) {
                         break;

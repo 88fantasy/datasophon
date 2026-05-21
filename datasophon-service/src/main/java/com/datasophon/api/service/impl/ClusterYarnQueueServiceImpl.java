@@ -53,9 +53,9 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.pattern.Patterns;
+import org.apache.pekko.util.Timeout;
 import cn.hutool.core.bean.BeanUtil;
 
 @Service("clusterYarnQueueService")
@@ -141,7 +141,7 @@ public class ClusterYarnQueueServiceImpl extends ServiceImpl<ClusterYarnQueueMap
             }
         }
         ActorSelection execCmdActor = ActorUtils.actorSystem
-                .actorSelection("akka.tcp://datasophon@" + hostname + ":2552/user/worker/executeCmdActor");
+                .actorSelection("pekko.tcp://datasophon@" + hostname + ":2552/user/worker/executeCmdActor");
         ExecuteCmdCommand command = new ExecuteCmdCommand();
         Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
         ArrayList<String> commands = new ArrayList<>();

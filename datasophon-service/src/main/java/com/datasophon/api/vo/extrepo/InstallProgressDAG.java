@@ -19,7 +19,7 @@ import java.util.List;
  * @date 2025/11/11
  */
 @Data
-public class InstallProgressDAG implements scala.Serializable {
+public class InstallProgressDAG implements java.io.Serializable {
 
     @Schema(description = "dagId")
     private String id;

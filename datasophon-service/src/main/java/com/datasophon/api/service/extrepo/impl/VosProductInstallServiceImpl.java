@@ -1,6 +1,6 @@
 package com.datasophon.api.service.extrepo.impl;
 
-import akka.actor.ActorRef;
+import org.apache.pekko.actor.ActorRef;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.collection.CollectionUtil;

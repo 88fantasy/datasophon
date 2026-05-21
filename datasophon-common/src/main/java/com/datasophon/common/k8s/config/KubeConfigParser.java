@@ -1,5 +1,6 @@
 package com.datasophon.common.k8s.config;
 
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
@@ -18,7 +19,7 @@ public class KubeConfigParser {
      * @return 包含 serverName 和 serverCert 的 ClientOptions 对象
      */
     public ClientOptions parse(String kubeConfigContent) {
-        Yaml yaml = new Yaml(new SafeConstructor());
+        Yaml yaml = new Yaml(new SafeConstructor(new LoaderOptions()));
         Map<String, Object> config = yaml.load(kubeConfigContent);
 
         ClientOptions options = new ClientOptions();

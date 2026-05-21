@@ -39,9 +39,9 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.pattern.Patterns;
+import org.apache.pekko.util.Timeout;
 
 @Data
 public class ServiceStartHandler extends ServiceHandler {
@@ -87,7 +87,7 @@ public class ServiceStartHandler extends ServiceHandler {
             return execResult;
         }
         ActorSelection startActor = ActorUtils.actorSystem.actorSelection(
-                "akka.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/startServiceActor");
+                "pekko.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/startServiceActor");
         Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
         Future<Object> startFuture = Patterns.ask(startActor, cmd, timeout);
         try {

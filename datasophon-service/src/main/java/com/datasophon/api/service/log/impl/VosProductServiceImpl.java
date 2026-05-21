@@ -1,8 +1,8 @@
 package com.datasophon.api.service.log.impl;
 
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.pattern.Patterns;
+import org.apache.pekko.util.Timeout;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.datasophon.api.dto.log.ServiceRoleLogQueryDTO;
@@ -80,7 +80,7 @@ public class VosProductServiceImpl implements VosProductService {
         command.setBaseDir(PkgInstallPathUtils.getInstallUniHome(serviceRoleInfo));
 
         log.info("start to get {} log from {}", serviceRole.getServiceRoleName(), dto.getHost());
-        ActorSelection configActor = ActorUtils.actorSystem.actorSelection("akka.tcp://datasophon@" + dto.getHost() + ":2552/user/worker/logActor");
+        ActorSelection configActor = ActorUtils.actorSystem.actorSelection("pekko.tcp://datasophon@" + dto.getHost() + ":2552/user/worker/logActor");
         Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
         Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
         ExecResult logResult = (ExecResult) Await.result(logFuture, timeout.duration());

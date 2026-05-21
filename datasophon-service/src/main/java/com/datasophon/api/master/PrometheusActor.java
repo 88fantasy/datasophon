@@ -19,10 +19,10 @@
 
 package com.datasophon.api.master;
 
-import akka.actor.ActorSelection;
-import akka.actor.UntypedActor;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import org.apache.pekko.actor.AbstractActor;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.pattern.Patterns;
+import org.apache.pekko.util.Timeout;
 import cn.hutool.http.HttpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.load.ServiceRoleJmxMap;
@@ -61,30 +61,26 @@ import java.util.concurrent.TimeUnit;
 /**
  * changelog: 将一大坨代码，拆分成多个函数
  */
-public class PrometheusActor extends UntypedActor {
+public class PrometheusActor extends AbstractActor {
 
     private static final Logger logger = LoggerFactory.getLogger(PrometheusActor.class);
 
     @Override
-    public void onReceive(Object msg) throws Throwable {
-        if (msg instanceof GenerateAlertConfigCommand) {
-            generateAlertConfigCommand((GenerateAlertConfigCommand) msg);
-        } else if (msg instanceof GeneratePrometheusConfigCommand) {
-            generatePrometheus((GeneratePrometheusConfigCommand) msg);
-        } else if (msg instanceof GenerateHostPrometheusConfig) {
-            generateHostPrometheusConfig((GenerateHostPrometheusConfig) msg);
-        } else if (msg instanceof GenerateSRPromConfigCommand) {
-            generateSRPromConfigCommand((GenerateSRPromConfigCommand) msg);
-        } else {
-            unhandled(msg);
-        }
+    public Receive createReceive() {
+        return receiveBuilder()
+            .match(GenerateAlertConfigCommand.class, this::generateAlertConfigCommand)
+            .match(GeneratePrometheusConfigCommand.class, this::generatePrometheus)
+            .match(GenerateHostPrometheusConfig.class, this::generateHostPrometheusConfig)
+            .match(GenerateSRPromConfigCommand.class, this::generateSRPromConfigCommand)
+            .matchAny(this::unhandled)
+            .build();
     }
 
 
     private void generateAlertConfigCommand(GenerateAlertConfigCommand command) throws Exception {
         doIfInstancePresent(command.getClusterId(), false, prometheusInstance -> {
             ActorSelection alertConfigActor =
-                    ActorUtils.actorSystem.actorSelection("akka.tcp://datasophon@" + prometheusInstance.getHostname()
+                    ActorUtils.actorSystem.actorSelection("pekko.tcp://datasophon@" + prometheusInstance.getHostname()
                                                           + ":2552/user/worker/alertConfigActor");
             Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
             Future<Object> configureFuture = Patterns.ask(alertConfigActor, command, timeout);

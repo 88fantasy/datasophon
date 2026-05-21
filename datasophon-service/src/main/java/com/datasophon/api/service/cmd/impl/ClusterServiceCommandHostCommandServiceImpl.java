@@ -17,9 +17,9 @@
 
 package com.datasophon.api.service.cmd.impl;
 
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.pattern.Patterns;
+import org.apache.pekko.util.Timeout;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.master.ActorUtils;
@@ -122,7 +122,7 @@ public class ClusterServiceCommandHostCommandServiceImpl
         command.setBaseDir(Constants.WORKER_PATH);
         logger.info("Start to get {} install log from host {}", serviceRoleName, hostCommand.getHostname());
         ActorSelection configActor = ActorUtils.actorSystem
-                .actorSelection("akka.tcp://datasophon@" + hostCommand.getHostname() + ":2552/user/worker/logActor");
+                .actorSelection("pekko.tcp://datasophon@" + hostCommand.getHostname() + ":2552/user/worker/logActor");
         Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
         Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
         ExecResult logResult = (ExecResult) Await.result(logFuture, timeout.duration());

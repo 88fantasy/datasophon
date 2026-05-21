@@ -26,20 +26,20 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import akka.actor.ActorRef;
-import akka.actor.Props;
-import akka.actor.Terminated;
-import akka.actor.UntypedActor;
+import org.apache.pekko.actor.AbstractActor;
+import org.apache.pekko.actor.ActorRef;
+import org.apache.pekko.actor.Props;
+import org.apache.pekko.actor.Terminated;
 
-public class WorkerActor extends UntypedActor {
-    
+public class WorkerActor extends AbstractActor {
+
     private static final Logger logger = LoggerFactory.getLogger(WorkerActor.class);
-    
+
     @Override
-    public void preRestart(Throwable reason, Option<Object> message) {
+    public void preRestart(Throwable reason, Option<Object> message) throws Exception {
         logger.info("worker actor restart by reason {}", reason.getMessage());
     }
-    
+
     @Override
     public void preStart() throws IOException {
         ActorRef installServiceActor = getContext().actorOf(Props.create(InstallServiceActor.class),
@@ -99,14 +99,11 @@ public class WorkerActor extends UntypedActor {
     }
 
     @Override
-    public void onReceive(Object message) throws Throwable {
-        if (message instanceof String) {
-
-        } else if (message instanceof Terminated) {
-            Terminated t = (Terminated) message;
-            logger.info("find actor {} terminated", t.getActor());
-        } else {
-            unhandled(message);
-        }
+    public Receive createReceive() {
+        return receiveBuilder()
+                .match(String.class, msg -> { /* no-op */ })
+                .match(Terminated.class, t -> logger.info("find actor {} terminated", t.getActor()))
+                .matchAny(this::unhandled)
+                .build();
     }
 }

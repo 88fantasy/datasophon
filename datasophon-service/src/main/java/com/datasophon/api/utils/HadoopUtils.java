@@ -37,9 +37,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.pattern.Patterns;
+import org.apache.pekko.util.Timeout;
 
 public class HadoopUtils {
     
@@ -59,7 +59,7 @@ public class HadoopUtils {
     
     public static ExecResult refreshQueuePropToYarn(ClusterInfoEntity clusterInfo, String hostname) throws Exception {
         ActorSelection execCmdActor = ActorUtils.actorSystem
-                .actorSelection("akka.tcp://datasophon@" + hostname + ":2552/user/worker/executeCmdActor");
+                .actorSelection("pekko.tcp://datasophon@" + hostname + ":2552/user/worker/executeCmdActor");
         ExecuteCmdCommand command = new ExecuteCmdCommand();
         Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
         ArrayList<String> commands = new ArrayList<>();

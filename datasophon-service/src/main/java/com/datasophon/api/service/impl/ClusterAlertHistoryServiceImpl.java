@@ -17,7 +17,7 @@
 
 package com.datasophon.api.service.impl;
 
-import akka.actor.ActorRef;
+import org.apache.pekko.actor.ActorRef;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;

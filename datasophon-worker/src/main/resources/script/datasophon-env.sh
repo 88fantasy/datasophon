@@ -1,6 +1,5 @@
-export JAVA_HOME=/usr/local/jdk1.8.0_333
-CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
-export JAVA_HOME CLASSPATH
+export JAVA_HOME=/usr/local/jdk17
+export JAVA_HOME
 
 export KYUUBI_HOME=/data/install_datasophon/kyuubi
 export SPARK_HOME=/data/install_datasophon/spark3

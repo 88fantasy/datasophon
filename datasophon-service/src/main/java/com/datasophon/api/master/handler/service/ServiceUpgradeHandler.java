@@ -1,8 +1,8 @@
 package com.datasophon.api.master.handler.service;
 
-import akka.actor.ActorSelection;
-import akka.pattern.Patterns;
-import akka.util.Timeout;
+import org.apache.pekko.actor.ActorSelection;
+import org.apache.pekko.pattern.Patterns;
+import org.apache.pekko.util.Timeout;
 import cn.hutool.core.collection.CollectionUtil;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.ActorUtils;
@@ -66,7 +66,7 @@ public class ServiceUpgradeHandler extends ServiceHandler {
         }
 
         ActorSelection actorSelection = ActorUtils.actorSystem.actorSelection(
-                "akka.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/installServiceActor");
+                "pekko.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/installServiceActor");
         Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
 
         log.info("开始在主机{}执行{}{}命令", serviceRoleInfo.getHostname(), serviceRoleInfo.getCommandType().getCommandName(Constants.CN),

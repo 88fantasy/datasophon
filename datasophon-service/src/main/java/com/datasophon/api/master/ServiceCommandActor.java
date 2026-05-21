@@ -17,7 +17,7 @@
 
 package com.datasophon.api.master;
 
-import akka.actor.ActorRef;
+import org.apache.pekko.actor.ActorRef;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.ClusterAlertQuotaService;
