@@ -1,0 +1,30 @@
+# ============================================================
+# Spring Boot 集成测试配置（通过 @ActiveProfiles("integration") 激活）
+#
+# 覆盖策略：
+#   1. DataSource → 真实 MySQL（127.0.0.1:3306/datasophon），使用 Druid 连接池
+#   2. datasophon.migration.enable=true → 执行 Flyway 数据库迁移
+#   3. 保留 Druid type 与生产环境一致，验证连接池配置正确性
+# ============================================================
+spring:
+  main:
+    # 测试上下文不经过 DataSophonApplicationServer.main()，需显式声明
+    allow-circular-references: true
+    allow-bean-definition-overriding: true
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mysql://127.0.0.1:3306/datasophon?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: localmysql
+
+datasophon:
+  migration:
+    enable: true
+
+logging:
+  level:
+    com.datasophon: INFO
+    org.springframework: WARN
+    org.apache.pekko: WARN
+    com.alibaba.druid: WARN

@@ -57,3 +57,5 @@ openspec
 /worktrees
 /.worktrees
 CLAUDE.local.md
+conf/common.local.properties
+datasophon-api/src/main/resources/application-local.yml
