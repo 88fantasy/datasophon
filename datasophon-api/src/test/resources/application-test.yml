@@ -1,0 +1,33 @@
+# ============================================================
+# Spring Boot 测试专用配置（通过 @ActiveProfiles("test") 激活）
+#
+# 覆盖策略：
+#   1. DataSource → H2 内存库（MySQL 兼容模式），替代 MySQL + Druid
+#   2. datasophon.migration.enable=false → 跳过 DatabaseMigrationAware 的 DB 迁移
+#   3. 降低日志级别，保持测试输出整洁
+# ============================================================
+spring:
+  main:
+    # 生产环境在 DataSophonApplicationServer.main() 中调用了 setAllowCircularReferences(true)
+    # 测试上下文走 SpringBootContextLoader，不经过 main()，需在此处显式声明
+    allow-circular-references: true
+    allow-bean-definition-overriding: true
+  datasource:
+    driver-class-name: org.h2.Driver
+    # MODE=MySQL：支持反引号、AUTO_INCREMENT 等 MySQL 方言
+    # NON_KEYWORDS=USER：防止 H2 把 user 当保留字导致建表失败
+    # DB_CLOSE_DELAY=-1：保持内存库在 JVM 存活期间不被关闭
+    url: "jdbc:h2:mem:datasophon;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=USER,VALUE"
+    username: sa
+    password: ''
+
+datasophon:
+  migration:
+    enable: false
+
+logging:
+  level:
+    com.datasophon: WARN
+    org.springframework: WARN
+    org.apache.pekko: WARN
+    com.alibaba.druid: WARN

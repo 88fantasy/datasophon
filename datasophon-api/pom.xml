@@ -54,6 +54,19 @@
             <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
             <version>4.5.0</version>
         </dependency>
+
+        <!-- test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -67,6 +80,23 @@
             </resource>
         </resources>
         <plugins>
+            <!--
+              覆盖父 pom 的 skipTests 硬编码，改为读取 ${skipTests} 属性：
+              - 默认（不传 -DskipTests）：false → 测试执行
+              - 传 -DskipTests=true：跳过（兼容 CI 全局跳过逻辑）
+              同时排除有本机路径依赖的历史遗留测试，避免在 CI 中失败。
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skipTests>${skipTests}</skipTests>
+                    <excludes>
+                        <exclude>**/MetaUtilsTaskTest.java</exclude>
+                        <exclude>**/NexusUtilsTaskTest.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
