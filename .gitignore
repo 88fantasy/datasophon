@@ -51,7 +51,8 @@ openspec
 .opencode
 .github/skills/
 .github/prompts
-.claude
+.claude/
+.codegraph/
 
 /worktrees
 /.worktrees
