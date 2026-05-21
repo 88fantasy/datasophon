@@ -4,7 +4,7 @@ import org.apache.pekko.actor.ActorSelection;
 import org.apache.pekko.pattern.Patterns;
 import org.apache.pekko.util.Timeout;
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.api.dto.log.ServiceRoleLogQueryDTO;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.GlobalVariables;

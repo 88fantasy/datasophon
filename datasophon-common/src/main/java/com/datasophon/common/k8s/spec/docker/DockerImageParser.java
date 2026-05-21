@@ -3,7 +3,8 @@ package com.datasophon.common.k8s.spec.docker;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.common.k8s.exception.UnsupportedFormatException;
 import com.datasophon.common.k8s.vo.docker.ImageManifest;
 import com.datasophon.common.utils.TarUtils;
@@ -94,7 +95,7 @@ public class DockerImageParser {
         String content = FileUtil.readString(oldFormat, StandardCharsets.UTF_8);
 
         // 解析为 DockerManifestEntry 列表
-        List<DockerManifestEntry> entries = JSONObject.parseArray(content, DockerManifestEntry.class);
+        List<DockerManifestEntry> entries = JSON.parseArray(content, DockerManifestEntry.class);
 
         for (DockerManifestEntry entry : entries) {
             // 读取配置文件（包含 OS 和架构信息）

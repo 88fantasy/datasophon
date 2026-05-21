@@ -33,7 +33,8 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
@@ -54,7 +55,7 @@ public class ClusterServiceInstanceConfigServiceImpl
                 roleGroupConfigService.getConfigByRoleGroupIdAndVersion(roleGroupId, version);
         if (Objects.nonNull(roleGroupConfig)) {
             String configJson = roleGroupConfig.getConfigJson();
-            List<ServiceConfig> serviceConfigs = JSONObject.parseArray(configJson, ServiceConfig.class);
+            List<ServiceConfig> serviceConfigs = JSON.parseArray(configJson, ServiceConfig.class);
             return Result.success(serviceConfigs);
         }
         return Result.success();

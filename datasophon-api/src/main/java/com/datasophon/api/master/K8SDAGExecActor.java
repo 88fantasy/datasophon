@@ -1,7 +1,7 @@
 package com.datasophon.api.master;
 
 import cn.hutool.extra.spring.SpringUtil;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.api.dag.DAGListener;
 import com.datasophon.api.dag.NodeTask;
 import com.datasophon.api.dag.RepoDAG;

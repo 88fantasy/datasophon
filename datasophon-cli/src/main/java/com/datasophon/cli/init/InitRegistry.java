@@ -2,7 +2,7 @@ package com.datasophon.cli.init;
 
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.cli.base.Executor;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.RepositoriesType;

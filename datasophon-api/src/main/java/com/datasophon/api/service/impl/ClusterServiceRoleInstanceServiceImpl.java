@@ -21,7 +21,7 @@ import org.apache.pekko.actor.ActorSelection;
 import org.apache.pekko.pattern.Patterns;
 import org.apache.pekko.util.Timeout;
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;

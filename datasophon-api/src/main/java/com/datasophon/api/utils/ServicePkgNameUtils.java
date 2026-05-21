@@ -1,7 +1,7 @@
 package com.datasophon.api.utils;
 
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.TypeReference;
+import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.TypeReference;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.model.ArchInfo;
 import com.datasophon.common.model.ServiceRoleInfo;

@@ -5,8 +5,10 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SmUtil;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.TypeReference;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONWriter;
+import com.alibaba.fastjson2.TypeReference;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.service.extrepo.ctx.MetaParseOption;
 import com.datasophon.api.service.extrepo.ctx.SrvParseCtx;
@@ -181,7 +183,7 @@ public class MetaUtils {
             throw new BusinessException(StringUtils.joinWith(";", errors));
         }
 
-        log.debug("解析到meta文件信息：{}", JSONObject.toJSONString(vo, true));
+        log.debug("解析到meta文件信息：{}", JSON.toJSONString(vo, JSONWriter.Feature.PrettyFormat));
         return vo;
     }
 

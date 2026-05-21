@@ -6,7 +6,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.api.dto.instance.K8sNamespaceIdentityDTO;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.frame.FrameK8sServiceService;

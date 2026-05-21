@@ -6,7 +6,9 @@ import cn.hutool.core.date.DatePattern;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONWriter;
 import com.datasophon.api.dag.model.DagDefinition;
 import com.datasophon.api.dag.model.NodeDefinition;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
@@ -138,7 +140,7 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
     @Override
     public InstallResult deploy(DeploymentDTO dto) {
         DeploymentModel model = doParseDeploymentFile(dto);
-        log.debug("解析到配置\n：{}", JSONObject.toJSONString(model, true));
+        log.debug("解析到配置\n：{}", JSON.toJSONString(model, JSONWriter.Feature.PrettyFormat));
         List<DeploySrvModel> apps = getTargetApps(model);
         log.info("完成解析部署文件，总共需要部署{}个应用", apps.size());
 

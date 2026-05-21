@@ -17,7 +17,7 @@
 
 package com.datasophon.api.enums;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 
 /**
  * status enum

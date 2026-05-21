@@ -1,6 +1,6 @@
 package com.datasophon.worker.test;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.worker.utils.FreemakerUtils;

@@ -1,7 +1,7 @@
 package com.datasophon.api.master;
 
 import cn.hutool.core.date.DateUtil;
-import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson2.JSONArray;
 import com.datasophon.api.master.handler.k8s.K8sAgentUninstallHandler;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceInstanceService;

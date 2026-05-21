@@ -20,9 +20,9 @@
 package com.datasophon.api.service.impl;
 
 import cn.hutool.crypto.SecureUtil;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.ServiceException;
@@ -536,7 +536,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             Map<Generators, List<ServiceConfig>> configFileMap,
             ClusterServiceRoleGroupConfig roleGroupConfig) {
         String configJson = JSONObject.toJSONString(list);
-        String configFileJson = JSONObject.toJSONString(configFileMap, SerializerFeature.DisableCircularReferenceDetect);
+        String configFileJson = JSON.toJSONString(configFileMap);
         roleGroupConfig.setConfigJson(configJson);
         roleGroupConfig.setConfigJsonMd5(SecureUtil.md5(configJson));
         roleGroupConfig.setConfigFileJson(configFileJson);

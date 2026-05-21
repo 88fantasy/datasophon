@@ -4,7 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.Pair;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.api.dag.model.EdgeDefinition;
 import com.datasophon.api.dag.model.NodeDefinition;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;

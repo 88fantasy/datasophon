@@ -42,7 +42,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 
 public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implements ServiceRoleStrategy {
     
@@ -125,7 +126,7 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
             Integer roleGroupId = roleList.get(0).getRoleGroupId();
             
             ClusterServiceRoleGroupConfig config = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
-            List<ServiceConfig> serviceConfigs = JSONObject.parseArray(config.getConfigJson(), ServiceConfig.class);
+            List<ServiceConfig> serviceConfigs = JSON.parseArray(config.getConfigJson(), ServiceConfig.class);
             Map<String, ServiceConfig> map = serviceConfigs.stream()
                     .collect(Collectors.toMap(ServiceConfig::getName, serviceConfig -> serviceConfig, (v1, v2) -> v1));
             

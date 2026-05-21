@@ -19,7 +19,7 @@ package com.datasophon.api.service.host.impl;
 
 import org.apache.pekko.actor.ActorRef;
 import cn.hutool.crypto.SecureUtil;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.enums.Status;

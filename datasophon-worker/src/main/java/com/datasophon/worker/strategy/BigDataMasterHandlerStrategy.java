@@ -31,7 +31,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 
 import cn.hutool.db.DbUtil;
 import cn.hutool.db.ds.simple.SimpleDataSource;

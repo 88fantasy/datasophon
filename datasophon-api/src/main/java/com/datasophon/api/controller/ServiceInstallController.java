@@ -17,7 +17,7 @@
 
 package com.datasophon.api.controller;
 
-import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson2.JSONArray;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.common.model.ServiceConfig;

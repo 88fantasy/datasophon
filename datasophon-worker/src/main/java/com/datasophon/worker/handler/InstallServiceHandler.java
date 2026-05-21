@@ -25,7 +25,7 @@ import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.ServiceLoaderUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.storage.StorageUtils;

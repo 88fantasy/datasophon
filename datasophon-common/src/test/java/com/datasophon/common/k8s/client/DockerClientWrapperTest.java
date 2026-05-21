@@ -1,6 +1,6 @@
 package com.datasophon.common.k8s.client;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.common.Constants;
 import com.datasophon.common.k8s.config.DockerRegistryOptions;
 import com.datasophon.common.k8s.spec.docker.DockerImageParser;

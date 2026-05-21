@@ -1,6 +1,6 @@
 package com.datasophon.common.model.uni;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
 import lombok.Data;
 
 import java.io.Serializable;
