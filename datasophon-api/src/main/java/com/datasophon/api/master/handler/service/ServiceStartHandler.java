@@ -18,7 +18,8 @@
 package com.datasophon.api.master.handler.service;
 
 import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.master.ActorUtils;
+import com.datasophon.api.master.transport.WorkerCallAdapter;
+import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
@@ -28,20 +29,12 @@ import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
 
 import lombok.Data;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 
 @Data
 public class ServiceStartHandler extends ServiceHandler {
@@ -86,21 +79,14 @@ public class ServiceStartHandler extends ServiceHandler {
             }
             return execResult;
         }
-        ActorSelection startActor = ActorUtils.actorSystem.actorSelection(
-                "pekko://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/startServiceActor");
-        Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-        Future<Object> startFuture = Patterns.ask(startActor, cmd, timeout);
-        try {
-            ExecResult startResult = (ExecResult) Await.result(startFuture, timeout.duration());
-            if (Objects.nonNull(startResult) && startResult.getExecResult()) {
-                // 角色启动成功
-                if (Objects.nonNull(getNext())) {
-                    return getNext().handlerRequest(serviceRoleInfo);
-                }
+        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        ExecResult startResult = adapter.startServiceRole(serviceRoleInfo.getHostname(), cmd);
+        if (Objects.nonNull(startResult) && startResult.getExecResult()) {
+            // 角色启动成功
+            if (Objects.nonNull(getNext())) {
+                return getNext().handlerRequest(serviceRoleInfo);
             }
-            return startResult;
-        } catch (Exception e) {
-            return new ExecResult();
         }
+        return startResult;
     }
 }

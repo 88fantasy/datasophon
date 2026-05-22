@@ -17,6 +17,7 @@
 
 package com.datasophon.common.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum ServiceRoleType {
@@ -49,5 +50,18 @@ public enum ServiceRoleType {
     
     public void setName(String name) {
         this.name = name;
+    }
+
+    @JsonCreator
+    public static ServiceRoleType fromName(String name) {
+        if (name == null) {
+            return null;
+        }
+        for (ServiceRoleType type : values()) {
+            if (type.name.equalsIgnoreCase(name)) {
+                return type;
+            }
+        }
+        return null;
     }
 }

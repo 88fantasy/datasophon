@@ -17,21 +17,15 @@
 
 package com.datasophon.api.master.handler.service;
 
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
-import com.datasophon.api.master.ActorUtils;
+import com.datasophon.api.master.transport.WorkerCallAdapter;
+import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.enums.HookType;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 public class ServiceConfigureHandler extends ServiceHandler {
     
@@ -51,21 +45,13 @@ public class ServiceConfigureHandler extends ServiceHandler {
             cmd.setMyid((Integer) CacheUtils.get("zkserver_" + serviceRoleInfo.getHostname()));
         }
         cmd.setServiceRoleName(serviceRoleInfo.getName());
-        ActorSelection configActor = ActorUtils.actorSystem.actorSelection(
-                "pekko://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/configureServiceActor");
-        
-        Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-        Future<Object> configureFuture = Patterns.ask(configActor, cmd, timeout);
-        try {
-            ExecResult configResult = (ExecResult) Await.result(configureFuture, timeout.duration());
-            if (Objects.nonNull(configResult) && configResult.getExecResult()) {
-                if (Objects.nonNull(getNext())) {
-                    return getNext().handlerRequest(serviceRoleInfo);
-                }
+        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        ExecResult configResult = adapter.configureServiceRole(serviceRoleInfo.getHostname(), cmd);
+        if (Objects.nonNull(configResult) && configResult.getExecResult()) {
+            if (Objects.nonNull(getNext())) {
+                return getNext().handlerRequest(serviceRoleInfo);
             }
-            return configResult;
-        } catch (Exception e) {
-            return new ExecResult();
         }
+        return configResult;
     }
 }

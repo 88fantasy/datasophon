@@ -1,11 +1,8 @@
 package com.datasophon.api.master.handler.service;
 
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 import cn.hutool.core.collection.CollectionUtil;
 import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.master.ActorUtils;
+import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.api.utils.SpringTool;
@@ -18,14 +15,10 @@ import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterHostDO;
 import lombok.extern.slf4j.Slf4j;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class ServiceUpgradeHandler extends ServiceHandler {
@@ -65,19 +58,11 @@ public class ServiceUpgradeHandler extends ServiceHandler {
             return execResult;
         }
 
-        ActorSelection actorSelection = ActorUtils.actorSystem.actorSelection(
-                "pekko://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/installServiceActor");
-        Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-
-        log.info("开始在主机{}执行{}{}命令", serviceRoleInfo.getHostname(), serviceRoleInfo.getCommandType().getCommandName(Constants.CN),
-                serviceRoleInfo.getName());
-        Future<Object> future = Patterns.ask(actorSelection, installServiceRoleCommand, timeout);
-        try {
-            ExecResult installResult = (ExecResult) Await.result(future, timeout.duration());
-            return this.invokeNext(serviceRoleInfo, installResult);
-        } catch (Exception e) {
-            return new ExecResult();
-        }
+        log.info("开始在主机{}执行{}{}命令", serviceRoleInfo.getHostname(),
+                serviceRoleInfo.getCommandType().getCommandName(Constants.CN), serviceRoleInfo.getName());
+        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        ExecResult installResult = adapter.installServiceRole(serviceRoleInfo.getHostname(), installServiceRoleCommand);
+        return this.invokeNext(serviceRoleInfo, installResult);
     }
 
     private Map<String, String> createVariables(ServiceRoleInfo roleInfo) {

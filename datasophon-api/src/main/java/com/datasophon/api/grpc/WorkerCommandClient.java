@@ -17,12 +17,18 @@
 
 package com.datasophon.api.grpc;
 
+import com.datasophon.common.command.GenerateServiceConfigCommand;
+import com.datasophon.common.command.InstallServiceRoleCommand;
+import com.datasophon.common.command.ServiceRoleOperateCommand;
+import com.datasophon.common.model.ConfigFileEntry;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.grpc.api.ExecResultPb;
 import com.datasophon.grpc.api.ExecuteCmdRequest;
 import com.datasophon.grpc.api.GetLogRequest;
 import com.datasophon.grpc.api.PingRequest;
+import com.datasophon.grpc.api.ServiceRoleRequest;
 import com.datasophon.grpc.api.WorkerCommandServiceGrpc;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
@@ -56,10 +62,12 @@ public class WorkerCommandClient {
     private static final Logger log = LoggerFactory.getLogger(WorkerCommandClient.class);
 
     private final WorkerRegistry workerRegistry;
+    private final ObjectMapper objectMapper;
     private final ConcurrentHashMap<String, ManagedChannel> channelCache = new ConcurrentHashMap<>();
 
-    public WorkerCommandClient(WorkerRegistry workerRegistry) {
+    public WorkerCommandClient(WorkerRegistry workerRegistry, ObjectMapper objectMapper) {
         this.workerRegistry = workerRegistry;
+        this.objectMapper = objectMapper;
     }
 
     // ─── Phase 1 API ─────────────────────────────────────────────────────────
@@ -134,6 +142,143 @@ public class WorkerCommandClient {
         }
     }
 
+    // ─── Phase 2 API ─────────────────────────────────────────────────────────
+
+    /** 安装服务角色（对应 InstallServiceActor）。 */
+    public ExecResult installServiceRole(String hostname, InstallServiceRoleCommand cmd) {
+        try {
+            String jsonPayload = objectMapper.writeValueAsString(cmd);
+            ServiceRoleRequest req = ServiceRoleRequest.newBuilder()
+                    .setServiceName(nullToEmpty(cmd.getServiceName()))
+                    .setServiceRoleName(nullToEmpty(cmd.getServiceRoleName()))
+                    .setJsonPayload(jsonPayload)
+                    .build();
+            ExecResultPb pb = getStub(hostname)
+                    .withDeadlineAfter(180, TimeUnit.SECONDS)
+                    .installServiceRole(req);
+            return toExecResult(pb);
+        } catch (StatusRuntimeException e) {
+            log.warn("gRPC installServiceRole to {} failed: {}", hostname, e.getStatus());
+            return ExecResult.error("gRPC installServiceRole failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC installServiceRole to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC installServiceRole failed: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("gRPC installServiceRole to {} serialization failed: {}", hostname, e.getMessage(), e);
+            return ExecResult.error("gRPC installServiceRole serialization failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 配置服务角色（对应 ConfigureServiceActor）。
+     *
+     * <p>由于 {@code cofigFileMap} 的 key 类型是 {@code Map<Generators, List<ServiceConfig>>}，
+     * JSON 不支持对象 key，因此单独序列化为 {@code config_map_json}（List&lt;ConfigFileEntry&gt;）。</p>
+     */
+    public ExecResult configureServiceRole(String hostname, GenerateServiceConfigCommand cmd) {
+        try {
+            String configMapJson = objectMapper.writeValueAsString(
+                    ConfigFileEntry.fromMap(cmd.getCofigFileMap()));
+            cmd.setCofigFileMap(null); // 避免 JSON 序列化 Map<Object, ...> key 问题
+            String jsonPayload = objectMapper.writeValueAsString(cmd);
+            ServiceRoleRequest req = ServiceRoleRequest.newBuilder()
+                    .setServiceName(nullToEmpty(cmd.getServiceName()))
+                    .setServiceRoleName(nullToEmpty(cmd.getServiceRoleName()))
+                    .setJsonPayload(jsonPayload)
+                    .setConfigMapJson(configMapJson)
+                    .build();
+            ExecResultPb pb = getStub(hostname)
+                    .withDeadlineAfter(180, TimeUnit.SECONDS)
+                    .configureServiceRole(req);
+            return toExecResult(pb);
+        } catch (StatusRuntimeException e) {
+            log.warn("gRPC configureServiceRole to {} failed: {}", hostname, e.getStatus());
+            return ExecResult.error("gRPC configureServiceRole failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC configureServiceRole to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC configureServiceRole failed: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("gRPC configureServiceRole to {} serialization failed: {}", hostname, e.getMessage(), e);
+            return ExecResult.error("gRPC configureServiceRole serialization failed: " + e.getMessage());
+        }
+    }
+
+    /** 启动服务角色（对应 StartServiceActor）。 */
+    public ExecResult startServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
+        try {
+            ExecResultPb pb = getStub(hostname)
+                    .withDeadlineAfter(180, TimeUnit.SECONDS)
+                    .startServiceRole(buildServiceRoleRequest(cmd));
+            return toExecResult(pb);
+        } catch (StatusRuntimeException e) {
+            log.warn("gRPC startServiceRole to {} failed: {}", hostname, e.getStatus());
+            return ExecResult.error("gRPC startServiceRole failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC startServiceRole to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC startServiceRole failed: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("gRPC startServiceRole to {} failed: {}", hostname, e.getMessage(), e);
+            return ExecResult.error("gRPC startServiceRole failed: " + e.getMessage());
+        }
+    }
+
+    /** 停止服务角色（对应 StopServiceActor）。 */
+    public ExecResult stopServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
+        try {
+            ExecResultPb pb = getStub(hostname)
+                    .withDeadlineAfter(180, TimeUnit.SECONDS)
+                    .stopServiceRole(buildServiceRoleRequest(cmd));
+            return toExecResult(pb);
+        } catch (StatusRuntimeException e) {
+            log.warn("gRPC stopServiceRole to {} failed: {}", hostname, e.getStatus());
+            return ExecResult.error("gRPC stopServiceRole failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC stopServiceRole to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC stopServiceRole failed: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("gRPC stopServiceRole to {} failed: {}", hostname, e.getMessage(), e);
+            return ExecResult.error("gRPC stopServiceRole failed: " + e.getMessage());
+        }
+    }
+
+    /** 重启服务角色（对应 RestartServiceActor）。 */
+    public ExecResult restartServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
+        try {
+            ExecResultPb pb = getStub(hostname)
+                    .withDeadlineAfter(180, TimeUnit.SECONDS)
+                    .restartServiceRole(buildServiceRoleRequest(cmd));
+            return toExecResult(pb);
+        } catch (StatusRuntimeException e) {
+            log.warn("gRPC restartServiceRole to {} failed: {}", hostname, e.getStatus());
+            return ExecResult.error("gRPC restartServiceRole failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC restartServiceRole to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC restartServiceRole failed: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("gRPC restartServiceRole to {} failed: {}", hostname, e.getMessage(), e);
+            return ExecResult.error("gRPC restartServiceRole failed: " + e.getMessage());
+        }
+    }
+
+    /** 检查服务角色状态（对应 ServiceStatusActor）。 */
+    public ExecResult serviceRoleStatus(String hostname, ServiceRoleOperateCommand cmd) {
+        try {
+            ExecResultPb pb = getStub(hostname)
+                    .withDeadlineAfter(180, TimeUnit.SECONDS)
+                    .serviceRoleStatus(buildServiceRoleRequest(cmd));
+            return toExecResult(pb);
+        } catch (StatusRuntimeException e) {
+            log.warn("gRPC serviceRoleStatus to {} failed: {}", hostname, e.getStatus());
+            return ExecResult.error("gRPC serviceRoleStatus failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC serviceRoleStatus to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC serviceRoleStatus failed: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("gRPC serviceRoleStatus to {} failed: {}", hostname, e.getMessage(), e);
+            return ExecResult.error("gRPC serviceRoleStatus failed: " + e.getMessage());
+        }
+    }
+
     // ─── lifecycle ────────────────────────────────────────────────────────────
 
     @PreDestroy
@@ -154,6 +299,24 @@ public class WorkerCommandClient {
     }
 
     // ─── private helpers ─────────────────────────────────────────────────────
+
+    /** 将 ServiceRoleOperateCommand 序列化为 ServiceRoleRequest proto。 */
+    private ServiceRoleRequest buildServiceRoleRequest(ServiceRoleOperateCommand cmd) {
+        try {
+            String jsonPayload = objectMapper.writeValueAsString(cmd);
+            return ServiceRoleRequest.newBuilder()
+                    .setServiceName(nullToEmpty(cmd.getServiceName()))
+                    .setServiceRoleName(nullToEmpty(cmd.getServiceRoleName()))
+                    .setJsonPayload(jsonPayload)
+                    .build();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize ServiceRoleOperateCommand", e);
+        }
+    }
+
+    private static String nullToEmpty(String s) {
+        return s != null ? s : "";
+    }
 
     /**
      * 构建到指定 Worker 的 gRPC Channel。

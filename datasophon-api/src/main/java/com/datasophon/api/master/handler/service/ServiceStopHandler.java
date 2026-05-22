@@ -17,21 +17,15 @@
 
 package com.datasophon.api.master.handler.service;
 
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
-import com.datasophon.api.master.ActorUtils;
+import com.datasophon.api.master.transport.WorkerCallAdapter;
+import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.HookType;
 import com.datasophon.common.enums.ServiceRoleType;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 public class ServiceStopHandler extends ServiceHandler {
     
@@ -56,21 +50,13 @@ public class ServiceStopHandler extends ServiceHandler {
             }
             return execResult;
         }
-        ActorSelection stopActor = ActorUtils.actorSystem.actorSelection(
-                "pekko://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/stopServiceActor");
-        Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-        Future<Object> startFuture = Patterns.ask(stopActor, cmd, timeout);
-        try {
-            ExecResult execResult = (ExecResult) Await.result(startFuture, timeout.duration());
-            if (Objects.nonNull(execResult) && execResult.getExecResult()) {
-                // 角色安装成功
-                if (Objects.nonNull(getNext())) {
-                    return getNext().handlerRequest(serviceRoleInfo);
-                }
+        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        ExecResult execResult = adapter.stopServiceRole(serviceRoleInfo.getHostname(), cmd);
+        if (Objects.nonNull(execResult) && execResult.getExecResult()) {
+            if (Objects.nonNull(getNext())) {
+                return getNext().handlerRequest(serviceRoleInfo);
             }
-            return execResult;
-        } catch (Exception e) {
-            return new ExecResult();
         }
+        return execResult;
     }
 }

@@ -17,11 +17,9 @@
 
 package com.datasophon.api.master.handler.service;
 
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.master.ActorUtils;
+import com.datasophon.api.master.transport.WorkerCallAdapter;
+import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
@@ -33,12 +31,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -80,18 +74,9 @@ public class ServiceStatusHandler extends ServiceHandler {
         if (serviceRoleInfo.getRoleType() == ServiceRoleType.CLIENT) {
             return invokeNext(serviceRoleInfo, ExecResult.success());
         } else {
-            ActorSelection startActor = ActorUtils.actorSystem.actorSelection(
-                    "pekko://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/serviceStatusActor");
-            Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-            Future<Object> startFuture = Patterns.ask(startActor, cmd, timeout);
-            try {
-                ExecResult statusResult = (ExecResult) Await.result(startFuture, timeout.duration());
-                statusResult = invokeNext(serviceRoleInfo, statusResult);
-                return statusResult;
-            } catch (Exception e) {
-                logger.error(e.getMessage(), e);
-                return ExecResult.error(e.getMessage());
-            }
+            WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+            ExecResult statusResult = adapter.serviceRoleStatus(serviceRoleInfo.getHostname(), cmd);
+            return invokeNext(serviceRoleInfo, statusResult);
         }
     }
 }

@@ -17,12 +17,19 @@
 
 package com.datasophon.api.grpc;
 
+import com.datasophon.common.command.GenerateServiceConfigCommand;
+import com.datasophon.common.command.InstallServiceRoleCommand;
+import com.datasophon.common.command.ServiceRoleOperateCommand;
+import com.datasophon.common.model.ConfigFileEntry;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.grpc.api.ExecResultPb;
 import com.datasophon.grpc.api.ExecuteCmdRequest;
 import com.datasophon.grpc.api.GetLogRequest;
 import com.datasophon.grpc.api.PingRequest;
+import com.datasophon.grpc.api.ServiceRoleRequest;
 import com.datasophon.grpc.api.WorkerCommandServiceGrpc;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
@@ -43,7 +50,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * WorkerCommandClient 单元测试。
+ * WorkerCommandClient 单元测试（Phase 1 + Phase 2）。
  *
  * <p>通过 {@code grpc-inprocess} 启动一个假 Worker gRPC 服务端，
  * 用 {@link TestableWorkerCommandClient} 覆盖 {@code buildChannel()} 注入
@@ -54,12 +61,15 @@ import static org.mockito.Mockito.when;
  *   <li>proto 请求字段是否按预期填充（commands vs commandLine 区分）</li>
  *   <li>响应正确映射为 {@link ExecResult}</li>
  *   <li>Worker 未注册时 client 返回 error 而非抛出异常</li>
+ *   <li>Phase 2: cofigFileMap 序列化/反序列化正确性</li>
  * </ul>
  */
 class WorkerCommandClientTest {
 
     private static final String SERVER_NAME = "test-worker-client";
     private static final String HOSTNAME = "worker-host";
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private FakeWorkerCommandService fakeService;
     private Server inProcessServer;
@@ -83,7 +93,7 @@ class WorkerCommandClientTest {
         WorkerEndpoint endpoint = new WorkerEndpoint(HOSTNAME, 18082, "x86_64", 1);
         when(registry.getEndpoint(HOSTNAME)).thenReturn(Optional.of(endpoint));
 
-        client = new TestableWorkerCommandClient(registry, inProcessChannel);
+        client = new TestableWorkerCommandClient(registry, MAPPER, inProcessChannel);
     }
 
     @AfterEach
@@ -93,7 +103,7 @@ class WorkerCommandClientTest {
         inProcessServer.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
     }
 
-    // ─── ping ─────────────────────────────────────────────────────────────────
+    // ─── Phase 1: ping ────────────────────────────────────────────────────────
 
     @Test
     @DisplayName("ping: 成功响应映射为 ExecResult{true, 'pong'}")
@@ -118,11 +128,13 @@ class WorkerCommandClientTest {
         assertThat(result.getExecOut()).contains("not registered");
     }
 
-    // ─── executeCmd ──────────────────────────────────────────────────────────
+    // ─── Phase 1: executeCmd ─────────────────────────────────────────────────
 
     @Test
     @DisplayName("executeCmd: 命令列表模式 → proto.commands 填充，commandLine 为空")
     void executeCmd_sendsCommandsListAndMapsResponse() {
+        fakeService.serviceRoleResponse = ExecResultPb.newBuilder()
+                .setExecResult(true).setExecOut("done").build();
         fakeService.executeCmdResponse = ExecResultPb.newBuilder()
                 .setExecResult(true).setExecOut("done").build();
 
@@ -152,7 +164,7 @@ class WorkerCommandClientTest {
         assertThat(fakeService.lastExecuteCmdRequest.getCommandsList()).isEmpty();
     }
 
-    // ─── getLog ──────────────────────────────────────────────────────────────
+    // ─── Phase 1: getLog ─────────────────────────────────────────────────────
 
     @Test
     @DisplayName("getLog: 正确填充 logFile + baseDir，返回日志内容")
@@ -171,6 +183,118 @@ class WorkerCommandClientTest {
                 .isEqualTo("/opt/datasophon/worker");
     }
 
+    // ─── Phase 2: installServiceRole ─────────────────────────────────────────
+
+    @Test
+    @DisplayName("installServiceRole: JSON payload 包含服务名称，成功映射响应")
+    void installServiceRole_serializedAndMapsResponse() throws Exception {
+        fakeService.serviceRoleResponse = ExecResultPb.newBuilder()
+                .setExecResult(true).setExecOut("installed").build();
+
+        InstallServiceRoleCommand cmd = new InstallServiceRoleCommand();
+        cmd.setServiceName("ZOOKEEPER");
+        cmd.setServiceRoleName("zkserver");
+
+        ExecResult result = client.installServiceRole(HOSTNAME, cmd);
+
+        assertThat(result.getExecResult()).isTrue();
+        assertThat(result.getExecOut()).isEqualTo("installed");
+        assertThat(fakeService.lastServiceRoleRequest.getServiceName()).isEqualTo("ZOOKEEPER");
+        assertThat(fakeService.lastServiceRoleRequest.getServiceRoleName()).isEqualTo("zkserver");
+        // JSON payload 应包含服务名
+        assertThat(fakeService.lastServiceRoleRequest.getJsonPayload()).contains("ZOOKEEPER");
+        // configMapJson 为空（InstallServiceRoleCommand 无 cofigFileMap）
+        assertThat(fakeService.lastServiceRoleRequest.getConfigMapJson()).isEmpty();
+    }
+
+    // ─── Phase 2: configureServiceRole ───────────────────────────────────────
+
+    @Test
+    @DisplayName("configureServiceRole: cofigFileMap 序列化为 config_map_json，json_payload 中 map 为 null")
+    void configureServiceRole_cofigFileMapSerializedSeparately() throws Exception {
+        fakeService.serviceRoleResponse = ExecResultPb.newBuilder()
+                .setExecResult(true).setExecOut("configured").build();
+
+        GenerateServiceConfigCommand cmd = new GenerateServiceConfigCommand();
+        cmd.setServiceName("HDFS");
+        cmd.setServiceRoleName("NameNode");
+        // cofigFileMap 为 null（无配置文件映射的简单情况）
+        cmd.setCofigFileMap(null);
+
+        ExecResult result = client.configureServiceRole(HOSTNAME, cmd);
+
+        assertThat(result.getExecResult()).isTrue();
+        assertThat(result.getExecOut()).isEqualTo("configured");
+
+        ServiceRoleRequest req = fakeService.lastServiceRoleRequest;
+        assertThat(req.getServiceName()).isEqualTo("HDFS");
+        assertThat(req.getServiceRoleName()).isEqualTo("NameNode");
+
+        // json_payload 应包含 serviceName
+        assertThat(req.getJsonPayload()).contains("HDFS");
+        // cofigFileMap=null → config_map_json 应为 "null" 或空数组，反序列化后为 null/empty
+        List<ConfigFileEntry> entries = MAPPER.readValue(req.getConfigMapJson(),
+                new TypeReference<List<ConfigFileEntry>>() {});
+        assertThat(entries).isNullOrEmpty();
+    }
+
+    // ─── Phase 2: startServiceRole ───────────────────────────────────────────
+
+    @Test
+    @DisplayName("startServiceRole: 请求字段正确填充，响应正确映射")
+    void startServiceRole_sendsRequestAndMapsResponse() {
+        fakeService.serviceRoleResponse = ExecResultPb.newBuilder()
+                .setExecResult(true).setExecOut("started").build();
+
+        ServiceRoleOperateCommand cmd = new ServiceRoleOperateCommand();
+        cmd.setServiceName("YARN");
+        cmd.setServiceRoleName("ResourceManager");
+
+        ExecResult result = client.startServiceRole(HOSTNAME, cmd);
+
+        assertThat(result.getExecResult()).isTrue();
+        assertThat(result.getExecOut()).isEqualTo("started");
+        assertThat(fakeService.lastServiceRoleRequest.getServiceName()).isEqualTo("YARN");
+        assertThat(fakeService.lastServiceRoleRequest.getServiceRoleName()).isEqualTo("ResourceManager");
+    }
+
+    // ─── Phase 2: stopServiceRole ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("stopServiceRole: 请求字段正确填充，响应正确映射")
+    void stopServiceRole_sendsRequestAndMapsResponse() {
+        fakeService.serviceRoleResponse = ExecResultPb.newBuilder()
+                .setExecResult(true).setExecOut("stopped").build();
+
+        ServiceRoleOperateCommand cmd = new ServiceRoleOperateCommand();
+        cmd.setServiceName("KAFKA");
+        cmd.setServiceRoleName("KafkaBroker");
+
+        ExecResult result = client.stopServiceRole(HOSTNAME, cmd);
+
+        assertThat(result.getExecResult()).isTrue();
+        assertThat(result.getExecOut()).isEqualTo("stopped");
+        assertThat(fakeService.lastServiceRoleRequest.getServiceName()).isEqualTo("KAFKA");
+    }
+
+    // ─── Phase 2: serviceRoleStatus ──────────────────────────────────────────
+
+    @Test
+    @DisplayName("serviceRoleStatus: 返回 false 时映射为 ExecResult{false}")
+    void serviceRoleStatus_failureResponse_mapsCorrectly() {
+        fakeService.serviceRoleResponse = ExecResultPb.newBuilder()
+                .setExecResult(false).setExecOut("not running").build();
+
+        ServiceRoleOperateCommand cmd = new ServiceRoleOperateCommand();
+        cmd.setServiceName("HDFS");
+        cmd.setServiceRoleName("DataNode");
+
+        ExecResult result = client.serviceRoleStatus(HOSTNAME, cmd);
+
+        assertThat(result.getExecResult()).isFalse();
+        assertThat(result.getExecOut()).isEqualTo("not running");
+    }
+
     // ─── helpers ─────────────────────────────────────────────────────────────
 
     /**
@@ -180,8 +304,9 @@ class WorkerCommandClientTest {
     static class TestableWorkerCommandClient extends WorkerCommandClient {
         private final ManagedChannel testChannel;
 
-        TestableWorkerCommandClient(WorkerRegistry registry, ManagedChannel testChannel) {
-            super(registry);
+        TestableWorkerCommandClient(WorkerRegistry registry, ObjectMapper objectMapper,
+                ManagedChannel testChannel) {
+            super(registry, objectMapper);
             this.testChannel = testChannel;
         }
 
@@ -192,7 +317,7 @@ class WorkerCommandClientTest {
     }
 
     /**
-     * 可配置响应的假 Worker gRPC 服务端。
+     * 可配置响应的假 Worker gRPC 服务端（Phase 1 + Phase 2）。
      * 记录最后一次收到的请求，供测试断言验证字段填充是否正确。
      */
     static class FakeWorkerCommandService
@@ -201,8 +326,11 @@ class WorkerCommandClientTest {
         ExecResultPb pingResponse;
         ExecResultPb executeCmdResponse;
         ExecResultPb getLogResponse;
+        ExecResultPb serviceRoleResponse;
+
         ExecuteCmdRequest lastExecuteCmdRequest;
         GetLogRequest lastGetLogRequest;
+        ServiceRoleRequest lastServiceRoleRequest;
 
         @Override
         public void ping(PingRequest request, StreamObserver<ExecResultPb> obs) {
@@ -221,6 +349,48 @@ class WorkerCommandClientTest {
         public void getLog(GetLogRequest request, StreamObserver<ExecResultPb> obs) {
             lastGetLogRequest = request;
             obs.onNext(getLogResponse != null ? getLogResponse : ExecResultPb.getDefaultInstance());
+            obs.onCompleted();
+        }
+
+        @Override
+        public void installServiceRole(ServiceRoleRequest request, StreamObserver<ExecResultPb> obs) {
+            lastServiceRoleRequest = request;
+            obs.onNext(serviceRoleResponse != null ? serviceRoleResponse : ExecResultPb.getDefaultInstance());
+            obs.onCompleted();
+        }
+
+        @Override
+        public void configureServiceRole(ServiceRoleRequest request, StreamObserver<ExecResultPb> obs) {
+            lastServiceRoleRequest = request;
+            obs.onNext(serviceRoleResponse != null ? serviceRoleResponse : ExecResultPb.getDefaultInstance());
+            obs.onCompleted();
+        }
+
+        @Override
+        public void startServiceRole(ServiceRoleRequest request, StreamObserver<ExecResultPb> obs) {
+            lastServiceRoleRequest = request;
+            obs.onNext(serviceRoleResponse != null ? serviceRoleResponse : ExecResultPb.getDefaultInstance());
+            obs.onCompleted();
+        }
+
+        @Override
+        public void stopServiceRole(ServiceRoleRequest request, StreamObserver<ExecResultPb> obs) {
+            lastServiceRoleRequest = request;
+            obs.onNext(serviceRoleResponse != null ? serviceRoleResponse : ExecResultPb.getDefaultInstance());
+            obs.onCompleted();
+        }
+
+        @Override
+        public void restartServiceRole(ServiceRoleRequest request, StreamObserver<ExecResultPb> obs) {
+            lastServiceRoleRequest = request;
+            obs.onNext(serviceRoleResponse != null ? serviceRoleResponse : ExecResultPb.getDefaultInstance());
+            obs.onCompleted();
+        }
+
+        @Override
+        public void serviceRoleStatus(ServiceRoleRequest request, StreamObserver<ExecResultPb> obs) {
+            lastServiceRoleRequest = request;
+            obs.onNext(serviceRoleResponse != null ? serviceRoleResponse : ExecResultPb.getDefaultInstance());
             obs.onCompleted();
         }
     }

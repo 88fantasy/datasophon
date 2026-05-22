@@ -30,6 +30,11 @@ public final class WorkerProto {
   static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_com_datasophon_grpc_GetLogRequest_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_com_datasophon_grpc_ServiceRoleRequest_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_com_datasophon_grpc_ServiceRoleRequest_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -44,15 +49,32 @@ public final class WorkerProto {
       "\t\";\n\021ExecuteCmdRequest\022\020\n\010commands\030\001 \003(\t" +
       "\022\024\n\014command_line\030\002 \001(\t\"H\n\rGetLogRequest\022" +
       "\020\n\010log_file\030\001 \001(\t\022\020\n\010base_dir\030\002 \001(\t\022\023\n\013r" +
-      "un_as_user\030\003 \001(\t2\215\002\n\024WorkerCommandServic" +
-      "e\022K\n\004Ping\022 .com.datasophon.grpc.PingRequ" +
-      "est\032!.com.datasophon.grpc.ExecResultPb\022W" +
-      "\n\nExecuteCmd\022&.com.datasophon.grpc.Execu" +
-      "teCmdRequest\032!.com.datasophon.grpc.ExecR" +
-      "esultPb\022O\n\006GetLog\022\".com.datasophon.grpc." +
-      "GetLogRequest\032!.com.datasophon.grpc.Exec" +
-      "ResultPbB(\n\027com.datasophon.grpc.apiB\013Wor" +
-      "kerProtoP\001b\006proto3"
+      "un_as_user\030\003 \001(\t\"t\n\022ServiceRoleRequest\022\024" +
+      "\n\014service_name\030\001 \001(\t\022\031\n\021service_role_nam" +
+      "e\030\002 \001(\t\022\024\n\014json_payload\030\003 \001(\t\022\027\n\017config_" +
+      "map_json\030\004 \001(\t2\325\006\n\024WorkerCommandService\022" +
+      "K\n\004Ping\022 .com.datasophon.grpc.PingReques" +
+      "t\032!.com.datasophon.grpc.ExecResultPb\022W\n\n" +
+      "ExecuteCmd\022&.com.datasophon.grpc.Execute" +
+      "CmdRequest\032!.com.datasophon.grpc.ExecRes" +
+      "ultPb\022O\n\006GetLog\022\".com.datasophon.grpc.Ge" +
+      "tLogRequest\032!.com.datasophon.grpc.ExecRe" +
+      "sultPb\022`\n\022InstallServiceRole\022\'.com.datas" +
+      "ophon.grpc.ServiceRoleRequest\032!.com.data" +
+      "sophon.grpc.ExecResultPb\022b\n\024ConfigureSer" +
+      "viceRole\022\'.com.datasophon.grpc.ServiceRo" +
+      "leRequest\032!.com.datasophon.grpc.ExecResu" +
+      "ltPb\022^\n\020StartServiceRole\022\'.com.datasopho" +
+      "n.grpc.ServiceRoleRequest\032!.com.datasoph" +
+      "on.grpc.ExecResultPb\022]\n\017StopServiceRole\022" +
+      "\'.com.datasophon.grpc.ServiceRoleRequest" +
+      "\032!.com.datasophon.grpc.ExecResultPb\022`\n\022R" +
+      "estartServiceRole\022\'.com.datasophon.grpc." +
+      "ServiceRoleRequest\032!.com.datasophon.grpc" +
+      ".ExecResultPb\022_\n\021ServiceRoleStatus\022\'.com" +
+      ".datasophon.grpc.ServiceRoleRequest\032!.co" +
+      "m.datasophon.grpc.ExecResultPbB(\n\027com.da" +
+      "tasophon.grpc.apiB\013WorkerProtoP\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -77,6 +99,12 @@ public final class WorkerProto {
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_datasophon_grpc_GetLogRequest_descriptor,
         new java.lang.String[] { "LogFile", "BaseDir", "RunAsUser", });
+    internal_static_com_datasophon_grpc_ServiceRoleRequest_descriptor =
+      getDescriptor().getMessageTypes().get(3);
+    internal_static_com_datasophon_grpc_ServiceRoleRequest_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_com_datasophon_grpc_ServiceRoleRequest_descriptor,
+        new java.lang.String[] { "ServiceName", "ServiceRoleName", "JsonPayload", "ConfigMapJson", });
     com.datasophon.grpc.api.CommonProto.getDescriptor();
   }
 

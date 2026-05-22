@@ -19,6 +19,7 @@ package com.datasophon.common.enums;
 
 import com.datasophon.common.Constants;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum CommandType {
@@ -88,9 +89,22 @@ public enum CommandType {
         return null;
     }
     
+    @JsonCreator
+    public static CommandType fromDesc(String desc) {
+        if (desc == null) {
+            return null;
+        }
+        for (CommandType ct : values()) {
+            if (ct.desc.equals(desc)) {
+                return ct;
+            }
+        }
+        return null;
+    }
+
     @Override
     public String toString() {
         return this.desc;
     }
-    
+
 }

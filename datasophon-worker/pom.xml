@@ -93,6 +93,13 @@
             <version>2.17.102</version>
         </dependency>
 
+        <!-- ─── JSON 序列化（Phase 2）───────────────────────────────────────── -->
+        <!-- Worker gRPC service 用 Jackson 反序列化 ServiceRoleRequest.json_payload -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
         <!-- ─── gRPC（Phase 0）──────────────────────────────────────────────── -->
         <!--
           worker 是普通 Java 进程（无 Spring 容器），不能用 grpc-spring-boot-starter。

@@ -25,15 +25,23 @@ option java_outer_classname = "WorkerProto";
 import "common.proto";
 
 /**
- * Worker 命令服务（Phase 1）：Master → Worker 的远程调用。
+ * Worker 命令服务（Phase 1+2）：Master → Worker 的远程调用。
  *
- * Phase 1 覆盖：PingActor、ExecuteCmdActor、LogActor（及同构的 RMStateActor、NMStateActor）
- * Phase 2+ 追加：InstallServiceRole、ConfigureServiceRole、StartServiceRole 等
+ * Phase 1：PingActor、ExecuteCmdActor、LogActor（及同构的 RMStateActor、NMStateActor）
+ * Phase 2：InstallServiceRole、ConfigureServiceRole、Start/Stop/Restart/Status
  */
 service WorkerCommandService {
+    // Phase 1
     rpc Ping       (PingRequest)       returns (ExecResultPb);
     rpc ExecuteCmd (ExecuteCmdRequest) returns (ExecResultPb);
     rpc GetLog     (GetLogRequest)     returns (ExecResultPb);
+    // Phase 2
+    rpc InstallServiceRole   (ServiceRoleRequest) returns (ExecResultPb);
+    rpc ConfigureServiceRole (ServiceRoleRequest) returns (ExecResultPb);
+    rpc StartServiceRole     (ServiceRoleRequest) returns (ExecResultPb);
+    rpc StopServiceRole      (ServiceRoleRequest) returns (ExecResultPb);
+    rpc RestartServiceRole   (ServiceRoleRequest) returns (ExecResultPb);
+    rpc ServiceRoleStatus    (ServiceRoleRequest) returns (ExecResultPb);
 }
 
 message PingRequest {
@@ -56,4 +64,18 @@ message GetLogRequest {
     string log_file    = 1;
     string base_dir    = 2;
     string run_as_user = 3;
+}
+
+/**
+ * Phase 2：服务角色操作通用请求。
+ *
+ * json_payload    = Jackson 序列化的命令 POJO（cofigFileMap 字段置 null）
+ * config_map_json = cofigFileMap 序列化为 List&lt;ConfigFileEntry&gt; 的 JSON
+ *                   （仅 ConfigureServiceRole / InstallServiceRole 使用）
+ */
+message ServiceRoleRequest {
+    string service_name      = 1;
+    string service_role_name = 2;
+    string json_payload      = 3;
+    string config_map_json   = 4;
 }
