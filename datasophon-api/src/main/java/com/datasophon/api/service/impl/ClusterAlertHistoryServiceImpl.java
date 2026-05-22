@@ -17,13 +17,11 @@
 
 package com.datasophon.api.service.impl;
 
-import org.apache.pekko.actor.ActorRef;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.master.PrometheusActor;
-import com.datasophon.api.master.alert.AlertActor;
+import com.datasophon.api.master.service.AlertService;
+import com.datasophon.api.master.service.PrometheusService;
 import com.datasophon.api.service.ClusterAlertHistoryService;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.common.Constants;
@@ -40,10 +38,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Service("clusterAlertHistoryService")
 @Transactional
@@ -58,14 +54,18 @@ public class ClusterAlertHistoryServiceImpl extends ServiceImpl<ClusterAlertHist
     
     @Autowired
     private ClusterInfoService clusterInfoService;
-    
+
+    @Autowired
+    private AlertService alertService;
+
+    @Autowired
+    private PrometheusService prometheusService;
+
     @Override
     public void saveAlertHistory(String alertMessage) {
         logger.warn("Receive Alert Message : {}", alertMessage);
         AlertMessage message = JSONObject.parseObject(alertMessage, AlertMessage.class);
-        ActorRef alertActor = ActorUtils.getLocalActor(AlertActor.class, "alertActor");
-        ActorUtils.actorSystem.scheduler().scheduleOnce(FiniteDuration.apply(2L, TimeUnit.SECONDS), alertActor,
-                message, ActorUtils.actorSystem.dispatcher(), ActorRef.noSender());
+        alertService.handleAlertMessage(message);
     }
     
     @Override
@@ -99,12 +99,10 @@ public class ClusterAlertHistoryServiceImpl extends ServiceImpl<ClusterAlertHist
                 .eq(Constants.IS_ENABLED, 1)
                 .in(Constants.SERVICE_ROLE_INSTANCE_ID, ids));
         // 重新配置prometheus
-        ActorRef prometheusActor =
-                ActorUtils.getLocalActor(PrometheusActor.class, ActorUtils.getActorRefName(PrometheusActor.class));
         GeneratePrometheusConfigCommand prometheusConfigCommand = new GeneratePrometheusConfigCommand();
         prometheusConfigCommand.setServiceInstanceId(roleInstanceEntity.getServiceId());
         prometheusConfigCommand.setClusterFrame(clusterInfoEntity.getClusterFrame());
         prometheusConfigCommand.setClusterId(roleInstanceEntity.getClusterId());
-        prometheusActor.tell(prometheusConfigCommand, ActorRef.noSender());
+        prometheusService.generatePrometheus(prometheusConfigCommand);
     }
 }

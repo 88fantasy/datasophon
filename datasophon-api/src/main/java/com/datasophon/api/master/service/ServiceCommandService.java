@@ -1,0 +1,232 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.datasophon.api.master.service;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.datasophon.api.load.GlobalVariables;
+import com.datasophon.api.master.ServiceCommandActor;
+import com.datasophon.api.service.ClusterAlertQuotaService;
+import com.datasophon.api.service.ClusterInfoService;
+import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
+import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
+import com.datasophon.api.service.cmd.ClusterServiceCommandHostService;
+import com.datasophon.api.service.cmd.ClusterServiceCommandService;
+import com.datasophon.common.Constants;
+import com.datasophon.common.command.GeneratePrometheusConfigCommand;
+import com.datasophon.common.command.GenerateSRPromConfigCommand;
+import com.datasophon.common.command.HdfsEcCommand;
+import com.datasophon.common.model.UpdateCommandHostMessage;
+import com.datasophon.dao.entity.ClusterAlertQuota;
+import com.datasophon.dao.entity.ClusterInfoEntity;
+import com.datasophon.dao.entity.ClusterServiceRoleInstanceWebuis;
+import com.datasophon.dao.entity.cmd.ClusterServiceCommandEntity;
+import com.datasophon.dao.entity.cmd.ClusterServiceCommandHostCommandEntity;
+import com.datasophon.dao.entity.cmd.ClusterServiceCommandHostEntity;
+import com.datasophon.dao.enums.ClusterState;
+import com.datasophon.dao.enums.CommandState;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * 服务命令完成处理 Spring Service，业务逻辑来自 {@link ServiceCommandActor}。
+ * 内部调用 {@link HdfsECService} 和 {@link PrometheusService}（均为 @Async，通过 Spring 代理触发）。
+ */
+@Service
+public class ServiceCommandService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ServiceCommandService.class);
+
+    private static final String STARROCKS = "starrocks";
+    private static final String DORIS = "doris";
+    private static final String HDFS = "hdfs";
+    private static final String ENABLE_HDFS_KERBEROS = "${enableHDFSKerberos}";
+    private static final String TRUE = "true";
+    private static final String FALSE = "false";
+    private static final String HTTP = "http";
+    private static final String HTTPS = "https";
+    private static final String NODE = "NODE";
+
+    private final ClusterServiceCommandHostCommandService hostCommandService;
+    private final ClusterServiceCommandHostService commandHostService;
+    private final ClusterServiceCommandService commandService;
+    private final ClusterInfoService clusterInfoService;
+    private final ClusterAlertQuotaService alertQuotaService;
+    private final ClusterServiceRoleInstanceWebuisService webuisService;
+    private final HdfsECService hdfsECService;
+    private final PrometheusService prometheusService;
+
+    public ServiceCommandService(ClusterServiceCommandHostCommandService hostCommandService,
+                                  ClusterServiceCommandHostService commandHostService,
+                                  ClusterServiceCommandService commandService,
+                                  ClusterInfoService clusterInfoService,
+                                  ClusterAlertQuotaService alertQuotaService,
+                                  ClusterServiceRoleInstanceWebuisService webuisService,
+                                  HdfsECService hdfsECService,
+                                  PrometheusService prometheusService) {
+        this.hostCommandService = hostCommandService;
+        this.commandHostService = commandHostService;
+        this.commandService = commandService;
+        this.clusterInfoService = clusterInfoService;
+        this.alertQuotaService = alertQuotaService;
+        this.webuisService = webuisService;
+        this.hdfsECService = hdfsECService;
+        this.prometheusService = prometheusService;
+    }
+
+    /**
+     * 异步处理主机命令完成通知（替代 ServiceCommandActor.tell(message)）。
+     */
+    @Async("masterExecutor")
+    public void updateCommandHost(UpdateCommandHostMessage message) {
+        doUpdateCommandHost(message);
+        doUpdateCommand(message);
+    }
+
+    // ─── private helpers ─────────────────────────────────────────────────────
+
+    private void doUpdateCommandHost(UpdateCommandHostMessage message) {
+        ClusterServiceCommandHostEntity commandHost = commandHostService.getOne(
+                new QueryWrapper<ClusterServiceCommandHostEntity>()
+                        .eq(Constants.COMMAND_HOST_ID, message.getCommandHostId()));
+
+        Long size = hostCommandService.getHostCommandSizeByHostnameAndCommandHostId(
+                message.getHostname(), message.getCommandHostId());
+        Integer totalProgress = hostCommandService.getHostCommandTotalProgressByHostnameAndCommandHostId(
+                message.getHostname(), message.getCommandHostId());
+        long progress = totalProgress / size;
+        commandHost.setCommandProgress((int) progress);
+
+        List<ClusterServiceCommandHostCommandEntity> failList =
+                hostCommandService.findFailedHostCommand(message.getHostname(), message.getCommandHostId());
+        List<ClusterServiceCommandHostCommandEntity> cancelList =
+                hostCommandService.findCanceledHostCommand(message.getHostname(), message.getCommandHostId());
+
+        if (!failList.isEmpty()) {
+            commandHost.setCommandState(CommandState.FAILED);
+        } else if (!cancelList.isEmpty()) {
+            commandHost.setCommandState(CommandState.CANCEL);
+        } else if (progress == 100) {
+            commandHost.setCommandState(CommandState.SUCCESS);
+        }
+        commandHostService.update(commandHost,
+                new QueryWrapper<ClusterServiceCommandHostEntity>()
+                        .eq(Constants.COMMAND_HOST_ID, message.getCommandHostId()));
+    }
+
+    private void doUpdateCommand(UpdateCommandHostMessage message) {
+        Long size = commandHostService.getCommandHostSizeByCommandId(message.getCommandId());
+        Integer totalProgress = commandHostService.getCommandHostTotalProgressByCommandId(message.getCommandId());
+        long progress = totalProgress / size;
+
+        ClusterServiceCommandEntity command = commandService.lambdaQuery()
+                .eq(ClusterServiceCommandEntity::getCommandId, message.getCommandId())
+                .one();
+        command.setCommandProgress((int) progress);
+
+        List<ClusterServiceCommandHostEntity> failList =
+                commandHostService.findFailedCommandHost(message.getCommandId());
+        List<ClusterServiceCommandHostEntity> cancelList =
+                commandHostService.findCanceledCommandHost(message.getCommandId());
+
+        if (!failList.isEmpty()) {
+            command.setCommandState(CommandState.FAILED);
+            command.setEndTime(new Date());
+        } else if (!cancelList.isEmpty()) {
+            command.setCommandState(CommandState.CANCEL);
+            command.setEndTime(new Date());
+        } else if (progress == 100) {
+            command.setCommandState(CommandState.SUCCESS);
+            command.setEndTime(new Date());
+
+            String serviceName = command.getServiceName();
+            ClusterInfoEntity clusterInfo = clusterInfoService.getById(command.getClusterId());
+
+            if (command.getCommandType() == 4 && HDFS.equalsIgnoreCase(serviceName)) {
+                updateHDFSWebUi(clusterInfo.getId(), command.getServiceInstanceId());
+            }
+
+            if (command.getCommandType() == 1) {
+                if (ClusterState.NEED_CONFIG.equals(clusterInfo.getClusterState())) {
+                    clusterInfo.setClusterState(ClusterState.RUNNING);
+                    clusterInfoService.updateById(clusterInfo);
+                }
+
+                if (HDFS.equalsIgnoreCase(serviceName)) {
+                    HdfsEcCommand hdfsEcCommand = new HdfsEcCommand();
+                    hdfsEcCommand.setServiceInstanceId(command.getServiceInstanceId());
+                    hdfsECService.manageHdfsEC(hdfsEcCommand);
+                }
+
+                logger.info("start to generate prometheus config");
+                if (STARROCKS.equalsIgnoreCase(serviceName) || DORIS.equalsIgnoreCase(serviceName)) {
+                    GenerateSRPromConfigCommand srCmd = new GenerateSRPromConfigCommand();
+                    srCmd.setServiceInstanceId(command.getServiceInstanceId());
+                    srCmd.setClusterFrame(clusterInfo.getClusterFrame());
+                    srCmd.setClusterId(clusterInfo.getId());
+                    srCmd.setFilename(serviceName.toLowerCase() + ".json");
+                    prometheusService.generateSRPromConfig(srCmd);
+                } else {
+                    GeneratePrometheusConfigCommand promCmd = new GeneratePrometheusConfigCommand();
+                    promCmd.setServiceInstanceId(command.getServiceInstanceId());
+                    promCmd.setClusterFrame(clusterInfo.getClusterFrame());
+                    promCmd.setClusterId(clusterInfo.getId());
+                    prometheusService.generatePrometheus(promCmd);
+                    enableAlertConfig(NODE, clusterInfo.getId());
+                }
+                enableAlertConfig(serviceName, clusterInfo.getId());
+            }
+        }
+
+        commandService.lambdaUpdate()
+                .eq(ClusterServiceCommandEntity::getCommandId, command.getCommandId())
+                .update(command);
+    }
+
+    private void enableAlertConfig(String serviceName, Integer clusterId) {
+        List<ClusterAlertQuota> list = alertQuotaService.listAlertQuotaByServiceName(serviceName);
+        List<Integer> ids = list.stream().map(ClusterAlertQuota::getId).collect(Collectors.toList());
+        String alertQuotaIds = StringUtils.join(ids, ",");
+        alertQuotaService.start(clusterId, alertQuotaIds);
+    }
+
+    private void updateHDFSWebUi(Integer clusterId, Integer serviceInstanceId) {
+        Map<String, String> variables = GlobalVariables.getVariables(clusterId);
+        if (variables.containsKey(ENABLE_HDFS_KERBEROS)) {
+            List<ClusterServiceRoleInstanceWebuis> webUis =
+                    webuisService.listWebUisByServiceInstanceId(serviceInstanceId);
+            for (ClusterServiceRoleInstanceWebuis webUi : webUis) {
+                if (TRUE.equals(variables.get(ENABLE_HDFS_KERBEROS)) && webUi.getWebUrl().contains("9870")) {
+                    webUi.setWebUrl(webUi.getWebUrl().replace(HTTP, HTTPS).replace("9870", "9871"));
+                    webuisService.updateById(webUi);
+                }
+                if (FALSE.equals(variables.get(ENABLE_HDFS_KERBEROS)) && webUi.getWebUrl().contains("9871")) {
+                    webUi.setWebUrl(webUi.getWebUrl().replace(HTTPS, HTTP).replace("9871", "9870"));
+                    webuisService.updateById(webUi);
+                }
+            }
+        }
+    }
+}

@@ -1,6 +1,5 @@
 package com.datasophon.api.service.extrepo.impl;
 
-import org.apache.pekko.actor.ActorRef;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.collection.CollectionUtil;
@@ -16,8 +15,7 @@ import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
 import com.datasophon.api.exceptions.BusinessHintException;
-import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.master.DAGExecActor;
+import com.datasophon.api.master.DAGExecService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.FrameServiceRoleService;
@@ -127,6 +125,9 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
 
     @Autowired
     private FrameServiceService frameService;
+
+    @Autowired
+    private DAGExecService dagExecService;
 
     @Override
     public ValidateResultVO validateDeploymentModel(DeploymentModel model, DeploymentDTO dto) {
@@ -413,8 +414,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
                 DAGExecCommand cmd = new DAGExecCommand();
                 cmd.setDagId(dagId);
                 cmd.setRestart(restart);
-                ActorRef actor = ActorUtils.getLocalActor(DAGExecActor.class, ActorUtils.getActorRefName(DAGExecActor.class));
-                actor.tell(cmd, ActorRef.noSender());
+                dagExecService.execDAG(cmd);
             } catch (Exception e) {
                 log.error("execute dagId: {} fail, {}", dagId, e.getMessage(), e);
                 transactionalUtils.doInNewTx(() -> commandIds.forEach(cmdId -> updateCommandState(cmdId, CommandState.FAILED, false)));

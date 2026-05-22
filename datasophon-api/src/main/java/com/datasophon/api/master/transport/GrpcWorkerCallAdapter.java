@@ -18,6 +18,7 @@
 package com.datasophon.api.master.transport;
 
 import com.datasophon.api.grpc.WorkerCommandClient;
+import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.command.FileOperateCommand;
 import com.datasophon.common.command.GenerateAlertConfigCommand;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
@@ -43,6 +44,14 @@ public class GrpcWorkerCallAdapter implements WorkerCallAdapter {
 
     public GrpcWorkerCallAdapter(WorkerCommandClient client) {
         this.client = client;
+    }
+
+    @Override
+    public ExecResult executeCmd(String hostname, ExecuteCmdCommand cmd) {
+        if (cmd.getCommandLine() != null && !cmd.getCommandLine().isEmpty()) {
+            return client.executeCmdLine(hostname, cmd.getCommandLine());
+        }
+        return client.executeCmd(hostname, cmd.getCommands());
     }
 
     @Override

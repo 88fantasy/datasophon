@@ -17,14 +17,12 @@
 
 package com.datasophon.api.service.impl;
 
-import org.apache.pekko.actor.ActorRef;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.master.PrometheusActor;
+import com.datasophon.api.master.service.PrometheusService;
 import com.datasophon.api.service.ClusterAlertQuotaService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.GenerateAlertConfigCommand;
@@ -67,6 +65,9 @@ public class ClusterAlertQuotaServiceImpl extends ServiceImpl<ClusterAlertQuotaM
 
   @Autowired
   AlertGroupMapper alertGroupMapper;
+
+  @Autowired
+  PrometheusService prometheusService;
 
   @Override
   public Result getAlertQuotaList(Integer clusterId, Integer alertGroupId, String quotaName, Integer page,
@@ -151,12 +152,10 @@ public class ClusterAlertQuotaServiceImpl extends ServiceImpl<ClusterAlertQuotaM
       }
       configFileMap.put(generators, alertItems);
     }
-    ActorRef prometheusActor =
-        ActorUtils.getLocalActor(PrometheusActor.class, ActorUtils.getActorRefName(PrometheusActor.class));
     GenerateAlertConfigCommand alertConfigCommand = new GenerateAlertConfigCommand();
     alertConfigCommand.setClusterId(clusterId);
     alertConfigCommand.setConfigFileMap(configFileMap);
-    prometheusActor.tell(alertConfigCommand, ActorRef.noSender());
+    prometheusService.generateAlertConfig(alertConfigCommand);
   }
 
   @Override

@@ -17,15 +17,14 @@
 
 package com.datasophon.api.service.host.impl;
 
-import org.apache.pekko.actor.ActorRef;
 import cn.hutool.crypto.SecureUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.enums.Status;
-import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.master.PrometheusActor;
-import com.datasophon.api.master.RackActor;
+import com.datasophon.api.master.service.PrometheusService;
+import com.datasophon.api.master.service.RackService;
+import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.ClusterRackService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.service.host.dto.QueryHostListPageDTO;
@@ -47,18 +46,18 @@ import com.datasophon.dao.mapper.ClusterInfoMapper;
 import com.datasophon.dao.mapper.ClusterServiceRoleInstanceMapper;
 import com.datasophon.domain.host.enums.HostState;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service("clusterHostService")
@@ -66,6 +65,8 @@ import java.util.stream.Collectors;
 public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, ClusterHostDO>
     implements
     ClusterHostService {
+
+  private static final Logger logger = LoggerFactory.getLogger(ClusterHostServiceImpl.class);
 
   @Autowired
   ClusterHostMapper hostMapper;
@@ -78,6 +79,15 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
 
   @Autowired
   ClusterRackService clusterRackService;
+
+  @Autowired
+  PrometheusService prometheusService;
+
+  @Autowired
+  RackService rackService;
+
+  @Autowired
+  WorkerCallAdapter workerCallAdapter;
 
   private final String ip = "ip";
 
@@ -185,30 +195,22 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
 
       if (host.getHostState() != HostState.OFFLINE) {
         // stop the worker on this host
-        ActorRef execCmdActor = ActorUtils.getRemoteActor(host.getHostname(), "executeCmdActor");
         ExecuteCmdCommand command = new ExecuteCmdCommand();
         ArrayList<String> commands = new ArrayList<>();
         commands.add("service");
         commands.add("datasophon-worker");
         commands.add("stop");
-
         command.setCommands(commands);
-        execCmdActor.tell(command, ActorRef.noSender());
+        try {
+          workerCallAdapter.executeCmd(host.getHostname(), command);
+        } catch (Exception e) {
+          logger.warn("Failed to stop worker on host {}: {}", host.getHostname(), e.getMessage());
+        }
       }
-      // remove host from prometheus
-      ActorRef prometheusActor =
-          ActorUtils.getLocalActor(PrometheusActor.class, ActorUtils.getActorRefName(PrometheusActor.class));
-
       // Prometheus 移除 hosts 信息
       GenerateHostPrometheusConfig prometheusConfigCommand = new GenerateHostPrometheusConfig();
       prometheusConfigCommand.setClusterId(clusterInfo.getId());
-
-      ActorUtils.actorSystem.scheduler().scheduleOnce(
-          FiniteDuration.apply(3L, TimeUnit.SECONDS),
-          prometheusActor,
-          prometheusConfigCommand,
-          ActorUtils.actorSystem.dispatcher(),
-          ActorRef.noSender());
+      prometheusService.generateHostPrometheusConfig(prometheusConfigCommand);
 
       // remove the host from the cache
       Map<String, HostInfo> map =
@@ -261,11 +263,9 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
       clusterHostDO.setRack(rack);
     }
     this.updateBatchById(list);
-    // tell rack actor
     GenerateRackPropCommand command = new GenerateRackPropCommand();
     command.setClusterId(clusterId);
-    ActorRef rackActor = ActorUtils.getLocalActor(RackActor.class, "rackActor");
-    rackActor.tell(command, ActorRef.noSender());
+    rackService.generateRackProp(command);
     return Result.success();
   }
 

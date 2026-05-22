@@ -17,14 +17,12 @@
 
 package com.datasophon.api.service.impl;
 
-import org.apache.pekko.actor.ActorRef;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.master.ClusterDeleteActor;
+import com.datasophon.api.master.service.ClusterDeleteService;
 import com.datasophon.api.service.AlertGroupService;
 import com.datasophon.api.service.ClusterAlertGroupMapService;
 import com.datasophon.api.service.ClusterInfoService;
@@ -39,8 +37,6 @@ import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.api.utils.SecurityUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
-import com.datasophon.common.command.ClusterCommand;
-import com.datasophon.common.enums.ClusterCommandType;
 import com.datasophon.dao.entity.AlertGroupEntity;
 import com.datasophon.dao.entity.ClusterAlertGroupMap;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -98,6 +94,9 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
 
     @Autowired
     private K8sServiceInstanceService k8sServiceInstanceService;
+
+    @Autowired
+    private ClusterDeleteService clusterDeleteService;
 
     @Override
     public ClusterInfoEntity getClusterByClusterCode(String clusterCode) {
@@ -236,8 +235,7 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                ActorRef ref = ActorUtils.getLocalActor(ClusterDeleteActor.class, "clusterActor");
-                ref.tell(new ClusterCommand(ClusterCommandType.DELETE, clusterId), ActorRef.noSender());
+                clusterDeleteService.deleteCluster(clusterId);
             }
         });
     }

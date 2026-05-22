@@ -17,6 +17,7 @@
 
 package com.datasophon.api.master.transport;
 
+import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.command.FileOperateCommand;
 import com.datasophon.common.command.GenerateAlertConfigCommand;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
@@ -38,6 +39,10 @@ import com.datasophon.common.utils.ExecResult;
  * <p>在 Phase 5（删除 Pekko）前，此接口同时支持两路。</p>
  */
 public interface WorkerCallAdapter {
+
+    // ─── Phase 1: Basic Commands ──────────────────────────────────────────────
+
+    ExecResult executeCmd(String hostname, ExecuteCmdCommand cmd);
 
     // ─── Phase 2: Service Role ────────────────────────────────────────────────
 

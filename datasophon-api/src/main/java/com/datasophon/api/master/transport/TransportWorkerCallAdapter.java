@@ -18,6 +18,7 @@
 package com.datasophon.api.master.transport;
 
 import com.datasophon.api.configuration.TransportProperties;
+import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.command.FileOperateCommand;
 import com.datasophon.common.command.GenerateAlertConfigCommand;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
@@ -57,6 +58,11 @@ public class TransportWorkerCallAdapter implements WorkerCallAdapter {
 
     private WorkerCallAdapter choose() {
         return transport.isGrpcEnabled() ? grpc : pekka;
+    }
+
+    @Override
+    public ExecResult executeCmd(String hostname, ExecuteCmdCommand cmd) {
+        return choose().executeCmd(hostname, cmd);
     }
 
     @Override

@@ -19,7 +19,6 @@
 
 package com.datasophon.api.service.impl;
 
-import org.apache.pekko.actor.ActorRef;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.date.DateUtil;
@@ -27,11 +26,10 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.enums.Status;
-import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.master.DispatcherWorkerActor;
-import com.datasophon.api.master.HostCheckActor;
-import com.datasophon.api.master.HostConnectActor;
-import com.datasophon.api.master.WorkerStartActor;
+import com.datasophon.api.master.MasterScheduledService;
+import com.datasophon.api.master.service.DispatcherWorkerService;
+import com.datasophon.api.master.service.HostConnectService;
+import com.datasophon.api.master.service.WorkerStartService;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.HostInstallService;
 import com.datasophon.api.service.host.ClusterHostService;
@@ -60,7 +58,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,7 +68,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service("hostInstallService")
@@ -87,6 +83,18 @@ public class HostInstallServiceImpl implements HostInstallService {
 
     @Autowired
     ClusterHostService hostService;
+
+    @Autowired
+    HostConnectService hostConnectService;
+
+    @Autowired
+    DispatcherWorkerService dispatcherWorkerService;
+
+    @Autowired
+    WorkerStartService workerStartService;
+
+    @Autowired
+    MasterScheduledService masterScheduledService;
 
     private static final String SSHUSER = "SSHUSER";
 
@@ -190,8 +198,7 @@ public class HostInstallServiceImpl implements HostInstallService {
     }
 
     private void tellHostCheck(String clusterCode, HostInfo hostInfo) {
-        ActorRef actor = ActorUtils.getLocalActor(HostConnectActor.class, "hostActor-" + hostInfo.getHostname());
-        actor.tell(new HostCheckCommand(hostInfo, clusterCode), ActorRef.noSender());
+        hostConnectService.checkHostConnectivity(hostInfo);
     }
 
     public HostInfo createHostInfo(
@@ -252,14 +259,12 @@ public class HostInstallServiceImpl implements HostInstallService {
                 (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
         for (String hostname : hostnames.split(",")) {
             if (map.containsKey(hostname)) {
-                ActorRef hostActor =
-                        ActorUtils.getLocalActor(HostConnectActor.class, "hostActor-" + hostname);
                 HostInfo hostInfo = map.get(hostname);
                 hostInfo.setCheckResult(
                         new CheckResult(
                                 Status.START_CHECK_HOST.getCode(),
                                 Status.START_CHECK_HOST.getMsg()));
-                hostActor.tell(new HostCheckCommand(hostInfo, clusterCode), ActorRef.noSender());
+                hostConnectService.checkHostConnectivity(hostInfo);
             }
         }
         return Result.success();
@@ -286,10 +291,10 @@ public class HostInstallServiceImpl implements HostInstallService {
                 hostInfo.setInstallState(InstallState.SUCCESS);
             } else if (!CacheUtils.containsKey(distributeAgentKey + Constants.UNDERLINE + hostInfo.getHostname())) {
                 logger.info("start to dispatcher host agent to {}", hostInfo.getHostname());
-                ActorRef hostActor = ActorUtils.getLocalActor(DispatcherWorkerActor.class, "dispatcherWorkerActor-" + hostInfo.getHostname());
                 hostInfo.setInstallStateCode(InstallState.RUNNING.getValue());
                 hostInfo.setCreateTime(new Date());
-                hostActor.tell(new DispatcherHostAgentCommand(hostInfo, clusterId, clusterInfo.getClusterFrame()), ActorRef.noSender());
+                dispatcherWorkerService.dispatchWorkerAgent(
+                        new DispatcherHostAgentCommand(hostInfo, clusterId, clusterInfo.getClusterFrame()));
                 // 保存主机agent分发历史
                 CacheUtils.put(distributeAgentKey + Constants.UNDERLINE + hostInfo.getHostname(), true);
 
@@ -342,7 +347,6 @@ public class HostInstallServiceImpl implements HostInstallService {
         }
 
         for (HostInfo hostInfo : hostInfos) {
-            ActorRef hostActor = ActorUtils.getLocalActor(DispatcherWorkerActor.class, "dispatcherWorkerActor-" + hostInfo.getHostname());
             //            防止二次分发 @see dispatcherHostAgentList
             String distributeAgentKey = clusterCode + Constants.UNDERLINE + Constants.START_DISTRIBUTE_AGENT;
             CacheUtils.put(distributeAgentKey + Constants.UNDERLINE + hostInfo.getHostname(), true);
@@ -356,7 +360,8 @@ public class HostInstallServiceImpl implements HostInstallService {
             hostInfo.setCheckResult(new CheckResult(Status.CHECK_HOST_SUCCESS.getCode(), Status.CHECK_HOST_SUCCESS.getMsg()));
             map.put(hostInfo.getHostname(), hostInfo);
 
-            hostActor.tell(new DispatcherHostAgentCommand(hostInfo, clusterId, clusterInfo.getClusterFrame()), ActorRef.noSender());
+            dispatcherWorkerService.dispatchWorkerAgent(
+                    new DispatcherHostAgentCommand(hostInfo, clusterId, clusterInfo.getClusterFrame()));
         }
         return Result.success();
     }
@@ -416,12 +421,8 @@ public class HostInstallServiceImpl implements HostInstallService {
                         MinaUtils.execCmdWithResult(session, "service datasophon-worker " + commandType);
                     }
             );
-            ActorRef actor = ActorUtils.getLocalActor(HostCheckActor.class, String.format("%s-%s", HostCheckActor.class.getSimpleName(), host.getHostname()));
-            HostCheckCommand command = new HostCheckCommand();
             HostInfo info = BeanUtil.copyProperties(host, HostInfo.class);
-            command.setHostInfo(info);
-            ActorUtils.actorSystem.scheduler().scheduleOnce(FiniteDuration.apply(4L, TimeUnit.SECONDS), actor, command,
-                    ActorUtils.actorSystem.dispatcher(), ActorRef.noSender());
+            masterScheduledService.checkHostWithDelay(info, 4);
         }
         return Result.success();
     }
@@ -446,12 +447,9 @@ public class HostInstallServiceImpl implements HostInstallService {
         CommandType serviceCommandType =
                 "start".equalsIgnoreCase(commandType) ? CommandType.START_SERVICE : CommandType.STOP_SERVICE;
         for (ClusterHostDO clusterHostDO : clusterHostList) {
-            WorkerServiceMessage serviceMessage = new WorkerServiceMessage(
-                    clusterHostDO.getHostname(), clusterHostDO.getClusterId(), serviceCommandType);
             try {
-                ActorRef actor =
-                        ActorUtils.getLocalActor(WorkerStartActor.class, "workerStartActor");
-                actor.tell(serviceMessage, ActorRef.noSender());
+                workerStartService.autoManageHostServices(
+                        clusterHostDO.getHostname(), clusterHostDO.getClusterId(), serviceCommandType, false);
             } catch (Exception e) {
                 logger.error("launcher worker service error!", e);
                 result = Result.error("启动服务异常，Cause: " + e.getMessage());

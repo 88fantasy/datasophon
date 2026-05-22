@@ -32,9 +32,10 @@ import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
-import com.datasophon.api.master.ActorUtils;
-import com.datasophon.api.master.ServiceCommandActor;
+import com.datasophon.api.master.service.ServiceCommandService;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
+import com.datasophon.common.command.remote.CreateUnixGroupCommand;
+import com.datasophon.common.command.remote.DelUnixGroupCommand;
 import com.datasophon.api.master.handler.service.ServiceHandler;
 import com.datasophon.api.master.handler.service.ServiceInstallHandler;
 import com.datasophon.api.master.handler.service.ServiceStartHandler;
@@ -99,8 +100,6 @@ import org.slf4j.LoggerFactory;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-import scala.concurrent.duration.FiniteDuration;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -281,11 +280,9 @@ public class ProcessUtils {
             message.setServiceRoleType(ServiceRoleType.WORKER);
         }
 
-        ActorRef commandActor = ActorUtils.getLocalActor(ServiceCommandActor.class, "commandActor");
-        ActorUtils.actorSystem.scheduler().scheduleOnce(FiniteDuration.apply(1L, TimeUnit.SECONDS),
-                commandActor, message,
-                ActorUtils.actorSystem.dispatcher(),
-                ActorRef.noSender());
+        ServiceCommandService commandService =
+                SpringTool.getApplicationContext().getBean(ServiceCommandService.class);
+        commandService.updateCommandHost(message);
 
         return hostCommand;
     }
@@ -668,14 +665,22 @@ public class ProcessUtils {
     }
 
     public static void syncUserGroupToHosts(List<ClusterHostDO> hostList, String groupName, String operate) {
+        WorkerCallAdapter workerCallAdapter =
+                SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
         for (ClusterHostDO hostEntity : hostList) {
-            ActorRef execCmdActor = ActorUtils.getRemoteActor(hostEntity.getHostname(), "unixGroupActor");
-            ExecuteCmdCommand command = new ExecuteCmdCommand();
-            ArrayList<String> commands = new ArrayList<>();
-            commands.add(operate);
-            commands.add(groupName);
-            command.setCommands(commands);
-            execCmdActor.tell(command, ActorRef.noSender());
+            try {
+                if ("groupadd".equalsIgnoreCase(operate)) {
+                    CreateUnixGroupCommand cmd = new CreateUnixGroupCommand();
+                    cmd.setGroupName(groupName);
+                    workerCallAdapter.createUnixGroup(hostEntity.getHostname(), cmd);
+                } else {
+                    DelUnixGroupCommand cmd = new DelUnixGroupCommand();
+                    cmd.setGroupName(groupName);
+                    workerCallAdapter.deleteUnixGroup(hostEntity.getHostname(), cmd);
+                }
+            } catch (Exception e) {
+                logger.warn("syncUserGroupToHosts failed for host {}: {}", hostEntity.getHostname(), e.getMessage());
+            }
         }
     }
 

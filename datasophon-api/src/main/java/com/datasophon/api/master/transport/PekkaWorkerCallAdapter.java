@@ -18,6 +18,7 @@
 package com.datasophon.api.master.transport;
 
 import com.datasophon.api.master.ActorUtils;
+import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.command.FileOperateCommand;
 import com.datasophon.common.command.GenerateAlertConfigCommand;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
@@ -53,6 +54,11 @@ public class PekkaWorkerCallAdapter implements WorkerCallAdapter {
 
     private static final String PEKKA_BASE = "pekko://datasophon@%s:2552/user/worker/";
     private static final int DEFAULT_TIMEOUT_SECONDS = 180;
+
+    @Override
+    public ExecResult executeCmd(String hostname, ExecuteCmdCommand cmd) {
+        return ask(hostname, "executeCmdActor", cmd, DEFAULT_TIMEOUT_SECONDS);
+    }
 
     @Override
     public ExecResult installServiceRole(String hostname, InstallServiceRoleCommand cmd) {

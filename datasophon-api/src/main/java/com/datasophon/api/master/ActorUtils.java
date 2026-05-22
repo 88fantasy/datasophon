@@ -22,11 +22,6 @@ import org.apache.pekko.actor.ActorSelection;
 import org.apache.pekko.actor.ActorSystem;
 import org.apache.pekko.actor.Props;
 import org.apache.pekko.util.Timeout;
-import com.datasophon.api.master.alert.ServiceRoleCheckActor;
-import com.datasophon.common.command.ClusterCommand;
-import com.datasophon.common.command.HostCheckCommand;
-import com.datasophon.common.command.ServiceRoleCheckCommand;
-import com.datasophon.common.enums.ClusterCommandType;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.apache.commons.lang3.StringUtils;
@@ -40,7 +35,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -60,42 +54,14 @@ public class ActorUtils {
     private ActorUtils() {
     }
     
+    /**
+     * 初始化 Pekka ActorSystem（仅用于 transport=pekka 时的远程 Worker 通信）。
+     * 本地 Actor 和定时任务已迁移到 MasterScheduledService（@Scheduled）。
+     */
     public static void init() throws UnknownHostException, NoSuchAlgorithmException {
         String hostname = InetAddress.getLocalHost().getHostName();
         Config config = ConfigFactory.parseString(AKKA_REMOTE_NETTY_TCP_HOSTNAME + "=" + hostname);
         actorSystem = ActorSystem.create(DATASOPHON, config.withFallback(ConfigFactory.load()));
-        actorSystem.actorOf(Props.create(WorkerStartActor.class), getActorRefName(WorkerStartActor.class));
-        ActorRef serviceRoleCheckActor = actorSystem.actorOf(Props.create(ServiceRoleCheckActor.class),
-                getActorRefName(ServiceRoleCheckActor.class));
-        ActorRef hostCheckActor =
-                actorSystem.actorOf(Props.create(HostCheckActor.class), getActorRefName(HostCheckActor.class));
-        actorSystem.actorOf(Props.create(MasterNodeProcessingActor.class),
-                getActorRefName(MasterNodeProcessingActor.class));
-        
-        ActorRef clusterCheckActor =
-                actorSystem.actorOf(Props.create(ClusterStatusActor.class), getActorRefName(ClusterStatusActor.class));
-        
-        // 节点检测 5m 检测一次
-        actorSystem.scheduler().scheduleWithFixedDelay(
-                java.time.Duration.of(30, ChronoUnit.SECONDS),
-                java.time.Duration.of(300, ChronoUnit.SECONDS),
-                () -> hostCheckActor.tell(new HostCheckCommand(), ActorRef.noSender()),
-                actorSystem.dispatcher());
-
-        // 服务检测 30s 检测一次
-        actorSystem.scheduler().scheduleWithFixedDelay(
-                java.time.Duration.of(15, ChronoUnit.SECONDS),
-                java.time.Duration.of(30, ChronoUnit.SECONDS),
-                () -> serviceRoleCheckActor.tell(new ServiceRoleCheckCommand(), ActorRef.noSender()),
-                actorSystem.dispatcher());
-
-        // 集群检测 1m 检测一次
-        actorSystem.scheduler().scheduleWithFixedDelay(
-                java.time.Duration.of(30, ChronoUnit.SECONDS),
-                java.time.Duration.of(60, ChronoUnit.SECONDS),
-                () -> clusterCheckActor.tell(new ClusterCommand(ClusterCommandType.CHECK), ActorRef.noSender()),
-                actorSystem.dispatcher());
-        
         rand = SecureRandom.getInstanceStrong();
     }
     

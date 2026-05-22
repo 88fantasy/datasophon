@@ -27,6 +27,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import jakarta.annotation.PostConstruct;
@@ -40,6 +41,7 @@ import java.security.NoSuchAlgorithmException;
 @MapperScan("com.datasophon.dao")
 @EnableSpringUtil
 @EnableScheduling
+@EnableAsync
 public class DataSophonApplicationServer extends SpringBootServletInitializer {
     
     public static void main(String[] args) {
