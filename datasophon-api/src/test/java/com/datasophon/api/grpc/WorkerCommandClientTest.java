@@ -17,16 +17,29 @@
 
 package com.datasophon.api.grpc;
 
+import com.datasophon.common.command.FileOperateCommand;
+import com.datasophon.common.command.GenerateAlertConfigCommand;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
+import com.datasophon.common.command.remote.CreateUnixGroupCommand;
+import com.datasophon.common.command.remote.CreateUnixUserCommand;
+import com.datasophon.common.command.remote.DelUnixGroupCommand;
+import com.datasophon.common.command.remote.DelUnixUserCommand;
+import com.datasophon.common.model.AlertConfigEntry;
+import com.datasophon.common.model.AlertItem;
 import com.datasophon.common.model.ConfigFileEntry;
+import com.datasophon.common.model.Generators;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.grpc.api.AlertConfigRequest;
 import com.datasophon.grpc.api.ExecResultPb;
 import com.datasophon.grpc.api.ExecuteCmdRequest;
+import com.datasophon.grpc.api.FileOperateRequest;
 import com.datasophon.grpc.api.GetLogRequest;
 import com.datasophon.grpc.api.PingRequest;
 import com.datasophon.grpc.api.ServiceRoleRequest;
+import com.datasophon.grpc.api.UnixGroupRequest;
+import com.datasophon.grpc.api.UnixUserRequest;
 import com.datasophon.grpc.api.WorkerCommandServiceGrpc;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -295,6 +308,150 @@ class WorkerCommandClientTest {
         assertThat(result.getExecOut()).isEqualTo("not running");
     }
 
+    // ─── Phase 3: createUnixGroup ────────────────────────────────────────────
+
+    @Test
+    @DisplayName("createUnixGroup: group_name 字段正确填充，响应正确映射")
+    void createUnixGroup_sendsGroupNameAndMapsResponse() {
+        fakeService.unixGroupResponse = ExecResultPb.newBuilder()
+                .setExecResult(true).setExecOut("created").build();
+
+        CreateUnixGroupCommand cmd = new CreateUnixGroupCommand();
+        cmd.setGroupName("hadoop");
+
+        ExecResult result = client.createUnixGroup(HOSTNAME, cmd);
+
+        assertThat(result.getExecResult()).isTrue();
+        assertThat(result.getExecOut()).isEqualTo("created");
+        assertThat(fakeService.lastUnixGroupRequest.getGroupName()).isEqualTo("hadoop");
+    }
+
+    @Test
+    @DisplayName("deleteUnixGroup: group_name 字段正确填充，响应正确映射")
+    void deleteUnixGroup_sendsGroupNameAndMapsResponse() {
+        fakeService.unixGroupResponse = ExecResultPb.newBuilder()
+                .setExecResult(true).setExecOut("deleted").build();
+
+        DelUnixGroupCommand cmd = new DelUnixGroupCommand();
+        cmd.setGroupName("oldgroup");
+
+        ExecResult result = client.deleteUnixGroup(HOSTNAME, cmd);
+
+        assertThat(result.getExecResult()).isTrue();
+        assertThat(fakeService.lastUnixGroupRequest.getGroupName()).isEqualTo("oldgroup");
+    }
+
+    // ─── Phase 3: createUnixUser / deleteUnixUser ────────────────────────────
+
+    @Test
+    @DisplayName("createUnixUser: username/mainGroup/otherGroups 字段正确填充")
+    void createUnixUser_sendsAllFieldsAndMapsResponse() {
+        fakeService.unixUserResponse = ExecResultPb.newBuilder()
+                .setExecResult(true).setExecOut("user created").build();
+
+        CreateUnixUserCommand cmd = new CreateUnixUserCommand();
+        cmd.setUsername("alice");
+        cmd.setMainGroup("hadoop");
+        cmd.setOtherGroups("spark,flink");
+
+        ExecResult result = client.createUnixUser(HOSTNAME, cmd);
+
+        assertThat(result.getExecResult()).isTrue();
+        assertThat(fakeService.lastUnixUserRequest.getUsername()).isEqualTo("alice");
+        assertThat(fakeService.lastUnixUserRequest.getMainGroup()).isEqualTo("hadoop");
+        assertThat(fakeService.lastUnixUserRequest.getOtherGroups()).isEqualTo("spark,flink");
+    }
+
+    @Test
+    @DisplayName("deleteUnixUser: username 字段正确填充")
+    void deleteUnixUser_sendsUsernameAndMapsResponse() {
+        fakeService.unixUserResponse = ExecResultPb.newBuilder()
+                .setExecResult(true).setExecOut("user deleted").build();
+
+        DelUnixUserCommand cmd = new DelUnixUserCommand();
+        cmd.setUsername("bob");
+
+        ExecResult result = client.deleteUnixUser(HOSTNAME, cmd);
+
+        assertThat(result.getExecResult()).isTrue();
+        assertThat(fakeService.lastUnixUserRequest.getUsername()).isEqualTo("bob");
+    }
+
+    // ─── Phase 3: operateFile ────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("operateFile: lines 列表正确填充到 proto.lines")
+    void operateFile_withLines_sendsLinesFieldCorrectly() {
+        fakeService.fileOperateResponse = ExecResultPb.newBuilder()
+                .setExecResult(true).setExecOut("written").build();
+
+        FileOperateCommand cmd = new FileOperateCommand();
+        java.util.TreeSet<String> lines = new java.util.TreeSet<>();
+        lines.add("host1");
+        lines.add("host2");
+        cmd.setLines(lines);
+        cmd.setPath("/etc/hadoop/dfs.include");
+
+        ExecResult result = client.operateFile(HOSTNAME, cmd);
+
+        assertThat(result.getExecResult()).isTrue();
+        assertThat(fakeService.lastFileOperateRequest.getPath()).isEqualTo("/etc/hadoop/dfs.include");
+        assertThat(fakeService.lastFileOperateRequest.getLinesList()).containsExactly("host1", "host2");
+    }
+
+    @Test
+    @DisplayName("operateFile: content 模式，lines 为空")
+    void operateFile_withContent_sendsContentField() {
+        fakeService.fileOperateResponse = ExecResultPb.newBuilder()
+                .setExecResult(true).setExecOut("written").build();
+
+        FileOperateCommand cmd = new FileOperateCommand();
+        cmd.setContent("some config content");
+        cmd.setPath("/etc/prometheus/alerts.yml");
+
+        ExecResult result = client.operateFile(HOSTNAME, cmd);
+
+        assertThat(result.getExecResult()).isTrue();
+        assertThat(fakeService.lastFileOperateRequest.getContent()).isEqualTo("some config content");
+        assertThat(fakeService.lastFileOperateRequest.getLinesList()).isEmpty();
+    }
+
+    // ─── Phase 3: generateAlertConfig ────────────────────────────────────────
+
+    @Test
+    @DisplayName("generateAlertConfig: configFileMap 序列化为 config_map_json，cluster_id 正确填充")
+    void generateAlertConfig_serializesConfigMapAndMapsResponse() throws Exception {
+        fakeService.alertConfigResponse = ExecResultPb.newBuilder()
+                .setExecResult(true).setExecOut("generated").build();
+
+        Generators gen = new Generators();
+        gen.setFilename("alert.yml");
+        gen.setConfigFormat("yaml");
+        AlertItem item = new AlertItem();
+        item.setAlertName("NameNodeDown");
+        item.setAlertLevel("critical");
+        java.util.HashMap<Generators, java.util.List<AlertItem>> configFileMap = new java.util.HashMap<>();
+        configFileMap.put(gen, java.util.List.of(item));
+
+        GenerateAlertConfigCommand cmd = new GenerateAlertConfigCommand();
+        cmd.setClusterId(1);
+        cmd.setConfigFileMap(configFileMap);
+
+        ExecResult result = client.generateAlertConfig(HOSTNAME, cmd);
+
+        assertThat(result.getExecResult()).isTrue();
+        assertThat(result.getExecOut()).isEqualTo("generated");
+        // cluster_id 正确传递
+        assertThat(fakeService.lastAlertConfigRequest.getClusterId()).isEqualTo(1);
+        // config_map_json 反序列化后包含预期条目
+        java.util.List<AlertConfigEntry> entries = MAPPER.readValue(
+                fakeService.lastAlertConfigRequest.getConfigMapJson(),
+                new TypeReference<java.util.List<AlertConfigEntry>>() {});
+        assertThat(entries).hasSize(1);
+        assertThat(entries.get(0).getGenerators().getFilename()).isEqualTo("alert.yml");
+        assertThat(entries.get(0).getAlertItems().get(0).getAlertName()).isEqualTo("NameNodeDown");
+    }
+
     // ─── helpers ─────────────────────────────────────────────────────────────
 
     /**
@@ -317,20 +474,32 @@ class WorkerCommandClientTest {
     }
 
     /**
-     * 可配置响应的假 Worker gRPC 服务端（Phase 1 + Phase 2）。
+     * 可配置响应的假 Worker gRPC 服务端（Phase 1 + Phase 2 + Phase 3）。
      * 记录最后一次收到的请求，供测试断言验证字段填充是否正确。
      */
     static class FakeWorkerCommandService
             extends WorkerCommandServiceGrpc.WorkerCommandServiceImplBase {
 
+        // Phase 1+2 responses
         ExecResultPb pingResponse;
         ExecResultPb executeCmdResponse;
         ExecResultPb getLogResponse;
         ExecResultPb serviceRoleResponse;
+        // Phase 3 responses
+        ExecResultPb unixGroupResponse;
+        ExecResultPb unixUserResponse;
+        ExecResultPb fileOperateResponse;
+        ExecResultPb alertConfigResponse;
 
+        // Phase 1+2 captured requests
         ExecuteCmdRequest lastExecuteCmdRequest;
         GetLogRequest lastGetLogRequest;
         ServiceRoleRequest lastServiceRoleRequest;
+        // Phase 3 captured requests
+        UnixGroupRequest lastUnixGroupRequest;
+        UnixUserRequest lastUnixUserRequest;
+        FileOperateRequest lastFileOperateRequest;
+        AlertConfigRequest lastAlertConfigRequest;
 
         @Override
         public void ping(PingRequest request, StreamObserver<ExecResultPb> obs) {
@@ -391,6 +560,50 @@ class WorkerCommandClientTest {
         public void serviceRoleStatus(ServiceRoleRequest request, StreamObserver<ExecResultPb> obs) {
             lastServiceRoleRequest = request;
             obs.onNext(serviceRoleResponse != null ? serviceRoleResponse : ExecResultPb.getDefaultInstance());
+            obs.onCompleted();
+        }
+
+        // Phase 3
+
+        @Override
+        public void createUnixGroup(UnixGroupRequest request, StreamObserver<ExecResultPb> obs) {
+            lastUnixGroupRequest = request;
+            obs.onNext(unixGroupResponse != null ? unixGroupResponse : ExecResultPb.getDefaultInstance());
+            obs.onCompleted();
+        }
+
+        @Override
+        public void deleteUnixGroup(UnixGroupRequest request, StreamObserver<ExecResultPb> obs) {
+            lastUnixGroupRequest = request;
+            obs.onNext(unixGroupResponse != null ? unixGroupResponse : ExecResultPb.getDefaultInstance());
+            obs.onCompleted();
+        }
+
+        @Override
+        public void createUnixUser(UnixUserRequest request, StreamObserver<ExecResultPb> obs) {
+            lastUnixUserRequest = request;
+            obs.onNext(unixUserResponse != null ? unixUserResponse : ExecResultPb.getDefaultInstance());
+            obs.onCompleted();
+        }
+
+        @Override
+        public void deleteUnixUser(UnixUserRequest request, StreamObserver<ExecResultPb> obs) {
+            lastUnixUserRequest = request;
+            obs.onNext(unixUserResponse != null ? unixUserResponse : ExecResultPb.getDefaultInstance());
+            obs.onCompleted();
+        }
+
+        @Override
+        public void operateFile(FileOperateRequest request, StreamObserver<ExecResultPb> obs) {
+            lastFileOperateRequest = request;
+            obs.onNext(fileOperateResponse != null ? fileOperateResponse : ExecResultPb.getDefaultInstance());
+            obs.onCompleted();
+        }
+
+        @Override
+        public void generateAlertConfig(AlertConfigRequest request, StreamObserver<ExecResultPb> obs) {
+            lastAlertConfigRequest = request;
+            obs.onNext(alertConfigResponse != null ? alertConfigResponse : ExecResultPb.getDefaultInstance());
             obs.onCompleted();
         }
     }

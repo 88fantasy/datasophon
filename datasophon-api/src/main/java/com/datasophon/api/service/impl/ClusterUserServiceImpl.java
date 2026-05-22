@@ -17,17 +17,15 @@
 
 package com.datasophon.api.service.impl;
 
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.ServiceException;
-import com.datasophon.api.master.ActorUtils;
+import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.ClusterUserGroupService;
 import com.datasophon.api.service.ClusterUserService;
 import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.remote.CreateUnixUserCommand;
 import com.datasophon.common.command.remote.DelUnixUserCommand;
@@ -45,14 +43,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service("clusterUserService")
@@ -97,28 +91,17 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         
         ClusterGroup mainGroup = clusterGroupMapper.selectById(mainGroupId);
         // sync to all hosts
+        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
         for (ClusterHostDO clusterHost : hostList) {
-            ActorSelection unixUserActor = ActorUtils.actorSystem.actorSelection(
-                    "pekko://datasophon@" + clusterHost.getHostname() + ":2552/user/worker/unixUserActor");
-            
             CreateUnixUserCommand createUnixUserCommand = new CreateUnixUserCommand();
             createUnixUserCommand.setUsername(username);
             createUnixUserCommand.setMainGroup(mainGroup.getGroupName());
             createUnixUserCommand.setOtherGroups(otherGroup);
-            
-            Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-            Future<Object> execFuture = Patterns.ask(unixUserActor, createUnixUserCommand, timeout);
-            ExecResult execResult = null;
-            try {
-                execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-                if (execResult.getExecResult()) {
-                    logger.info("create unix user {} success at {}", username, clusterHost.getHostname());
-                } else {
-                    logger.info(execResult.getExecOut());
-                    throw new ServiceException(500,
-                            "create unix user " + username + " failed at " + clusterHost.getHostname());
-                }
-            } catch (Exception e) {
+            ExecResult execResult = adapter.createUnixUser(clusterHost.getHostname(), createUnixUserCommand);
+            if (execResult.getExecResult()) {
+                logger.info("create unix user {} success at {}", username, clusterHost.getHostname());
+            } else {
+                logger.info(execResult.getExecOut());
                 throw new ServiceException(500,
                         "create unix user " + username + " failed at " + clusterHost.getHostname());
             }
@@ -172,22 +155,14 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         userGroupService.deleteByUser(id);
         List<ClusterHostDO> hostList = hostService.getHostListByClusterId(clusterUser.getClusterId());
         // sync to all hosts
+        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
         for (ClusterHostDO clusterHost : hostList) {
-            ActorSelection unixUserActor = ActorUtils.actorSystem.actorSelection(
-                    "pekko://datasophon@" + clusterHost.getHostname() + ":2552/user/worker/unixUserActor");
-            DelUnixUserCommand createUnixUserCommand = new DelUnixUserCommand();
-            Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-            createUnixUserCommand.setUsername(clusterUser.getUsername());
-            Future<Object> execFuture = Patterns.ask(unixUserActor, createUnixUserCommand, timeout);
-            ExecResult execResult = null;
-            try {
-                execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-                if (execResult.getExecResult()) {
-                    logger.info("del unix user success at {}", clusterHost.getHostname());
-                } else {
-                    logger.info("del unix user failed at {}", clusterHost.getHostname());
-                }
-            } catch (Exception e) {
+            DelUnixUserCommand delUnixUserCommand = new DelUnixUserCommand();
+            delUnixUserCommand.setUsername(clusterUser.getUsername());
+            ExecResult execResult = adapter.deleteUnixUser(clusterHost.getHostname(), delUnixUserCommand);
+            if (execResult.getExecResult()) {
+                logger.info("del unix user success at {}", clusterHost.getHostname());
+            } else {
                 logger.info("del unix user failed at {}", clusterHost.getHostname());
             }
         }
@@ -209,28 +184,17 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         if (Objects.nonNull(otherGroupList) && !otherGroupList.isEmpty()) {
             otherGroup = otherGroupList.stream().map(ClusterGroup::getGroupName).collect(Collectors.joining(","));
         }
-        ActorSelection unixUserActor = ActorUtils.actorSystem
-                .actorSelection("pekko://datasophon@" + hostname + ":2552/user/worker/unixUserActor");
-        
         CreateUnixUserCommand createUnixUserCommand = new CreateUnixUserCommand();
         createUnixUserCommand.setUsername(clusterUser.getUsername());
         createUnixUserCommand.setMainGroup(mainGroup.getGroupName());
         createUnixUserCommand.setOtherGroups(otherGroup);
-        
-        Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-        Future<Object> execFuture = Patterns.ask(unixUserActor, createUnixUserCommand, timeout);
-        ExecResult execResult = null;
-        try {
-            execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-            if (execResult.getExecResult()) {
-                logger.info("create unix user {} success at {}", username, hostname);
-            } else {
-                logger.info(execResult.getExecOut());
-                throw new ServiceException(500, "create unix user " + username + " failed at " + hostname);
-            }
-        } catch (Exception e) {
+        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        ExecResult execResult = adapter.createUnixUser(hostname, createUnixUserCommand);
+        if (execResult.getExecResult()) {
+            logger.info("create unix user {} success at {}", username, hostname);
+        } else {
+            logger.info(execResult.getExecOut());
             throw new ServiceException(500, "create unix user " + username + " failed at " + hostname);
         }
-        
     }
 }

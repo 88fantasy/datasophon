@@ -25,10 +25,11 @@ option java_outer_classname = "WorkerProto";
 import "common.proto";
 
 /**
- * Worker 命令服务（Phase 1+2）：Master → Worker 的远程调用。
+ * Worker 命令服务（Phase 1+2+3）：Master → Worker 的远程调用。
  *
  * Phase 1：PingActor、ExecuteCmdActor、LogActor（及同构的 RMStateActor、NMStateActor）
  * Phase 2：InstallServiceRole、ConfigureServiceRole、Start/Stop/Restart/Status
+ * Phase 3：Unix User/Group、FileOperate、AlertConfig
  */
 service WorkerCommandService {
     // Phase 1
@@ -42,6 +43,13 @@ service WorkerCommandService {
     rpc StopServiceRole      (ServiceRoleRequest) returns (ExecResultPb);
     rpc RestartServiceRole   (ServiceRoleRequest) returns (ExecResultPb);
     rpc ServiceRoleStatus    (ServiceRoleRequest) returns (ExecResultPb);
+    // Phase 3
+    rpc CreateUnixGroup     (UnixGroupRequest)    returns (ExecResultPb);
+    rpc DeleteUnixGroup     (UnixGroupRequest)    returns (ExecResultPb);
+    rpc CreateUnixUser      (UnixUserRequest)     returns (ExecResultPb);
+    rpc DeleteUnixUser      (UnixUserRequest)     returns (ExecResultPb);
+    rpc OperateFile         (FileOperateRequest)  returns (ExecResultPb);
+    rpc GenerateAlertConfig (AlertConfigRequest)  returns (ExecResultPb);
 }
 
 message PingRequest {
@@ -78,4 +86,36 @@ message ServiceRoleRequest {
     string service_role_name = 2;
     string json_payload      = 3;
     string config_map_json   = 4;
+}
+
+// Phase 3: Unix 用户/组管理
+
+/** Unix 组操作请求（create / delete 共用）。 */
+message UnixGroupRequest {
+    string group_name = 1;
+}
+
+/** Unix 用户操作请求（create / delete 共用；delete 只需 username）。 */
+message UnixUserRequest {
+    string username     = 1;
+    string main_group   = 2;
+    string other_groups = 3;
+}
+
+/** 文件写入操作请求。lines 与 content 互斥，优先判断 lines 是否非空。 */
+message FileOperateRequest {
+    string          path    = 1;
+    string          content = 2;
+    repeated string lines   = 3;
+}
+
+/**
+ * 告警配置生成请求。
+ *
+ * config_map_json = GenerateAlertConfigCommand.configFileMap 序列化为
+ *                   List&lt;AlertConfigEntry&gt; 的 JSON（解决 Generators 作为 Map key 的问题）。
+ */
+message AlertConfigRequest {
+    int32  cluster_id      = 1;
+    string config_map_json = 2;
 }

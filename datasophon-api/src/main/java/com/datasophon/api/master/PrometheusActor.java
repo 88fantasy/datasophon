@@ -20,13 +20,11 @@
 package com.datasophon.api.master;
 
 import org.apache.pekko.actor.AbstractActor;
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 import cn.hutool.http.HttpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.load.ServiceRoleJmxMap;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
+import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.FrameServiceService;
@@ -48,15 +46,11 @@ import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * changelog: 将一大坨代码，拆分成多个函数
@@ -79,12 +73,8 @@ public class PrometheusActor extends AbstractActor {
 
     private void generateAlertConfigCommand(GenerateAlertConfigCommand command) throws Exception {
         doIfInstancePresent(command.getClusterId(), false, prometheusInstance -> {
-            ActorSelection alertConfigActor =
-                    ActorUtils.actorSystem.actorSelection("pekko://datasophon@" + prometheusInstance.getHostname()
-                                                          + ":2552/user/worker/alertConfigActor");
-            Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-            Future<Object> configureFuture = Patterns.ask(alertConfigActor, command, timeout);
-            ExecResult configResult = (ExecResult) Await.result(configureFuture, timeout.duration());
+            WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+            ExecResult configResult = adapter.generateAlertConfig(prometheusInstance.getHostname(), command);
             if (configResult.getExecResult()) {
                 logger.info("Generate prometheus alert config success , now start to reload prometheus");
                 // reload prometheus config

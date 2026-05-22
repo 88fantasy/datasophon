@@ -17,10 +17,10 @@
 
 package com.datasophon.api.utils;
 
-import com.datasophon.api.master.ActorUtils;
+import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
+import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
-import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
@@ -28,18 +28,9 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 
 public class HadoopUtils {
     
@@ -57,19 +48,13 @@ public class HadoopUtils {
         return execResult;
     }
     
-    public static ExecResult refreshQueuePropToYarn(ClusterInfoEntity clusterInfo, String hostname) throws Exception {
-        ActorSelection execCmdActor = ActorUtils.actorSystem
-                .actorSelection("pekko://datasophon@" + hostname + ":2552/user/worker/executeCmdActor");
-        ExecuteCmdCommand command = new ExecuteCmdCommand();
-        Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
+    public static ExecResult refreshQueuePropToYarn(ClusterInfoEntity clusterInfo, String hostname) {
         ArrayList<String> commands = new ArrayList<>();
         commands.add(Constants.INSTALL_PATH + Constants.SLASH
                 + PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "YARN") + "/bin/yarn");
         commands.add("rmadmin");
         commands.add("-refreshQueues");
-        command.setCommands(commands);
-        Future<Object> execFuture = Patterns.ask(execCmdActor, command, timeout);
-        ExecResult execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-        return execResult;
+        WorkerCommandClient client = SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
+        return client.executeCmd(hostname, commands);
     }
 }

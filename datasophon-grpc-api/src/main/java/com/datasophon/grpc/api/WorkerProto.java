@@ -35,6 +35,26 @@ public final class WorkerProto {
   static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_com_datasophon_grpc_ServiceRoleRequest_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_com_datasophon_grpc_UnixGroupRequest_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_com_datasophon_grpc_UnixGroupRequest_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_com_datasophon_grpc_UnixUserRequest_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_com_datasophon_grpc_UnixUserRequest_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_com_datasophon_grpc_FileOperateRequest_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_com_datasophon_grpc_FileOperateRequest_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_com_datasophon_grpc_AlertConfigRequest_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_com_datasophon_grpc_AlertConfigRequest_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -52,29 +72,50 @@ public final class WorkerProto {
       "un_as_user\030\003 \001(\t\"t\n\022ServiceRoleRequest\022\024" +
       "\n\014service_name\030\001 \001(\t\022\031\n\021service_role_nam" +
       "e\030\002 \001(\t\022\024\n\014json_payload\030\003 \001(\t\022\027\n\017config_" +
-      "map_json\030\004 \001(\t2\325\006\n\024WorkerCommandService\022" +
-      "K\n\004Ping\022 .com.datasophon.grpc.PingReques" +
-      "t\032!.com.datasophon.grpc.ExecResultPb\022W\n\n" +
-      "ExecuteCmd\022&.com.datasophon.grpc.Execute" +
-      "CmdRequest\032!.com.datasophon.grpc.ExecRes" +
-      "ultPb\022O\n\006GetLog\022\".com.datasophon.grpc.Ge" +
-      "tLogRequest\032!.com.datasophon.grpc.ExecRe" +
-      "sultPb\022`\n\022InstallServiceRole\022\'.com.datas" +
-      "ophon.grpc.ServiceRoleRequest\032!.com.data" +
-      "sophon.grpc.ExecResultPb\022b\n\024ConfigureSer" +
-      "viceRole\022\'.com.datasophon.grpc.ServiceRo" +
+      "map_json\030\004 \001(\t\"&\n\020UnixGroupRequest\022\022\n\ngr" +
+      "oup_name\030\001 \001(\t\"M\n\017UnixUserRequest\022\020\n\010use" +
+      "rname\030\001 \001(\t\022\022\n\nmain_group\030\002 \001(\t\022\024\n\014other" +
+      "_groups\030\003 \001(\t\"B\n\022FileOperateRequest\022\014\n\004p" +
+      "ath\030\001 \001(\t\022\017\n\007content\030\002 \001(\t\022\r\n\005lines\030\003 \003(" +
+      "\t\"A\n\022AlertConfigRequest\022\022\n\ncluster_id\030\001 " +
+      "\001(\005\022\027\n\017config_map_json\030\002 \001(\t2\203\013\n\024WorkerC" +
+      "ommandService\022K\n\004Ping\022 .com.datasophon.g" +
+      "rpc.PingRequest\032!.com.datasophon.grpc.Ex" +
+      "ecResultPb\022W\n\nExecuteCmd\022&.com.datasopho" +
+      "n.grpc.ExecuteCmdRequest\032!.com.datasopho" +
+      "n.grpc.ExecResultPb\022O\n\006GetLog\022\".com.data" +
+      "sophon.grpc.GetLogRequest\032!.com.datasoph" +
+      "on.grpc.ExecResultPb\022`\n\022InstallServiceRo" +
+      "le\022\'.com.datasophon.grpc.ServiceRoleRequ" +
+      "est\032!.com.datasophon.grpc.ExecResultPb\022b" +
+      "\n\024ConfigureServiceRole\022\'.com.datasophon." +
+      "grpc.ServiceRoleRequest\032!.com.datasophon" +
+      ".grpc.ExecResultPb\022^\n\020StartServiceRole\022\'" +
+      ".com.datasophon.grpc.ServiceRoleRequest\032" +
+      "!.com.datasophon.grpc.ExecResultPb\022]\n\017St" +
+      "opServiceRole\022\'.com.datasophon.grpc.Serv" +
+      "iceRoleRequest\032!.com.datasophon.grpc.Exe" +
+      "cResultPb\022`\n\022RestartServiceRole\022\'.com.da" +
+      "tasophon.grpc.ServiceRoleRequest\032!.com.d" +
+      "atasophon.grpc.ExecResultPb\022_\n\021ServiceRo" +
+      "leStatus\022\'.com.datasophon.grpc.ServiceRo" +
       "leRequest\032!.com.datasophon.grpc.ExecResu" +
-      "ltPb\022^\n\020StartServiceRole\022\'.com.datasopho" +
-      "n.grpc.ServiceRoleRequest\032!.com.datasoph" +
-      "on.grpc.ExecResultPb\022]\n\017StopServiceRole\022" +
-      "\'.com.datasophon.grpc.ServiceRoleRequest" +
-      "\032!.com.datasophon.grpc.ExecResultPb\022`\n\022R" +
-      "estartServiceRole\022\'.com.datasophon.grpc." +
-      "ServiceRoleRequest\032!.com.datasophon.grpc" +
-      ".ExecResultPb\022_\n\021ServiceRoleStatus\022\'.com" +
-      ".datasophon.grpc.ServiceRoleRequest\032!.co" +
-      "m.datasophon.grpc.ExecResultPbB(\n\027com.da" +
-      "tasophon.grpc.apiB\013WorkerProtoP\001b\006proto3"
+      "ltPb\022[\n\017CreateUnixGroup\022%.com.datasophon" +
+      ".grpc.UnixGroupRequest\032!.com.datasophon." +
+      "grpc.ExecResultPb\022[\n\017DeleteUnixGroup\022%.c" +
+      "om.datasophon.grpc.UnixGroupRequest\032!.co" +
+      "m.datasophon.grpc.ExecResultPb\022Y\n\016Create" +
+      "UnixUser\022$.com.datasophon.grpc.UnixUserR" +
+      "equest\032!.com.datasophon.grpc.ExecResultP" +
+      "b\022Y\n\016DeleteUnixUser\022$.com.datasophon.grp" +
+      "c.UnixUserRequest\032!.com.datasophon.grpc." +
+      "ExecResultPb\022Y\n\013OperateFile\022\'.com.dataso" +
+      "phon.grpc.FileOperateRequest\032!.com.datas" +
+      "ophon.grpc.ExecResultPb\022a\n\023GenerateAlert" +
+      "Config\022\'.com.datasophon.grpc.AlertConfig" +
+      "Request\032!.com.datasophon.grpc.ExecResult" +
+      "PbB(\n\027com.datasophon.grpc.apiB\013WorkerPro" +
+      "toP\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -105,6 +146,30 @@ public final class WorkerProto {
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_com_datasophon_grpc_ServiceRoleRequest_descriptor,
         new java.lang.String[] { "ServiceName", "ServiceRoleName", "JsonPayload", "ConfigMapJson", });
+    internal_static_com_datasophon_grpc_UnixGroupRequest_descriptor =
+      getDescriptor().getMessageTypes().get(4);
+    internal_static_com_datasophon_grpc_UnixGroupRequest_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_com_datasophon_grpc_UnixGroupRequest_descriptor,
+        new java.lang.String[] { "GroupName", });
+    internal_static_com_datasophon_grpc_UnixUserRequest_descriptor =
+      getDescriptor().getMessageTypes().get(5);
+    internal_static_com_datasophon_grpc_UnixUserRequest_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_com_datasophon_grpc_UnixUserRequest_descriptor,
+        new java.lang.String[] { "Username", "MainGroup", "OtherGroups", });
+    internal_static_com_datasophon_grpc_FileOperateRequest_descriptor =
+      getDescriptor().getMessageTypes().get(6);
+    internal_static_com_datasophon_grpc_FileOperateRequest_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_com_datasophon_grpc_FileOperateRequest_descriptor,
+        new java.lang.String[] { "Path", "Content", "Lines", });
+    internal_static_com_datasophon_grpc_AlertConfigRequest_descriptor =
+      getDescriptor().getMessageTypes().get(7);
+    internal_static_com_datasophon_grpc_AlertConfigRequest_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_com_datasophon_grpc_AlertConfigRequest_descriptor,
+        new java.lang.String[] { "ClusterId", "ConfigMapJson", });
     com.datasophon.grpc.api.CommonProto.getDescriptor();
   }
 

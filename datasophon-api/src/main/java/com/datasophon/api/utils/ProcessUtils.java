@@ -18,7 +18,6 @@
 package com.datasophon.api.utils;
 
 import org.apache.pekko.actor.ActorRef;
-import org.apache.pekko.actor.ActorSelection;
 import org.apache.pekko.pattern.Patterns;
 import org.apache.pekko.util.Timeout;
 import cn.hutool.core.bean.BeanUtil;
@@ -29,8 +28,8 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.datasophon.api.configuration.TransportProperties;
 import com.datasophon.api.grpc.WorkerCommandClient;
+import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.master.ActorUtils;
@@ -416,17 +415,12 @@ public class ProcessUtils {
                 .list();
 
         // 更新namenode节点的whitelist白名单
+        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
         for (ClusterServiceRoleInstanceEntity namenode : namenodes) {
-            ActorSelection actorSelection = ActorUtils.actorSystem.actorSelection(
-                    "pekko://datasophon@" + namenode.getHostname() + ":2552/user/worker/fileOperateActor");
-            ActorSelection execCmdActor = ActorUtils.actorSystem.actorSelection(
-                    "pekko://datasophon@" + namenode.getHostname() + ":2552/user/worker/executeCmdActor");
-            Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
             FileOperateCommand fileOperateCommand = new FileOperateCommand();
             fileOperateCommand.setLines(list);
             fileOperateCommand.setPath(Constants.INSTALL_PATH + "/hadoop/etc/hadoop/" + type);
-            Future<Object> future = Patterns.ask(actorSelection, fileOperateCommand, timeout);
-            ExecResult fileOperateResult = (ExecResult) Await.result(future, timeout.duration());
+            ExecResult fileOperateResult = adapter.operateFile(namenode.getHostname(), fileOperateCommand);
             if (Objects.nonNull(fileOperateResult) && fileOperateResult.getExecResult()) {
                 logger.info("write {} success in namenode {}", type, namenode.getHostname());
                 // 刷新白名单
@@ -434,18 +428,9 @@ public class ProcessUtils {
                 refreshCmds.add(Constants.INSTALL_PATH + "/hadoop/bin/hdfs");
                 refreshCmds.add("dfsadmin");
                 refreshCmds.add("-refreshNodes");
-                ExecResult execResult;
-                TransportProperties tp = SpringTool.getApplicationContext().getBean(TransportProperties.class);
-                if (tp.isGrpcEnabled()) {
-                    WorkerCommandClient workerCommandClient =
-                            SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
-                    execResult = workerCommandClient.executeCmd(namenode.getHostname(), refreshCmds);
-                } else {
-                    ExecuteCmdCommand command = new ExecuteCmdCommand();
-                    command.setCommands(refreshCmds);
-                    Future<Object> execFuture = Patterns.ask(execCmdActor, command, timeout);
-                    execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-                }
+                WorkerCommandClient workerCommandClient =
+                        SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
+                ExecResult execResult = workerCommandClient.executeCmd(namenode.getHostname(), refreshCmds);
                 if (execResult.getExecResult()) {
                     logger.info("hdfs dfsadmin -refreshNodes success at {}", namenode.getHostname());
                 }

@@ -19,11 +19,12 @@ package com.datasophon.api.service.impl;
 
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.ServiceException;
-import com.datasophon.api.master.ActorUtils;
+import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.ClusterGroupService;
 import com.datasophon.api.service.ClusterUserGroupService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.remote.CreateUnixGroupCommand;
 import com.datasophon.common.command.remote.DelUnixGroupCommand;
@@ -36,13 +37,8 @@ import com.datasophon.dao.mapper.ClusterGroupMapper;
 
 import org.apache.commons.lang3.StringUtils;
 
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -53,10 +49,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-
-import org.apache.pekko.actor.ActorRef;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 
 @Service("clusterGroupService")
 @Transactional
@@ -83,28 +75,20 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
         this.save(clusterGroup);
         
         List<ClusterHostDO> hostList = hostService.getHostListByClusterId(clusterId);
+        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
         for (ClusterHostDO clusterHost : hostList) {
-            ActorRef unixGroupActor = ActorUtils.getRemoteActor(clusterHost.getHostname(), "unixGroupActor");
             CreateUnixGroupCommand createUnixGroupCommand = new CreateUnixGroupCommand();
             createUnixGroupCommand.setGroupName(groupName);
-            Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-            Future<Object> execFuture = Patterns.ask(unixGroupActor, createUnixGroupCommand, timeout);
-            ExecResult execResult = null;
-            try {
-                execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-                if (execResult.getExecResult()) {
-                    logger.info("create unix group success at {}", clusterHost.getHostname());
-                } else {
-                    logger.info(execResult.getExecOut());
-                    throw new ServiceException(500,
-                            "create unix group " + groupName + " failed at " + clusterHost.getHostname());
-                }
-            } catch (Exception e) {
+            ExecResult execResult = adapter.createUnixGroup(clusterHost.getHostname(), createUnixGroupCommand);
+            if (execResult.getExecResult()) {
+                logger.info("create unix group success at {}", clusterHost.getHostname());
+            } else {
+                logger.info(execResult.getExecOut());
                 throw new ServiceException(500,
                         "create unix group " + groupName + " failed at " + clusterHost.getHostname());
             }
         }
-        
+
         return Result.success();
     }
     
@@ -136,21 +120,14 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
         }
         this.removeById(id);
         List<ClusterHostDO> hostList = hostService.getHostListByClusterId(clusterGroup.getClusterId());
+        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
         for (ClusterHostDO clusterHost : hostList) {
-            ActorRef unixGroupActor = ActorUtils.getRemoteActor(clusterHost.getHostname(), "unixGroupActor");
             DelUnixGroupCommand delUnixGroupCommand = new DelUnixGroupCommand();
             delUnixGroupCommand.setGroupName(clusterGroup.getGroupName());
-            Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-            Future<Object> execFuture = Patterns.ask(unixGroupActor, delUnixGroupCommand, timeout);
-            ExecResult execResult = null;
-            try {
-                execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-                if (execResult.getExecResult()) {
-                    logger.info("del unix group success at {}", clusterHost.getHostname());
-                } else {
-                    logger.info("del unix group failed at {}", clusterHost.getHostname());
-                }
-            } catch (Exception e) {
+            ExecResult execResult = adapter.deleteUnixGroup(clusterHost.getHostname(), delUnixGroupCommand);
+            if (execResult.getExecResult()) {
+                logger.info("del unix group success at {}", clusterHost.getHostname());
+            } else {
                 logger.info("del unix group failed at {}", clusterHost.getHostname());
             }
         }
@@ -185,25 +162,18 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
     
     @Override
     public void createUnixGroupOnHost(String hostname, String groupName) {
-        ActorRef unixGroupActor = ActorUtils.getRemoteActor(hostname, "unixGroupActor");
-        createUnixGroup(hostname, unixGroupActor, groupName);
+        createUnixGroup(hostname, groupName);
     }
-    
-    private void createUnixGroup(String hostname, ActorRef unixGroupActor, String groupName) {
+
+    private void createUnixGroup(String hostname, String groupName) {
         CreateUnixGroupCommand createUnixGroupCommand = new CreateUnixGroupCommand();
         createUnixGroupCommand.setGroupName(groupName);
-        Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-        Future<Object> execFuture = Patterns.ask(unixGroupActor, createUnixGroupCommand, timeout);
-        ExecResult execResult = null;
-        try {
-            execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-            if (execResult.getExecResult()) {
-                logger.info("create unix group success at {}", hostname);
-            } else {
-                logger.info(execResult.getExecOut());
-                throw new ServiceException(500, "create unix group " + groupName + " failed at " + hostname);
-            }
-        } catch (Exception e) {
+        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        ExecResult execResult = adapter.createUnixGroup(hostname, createUnixGroupCommand);
+        if (execResult.getExecResult()) {
+            logger.info("create unix group success at {}", hostname);
+        } else {
+            logger.info(execResult.getExecOut());
             throw new ServiceException(500, "create unix group " + groupName + " failed at " + hostname);
         }
     }

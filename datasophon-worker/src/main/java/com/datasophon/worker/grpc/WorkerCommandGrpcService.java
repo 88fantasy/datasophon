@@ -27,18 +27,25 @@ import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.command.ServiceRoleResource;
 import com.datasophon.common.enums.HookType;
 import com.datasophon.common.function.ThrowableSupplier;
+import com.datasophon.common.model.AlertConfigEntry;
+import com.datasophon.common.model.AlertItem;
 import com.datasophon.common.model.ConfigFileEntry;
+import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.HookConfig;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
+import com.datasophon.grpc.api.AlertConfigRequest;
 import com.datasophon.grpc.api.ExecResultPb;
 import com.datasophon.grpc.api.ExecuteCmdRequest;
+import com.datasophon.grpc.api.FileOperateRequest;
 import com.datasophon.grpc.api.GetLogRequest;
 import com.datasophon.grpc.api.PingRequest;
 import com.datasophon.grpc.api.ServiceRoleRequest;
+import com.datasophon.grpc.api.UnixGroupRequest;
+import com.datasophon.grpc.api.UnixUserRequest;
 import com.datasophon.grpc.api.WorkerCommandServiceGrpc;
 import com.datasophon.worker.handler.ConfigureServiceHandler;
 import com.datasophon.worker.handler.InstallServiceHandler;
@@ -48,7 +55,9 @@ import com.datasophon.worker.hook.HookUtils;
 import com.datasophon.worker.strategy.ServiceRoleStrategy;
 import com.datasophon.worker.strategy.ServiceRoleStrategyContext;
 import com.datasophon.worker.utils.FileUtils;
+import com.datasophon.worker.utils.FreemakerUtils;
 import com.datasophon.worker.utils.TaskConstants;
+import com.datasophon.worker.utils.UnixUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,6 +75,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeSet;
 
 /**
  * Worker 端 gRPC 服务实现（Phase 1 + Phase 2）。
@@ -335,6 +345,123 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
             result = ExecResult.error("检查服务状态失败: " + e.getMessage());
         }
         obs.onNext(toProto(result));
+        obs.onCompleted();
+    }
+
+    // ─── Phase 3: UnixGroup ───────────────────────────────────────────────────
+
+    @Override
+    public void createUnixGroup(UnixGroupRequest req, StreamObserver<ExecResultPb> obs) {
+        try {
+            log.info("gRPC createUnixGroup: {}", req.getGroupName());
+            ExecResult result = UnixUtils.createUnixGroup(req.getGroupName());
+            log.info("gRPC createUnixGroup {} {}", req.getGroupName(),
+                    result.getExecResult() ? "success" : "failed");
+            obs.onNext(toProto(result));
+            obs.onCompleted();
+        } catch (Exception e) {
+            log.error("gRPC createUnixGroup failed: {}", e.getMessage(), e);
+            obs.onNext(toProto(ExecResult.error("createUnixGroup failed: " + e.getMessage())));
+            obs.onCompleted();
+        }
+    }
+
+    @Override
+    public void deleteUnixGroup(UnixGroupRequest req, StreamObserver<ExecResultPb> obs) {
+        try {
+            log.info("gRPC deleteUnixGroup: {}", req.getGroupName());
+            ExecResult result = UnixUtils.delUnixGroup(req.getGroupName());
+            log.info("gRPC deleteUnixGroup {} {}", req.getGroupName(),
+                    result.getExecResult() ? "success" : "failed");
+            obs.onNext(toProto(result));
+            obs.onCompleted();
+        } catch (Exception e) {
+            log.error("gRPC deleteUnixGroup failed: {}", e.getMessage(), e);
+            obs.onNext(toProto(ExecResult.error("deleteUnixGroup failed: " + e.getMessage())));
+            obs.onCompleted();
+        }
+    }
+
+    // ─── Phase 3: UnixUser ────────────────────────────────────────────────────
+
+    @Override
+    public void createUnixUser(UnixUserRequest req, StreamObserver<ExecResultPb> obs) {
+        try {
+            log.info("gRPC createUnixUser: {}", req.getUsername());
+            ExecResult result = UnixUtils.createUnixUser(
+                    req.getUsername(), req.getMainGroup(), req.getOtherGroups());
+            log.info("gRPC createUnixUser {} {}", req.getUsername(),
+                    result.getExecResult() ? "success" : "failed");
+            obs.onNext(toProto(result));
+            obs.onCompleted();
+        } catch (Exception e) {
+            log.error("gRPC createUnixUser failed: {}", e.getMessage(), e);
+            obs.onNext(toProto(ExecResult.error("createUnixUser failed: " + e.getMessage())));
+            obs.onCompleted();
+        }
+    }
+
+    @Override
+    public void deleteUnixUser(UnixUserRequest req, StreamObserver<ExecResultPb> obs) {
+        try {
+            log.info("gRPC deleteUnixUser: {}", req.getUsername());
+            ExecResult result = UnixUtils.delUnixUser(req.getUsername());
+            log.info("gRPC deleteUnixUser {} {}", req.getUsername(),
+                    result.getExecResult() ? "success" : "failed");
+            obs.onNext(toProto(result));
+            obs.onCompleted();
+        } catch (Exception e) {
+            log.error("gRPC deleteUnixUser failed: {}", e.getMessage(), e);
+            obs.onNext(toProto(ExecResult.error("deleteUnixUser failed: " + e.getMessage())));
+            obs.onCompleted();
+        }
+    }
+
+    // ─── Phase 3: FileOperate ─────────────────────────────────────────────────
+
+    @Override
+    public void operateFile(FileOperateRequest req, StreamObserver<ExecResultPb> obs) {
+        ExecResult execResult = new ExecResult();
+        try {
+            log.info("gRPC operateFile: {}", req.getPath());
+            TreeSet<String> lines = new TreeSet<>(req.getLinesList());
+            if (!lines.isEmpty()) {
+                File file = FileUtil.writeLines(lines, req.getPath(), Charset.defaultCharset());
+                execResult.setExecResult(file.exists());
+            } else {
+                FileUtil.writeUtf8String(req.getContent(), req.getPath());
+                execResult.setExecResult(true);
+            }
+        } catch (Exception e) {
+            log.error("gRPC operateFile failed: {}", e.getMessage(), e);
+            execResult = ExecResult.error("operateFile failed: " + e.getMessage());
+        }
+        obs.onNext(toProto(execResult));
+        obs.onCompleted();
+    }
+
+    // ─── Phase 3: AlertConfig ─────────────────────────────────────────────────
+
+    @Override
+    public void generateAlertConfig(AlertConfigRequest req, StreamObserver<ExecResultPb> obs) {
+        ExecResult execResult = new ExecResult();
+        try {
+            log.info("gRPC generateAlertConfig clusterId={}", req.getClusterId());
+            List<AlertConfigEntry> entries = MAPPER.readValue(req.getConfigMapJson(),
+                    new TypeReference<List<AlertConfigEntry>>() {});
+            HashMap<Generators, List<AlertItem>> configFileMap = AlertConfigEntry.toMap(entries);
+            for (Generators generators : configFileMap.keySet()) {
+                List<AlertItem> alertItems = configFileMap.get(generators);
+                FreemakerUtils.generatePromAlertFile(generators, alertItems,
+                        generators.getFilename().replace(".yml", "").toUpperCase());
+            }
+            execResult.setExecResult(true);
+            log.info("gRPC generateAlertConfig success, rules={}", configFileMap.size());
+        } catch (Exception e) {
+            log.error("gRPC generateAlertConfig failed: {}", e.getMessage(), e);
+            execResult = ExecResult.error("generateAlertConfig failed: " + e.getMessage());
+        }
+        obs.onNext(toProto(execResult));
         obs.onCompleted();
     }
 

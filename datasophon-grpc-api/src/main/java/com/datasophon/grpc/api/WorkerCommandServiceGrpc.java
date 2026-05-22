@@ -5,9 +5,10 @@ import static io.grpc.MethodDescriptor.generateFullMethodName;
 /**
  * <pre>
  **
- * Worker 命令服务（Phase 1+2）：Master → Worker 的远程调用。
+ * Worker 命令服务（Phase 1+2+3）：Master → Worker 的远程调用。
  * Phase 1：PingActor、ExecuteCmdActor、LogActor（及同构的 RMStateActor、NMStateActor）
  * Phase 2：InstallServiceRole、ConfigureServiceRole、Start/Stop/Restart/Status
+ * Phase 3：Unix User/Group、FileOperate、AlertConfig
  * </pre>
  */
 @javax.annotation.Generated(
@@ -300,6 +301,192 @@ public final class WorkerCommandServiceGrpc {
     return getServiceRoleStatusMethod;
   }
 
+  private static volatile io.grpc.MethodDescriptor<com.datasophon.grpc.api.UnixGroupRequest,
+      com.datasophon.grpc.api.ExecResultPb> getCreateUnixGroupMethod;
+
+  @io.grpc.stub.annotations.RpcMethod(
+      fullMethodName = SERVICE_NAME + '/' + "CreateUnixGroup",
+      requestType = com.datasophon.grpc.api.UnixGroupRequest.class,
+      responseType = com.datasophon.grpc.api.ExecResultPb.class,
+      methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
+  public static io.grpc.MethodDescriptor<com.datasophon.grpc.api.UnixGroupRequest,
+      com.datasophon.grpc.api.ExecResultPb> getCreateUnixGroupMethod() {
+    io.grpc.MethodDescriptor<com.datasophon.grpc.api.UnixGroupRequest, com.datasophon.grpc.api.ExecResultPb> getCreateUnixGroupMethod;
+    if ((getCreateUnixGroupMethod = WorkerCommandServiceGrpc.getCreateUnixGroupMethod) == null) {
+      synchronized (WorkerCommandServiceGrpc.class) {
+        if ((getCreateUnixGroupMethod = WorkerCommandServiceGrpc.getCreateUnixGroupMethod) == null) {
+          WorkerCommandServiceGrpc.getCreateUnixGroupMethod = getCreateUnixGroupMethod =
+              io.grpc.MethodDescriptor.<com.datasophon.grpc.api.UnixGroupRequest, com.datasophon.grpc.api.ExecResultPb>newBuilder()
+              .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
+              .setFullMethodName(generateFullMethodName(SERVICE_NAME, "CreateUnixGroup"))
+              .setSampledToLocalTracing(true)
+              .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.datasophon.grpc.api.UnixGroupRequest.getDefaultInstance()))
+              .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.datasophon.grpc.api.ExecResultPb.getDefaultInstance()))
+              .setSchemaDescriptor(new WorkerCommandServiceMethodDescriptorSupplier("CreateUnixGroup"))
+              .build();
+        }
+      }
+    }
+    return getCreateUnixGroupMethod;
+  }
+
+  private static volatile io.grpc.MethodDescriptor<com.datasophon.grpc.api.UnixGroupRequest,
+      com.datasophon.grpc.api.ExecResultPb> getDeleteUnixGroupMethod;
+
+  @io.grpc.stub.annotations.RpcMethod(
+      fullMethodName = SERVICE_NAME + '/' + "DeleteUnixGroup",
+      requestType = com.datasophon.grpc.api.UnixGroupRequest.class,
+      responseType = com.datasophon.grpc.api.ExecResultPb.class,
+      methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
+  public static io.grpc.MethodDescriptor<com.datasophon.grpc.api.UnixGroupRequest,
+      com.datasophon.grpc.api.ExecResultPb> getDeleteUnixGroupMethod() {
+    io.grpc.MethodDescriptor<com.datasophon.grpc.api.UnixGroupRequest, com.datasophon.grpc.api.ExecResultPb> getDeleteUnixGroupMethod;
+    if ((getDeleteUnixGroupMethod = WorkerCommandServiceGrpc.getDeleteUnixGroupMethod) == null) {
+      synchronized (WorkerCommandServiceGrpc.class) {
+        if ((getDeleteUnixGroupMethod = WorkerCommandServiceGrpc.getDeleteUnixGroupMethod) == null) {
+          WorkerCommandServiceGrpc.getDeleteUnixGroupMethod = getDeleteUnixGroupMethod =
+              io.grpc.MethodDescriptor.<com.datasophon.grpc.api.UnixGroupRequest, com.datasophon.grpc.api.ExecResultPb>newBuilder()
+              .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
+              .setFullMethodName(generateFullMethodName(SERVICE_NAME, "DeleteUnixGroup"))
+              .setSampledToLocalTracing(true)
+              .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.datasophon.grpc.api.UnixGroupRequest.getDefaultInstance()))
+              .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.datasophon.grpc.api.ExecResultPb.getDefaultInstance()))
+              .setSchemaDescriptor(new WorkerCommandServiceMethodDescriptorSupplier("DeleteUnixGroup"))
+              .build();
+        }
+      }
+    }
+    return getDeleteUnixGroupMethod;
+  }
+
+  private static volatile io.grpc.MethodDescriptor<com.datasophon.grpc.api.UnixUserRequest,
+      com.datasophon.grpc.api.ExecResultPb> getCreateUnixUserMethod;
+
+  @io.grpc.stub.annotations.RpcMethod(
+      fullMethodName = SERVICE_NAME + '/' + "CreateUnixUser",
+      requestType = com.datasophon.grpc.api.UnixUserRequest.class,
+      responseType = com.datasophon.grpc.api.ExecResultPb.class,
+      methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
+  public static io.grpc.MethodDescriptor<com.datasophon.grpc.api.UnixUserRequest,
+      com.datasophon.grpc.api.ExecResultPb> getCreateUnixUserMethod() {
+    io.grpc.MethodDescriptor<com.datasophon.grpc.api.UnixUserRequest, com.datasophon.grpc.api.ExecResultPb> getCreateUnixUserMethod;
+    if ((getCreateUnixUserMethod = WorkerCommandServiceGrpc.getCreateUnixUserMethod) == null) {
+      synchronized (WorkerCommandServiceGrpc.class) {
+        if ((getCreateUnixUserMethod = WorkerCommandServiceGrpc.getCreateUnixUserMethod) == null) {
+          WorkerCommandServiceGrpc.getCreateUnixUserMethod = getCreateUnixUserMethod =
+              io.grpc.MethodDescriptor.<com.datasophon.grpc.api.UnixUserRequest, com.datasophon.grpc.api.ExecResultPb>newBuilder()
+              .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
+              .setFullMethodName(generateFullMethodName(SERVICE_NAME, "CreateUnixUser"))
+              .setSampledToLocalTracing(true)
+              .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.datasophon.grpc.api.UnixUserRequest.getDefaultInstance()))
+              .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.datasophon.grpc.api.ExecResultPb.getDefaultInstance()))
+              .setSchemaDescriptor(new WorkerCommandServiceMethodDescriptorSupplier("CreateUnixUser"))
+              .build();
+        }
+      }
+    }
+    return getCreateUnixUserMethod;
+  }
+
+  private static volatile io.grpc.MethodDescriptor<com.datasophon.grpc.api.UnixUserRequest,
+      com.datasophon.grpc.api.ExecResultPb> getDeleteUnixUserMethod;
+
+  @io.grpc.stub.annotations.RpcMethod(
+      fullMethodName = SERVICE_NAME + '/' + "DeleteUnixUser",
+      requestType = com.datasophon.grpc.api.UnixUserRequest.class,
+      responseType = com.datasophon.grpc.api.ExecResultPb.class,
+      methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
+  public static io.grpc.MethodDescriptor<com.datasophon.grpc.api.UnixUserRequest,
+      com.datasophon.grpc.api.ExecResultPb> getDeleteUnixUserMethod() {
+    io.grpc.MethodDescriptor<com.datasophon.grpc.api.UnixUserRequest, com.datasophon.grpc.api.ExecResultPb> getDeleteUnixUserMethod;
+    if ((getDeleteUnixUserMethod = WorkerCommandServiceGrpc.getDeleteUnixUserMethod) == null) {
+      synchronized (WorkerCommandServiceGrpc.class) {
+        if ((getDeleteUnixUserMethod = WorkerCommandServiceGrpc.getDeleteUnixUserMethod) == null) {
+          WorkerCommandServiceGrpc.getDeleteUnixUserMethod = getDeleteUnixUserMethod =
+              io.grpc.MethodDescriptor.<com.datasophon.grpc.api.UnixUserRequest, com.datasophon.grpc.api.ExecResultPb>newBuilder()
+              .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
+              .setFullMethodName(generateFullMethodName(SERVICE_NAME, "DeleteUnixUser"))
+              .setSampledToLocalTracing(true)
+              .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.datasophon.grpc.api.UnixUserRequest.getDefaultInstance()))
+              .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.datasophon.grpc.api.ExecResultPb.getDefaultInstance()))
+              .setSchemaDescriptor(new WorkerCommandServiceMethodDescriptorSupplier("DeleteUnixUser"))
+              .build();
+        }
+      }
+    }
+    return getDeleteUnixUserMethod;
+  }
+
+  private static volatile io.grpc.MethodDescriptor<com.datasophon.grpc.api.FileOperateRequest,
+      com.datasophon.grpc.api.ExecResultPb> getOperateFileMethod;
+
+  @io.grpc.stub.annotations.RpcMethod(
+      fullMethodName = SERVICE_NAME + '/' + "OperateFile",
+      requestType = com.datasophon.grpc.api.FileOperateRequest.class,
+      responseType = com.datasophon.grpc.api.ExecResultPb.class,
+      methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
+  public static io.grpc.MethodDescriptor<com.datasophon.grpc.api.FileOperateRequest,
+      com.datasophon.grpc.api.ExecResultPb> getOperateFileMethod() {
+    io.grpc.MethodDescriptor<com.datasophon.grpc.api.FileOperateRequest, com.datasophon.grpc.api.ExecResultPb> getOperateFileMethod;
+    if ((getOperateFileMethod = WorkerCommandServiceGrpc.getOperateFileMethod) == null) {
+      synchronized (WorkerCommandServiceGrpc.class) {
+        if ((getOperateFileMethod = WorkerCommandServiceGrpc.getOperateFileMethod) == null) {
+          WorkerCommandServiceGrpc.getOperateFileMethod = getOperateFileMethod =
+              io.grpc.MethodDescriptor.<com.datasophon.grpc.api.FileOperateRequest, com.datasophon.grpc.api.ExecResultPb>newBuilder()
+              .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
+              .setFullMethodName(generateFullMethodName(SERVICE_NAME, "OperateFile"))
+              .setSampledToLocalTracing(true)
+              .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.datasophon.grpc.api.FileOperateRequest.getDefaultInstance()))
+              .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.datasophon.grpc.api.ExecResultPb.getDefaultInstance()))
+              .setSchemaDescriptor(new WorkerCommandServiceMethodDescriptorSupplier("OperateFile"))
+              .build();
+        }
+      }
+    }
+    return getOperateFileMethod;
+  }
+
+  private static volatile io.grpc.MethodDescriptor<com.datasophon.grpc.api.AlertConfigRequest,
+      com.datasophon.grpc.api.ExecResultPb> getGenerateAlertConfigMethod;
+
+  @io.grpc.stub.annotations.RpcMethod(
+      fullMethodName = SERVICE_NAME + '/' + "GenerateAlertConfig",
+      requestType = com.datasophon.grpc.api.AlertConfigRequest.class,
+      responseType = com.datasophon.grpc.api.ExecResultPb.class,
+      methodType = io.grpc.MethodDescriptor.MethodType.UNARY)
+  public static io.grpc.MethodDescriptor<com.datasophon.grpc.api.AlertConfigRequest,
+      com.datasophon.grpc.api.ExecResultPb> getGenerateAlertConfigMethod() {
+    io.grpc.MethodDescriptor<com.datasophon.grpc.api.AlertConfigRequest, com.datasophon.grpc.api.ExecResultPb> getGenerateAlertConfigMethod;
+    if ((getGenerateAlertConfigMethod = WorkerCommandServiceGrpc.getGenerateAlertConfigMethod) == null) {
+      synchronized (WorkerCommandServiceGrpc.class) {
+        if ((getGenerateAlertConfigMethod = WorkerCommandServiceGrpc.getGenerateAlertConfigMethod) == null) {
+          WorkerCommandServiceGrpc.getGenerateAlertConfigMethod = getGenerateAlertConfigMethod =
+              io.grpc.MethodDescriptor.<com.datasophon.grpc.api.AlertConfigRequest, com.datasophon.grpc.api.ExecResultPb>newBuilder()
+              .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
+              .setFullMethodName(generateFullMethodName(SERVICE_NAME, "GenerateAlertConfig"))
+              .setSampledToLocalTracing(true)
+              .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.datasophon.grpc.api.AlertConfigRequest.getDefaultInstance()))
+              .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
+                  com.datasophon.grpc.api.ExecResultPb.getDefaultInstance()))
+              .setSchemaDescriptor(new WorkerCommandServiceMethodDescriptorSupplier("GenerateAlertConfig"))
+              .build();
+        }
+      }
+    }
+    return getGenerateAlertConfigMethod;
+  }
+
   /**
    * Creates a new async stub that supports all call types for the service
    */
@@ -347,9 +534,10 @@ public final class WorkerCommandServiceGrpc {
   /**
    * <pre>
    **
-   * Worker 命令服务（Phase 1+2）：Master → Worker 的远程调用。
+   * Worker 命令服务（Phase 1+2+3）：Master → Worker 的远程调用。
    * Phase 1：PingActor、ExecuteCmdActor、LogActor（及同构的 RMStateActor、NMStateActor）
    * Phase 2：InstallServiceRole、ConfigureServiceRole、Start/Stop/Restart/Status
+   * Phase 3：Unix User/Group、FileOperate、AlertConfig
    * </pre>
    */
   public interface AsyncService {
@@ -422,15 +610,61 @@ public final class WorkerCommandServiceGrpc {
         io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb> responseObserver) {
       io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getServiceRoleStatusMethod(), responseObserver);
     }
+
+    /**
+     * <pre>
+     * Phase 3
+     * </pre>
+     */
+    default void createUnixGroup(com.datasophon.grpc.api.UnixGroupRequest request,
+        io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb> responseObserver) {
+      io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getCreateUnixGroupMethod(), responseObserver);
+    }
+
+    /**
+     */
+    default void deleteUnixGroup(com.datasophon.grpc.api.UnixGroupRequest request,
+        io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb> responseObserver) {
+      io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getDeleteUnixGroupMethod(), responseObserver);
+    }
+
+    /**
+     */
+    default void createUnixUser(com.datasophon.grpc.api.UnixUserRequest request,
+        io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb> responseObserver) {
+      io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getCreateUnixUserMethod(), responseObserver);
+    }
+
+    /**
+     */
+    default void deleteUnixUser(com.datasophon.grpc.api.UnixUserRequest request,
+        io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb> responseObserver) {
+      io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getDeleteUnixUserMethod(), responseObserver);
+    }
+
+    /**
+     */
+    default void operateFile(com.datasophon.grpc.api.FileOperateRequest request,
+        io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb> responseObserver) {
+      io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getOperateFileMethod(), responseObserver);
+    }
+
+    /**
+     */
+    default void generateAlertConfig(com.datasophon.grpc.api.AlertConfigRequest request,
+        io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb> responseObserver) {
+      io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall(getGenerateAlertConfigMethod(), responseObserver);
+    }
   }
 
   /**
    * Base class for the server implementation of the service WorkerCommandService.
    * <pre>
    **
-   * Worker 命令服务（Phase 1+2）：Master → Worker 的远程调用。
+   * Worker 命令服务（Phase 1+2+3）：Master → Worker 的远程调用。
    * Phase 1：PingActor、ExecuteCmdActor、LogActor（及同构的 RMStateActor、NMStateActor）
    * Phase 2：InstallServiceRole、ConfigureServiceRole、Start/Stop/Restart/Status
+   * Phase 3：Unix User/Group、FileOperate、AlertConfig
    * </pre>
    */
   public static abstract class WorkerCommandServiceImplBase
@@ -445,9 +679,10 @@ public final class WorkerCommandServiceGrpc {
    * A stub to allow clients to do asynchronous rpc calls to service WorkerCommandService.
    * <pre>
    **
-   * Worker 命令服务（Phase 1+2）：Master → Worker 的远程调用。
+   * Worker 命令服务（Phase 1+2+3）：Master → Worker 的远程调用。
    * Phase 1：PingActor、ExecuteCmdActor、LogActor（及同构的 RMStateActor、NMStateActor）
    * Phase 2：InstallServiceRole、ConfigureServiceRole、Start/Stop/Restart/Status
+   * Phase 3：Unix User/Group、FileOperate、AlertConfig
    * </pre>
    */
   public static final class WorkerCommandServiceStub
@@ -540,15 +775,67 @@ public final class WorkerCommandServiceGrpc {
       io.grpc.stub.ClientCalls.asyncUnaryCall(
           getChannel().newCall(getServiceRoleStatusMethod(), getCallOptions()), request, responseObserver);
     }
+
+    /**
+     * <pre>
+     * Phase 3
+     * </pre>
+     */
+    public void createUnixGroup(com.datasophon.grpc.api.UnixGroupRequest request,
+        io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb> responseObserver) {
+      io.grpc.stub.ClientCalls.asyncUnaryCall(
+          getChannel().newCall(getCreateUnixGroupMethod(), getCallOptions()), request, responseObserver);
+    }
+
+    /**
+     */
+    public void deleteUnixGroup(com.datasophon.grpc.api.UnixGroupRequest request,
+        io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb> responseObserver) {
+      io.grpc.stub.ClientCalls.asyncUnaryCall(
+          getChannel().newCall(getDeleteUnixGroupMethod(), getCallOptions()), request, responseObserver);
+    }
+
+    /**
+     */
+    public void createUnixUser(com.datasophon.grpc.api.UnixUserRequest request,
+        io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb> responseObserver) {
+      io.grpc.stub.ClientCalls.asyncUnaryCall(
+          getChannel().newCall(getCreateUnixUserMethod(), getCallOptions()), request, responseObserver);
+    }
+
+    /**
+     */
+    public void deleteUnixUser(com.datasophon.grpc.api.UnixUserRequest request,
+        io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb> responseObserver) {
+      io.grpc.stub.ClientCalls.asyncUnaryCall(
+          getChannel().newCall(getDeleteUnixUserMethod(), getCallOptions()), request, responseObserver);
+    }
+
+    /**
+     */
+    public void operateFile(com.datasophon.grpc.api.FileOperateRequest request,
+        io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb> responseObserver) {
+      io.grpc.stub.ClientCalls.asyncUnaryCall(
+          getChannel().newCall(getOperateFileMethod(), getCallOptions()), request, responseObserver);
+    }
+
+    /**
+     */
+    public void generateAlertConfig(com.datasophon.grpc.api.AlertConfigRequest request,
+        io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb> responseObserver) {
+      io.grpc.stub.ClientCalls.asyncUnaryCall(
+          getChannel().newCall(getGenerateAlertConfigMethod(), getCallOptions()), request, responseObserver);
+    }
   }
 
   /**
    * A stub to allow clients to do synchronous rpc calls to service WorkerCommandService.
    * <pre>
    **
-   * Worker 命令服务（Phase 1+2）：Master → Worker 的远程调用。
+   * Worker 命令服务（Phase 1+2+3）：Master → Worker 的远程调用。
    * Phase 1：PingActor、ExecuteCmdActor、LogActor（及同构的 RMStateActor、NMStateActor）
    * Phase 2：InstallServiceRole、ConfigureServiceRole、Start/Stop/Restart/Status
+   * Phase 3：Unix User/Group、FileOperate、AlertConfig
    * </pre>
    */
   public static final class WorkerCommandServiceBlockingStub
@@ -632,15 +919,61 @@ public final class WorkerCommandServiceGrpc {
       return io.grpc.stub.ClientCalls.blockingUnaryCall(
           getChannel(), getServiceRoleStatusMethod(), getCallOptions(), request);
     }
+
+    /**
+     * <pre>
+     * Phase 3
+     * </pre>
+     */
+    public com.datasophon.grpc.api.ExecResultPb createUnixGroup(com.datasophon.grpc.api.UnixGroupRequest request) {
+      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+          getChannel(), getCreateUnixGroupMethod(), getCallOptions(), request);
+    }
+
+    /**
+     */
+    public com.datasophon.grpc.api.ExecResultPb deleteUnixGroup(com.datasophon.grpc.api.UnixGroupRequest request) {
+      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+          getChannel(), getDeleteUnixGroupMethod(), getCallOptions(), request);
+    }
+
+    /**
+     */
+    public com.datasophon.grpc.api.ExecResultPb createUnixUser(com.datasophon.grpc.api.UnixUserRequest request) {
+      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+          getChannel(), getCreateUnixUserMethod(), getCallOptions(), request);
+    }
+
+    /**
+     */
+    public com.datasophon.grpc.api.ExecResultPb deleteUnixUser(com.datasophon.grpc.api.UnixUserRequest request) {
+      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+          getChannel(), getDeleteUnixUserMethod(), getCallOptions(), request);
+    }
+
+    /**
+     */
+    public com.datasophon.grpc.api.ExecResultPb operateFile(com.datasophon.grpc.api.FileOperateRequest request) {
+      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+          getChannel(), getOperateFileMethod(), getCallOptions(), request);
+    }
+
+    /**
+     */
+    public com.datasophon.grpc.api.ExecResultPb generateAlertConfig(com.datasophon.grpc.api.AlertConfigRequest request) {
+      return io.grpc.stub.ClientCalls.blockingUnaryCall(
+          getChannel(), getGenerateAlertConfigMethod(), getCallOptions(), request);
+    }
   }
 
   /**
    * A stub to allow clients to do ListenableFuture-style rpc calls to service WorkerCommandService.
    * <pre>
    **
-   * Worker 命令服务（Phase 1+2）：Master → Worker 的远程调用。
+   * Worker 命令服务（Phase 1+2+3）：Master → Worker 的远程调用。
    * Phase 1：PingActor、ExecuteCmdActor、LogActor（及同构的 RMStateActor、NMStateActor）
    * Phase 2：InstallServiceRole、ConfigureServiceRole、Start/Stop/Restart/Status
+   * Phase 3：Unix User/Group、FileOperate、AlertConfig
    * </pre>
    */
   public static final class WorkerCommandServiceFutureStub
@@ -733,6 +1066,57 @@ public final class WorkerCommandServiceGrpc {
       return io.grpc.stub.ClientCalls.futureUnaryCall(
           getChannel().newCall(getServiceRoleStatusMethod(), getCallOptions()), request);
     }
+
+    /**
+     * <pre>
+     * Phase 3
+     * </pre>
+     */
+    public com.google.common.util.concurrent.ListenableFuture<com.datasophon.grpc.api.ExecResultPb> createUnixGroup(
+        com.datasophon.grpc.api.UnixGroupRequest request) {
+      return io.grpc.stub.ClientCalls.futureUnaryCall(
+          getChannel().newCall(getCreateUnixGroupMethod(), getCallOptions()), request);
+    }
+
+    /**
+     */
+    public com.google.common.util.concurrent.ListenableFuture<com.datasophon.grpc.api.ExecResultPb> deleteUnixGroup(
+        com.datasophon.grpc.api.UnixGroupRequest request) {
+      return io.grpc.stub.ClientCalls.futureUnaryCall(
+          getChannel().newCall(getDeleteUnixGroupMethod(), getCallOptions()), request);
+    }
+
+    /**
+     */
+    public com.google.common.util.concurrent.ListenableFuture<com.datasophon.grpc.api.ExecResultPb> createUnixUser(
+        com.datasophon.grpc.api.UnixUserRequest request) {
+      return io.grpc.stub.ClientCalls.futureUnaryCall(
+          getChannel().newCall(getCreateUnixUserMethod(), getCallOptions()), request);
+    }
+
+    /**
+     */
+    public com.google.common.util.concurrent.ListenableFuture<com.datasophon.grpc.api.ExecResultPb> deleteUnixUser(
+        com.datasophon.grpc.api.UnixUserRequest request) {
+      return io.grpc.stub.ClientCalls.futureUnaryCall(
+          getChannel().newCall(getDeleteUnixUserMethod(), getCallOptions()), request);
+    }
+
+    /**
+     */
+    public com.google.common.util.concurrent.ListenableFuture<com.datasophon.grpc.api.ExecResultPb> operateFile(
+        com.datasophon.grpc.api.FileOperateRequest request) {
+      return io.grpc.stub.ClientCalls.futureUnaryCall(
+          getChannel().newCall(getOperateFileMethod(), getCallOptions()), request);
+    }
+
+    /**
+     */
+    public com.google.common.util.concurrent.ListenableFuture<com.datasophon.grpc.api.ExecResultPb> generateAlertConfig(
+        com.datasophon.grpc.api.AlertConfigRequest request) {
+      return io.grpc.stub.ClientCalls.futureUnaryCall(
+          getChannel().newCall(getGenerateAlertConfigMethod(), getCallOptions()), request);
+    }
   }
 
   private static final int METHODID_PING = 0;
@@ -744,6 +1128,12 @@ public final class WorkerCommandServiceGrpc {
   private static final int METHODID_STOP_SERVICE_ROLE = 6;
   private static final int METHODID_RESTART_SERVICE_ROLE = 7;
   private static final int METHODID_SERVICE_ROLE_STATUS = 8;
+  private static final int METHODID_CREATE_UNIX_GROUP = 9;
+  private static final int METHODID_DELETE_UNIX_GROUP = 10;
+  private static final int METHODID_CREATE_UNIX_USER = 11;
+  private static final int METHODID_DELETE_UNIX_USER = 12;
+  private static final int METHODID_OPERATE_FILE = 13;
+  private static final int METHODID_GENERATE_ALERT_CONFIG = 14;
 
   private static final class MethodHandlers<Req, Resp> implements
       io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
@@ -796,6 +1186,30 @@ public final class WorkerCommandServiceGrpc {
           break;
         case METHODID_SERVICE_ROLE_STATUS:
           serviceImpl.serviceRoleStatus((com.datasophon.grpc.api.ServiceRoleRequest) request,
+              (io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb>) responseObserver);
+          break;
+        case METHODID_CREATE_UNIX_GROUP:
+          serviceImpl.createUnixGroup((com.datasophon.grpc.api.UnixGroupRequest) request,
+              (io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb>) responseObserver);
+          break;
+        case METHODID_DELETE_UNIX_GROUP:
+          serviceImpl.deleteUnixGroup((com.datasophon.grpc.api.UnixGroupRequest) request,
+              (io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb>) responseObserver);
+          break;
+        case METHODID_CREATE_UNIX_USER:
+          serviceImpl.createUnixUser((com.datasophon.grpc.api.UnixUserRequest) request,
+              (io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb>) responseObserver);
+          break;
+        case METHODID_DELETE_UNIX_USER:
+          serviceImpl.deleteUnixUser((com.datasophon.grpc.api.UnixUserRequest) request,
+              (io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb>) responseObserver);
+          break;
+        case METHODID_OPERATE_FILE:
+          serviceImpl.operateFile((com.datasophon.grpc.api.FileOperateRequest) request,
+              (io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb>) responseObserver);
+          break;
+        case METHODID_GENERATE_ALERT_CONFIG:
+          serviceImpl.generateAlertConfig((com.datasophon.grpc.api.AlertConfigRequest) request,
               (io.grpc.stub.StreamObserver<com.datasophon.grpc.api.ExecResultPb>) responseObserver);
           break;
         default:
@@ -879,6 +1293,48 @@ public final class WorkerCommandServiceGrpc {
               com.datasophon.grpc.api.ServiceRoleRequest,
               com.datasophon.grpc.api.ExecResultPb>(
                 service, METHODID_SERVICE_ROLE_STATUS)))
+        .addMethod(
+          getCreateUnixGroupMethod(),
+          io.grpc.stub.ServerCalls.asyncUnaryCall(
+            new MethodHandlers<
+              com.datasophon.grpc.api.UnixGroupRequest,
+              com.datasophon.grpc.api.ExecResultPb>(
+                service, METHODID_CREATE_UNIX_GROUP)))
+        .addMethod(
+          getDeleteUnixGroupMethod(),
+          io.grpc.stub.ServerCalls.asyncUnaryCall(
+            new MethodHandlers<
+              com.datasophon.grpc.api.UnixGroupRequest,
+              com.datasophon.grpc.api.ExecResultPb>(
+                service, METHODID_DELETE_UNIX_GROUP)))
+        .addMethod(
+          getCreateUnixUserMethod(),
+          io.grpc.stub.ServerCalls.asyncUnaryCall(
+            new MethodHandlers<
+              com.datasophon.grpc.api.UnixUserRequest,
+              com.datasophon.grpc.api.ExecResultPb>(
+                service, METHODID_CREATE_UNIX_USER)))
+        .addMethod(
+          getDeleteUnixUserMethod(),
+          io.grpc.stub.ServerCalls.asyncUnaryCall(
+            new MethodHandlers<
+              com.datasophon.grpc.api.UnixUserRequest,
+              com.datasophon.grpc.api.ExecResultPb>(
+                service, METHODID_DELETE_UNIX_USER)))
+        .addMethod(
+          getOperateFileMethod(),
+          io.grpc.stub.ServerCalls.asyncUnaryCall(
+            new MethodHandlers<
+              com.datasophon.grpc.api.FileOperateRequest,
+              com.datasophon.grpc.api.ExecResultPb>(
+                service, METHODID_OPERATE_FILE)))
+        .addMethod(
+          getGenerateAlertConfigMethod(),
+          io.grpc.stub.ServerCalls.asyncUnaryCall(
+            new MethodHandlers<
+              com.datasophon.grpc.api.AlertConfigRequest,
+              com.datasophon.grpc.api.ExecResultPb>(
+                service, METHODID_GENERATE_ALERT_CONFIG)))
         .build();
   }
 
@@ -936,6 +1392,12 @@ public final class WorkerCommandServiceGrpc {
               .addMethod(getStopServiceRoleMethod())
               .addMethod(getRestartServiceRoleMethod())
               .addMethod(getServiceRoleStatusMethod())
+              .addMethod(getCreateUnixGroupMethod())
+              .addMethod(getDeleteUnixGroupMethod())
+              .addMethod(getCreateUnixUserMethod())
+              .addMethod(getDeleteUnixUserMethod())
+              .addMethod(getOperateFileMethod())
+              .addMethod(getGenerateAlertConfigMethod())
               .build();
         }
       }

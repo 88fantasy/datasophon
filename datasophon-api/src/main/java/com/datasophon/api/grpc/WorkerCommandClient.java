@@ -17,16 +17,27 @@
 
 package com.datasophon.api.grpc;
 
+import com.datasophon.common.command.FileOperateCommand;
+import com.datasophon.common.command.GenerateAlertConfigCommand;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
+import com.datasophon.common.command.remote.CreateUnixGroupCommand;
+import com.datasophon.common.command.remote.CreateUnixUserCommand;
+import com.datasophon.common.command.remote.DelUnixGroupCommand;
+import com.datasophon.common.command.remote.DelUnixUserCommand;
+import com.datasophon.common.model.AlertConfigEntry;
 import com.datasophon.common.model.ConfigFileEntry;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.grpc.api.AlertConfigRequest;
 import com.datasophon.grpc.api.ExecResultPb;
 import com.datasophon.grpc.api.ExecuteCmdRequest;
+import com.datasophon.grpc.api.FileOperateRequest;
 import com.datasophon.grpc.api.GetLogRequest;
 import com.datasophon.grpc.api.PingRequest;
 import com.datasophon.grpc.api.ServiceRoleRequest;
+import com.datasophon.grpc.api.UnixGroupRequest;
+import com.datasophon.grpc.api.UnixUserRequest;
 import com.datasophon.grpc.api.WorkerCommandServiceGrpc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.grpc.ManagedChannel;
@@ -276,6 +287,138 @@ public class WorkerCommandClient {
         } catch (Exception e) {
             log.error("gRPC serviceRoleStatus to {} failed: {}", hostname, e.getMessage(), e);
             return ExecResult.error("gRPC serviceRoleStatus failed: " + e.getMessage());
+        }
+    }
+
+    // ─── Phase 3 API ─────────────────────────────────────────────────────────
+
+    /** 创建 Unix 组（对应 UnixGroupActor create）。 */
+    public ExecResult createUnixGroup(String hostname, CreateUnixGroupCommand cmd) {
+        try {
+            UnixGroupRequest req = UnixGroupRequest.newBuilder()
+                    .setGroupName(nullToEmpty(cmd.getGroupName()))
+                    .build();
+            ExecResultPb pb = getStub(hostname)
+                    .withDeadlineAfter(180, TimeUnit.SECONDS)
+                    .createUnixGroup(req);
+            return toExecResult(pb);
+        } catch (StatusRuntimeException e) {
+            log.warn("gRPC createUnixGroup to {} failed: {}", hostname, e.getStatus());
+            return ExecResult.error("gRPC createUnixGroup failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC createUnixGroup to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC createUnixGroup failed: " + e.getMessage());
+        }
+    }
+
+    /** 删除 Unix 组（对应 UnixGroupActor delete）。 */
+    public ExecResult deleteUnixGroup(String hostname, DelUnixGroupCommand cmd) {
+        try {
+            UnixGroupRequest req = UnixGroupRequest.newBuilder()
+                    .setGroupName(nullToEmpty(cmd.getGroupName()))
+                    .build();
+            ExecResultPb pb = getStub(hostname)
+                    .withDeadlineAfter(180, TimeUnit.SECONDS)
+                    .deleteUnixGroup(req);
+            return toExecResult(pb);
+        } catch (StatusRuntimeException e) {
+            log.warn("gRPC deleteUnixGroup to {} failed: {}", hostname, e.getStatus());
+            return ExecResult.error("gRPC deleteUnixGroup failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC deleteUnixGroup to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC deleteUnixGroup failed: " + e.getMessage());
+        }
+    }
+
+    /** 创建 Unix 用户（对应 UnixUserActor create）。 */
+    public ExecResult createUnixUser(String hostname, CreateUnixUserCommand cmd) {
+        try {
+            UnixUserRequest req = UnixUserRequest.newBuilder()
+                    .setUsername(nullToEmpty(cmd.getUsername()))
+                    .setMainGroup(nullToEmpty(cmd.getMainGroup()))
+                    .setOtherGroups(nullToEmpty(cmd.getOtherGroups()))
+                    .build();
+            ExecResultPb pb = getStub(hostname)
+                    .withDeadlineAfter(180, TimeUnit.SECONDS)
+                    .createUnixUser(req);
+            return toExecResult(pb);
+        } catch (StatusRuntimeException e) {
+            log.warn("gRPC createUnixUser to {} failed: {}", hostname, e.getStatus());
+            return ExecResult.error("gRPC createUnixUser failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC createUnixUser to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC createUnixUser failed: " + e.getMessage());
+        }
+    }
+
+    /** 删除 Unix 用户（对应 UnixUserActor delete）。 */
+    public ExecResult deleteUnixUser(String hostname, DelUnixUserCommand cmd) {
+        try {
+            UnixUserRequest req = UnixUserRequest.newBuilder()
+                    .setUsername(nullToEmpty(cmd.getUsername()))
+                    .build();
+            ExecResultPb pb = getStub(hostname)
+                    .withDeadlineAfter(180, TimeUnit.SECONDS)
+                    .deleteUnixUser(req);
+            return toExecResult(pb);
+        } catch (StatusRuntimeException e) {
+            log.warn("gRPC deleteUnixUser to {} failed: {}", hostname, e.getStatus());
+            return ExecResult.error("gRPC deleteUnixUser failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC deleteUnixUser to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC deleteUnixUser failed: " + e.getMessage());
+        }
+    }
+
+    /** 文件写入操作（对应 FileOperateActor）。 */
+    public ExecResult operateFile(String hostname, FileOperateCommand cmd) {
+        try {
+            FileOperateRequest.Builder reqBuilder = FileOperateRequest.newBuilder()
+                    .setPath(nullToEmpty(cmd.getPath()))
+                    .setContent(nullToEmpty(cmd.getContent()));
+            if (cmd.getLines() != null) {
+                reqBuilder.addAllLines(cmd.getLines());
+            }
+            ExecResultPb pb = getStub(hostname)
+                    .withDeadlineAfter(180, TimeUnit.SECONDS)
+                    .operateFile(reqBuilder.build());
+            return toExecResult(pb);
+        } catch (StatusRuntimeException e) {
+            log.warn("gRPC operateFile to {} failed: {}", hostname, e.getStatus());
+            return ExecResult.error("gRPC operateFile failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC operateFile to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC operateFile failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 生成告警配置（对应 AlertConfigActor）。
+     *
+     * <p>{@code configFileMap} 的 key 是 {@link com.datasophon.common.model.Generators}
+     * 对象，不可直接作为 JSON key，故通过 {@link AlertConfigEntry} 桥接列表序列化。</p>
+     */
+    public ExecResult generateAlertConfig(String hostname, GenerateAlertConfigCommand cmd) {
+        try {
+            String configMapJson = objectMapper.writeValueAsString(
+                    AlertConfigEntry.fromMap(cmd.getConfigFileMap()));
+            AlertConfigRequest req = AlertConfigRequest.newBuilder()
+                    .setClusterId(cmd.getClusterId() != null ? cmd.getClusterId() : 0)
+                    .setConfigMapJson(configMapJson)
+                    .build();
+            ExecResultPb pb = getStub(hostname)
+                    .withDeadlineAfter(180, TimeUnit.SECONDS)
+                    .generateAlertConfig(req);
+            return toExecResult(pb);
+        } catch (StatusRuntimeException e) {
+            log.warn("gRPC generateAlertConfig to {} failed: {}", hostname, e.getStatus());
+            return ExecResult.error("gRPC generateAlertConfig failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC generateAlertConfig to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC generateAlertConfig failed: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("gRPC generateAlertConfig to {} serialization failed: {}", hostname, e.getMessage(), e);
+            return ExecResult.error("gRPC generateAlertConfig serialization failed: " + e.getMessage());
         }
     }
 

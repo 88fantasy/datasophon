@@ -18,9 +18,15 @@
 package com.datasophon.api.master.transport;
 
 import com.datasophon.api.grpc.WorkerCommandClient;
+import com.datasophon.common.command.FileOperateCommand;
+import com.datasophon.common.command.GenerateAlertConfigCommand;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
+import com.datasophon.common.command.remote.CreateUnixGroupCommand;
+import com.datasophon.common.command.remote.CreateUnixUserCommand;
+import com.datasophon.common.command.remote.DelUnixGroupCommand;
+import com.datasophon.common.command.remote.DelUnixUserCommand;
 import com.datasophon.common.utils.ExecResult;
 import org.springframework.stereotype.Component;
 
@@ -67,5 +73,37 @@ public class GrpcWorkerCallAdapter implements WorkerCallAdapter {
     @Override
     public ExecResult serviceRoleStatus(String hostname, ServiceRoleOperateCommand cmd) {
         return client.serviceRoleStatus(hostname, cmd);
+    }
+
+    // ─── Phase 3 ──────────────────────────────────────────────────────────────
+
+    @Override
+    public ExecResult createUnixGroup(String hostname, CreateUnixGroupCommand cmd) {
+        return client.createUnixGroup(hostname, cmd);
+    }
+
+    @Override
+    public ExecResult deleteUnixGroup(String hostname, DelUnixGroupCommand cmd) {
+        return client.deleteUnixGroup(hostname, cmd);
+    }
+
+    @Override
+    public ExecResult createUnixUser(String hostname, CreateUnixUserCommand cmd) {
+        return client.createUnixUser(hostname, cmd);
+    }
+
+    @Override
+    public ExecResult deleteUnixUser(String hostname, DelUnixUserCommand cmd) {
+        return client.deleteUnixUser(hostname, cmd);
+    }
+
+    @Override
+    public ExecResult operateFile(String hostname, FileOperateCommand cmd) {
+        return client.operateFile(hostname, cmd);
+    }
+
+    @Override
+    public ExecResult generateAlertConfig(String hostname, GenerateAlertConfigCommand cmd) {
+        return client.generateAlertConfig(hostname, cmd);
     }
 }
