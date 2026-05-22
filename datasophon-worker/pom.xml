@@ -108,11 +108,50 @@
             <groupId>com.datasophon</groupId>
             <artifactId>datasophon-grpc-api</artifactId>
         </dependency>
+
+        <!-- ─── test ──────────────────────────────────────────────────────────── -->
+        <!-- gRPC in-process channel：无需真实 TCP 的 gRPC 单测 -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-inprocess</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <testSourceDirectory>${project.basedir}/src/test</testSourceDirectory>
         <plugins>
+            <!--
+              覆盖父 pom 的 skipTests 硬编码，改为读取 ${skipTests} 属性：
+              - 默认（不传 -DskipTests）：false → 测试执行
+              - 传 -DskipTests=true：跳过（兼容 CI 全局跳过逻辑）
+              includes 限定只跑 grpc 包下的新测试，排除路径依赖的遗留测试。
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skipTests>${skipTests}</skipTests>
+                    <includes>
+                        <include>**/grpc/**Test.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>

@@ -196,6 +196,12 @@
             <version>${h2.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- gRPC in-process channel for unit tests (no real TCP needed) -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-inprocess</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

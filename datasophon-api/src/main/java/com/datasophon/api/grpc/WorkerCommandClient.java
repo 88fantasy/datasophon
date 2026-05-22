@@ -73,6 +73,9 @@ public class WorkerCommandClient {
         } catch (StatusRuntimeException e) {
             log.warn("gRPC ping to {} failed: {}", hostname, e.getStatus());
             return ExecResult.error("gRPC ping failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC ping to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC ping failed: " + e.getMessage());
         }
     }
 
@@ -88,6 +91,9 @@ public class WorkerCommandClient {
         } catch (StatusRuntimeException e) {
             log.warn("gRPC executeCmd to {} failed: {}", hostname, e.getStatus());
             return ExecResult.error("gRPC executeCmd failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC executeCmd to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC executeCmd failed: " + e.getMessage());
         }
     }
 
@@ -103,6 +109,9 @@ public class WorkerCommandClient {
         } catch (StatusRuntimeException e) {
             log.warn("gRPC executeCmdLine to {} failed: {}", hostname, e.getStatus());
             return ExecResult.error("gRPC executeCmdLine failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC executeCmdLine to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC executeCmdLine failed: " + e.getMessage());
         }
     }
 
@@ -119,6 +128,9 @@ public class WorkerCommandClient {
         } catch (StatusRuntimeException e) {
             log.warn("gRPC getLog to {} failed: {}", hostname, e.getStatus());
             return ExecResult.error("gRPC getLog failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC getLog to {} failed: {}", hostname, e.getMessage());
+            return ExecResult.error("gRPC getLog failed: " + e.getMessage());
         }
     }
 
@@ -143,14 +155,22 @@ public class WorkerCommandClient {
 
     // ─── private helpers ─────────────────────────────────────────────────────
 
+    /**
+     * 构建到指定 Worker 的 gRPC Channel。
+     * 测试子类可重写此方法注入 in-process channel，无需真实 TCP 连接。
+     */
+    protected ManagedChannel buildChannel(String hostname, int port) {
+        return ManagedChannelBuilder.forAddress(hostname, port)
+                .usePlaintext()
+                .build();
+    }
+
     private WorkerCommandServiceGrpc.WorkerCommandServiceBlockingStub getStub(String hostname) {
         WorkerEndpoint endpoint = workerRegistry.getEndpoint(hostname)
                 .orElseThrow(() -> new IllegalStateException(
                         "Worker not registered in gRPC registry: " + hostname));
         ManagedChannel channel = channelCache.computeIfAbsent(hostname, h ->
-                ManagedChannelBuilder.forAddress(endpoint.getHostname(), endpoint.getGrpcPort())
-                        .usePlaintext()
-                        .build());
+                buildChannel(endpoint.getHostname(), endpoint.getGrpcPort()));
         return WorkerCommandServiceGrpc.newBlockingStub(channel);
     }
 
