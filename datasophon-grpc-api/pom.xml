@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~  Licensed to the Apache Software Foundation (ASF) under one or more
+  ~  contributor license agreements.  See the NOTICE file distributed with
+  ~  this work for additional information regarding copyright ownership.
+  ~  The ASF licenses this file to You under the Apache License, Version 2.0
+  ~  (the "License"); you may not use this file except in compliance with
+  ~  the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.datasophon</groupId>
+        <artifactId>datasophon</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>datasophon-grpc-api</artifactId>
+    <description>gRPC API: .proto definitions and generated stubs for datasophon Master-Worker communication</description>
+
+    <dependencies>
+        <!-- grpc stubs 生成所需运行时 -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-stub</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-protobuf</artifactId>
+        </dependency>
+        <!-- Jakarta annotation（@Generated for Spring Boot 3） -->
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+        </dependency>
+        <!-- javax.annotation（grpc-java 生成的 stub 代码使用 javax.annotation.Generated） -->
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+    </dependencies>
+
+    <!--
+      ┌─────────────────────────────────────────────────────────────────────┐
+      │  generate-proto profile                                             │
+      │                                                                     │
+      │  生成的 Java stub 已 checked-in 到 src/main/java/，正常构建不运行 protoc。  │
+      │  修改 .proto 文件后，在本地执行以下命令重新生成并 commit：              │
+      │    mvn generate-sources -Pgenerate-proto -s ~/.m2/setting.xml       │
+      │  需要：protoc（brew install protobuf）+ grpc-java 插件（Maven 镜像） │
+      └─────────────────────────────────────────────────────────────────────┘
+    -->
+    <!-- os-maven-plugin 需要在顶层 build.extensions，profile 里不支持 extensions -->
+    <build>
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>${os-maven-plugin.version}</version>
+            </extension>
+        </extensions>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>generate-proto</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.xolstice.maven.plugins</groupId>
+                        <artifactId>protobuf-maven-plugin</artifactId>
+                        <version>0.5.1</version>
+                        <configuration>
+                            <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+                            <pluginId>grpc-java</pluginId>
+                            <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+                            <!-- 生成到 src/main/java（checked-in 模式） -->
+                            <outputDirectory>${project.basedir}/src/main/java</outputDirectory>
+                            <clearOutputDirectory>false</clearOutputDirectory>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>compile</goal>
+                                    <goal>compile-custom</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

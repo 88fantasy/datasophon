@@ -28,6 +28,7 @@ import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.actor.RemoteEventActor;
 import com.datasophon.worker.actor.WorkerActor;
+import com.datasophon.worker.grpc.MasterRegistryClient;
 import com.datasophon.worker.utils.ActorUtils;
 import com.datasophon.worker.utils.UnixUtils;
 
@@ -72,25 +73,37 @@ public class WorkerApplicationServer {
         String workDir = System.getProperty(USER_DIR);
         String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
         String cpuArchitecture = ShellUtils.getCpuArchitecture();
-        
+        int clusterId = PropertyUtils.getInt("clusterId");
+
         CacheUtils.put(Constants.HOSTNAME, hostname);
         CacheUtils.put(Constants.CPU_ARCH, cpuArchitecture);
         // init actor
         ActorSystem system = initActor(hostname);
         ActorUtils.setActorSystem(system);
-        
+
         subscribeRemoteEvent(system);
-        
+
         startNodeExporter(workDir, cpuArchitecture);
-        
+
         Map<String, String> userMap = new HashMap<>(16);
         initUserMap(userMap);
-        
+
         createDefaultUser(userMap);
-        
+
         tellToMaster(hostname, workDir, masterHost, cpuArchitecture, system);
         logger.info("start worker");
-        
+
+        // ── gRPC 双轨注册（transport=grpc 或 both 时启用） ──────────────────
+        // transport 属性从 conf/common.properties 读取，默认 pekko
+        String transport = PropertyUtils.getString("transport", "pekko");
+        MasterRegistryClient registryClient = null;
+        if ("grpc".equals(transport) || "both".equals(transport)) {
+            registryClient = new MasterRegistryClient(masterHost, hostname, cpuArchitecture, clusterId);
+            registryClient.register();
+            logger.info("Worker gRPC registry client started (transport={})", transport);
+        }
+        final MasterRegistryClient finalRegistryClient = registryClient;
+
         /*
          * registry hooks, which are called before the process exits
          */
@@ -99,6 +112,13 @@ public class WorkerApplicationServer {
                         new Thread(
                                 () -> {
                                     if (!ServerLifeCycleManager.isStopped()) {
+                                        if (finalRegistryClient != null) {
+                                            try {
+                                                finalRegistryClient.close();
+                                            } catch (Exception e) {
+                                                logger.warn("Failed to close gRPC registry client", e);
+                                            }
+                                        }
                                         close("WorkerServer shutdown hook");
                                     }
                                 }));

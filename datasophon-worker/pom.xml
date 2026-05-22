@@ -92,7 +92,24 @@
             <artifactId>s3</artifactId>
             <version>2.17.102</version>
         </dependency>
+
+        <!-- ─── gRPC（Phase 0）──────────────────────────────────────────────── -->
+        <!--
+          worker 是普通 Java 进程（无 Spring 容器），不能用 grpc-spring-boot-starter。
+          使用原生 grpc-netty-shaded 驱动 ManagedChannelBuilder。
+          Phase 1 增加 worker gRPC server 时继续在此处追加 grpc-services 依赖。
+        -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+        </dependency>
+        <!-- proto 生成的 stub 和消息类（grpc-stub、grpc-protobuf 由 datasophon-grpc-api 传递） -->
+        <dependency>
+            <groupId>com.datasophon</groupId>
+            <artifactId>datasophon-grpc-api</artifactId>
+        </dependency>
     </dependencies>
+
     <build>
         <testSourceDirectory>${project.basedir}/src/test</testSourceDirectory>
         <plugins>

@@ -1,0 +1,70 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License. You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package com.datasophon.grpc;
+
+option java_package = "com.datasophon.grpc.api";
+option java_multiple_files = true;
+option java_outer_classname = "RegistryProto";
+
+// Worker 向 Master 注册自身的服务
+// Master 监听 grpc.server.port（默认 18081）
+service WorkerRegistryService {
+
+    // Worker 启动时调用，向 Master 注册节点信息
+    rpc Register (RegisterRequest) returns (RegisterResponse);
+
+    // Worker 定期心跳（默认 30s），Master 超过 3 次（90s）未收到则标记 worker 离线
+    rpc Heartbeat (HeartbeatRequest) returns (HeartbeatResponse);
+
+    // Worker 正常关闭时主动注销（可选，Master 依赖心跳超时也能感知）
+    rpc Unregister (UnregisterRequest) returns (UnregisterResponse);
+}
+
+// ─── Register ──────────────────────────────────────────────────────────────
+
+message RegisterRequest {
+    string hostname        = 1;  // worker 主机名，作为唯一标识
+    int32  grpc_port       = 2;  // worker gRPC server 监听端口（默认 18082）
+    string cpu_architecture = 3; // x86_64 / aarch64
+    int32  cluster_id      = 4;  // 所属集群 ID
+}
+
+message RegisterResponse {
+    bool   success = 1;
+    string message = 2;
+}
+
+// ─── Heartbeat ─────────────────────────────────────────────────────────────
+
+message HeartbeatRequest {
+    string hostname = 1;
+}
+
+message HeartbeatResponse {
+    bool success = 1;
+}
+
+// ─── Unregister ────────────────────────────────────────────────────────────
+
+message UnregisterRequest {
+    string hostname = 1;
+}
+
+message UnregisterResponse {
+    bool success = 1;
+}

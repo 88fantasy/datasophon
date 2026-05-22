@@ -28,6 +28,7 @@
         and scalable big data cloud native platform.</description>
     <modules>
         <module>datasophon-common</module>
+        <module>datasophon-grpc-api</module>
         <module>datasophon-worker</module>
         <module>datasophon-cli</module>
         <module>datasophon-ui</module>
@@ -38,6 +39,12 @@
     <properties>
         <revision>2.1-SNAPSHOT</revision>
         <pekko.version>1.0.3</pekko.version>
+        <!-- gRPC / Protobuf 版本（protoc 3.25.5 + protobuf-java 3.25.5 + grpc-java 1.68.1 稳定组合） -->
+        <grpc.version>1.68.1</grpc.version>
+        <protobuf.version>3.25.5</protobuf.version>
+        <grpc-spring-boot-starter.version>3.1.0.RELEASE</grpc-spring-boot-starter.version>
+        <os-maven-plugin.version>1.7.1</os-maven-plugin.version>
+        <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
         <commons.httpclient>3.0.1</commons.httpclient>
         <commons.lang>3.12.0</commons.lang>
         <druid.version>1.2.24</druid.version>
@@ -338,6 +345,40 @@
                 <groupId>io.swagger.core.v3</groupId>
                 <artifactId>swagger-annotations</artifactId>
                 <version>2.2.40</version>
+            </dependency>
+
+            <!-- ─── gRPC / Protobuf BOM ────────────────────────────────────────── -->
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-bom</artifactId>
+                <version>${grpc.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- protobuf-bom 3.25.5（与 grpc-java 1.68.1 + protoc 3.25.5 兼容） -->
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-bom</artifactId>
+                <version>${protobuf.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- grpc-spring-boot-starter（yidongnan / grpc-ecosystem） -->
+            <dependency>
+                <groupId>net.devh</groupId>
+                <artifactId>grpc-server-spring-boot-starter</artifactId>
+                <version>${grpc-spring-boot-starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>net.devh</groupId>
+                <artifactId>grpc-client-spring-boot-starter</artifactId>
+                <version>${grpc-spring-boot-starter.version}</version>
+            </dependency>
+            <!-- datasophon-grpc-api 生成的 stub -->
+            <dependency>
+                <groupId>com.datasophon</groupId>
+                <artifactId>datasophon-grpc-api</artifactId>
+                <version>${revision}</version>
             </dependency>
 
             <!-- test -->

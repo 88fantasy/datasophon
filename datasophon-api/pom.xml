@@ -172,6 +172,18 @@
             <version>4.5.0</version>
         </dependency>
 
+        <!-- ─── gRPC（Phase 0）──────────────────────────────────────────────── -->
+        <!-- gRPC server（Netty 内嵌，端口独立于 Jetty 的 8081） -->
+        <dependency>
+            <groupId>net.devh</groupId>
+            <artifactId>grpc-server-spring-boot-starter</artifactId>
+        </dependency>
+        <!-- proto 生成的 stub 和消息类 -->
+        <dependency>
+            <groupId>com.datasophon</groupId>
+            <artifactId>datasophon-grpc-api</artifactId>
+        </dependency>
+
         <!-- test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

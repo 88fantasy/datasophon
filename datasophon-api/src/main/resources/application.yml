@@ -77,6 +77,16 @@ datasophon:
     path-prefix: /api
   proxy-grafana:
     enable: false
+  # ─── 传输协议双轨开关 ────────────────────────────────────────────────
+  # pekko  → 全走 Pekko（默认，Phase 0~4 期间保持）
+  # grpc   → 全走 gRPC（Phase 5 之后）
+  # both   → 两路并行，gRPC 优先（过渡调试用）
+  transport: pekko
+
+# gRPC server（Netty，与 Jetty 8081 端口独立）
+grpc:
+  server:
+    port: 18081
 #    max-threads: 32
 
 
