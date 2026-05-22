@@ -66,7 +66,7 @@ public class ServiceUpgradeHandler extends ServiceHandler {
         }
 
         ActorSelection actorSelection = ActorUtils.actorSystem.actorSelection(
-                "pekko.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/installServiceActor");
+                "pekko://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/installServiceActor");
         Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
 
         log.info("开始在主机{}执行{}{}命令", serviceRoleInfo.getHostname(), serviceRoleInfo.getCommandType().getCommandName(Constants.CN),

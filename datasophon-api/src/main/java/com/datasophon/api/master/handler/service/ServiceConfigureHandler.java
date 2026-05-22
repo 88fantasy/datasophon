@@ -52,7 +52,7 @@ public class ServiceConfigureHandler extends ServiceHandler {
         }
         cmd.setServiceRoleName(serviceRoleInfo.getName());
         ActorSelection configActor = ActorUtils.actorSystem.actorSelection(
-                "pekko.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/configureServiceActor");
+                "pekko://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/configureServiceActor");
         
         Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
         Future<Object> configureFuture = Patterns.ask(configActor, cmd, timeout);

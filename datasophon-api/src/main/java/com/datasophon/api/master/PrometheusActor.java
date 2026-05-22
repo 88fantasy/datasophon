@@ -80,7 +80,7 @@ public class PrometheusActor extends AbstractActor {
     private void generateAlertConfigCommand(GenerateAlertConfigCommand command) throws Exception {
         doIfInstancePresent(command.getClusterId(), false, prometheusInstance -> {
             ActorSelection alertConfigActor =
-                    ActorUtils.actorSystem.actorSelection("pekko.tcp://datasophon@" + prometheusInstance.getHostname()
+                    ActorUtils.actorSystem.actorSelection("pekko://datasophon@" + prometheusInstance.getHostname()
                                                           + ":2552/user/worker/alertConfigActor");
             Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
             Future<Object> configureFuture = Patterns.ask(alertConfigActor, command, timeout);

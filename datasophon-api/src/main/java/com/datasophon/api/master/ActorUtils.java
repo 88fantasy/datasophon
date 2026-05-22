@@ -53,7 +53,7 @@ public class ActorUtils {
     
     public static final String DATASOPHON = "datasophon";
     
-    public static final String AKKA_REMOTE_NETTY_TCP_HOSTNAME = "pekko.remote.classic.netty.tcp.hostname";
+    public static final String AKKA_REMOTE_NETTY_TCP_HOSTNAME = "pekko.remote.artery.canonical.hostname";
     
     private static Random rand;
 
@@ -133,7 +133,7 @@ public class ActorUtils {
     }
     
     public static ActorRef getRemoteActor(String hostname, String actorName) {
-        String actorPath = "pekko.tcp://datasophon@" + hostname + ":2552/user/worker/" + actorName;
+        String actorPath = "pekko://datasophon@" + hostname + ":2552/user/worker/" + actorName;
         ActorSelection actorSelection = actorSystem.actorSelection(actorPath);
         Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
         Future<ActorRef> future = actorSelection.resolveOne(timeout);

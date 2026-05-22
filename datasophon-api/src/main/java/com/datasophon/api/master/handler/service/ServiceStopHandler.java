@@ -57,7 +57,7 @@ public class ServiceStopHandler extends ServiceHandler {
             return execResult;
         }
         ActorSelection stopActor = ActorUtils.actorSystem.actorSelection(
-                "pekko.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/stopServiceActor");
+                "pekko://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/stopServiceActor");
         Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
         Future<Object> startFuture = Patterns.ask(stopActor, cmd, timeout);
         try {

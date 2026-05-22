@@ -192,7 +192,7 @@ public class ClusterServiceRoleInstanceServiceImpl
         logger.info("start to get {} log from {}", serviceRole.getServiceRoleName(), roleInstance.getHostname());
 
         ActorSelection configActor = ActorUtils.actorSystem
-                .actorSelection("pekko.tcp://datasophon@" + roleInstance.getHostname() + ":2552/user/worker/logActor");
+                .actorSelection("pekko://datasophon@" + roleInstance.getHostname() + ":2552/user/worker/logActor");
         Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
         Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
         ExecResult logResult = (ExecResult) Await.result(logFuture, timeout.duration());

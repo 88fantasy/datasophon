@@ -20,7 +20,7 @@ public class ActorUtils {
     }
     
     public static ActorRef getRemoteActor(String hostname, String actorName) {
-        String actorPath = "pekko.tcp://datasophon@" + hostname + ":2551/user/" + actorName;
+        String actorPath = "pekko://datasophon@" + hostname + ":2551/user/" + actorName;
         ActorSelection actorSelection = actorSystem.actorSelection(actorPath);
         Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
         Future<ActorRef> future = actorSelection.resolveOne(timeout);

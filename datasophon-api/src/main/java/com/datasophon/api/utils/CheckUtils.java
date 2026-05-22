@@ -165,7 +165,7 @@ public class CheckUtils {
                 ServiceInfoMap.get(frameCode + Constants.UNDERLINE + roleInstanceEntity.getServiceName());
 
         ActorSelection execCmdActor = ActorUtils.actorSystem.actorSelection(
-                "pekko.tcp://datasophon@" + roleInstanceEntity.getHostname() + ":2552/user/worker/executeCmdActor");
+                "pekko://datasophon@" + roleInstanceEntity.getHostname() + ":2552/user/worker/executeCmdActor");
         ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
         ArrayList<String> commandList = new ArrayList<>();
         if(serviceRoleInfo.getStatusRunner() == null

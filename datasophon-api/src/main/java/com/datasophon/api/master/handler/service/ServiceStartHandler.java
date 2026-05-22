@@ -87,7 +87,7 @@ public class ServiceStartHandler extends ServiceHandler {
             return execResult;
         }
         ActorSelection startActor = ActorUtils.actorSystem.actorSelection(
-                "pekko.tcp://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/startServiceActor");
+                "pekko://datasophon@" + serviceRoleInfo.getHostname() + ":2552/user/worker/startServiceActor");
         Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
         Future<Object> startFuture = Patterns.ask(startActor, cmd, timeout);
         try {

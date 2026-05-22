@@ -99,7 +99,7 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         // sync to all hosts
         for (ClusterHostDO clusterHost : hostList) {
             ActorSelection unixUserActor = ActorUtils.actorSystem.actorSelection(
-                    "pekko.tcp://datasophon@" + clusterHost.getHostname() + ":2552/user/worker/unixUserActor");
+                    "pekko://datasophon@" + clusterHost.getHostname() + ":2552/user/worker/unixUserActor");
             
             CreateUnixUserCommand createUnixUserCommand = new CreateUnixUserCommand();
             createUnixUserCommand.setUsername(username);
@@ -174,7 +174,7 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         // sync to all hosts
         for (ClusterHostDO clusterHost : hostList) {
             ActorSelection unixUserActor = ActorUtils.actorSystem.actorSelection(
-                    "pekko.tcp://datasophon@" + clusterHost.getHostname() + ":2552/user/worker/unixUserActor");
+                    "pekko://datasophon@" + clusterHost.getHostname() + ":2552/user/worker/unixUserActor");
             DelUnixUserCommand createUnixUserCommand = new DelUnixUserCommand();
             Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
             createUnixUserCommand.setUsername(clusterUser.getUsername());
@@ -210,7 +210,7 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
             otherGroup = otherGroupList.stream().map(ClusterGroup::getGroupName).collect(Collectors.joining(","));
         }
         ActorSelection unixUserActor = ActorUtils.actorSystem
-                .actorSelection("pekko.tcp://datasophon@" + hostname + ":2552/user/worker/unixUserActor");
+                .actorSelection("pekko://datasophon@" + hostname + ":2552/user/worker/unixUserActor");
         
         CreateUnixUserCommand createUnixUserCommand = new CreateUnixUserCommand();
         createUnixUserCommand.setUsername(clusterUser.getUsername());

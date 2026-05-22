@@ -127,7 +127,7 @@ public class WorkerApplicationServer {
     }
     
     private static ActorSystem initActor(String hostname) {
-        Config config = ConfigFactory.parseString("pekko.remote.classic.netty.tcp.hostname=" + hostname);
+        Config config = ConfigFactory.parseString("pekko.remote.artery.canonical.hostname=" + hostname);
         ActorSystem system =
                 ActorSystem.create(Constants.DATASOPHON, config.withFallback(ConfigFactory.load()));
         system.actorOf(Props.create(WorkerActor.class), WORKER);
@@ -151,7 +151,7 @@ public class WorkerApplicationServer {
                                      ActorSystem system) {
         ActorSelection workerStartActor =
                 system.actorSelection(
-                        "pekko.tcp://datasophon@" + masterHost + ":2551/user/workerStartActor");
+                        "pekko://datasophon@" + masterHost + ":2551/user/workerStartActor");
         ExecResult result = ShellUtils.execShell(workDir + "/script/host-info-collect.sh");
         if (!result.getExecResult()) {
             logger.error("host info collect error:{}", result.getExecErrOut());

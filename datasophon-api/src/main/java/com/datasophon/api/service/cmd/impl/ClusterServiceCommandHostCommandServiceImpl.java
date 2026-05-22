@@ -122,7 +122,7 @@ public class ClusterServiceCommandHostCommandServiceImpl
         command.setBaseDir(Constants.WORKER_PATH);
         logger.info("Start to get {} install log from host {}", serviceRoleName, hostCommand.getHostname());
         ActorSelection configActor = ActorUtils.actorSystem
-                .actorSelection("pekko.tcp://datasophon@" + hostCommand.getHostname() + ":2552/user/worker/logActor");
+                .actorSelection("pekko://datasophon@" + hostCommand.getHostname() + ":2552/user/worker/logActor");
         Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
         Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
         ExecResult logResult = (ExecResult) Await.result(logFuture, timeout.duration());

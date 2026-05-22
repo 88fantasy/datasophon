@@ -416,9 +416,9 @@ public class ProcessUtils {
         // 更新namenode节点的whitelist白名单
         for (ClusterServiceRoleInstanceEntity namenode : namenodes) {
             ActorSelection actorSelection = ActorUtils.actorSystem.actorSelection(
-                    "pekko.tcp://datasophon@" + namenode.getHostname() + ":2552/user/worker/fileOperateActor");
+                    "pekko://datasophon@" + namenode.getHostname() + ":2552/user/worker/fileOperateActor");
             ActorSelection execCmdActor = ActorUtils.actorSystem.actorSelection(
-                    "pekko.tcp://datasophon@" + namenode.getHostname() + ":2552/user/worker/executeCmdActor");
+                    "pekko://datasophon@" + namenode.getHostname() + ":2552/user/worker/executeCmdActor");
             Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
             FileOperateCommand fileOperateCommand = new FileOperateCommand();
             fileOperateCommand.setLines(list);
