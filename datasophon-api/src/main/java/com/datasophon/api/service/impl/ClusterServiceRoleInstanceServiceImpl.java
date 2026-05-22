@@ -27,6 +27,8 @@ import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapp
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.load.GlobalVariables;
+import com.datasophon.api.configuration.TransportProperties;
+import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterAlertHistoryService;
 import com.datasophon.api.service.ClusterInfoService;
@@ -104,6 +106,12 @@ public class ClusterServiceRoleInstanceServiceImpl
 
     @Autowired
     private ClusterServiceRoleInstanceMapper roleInstanceMapper;
+
+    @Autowired
+    private TransportProperties transportProperties;
+
+    @Autowired
+    private WorkerCommandClient workerCommandClient;
 
     @Autowired
     private ClusterAlertHistoryService alertHistoryService;
@@ -190,12 +198,16 @@ public class ClusterServiceRoleInstanceServiceImpl
         command.setBaseDir(PkgInstallPathUtils.getInstallUniHome(serviceRoleInfo));
 
         logger.info("start to get {} log from {}", serviceRole.getServiceRoleName(), roleInstance.getHostname());
-
-        ActorSelection configActor = ActorUtils.actorSystem
-                .actorSelection("pekko://datasophon@" + roleInstance.getHostname() + ":2552/user/worker/logActor");
-        Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
-        Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
-        ExecResult logResult = (ExecResult) Await.result(logFuture, timeout.duration());
+        ExecResult logResult;
+        if (transportProperties.isGrpcEnabled()) {
+            logResult = workerCommandClient.getLog(roleInstance.getHostname(), command.getLogFile(), command.getBaseDir());
+        } else {
+            ActorSelection configActor = ActorUtils.actorSystem
+                    .actorSelection("pekko://datasophon@" + roleInstance.getHostname() + ":2552/user/worker/logActor");
+            Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
+            Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
+            logResult = (ExecResult) Await.result(logFuture, timeout.duration());
+        }
         if (Objects.nonNull(logResult) && logResult.getExecResult()) {
             return Result.success(logResult.getExecOut());
         }

@@ -17,7 +17,9 @@
 
 package com.datasophon.api.service.impl;
 
+import com.datasophon.api.configuration.TransportProperties;
 import com.datasophon.api.enums.Status;
+import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
@@ -67,6 +69,12 @@ public class ClusterYarnQueueServiceImpl extends ServiceImpl<ClusterYarnQueueMap
     
     @Autowired
     private ClusterServiceRoleInstanceService roleInstanceService;
+
+    @Autowired
+    private TransportProperties transportProperties;
+
+    @Autowired
+    private WorkerCommandClient workerCommandClient;
     
     @Override
     public Result listByPage(Integer clusterId, Integer page, Integer pageSize) {
@@ -140,17 +148,22 @@ public class ClusterYarnQueueServiceImpl extends ServiceImpl<ClusterYarnQueueMap
                 hostname = roleInstanceEntity.getHostname();
             }
         }
-        ActorSelection execCmdActor = ActorUtils.actorSystem
-                .actorSelection("pekko://datasophon@" + hostname + ":2552/user/worker/executeCmdActor");
-        ExecuteCmdCommand command = new ExecuteCmdCommand();
-        Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
         ArrayList<String> commands = new ArrayList<>();
         commands.add(Constants.INSTALL_PATH + "/hadoop/bin/yarn");
         commands.add("rmadmin");
         commands.add("-refreshQueues");
-        command.setCommands(commands);
-        Future<Object> execFuture = Patterns.ask(execCmdActor, command, timeout);
-        ExecResult execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+        ExecResult execResult;
+        if (transportProperties.isGrpcEnabled()) {
+            execResult = workerCommandClient.executeCmd(hostname, commands);
+        } else {
+            ActorSelection execCmdActor = ActorUtils.actorSystem
+                    .actorSelection("pekko://datasophon@" + hostname + ":2552/user/worker/executeCmdActor");
+            ExecuteCmdCommand command = new ExecuteCmdCommand();
+            command.setCommands(commands);
+            Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
+            Future<Object> execFuture = Patterns.ask(execCmdActor, command, timeout);
+            execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+        }
         if (execResult.getExecResult()) {
             logger.info("yarn dfsadmin -refreshQueues success at {}", hostname);
         } else {

@@ -29,6 +29,7 @@ import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.actor.RemoteEventActor;
 import com.datasophon.worker.actor.WorkerActor;
 import com.datasophon.worker.grpc.MasterRegistryClient;
+import com.datasophon.worker.grpc.WorkerGrpcServer;
 import com.datasophon.worker.utils.ActorUtils;
 import com.datasophon.worker.utils.UnixUtils;
 
@@ -93,16 +94,26 @@ public class WorkerApplicationServer {
         tellToMaster(hostname, workDir, masterHost, cpuArchitecture, system);
         logger.info("start worker");
 
-        // ── gRPC 双轨注册（transport=grpc 或 both 时启用） ──────────────────
+        // ── gRPC 双轨（transport=grpc 或 both 时启用） ───────────────────────
         // transport 属性从 conf/common.properties 读取，默认 pekko
         String transport = PropertyUtils.getString("transport", "pekko");
         MasterRegistryClient registryClient = null;
+        WorkerGrpcServer workerGrpcServer = null;
         if ("grpc".equals(transport) || "both".equals(transport)) {
+            // 1. 先启动 gRPC Server，再向 Master 注册，确保注册成功时 Server 已就绪
+            workerGrpcServer = new WorkerGrpcServer();
+            try {
+                workerGrpcServer.start();
+            } catch (Exception e) {
+                logger.error("Failed to start worker gRPC server, gRPC channel will be unavailable", e);
+            }
+            // 2. 向 Master 注册（携带 grpcPort=18082）
             registryClient = new MasterRegistryClient(masterHost, hostname, cpuArchitecture, clusterId);
             registryClient.register();
-            logger.info("Worker gRPC registry client started (transport={})", transport);
+            logger.info("Worker gRPC started (transport={})", transport);
         }
         final MasterRegistryClient finalRegistryClient = registryClient;
+        final WorkerGrpcServer finalWorkerGrpcServer = workerGrpcServer;
 
         /*
          * registry hooks, which are called before the process exits
@@ -118,6 +129,9 @@ public class WorkerApplicationServer {
                                             } catch (Exception e) {
                                                 logger.warn("Failed to close gRPC registry client", e);
                                             }
+                                        }
+                                        if (finalWorkerGrpcServer != null) {
+                                            finalWorkerGrpcServer.stop();
                                         }
                                         close("WorkerServer shutdown hook");
                                     }

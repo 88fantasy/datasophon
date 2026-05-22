@@ -8,6 +8,8 @@ import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.api.dto.log.ServiceRoleLogQueryDTO;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.GlobalVariables;
+import com.datasophon.api.configuration.TransportProperties;
+import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.FrameServiceRoleService;
@@ -49,6 +51,12 @@ public class VosProductServiceImpl implements VosProductService {
     @Autowired
     private FrameServiceRoleService frameServiceRoleService;
 
+    @Autowired
+    private TransportProperties transportProperties;
+
+    @Autowired
+    private WorkerCommandClient workerCommandClient;
+
     @Override
     public String getVosServiceRoleRuntimeLog(ServiceRoleLogQueryDTO dto) throws Exception {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
@@ -80,10 +88,16 @@ public class VosProductServiceImpl implements VosProductService {
         command.setBaseDir(PkgInstallPathUtils.getInstallUniHome(serviceRoleInfo));
 
         log.info("start to get {} log from {}", serviceRole.getServiceRoleName(), dto.getHost());
-        ActorSelection configActor = ActorUtils.actorSystem.actorSelection("pekko://datasophon@" + dto.getHost() + ":2552/user/worker/logActor");
-        Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
-        Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
-        ExecResult logResult = (ExecResult) Await.result(logFuture, timeout.duration());
+        ExecResult logResult;
+        if (transportProperties.isGrpcEnabled()) {
+            logResult = workerCommandClient.getLog(dto.getHost(), command.getLogFile(), command.getBaseDir());
+        } else {
+            ActorSelection configActor = ActorUtils.actorSystem
+                    .actorSelection("pekko://datasophon@" + dto.getHost() + ":2552/user/worker/logActor");
+            Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
+            Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
+            logResult = (ExecResult) Await.result(logFuture, timeout.duration());
+        }
         if (logResult == null) {
             throw new BusinessException("获取日志结果为空");
         }

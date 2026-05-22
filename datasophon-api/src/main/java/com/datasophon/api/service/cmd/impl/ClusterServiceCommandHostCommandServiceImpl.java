@@ -22,6 +22,8 @@ import org.apache.pekko.pattern.Patterns;
 import org.apache.pekko.util.Timeout;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.datasophon.api.configuration.TransportProperties;
+import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
@@ -60,9 +62,15 @@ public class ClusterServiceCommandHostCommandServiceImpl
     
     @Autowired
     ClusterInfoService clusterInfoService;
-    
+
     @Autowired
     ClusterServiceCommandMapper commandMapper;
+
+    @Autowired
+    private TransportProperties transportProperties;
+
+    @Autowired
+    private WorkerCommandClient workerCommandClient;
     
     @Override
     public Result getHostCommandList(String hostname, String commandHostId, Integer page, Integer pageSize) {
@@ -117,15 +125,20 @@ public class ClusterServiceCommandHostCommandServiceImpl
         String serviceRoleName = hostCommand.getServiceRoleName();
         String logFile = String.format("logs/%s/%s.log", serviceName, serviceRoleName);
         
-        GetLogCommand command = new GetLogCommand();
-        command.setLogFile(logFile);
-        command.setBaseDir(Constants.WORKER_PATH);
         logger.info("Start to get {} install log from host {}", serviceRoleName, hostCommand.getHostname());
-        ActorSelection configActor = ActorUtils.actorSystem
-                .actorSelection("pekko://datasophon@" + hostCommand.getHostname() + ":2552/user/worker/logActor");
-        Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
-        Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
-        ExecResult logResult = (ExecResult) Await.result(logFuture, timeout.duration());
+        ExecResult logResult;
+        if (transportProperties.isGrpcEnabled()) {
+            logResult = workerCommandClient.getLog(hostCommand.getHostname(), logFile, Constants.WORKER_PATH);
+        } else {
+            GetLogCommand command = new GetLogCommand();
+            command.setLogFile(logFile);
+            command.setBaseDir(Constants.WORKER_PATH);
+            ActorSelection configActor = ActorUtils.actorSystem
+                    .actorSelection("pekko://datasophon@" + hostCommand.getHostname() + ":2552/user/worker/logActor");
+            Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
+            Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
+            logResult = (ExecResult) Await.result(logFuture, timeout.duration());
+        }
         if (Objects.nonNull(logResult) && logResult.getExecResult()) {
             return Result.success(logResult.getExecOut());
         }

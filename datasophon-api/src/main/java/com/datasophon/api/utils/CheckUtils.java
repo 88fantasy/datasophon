@@ -21,7 +21,9 @@ import org.apache.pekko.actor.ActorSelection;
 import org.apache.pekko.pattern.Patterns;
 import org.apache.pekko.util.Timeout;
 import cn.hutool.core.util.StrUtil;
+import com.datasophon.api.configuration.TransportProperties;
 import com.datasophon.api.enums.Status;
+import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.load.ServiceInfoMap;
 import com.datasophon.api.load.ServiceRoleMap;
 import com.datasophon.api.master.ActorUtils;
@@ -164,10 +166,6 @@ public class CheckUtils {
         ServiceInfo serviceInfo =
                 ServiceInfoMap.get(frameCode + Constants.UNDERLINE + roleInstanceEntity.getServiceName());
 
-        ActorSelection execCmdActor = ActorUtils.actorSystem.actorSelection(
-                "pekko://datasophon@" + roleInstanceEntity.getHostname() + ":2552/user/worker/executeCmdActor");
-        ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
-        ArrayList<String> commandList = new ArrayList<>();
         if(serviceRoleInfo.getStatusRunner() == null
                 || StrUtil.isBlank(serviceRoleInfo.getStatusRunner().getProgram())){
             //不写则不执行检测命令
@@ -175,13 +173,25 @@ public class CheckUtils {
         }
 
         String linkDirName = PkgInstallPathUtils.getLinkDirName(serviceRoleInfo);
+        ArrayList<String> commandList = new ArrayList<>();
         commandList.add(linkDirName + Constants.SLASH + serviceRoleInfo.getStatusRunner().getProgram());
         commandList.addAll(serviceRoleInfo.getStatusRunner().getArgs());
-        cmdCommand.setCommands(commandList);
-        Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
-        Future<Object> execFuture = Patterns.ask(execCmdActor, cmdCommand, timeout);
         try {
-            ExecResult execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+            ExecResult execResult;
+            TransportProperties tp = SpringTool.getApplicationContext().getBean(TransportProperties.class);
+            if (tp.isGrpcEnabled()) {
+                WorkerCommandClient workerCommandClient =
+                        SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
+                execResult = workerCommandClient.executeCmd(roleInstanceEntity.getHostname(), commandList);
+            } else {
+                ActorSelection execCmdActor = ActorUtils.actorSystem.actorSelection(
+                        "pekko://datasophon@" + roleInstanceEntity.getHostname() + ":2552/user/worker/executeCmdActor");
+                ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
+                cmdCommand.setCommands(commandList);
+                Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
+                Future<Object> execFuture = Patterns.ask(execCmdActor, cmdCommand, timeout);
+                execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+            }
             if (execResult.getExecResult()) {
                 ProcessUtils.recoverAlert(roleInstanceEntity);
             } else {

@@ -29,6 +29,8 @@ import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.datasophon.api.configuration.TransportProperties;
+import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.master.ActorUtils;
@@ -428,14 +430,22 @@ public class ProcessUtils {
             if (Objects.nonNull(fileOperateResult) && fileOperateResult.getExecResult()) {
                 logger.info("write {} success in namenode {}", type, namenode.getHostname());
                 // 刷新白名单
-                ExecuteCmdCommand command = new ExecuteCmdCommand();
-                ArrayList<String> commands = new ArrayList<>();
-                commands.add(Constants.INSTALL_PATH + "/hadoop/bin/hdfs");
-                commands.add("dfsadmin");
-                commands.add("-refreshNodes");
-                command.setCommands(commands);
-                Future<Object> execFuture = Patterns.ask(execCmdActor, command, timeout);
-                ExecResult execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+                ArrayList<String> refreshCmds = new ArrayList<>();
+                refreshCmds.add(Constants.INSTALL_PATH + "/hadoop/bin/hdfs");
+                refreshCmds.add("dfsadmin");
+                refreshCmds.add("-refreshNodes");
+                ExecResult execResult;
+                TransportProperties tp = SpringTool.getApplicationContext().getBean(TransportProperties.class);
+                if (tp.isGrpcEnabled()) {
+                    WorkerCommandClient workerCommandClient =
+                            SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
+                    execResult = workerCommandClient.executeCmd(namenode.getHostname(), refreshCmds);
+                } else {
+                    ExecuteCmdCommand command = new ExecuteCmdCommand();
+                    command.setCommands(refreshCmds);
+                    Future<Object> execFuture = Patterns.ask(execCmdActor, command, timeout);
+                    execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+                }
                 if (execResult.getExecResult()) {
                     logger.info("hdfs dfsadmin -refreshNodes success at {}", namenode.getHostname());
                 }

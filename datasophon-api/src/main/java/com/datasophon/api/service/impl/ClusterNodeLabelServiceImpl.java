@@ -19,6 +19,8 @@ package com.datasophon.api.service.impl;
 
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.BusinessException;
+import com.datasophon.api.configuration.TransportProperties;
+import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterNodeLabelService;
@@ -77,6 +79,12 @@ public class ClusterNodeLabelServiceImpl extends ServiceImpl<ClusterNodeLabelMap
   @Autowired
   private ClusterInfoMapper clusterInfoMapper;
 
+  @Autowired
+  private TransportProperties transportProperties;
+
+  @Autowired
+  private WorkerCommandClient workerCommandClient;
+
   @Override
   public Result saveNodeLabel(Integer clusterId, String nodeLabel) {
     if (repeatNodeLable(clusterId, nodeLabel)) {
@@ -100,20 +108,25 @@ public class ClusterNodeLabelServiceImpl extends ServiceImpl<ClusterNodeLabelMap
         roleInstanceMapper.getServiceRoleInstanceListByClusterIdAndRoleName(clusterId, "ResourceManager");
     if (!roleList.isEmpty()) {
       String hostname = roleList.get(0).getHostname();
-      ActorSelection execCmdActor = ActorUtils.actorSystem
-          .actorSelection("pekko://datasophon@" + hostname + ":2552/user/worker/executeCmdActor");
-      ExecuteCmdCommand command = new ExecuteCmdCommand();
-      Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
       ArrayList<String> commands = new ArrayList<>();
       commands.add(Constants.INSTALL_PATH + Constants.SLASH
           + PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "YARN") + "/bin/yarn");
       commands.add("rmadmin");
       commands.add(type);
       commands.add("\"" + nodeLabel + "\"");
-      command.setCommands(commands);
-      Future<Object> execFuture = Patterns.ask(execCmdActor, command, timeout);
       try {
-        ExecResult execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+        ExecResult execResult;
+        if (transportProperties.isGrpcEnabled()) {
+          execResult = workerCommandClient.executeCmd(hostname, commands);
+        } else {
+          ActorSelection execCmdActor = ActorUtils.actorSystem
+              .actorSelection("pekko://datasophon@" + hostname + ":2552/user/worker/executeCmdActor");
+          ExecuteCmdCommand command = new ExecuteCmdCommand();
+          command.setCommands(commands);
+          Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
+          Future<Object> execFuture = Patterns.ask(execCmdActor, command, timeout);
+          execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+        }
         if (execResult.getExecResult()) {
           logger.info("add yarn node label success at {}", hostname);
           return true;

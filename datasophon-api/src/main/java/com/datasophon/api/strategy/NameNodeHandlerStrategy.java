@@ -22,6 +22,8 @@ package com.datasophon.api.strategy;
 import org.apache.pekko.actor.ActorRef;
 import org.apache.pekko.pattern.Patterns;
 import org.apache.pekko.util.Timeout;
+import com.datasophon.api.configuration.TransportProperties;
+import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.master.ActorUtils;
@@ -125,14 +127,23 @@ public class NameNodeHandlerStrategy extends ServiceHandlerAbstract implements S
     }
 
     private void getNMState(ClusterServiceRoleInstanceEntity roleInstanceEntity, String commandLine) {
-        ClusterServiceRoleInstanceWebuisService webuisService = SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceWebuisService.class);
-        ActorRef execCmdActor = ActorUtils.getRemoteActor(roleInstanceEntity.getHostname(), "nMStateActor");
-        ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
-        cmdCommand.setCommandLine(commandLine);
-        Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
-        Future<Object> execFuture = Patterns.ask(execCmdActor, cmdCommand, timeout);
+        ClusterServiceRoleInstanceWebuisService webuisService =
+                SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceWebuisService.class);
         try {
-            ExecResult execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+            ExecResult execResult;
+            TransportProperties tp = SpringTool.getApplicationContext().getBean(TransportProperties.class);
+            if (tp.isGrpcEnabled()) {
+                WorkerCommandClient workerCommandClient =
+                        SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
+                execResult = workerCommandClient.executeCmdLine(roleInstanceEntity.getHostname(), commandLine);
+            } else {
+                ActorRef execCmdActor = ActorUtils.getRemoteActor(roleInstanceEntity.getHostname(), "nMStateActor");
+                ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
+                cmdCommand.setCommandLine(commandLine);
+                Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
+                Future<Object> execFuture = Patterns.ask(execCmdActor, cmdCommand, timeout);
+                execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+            }
             if (execResult.getExecResult()) {
                 if (execResult.getExecOut().contains(ACTIVE)) {
                     webuisService.updateWebUiToActive(roleInstanceEntity.getId());

@@ -20,6 +20,8 @@ package com.datasophon.api.master;
 import org.apache.pekko.actor.ActorRef;
 import org.apache.pekko.pattern.Patterns;
 import org.apache.pekko.util.Timeout;
+import com.datasophon.api.configuration.TransportProperties;
+import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.host.ClusterHostService;
@@ -102,14 +104,20 @@ public class HostCheckActor extends TypedActor<HostCheckCommand> {
 
     private void checkHostByPingPong(ClusterHostDO host) {
         host.setCheckTime(new Date());
+        ExecResult execResult = null;
         try {
-            // rpc 检测
-            final ActorRef pingActor = ActorUtils.getRemoteActor(host.getHostname(), "pingActor");
-            PingCommand pingCommand = new PingCommand();
-            pingCommand.setMessage("ping");
-            Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-            Future<Object> execFuture = Patterns.ask(pingActor, pingCommand, timeout);
-            ExecResult execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+            if (getBean(TransportProperties.class).isGrpcEnabled()) {
+                // ── gRPC 路径 ──────────────────────────────────────────────
+                execResult = getBean(WorkerCommandClient.class).ping(host.getHostname());
+            } else {
+                // ── Pekko 路径（默认，transport=pekko）─────────────────────
+                final ActorRef pingActor = ActorUtils.getRemoteActor(host.getHostname(), "pingActor");
+                PingCommand pingCommand = new PingCommand();
+                pingCommand.setMessage("ping");
+                Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
+                Future<Object> execFuture = Patterns.ask(pingActor, pingCommand, timeout);
+                execResult = (ExecResult) Await.result(execFuture, timeout.duration());
+            }
             host.setManaged(MANAGED.YES);
             if (execResult.getExecResult()) {
                 host.setHostState(HostState.RUNNING);
@@ -119,7 +127,7 @@ public class HostCheckActor extends TypedActor<HostCheckCommand> {
                 host.setManaged(MANAGED.YES);
                 logger.warn("ping host: {} fail, reason: {}", host.getHostname(), execResult.getExecOut());
             }
-        } catch (Exception  e) {
+        } catch (Exception e) {
             if (e instanceof TimeoutException) {
                 logger.warn("ping: {} timeout, it maybe offline", host.getHostname());
             } else {

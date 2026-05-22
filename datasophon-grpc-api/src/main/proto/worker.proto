@@ -1,0 +1,59 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+package com.datasophon.grpc;
+
+option java_package = "com.datasophon.grpc.api";
+option java_multiple_files = true;
+option java_outer_classname = "WorkerProto";
+
+import "common.proto";
+
+/**
+ * Worker 命令服务（Phase 1）：Master → Worker 的远程调用。
+ *
+ * Phase 1 覆盖：PingActor、ExecuteCmdActor、LogActor（及同构的 RMStateActor、NMStateActor）
+ * Phase 2+ 追加：InstallServiceRole、ConfigureServiceRole、StartServiceRole 等
+ */
+service WorkerCommandService {
+    rpc Ping       (PingRequest)       returns (ExecResultPb);
+    rpc ExecuteCmd (ExecuteCmdRequest) returns (ExecResultPb);
+    rpc GetLog     (GetLogRequest)     returns (ExecResultPb);
+}
+
+message PingRequest {
+    string message = 1;
+}
+
+/**
+ * 覆盖三类 Actor：
+ *   - ExecuteCmdActor  →  commands（命令 + 参数列表）
+ *   - RMStateActor     →  command_line（单行 shell 命令）
+ *   - NMStateActor     →  command_line（单行 shell 命令）
+ * 两个字段互斥，服务端优先判断 command_line 是否非空。
+ */
+message ExecuteCmdRequest {
+    repeated string commands     = 1;
+    string          command_line = 2;
+}
+
+message GetLogRequest {
+    string log_file    = 1;
+    string base_dir    = 2;
+    string run_as_user = 3;
+}
