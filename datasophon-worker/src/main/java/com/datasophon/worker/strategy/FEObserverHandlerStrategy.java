@@ -17,23 +17,17 @@
 
 package com.datasophon.worker.strategy;
 
-import com.datasophon.common.Constants;
-import com.datasophon.common.command.OlapOpsType;
-import com.datasophon.common.command.OlapSqlExecCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ThrowableUtils;
+import com.datasophon.common.utils.OlapUtils;
 import com.datasophon.worker.handler.ServiceHandler;
-import com.datasophon.worker.utils.ActorUtils;
-
-import java.util.ArrayList;
-
-import org.apache.pekko.actor.ActorRef;
 
 import cn.hutool.core.net.NetUtil;
+import java.util.ArrayList;
 import cn.hutool.json.JSONUtil;
 
 public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
@@ -64,14 +58,13 @@ public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implement
             if (startResult.getExecResult()) {
                 // add observer
                 try {
-                    OlapSqlExecCommand sqlExecCommand = new OlapSqlExecCommand();
-                    sqlExecCommand.setVariables(command.getVariables());
-                    sqlExecCommand.setFeMaster(command.getMasterHost());
-                    sqlExecCommand.setHostName(NetUtil.getLocalhostStr());
-                    sqlExecCommand.setWorkerPath(workPath);
-                    sqlExecCommand.setOpsType(OlapOpsType.ADD_FE_OBSERVER);
-                    ActorUtils.getRemoteActor(command.getManagerHost(), "masterNodeProcessingActor")
-                            .tell(sqlExecCommand, ActorRef.noSender());
+                    String rootPassword = command.getVariables()
+                            .getOrDefault("${DORIS.root_password}", "");
+                    ExecResult addResult = OlapUtils.addObserver(
+                            command.getMasterHost(), NetUtil.getLocalhostStr(), rootPassword);
+                    if (!addResult.getExecResult()) {
+                        OlapUtils.addObserverBySqlClient(command.getMasterHost(), NetUtil.getLocalhostStr());
+                    }
                 } catch (Exception e) {
                     logger.error("add fe observer failed {}", ThrowableUtils.getStackTrace(e));
                 }

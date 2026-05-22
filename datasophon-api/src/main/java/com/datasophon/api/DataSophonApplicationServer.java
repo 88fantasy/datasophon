@@ -18,7 +18,6 @@
 package com.datasophon.api;
 
 import cn.hutool.extra.spring.EnableSpringUtil;
-import com.datasophon.api.master.ActorUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import org.mybatis.spring.annotation.MapperScan;
@@ -33,7 +32,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import jakarta.annotation.PostConstruct;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.security.NoSuchAlgorithmException;
 
 @SpringBootApplication
 @ServletComponentScan
@@ -49,23 +47,11 @@ public class DataSophonApplicationServer extends SpringBootServletInitializer {
         app.setAllowBeanDefinitionOverriding(true);
         app.setAllowCircularReferences(true);
         app.run(args);
-        // add shutdown hook， close and shutdown resources
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            shutdown();
-        }));
     }
     
     @PostConstruct
-    public void run() throws UnknownHostException, NoSuchAlgorithmException {
+    public void run() throws UnknownHostException {
         String hostName = InetAddress.getLocalHost().getHostName();
         CacheUtils.put(Constants.HOSTNAME, hostName);
-        ActorUtils.init();
-    }
-    
-    /**
-     * Master 关闭时调用
-     */
-    public static void shutdown() {
-        ActorUtils.shutdown();
     }
 }

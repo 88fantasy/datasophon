@@ -17,18 +17,12 @@
 
 package com.datasophon.api.service.cmd.impl;
 
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.datasophon.api.configuration.TransportProperties;
 import com.datasophon.api.grpc.WorkerCommandClient;
-import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
 import com.datasophon.common.Constants;
-import com.datasophon.common.command.GetLogCommand;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.cmd.ClusterServiceCommandEntity;
@@ -40,13 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 @Service("clusterServiceCommandHostCommandService")
 public class ClusterServiceCommandHostCommandServiceImpl
@@ -67,11 +56,8 @@ public class ClusterServiceCommandHostCommandServiceImpl
     ClusterServiceCommandMapper commandMapper;
 
     @Autowired
-    private TransportProperties transportProperties;
-
-    @Autowired
     private WorkerCommandClient workerCommandClient;
-    
+
     @Override
     public Result getHostCommandList(String hostname, String commandHostId, Integer page, Integer pageSize) {
         Integer offset = (page - 1) * pageSize;
@@ -126,19 +112,7 @@ public class ClusterServiceCommandHostCommandServiceImpl
         String logFile = String.format("logs/%s/%s.log", serviceName, serviceRoleName);
         
         logger.info("Start to get {} install log from host {}", serviceRoleName, hostCommand.getHostname());
-        ExecResult logResult;
-        if (transportProperties.isGrpcEnabled()) {
-            logResult = workerCommandClient.getLog(hostCommand.getHostname(), logFile, Constants.WORKER_PATH);
-        } else {
-            GetLogCommand command = new GetLogCommand();
-            command.setLogFile(logFile);
-            command.setBaseDir(Constants.WORKER_PATH);
-            ActorSelection configActor = ActorUtils.actorSystem
-                    .actorSelection("pekko://datasophon@" + hostCommand.getHostname() + ":2552/user/worker/logActor");
-            Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
-            Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
-            logResult = (ExecResult) Await.result(logFuture, timeout.duration());
-        }
+        ExecResult logResult = workerCommandClient.getLog(hostCommand.getHostname(), logFile, Constants.WORKER_PATH);
         if (Objects.nonNull(logResult) && logResult.getExecResult()) {
             return Result.success(logResult.getExecOut());
         }

@@ -17,9 +17,6 @@
 
 package com.datasophon.api.utils;
 
-import org.apache.pekko.actor.ActorRef;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
@@ -97,9 +94,6 @@ import com.datasophon.domain.host.enums.HostState;
 import com.datasophon.domain.host.enums.MANAGED;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -285,35 +279,6 @@ public class ProcessUtils {
         commandService.updateCommandHost(message);
 
         return hostCommand;
-    }
-
-    public static void buildExecuteServiceRoleCommand(
-            Integer clusterId,
-            CommandType commandType,
-            String clusterCode,
-            DAGGraph<String, ServiceNode, String> dag,
-            Map<String, ServiceExecuteState> activeTaskList,
-            Map<String, String> errorTaskList,
-            Map<String, String> readyToSubmitTaskList,
-            Map<String, String> completeTaskList,
-            String node,
-            List<ServiceRoleInfo> masterRoles,
-            ServiceRoleInfo workerRole,
-            ActorRef serviceActor,
-            ServiceRoleType serviceRoleType) {
-        ExecuteServiceRoleCommand executeServiceRoleCommand =
-                new ExecuteServiceRoleCommand(clusterId, node, masterRoles);
-        executeServiceRoleCommand.setServiceRoleType(serviceRoleType);
-        executeServiceRoleCommand.setCommandType(commandType);
-        executeServiceRoleCommand.setDag(dag);
-        executeServiceRoleCommand.setClusterCode(clusterCode);
-        executeServiceRoleCommand.setClusterId(clusterId);
-        executeServiceRoleCommand.setActiveTaskList(activeTaskList);
-        executeServiceRoleCommand.setErrorTaskList(errorTaskList);
-        executeServiceRoleCommand.setReadyToSubmitTaskList(readyToSubmitTaskList);
-        executeServiceRoleCommand.setCompleteTaskList(completeTaskList);
-        executeServiceRoleCommand.setWorkerRole(workerRole);
-        serviceActor.tell(executeServiceRoleCommand, ActorRef.noSender());
     }
 
     public static ClusterServiceCommandEntity generateCommandEntity(Integer clusterId, CommandType commandType,

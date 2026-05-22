@@ -17,7 +17,6 @@
 
 package com.datasophon.api.master.service;
 
-import com.datasophon.api.master.DispatcherWorkerActor;
 import com.datasophon.api.master.handler.host.CheckWorkerMd5Handler;
 import com.datasophon.api.master.handler.host.DecompressWorkerHandler;
 import com.datasophon.api.master.handler.host.DispatcherWorkerHandlerChain;

@@ -17,7 +17,6 @@
 
 package com.datasophon.api.master.service;
 
-import com.datasophon.api.master.MasterNodeProcessingActor;
 import com.datasophon.common.command.OlapSqlExecCommand;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.OlapUtils;

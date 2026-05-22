@@ -17,7 +17,6 @@
 
 package com.datasophon.worker.strategy;
 
-import org.apache.pekko.actor.ActorRef;
 import cn.hutool.core.net.NetUtil;
 import cn.hutool.db.DbUtil;
 import cn.hutool.db.ds.simple.SimpleDataSource;
@@ -25,8 +24,6 @@ import cn.hutool.db.sql.SqlExecutor;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.setting.dialect.Props;
 import com.datasophon.common.Constants;
-import com.datasophon.common.command.OlapOpsType;
-import com.datasophon.common.command.OlapSqlExecCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.model.ServiceRoleRunner;
@@ -35,8 +32,8 @@ import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.OlapUtils;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ThrowableUtils;
+import com.datasophon.common.utils.OlapUtils;
 import com.datasophon.worker.handler.ServiceHandler;
-import com.datasophon.worker.utils.ActorUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -79,14 +76,13 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                 if (startResult.getExecResult()) {
                     // add follower
                     try {
-                        OlapSqlExecCommand sqlExecCommand = new OlapSqlExecCommand();
-                        sqlExecCommand.setVariables(command.getVariables());
-                        sqlExecCommand.setFeMaster(command.getMasterHost());
-                        sqlExecCommand.setHostName(NetUtil.getLocalhostStr());
-                        sqlExecCommand.setOpsType(OlapOpsType.ADD_FE_FOLLOWER);
-                        sqlExecCommand.setWorkerPath(workPath);
-                        ActorUtils.getRemoteActor(command.getManagerHost(), "masterNodeProcessingActor")
-                                .tell(sqlExecCommand, ActorRef.noSender());
+                        String rootPassword = command.getVariables()
+                                .getOrDefault("${DORIS.root_password}", "");
+                        ExecResult addResult = OlapUtils.addFollower(
+                                command.getMasterHost(), NetUtil.getLocalhostStr(), rootPassword);
+                        if (!addResult.getExecResult()) {
+                            OlapUtils.addFollowerBySqlClient(command.getMasterHost(), NetUtil.getLocalhostStr());
+                        }
                         logger.info("slave fe start success");
                     } catch (Exception e) {
                         logger.error("add slave fe failed {}", ThrowableUtils.getStackTrace(e));

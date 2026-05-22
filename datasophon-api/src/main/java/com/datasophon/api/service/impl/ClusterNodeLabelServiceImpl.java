@@ -19,16 +19,13 @@ package com.datasophon.api.service.impl;
 
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.BusinessException;
-import com.datasophon.api.configuration.TransportProperties;
 import com.datasophon.api.grpc.WorkerCommandClient;
-import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterNodeLabelService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.common.Constants;
-import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterHostDO;
@@ -39,14 +36,9 @@ import com.datasophon.dao.mapper.ClusterInfoMapper;
 import com.datasophon.dao.mapper.ClusterNodeLabelMapper;
 
 import com.datasophon.dao.mapper.ClusterServiceRoleInstanceMapper;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -57,10 +49,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 
 @Service("clusterNodeLabelService")
 @Transactional
@@ -78,9 +66,6 @@ public class ClusterNodeLabelServiceImpl extends ServiceImpl<ClusterNodeLabelMap
 
   @Autowired
   private ClusterInfoMapper clusterInfoMapper;
-
-  @Autowired
-  private TransportProperties transportProperties;
 
   @Autowired
   private WorkerCommandClient workerCommandClient;
@@ -115,18 +100,7 @@ public class ClusterNodeLabelServiceImpl extends ServiceImpl<ClusterNodeLabelMap
       commands.add(type);
       commands.add("\"" + nodeLabel + "\"");
       try {
-        ExecResult execResult;
-        if (transportProperties.isGrpcEnabled()) {
-          execResult = workerCommandClient.executeCmd(hostname, commands);
-        } else {
-          ActorSelection execCmdActor = ActorUtils.actorSystem
-              .actorSelection("pekko://datasophon@" + hostname + ":2552/user/worker/executeCmdActor");
-          ExecuteCmdCommand command = new ExecuteCmdCommand();
-          command.setCommands(commands);
-          Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-          Future<Object> execFuture = Patterns.ask(execCmdActor, command, timeout);
-          execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-        }
+        ExecResult execResult = workerCommandClient.executeCmd(hostname, commands);
         if (execResult.getExecResult()) {
           logger.info("add yarn node label success at {}", hostname);
           return true;

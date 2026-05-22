@@ -1,0 +1,164 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.datasophon.api.master.service;
+
+import com.datasophon.api.grpc.WorkerCommandClient;
+import com.datasophon.api.service.ClusterInfoService;
+import com.datasophon.api.service.ClusterServiceRoleInstanceService;
+import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.common.model.HostInfo;
+import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.PromInfoUtils;
+import com.datasophon.dao.entity.ClusterHostDO;
+import com.datasophon.dao.entity.ClusterInfoEntity;
+import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.enums.ClusterArchType;
+import com.datasophon.dao.enums.ServiceRoleState;
+import com.datasophon.domain.host.enums.HostState;
+import com.datasophon.domain.host.enums.MANAGED;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
+
+/**
+ * 节点状态巡检 Spring Service（替代 HostCheckActor）。
+ *
+ * <p>原 HostCheckActor.doOnReceive() 的全部逻辑迁移至此；
+ * Pekka 分支彻底移除，改为通过 {@link WorkerCommandClient#ping} gRPC 调用。</p>
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class HostCheckService {
+
+    private final ClusterInfoService clusterInfoService;
+    private final ClusterHostService clusterHostService;
+    private final ClusterServiceRoleInstanceService roleInstanceService;
+    private final WorkerCommandClient workerCommandClient;
+
+    /**
+     * 检测所有物理集群主机的在线状态。
+     *
+     * @param hostInfo 若非 null，则只检测指定主机；为 null 时检测全部主机
+     */
+    public void checkHosts(HostInfo hostInfo) {
+        log.info("start to check host info");
+        List<ClusterInfoEntity> clusterList = clusterInfoService.getReadyClusterList();
+        for (ClusterInfoEntity cluster : clusterList) {
+            if (ClusterArchType.physical.equals(cluster.getArchType())) {
+                try {
+                    checkCluster(cluster, hostInfo);
+                } catch (Exception ex) {
+                    log.error("检查集群{}状态失败，{}", cluster.getClusterName(), ex.getMessage(), ex);
+                }
+            }
+        }
+    }
+
+    private void checkCluster(ClusterInfoEntity cluster, HostInfo hostInfo) {
+        ClusterServiceRoleInstanceEntity prometheusInstance =
+                roleInstanceService.getOneServiceRole("Prometheus", "", cluster.getId());
+
+        List<ClusterHostDO> list = clusterHostService.getHostListByClusterId(cluster.getId());
+        List<ClusterHostDO> updates = new ArrayList<>();
+        for (ClusterHostDO host : list) {
+            if (hostInfo != null && !StringUtils.equals(host.getHostname(), hostInfo.getHostname())) {
+                continue;
+            }
+            checkHostByPingPong(host);
+            if (!HostState.OFFLINE.equals(host.getHostState())) {
+                if (prometheusInstance != null
+                        && ServiceRoleState.RUNNING.equals(prometheusInstance.getServiceRoleState())) {
+                    String promUrl = "http://" + prometheusInstance.getHostname() + ":9090/api/v1/query";
+                    checkHostByPrometheus(host, promUrl);
+                }
+            }
+            updates.add(host);
+        }
+        if (!updates.isEmpty()) {
+            clusterHostService.updateBatchById(updates);
+        }
+    }
+
+    private void checkHostByPingPong(ClusterHostDO host) {
+        host.setCheckTime(new Date());
+        try {
+            ExecResult execResult = workerCommandClient.ping(host.getHostname());
+            host.setManaged(MANAGED.YES);
+            if (execResult.getExecResult()) {
+                host.setHostState(HostState.RUNNING);
+                log.info("ping host: {} success", host.getHostname());
+            } else {
+                host.setHostState(HostState.OFFLINE);
+                host.setManaged(MANAGED.YES);
+                log.warn("ping host: {} fail, reason: {}", host.getHostname(), execResult.getExecOut());
+            }
+        } catch (Exception e) {
+            if (e instanceof TimeoutException) {
+                log.warn("ping: {} timeout, it maybe offline", host.getHostname());
+            } else {
+                log.error("ping host: {} error, cause: {}", host.getHostname(), e.getMessage());
+            }
+            host.setHostState(HostState.OFFLINE);
+        }
+    }
+
+    private void checkHostByPrometheus(ClusterHostDO host, String promUrl) {
+        try {
+            String hostname = host.getHostname();
+            String totalMemPromQl = "node_memory_MemTotal_bytes{job=~\"node\",instance=\"" + hostname + ":9100\"}/1024/1024/1024";
+            String totalMemStr = PromInfoUtils.getSinglePrometheusMetric(promUrl, totalMemPromQl);
+            if (StringUtils.isNotBlank(totalMemStr)) {
+                host.setTotalMem(Double.valueOf(totalMemStr).intValue());
+            }
+            String memAvailablePromQl = "node_memory_MemAvailable_bytes{job=~\"node\",instance=\"" + hostname + ":9100\"}/1024/1024/1024";
+            String memAvailableStr = PromInfoUtils.getSinglePrometheusMetric(promUrl, memAvailablePromQl);
+            if (StringUtils.isNotBlank(memAvailableStr)) {
+                int memAvailable = Double.valueOf(memAvailableStr).intValue();
+                host.setUsedMem(host.getTotalMem() - memAvailable);
+            }
+            String totalDiskPromQl = "sum(node_filesystem_size_bytes{instance=\"" + hostname
+                    + ":9100\",fstype=~\"ext4|xfs\",mountpoint !~\".*pod.*\"})/1024/1024/1024";
+            String totalDiskStr = PromInfoUtils.getSinglePrometheusMetric(promUrl, totalDiskPromQl);
+            if (StringUtils.isNotBlank(totalDiskStr)) {
+                host.setTotalDisk(Double.valueOf(totalDiskStr).intValue());
+            }
+            String diskUsedPromQl = "sum(node_filesystem_size_bytes{instance=\"" + hostname
+                    + ":9100\",fstype=~\"ext.*|xfs\",mountpoint !~\".*pod.*\"}-node_filesystem_free_bytes{instance=\""
+                    + hostname + ":9100\",fstype=~\"ext.*|xfs\",mountpoint !~\".*pod.*\"})/1024/1024/1024";
+            String diskUsed = PromInfoUtils.getSinglePrometheusMetric(promUrl, diskUsedPromQl);
+            if (StringUtils.isNotBlank(diskUsed)) {
+                host.setUsedDisk(Double.valueOf(diskUsed).intValue());
+            }
+            String cpuLoadPromQl = "node_load5{job=~\"node\",instance=\"" + hostname + ":9100\"}";
+            String cpuLoad = PromInfoUtils.getSinglePrometheusMetric(promUrl, cpuLoadPromQl);
+            if (StringUtils.isNotBlank(cpuLoad)) {
+                host.setAverageLoad(cpuLoad);
+            }
+        } catch (Exception e) {
+            log.warn("check cluster state error, cause: {}", e.getMessage());
+            host.setHostState(HostState.EXISTS_ALARM);
+        }
+    }
+}

@@ -17,18 +17,12 @@
 
 package com.datasophon.api.utils;
 
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 import cn.hutool.core.util.StrUtil;
-import com.datasophon.api.configuration.TransportProperties;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.load.ServiceInfoMap;
 import com.datasophon.api.load.ServiceRoleMap;
-import com.datasophon.api.master.ActorUtils;
 import com.datasophon.common.Constants;
-import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.model.ServiceInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
@@ -37,15 +31,11 @@ import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.AlertLevel;
 import org.apache.commons.lang3.StringUtils;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 public class CheckUtils {
@@ -177,21 +167,9 @@ public class CheckUtils {
         commandList.add(linkDirName + Constants.SLASH + serviceRoleInfo.getStatusRunner().getProgram());
         commandList.addAll(serviceRoleInfo.getStatusRunner().getArgs());
         try {
-            ExecResult execResult;
-            TransportProperties tp = SpringTool.getApplicationContext().getBean(TransportProperties.class);
-            if (tp.isGrpcEnabled()) {
-                WorkerCommandClient workerCommandClient =
-                        SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
-                execResult = workerCommandClient.executeCmd(roleInstanceEntity.getHostname(), commandList);
-            } else {
-                ActorSelection execCmdActor = ActorUtils.actorSystem.actorSelection(
-                        "pekko://datasophon@" + roleInstanceEntity.getHostname() + ":2552/user/worker/executeCmdActor");
-                ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
-                cmdCommand.setCommands(commandList);
-                Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
-                Future<Object> execFuture = Patterns.ask(execCmdActor, cmdCommand, timeout);
-                execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-            }
+            WorkerCommandClient workerCommandClient =
+                    SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
+            ExecResult execResult = workerCommandClient.executeCmd(roleInstanceEntity.getHostname(), commandList);
             if (execResult.getExecResult()) {
                 ProcessUtils.recoverAlert(roleInstanceEntity);
             } else {

@@ -17,7 +17,6 @@
 
 package com.datasophon.api.master.transport;
 
-import com.datasophon.api.configuration.TransportProperties;
 import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.command.FileOperateCommand;
 import com.datasophon.common.command.GenerateAlertConfigCommand;
@@ -33,97 +32,82 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 /**
- * 路由 WorkerCallAdapter：根据 {@code datasophon.transport} 配置委托到
- * {@link PekkaWorkerCallAdapter}（pekko 模式）或
- * {@link GrpcWorkerCallAdapter}（grpc 模式）。
+ * 路由 WorkerCallAdapter（Phase 5+）：直接委托到 {@link GrpcWorkerCallAdapter}。
  *
- * <p>标记 {@code @Primary}，Handler 通过 {@code SpringTool.getApplicationContext()
- * .getBean(WorkerCallAdapter.class)} 获取的就是此类。</p>
+ * <p>标记 {@code @Primary}，业务组件注入 {@code WorkerCallAdapter} 时获取此类。</p>
  */
 @Primary
 @Component
 public class TransportWorkerCallAdapter implements WorkerCallAdapter {
 
-    private final TransportProperties transport;
-    private final PekkaWorkerCallAdapter pekka;
     private final GrpcWorkerCallAdapter grpc;
 
-    public TransportWorkerCallAdapter(TransportProperties transport,
-                                      PekkaWorkerCallAdapter pekka,
-                                      GrpcWorkerCallAdapter grpc) {
-        this.transport = transport;
-        this.pekka = pekka;
+    public TransportWorkerCallAdapter(GrpcWorkerCallAdapter grpc) {
         this.grpc = grpc;
-    }
-
-    private WorkerCallAdapter choose() {
-        return transport.isGrpcEnabled() ? grpc : pekka;
     }
 
     @Override
     public ExecResult executeCmd(String hostname, ExecuteCmdCommand cmd) {
-        return choose().executeCmd(hostname, cmd);
+        return grpc.executeCmd(hostname, cmd);
     }
 
     @Override
     public ExecResult installServiceRole(String hostname, InstallServiceRoleCommand cmd) {
-        return choose().installServiceRole(hostname, cmd);
+        return grpc.installServiceRole(hostname, cmd);
     }
 
     @Override
     public ExecResult configureServiceRole(String hostname, GenerateServiceConfigCommand cmd) {
-        return choose().configureServiceRole(hostname, cmd);
+        return grpc.configureServiceRole(hostname, cmd);
     }
 
     @Override
     public ExecResult startServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
-        return choose().startServiceRole(hostname, cmd);
+        return grpc.startServiceRole(hostname, cmd);
     }
 
     @Override
     public ExecResult stopServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
-        return choose().stopServiceRole(hostname, cmd);
+        return grpc.stopServiceRole(hostname, cmd);
     }
 
     @Override
     public ExecResult restartServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
-        return choose().restartServiceRole(hostname, cmd);
+        return grpc.restartServiceRole(hostname, cmd);
     }
 
     @Override
     public ExecResult serviceRoleStatus(String hostname, ServiceRoleOperateCommand cmd) {
-        return choose().serviceRoleStatus(hostname, cmd);
+        return grpc.serviceRoleStatus(hostname, cmd);
     }
-
-    // ─── Phase 3 ──────────────────────────────────────────────────────────────
 
     @Override
     public ExecResult createUnixGroup(String hostname, CreateUnixGroupCommand cmd) {
-        return choose().createUnixGroup(hostname, cmd);
+        return grpc.createUnixGroup(hostname, cmd);
     }
 
     @Override
     public ExecResult deleteUnixGroup(String hostname, DelUnixGroupCommand cmd) {
-        return choose().deleteUnixGroup(hostname, cmd);
+        return grpc.deleteUnixGroup(hostname, cmd);
     }
 
     @Override
     public ExecResult createUnixUser(String hostname, CreateUnixUserCommand cmd) {
-        return choose().createUnixUser(hostname, cmd);
+        return grpc.createUnixUser(hostname, cmd);
     }
 
     @Override
     public ExecResult deleteUnixUser(String hostname, DelUnixUserCommand cmd) {
-        return choose().deleteUnixUser(hostname, cmd);
+        return grpc.deleteUnixUser(hostname, cmd);
     }
 
     @Override
     public ExecResult operateFile(String hostname, FileOperateCommand cmd) {
-        return choose().operateFile(hostname, cmd);
+        return grpc.operateFile(hostname, cmd);
     }
 
     @Override
     public ExecResult generateAlertConfig(String hostname, GenerateAlertConfigCommand cmd) {
-        return choose().generateAlertConfig(hostname, cmd);
+        return grpc.generateAlertConfig(hostname, cmd);
     }
 }

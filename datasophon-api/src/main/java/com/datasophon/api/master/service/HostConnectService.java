@@ -18,7 +18,6 @@
 package com.datasophon.api.master.service;
 
 import com.datasophon.api.enums.Status;
-import com.datasophon.api.master.HostConnectActor;
 import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.model.CheckResult;
 import com.datasophon.common.model.HostInfo;

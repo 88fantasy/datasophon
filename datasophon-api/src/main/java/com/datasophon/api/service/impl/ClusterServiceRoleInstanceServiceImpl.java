@@ -17,9 +17,6 @@
 
 package com.datasophon.api.service.impl;
 
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -27,9 +24,7 @@ import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapp
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.configuration.TransportProperties;
 import com.datasophon.api.grpc.WorkerCommandClient;
-import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterAlertHistoryService;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
@@ -62,10 +57,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -73,7 +64,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service("clusterServiceRoleInstanceService")
@@ -106,9 +96,6 @@ public class ClusterServiceRoleInstanceServiceImpl
 
     @Autowired
     private ClusterServiceRoleInstanceMapper roleInstanceMapper;
-
-    @Autowired
-    private TransportProperties transportProperties;
 
     @Autowired
     private WorkerCommandClient workerCommandClient;
@@ -198,16 +185,7 @@ public class ClusterServiceRoleInstanceServiceImpl
         command.setBaseDir(PkgInstallPathUtils.getInstallUniHome(serviceRoleInfo));
 
         logger.info("start to get {} log from {}", serviceRole.getServiceRoleName(), roleInstance.getHostname());
-        ExecResult logResult;
-        if (transportProperties.isGrpcEnabled()) {
-            logResult = workerCommandClient.getLog(roleInstance.getHostname(), command.getLogFile(), command.getBaseDir());
-        } else {
-            ActorSelection configActor = ActorUtils.actorSystem
-                    .actorSelection("pekko://datasophon@" + roleInstance.getHostname() + ":2552/user/worker/logActor");
-            Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
-            Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
-            logResult = (ExecResult) Await.result(logFuture, timeout.duration());
-        }
+        ExecResult logResult = workerCommandClient.getLog(roleInstance.getHostname(), command.getLogFile(), command.getBaseDir());
         if (Objects.nonNull(logResult) && logResult.getExecResult()) {
             return Result.success(logResult.getExecOut());
         }

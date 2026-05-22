@@ -18,7 +18,6 @@
 package com.datasophon.api.master.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Constants;
-import com.datasophon.api.master.RackActor;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;

@@ -17,7 +17,6 @@
 
 package com.datasophon.api.master.service;
 
-import com.datasophon.api.master.alert.AlertActor;
 import com.datasophon.api.service.ClusterAlertHistoryService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;

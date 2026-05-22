@@ -1,16 +1,11 @@
 package com.datasophon.api.service.log.impl;
 
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.api.dto.log.ServiceRoleLogQueryDTO;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.configuration.TransportProperties;
 import com.datasophon.api.grpc.WorkerCommandClient;
-import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.log.VosProductService;
@@ -27,10 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -50,9 +41,6 @@ public class VosProductServiceImpl implements VosProductService {
 
     @Autowired
     private FrameServiceRoleService frameServiceRoleService;
-
-    @Autowired
-    private TransportProperties transportProperties;
 
     @Autowired
     private WorkerCommandClient workerCommandClient;
@@ -88,16 +76,7 @@ public class VosProductServiceImpl implements VosProductService {
         command.setBaseDir(PkgInstallPathUtils.getInstallUniHome(serviceRoleInfo));
 
         log.info("start to get {} log from {}", serviceRole.getServiceRoleName(), dto.getHost());
-        ExecResult logResult;
-        if (transportProperties.isGrpcEnabled()) {
-            logResult = workerCommandClient.getLog(dto.getHost(), command.getLogFile(), command.getBaseDir());
-        } else {
-            ActorSelection configActor = ActorUtils.actorSystem
-                    .actorSelection("pekko://datasophon@" + dto.getHost() + ":2552/user/worker/logActor");
-            Timeout timeout = new Timeout(Duration.create(60, TimeUnit.SECONDS));
-            Future<Object> logFuture = Patterns.ask(configActor, command, timeout);
-            logResult = (ExecResult) Await.result(logFuture, timeout.duration());
-        }
+        ExecResult logResult = workerCommandClient.getLog(dto.getHost(), command.getLogFile(), command.getBaseDir());
         if (logResult == null) {
             throw new BusinessException("获取日志结果为空");
         }

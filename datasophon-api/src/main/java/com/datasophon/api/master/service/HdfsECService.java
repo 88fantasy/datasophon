@@ -17,7 +17,6 @@
 
 package com.datasophon.api.master.service;
 
-import com.datasophon.api.master.HdfsECActor;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.command.HdfsEcCommand;

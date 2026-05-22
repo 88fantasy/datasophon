@@ -19,15 +19,15 @@ package com.datasophon.api.master;
 
 import cn.hutool.extra.spring.SpringUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.datasophon.api.master.service.ClusterStatusService;
+import com.datasophon.api.master.service.HostCheckService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.strategy.ServiceRoleStrategy;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.CheckUtils;
-import com.datasophon.common.command.ClusterCommand;
-import com.datasophon.common.command.HostCheckCommand;
-import com.datasophon.common.enums.ClusterCommandType;
 import com.datasophon.common.model.HostInfo;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -51,7 +51,11 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class MasterScheduledService {
+
+    private final HostCheckService hostCheckService;
+    private final ClusterStatusService clusterStatusService;
 
     /**
      * 节点检测任务，每 5 分钟巡检一次所有物理集群主机的在线状态。
@@ -61,7 +65,7 @@ public class MasterScheduledService {
     public void checkHosts() {
         log.debug("Scheduled: start host check");
         try {
-            new HostCheckActor().doOnReceive(new HostCheckCommand());
+            hostCheckService.checkHosts(null);
         } catch (Throwable e) {
             log.error("Scheduled host check failed: {}", e.getMessage(), e);
         }
@@ -109,7 +113,7 @@ public class MasterScheduledService {
     public void checkClusterStatus() {
         log.debug("Scheduled: start cluster status check");
         try {
-            new ClusterStatusActor().doOnReceive(new ClusterCommand(ClusterCommandType.CHECK));
+            clusterStatusService.checkClusterStatus(null);
         } catch (Throwable e) {
             log.error("Scheduled cluster status check failed: {}", e.getMessage(), e);
         }
@@ -132,9 +136,7 @@ public class MasterScheduledService {
             Thread.currentThread().interrupt();
         }
         try {
-            HostCheckCommand cmd = new HostCheckCommand();
-            cmd.setHostInfo(hostInfo);
-            new HostCheckActor().doOnReceive(cmd);
+            hostCheckService.checkHosts(hostInfo);
         } catch (Throwable e) {
             log.warn("Delayed host check for {} failed: {}", hostInfo.getHostname(), e.getMessage(), e);
         }

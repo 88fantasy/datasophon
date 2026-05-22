@@ -17,15 +17,12 @@
 
 package com.datasophon.api.service.impl;
 
-import com.datasophon.api.configuration.TransportProperties;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.grpc.WorkerCommandClient;
-import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterYarnQueueService;
 import com.datasophon.common.Constants;
-import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
@@ -37,14 +34,9 @@ import com.datasophon.dao.mapper.ClusterYarnQueueMapper;
 
 import org.apache.commons.lang3.StringUtils;
 
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,9 +47,6 @@ import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
-import org.apache.pekko.actor.ActorSelection;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
 import cn.hutool.core.bean.BeanUtil;
 
 @Service("clusterYarnQueueService")
@@ -71,11 +60,8 @@ public class ClusterYarnQueueServiceImpl extends ServiceImpl<ClusterYarnQueueMap
     private ClusterServiceRoleInstanceService roleInstanceService;
 
     @Autowired
-    private TransportProperties transportProperties;
-
-    @Autowired
     private WorkerCommandClient workerCommandClient;
-    
+
     @Override
     public Result listByPage(Integer clusterId, Integer page, Integer pageSize) {
         Integer offset = (page - 1) * pageSize;
@@ -152,18 +138,7 @@ public class ClusterYarnQueueServiceImpl extends ServiceImpl<ClusterYarnQueueMap
         commands.add(Constants.INSTALL_PATH + "/hadoop/bin/yarn");
         commands.add("rmadmin");
         commands.add("-refreshQueues");
-        ExecResult execResult;
-        if (transportProperties.isGrpcEnabled()) {
-            execResult = workerCommandClient.executeCmd(hostname, commands);
-        } else {
-            ActorSelection execCmdActor = ActorUtils.actorSystem
-                    .actorSelection("pekko://datasophon@" + hostname + ":2552/user/worker/executeCmdActor");
-            ExecuteCmdCommand command = new ExecuteCmdCommand();
-            command.setCommands(commands);
-            Timeout timeout = new Timeout(Duration.create(180, TimeUnit.SECONDS));
-            Future<Object> execFuture = Patterns.ask(execCmdActor, command, timeout);
-            execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-        }
+        ExecResult execResult = workerCommandClient.executeCmd(hostname, commands);
         if (execResult.getExecResult()) {
             logger.info("yarn dfsadmin -refreshQueues success at {}", hostname);
         } else {

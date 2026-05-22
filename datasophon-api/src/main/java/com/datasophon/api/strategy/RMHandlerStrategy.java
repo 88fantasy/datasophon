@@ -19,20 +19,14 @@
 
 package com.datasophon.api.strategy;
 
-import org.apache.pekko.actor.ActorRef;
-import org.apache.pekko.pattern.Patterns;
-import org.apache.pekko.util.Timeout;
-import com.datasophon.api.configuration.TransportProperties;
 import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
-import com.datasophon.api.master.ActorUtils;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.api.service.ClusterYarnSchedulerService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
-import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -41,14 +35,9 @@ import com.datasophon.dao.entity.ClusterYarnScheduler;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class RMHandlerStrategy extends ServiceHandlerAbstract implements ServiceRoleStrategy {
 
@@ -129,21 +118,9 @@ public class RMHandlerStrategy extends ServiceHandlerAbstract implements Service
     ClusterServiceRoleInstanceWebuisService webuisService =
         SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceWebuisService.class);
     try {
-      ExecResult execResult;
-      TransportProperties tp = SpringTool.getApplicationContext().getBean(TransportProperties.class);
-      if (tp.isGrpcEnabled()) {
-        WorkerCommandClient workerCommandClient =
-            SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
-        execResult = workerCommandClient.executeCmdLine(roleInstanceEntity.getHostname(), commandLine);
-      } else {
-        ActorRef execCmdActor =
-            ActorUtils.getRemoteActor(roleInstanceEntity.getHostname(), "rMStateActor");
-        ExecuteCmdCommand cmdCommand = new ExecuteCmdCommand();
-        cmdCommand.setCommandLine(commandLine);
-        Timeout timeout = new Timeout(Duration.create(30, TimeUnit.SECONDS));
-        Future<Object> execFuture = Patterns.ask(execCmdActor, cmdCommand, timeout);
-        execResult = (ExecResult) Await.result(execFuture, timeout.duration());
-      }
+      WorkerCommandClient workerCommandClient =
+          SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
+      ExecResult execResult = workerCommandClient.executeCmdLine(roleInstanceEntity.getHostname(), commandLine);
       if (execResult.getExecResult()) {
         if (execResult.getExecOut().contains(ACTIVE)) {
           webuisService.updateWebUiToActive(roleInstanceEntity.getId());
