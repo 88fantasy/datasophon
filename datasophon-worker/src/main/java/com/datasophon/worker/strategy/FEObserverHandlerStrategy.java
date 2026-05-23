@@ -23,7 +23,8 @@ import com.datasophon.common.model.ServiceRoleRunner;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ThrowableUtils;
-import com.datasophon.common.utils.OlapUtils;
+import com.datasophon.grpc.api.OlapNodeType;
+import com.datasophon.worker.grpc.MasterCallbackClient;
 import com.datasophon.worker.handler.ServiceHandler;
 
 import cn.hutool.core.net.NetUtil;
@@ -60,10 +61,13 @@ public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implement
                 try {
                     String rootPassword = command.getVariables()
                             .getOrDefault("${DORIS.root_password}", "");
-                    ExecResult addResult = OlapUtils.addObserver(
-                            command.getMasterHost(), NetUtil.getLocalhostStr(), rootPassword);
-                    if (!addResult.getExecResult()) {
-                        OlapUtils.addObserverBySqlClient(command.getMasterHost(), NetUtil.getLocalhostStr());
+                    MasterCallbackClient callbackClient = MasterCallbackClient.getInstance();
+                    if (callbackClient != null) {
+                        callbackClient.registerOlapNode(
+                                command.getMasterHost(), NetUtil.getLocalhostStr(),
+                                OlapNodeType.ADD_FE_OBSERVER, rootPassword);
+                    } else {
+                        logger.warn("MasterCallbackClient not initialized, skipping FE observer registration");
                     }
                 } catch (Exception e) {
                     logger.error("add fe observer failed {}", ThrowableUtils.getStackTrace(e));

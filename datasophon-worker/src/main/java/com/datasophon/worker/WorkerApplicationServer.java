@@ -24,6 +24,7 @@ import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.lifecycle.ServerLifeCycleManager;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
+import com.datasophon.worker.grpc.MasterCallbackClient;
 import com.datasophon.worker.grpc.MasterRegistryClient;
 import com.datasophon.worker.grpc.WorkerGrpcServer;
 import com.datasophon.worker.utils.UnixUtils;
@@ -75,6 +76,9 @@ public class WorkerApplicationServer {
             logger.error("Failed to start worker gRPC server, communication with master will fail", e);
         }
 
+        // 初始化 Master 回调客户端（供策略类静态获取），在注册前就绪
+        MasterCallbackClient.init(masterHost);
+
         MasterRegistryClient registryClient =
                 new MasterRegistryClient(masterHost, hostname, cpuArchitecture, clusterId);
         registryClient.register();
@@ -86,6 +90,10 @@ public class WorkerApplicationServer {
                     registryClient.close();
                 } catch (Exception e) {
                     logger.warn("Failed to close gRPC registry client", e);
+                }
+                MasterCallbackClient client = MasterCallbackClient.getInstance();
+                if (client != null) {
+                    client.close();
                 }
                 workerGrpcServer.stop();
                 close("WorkerServer shutdown hook");

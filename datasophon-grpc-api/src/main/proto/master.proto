@@ -1,0 +1,52 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License. You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package com.datasophon.grpc;
+
+option java_package = "com.datasophon.grpc.api";
+option java_multiple_files = true;
+option java_outer_classname = "MasterProto";
+
+// Worker → Master 反向回调服务。
+// Worker 安装 Doris/StarRocks 节点后通知 Master 执行集群注册 SQL，
+// 避免 Worker 进程直连 OLAP 数据库。
+service MasterCallbackService {
+
+    // Worker 新节点启动成功后，请求 Master 将其注册到 OLAP 集群。
+    // Master 立即返回 success，异步执行注册 SQL（fire-and-forget 语义）。
+    rpc RegisterOlapNode (OlapRegistrationRequest) returns (OlapRegistrationResponse);
+}
+
+// OLAP 节点类型，对应 com.datasophon.common.command.OlapOpsType
+enum OlapNodeType {
+    OLAP_NODE_TYPE_UNSPECIFIED = 0;
+    ADD_BE          = 1;  // 添加 Backend（Doris BE / StarRocks BE）
+    ADD_FE_FOLLOWER = 2;  // 添加 FE Follower
+    ADD_FE_OBSERVER = 3;  // 添加 FE Observer
+}
+
+message OlapRegistrationRequest {
+    string       fe_master    = 1;  // FE Leader 主机名
+    string       hostname     = 2;  // 新节点主机名
+    OlapNodeType node_type    = 3;  // 节点类型
+    string       root_password = 4; // Doris root 密码（Master 执行 JDBC，不落 Worker 日志）
+}
+
+message OlapRegistrationResponse {
+    bool   success = 1;
+    string message = 2;
+}

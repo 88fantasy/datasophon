@@ -32,7 +32,8 @@ import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.OlapUtils;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ThrowableUtils;
-import com.datasophon.common.utils.OlapUtils;
+import com.datasophon.grpc.api.OlapNodeType;
+import com.datasophon.worker.grpc.MasterCallbackClient;
 import com.datasophon.worker.handler.ServiceHandler;
 import org.apache.commons.lang3.StringUtils;
 
@@ -78,10 +79,13 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                     try {
                         String rootPassword = command.getVariables()
                                 .getOrDefault("${DORIS.root_password}", "");
-                        ExecResult addResult = OlapUtils.addFollower(
-                                command.getMasterHost(), NetUtil.getLocalhostStr(), rootPassword);
-                        if (!addResult.getExecResult()) {
-                            OlapUtils.addFollowerBySqlClient(command.getMasterHost(), NetUtil.getLocalhostStr());
+                        MasterCallbackClient callbackClient = MasterCallbackClient.getInstance();
+                        if (callbackClient != null) {
+                            callbackClient.registerOlapNode(
+                                    command.getMasterHost(), NetUtil.getLocalhostStr(),
+                                    OlapNodeType.ADD_FE_FOLLOWER, rootPassword);
+                        } else {
+                            logger.warn("MasterCallbackClient not initialized, skipping FE follower registration");
                         }
                         logger.info("slave fe start success");
                     } catch (Exception e) {
