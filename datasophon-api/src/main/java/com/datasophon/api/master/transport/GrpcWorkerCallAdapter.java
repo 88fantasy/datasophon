@@ -29,14 +29,16 @@ import com.datasophon.common.command.remote.CreateUnixUserCommand;
 import com.datasophon.common.command.remote.DelUnixGroupCommand;
 import com.datasophon.common.command.remote.DelUnixUserCommand;
 import com.datasophon.common.utils.ExecResult;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 /**
- * gRPC 传输实现：通过 {@link WorkerCommandClient} 发送 gRPC 请求。
- *
- * <p>当 {@code datasophon.transport=grpc} 或 {@code both} 时由
- * {@link TransportWorkerCallAdapter} 委托调用。</p>
+ * {@link WorkerCallAdapter} 的 gRPC 实现，通过 {@link WorkerCommandClient} 向 Worker 发送命令。
+ * <p>
+ * 标记 {@code @Primary}，所有注入 {@code WorkerCallAdapter} 的 Handler 均获取此实现。
+ * </p>
  */
+@Primary
 @Component
 public class GrpcWorkerCallAdapter implements WorkerCallAdapter {
 

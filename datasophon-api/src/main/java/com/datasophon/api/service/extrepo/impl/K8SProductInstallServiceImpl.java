@@ -17,7 +17,7 @@ import com.datasophon.api.dto.instance.K8sNamespaceIdentityDTO;
 import com.datasophon.api.dto.instance.K8sServiceInstanceValuesSaveDTO;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.master.K8SDAGExecService;
+import com.datasophon.api.master.K8SDAGExecutor;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.cmd.ClusterK8sServiceCommandService;
 import com.datasophon.api.service.extrepo.K8sProductInstallService;
@@ -95,7 +95,7 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
     private K8sClusterNamespaceService k8sClusterNamespaceService;
 
     @Autowired
-    private K8SDAGExecService k8sDAGExecService;
+    private K8SDAGExecutor k8sDAGExecutor;
 
     public static final String K8S_SERVICE_NAMESPACE_MAPPING = "k8s_service_namespace_mapping";
 
@@ -503,7 +503,7 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
                         DAGExecCommand cmd = new DAGExecCommand();
                         cmd.setDagId(dagId);
                         cmd.setRestart(restart);
-                        k8sDAGExecService.execK8SDAG(cmd);
+                        k8sDAGExecutor.execK8SDAG(cmd);
                     } catch (Exception e) {
                         log.error("执行 K8s dagId: {} 失败，{}", dagId, e.getMessage(), e);
                         transactionalUtils.doInNewTx(() -> commandIds.forEach(cmdId -> updateCommandState(cmdId, CommandState.FAILED, false)));

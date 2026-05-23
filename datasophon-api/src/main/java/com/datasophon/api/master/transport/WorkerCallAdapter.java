@@ -30,21 +30,15 @@ import com.datasophon.common.command.remote.DelUnixUserCommand;
 import com.datasophon.common.utils.ExecResult;
 
 /**
- * Master → Worker 调用适配接口（Phase 2 + Phase 3）。
+ * Master → Worker 调用适配接口。
  *
- * <p>封装 Pekko actor ask 和 gRPC 两种传输方式，Handler 只依赖此接口，
- * 通过 {@link TransportWorkerCallAdapter}（@Primary）根据
- * {@code datasophon.transport} 配置路由到具体实现。</p>
- *
- * <p>在 Phase 5（删除 Pekko）前，此接口同时支持两路。</p>
+ * <p>Handler 注入此接口，唯一实现为 {@link GrpcWorkerCallAdapter}（{@code @Primary}）。</p>
  */
 public interface WorkerCallAdapter {
 
-    // ─── Phase 1: Basic Commands ──────────────────────────────────────────────
-
     ExecResult executeCmd(String hostname, ExecuteCmdCommand cmd);
 
-    // ─── Phase 2: Service Role ────────────────────────────────────────────────
+    // ─── Service Role ─────────────────────────────────────────────────────────
 
     ExecResult installServiceRole(String hostname, InstallServiceRoleCommand cmd);
 
@@ -58,7 +52,7 @@ public interface WorkerCallAdapter {
 
     ExecResult serviceRoleStatus(String hostname, ServiceRoleOperateCommand cmd);
 
-    // ─── Phase 3: Auxiliary ───────────────────────────────────────────────────
+    // ─── Auxiliary ───────────────────────────────────────────────────────────
 
     ExecResult createUnixGroup(String hostname, CreateUnixGroupCommand cmd);
 

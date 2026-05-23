@@ -15,7 +15,7 @@ import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
 import com.datasophon.api.exceptions.BusinessHintException;
-import com.datasophon.api.master.DAGExecService;
+import com.datasophon.api.master.DAGExecutor;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.FrameServiceRoleService;
@@ -127,7 +127,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
     private FrameServiceService frameService;
 
     @Autowired
-    private DAGExecService dagExecService;
+    private DAGExecutor dagExecutor;
 
     @Override
     public ValidateResultVO validateDeploymentModel(DeploymentModel model, DeploymentDTO dto) {
@@ -414,7 +414,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
                 DAGExecCommand cmd = new DAGExecCommand();
                 cmd.setDagId(dagId);
                 cmd.setRestart(restart);
-                dagExecService.execDAG(cmd);
+                dagExecutor.execDAG(cmd);
             } catch (Exception e) {
                 log.error("execute dagId: {} fail, {}", dagId, e.getMessage(), e);
                 transactionalUtils.doInNewTx(() -> commandIds.forEach(cmdId -> updateCommandState(cmdId, CommandState.FAILED, false)));

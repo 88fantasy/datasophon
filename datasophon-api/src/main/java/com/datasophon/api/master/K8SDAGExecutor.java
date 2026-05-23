@@ -1,23 +1,22 @@
 /*
- *  Licensed to the Apache Software Foundation (ASF) under one or more
- *  contributor license agreements.  See the NOTICE file distributed with
- *  this work for additional information regarding copyright ownership.
- *  The ASF licenses this file to You under the Apache License, Version 2.0
- *  (the "License"); you may not use this file except in compliance with
- *  the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.datasophon.api.master;
 
-import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.api.dag.DAGListener;
 import com.datasophon.api.dag.NodeTask;
@@ -39,36 +38,54 @@ import com.datasophon.common.model.k8s.K8sServiceNode;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.cmd.ClusterK8sServiceCommandEntity;
 import com.datasophon.dao.enums.CommandState;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
 
 import java.util.Date;
 
 /**
- * K8s DAG 执行逻辑（Phase 5：去除 Pekka TypedActor 继承，保留全部业务逻辑不变）。
+ * K8s DAG 执行器（Spring Service）。
+ *
+ * <p>合并原 {@code K8SDAGExecActor}（业务逻辑）与 {@code K8SDAGExecService}（@Async 包装），
+ * 使用构造器注入代替 {@code SpringUtil.getBean()} 静态查找。</p>
  */
 @Slf4j
-public class K8SDAGExecActor {
+@Service
+@RequiredArgsConstructor
+public class K8SDAGExecutor {
 
-    protected <T> T getBean(Class<T> beanClass) {
-        return SpringUtil.getBean(beanClass);
+    private final DAGService dagService;
+    private final ClusterK8sServiceCommandService commandService;
+
+    /**
+     * 异步执行 K8s DAG 任务（替代原 {@code K8SDAGExecActor.tell(cmd)}）。
+     */
+    @Async("masterExecutor")
+    public void execK8SDAG(DAGExecCommand cmd) {
+        try {
+            RepoDAG dag = createMultiServiceDAG(cmd);
+
+            NodeTask task = (nodeDef) -> {
+                K8sServiceNode serviceNode = JSONObject.parseObject((String) nodeDef.getNodeConfig(), K8sServiceNode.class);
+                doExecServiceNode(serviceNode);
+                return String.format("%s %s成功",
+                        serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName());
+            };
+
+            dag.exec(task, cmd.isRestart());
+        } catch (Throwable e) {
+            log.error("K8S DAG execution failed for dagId={}: {}", cmd.getDagId(), e.getMessage(), e);
+        }
     }
 
-    public void doOnReceive(DAGExecCommand message) throws Throwable {
-        RepoDAG dag = createMultiServiceDAG(message);
-
-        NodeTask task = (nodeDef) -> {
-            K8sServiceNode serviceNode = JSONObject.parseObject((String) nodeDef.getNodeConfig(), K8sServiceNode.class);
-            doExecServiceNode(serviceNode);
-            return String.format("%s %s成功", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName());
-        };
-
-        dag.exec(task, message.isRestart());
-    }
+    // ─── private methods ─────────────────────────────────────────────────────
 
     private RepoDAG createMultiServiceDAG(DAGExecCommand cmd) {
         String dagId = cmd.getDagId();
-        log.info("K8SDAGExecActor 开始执行 DAG 任务，dagId:{}", dagId);
-        DAGRepository repository = SpringUtil.getBean(DAGService.class);
+        log.info("K8SDAGExecutor 开始执行 DAG 任务，dagId:{}", dagId);
+        DAGRepository repository = dagService;
         RepoDAG dag = new RepoDAG(repository);
         dag.init(dagId, false);
 
@@ -101,7 +118,6 @@ public class K8SDAGExecActor {
         log.info("更新{}{}的状态为{}",
                 serviceNode.getCommandType().getCommandName(Constants.CN),
                 serviceNode.getServiceName(), commandState);
-        ClusterK8sServiceCommandService commandService = getBean(ClusterK8sServiceCommandService.class);
         commandService.lambdaUpdate()
                 .eq(ClusterK8sServiceCommandEntity::getCommandId, serviceNode.getCommandId())
                 .set(ClusterK8sServiceCommandEntity::getCommandState, commandState)

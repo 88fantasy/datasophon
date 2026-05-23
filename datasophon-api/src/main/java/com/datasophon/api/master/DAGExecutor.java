@@ -19,7 +19,6 @@ package com.datasophon.api.master;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.Pair;
-import cn.hutool.extra.spring.SpringUtil;
 import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.api.dag.DAGListener;
 import com.datasophon.api.dag.NodeTask;
@@ -56,7 +55,10 @@ import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.NeedRestart;
 import com.datasophon.dao.enums.ServiceRoleState;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,59 +76,78 @@ import static com.datasophon.common.enums.CommandType.STOP_SERVICE;
 import static com.datasophon.common.enums.CommandType.UPGRADE_SERVICE;
 
 /**
- * 物理集群 DAG 执行逻辑（Phase 5：去除 Pekka TypedActor 继承，保留全部业务逻辑不变）。
+ * 物理集群 DAG 执行器（Spring Service）。
+ *
+ * <p>合并原 {@code DAGExecActor}（业务逻辑）与 {@code DAGExecService}（@Async 包装），
+ * 使用构造器注入代替 {@code SpringUtil.getBean()} 静态查找，便于测试和依赖追踪。</p>
  */
 @Slf4j
-public class DAGExecActor {
+@Service
+@RequiredArgsConstructor
+public class DAGExecutor {
 
     private static final List<CommandType> DELAY_ACTION_COMMAND_TYPES =
             Arrays.asList(INSTALL_SERVICE, UPGRADE_SERVICE, START_SERVICE, RESTART_SERVICE);
 
-    protected <T> T getBean(Class<T> beanClass) {
-        return SpringUtil.getBean(beanClass);
-    }
+    private final DAGService dagService;
+    private final ClusterServiceCommandHostCommandService hostCommandService;
+    private final ClusterServiceCommandHostService commandHostService;
+    private final ClusterServiceCommandService commandService;
+    private final ClusterServiceRoleInstanceService roleInstanceService;
+    private final ClusterServiceRoleGroupConfigService roleGroupConfigService;
 
-    public void doOnReceive(DAGExecCommand message) {
-        RepoDAG dag = createMultiServiceDAG(message);
+    /**
+     * 异步执行物理集群 DAG 任务（替代原 {@code DAGExecActor.tell(cmd)}）。
+     */
+    @Async("masterExecutor")
+    public void execDAG(DAGExecCommand cmd) {
+        try {
+            RepoDAG dag = createMultiServiceDAG(cmd);
 
-        NodeTask task = (nodeDef) -> {
-            ServiceNode serviceNode = JSONObject.parseObject((String) nodeDef.getNodeConfig(), ServiceNode.class);
+            NodeTask task = (nodeDef) -> {
+                ServiceNode serviceNode = JSONObject.parseObject((String) nodeDef.getNodeConfig(), ServiceNode.class);
 
-            List<Pair<String, List<ServiceRoleInfo>>> tasks = new ArrayList<>();
-            if (STOP_SERVICE.equals(serviceNode.getCommandType())) {
-                tasks.add(new Pair<>("worker", serviceNode.getWorkerRoles()));
-                tasks.add(new Pair<>("client", serviceNode.getClientRoles()));
-                tasks.add(new Pair<>("master", serviceNode.getMasterRoles()));
-            } else {
-                tasks.add(new Pair<>("master", serviceNode.getMasterRoles()));
-                tasks.add(new Pair<>("client", serviceNode.getClientRoles()));
-                tasks.add(new Pair<>("worker", serviceNode.getWorkerRoles()));
-            }
-
-            for (Pair<String, List<ServiceRoleInfo>> pair : tasks) {
-                List<ServiceRoleInfo> roles = pair.getValue();
-                if (CollectionUtil.isEmpty(roles)) {
-                    log.info("执行命令, ID:{}，{}不存在的{}角色， 无需操作",
-                            serviceNode.getCommandId(), serviceNode.getServiceName(), pair.getKey());
+                List<Pair<String, List<ServiceRoleInfo>>> tasks = new ArrayList<>();
+                if (STOP_SERVICE.equals(serviceNode.getCommandType())) {
+                    tasks.add(new Pair<>("worker", serviceNode.getWorkerRoles()));
+                    tasks.add(new Pair<>("client", serviceNode.getClientRoles()));
+                    tasks.add(new Pair<>("master", serviceNode.getMasterRoles()));
                 } else {
-                    log.info("执行命令, ID:{}， 准备{}{}的{}角色",
-                            serviceNode.getCommandId(),
-                            serviceNode.getCommandType().getCommandName(Constants.CN),
-                            serviceNode.getServiceName(),
-                            pair.getKey());
-                    doExecServiceRoles(serviceNode, roles);
+                    tasks.add(new Pair<>("master", serviceNode.getMasterRoles()));
+                    tasks.add(new Pair<>("client", serviceNode.getClientRoles()));
+                    tasks.add(new Pair<>("worker", serviceNode.getWorkerRoles()));
                 }
-            }
-            return String.format("%s %s成功", serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName());
-        };
 
-        dag.exec(task, message.isRestart());
+                for (Pair<String, List<ServiceRoleInfo>> pair : tasks) {
+                    List<ServiceRoleInfo> roles = pair.getValue();
+                    if (CollectionUtil.isEmpty(roles)) {
+                        log.info("执行命令, ID:{}，{}不存在的{}角色， 无需操作",
+                                serviceNode.getCommandId(), serviceNode.getServiceName(), pair.getKey());
+                    } else {
+                        log.info("执行命令, ID:{}， 准备{}{}的{}角色",
+                                serviceNode.getCommandId(),
+                                serviceNode.getCommandType().getCommandName(Constants.CN),
+                                serviceNode.getServiceName(),
+                                pair.getKey());
+                        doExecServiceRoles(serviceNode, roles);
+                    }
+                }
+                return String.format("%s %s成功",
+                        serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName());
+            };
+
+            dag.exec(task, cmd.isRestart());
+        } catch (Throwable e) {
+            log.error("DAG execution failed for dagId={}: {}", cmd.getDagId(), e.getMessage(), e);
+        }
     }
+
+    // ─── private methods ─────────────────────────────────────────────────────
 
     private RepoDAG createMultiServiceDAG(DAGExecCommand cmd) {
         String dagId = cmd.getDagId();
-        log.info("DAGExecActor开始执行任务， id:{}", dagId);
-        DAGRepository repository = SpringUtil.getBean(DAGService.class);
+        log.info("DAGExecutor 开始执行任务，id:{}", dagId);
+        DAGRepository repository = dagService;
         RepoDAG dag = new RepoDAG(repository);
         dag.init(dagId, false);
 
@@ -156,15 +177,11 @@ public class DAGExecActor {
     }
 
     private void updateCmdState(ServiceNode serviceNode, CommandState commandState) {
-        ClusterServiceCommandHostCommandService hostCmdService = SpringUtil.getBean(ClusterServiceCommandHostCommandService.class);
-        ClusterServiceCommandHostService commandHostService = SpringUtil.getBean(ClusterServiceCommandHostService.class);
-        ClusterServiceCommandService commandService = SpringUtil.getBean(ClusterServiceCommandService.class);
-
         List<String> hostCmdIds = commandHostService.lambdaQuery()
                 .eq(ClusterServiceCommandHostEntity::getCommandId, serviceNode.getCommandId())
                 .select(ClusterServiceCommandHostEntity::getCommandHostId).list().stream()
                 .map(ClusterServiceCommandHostEntity::getCommandHostId).collect(Collectors.toList());
-        hostCmdService.lambdaUpdate()
+        hostCommandService.lambdaUpdate()
                 .in(ClusterServiceCommandHostCommandEntity::getCommandHostId, hostCmdIds)
                 .in(ClusterServiceCommandHostCommandEntity::getCommandState, Arrays.asList(CommandState.WAIT, CommandState.RUNNING))
                 .set(ClusterServiceCommandHostCommandEntity::getCommandState, commandState).update();
@@ -262,12 +279,12 @@ public class DAGExecActor {
                         serviceNode.getCommandType().getCommandName(Constants.CN),
                         serviceNode.getServiceName(), roles.size(), throwable.getMessage(), throwable);
             }
-            String message = getString(serviceNode, throwable, currentRole);
+            String message = buildErrorMessage(serviceNode, throwable, currentRole);
             throw new ServiceRoleExecException(message, throwable);
         }
     }
 
-    private static String getString(ServiceNode serviceNode, Throwable throwable, ServiceRoleInfo currentRole) {
+    private static String buildErrorMessage(ServiceNode serviceNode, Throwable throwable, ServiceRoleInfo currentRole) {
         String tmpMsg = throwable instanceof NullPointerException ? "对象空指针" : throwable.getMessage();
         if (currentRole != null) {
             return String.format("在%s%s%s失败，原因：%s",
@@ -298,8 +315,6 @@ public class DAGExecActor {
     }
 
     private ExecResult execServiceRole(ServiceRoleInfo serviceRoleInfo) {
-        ClusterServiceRoleInstanceService roleInstanceService = SpringUtil.getBean(ClusterServiceRoleInstanceService.class);
-
         Map<Generators, List<ServiceConfig>> configFileMap = createConfigFileMap(serviceRoleInfo);
         serviceRoleInfo.setConfigFileMap(configFileMap);
 
@@ -344,18 +359,15 @@ public class DAGExecActor {
         if (needTellResult) {
             ProcessUtils.handleCommandResult(serviceRoleInfo.getHostCommandId(), execResult.getExecResult(), execResult.getExecOut());
         } else {
-            ClusterServiceCommandHostCommandService service = getBean(ClusterServiceCommandHostCommandService.class);
-            ClusterServiceCommandHostCommandEntity hostCommand = service.getByHostCommandId(serviceRoleInfo.getHostCommandId());
+            ClusterServiceCommandHostCommandEntity hostCommand = hostCommandService.getByHostCommandId(serviceRoleInfo.getHostCommandId());
             hostCommand.setCommandProgress(90);
-            service.updateByHostCommandId(hostCommand);
+            hostCommandService.updateByHostCommandId(hostCommand);
         }
         return execResult;
     }
 
     private Map<Generators, List<ServiceConfig>> createConfigFileMap(ServiceRoleInfo serviceRoleInfo) {
         log.info("服务{}{}创建ConfigFileMap", serviceRoleInfo.getParentName(), serviceRoleInfo.getServiceRoleName());
-        ClusterServiceRoleGroupConfigService roleGroupConfigService = getBean(ClusterServiceRoleGroupConfigService.class);
-        ClusterServiceRoleInstanceService roleInstanceService = getBean(ClusterServiceRoleInstanceService.class);
 
         ClusterServiceRoleInstanceEntity serviceRoleInstance = roleInstanceService.getOneServiceRole(
                 serviceRoleInfo.getName(), serviceRoleInfo.getHostname(), serviceRoleInfo.getClusterId());
@@ -436,6 +448,9 @@ public class DAGExecActor {
         ProcessUtils.updateServiceRoleState(role.getCommandType(), role.getName(), role.getHostname(), role.getClusterId(), state);
     }
 
+    // ─── inner types ─────────────────────────────────────────────────────────
+
+    /** DAG 节点中单个服务角色执行失败时抛出，由 RepoDAG 的监听器识别并决定是否触发级联取消。 */
     @Data
     public static class ServiceRoleExecException extends RuntimeException {
         public ServiceRoleExecException(String message) {
