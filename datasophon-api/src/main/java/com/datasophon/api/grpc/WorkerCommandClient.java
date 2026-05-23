@@ -46,6 +46,7 @@ import io.grpc.StatusRuntimeException;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -53,19 +54,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Master 端 gRPC 客户端：向目标 Worker 发送命令（Phase 1）。
+ * Master 端 gRPC 客户端：向目标 Worker 发送命令。
  *
- * <p>Channel 按 hostname 缓存，Spring 销毁时统一关闭。
- * 调用方先通过 {@link TransportProperties#isGrpcEnabled()} 判断是否走 gRPC，
- * 不走 gRPC 时不调用此 Bean。</p>
- *
- * <p>Phase 1 方法：</p>
- * <ul>
- *   <li>{@link #ping(String)}                         — 对应 PingActor</li>
- *   <li>{@link #executeCmd(String, List)}              — 对应 ExecuteCmdActor（commands 列表）</li>
- *   <li>{@link #executeCmdLine(String, String)}        — 对应 RMStateActor / NMStateActor（单行命令）</li>
- *   <li>{@link #getLog(String, String, String)}        — 对应 LogActor</li>
- * </ul>
+ * <p>Channel 按 hostname 懒建并缓存。当 Worker 离线（注销、重注册、心跳超时）时，
+ * {@link WorkerRegistry} 发布 {@link WorkerOfflineEvent}，本类通过 {@link EventListener}
+ * 监听并立即关闭对应 Channel，防止连接句柄泄漏。Spring 销毁时关闭所有剩余 Channel。</p>
  */
 @Component
 public class WorkerCommandClient {
@@ -423,6 +416,19 @@ public class WorkerCommandClient {
     }
 
     // ─── lifecycle ────────────────────────────────────────────────────────────
+
+    /**
+     * 监听 Worker 离线事件（注销、重注册、心跳超时），立即关闭并移除对应 Channel。
+     * 这是 H1（Channel 泄漏）的核心修复：Channel 生命周期与 WorkerEndpoint 保持同步。
+     */
+    @EventListener
+    public void onWorkerOffline(WorkerOfflineEvent event) {
+        ManagedChannel channel = channelCache.remove(event.getHostname());
+        if (channel != null) {
+            channel.shutdown();
+            log.info("gRPC channel closed for offline worker: {}", event.getHostname());
+        }
+    }
 
     @PreDestroy
     public void destroy() {

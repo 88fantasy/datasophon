@@ -120,10 +120,10 @@ public class MasterRegistryClient implements AutoCloseable {
                 log.warn("Worker gRPC registration failed: {}", resp.getMessage());
             }
         } catch (StatusRuntimeException e) {
-            // 注册失败不影响 Pekko 通道（双轨期间容忍 gRPC 注册失败）
-            log.warn("Worker gRPC register to master {} failed (will retry via heartbeat): {}",
+            log.warn("Worker gRPC register to master {} failed, will retry via heartbeat: {}",
                     masterHost, e.getStatus());
-            // 即便注册失败也启动心跳，心跳失败时 master 会要求重新注册
+            // 注册失败也启动心跳定时器：heartbeat 收到 success=false 时会重试 register()。
+            // startHeartbeat() 已保证幂等（取消旧任务后再调度），此处安全。
             startHeartbeat();
         }
     }
@@ -166,6 +166,10 @@ public class MasterRegistryClient implements AutoCloseable {
     // ─── private helpers ──────────────────────────────────────────────────────
 
     private void startHeartbeat() {
+        // 先取消旧任务，保证同一时刻只有一个心跳定时器在运行（H2 修复）
+        if (heartbeatTask != null) {
+            heartbeatTask.cancel(false);
+        }
         heartbeatTask = scheduler.scheduleWithFixedDelay(
                 this::sendHeartbeat,
                 HEARTBEAT_INTERVAL_SECONDS,

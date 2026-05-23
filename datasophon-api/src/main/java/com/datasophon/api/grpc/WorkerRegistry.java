@@ -19,12 +19,12 @@ package com.datasophon.api.grpc;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -36,6 +36,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * </p>
  * <p>
  * 心跳超时判定：连续 3 次心跳间隔（默认 90s）未收到心跳，视为 worker 离线。
+ * 超时或注销时发布 {@link WorkerOfflineEvent}，由 {@link WorkerCommandClient}
+ * 监听以关闭对应的 gRPC Channel，防止连接句柄泄漏。
  * </p>
  */
 @Component
@@ -47,12 +49,24 @@ public class WorkerRegistry {
     private static final Duration HEARTBEAT_TIMEOUT = Duration.ofSeconds(90);
 
     private final ConcurrentHashMap<String, WorkerEndpoint> registry = new ConcurrentHashMap<>();
+    private final ApplicationEventPublisher eventPublisher;
+
+    public WorkerRegistry(ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
 
     /**
-     * 注册 Worker 节点。若已存在则更新端口和心跳时间。
+     * 注册 Worker 节点。
+     * 若同名节点已存在（如 worker 重启后端口变更），先发布 {@link WorkerOfflineEvent}
+     * 以关闭旧 Channel，再写入新端点。
      */
     public void register(WorkerEndpoint endpoint) {
-        registry.put(endpoint.getHostname(), endpoint);
+        WorkerEndpoint old = registry.put(endpoint.getHostname(), endpoint);
+        if (old != null) {
+            // worker 重新注册（重启/端口变更）—— 旧 channel 需要关闭
+            log.info("Worker re-registered, closing old channel: hostname={}", endpoint.getHostname());
+            eventPublisher.publishEvent(new WorkerOfflineEvent(this, endpoint.getHostname()));
+        }
         log.info("Worker registered: hostname={}, port={}, arch={}",
                 endpoint.getHostname(), endpoint.getGrpcPort(), endpoint.getCpuArchitecture());
     }
@@ -71,17 +85,19 @@ public class WorkerRegistry {
     }
 
     /**
-     * 注销 Worker 节点。
+     * 注销 Worker 节点，并发布 {@link WorkerOfflineEvent} 关闭其 gRPC Channel。
      */
     public void unregister(String hostname) {
         WorkerEndpoint removed = registry.remove(hostname);
         if (removed != null) {
             log.info("Worker unregistered: hostname={}", hostname);
+            eventPublisher.publishEvent(new WorkerOfflineEvent(this, hostname));
         }
     }
 
     /**
      * 获取指定 hostname 的 Worker 端点信息。
+     * 若心跳超时，主动从注册表移除并发布 {@link WorkerOfflineEvent}。
      *
      * @return 非空 Optional 表示 worker 已注册且在线
      */
@@ -91,8 +107,12 @@ public class WorkerRegistry {
             return Optional.empty();
         }
         if (isTimedOut(ep)) {
-            log.warn("Worker {} heartbeat timed out (last seen: {}), treating as offline",
+            log.warn("Worker {} heartbeat timed out (last seen: {}), evicting from registry",
                     hostname, ep.getLastHeartbeat());
+            // 条件移除：只有值未被其他线程更新时才移除，避免误删刚重新注册的端点
+            if (registry.remove(hostname, ep)) {
+                eventPublisher.publishEvent(new WorkerOfflineEvent(this, hostname));
+            }
             return Optional.empty();
         }
         return Optional.of(ep);
