@@ -163,6 +163,52 @@ class WorkerRegistryTest {
         assertThat(online.iterator().next().getHostname()).isEqualTo("host6");
     }
 
+    // ─── preRegister（H3 修复）────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("preRegister 后 getEndpoint 可取到端点（Master 重启预热场景）")
+    void preRegister_thenGetEndpoint_returnsEndpoint() {
+        registry.preRegister("host-pre", 18082, 1);
+
+        Optional<WorkerEndpoint> result = registry.getEndpoint("host-pre");
+        assertThat(result).isPresent();
+        assertThat(result.get().getHostname()).isEqualTo("host-pre");
+        assertThat(result.get().getGrpcPort()).isEqualTo(18082);
+    }
+
+    @Test
+    @DisplayName("preRegister 不发布 WorkerOfflineEvent（预热不是替换离线节点）")
+    void preRegister_doesNotPublishOfflineEvent() {
+        registry.preRegister("host-pre2", 18082, 1);
+        assertThat(publishedEvents).isEmpty();
+    }
+
+    @Test
+    @DisplayName("preRegister 若节点已真实注册则 putIfAbsent 不覆盖，register 真实更新时才发 OfflineEvent")
+    void preRegister_doesNotOverwriteExistingRealEndpoint() {
+        // 真实注册
+        registry.register(new WorkerEndpoint("host-pre3", 18082, "x86_64", 1));
+        publishedEvents.clear();
+
+        // 预热不应覆盖真实注册
+        registry.preRegister("host-pre3", 19999, 1);
+        assertThat(registry.getEndpoint("host-pre3").get().getGrpcPort()).isEqualTo(18082);
+        assertThat(publishedEvents).isEmpty(); // putIfAbsent → 不触发 OfflineEvent
+    }
+
+    @Test
+    @DisplayName("preRegister 后 Worker 真实注册会覆盖预热条目并发布 WorkerOfflineEvent")
+    void preRegister_thenRealRegister_overwritesAndPublishesEvent() {
+        registry.preRegister("host-pre4", 18082, 1);
+        publishedEvents.clear(); // 预热不发事件
+
+        // Worker 真实注册覆盖预热条目
+        registry.register(new WorkerEndpoint("host-pre4", 18082, "x86_64", 1));
+        // register() 发现 putIfAbsent 条目存在 → 视为旧端点发 OfflineEvent（关旧 Channel）
+        assertThat(publishedEvents).hasSize(1);
+        assertThat(((WorkerOfflineEvent) publishedEvents.get(0)).getHostname()).isEqualTo("host-pre4");
+    }
+
     // ─── helpers ─────────────────────────────────────────────────────────────
 
     /** 通过反射设置 WorkerEndpoint.lastHeartbeat，模拟心跳超时场景。 */

@@ -56,6 +56,23 @@ public class WorkerRegistry {
     }
 
     /**
+     * Master 启动时预热注册表：根据 DB 中已管理的主机列表，以默认端口预填端点。
+     *
+     * <p>预热条目的 {@link WorkerEndpoint#getLastHeartbeat()} 设为当前时间，
+     * 在 {@link #HEARTBEAT_TIMEOUT}（90s）内有效；Worker 真实注册后会覆盖该条目。
+     * 预热时不发布 {@link WorkerOfflineEvent}（没有旧 Channel 需要清理）。</p>
+     *
+     * @param hostname  Worker 主机名
+     * @param grpcPort  Worker gRPC 端口（通常 18082）
+     * @param clusterId 所属集群 ID
+     */
+    public void preRegister(String hostname, int grpcPort, int clusterId) {
+        // 仅在节点尚未注册时才预热，避免覆盖已在线 Worker 的真实端点
+        registry.putIfAbsent(hostname, new WorkerEndpoint(hostname, grpcPort, "", clusterId));
+        log.debug("Worker pre-registered from DB: hostname={}, port={}", hostname, grpcPort);
+    }
+
+    /**
      * 注册 Worker 节点。
      * 若同名节点已存在（如 worker 重启后端口变更），先发布 {@link WorkerOfflineEvent}
      * 以关闭旧 Channel，再写入新端点。
