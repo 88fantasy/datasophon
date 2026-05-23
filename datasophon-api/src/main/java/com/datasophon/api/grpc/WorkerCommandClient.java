@@ -77,100 +77,58 @@ public class WorkerCommandClient {
     // ─── Phase 1 API ─────────────────────────────────────────────────────────
 
     public ExecResult ping(String hostname) {
-        try {
-            ExecResultPb pb = getStub(hostname)
-                    .withDeadlineAfter(30, TimeUnit.SECONDS)
-                    .ping(PingRequest.newBuilder().setMessage("ping").build());
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC ping to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC ping failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC ping to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC ping failed: " + e.getMessage());
-        }
+        return callWorker(hostname, "ping", () ->
+                getStub(hostname)
+                        .withDeadlineAfter(30, TimeUnit.SECONDS)
+                        .ping(PingRequest.newBuilder().setMessage("ping").build()));
     }
 
     /** 执行命令列表（ExecuteCmdActor 模式）。 */
     public ExecResult executeCmd(String hostname, List<String> commands) {
-        try {
-            ExecResultPb pb = getStub(hostname)
-                    .withDeadlineAfter(90, TimeUnit.SECONDS)
-                    .executeCmd(ExecuteCmdRequest.newBuilder()
-                            .addAllCommands(commands)
-                            .build());
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC executeCmd to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC executeCmd failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC executeCmd to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC executeCmd failed: " + e.getMessage());
-        }
+        return callWorker(hostname, "executeCmd", () ->
+                getStub(hostname)
+                        .withDeadlineAfter(90, TimeUnit.SECONDS)
+                        .executeCmd(ExecuteCmdRequest.newBuilder()
+                                .addAllCommands(commands)
+                                .build()));
     }
 
     /** 执行单行 shell 命令（RMStateActor / NMStateActor 模式）。 */
     public ExecResult executeCmdLine(String hostname, String commandLine) {
-        try {
-            ExecResultPb pb = getStub(hostname)
-                    .withDeadlineAfter(90, TimeUnit.SECONDS)
-                    .executeCmd(ExecuteCmdRequest.newBuilder()
-                            .setCommandLine(commandLine)
-                            .build());
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC executeCmdLine to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC executeCmdLine failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC executeCmdLine to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC executeCmdLine failed: " + e.getMessage());
-        }
+        return callWorker(hostname, "executeCmdLine", () ->
+                getStub(hostname)
+                        .withDeadlineAfter(90, TimeUnit.SECONDS)
+                        .executeCmd(ExecuteCmdRequest.newBuilder()
+                                .setCommandLine(commandLine)
+                                .build()));
     }
 
     /** 读取 Worker 节点日志（LogActor 模式）。 */
     public ExecResult getLog(String hostname, String logFile, String baseDir) {
-        try {
-            ExecResultPb pb = getStub(hostname)
-                    .withDeadlineAfter(30, TimeUnit.SECONDS)
-                    .getLog(GetLogRequest.newBuilder()
-                            .setLogFile(logFile)
-                            .setBaseDir(baseDir)
-                            .build());
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC getLog to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC getLog failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC getLog to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC getLog failed: " + e.getMessage());
-        }
+        return callWorker(hostname, "getLog", () ->
+                getStub(hostname)
+                        .withDeadlineAfter(30, TimeUnit.SECONDS)
+                        .getLog(GetLogRequest.newBuilder()
+                                .setLogFile(logFile)
+                                .setBaseDir(baseDir)
+                                .build()));
     }
 
     // ─── Phase 2 API ─────────────────────────────────────────────────────────
 
     /** 安装服务角色（对应 InstallServiceActor）。 */
     public ExecResult installServiceRole(String hostname, InstallServiceRoleCommand cmd) {
-        try {
+        return callWorker(hostname, "installServiceRole", () -> {
             String jsonPayload = objectMapper.writeValueAsString(cmd);
             ServiceRoleRequest req = ServiceRoleRequest.newBuilder()
                     .setServiceName(nullToEmpty(cmd.getServiceName()))
                     .setServiceRoleName(nullToEmpty(cmd.getServiceRoleName()))
                     .setJsonPayload(jsonPayload)
                     .build();
-            ExecResultPb pb = getStub(hostname)
+            return getStub(hostname)
                     .withDeadlineAfter(180, TimeUnit.SECONDS)
                     .installServiceRole(req);
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC installServiceRole to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC installServiceRole failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC installServiceRole to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC installServiceRole failed: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("gRPC installServiceRole to {} serialization failed: {}", hostname, e.getMessage(), e);
-            return ExecResult.error("gRPC installServiceRole serialization failed: " + e.getMessage());
-        }
+        });
     }
 
     /**
@@ -180,7 +138,7 @@ public class WorkerCommandClient {
      * JSON 不支持对象 key，因此单独序列化为 {@code config_map_json}（List&lt;ConfigFileEntry&gt;）。</p>
      */
     public ExecResult configureServiceRole(String hostname, GenerateServiceConfigCommand cmd) {
-        try {
+        return callWorker(hostname, "configureServiceRole", () -> {
             String configMapJson = objectMapper.writeValueAsString(
                     ConfigFileEntry.fromMap(cmd.getCofigFileMap()));
             cmd.setCofigFileMap(null); // 避免 JSON 序列化 Map<Object, ...> key 问题
@@ -191,198 +149,101 @@ public class WorkerCommandClient {
                     .setJsonPayload(jsonPayload)
                     .setConfigMapJson(configMapJson)
                     .build();
-            ExecResultPb pb = getStub(hostname)
+            return getStub(hostname)
                     .withDeadlineAfter(180, TimeUnit.SECONDS)
                     .configureServiceRole(req);
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC configureServiceRole to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC configureServiceRole failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC configureServiceRole to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC configureServiceRole failed: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("gRPC configureServiceRole to {} serialization failed: {}", hostname, e.getMessage(), e);
-            return ExecResult.error("gRPC configureServiceRole serialization failed: " + e.getMessage());
-        }
+        });
     }
 
     /** 启动服务角色（对应 StartServiceActor）。 */
     public ExecResult startServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
-        try {
-            ExecResultPb pb = getStub(hostname)
-                    .withDeadlineAfter(180, TimeUnit.SECONDS)
-                    .startServiceRole(buildServiceRoleRequest(cmd));
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC startServiceRole to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC startServiceRole failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC startServiceRole to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC startServiceRole failed: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("gRPC startServiceRole to {} failed: {}", hostname, e.getMessage(), e);
-            return ExecResult.error("gRPC startServiceRole failed: " + e.getMessage());
-        }
+        return callWorker(hostname, "startServiceRole", () ->
+                getStub(hostname)
+                        .withDeadlineAfter(180, TimeUnit.SECONDS)
+                        .startServiceRole(buildServiceRoleRequest(cmd)));
     }
 
     /** 停止服务角色（对应 StopServiceActor）。 */
     public ExecResult stopServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
-        try {
-            ExecResultPb pb = getStub(hostname)
-                    .withDeadlineAfter(180, TimeUnit.SECONDS)
-                    .stopServiceRole(buildServiceRoleRequest(cmd));
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC stopServiceRole to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC stopServiceRole failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC stopServiceRole to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC stopServiceRole failed: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("gRPC stopServiceRole to {} failed: {}", hostname, e.getMessage(), e);
-            return ExecResult.error("gRPC stopServiceRole failed: " + e.getMessage());
-        }
+        return callWorker(hostname, "stopServiceRole", () ->
+                getStub(hostname)
+                        .withDeadlineAfter(180, TimeUnit.SECONDS)
+                        .stopServiceRole(buildServiceRoleRequest(cmd)));
     }
 
     /** 重启服务角色（对应 RestartServiceActor）。 */
     public ExecResult restartServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
-        try {
-            ExecResultPb pb = getStub(hostname)
-                    .withDeadlineAfter(180, TimeUnit.SECONDS)
-                    .restartServiceRole(buildServiceRoleRequest(cmd));
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC restartServiceRole to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC restartServiceRole failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC restartServiceRole to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC restartServiceRole failed: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("gRPC restartServiceRole to {} failed: {}", hostname, e.getMessage(), e);
-            return ExecResult.error("gRPC restartServiceRole failed: " + e.getMessage());
-        }
+        return callWorker(hostname, "restartServiceRole", () ->
+                getStub(hostname)
+                        .withDeadlineAfter(180, TimeUnit.SECONDS)
+                        .restartServiceRole(buildServiceRoleRequest(cmd)));
     }
 
     /** 检查服务角色状态（对应 ServiceStatusActor）。 */
     public ExecResult serviceRoleStatus(String hostname, ServiceRoleOperateCommand cmd) {
-        try {
-            ExecResultPb pb = getStub(hostname)
-                    .withDeadlineAfter(180, TimeUnit.SECONDS)
-                    .serviceRoleStatus(buildServiceRoleRequest(cmd));
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC serviceRoleStatus to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC serviceRoleStatus failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC serviceRoleStatus to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC serviceRoleStatus failed: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("gRPC serviceRoleStatus to {} failed: {}", hostname, e.getMessage(), e);
-            return ExecResult.error("gRPC serviceRoleStatus failed: " + e.getMessage());
-        }
+        return callWorker(hostname, "serviceRoleStatus", () ->
+                getStub(hostname)
+                        .withDeadlineAfter(180, TimeUnit.SECONDS)
+                        .serviceRoleStatus(buildServiceRoleRequest(cmd)));
     }
 
     // ─── Phase 3 API ─────────────────────────────────────────────────────────
 
     /** 创建 Unix 组（对应 UnixGroupActor create）。 */
     public ExecResult createUnixGroup(String hostname, CreateUnixGroupCommand cmd) {
-        try {
-            UnixGroupRequest req = UnixGroupRequest.newBuilder()
-                    .setGroupName(nullToEmpty(cmd.getGroupName()))
-                    .build();
-            ExecResultPb pb = getStub(hostname)
-                    .withDeadlineAfter(180, TimeUnit.SECONDS)
-                    .createUnixGroup(req);
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC createUnixGroup to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC createUnixGroup failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC createUnixGroup to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC createUnixGroup failed: " + e.getMessage());
-        }
+        return callWorker(hostname, "createUnixGroup", () ->
+                getStub(hostname)
+                        .withDeadlineAfter(180, TimeUnit.SECONDS)
+                        .createUnixGroup(UnixGroupRequest.newBuilder()
+                                .setGroupName(nullToEmpty(cmd.getGroupName()))
+                                .build()));
     }
 
     /** 删除 Unix 组（对应 UnixGroupActor delete）。 */
     public ExecResult deleteUnixGroup(String hostname, DelUnixGroupCommand cmd) {
-        try {
-            UnixGroupRequest req = UnixGroupRequest.newBuilder()
-                    .setGroupName(nullToEmpty(cmd.getGroupName()))
-                    .build();
-            ExecResultPb pb = getStub(hostname)
-                    .withDeadlineAfter(180, TimeUnit.SECONDS)
-                    .deleteUnixGroup(req);
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC deleteUnixGroup to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC deleteUnixGroup failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC deleteUnixGroup to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC deleteUnixGroup failed: " + e.getMessage());
-        }
+        return callWorker(hostname, "deleteUnixGroup", () ->
+                getStub(hostname)
+                        .withDeadlineAfter(180, TimeUnit.SECONDS)
+                        .deleteUnixGroup(UnixGroupRequest.newBuilder()
+                                .setGroupName(nullToEmpty(cmd.getGroupName()))
+                                .build()));
     }
 
     /** 创建 Unix 用户（对应 UnixUserActor create）。 */
     public ExecResult createUnixUser(String hostname, CreateUnixUserCommand cmd) {
-        try {
-            UnixUserRequest req = UnixUserRequest.newBuilder()
-                    .setUsername(nullToEmpty(cmd.getUsername()))
-                    .setMainGroup(nullToEmpty(cmd.getMainGroup()))
-                    .setOtherGroups(nullToEmpty(cmd.getOtherGroups()))
-                    .build();
-            ExecResultPb pb = getStub(hostname)
-                    .withDeadlineAfter(180, TimeUnit.SECONDS)
-                    .createUnixUser(req);
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC createUnixUser to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC createUnixUser failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC createUnixUser to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC createUnixUser failed: " + e.getMessage());
-        }
+        return callWorker(hostname, "createUnixUser", () ->
+                getStub(hostname)
+                        .withDeadlineAfter(180, TimeUnit.SECONDS)
+                        .createUnixUser(UnixUserRequest.newBuilder()
+                                .setUsername(nullToEmpty(cmd.getUsername()))
+                                .setMainGroup(nullToEmpty(cmd.getMainGroup()))
+                                .setOtherGroups(nullToEmpty(cmd.getOtherGroups()))
+                                .build()));
     }
 
     /** 删除 Unix 用户（对应 UnixUserActor delete）。 */
     public ExecResult deleteUnixUser(String hostname, DelUnixUserCommand cmd) {
-        try {
-            UnixUserRequest req = UnixUserRequest.newBuilder()
-                    .setUsername(nullToEmpty(cmd.getUsername()))
-                    .build();
-            ExecResultPb pb = getStub(hostname)
-                    .withDeadlineAfter(180, TimeUnit.SECONDS)
-                    .deleteUnixUser(req);
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC deleteUnixUser to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC deleteUnixUser failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC deleteUnixUser to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC deleteUnixUser failed: " + e.getMessage());
-        }
+        return callWorker(hostname, "deleteUnixUser", () ->
+                getStub(hostname)
+                        .withDeadlineAfter(180, TimeUnit.SECONDS)
+                        .deleteUnixUser(UnixUserRequest.newBuilder()
+                                .setUsername(nullToEmpty(cmd.getUsername()))
+                                .build()));
     }
 
     /** 文件写入操作（对应 FileOperateActor）。 */
     public ExecResult operateFile(String hostname, FileOperateCommand cmd) {
-        try {
+        return callWorker(hostname, "operateFile", () -> {
             FileOperateRequest.Builder reqBuilder = FileOperateRequest.newBuilder()
                     .setPath(nullToEmpty(cmd.getPath()))
                     .setContent(nullToEmpty(cmd.getContent()));
             if (cmd.getLines() != null) {
                 reqBuilder.addAllLines(cmd.getLines());
             }
-            ExecResultPb pb = getStub(hostname)
+            return getStub(hostname)
                     .withDeadlineAfter(180, TimeUnit.SECONDS)
                     .operateFile(reqBuilder.build());
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC operateFile to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC operateFile failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC operateFile to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC operateFile failed: " + e.getMessage());
-        }
+        });
     }
 
     /**
@@ -392,27 +253,17 @@ public class WorkerCommandClient {
      * 对象，不可直接作为 JSON key，故通过 {@link AlertConfigEntry} 桥接列表序列化。</p>
      */
     public ExecResult generateAlertConfig(String hostname, GenerateAlertConfigCommand cmd) {
-        try {
+        return callWorker(hostname, "generateAlertConfig", () -> {
             String configMapJson = objectMapper.writeValueAsString(
                     AlertConfigEntry.fromMap(cmd.getConfigFileMap()));
             AlertConfigRequest req = AlertConfigRequest.newBuilder()
                     .setClusterId(cmd.getClusterId() != null ? cmd.getClusterId() : 0)
                     .setConfigMapJson(configMapJson)
                     .build();
-            ExecResultPb pb = getStub(hostname)
+            return getStub(hostname)
                     .withDeadlineAfter(180, TimeUnit.SECONDS)
                     .generateAlertConfig(req);
-            return toExecResult(pb);
-        } catch (StatusRuntimeException e) {
-            log.warn("gRPC generateAlertConfig to {} failed: {}", hostname, e.getStatus());
-            return ExecResult.error("gRPC generateAlertConfig failed: " + e.getStatus());
-        } catch (IllegalStateException e) {
-            log.warn("gRPC generateAlertConfig to {} failed: {}", hostname, e.getMessage());
-            return ExecResult.error("gRPC generateAlertConfig failed: " + e.getMessage());
-        } catch (Exception e) {
-            log.error("gRPC generateAlertConfig to {} serialization failed: {}", hostname, e.getMessage(), e);
-            return ExecResult.error("gRPC generateAlertConfig serialization failed: " + e.getMessage());
-        }
+        });
     }
 
     // ─── lifecycle ────────────────────────────────────────────────────────────
@@ -448,6 +299,35 @@ public class WorkerCommandClient {
     }
 
     // ─── private helpers ─────────────────────────────────────────────────────
+
+    /**
+     * 统一的 gRPC 调用包装器，消除各方法中的重复 try-catch。
+     *
+     * <ul>
+     *   <li>{@link StatusRuntimeException} / {@link IllegalStateException} → warn 级日志（预期错误）</li>
+     *   <li>其他 {@link Exception}（如 JSON 序列化失败）→ error 级日志（非预期）</li>
+     * </ul>
+     */
+    private ExecResult callWorker(String hostname, String method, WorkerCall<ExecResultPb> call) {
+        try {
+            return toExecResult(call.call());
+        } catch (StatusRuntimeException e) {
+            log.warn("gRPC {} to {} failed: {}", method, hostname, e.getStatus());
+            return ExecResult.error("gRPC " + method + " failed: " + e.getStatus());
+        } catch (IllegalStateException e) {
+            log.warn("gRPC {} to {} failed: {}", method, hostname, e.getMessage());
+            return ExecResult.error("gRPC " + method + " failed: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("gRPC {} to {} failed: {}", method, hostname, e.getMessage(), e);
+            return ExecResult.error("gRPC " + method + " failed: " + e.getMessage());
+        }
+    }
+
+    /** 供 callWorker 使用的 checked-exception 版 Supplier。 */
+    @FunctionalInterface
+    private interface WorkerCall<T> {
+        T call() throws Exception;
+    }
 
     /** 将 ServiceRoleOperateCommand 序列化为 ServiceRoleRequest proto。 */
     private ServiceRoleRequest buildServiceRoleRequest(ServiceRoleOperateCommand cmd) {

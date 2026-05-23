@@ -22,6 +22,7 @@ import com.datasophon.common.Constants;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.mapper.ClusterHostMapper;
 import com.datasophon.domain.host.enums.HostState;
+import com.datasophon.grpc.api.GrpcConstants;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,8 +45,7 @@ public class WorkerRegistryPrewarmer {
 
     private static final Logger log = LoggerFactory.getLogger(WorkerRegistryPrewarmer.class);
 
-    /** 与 MasterRegistryClient.WORKER_GRPC_PORT 保持一致 */
-    private static final int DEFAULT_WORKER_GRPC_PORT = 18082;
+    // 端口常量统一从 GrpcConstants 读取，与 Worker 侧保持单点事实（SSOT）
 
     private final WorkerRegistry workerRegistry;
     private final ClusterHostMapper clusterHostMapper;
@@ -69,10 +69,10 @@ public class WorkerRegistryPrewarmer {
             }
 
             for (ClusterHostDO host : hosts) {
-                workerRegistry.preRegister(host.getHostname(), DEFAULT_WORKER_GRPC_PORT, host.getClusterId());
+                workerRegistry.preRegister(host.getHostname(), GrpcConstants.WORKER_GRPC_PORT, host.getClusterId());
             }
             log.info("WorkerRegistry prewarm: pre-registered {} hosts from DB (port={})",
-                    hosts.size(), DEFAULT_WORKER_GRPC_PORT);
+                    hosts.size(), GrpcConstants.WORKER_GRPC_PORT);
         } catch (Exception e) {
             // 预热失败为非致命错误：注册表仍可正常工作，Workers 在首次心跳时会主动注册
             log.warn("WorkerRegistry prewarm failed (non-fatal, workers will re-register via heartbeat): {}",

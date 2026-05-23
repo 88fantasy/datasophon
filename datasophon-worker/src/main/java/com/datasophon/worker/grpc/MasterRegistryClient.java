@@ -20,6 +20,7 @@ package com.datasophon.worker.grpc;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.utils.PropertyUtils;
+import com.datasophon.grpc.api.GrpcConstants;
 import com.datasophon.grpc.api.HeartbeatRequest;
 import com.datasophon.grpc.api.HeartbeatResponse;
 import com.datasophon.grpc.api.RegisterRequest;
@@ -53,14 +54,7 @@ public class MasterRegistryClient implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(MasterRegistryClient.class);
 
-    /** 心跳间隔（秒） */
-    private static final int HEARTBEAT_INTERVAL_SECONDS = 30;
-
-    /** Master gRPC server 端口（对应 master 的 grpc.server.port） */
-    private static final int MASTER_GRPC_PORT = 18081;
-
-    /** Worker gRPC server 端口（Phase 1 启动后使用） */
-    private static final int WORKER_GRPC_PORT = 18082;
+    // 端口与心跳常量统一从 GrpcConstants 读取，避免两端各自硬编码
 
     private final ManagedChannel channel;
     private final WorkerRegistryServiceGrpc.WorkerRegistryServiceBlockingStub stub;
@@ -88,7 +82,7 @@ public class MasterRegistryClient implements AutoCloseable {
         this.clusterId = clusterId;
 
         this.channel = ManagedChannelBuilder
-                .forAddress(masterHost, MASTER_GRPC_PORT)
+                .forAddress(masterHost, GrpcConstants.MASTER_GRPC_PORT)
                 .usePlaintext()  // Phase 0 明文，与 Pekko 当前安全模型一致
                 .build();
         this.stub = WorkerRegistryServiceGrpc.newBlockingStub(channel);
@@ -105,7 +99,7 @@ public class MasterRegistryClient implements AutoCloseable {
     public void register() {
         RegisterRequest req = RegisterRequest.newBuilder()
                 .setHostname(hostname)
-                .setGrpcPort(WORKER_GRPC_PORT)
+                .setGrpcPort(GrpcConstants.WORKER_GRPC_PORT)
                 .setCpuArchitecture(cpuArchitecture)
                 .setClusterId(clusterId)
                 .build();
@@ -172,8 +166,8 @@ public class MasterRegistryClient implements AutoCloseable {
         }
         heartbeatTask = scheduler.scheduleWithFixedDelay(
                 this::sendHeartbeat,
-                HEARTBEAT_INTERVAL_SECONDS,
-                HEARTBEAT_INTERVAL_SECONDS,
+                GrpcConstants.HEARTBEAT_INTERVAL_SECONDS,
+                GrpcConstants.HEARTBEAT_INTERVAL_SECONDS,
                 TimeUnit.SECONDS);
     }
 

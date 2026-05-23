@@ -17,12 +17,14 @@
 
 package com.datasophon.worker.grpc;
 
+import com.datasophon.grpc.api.GrpcConstants;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -36,13 +38,24 @@ public class WorkerGrpcServer {
 
     private static final Logger log = LoggerFactory.getLogger(WorkerGrpcServer.class);
 
-    /** Worker gRPC 服务端口（须与 MasterRegistryClient.WORKER_GRPC_PORT 保持一致） */
-    static final int PORT = 18082;
+    /**
+     * gRPC 服务线程池上界：max(8, 2 × CPU 核数)。
+     *
+     * <p>gRPC-Java 默认使用无界 CachedThreadPool；在高并发（如批量 install）场景下
+     * 可能创建数百线程导致堆栈溢出。有界线程池在满负荷时让请求排队而非创建新线程。</p>
+     */
+    private static final int GRPC_THREAD_POOL_SIZE =
+            Math.max(8, Runtime.getRuntime().availableProcessors() * 2);
 
     private final Server server;
 
     public WorkerGrpcServer() {
-        this.server = ServerBuilder.forPort(PORT)
+        this.server = ServerBuilder.forPort(GrpcConstants.WORKER_GRPC_PORT)
+                .executor(Executors.newFixedThreadPool(GRPC_THREAD_POOL_SIZE, r -> {
+                    Thread t = new Thread(r, "worker-grpc-exec");
+                    t.setDaemon(true);
+                    return t;
+                }))
                 .addService(new WorkerCommandGrpcService())
                 .build();
     }
@@ -50,7 +63,8 @@ public class WorkerGrpcServer {
     /** 启动服务器，阻塞直到端口绑定完成。 */
     public void start() throws IOException {
         server.start();
-        log.info("Worker gRPC server started on port {}", PORT);
+        log.info("Worker gRPC server started on port {} (threadPool={})",
+                GrpcConstants.WORKER_GRPC_PORT, GRPC_THREAD_POOL_SIZE);
     }
 
     /** 优雅关闭：等待 5s，超时后强制终止。 */

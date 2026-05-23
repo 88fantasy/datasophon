@@ -17,6 +17,7 @@
 
 package com.datasophon.worker.grpc;
 
+import com.datasophon.grpc.api.GrpcConstants;
 import com.datasophon.grpc.api.MasterCallbackServiceGrpc;
 import com.datasophon.grpc.api.OlapNodeType;
 import com.datasophon.grpc.api.OlapRegistrationRequest;
@@ -35,15 +36,12 @@ import java.util.concurrent.TimeUnit;
  * <p>Worker 是纯 Java 进程，不使用 Spring 注入，通过静态持有单例供策略类调用。
  * 由 {@link com.datasophon.worker.WorkerApplicationServer} 在 main() 中初始化。</p>
  *
- * <p>复用与 {@link MasterRegistryClient} 相同的 Master 端口（18081），
+ * <p>复用与 {@link MasterRegistryClient} 相同的 Master 端口（{@link GrpcConstants#MASTER_GRPC_PORT}），
  * 独立 Channel 以便单独关闭。</p>
  */
 public class MasterCallbackClient implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(MasterCallbackClient.class);
-
-    /** Master gRPC server 端口（与 MasterRegistryClient 一致） */
-    private static final int MASTER_GRPC_PORT = 18081;
 
     /** 静态单例，由 init() 设置，策略类通过 getInstance() 获取 */
     private static MasterCallbackClient instance;
@@ -53,7 +51,7 @@ public class MasterCallbackClient implements AutoCloseable {
 
     private MasterCallbackClient(String masterHost) {
         this.channel = ManagedChannelBuilder
-                .forAddress(masterHost, MASTER_GRPC_PORT)
+                .forAddress(masterHost, GrpcConstants.MASTER_GRPC_PORT)
                 .usePlaintext()
                 .build();
         this.stub = MasterCallbackServiceGrpc.newBlockingStub(channel);

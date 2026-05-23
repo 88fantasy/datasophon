@@ -17,6 +17,7 @@
 
 package com.datasophon.api.grpc;
 
+import com.datasophon.grpc.api.GrpcConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -45,8 +46,9 @@ public class WorkerRegistry {
 
     private static final Logger log = LoggerFactory.getLogger(WorkerRegistry.class);
 
-    /** 心跳超时阈值：3 个心跳周期（30s * 3 = 90s） */
-    private static final Duration HEARTBEAT_TIMEOUT = Duration.ofSeconds(90);
+    /** 心跳超时阈值（= {@link GrpcConstants#HEARTBEAT_TIMEOUT_SECONDS}）。 */
+    private static final Duration HEARTBEAT_TIMEOUT =
+            Duration.ofSeconds(GrpcConstants.HEARTBEAT_TIMEOUT_SECONDS);
 
     private final ConcurrentHashMap<String, WorkerEndpoint> registry = new ConcurrentHashMap<>();
     private final ApplicationEventPublisher eventPublisher;
