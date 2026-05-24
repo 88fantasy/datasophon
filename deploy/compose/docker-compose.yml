@@ -1,36 +1,119 @@
-version: '3'
 services:
-  datasophon:
-    #restart: always
-    image: datasophon/datasophon:1.1.3
-    container_name: datasophon  #指定容器名
-    depends_on:
-      - mysql
+  mysql:
+    image: mysql:8
+    container_name: ddh-mysql
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: datasophon
+      MYSQL_USER: datasophon
+      MYSQL_PASSWORD: datasophon
+    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_general_ci']
+    ports:
+      - "3307:3306"   # 本机 3306 已被占用，宿主机用 3307 访问测试 DB
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-udatasophon", "-pdatasophon"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  nexus:
+    image: sonatype/nexus3
+    container_name: ddh-nexus
+    environment:
+      TZ: Asia/Shanghai
+      # 禁用随机密码，固定 admin 密码为 admin123（测试环境专用）
+      INSTALL4J_ADD_VM_PARAMS: >-
+        -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m
+        -Dnexus.security.randompassword=false
     ports:
       - "8081:8081"
+    volumes:
+      - nexus-data:/nexus-data
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8081/service/rest/v1/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s   # Nexus 冷启动较慢
+
+  nexus-init:
+    image: curlimages/curl:latest
+    container_name: ddh-nexus-init
+    depends_on:
+      nexus:
+        condition: service_healthy
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        echo "Creating raw hosted repository in Nexus..."
+        curl -sf -u admin:admin123 \
+          -X POST http://nexus:8081/service/rest/v1/repositories/raw/hosted \
+          -H 'Content-Type: application/json' \
+          -d '{"name":"raw","online":true,"storage":{"blobStoreName":"default","strictContentTypeValidation":false,"writePolicy":"ALLOW"}}' \
+          && echo "Repository 'raw' created." \
+          || echo "Repository may already exist, skipping."
+        echo "Nexus init done."
+    restart: "no"
+
+  master:
+    build:
+      context: ../..
+      dockerfile: deploy/compose/Dockerfile.master
+    container_name: master
+    hostname: master
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nexus-init:
+        condition: service_completed_successfully
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+      - "18081:18081"
+      - "8586:8586"
+    volumes:
+      - ./conf/common.properties:/datasophon/conf/common.properties:ro
+      - ./conf/application-config.yml:/datasophon/conf/profiles/application-config.yml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8080/ddh/actuator/health || curl -fs http://localhost:8080/ddh/ > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  cluster-seed:
+    image: mysql:8
+    container_name: ddh-cluster-seed
+    depends_on:
+      master:
+        condition: service_healthy
+    volumes:
+      - ./seed:/seed:ro
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        echo "Seeding test cluster record..."
+        mysql -h mysql -u datasophon -pdatasophon datasophon < /seed/01-cluster.sql
+        echo "Seed done."
+    restart: "no"
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: deploy/compose/Dockerfile.worker
+    container_name: worker
+    hostname: worker
+    depends_on:
+      cluster-seed:
+        condition: service_completed_successfully
     environment:
       TZ: Asia/Shanghai
     volumes:
-      - ./datasophon.conf:/datasophon/conf/datasophon.conf
-  mysql:
-    container_name: db
-    image: mysql:8
-    privileged: true
-    environment:
-      - TZ=Asia/Shanghai
-      - LANG=C.UTF-8
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=datasophon
-      - MYSQL_USER=datasophon
-      - MYSQL_PASSWORD=datasophon
-    volumes:
-      - ./mysql/init/:/docker-entrypoint-initdb.d/
-    #  - ./docker/mysql/db:/var/lib/mysql
-    #  - ./docker/mysql/conf/my.cnf:/etc/my.cnf
-    ports:
-      - "3306:3306"
-    command: [
-        '--character-set-server=utf8mb4',
-        '--collation-server=utf8mb4_general_ci'
-    ]
-    #restart: always
+      - ./conf/common.properties:/datasophon-worker/conf/common.properties:ro
+    restart: on-failure
+
+volumes:
+  nexus-data:   # Nexus 数据持久化（docker compose down -v 时清除）

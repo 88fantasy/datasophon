@@ -73,7 +73,13 @@ public class LoadServiceMeta implements ApplicationRunner {
 
         Map<String, FrameInfoEntity> frameworkCache = new HashMap<>();
 
-        MetaStorage metaStorage =  StorageUtils.getMetaStorage();
+        MetaStorage metaStorage;
+        try {
+            metaStorage = StorageUtils.getMetaStorage();
+        } catch (IllegalStateException e) {
+            logger.warn("No MetaStorage available, skipping service meta load: {}", e.getMessage());
+            return;
+        }
         List<ServiceMetaItem> vosDdlItems = metaStorage.listService(MetaStorage.VOS_DDL);
         Map<String, List<ServiceMetaItem>> groupeVosDdldMap = vosDdlItems.stream().collect(Collectors.groupingBy(ServiceMetaItem::getFramework));
         groupeVosDdldMap.forEach((frameCode, items)-> {

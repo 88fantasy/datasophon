@@ -99,6 +99,13 @@ public class WorkerApplicationServer {
                 close("WorkerServer shutdown hook");
             }
         }));
+
+        // 阻塞主线程，防止 JVM 因无非守护线程退出（容器/前台运行）
+        try {
+            workerGrpcServer.awaitTermination();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private static void initUserMap(Map<String, String> userMap) {

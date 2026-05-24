@@ -148,7 +148,7 @@
             <includes>
                 <include>**</include>
             </includes>
-            <outputDirectory>datasophon-init/sbin/</outputDirectory>
+            <outputDirectory>datasophon-cli/sbin/</outputDirectory>
             <fileMode>0755</fileMode>
             <lineEnding>unix</lineEnding>
         </fileSet>
@@ -157,14 +157,14 @@
             <includes>
                 <include>datasophon-cli-cli.jar</include>
             </includes>
-            <outputDirectory>datasophon-init/sbin</outputDirectory>
+            <outputDirectory>datasophon-cli/sbin</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>${basedir}/../datasophon-cli/src/main/resources</directory>
             <includes>
                 <include>cluster-sample.yml</include>
             </includes>
-            <outputDirectory>datasophon-init/config</outputDirectory>
+            <outputDirectory>datasophon-cli/config</outputDirectory>
             <fileMode>0755</fileMode>
             <lineEnding>unix</lineEnding>
         </fileSet>
@@ -173,7 +173,7 @@
             <includes>
                 <include>README.md</include>
             </includes>
-            <outputDirectory>datasophon-init/</outputDirectory>
+            <outputDirectory>datasophon-cli/</outputDirectory>
             <fileMode>0755</fileMode>
             <lineEnding>unix</lineEnding>
         </fileSet>
@@ -182,7 +182,7 @@
             <includes>
                 <include>**</include>
             </includes>
-            <outputDirectory>datasophon-init/bin/</outputDirectory>
+            <outputDirectory>datasophon-cli/bin/</outputDirectory>
             <fileMode>0755</fileMode>
             <lineEnding>unix</lineEnding>
         </fileSet>

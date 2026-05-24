@@ -67,6 +67,11 @@ public class WorkerGrpcServer {
                 GrpcConstants.WORKER_GRPC_PORT, GRPC_THREAD_POOL_SIZE);
     }
 
+    /** 阻塞主线程直到 gRPC server 关闭（容器/前台运行时调用，防止 JVM 因无非守护线程而提前退出）。 */
+    public void awaitTermination() throws InterruptedException {
+        server.awaitTermination();
+    }
+
     /** 优雅关闭：等待 5s，超时后强制终止。 */
     public void stop() {
         if (server == null || server.isShutdown()) {

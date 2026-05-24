@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mysql://${mysql.ip:localhost}:${mysql.port:3306}/${mysql.database:datasophon}?&allowMultiQueries=true&characterEncoding=utf-8
+    username: ${mysql.username:datasophon}
+    password: ${mysql.password:datasophon}
+
+server:
+  port: ${server.port:8081}
+  address: ${server.address:0.0.0.0}
+
+datasophon:
+  migration:
+    enable: true
+  proxy-grafana:
+    enable: true
+    max-threads: 80

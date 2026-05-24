@@ -1,4 +1,4 @@
-package com.datasophon.cli.registry;
+package com.datasophon.cli.s3;
 
 import com.datasophon.cli.base.Executor;
 import com.datasophon.common.model.Host;
@@ -12,7 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import cn.hutool.core.util.StrUtil;
 
 @Slf4j
-public class MinioRegistry implements Registry {
+public class MinioS3 implements S3 {
+
+    public final String TYPE = "minio";
     
     // minio 下载目录 https://dl.min.io/server/minio/release/linux-amd64/minio
     private static final String TAR_PATH = "/data/install_datasophon/minio.tar.gz";
@@ -21,7 +23,7 @@ public class MinioRegistry implements Registry {
     
     @Override
     public String type() {
-        return "minio";
+        return TYPE;
     }
     
     @Override

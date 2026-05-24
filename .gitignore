@@ -53,6 +53,7 @@ openspec
 .github/prompts
 .claude/
 .codegraph/
+.mcp.json
 
 /worktrees
 /.worktrees
