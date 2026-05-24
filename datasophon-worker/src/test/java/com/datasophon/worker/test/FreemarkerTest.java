@@ -25,66 +25,6 @@ public class FreemarkerTest {
         System.out.println(URLEncoder.encode("dafU&%Ukabm12"));
     }
 
-    @Test
-    public void generateCustomTemplate() throws IOException, TemplateException {
-        Generators generators = new Generators();
-        generators.setConfigFormat("custom");
-        generators.setFilename("gateway-mvc.yaml");
-        generators.setTemplateName("portal-gateway-mvc.ftl");
-        generators.setOutputDirectory("conf");
-
-        Map<String, Object> map = new HashMap<>();
-        map.put("replaceReg", "/$\\{segment}");
-        map.put("predicateUrl", "/gateway/portal/**");
-        map.put("id", "portal");
-        map.put("uri", "lb://portal");
-        map.put("rewriteReg", "/gateway/portal/(?<segment>.*)");
-        ServiceConfig serviceConfig = new ServiceConfig();
-        serviceConfig.setName("portalRoutes");
-        serviceConfig.setValue(Arrays.asList(map));
-        serviceConfig.setConfigType("map");
-
-//        ServiceConfig serviceConfig2 = new ServiceConfig();
-//        serviceConfig2.setName("apiPort");
-//        serviceConfig2.setValue("8081");
-
-        ArrayList<ServiceConfig> serviceConfigs = new ArrayList<>();
-        serviceConfigs.add(serviceConfig);
-
-        FreemakerUtils.generateConfigFile(generators, serviceConfigs, "portal", "D:\\data\\chinaunicom\\source\\portal\\portal-vos-build-project\\templates");
-    }
-
-    @Test
-    public void generateCustomTemplate2() throws IOException, TemplateException {
-        Generators generators = new Generators();
-        generators.setConfigFormat("custom");
-        generators.setFilename("gateway-mvc.yaml");
-        generators.setTemplateName("portal-gateway-mvc.ftl");
-        generators.setOutputDirectory("${portalNacosUsername}:${portalNacosPassword}:${portalNacosHost}:${portalNacosPort}:${portalProfilesActive}:portal");
-        generators.setType("nacos");
-
-        List<ServiceConfig> serviceConfigs = new ArrayList<>();
-
-        Map<String, Object> map = new HashMap<>();
-        map.put("replaceReg", "/$\\{segment}");
-        map.put("predicateUrl", "/gateway/portal/**");
-        map.put("id", "portal");
-        map.put("uri", "lb://portal");
-        map.put("rewriteReg", "/gateway/portal/(?<segment>.*)");
-        serviceConfigs.add(newServiceConfig("portalRoutes", Arrays.asList(map)));
-
-
-        serviceConfigs.add(newServiceConfig("portalNacosUsername", "nacos"));
-        serviceConfigs.add(newServiceConfig("portalNacosPassword", ""));
-        serviceConfigs.add(newServiceConfig("portalNacosHost", "192.168.2.175"));
-        serviceConfigs.add(newServiceConfig("portalNacosPort", "8848"));
-        serviceConfigs.add(newServiceConfig("portalProfilesActive", "temp"));
-
-
-        FreemakerUtils.generateConfigFile(generators, serviceConfigs, "portal", "D:\\data\\chinaunicom\\source\\portal\\portal-vos-build-project\\templates");
-    }
-
-
     private ServiceConfig newServiceConfig(String name, Object val) {
         ServiceConfig config2 = new ServiceConfig();
         config2.setName(name);

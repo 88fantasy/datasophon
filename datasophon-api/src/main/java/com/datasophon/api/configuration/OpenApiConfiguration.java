@@ -25,7 +25,7 @@ public class OpenApiConfiguration {
                 .contact(
                         new Contact()
                                 .name("datasophon")
-                                .email("datasophon@chinaunicom.cn")
+                                .email("88fantasy@gmail.com")
                 );
         return new OpenAPI().info(info);
     }

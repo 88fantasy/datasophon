@@ -47,15 +47,12 @@ export DATAX_HOME=${r"${DATAX_HOME"}:-/data/install_datasophon/usync}
 export DATASOURCEX_HOME=${r"${USCHEDULER_HOME"}:-/data/install_datasophon/uscheduler/executor/datasourcex}
 export EXECUTOR=${r"${USCHEDULER_HOME"}:-/data/install_datasophon/uscheduler/executor}
 export SPARK_SQL_EXECUTOR=$EXECUTOR/spark-sql-executor.jar
-export SPARK_QUALITY_V2_JAR=$EXECUTOR/chinaunicom-quality.jar
 export SPARK_SHELL_EXECUTOR=$EXECUTOR/spark-shell-executor.jar
-export EASYFLOW_EXECUTOR=$EXECUTOR/easyflow-executor.jar
 export DC_DRIVER_ASSEMBLY=$EXECUTOR/datasource-driver.jar
 export SQL_EXECUTOR=$EXECUTOR/sql-executor.jar
 export METADATA_EXECUTOR=$EXECUTOR/metadata-executor.jar
 export SPARK_EXPLORATION_JAR=$EXECUTOR/exploration-executor.jar
 export SPARK_SECURITY_JAR=$EXECUTOR/security-executor.jar
 export SPARK_COMPARE_JAR=$EXECUTOR/compare-executor.jar
-export USTREAM_EXECUTOR_JAR=$EXECUTOR/ustream-executor.jar
 
 export PATH=$HADOOP_HOME/bin:$SPARK_HOME3/bin:$PYTHON_HOME/bin:$JAVA_HOME/bin:$HIVE_HOME/bin:$FLINK_HOME/bin:$DATAX_HOME/bin:$PATH

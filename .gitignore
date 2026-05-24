@@ -54,6 +54,8 @@ openspec
 .claude/
 .codegraph/
 .mcp.json
+docs/superpowers
+
 
 /worktrees
 /.worktrees
