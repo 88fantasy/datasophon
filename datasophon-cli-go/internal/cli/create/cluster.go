@@ -17,7 +17,6 @@ import (
 type createClusterCmd struct {
 	DatasophonPath  string
 	InstallPath     string
-	Action          string
 	ProductPkgsPath string
 
 	InitPathOverwriteForce bool
@@ -53,7 +52,6 @@ func NewClusterCommand(dryRun *bool) *cobra.Command {
 
 	cmd.Flags().StringVarP(&c.DatasophonPath, "datasophonPath", "p", "", "datasophon 绝对路径 (必填)")
 	cmd.Flags().StringVar(&c.InstallPath, "installPath", "", "安装路径 (必填)")
-	cmd.Flags().StringVarP(&c.Action, "action", "a", "", "执行动作 initALL|initSingleNode (必填)")
 	cmd.Flags().StringVarP(&c.ProductPkgsPath, "productPackagesPath", "n", "", "安装包路径 (必填)")
 	cmd.Flags().BoolVar(&c.InitPathOverwriteForce, "initPathOverwriteForce", false, "datasophon-init 目录是否覆盖")
 	cmd.Flags().BoolVar(&c.DisableUploadRegistry, "disableUploadRegistry", false, "禁止上传制品")
@@ -64,25 +62,24 @@ func NewClusterCommand(dryRun *bool) *cobra.Command {
 
 	_ = cmd.MarkFlagRequired("datasophonPath")
 	_ = cmd.MarkFlagRequired("installPath")
-	_ = cmd.MarkFlagRequired("action")
 	_ = cmd.MarkFlagRequired("productPackagesPath")
 
 	return cmd
 }
 
-func (c *createClusterCmd) run() error {
-	// 路径校验（对应 Java CreateCluster.run()）
+// setup 校验路径、推导运行时字段、加载集群配置，供 run() 和 createNodeCmd.run() 共用。
+func (c *createClusterCmd) setup() (*config.ClusterConfig, error) {
 	if !strings.HasPrefix(c.DatasophonPath, "/") || !strings.HasPrefix(c.InstallPath, "/") {
-		return fmt.Errorf("datasophonPath、installPath 必须是绝对路径（以 / 开头）")
+		return nil, fmt.Errorf("datasophonPath、installPath 必须是绝对路径（以 / 开头）")
 	}
 	c.DatasophonPath = strings.TrimSuffix(c.DatasophonPath, "/")
 
 	if _, err := os.Stat(c.DatasophonPath); err != nil {
-		return fmt.Errorf("路径不存在: %s", c.DatasophonPath)
+		return nil, fmt.Errorf("路径不存在: %s", c.DatasophonPath)
 	}
 	if _, err := os.Stat(c.InstallPath); err != nil {
 		if mkErr := os.MkdirAll(c.InstallPath, 0755); mkErr != nil {
-			return fmt.Errorf("创建安装路径失败 %s: %w", c.InstallPath, mkErr)
+			return nil, fmt.Errorf("创建安装路径失败 %s: %w", c.InstallPath, mkErr)
 		}
 	}
 
@@ -98,7 +95,7 @@ func (c *createClusterCmd) run() error {
 
 	cfg, err := config.Load(c.initConfigYaml)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	c.sshAuthType = cfg.Global.SSHAuthType
 	c.globalNodes = make(map[string]*config.Host, len(cfg.Nodes))
@@ -116,14 +113,15 @@ func (c *createClusterCmd) run() error {
 		}
 	}
 
-	switch c.Action {
-	case "initALL":
-		return c.initALL(cfg)
-	case "initSingleNode":
-		return c.initSingleNode(cfg)
-	default:
-		return fmt.Errorf("action[initALL/initSingleNode] not found: %s", c.Action)
+	return cfg, nil
+}
+
+func (c *createClusterCmd) run() error {
+	cfg, err := c.setup()
+	if err != nil {
+		return err
 	}
+	return c.initALL(cfg)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

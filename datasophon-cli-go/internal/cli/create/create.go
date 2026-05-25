@@ -9,5 +9,6 @@ func NewCreateCommand(dryRun *bool) *cobra.Command {
 		Short: "创建集群相关命令组",
 	}
 	cmd.AddCommand(NewClusterCommand(dryRun))
+	cmd.AddCommand(NewNodeCommand(dryRun))
 	return cmd
 }
