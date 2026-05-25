@@ -152,7 +152,11 @@ func (t *InitRegistry) checkStart(exec executor.Executor) bool {
 
 func (t *InitRegistry) changePassword(baseURL, oldPassword string) bool {
 	url := baseURL + "/service/rest/v1/security/users/admin/change-password"
-	req, _ := http.NewRequest(http.MethodPut, url, strings.NewReader(t.Password))
+	req, err := http.NewRequest(http.MethodPut, url, strings.NewReader(t.Password))
+	if err != nil {
+		slog.Error("构建修改密码请求失败", "err", err)
+		return false
+	}
 	req.SetBasicAuth(t.Username, oldPassword)
 	req.Header.Set("Content-Type", "text/plain")
 	req.Header.Set("Accept", "application/json")

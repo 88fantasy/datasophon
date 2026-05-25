@@ -154,7 +154,7 @@ func (t *InitMysql) installCentos(exec executor.Executor, osType osinfo.OsType, 
 
 	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); r.Success {
 		tmpPasswd := strings.TrimSpace(exec.ExecShell("grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'").Output)
-		slog.Info("临时密码已获取", "tmpPasswd", tmpPasswd)
+		slog.Info("临时密码已获取，开始修改密码")
 		exec.ExecShell(fmt.Sprintf("/usr/bin/mysqladmin -uroot -p'%s' password '%s'", tmpPasswd, t.Password))
 		t.rootUserConf(exec)
 		exec.ExecShell("mv /etc/my.cnf /etc/my.cnf.bak")

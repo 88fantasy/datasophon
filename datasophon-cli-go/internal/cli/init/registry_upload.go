@@ -197,7 +197,11 @@ func (t *InitRegistryUpload) uploadFile(baseURL, repoType, filePath string) bool
 	_ = w.Close()
 
 	url := fmt.Sprintf("%s/service/rest/internal/ui/upload/%s", baseURL, repoType)
-	req, _ := http.NewRequest(http.MethodPost, url, &buf)
+	req, err := http.NewRequest(http.MethodPost, url, &buf)
+	if err != nil {
+		slog.Error("构建上传请求失败", "err", err)
+		return false
+	}
 	req.SetBasicAuth(t.Username, t.Password)
 	req.Header.Set("Content-Type", w.FormDataContentType())
 

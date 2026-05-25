@@ -89,6 +89,6 @@ func (t *InitK8sKuboard) doRun(exec executor.Executor) bool {
 		slog.Error("安装 kuboard 失败")
 		return false
 	}
-	slog.Info("kuboard 安装成功，访问地址：http://ip:30080, user: admin password: Kuboard123")
+	slog.Info("kuboard 安装成功，访问地址：http://ip:30080（默认账号 admin，首次登录请修改密码）")
 	return true
 }

@@ -82,7 +82,9 @@ func (c *createClusterCmd) run() error {
 		return fmt.Errorf("路径不存在: %s", c.DatasophonPath)
 	}
 	if _, err := os.Stat(c.InstallPath); err != nil {
-		_ = os.MkdirAll(c.InstallPath, 0755)
+		if mkErr := os.MkdirAll(c.InstallPath, 0755); mkErr != nil {
+			return fmt.Errorf("创建安装路径失败 %s: %w", c.InstallPath, mkErr)
+		}
 	}
 
 	c.initPath = c.DatasophonPath + "/datasophon-init"
