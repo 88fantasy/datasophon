@@ -153,7 +153,18 @@ func (t *InitMysql) installCentos(exec executor.Executor, osType osinfo.OsType, 
 	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); r.Success {
 		tmpPasswd := strings.TrimSpace(exec.ExecShell("grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'").Output)
 		slog.Info("临时密码已获取，开始修改密码")
-		exec.ExecShell(fmt.Sprintf("/usr/bin/mysqladmin -uroot -p'%s' password '%s'", tmpPasswd, t.Password))
+		// 将旧密码写入临时 cnf 文件，避免密码出现在进程参数（ps aux 可见）
+		oldCnf := "/tmp/.dsph_mysql_old.cnf"
+		exec.WriteLines([]string{"[client]", "password=" + tmpPasswd}, oldCnf)
+		exec.ExecShell(fmt.Sprintf("chmod 600 %s", oldCnf))
+		// 将新密码 SQL 写入临时文件，同样避免出现在进程参数
+		newSqlPath := "/tmp/.dsph_mysql_init.sql"
+		exec.WriteLines([]string{
+			fmt.Sprintf("ALTER USER 'root'@'localhost' IDENTIFIED BY '%s';", t.Password),
+		}, newSqlPath)
+		exec.ExecShell(fmt.Sprintf("chmod 600 %s", newSqlPath))
+		exec.ExecShell(fmt.Sprintf("mysql --defaults-extra-file=%s -uroot < %s", oldCnf, newSqlPath))
+		exec.ExecShell(fmt.Sprintf("rm -f %s %s", oldCnf, newSqlPath))
 		t.rootUserConf(exec)
 		exec.ExecShell("mv /etc/my.cnf /etc/my.cnf.bak")
 		exec.WriteLines(t.mysqldConf(), "/etc/my.cnf")
@@ -178,11 +189,22 @@ func (t *InitMysql) mysqlLib(exec executor.Executor, name, checkCmd, installCmd 
 }
 
 func (t *InitMysql) rootUserConf(exec executor.Executor) {
-	exec.ExecShell(fmt.Sprintf("mysql -uroot -P'%d' -p'%s' -e \"update mysql.user set host='%%' where user ='root';\"", t.Port, t.Password))
-	exec.ExecShell(fmt.Sprintf("mysql -uroot -P'%d' -p'%s' -e \"FLUSH PRIVILEGES;\"", t.Port, t.Password))
-	exec.ExecShell(fmt.Sprintf("mysql -uroot -P'%d' -p'%s' -e \"ALTER USER 'root'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;\"", t.Port, t.Password, t.Password))
-	exec.ExecShell(fmt.Sprintf("mysql -uroot -P'%d' -p'%s' -e \"ALTER USER 'root'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';\"", t.Port, t.Password, t.Password))
-	exec.ExecShell(fmt.Sprintf("mysql -uroot -P'%d' -p'%s' -e \"FLUSH PRIVILEGES;\"", t.Port, t.Password))
+	// 将密码写入临时 cnf 文件，避免密码出现在进程参数（ps aux 可见）
+	newCnf := "/tmp/.dsph_mysql_new.cnf"
+	exec.WriteLines([]string{"[client]", "password=" + t.Password}, newCnf)
+	exec.ExecShell(fmt.Sprintf("chmod 600 %s", newCnf))
+	// 将所有 SQL 写入临时文件，同样避免出现在进程参数
+	sqlPath := "/tmp/.dsph_mysql_conf.sql"
+	exec.WriteLines([]string{
+		"UPDATE mysql.user SET host='%' WHERE user='root';",
+		"FLUSH PRIVILEGES;",
+		fmt.Sprintf("ALTER USER 'root'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;", t.Password),
+		fmt.Sprintf("ALTER USER 'root'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';", t.Password),
+		"FLUSH PRIVILEGES;",
+	}, sqlPath)
+	exec.ExecShell(fmt.Sprintf("chmod 600 %s", sqlPath))
+	exec.ExecShell(fmt.Sprintf("mysql --defaults-extra-file=%s -uroot -P%d < %s", newCnf, t.Port, sqlPath))
+	exec.ExecShell(fmt.Sprintf("rm -f %s %s", newCnf, sqlPath))
 }
 
 func (t *InitMysql) mysqldConf() []string {

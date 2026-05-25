@@ -402,8 +402,3 @@ func (t *InitOsSafeConf) userControl() error {
 	}
 	return nil
 }
-
-// splitCmd 已由 strings.Fields 替代，保留仅供历史参考（N2 修复）。
-func splitCmd(cmd string) []string {
-	return strings.Fields(cmd)
-}

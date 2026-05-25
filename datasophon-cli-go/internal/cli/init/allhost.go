@@ -32,10 +32,10 @@ func (t *InitAllHost) doRun(exec executor.Executor) error {
 	}
 
 	for _, node := range cfg.Nodes {
-		exec.ExecShell(fmt.Sprintf("echo %s %s >>/etc/hosts", node.IP, node.Hostname))
+		exec.ExecShell(fmt.Sprintf("printf '%%s %%s\\n' '%s' '%s' >>/etc/hosts", node.IP, node.Hostname))
 	}
 	for _, node := range cfg.AddNodes {
-		exec.ExecShell(fmt.Sprintf("echo %s %s >>/etc/hosts", node.IP, node.Hostname))
+		exec.ExecShell(fmt.Sprintf("printf '%%s %%s\\n' '%s' '%s' >>/etc/hosts", node.IP, node.Hostname))
 	}
 
 	exec.ExecShell(`echo '#modify etc hosts end' >>/etc/hosts`)

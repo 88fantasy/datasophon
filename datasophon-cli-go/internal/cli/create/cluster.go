@@ -11,7 +11,6 @@ import (
 
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
-	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/handler"
 )
 
@@ -878,9 +877,4 @@ func getLocalIP() string {
 	}
 	defer conn.Close()
 	return conn.LocalAddr().(*net.UDPAddr).IP.String()
-}
-
-// localExecutor 返回一个 LocalExecutor（供 create cluster 中本地步骤使用）。
-func localExecutor(dryRun bool) executor.Executor {
-	return executor.NewLocalExecutor(dryRun)
 }

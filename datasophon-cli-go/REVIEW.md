@@ -12,7 +12,7 @@
 |---|---|---|---|
 | 🔴 Critical | 2 | 凭据/敏感信息写入 INFO 日志 | ✅ C1、C2 已修复 |
 | 🟡 Major | 6 | panic 语义回归、资源泄漏、逻辑 bug、测试空白 | ✅ M1~M5 已修复；M6（测试覆盖）待补 |
-| 🟢 Minor | 6 | 死代码、命令注入低风险面、API 设计 | ⏸ 可延后处理 |
+| 🟢 Minor | 6 | 死代码、命令注入低风险面、API 设计 | ✅ N1~N4 已修复；N5/N6 可延后 |
 
 ---
 
@@ -109,54 +109,63 @@
 
 ## 🟢 Minor
 
-### N1. `localExecutor` 函数定义但从未调用（死代码）
+### N1. `localExecutor` 函数定义但从未调用（死代码）✅ 已修复
 
-- **位置**: `internal/cli/create/cluster.go:882-884`
-- **问题**: 
+- **位置**: `internal/cli/create/cluster.go`（已删除）
+- **修复**: 删除 `localExecutor` 函数及对应的 `executor` import（其为唯一调用方，删除后 import 变为孤立）。
+- **原始问题**: 
   ```go
   func localExecutor(dryRun bool) executor.Executor {
       return executor.NewLocalExecutor(dryRun)
   }
   ```
   `go vet` / `staticcheck` 会标记此函数为未使用死代码。
-- **建议修复**: 直接删除。
 
 ---
 
-### N2. `splitCmd` 手写字符串分割，应使用 `strings.Fields`
+### N2. `splitCmd` 手写字符串分割，应使用 `strings.Fields` ✅ 已修复
 
-- **位置**: `internal/cli/init/os_safe_conf.go:352-368`
-- **问题**: 手写了一个按空格分割字符串的循环，`strings.Fields()` 一行即可完成，且能正确处理连续空格。
-- **建议修复**: `parts := strings.Fields(cmd)`
+- **位置**: `internal/cli/init/os_safe_conf.go`（已删除）
+- **修复**: 删除 `splitCmd` 死代码包装函数（该函数已无任何调用点）。调用方（`editConf` 辅助方法）在上一轮迭代中已直接改用 `strings.Fields(cmd)`，包装层成为多余残留。
+- **原始问题**: 手写了一个按空格分割字符串的循环，`strings.Fields()` 一行即可完成，且能正确处理连续空格。
 
 ---
 
-### N3. `allhost.go` shell 命令拼接含半可信用户输入
+### N3. `allhost.go` shell 命令拼接含半可信用户输入 ✅ 已修复
 
 - **位置**: `internal/cli/init/allhost.go:35,38`
-- **问题**:
+- **修复**: 将 `echo %s %s` 改为 `printf '%%s %%s\\n' '%s' '%s'`，单引号包裹参数使 shell 元字符失效。
+  ```go
+  exec.ExecShell(fmt.Sprintf("printf '%%s %%s\\n' '%s' '%s' >>/etc/hosts", node.IP, node.Hostname))
+  ```
+- **原始问题**:
   ```go
   exec.ExecShell(fmt.Sprintf("echo %s %s >>/etc/hosts", node.IP, node.Hostname))
   ```
   `node.IP` 和 `node.Hostname` 来自 `cluster.yml`，若包含空格、`&&`、`;` 等 shell 元字符，可注入任意命令。现实场景中 `cluster.yml` 由运维自己编写，可信度较高，但仍是不良实践。
-- **建议修复**: 使用 `printf` 并单引号包裹，或用 `WriteFromStream`/`WriteLines` 直接写文件代替 shell echo：
-  ```go
-  exec.ExecShell(fmt.Sprintf("printf '%%s %%s\\n' '%s' '%s' >>/etc/hosts", node.IP, node.Hostname))
-  ```
 
 ---
 
-### N4. MySQL 密码通过命令行参数传递，`ps aux` 可见
+### N4. MySQL 密码通过命令行参数传递，`ps aux` 可见 ✅ 已修复
 
-- **位置**: `internal/cli/init/mysql.go:158,183-187`
-- **问题**:
+- **位置**: `internal/cli/init/mysql.go`（`installCentos` + `rootUserConf`）
+- **修复**: 将旧密码（`tmpPasswd`）和新密码（`t.Password`）分别写入 `chmod 600` 的临时 cnf 文件；SQL 语句写入临时 sql 文件；通过 `--defaults-extra-file=<cnf>` 和 stdin 重定向执行，命令行中不再出现任何密码。操作完成后删除两个临时文件。
+  ```go
+  // 旧密码：写入临时 cnf
+  exec.WriteLines([]string{"[client]", "password=" + tmpPasswd}, "/tmp/.dsph_mysql_old.cnf")
+  exec.ExecShell("chmod 600 /tmp/.dsph_mysql_old.cnf")
+  // 新密码 SQL：写入临时文件
+  exec.WriteLines([]string{"ALTER USER 'root'@'localhost' IDENTIFIED BY 'NEWPASS';"}, "/tmp/.dsph_mysql_init.sql")
+  exec.ExecShell("mysql --defaults-extra-file=/tmp/.dsph_mysql_old.cnf -uroot < /tmp/.dsph_mysql_init.sql")
+  exec.ExecShell("rm -f /tmp/.dsph_mysql_old.cnf /tmp/.dsph_mysql_init.sql")
+  ```
+- **原始问题**:
   ```go
   exec.ExecShell(fmt.Sprintf("/usr/bin/mysqladmin -uroot -p'%s' password '%s'", tmpPasswd, t.Password))
   exec.ExecShell(fmt.Sprintf("mysql -uroot -P'%d' -p'%s' ...", t.Port, t.Password))
   ```
   密码以明文出现在进程参数，在 MySQL 操作期间可通过 `ps aux` 被同机其他用户读取。
-- **Java 对照**: Java 版同位置行为一致，属于 Java 原始问题。Go 重写本有机会改善：可使用 `--defaults-extra-file=<(printf '[client]\npassword=%s\n' "$PASS")` 或通过 stdin 传递密码。
-- **优先级**: 低（运维环境通常受控，且需改动较大）
+- **Java 对照**: Java 版同位置行为一致，属于 Java 原始问题。
 
 ---
 
@@ -223,4 +232,9 @@
 ### 可延后到 Phase 5/6 之后的项
 
 - **🟡 M6**: 补充测试套件（建议专项 sprint）
-- **🟢 N1-N6**: 所有 Minor 项可延后或在代码清理 PR 中合并处理
+- **🟢 N1** ✅ 已修复：删除 `cluster.go` 死代码 `localExecutor` + 孤立 `executor` import
+- **🟢 N2** ✅ 已修复：删除 `os_safe_conf.go` 死代码 `splitCmd` 包装函数
+- **🟢 N3** ✅ 已修复：`allhost.go` 用 `printf` 单引号参数替换裸 `echo`，消除 shell 元字符注入面
+- **🟢 N4** ✅ 已修复：`mysql.go` 改用临时 cnf/sql 文件传递密码，消除 `ps aux` 暴露
+- **🟢 N5**: `DownloadFromRegistry` 9 参数建议提取 `RegistryConfig` 结构体（可在 Phase 5/6 重构时处理）
+- **🟢 N6**: `--sshPasswd` CLI flag 建议改为环境变量或交互式输入（可在 Phase 5/6 处理）
