@@ -8,11 +8,11 @@
 
 ## 摘要
 
-| 级别 | 数量 | 描述 |
-|---|---|---|
-| 🔴 Critical | 2 | 凭据/敏感信息写入 INFO 日志 |
-| 🟡 Major | 6 | panic 语义回归、资源泄漏、逻辑 bug、测试空白 |
-| 🟢 Minor | 6 | 死代码、命令注入低风险面、API 设计 |
+| 级别 | 数量 | 描述 | 已修复 |
+|---|---|---|---|
+| 🔴 Critical | 2 | 凭据/敏感信息写入 INFO 日志 | ✅ C1、C2 已修复 |
+| 🟡 Major | 6 | panic 语义回归、资源泄漏、逻辑 bug、测试空白 | ✅ M1~M5 已修复；M6（测试覆盖）待补 |
+| 🟢 Minor | 6 | 死代码、命令注入低风险面、API 设计 | ⏸ 可延后处理 |
 
 ---
 
@@ -38,32 +38,25 @@
 
 ## 🟡 Major
 
-### M1. 14 处 `panic()` 产生 goroutine stack trace，替换了 Java 的干净错误信息
+### M1. 14 处 `panic()` 产生 goroutine stack trace，替换了 Java 的干净错误信息 ✅ 已修复
 
 - **位置**: `internal/cli/init/util.go:34,41,45,49`、`offline_server.go:69,72,81,88,91,98`、`offline_slave.go:55,65`、`mysql.go:205`、`k8s_base_services.go:226`
-- **问题**: Java 版同位置使用 `throw new RuntimeException("msg")` ——picocli 拦截后打印单行错误消息并以 exit code 1 退出，用户只看到：
+- **修复**: 将 `Handler` 接口签名从 `Handle() bool` 改为 `Handle() error`；所有 `doRun()` 从返回 `bool` 改为返回 `error`；全部 `panic(msg)` 替换为 `return errors.New(msg)` / `return fmt.Errorf(...)`；`DownloadFromRegistry` 由 void+panic 改为返回 `error`；`BatchExecutor.ExecBatch/InstallSoftware` 由 os.Exit 改为返回 `error`。涉及 35+ 个文件，约 300 行改动。
+- **原始问题**: Java 版同位置使用 `throw new RuntimeException("msg")` ——picocli 拦截后打印单行错误消息并以 exit code 1 退出，用户只看到：
   ```
   Error: apt update fail
   ```
-  Go 版用 `panic("msg")`，cobra 不拦截 panic，程序输出完整 goroutine stack trace 并崩溃：
-  ```
-  goroutine 1 [running]:
-  main.main()
-      ...
-  panic: apt update 失败
-  ```
-  这是用户体验回归。此外，`panic` 会跳过调用链上所有 `defer`，包括 `chain.go:39` 的 `defer client.Close()`，导致 SSH 连接未关闭（进程退出后 OS 会回收，但 defer 语义被破坏）。
+  Go 版用 `panic("msg")`，cobra 不拦截 panic，程序输出完整 goroutine stack trace 并崩溃。这是用户体验回归，且 `panic` 会跳过调用链上所有 `defer`，包括 `chain.go` 的 `defer client.Close()`。
 - **Java 对照**: `throw RuntimeException / CommandLine.ExecutionException` → 干净退出。
-- **建议修复**: 将 `doRun()` 的签名从 `bool` 改为 `error`，把 `panic(msg)` 替换为 `return errors.New(msg)`，让 `Handle()` → `chain.Handle()` 逐级传递错误，最终由 cobra `RunE` 以 `return err` 返回。这样 cobra 会打印 `Error: <msg>` 并以 exit code 1 退出，与 Java 行为对齐。
 
 ---
 
-### M2. 18 处 `os.Exit(1)` 位于 handler 方法内，跳过 `defer client.Close()`
+### M2. 18 处 `os.Exit(1)` 位于 handler 方法内，跳过 `defer client.Close()` ✅ 已修复
 
 - **位置**: `os_safe_conf.go:85,131,293,338,347`、`mysql.go:84,125,167`、`library.go:103`、`docker.go:89,121,125`、`bash.go:31,45`、`nmap.go:38`、`executor/batch.go:25,46`
-- **问题**: `os.Exit()` 和 `panic()` 一样，会跳过 `chain.go:39` 的 `defer client.Close()`。虽然进程退出后 OS 会回收连接，但对于 `batch.go` 这类被多步复用的 executor 来说，中途 Exit 破坏了任何上层清理逻辑。此外，`os.Exit()` 无法被任何 wrapper 捕获，不利于日后的测试（无法在测试中 mock 退出行为）。
+- **修复**: 同 M1 — 全部替换为 `return errors.New(msg)` / `return fmt.Errorf(...)`，包含在整体 `bool → error` 签名重构中。
+- **原始问题**: `os.Exit()` 和 `panic()` 一样，会跳过 `chain.go:39` 的 `defer client.Close()`。对于 `batch.go` 这类被多步复用的 executor 来说，中途 Exit 破坏了任何上层清理逻辑，且 `os.Exit()` 无法被任何 wrapper 捕获，不利于日后测试。
 - **Java 对照**: 同位置 `throw new CommandLine.ExecutionException(...)` — picocli 处理后干净退出，defer 语义无影响。
-- **建议修复**: 同 M1 — 让 `doRun` 返回 `error`，替换 `os.Exit(1)` 为 `return errors.New(msg)`，在最顶层（`chain.Handle()` 或 `RunE`）统一处理退出。
 
 ---
 
@@ -84,33 +77,12 @@
 
 ---
 
-### M5. `isKubernetesReady` 在 kubectl 不可达时返回 `true`（假阳性）
+### M5. `isKubernetesReady` 在 kubectl 不可达时返回 `true`（假阳性）✅ 已修复
 
-- **位置**: `internal/cli/init/k8s_base_services.go:204-212`
-- **问题**:
-  ```go
-  func (t *InitK8sBaseServices) isKubernetesReady(exec executor.Executor) bool {
-      r := exec.ExecShell("/usr/bin/kubectl get nodes | ...")
-      for _, status := range strings.Fields(r.Output) { // r.Output="" 时 → nil slice
-          if strings.TrimSpace(status) != "Ready" {
-              return false
-          }
-      }
-      return true  // ← 空输出时立即返回 true
-  }
-  ```
-  若 kubectl 尚未就绪（命令失败，`r.Output=""`），`strings.Fields("")` 返回 nil，for 循环不执行，函数返回 `true`。5 分钟的等待循环会在 kubernetes 真正就绪之前提前跳出，后续 `kubectl create namespace` 可能失败。
-- **Java 对照**: Java 版同位置逻辑相同，属于 Java bug 被忠实复现。
-- **建议修复**: 增加命令成功检查 + 最少节点数检查：
-  ```go
-  if !r.Success || r.Output == "" {
-      return false
-  }
-  statuses := strings.Fields(r.Output)
-  if len(statuses) == 0 {
-      return false
-  }
-  ```
+- **位置**: `internal/cli/init/k8s_base_services.go:217-232`
+- **修复**: 在循环前增加 `!r.Success || strings.TrimSpace(r.Output) == ""` 以及 `len(statuses) == 0` 的双重守卫，任一条件满足即返回 `false`。
+- **原始问题**: 若 kubectl 尚未就绪（命令失败，`r.Output=""`），`strings.Fields("")` 返回 nil，for 循环不执行，函数提前返回 `true`。5 分钟等待循环因假阳性提前跳出，后续 `kubectl create namespace` 可能失败。
+- **Java 对照**: Java 版同位置逻辑相同，属于 Java bug 被忠实复现；Go 修复后优于 Java 原版。
 
 ---
 
@@ -226,10 +198,10 @@
 | `slavesNodesExec` 过滤（排除 serverNode）| `cluster.go:slavesNodesExec()` | ✅ | `node.IP == serverNode.IP` |
 | handler 失败中断但不抛出 | `chain.go:45 return nil` | ✅ | 与 Java `return;` 对齐 |
 | HTTP resp.Body 关闭 | `registry.go:166`、`registry_upload.go:211` | ✅ | 均有 `defer resp.Body.Close()` |
-| `panic()` / `throw RuntimeException` | 14 处 `panic()` | ⚠️ | Java 通过 picocli 拦截输出干净错误；Go 产生 stack trace（M1） |
-| `os.Exit(1)` / `throw CommandLine.ExecutionException` | 18 处 `os.Exit` | ⚠️ | 均中止进程，但 Go 跳过 defer（M2） |
-| `InitMysql.checkStart` panic | `mysql.go:205` | ⚠️ | Java 同位置也 `throw RuntimeException`，语义一致，UX 不同 |
-| `isKubernetesReady` 空输出 | `k8s_base_services.go:204` | ⚠️ | Java 同位置同逻辑，属于 Java bug 复现（M5） |
+| `panic()` / `throw RuntimeException` | 14 处 `panic()` | ✅ | 已全部替换为 `return errors.New()`，cobra 打印单行错误（M1 修复） |
+| `os.Exit(1)` / `throw CommandLine.ExecutionException` | 18 处 `os.Exit` | ✅ | 已全部替换为 `return errors.New()`，defer client.Close() 正常执行（M2 修复） |
+| `InitMysql.checkStart` panic | `mysql.go` | ✅ | 已改为返回 `error`（M1/M2 修复） |
+| `isKubernetesReady` 空输出 | `k8s_base_services.go:217` | ✅ | 增加 `!r.Success || 空输出` 守卫，消除假阳性（M5 修复） |
 | `InitRegistryUpload.uploadFile` | `registry_upload.go:177` | ✅ | `defer file.Close()` 正确 |
 | `SSHExecutor.SendDir` 文件逐一关闭 | `ssh.go:100-134` | ✅ | 显式 Close，无泄漏 |
 | `SendFile` override=false 时跳过 | `ssh.go:57-60` | ✅ | 与 Java 语义一致 |
@@ -242,12 +214,13 @@
 
 - **🔴 C1** ✅ 已修复：移除 mysql.go 临时密码日志
 - **🔴 C2** ✅ 已修复：移除 kuboard.go 硬编码密码字符串
+- **🟡 M1** ✅ 已修复：`bool → error` 重构，消除全部 panic + os.Exit，恢复 defer 语义
+- **🟡 M2** ✅ 已修复：同上（M1/M2 合并一次 PR 完成）
 - **🟡 M3** ✅ 已修复：registry.go + registry_upload.go `http.NewRequest` nil 检查
 - **🟡 M4** ✅ 已修复：cluster.go `os.MkdirAll` 错误传播
+- **🟡 M5** ✅ 已修复：`isKubernetesReady` 假阳性，增加 `!r.Success || 空输出` 双重守卫
 
 ### 可延后到 Phase 5/6 之后的项
 
-- **🟡 M1/M2**: panic + os.Exit 重构需要修改所有 `doRun` 签名，涉及面广，建议单独 PR（改动约 300 行）
-- **🟡 M5**: `isKubernetesReady` 假阳性修复（5 分钟，但需 k8s 环境验证）
 - **🟡 M6**: 补充测试套件（建议专项 sprint）
 - **🟢 N1-N6**: 所有 Minor 项可延后或在代码清理 PR 中合并处理

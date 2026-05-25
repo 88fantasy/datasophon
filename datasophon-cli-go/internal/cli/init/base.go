@@ -31,7 +31,6 @@ func (b *TaskBase) AddBaseFlags(cmd *cobra.Command) {
 }
 
 // runLocal 对应 Java InitBase.run()：本地 LocalExecutor 执行 doRun。
-func runLocal(dryRun bool, doRun func(executor.Executor) bool) error {
-	doRun(executor.NewLocalExecutor(dryRun))
-	return nil
+func runLocal(dryRun bool, doRun func(executor.Executor) error) error {
+	return doRun(executor.NewLocalExecutor(dryRun))
 }

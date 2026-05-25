@@ -21,7 +21,7 @@ type InitRegistryDecode struct {
 
 func (t *InitRegistryDecode) Name() string { return "制品包解压复制" }
 
-func (t *InitRegistryDecode) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitRegistryDecode) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -44,10 +44,10 @@ func (t *InitRegistryDecode) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitRegistryDecode) doRun(exec executor.Executor) bool {
+func (t *InitRegistryDecode) doRun(exec executor.Executor) error {
 	if !t.Enable {
 		slog.Info("enable=false，跳过")
-		return true
+		return nil
 	}
 
 	rawPackagesPath := fmt.Sprintf("%s/raw/packages", t.ProductPackagesPath)
@@ -63,7 +63,7 @@ func (t *InitRegistryDecode) doRun(exec executor.Executor) bool {
 	} {
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			slog.Error("路径不存在", "path", path)
-			return false
+			return fmt.Errorf("路径不存在: %s", path)
 		}
 	}
 
@@ -77,5 +77,5 @@ func (t *InitRegistryDecode) doRun(exec executor.Executor) bool {
 	}
 
 	slog.Info("制品包初始化完成")
-	return true
+	return nil
 }

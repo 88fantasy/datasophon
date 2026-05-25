@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -14,7 +15,7 @@ type InitHugePage struct{ TaskBase }
 
 func (t *InitHugePage) Name() string { return "关闭透明大页" }
 
-func (t *InitHugePage) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitHugePage) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -30,7 +31,7 @@ func (t *InitHugePage) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitHugePage) doRun(exec executor.Executor) bool {
+func (t *InitHugePage) doRun(exec executor.Executor) error {
 	slog.Info("开始关闭透明大页")
 	osType := exec.GetOs()
 	rcLocalPath := "/etc/rc.d/rc.local"
@@ -39,7 +40,7 @@ func (t *InitHugePage) doRun(exec executor.Executor) bool {
 	}
 	if !exec.Exists(rcLocalPath).Success {
 		slog.Error("文件不存在", "path", rcLocalPath)
-		return false
+		return errors.New("rc.local 文件不存在")
 	}
 	exec.ExecShell("echo never > /sys/kernel/mm/transparent_hugepage/enabled")
 	exec.ExecShell("echo never > /sys/kernel/mm/transparent_hugepage/defrag")
@@ -55,5 +56,5 @@ func (t *InitHugePage) doRun(exec executor.Executor) bool {
 			"echo 'echo never > /sys/kernel/mm/transparent_hugepage/enabled' >>%s", rcLocalPath))
 	}
 	slog.Info("透明大页已关闭")
-	return true
+	return nil
 }

@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"log/slog"
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
@@ -13,7 +14,7 @@ type InitNtpServer struct{ TaskBase }
 
 func (t *InitNtpServer) Name() string { return "ntpserver时钟配置" }
 
-func (t *InitNtpServer) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitNtpServer) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -29,7 +30,7 @@ func (t *InitNtpServer) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitNtpServer) doRun(exec executor.Executor) bool {
+func (t *InitNtpServer) doRun(exec executor.Executor) error {
 	osType := exec.GetOs()
 
 	checkCmd := "rpm -qa | grep chrony"
@@ -48,7 +49,7 @@ func (t *InitNtpServer) doRun(exec executor.Executor) bool {
 	exec.ExecShell(installCmd)
 	if r := exec.ExecShell(checkCmd); !r.Success {
 		slog.Error("chrony 安装失败")
-		return false
+		return errors.New("chrony 安装失败")
 	}
 	exec.ExecShell(mvCmd)
 
@@ -75,5 +76,5 @@ func (t *InitNtpServer) doRun(exec executor.Executor) bool {
 	}
 	exec.ExecShell("chronyc sources")
 	slog.Info("ntpserver 配置完成")
-	return true
+	return nil
 }

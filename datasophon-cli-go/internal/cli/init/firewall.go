@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"log/slog"
 
 	"github.com/spf13/cobra"
@@ -13,11 +14,11 @@ type InitFirewall struct{ TaskBase }
 
 func (t *InitFirewall) Name() string { return "防火墙策略" }
 
-func (t *InitFirewall) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitFirewall) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitFirewall) doRun(exec executor.Executor) bool {
+func (t *InitFirewall) doRun(exec executor.Executor) error {
 	osType := exec.GetOs()
 
 	statusCmd := "systemctl status firewalld"
@@ -33,15 +34,15 @@ func (t *InitFirewall) doRun(exec executor.Executor) bool {
 	if r.Success {
 		if stop := exec.ExecShell(stopCmd); !stop.Success {
 			slog.Info("防火墙 stop 失败")
-			return false
+			return errors.New("防火墙 stop 失败")
 		}
 		if dis := exec.ExecShell(disCmd); !dis.Success {
 			slog.Info("防火墙 disable 失败")
-			return false
+			return errors.New("防火墙 disable 失败")
 		}
 	}
 	slog.Info("防火墙已关闭")
-	return true
+	return nil
 }
 
 func (t *InitFirewall) Command(dryRun *bool) *cobra.Command {

@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -19,7 +20,7 @@ type InitOfflineServer struct {
 
 func (t *InitOfflineServer) Name() string { return "离线源Server配置" }
 
-func (t *InitOfflineServer) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitOfflineServer) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -41,10 +42,10 @@ func (t *InitOfflineServer) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitOfflineServer) doRun(exec executor.Executor) bool {
+func (t *InitOfflineServer) doRun(exec executor.Executor) error {
 	if t.EnableRegistry {
 		slog.Info("enableRegistry=true，offlineServer 不需要", "enableRegistry", t.EnableRegistry)
-		return true
+		return nil
 	}
 	osType := exec.GetOs()
 	archType := exec.GetArch()
@@ -53,11 +54,11 @@ func (t *InitOfflineServer) doRun(exec executor.Executor) bool {
 
 	if !exec.Exists(httpRootPath).Success {
 		slog.Error("目录不存在", "path", httpRootPath)
-		return false
+		return fmt.Errorf("目录不存在: %s", httpRootPath)
 	}
 	if !exec.Exists(repoOsPath).Success {
 		slog.Error("目录不存在", "path", repoOsPath)
-		return false
+		return fmt.Errorf("目录不存在: %s", repoOsPath)
 	}
 
 	if osType.IsUbuntu() {
@@ -66,10 +67,10 @@ func (t *InitOfflineServer) doRun(exec executor.Executor) bool {
 		AptRepoConfFile(exec, fileRepoURL)
 		exec.ExecShell("apt clean")
 		if r := exec.ExecShell("apt update"); !r.Success {
-			panic("apt update 失败")
+			return errors.New("apt update 失败")
 		}
 		if r := exec.ExecShell("apt -y install apache2"); !r.Success {
-			panic("apt -y install apache2 失败")
+			return errors.New("apt -y install apache2 失败")
 		}
 		if r := exec.ExecShell("apache2 -v"); r.Success {
 			exec.ExecShell(fmt.Sprintf("sed -i 's|DocumentRoot /var/www/html|DocumentRoot %s|g' /etc/apache2/sites-available/000-default.conf", httpRootPath))
@@ -78,30 +79,30 @@ func (t *InitOfflineServer) doRun(exec executor.Executor) bool {
 			exec.ExecShell(fmt.Sprintf("sed -i 's|Listen 80|Listen %s|g' /etc/apache2/ports.conf", t.ServerPort))
 		}
 		if r := exec.ExecShell("systemctl restart apache2"); !r.Success {
-			panic("apache2 启动失败")
+			return errors.New("apache2 启动失败")
 		}
 	} else if osType.IsCentos() {
 		fileRepoURL := fmt.Sprintf("file://%s", repoOsPath)
 		YumRepoConfFile(exec, fileRepoURL)
 		exec.ExecShell("yum clean all")
 		if r := exec.ExecShell("yum makecache"); !r.Success {
-			panic("yum makecache 失败")
+			return errors.New("yum makecache 失败")
 		}
 		if r := exec.ExecShell("yum install -y httpd"); !r.Success {
-			panic("yum install httpd 失败")
+			return errors.New("yum install httpd 失败")
 		}
 		httpdConfPath := "/etc/httpd/conf/httpd.conf"
 		exec.ExecShell(fmt.Sprintf("sed -i 's|^DocumentRoot \"/var/www/html\"|DocumentRoot \"%s\"|g' %s", httpRootPath, httpdConfPath))
 		exec.ExecShell(fmt.Sprintf("sed -i 's|^<Directory \"/var/www/html\">|<Directory \"%s\">|g' %s", httpRootPath, httpdConfPath))
 		exec.ExecShell(fmt.Sprintf("sed -i 's|^Listen 80|Listen %s|g' %s", t.ServerPort, httpdConfPath))
 		if r := exec.ExecShell("systemctl restart httpd"); !r.Success {
-			panic("httpd 启动失败")
+			return errors.New("httpd 启动失败")
 		}
 	} else {
 		slog.Error("不支持的 OS", "os", string(osType))
-		return false
+		return fmt.Errorf("不支持的 OS: %s", string(osType))
 	}
-	return true
+	return nil
 }
 
 // YumRepoConfFile 配置 yum 离线源（共享给 offlineSlave 使用）。

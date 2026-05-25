@@ -2,6 +2,7 @@ package initcmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -19,7 +20,7 @@ type InitK8sRegistryConf struct {
 
 func (t *InitK8sRegistryConf) Name() string { return "初始化私有仓库nexus配置" }
 
-func (t *InitK8sRegistryConf) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitK8sRegistryConf) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -38,10 +39,10 @@ func (t *InitK8sRegistryConf) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitK8sRegistryConf) doRun(exec executor.Executor) bool {
+func (t *InitK8sRegistryConf) doRun(exec executor.Executor) error {
 	if !t.EnableK8sCluster {
 		slog.Info("k8s 集群安装未开启，跳过")
-		return true
+		return nil
 	}
 
 	configTomlPath := "/etc/containerd/config.toml"
@@ -52,11 +53,11 @@ func (t *InitK8sRegistryConf) doRun(exec executor.Executor) bool {
 
 	if !exec.Exists(certsdPath).Success {
 		slog.Error("containerd certs.d 目录不存在", "path", certsdPath)
-		return false
+		return errors.New("containerd certs.d 目录不存在")
 	}
 	if !exec.Exists(configTomlPath).Success {
 		slog.Error("config.toml 不存在", "path", configTomlPath)
-		return false
+		return errors.New("containerd config.toml 不存在")
 	}
 
 	exec.ExecShell(fmt.Sprintf("mkdir -p %s", certsdHostPortDir))
@@ -80,5 +81,5 @@ func (t *InitK8sRegistryConf) doRun(exec executor.Executor) bool {
 	}
 	exec.ExecShell("systemctl restart containerd")
 	slog.Info("k8sRegistryConf 配置完成")
-	return true
+	return nil
 }

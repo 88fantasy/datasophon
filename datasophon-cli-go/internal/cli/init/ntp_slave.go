@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -17,7 +18,7 @@ type InitNtpSlave struct {
 
 func (t *InitNtpSlave) Name() string { return "ntp slave配置" }
 
-func (t *InitNtpSlave) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitNtpSlave) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -35,7 +36,7 @@ func (t *InitNtpSlave) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitNtpSlave) doRun(exec executor.Executor) bool {
+func (t *InitNtpSlave) doRun(exec executor.Executor) error {
 	osType := exec.GetOs()
 
 	checkCmd := "rpm -qa | grep chrony"
@@ -54,7 +55,7 @@ func (t *InitNtpSlave) doRun(exec executor.Executor) bool {
 	exec.ExecShell(installCmd)
 	if r := exec.ExecShell(checkCmd); !r.Success {
 		slog.Error("chrony 安装失败")
-		return false
+		return errors.New("chrony 安装失败")
 	}
 	exec.ExecShell(mvCmd)
 
@@ -81,5 +82,5 @@ func (t *InitNtpSlave) doRun(exec executor.Executor) bool {
 	}
 	exec.ExecShell("chronyc sources")
 	slog.Info("ntpSlave 配置完成")
-	return true
+	return nil
 }

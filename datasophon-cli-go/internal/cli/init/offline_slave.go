@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -19,7 +20,7 @@ type InitOfflineSlave struct {
 
 func (t *InitOfflineSlave) Name() string { return "离线源slave配置" }
 
-func (t *InitOfflineSlave) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitOfflineSlave) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -39,7 +40,7 @@ func (t *InitOfflineSlave) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitOfflineSlave) doRun(exec executor.Executor) bool {
+func (t *InitOfflineSlave) doRun(exec executor.Executor) error {
 	archType := exec.GetArch()
 	osType := exec.GetOs()
 	repoOsSuffix := fmt.Sprintf("%s/%s/", string(archType), string(osType))
@@ -52,7 +53,7 @@ func (t *InitOfflineSlave) doRun(exec executor.Executor) bool {
 		AptRepoConfFile(exec, t.buildURL(repoOsSuffix))
 		exec.ExecShell("apt clean")
 		if r := exec.ExecShell("apt update"); !r.Success {
-			panic("apt update 失败")
+			return errors.New("apt update 失败")
 		}
 		slog.Info("apt 离线源配置完成")
 	} else if osType.IsCentos() {
@@ -62,14 +63,14 @@ func (t *InitOfflineSlave) doRun(exec executor.Executor) bool {
 		YumRepoConfFile(exec, t.buildURL(repoOsSuffix))
 		exec.ExecShell("yum clean all")
 		if r := exec.ExecShell("yum makecache"); !r.Success {
-			panic("yum makecache 失败")
+			return errors.New("yum makecache 失败")
 		}
 		slog.Info("yum 离线源配置完成")
 	} else {
 		slog.Error("不支持的 OS", "os", string(osType))
-		return false
+		return fmt.Errorf("不支持的 OS: %s", string(osType))
 	}
-	return true
+	return nil
 }
 
 func (t *InitOfflineSlave) buildURL(suffix string) string {

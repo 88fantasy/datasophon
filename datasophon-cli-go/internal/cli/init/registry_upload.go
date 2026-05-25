@@ -2,6 +2,7 @@ package initcmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -20,19 +21,19 @@ import (
 // InitRegistryUpload 对应 Java InitRegistryUpload — 将本地安装包批量上传到 Nexus。
 type InitRegistryUpload struct {
 	TaskBase
-	ProductPackagesPath    string
-	WebHost                string
-	WebPort                string
-	Username               string
-	Password               string
-	IsSuccessDelete        bool
-	DisableUploadRegistry  bool
-	DockerHTTPPort         int
+	ProductPackagesPath   string
+	WebHost               string
+	WebPort               string
+	Username              string
+	Password              string
+	IsSuccessDelete       bool
+	DisableUploadRegistry bool
+	DockerHTTPPort        int
 }
 
 func (t *InitRegistryUpload) Name() string { return "制品库上传" }
 
-func (t *InitRegistryUpload) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitRegistryUpload) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -62,14 +63,14 @@ func (t *InitRegistryUpload) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitRegistryUpload) doRun(exec executor.Executor) bool {
+func (t *InitRegistryUpload) doRun(exec executor.Executor) error {
 	if !t.EnableRegistry {
 		slog.Info("enableRegistry=false，跳过上传")
-		return true
+		return nil
 	}
 	if _, err := os.Stat(t.ProductPackagesPath); os.IsNotExist(err) {
 		slog.Error("本地目录不存在", "path", t.ProductPackagesPath)
-		return false
+		return errors.New("本地安装包目录不存在")
 	}
 
 	baseURL := fmt.Sprintf("http://%s:%s", t.WebHost, t.WebPort)
@@ -80,16 +81,17 @@ func (t *InitRegistryUpload) doRun(exec executor.Executor) bool {
 		t.uploadDocker(exec, baseURL)
 		slog.Info("制品库上传完成", "success", success, "fail", fail)
 	}
-	return true
+	return nil
 }
 
 // repositoryUploadBatch 遍历 productPackagesPath 下的子目录，按仓库类型上传。
 // 目录结构约定（与 Java NexusFileUtils 对齐）：
-//   yum/<arch>/<os>/*.rpm
-//   apt/<arch>/<os>/*.deb
-//   raw/packages/*
-//   helm/*.tgz
-//   docker/*.tar  （单独通过 docker push 处理）
+//
+//	yum/<arch>/<os>/*.rpm
+//	apt/<arch>/<os>/*.deb
+//	raw/packages/*
+//	helm/*.tgz
+//	docker/*.tar  （单独通过 docker push 处理）
 func (t *InitRegistryUpload) repositoryUploadBatch(baseURL string) (int, int) {
 	success, fail := 0, 0
 	entries, err := os.ReadDir(t.ProductPackagesPath)

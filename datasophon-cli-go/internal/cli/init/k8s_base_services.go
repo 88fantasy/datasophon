@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -42,7 +43,7 @@ type InitK8sBaseServices struct {
 
 func (t *InitK8sBaseServices) Name() string { return "安装k8s集群" }
 
-func (t *InitK8sBaseServices) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitK8sBaseServices) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -84,10 +85,10 @@ func (t *InitK8sBaseServices) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitK8sBaseServices) doRun(exec executor.Executor) bool {
+func (t *InitK8sBaseServices) doRun(exec executor.Executor) error {
 	if !t.EnableK8sCluster {
 		slog.Info("k8s 集群安装未开启，跳过")
-		return true
+		return nil
 	}
 	isX86 := exec.GetArch() != osinfo.ArchAarch64
 	osType := exec.GetOs()
@@ -106,7 +107,7 @@ func (t *InitK8sBaseServices) doRun(exec executor.Executor) bool {
 			slog.Info("sealos reset --force=true")
 		} else {
 			slog.Info("k8s 已安装，跳过")
-			return true
+			return nil
 		}
 	}
 
@@ -126,7 +127,7 @@ func (t *InitK8sBaseServices) doRun(exec executor.Executor) bool {
 
 	if len(t.Nodes) < 3 {
 		slog.Error("nodes 节点不能少于 3")
-		return false
+		return errors.New("nodes 节点不能少于 3")
 	}
 
 	// 安装 sealos
@@ -135,7 +136,7 @@ func (t *InitK8sBaseServices) doRun(exec executor.Executor) bool {
 		sealosCmd := fmt.Sprintf("tar zxvf %s sealos && chmod +x sealos && mv sealos /usr/bin", sealosPath)
 		if r := exec.ExecShell(sealosCmd); !r.Success {
 			slog.Error("sealos 安装失败")
-			return false
+			return errors.New("sealos 安装失败")
 		}
 		slog.Info("sealos 安装成功")
 	}
@@ -148,21 +149,31 @@ func (t *InitK8sBaseServices) doRun(exec executor.Executor) bool {
 		{t.tarName(isX86, t.CalicoX86Tar, t.CalicoArmTar), calicoPath},
 		{t.tarName(isX86, t.IngressX86Tar, t.IngressArmTar), ingressPath},
 	} {
-		DownloadFromRegistry(exec, t.EnableRegistry,
+		if err := DownloadFromRegistry(exec, t.EnableRegistry,
 			t.RegistryIP, t.RegistryPort, t.RegistryUsername, t.RegistryPassword,
-			pair[0], pair[1], true)
+			pair[0], pair[1], true); err != nil {
+			return err
+		}
 	}
 
 	// 安装 kubernetes
 	slog.Info("安装 kubernetes")
-	t.sealosInstall(exec, kubernetesPath, true)
+	if err := t.sealosInstall(exec, kubernetesPath, true); err != nil {
+		return err
+	}
 	time.Sleep(5 * time.Second)
 
 	// 安装插件
 	slog.Info("安装 k8s 插件")
-	t.sealosInstall(exec, calicoPath, false)
-	t.sealosInstall(exec, helmPath, false)
-	t.sealosInstall(exec, ingressPath, false)
+	if err := t.sealosInstall(exec, calicoPath, false); err != nil {
+		return err
+	}
+	if err := t.sealosInstall(exec, helmPath, false); err != nil {
+		return err
+	}
+	if err := t.sealosInstall(exec, ingressPath, false); err != nil {
+		return err
+	}
 
 	// 等待集群就绪（最多 5 分钟）
 	for i := 0; i < 60; i++ {
@@ -173,7 +184,7 @@ func (t *InitK8sBaseServices) doRun(exec executor.Executor) bool {
 		time.Sleep(5 * time.Second)
 		if i == 59 {
 			slog.Error("k8s 集群就绪超时")
-			return false
+			return errors.New("k8s 集群就绪超时")
 		}
 	}
 
@@ -183,7 +194,7 @@ func (t *InitK8sBaseServices) doRun(exec executor.Executor) bool {
 	}
 
 	slog.Info("k8s 集群安装成功")
-	return true
+	return nil
 }
 
 func (t *InitK8sBaseServices) pkgPath(isX86 bool, x86, arm string) string {
@@ -201,9 +212,18 @@ func (t *InitK8sBaseServices) tarName(isX86 bool, x86, arm string) string {
 	return arm
 }
 
+// isKubernetesReady 检查所有节点是否都处于 Ready 状态。
+// M5 修复：kubectl 命令失败或输出为空时返回 false，避免假阳性。
 func (t *InitK8sBaseServices) isKubernetesReady(exec executor.Executor) bool {
 	r := exec.ExecShell("/usr/bin/kubectl get nodes | grep -v NAME | awk '{print $2}' | xargs echo")
-	for _, status := range strings.Fields(r.Output) {
+	if !r.Success || strings.TrimSpace(r.Output) == "" {
+		return false
+	}
+	statuses := strings.Fields(r.Output)
+	if len(statuses) == 0 {
+		return false
+	}
+	for _, status := range statuses {
 		if strings.TrimSpace(status) != "Ready" {
 			return false
 		}
@@ -211,7 +231,7 @@ func (t *InitK8sBaseServices) isKubernetesReady(exec executor.Executor) bool {
 	return true
 }
 
-func (t *InitK8sBaseServices) sealosInstall(exec executor.Executor, imagePath string, isKubernetes bool) {
+func (t *InitK8sBaseServices) sealosInstall(exec executor.Executor, imagePath string, isKubernetes bool) error {
 	cmd := fmt.Sprintf("/usr/bin/sealos run %s --port=%d --force=true", imagePath, t.SSHPort)
 	if isKubernetes {
 		cmd += fmt.Sprintf(" --masters %s --nodes %s", strings.Join(t.Masters, ","), strings.Join(t.Nodes, ","))
@@ -223,6 +243,7 @@ func (t *InitK8sBaseServices) sealosInstall(exec executor.Executor, imagePath st
 	slog.Info("sealos 安装", "path", imagePath, "success", r.Success)
 	if !r.Success {
 		slog.Error("sealos 安装失败", "path", imagePath)
-		panic(fmt.Sprintf("%s 安装失败", imagePath))
+		return fmt.Errorf("%s 安装失败", imagePath)
 	}
+	return nil
 }

@@ -19,7 +19,7 @@ type InitJdk8 struct {
 
 func (t *InitJdk8) Name() string { return "初始化jdk8" }
 
-func (t *InitJdk8) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitJdk8) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -37,7 +37,7 @@ func (t *InitJdk8) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitJdk8) doRun(exec executor.Executor) bool {
+func (t *InitJdk8) doRun(exec executor.Executor) error {
 	jdkFolderPath := "/usr/local"
 	jdkPathName := "jdk1.8.0_333"
 	jdkTarName := "jdk-8u333-linux-x64.tar.gz"
@@ -50,13 +50,15 @@ func (t *InitJdk8) doRun(exec executor.Executor) bool {
 	r := exec.ExecShell("which java")
 	if strings.TrimSpace(r.Output) == javaBinPath {
 		slog.Info("JDK8 已安装", "path", javaBinPath)
-		return true
+		return nil
 	}
 
 	slog.Info("JDK8 未安装，开始安装")
-	DownloadFromRegistry(exec, t.EnableRegistry,
+	if err := DownloadFromRegistry(exec, t.EnableRegistry,
 		t.RegistryIP, t.RegistryPort, t.RegistryUsername, t.RegistryPassword,
-		jdkTarName, fmt.Sprintf("%s/%s", t.PackagePath, jdkTarName), true)
+		jdkTarName, fmt.Sprintf("%s/%s", t.PackagePath, jdkTarName), true); err != nil {
+		return err
+	}
 
 	// 清理旧 profile
 	exec.ExecShell("sed -i '/export JAVA_HOME/d' /etc/profile")
@@ -82,9 +84,11 @@ func (t *InitJdk8) doRun(exec executor.Executor) bool {
 	javaBcprovDir := fmt.Sprintf("%s/jre/lib/ext/", javaHome)
 	javaBcprovJarName := "bcprov-jdk15on-1.68.jar"
 	javaBcprovJar := fmt.Sprintf("%s/%s", t.PackagePath, javaBcprovJarName)
-	DownloadFromRegistry(exec, t.EnableRegistry,
+	if err := DownloadFromRegistry(exec, t.EnableRegistry,
 		t.RegistryIP, t.RegistryPort, t.RegistryUsername, t.RegistryPassword,
-		javaBcprovJarName, javaBcprovJar, true)
+		javaBcprovJarName, javaBcprovJar, true); err != nil {
+		return err
+	}
 	exec.ExecShell(fmt.Sprintf("cp -a %s %s", javaBcprovJar, javaBcprovDir))
 	slog.Info("BCPROV 安装完成")
 
@@ -98,5 +102,5 @@ func (t *InitJdk8) doRun(exec executor.Executor) bool {
 	exec.ExecShell("source /root/.bashrc")
 	exec.ExecShell("source /etc/profile")
 	slog.Info("JDK8 安装完成")
-	return true
+	return nil
 }

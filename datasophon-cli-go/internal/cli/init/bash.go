@@ -1,8 +1,8 @@
 package initcmd
 
 import (
+	"errors"
 	"log/slog"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -15,11 +15,11 @@ type InitBash struct{ TaskBase }
 
 func (t *InitBash) Name() string { return "bash解析器设置" }
 
-func (t *InitBash) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitBash) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitBash) doRun(exec executor.Executor) bool {
+func (t *InitBash) doRun(exec executor.Executor) error {
 	// 检查 /bin/sh 是否指向 bash
 	if r := exec.ExecShell("ls -l /bin/sh"); r.Success {
 		parts := strings.Split(r.Output, "->")
@@ -28,7 +28,7 @@ func (t *InitBash) doRun(exec executor.Executor) bool {
 			if target != "bash" {
 				if s := exec.ExecShell("sudo ln -svf bash /bin/sh"); !s.Success {
 					slog.Info("设置 /bin/sh -> bash 失败")
-					os.Exit(1)
+					return errors.New("设置 /bin/sh -> bash 失败")
 				}
 			}
 		}
@@ -42,11 +42,11 @@ func (t *InitBash) doRun(exec executor.Executor) bool {
 	// 检查 $SHELL
 	if r := exec.ExecShell("echo $SHELL"); !strings.Contains(r.Output, "/bin/bash") {
 		slog.Error("当前用户 shell 解析器不是 bash，请检查 /etc/passwd")
-		os.Exit(1)
+		return errors.New("当前用户 shell 解析器不是 bash，请检查 /etc/passwd")
 	}
 
 	slog.Info("bash 解析器设置完成")
-	return true
+	return nil
 }
 
 func (t *InitBash) Command(dryRun *bool) *cobra.Command {

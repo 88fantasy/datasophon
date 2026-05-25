@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"log/slog"
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
@@ -17,7 +18,7 @@ type InitTar struct {
 
 func (t *InitTar) Name() string { return "安装tar" }
 
-func (t *InitTar) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitTar) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -34,12 +35,12 @@ func (t *InitTar) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitTar) doRun(exec executor.Executor) bool {
+func (t *InitTar) doRun(exec executor.Executor) error {
 	r := exec.ExecShell("which tar")
 	if !r.Success {
 		slog.Error("tar 命令不存在，请手动安装")
-		return false
+		return errors.New("tar 命令不存在")
 	}
 	slog.Info("tar 已存在", "path", r.Output)
-	return true
+	return nil
 }

@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -20,7 +21,7 @@ type InitBinPackage struct {
 
 func (t *InitBinPackage) Name() string { return "分发datasophon-init资源包" }
 
-func (t *InitBinPackage) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitBinPackage) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -41,12 +42,12 @@ func (t *InitBinPackage) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitBinPackage) doRun(exec executor.Executor) bool {
+func (t *InitBinPackage) doRun(exec executor.Executor) error {
 	// 本地目录检查
 	info, err := os.Stat(t.DatasophonInitPath)
 	if err != nil || !info.IsDir() {
 		slog.Error("本地目录不存在", "path", t.DatasophonInitPath)
-		return false
+		return fmt.Errorf("本地目录不存在: %s", t.DatasophonInitPath)
 	}
 
 	// 确保本地 installPath 存在
@@ -60,12 +61,12 @@ func (t *InitBinPackage) doRun(exec executor.Executor) bool {
 	} else {
 		if r := exec.ExecShell(fmt.Sprintf("mkdir -p %s", t.DatasophonInitPath)); !r.Success {
 			slog.Error("远程创建目录失败", "path", t.DatasophonInitPath)
-			return false
+			return errors.New("远程创建目录失败")
 		}
 		slog.Info("分发资源包开始", "path", t.DatasophonInitPath)
 		if r := exec.SendDir(t.DatasophonInitPath, t.DatasophonInitPath, true); !r.Success {
 			slog.Error("分发资源包失败", "path", t.DatasophonInitPath)
-			return false
+			return errors.New("分发资源包失败")
 		}
 		slog.Info("分发资源包完成", "path", t.DatasophonInitPath)
 	}
@@ -74,5 +75,5 @@ func (t *InitBinPackage) doRun(exec executor.Executor) bool {
 	if !exec.Exists(t.InstallPath).Success {
 		exec.ExecShell(fmt.Sprintf("mkdir -p %s", t.InstallPath))
 	}
-	return true
+	return nil
 }

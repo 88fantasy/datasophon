@@ -1,8 +1,8 @@
 package initcmd
 
 import (
+	"errors"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -16,11 +16,11 @@ type InitLibrary struct{ TaskBase }
 
 func (t *InitLibrary) Name() string { return "初始化依赖库" }
 
-func (t *InitLibrary) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitLibrary) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitLibrary) doRun(exec executor.Executor) bool {
+func (t *InitLibrary) doRun(exec executor.Executor) error {
 	osType := exec.GetOs()
 	archType := exec.GetArch()
 
@@ -39,7 +39,9 @@ func (t *InitLibrary) doRun(exec executor.Executor) bool {
 		t.initCleanBuff(exec)
 		exec.ExecShell("source /etc/profile")
 		exec.ExecShell("source /root/.bash_profile")
-		t.installTelnet(exec, osType)
+		if err := t.installTelnet(exec, osType); err != nil {
+			return err
+		}
 	} else if osType.IsUbuntu() {
 		t.installPkg(exec, "psmisc")
 		t.initJavaPolicy(exec)
@@ -49,9 +51,11 @@ func (t *InitLibrary) doRun(exec executor.Executor) bool {
 		exec.ExecShell("source /root/.bash_profile")
 		t.installPkg(exec, "libpam-cracklib")
 		t.installPkg(exec, "policycoreutils")
-		t.installTelnet(exec, osType)
+		if err := t.installTelnet(exec, osType); err != nil {
+			return err
+		}
 	}
-	return true
+	return nil
 }
 
 func (t *InitLibrary) installPkg(exec executor.Executor, pkg string) {
@@ -90,7 +94,7 @@ func (t *InitLibrary) initCleanBuff(exec executor.Executor) {
 	exec.ExecShell("echo 3 >/proc/sys/vm/drop_caches")
 }
 
-func (t *InitLibrary) installTelnet(exec executor.Executor, osType osinfo.OsType) {
+func (t *InitLibrary) installTelnet(exec executor.Executor, osType osinfo.OsType) error {
 	slog.Info("安装 telnet")
 	var installCmd string
 	if osType.IsUbuntu() {
@@ -100,8 +104,9 @@ func (t *InitLibrary) installTelnet(exec executor.Executor, osType osinfo.OsType
 	}
 	if r := exec.ExecShell(installCmd); !r.Success {
 		slog.Error("telnet 安装失败")
-		os.Exit(1)
+		return errors.New("telnet 安装失败")
 	}
+	return nil
 }
 
 func (t *InitLibrary) Command(dryRun *bool) *cobra.Command {

@@ -14,11 +14,11 @@ type InitAllHost struct{ TaskBase }
 
 func (t *InitAllHost) Name() string { return "初始化hosts" }
 
-func (t *InitAllHost) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitAllHost) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitAllHost) doRun(exec executor.Executor) bool {
+func (t *InitAllHost) doRun(exec executor.Executor) error {
 	slog.Info("开始修改 /etc/hosts")
 
 	// 删除上次写入的 hosts 块
@@ -28,7 +28,7 @@ func (t *InitAllHost) doRun(exec executor.Executor) bool {
 	cfg, err := t.GetConfig()
 	if err != nil {
 		slog.Error("读取配置失败", "err", err)
-		return false
+		return fmt.Errorf("读取配置失败: %w", err)
 	}
 
 	for _, node := range cfg.Nodes {
@@ -44,7 +44,7 @@ func (t *InitAllHost) doRun(exec executor.Executor) bool {
 	slog.Info("/etc/hosts 修改完成")
 	slog.Info("配置 SSH StrictHostKeyChecking")
 	exec.ExecShell(`echo 'StrictHostKeyChecking no' >~/.ssh/config`)
-	return true
+	return nil
 }
 
 func (t *InitAllHost) Command(dryRun *bool) *cobra.Command {

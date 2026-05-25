@@ -40,9 +40,9 @@ func (c *Chain) Handle() error {
 
 	for _, h := range c.handlers {
 		slog.Info("执行处理器开始", "name", h.Name(), "host", c.host.Hostname)
-		if !h.Handle(client, c.dryRun) {
-			slog.Error("执行处理器失败", "name", h.Name(), "host", c.host.Hostname)
-			return nil // 对齐 Java 行为：失败中断但不抛出
+		if err := h.Handle(client, c.dryRun); err != nil {
+			slog.Error("执行处理器失败", "name", h.Name(), "host", c.host.Hostname, "err", err)
+			return err
 		}
 		slog.Info("执行处理器结束", "name", h.Name(), "host", c.host.Hostname)
 	}

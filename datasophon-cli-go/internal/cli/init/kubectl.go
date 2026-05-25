@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -22,7 +23,7 @@ type InitKubectl struct {
 
 func (t *InitKubectl) Name() string { return "安装kubectl" }
 
-func (t *InitKubectl) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitKubectl) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -47,14 +48,14 @@ func (t *InitKubectl) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitKubectl) doRun(exec executor.Executor) bool {
+func (t *InitKubectl) doRun(exec executor.Executor) error {
 	if !t.EnableK8sCluster {
 		slog.Info("k8s 集群安装未开启，跳过 kubectl 安装")
-		return true
+		return nil
 	}
 	if r := exec.ExecShell("kubectl version"); r.Success {
 		slog.Info("kubectl 已安装")
-		return true
+		return nil
 	}
 
 	tarName := t.X86Tar
@@ -62,15 +63,17 @@ func (t *InitKubectl) doRun(exec executor.Executor) bool {
 		tarName = t.Aarch64Tar
 	}
 	tarPath := fmt.Sprintf("%s/%s", t.PackagePath, tarName)
-	DownloadFromRegistry(exec, t.EnableRegistry,
+	if err := DownloadFromRegistry(exec, t.EnableRegistry,
 		t.RegistryIP, t.RegistryPort, t.RegistryUsername, t.RegistryPassword,
-		tarName, tarPath, true)
+		tarName, tarPath, true); err != nil {
+		return err
+	}
 
 	if !exec.Exists(tarPath).Success {
 		slog.Error("安装包不存在", "path", tarPath)
-		return false
+		return errors.New("安装包不存在")
 	}
 	exec.ExecShell(fmt.Sprintf("cp %s /usr/bin/kubectl", tarPath))
 	slog.Info("kubectl 安装成功")
-	return true
+	return nil
 }

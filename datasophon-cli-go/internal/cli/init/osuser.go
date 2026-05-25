@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"log/slog"
 
 	"github.com/spf13/cobra"
@@ -16,18 +17,18 @@ type InitOsUser struct{ TaskBase }
 
 func (t *InitOsUser) Name() string { return "初始化用户" }
 
-func (t *InitOsUser) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitOsUser) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitOsUser) doRun(exec executor.Executor) bool {
+func (t *InitOsUser) doRun(exec executor.Executor) error {
 	// 创建 hadoop 组
 	if r := exec.ExecShell("egrep '^" + hadoopGroup + "' /etc/group >&/dev/null"); !r.Success {
 		if gr := exec.ExecShell("groupadd " + hadoopGroup); gr.Success {
 			slog.Info("创建组成功", "group", hadoopGroup)
 		} else {
 			slog.Error("创建组失败", "group", hadoopGroup)
-			return false
+			return errors.New("创建 hadoop 组失败")
 		}
 	}
 
@@ -37,7 +38,7 @@ func (t *InitOsUser) doRun(exec executor.Executor) bool {
 			slog.Info("创建用户成功", "user", hadoopUser)
 		} else {
 			slog.Error("创建用户失败", "user", hadoopUser)
-			return false
+			return errors.New("创建 hadoop 用户失败")
 		}
 	}
 
@@ -46,7 +47,7 @@ func (t *InitOsUser) doRun(exec executor.Executor) bool {
 	exec.ExecShell("chown -R " + hadoopUser + ":" + hadoopGroup + " /home/" + hadoopUser + "/.ssh/")
 
 	slog.Info("hadoop 用户初始化完成")
-	return true
+	return nil
 }
 
 func (t *InitOsUser) Command(dryRun *bool) *cobra.Command {

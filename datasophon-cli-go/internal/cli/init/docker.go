@@ -1,9 +1,9 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"strings"
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
@@ -26,7 +26,7 @@ type InitDocker struct {
 
 func (t *InitDocker) Name() string { return "安装docker" }
 
-func (t *InitDocker) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitDocker) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -54,10 +54,10 @@ func (t *InitDocker) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitDocker) doRun(exec executor.Executor) bool {
+func (t *InitDocker) doRun(exec executor.Executor) error {
 	if !t.EnableK8sCluster {
 		slog.Info("k8s 集群安装未开启，跳过 docker 安装")
-		return true
+		return nil
 	}
 
 	dockerOut := exec.ExecShell("docker version").Output
@@ -71,7 +71,7 @@ func (t *InitDocker) doRun(exec executor.Executor) bool {
 			exec.ExecShell("rm -f /usr/bin/docker*")
 		} else {
 			slog.Info("docker 已安装，跳过")
-			return true
+			return nil
 		}
 	}
 
@@ -80,13 +80,15 @@ func (t *InitDocker) doRun(exec executor.Executor) bool {
 		tarName = t.Aarch64Tar
 	}
 	tarPath := fmt.Sprintf("%s/%s", t.PackagePath, tarName)
-	DownloadFromRegistry(exec, t.EnableRegistry,
+	if err := DownloadFromRegistry(exec, t.EnableRegistry,
 		t.RegistryIP, t.RegistryPort, t.RegistryUsername, t.RegistryPassword,
-		tarName, tarPath, true)
+		tarName, tarPath, true); err != nil {
+		return err
+	}
 
 	if !exec.Exists(tarPath).Success {
 		slog.Error("安装包不存在", "path", tarPath)
-		os.Exit(1)
+		return fmt.Errorf("安装包不存在: %s", tarPath)
 	}
 
 	softPath := fmt.Sprintf("%s/docker", t.InstallPath)
@@ -118,14 +120,14 @@ func (t *InitDocker) doRun(exec executor.Executor) bool {
 
 	if r := exec.ExecShell("systemctl status docker"); !r.Success {
 		slog.Error("docker 安装失败")
-		os.Exit(1)
+		return errors.New("docker 安装失败")
 	}
 	if r := exec.ExecShell(fmt.Sprintf("docker login %s:%d", t.RegistryIP, t.DockerHTTPPort)); !r.Success {
 		slog.Error("docker login 失败")
-		os.Exit(1)
+		return errors.New("docker login 失败")
 	}
 	slog.Info("docker 安装成功")
-	return true
+	return nil
 }
 
 func dockerServiceConf() []string {

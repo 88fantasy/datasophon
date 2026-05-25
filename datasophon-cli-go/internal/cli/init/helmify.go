@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -22,7 +23,7 @@ type InitHelmify struct {
 
 func (t *InitHelmify) Name() string { return "安装helmify" }
 
-func (t *InitHelmify) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitHelmify) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -47,14 +48,14 @@ func (t *InitHelmify) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitHelmify) doRun(exec executor.Executor) bool {
+func (t *InitHelmify) doRun(exec executor.Executor) error {
 	if !t.EnableK8sCluster {
 		slog.Info("k8s 集群安装未开启，跳过 helmify 安装")
-		return true
+		return nil
 	}
 	if r := exec.ExecShell("helmify -version"); r.Success {
 		slog.Info("helmify 已安装")
-		return true
+		return nil
 	}
 
 	tarName := t.X86Tar
@@ -62,18 +63,20 @@ func (t *InitHelmify) doRun(exec executor.Executor) bool {
 		tarName = t.Aarch64Tar
 	}
 	tarPath := fmt.Sprintf("%s/%s", t.PackagePath, tarName)
-	DownloadFromRegistry(exec, t.EnableRegistry,
+	if err := DownloadFromRegistry(exec, t.EnableRegistry,
 		t.RegistryIP, t.RegistryPort, t.RegistryUsername, t.RegistryPassword,
-		tarName, tarPath, true)
+		tarName, tarPath, true); err != nil {
+		return err
+	}
 
 	if !exec.Exists(tarPath).Success {
 		slog.Error("安装包不存在", "path", tarPath)
-		return false
+		return errors.New("安装包不存在")
 	}
 	softPath := fmt.Sprintf("%s/helmify", t.InstallPath)
 	exec.ExecShell(fmt.Sprintf("mkdir -p %s", softPath))
 	exec.ExecShell(fmt.Sprintf("tar -xvf %s -C %s", tarPath, softPath))
 	exec.ExecShell(fmt.Sprintf("cp %s/* /usr/bin/", softPath))
 	slog.Info("helmify 安装成功")
-	return true
+	return nil
 }

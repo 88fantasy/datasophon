@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -24,7 +25,7 @@ type InitK8sKuboard struct {
 
 func (t *InitK8sKuboard) Name() string { return "安装kuboard" }
 
-func (t *InitK8sKuboard) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitK8sKuboard) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -48,15 +49,15 @@ func (t *InitK8sKuboard) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitK8sKuboard) doRun(exec executor.Executor) bool {
+func (t *InitK8sKuboard) doRun(exec executor.Executor) error {
 	if !t.EnableK8sCluster {
 		slog.Info("k8s 集群安装未开启，跳过 kuboard 安装")
-		return true
+		return nil
 	}
 	prodOut := exec.ExecShell("kubectl get pods -n kuboard").Output
 	if strings.Contains(prodOut, "kuboard") {
 		slog.Info("kuboard pods 已存在，跳过")
-		return true
+		return nil
 	}
 
 	isX86 := exec.GetArch() != osinfo.ArchAarch64
@@ -66,9 +67,11 @@ func (t *InitK8sKuboard) doRun(exec executor.Executor) bool {
 	}
 	kuboardPath := fmt.Sprintf("%s/%s", t.PackagePath, tarName)
 	slog.Info("安装 kuboard...")
-	DownloadFromRegistry(exec, t.EnableRegistry,
+	if err := DownloadFromRegistry(exec, t.EnableRegistry,
 		t.RegistryIP, t.RegistryPort, t.RegistryUsername, t.RegistryPassword,
-		tarName, kuboardPath, true)
+		tarName, kuboardPath, true); err != nil {
+		return err
+	}
 
 	// 给 etcd 节点打标签
 	etcdsStr := strings.Join(t.Etcds, " ")
@@ -79,7 +82,7 @@ func (t *InitK8sKuboard) doRun(exec executor.Executor) bool {
 		checkCmd := fmt.Sprintf("/usr/bin/kubectl get nodes --show-labels | grep %s | grep k8s.kuboard.cn/role=etcd", node)
 		if r := exec.ExecShell(checkCmd); !r.Success {
 			slog.Error("节点打标签失败", "node", node)
-			return false
+			return errors.New("etcd 节点打标签失败")
 		}
 	}
 
@@ -87,8 +90,8 @@ func (t *InitK8sKuboard) doRun(exec executor.Executor) bool {
 	cmd := fmt.Sprintf("/usr/bin/sealos run %s --force=true", kuboardPath)
 	if r := exec.ExecShell(cmd); !r.Success {
 		slog.Error("安装 kuboard 失败")
-		return false
+		return errors.New("安装 kuboard 失败")
 	}
 	slog.Info("kuboard 安装成功，访问地址：http://ip:30080（默认账号 admin，首次登录请修改密码）")
-	return true
+	return nil
 }

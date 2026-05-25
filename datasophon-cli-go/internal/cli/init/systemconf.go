@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"log/slog"
 	"strings"
 
@@ -15,7 +16,7 @@ type InitSystemConf struct{ TaskBase }
 
 func (t *InitSystemConf) Name() string { return "设置操作系统配置" }
 
-func (t *InitSystemConf) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitSystemConf) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -31,7 +32,7 @@ func (t *InitSystemConf) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitSystemConf) doRun(exec executor.Executor) bool {
+func (t *InitSystemConf) doRun(exec executor.Executor) error {
 	// /etc/systemd/system.conf
 	r := exec.GetFileString("/etc/systemd/system.conf")
 	if r.Success {
@@ -40,7 +41,7 @@ func (t *InitSystemConf) doRun(exec executor.Executor) bool {
 		lines = append(lines, "DefaultLimitNOFILE=1024000", "DefaultLimitNPROC=1024000")
 		if w := exec.WriteLines(lines, "/etc/systemd/system.conf"); !w.Success {
 			slog.Error("system.conf 写入失败", "err", w.ErrOutput)
-			return false
+			return errors.New("system.conf 写入失败")
 		}
 		slog.Info("system.conf 初始化完成")
 	}
@@ -67,7 +68,7 @@ func (t *InitSystemConf) doRun(exec executor.Executor) bool {
 		)
 		if w := exec.WriteLines(lines, "/etc/security/limits.conf"); !w.Success {
 			slog.Error("limits.conf 写入失败", "err", w.ErrOutput)
-			return false
+			return errors.New("limits.conf 写入失败")
 		}
 		slog.Info("limits.conf 初始化完成")
 	}
@@ -88,13 +89,13 @@ func (t *InitSystemConf) doRun(exec executor.Executor) bool {
 		lines = append(lines, "kernel.pid_max=1000000")
 		if w := exec.WriteLines(lines, "/etc/sysctl.conf"); !w.Success {
 			slog.Error("sysctl.conf 写入失败", "err", w.ErrOutput)
-			return false
+			return errors.New("sysctl.conf 写入失败")
 		}
 		slog.Info("sysctl.conf 初始化完成")
 	}
 
 	if load := exec.ExecShell("sysctl -p"); !load.Success {
-		return false
+		return errors.New("sysctl -p 失败")
 	}
 
 	// Ubuntu 额外的 rc.local 配置
@@ -120,12 +121,12 @@ func (t *InitSystemConf) doRun(exec executor.Executor) bool {
 		}
 		exec.ExecShell("systemctl start rc-local.service")
 		if status := exec.ExecShell("systemctl status rc-local.service"); !status.Success {
-			return false
+			return errors.New("rc-local.service 启动失败")
 		}
 	}
 
 	slog.Info("操作系统配置完成")
-	return true
+	return nil
 }
 
 // filterLines 过滤掉包含任意关键词的行（对应 Java removeIf(s -> s.contains(...))）。

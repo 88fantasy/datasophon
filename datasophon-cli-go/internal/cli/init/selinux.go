@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"log/slog"
 	"strings"
 
@@ -14,14 +15,14 @@ type InitSelinux struct{ TaskBase }
 
 func (t *InitSelinux) Name() string { return "关闭安全策略" }
 
-func (t *InitSelinux) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitSelinux) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitSelinux) doRun(exec executor.Executor) bool {
+func (t *InitSelinux) doRun(exec executor.Executor) error {
 	r := exec.ExecShell("getenforce")
 	if !r.Success {
-		return false
+		return errors.New("getenforce 执行失败")
 	}
 	if strings.TrimSpace(r.Output) == "Enforcing" {
 		slog.Info("正在关闭 SELinux")
@@ -30,11 +31,11 @@ func (t *InitSelinux) doRun(exec executor.Executor) bool {
 		}
 		if sed := exec.ExecShell(`sed -i "s/SELINUX=enforcing/SELINUX=disabled/g" /etc/selinux/config`); !sed.Success {
 			slog.Info("SELinux config 修改失败")
-			return true // 对齐 Java 行为：sed 失败仍返回 true
+			return nil // 对齐 Java 行为：sed 失败仍视为成功
 		}
 	}
 	slog.Info("SELinux 已关闭")
-	return true
+	return nil
 }
 
 func (t *InitSelinux) Command(dryRun *bool) *cobra.Command {

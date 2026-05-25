@@ -25,11 +25,11 @@ type InitJdk17 struct {
 
 func (t *InitJdk17) Name() string { return "初始化jdk17" }
 
-func (t *InitJdk17) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitJdk17) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitJdk17) doRun(exec executor.Executor) bool {
+func (t *InitJdk17) doRun(exec executor.Executor) error {
 	exec.ExecShell("source /etc/profile")
 
 	tarName := jdk17TarX86
@@ -40,7 +40,7 @@ func (t *InitJdk17) doRun(exec executor.Executor) bool {
 	javaBin := fmt.Sprintf("%s/%s/bin/java", jdk17FolderPath, jdk17PathName)
 	if exec.Exists(javaBin).Success {
 		slog.Info("JDK17 已安装", "path", javaBin)
-		return true
+		return nil
 	}
 
 	slog.Info("JDK17 未安装，开始安装")
@@ -66,7 +66,7 @@ func (t *InitJdk17) doRun(exec executor.Executor) bool {
 	exec.ExecShell("source /etc/profile")
 
 	slog.Info("JDK17 安装完成")
-	return true
+	return nil
 }
 
 func (t *InitJdk17) Command(dryRun *bool) *cobra.Command {

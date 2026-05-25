@@ -22,7 +22,7 @@ type InitMysqlAppDb struct {
 
 func (t *InitMysqlAppDb) Name() string { return "创建数据库与账号密码" }
 
-func (t *InitMysqlAppDb) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitMysqlAppDb) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -47,7 +47,7 @@ func (t *InitMysqlAppDb) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitMysqlAppDb) doRun(exec executor.Executor) bool {
+func (t *InitMysqlAppDb) doRun(exec executor.Executor) error {
 	osType := exec.GetOs()
 	mysqlService := "mysqld"
 	if osType.IsUbuntu() {
@@ -60,7 +60,7 @@ func (t *InitMysqlAppDb) doRun(exec executor.Executor) bool {
 	} else {
 		exec.ExecShell(fmt.Sprintf("systemctl restart %s", mysqlService))
 	}
-	return true
+	return nil
 }
 
 func (t *InitMysqlAppDb) initCommonAccount(exec executor.Executor) {

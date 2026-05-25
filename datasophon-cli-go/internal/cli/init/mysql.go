@@ -1,9 +1,9 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"strings"
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
@@ -26,7 +26,7 @@ type InitMysql struct {
 
 func (t *InitMysql) Name() string { return "安装mysql" }
 
-func (t *InitMysql) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitMysql) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -54,7 +54,7 @@ func (t *InitMysql) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitMysql) doRun(exec executor.Executor) bool {
+func (t *InitMysql) doRun(exec executor.Executor) error {
 	tarName := t.X86Tar
 	if exec.GetArch() == osinfo.ArchAarch64 {
 		tarName = t.Aarch64Tar
@@ -63,9 +63,11 @@ func (t *InitMysql) doRun(exec executor.Executor) bool {
 	tarPath := fmt.Sprintf("%s/%s", t.PackagePath, tarName)
 	httpRootPath := fmt.Sprintf("%s/tmp/mysql", t.InstallPath)
 
-	DownloadFromRegistry(exec, t.EnableRegistry,
+	if err := DownloadFromRegistry(exec, t.EnableRegistry,
 		t.RegistryIP, t.RegistryPort, t.RegistryUsername, t.RegistryPassword,
-		tarName, tarPath, true)
+		tarName, tarPath, true); err != nil {
+		return err
+	}
 
 	mysqlService := "mysqld"
 	if osType.IsUbuntu() {
@@ -75,13 +77,13 @@ func (t *InitMysql) doRun(exec executor.Executor) bool {
 	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); r.Success {
 		slog.Info("MySQL 已存在")
 		if !t.Force {
-			return true
+			return nil
 		}
 	}
 
 	if !exec.Exists(tarPath).Success {
 		slog.Error("安装包不存在", "path", tarPath)
-		os.Exit(1)
+		return fmt.Errorf("安装包不存在: %s", tarPath)
 	}
 
 	if exec.Exists(httpRootPath).Success {
@@ -91,16 +93,12 @@ func (t *InitMysql) doRun(exec executor.Executor) bool {
 	exec.ExecShell(fmt.Sprintf("tar -xvf %s -C %s", tarPath, httpRootPath))
 
 	if osType.IsUbuntu() {
-		t.installUbuntu(exec, httpRootPath, mysqlService)
-	} else {
-		t.installCentos(exec, osType, httpRootPath, mysqlService)
+		return t.installUbuntu(exec, httpRootPath, mysqlService)
 	}
-
-	t.checkStart(exec, osType, mysqlService)
-	return true
+	return t.installCentos(exec, osType, httpRootPath, mysqlService)
 }
 
-func (t *InitMysql) installUbuntu(exec executor.Executor, httpRootPath, mysqlService string) {
+func (t *InitMysql) installUbuntu(exec executor.Executor, httpRootPath, mysqlService string) error {
 	if r := exec.ExecShell("dpkg --list|grep -E 'mysql-community-server|mariadb'"); r.Success {
 		slog.Info("卸载已存在的 MySQL")
 		exec.ExecShell("systemctl stop mysql")
@@ -120,13 +118,13 @@ func (t *InitMysql) installUbuntu(exec executor.Executor, httpRootPath, mysqlSer
 		exec.ExecShell(fmt.Sprintf("systemctl restart %s", mysqlService))
 		exec.ExecShell(fmt.Sprintf("systemctl enable %s", mysqlService))
 		slog.Info("MySQL 安装成功")
-	} else {
-		slog.Error("MySQL 安装失败")
-		os.Exit(1)
+		return t.checkStart(exec, mysqlService)
 	}
+	slog.Error("MySQL 安装失败")
+	return errors.New("MySQL 安装失败")
 }
 
-func (t *InitMysql) installCentos(exec executor.Executor, osType osinfo.OsType, httpRootPath, mysqlService string) {
+func (t *InitMysql) installCentos(exec executor.Executor, osType osinfo.OsType, httpRootPath, mysqlService string) error {
 	// 卸载 mariadb
 	if r := exec.ExecShell("rpm -qa | grep mariadb"); r.Success {
 		exec.ExecShell("rpm -qa | grep mariadb | xargs rpm -e --nodeps")
@@ -162,10 +160,10 @@ func (t *InitMysql) installCentos(exec executor.Executor, osType osinfo.OsType, 
 		exec.ExecShell(fmt.Sprintf("systemctl restart %s", mysqlService))
 		exec.ExecShell(fmt.Sprintf("systemctl enable %s", mysqlService))
 		slog.Info("MySQL 安装成功")
-	} else {
-		slog.Error("MySQL 安装失败")
-		os.Exit(1)
+		return t.checkStart(exec, mysqlService)
 	}
+	slog.Error("MySQL 安装失败")
+	return errors.New("MySQL 安装失败")
 }
 
 func (t *InitMysql) mysqlLib(exec executor.Executor, name, checkCmd, installCmd string) {
@@ -200,8 +198,9 @@ func (t *InitMysql) mysqldConf() []string {
 	}
 }
 
-func (t *InitMysql) checkStart(exec executor.Executor, osType osinfo.OsType, mysqlService string) {
+func (t *InitMysql) checkStart(exec executor.Executor, mysqlService string) error {
 	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); !r.Success {
-		panic("mysql 启动状态失败，请检查")
+		return errors.New("mysql 启动状态失败，请检查")
 	}
+	return nil
 }

@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -27,7 +28,7 @@ type InitRustfs struct {
 
 func (t *InitRustfs) Name() string { return "安装rustfs" }
 
-func (t *InitRustfs) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitRustfs) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -60,14 +61,14 @@ func (t *InitRustfs) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitRustfs) doRun(exec executor.Executor) bool {
+func (t *InitRustfs) doRun(exec executor.Executor) error {
 	if !t.Enable {
 		slog.Info("rustfs enable=false，跳过")
-		return true
+		return nil
 	}
 	if !exec.Exists(t.InstallPath).Success {
 		slog.Error("安装目录不存在", "path", t.InstallPath)
-		return false
+		return errors.New("rustfs 安装目录不存在")
 	}
 
 	home := fmt.Sprintf("%s/rustfs", t.InstallPath)
@@ -84,7 +85,7 @@ func (t *InitRustfs) doRun(exec executor.Executor) bool {
 		tarPath := fmt.Sprintf("%s/%s", t.PackagePath, tarName)
 		if !exec.Exists(tarPath).Success {
 			slog.Error("安装包不存在", "path", tarPath)
-			return false
+			return errors.New("rustfs 安装包不存在")
 		}
 		exec.ExecShell(fmt.Sprintf("tar xvz -f %s -C %s", tarPath, t.InstallPath))
 		exec.ExecShell(fmt.Sprintf("mv %s/rustfs-* %s", t.InstallPath, home))
@@ -99,10 +100,10 @@ func (t *InitRustfs) doRun(exec executor.Executor) bool {
 
 	if t.checkStart(exec) {
 		slog.Info("rustfs 安装成功", "path", home)
-		return true
+		return nil
 	}
 	slog.Error("rustfs 启动失败", "path", home)
-	return false
+	return errors.New("rustfs 启动失败")
 }
 
 func (t *InitRustfs) checkStart(exec executor.Executor) bool {

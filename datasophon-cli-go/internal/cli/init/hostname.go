@@ -1,6 +1,7 @@
 package initcmd
 
 import (
+	"errors"
 	"log/slog"
 	"strings"
 
@@ -17,11 +18,11 @@ type InitHostname struct {
 
 func (t *InitHostname) Name() string { return "初始化hostname" }
 
-func (t *InitHostname) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitHostname) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitHostname) doRun(exec executor.Executor) bool {
+func (t *InitHostname) doRun(exec executor.Executor) error {
 	exec.ExecShell("echo " + t.Hostname + " >/etc/hostname")
 	if exec.Exists("/etc/sysconfig/network").Success {
 		exec.ExecShell("echo HOSTNAME=" + t.Hostname + " >/etc/sysconfig/network")
@@ -35,10 +36,10 @@ func (t *InitHostname) doRun(exec executor.Executor) bool {
 	r := exec.ExecShell("hostname")
 	if !r.Success || strings.TrimSpace(r.Output) != t.Hostname {
 		slog.Error("hostname 设置失败", "expected", t.Hostname, "actual", r.Output)
-		return false
+		return errors.New("hostname 设置失败")
 	}
 	slog.Info("hostname 设置完成", "hostname", t.Hostname)
-	return true
+	return nil
 }
 
 func (t *InitHostname) Command(dryRun *bool) *cobra.Command {

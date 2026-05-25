@@ -3,6 +3,7 @@ package initcmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -36,7 +37,7 @@ type InitRegistry struct {
 
 func (t *InitRegistry) Name() string { return "安装制品库registry" }
 
-func (t *InitRegistry) Handle(client *ssh.Client, dryRun bool) bool {
+func (t *InitRegistry) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
@@ -73,10 +74,10 @@ func (t *InitRegistry) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitRegistry) doRun(exec executor.Executor) bool {
+func (t *InitRegistry) doRun(exec executor.Executor) error {
 	if !t.EnableRegistry {
 		slog.Info("enableRegistry=false，跳过 registry 安装")
-		return true
+		return nil
 	}
 
 	if !exec.Exists(t.InstallPath).Success {
@@ -95,7 +96,7 @@ func (t *InitRegistry) doRun(exec executor.Executor) bool {
 	}
 	if !exec.Exists(tarPath).Success {
 		slog.Error("安装包不存在", "path", tarPath)
-		return false
+		return errors.New("安装包不存在")
 	}
 
 	if exec.Exists(nexusPath).Success {
@@ -134,10 +135,10 @@ func (t *InitRegistry) doRun(exec executor.Executor) bool {
 		t.systemEula(baseURL)
 		t.repoCreateByList(baseURL)
 		slog.Info("nexus 安装成功", "path", home)
-		return true
+		return nil
 	}
 	slog.Error("nexus 安装失败", "path", home)
-	return false
+	return errors.New("nexus 安装失败")
 }
 
 func (t *InitRegistry) checkStart(exec executor.Executor) bool {

@@ -1,8 +1,9 @@
 package executor
 
 import (
+	"errors"
+	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/osinfo"
 )
@@ -16,19 +17,20 @@ func NewBatchExecutor(e Executor) *BatchExecutor {
 	return &BatchExecutor{exec: e}
 }
 
-func (b *BatchExecutor) ExecBatch(cmds []string) {
+func (b *BatchExecutor) ExecBatch(cmds []string) error {
 	for _, cmd := range cmds {
 		slog.Info("批量执行", "cmd", cmd)
 		r := b.exec.ExecShell(cmd)
 		if !r.Success {
 			slog.Error("批量执行失败", "cmd", cmd, "err", r.ErrOutput)
-			os.Exit(1)
+			return fmt.Errorf("批量执行失败 cmd=%s: %s", cmd, r.ErrOutput)
 		}
 	}
+	return nil
 }
 
 // InstallSoftware 对应 Java BatchExecutor.installSoftware，按 OS 选择 yum/apt 命令。
-func (b *BatchExecutor) InstallSoftware(rpmPkgs, debPkgs []string) {
+func (b *BatchExecutor) InstallSoftware(rpmPkgs, debPkgs []string) error {
 	osType := b.exec.GetOs()
 	var cmds []string
 
@@ -42,15 +44,14 @@ func (b *BatchExecutor) InstallSoftware(rpmPkgs, debPkgs []string) {
 			cmds = append(cmds, "apt install -y "+pkg)
 		}
 	} else {
-		slog.Error("不支持的 OS 类型", "os", string(osType))
-		os.Exit(1)
+		return errors.New("不支持的 OS 类型: " + string(osType))
 	}
 
 	if len(cmds) == 0 {
 		slog.Warn("InstallSoftware: 未传入任何包名")
-		return
+		return nil
 	}
-	b.ExecBatch(cmds)
+	return b.ExecBatch(cmds)
 }
 
 // CheckAndInstall 检查包是否已安装，未安装则执行 installCmd。
