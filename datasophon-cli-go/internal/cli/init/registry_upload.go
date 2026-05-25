@@ -1,0 +1,249 @@
+package initcmd
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"log/slog"
+	"mime/multipart"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
+	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh"
+)
+
+// InitRegistryUpload 对应 Java InitRegistryUpload — 将本地安装包批量上传到 Nexus。
+type InitRegistryUpload struct {
+	TaskBase
+	ProductPackagesPath    string
+	WebHost                string
+	WebPort                string
+	Username               string
+	Password               string
+	IsSuccessDelete        bool
+	DisableUploadRegistry  bool
+	DockerHTTPPort         int
+}
+
+func (t *InitRegistryUpload) Name() string { return "制品库上传" }
+
+func (t *InitRegistryUpload) Handle(client *ssh.Client, dryRun bool) bool {
+	return t.doRun(executor.NewSSHExecutor(client, dryRun))
+}
+
+func (t *InitRegistryUpload) Command(dryRun *bool) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "registryUpload",
+		Short: "将本地安装包批量上传到 Nexus",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runLocal(*dryRun, t.doRun)
+		},
+	}
+	t.AddBaseFlags(cmd)
+	cmd.Flags().StringVar(&t.ProductPackagesPath, "productPackagesPath", "", "安装包目录（必填）")
+	cmd.Flags().StringVar(&t.WebHost, "webHost", "", "Nexus 主机（必填）")
+	cmd.Flags().StringVar(&t.WebPort, "webPort", "", "Nexus 端口（必填）")
+	cmd.Flags().StringVarP(&t.Username, "username", "u", "", "用户名（必填）")
+	cmd.Flags().StringVarP(&t.Password, "password", "p", "", "密码（必填）")
+	cmd.Flags().BoolVarP(&t.IsSuccessDelete, "isSuccessDelete", "e", false, "上传成功后删除本地文件")
+	cmd.Flags().BoolVar(&t.DisableUploadRegistry, "disableUploadRegistry", false, "禁用上传")
+	cmd.Flags().IntVar(&t.DockerHTTPPort, "dockerHttpPort", 0, "Docker HTTP 端口（必填）")
+	_ = cmd.MarkFlagRequired("productPackagesPath")
+	_ = cmd.MarkFlagRequired("webHost")
+	_ = cmd.MarkFlagRequired("webPort")
+	_ = cmd.MarkFlagRequired("username")
+	_ = cmd.MarkFlagRequired("password")
+	_ = cmd.MarkFlagRequired("dockerHttpPort")
+	return cmd
+}
+
+func (t *InitRegistryUpload) doRun(exec executor.Executor) bool {
+	if !t.EnableRegistry {
+		slog.Info("enableRegistry=false，跳过上传")
+		return true
+	}
+	if _, err := os.Stat(t.ProductPackagesPath); os.IsNotExist(err) {
+		slog.Error("本地目录不存在", "path", t.ProductPackagesPath)
+		return false
+	}
+
+	baseURL := fmt.Sprintf("http://%s:%s", t.WebHost, t.WebPort)
+	if !t.DisableUploadRegistry {
+		slog.Info("制品库上传开始", "url", baseURL)
+		success, fail := t.repositoryUploadBatch(baseURL)
+		// Docker 镜像单独推送
+		t.uploadDocker(exec, baseURL)
+		slog.Info("制品库上传完成", "success", success, "fail", fail)
+	}
+	return true
+}
+
+// repositoryUploadBatch 遍历 productPackagesPath 下的子目录，按仓库类型上传。
+// 目录结构约定（与 Java NexusFileUtils 对齐）：
+//   yum/<arch>/<os>/*.rpm
+//   apt/<arch>/<os>/*.deb
+//   raw/packages/*
+//   helm/*.tgz
+//   docker/*.tar  （单独通过 docker push 处理）
+func (t *InitRegistryUpload) repositoryUploadBatch(baseURL string) (int, int) {
+	success, fail := 0, 0
+	entries, err := os.ReadDir(t.ProductPackagesPath)
+	if err != nil {
+		slog.Error("读取目录失败", "path", t.ProductPackagesPath, "err", err)
+		return 0, 0
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		repoType := strings.ToLower(entry.Name())
+		repoDir := filepath.Join(t.ProductPackagesPath, entry.Name())
+		switch repoType {
+		case "yum", "apt":
+			// <arch>/<os>/*.file
+			archEntries, _ := os.ReadDir(repoDir)
+			for _, archEntry := range archEntries {
+				if !archEntry.IsDir() {
+					continue
+				}
+				archDir := filepath.Join(repoDir, archEntry.Name())
+				osEntries, _ := os.ReadDir(archDir)
+				for _, osEntry := range osEntries {
+					if !osEntry.IsDir() {
+						continue
+					}
+					osDir := filepath.Join(archDir, osEntry.Name())
+					files, _ := os.ReadDir(osDir)
+					for _, f := range files {
+						if f.IsDir() {
+							continue
+						}
+						ok := t.uploadFile(baseURL, repoType, filepath.Join(osDir, f.Name()))
+						if ok {
+							success++
+							if t.IsSuccessDelete {
+								_ = os.Remove(filepath.Join(osDir, f.Name()))
+							}
+						} else {
+							fail++
+						}
+					}
+				}
+			}
+		case "raw":
+			packagesDir := filepath.Join(repoDir, "packages")
+			files, _ := os.ReadDir(packagesDir)
+			for _, f := range files {
+				if f.IsDir() {
+					continue
+				}
+				ok := t.uploadFile(baseURL, repoType, filepath.Join(packagesDir, f.Name()))
+				if ok {
+					success++
+					if t.IsSuccessDelete {
+						_ = os.Remove(filepath.Join(packagesDir, f.Name()))
+					}
+				} else {
+					fail++
+				}
+			}
+		case "helm":
+			files, _ := os.ReadDir(repoDir)
+			for _, f := range files {
+				if f.IsDir() {
+					continue
+				}
+				ok := t.uploadFile(baseURL, repoType, filepath.Join(repoDir, f.Name()))
+				if ok {
+					success++
+				} else {
+					fail++
+				}
+			}
+		case "docker":
+			// 由 uploadDocker 处理
+		default:
+			slog.Info("不支持的目录类型，跳过", "dir", entry.Name())
+		}
+	}
+	return success, fail
+}
+
+// uploadFile 用 multipart/form-data 上传单个文件到 Nexus 内部 UI 接口。
+func (t *InitRegistryUpload) uploadFile(baseURL, repoType, filePath string) bool {
+	file, err := os.Open(filePath)
+	if err != nil {
+		slog.Error("打开文件失败", "path", filePath, "err", err)
+		return false
+	}
+	defer file.Close()
+
+	var buf bytes.Buffer
+	w := multipart.NewWriter(&buf)
+	part, err := w.CreateFormFile("file", filepath.Base(filePath))
+	if err != nil {
+		slog.Error("创建 form 字段失败", "err", err)
+		return false
+	}
+	if _, err = io.Copy(part, file); err != nil {
+		slog.Error("写入文件内容失败", "err", err)
+		return false
+	}
+	_ = w.Close()
+
+	url := fmt.Sprintf("%s/service/rest/internal/ui/upload/%s", baseURL, repoType)
+	req, _ := http.NewRequest(http.MethodPost, url, &buf)
+	req.SetBasicAuth(t.Username, t.Password)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+
+	client := &http.Client{Timeout: 10 * time.Minute}
+	resp, err := client.Do(req)
+	if err != nil {
+		slog.Error("上传文件失败", "path", filePath, "err", err)
+		return false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == 200 || resp.StatusCode == 201 || resp.StatusCode == 204 {
+		slog.Info("上传成功", "file", filepath.Base(filePath))
+		return true
+	}
+	body, _ := io.ReadAll(resp.Body)
+	slog.Error("上传失败", "file", filepath.Base(filePath), "status", resp.StatusCode, "body", string(body))
+	return false
+}
+
+// uploadDocker 将 docker/ 目录下的 .tar 镜像 load 并 push 到私有仓库。
+func (t *InitRegistryUpload) uploadDocker(exec executor.Executor, baseURL string) {
+	dockerDir := filepath.Join(t.ProductPackagesPath, "docker")
+	if !exec.Exists(dockerDir).Success {
+		return
+	}
+	files, err := os.ReadDir(dockerDir)
+	if err != nil {
+		return
+	}
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+		absPath := filepath.Join(dockerDir, f.Name())
+		imageID := strings.TrimSpace(exec.ExecShell(fmt.Sprintf("docker load -i %s | cut -d' ' -f3", absPath)).Output)
+		imageName := imageID
+		if idx := strings.LastIndex(imageID, "/"); idx >= 0 {
+			imageName = imageID[idx+1:]
+		}
+		rImageName := fmt.Sprintf("%s:%d/docker/%s", t.WebHost, t.DockerHTTPPort, imageName)
+		exec.ExecShell(fmt.Sprintf("docker tag %s %s", imageID, rImageName))
+		r := exec.ExecShell(fmt.Sprintf("docker push %s", rImageName))
+		if r.Success {
+			slog.Info("docker push 成功", "file", absPath)
+		} else {
+			slog.Error("docker push 失败", "file", absPath)
+		}
+	}
+}

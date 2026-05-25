@@ -11,7 +11,7 @@ func NewInitCommand(dryRun *bool) *cobra.Command {
 		Short: "节点初始化命令组",
 	}
 
-	// 第一版 10 个核心任务
+	// ── Phase 1: 10 个核心任务 ────────────────────────────────────────────
 	cmd.AddCommand((&InitFirewall{}).Command(dryRun))
 	cmd.AddCommand((&InitSelinux{}).Command(dryRun))
 	cmd.AddCommand((&InitSwap{}).Command(dryRun))
@@ -23,10 +23,45 @@ func NewInitCommand(dryRun *bool) *cobra.Command {
 	cmd.AddCommand((&InitJdk17{}).Command(dryRun))
 	cmd.AddCommand(NewInitSshFreeCommand(dryRun))
 
-	// TODO Phase 2: nmap/ntpServer/ntpSlave/offlineServer/offlineSlave/
-	//               binPackage/tar/systemConf/hugePage/registry/registryUpload/
-	//               registryDecode/rustfs/mysql/mysqlAppDb/osSafeConf/osUser/
-	//               k8sBaseServices/k8sKuboard/k8sRegistryConf/docker/helm/helmify/kubectl
+	// ── Phase 2: 补齐剩余 init 任务 ──────────────────────────────────────
+
+	// 系统基础配置
+	cmd.AddCommand((&InitHugePage{}).Command(dryRun))
+	cmd.AddCommand((&InitNmap{}).Command(dryRun))
+	cmd.AddCommand((&InitTar{}).Command(dryRun))
+	cmd.AddCommand((&InitSystemConf{}).Command(dryRun))
+	cmd.AddCommand((&InitOsSafeConf{}).Command(dryRun))
+	cmd.AddCommand((&InitBinPackage{}).Command(dryRun))
+
+	// JDK
+	cmd.AddCommand((&InitJdk8{}).Command(dryRun))
+
+	// NTP 时钟同步
+	cmd.AddCommand((&InitNtpServer{}).Command(dryRun))
+	cmd.AddCommand((&InitNtpSlave{}).Command(dryRun))
+
+	// 离线源
+	cmd.AddCommand((&InitOfflineServer{}).Command(dryRun))
+	cmd.AddCommand((&InitOfflineSlave{}).Command(dryRun))
+
+	// MySQL
+	cmd.AddCommand((&InitMysql{}).Command(dryRun))
+	cmd.AddCommand((&InitMysqlAppDb{}).Command(dryRun))
+
+	// 制品库 (Nexus / Rustfs)
+	cmd.AddCommand((&InitRegistry{}).Command(dryRun))
+	cmd.AddCommand((&InitRegistryUpload{}).Command(dryRun))
+	cmd.AddCommand((&InitRegistryDecode{}).Command(dryRun))
+	cmd.AddCommand((&InitRustfs{}).Command(dryRun))
+
+	// K8s 相关
+	cmd.AddCommand((&InitDocker{}).Command(dryRun))
+	cmd.AddCommand((&InitHelm{}).Command(dryRun))
+	cmd.AddCommand((&InitHelmify{}).Command(dryRun))
+	cmd.AddCommand((&InitKubectl{}).Command(dryRun))
+	cmd.AddCommand((&InitK8sBaseServices{}).Command(dryRun))
+	cmd.AddCommand((&InitK8sRegistryConf{}).Command(dryRun))
+	cmd.AddCommand((&InitK8sKuboard{}).Command(dryRun))
 
 	return cmd
 }
