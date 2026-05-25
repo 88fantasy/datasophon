@@ -1,4 +1,4 @@
-package com.datasophon.cli.registry;
+package com.datasophon.cli.s3;
 
 import com.datasophon.cli.base.Executor;
 import com.datasophon.common.model.Host;
@@ -6,7 +6,7 @@ import com.datasophon.common.utils.ExecResult;
 
 import java.io.File;
 
-public interface Registry {
+public interface S3 {
     
     String type();
     
