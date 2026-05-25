@@ -15,11 +15,10 @@ import (
 // 本地执行：生成密钥对 + 向所有节点分发公钥实现 SSH 免密登录。
 type InitSshFree struct {
 	ConfigFilePath string
-	ConfigPassword string
 }
 
 func (t *InitSshFree) run(dryRun bool) error {
-	cfg, err := config.Load(t.ConfigFilePath, t.ConfigPassword)
+	cfg, err := config.Load(t.ConfigFilePath)
 	if err != nil {
 		return err
 	}
@@ -72,7 +71,6 @@ func NewInitSshFreeCommand(dryRun *bool) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&task.ConfigFilePath, "config", "c", "", "配置文件路径 (必填)")
-	cmd.Flags().StringVar(&task.ConfigPassword, "cpassword", "", "配置文件加密密钥")
 	_ = cmd.MarkFlagRequired("config")
 	return cmd
 }

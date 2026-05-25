@@ -19,7 +19,7 @@ func fixturesDir() string {
 
 func TestLoad_Plaintext(t *testing.T) {
 	path := filepath.Join(fixturesDir(), "cluster-sample.yml")
-	cfg, err := config.Load(path, "")
+	cfg, err := config.Load(path)
 	require.NoError(t, err)
 
 	assert.Equal(t, config.SSHAuthTypeAuto, cfg.Global.SSHAuthType)
@@ -34,16 +34,8 @@ func TestLoad_Plaintext(t *testing.T) {
 	assert.Equal(t, "node2", cfg.AddNodes[0].Hostname)
 }
 
-func TestLoad_PasswordWarning(t *testing.T) {
-	// 传 password 时应仅打印 warn，不返回 error
-	path := filepath.Join(fixturesDir(), "cluster-sample.yml")
-	cfg, err := config.Load(path, "somepassword")
-	require.NoError(t, err)
-	assert.NotNil(t, cfg)
-}
-
 func TestLoad_FileNotFound(t *testing.T) {
-	_, err := config.Load("/nonexistent/path/cluster.yml", "")
+	_, err := config.Load("/nonexistent/path/cluster.yml")
 	assert.Error(t, err)
 }
 
@@ -52,6 +44,6 @@ func TestLoad_InvalidYaml(t *testing.T) {
 	badFile := filepath.Join(dir, "bad.yml")
 	require.NoError(t, os.WriteFile(badFile, []byte("global: [invalid yaml }"), 0o644))
 
-	_, err := config.Load(badFile, "")
+	_, err := config.Load(badFile)
 	assert.Error(t, err)
 }

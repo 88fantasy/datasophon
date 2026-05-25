@@ -18,7 +18,6 @@ import (
 type createClusterCmd struct {
 	DatasophonPath  string
 	InstallPath     string
-	Password        string
 	Action          string
 	ProductPkgsPath string
 
@@ -55,7 +54,6 @@ func NewClusterCommand(dryRun *bool) *cobra.Command {
 
 	cmd.Flags().StringVarP(&c.DatasophonPath, "datasophonPath", "p", "", "datasophon 绝对路径 (必填)")
 	cmd.Flags().StringVar(&c.InstallPath, "installPath", "", "安装路径 (必填)")
-	cmd.Flags().StringVar(&c.Password, "cpassword", "", "配置文件加密密钥 (必填)")
 	cmd.Flags().StringVarP(&c.Action, "action", "a", "", "执行动作 initALL|initSingleNode (必填)")
 	cmd.Flags().StringVarP(&c.ProductPkgsPath, "productPackagesPath", "n", "", "安装包路径 (必填)")
 	cmd.Flags().BoolVar(&c.InitPathOverwriteForce, "initPathOverwriteForce", false, "datasophon-init 目录是否覆盖")
@@ -67,7 +65,6 @@ func NewClusterCommand(dryRun *bool) *cobra.Command {
 
 	_ = cmd.MarkFlagRequired("datasophonPath")
 	_ = cmd.MarkFlagRequired("installPath")
-	_ = cmd.MarkFlagRequired("cpassword")
 	_ = cmd.MarkFlagRequired("action")
 	_ = cmd.MarkFlagRequired("productPackagesPath")
 
@@ -98,7 +95,7 @@ func (c *createClusterCmd) run() error {
 		"INIT_PATH", c.initPath,
 		"INIT_CONFIG_YAML", c.initConfigYaml)
 
-	cfg, err := config.Load(c.initConfigYaml, c.Password)
+	cfg, err := config.Load(c.initConfigYaml)
 	if err != nil {
 		return err
 	}
@@ -455,7 +452,7 @@ func (c *createClusterCmd) doInitRustfs(cfg *config.ClusterConfig) error {
 		Username:    rs.Config.User,
 		Password:    rs.Config.Password,
 	}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	return c.singleNodeExec(c.globalNodes[rs.Nodes[0]], t)
 }
 
@@ -515,7 +512,7 @@ func (c *createClusterCmd) doInitOfflineServer(cfg *config.ClusterConfig) error 
 		ServerIP:    ys.Node,
 		ServerPort:  ys.ListenPort,
 	}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	applyRegistry(&t.TaskBase, &cfg.Global.Registry)
 	node, ok := c.globalNodes[ys.Node]
 	if !ok {
@@ -531,7 +528,7 @@ func (c *createClusterCmd) doInitOfflineNodes(cfg *config.ClusterConfig, nodes [
 		ServerIP:   ys.Node,
 		ServerPort: ys.ListenPort,
 	}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	if reg.Enable {
 		// Registry 启用时使用 registry 地址覆盖 yumServer 地址（对应 Java 逻辑）
 		t.ServerIP = reg.Node
@@ -553,7 +550,7 @@ func (c *createClusterCmd) doInitHostname(nodes []config.Host) error {
 
 func (c *createClusterCmd) doInitAllHost(cfg *config.ClusterConfig, nodes []config.Host) error {
 	t := &initcmd.InitAllHost{}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	for i := range nodes {
 		if err := c.singleNodeExec(&nodes[i], t); err != nil {
 			return err
@@ -574,7 +571,7 @@ func (c *createClusterCmd) doInitNmap(cfg *config.ClusterConfig) error {
 func (c *createClusterCmd) doInitNtpServer(cfg *config.ClusterConfig) error {
 	ntp := cfg.Global.NtpServer
 	t := &initcmd.InitNtpServer{}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	node, ok := c.globalNodes[ntp.Node]
 	if !ok {
 		return fmt.Errorf("ntpServer 节点 %q 不在 nodes 列表中", ntp.Node)
@@ -589,7 +586,7 @@ func (c *createClusterCmd) doInitNtpSlave(cfg *config.ClusterConfig, nodes []con
 		return fmt.Errorf("ntpServer 节点 %q 不在 nodes 列表中", ntp.Node)
 	}
 	t := &initcmd.InitNtpSlave{NtpServerIP: serverNode.IP}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	return c.slavesNodesExec(serverNode, hostsToPtr(nodes), t)
 }
 
@@ -604,7 +601,7 @@ func (c *createClusterCmd) doInitMysql(cfg *config.ClusterConfig) error {
 		Aarch64Tar:  cfg.Global.Packages.Mysql.Aarch64,
 		Port:        mc.Port,
 	}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	applyRegistry(&t.TaskBase, &cfg.Global.Registry)
 	node, ok := c.globalNodes[mc.Node]
 	if !ok {
@@ -627,7 +624,7 @@ func (c *createClusterCmd) doInitMysqlAppDb(cfg *config.ClusterConfig) error {
 			DBName:       appDb.DbName,
 			Port:         mc.Port,
 		}
-		applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+		applyConfig(&t.TaskBase, c.initConfigYaml)
 		if err := c.singleNodeExec(node, t); err != nil {
 			return err
 		}
@@ -686,7 +683,7 @@ func (c *createClusterCmd) doInitK8sBaseServices(cfg *config.ClusterConfig) erro
 		SSHPort:          c.localHost.Port,
 		SSHPasswd:        c.localHost.Password,
 	}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	applyRegistry(&t.TaskBase, &cfg.Global.Registry)
 
 	masterNode, ok := c.globalNodes[bs.Masters[0]]
@@ -705,7 +702,7 @@ func (c *createClusterCmd) doInitK8sKuboard(cfg *config.ClusterConfig) error {
 		PackagePath:      c.packagesPath,
 		Etcds:            kb.EtcdNodes,
 	}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	applyRegistry(&t.TaskBase, &cfg.Global.Registry)
 	node, ok := c.globalNodes[kb.Node]
 	if !ok {
@@ -720,7 +717,7 @@ func (c *createClusterCmd) doInitK8sRegistryConf(cfg *config.ClusterConfig) erro
 		EnableK8sCluster: cfg.Global.Kubernetes.Enable,
 		DockerHTTPPort:   cfg.Global.Registry.Config.DockerHTTPPort,
 	}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	applyRegistry(&t.TaskBase, &cfg.Global.Registry)
 
 	// 所有 master + node 节点
@@ -748,7 +745,7 @@ func (c *createClusterCmd) doInitDocker(cfg *config.ClusterConfig) error {
 		DockerHTTPPort:   cfg.Global.Registry.Config.DockerHTTPPort,
 		KubernetesForce:  c.KubernetesForce,
 	}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	applyRegistry(&t.TaskBase, &cfg.Global.Registry)
 	return c.singleNodeExec(c.localHost, t)
 }
@@ -761,7 +758,7 @@ func (c *createClusterCmd) doInitKubectl(cfg *config.ClusterConfig) error {
 		X86Tar:           cfg.Global.Packages.Kubectl.X86_64,
 		Aarch64Tar:       cfg.Global.Packages.Kubectl.Aarch64,
 	}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	applyRegistry(&t.TaskBase, &cfg.Global.Registry)
 	return c.singleNodeExec(c.localHost, t)
 }
@@ -774,7 +771,7 @@ func (c *createClusterCmd) doInitHelm(cfg *config.ClusterConfig) error {
 		X86Tar:           cfg.Global.Packages.Helm.X86_64,
 		Aarch64Tar:       cfg.Global.Packages.Helm.Aarch64,
 	}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	applyRegistry(&t.TaskBase, &cfg.Global.Registry)
 	return c.singleNodeExec(c.localHost, t)
 }
@@ -787,7 +784,7 @@ func (c *createClusterCmd) doInitHelmify(cfg *config.ClusterConfig) error {
 		X86Tar:           cfg.Global.Packages.Helmify.X86_64,
 		Aarch64Tar:       cfg.Global.Packages.Helmify.Aarch64,
 	}
-	applyConfig(&t.TaskBase, c.initConfigYaml, c.Password)
+	applyConfig(&t.TaskBase, c.initConfigYaml)
 	applyRegistry(&t.TaskBase, &cfg.Global.Registry)
 	return c.singleNodeExec(c.localHost, t)
 }
@@ -858,10 +855,9 @@ func applyRegistry(tb *initcmd.TaskBase, registry *config.Registry) {
 	tb.RegistryPassword = registry.Config.Password
 }
 
-// applyConfig 向 TaskBase 填充配置文件路径和密钥。
-func applyConfig(tb *initcmd.TaskBase, configFilePath, configPassword string) {
+// applyConfig 向 TaskBase 填充配置文件路径。
+func applyConfig(tb *initcmd.TaskBase, configFilePath string) {
 	tb.ConfigFilePath = configFilePath
-	tb.ConfigPassword = configPassword
 }
 
 // hostsToPtr 将 []config.Host 转为 []*config.Host（避免复制）。

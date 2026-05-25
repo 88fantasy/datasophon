@@ -9,7 +9,6 @@ import (
 // TaskBase 对应 Java InitBase 中继承到各子任务的公共字段和方法。
 type TaskBase struct {
 	ConfigFilePath   string
-	ConfigPassword   string
 	RegistryIP       string
 	RegistryPort     string
 	RegistryUsername string
@@ -18,13 +17,12 @@ type TaskBase struct {
 }
 
 func (b *TaskBase) GetConfig() (*config.ClusterConfig, error) {
-	return config.Load(b.ConfigFilePath, b.ConfigPassword)
+	return config.Load(b.ConfigFilePath)
 }
 
-// AddBaseFlags 注册 InitBase 的公共 flags（对应 Java @CommandLine.Option 注解列表）。
+// AddBaseFlags 注册 InitBase 的公共 flags。
 func (b *TaskBase) AddBaseFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&b.ConfigFilePath, "config", "c", "", "配置文件路径")
-	cmd.Flags().StringVar(&b.ConfigPassword, "cpassword", "", "配置文件加密密钥")
 	cmd.Flags().StringVar(&b.RegistryIP, "registryIp", "", "制品库 IP")
 	cmd.Flags().StringVar(&b.RegistryPort, "registryPort", "", "制品库端口")
 	cmd.Flags().StringVar(&b.RegistryUsername, "registryUsername", "", "制品库用户名")
