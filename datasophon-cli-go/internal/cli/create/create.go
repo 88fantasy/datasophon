@@ -10,5 +10,6 @@ func NewCreateCommand(dryRun *bool) *cobra.Command {
 	}
 	cmd.AddCommand(NewClusterCommand(dryRun))
 	cmd.AddCommand(NewNodeCommand(dryRun))
+	cmd.AddCommand(NewConfigCommand())
 	return cmd
 }
