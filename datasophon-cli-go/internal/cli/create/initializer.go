@@ -14,10 +14,10 @@ import (
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/handler"
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/plan"
 )
 
 // nodeInitializer 持有集群模式和独立模式共用的状态与 helper。
-// createClusterCmd 和 createNodeCmd 各自 embed 它。
 type nodeInitializer struct {
 	DatasophonPath         string
 	InstallPath            string
@@ -35,9 +35,9 @@ type nodeInitializer struct {
 	sshAuthType    config.SSHAuthType
 	globalNodes    map[string]*config.Host
 	localHost      *config.Host
+	currentCfg     *config.ClusterConfig // setup() 后赋值
 }
 
-// bindCommonFlags 注册两个命令共用的 4 个 flag。
 func (n *nodeInitializer) bindCommonFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&n.DatasophonPath, "datasophonPath", "p", "", "datasophon 绝对路径 (必填)")
 	cmd.Flags().StringVar(&n.InstallPath, "installPath", "", "安装路径 (必填)")
@@ -48,7 +48,6 @@ func (n *nodeInitializer) bindCommonFlags(cmd *cobra.Command) {
 	_ = cmd.MarkFlagRequired("productPackagesPath")
 }
 
-// setup 集群模式:校验路径、推导运行时字段、加载集群配置。
 func (n *nodeInitializer) setup() (*config.ClusterConfig, error) {
 	if !strings.HasPrefix(n.DatasophonPath, "/") || !strings.HasPrefix(n.InstallPath, "/") {
 		return nil, fmt.Errorf("datasophonPath、installPath 必须是绝对路径（以 / 开头）")
@@ -84,6 +83,9 @@ func (n *nodeInitializer) setup() (*config.ClusterConfig, error) {
 		n.globalNodes[cfg.Nodes[i].Hostname] = &cfg.Nodes[i]
 	}
 
+	if len(cfg.Nodes) == 0 {
+		return nil, fmt.Errorf("cluster-sample.yml 中 nodes 列表不能为空")
+	}
 	n.localIP = getLocalIP()
 	n.localHost = &cfg.Nodes[0]
 	for i := range cfg.Nodes {
@@ -94,10 +96,10 @@ func (n *nodeInitializer) setup() (*config.ClusterConfig, error) {
 		}
 	}
 
+	n.currentCfg = cfg
 	return cfg, nil
 }
 
-// setupStandalone 独立模式:跳过 config.Load,直接用 CLI host 构造最小状态。
 func (n *nodeInitializer) setupStandalone(host *config.Host) error {
 	if !strings.HasPrefix(n.DatasophonPath, "/") || !strings.HasPrefix(n.InstallPath, "/") {
 		return fmt.Errorf("datasophonPath、installPath 必须是绝对路径（以 / 开头）")
@@ -119,314 +121,84 @@ func (n *nodeInitializer) setupStandalone(host *config.Host) error {
 	return nil
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// initSingleNode 新增节点流程（对应 Java CreateCluster.initSingleNode()）
-// ─────────────────────────────────────────────────────────────────────────────
+// toBuildContext 组装 plan.BuildContext。
+func (n *nodeInitializer) toBuildContext() *plan.BuildContext {
+	return &plan.BuildContext{
+		Cfg:                    n.currentCfg,
+		InitPath:               n.initPath,
+		PackagesPath:           n.packagesPath,
+		InstallPath:            n.InstallPath,
+		ProductPkgsPath:        n.ProductPkgsPath,
+		ConfigYaml:             n.initConfigYaml,
+		LocalHost:              n.localHost,
+		LocalIP:                n.localIP,
+		GlobalNodes:            n.globalNodes,
+		SSHAuthType:            n.sshAuthType,
+		InitPathOverwriteForce: n.InitPathOverwriteForce,
+		DryRun:                 n.dryRun,
+	}
+}
 
+// initSingleNode 新增节点：生成 plan → 执行。
 func (n *nodeInitializer) initSingleNode(cfg *config.ClusterConfig) error {
-	nodes := cfg.AddNodes
-	if len(nodes) == 0 {
+	if len(cfg.AddNodes) == 0 {
 		slog.Warn("addNodes 列表为空，无需执行")
 		return nil
 	}
-	allInitNodes := cfg.Nodes
-
-	slog.Info("分发资源包")
-	if err := n.doInitBinPackage(cfg, nodes); err != nil {
+	ctx := n.toBuildContext()
+	pf, err := plan.GeneratePlan("initSingleNode", plan.InitSingleNodeRegistry, ctx)
+	if err != nil {
+		return fmt.Errorf("生成 initSingleNode 计划失败: %w", err)
+	}
+	if err := plan.Save(n.initPath, pf); err != nil {
 		return err
 	}
-
-	slog.Info("shell bash 设置")
-	if err := n.allNodesExec(hostsToPtr(nodes), &initcmd.InitBash{}); err != nil {
-		return err
-	}
-
-	slog.Info("安装 tar")
-	if err := n.doInitTar(cfg, nodes); err != nil {
-		return err
-	}
-
-	slog.Info("安装 jdk8")
-	if err := n.doInitJdk8(cfg, nodes); err != nil {
-		return err
-	}
-
-	slog.Info("安装 jdk17")
-	if err := n.doInitJdk17(cfg, nodes); err != nil {
-		return err
-	}
-
-	slog.Info("创建 hadoop 用户和组")
-	if err := n.allNodesExec(hostsToPtr(nodes), &initcmd.InitOsUser{}); err != nil {
-		return err
-	}
-
-	slog.Info("关闭防火墙")
-	if err := n.allNodesExec(hostsToPtr(nodes), &initcmd.InitFirewall{}); err != nil {
-		return err
-	}
-
-	slog.Info("关闭 selinux")
-	if err := n.allNodesExec(hostsToPtr(nodes), &initcmd.InitSelinux{}); err != nil {
-		return err
-	}
-
-	slog.Info("关闭 swap")
-	if err := n.allNodesExec(hostsToPtr(nodes), &initcmd.InitSwap{}); err != nil {
-		return err
-	}
-
-	slog.Info("离线 yum/apt 仓库配置")
-	if err := n.doInitOfflineNodes(cfg, nodes); err != nil {
-		return err
-	}
-
-	slog.Info("初始化依赖库")
-	if err := n.allNodesExec(hostsToPtr(nodes), &initcmd.InitLibrary{}); err != nil {
-		return err
-	}
-
-	slog.Info("安全配置")
-	if err := n.allNodesExec(hostsToPtr(nodes), &initcmd.InitOsSafeConf{}); err != nil {
-		return err
-	}
-
-	slog.Info("优化系统配置")
-	if err := n.allNodesExec(hostsToPtr(nodes), &initcmd.InitSystemConf{}); err != nil {
-		return err
-	}
-
-	slog.Info("配置 all hostname")
-	if err := n.doInitHostname(nodes); err != nil {
-		return err
-	}
-
-	slog.Info("配置 all hosts")
-	// 先更新所有原有节点的 hosts（Java: initAllHost(config, initNodes)）
-	if err := n.doInitAllHost(cfg, allInitNodes); err != nil {
-		return err
-	}
-	// 再更新新节点的 hosts（Java: initAllHost(config, nodes)）
-	if err := n.doInitAllHost(cfg, nodes); err != nil {
-		return err
-	}
-
-	slog.Info("配置 ntpSlave")
-	if err := n.doInitNtpSlave(cfg, nodes); err != nil {
-		return err
-	}
-
-	slog.Info("关闭透明大页")
-	return n.allNodesExec(hostsToPtr(nodes), &initcmd.InitHugePage{})
+	plan.PrintSummary(pf)
+	return plan.Apply(n.initPath, "initSingleNode", plan.InitSingleNodeRegistry, ctx)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// initStandaloneNode 独立模式 10 步节点级 DAG（不依赖集群上下文）
-// ─────────────────────────────────────────────────────────────────────────────
-
+// initStandaloneNode 独立模式 10 步节点级 DAG（不依赖集群上下文，不走 plan 引擎）。
 func (n *nodeInitializer) initStandaloneNode(host *config.Host) error {
-	nodes := []*config.Host{host}
-
-	slog.Info("shell bash 设置")
-	if err := n.allNodesExec(nodes, &initcmd.InitBash{}); err != nil {
-		return err
+	steps := []struct {
+		name string
+		fn   func() error
+	}{
+		{"shell bash 设置", func() error { return n.singleNodeExecDirect(host, &initcmd.InitBash{}) }},
+		{"创建 hadoop 用户和组", func() error { return n.singleNodeExecDirect(host, &initcmd.InitOsUser{}) }},
+		{"关闭防火墙", func() error { return n.singleNodeExecDirect(host, &initcmd.InitFirewall{}) }},
+		{"关闭 selinux", func() error { return n.singleNodeExecDirect(host, &initcmd.InitSelinux{}) }},
+		{"关闭 swap", func() error { return n.singleNodeExecDirect(host, &initcmd.InitSwap{}) }},
+		{"初始化依赖库", func() error { return n.singleNodeExecDirect(host, &initcmd.InitLibrary{}) }},
+		{"安全配置", func() error { return n.singleNodeExecDirect(host, &initcmd.InitOsSafeConf{}) }},
+		{"优化系统配置", func() error { return n.singleNodeExecDirect(host, &initcmd.InitSystemConf{}) }},
+		{"配置 hostname", func() error {
+			return n.singleNodeExecDirect(host, &initcmd.InitHostname{Hostname: host.Hostname})
+		}},
+		{"关闭透明大页", func() error { return n.singleNodeExecDirect(host, &initcmd.InitHugePage{}) }},
 	}
 
-	slog.Info("创建 hadoop 用户和组")
-	if err := n.allNodesExec(nodes, &initcmd.InitOsUser{}); err != nil {
-		return err
-	}
-
-	slog.Info("关闭防火墙")
-	if err := n.allNodesExec(nodes, &initcmd.InitFirewall{}); err != nil {
-		return err
-	}
-
-	slog.Info("关闭 selinux")
-	if err := n.allNodesExec(nodes, &initcmd.InitSelinux{}); err != nil {
-		return err
-	}
-
-	slog.Info("关闭 swap")
-	if err := n.allNodesExec(nodes, &initcmd.InitSwap{}); err != nil {
-		return err
-	}
-
-	slog.Info("初始化依赖库")
-	if err := n.allNodesExec(nodes, &initcmd.InitLibrary{}); err != nil {
-		return err
-	}
-
-	slog.Info("安全配置")
-	if err := n.allNodesExec(nodes, &initcmd.InitOsSafeConf{}); err != nil {
-		return err
-	}
-
-	slog.Info("优化系统配置")
-	if err := n.allNodesExec(nodes, &initcmd.InitSystemConf{}); err != nil {
-		return err
-	}
-
-	slog.Info("配置 hostname")
-	if err := n.singleNodeExec(host, &initcmd.InitHostname{Hostname: host.Hostname}); err != nil {
-		return err
-	}
-
-	slog.Info("关闭透明大页")
-	return n.allNodesExec(nodes, &initcmd.InitHugePage{})
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 共用 init helper（initSingleNode 与 initALL 都用）
-// ─────────────────────────────────────────────────────────────────────────────
-
-func (n *nodeInitializer) doInitBinPackage(cfg *config.ClusterConfig, nodes []config.Host) error {
-	t := &initcmd.InitBinPackage{
-		DatasophonInitPath:     n.initPath,
-		InstallPath:            n.InstallPath,
-		InitPathOverwriteForce: n.InitPathOverwriteForce,
-	}
-	applyRegistry(&t.TaskBase, &cfg.Global.Registry)
-	return n.allNodesExec(n.workerNodes(nodes), t)
-}
-
-func (n *nodeInitializer) doInitTar(cfg *config.ClusterConfig, nodes []config.Host) error {
-	t := &initcmd.InitTar{PackagePath: n.packagesPath}
-	return n.allNodesExec(n.workerNodes(nodes), t)
-}
-
-func (n *nodeInitializer) doInitJdk8(cfg *config.ClusterConfig, nodes []config.Host) error {
-	t := &initcmd.InitJdk8{PackagePath: n.packagesPath}
-	applyRegistry(&t.TaskBase, &cfg.Global.Registry)
-	return n.allNodesExec(n.workerNodes(nodes), t)
-}
-
-func (n *nodeInitializer) doInitJdk17(cfg *config.ClusterConfig, nodes []config.Host) error {
-	t := &initcmd.InitJdk17{PackagePath: n.packagesPath}
-	applyRegistry(&t.TaskBase, &cfg.Global.Registry)
-	return n.allNodesExec(n.workerNodes(nodes), t)
-}
-
-func (n *nodeInitializer) doInitOfflineNodes(cfg *config.ClusterConfig, nodes []config.Host) error {
-	ys := cfg.Global.YumServer
-	reg := cfg.Global.Registry
-	t := &initcmd.InitOfflineSlave{
-		ServerIP:   ys.Node,
-		ServerPort: ys.ListenPort,
-	}
-	applyConfig(&t.TaskBase, n.initConfigYaml)
-	if reg.Enable {
-		t.ServerIP = reg.Node
-		t.ServerPort = reg.Config.WebPort
-		applyRegistry(&t.TaskBase, &reg)
-	}
-	return n.allNodesExec(hostsToPtr(nodes), t)
-}
-
-func (n *nodeInitializer) doInitHostname(nodes []config.Host) error {
-	for i := range nodes {
-		t := &initcmd.InitHostname{Hostname: nodes[i].Hostname}
-		if err := n.singleNodeExec(&nodes[i], t); err != nil {
+	for _, s := range steps {
+		slog.Info(s.name)
+		if err := s.fn(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (n *nodeInitializer) doInitAllHost(cfg *config.ClusterConfig, nodes []config.Host) error {
-	t := &initcmd.InitAllHost{}
-	applyConfig(&t.TaskBase, n.initConfigYaml)
-	for i := range nodes {
-		if err := n.singleNodeExec(&nodes[i], t); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (n *nodeInitializer) doInitNtpSlave(cfg *config.ClusterConfig, nodes []config.Host) error {
-	ntp := cfg.Global.NtpServer
-	serverNode, ok := n.globalNodes[ntp.Node]
-	if !ok {
-		return fmt.Errorf("ntpServer 节点 %q 不在 nodes 列表中", ntp.Node)
-	}
-	t := &initcmd.InitNtpSlave{NtpServerIP: serverNode.IP}
-	applyConfig(&t.TaskBase, n.initConfigYaml)
-	return n.slavesNodesExec(serverNode, hostsToPtr(nodes), t)
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 执行辅助方法
-// ─────────────────────────────────────────────────────────────────────────────
-
-func (n *nodeInitializer) allNodesExec(nodes []*config.Host, h handler.Handler) error {
-	for _, node := range nodes {
-		if err := n.singleNodeExec(node, h); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (n *nodeInitializer) singleNodeExec(node *config.Host, h handler.Handler) error {
+// singleNodeExecDirect 为独立模式直接建 chain 执行（不经过 plan 引擎）。
+func (n *nodeInitializer) singleNodeExecDirect(node *config.Host, h handler.Handler) error {
 	if node == nil {
 		slog.Warn("节点为 nil，跳过", "handler", h.Name())
 		return nil
 	}
 	slog.Info("在节点执行", "ip", node.IP, "hostname", node.Hostname)
-	chain := handler.NewChain(node, n.sshAuthType, n.dryRun)
-	chain.Add(h)
-	return chain.Handle()
+	ch := handler.NewChain(node, n.sshAuthType, n.dryRun)
+	ch.Add(h)
+	return ch.Handle()
 }
 
-func (n *nodeInitializer) slavesNodesExec(serverNode *config.Host, allNodes []*config.Host, h handler.Handler) error {
-	for _, node := range allNodes {
-		if node.IP == serverNode.IP {
-			continue
-		}
-		if err := n.singleNodeExec(node, h); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (n *nodeInitializer) workerNodes(nodes []config.Host) []*config.Host {
-	var result []*config.Host
-	for i := range nodes {
-		if nodes[i].IP != n.localIP {
-			result = append(result, &nodes[i])
-		}
-	}
-	return result
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 包级工具函数
-// ─────────────────────────────────────────────────────────────────────────────
-
-func applyRegistry(tb *initcmd.TaskBase, registry *config.Registry) {
-	if registry == nil || !registry.Enable {
-		return
-	}
-	tb.EnableRegistry = true
-	tb.RegistryIP = registry.Node
-	tb.RegistryPort = registry.Config.WebPort
-	tb.RegistryUsername = registry.Config.User
-	tb.RegistryPassword = registry.Config.Password
-}
-
-func applyConfig(tb *initcmd.TaskBase, configFilePath string) {
-	tb.ConfigFilePath = configFilePath
-}
-
-func hostsToPtr(hosts []config.Host) []*config.Host {
-	result := make([]*config.Host, len(hosts))
-	for i := range hosts {
-		result[i] = &hosts[i]
-	}
-	return result
-}
+// ─── helpers ─────────────────────────────────────────────────────────────────
 
 func getLocalIP() string {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
@@ -437,8 +209,7 @@ func getLocalIP() string {
 	return conn.LocalAddr().(*net.UDPAddr).IP.String()
 }
 
-// appendNodeToYAML 用 *yaml.Node 树操作追加节点到 cluster-sample.yml 的 nodes 序列,
-// 保留原文件注释和格式。同 IP 或同 hostname 已存在时返回 (false, nil)。
+// appendNodeToYAML 追加节点到 cluster-sample.yml（保持注释格式）。
 func appendNodeToYAML(path string, host *config.Host) (bool, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
