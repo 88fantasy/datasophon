@@ -32,10 +32,11 @@ type OsInfo struct {
 
 // Registry 对应 Java NexusRegistry。
 type Registry struct {
-	Enable bool           `yaml:"enable"`
-	Type   string         `yaml:"type"`
-	Config RegistryConfig `yaml:"config"`
-	Node   string         `yaml:"node"`
+	Enable        bool           `yaml:"enable"`
+	DisableUpload bool           `yaml:"disableUpload"` // 承接 --disableUploadRegistry
+	Type          string         `yaml:"type"`
+	Config        RegistryConfig `yaml:"config"`
+	Node          string         `yaml:"node"`
 }
 
 type RegistryConfig struct {
@@ -62,12 +63,13 @@ type RustfsConfig struct {
 }
 
 type MysqlConfig struct {
-	Enable   bool        `yaml:"enable"`
-	User     string      `yaml:"user"`
-	Password string      `yaml:"password"`
-	Port     int         `yaml:"port"`
+	Enable   bool         `yaml:"enable"`
+	Force    bool         `yaml:"force"` // 承接 --mysqlInstallForce
+	User     string       `yaml:"user"`
+	Password string       `yaml:"password"`
+	Port     int          `yaml:"port"`
 	AppDbs   []MysqlAppDb `yaml:"appDbs"`
-	Node     string      `yaml:"node"`
+	Node     string       `yaml:"node"`
 }
 
 type MysqlAppDb struct {
@@ -90,6 +92,8 @@ type NodeRef struct {
 
 type Kubernetes struct {
 	Enable       bool         `yaml:"enable"`
+	OnlyInstall  bool         `yaml:"onlyInstall"` // 承接 --onlyInstallK8s
+	Force        bool         `yaml:"force"`        // 承接 --kubernetesForce
 	BaseServices BaseServices `yaml:"baseServices"`
 	KuboardI     Kuboard      `yaml:"kuboardI"`
 	K8sTools     K8sTools     `yaml:"k8sTools"`
