@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/github/release/datasophon/datasophon.svg">
   <img src="https://img.shields.io/github/stars/datasophon/datasophon">
   <img src="https://img.shields.io/github/forks/datasophon/datasophon">
-  <a href="https://www.apache.org/licenses/LICENSE-2.0.html"><img src="https://img.shields.io/badge/license-Apache%202-4EB1BA.svg"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-4EB1BA.svg"></a>
   <p align="center">
     <a href="https://datasophon.github.io/datasophon-website/">官网</a> |
     <a href="https://github.com/datasophon/datasophon/blob/main/README.md">English</a>
