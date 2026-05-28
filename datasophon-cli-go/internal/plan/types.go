@@ -58,7 +58,7 @@ type Action struct {
 
 // PlanFile 是序列化到磁盘的执行计划。
 type PlanFile struct {
-	Version     string     `json:"version"`     // "1"
+	Version     string     `json:"version"` // "1"
 	CreatedAt   time.Time  `json:"createdAt"`
 	UpdatedAt   time.Time  `json:"updatedAt"`
 	ConfigFile  string     `json:"configFile"`  // cluster-sample.yml 绝对路径
@@ -72,7 +72,7 @@ type PlanStep struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
 	Status    Status    `json:"status"`
-	Targets   []string  `json:"targets"`              // hostname 列表，仅供展示
+	Targets   []string  `json:"targets"` // hostname 列表，仅供展示
 	StartedAt time.Time `json:"startedAt,omitempty"`
 	EndedAt   time.Time `json:"endedAt,omitempty"`
 	Error     string    `json:"error,omitempty"`
