@@ -83,6 +83,9 @@ func (n *nodeInitializer) setup() (*config.ClusterConfig, error) {
 		n.globalNodes[cfg.Nodes[i].Hostname] = &cfg.Nodes[i]
 	}
 
+	if len(cfg.Nodes) == 0 {
+		return nil, fmt.Errorf("cluster-sample.yml 中 nodes 列表不能为空")
+	}
 	n.localIP = getLocalIP()
 	n.localHost = &cfg.Nodes[0]
 	for i := range cfg.Nodes {
@@ -151,7 +154,7 @@ func (n *nodeInitializer) initSingleNode(cfg *config.ClusterConfig) error {
 		return err
 	}
 	plan.PrintSummary(pf)
-	return plan.Apply(n.initPath, plan.InitSingleNodeRegistry, ctx)
+	return plan.Apply(n.initPath, "initSingleNode", plan.InitSingleNodeRegistry, ctx)
 }
 
 // initStandaloneNode 独立模式 10 步节点级 DAG（不依赖集群上下文，不走 plan 引擎）。

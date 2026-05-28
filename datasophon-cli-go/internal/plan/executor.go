@@ -7,15 +7,16 @@ import (
 )
 
 // Apply 读取 plan 文件，顺序执行非 completed/skipped 步骤，每步完成后回写状态。
-func Apply(initPath string, registry []Step, ctx *BuildContext) error {
-	pf, err := Load(initPath)
+// action 须与 GeneratePlan 时传入的 action 一致，对应文件 <action>.plan.json。
+func Apply(initPath, action string, registry []Step, ctx *BuildContext) error {
+	pf, err := Load(initPath, action)
 	if err != nil {
 		return err
 	}
 
 	// 校验 cfg 未变
 	if pf.ClusterHash != ComputeHash(ctx.Cfg) {
-		return fmt.Errorf("cluster.plan.json 与当前 cfg 不一致（clusterHash 不匹配），请重新执行 `plan`")
+		return fmt.Errorf("plan 文件与当前 cfg 不一致（clusterHash 不匹配），请重新执行 `plan`")
 	}
 
 	byID := make(map[string]Step, len(registry))

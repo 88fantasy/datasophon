@@ -37,7 +37,7 @@ func NewClusterCommand(dryRun *bool) *cobra.Command {
 	// plan 子命令
 	planCmd := &cobra.Command{
 		Use:   "plan",
-		Short: "生成执行计划到 state/cluster.plan.json（不执行）",
+		Short: "生成执行计划到 state/initALL.plan.json（不执行）",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c.dryRun = *dryRun
 			return c.runPlan()
@@ -48,7 +48,7 @@ func NewClusterCommand(dryRun *bool) *cobra.Command {
 	// apply 子命令
 	applyCmd := &cobra.Command{
 		Use:   "apply",
-		Short: "读取 state/cluster.plan.json 并顺序执行（支持断点续跑）",
+		Short: "读取 state/initALL.plan.json 并顺序执行（支持断点续跑）",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c.dryRun = *dryRun
 			return c.runApply()
@@ -93,7 +93,7 @@ func (c *createClusterCmd) runPlan() error {
 	if err := plan.Save(c.initPath, pf); err != nil {
 		return err
 	}
-	slog.Info("计划已写入", "path", plan.PlanPath(c.initPath))
+	slog.Info("计划已写入", "path", plan.PlanPath(c.initPath, "initALL"))
 	plan.PrintSummary(pf)
 	fmt.Printf("下一步: datasophon-cli create cluster apply\n\n")
 	return nil
@@ -105,5 +105,5 @@ func (c *createClusterCmd) runApply() error {
 		return err
 	}
 	ctx := c.toBuildContext()
-	return plan.Apply(c.initPath, plan.InitALLRegistry, ctx)
+	return plan.Apply(c.initPath, "initALL", plan.InitALLRegistry, ctx)
 }

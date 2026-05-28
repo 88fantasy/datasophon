@@ -144,11 +144,11 @@ func TestSaveLoad_RoundTrip(t *testing.T) {
 	err = Save(tmpDir, pf)
 	require.NoError(t, err)
 
-	info, err := os.Stat(PlanPath(tmpDir))
+	info, err := os.Stat(PlanPath(tmpDir, "initALL"))
 	require.NoError(t, err)
 	assert.Equal(t, os.FileMode(0600), info.Mode().Perm())
 
-	loaded, err := Load(tmpDir)
+	loaded, err := Load(tmpDir, "initALL")
 	require.NoError(t, err)
 	assert.Equal(t, pf.Action, loaded.Action)
 	assert.Equal(t, pf.ClusterHash, loaded.ClusterHash)
@@ -156,7 +156,7 @@ func TestSaveLoad_RoundTrip(t *testing.T) {
 }
 
 func TestLoad_FileNotExist(t *testing.T) {
-	_, err := Load(t.TempDir())
+	_, err := Load(t.TempDir(), "test")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "请先执行")
 }
@@ -200,9 +200,9 @@ func TestApply_SkipCompleted(t *testing.T) {
 	require.NoError(t, Save(tmpDir, pf))
 
 	// Apply 会对 step-3 尝试 SSH；step-1/step-2 必须保持 completed
-	_ = Apply(tmpDir, registry, ctx)
+	_ = Apply(tmpDir, "test", registry, ctx)
 
-	loaded, err := Load(tmpDir)
+	loaded, err := Load(tmpDir, "test")
 	require.NoError(t, err)
 	assert.Equal(t, StatusCompleted, loaded.Steps[0].Status, "step-1 should stay completed")
 	assert.Equal(t, StatusCompleted, loaded.Steps[1].Status, "step-2 should stay completed")
@@ -224,7 +224,7 @@ func TestApply_HashMismatch(t *testing.T) {
 	cfg.Global.Mysql.Enable = !cfg.Global.Mysql.Enable
 	ctx.Cfg = cfg
 
-	err = Apply(tmpDir, registry, ctx)
+	err = Apply(tmpDir, "test", registry, ctx)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "clusterHash 不匹配")
 }
@@ -249,11 +249,11 @@ func TestApply_FailedStepMarked(t *testing.T) {
 	}
 	require.NoError(t, Save(tmpDir, pf))
 
-	err := Apply(tmpDir, registry, ctx)
+	err := Apply(tmpDir, "test", registry, ctx)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "build error injected")
 
-	loaded, err := Load(tmpDir)
+	loaded, err := Load(tmpDir, "test")
 	require.NoError(t, err)
 	assert.Equal(t, StatusFailed, loaded.Steps[0].Status)
 }

@@ -12,11 +12,9 @@ import (
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
 )
 
-const planFileName = "cluster.plan.json"
-
-// PlanPath 返回计划文件的绝对路径。
-func PlanPath(initPath string) string {
-	return filepath.Join(initPath, "state", planFileName)
+// PlanPath 返回计划文件的绝对路径（按 action 区分，避免 initALL/initSingleNode 互相覆盖）。
+func PlanPath(initPath, action string) string {
+	return filepath.Join(initPath, "state", action+".plan.json")
 }
 
 // Save 把 PlanFile 序列化为 JSON 并写入磁盘（0600 权限）。
@@ -26,7 +24,7 @@ func Save(initPath string, pf *PlanFile) error {
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("创建 state 目录失败: %w", err)
 	}
-	path := PlanPath(initPath)
+	path := PlanPath(initPath, pf.Action)
 	data, err := json.MarshalIndent(pf, "", "  ")
 	if err != nil {
 		return fmt.Errorf("序列化 plan 失败: %w", err)
@@ -38,12 +36,12 @@ func Save(initPath string, pf *PlanFile) error {
 }
 
 // Load 从磁盘反序列化 PlanFile。
-func Load(initPath string) (*PlanFile, error) {
-	path := PlanPath(initPath)
+func Load(initPath, action string) (*PlanFile, error) {
+	path := PlanPath(initPath, action)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("计划文件不存在 %s，请先执行 `create cluster plan`", path)
+			return nil, fmt.Errorf("计划文件不存在 %s，请先执行 `plan`", path)
 		}
 		return nil, fmt.Errorf("读取 plan 文件失败: %w", err)
 	}
@@ -55,8 +53,8 @@ func Load(initPath string) (*PlanFile, error) {
 }
 
 // PlanExists 检查计划文件是否存在。
-func PlanExists(initPath string) bool {
-	_, err := os.Stat(PlanPath(initPath))
+func PlanExists(initPath, action string) bool {
+	_, err := os.Stat(PlanPath(initPath, action))
 	return err == nil
 }
 

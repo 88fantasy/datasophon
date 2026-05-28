@@ -74,33 +74,6 @@ func allNodes(ctx *BuildContext) []config.Host { return ctx.Cfg.Nodes }
 // addNodes 选取 cfg.AddNodes（initSingleNode 用）。
 func addNodes(ctx *BuildContext) []config.Host { return ctx.Cfg.AddNodes }
 
-// workerOfAll 选取 cfg.Nodes 并过滤本地节点。
-func workerOfAll(ctx *BuildContext) []config.Host {
-	return derefHosts(workerHostSlice(ctx.Cfg.Nodes, ctx.LocalIP))
-}
-
-// workerOfAdd 选取 cfg.AddNodes 并过滤本地节点。
-func workerOfAdd(ctx *BuildContext) []config.Host {
-	return derefHosts(workerHostSlice(ctx.Cfg.AddNodes, ctx.LocalIP))
-}
-
-// derefHosts 把 []*config.Host 转为 []config.Host。
-func derefHosts(ptrs []*config.Host) []config.Host {
-	result := make([]config.Host, 0, len(ptrs))
-	for _, p := range ptrs {
-		result = append(result, *p)
-	}
-	return result
-}
-
-// simpleNodes 是一个工厂：返回一个 BuildFunc，对选定节点执行给定 handler。
-func simpleNodes(newHandler func() handler.Handler, sel nodeSelector) BuildFunc {
-	return func(ctx *BuildContext) ([]Action, error) {
-		nodes := sel(ctx)
-		return hostsToActions(hostsToPtr(nodes), newHandler()), nil
-	}
-}
-
 // slavesOf 过滤掉 serverNode，返回其他节点（对应 nodeInitializer.slavesNodesExec）。
 func slavesOf(all []*config.Host, serverHost *config.Host) []*config.Host {
 	var result []*config.Host
@@ -112,8 +85,3 @@ func slavesOf(all []*config.Host, serverHost *config.Host) []*config.Host {
 	return result
 }
 
-// 防止未使用编译警告
-var (
-	_ = workerOfAll
-	_ = workerOfAdd
-)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/handler"
 )
 
@@ -115,11 +116,15 @@ func buildNtpSlave(sel nodeSelector) BuildFunc {
 	}
 }
 
-// simpleAllNodes 对所有节点（不过滤本地）运行同一 handler。
+// simpleAllNodes 对所有节点（不过滤本地）运行 handler，每节点独立创建实例。
 func simpleAllNodes(newH func() handler.Handler, sel nodeSelector) BuildFunc {
 	return func(ctx *BuildContext) ([]Action, error) {
 		nodes := sel(ctx)
-		return hostsToActions(hostsToPtr(nodes), newH()), nil
+		actions := make([]Action, 0, len(nodes))
+		for i := range nodes {
+			actions = append(actions, Action{HostKey: nodes[i].Hostname, Host: &nodes[i], Handler: newH()})
+		}
+		return actions, nil
 	}
 }
 
@@ -129,6 +134,8 @@ func simpleAllNodes(newH func() handler.Handler, sel nodeSelector) BuildFunc {
 func buildAllHostBoth(ctx *BuildContext) ([]Action, error) {
 	t := &initcmd.InitAllHost{}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	all := append(ctx.Cfg.Nodes, ctx.Cfg.AddNodes...)
+	all := make([]config.Host, len(ctx.Cfg.Nodes)+len(ctx.Cfg.AddNodes))
+	copy(all, ctx.Cfg.Nodes)
+	copy(all[len(ctx.Cfg.Nodes):], ctx.Cfg.AddNodes)
 	return hostsToActions(hostsToPtr(all), t), nil
 }
