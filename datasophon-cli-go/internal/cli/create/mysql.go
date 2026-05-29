@@ -1,29 +1,219 @@
 package create
 
 import (
+	"errors"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh"
 
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/handler"
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/osinfo"
 )
 
+// mysqlTask 安装 MySQL 8（本地 rpm/deb 包）。
+type mysqlTask struct {
+	Password         string
+	Force            bool
+	PackagePath      string
+	InstallPath      string
+	X86Tar           string
+	Aarch64Tar       string
+	Port             int
+	EnableRegistry   bool
+	RegistryIP       string
+	RegistryPort     string
+	RegistryUsername string
+	RegistryPassword string
+}
+
+func (t *mysqlTask) Name() string { return "安装mysql" }
+
+func (t *mysqlTask) Handle(client *ssh.Client, dryRun bool) error {
+	return t.doRun(executor.NewSSHExecutor(client, dryRun))
+}
+
+func (t *mysqlTask) doRun(exec executor.Executor) error {
+	tarName := t.X86Tar
+	if exec.GetArch() == osinfo.ArchAarch64 {
+		tarName = t.Aarch64Tar
+	}
+	osType := exec.GetOs()
+	tarPath := fmt.Sprintf("%s/%s", t.PackagePath, tarName)
+	httpRootPath := fmt.Sprintf("%s/tmp/mysql", t.InstallPath)
+
+	if err := initcmd.DownloadFromRegistry(exec, t.EnableRegistry,
+		t.RegistryIP, t.RegistryPort, t.RegistryUsername, t.RegistryPassword,
+		tarName, tarPath, true); err != nil {
+		return err
+	}
+
+	mysqlService := "mysqld"
+	if osType.IsUbuntu() {
+		mysqlService = "mysql"
+	}
+
+	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); r.Success {
+		slog.Info("MySQL 已存在")
+		if !t.Force {
+			return nil
+		}
+	}
+
+	if !exec.Exists(tarPath).Success {
+		slog.Error("安装包不存在", "path", tarPath)
+		return fmt.Errorf("安装包不存在: %s", tarPath)
+	}
+
+	if exec.Exists(httpRootPath).Success {
+		exec.ExecShell(fmt.Sprintf("rm -rf %s/tmp/mysql", t.InstallPath))
+	}
+	exec.ExecShell(fmt.Sprintf("mkdir -p %s", httpRootPath))
+	exec.ExecShell(fmt.Sprintf("tar -xvf %s -C %s", tarPath, httpRootPath))
+
+	if osType.IsUbuntu() {
+		return t.installUbuntu(exec, httpRootPath, mysqlService)
+	}
+	return t.installCentos(exec, osType, httpRootPath, mysqlService)
+}
+
+func (t *mysqlTask) installUbuntu(exec executor.Executor, httpRootPath, mysqlService string) error {
+	if r := exec.ExecShell("dpkg --list|grep -E 'mysql-community-server|mariadb'"); r.Success {
+		slog.Info("卸载已存在的 MySQL")
+		exec.ExecShell("systemctl stop mysql")
+		exec.ExecShell("apt remove mysql-common -y")
+		exec.ExecShell("apt remove mariadb -y")
+		exec.ExecShell("apt autoremove --purge mysql-server-8.0 -y")
+		exec.ExecShell("dpkg -P systemd-timesyncd")
+		exec.ExecShell("rm -rf /var/lib/mysql")
+		exec.ExecShell("rm -rf /etc/mysql")
+		exec.ExecShell("rm -rf /var/log/mysql")
+	}
+	exec.ExecShell(fmt.Sprintf("apt localinstall %s/*.rpm -y", httpRootPath))
+	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); r.Success {
+		t.rootUserConf(exec)
+		exec.ExecShell("mv /etc/mysql/mysql.conf.d/mysqld.cnf /etc/mysql/mysql.conf.d/mysqld.cnf.bak")
+		exec.WriteLines(t.mysqldConf(), "/etc/mysql/mysql.conf.d/mysqld.cnf")
+		exec.ExecShell(fmt.Sprintf("systemctl restart %s", mysqlService))
+		exec.ExecShell(fmt.Sprintf("systemctl enable %s", mysqlService))
+		slog.Info("MySQL 安装成功")
+		return t.checkStart(exec, mysqlService)
+	}
+	slog.Error("MySQL 安装失败")
+	return errors.New("MySQL 安装失败")
+}
+
+func (t *mysqlTask) installCentos(exec executor.Executor, osType osinfo.OsType, httpRootPath, mysqlService string) error {
+	if r := exec.ExecShell("rpm -qa | grep mariadb"); r.Success {
+		exec.ExecShell("rpm -qa | grep mariadb | xargs rpm -e --nodeps")
+	}
+	if r := exec.ExecShell("rpm -qa | grep mysql"); r.Success {
+		exec.ExecShell("systemctl stop mysqld")
+		exec.ExecShell("rpm -qa | grep mysql | xargs rpm -e")
+		exec.ExecShell("rm -rf /var/lib/mysql /usr/sbin/mysqld /usr/local/mysql /etc/my.cnf /var/log/mysqld.log /var/log/mysql.log")
+	}
+	t.mysqlLib(exec, "zlib-devel", "rpm -qa | grep zlib-devel", "yum -y install zlib-devel")
+	t.mysqlLib(exec, "bzip2-devel", "rpm -qa | grep bzip2-devel", "yum -y install bzip2-devel")
+	t.mysqlLib(exec, "openssl-devel", "rpm -qa | grep openssl-devel", "yum -y install openssl-devel")
+	t.mysqlLib(exec, "ncurses-devel", "rpm -qa | grep ncurses-devel", "yum -y install ncurses-devel")
+	if osType == osinfo.OsTypeCentos7 {
+		t.mysqlLib(exec, "libaio", "rpm -qa | grep libaio", "yum -y install libaio")
+	}
+	exec.ExecShell(fmt.Sprintf("yum -y localinstall %s/*.rpm", httpRootPath))
+	exec.ExecShell("mysqld --initialize --user=mysql")
+	exec.ExecShell(fmt.Sprintf("systemctl start %s", mysqlService))
+	exec.ExecShell(fmt.Sprintf("systemctl enable %s", mysqlService))
+	exec.ExecShell("sleep 2")
+
+	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); r.Success {
+		tmpPasswd := strings.TrimSpace(exec.ExecShell("grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'").Output)
+		slog.Info("临时密码已获取，开始修改密码")
+		oldCnf := "/tmp/.dsph_mysql_old.cnf"
+		exec.WriteLines([]string{"[client]", "password=" + tmpPasswd}, oldCnf)
+		exec.ExecShell(fmt.Sprintf("chmod 600 %s", oldCnf))
+		newSqlPath := "/tmp/.dsph_mysql_init.sql"
+		exec.WriteLines([]string{
+			fmt.Sprintf("ALTER USER 'root'@'localhost' IDENTIFIED BY '%s';", t.Password),
+		}, newSqlPath)
+		exec.ExecShell(fmt.Sprintf("chmod 600 %s", newSqlPath))
+		exec.ExecShell(fmt.Sprintf("mysql --defaults-extra-file=%s -uroot < %s", oldCnf, newSqlPath))
+		exec.ExecShell(fmt.Sprintf("rm -f %s %s", oldCnf, newSqlPath))
+		t.rootUserConf(exec)
+		exec.ExecShell("mv /etc/my.cnf /etc/my.cnf.bak")
+		exec.WriteLines(t.mysqldConf(), "/etc/my.cnf")
+		exec.ExecShell(fmt.Sprintf("systemctl restart %s", mysqlService))
+		exec.ExecShell(fmt.Sprintf("systemctl enable %s", mysqlService))
+		slog.Info("MySQL 安装成功")
+		return t.checkStart(exec, mysqlService)
+	}
+	slog.Error("MySQL 安装失败")
+	return errors.New("MySQL 安装失败")
+}
+
+func (t *mysqlTask) mysqlLib(exec executor.Executor, name, checkCmd, installCmd string) {
+	if r := exec.ExecShell(checkCmd); r.Success {
+		slog.Info("依赖已存在", "name", name)
+		return
+	}
+	exec.ExecShell(installCmd)
+	if r := exec.ExecShell(checkCmd); r.Success {
+		slog.Info("依赖安装成功", "name", name)
+	}
+}
+
+func (t *mysqlTask) rootUserConf(exec executor.Executor) {
+	newCnf := "/tmp/.dsph_mysql_new.cnf"
+	exec.WriteLines([]string{"[client]", "password=" + t.Password}, newCnf)
+	exec.ExecShell(fmt.Sprintf("chmod 600 %s", newCnf))
+	sqlPath := "/tmp/.dsph_mysql_conf.sql"
+	exec.WriteLines([]string{
+		"UPDATE mysql.user SET host='%' WHERE user='root';",
+		"FLUSH PRIVILEGES;",
+		fmt.Sprintf("ALTER USER 'root'@'%%' IDENTIFIED BY '%s' PASSWORD EXPIRE NEVER;", t.Password),
+		fmt.Sprintf("ALTER USER 'root'@'%%' IDENTIFIED WITH mysql_native_password BY '%s';", t.Password),
+		"FLUSH PRIVILEGES;",
+	}, sqlPath)
+	exec.ExecShell(fmt.Sprintf("chmod 600 %s", sqlPath))
+	exec.ExecShell(fmt.Sprintf("mysql --defaults-extra-file=%s -uroot -P%d < %s", newCnf, t.Port, sqlPath))
+	exec.ExecShell(fmt.Sprintf("rm -f %s %s", newCnf, sqlPath))
+}
+
+func (t *mysqlTask) mysqldConf() []string {
+	return []string{
+		"[mysqld]",
+		"character_set_server=utf8mb4",
+		"collation_server=utf8mb4_bin",
+		"default-storage-engine=INNODB",
+		"explicit_defaults_for_timestamp=true",
+		"max_connections=3600",
+		fmt.Sprintf("port=%d", t.Port),
+		"sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+	}
+}
+
+func (t *mysqlTask) checkStart(exec executor.Executor, mysqlService string) error {
+	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); !r.Success {
+		return errors.New("mysql 启动状态失败，请检查")
+	}
+	return nil
+}
+
+// ── 命令实现 ────────────────────────────────────────────────────────────────
+
 type createMysqlCmd struct {
-	// 配置文件模式（-c）
 	configFile     string
 	datasophonPath string
 
-	// 两种模式公用
 	installPath string
 
-	// 手动模式（无 -c 时必填）
 	node     string
-	file     string // -f: MySQL tar 安装包完整路径
+	file     string
 	password string
 	port     int
 
@@ -50,14 +240,11 @@ func NewMysqlCommand(dryRun *bool) *cobra.Command {
 		},
 	}
 
-	// ── 配置文件模式 ────────────────────────────────────────────────────
 	cmd.Flags().StringVarP(&c.configFile, "config", "c", "", "配置文件路径（指定后从 mysql 读取参数）")
 	cmd.Flags().StringVar(&c.datasophonPath, "datasophonPath", "", "datasophon 绝对路径（配置文件模式下必填，推导安装包路径）")
 
-	// ── 两种模式公用 ─────────────────────────────────────────────────────
 	cmd.Flags().StringVar(&c.installPath, "installPath", "", "MySQL 安装路径（必填）")
 
-	// ── 手动模式 ─────────────────────────────────────────────────────────
 	cmd.Flags().StringVar(&c.node, "node", "", "MySQL 节点 hostname 或 IP（手动模式必填）")
 	cmd.Flags().StringVarP(&c.file, "file", "f", "", "MySQL tar 安装包完整路径（手动模式必填）")
 	cmd.Flags().StringVarP(&c.password, "password", "p", "", "MySQL root 密码（手动模式必填）")
@@ -73,8 +260,6 @@ func (c *createMysqlCmd) run() error {
 	return c.runFromFlags()
 }
 
-// runFromConfig 从配置文件读取 mysql，SSH 到 mysql.node 执行，
-// 安装成功后将 mysql.enable 置为 true 写回配置文件，并依次创建所有 appDbs。
 func (c *createMysqlCmd) runFromConfig() error {
 	if c.datasophonPath == "" {
 		return fmt.Errorf("配置文件模式下 --datasophonPath 为必填项")
@@ -106,7 +291,6 @@ func (c *createMysqlCmd) runFromConfig() error {
 		return fmt.Errorf("配置中未找到 mysql 节点: %s（请检查 mysql.node 与 nodes 列表是否一致）", mysqlCfg.Node)
 	}
 
-	// 推导 registry 连接字段（EnableRegistry 跟随 cfg.Registry.Enable）
 	var regIP, regPort, regUser, regPwd string
 	if cfg.Registry.Enable {
 		regNode, found := globalNodes[cfg.Registry.Node]
@@ -119,20 +303,20 @@ func (c *createMysqlCmd) runFromConfig() error {
 		regPwd = cfg.Registry.Config.Password
 	}
 
-	installer := &initcmd.InitMysql{
-		Password:    mysqlCfg.Password,
-		Force:       mysqlCfg.Force,
-		PackagePath: packagesPath,
-		InstallPath: c.installPath,
-		X86Tar:      cfg.Packages.Mysql.X86_64,
-		Aarch64Tar:  cfg.Packages.Mysql.Aarch64,
-		Port:        mysqlCfg.Port,
+	installer := &mysqlTask{
+		Password:         mysqlCfg.Password,
+		Force:            mysqlCfg.Force,
+		PackagePath:      packagesPath,
+		InstallPath:      c.installPath,
+		X86Tar:           cfg.Packages.Mysql.X86_64,
+		Aarch64Tar:       cfg.Packages.Mysql.Aarch64,
+		Port:             mysqlCfg.Port,
+		EnableRegistry:   cfg.Registry.Enable,
+		RegistryIP:       regIP,
+		RegistryPort:     regPort,
+		RegistryUsername: regUser,
+		RegistryPassword: regPwd,
 	}
-	installer.EnableRegistry = cfg.Registry.Enable
-	installer.RegistryIP = regIP
-	installer.RegistryPort = regPort
-	installer.RegistryUsername = regUser
-	installer.RegistryPassword = regPwd
 
 	ch := handler.NewChain(node, cfg.Global.SSHAuthType, c.dryRun)
 	ch.Add(installer)
@@ -149,7 +333,6 @@ func (c *createMysqlCmd) runFromConfig() error {
 		return err
 	}
 
-	// 安装成功后持久化 enable=true
 	cfg.Mysql.Enable = true
 	if err := config.Save(c.configFile, cfg); err != nil {
 		return fmt.Errorf("安装成功但写回配置文件失败: %w", err)
@@ -157,7 +340,6 @@ func (c *createMysqlCmd) runFromConfig() error {
 	return nil
 }
 
-// runFromFlags 从命令行参数读取所有字段，在本地节点执行（不创建 appDbs）。
 func (c *createMysqlCmd) runFromFlags() error {
 	missing := []string{}
 	if c.installPath == "" {
@@ -176,16 +358,15 @@ func (c *createMysqlCmd) runFromFlags() error {
 		return fmt.Errorf("手动模式下以下参数为必填项: %s", strings.Join(missing, ", "))
 	}
 
-	installer := &initcmd.InitMysql{
-		Password:    c.password,
-		Force:       false,
-		PackagePath: filepath.Dir(c.file),
-		InstallPath: c.installPath,
-		X86Tar:      filepath.Base(c.file),
-		Aarch64Tar:  filepath.Base(c.file),
-		Port:        c.port,
+	installer := &mysqlTask{
+		Password:       c.password,
+		Force:          false,
+		PackagePath:    filepath.Dir(c.file),
+		InstallPath:    c.installPath,
+		X86Tar:         filepath.Base(c.file),
+		Aarch64Tar:     filepath.Base(c.file),
+		Port:           c.port,
+		EnableRegistry: false,
 	}
-	installer.EnableRegistry = false
-
-	return installer.Run(executor.NewLocalExecutor(c.dryRun))
+	return installer.doRun(executor.NewLocalExecutor(c.dryRun))
 }

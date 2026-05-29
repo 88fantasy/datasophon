@@ -133,4 +133,3 @@ var InitALLRegistry = []Step{
 	{ID: "init-hugepage", Name: "关闭透明大页",
 		Build: simpleAllNodes(func() handler.Handler { return &initcmd.InitHugePage{} }, allNodes)},
 }
-

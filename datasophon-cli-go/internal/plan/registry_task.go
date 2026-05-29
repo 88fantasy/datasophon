@@ -1,4 +1,4 @@
-package initcmd
+package plan
 
 import (
 	"bytes"
@@ -13,16 +13,14 @@ import (
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/osinfo"
-	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
 
 const nexusEula = "Use of Sonatype Nexus Repository - Community Edition is governed by the End User License Agreement at https://links.sonatype.com/products/nxrm/ce-eula. By returning the value from 'accepted:false' to 'accepted:true', you acknowledge that you have read and agree to the End User License Agreement at https://links.sonatype.com/products/nxrm/ce-eula."
 
-// InitRegistry 对应 Java InitRegistry — 安装 Sonatype Nexus 制品库并初始化仓库。
-type InitRegistry struct {
-	TaskBase
-	Type           string
+// registryTask 是 plan 包用于 Nexus Registry 安装步骤的 handler。
+type registryTask struct {
+	EnableRegistry bool
 	PackagePath    string
 	InstallPath    string
 	X86Tar         string
@@ -35,49 +33,13 @@ type InitRegistry struct {
 	DockerHTTPPort int
 }
 
-func (t *InitRegistry) Name() string { return "安装制品库registry" }
+func (t *registryTask) Name() string { return "安装制品库registry" }
 
-func (t *InitRegistry) Handle(client *ssh.Client, dryRun bool) error {
+func (t *registryTask) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitRegistry) Command(dryRun *bool) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "registry",
-		Short: "安装 Sonatype Nexus 制品库",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLocal(*dryRun, t.doRun)
-		},
-	}
-	t.AddBaseFlags(cmd)
-	cmd.Flags().StringVar(&t.Type, "type", "nexus", "制品类型")
-	cmd.Flags().StringVar(&t.PackagePath, "packagePath", "", "安装包目录（必填）")
-	cmd.Flags().StringVar(&t.InstallPath, "installPath", "", "安装路径（必填）")
-	cmd.Flags().StringVarP(&t.X86Tar, "x86Tar", "x", "", "x86_64 包（必填）")
-	cmd.Flags().StringVarP(&t.Aarch64Tar, "aarch64Tar", "a", "", "aarch64 包（必填）")
-	cmd.Flags().StringVar(&t.WebHost, "webHost", "", "Web 主机（必填）")
-	cmd.Flags().StringVar(&t.WebPort, "webPort", "", "Web 端口（必填）")
-	cmd.Flags().StringVarP(&t.Username, "username", "u", "", "用户名（必填）")
-	cmd.Flags().StringVarP(&t.Password, "password", "p", "", "密码（必填）")
-	cmd.Flags().StringSliceVarP(&t.Repositories, "repositories", "r", nil, "仓库列表（必填）")
-	cmd.Flags().IntVar(&t.DockerHTTPPort, "dockerHttpPort", 0, "Docker HTTP 端口（必填）")
-	_ = cmd.MarkFlagRequired("packagePath")
-	_ = cmd.MarkFlagRequired("installPath")
-	_ = cmd.MarkFlagRequired("x86Tar")
-	_ = cmd.MarkFlagRequired("aarch64Tar")
-	_ = cmd.MarkFlagRequired("webHost")
-	_ = cmd.MarkFlagRequired("webPort")
-	_ = cmd.MarkFlagRequired("username")
-	_ = cmd.MarkFlagRequired("password")
-	_ = cmd.MarkFlagRequired("repositories")
-	_ = cmd.MarkFlagRequired("dockerHttpPort")
-	return cmd
-}
-
-// Run 导出 doRun，供 create 包手动模式直接调用。
-func (t *InitRegistry) Run(exec executor.Executor) error { return t.doRun(exec) }
-
-func (t *InitRegistry) doRun(exec executor.Executor) error {
+func (t *registryTask) doRun(exec executor.Executor) error {
 	if !t.EnableRegistry {
 		slog.Info("enableRegistry=false，跳过 registry 安装")
 		return nil
@@ -117,7 +79,6 @@ func (t *InitRegistry) doRun(exec executor.Executor) error {
 		slog.Info("nexus-default.properties 已生成", "path", nexusPropertiesPath)
 	}
 
-	// 检测并启动
 	if !t.checkStart(exec) {
 		exec.ExecShell(fmt.Sprintf("%s/bin/nexus start", nexusPath))
 		for i := 0; i < 20; i++ {
@@ -129,7 +90,6 @@ func (t *InitRegistry) doRun(exec executor.Executor) error {
 		}
 	}
 
-	// 初始化
 	if t.checkStart(exec) {
 		if exec.Exists(passwordPath).Success {
 			oldPassword := strings.TrimSpace(exec.GetFileString(passwordPath).Output)
@@ -144,7 +104,7 @@ func (t *InitRegistry) doRun(exec executor.Executor) error {
 	return errors.New("nexus 安装失败")
 }
 
-func (t *InitRegistry) checkStart(exec executor.Executor) bool {
+func (t *registryTask) checkStart(exec executor.Executor) bool {
 	r := exec.ExecShell("ps -ef | grep nexus | grep sonatype-work | grep -v datasophon-cli | grep -v grep")
 	if r.Success {
 		slog.Info("nexus 已在运行")
@@ -154,7 +114,7 @@ func (t *InitRegistry) checkStart(exec executor.Executor) bool {
 	return false
 }
 
-func (t *InitRegistry) changePassword(baseURL, oldPassword string) bool {
+func (t *registryTask) changePassword(baseURL, oldPassword string) bool {
 	url := baseURL + "/service/rest/v1/security/users/admin/change-password"
 	req, err := http.NewRequest(http.MethodPut, url, strings.NewReader(t.Password))
 	if err != nil {
@@ -181,7 +141,7 @@ func (t *InitRegistry) changePassword(baseURL, oldPassword string) bool {
 	return false
 }
 
-func (t *InitRegistry) systemEula(baseURL string) bool {
+func (t *registryTask) systemEula(baseURL string) bool {
 	type eulaReq struct {
 		Accepted   bool   `json:"accepted"`
 		Disclaimer string `json:"disclaimer"`
@@ -202,7 +162,7 @@ func (t *InitRegistry) systemEula(baseURL string) bool {
 	return false
 }
 
-func (t *InitRegistry) repoCreateByList(baseURL string) {
+func (t *registryTask) repoCreateByList(baseURL string) {
 	slog.Info("初始化 nexus 仓库")
 	for _, repo := range t.Repositories {
 		lower := strings.ToLower(repo)
@@ -224,7 +184,7 @@ func (t *InitRegistry) repoCreateByList(baseURL string) {
 	}
 }
 
-func (t *InitRegistry) postRepo(baseURL, path string, payload interface{}) bool {
+func (t *registryTask) postRepo(baseURL, path string, payload interface{}) bool {
 	body, _ := json.Marshal(payload)
 	resp, err := nexusHTTPPost(baseURL, path, t.Username, t.Password, "application/json", bytes.NewReader(body))
 	if err != nil {
@@ -241,32 +201,32 @@ func (t *InitRegistry) postRepo(baseURL, path string, payload interface{}) bool 
 	return false
 }
 
-func (t *InitRegistry) rawRepoCreate(baseURL, repoName string) bool {
+func (t *registryTask) rawRepoCreate(baseURL, repoName string) bool {
 	return t.postRepo(baseURL, "/service/rest/v1/repositories/raw/hosted",
 		map[string]interface{}{"name": repoName, "online": true, "storage": map[string]interface{}{"blobStoreName": "default", "strictContentTypeValidation": false, "writePolicy": "allow"}})
 }
 
-func (t *InitRegistry) yumRepoCreate(baseURL, repoName string) bool {
+func (t *registryTask) yumRepoCreate(baseURL, repoName string) bool {
 	return t.postRepo(baseURL, "/service/rest/v1/repositories/yum/hosted",
 		map[string]interface{}{"name": repoName, "online": true, "storage": map[string]interface{}{"blobStoreName": "default", "strictContentTypeValidation": false, "writePolicy": "allow"}, "yum": map[string]interface{}{"repodataDepth": 0}})
 }
 
-func (t *InitRegistry) aptRepoCreate(baseURL, repoName, distribution string) bool {
+func (t *registryTask) aptRepoCreate(baseURL, repoName, distribution string) bool {
 	return t.postRepo(baseURL, "/service/rest/v1/repositories/apt/hosted",
 		map[string]interface{}{"name": repoName, "online": true, "storage": map[string]interface{}{"blobStoreName": "default", "strictContentTypeValidation": false, "writePolicy": "allow"}, "apt": map[string]interface{}{"distribution": distribution}, "aptSigning": map[string]interface{}{"keypair": "key", "passphrase": ""}})
 }
 
-func (t *InitRegistry) helmCreate(baseURL, repoName string) bool {
+func (t *registryTask) helmCreate(baseURL, repoName string) bool {
 	return t.postRepo(baseURL, "/service/rest/v1/repositories/helm/hosted",
 		map[string]interface{}{"name": repoName, "online": true})
 }
 
-func (t *InitRegistry) dockerCreate(baseURL, repoName string) bool {
+func (t *registryTask) dockerCreate(baseURL, repoName string) bool {
 	return t.postRepo(baseURL, "/service/rest/v1/repositories/docker/hosted",
 		map[string]interface{}{"name": repoName, "online": true, "docker": map[string]interface{}{"httpPort": t.DockerHTTPPort, "forceBasicAuth": true}})
 }
 
-func (t *InitRegistry) realmsDocker(baseURL string) bool {
+func (t *registryTask) realmsDocker(baseURL string) bool {
 	payload, _ := json.Marshal([]string{"DockerToken", "NexusAuthenticatingRealm"})
 	resp, err := nexusHTTPPut(baseURL, "/service/rest/v1/security/realms/active",
 		t.Username, t.Password, "application/json", bytes.NewReader(payload))
@@ -281,4 +241,26 @@ func (t *InitRegistry) realmsDocker(baseURL string) bool {
 	}
 	slog.Error("realms 配置失败", "status", resp.StatusCode)
 	return false
+}
+
+func nexusHTTPPost(baseURL, path, username, password, contentType string, body io.Reader) (*http.Response, error) {
+	url := baseURL + path
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(username, password)
+	req.Header.Set("Content-Type", contentType)
+	return http.DefaultClient.Do(req)
+}
+
+func nexusHTTPPut(baseURL, path, username, password, contentType string, body io.Reader) (*http.Response, error) {
+	url := baseURL + path
+	req, err := http.NewRequest(http.MethodPut, url, body)
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(username, password)
+	req.Header.Set("Content-Type", contentType)
+	return http.DefaultClient.Do(req)
 }

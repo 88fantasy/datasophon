@@ -255,3 +255,69 @@ func TestApply_FailedStepMarked(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, StatusFailed, loaded.Steps[0].Status)
 }
+
+// ─── Condition 边界用例 ────────────────────────────────────────────────────────
+
+func assertStepStatus(t *testing.T, pf *PlanFile, id string, want Status) {
+	t.Helper()
+	for _, s := range pf.Steps {
+		if s.ID == id {
+			assert.Equal(t, want, s.Status, "step %s", id)
+			return
+		}
+	}
+	t.Errorf("step %s not found in plan", id)
+}
+
+func TestGeneratePlan_NtpServerDisabled(t *testing.T) {
+	cfg := stubCfg()
+	cfg.NtpServer.Enable = false
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+	assertStepStatus(t, pf, "init-ntp-server", StatusSkipped)
+	assertStepStatus(t, pf, "init-ntp-slave", StatusSkipped)
+}
+
+func TestGeneratePlan_NmapServerDisabled(t *testing.T) {
+	cfg := stubCfg()
+	cfg.NmapServer.Enable = false
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+	assertStepStatus(t, pf, "init-nmap", StatusSkipped)
+}
+
+func TestGeneratePlan_OfflineNodesNotSkippedWhenRegistryEnabled(t *testing.T) {
+	cfg := stubCfg()
+	cfg.YumServer.Enable = false
+	cfg.Registry.Enable = true
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+	// YumServer=false 但 Registry=true → init-offline-nodes 不应跳过
+	assertStepStatus(t, pf, "init-offline-nodes", StatusPending)
+}
+
+func TestGeneratePlan_RustfsSkippedWhenRegistryDisabled(t *testing.T) {
+	cfg := stubCfg()
+	cfg.Rustfs.Enable = true
+	cfg.Registry.Enable = false
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+	assertStepStatus(t, pf, "init-rustfs", StatusSkipped)
+}
+
+func TestGeneratePlan_KuboardSkippedWhenKuboardDisabled(t *testing.T) {
+	cfg := stubCfg()
+	cfg.Kubernetes.Enable = true
+	cfg.Kubernetes.KuboardI.Enable = false
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+	assertStepStatus(t, pf, "k8s-kuboard", StatusSkipped)
+	// 其他 k8s-* 应正常 pending（不跳过）
+	assertStepStatus(t, pf, "k8s-base-services", StatusPending)
+	assertStepStatus(t, pf, "k8s-docker", StatusPending)
+}

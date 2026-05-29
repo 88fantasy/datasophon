@@ -1,29 +1,119 @@
 package create
 
 import (
+	"errors"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh"
 
-	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/handler"
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/osinfo"
 )
 
+// rustfsTask 安装并启动 Rustfs 对象存储。
+type rustfsTask struct {
+	Enable      bool
+	PackagePath string
+	InstallPath string
+	X86Tar      string
+	Aarch64Tar  string
+	WebHost     string
+	WebPort     string
+	APIPort     string
+	Username    string
+	Password    string
+}
+
+func (t *rustfsTask) Name() string { return "安装rustfs" }
+
+func (t *rustfsTask) Handle(client *ssh.Client, dryRun bool) error {
+	return t.doRun(executor.NewSSHExecutor(client, dryRun))
+}
+
+func (t *rustfsTask) doRun(exec executor.Executor) error {
+	if !t.Enable {
+		slog.Info("rustfs enable=false，跳过")
+		return nil
+	}
+	if !exec.Exists(t.InstallPath).Success {
+		slog.Error("安装目录不存在", "path", t.InstallPath)
+		return errors.New("rustfs 安装目录不存在")
+	}
+
+	home := fmt.Sprintf("%s/rustfs", t.InstallPath)
+	dataPath := fmt.Sprintf("%s/data", home)
+	logsPath := fmt.Sprintf("%s/logs", home)
+
+	if exec.Exists(home).Success {
+		slog.Info("rustfs 目录已存在", "path", home)
+	} else {
+		tarName := t.X86Tar
+		if exec.GetArch() == osinfo.ArchAarch64 {
+			tarName = t.Aarch64Tar
+		}
+		tarPath := fmt.Sprintf("%s/%s", t.PackagePath, tarName)
+		if !exec.Exists(tarPath).Success {
+			slog.Error("安装包不存在", "path", tarPath)
+			return errors.New("rustfs 安装包不存在")
+		}
+		exec.ExecShell(fmt.Sprintf("tar xvz -f %s -C %s", tarPath, t.InstallPath))
+		exec.ExecShell(fmt.Sprintf("mv %s/rustfs-* %s", t.InstallPath, home))
+		exec.ExecShell(fmt.Sprintf("mkdir -p %s", dataPath))
+		exec.ExecShell(fmt.Sprintf("mkdir -p %s", logsPath))
+	}
+
+	if !t.checkStart(exec) {
+		t.start(exec, home, dataPath, logsPath)
+		exec.ExecShell("sleep 3")
+	}
+
+	if t.checkStart(exec) {
+		slog.Info("rustfs 安装成功", "path", home)
+		return nil
+	}
+	slog.Error("rustfs 启动失败", "path", home)
+	return errors.New("rustfs 启动失败")
+}
+
+func (t *rustfsTask) checkStart(exec executor.Executor) bool {
+	r := exec.ExecShell("ps -ef | grep rustfs | grep -v datasophon-cli | grep -v grep")
+	if r.Success {
+		slog.Info("rustfs 已在运行")
+		return true
+	}
+	slog.Info("rustfs 未在运行")
+	return false
+}
+
+func (t *rustfsTask) start(exec executor.Executor, home, data, logs string) bool {
+	startCmd := fmt.Sprintf(
+		"%s/rustfs --address %s:%s --console-enable --console-address %s:%s"+
+			" --access-key %s --secret-key %s %s > %s/rustfs.log 2>&1 &",
+		home, t.WebHost, t.APIPort, t.WebHost, t.WebPort,
+		t.Username, t.Password, data, logs,
+	)
+	startPath := fmt.Sprintf("%s/start.sh", home)
+	exec.WriteLines([]string{startCmd}, startPath)
+	r := exec.ExecShell(fmt.Sprintf("bash %s", startPath))
+	return r.Success
+}
+
+// ── 命令实现 ────────────────────────────────────────────────────────────────
+
 type createRustfsCmd struct {
-	// 配置文件模式（-c）
 	configFile     string
 	datasophonPath string
 
-	// 两种模式公用
 	installPath string
 
-	// 手动模式（无 -c 时必填）
 	node     string
-	file     string // -f: Rustfs tar 安装包完整路径
+	file     string
 	webPort  string
 	apiPort  string
 	user     string
@@ -52,14 +142,11 @@ func NewRustfsCommand(dryRun *bool) *cobra.Command {
 		},
 	}
 
-	// ── 配置文件模式 ────────────────────────────────────────────────────
 	cmd.Flags().StringVarP(&c.configFile, "config", "c", "", "配置文件路径（指定后从 rustfs 读取参数）")
 	cmd.Flags().StringVar(&c.datasophonPath, "datasophonPath", "", "datasophon 绝对路径（配置文件模式下必填，推导安装包路径）")
 
-	// ── 两种模式公用 ─────────────────────────────────────────────────────
 	cmd.Flags().StringVar(&c.installPath, "installPath", "", "Rustfs 安装路径（必填）")
 
-	// ── 手动模式 ─────────────────────────────────────────────────────────
 	cmd.Flags().StringVar(&c.node, "node", "", "Rustfs 节点 hostname 或 IP，同时作为服务绑定地址（手动模式必填）")
 	cmd.Flags().StringVarP(&c.file, "file", "f", "", "Rustfs tar 安装包完整路径（手动模式必填）")
 	cmd.Flags().StringVar(&c.webPort, "webPort", "", "控制台端口（手动模式必填）")
@@ -77,8 +164,6 @@ func (c *createRustfsCmd) run() error {
 	return c.runFromFlags()
 }
 
-// runFromConfig 从配置文件读取 rustfs，SSH 到每个节点依次执行，
-// 全部成功后将 rustfs.enable 置为 true 写回配置文件。
 func (c *createRustfsCmd) runFromConfig() error {
 	if c.datasophonPath == "" {
 		return fmt.Errorf("配置文件模式下 --datasophonPath 为必填项")
@@ -110,27 +195,13 @@ func (c *createRustfsCmd) runFromConfig() error {
 		globalNodes[cfg.Nodes[i].Hostname] = &cfg.Nodes[i]
 	}
 
-	// 推导 registry 连接字段（跟随 cfg.Registry.Enable）
-	var regIP, regPort, regUser, regPwd string
-	if cfg.Registry.Enable {
-		regNode, found := globalNodes[cfg.Registry.Node]
-		if !found {
-			return fmt.Errorf("配置中未找到 registry 节点: %s（registry.enable=true 时需要）", cfg.Registry.Node)
-		}
-		regIP = regNode.IP
-		regPort = cfg.Registry.Config.WebPort
-		regUser = cfg.Registry.Config.User
-		regPwd = cfg.Registry.Config.Password
-	}
-
-	// 依次在每个节点安装
 	for _, hostname := range rustfsCfg.Nodes {
 		node, ok := globalNodes[hostname]
 		if !ok {
 			return fmt.Errorf("配置中未找到 rustfs 节点: %s（请检查 rustfs.nodes 与 nodes 列表是否一致）", hostname)
 		}
 
-		t := &initcmd.InitRustfs{
+		t := &rustfsTask{
 			Enable:      true,
 			PackagePath: packagesPath,
 			InstallPath: c.installPath,
@@ -142,18 +213,11 @@ func (c *createRustfsCmd) runFromConfig() error {
 			Username:    rustfsCfg.Config.User,
 			Password:    rustfsCfg.Config.Password,
 		}
-		t.EnableRegistry = cfg.Registry.Enable
-		t.RegistryIP = regIP
-		t.RegistryPort = regPort
-		t.RegistryUsername = regUser
-		t.RegistryPassword = regPwd
-
 		if err := handler.NewChain(node, cfg.Global.SSHAuthType, c.dryRun).Add(t).Handle(); err != nil {
 			return fmt.Errorf("节点 %s 安装失败: %w", hostname, err)
 		}
 	}
 
-	// 全部节点安装成功后持久化 enable=true
 	cfg.Rustfs.Enable = true
 	if err := config.Save(c.configFile, cfg); err != nil {
 		return fmt.Errorf("安装成功但写回配置文件失败: %w", err)
@@ -161,7 +225,6 @@ func (c *createRustfsCmd) runFromConfig() error {
 	return nil
 }
 
-// runFromFlags 从命令行参数读取所有字段，在本地节点执行。
 func (c *createRustfsCmd) runFromFlags() error {
 	missing := []string{}
 	if c.installPath == "" {
@@ -189,7 +252,7 @@ func (c *createRustfsCmd) runFromFlags() error {
 		return fmt.Errorf("手动模式下以下参数为必填项: %s", strings.Join(missing, ", "))
 	}
 
-	t := &initcmd.InitRustfs{
+	t := &rustfsTask{
 		Enable:      true,
 		PackagePath: filepath.Dir(c.file),
 		InstallPath: c.installPath,
@@ -201,7 +264,5 @@ func (c *createRustfsCmd) runFromFlags() error {
 		Username:    c.user,
 		Password:    c.password,
 	}
-	t.EnableRegistry = false
-
-	return t.Run(executor.NewLocalExecutor(c.dryRun))
+	return t.doRun(executor.NewLocalExecutor(c.dryRun))
 }

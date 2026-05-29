@@ -1,4 +1,4 @@
-package initcmd
+package plan
 
 import (
 	"errors"
@@ -6,30 +6,35 @@ import (
 	"log/slog"
 	"strings"
 
+	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/osinfo"
 	"golang.org/x/crypto/ssh"
 )
 
-// InitMysql 对应 Java InitMysql — 安装 MySQL 8（本地 rpm/deb 包）。
-type InitMysql struct {
-	TaskBase
-	Password    string
-	Force       bool
-	PackagePath string
-	InstallPath string
-	X86Tar      string
-	Aarch64Tar  string
-	Port        int
+// mysqlTask 是 plan 包用于 MySQL 安装步骤的 handler。
+type mysqlTask struct {
+	Password         string
+	Force            bool
+	PackagePath      string
+	InstallPath      string
+	X86Tar           string
+	Aarch64Tar       string
+	Port             int
+	EnableRegistry   bool
+	RegistryIP       string
+	RegistryPort     string
+	RegistryUsername string
+	RegistryPassword string
 }
 
-func (t *InitMysql) Name() string { return "安装mysql" }
+func (t *mysqlTask) Name() string { return "安装mysql" }
 
-func (t *InitMysql) Handle(client *ssh.Client, dryRun bool) error {
+func (t *mysqlTask) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitMysql) doRun(exec executor.Executor) error {
+func (t *mysqlTask) doRun(exec executor.Executor) error {
 	tarName := t.X86Tar
 	if exec.GetArch() == osinfo.ArchAarch64 {
 		tarName = t.Aarch64Tar
@@ -38,7 +43,7 @@ func (t *InitMysql) doRun(exec executor.Executor) error {
 	tarPath := fmt.Sprintf("%s/%s", t.PackagePath, tarName)
 	httpRootPath := fmt.Sprintf("%s/tmp/mysql", t.InstallPath)
 
-	if err := DownloadFromRegistry(exec, t.EnableRegistry,
+	if err := initcmd.DownloadFromRegistry(exec, t.EnableRegistry,
 		t.RegistryIP, t.RegistryPort, t.RegistryUsername, t.RegistryPassword,
 		tarName, tarPath, true); err != nil {
 		return err
@@ -73,7 +78,7 @@ func (t *InitMysql) doRun(exec executor.Executor) error {
 	return t.installCentos(exec, osType, httpRootPath, mysqlService)
 }
 
-func (t *InitMysql) installUbuntu(exec executor.Executor, httpRootPath, mysqlService string) error {
+func (t *mysqlTask) installUbuntu(exec executor.Executor, httpRootPath, mysqlService string) error {
 	if r := exec.ExecShell("dpkg --list|grep -E 'mysql-community-server|mariadb'"); r.Success {
 		slog.Info("卸载已存在的 MySQL")
 		exec.ExecShell("systemctl stop mysql")
@@ -99,18 +104,15 @@ func (t *InitMysql) installUbuntu(exec executor.Executor, httpRootPath, mysqlSer
 	return errors.New("MySQL 安装失败")
 }
 
-func (t *InitMysql) installCentos(exec executor.Executor, osType osinfo.OsType, httpRootPath, mysqlService string) error {
-	// 卸载 mariadb
+func (t *mysqlTask) installCentos(exec executor.Executor, osType osinfo.OsType, httpRootPath, mysqlService string) error {
 	if r := exec.ExecShell("rpm -qa | grep mariadb"); r.Success {
 		exec.ExecShell("rpm -qa | grep mariadb | xargs rpm -e --nodeps")
 	}
-	// 卸载 mysql
 	if r := exec.ExecShell("rpm -qa | grep mysql"); r.Success {
 		exec.ExecShell("systemctl stop mysqld")
 		exec.ExecShell("rpm -qa | grep mysql | xargs rpm -e")
 		exec.ExecShell("rm -rf /var/lib/mysql /usr/sbin/mysqld /usr/local/mysql /etc/my.cnf /var/log/mysqld.log /var/log/mysql.log")
 	}
-	// 安装依赖
 	t.mysqlLib(exec, "zlib-devel", "rpm -qa | grep zlib-devel", "yum -y install zlib-devel")
 	t.mysqlLib(exec, "bzip2-devel", "rpm -qa | grep bzip2-devel", "yum -y install bzip2-devel")
 	t.mysqlLib(exec, "openssl-devel", "rpm -qa | grep openssl-devel", "yum -y install openssl-devel")
@@ -118,7 +120,6 @@ func (t *InitMysql) installCentos(exec executor.Executor, osType osinfo.OsType, 
 	if osType == osinfo.OsTypeCentos7 {
 		t.mysqlLib(exec, "libaio", "rpm -qa | grep libaio", "yum -y install libaio")
 	}
-	// 安装
 	exec.ExecShell(fmt.Sprintf("yum -y localinstall %s/*.rpm", httpRootPath))
 	exec.ExecShell("mysqld --initialize --user=mysql")
 	exec.ExecShell(fmt.Sprintf("systemctl start %s", mysqlService))
@@ -128,11 +129,9 @@ func (t *InitMysql) installCentos(exec executor.Executor, osType osinfo.OsType, 
 	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); r.Success {
 		tmpPasswd := strings.TrimSpace(exec.ExecShell("grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}'").Output)
 		slog.Info("临时密码已获取，开始修改密码")
-		// 将旧密码写入临时 cnf 文件，避免密码出现在进程参数（ps aux 可见）
 		oldCnf := "/tmp/.dsph_mysql_old.cnf"
 		exec.WriteLines([]string{"[client]", "password=" + tmpPasswd}, oldCnf)
 		exec.ExecShell(fmt.Sprintf("chmod 600 %s", oldCnf))
-		// 将新密码 SQL 写入临时文件，同样避免出现在进程参数
 		newSqlPath := "/tmp/.dsph_mysql_init.sql"
 		exec.WriteLines([]string{
 			fmt.Sprintf("ALTER USER 'root'@'localhost' IDENTIFIED BY '%s';", t.Password),
@@ -152,7 +151,7 @@ func (t *InitMysql) installCentos(exec executor.Executor, osType osinfo.OsType, 
 	return errors.New("MySQL 安装失败")
 }
 
-func (t *InitMysql) mysqlLib(exec executor.Executor, name, checkCmd, installCmd string) {
+func (t *mysqlTask) mysqlLib(exec executor.Executor, name, checkCmd, installCmd string) {
 	if r := exec.ExecShell(checkCmd); r.Success {
 		slog.Info("依赖已存在", "name", name)
 		return
@@ -163,12 +162,10 @@ func (t *InitMysql) mysqlLib(exec executor.Executor, name, checkCmd, installCmd 
 	}
 }
 
-func (t *InitMysql) rootUserConf(exec executor.Executor) {
-	// 将密码写入临时 cnf 文件，避免密码出现在进程参数（ps aux 可见）
+func (t *mysqlTask) rootUserConf(exec executor.Executor) {
 	newCnf := "/tmp/.dsph_mysql_new.cnf"
 	exec.WriteLines([]string{"[client]", "password=" + t.Password}, newCnf)
 	exec.ExecShell(fmt.Sprintf("chmod 600 %s", newCnf))
-	// 将所有 SQL 写入临时文件，同样避免出现在进程参数
 	sqlPath := "/tmp/.dsph_mysql_conf.sql"
 	exec.WriteLines([]string{
 		"UPDATE mysql.user SET host='%' WHERE user='root';",
@@ -182,7 +179,7 @@ func (t *InitMysql) rootUserConf(exec executor.Executor) {
 	exec.ExecShell(fmt.Sprintf("rm -f %s %s", newCnf, sqlPath))
 }
 
-func (t *InitMysql) mysqldConf() []string {
+func (t *mysqlTask) mysqldConf() []string {
 	return []string{
 		"[mysqld]",
 		"character_set_server=utf8mb4",
@@ -195,12 +192,9 @@ func (t *InitMysql) mysqldConf() []string {
 	}
 }
 
-func (t *InitMysql) checkStart(exec executor.Executor, mysqlService string) error {
+func (t *mysqlTask) checkStart(exec executor.Executor, mysqlService string) error {
 	if r := exec.ExecShell(fmt.Sprintf("systemctl status %s", mysqlService)); !r.Success {
 		return errors.New("mysql 启动状态失败，请检查")
 	}
 	return nil
 }
-
-// Run 导出 doRun，供 create 包手动模式/配置模式直接调用。
-func (t *InitMysql) Run(exec executor.Executor) error { return t.doRun(exec) }

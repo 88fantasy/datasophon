@@ -2,12 +2,13 @@ package initcmd
 
 import (
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 )
+
+var httpClient = http.DefaultClient
 
 // DownloadFromRegistry 对应 Java CliUtil.downRegistryFile。
 // 若本地文件已存在 (isCheckExist=true) 则跳过；否则从 Nexus raw 仓库下载并写入 distPath。
@@ -36,7 +37,7 @@ func DownloadFromRegistry(
 	if registryUsername != "" {
 		req.SetBasicAuth(registryUsername, registryPassword)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("下载制品失败 url=%s: %w", url, err)
 	}
@@ -52,26 +53,3 @@ func DownloadFromRegistry(
 	return nil
 }
 
-// nexusHTTPPost 向 Nexus REST API 发送 POST 请求（JSON body）。
-func nexusHTTPPost(baseURL, path, username, password, contentType string, body io.Reader) (*http.Response, error) {
-	url := baseURL + path
-	req, err := http.NewRequest(http.MethodPost, url, body)
-	if err != nil {
-		return nil, err
-	}
-	req.SetBasicAuth(username, password)
-	req.Header.Set("Content-Type", contentType)
-	return http.DefaultClient.Do(req)
-}
-
-// nexusHTTPPut 向 Nexus REST API 发送 PUT 请求。
-func nexusHTTPPut(baseURL, path, username, password, contentType string, body io.Reader) (*http.Response, error) {
-	url := baseURL + path
-	req, err := http.NewRequest(http.MethodPut, url, body)
-	if err != nil {
-		return nil, err
-	}
-	req.SetBasicAuth(username, password)
-	req.Header.Set("Content-Type", contentType)
-	return http.DefaultClient.Do(req)
-}
