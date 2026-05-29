@@ -68,11 +68,8 @@ func uniqueHostKeys(actions []Action) []string {
 // nodeSelector 定义从 BuildContext 选取节点列表的函数类型。
 type nodeSelector func(ctx *BuildContext) []config.Host
 
-// allNodes 选取 cfg.Nodes（initALL 用）。
+// allNodes 选取 cfg.Nodes。
 func allNodes(ctx *BuildContext) []config.Host { return ctx.Cfg.Nodes }
-
-// addNodes 选取 cfg.AddNodes（initSingleNode 用）。
-func addNodes(ctx *BuildContext) []config.Host { return ctx.Cfg.AddNodes }
 
 // slavesOf 过滤掉 serverNode，返回其他节点（对应 nodeInitializer.slavesNodesExec）。
 func slavesOf(all []*config.Host, serverHost *config.Host) []*config.Host {

@@ -24,14 +24,7 @@ type createNodeCmd struct {
 }
 
 func (c *createNodeCmd) run() error {
-	if c.standaloneIP != "" {
-		return c.runStandalone()
-	}
-	cfg, err := c.setup()
-	if err != nil {
-		return err
-	}
-	return c.initSingleNode(cfg)
+	return c.runStandalone()
 }
 
 // runStandalone 独立模式:不加载配置文件，直接用 CLI 参数初始化目标节点（10 步节点级 DAG）。
@@ -77,13 +70,12 @@ func (c *createNodeCmd) maybeAppendToYAML(host *config.Host) error {
 }
 
 // NewNodeCommand 对应 datasophon-cli create node。
-// 不传 --ip 时读取 cluster-sample.yml 中的 addNodes 列表；
-// 传 --ip 时进入独立模式，直接对该节点执行基础初始化。
+// 通过 --ip/--user/--password/--port/--hostname 直接对目标节点执行基础初始化。
 func NewNodeCommand(dryRun *bool) *cobra.Command {
 	c := &createNodeCmd{}
 	cmd := &cobra.Command{
 		Use:   "node",
-		Short: "初始化新增节点（读取 cluster-sample.yml 中的 addNodes，或通过 --ip 独立运行）",
+		Short: "初始化新增节点（通过 --ip 指定目标节点）",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c.dryRun = *dryRun
 			return c.run()
@@ -91,11 +83,16 @@ func NewNodeCommand(dryRun *bool) *cobra.Command {
 	}
 
 	c.bindCommonFlags(cmd)
-	cmd.Flags().StringVar(&c.standaloneIP, "ip", "", "独立模式：目标节点 IP（给出后自动进入独立模式）")
-	cmd.Flags().StringVar(&c.standaloneUser, "user", "", "独立模式：SSH 用户")
-	cmd.Flags().StringVar(&c.standalonePassword, "password", "", "独立模式：SSH 密码")
-	cmd.Flags().IntVar(&c.standalonePort, "port", 0, "独立模式：SSH 端口")
-	cmd.Flags().StringVar(&c.standaloneHostname, "hostname", "", "独立模式：目标节点 hostname")
+	cmd.Flags().StringVar(&c.standaloneIP, "ip", "", "目标节点 IP")
+	cmd.Flags().StringVar(&c.standaloneUser, "user", "", "SSH 用户")
+	cmd.Flags().StringVar(&c.standalonePassword, "password", "", "SSH 密码")
+	cmd.Flags().IntVar(&c.standalonePort, "port", 0, "SSH 端口")
+	cmd.Flags().StringVar(&c.standaloneHostname, "hostname", "", "目标节点 hostname")
+	_ = cmd.MarkFlagRequired("ip")
+	_ = cmd.MarkFlagRequired("user")
+	_ = cmd.MarkFlagRequired("password")
+	_ = cmd.MarkFlagRequired("port")
+	_ = cmd.MarkFlagRequired("hostname")
 
 	return cmd
 }

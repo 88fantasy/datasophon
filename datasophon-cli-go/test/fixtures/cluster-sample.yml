@@ -34,9 +34,3 @@ nodes:
     port: 22
     hostname: "node2"
 
-addNodes:
-  - ip: "192.168.1.11"
-    user: "root"
-    password: "node2pass"
-    port: 22
-    hostname: "node2"

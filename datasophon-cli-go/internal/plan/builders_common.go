@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
-	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/handler"
 )
 
@@ -126,16 +125,4 @@ func simpleAllNodes(newH func() handler.Handler, sel nodeSelector) BuildFunc {
 		}
 		return actions, nil
 	}
-}
-
-// ─── initSingleNode 专用的 buildAllHost 变体 ──────────────────────────────────
-
-// buildAllHostBoth 先更新 cfg.Nodes，再更新 cfg.AddNodes（initSingleNode 专用）。
-func buildAllHostBoth(ctx *BuildContext) ([]Action, error) {
-	t := &initcmd.InitAllHost{}
-	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	all := make([]config.Host, len(ctx.Cfg.Nodes)+len(ctx.Cfg.AddNodes))
-	copy(all, ctx.Cfg.Nodes)
-	copy(all[len(ctx.Cfg.Nodes):], ctx.Cfg.AddNodes)
-	return hostsToActions(hostsToPtr(all), t), nil
 }

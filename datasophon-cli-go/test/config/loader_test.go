@@ -29,9 +29,6 @@ func TestLoad_Plaintext(t *testing.T) {
 	assert.Equal(t, "node1", cfg.Nodes[0].Hostname)
 	assert.Equal(t, "192.168.1.10", cfg.Nodes[0].IP)
 	assert.Equal(t, 22, cfg.Nodes[0].Port)
-
-	require.Len(t, cfg.AddNodes, 1)
-	assert.Equal(t, "node2", cfg.AddNodes[0].Hostname)
 }
 
 func TestLoad_FileNotFound(t *testing.T) {

@@ -139,24 +139,6 @@ func (n *nodeInitializer) toBuildContext() *plan.BuildContext {
 	}
 }
 
-// initSingleNode 新增节点：生成 plan → 执行。
-func (n *nodeInitializer) initSingleNode(cfg *config.ClusterConfig) error {
-	if len(cfg.AddNodes) == 0 {
-		slog.Warn("addNodes 列表为空，无需执行")
-		return nil
-	}
-	ctx := n.toBuildContext()
-	pf, err := plan.GeneratePlan("initSingleNode", plan.InitSingleNodeRegistry, ctx)
-	if err != nil {
-		return fmt.Errorf("生成 initSingleNode 计划失败: %w", err)
-	}
-	if err := plan.Save(n.initPath, pf); err != nil {
-		return err
-	}
-	plan.PrintSummary(pf)
-	return plan.Apply(n.initPath, "initSingleNode", plan.InitSingleNodeRegistry, ctx)
-}
-
 // initStandaloneNode 独立模式 10 步节点级 DAG（不依赖集群上下文，不走 plan 引擎）。
 func (n *nodeInitializer) initStandaloneNode(host *config.Host) error {
 	steps := []struct {
