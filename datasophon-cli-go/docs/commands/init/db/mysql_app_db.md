@@ -2,7 +2,9 @@
 
 ## 用途
 
-在已安装的 MySQL 上创建应用数据库（默认 `datasophon`）和对应账号，并授予全库权限。在 `init mysql` 完成后执行。
+在已安装的 MySQL 上创建应用数据库和对应账号，并授予权限（`bigdata` 账号仅授权目标 DB，其余账号授全库权限）。先用 [`create mysql`](../../create/mysql.md) 完成 MySQL 安装后再执行本命令。
+
+> `create mysql` 在配置文件模式下会自动依次调用本命令，按 `global.mysql.appDbs` 列表创建所有应用账号；通常不需要手动单独执行。
 
 ## 用法 (Synopsis)
 
@@ -33,12 +35,18 @@ datasophon-cli [--dry-run] init mysql_app_db \
 
 ## 配置文件依赖
 
+被 `create cluster` DAG（步骤 25 `init-mysql-app-db`）或 `create mysql -c <config>` 调用时，对应字段：
+
 | 字段 | 说明 |
 |---|---|
-| `global.mysql.mysqlNode` | MySQL 节点（DAG 节点选择器） |
-| `global.mysql.mysqlRootPassword` | 在 DAG 中自动传入 `--rootPassword` |
-| `global.mysql.mysqlAccount` / `mysqlPassword` | 在 DAG 中自动传入 `-a` / `-p` |
-| `global.mysql.mysqlDbName` | 数据库名，默认 `datasophon` |
+| `global.mysql.node` | MySQL 节点 hostname（用于 DAG 节点选择） |
+| `global.mysql.password` | 自动传入 `--rootPassword` |
+| `global.mysql.port` | 自动传入 `--mysqlPort` |
+| `global.mysql.appDbs[*].account` | 自动传入 `-a` |
+| `global.mysql.appDbs[*].password` | 自动传入 `-p` |
+| `global.mysql.appDbs[*].dbName` | 自动传入 `-d` |
+
+`appDbs` 是数组，DAG 会按列表顺序为每条记录调用本命令一次。
 
 ## 示例
 
@@ -68,10 +76,10 @@ datasophon-cli init mysql_app_db \
 
 | 错误信息 | 根因 | 处置 |
 |---|---|---|
-| `MySQL 连接失败` | root 密码错误或 MySQL 未启动 | 确认 `init mysql` 已成功；密码与 `-p` 传入值一致 |
+| `MySQL 连接失败` | root 密码错误或 MySQL 未启动 | 确认 `create mysql` 已成功；root 密码与 `--rootPassword` 传入值一致 |
 | 数据库已存在 | 重复执行 | 幂等操作，不报错 |
 
 ## 相关命令
 
-- [`init mysql`](./mysql.md) — 先安装 MySQL
+- [`create mysql`](../../create/mysql.md) — 安装 MySQL；配置文件模式下会自动创建 `appDbs`
 - [DAG 步骤表](../../../reference/init-all-dag.md)

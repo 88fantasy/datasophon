@@ -1,12 +1,14 @@
 # init — 单步初始化命令组
 
-`init` 命令组包含 32 条独立的初始化子命令，每条对应集群初始化流程中的一个步骤。通常由 `create cluster`（initALL DAG）或 `create node`（initSingleNode DAG）自动调用；也可单独执行用于故障排查或补跑。
+`init` 命令组包含 **27 条**独立的初始化子命令，每条对应集群初始化流程中的一个步骤。通常由 `create cluster`（initALL DAG）自动调用；也可单独执行用于故障排查或补跑。
+
+`init` 子命令的设计语义是"在已登录的当前节点上单步本地初始化"。涉及"指定某个特定节点远程安装"的命令（如 MySQL / Nexus / Rustfs / NTP Server / nmap / yum 离线源）已统一迁移到 [`create` 命令组](../create/README.md)，并支持配置文件 / 手动双模式入口。
 
 所有子命令均继承 [init 公共 flag](../../global-flags.md#init-公共-flag)（`-c/--config`、`--registryIp` 等）。
 
 ## 子命令速查
 
-### system — 操作系统基础配置
+### system — 操作系统基础配置（9 条）
 
 | 命令 | 说明 |
 |---|---|
@@ -20,18 +22,18 @@
 | [system-conf](./system/system-conf.md) | 设置系统配置（limits/sysctl/rc-local） |
 | [hugePage](./system/hugepage.md) | 关闭透明大页 |
 
-### network — 网络与时间同步
+### network — 网络与时间同步（4 条）
 
 | 命令 | 说明 |
 |---|---|
 | [hostname](./network/hostname.md) | 配置主机名 |
 | [allHost](./network/allhost.md) | 初始化 /etc/hosts（全节点） |
-| [nmap](./network/nmap.md) | 安装 nmap |
-| [ntpserver](./network/ntpserver.md) | 安装并配置 chrony NTP 服务端 |
 | [ntpslave](./network/ntpslave.md) | 配置 chrony NTP 从节点 |
 | [ssh](./network/ssh.md) | 配置 SSH 免密登录 |
 
-### packages — 基础软件包
+> NTP 服务端与 nmap 安装请使用 [`create ntp-server`](../create/ntp-server.md) / [`create nmap-server`](../create/nmap-server.md)。
+
+### packages — 基础软件包（4 条）
 
 | 命令 | 说明 |
 |---|---|
@@ -40,23 +42,24 @@
 | [jdk8](./packages/jdk8.md) | 安装 JDK 8（`/usr/local/jdk1.8.0_333/`） |
 | [jdk17](./packages/jdk17.md) | 安装 JDK 17（`/usr/local/jdk-17.0.1/`） |
 
-### repo — 制品库与对象存储
+### repo — 制品库与离线源（2 条）
 
 | 命令 | 说明 |
 |---|---|
-| [offlineServer](./repo/offlineserver.md) | 启动离线软件源（Nginx 静态服务） |
-| [offlineSlave](./repo/offlineslave.md) | 配置节点使用离线软件源 |
+| [offlineSlave](./repo/offlineslave.md) | 配置节点使用离线 yum/apt 源 |
 | [registryDecode](./repo/registrydecode.md) | 将离线包解码并导入到 Nexus |
-| [rustfs](./repo/rustfs.md) | 安装 RustFS 对象存储 |
 
-### db — 数据库初始化
+> Nexus 制品库安装请使用 [`create registry`](../create/registry.md)；离线源服务端安装请使用 [`create yum-server`](../create/yum-server.md)；Rustfs 安装请使用 [`create rustfs`](../create/rustfs.md)。
+
+### db — 数据库初始化（1 条）
 
 | 命令 | 说明 |
 |---|---|
-| [mysql](./db/mysql.md) | 安装并初始化 MySQL |
-| [mysql_app_db](./db/mysql_app_db.md) | 创建应用数据库及账号 |
+| [mysql_app_db](./db/mysql_app_db.md) | 在已安装的 MySQL 上创建应用数据库及账号 |
 
-### k8s — Kubernetes 生态
+> MySQL 自身安装请使用 [`create mysql`](../create/mysql.md)；配置文件模式下会自动依次调用 `mysql_app_db` 创建 `appDbs` 列表中的每个数据库。
+
+### k8s — Kubernetes 生态（7 条）
 
 | 命令 | 说明 |
 |---|---|
@@ -76,5 +79,6 @@ datasophon-cli [--dry-run] init <subcommand> [flags]
 
 ## 参考
 
-- [initALL / initSingleNode / standalone DAG 步骤表](../../reference/init-all-dag.md)
+- [initALL / standalone DAG 步骤表](../../reference/init-all-dag.md)
 - [init 公共 flag 说明](../../global-flags.md#init-公共-flag)
+- [`create` 命令组](../create/README.md) — MySQL/Nexus/Rustfs/NTP/Nmap/Yum 等远程安装命令

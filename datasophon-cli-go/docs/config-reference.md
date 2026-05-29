@@ -15,8 +15,9 @@
 ```yaml
 global:        # 全局配置（registry / mysql / ntp / kubernetes / packages…）
 nodes:         # 集群节点列表（至少 1 个，含主节点）
-addNodes:      # 待扩容节点列表（仅 create node / initSingleNode 使用）
 ```
+
+> 早期版本支持的 `addNodes:` 顶层字段已随 `create node` 批量模式一并移除。扩容时通过 `create node --ip ...` 对单节点初始化，成功后由命令自动追加到 `nodes` 列表。
 
 ---
 
@@ -269,20 +270,17 @@ nodes:
 
 ---
 
-## addNodes
+## 节点扩容
 
-仅供 `create node` 和 `initSingleNode` 使用。字段结构与 `nodes` 完全相同。
+新节点不再通过配置文件提前声明。请直接对单节点执行：
 
-```yaml
-addNodes:
-  - ip: 192.168.1.20
-    port: 22
-    user: root
-    password: "YourPassword"
-    hostname: app7
+```bash
+datasophon-cli create node \
+  -p /data/datasophon --installPath /opt/install -n /data/datasophon/datasophon-init/packages \
+  --ip 192.168.1.20 --user root --password "YourPassword" --port 22 --hostname app7
 ```
 
-`create node` 执行结束后，该节点会被自动追加到 `cluster-sample.yml` 的 `nodes` 列表中。
+命令完成后，该节点会**自动追加**到 `cluster-sample.yml` 的 `nodes` 列表。详见 [`create node`](./commands/create/node.md)。
 
 ---
 

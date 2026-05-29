@@ -11,7 +11,7 @@
 
 ## Plan 文件
 
-`create cluster`（initALL）和 `create node`（initSingleNode 批量模式）通过 plan 引擎执行。plan 文件持久化在：
+`create cluster`（initALL）通过 plan 引擎执行。plan 文件持久化在：
 
 ```
 <datasophon-init-path>/state/<action>.plan.json
@@ -21,8 +21,9 @@
 
 ```
 /data/datasophon/datasophon-init/state/initALL.plan.json
-/data/datasophon/datasophon-init/state/initSingleNode.plan.json
 ```
+
+> `create node`（standalone 10 步）**不**走 plan 引擎，详见下文 [Standalone 模式的差异](#standalone-模式的差异)。
 
 文件权限为 `0600`（仅 owner 可读），格式为 JSON。
 
@@ -93,9 +94,13 @@ datasophon-cli create cluster apply \
   -n /data/datasophon/datasophon-init/packages
 ```
 
+<a id="standalone-模式的差异"></a>
+
 ## Standalone 模式的差异
 
-`create node --ip <IP>` 触发的 standalone（10 步序列）**不使用 plan 引擎**，不生成 plan 文件，不支持断点续跑。中途失败后重新执行会从第 1 步开始，但所有步骤均为幂等操作，重跑安全。
+`create node`（独立模式，需同时提供 `--ip / --user / --password / --port / --hostname`）触发的 standalone（10 步序列）**不使用 plan 引擎**，不生成 plan 文件，不支持断点续跑。中途失败后重新执行会从第 1 步开始，但所有步骤均为幂等操作，重跑安全。
+
+> 早期版本支持的 "initSingleNode 17 步 + addNodes 批量" 模式已移除：扩容多节点请对每个节点分别执行 `create node`。
 
 ## 常见错误排查
 
@@ -110,4 +115,4 @@ datasophon-cli create cluster apply \
 ## 相关页面
 
 - [create cluster — plan / apply 子命令](../commands/create/cluster.md)
-- [initALL / initSingleNode / standalone DAG 步骤表](./init-all-dag.md)
+- [initALL / standalone DAG 步骤表](./init-all-dag.md)
