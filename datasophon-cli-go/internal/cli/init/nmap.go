@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
-	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -18,17 +17,8 @@ func (t *InitNmap) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitNmap) Command(dryRun *bool) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "nmap",
-		Short: "安装 nmap",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLocal(*dryRun, t.doRun)
-		},
-	}
-	t.AddBaseFlags(cmd)
-	return cmd
-}
+// Run 导出 doRun，供 create 包调用。
+func (t *InitNmap) Run(exec executor.Executor) error { return t.doRun(exec) }
 
 func (t *InitNmap) doRun(exec executor.Executor) error {
 	slog.Info("安装 nmap")

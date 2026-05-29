@@ -7,7 +7,6 @@ import (
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/osinfo"
-	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -32,34 +31,8 @@ func (t *InitRustfs) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitRustfs) Command(dryRun *bool) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "rustfs",
-		Short: "安装并启动 Rustfs 对象存储",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLocal(*dryRun, t.doRun)
-		},
-	}
-	t.AddBaseFlags(cmd)
-	cmd.Flags().BoolVarP(&t.Enable, "enable", "e", false, "是否安装")
-	cmd.Flags().StringVar(&t.PackagePath, "packagePath", "", "安装包目录（必填）")
-	cmd.Flags().StringVar(&t.InstallPath, "installPath", "", "安装路径（必填）")
-	cmd.Flags().StringVarP(&t.X86Tar, "x86Tar", "x", "", "x86_64 包名")
-	cmd.Flags().StringVarP(&t.Aarch64Tar, "aarch64Tar", "a", "", "aarch64 包名")
-	cmd.Flags().StringVar(&t.WebHost, "webHost", "", "Web 主机（必填）")
-	cmd.Flags().StringVar(&t.WebPort, "webPort", "", "Web 端口（必填）")
-	cmd.Flags().StringVar(&t.APIPort, "apiPort", "", "API 端口（必填）")
-	cmd.Flags().StringVarP(&t.Username, "username", "u", "", "访问密钥（必填）")
-	cmd.Flags().StringVarP(&t.Password, "password", "p", "", "密钥（必填）")
-	_ = cmd.MarkFlagRequired("packagePath")
-	_ = cmd.MarkFlagRequired("installPath")
-	_ = cmd.MarkFlagRequired("webHost")
-	_ = cmd.MarkFlagRequired("webPort")
-	_ = cmd.MarkFlagRequired("apiPort")
-	_ = cmd.MarkFlagRequired("username")
-	_ = cmd.MarkFlagRequired("password")
-	return cmd
-}
+// Run 导出 doRun，供 create 包手动模式/配置模式直接调用。
+func (t *InitRustfs) Run(exec executor.Executor) error { return t.doRun(exec) }
 
 func (t *InitRustfs) doRun(exec executor.Executor) error {
 	if !t.Enable {

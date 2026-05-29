@@ -27,15 +27,13 @@ func stubCfg() *config.ClusterConfig {
 			{Hostname: "node1", IP: "10.0.0.1", Port: 22, User: "root", Password: "pass"},
 			{Hostname: "node2", IP: "10.0.0.2", Port: 22, User: "root", Password: "pass"},
 		},
-		Global: config.GlobalConfig{
-			Registry:   config.Registry{Enable: true, Node: "node1"},
-			Mysql:      config.MysqlConfig{Enable: true, Node: "node1"},
-			NtpServer:  config.NodeRef{Enable: true, Node: "node1"},
-			NmapServer: config.NodeRef{Enable: true, Node: "node1"},
-			YumServer:  config.YumServer{Enable: true, Node: "node1"},
-			Kubernetes: config.Kubernetes{Enable: false},
-			Rustfs:     config.Rustfs{Enable: true, Nodes: []string{"node1"}},
-		},
+		Registry:   config.Registry{Enable: true, Node: "node1"},
+		Mysql:      config.MysqlConfig{Enable: true, Node: "node1"},
+		NtpServer:  config.NodeRef{Enable: true, Node: "node1"},
+		NmapServer: config.NodeRef{Enable: true, Node: "node1"},
+		YumServer:  config.YumServer{Enable: true, Node: "node1"},
+		Kubernetes: config.Kubernetes{Enable: false},
+		Rustfs:     config.Rustfs{Enable: true, Nodes: []string{"node1"}},
 	}
 }
 
@@ -69,7 +67,7 @@ func TestGeneratePlan_AllEnabled(t *testing.T) {
 
 func TestGeneratePlan_K8sDisabled(t *testing.T) {
 	cfg := stubCfg()
-	cfg.Global.Kubernetes.Enable = false
+	cfg.Kubernetes.Enable = false
 	ctx := stubCtx(cfg, t.TempDir())
 	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
 	require.NoError(t, err)
@@ -88,7 +86,7 @@ func TestGeneratePlan_K8sDisabled(t *testing.T) {
 
 func TestGeneratePlan_RegistryDisabled(t *testing.T) {
 	cfg := stubCfg()
-	cfg.Global.Registry.Enable = false
+	cfg.Registry.Enable = false
 	ctx := stubCtx(cfg, t.TempDir())
 	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
 	require.NoError(t, err)
@@ -103,7 +101,7 @@ func TestGeneratePlan_RegistryDisabled(t *testing.T) {
 
 func TestGeneratePlan_MysqlDisabled(t *testing.T) {
 	cfg := stubCfg()
-	cfg.Global.Mysql.Enable = false
+	cfg.Mysql.Enable = false
 	ctx := stubCtx(cfg, t.TempDir())
 	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
 	require.NoError(t, err)
@@ -118,8 +116,8 @@ func TestGeneratePlan_MysqlDisabled(t *testing.T) {
 
 func TestGeneratePlan_OnlyInstallK8s(t *testing.T) {
 	cfg := stubCfg()
-	cfg.Global.Kubernetes.Enable = true
-	cfg.Global.Kubernetes.OnlyInstall = true
+	cfg.Kubernetes.Enable = true
+	cfg.Kubernetes.OnlyInstall = true
 	ctx := stubCtx(cfg, t.TempDir())
 	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
 	require.NoError(t, err)
@@ -171,7 +169,7 @@ func TestComputeHash_Stable(t *testing.T) {
 func TestComputeHash_ChangeDetected(t *testing.T) {
 	cfg := stubCfg()
 	h1 := ComputeHash(cfg)
-	cfg.Global.Mysql.Enable = !cfg.Global.Mysql.Enable
+	cfg.Mysql.Enable = !cfg.Mysql.Enable
 	h2 := ComputeHash(cfg)
 	assert.NotEqual(t, h1, h2)
 }
@@ -221,7 +219,7 @@ func TestApply_HashMismatch(t *testing.T) {
 	require.NoError(t, Save(tmpDir, pf))
 
 	// 修改 cfg 后 apply 应失败
-	cfg.Global.Mysql.Enable = !cfg.Global.Mysql.Enable
+	cfg.Mysql.Enable = !cfg.Mysql.Enable
 	ctx.Cfg = cfg
 
 	err = Apply(tmpDir, "test", registry, ctx)

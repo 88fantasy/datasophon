@@ -8,7 +8,6 @@ import (
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/osinfo"
-	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -28,30 +27,6 @@ func (t *InitMysql) Name() string { return "安装mysql" }
 
 func (t *InitMysql) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
-}
-
-func (t *InitMysql) Command(dryRun *bool) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "mysql",
-		Short: "安装 MySQL 8（本地 rpm/deb 包）",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLocal(*dryRun, t.doRun)
-		},
-	}
-	t.AddBaseFlags(cmd)
-	cmd.Flags().StringVarP(&t.Password, "password", "p", "", "MySQL root 密码（必填）")
-	cmd.Flags().BoolVarP(&t.Force, "force", "f", false, "MySQL 已存在时是否覆盖")
-	cmd.Flags().StringVar(&t.PackagePath, "packagePath", "", "安装包目录（必填）")
-	cmd.Flags().StringVar(&t.InstallPath, "installPath", "", "安装路径（必填）")
-	cmd.Flags().StringVarP(&t.X86Tar, "x86Tar", "x", "", "x86_64 包（必填）")
-	cmd.Flags().StringVarP(&t.Aarch64Tar, "aarch64Tar", "a", "", "aarch64 包（必填）")
-	cmd.Flags().IntVar(&t.Port, "mysqlPort", 3306, "端口（必填）")
-	_ = cmd.MarkFlagRequired("password")
-	_ = cmd.MarkFlagRequired("packagePath")
-	_ = cmd.MarkFlagRequired("installPath")
-	_ = cmd.MarkFlagRequired("x86Tar")
-	_ = cmd.MarkFlagRequired("aarch64Tar")
-	return cmd
 }
 
 func (t *InitMysql) doRun(exec executor.Executor) error {
@@ -226,3 +201,6 @@ func (t *InitMysql) checkStart(exec executor.Executor, mysqlService string) erro
 	}
 	return nil
 }
+
+// Run 导出 doRun，供 create 包手动模式/配置模式直接调用。
+func (t *InitMysql) Run(exec executor.Executor) error { return t.doRun(exec) }

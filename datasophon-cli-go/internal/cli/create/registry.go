@@ -39,8 +39,8 @@ func NewRegistryCommand(dryRun *bool) *cobra.Command {
 		Short: "在 registry 节点上安装 Sonatype Nexus 制品库",
 		Long: `安装 Sonatype Nexus 制品库，支持两种模式：
 
-  1. 配置文件模式（指定 -c）：从 cluster-sample.yml 的 global.registry 读取参数，
-     SSH 到 registry 节点远程执行，完成后将 global.registry.enable 置为 true 写回配置文件。
+  1. 配置文件模式（指定 -c）：从 cluster-sample.yml 的 registry 读取参数，
+     SSH 到 registry 节点远程执行，完成后将 registry.enable 置为 true 写回配置文件。
      需同时提供 --datasophonPath 和 --installPath。
 
   2. 手动模式（不指定 -c）：所有参数通过命令行传入，在本地节点执行。
@@ -52,7 +52,7 @@ func NewRegistryCommand(dryRun *bool) *cobra.Command {
 	}
 
 	// ── 配置文件模式 ────────────────────────────────────────────────────
-	cmd.Flags().StringVarP(&c.configFile, "config", "c", "", "配置文件路径（指定后从 global.registry 读取参数）")
+	cmd.Flags().StringVarP(&c.configFile, "config", "c", "", "配置文件路径（指定后从 registry 读取参数）")
 	cmd.Flags().StringVar(&c.datasophonPath, "datasophonPath", "", "datasophon 绝对路径（配置文件模式下必填，推导安装包路径）")
 
 	// ── 两种模式公用 ─────────────────────────────────────────────────────
@@ -78,8 +78,8 @@ func (c *createRegistryCmd) run() error {
 	return c.runFromFlags()
 }
 
-// runFromConfig 从配置文件读取 global.registry，SSH 到 registry 节点执行，
-// 安装成功后将 global.registry.enable 置为 true 写回配置文件。
+// runFromConfig 从配置文件读取 registry，SSH 到 registry 节点执行，
+// 安装成功后将 registry.enable 置为 true 写回配置文件。
 func (c *createRegistryCmd) runFromConfig() error {
 	if c.datasophonPath == "" {
 		return fmt.Errorf("配置文件模式下 --datasophonPath 为必填项")
@@ -98,22 +98,22 @@ func (c *createRegistryCmd) runFromConfig() error {
 		return fmt.Errorf("加载配置文件失败: %w", err)
 	}
 
-	reg := cfg.Global.Registry
+	reg := cfg.Registry
 	globalNodes := make(map[string]*config.Host, len(cfg.Nodes))
 	for i := range cfg.Nodes {
 		globalNodes[cfg.Nodes[i].Hostname] = &cfg.Nodes[i]
 	}
 	node, ok := globalNodes[reg.Node]
 	if !ok {
-		return fmt.Errorf("配置中未找到 registry 节点: %s（请检查 global.registry.node 与 nodes 列表是否一致）", reg.Node)
+		return fmt.Errorf("配置中未找到 registry 节点: %s（请检查 registry.node 与 nodes 列表是否一致）", reg.Node)
 	}
 
 	t := &initcmd.InitRegistry{
 		PackagePath:    packagesPath,
 		InstallPath:    c.installPath,
 		Repositories:   reg.Config.Repositories,
-		X86Tar:         cfg.Global.Packages.Nexus.X86_64,
-		Aarch64Tar:     cfg.Global.Packages.Nexus.Aarch64,
+		X86Tar:         cfg.Packages.Nexus.X86_64,
+		Aarch64Tar:     cfg.Packages.Nexus.Aarch64,
 		WebHost:        reg.Node,
 		WebPort:        reg.Config.WebPort,
 		Username:       reg.Config.User,
@@ -127,7 +127,7 @@ func (c *createRegistryCmd) runFromConfig() error {
 	}
 
 	// 安装成功后持久化 enable=true
-	cfg.Global.Registry.Enable = true
+	cfg.Registry.Enable = true
 	if err := config.Save(c.configFile, cfg); err != nil {
 		return fmt.Errorf("安装成功但写回配置文件失败: %w", err)
 	}

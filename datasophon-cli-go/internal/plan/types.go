@@ -33,7 +33,7 @@ type Step struct {
 }
 
 // BuildContext 把运行时状态传给 Build 和 Condition。
-// 所有 condition 类参数通过 cfg.Global.* 获取，不通过 CLI flag。
+// 所有 condition 类参数通过 cfg.* 获取，不通过 CLI flag。
 type BuildContext struct {
 	Cfg                    *config.ClusterConfig
 	InitPath               string

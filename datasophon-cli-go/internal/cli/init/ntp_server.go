@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
-	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -18,17 +17,8 @@ func (t *InitNtpServer) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitNtpServer) Command(dryRun *bool) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "ntpserver",
-		Short: "安装并配置 chrony NTP 服务端",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLocal(*dryRun, t.doRun)
-		},
-	}
-	t.AddBaseFlags(cmd)
-	return cmd
-}
+// Run 导出 doRun，供 create 包调用。
+func (t *InitNtpServer) Run(exec executor.Executor) error { return t.doRun(exec) }
 
 func (t *InitNtpServer) doRun(exec executor.Executor) error {
 	osType := exec.GetOs()

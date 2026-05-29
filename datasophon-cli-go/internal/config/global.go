@@ -9,19 +9,11 @@ const (
 	SSHAuthTypeAuto      SSHAuthType = "AUTO"
 )
 
-// GlobalConfig 对应 Java GlobalConfig。
+// GlobalConfig 对应 Java GlobalConfig，仅保留节点级上下文字段。
 type GlobalConfig struct {
 	Offline     bool        `yaml:"offline"`
 	OsInfo      OsInfo      `yaml:"osInfo"`
 	SSHAuthType SSHAuthType `yaml:"sshAuthType"`
-	Registry    Registry    `yaml:"registry"`
-	Rustfs      Rustfs      `yaml:"rustfs"`
-	NmapServer  NodeRef     `yaml:"nmapServer"`
-	Mysql       MysqlConfig `yaml:"mysql"`
-	YumServer   YumServer   `yaml:"yumServer"`
-	NtpServer   NodeRef     `yaml:"ntpServer"`
-	Kubernetes  Kubernetes  `yaml:"kubernetes"`
-	Packages    Packages    `yaml:"packages"`
 }
 
 type OsInfo struct {

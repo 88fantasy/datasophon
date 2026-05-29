@@ -7,20 +7,25 @@ global:
     osType: centos
     archType: x86_64
   sshAuthType: "AUTO"
-  registry:
-    enable: false
-  mysql:
-    enable: false
-    user: "root"
-    password: "testpassword"
-    port: 3306
-  rustfs:
-    enable: false
-  kubernetes:
-    enable: false
-  packages:
-    os: "centos.tar.gz"
-    soft: "packages.tar.gz"
+
+registry:
+  enable: false
+
+mysql:
+  enable: false
+  user: "root"
+  password: "testpassword"
+  port: 3306
+
+rustfs:
+  enable: false
+
+kubernetes:
+  enable: false
+
+packages:
+  os: "centos.tar.gz"
+  soft: "packages.tar.gz"
 
 nodes:
   - ip: "192.168.1.10"
@@ -33,4 +38,3 @@ nodes:
     password: "node2pass"
     port: 22
     hostname: "node2"
-

@@ -27,7 +27,7 @@ func NewInitCommand(dryRun *bool) *cobra.Command {
 
 	// 系统基础配置
 	cmd.AddCommand((&InitHugePage{}).Command(dryRun))
-	cmd.AddCommand((&InitNmap{}).Command(dryRun))
+	// init nmap 已提取为 create nmap-server
 	cmd.AddCommand((&InitTar{}).Command(dryRun))
 	cmd.AddCommand((&InitSystemConf{}).Command(dryRun))
 	cmd.AddCommand((&InitOsSafeConf{}).Command(dryRun))
@@ -36,23 +36,19 @@ func NewInitCommand(dryRun *bool) *cobra.Command {
 	// JDK
 	cmd.AddCommand((&InitJdk8{}).Command(dryRun))
 
-	// NTP 时钟同步
-	cmd.AddCommand((&InitNtpServer{}).Command(dryRun))
+	// NTP 时钟同步（init ntpserver 已提取为 create ntp-server）
 	cmd.AddCommand((&InitNtpSlave{}).Command(dryRun))
 
-	// 离线源
-	cmd.AddCommand((&InitOfflineServer{}).Command(dryRun))
+	// 离线源（init offlineServer 已提取为 create yum-server）
 	cmd.AddCommand((&InitOfflineSlave{}).Command(dryRun))
 
-	// MySQL
-	cmd.AddCommand((&InitMysql{}).Command(dryRun))
+	// MySQL（init mysql 已提取为 create mysql；mysql_app_db 仍作为独立工具保留）
 	cmd.AddCommand((&InitMysqlAppDb{}).Command(dryRun))
 
 	// 制品库 (Nexus)
 	cmd.AddCommand((&InitRegistryDecode{}).Command(dryRun))
 
-	// 对象存储 (Rustfs)
-	cmd.AddCommand((&InitRustfs{}).Command(dryRun))
+	// 对象存储 (Rustfs)（init rustfs 已提取为 create rustfs）
 
 	// K8s 相关
 	cmd.AddCommand((&InitDocker{}).Command(dryRun))

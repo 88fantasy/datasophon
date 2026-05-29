@@ -10,7 +10,7 @@ import (
 
 // buildRustfs 安装 rustfs（单节点）。
 func buildRustfs(ctx *BuildContext) ([]Action, error) {
-	rs := ctx.Cfg.Global.Rustfs
+	rs := ctx.Cfg.Rustfs
 	if len(rs.Nodes) == 0 {
 		return nil, nil
 	}
@@ -18,8 +18,8 @@ func buildRustfs(ctx *BuildContext) ([]Action, error) {
 		Enable:      rs.Enable,
 		PackagePath: ctx.PackagesPath,
 		InstallPath: ctx.InstallPath,
-		X86Tar:      ctx.Cfg.Global.Packages.Rustfs.X86_64,
-		Aarch64Tar:  ctx.Cfg.Global.Packages.Rustfs.Aarch64,
+		X86Tar:      ctx.Cfg.Packages.Rustfs.X86_64,
+		Aarch64Tar:  ctx.Cfg.Packages.Rustfs.Aarch64,
 		WebHost:     rs.Nodes[0],
 		WebPort:     rs.Config.WebPort,
 		APIPort:     rs.Config.APIPort,
@@ -36,13 +36,13 @@ func buildRustfs(ctx *BuildContext) ([]Action, error) {
 
 // buildRegistry 安装 Nexus Registry（单节点）。
 func buildRegistry(ctx *BuildContext) ([]Action, error) {
-	reg := ctx.Cfg.Global.Registry
+	reg := ctx.Cfg.Registry
 	t := &initcmd.InitRegistry{
 		PackagePath:    ctx.PackagesPath,
 		InstallPath:    ctx.InstallPath,
 		Repositories:   reg.Config.Repositories,
-		X86Tar:         ctx.Cfg.Global.Packages.Nexus.X86_64,
-		Aarch64Tar:     ctx.Cfg.Global.Packages.Nexus.Aarch64,
+		X86Tar:         ctx.Cfg.Packages.Nexus.X86_64,
+		Aarch64Tar:     ctx.Cfg.Packages.Nexus.Aarch64,
 		WebHost:        reg.Node,
 		WebPort:        reg.Config.WebPort,
 		Username:       reg.Config.User,
@@ -59,7 +59,7 @@ func buildRegistry(ctx *BuildContext) ([]Action, error) {
 
 // buildRegistryUpload 上传安装包到 Registry（本地节点执行）。
 func buildRegistryUpload(ctx *BuildContext) ([]Action, error) {
-	reg := ctx.Cfg.Global.Registry
+	reg := ctx.Cfg.Registry
 	t := &upload.UploadRegistry{
 		ProductPackagesPath:   ctx.ProductPkgsPath,
 		WebHost:               reg.Node,
@@ -76,29 +76,29 @@ func buildRegistryUpload(ctx *BuildContext) ([]Action, error) {
 // buildDocker 安装 Docker（本地节点执行）。
 func buildDocker(ctx *BuildContext) ([]Action, error) {
 	t := &initcmd.InitDocker{
-		EnableK8sCluster: ctx.Cfg.Global.Kubernetes.Enable,
+		EnableK8sCluster: ctx.Cfg.Kubernetes.Enable,
 		PackagePath:      ctx.PackagesPath,
 		InstallPath:      ctx.InstallPath,
-		X86Tar:           ctx.Cfg.Global.Packages.Docker.X86_64,
-		Aarch64Tar:       ctx.Cfg.Global.Packages.Docker.Aarch64,
-		DockerHTTPPort:   ctx.Cfg.Global.Registry.Config.DockerHTTPPort,
-		KubernetesForce:  ctx.Cfg.Global.Kubernetes.Force,
+		X86Tar:           ctx.Cfg.Packages.Docker.X86_64,
+		Aarch64Tar:       ctx.Cfg.Packages.Docker.Aarch64,
+		DockerHTTPPort:   ctx.Cfg.Registry.Config.DockerHTTPPort,
+		KubernetesForce:  ctx.Cfg.Kubernetes.Force,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Global.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 	return singleHostAction(ctx.LocalHost, t), nil
 }
 
 // buildOfflineServer 配置 yum/apt 离线源服务端（单节点）。
 func buildOfflineServer(ctx *BuildContext) ([]Action, error) {
-	ys := ctx.Cfg.Global.YumServer
+	ys := ctx.Cfg.YumServer
 	t := &initcmd.InitOfflineServer{
 		PackagePath: ctx.PackagesPath,
 		ServerIP:    ys.Node,
 		ServerPort:  ys.ListenPort,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Global.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 	node, err := requireNode(ctx.GlobalNodes, ys.Node)
 	if err != nil {
 		return nil, fmt.Errorf("yumServer 节点: %w", err)
@@ -108,7 +108,7 @@ func buildOfflineServer(ctx *BuildContext) ([]Action, error) {
 
 // buildNmap 安装 nmap（单节点）。
 func buildNmap(ctx *BuildContext) ([]Action, error) {
-	nm := ctx.Cfg.Global.NmapServer
+	nm := ctx.Cfg.NmapServer
 	node, err := requireNode(ctx.GlobalNodes, nm.Node)
 	if err != nil {
 		return nil, fmt.Errorf("nmapServer 节点: %w", err)
@@ -118,7 +118,7 @@ func buildNmap(ctx *BuildContext) ([]Action, error) {
 
 // buildNtpServer 配置 NTP Server（单节点）。
 func buildNtpServer(ctx *BuildContext) ([]Action, error) {
-	ntp := ctx.Cfg.Global.NtpServer
+	ntp := ctx.Cfg.NtpServer
 	t := &initcmd.InitNtpServer{}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
 	node, err := requireNode(ctx.GlobalNodes, ntp.Node)
@@ -130,18 +130,18 @@ func buildNtpServer(ctx *BuildContext) ([]Action, error) {
 
 // buildMysql 安装 MySQL（单节点）。
 func buildMysql(ctx *BuildContext) ([]Action, error) {
-	mc := ctx.Cfg.Global.Mysql
+	mc := ctx.Cfg.Mysql
 	t := &initcmd.InitMysql{
 		Password:    mc.Password,
 		Force:       mc.Force,
 		PackagePath: ctx.PackagesPath,
 		InstallPath: ctx.InstallPath,
-		X86Tar:      ctx.Cfg.Global.Packages.Mysql.X86_64,
-		Aarch64Tar:  ctx.Cfg.Global.Packages.Mysql.Aarch64,
+		X86Tar:      ctx.Cfg.Packages.Mysql.X86_64,
+		Aarch64Tar:  ctx.Cfg.Packages.Mysql.Aarch64,
 		Port:        mc.Port,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Global.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 	node, err := requireNode(ctx.GlobalNodes, mc.Node)
 	if err != nil {
 		return nil, fmt.Errorf("mysql 节点: %w", err)
@@ -151,7 +151,7 @@ func buildMysql(ctx *BuildContext) ([]Action, error) {
 
 // buildMysqlAppDb 初始化 MySQL 数据库账号（多个 AppDb 每个一个 action）。
 func buildMysqlAppDb(ctx *BuildContext) ([]Action, error) {
-	mc := ctx.Cfg.Global.Mysql
+	mc := ctx.Cfg.Mysql
 	node, err := requireNode(ctx.GlobalNodes, mc.Node)
 	if err != nil {
 		return nil, fmt.Errorf("mysql 节点: %w", err)
@@ -173,7 +173,7 @@ func buildMysqlAppDb(ctx *BuildContext) ([]Action, error) {
 
 // buildK8sBaseServices 安装 K8s 基础服务（master 节点）。
 func buildK8sBaseServices(ctx *BuildContext) ([]Action, error) {
-	k8s := ctx.Cfg.Global.Kubernetes
+	k8s := ctx.Cfg.Kubernetes
 	bs := k8s.BaseServices
 	if len(bs.Masters) == 0 {
 		return nil, nil
@@ -201,26 +201,26 @@ func buildK8sBaseServices(ctx *BuildContext) ([]Action, error) {
 		Masters:          masters,
 		Nodes:            k8snodes,
 		Sealos:           bs.Sealos,
-		SealosX86Tar:     ctx.Cfg.Global.Packages.Sealos.X86_64,
-		SealosArmTar:     ctx.Cfg.Global.Packages.Sealos.Aarch64,
+		SealosX86Tar:     ctx.Cfg.Packages.Sealos.X86_64,
+		SealosArmTar:     ctx.Cfg.Packages.Sealos.Aarch64,
 		Kubernetes:       bs.KubernetesI,
-		KubernetesX86Tar: ctx.Cfg.Global.Packages.KubernetesI.X86_64,
-		KubernetesArmTar: ctx.Cfg.Global.Packages.KubernetesI.Aarch64,
+		KubernetesX86Tar: ctx.Cfg.Packages.KubernetesI.X86_64,
+		KubernetesArmTar: ctx.Cfg.Packages.KubernetesI.Aarch64,
 		Helm:             bs.HelmI,
-		HelmX86Tar:       ctx.Cfg.Global.Packages.HelmI.X86_64,
-		HelmArmTar:       ctx.Cfg.Global.Packages.HelmI.Aarch64,
+		HelmX86Tar:       ctx.Cfg.Packages.HelmI.X86_64,
+		HelmArmTar:       ctx.Cfg.Packages.HelmI.Aarch64,
 		Calico:           bs.CalicoI,
-		CalicoX86Tar:     ctx.Cfg.Global.Packages.CalicoI.X86_64,
-		CalicoArmTar:     ctx.Cfg.Global.Packages.CalicoI.Aarch64,
+		CalicoX86Tar:     ctx.Cfg.Packages.CalicoI.X86_64,
+		CalicoArmTar:     ctx.Cfg.Packages.CalicoI.Aarch64,
 		Ingress:          bs.IngressI,
-		IngressX86Tar:    ctx.Cfg.Global.Packages.IngressI.X86_64,
-		IngressArmTar:    ctx.Cfg.Global.Packages.IngressI.Aarch64,
+		IngressX86Tar:    ctx.Cfg.Packages.IngressI.X86_64,
+		IngressArmTar:    ctx.Cfg.Packages.IngressI.Aarch64,
 		PackagePath:      ctx.PackagesPath,
 		SSHPort:          ctx.LocalHost.Port,
 		SSHPasswd:        ctx.LocalHost.Password,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Global.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 	masterNode, err := requireNode(ctx.GlobalNodes, bs.Masters[0])
 	if err != nil {
 		return nil, fmt.Errorf("第一个 master 节点: %w", err)
@@ -230,16 +230,16 @@ func buildK8sBaseServices(ctx *BuildContext) ([]Action, error) {
 
 // buildK8sKuboard 安装 Kuboard（单节点）。
 func buildK8sKuboard(ctx *BuildContext) ([]Action, error) {
-	kb := ctx.Cfg.Global.Kubernetes.KuboardI
+	kb := ctx.Cfg.Kubernetes.KuboardI
 	t := &initcmd.InitK8sKuboard{
-		EnableK8sCluster: ctx.Cfg.Global.Kubernetes.Enable,
-		KuboardX86Tar:    ctx.Cfg.Global.Packages.KuboardI.X86_64,
-		KuboardArmTar:    ctx.Cfg.Global.Packages.KuboardI.Aarch64,
+		EnableK8sCluster: ctx.Cfg.Kubernetes.Enable,
+		KuboardX86Tar:    ctx.Cfg.Packages.KuboardI.X86_64,
+		KuboardArmTar:    ctx.Cfg.Packages.KuboardI.Aarch64,
 		PackagePath:      ctx.PackagesPath,
 		Etcds:            kb.EtcdNodes,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Global.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 	node, err := requireNode(ctx.GlobalNodes, kb.Node)
 	if err != nil {
 		return nil, fmt.Errorf("kuboard 节点: %w", err)
@@ -249,13 +249,13 @@ func buildK8sKuboard(ctx *BuildContext) ([]Action, error) {
 
 // buildK8sRegistryConf 配置 K8s 节点的 Registry（K8s master + worker 节点）。
 func buildK8sRegistryConf(ctx *BuildContext) ([]Action, error) {
-	bs := ctx.Cfg.Global.Kubernetes.BaseServices
+	bs := ctx.Cfg.Kubernetes.BaseServices
 	t := &initcmd.InitK8sRegistryConf{
-		EnableK8sCluster: ctx.Cfg.Global.Kubernetes.Enable,
-		DockerHTTPPort:   ctx.Cfg.Global.Registry.Config.DockerHTTPPort,
+		EnableK8sCluster: ctx.Cfg.Kubernetes.Enable,
+		DockerHTTPPort:   ctx.Cfg.Registry.Config.DockerHTTPPort,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Global.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 
 	var k8sNodes []*config.Host
 	for _, h := range bs.Masters {
@@ -274,41 +274,41 @@ func buildK8sRegistryConf(ctx *BuildContext) ([]Action, error) {
 // buildKubectl 安装 kubectl（本地节点）。
 func buildKubectl(ctx *BuildContext) ([]Action, error) {
 	t := &initcmd.InitKubectl{
-		EnableK8sCluster: ctx.Cfg.Global.Kubernetes.Enable,
+		EnableK8sCluster: ctx.Cfg.Kubernetes.Enable,
 		PackagePath:      ctx.PackagesPath,
 		InstallPath:      ctx.InstallPath,
-		X86Tar:           ctx.Cfg.Global.Packages.Kubectl.X86_64,
-		Aarch64Tar:       ctx.Cfg.Global.Packages.Kubectl.Aarch64,
+		X86Tar:           ctx.Cfg.Packages.Kubectl.X86_64,
+		Aarch64Tar:       ctx.Cfg.Packages.Kubectl.Aarch64,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Global.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 	return singleHostAction(ctx.LocalHost, t), nil
 }
 
 // buildHelm 安装 Helm（本地节点）。
 func buildHelm(ctx *BuildContext) ([]Action, error) {
 	t := &initcmd.InitHelm{
-		EnableK8sCluster: ctx.Cfg.Global.Kubernetes.Enable,
+		EnableK8sCluster: ctx.Cfg.Kubernetes.Enable,
 		PackagePath:      ctx.PackagesPath,
 		InstallPath:      ctx.InstallPath,
-		X86Tar:           ctx.Cfg.Global.Packages.Helm.X86_64,
-		Aarch64Tar:       ctx.Cfg.Global.Packages.Helm.Aarch64,
+		X86Tar:           ctx.Cfg.Packages.Helm.X86_64,
+		Aarch64Tar:       ctx.Cfg.Packages.Helm.Aarch64,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Global.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 	return singleHostAction(ctx.LocalHost, t), nil
 }
 
 // buildHelmify 安装 Helmify（本地节点）。
 func buildHelmify(ctx *BuildContext) ([]Action, error) {
 	t := &initcmd.InitHelmify{
-		EnableK8sCluster: ctx.Cfg.Global.Kubernetes.Enable,
+		EnableK8sCluster: ctx.Cfg.Kubernetes.Enable,
 		PackagePath:      ctx.PackagesPath,
 		InstallPath:      ctx.InstallPath,
-		X86Tar:           ctx.Cfg.Global.Packages.Helmify.X86_64,
-		Aarch64Tar:       ctx.Cfg.Global.Packages.Helmify.Aarch64,
+		X86Tar:           ctx.Cfg.Packages.Helmify.X86_64,
+		Aarch64Tar:       ctx.Cfg.Packages.Helmify.Aarch64,
 	}
 	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	applyRegistry(&t.TaskBase, &ctx.Cfg.Global.Registry)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 	return singleHostAction(ctx.LocalHost, t), nil
 }

@@ -18,7 +18,7 @@ func GeneratePlan(action string, registry []Step, ctx *BuildContext) (*PlanFile,
 		Action:      action,
 	}
 
-	onlyK8s := ctx.Cfg.Global.Kubernetes.OnlyInstall
+	onlyK8s := ctx.Cfg.Kubernetes.OnlyInstall
 	for _, s := range registry {
 		ps := PlanStep{ID: s.ID, Name: s.Name, Status: StatusPending}
 

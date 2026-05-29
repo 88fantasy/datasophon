@@ -90,3 +90,6 @@ func (t *InitMysqlAppDb) initCommonAccount(exec executor.Executor) {
 		t.Port, t.RootPassword))
 	slog.Info("数据库账号创建完成", "account", t.Account, "db", t.DBName)
 }
+
+// Run 导出 doRun，供 create 包配置模式直接调用。
+func (t *InitMysqlAppDb) Run(exec executor.Executor) error { return t.doRun(exec) }
