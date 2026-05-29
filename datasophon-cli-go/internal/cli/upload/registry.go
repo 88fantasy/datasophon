@@ -1,4 +1,4 @@
-package initcmd
+package upload
 
 import (
 	"bytes"
@@ -13,14 +13,15 @@ import (
 	"strings"
 	"time"
 
+	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
 
-// InitRegistryUpload 对应 Java InitRegistryUpload — 将本地安装包批量上传到 Nexus。
-type InitRegistryUpload struct {
-	TaskBase
+// UploadRegistry 将本地安装包批量上传到 Nexus。
+type UploadRegistry struct {
+	initcmd.TaskBase
 	ProductPackagesPath   string
 	WebHost               string
 	WebPort               string
@@ -31,18 +32,18 @@ type InitRegistryUpload struct {
 	DockerHTTPPort        int
 }
 
-func (t *InitRegistryUpload) Name() string { return "制品库上传" }
+func (t *UploadRegistry) Name() string { return "制品库上传" }
 
-func (t *InitRegistryUpload) Handle(client *ssh.Client, dryRun bool) error {
+func (t *UploadRegistry) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitRegistryUpload) Command(dryRun *bool) *cobra.Command {
+func (t *UploadRegistry) Command(dryRun *bool) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "registryUpload",
+		Use:   "registry",
 		Short: "将本地安装包批量上传到 Nexus",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLocal(*dryRun, t.doRun)
+			return t.doRun(executor.NewLocalExecutor(*dryRun))
 		},
 	}
 	t.AddBaseFlags(cmd)
@@ -63,7 +64,7 @@ func (t *InitRegistryUpload) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
-func (t *InitRegistryUpload) doRun(exec executor.Executor) error {
+func (t *UploadRegistry) doRun(exec executor.Executor) error {
 	if !t.EnableRegistry {
 		slog.Info("enableRegistry=false，跳过上传")
 		return nil
@@ -77,7 +78,6 @@ func (t *InitRegistryUpload) doRun(exec executor.Executor) error {
 	if !t.DisableUploadRegistry {
 		slog.Info("制品库上传开始", "url", baseURL)
 		success, fail := t.repositoryUploadBatch(baseURL)
-		// Docker 镜像单独推送
 		t.uploadDocker(exec, baseURL)
 		slog.Info("制品库上传完成", "success", success, "fail", fail)
 	}
@@ -92,7 +92,7 @@ func (t *InitRegistryUpload) doRun(exec executor.Executor) error {
 //	raw/packages/*
 //	helm/*.tgz
 //	docker/*.tar  （单独通过 docker push 处理）
-func (t *InitRegistryUpload) repositoryUploadBatch(baseURL string) (int, int) {
+func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 	success, fail := 0, 0
 	entries, err := os.ReadDir(t.ProductPackagesPath)
 	if err != nil {
@@ -177,7 +177,7 @@ func (t *InitRegistryUpload) repositoryUploadBatch(baseURL string) (int, int) {
 }
 
 // uploadFile 用 multipart/form-data 上传单个文件到 Nexus 内部 UI 接口。
-func (t *InitRegistryUpload) uploadFile(baseURL, repoType, filePath string) bool {
+func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath string) bool {
 	file, err := os.Open(filePath)
 	if err != nil {
 		slog.Error("打开文件失败", "path", filePath, "err", err)
@@ -224,7 +224,7 @@ func (t *InitRegistryUpload) uploadFile(baseURL, repoType, filePath string) bool
 }
 
 // uploadDocker 将 docker/ 目录下的 .tar 镜像 load 并 push 到私有仓库。
-func (t *InitRegistryUpload) uploadDocker(exec executor.Executor, baseURL string) {
+func (t *UploadRegistry) uploadDocker(exec executor.Executor, baseURL string) {
 	dockerDir := filepath.Join(t.ProductPackagesPath, "docker")
 	if !exec.Exists(dockerDir).Success {
 		return

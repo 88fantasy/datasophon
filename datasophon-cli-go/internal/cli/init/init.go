@@ -49,8 +49,6 @@ func NewInitCommand(dryRun *bool) *cobra.Command {
 	cmd.AddCommand((&InitMysqlAppDb{}).Command(dryRun))
 
 	// 制品库 (Nexus)
-	cmd.AddCommand((&InitRegistry{}).Command(dryRun))
-	cmd.AddCommand((&InitRegistryUpload{}).Command(dryRun))
 	cmd.AddCommand((&InitRegistryDecode{}).Command(dryRun))
 
 	// 对象存储 (Rustfs)

@@ -74,6 +74,9 @@ func (t *InitRegistry) Command(dryRun *bool) *cobra.Command {
 	return cmd
 }
 
+// Run 导出 doRun，供 create 包手动模式直接调用。
+func (t *InitRegistry) Run(exec executor.Executor) error { return t.doRun(exec) }
+
 func (t *InitRegistry) doRun(exec executor.Executor) error {
 	if !t.EnableRegistry {
 		slog.Info("enableRegistry=false，跳过 registry 安装")

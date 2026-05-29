@@ -5,6 +5,7 @@ import (
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/create"
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/upload"
 )
 
 // Root 返回 Cobra 根命令，对应 Java Main 中 @Command(subcommands=…)。
@@ -24,6 +25,7 @@ func Root() *cobra.Command {
 
 	root.AddCommand(create.NewCreateCommand(&dryRun))
 	root.AddCommand(initcmd.NewInitCommand(&dryRun))
+	root.AddCommand(upload.NewUploadCommand(&dryRun))
 
 	return root
 }

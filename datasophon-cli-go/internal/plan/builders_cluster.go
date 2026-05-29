@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/upload"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
 )
 
@@ -59,7 +60,7 @@ func buildRegistry(ctx *BuildContext) ([]Action, error) {
 // buildRegistryUpload 上传安装包到 Registry（本地节点执行）。
 func buildRegistryUpload(ctx *BuildContext) ([]Action, error) {
 	reg := ctx.Cfg.Global.Registry
-	t := &initcmd.InitRegistryUpload{
+	t := &upload.UploadRegistry{
 		ProductPackagesPath:   ctx.ProductPkgsPath,
 		WebHost:               reg.Node,
 		WebPort:               reg.Config.WebPort,
