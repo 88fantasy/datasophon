@@ -19,7 +19,7 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   ~ SOFTWARE.
   -->
-
+<project>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.datasophon</groupId>
@@ -33,14 +33,15 @@
         <module>datasophon-common</module>
         <module>datasophon-grpc-api</module>
         <module>datasophon-worker</module>
-        <module>datasophon-cli</module>
+        <module>datasophon-cli-go</module>
         <module>datasophon-ui</module>
         <module>datasophon-api</module>
         <module>datasophon-k8s-agent</module>
+        <module>datasophon-assembly</module>
     </modules>
 
     <properties>
-        <revision>2.1-SNAPSHOT</revision>
+        <revision>3.0-SNAPSHOT</revision>
         <!-- gRPC / Protobuf 版本（protoc 3.25.5 + protobuf-java 3.25.5 + grpc-java 1.68.1 稳定组合） -->
         <grpc.version>1.68.1</grpc.version>
         <protobuf.version>3.25.5</protobuf.version>
@@ -629,9 +630,6 @@
         </plugins>
     </build>
 
-    <url>https://datasophon.github.io/datasophon-website/</url>
-    <inceptionYear>2022</inceptionYear>
-
     <licenses>
         <license>
             <name>MIT License</name>
@@ -640,10 +638,6 @@
         </license>
     </licenses>
 
-    <scm>
-        <connection>git@github.com:datasophon/datasophon.git</connection>
-        <url>https://github.com/datasophon/datasophon</url>
-    </scm>
     <profiles>
         <profile>
             <id>google-mirror</id>
