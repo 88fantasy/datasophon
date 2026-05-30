@@ -21,7 +21,7 @@ func GeneratePlan(action string, registry []Step, ctx *BuildContext) (*PlanFile,
 		ps := PlanStep{ID: s.ID, Name: s.Name, Status: StatusPending}
 
 		// Scope 检查：步骤与集群类型不匹配时跳过
-		if !s.Scope.Matches(ctx.Cfg.Type) {
+		if !s.Scope.Matches(ctx.Cfg.Global.ClusterType) {
 			ps.Status = StatusSkipped
 			pf.Steps = append(pf.Steps, ps)
 			continue

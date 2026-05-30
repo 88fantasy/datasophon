@@ -91,14 +91,14 @@ func (c *createClusterCmd) bindTypeFlag(cmd *cobra.Command) {
 	_ = cmd.MarkFlagRequired("type")
 }
 
-// applyTypeToConfig 把 CLI flag 覆盖到 cfg.Type，并校验合法性。
+// applyTypeToConfig 把 CLI flag 覆盖到 cfg.Global.ClusterType，并校验合法性。
 func (c *createClusterCmd) applyTypeToConfig() error {
 	if c.typeFlag != "" {
-		c.currentCfg.Type = config.ClusterType(c.typeFlag)
+		c.currentCfg.Global.ClusterType = config.ClusterType(c.typeFlag)
 	}
-	if c.currentCfg.Type != config.ClusterTypeHadoop &&
-		c.currentCfg.Type != config.ClusterTypeKubernetes {
-		return fmt.Errorf("--type 必须是 hadoop 或 kubernetes，当前值: %q", c.currentCfg.Type)
+	if c.currentCfg.Global.ClusterType != config.ClusterTypeHadoop &&
+		c.currentCfg.Global.ClusterType != config.ClusterTypeKubernetes {
+		return fmt.Errorf("--type 必须是 hadoop 或 kubernetes，当前值: %q", c.currentCfg.Global.ClusterType)
 	}
 	return nil
 }

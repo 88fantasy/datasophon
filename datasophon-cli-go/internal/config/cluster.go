@@ -10,8 +10,6 @@ const (
 
 // ClusterConfig 对应 Java ClusterConfig，对应 cluster-sample.yml 顶层结构。
 type ClusterConfig struct {
-	// Type 标识集群类型（hadoop / kubernetes），对应 --type CLI flag。
-	Type ClusterType `yaml:"type"`
 	Global     GlobalConfig `yaml:"global"`
 	Registry   Registry     `yaml:"registry"`
 	Rustfs     Rustfs       `yaml:"rustfs"`

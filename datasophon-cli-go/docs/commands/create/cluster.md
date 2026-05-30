@@ -26,7 +26,7 @@ datasophon-cli [--dry-run] create cluster apply [flags]
 
 | flag | 简写 | 类型 | 默认 | 必填 | 说明 |
 |---|---|---|---|---|---|
-| `--type` | `-t` | string | — | **是** | 集群类型：`hadoop`（Hadoop 大数据集群）或 `kubernetes`（K8s 集群）。CLI 值优先于 `cluster-sample.yml` 中的 `type` 字段 |
+| `--type` | `-t` | string | — | **是** | 集群类型：`hadoop`（Hadoop 大数据集群）或 `kubernetes`（K8s 集群）。CLI 值优先于 `cluster-sample.yml` 中的 `global.cluster-type` 字段 |
 | `--datasophonPath` | `-p` | string | — | 是 | datasophon 根目录绝对路径（须以 `/` 开头且目录存在）。配置文件从 `<datasophonPath>/datasophon-init/config/cluster-sample.yml` 读取 |
 | `--installPath` | 无 | string | — | 是 | 组件安装根目录绝对路径，不存在时自动创建 |
 | `--productPackagesPath` | `-n` | string | — | 是 | 组件安装包目录路径 |
@@ -73,11 +73,11 @@ datasophon-cli create cluster apply -p /data/datasophon --installPath /opt/insta
 
 | 字段 | 说明 |
 |---|---|
-| `type` | 集群类型：`hadoop` 或 `kubernetes`（CLI `--type` 优先覆盖） |
+| `global.cluster-type` | 集群类型：`hadoop` 或 `kubernetes`。CLI `--type` 优先覆盖此值。两者均需合法，否则启动时报错 |
 | `nodes` | 至少 1 个节点；当前机器 IP 必须出现在列表中 |
 | `global.sshAuthType` | SSH 鉴权方式 |
 | `global.registry.enable` | 控制 `init-registry` / `init-registry-upload` / `init-offline-nodes` 步骤是否激活 |
-| `global.kubernetes.enable` | 控制所有 `k8s-*` 步骤是否激活（需同时 `--type kubernetes`） |
+| `global.kubernetes.enable` | 控制所有 `k8s-*` 步骤是否激活（需同时 `global.cluster-type: kubernetes`） |
 | `global.mysql.enable` | 控制 `init-mysql` / `init-mysql-app-db` 步骤是否激活 |
 | `global.ntpServer.enable` | 控制 NTP 步骤是否激活 |
 | `global.packages.*` | 各组件安装包文件名，与 `<datasophonPath>/datasophon-init/packages/` 下文件名对应 |

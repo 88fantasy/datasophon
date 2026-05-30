@@ -22,6 +22,8 @@ const (
 )
 
 type templateData struct {
+	ClusterType       string
+	IsKubernetes      bool
 	RegistryPassword  string
 	MySQLRootPassword string
 	RustfsPassword    string
@@ -31,6 +33,7 @@ type templateData struct {
 type createConfigCmd struct {
 	OutputPath string
 	Force      bool
+	typeFlag   string
 }
 
 func NewConfigCommand() *cobra.Command {
@@ -46,11 +49,17 @@ func NewConfigCommand() *cobra.Command {
 
 	cmd.Flags().StringVarP(&c.OutputPath, "output", "o", "cluster-config.yml", "输出文件路径")
 	cmd.Flags().BoolVarP(&c.Force, "force", "f", false, "强制覆盖已存在的文件")
+	cmd.Flags().StringVarP(&c.typeFlag, "type", "t", "", "集群类型: hadoop | kubernetes (必填)")
+	_ = cmd.MarkFlagRequired("type")
 
 	return cmd
 }
 
 func (c *createConfigCmd) run() error {
+	if c.typeFlag != "hadoop" && c.typeFlag != "kubernetes" {
+		return fmt.Errorf("--type 必须是 hadoop 或 kubernetes，当前值: %q", c.typeFlag)
+	}
+
 	absOutputPath, err := filepath.Abs(c.OutputPath)
 	if err != nil {
 		return fmt.Errorf("获取输出文件绝对路径失败: %w", err)
@@ -89,6 +98,8 @@ func (c *createConfigCmd) run() error {
 
 	var rendered bytes.Buffer
 	if err := tpl.Execute(&rendered, templateData{
+		ClusterType:       c.typeFlag,
+		IsKubernetes:      c.typeFlag == "kubernetes",
 		RegistryPassword:  regPwd,
 		MySQLRootPassword: mysqlPwd,
 		RustfsPassword:    rustfsPwd,

@@ -23,7 +23,7 @@ func (m *mockHandlerSsh) Handle(_ *ssh.Client, _ bool) error { return nil }
 
 func stubCfg() *config.ClusterConfig {
 	return &config.ClusterConfig{
-		Type: config.ClusterTypeHadoop,
+		Global: config.GlobalConfig{ClusterType: config.ClusterTypeHadoop},
 		Nodes: []config.Host{
 			{Hostname: "node1", IP: "10.0.0.1", Port: 22, User: "root", Password: "pass"},
 			{Hostname: "node2", IP: "10.0.0.2", Port: 22, User: "root", Password: "pass"},
@@ -117,7 +117,7 @@ func TestGeneratePlan_MysqlDisabled(t *testing.T) {
 
 func TestGeneratePlan_TypeHadoop_SkipsK8sSteps(t *testing.T) {
 	cfg := stubCfg()
-	cfg.Type = config.ClusterTypeHadoop
+	cfg.Global.ClusterType = config.ClusterTypeHadoop
 	cfg.Kubernetes.Enable = true
 	ctx := stubCtx(cfg, t.TempDir())
 	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
@@ -137,7 +137,7 @@ func TestGeneratePlan_TypeHadoop_SkipsK8sSteps(t *testing.T) {
 
 func TestGeneratePlan_TypeKubernetes_SkipsOsuser(t *testing.T) {
 	cfg := stubCfg()
-	cfg.Type = config.ClusterTypeKubernetes
+	cfg.Global.ClusterType = config.ClusterTypeKubernetes
 	cfg.Kubernetes.Enable = true
 	ctx := stubCtx(cfg, t.TempDir())
 	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
@@ -331,7 +331,7 @@ func TestGeneratePlan_RustfsSkippedWhenRegistryDisabled(t *testing.T) {
 
 func TestGeneratePlan_KuboardSkippedWhenKuboardDisabled(t *testing.T) {
 	cfg := stubCfg()
-	cfg.Type = config.ClusterTypeKubernetes
+	cfg.Global.ClusterType = config.ClusterTypeKubernetes
 	cfg.Kubernetes.Enable = true
 	cfg.Kubernetes.KuboardI.Enable = false
 	ctx := stubCtx(cfg, t.TempDir())

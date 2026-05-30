@@ -11,6 +11,7 @@ const (
 
 // GlobalConfig 对应 Java GlobalConfig，仅保留节点级上下文字段。
 type GlobalConfig struct {
+	ClusterType ClusterType `yaml:"cluster-type"`
 	Offline     bool        `yaml:"offline"`
 	OsInfo      OsInfo      `yaml:"osInfo"`
 	SSHAuthType SSHAuthType `yaml:"sshAuthType"`

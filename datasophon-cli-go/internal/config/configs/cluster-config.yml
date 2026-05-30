@@ -1,4 +1,5 @@
 global:
+  cluster-type: {{.ClusterType}}
   offline: true
   osInfo:
     auto: true
@@ -80,12 +81,12 @@ rustfs:
     installType: "SNSD" #可选SNSD(单节点单盘模式)，SNMD(单节点多磁盘模式)，MNMD(多节点多磁盘模式)
     volumes: "/data/rustfs0" #示例：/data/rustfs0[SNSD], /data/rustfs{0...3}[SNMD], http://node{1...4}:9040/data/rustfs{0...3}[MNMD]
   nodes: ["app6"]
-
+{{if .IsKubernetes}}
 kubernetes:
   enable: true
   baseServices:
     namespaces: ["prod"]
-    masters: [ "app2"]
+    masters: ["app2"]
     nodes: ["app3", "app4", "app6"]
     sealos: true
     kubernetesI: true
@@ -101,7 +102,7 @@ kubernetes:
     helm: true
     helmify: true
     kubectl: true
-
+{{end}}
 packages:
   os: "openEuler-22.03-LTS-SP3.tar.gz"
   config: "config.tar.gz"
@@ -115,6 +116,7 @@ packages:
   rustfs:
     x86_64: "rustfs-linux-x86_64-musl-1.0.0.tar.gz"
     aarch64: "rustfs-linux-aarch64-musl-1.0.0.tar.gz"
+{{- if .IsKubernetes}}
   sealos:
     x86_64: "sealos_5.1.0_linux_amd64.tar.gz"
     aarch64: "sealos_5.1.0_linux_arm64.tar.gz"
@@ -134,8 +136,8 @@ packages:
     x86_64: "kuboard-v3-x86.tar"
     aarch64: "kuboard-v3-arm.tar"
   helmify:
-    x86_64: "helmify_Linux_arm64.tar.gz"
-    aarch64: "helmify_Linux_x86_64.tar.gz"
+    x86_64: "helmify_Linux_x86_64.tar.gz"
+    aarch64: "helmify_Linux_arm64.tar.gz"
   docker:
     x86_64: "docker-x86-29.3.1.tgz"
     aarch64: "docker-arm-29.3.1.tgz"
@@ -145,6 +147,7 @@ packages:
   kubectl:
     x86_64: "kubectl-x86"
     aarch64: "kubectl-arm"
+{{- end}}
 
 nodes:
   - ip: {{.CurrentNodeIP}}
@@ -152,4 +155,3 @@ nodes:
     password: ""
     port: 22
     hostname: "ddh1"
-  #    projectEnvDetailId: 2001478085436047360
