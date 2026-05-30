@@ -13,9 +13,18 @@
 ## 顶层结构
 
 ```yaml
+type:          # 集群类型（hadoop | kubernetes），与 --type CLI flag 对应
 global:        # 全局配置（registry / mysql / ntp / kubernetes / packages…）
 nodes:         # 集群节点列表（至少 1 个，含主节点）
 ```
+
+### type
+
+| 字段 | 类型 | 默认 | 必填 | 说明 |
+|---|---|---|---|---|
+| `type` | string | — | 是 | 集群类型。`hadoop`：Hadoop 大数据集群（含 osuser 步骤，跳过 k8s-*）；`kubernetes`：K8s 集群（包含所有 k8s-* 步骤，跳过 osuser） |
+
+`type` 也可通过 `--type` / `-t` CLI flag 覆盖（flag 优先于文件中的值）。两者均需为 `hadoop` 或 `kubernetes`，否则命令启动时报错。
 
 > 早期版本支持的 `addNodes:` 顶层字段已随 `create node` 批量模式一并移除。扩容时通过 `create node --ip ...` 对单节点初始化，成功后由命令自动追加到 `nodes` 列表。
 
@@ -163,8 +172,9 @@ Kubernetes 集群部署（使用 Sealos 方案）。
 | 字段 | 类型 | 默认 | 说明 |
 |---|---|---|---|
 | `enable` | bool | `false` | 是否部署 K8s。`false` 时所有 `k8s-*` 步骤均跳过 |
-| `onlyInstall` | bool | `false` | `true` 时仅安装 K8s，跳过其他非 K8s 步骤 |
 | `force` | bool | `false` | 强制重装 K8s |
+
+> `onlyInstall` 字段已移除，由顶层 `type: kubernetes` 取代。
 
 #### global.kubernetes.baseServices
 

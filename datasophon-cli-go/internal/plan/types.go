@@ -7,6 +7,28 @@ import (
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/handler"
 )
 
+// ClusterScope 标记一个 Step 适用于哪种集群类型。
+type ClusterScope int
+
+const (
+	ScopeBoth          ClusterScope = iota // 默认：hadoop 与 kubernetes 集群均执行
+	ScopeHadoopOnly                        // 仅 hadoop 集群执行
+	ScopeKubernetesOnly                    // 仅 kubernetes 集群执行
+)
+
+// Matches 判断该 Step 是否应在给定集群类型下执行。
+// 空 ClusterType 视为 ScopeBoth（兼容未设置 type 的旧配置）。
+func (s ClusterScope) Matches(t config.ClusterType) bool {
+	switch s {
+	case ScopeHadoopOnly:
+		return t == config.ClusterTypeHadoop
+	case ScopeKubernetesOnly:
+		return t == config.ClusterTypeKubernetes
+	default: // ScopeBoth 或未知值
+		return true
+	}
+}
+
 // Status 表示一个 Step 的当前执行状态。
 type Status string
 
@@ -26,10 +48,11 @@ type CondFunc func(ctx *BuildContext) bool
 
 // Step 是一类初始化步骤的声明式蓝图。
 type Step struct {
-	ID        string    // 稳定 ID，如 "init-firewall"
-	Name      string    // 人类可读名称
-	Condition CondFunc  // nil 视作 true
-	Build     BuildFunc // 在 plan/apply 阶段按需调用
+	ID        string       // 稳定 ID，如 "init-firewall"
+	Name      string       // 人类可读名称
+	Scope     ClusterScope // 适用集群类型；零值=ScopeBoth
+	Condition CondFunc     // nil 视作 true
+	Build     BuildFunc    // 在 plan/apply 阶段按需调用
 }
 
 // BuildContext 把运行时状态传给 Build 和 Condition。

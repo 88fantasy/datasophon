@@ -1,5 +1,7 @@
 # 测试固件 — 全明文密码，最小化节点集
 # 用于 test/config/loader_test.go
+type: hadoop
+
 global:
   offline: false
   osInfo:

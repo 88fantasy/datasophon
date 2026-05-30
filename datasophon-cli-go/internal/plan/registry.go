@@ -28,6 +28,7 @@ var InitALLRegistry = []Step{
 		Build:     buildRegistry},
 
 	{ID: "init-docker-for-registry", Name: "安装 docker（registry 阶段）",
+		Scope: ScopeKubernetesOnly,
 		Condition: func(ctx *BuildContext) bool {
 			return ctx.Cfg.Registry.Enable && ctx.Cfg.Kubernetes.Enable
 		},
@@ -44,6 +45,7 @@ var InitALLRegistry = []Step{
 		Build: buildJdk17(allNodes)},
 
 	{ID: "init-osuser", Name: "创建 hadoop 用户和组",
+		Scope: ScopeHadoopOnly,
 		Build: simpleAllNodes(func() handler.Handler { return &initcmd.InitOsUser{} }, allNodes)},
 
 	{ID: "init-firewall", Name: "关闭防火墙",
@@ -101,32 +103,39 @@ var InitALLRegistry = []Step{
 		Build:     buildMysqlAppDb},
 
 	{ID: "k8s-base-services", Name: "安装 K8s 集群",
+		Scope:     ScopeKubernetesOnly,
 		Condition: func(ctx *BuildContext) bool { return ctx.Cfg.Kubernetes.Enable },
 		Build:     buildK8sBaseServices},
 
 	{ID: "k8s-kuboard", Name: "安装 Kuboard",
+		Scope: ScopeKubernetesOnly,
 		Condition: func(ctx *BuildContext) bool {
 			return ctx.Cfg.Kubernetes.Enable && ctx.Cfg.Kubernetes.KuboardI.Enable
 		},
 		Build: buildK8sKuboard},
 
 	{ID: "k8s-registry-conf", Name: "配置 K8s Registry",
+		Scope:     ScopeKubernetesOnly,
 		Condition: func(ctx *BuildContext) bool { return ctx.Cfg.Kubernetes.Enable },
 		Build:     buildK8sRegistryConf},
 
 	{ID: "k8s-docker", Name: "安装 Docker（K8s 阶段）",
+		Scope:     ScopeKubernetesOnly,
 		Condition: func(ctx *BuildContext) bool { return ctx.Cfg.Kubernetes.Enable },
 		Build:     buildDocker},
 
 	{ID: "k8s-kubectl", Name: "安装 kubectl",
+		Scope:     ScopeKubernetesOnly,
 		Condition: func(ctx *BuildContext) bool { return ctx.Cfg.Kubernetes.Enable },
 		Build:     buildKubectl},
 
 	{ID: "k8s-helm", Name: "安装 Helm",
+		Scope:     ScopeKubernetesOnly,
 		Condition: func(ctx *BuildContext) bool { return ctx.Cfg.Kubernetes.Enable },
 		Build:     buildHelm},
 
 	{ID: "k8s-helmify", Name: "安装 Helmify",
+		Scope:     ScopeKubernetesOnly,
 		Condition: func(ctx *BuildContext) bool { return ctx.Cfg.Kubernetes.Enable },
 		Build:     buildHelmify},
 

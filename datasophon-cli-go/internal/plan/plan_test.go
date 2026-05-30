@@ -23,6 +23,7 @@ func (m *mockHandlerSsh) Handle(_ *ssh.Client, _ bool) error { return nil }
 
 func stubCfg() *config.ClusterConfig {
 	return &config.ClusterConfig{
+		Type: config.ClusterTypeHadoop,
 		Nodes: []config.Host{
 			{Hostname: "node1", IP: "10.0.0.1", Port: 22, User: "root", Password: "pass"},
 			{Hostname: "node2", IP: "10.0.0.2", Port: 22, User: "root", Password: "pass"},
@@ -114,19 +115,38 @@ func TestGeneratePlan_MysqlDisabled(t *testing.T) {
 	}
 }
 
-func TestGeneratePlan_OnlyInstallK8s(t *testing.T) {
+func TestGeneratePlan_TypeHadoop_SkipsK8sSteps(t *testing.T) {
 	cfg := stubCfg()
+	cfg.Type = config.ClusterTypeHadoop
 	cfg.Kubernetes.Enable = true
-	cfg.Kubernetes.OnlyInstall = true
 	ctx := stubCtx(cfg, t.TempDir())
 	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
 	require.NoError(t, err)
 
-	for _, s := range pf.Steps {
-		if len(s.ID) < 4 || s.ID[:4] != "k8s-" {
-			assert.Equal(t, StatusSkipped, s.Status, "non-k8s step %s should be skipped", s.ID)
-		}
+	// osuser 应执行（hadoop-only 但 type=hadoop）
+	assertStepStatus(t, pf, "init-osuser", StatusPending)
+	// k8s-* 与 init-docker-for-registry 应跳过（KubernetesOnly）
+	for _, id := range []string{
+		"k8s-base-services", "k8s-kuboard", "k8s-registry-conf",
+		"k8s-docker", "k8s-kubectl", "k8s-helm", "k8s-helmify",
+		"init-docker-for-registry",
+	} {
+		assertStepStatus(t, pf, id, StatusSkipped)
 	}
+}
+
+func TestGeneratePlan_TypeKubernetes_SkipsOsuser(t *testing.T) {
+	cfg := stubCfg()
+	cfg.Type = config.ClusterTypeKubernetes
+	cfg.Kubernetes.Enable = true
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+
+	// osuser 应跳过（hadoop-only 但 type=kubernetes）
+	assertStepStatus(t, pf, "init-osuser", StatusSkipped)
+	// k8s-base-services 应执行（KubernetesOnly，Enable=true）
+	assertStepStatus(t, pf, "k8s-base-services", StatusPending)
 }
 
 // ─── Store tests ─────────────────────────────────────────────────────────────
@@ -311,6 +331,7 @@ func TestGeneratePlan_RustfsSkippedWhenRegistryDisabled(t *testing.T) {
 
 func TestGeneratePlan_KuboardSkippedWhenKuboardDisabled(t *testing.T) {
 	cfg := stubCfg()
+	cfg.Type = config.ClusterTypeKubernetes
 	cfg.Kubernetes.Enable = true
 	cfg.Kubernetes.KuboardI.Enable = false
 	ctx := stubCtx(cfg, t.TempDir())
