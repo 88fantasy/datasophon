@@ -146,7 +146,7 @@ func (n *nodeInitializer) initStandaloneNode(host *config.Host) error {
 		fn   func() error
 	}{
 		{"shell bash 设置", func() error { return n.singleNodeExecDirect(host, &initcmd.InitBash{}) }},
-		{"创建 hadoop 用户和组", func() error { return n.singleNodeExecDirect(host, &initcmd.InitOsUser{}) }},
+		{"创建 hadoop 用户和组", func() error { return n.singleNodeExecDirect(host, &initcmd.InitHadoopUser{}) }},
 		{"关闭防火墙", func() error { return n.singleNodeExecDirect(host, &initcmd.InitFirewall{}) }},
 		{"关闭 selinux", func() error { return n.singleNodeExecDirect(host, &initcmd.InitSelinux{}) }},
 		{"关闭 swap", func() error { return n.singleNodeExecDirect(host, &initcmd.InitSwap{}) }},

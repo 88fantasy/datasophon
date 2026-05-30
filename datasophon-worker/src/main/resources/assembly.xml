@@ -20,6 +20,7 @@
   ~ SOFTWARE.
   -->
 
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
 
@@ -163,6 +164,15 @@
             <filtered>true</filtered>
             <lineEnding>unix</lineEnding>
             <outputDirectory>/node/arm</outputDirectory>
+        </fileSet>
+        <!-- release.txt 打入包根目录 -->
+        <fileSet>
+            <directory>${basedir}/target</directory>
+            <includes>
+                <include>release.txt</include>
+            </includes>
+            <outputDirectory>/</outputDirectory>
+            <fileMode>0644</fileMode>
         </fileSet>
     </fileSets>
 </assembly>

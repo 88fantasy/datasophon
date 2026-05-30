@@ -33,7 +33,7 @@ import java.util.zip.GZIPInputStream;
  */
 public class UploadK8sAgentTest {
 
-    private static final String VERSION = "2.1-SNAPSHOT";
+    private static final String VERSION = "3.0-SNAPSHOT";
 
     @BeforeAll
     public static void init() {

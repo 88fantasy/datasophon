@@ -20,8 +20,6 @@
  * SOFTWARE.
  */
 
- */
-
 package com.datasophon.common.utils;
 
 import cn.hutool.db.PageResult;

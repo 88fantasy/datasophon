@@ -1,5 +1,5 @@
 FROM eclipse-temurin:17-jre
-ARG DATASOPHON_VERSION=2.1-SNAPSHOT
+ARG DATASOPHON_VERSION=3.0-SNAPSHOT
 RUN apt-get update && apt-get install -y --no-install-recommends curl tar && rm -rf /var/lib/apt/lists/*
 COPY datasophon-api/target/datasophon-manager-${DATASOPHON_VERSION}.tar.gz /tmp/master.tar.gz
 RUN mkdir -p /datasophon && tar -xzf /tmp/master.tar.gz -C /datasophon --strip-components=1 && rm /tmp/master.tar.gz

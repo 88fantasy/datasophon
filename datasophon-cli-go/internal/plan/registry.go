@@ -44,9 +44,9 @@ var InitALLRegistry = []Step{
 	{ID: "init-jdk17", Name: "安装 JDK 17",
 		Build: buildJdk17(allNodes)},
 
-	{ID: "init-osuser", Name: "创建 hadoop 用户和组",
+	{ID: "init-hadoopuser", Name: "创建 hadoop 用户和组",
 		Scope: ScopeHadoopOnly,
-		Build: simpleAllNodes(func() handler.Handler { return &initcmd.InitOsUser{} }, allNodes)},
+		Build: simpleAllNodes(func() handler.Handler { return &initcmd.InitHadoopUser{} }, allNodes)},
 
 	{ID: "init-firewall", Name: "关闭防火墙",
 		Build: simpleAllNodes(func() handler.Handler { return &initcmd.InitFirewall{} }, allNodes)},

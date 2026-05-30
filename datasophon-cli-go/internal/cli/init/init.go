@@ -17,7 +17,7 @@ func NewInitCommand(dryRun *bool) *cobra.Command {
 	cmd.AddCommand((&InitSwap{}).Command(dryRun))
 	cmd.AddCommand((&InitHostname{}).Command(dryRun))
 	cmd.AddCommand((&InitAllHost{}).Command(dryRun))
-	cmd.AddCommand((&InitOsUser{}).Command(dryRun))
+	cmd.AddCommand((&InitHadoopUser{}).Command(dryRun))
 	cmd.AddCommand((&InitLibrary{}).Command(dryRun))
 	cmd.AddCommand((&InitBash{}).Command(dryRun))
 	cmd.AddCommand((&InitJdk17{}).Command(dryRun))

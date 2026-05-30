@@ -124,7 +124,7 @@ func TestGeneratePlan_TypeHadoop_SkipsK8sSteps(t *testing.T) {
 	require.NoError(t, err)
 
 	// osuser 应执行（hadoop-only 但 type=hadoop）
-	assertStepStatus(t, pf, "init-osuser", StatusPending)
+	assertStepStatus(t, pf, "init-hadoopuser", StatusPending)
 	// k8s-* 与 init-docker-for-registry 应跳过（KubernetesOnly）
 	for _, id := range []string{
 		"k8s-base-services", "k8s-kuboard", "k8s-registry-conf",
@@ -144,7 +144,7 @@ func TestGeneratePlan_TypeKubernetes_SkipsOsuser(t *testing.T) {
 	require.NoError(t, err)
 
 	// osuser 应跳过（hadoop-only 但 type=kubernetes）
-	assertStepStatus(t, pf, "init-osuser", StatusSkipped)
+	assertStepStatus(t, pf, "init-hadoopuser", StatusSkipped)
 	// k8s-base-services 应执行（KubernetesOnly，Enable=true）
 	assertStepStatus(t, pf, "k8s-base-services", StatusPending)
 }

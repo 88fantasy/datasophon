@@ -22,7 +22,7 @@ JAVA_HOME=$JH17 ./mvnw clean package -DskipTests -s ~/.m2/setting.xml
 
 确认产物存在：
 ```bash
-ls datasophon-api/target/datasophon-manager-2.1-SNAPSHOT.tar.gz
+ls datasophon-api/target/datasophon-manager-3.0-SNAPSHOT.tar.gz
 ls datasophon-worker/target/datasophon-worker.tar.gz
 ```
 

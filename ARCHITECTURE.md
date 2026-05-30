@@ -1,7 +1,7 @@
 # Datasophon 架构文档
 
 > 面向研发与运维工程师的整体架构说明。
-> 适用版本:`2.1-SNAPSHOT`（2026 年 Pekko 全量移除后的形态)。
+> 适用版本:`3.0-SNAPSHOT`（2026 年 Pekko 全量移除后的形态)。
 > 文档对应代码分支：`refactor/cluster-type`。
 
 ---
@@ -24,43 +24,45 @@ Datasophon 是一个**大数据/云原生平台部署与运维管理系统**,目
 ```mermaid
 flowchart LR
     subgraph User["用户层"]
-        UI[datasophon-ui<br/>React 19 + Antd Pro<br/>:Vite/Nginx]
-        CLI[datasophon-cli-go<br/>Cobra + Go 1.21]
+        UI["datasophon-ui<br/>React 19 + Antd Pro"]
+        CLI["datasophon-cli-go<br/>Cobra + Go 1.21"]
     end
 
-    subgraph Master["Master 控制面（datasophon-api）"]
-        REST[REST API<br/>:8081 /ddh/api]
-        GRPC_S[gRPC Server<br/>:18081<br/>Registry+Callback]
-        DAG[DAGExecutor /<br/>K8SDAGExecutor]
-        SCHED[MasterScheduledService<br/>@Scheduled 巡检]
-        REG[(WorkerRegistry<br/>hostname→Endpoint)]
-        DB[(MySQL<br/>+ Flyway 1.1→2.1)]
-        META[(meta/datacluster/<br/>service_ddl.json)]
+    subgraph Master["Master 控制面 datasophon-api"]
+        REST["REST API<br/>:8081 /ddh/api"]
+        GRPC_S["gRPC Server :18081<br/>Registry + Callback"]
+        DAG["DAGExecutor<br/>K8SDAGExecutor"]
+        SCHED["MasterScheduledService<br/>@Scheduled 巡检"]
+        REG[("WorkerRegistry<br/>hostname to Endpoint")]
+        DB[("MySQL + Flyway")]
+        META[("meta datacluster<br/>service_ddl.json")]
     end
 
-    subgraph Worker["Worker 工作面（datasophon-worker，每节点一进程）"]
-        WGRPC[WorkerGrpcServer<br/>:18082]
-        STRAT[Strategy 类<br/>~30 个 服务角色]
-        REGCLI[MasterRegistryClient<br/>30s 心跳]
+    subgraph Worker["Worker 工作面 datasophon-worker 每节点一进程"]
+        WGRPC["WorkerGrpcServer :18082"]
+        STRAT["Strategy 类<br/>约 30 个服务角色"]
+        REGCLI["MasterRegistryClient<br/>30s 心跳"]
     end
 
     subgraph K8s["K8s 内部"]
-        AGENT[datasophon-k8s-agent<br/>Spring Boot Web<br/>RSA 签名鉴权]
+        AGENT["datasophon-k8s-agent<br/>Spring Boot Web<br/>RSA 签名鉴权"]
     end
 
-    UI -- HTTP/JSON --> REST
-    CLI -. SSH 初始化裸机 .-> Host[(物理/虚拟机)]
+    Host[("物理或虚拟机")]
+
+    UI -->|HTTP JSON| REST
+    CLI -.->|SSH 初始化| Host
     REST --> DAG
     REST --> DB
     DAG --> REG
     SCHED --> REG
-    REG -. WorkerOfflineEvent .-> GRPC_S
-    REGCLI -- Register/Heartbeat --> GRPC_S
-    DAG -- WorkerCommandClient<br/>RPC --> WGRPC
+    REG -.->|WorkerOfflineEvent| GRPC_S
+    REGCLI -->|Register Heartbeat| GRPC_S
+    DAG -->|WorkerCommandClient RPC| WGRPC
     WGRPC --> STRAT
-    STRAT -. MasterCallbackClient<br/>OLAP 反向注册 .-> GRPC_S
-    REST -- 调用 --> AGENT
-    META -. 加载 .-> DAG
+    STRAT -.->|OLAP 反向注册| GRPC_S
+    REST -->|调用| AGENT
+    META -.->|加载| DAG
 ```
 
 ### 关键边界
@@ -183,21 +185,21 @@ stub 已提交,日常 `./mvnw compile` 不必重新生成;只有 proto 改动时
 
 ```mermaid
 flowchart LR
-    M[Master :18081<br/>RegistryGrpc + CallbackGrpc]
-    W1[Worker A :18082]
-    W2[Worker B :18082]
-    W3[Worker C :18082]
+    M["Master :18081<br/>RegistryGrpc + CallbackGrpc"]
+    W1["Worker A :18082"]
+    W2["Worker B :18082"]
+    W3["Worker C :18082"]
 
-    W1 -- Register/Heartbeat/Unregister --> M
-    W2 -- Register/Heartbeat/Unregister --> M
-    W3 -- Register/Heartbeat/Unregister --> M
+    W1 -->|Register Heartbeat Unregister| M
+    W2 -->|Register Heartbeat Unregister| M
+    W3 -->|Register Heartbeat Unregister| M
 
-    M -- Install/Start/Stop/Configure<br/>ExecuteCmd/GetLog --> W1
-    M -- ... --> W2
-    M -- ... --> W3
+    M -->|Install Start Stop Configure<br/>ExecuteCmd GetLog| W1
+    M -->|...| W2
+    M -->|...| W3
 
-    W1 -. RegisterOlapNode .-> M
-    W3 -. RegisterOlapNode .-> M
+    W1 -.->|RegisterOlapNode| M
+    W3 -.->|RegisterOlapNode| M
 ```
 
 - **Worker → Master**:`WorkerRegistryService`(注册/心跳/注销) + `MasterCallbackService`(OLAP 节点反向注册)。
@@ -210,28 +212,28 @@ flowchart LR
 sequenceDiagram
     autonumber
     participant W as Worker 进程
-    participant Reg as Master:WorkerRegistry
-    participant Cli as Master:WorkerCommandClient
+    participant Reg as Master WorkerRegistry
+    participant Cli as Master WorkerCommandClient
 
-    Note over W: WorkerApplicationServer.main()
-    W->>W: WorkerGrpcServer.start() (:18082)
-    W->>W: MasterCallbackClient.init()
-    W->>Reg: Register(hostname, grpc_port, arch, clusterId)
-    Reg-->>W: success=true
+    Note over W: WorkerApplicationServer.main
+    W->>W: WorkerGrpcServer.start :18082
+    W->>W: MasterCallbackClient.init
+    W->>Reg: Register hostname grpc_port arch clusterId
+    Reg-->>W: success true
     loop 每 30s
-        W->>Reg: Heartbeat(hostname)
+        W->>Reg: Heartbeat hostname
         alt 已在注册表
-            Reg-->>W: success=true
-            Reg->>Reg: endpoint.touch()
+            Reg-->>W: success true
+            Reg->>Reg: endpoint.touch
         else hostname 未知
-            Reg-->>W: success=false → 重新 Register
+            Reg-->>W: success false 触发重新 Register
         end
     end
 
-    Note over Reg: 心跳超时 (>90s) 或 主动 Unregister
-    Reg->>Reg: registry.remove(hostname)
+    Note over Reg: 心跳超时 大于 90s 或 主动 Unregister
+    Reg->>Reg: registry.remove hostname
     Reg->>Cli: publish WorkerOfflineEvent
-    Cli->>Cli: channelCache.remove + channel.shutdown()
+    Cli->>Cli: channelCache.remove + channel.shutdown
 ```
 
 #### Channel 泄漏防御(H1 修复)
@@ -252,17 +254,26 @@ Master 重启后,`WorkerRegistryPrewarmer` 在 `@PostConstruct` 阶段从 DB 加
 
 ```mermaid
 flowchart TB
-    cmd[REST: 提交命令<br/>INSTALL/START/STOP/RESTART/...]
-    --> dispatch[DispatcherWorkerService<br/>(host 选择 + worker 包推送)]
-    --> dagx[DAGExecutor.execDAG<br/>@Async masterExecutor]
-    --> repo[RepoDAG（多服务有向无环图）]
-    --> node[节点 = 一个服务<br/>含 master/worker/client 三组角色]
-    --> taskA[Master 角色任务]
-    --> taskB[Worker 角色任务]
-    --> taskC[Client 角色任务]
-    --> grpc[WorkerCommandClient → Worker]
-    --> strat[Worker.ServiceRoleStrategyContext<br/>按角色名分派]
-    --> handler[*HandlerStrategy.handler()<br/>install / start / stop / configure]
+    cmd["REST 提交命令<br/>INSTALL START STOP RESTART"]
+    dispatch["DispatcherWorkerService<br/>host 选择 + worker 包推送"]
+    dagx["DAGExecutor.execDAG<br/>@Async masterExecutor"]
+    repo["RepoDAG 多服务有向无环图"]
+    node["节点 = 一个服务<br/>含 master worker client 三组角色"]
+    taskA["Master 角色任务"]
+    taskB["Worker 角色任务"]
+    taskC["Client 角色任务"]
+    grpc["WorkerCommandClient 到 Worker"]
+    strat["Worker.ServiceRoleStrategyContext<br/>按角色名分派"]
+    handler["HandlerStrategy<br/>install configure start stop"]
+
+    cmd --> dispatch --> dagx --> repo --> node
+    node --> taskA
+    node --> taskB
+    node --> taskC
+    taskA --> grpc
+    taskB --> grpc
+    taskC --> grpc
+    grpc --> strat --> handler
 ```
 
 - **DAGExecutor**(`datasophon-api/master/DAGExecutor.java`)负责物理集群多服务的依赖编排,使用 `RepoDAG`(自实现的拓扑排序 + 任务调度器)。
@@ -315,37 +326,37 @@ sequenceDiagram
     participant U as UI
     participant API as ServiceInstallController
     participant DS as DispatcherWorkerService
-    participant DAG as DAGExecutor (@Async)
+    participant DAG as DAGExecutor @Async
     participant DB as MySQL
     participant Cli as WorkerCommandClient
-    participant Wkr as Worker (NameNodeHandlerStrategy)
+    participant Wkr as Worker NameNodeHandlerStrategy
 
-    U->>API: POST /api/cluster/service/install (clusterId, services)
-    API->>DB: 写入 ClusterServiceCommand & HostCommand 记录
+    U->>API: POST cluster service install clusterId services
+    API->>DB: 写入 ClusterServiceCommand 和 HostCommand 记录
     API->>DS: 选择目标主机 + 推送 worker 安装包
-    API->>DAG: execDAG(DAGExecCommand)
-    DAG->>DAG: createMultiServiceDAG（RepoDAG 拓扑排序）
+    API->>DAG: execDAG DAGExecCommand
+    DAG->>DAG: createMultiServiceDAG RepoDAG 拓扑排序
 
-    loop 每个 ServiceNode（HDFS、Yarn、Hive、…）
-        DAG->>DAG: 拆出 master / worker / client 三类角色
+    loop 每个 ServiceNode 例如 HDFS Yarn Hive
+        DAG->>DAG: 拆出 master worker client 三类角色
         par 同类角色并行
-            DAG->>Cli: configureServiceRole(host, cmd)
-            Cli->>Wkr: gRPC ConfigureServiceRole(ServiceRoleRequest)
-            Wkr->>Wkr: handlerConfig（写配置文件）
-            Wkr-->>Cli: ExecResultPb(success)
+            DAG->>Cli: configureServiceRole host cmd
+            Cli->>Wkr: gRPC ConfigureServiceRole
+            Wkr->>Wkr: handlerConfig 写配置文件
+            Wkr-->>Cli: ExecResultPb success
             Cli-->>DAG: ExecResult
-            DAG->>Cli: installServiceRole(host, cmd)
+            DAG->>Cli: installServiceRole host cmd
             Cli->>Wkr: gRPC InstallServiceRole
-            Wkr->>Wkr: handlerInstall（资源处理策略）
+            Wkr->>Wkr: handlerInstall 资源处理策略
             Wkr-->>Cli: ExecResultPb
-            DAG->>Cli: startServiceRole(host, cmd)
+            DAG->>Cli: startServiceRole host cmd
             Cli->>Wkr: gRPC StartServiceRole
             Wkr->>Wkr: handlerStart
         end
-        DAG->>DB: 更新 host_command_state = SUCCESS
+        DAG->>DB: 更新 host_command_state SUCCESS
     end
-    DAG->>DB: 更新 command_state = SUCCESS
-    API-->>U: 异步通过 ScheduleLog / WS 反馈进度
+    DAG->>DB: 更新 command_state SUCCESS
+    API-->>U: 异步通过 ScheduleLog 或 WS 反馈进度
 ```
 
 ### 4.5 周期巡检与告警
@@ -367,23 +378,24 @@ CLI-Go 取代旧 Java CLI,使用 Cobra 命令树 + 声明式 Step + 持久化 Pl
 ```mermaid
 flowchart LR
     subgraph Subcmds["主命令"]
-        init[init &lt;subcmd&gt;<br/>30+ 独立步骤]
-        create[create cluster<br/>plan / apply / 默认 plan→确认→apply]
+        initc["init 子命令<br/>30+ 独立步骤"]
+        createc["create cluster<br/>plan apply 或 默认 plan 到 apply"]
     end
 
     subgraph Pipeline["create cluster 内部流水线"]
-        cfg[config.Load<br/>cluster-sample.yml]
-        --> bctx[BuildContext<br/>含 cfg/dryRun/path]
-        --> reg[Registry: InitALLRegistry<br/>33 个 Step]
-        --> build[每个 Step.Build<br/>→ []Action]
-        --> plan[(state/initALL.plan.json<br/>含 hash + 状态)]
-        --> apply[Apply: 顺序执行<br/>跳过 completed]
-        --> exec[Executor<br/>local / ssh / batch]
-        --> chain[handler.Chain<br/>调用各 *Handler.Handle]
+        cfg["config.Load<br/>cluster-sample.yml"]
+        bctx["BuildContext<br/>cfg dryRun path"]
+        reg["Registry InitALLRegistry<br/>33 个 Step"]
+        build["每个 Step.Build<br/>产出 Action 列表"]
+        planf[("state initALL.plan.json<br/>hash + 状态")]
+        applyp["Apply 顺序执行<br/>跳过 completed"]
+        exec["Executor<br/>local ssh batch"]
+        chain["handler.Chain<br/>调用各 Handler.Handle"]
     end
 
-    init --> exec
-    create --> cfg
+    cfg --> bctx --> reg --> build --> planf --> applyp --> exec --> chain
+    initc --> exec
+    createc --> cfg
 ```
 
 关键设计:
@@ -394,12 +406,12 @@ flowchart LR
 
 ### 4.7 K8s Agent
 
-```
-[Master API] ── HTTP(签名头) ──► [datasophon-k8s-agent Pod]
-                                       │
-                                       ├── /probe/*    健康探针
-                                       ├── /demo/*     演示接口
-                                       └── 自定义业务接口
+```mermaid
+flowchart LR
+    M["Master API"] -->|HTTP + 签名头| A["datasophon-k8s-agent Pod"]
+    A --> P["/probe 健康探针"]
+    A --> D["/demo 演示接口"]
+    A --> B["自定义业务接口"]
 ```
 
 `SignatureVerifier` 校验请求头中的 `timestamp + nonce` RSA-SHA256 签名,公钥下发到 Agent,私钥保留在 Master,实现"K8s 内部远端执行"的最小化鉴权(无需打通业务网络)。`UniResponseBodyWrapperAdvice` 统一封装返回体。
@@ -460,7 +472,7 @@ erDiagram
 
 | 模块 | 产物 |
 |---|---|
-| datasophon-api | `target/datasophon-manager-2.1-SNAPSHOT.tar.gz`(assembly 内嵌前端 `dist/`) |
+| datasophon-api | `target/datasophon-manager-3.0-SNAPSHOT.tar.gz`(assembly 内嵌前端 `dist/`) |
 | datasophon-worker | `target/` 包含可执行脚本 + 全量 jar |
 | datasophon-cli-go | `dist/datasophon-cli-{linux,darwin}-{amd64,arm64}` |
 | datasophon-k8s-agent | Docker 镜像(`docker/`)+ Helm Chart(`helm/`) |
@@ -469,19 +481,19 @@ erDiagram
 
 ```mermaid
 flowchart TB
-    subgraph Bare["裸机/虚拟机部署"]
-        BareUI[Nginx / API 内嵌静态]
-        BareAPI[datasophon-manager.tar.gz<br/>解压运行]
-        BareWk[Worker 进程<br/>每节点 1 个]
+    subgraph Bare["裸机 或 虚拟机部署"]
+        BareUI["Nginx 或 API 内嵌静态"]
+        BareAPI["datasophon-manager.tar.gz<br/>解压运行"]
+        BareWk["Worker 进程<br/>每节点 1 个"]
     end
     subgraph Docker["Docker Compose"]
-        DCApi[datasophon/datasophon:dev]
-        DCDB[(MySQL 容器)]
+        DCApi["datasophon dev 镜像"]
+        DCDB[("MySQL 容器")]
     end
     subgraph K8s["Kubernetes"]
-        KApi[Master Deployment]
-        KAgent[k8s-agent DaemonSet]
-        KDB[(MySQL StatefulSet 或外部)]
+        KApi["Master Deployment"]
+        KAgent["k8s-agent DaemonSet"]
+        KDB[("MySQL StatefulSet 或外部")]
     end
 ```
 

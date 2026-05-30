@@ -20,8 +20,6 @@
  * SOFTWARE.
  */
 
- *
- */
 
 package com.datasophon.api.load;
 

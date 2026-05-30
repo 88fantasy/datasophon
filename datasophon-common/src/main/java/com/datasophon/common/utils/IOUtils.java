@@ -20,8 +20,6 @@
  * SOFTWARE.
  */
 
- */
-
 package com.datasophon.common.utils;
 
 import java.io.Closeable;
