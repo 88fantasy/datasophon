@@ -1,0 +1,239 @@
+# Datasophon K8s 部署拓扑模拟（1mw + 1 裸机 worker + 1 K8s Pod worker）
+#
+# 拓扑说明：
+#   mw-*       ── 模拟 mw1（middleware 节点）的各服务
+#   mw-worker  ── 模拟 mw1 上以 systemd 形式运行的裸机 datasophon-worker（hostname=mw1）
+#   k8s-worker ── 模拟 K8s 集群中 Deployment 形式的 datasophon-worker Pod（hostname=w1）
+#                 真实场景中这是 hostNetwork:true 的 Pod，此处用独立容器近似
+#   无真实 K8s：m1 节点的 kube-apiserver/etcd/Calico 等组件不在此 compose 范围内
+#
+# 启动：
+#   cd deploy/compose/kubernetes
+#   docker compose up --build
+#
+# 验证：
+#   curl http://localhost:8080/ddh/actuator/health
+#   docker compose logs mw-api    | grep -i "WorkerRegistry"
+#   docker compose logs mw-worker | grep -i "registered"
+#   docker compose logs k8s-worker| grep -i "registered"
+#
+# 详细部署文档：deploy/deployment-k8s.md
+
+name: datasophon-k8s
+
+services:
+
+  # ── mw1: Middleware Node ─────────────────────────────────────────────
+
+  mw-mysql:
+    image: mysql:8
+    container_name: ddh-k8s-mysql
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: datasophon
+      MYSQL_USER: datasophon
+      MYSQL_PASSWORD: datasophon
+    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_general_ci']
+    ports:
+      - "3308:3306"   # host 3308，避免与其他 compose 环境冲突
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-udatasophon", "-pdatasophon"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [ddh-k8s-net]
+
+  mw-nexus:
+    image: sonatype/nexus3
+    container_name: ddh-k8s-nexus
+    environment:
+      TZ: Asia/Shanghai
+      INSTALL4J_ADD_VM_PARAMS: >-
+        -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m
+        -Dnexus.security.randompassword=false
+    ports:
+      - "8081:8081"   # Nexus 默认端口 8081，datasophon-api 改为 8080 后不再冲突
+    volumes:
+      - nexus-data:/nexus-data
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8081/service/rest/v1/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+    networks: [ddh-k8s-net]
+
+  mw-nexus-init:
+    # 创建与真实部署一致的 Nexus 仓库：
+    #   yum    → 离线 OS 包，路径 /repository/yum/<arch>/<os>/
+    #   raw    → 二进制安装包
+    #   docker → 容器镜像 mirror（containerd hosts.toml 指向 :8083）
+    #   helm   → Helm chart 仓库
+    image: curlimages/curl:latest
+    container_name: ddh-k8s-nexus-init
+    depends_on:
+      mw-nexus:
+        condition: service_healthy
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        BASE=http://mw-nexus:8081
+        AUTH="admin:admin123"
+        H="Content-Type: application/json"
+
+        echo "=== Creating yum hosted repository ==="
+        curl -sf -u "$AUTH" -X POST "$BASE/service/rest/v1/repositories/yum/hosted" \
+          -H "$H" -d '{
+            "name":"yum","online":true,
+            "storage":{"blobStoreName":"default","strictContentTypeValidation":false,"writePolicy":"allow"},
+            "yum":{"repodataDepth":2}
+          }' && echo "yum repo created" || echo "yum repo may already exist"
+
+        echo "=== Creating raw hosted repository ==="
+        curl -sf -u "$AUTH" -X POST "$BASE/service/rest/v1/repositories/raw/hosted" \
+          -H "$H" -d '{
+            "name":"raw","online":true,
+            "storage":{"blobStoreName":"default","strictContentTypeValidation":false,"writePolicy":"allow"}
+          }' && echo "raw repo created" || echo "raw repo may already exist"
+
+        echo "=== Creating docker hosted repository (mirror for containerd) ==="
+        curl -sf -u "$AUTH" -X POST "$BASE/service/rest/v1/repositories/docker/hosted" \
+          -H "$H" -d '{
+            "name":"docker","online":true,
+            "docker":{"httpPort":8083,"forceBasicAuth":true}
+          }' && echo "docker repo created" || echo "docker repo may already exist"
+
+        echo "=== Creating helm hosted repository ==="
+        curl -sf -u "$AUTH" -X POST "$BASE/service/rest/v1/repositories/helm/hosted" \
+          -H "$H" -d '{
+            "name":"helm","online":true,
+            "storage":{"blobStoreName":"default","strictContentTypeValidation":false,"writePolicy":"allow"}
+          }' && echo "helm repo created" || echo "helm repo may already exist"
+
+        echo "=== Enabling Docker Bearer Token realm ==="
+        curl -sf -u "$AUTH" -X PUT "$BASE/service/rest/v1/security/realms/active" \
+          -H "$H" -d '["DockerToken","NexusAuthenticatingRealm"]' \
+          && echo "realms configured" || echo "realms config failed (non-fatal)"
+
+        echo "=== Nexus init done ==="
+    restart: "no"
+    networks: [ddh-k8s-net]
+
+  mw-minio:
+    # MinIO 模拟 Rustfs（S3 兼容对象存储）
+    image: minio/minio:latest
+    container_name: ddh-k8s-minio
+    command: server /data --address ":9040" --console-address ":9041"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9040:9040"
+      - "9041:9041"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:9040/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks: [ddh-k8s-net]
+
+  mw-api:
+    build:
+      context: ../../..
+      dockerfile: deploy/compose/Dockerfile.master
+    container_name: ddh-k8s-api
+    depends_on:
+      mw-mysql:
+        condition: service_healthy
+      mw-nexus-init:
+        condition: service_completed_successfully
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+      - "18081:18081"
+    volumes:
+      - ./conf/common.properties:/datasophon/conf/common.properties:ro
+      - ./conf/application-config.yml:/datasophon/conf/profiles/application-config.yml:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/ddh/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks: [ddh-k8s-net]
+
+  cluster-seed:
+    image: mysql:8
+    container_name: ddh-k8s-seed
+    depends_on:
+      mw-api:
+        condition: service_healthy
+    volumes:
+      - ./seed:/seed:ro
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        echo "Seeding k8s topology cluster record..."
+        mysql -h mw-mysql -u datasophon -pdatasophon datasophon < /seed/01-cluster.sql
+        echo "Seed done."
+    restart: "no"
+    networks: [ddh-k8s-net]
+
+  # ── mw1 裸机 datasophon-worker ──────────────────────────────────────
+  # hostname=mw1 → WorkerRegistry 注册为 hostname="mw1"
+  # 真实部署：masterHost=127.0.0.1；此处用 Docker DNS 名 mw-api
+
+  mw-worker:
+    build:
+      context: ../../..
+      dockerfile: deploy/compose/Dockerfile.worker
+    container_name: ddh-k8s-mw-worker
+    hostname: mw1
+    depends_on:
+      cluster-seed:
+        condition: service_completed_successfully
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "18082:18082"
+    volumes:
+      - ./conf/worker.properties:/datasophon-worker/conf/common.properties:ro
+    restart: on-failure
+    networks: [ddh-k8s-net]
+
+  # ── K8s Pod worker 模拟 ─────────────────────────────────────────────
+  # 对应真实 K8s Deployment（hostNetwork:true，落点 w1）
+  # hostname=w1 → WorkerRegistry 注册为 hostname="w1"
+
+  k8s-worker:
+    build:
+      context: ../../..
+      dockerfile: deploy/compose/Dockerfile.worker
+    container_name: ddh-k8s-k8s-worker
+    hostname: w1
+    depends_on:
+      cluster-seed:
+        condition: service_completed_successfully
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "18083:18082"   # host 18083 避免与 mw-worker 的 18082 冲突
+    volumes:
+      - ./conf/worker.properties:/datasophon-worker/conf/common.properties:ro
+    restart: on-failure
+    networks: [ddh-k8s-net]
+
+networks:
+  ddh-k8s-net:
+    driver: bridge
+
+volumes:
+  nexus-data:
+  minio-data:

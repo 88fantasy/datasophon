@@ -20,9 +20,6 @@
  * SOFTWARE.
  */
 
- *
- */
-
 package com.datasophon.worker.hook.db;
 
 import lombok.Data;

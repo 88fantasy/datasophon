@@ -1,143 +1,163 @@
 global:
+  cluster-type: {{.ClusterType}}
   offline: true
   osInfo:
     auto: true
     osType: openEuler-22.03-LTS-SP3
     archType: x86_64
-  registry:
-    enable: true
-    type: "nexus"
-    config:
-      webPort: 8091
-      user: "admin"
-      password: "{{.RegistryPassword}}"
-      dockerHttpPort: 8083
-      repositories:
-        - "yum"
-        - "raw"
-        - "apt"
-        - "docker"
-        - "helm"
-    node: "app6"
-  yumServer:
-    enable: true
-    node: "app6"
-    listenPort: 4080
-  nmapServer:
-    enable: true
-    node: "app6"
   sshAuthType: "AUTO"
-  mysql:
-    enable: true
-    user: "root"
-    password: "{{.MySQLRootPassword}}"
-    port: 3306
-    appDbs:
-      - account: "datasophon"
-        password: "fI5sQ4yQ4fP5"
-        dbName: "datasophon"
-      - account: "hive"
-        password: "fI5sQ4yQ4fP5"
-        dbName: "hive"
-      - account: "dolphinscheduler"
-        password: "fI5sQ4yQ4fP5"
-        dbName: "dolphinscheduler"
-      - account: "ustream"
-        password: "fI5sQ4yQ4fP5"
-        dbName: "ustream"
-      - account: "nacos"
-        password: "fI5sQ4yQ4fP5"
-        dbName: "nacos"
-      - account: "bigdata"
-        password: "fI5sQ4yQ4fP5"
-        dbName: "bigdata"
-      - account: "juicefs"
-        password: "fI5sQ4yQ4fP5"
-        dbName: "juicefs"
-      - account: "portal"
-        password: "fI5sQ4yQ4fP5"
-        dbName: "portal"
-      - account: "datart"
-        password: "fI5sQ4yQ4fP5"
-        dbName: "datart"
-    node: "app6"
-  ntpServer:
-    enable: true
-    node: "app6"
-  rustfs:
-    enable: true
-    config:
-      webPort: 9041
-      apiPort: 9040
-      user: "admin"
-      password: "{{.RustfsPassword}}"
-      installType: "SNSD" #可选SNSD(单节点单盘模式)，SNMD(单节点多磁盘模式)，MNMD(多节点多磁盘模式)
-      volumes: "/data/rustfs0" #示例：/data/rustfs0[SNSD], /data/rustfs{0...3}[SNMD], http://node{1...4}:9040/data/rustfs{0...3}[MNMD]
-    nodes: ["app6"]
-  kubernetes:
-    enable: true
-    baseServices:
-      namespaces: ["prod"]
-      masters: [ "app2"]
-      nodes: ["app3", "app4", "app6"]
-      sealos: true
-      kubernetesI: true
-      helmI: true
-      calicoI: true
-      ingressI: true
-    kuboardI:
-      enable: true
-      node: "app2"
-      etcdNodes: ["app3", "app4", "app6"] #至少3个节点
-    k8sTools:
-      docker: true
-      helm: true
-      helmify: true
-      kubectl: true
 
-  packages:
-    os: "openEuler-22.03-LTS-SP3.tar.gz"
-    config: "config.tar.gz"
-    soft: "packages.tar.gz"
-    nexus:
-      x86_64: "nexus-3.85.0-03-linux-x86_64.tar.gz"
-      aarch64: "nexus-3.85.0-03-linux-aarch_64.tar.gz"
-    mysql:
-      x86_64: "mysql-8.0.28-1.el8.x86_64.rpm-bundle.tar"
-      aarch64: "mysql-8.0.28-1.el8.aarch64.rpm-bundle.tar"
-    rustfs:
-      x86_64: "rustfs-linux-x86_64-musl-1.0.0.tar.gz"
-      aarch64: "rustfs-linux-aarch64-musl-1.0.0.tar.gz"
-    sealos:
-      x86_64: "sealos_5.1.0_linux_amd64.tar.gz"
-      aarch64: "sealos_5.1.0_linux_arm64.tar.gz"
-    kubernetesI:
-      x86_64: "kubernetes-v1.31.8-x86.tar"
-      aarch64: "kubernetes-v1.31.8-arm.tar"
-    helmI:
-      x86_64: "helm-v4.0.1-x86.tar"
-      aarch64: "helm-v4.0.1-arm.tar"
-    calicoI:
-      x86_64: "calico-v3.28.1-x86.tar"
-      aarch64: "calico-v3.28.1-arm.tar"
-    ingressI:
-      x86_64: "ingress-nginx-4.1.0-x86.tar"
-      aarch64: "ingress-nginx-4.1.0-arm.tar"
-    kuboardI:
-      x86_64: "kuboard-v3-x86.tar"
-      aarch64: "kuboard-v3-arm.tar"
-    helmify:
-      x86_64: "helmify_Linux_arm64.tar.gz"
-      aarch64: "helmify_Linux_x86_64.tar.gz"
-    docker:
-      x86_64: "docker-x86-29.3.1.tgz"
-      aarch64: "docker-arm-29.3.1.tgz"
-    helm:
-      x86_64: "helm-v4.0.1-linux-amd64.tar.gz"
-      aarch64: "helm-v4.0.1-linux-arm64.tar.gz"
-    kubectl:
-      x86_64: "kubectl-x86"
-      aarch64: "kubectl-arm"
+registry:
+  enable: true
+  type: "nexus"
+  config:
+    webPort: 8081
+    user: "admin"
+    password: "{{.RegistryPassword}}"
+    dockerHttpPort: 8083
+    repositories:
+      - "yum"
+      - "raw"
+      - "apt"
+      - "docker"
+      - "helm"
+  node: "app6"
+
+yumServer:
+  enable: false   # Nexus yum 仓库已接管离线源，不再单独安装 httpd YumServer
+  node: "app6"
+  listenPort: 4080
+
+nmapServer:
+  enable: true
+  node: "app6"
+
+mysql:
+  enable: true
+  user: "root"
+  password: "{{.MySQLRootPassword}}"
+  port: 3306
+  appDbs:
+    - account: "datasophon"
+      password: "fI5sQ4yQ4fP5"
+      dbName: "datasophon"
+    - account: "hive"
+      password: "fI5sQ4yQ4fP5"
+      dbName: "hive"
+    - account: "dolphinscheduler"
+      password: "fI5sQ4yQ4fP5"
+      dbName: "dolphinscheduler"
+    - account: "ustream"
+      password: "fI5sQ4yQ4fP5"
+      dbName: "ustream"
+    - account: "nacos"
+      password: "fI5sQ4yQ4fP5"
+      dbName: "nacos"
+    - account: "bigdata"
+      password: "fI5sQ4yQ4fP5"
+      dbName: "bigdata"
+    - account: "juicefs"
+      password: "fI5sQ4yQ4fP5"
+      dbName: "juicefs"
+    - account: "portal"
+      password: "fI5sQ4yQ4fP5"
+      dbName: "portal"
+    - account: "datart"
+      password: "fI5sQ4yQ4fP5"
+      dbName: "datart"
+  node: "app6"
+
+ntpServer:
+  enable: true
+  node: "app6"
+
+rustfs:
+  enable: true
+  config:
+    webPort: 9041
+    apiPort: 9040
+    user: "admin"
+    password: "{{.RustfsPassword}}"
+    installType: "SNSD" #可选SNSD(单节点单盘模式)，SNMD(单节点多磁盘模式)，MNMD(多节点多磁盘模式)
+    volumes: "/data/rustfs0" #示例：/data/rustfs0[SNSD], /data/rustfs{0...3}[SNMD], http://node{1...4}:9040/data/rustfs{0...3}[MNMD]
+  nodes: ["app6"]
+{{if .IsKubernetes}}
+kubernetes:
+  enable: true
+  baseServices:
+    namespaces: ["prod"]
+    masters: ["app2"]
+    nodes: ["app3", "app4", "app6"]
+    sealos: true
+    kubernetesI: true
+    helmI: true
+    calicoI: true
+    ingressI: true
+  kuboardI:
+    enable: true
+    node: "app2"
+    etcdNodes: ["app3", "app4", "app6"] #至少3个节点
+  k8sTools:
+    docker: true
+    containerd: false
+    helm: true
+    helmify: true
+    kubectl: true
+{{end}}
+packages:
+  os: "openEuler-22.03-LTS-SP3.tar.gz"
+  config: "config.tar.gz"
+  soft: "packages.tar.gz"
+  nexus:
+    x86_64: "nexus-3.85.0-03-linux-x86_64.tar.gz"
+    aarch64: "nexus-3.85.0-03-linux-aarch_64.tar.gz"
+  mysql:
+    x86_64: "mysql-8.0.28-1.el8.x86_64.rpm-bundle.tar"
+    aarch64: "mysql-8.0.28-1.el8.aarch64.rpm-bundle.tar"
+  rustfs:
+    x86_64: "rustfs-linux-x86_64-musl-1.0.0.tar.gz"
+    aarch64: "rustfs-linux-aarch64-musl-1.0.0.tar.gz"
+{{- if .IsKubernetes}}
+  sealos:
+    x86_64: "sealos_5.1.0_linux_amd64.tar.gz"
+    aarch64: "sealos_5.1.0_linux_arm64.tar.gz"
+  kubernetesI:
+    x86_64: "kubernetes-v1.31.8-x86.tar"
+    aarch64: "kubernetes-v1.31.8-arm.tar"
+  helmI:
+    x86_64: "helm-v4.0.1-x86.tar"
+    aarch64: "helm-v4.0.1-arm.tar"
+  calicoI:
+    x86_64: "calico-v3.28.1-x86.tar"
+    aarch64: "calico-v3.28.1-arm.tar"
+  ingressI:
+    x86_64: "ingress-nginx-4.1.0-x86.tar"
+    aarch64: "ingress-nginx-4.1.0-arm.tar"
+  kuboardI:
+    x86_64: "kuboard-v3-x86.tar"
+    aarch64: "kuboard-v3-arm.tar"
+  helmify:
+    x86_64: "helmify_Linux_x86_64.tar.gz"
+    aarch64: "helmify_Linux_arm64.tar.gz"
+  docker:
+    x86_64: "docker-x86-29.3.1.tgz"
+    aarch64: "docker-arm-29.3.1.tgz"
+  containerd:
+    x86_64: "containerd-2.3.0-linux-amd64.tar.gz"
+    aarch64: "containerd-2.3.0-linux-arm64.tar.gz"
+  runc:
+    x86_64: "runc.amd64"
+    aarch64: "runc.arm64"
+  cni:
+    x86_64: "cni-plugins-linux-amd64-v1.6.0.tgz"
+    aarch64: "cni-plugins-linux-arm64-v1.6.0.tgz"
+  helm:
+    x86_64: "helm-v4.0.1-linux-amd64.tar.gz"
+    aarch64: "helm-v4.0.1-linux-arm64.tar.gz"
+  kubectl:
+    x86_64: "kubectl-x86"
+    aarch64: "kubectl-arm"
+{{- end}}
 
 nodes:
   - ip: {{.CurrentNodeIP}}
@@ -145,4 +165,3 @@ nodes:
     password: ""
     port: 22
     hostname: "ddh1"
-  #    projectEnvDetailId: 2001478085436047360

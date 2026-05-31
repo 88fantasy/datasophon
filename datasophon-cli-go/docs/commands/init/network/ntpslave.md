@@ -2,7 +2,7 @@
 
 ## 用途
 
-将目标节点配置为 chrony NTP 从节点，使其从指定的 NTP Server IP 同步时间。需在 NTP Server 节点执行 `init ntpserver` 之后运行。
+将目标节点配置为 chrony NTP 从节点，使其从指定的 NTP Server IP 同步时间。需在 NTP Server 节点执行 `create ntp-server` 之后运行。
 
 ## 用法 (Synopsis)
 
@@ -47,9 +47,9 @@ datasophon-cli init ntpslave \
 | 错误信息 | 根因 | 处置 |
 |---|---|---|
 | `required flag(s) "ntpServerIp" not set` | 未提供 `--ntpServerIp` | 补上 NTP Server IP |
-| `chrony 同步失败` | NTP Server 端口 123/UDP 不通 | 检查防火墙，确认 `init ntpserver` 已成功执行 |
+| `chrony 同步失败` | NTP Server 端口 123/UDP 不通 | 检查防火墙，确认 `create ntp-server` 已成功执行 |
 
 ## 相关命令
 
-- [`init ntpserver`](./ntpserver.md) — 先在 NTP Server 节点执行
+- [`create ntp-server`](../../create/ntp-server.md) — 先在 NTP Server 节点执行
 - [DAG 步骤表](../../../reference/init-all-dag.md)

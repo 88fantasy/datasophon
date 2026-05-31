@@ -2,7 +2,6 @@ package plan
 
 import (
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -18,12 +17,11 @@ func GeneratePlan(action string, registry []Step, ctx *BuildContext) (*PlanFile,
 		Action:      action,
 	}
 
-	onlyK8s := ctx.Cfg.Global.Kubernetes.OnlyInstall
 	for _, s := range registry {
 		ps := PlanStep{ID: s.ID, Name: s.Name, Status: StatusPending}
 
-		// OnlyInstall 模式：跳过非 k8s- 前缀的 step
-		if onlyK8s && !strings.HasPrefix(s.ID, "k8s-") {
+		// Scope 检查：步骤与集群类型不匹配时跳过
+		if !s.Scope.Matches(ctx.Cfg.Global.ClusterType) {
 			ps.Status = StatusSkipped
 			pf.Steps = append(pf.Steps, ps)
 			continue

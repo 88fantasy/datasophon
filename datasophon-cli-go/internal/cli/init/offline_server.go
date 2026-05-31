@@ -6,7 +6,6 @@ import (
 	"log/slog"
 
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/executor"
-	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -24,23 +23,8 @@ func (t *InitOfflineServer) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitOfflineServer) Command(dryRun *bool) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "offlineServer",
-		Short: "配置 httpd/apache2 离线源服务端",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runLocal(*dryRun, t.doRun)
-		},
-	}
-	t.AddBaseFlags(cmd)
-	cmd.Flags().StringVarP(&t.PackagePath, "packagePath", "p", "", "安装包目录（必填）")
-	cmd.Flags().StringVar(&t.ServerIP, "serverIp", "", "httpd 服务 IP（必填）")
-	cmd.Flags().StringVar(&t.ServerPort, "serverPort", "", "httpd 服务端口（必填）")
-	_ = cmd.MarkFlagRequired("packagePath")
-	_ = cmd.MarkFlagRequired("serverIp")
-	_ = cmd.MarkFlagRequired("serverPort")
-	return cmd
-}
+// Run 导出 doRun，供 create 包调用。
+func (t *InitOfflineServer) Run(exec executor.Executor) error { return t.doRun(exec) }
 
 func (t *InitOfflineServer) doRun(exec executor.Executor) error {
 	if t.EnableRegistry {

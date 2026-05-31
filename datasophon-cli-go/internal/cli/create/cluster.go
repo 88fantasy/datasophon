@@ -9,14 +9,16 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/plan"
 )
 
 type createClusterCmd struct {
 	nodeInitializer
 
-	yes      bool // --yes/-y：跳过确认
-	planOnly bool // --plan-only：只生成计划，不执行
+	yes      bool   // --yes/-y：跳过确认
+	planOnly bool   // --plan-only：只生成计划，不执行
+	typeFlag string // -t/--type：集群类型（hadoop | kubernetes），必填
 }
 
 func NewClusterCommand(dryRun *bool) *cobra.Command {
@@ -31,6 +33,7 @@ func NewClusterCommand(dryRun *bool) *cobra.Command {
 	}
 
 	c.bindCommonFlags(cmd)
+	c.bindTypeFlag(cmd)
 	cmd.Flags().BoolVarP(&c.yes, "yes", "y", false, "跳过确认，直接执行计划")
 	cmd.Flags().BoolVar(&c.planOnly, "plan-only", false, "只生成计划，不执行（等价于 plan 子命令）")
 
@@ -44,6 +47,7 @@ func NewClusterCommand(dryRun *bool) *cobra.Command {
 		},
 	}
 	c.bindCommonFlags(planCmd)
+	c.bindTypeFlag(planCmd)
 
 	// apply 子命令
 	applyCmd := &cobra.Command{
@@ -55,6 +59,7 @@ func NewClusterCommand(dryRun *bool) *cobra.Command {
 		},
 	}
 	c.bindCommonFlags(applyCmd)
+	c.bindTypeFlag(applyCmd)
 
 	cmd.AddCommand(planCmd, applyCmd)
 	return cmd
@@ -80,9 +85,33 @@ func (c *createClusterCmd) runDefault() error {
 	return c.runApply()
 }
 
+// bindTypeFlag 将 -t/--type 注册到 cmd 并标记必填。
+func (c *createClusterCmd) bindTypeFlag(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&c.typeFlag, "type", "t", "", "集群类型: hadoop | kubernetes (必填)")
+	_ = cmd.MarkFlagRequired("type")
+}
+
+// applyTypeToConfig 把 CLI flag 覆盖到 cfg.Global.ClusterType，并校验合法性。
+// flag 为空时回退到配置文件中的 cluster-type，统一经 config.ParseClusterType 校验。
+func (c *createClusterCmd) applyTypeToConfig() error {
+	effective := string(c.currentCfg.Global.ClusterType)
+	if c.typeFlag != "" {
+		effective = c.typeFlag
+	}
+	ct, err := config.ParseClusterType(effective)
+	if err != nil {
+		return err
+	}
+	c.currentCfg.Global.ClusterType = ct
+	return nil
+}
+
 // runPlan 生成执行计划并打印摘要。
 func (c *createClusterCmd) runPlan() error {
 	if _, err := c.setup(); err != nil {
+		return err
+	}
+	if err := c.applyTypeToConfig(); err != nil {
 		return err
 	}
 	ctx := c.toBuildContext()
@@ -102,6 +131,9 @@ func (c *createClusterCmd) runPlan() error {
 // runApply 执行计划（断点续跑）。
 func (c *createClusterCmd) runApply() error {
 	if _, err := c.setup(); err != nil {
+		return err
+	}
+	if err := c.applyTypeToConfig(); err != nil {
 		return err
 	}
 	ctx := c.toBuildContext()

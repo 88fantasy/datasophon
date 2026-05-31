@@ -1,26 +1,33 @@
 # 测试固件 — 全明文密码，最小化节点集
 # 用于 test/config/loader_test.go
+
 global:
+  cluster-type: hadoop
   offline: false
   osInfo:
     auto: true
     osType: centos
     archType: x86_64
   sshAuthType: "AUTO"
-  registry:
-    enable: false
-  mysql:
-    enable: false
-    user: "root"
-    password: "testpassword"
-    port: 3306
-  rustfs:
-    enable: false
-  kubernetes:
-    enable: false
-  packages:
-    os: "centos.tar.gz"
-    soft: "packages.tar.gz"
+
+registry:
+  enable: false
+
+mysql:
+  enable: false
+  user: "root"
+  password: "testpassword"
+  port: 3306
+
+rustfs:
+  enable: false
+
+kubernetes:
+  enable: false
+
+packages:
+  os: "centos.tar.gz"
+  soft: "packages.tar.gz"
 
 nodes:
   - ip: "192.168.1.10"
@@ -28,13 +35,6 @@ nodes:
     password: "node1pass"
     port: 22
     hostname: "node1"
-  - ip: "192.168.1.11"
-    user: "root"
-    password: "node2pass"
-    port: 22
-    hostname: "node2"
-
-addNodes:
   - ip: "192.168.1.11"
     user: "root"
     password: "node2pass"

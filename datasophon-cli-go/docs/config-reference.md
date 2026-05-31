@@ -13,14 +13,30 @@
 ## 顶层结构
 
 ```yaml
-global:        # 全局配置（registry / mysql / ntp / kubernetes / packages…）
+global:        # 全局配置（cluster-type / registry / mysql / ntp / kubernetes / packages…）
 nodes:         # 集群节点列表（至少 1 个，含主节点）
-addNodes:      # 待扩容节点列表（仅 create node / initSingleNode 使用）
 ```
+
+> 早期版本支持的顶层 `type:` 和 `addNodes:` 字段均已移除。集群类型改为 `global.cluster-type`；扩容通过 `create node --ip ...` 对单节点初始化，成功后由命令自动追加到 `nodes` 列表。
 
 ---
 
 ## global
+
+### global.cluster-type
+
+| 字段 | 类型 | 默认 | 必填 | 说明 |
+|---|---|---|---|---|
+| `cluster-type` | string | — | 是 | 集群类型。`hadoop`：Hadoop 大数据集群（含 osuser 步骤，跳过 k8s-*）；`kubernetes`：K8s 集群（包含所有 k8s-* 步骤，跳过 osuser） |
+
+`cluster-type` 也可通过 `--type` / `-t` CLI flag 覆盖（flag 优先于文件中的值）。两者均需为 `hadoop` 或 `kubernetes`，否则命令启动时报错。
+
+```yaml
+global:
+  cluster-type: hadoop   # 或 kubernetes
+```
+
+---
 
 ### global.offline
 
@@ -162,8 +178,9 @@ Kubernetes 集群部署（使用 Sealos 方案）。
 | 字段 | 类型 | 默认 | 说明 |
 |---|---|---|---|
 | `enable` | bool | `false` | 是否部署 K8s。`false` 时所有 `k8s-*` 步骤均跳过 |
-| `onlyInstall` | bool | `false` | `true` 时仅安装 K8s，跳过其他非 K8s 步骤 |
 | `force` | bool | `false` | 强制重装 K8s |
+
+> `onlyInstall` 字段已移除，由顶层 `type: kubernetes` 取代。
 
 #### global.kubernetes.baseServices
 
@@ -269,20 +286,17 @@ nodes:
 
 ---
 
-## addNodes
+## 节点扩容
 
-仅供 `create node` 和 `initSingleNode` 使用。字段结构与 `nodes` 完全相同。
+新节点不再通过配置文件提前声明。请直接对单节点执行：
 
-```yaml
-addNodes:
-  - ip: 192.168.1.20
-    port: 22
-    user: root
-    password: "YourPassword"
-    hostname: app7
+```bash
+datasophon-cli create node \
+  -p /data/datasophon --installPath /opt/install -n /data/datasophon/datasophon-init/packages \
+  --ip 192.168.1.20 --user root --password "YourPassword" --port 22 --hostname app7
 ```
 
-`create node` 执行结束后，该节点会被自动追加到 `cluster-sample.yml` 的 `nodes` 列表中。
+命令完成后，该节点会**自动追加**到 `cluster-sample.yml` 的 `nodes` 列表。详见 [`create node`](./commands/create/node.md)。
 
 ---
 

@@ -19,7 +19,7 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   ~ SOFTWARE.
   -->
-
+<project>
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.datasophon</groupId>
@@ -255,7 +255,7 @@
                             <outputDirectory>${project.build.directory}</outputDirectory>
                             <resources>
                                 <resource>
-                                    <directory>${project.basedir}/../build-resources</directory>
+                                    <directory>${project.basedir}/../datasophon-assembly/build-resources</directory>
                                     <includes>
                                         <include>release.txt</include>
                                     </includes>

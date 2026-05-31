@@ -188,4 +188,7 @@ datasophon-cli create cluster apply \
 答：在 `cluster-sample.yml` 中把对应模块的 `enable` 设为 `false`（如 `global.kubernetes.enable: false`），DAG 中相关步骤会自动跳过。
 
 **问：如何新增节点而不重跑全量初始化？**
-答：见 [`create node`](./commands/create/node.md)。
+答：用 `create node --ip <IP> --user <user> --password <pass> --port <port> --hostname <hn>`，对单节点执行 10 步基础初始化。详见 [`create node`](./commands/create/node.md)。安装成功后该节点会自动追加到 `cluster-sample.yml` 的 `nodes` 列表。
+
+**问：MySQL / Nexus / Rustfs / NTP / nmap 安装为什么不在 init 命令组里？**
+答：自 2026-05 重构后，这些涉及"特定节点远程安装"的子命令已统一搬到 `create` 命令组下，并新增了双模式（配置文件模式 + 手动模式）。`init` 命令组现在专门承载"在已登录节点上单步本地初始化"语义。完整命令对照见 [`create` 命令参考](./commands/create/README.md)。

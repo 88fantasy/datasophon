@@ -20,6 +20,7 @@
   ~ SOFTWARE.
   -->
 
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
 
@@ -146,49 +147,6 @@
             <outputDirectory>/bin/compose</outputDirectory>
             <directoryMode>0755</directoryMode>
             <fileMode>0755</fileMode>
-        </fileSet>
-        <fileSet>
-            <directory>${basedir}/../datasophon-cli/src/main/resources/sbin</directory>
-            <includes>
-                <include>**</include>
-            </includes>
-            <outputDirectory>datasophon-cli/sbin/</outputDirectory>
-            <fileMode>0755</fileMode>
-            <lineEnding>unix</lineEnding>
-        </fileSet>
-        <fileSet>
-            <directory>${basedir}/../datasophon-cli/target</directory>
-            <includes>
-                <include>datasophon-cli-cli.jar</include>
-            </includes>
-            <outputDirectory>datasophon-cli/sbin</outputDirectory>
-        </fileSet>
-        <fileSet>
-            <directory>${basedir}/../datasophon-cli/src/main/resources</directory>
-            <includes>
-                <include>cluster-sample.yml</include>
-            </includes>
-            <outputDirectory>datasophon-cli/config</outputDirectory>
-            <fileMode>0755</fileMode>
-            <lineEnding>unix</lineEnding>
-        </fileSet>
-        <fileSet>
-            <directory>${basedir}/../datasophon-cli</directory>
-            <includes>
-                <include>README.md</include>
-            </includes>
-            <outputDirectory>datasophon-cli/</outputDirectory>
-            <fileMode>0755</fileMode>
-            <lineEnding>unix</lineEnding>
-        </fileSet>
-        <fileSet>
-            <directory>${basedir}/../datasophon-cli/src/main/resources/bin</directory>
-            <includes>
-                <include>**</include>
-            </includes>
-            <outputDirectory>datasophon-cli/bin/</outputDirectory>
-            <fileMode>0755</fileMode>
-            <lineEnding>unix</lineEnding>
         </fileSet>
     </fileSets>
 </assembly>

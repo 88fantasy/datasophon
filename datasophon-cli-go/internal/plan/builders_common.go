@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
-	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/handler"
 )
 
@@ -18,7 +17,7 @@ func buildBinPackage(sel nodeSelector) BuildFunc {
 			InstallPath:            ctx.InstallPath,
 			InitPathOverwriteForce: ctx.InitPathOverwriteForce,
 		}
-		applyRegistry(&t.TaskBase, &ctx.Cfg.Global.Registry)
+		applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 		nodes := sel(ctx)
 		workers := workerHostSlice(nodes, ctx.LocalIP)
 		return hostsToActions(workers, t), nil
@@ -39,7 +38,7 @@ func buildTar(sel nodeSelector) BuildFunc {
 func buildJdk8(sel nodeSelector) BuildFunc {
 	return func(ctx *BuildContext) ([]Action, error) {
 		t := &initcmd.InitJdk8{PackagePath: ctx.PackagesPath}
-		applyRegistry(&t.TaskBase, &ctx.Cfg.Global.Registry)
+		applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 		nodes := sel(ctx)
 		workers := workerHostSlice(nodes, ctx.LocalIP)
 		return hostsToActions(workers, t), nil
@@ -50,7 +49,7 @@ func buildJdk8(sel nodeSelector) BuildFunc {
 func buildJdk17(sel nodeSelector) BuildFunc {
 	return func(ctx *BuildContext) ([]Action, error) {
 		t := &initcmd.InitJdk17{PackagePath: ctx.PackagesPath}
-		applyRegistry(&t.TaskBase, &ctx.Cfg.Global.Registry)
+		applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 		nodes := sel(ctx)
 		workers := workerHostSlice(nodes, ctx.LocalIP)
 		return hostsToActions(workers, t), nil
@@ -60,8 +59,8 @@ func buildJdk17(sel nodeSelector) BuildFunc {
 // buildOfflineNodes 配置 yum/apt 离线源（所有选定节点）。
 func buildOfflineNodes(sel nodeSelector) BuildFunc {
 	return func(ctx *BuildContext) ([]Action, error) {
-		ys := ctx.Cfg.Global.YumServer
-		reg := ctx.Cfg.Global.Registry
+		ys := ctx.Cfg.YumServer
+		reg := ctx.Cfg.Registry
 		t := &initcmd.InitOfflineSlave{
 			ServerIP:   ys.Node,
 			ServerPort: ys.ListenPort,
@@ -103,7 +102,7 @@ func buildAllHost(sel nodeSelector) BuildFunc {
 // buildNtpSlave 配置 NTP 从节点（排除 NTP Server 自身）。
 func buildNtpSlave(sel nodeSelector) BuildFunc {
 	return func(ctx *BuildContext) ([]Action, error) {
-		ntp := ctx.Cfg.Global.NtpServer
+		ntp := ctx.Cfg.NtpServer
 		serverNode, err := requireNode(ctx.GlobalNodes, ntp.Node)
 		if err != nil {
 			return nil, fmt.Errorf("ntpServer 节点: %w", err)
@@ -126,16 +125,4 @@ func simpleAllNodes(newH func() handler.Handler, sel nodeSelector) BuildFunc {
 		}
 		return actions, nil
 	}
-}
-
-// ─── initSingleNode 专用的 buildAllHost 变体 ──────────────────────────────────
-
-// buildAllHostBoth 先更新 cfg.Nodes，再更新 cfg.AddNodes（initSingleNode 专用）。
-func buildAllHostBoth(ctx *BuildContext) ([]Action, error) {
-	t := &initcmd.InitAllHost{}
-	applyConfig(&t.TaskBase, ctx.ConfigYaml)
-	all := make([]config.Host, len(ctx.Cfg.Nodes)+len(ctx.Cfg.AddNodes))
-	copy(all, ctx.Cfg.Nodes)
-	copy(all[len(ctx.Cfg.Nodes):], ctx.Cfg.AddNodes)
-	return hostsToActions(hostsToPtr(all), t), nil
 }

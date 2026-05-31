@@ -12,5 +12,10 @@ func NewCreateCommand(dryRun *bool) *cobra.Command {
 	cmd.AddCommand(NewNodeCommand(dryRun))
 	cmd.AddCommand(NewConfigCommand())
 	cmd.AddCommand(NewRegistryCommand(dryRun))
+	cmd.AddCommand(NewMysqlCommand(dryRun))
+	cmd.AddCommand(NewRustfsCommand(dryRun))
+	cmd.AddCommand(NewNmapServerCommand(dryRun))
+	cmd.AddCommand(NewNtpServerCommand(dryRun))
+	cmd.AddCommand(NewYumServerCommand(dryRun))
 	return cmd
 }

@@ -54,8 +54,6 @@ public class ServiceRoleStrategyContext {
         map.put("SRBE", new BEHandlerStrategy("STARROCKS", "SRBE"));
         map.put("DorisBE", new BEHandlerStrategy("DORIS", "DorisBE"));
         map.put("HistoryServer", new HistoryServerHandlerStrategy("YARN", "HistoryServer"));
-        map.put("BigData", new BigDataMasterHandlerStrategy("BIGDATA", "BigData"));
-
         // TEZ Server service
         map.put("TezServer", new TezServerHandlerStrategy("TEZ", "TezServer"));
         // kyuubi
@@ -68,8 +66,6 @@ public class ServiceRoleStrategyContext {
         map.put("UMasterServer", new DSMasterHandlerStrategy("USCHEDULER", "UMasterServer"));
         // DolphinScheduler
         map.put("MasterServer", new DSMasterHandlerStrategy("DS", "MasterServer"));
-        // ustream
-        map.put("UstreamServer", new UstreamMasterHandlerStrategy("USTREAM", "UstreamServer"));
         // nacos
         map.put("NacosServer", new NacosMasterHandlerStrategy("NACOS", "NacosServer"));
 

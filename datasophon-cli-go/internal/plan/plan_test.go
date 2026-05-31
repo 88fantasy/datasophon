@@ -23,19 +23,18 @@ func (m *mockHandlerSsh) Handle(_ *ssh.Client, _ bool) error { return nil }
 
 func stubCfg() *config.ClusterConfig {
 	return &config.ClusterConfig{
+		Global: config.GlobalConfig{ClusterType: config.ClusterTypeHadoop},
 		Nodes: []config.Host{
 			{Hostname: "node1", IP: "10.0.0.1", Port: 22, User: "root", Password: "pass"},
 			{Hostname: "node2", IP: "10.0.0.2", Port: 22, User: "root", Password: "pass"},
 		},
-		Global: config.GlobalConfig{
-			Registry:   config.Registry{Enable: true, Node: "node1"},
-			Mysql:      config.MysqlConfig{Enable: true, Node: "node1"},
-			NtpServer:  config.NodeRef{Enable: true, Node: "node1"},
-			NmapServer: config.NodeRef{Enable: true, Node: "node1"},
-			YumServer:  config.YumServer{Enable: true, Node: "node1"},
-			Kubernetes: config.Kubernetes{Enable: false},
-			Rustfs:     config.Rustfs{Enable: true, Nodes: []string{"node1"}},
-		},
+		Registry:   config.Registry{Enable: true, Node: "node1"},
+		Mysql:      config.MysqlConfig{Enable: true, Node: "node1"},
+		NtpServer:  config.NodeRef{Enable: true, Node: "node1"},
+		NmapServer: config.NodeRef{Enable: true, Node: "node1"},
+		YumServer:  config.YumServer{Enable: true, Node: "node1"},
+		Kubernetes: config.Kubernetes{Enable: false},
+		Rustfs:     config.Rustfs{Enable: true, Nodes: []string{"node1"}},
 	}
 }
 
@@ -69,7 +68,7 @@ func TestGeneratePlan_AllEnabled(t *testing.T) {
 
 func TestGeneratePlan_K8sDisabled(t *testing.T) {
 	cfg := stubCfg()
-	cfg.Global.Kubernetes.Enable = false
+	cfg.Kubernetes.Enable = false
 	ctx := stubCtx(cfg, t.TempDir())
 	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
 	require.NoError(t, err)
@@ -88,7 +87,7 @@ func TestGeneratePlan_K8sDisabled(t *testing.T) {
 
 func TestGeneratePlan_RegistryDisabled(t *testing.T) {
 	cfg := stubCfg()
-	cfg.Global.Registry.Enable = false
+	cfg.Registry.Enable = false
 	ctx := stubCtx(cfg, t.TempDir())
 	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
 	require.NoError(t, err)
@@ -103,7 +102,7 @@ func TestGeneratePlan_RegistryDisabled(t *testing.T) {
 
 func TestGeneratePlan_MysqlDisabled(t *testing.T) {
 	cfg := stubCfg()
-	cfg.Global.Mysql.Enable = false
+	cfg.Mysql.Enable = false
 	ctx := stubCtx(cfg, t.TempDir())
 	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
 	require.NoError(t, err)
@@ -116,19 +115,38 @@ func TestGeneratePlan_MysqlDisabled(t *testing.T) {
 	}
 }
 
-func TestGeneratePlan_OnlyInstallK8s(t *testing.T) {
+func TestGeneratePlan_TypeHadoop_SkipsK8sSteps(t *testing.T) {
 	cfg := stubCfg()
-	cfg.Global.Kubernetes.Enable = true
-	cfg.Global.Kubernetes.OnlyInstall = true
+	cfg.Global.ClusterType = config.ClusterTypeHadoop
+	cfg.Kubernetes.Enable = true
 	ctx := stubCtx(cfg, t.TempDir())
 	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
 	require.NoError(t, err)
 
-	for _, s := range pf.Steps {
-		if len(s.ID) < 4 || s.ID[:4] != "k8s-" {
-			assert.Equal(t, StatusSkipped, s.Status, "non-k8s step %s should be skipped", s.ID)
-		}
+	// osuser 应执行（hadoop-only 但 type=hadoop）
+	assertStepStatus(t, pf, "init-hadoopuser", StatusPending)
+	// k8s-* 与 init-docker-for-registry 应跳过（KubernetesOnly）
+	for _, id := range []string{
+		"k8s-base-services", "k8s-kuboard", "k8s-registry-conf",
+		"k8s-docker", "k8s-kubectl", "k8s-helm", "k8s-helmify",
+		"init-docker-for-registry",
+	} {
+		assertStepStatus(t, pf, id, StatusSkipped)
 	}
+}
+
+func TestGeneratePlan_TypeKubernetes_SkipsOsuser(t *testing.T) {
+	cfg := stubCfg()
+	cfg.Global.ClusterType = config.ClusterTypeKubernetes
+	cfg.Kubernetes.Enable = true
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+
+	// osuser 应跳过（hadoop-only 但 type=kubernetes）
+	assertStepStatus(t, pf, "init-hadoopuser", StatusSkipped)
+	// k8s-base-services 应执行（KubernetesOnly，Enable=true）
+	assertStepStatus(t, pf, "k8s-base-services", StatusPending)
 }
 
 // ─── Store tests ─────────────────────────────────────────────────────────────
@@ -171,7 +189,7 @@ func TestComputeHash_Stable(t *testing.T) {
 func TestComputeHash_ChangeDetected(t *testing.T) {
 	cfg := stubCfg()
 	h1 := ComputeHash(cfg)
-	cfg.Global.Mysql.Enable = !cfg.Global.Mysql.Enable
+	cfg.Mysql.Enable = !cfg.Mysql.Enable
 	h2 := ComputeHash(cfg)
 	assert.NotEqual(t, h1, h2)
 }
@@ -221,7 +239,7 @@ func TestApply_HashMismatch(t *testing.T) {
 	require.NoError(t, Save(tmpDir, pf))
 
 	// 修改 cfg 后 apply 应失败
-	cfg.Global.Mysql.Enable = !cfg.Global.Mysql.Enable
+	cfg.Mysql.Enable = !cfg.Mysql.Enable
 	ctx.Cfg = cfg
 
 	err = Apply(tmpDir, "test", registry, ctx)
@@ -256,4 +274,71 @@ func TestApply_FailedStepMarked(t *testing.T) {
 	loaded, err := Load(tmpDir, "test")
 	require.NoError(t, err)
 	assert.Equal(t, StatusFailed, loaded.Steps[0].Status)
+}
+
+// ─── Condition 边界用例 ────────────────────────────────────────────────────────
+
+func assertStepStatus(t *testing.T, pf *PlanFile, id string, want Status) {
+	t.Helper()
+	for _, s := range pf.Steps {
+		if s.ID == id {
+			assert.Equal(t, want, s.Status, "step %s", id)
+			return
+		}
+	}
+	t.Errorf("step %s not found in plan", id)
+}
+
+func TestGeneratePlan_NtpServerDisabled(t *testing.T) {
+	cfg := stubCfg()
+	cfg.NtpServer.Enable = false
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+	assertStepStatus(t, pf, "init-ntp-server", StatusSkipped)
+	assertStepStatus(t, pf, "init-ntp-slave", StatusSkipped)
+}
+
+func TestGeneratePlan_NmapServerDisabled(t *testing.T) {
+	cfg := stubCfg()
+	cfg.NmapServer.Enable = false
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+	assertStepStatus(t, pf, "init-nmap", StatusSkipped)
+}
+
+func TestGeneratePlan_OfflineNodesNotSkippedWhenRegistryEnabled(t *testing.T) {
+	cfg := stubCfg()
+	cfg.YumServer.Enable = false
+	cfg.Registry.Enable = true
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+	// YumServer=false 但 Registry=true → init-offline-nodes 不应跳过
+	assertStepStatus(t, pf, "init-offline-nodes", StatusPending)
+}
+
+func TestGeneratePlan_RustfsSkippedWhenRegistryDisabled(t *testing.T) {
+	cfg := stubCfg()
+	cfg.Rustfs.Enable = true
+	cfg.Registry.Enable = false
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+	assertStepStatus(t, pf, "init-rustfs", StatusSkipped)
+}
+
+func TestGeneratePlan_KuboardSkippedWhenKuboardDisabled(t *testing.T) {
+	cfg := stubCfg()
+	cfg.Global.ClusterType = config.ClusterTypeKubernetes
+	cfg.Kubernetes.Enable = true
+	cfg.Kubernetes.KuboardI.Enable = false
+	ctx := stubCtx(cfg, t.TempDir())
+	pf, err := GeneratePlan("initALL", InitALLRegistry, ctx)
+	require.NoError(t, err)
+	assertStepStatus(t, pf, "k8s-kuboard", StatusSkipped)
+	// 其他 k8s-* 应正常 pending（不跳过）
+	assertStepStatus(t, pf, "k8s-base-services", StatusPending)
+	assertStepStatus(t, pf, "k8s-docker", StatusPending)
 }

@@ -26,6 +26,7 @@ datasophon-cli [--dry-run] create cluster apply [flags]
 
 | flag | 简写 | 类型 | 默认 | 必填 | 说明 |
 |---|---|---|---|---|---|
+| `--type` | `-t` | string | — | **是** | 集群类型：`hadoop`（Hadoop 大数据集群）或 `kubernetes`（K8s 集群）。CLI 值优先于 `cluster-sample.yml` 中的 `global.cluster-type` 字段 |
 | `--datasophonPath` | `-p` | string | — | 是 | datasophon 根目录绝对路径（须以 `/` 开头且目录存在）。配置文件从 `<datasophonPath>/datasophon-init/config/cluster-sample.yml` 读取 |
 | `--installPath` | 无 | string | — | 是 | 组件安装根目录绝对路径，不存在时自动创建 |
 | `--productPackagesPath` | `-n` | string | — | 是 | 组件安装包目录路径 |
@@ -72,10 +73,11 @@ datasophon-cli create cluster apply -p /data/datasophon --installPath /opt/insta
 
 | 字段 | 说明 |
 |---|---|
+| `global.cluster-type` | 集群类型：`hadoop` 或 `kubernetes`。CLI `--type` 优先覆盖此值。两者均需合法，否则启动时报错 |
 | `nodes` | 至少 1 个节点；当前机器 IP 必须出现在列表中 |
 | `global.sshAuthType` | SSH 鉴权方式 |
 | `global.registry.enable` | 控制 `init-registry` / `init-registry-upload` / `init-offline-nodes` 步骤是否激活 |
-| `global.kubernetes.enable` | 控制所有 `k8s-*` 步骤是否激活 |
+| `global.kubernetes.enable` | 控制所有 `k8s-*` 步骤是否激活（需同时 `global.cluster-type: kubernetes`） |
 | `global.mysql.enable` | 控制 `init-mysql` / `init-mysql-app-db` 步骤是否激活 |
 | `global.ntpServer.enable` | 控制 NTP 步骤是否激活 |
 | `global.packages.*` | 各组件安装包文件名，与 `<datasophonPath>/datasophon-init/packages/` 下文件名对应 |
@@ -87,7 +89,7 @@ datasophon-cli create cluster apply -p /data/datasophon --installPath /opt/insta
 ### dry-run 预检（推荐先执行）
 
 ```bash
-datasophon-cli --dry-run create cluster \
+datasophon-cli --dry-run create cluster -t hadoop \
   -p /data/datasophon \
   --installPath /opt/install \
   -n /data/datasophon/datasophon-init/packages
@@ -96,8 +98,8 @@ datasophon-cli --dry-run create cluster \
 ### 生产环境：plan 后审阅再 apply
 
 ```bash
-# Step 1: 生成计划
-datasophon-cli create cluster plan \
+# Step 1: 生成计划（hadoop 集群）
+datasophon-cli create cluster plan -t hadoop \
   -p /data/datasophon \
   --installPath /opt/install \
   -n /data/datasophon/datasophon-init/packages
@@ -106,7 +108,16 @@ datasophon-cli create cluster plan \
 cat /data/datasophon/datasophon-init/state/initALL.plan.json
 
 # Step 3: 执行
-datasophon-cli create cluster apply \
+datasophon-cli create cluster apply -t hadoop \
+  -p /data/datasophon \
+  --installPath /opt/install \
+  -n /data/datasophon/datasophon-init/packages
+```
+
+### K8s 集群初始化
+
+```bash
+datasophon-cli create cluster -t kubernetes -y \
   -p /data/datasophon \
   --installPath /opt/install \
   -n /data/datasophon/datasophon-init/packages
@@ -115,7 +126,7 @@ datasophon-cli create cluster apply \
 ### 跳过确认一键执行
 
 ```bash
-datasophon-cli create cluster -y \
+datasophon-cli create cluster -t hadoop -y \
   -p /data/datasophon \
   --installPath /opt/install \
   -n /data/datasophon/datasophon-init/packages
@@ -125,6 +136,8 @@ datasophon-cli create cluster -y \
 
 | 错误信息 | 根因 | 处置 |
 |---|---|---|
+| `required flag(s) "type" not set` | 未传 `--type` | 添加 `-t hadoop` 或 `-t kubernetes` |
+| `--type 必须是 hadoop 或 kubernetes` | `--type` 取值不合法 | 检查拼写；仅接受 `hadoop` / `kubernetes` |
 | `datasophonPath、installPath 必须是绝对路径` | 传入了相对路径 | 改用 `/` 开头的绝对路径 |
 | `路径不存在: <path>` | `--datasophonPath` 指定的目录不存在 | 确认目录已创建 |
 | `cluster-sample.yml 中 nodes 列表不能为空` | 配置文件 `nodes` 字段为空 | 补全 nodes 配置 |

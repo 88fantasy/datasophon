@@ -97,6 +97,5 @@ datasophon-cli create registry \
 
 ## 相关命令
 
-- [`init registry`](../init/repo/registry.md) — 同一底层逻辑，`create registry` 是其高层封装
 - [`upload registry`](../upload/registry.md) — 安装 Nexus 后上传安装包
-- [`create cluster`](./cluster.md) — 集群初始化（含 Nexus 步骤）
+- [`create cluster`](./cluster.md) — 集群初始化（DAG 步骤 5 `init-registry` 复用同一 `registryTask`）

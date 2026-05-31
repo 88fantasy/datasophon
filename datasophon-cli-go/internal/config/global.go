@@ -9,19 +9,12 @@ const (
 	SSHAuthTypeAuto      SSHAuthType = "AUTO"
 )
 
-// GlobalConfig 对应 Java GlobalConfig。
+// GlobalConfig 对应 Java GlobalConfig，仅保留节点级上下文字段。
 type GlobalConfig struct {
+	ClusterType ClusterType `yaml:"cluster-type"`
 	Offline     bool        `yaml:"offline"`
 	OsInfo      OsInfo      `yaml:"osInfo"`
 	SSHAuthType SSHAuthType `yaml:"sshAuthType"`
-	Registry    Registry    `yaml:"registry"`
-	Rustfs      Rustfs      `yaml:"rustfs"`
-	NmapServer  NodeRef     `yaml:"nmapServer"`
-	Mysql       MysqlConfig `yaml:"mysql"`
-	YumServer   YumServer   `yaml:"yumServer"`
-	NtpServer   NodeRef     `yaml:"ntpServer"`
-	Kubernetes  Kubernetes  `yaml:"kubernetes"`
-	Packages    Packages    `yaml:"packages"`
 }
 
 type OsInfo struct {
@@ -92,8 +85,7 @@ type NodeRef struct {
 
 type Kubernetes struct {
 	Enable       bool         `yaml:"enable"`
-	OnlyInstall  bool         `yaml:"onlyInstall"` // 承接 --onlyInstallK8s
-	Force        bool         `yaml:"force"`       // 承接 --kubernetesForce
+	Force        bool         `yaml:"force"` // 承接 --kubernetesForce
 	BaseServices BaseServices `yaml:"baseServices"`
 	KuboardI     Kuboard      `yaml:"kuboardI"`
 	K8sTools     K8sTools     `yaml:"k8sTools"`
@@ -117,10 +109,11 @@ type Kuboard struct {
 }
 
 type K8sTools struct {
-	Docker  bool `yaml:"docker"`
-	Helm    bool `yaml:"helm"`
-	Helmify bool `yaml:"helmify"`
-	Kubectl bool `yaml:"kubectl"`
+	Docker     bool `yaml:"docker"`
+	Containerd bool `yaml:"containerd"`
+	Helm       bool `yaml:"helm"`
+	Helmify    bool `yaml:"helmify"`
+	Kubectl    bool `yaml:"kubectl"`
 }
 
 // Package 对应 Java Package，x86_64/aarch64 包文件名。
@@ -145,6 +138,9 @@ type Packages struct {
 	KuboardI    Package `yaml:"kuboardI"`
 	Helmify     Package `yaml:"helmify"`
 	Docker      Package `yaml:"docker"`
+	Containerd  Package `yaml:"containerd"`
+	Runc        Package `yaml:"runc"`
+	Cni         Package `yaml:"cni"`
 	Helm        Package `yaml:"helm"`
 	Kubectl     Package `yaml:"kubectl"`
 }
