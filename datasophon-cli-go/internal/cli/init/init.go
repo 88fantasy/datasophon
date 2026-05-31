@@ -52,6 +52,7 @@ func NewInitCommand(dryRun *bool) *cobra.Command {
 
 	// K8s 相关
 	cmd.AddCommand((&InitDocker{}).Command(dryRun))
+	cmd.AddCommand((&InitContainerd{}).Command(dryRun))
 	cmd.AddCommand((&InitHelm{}).Command(dryRun))
 	cmd.AddCommand((&InitHelmify{}).Command(dryRun))
 	cmd.AddCommand((&InitKubectl{}).Command(dryRun))

@@ -109,10 +109,11 @@ type Kuboard struct {
 }
 
 type K8sTools struct {
-	Docker  bool `yaml:"docker"`
-	Helm    bool `yaml:"helm"`
-	Helmify bool `yaml:"helmify"`
-	Kubectl bool `yaml:"kubectl"`
+	Docker     bool `yaml:"docker"`
+	Containerd bool `yaml:"containerd"`
+	Helm       bool `yaml:"helm"`
+	Helmify    bool `yaml:"helmify"`
+	Kubectl    bool `yaml:"kubectl"`
 }
 
 // Package 对应 Java Package，x86_64/aarch64 包文件名。
@@ -137,6 +138,9 @@ type Packages struct {
 	KuboardI    Package `yaml:"kuboardI"`
 	Helmify     Package `yaml:"helmify"`
 	Docker      Package `yaml:"docker"`
+	Containerd  Package `yaml:"containerd"`
+	Runc        Package `yaml:"runc"`
+	Cni         Package `yaml:"cni"`
 	Helm        Package `yaml:"helm"`
 	Kubectl     Package `yaml:"kubectl"`
 }

@@ -223,6 +223,26 @@ func buildRegistryUpload(ctx *BuildContext) ([]Action, error) {
 	return singleHostAction(ctx.LocalHost, t), nil
 }
 
+// buildContainerd 安装 containerd + runc + CNI（本地节点执行）。
+func buildContainerd(ctx *BuildContext) ([]Action, error) {
+	t := &initcmd.InitContainerd{
+		EnableK8sCluster: ctx.Cfg.Kubernetes.Enable,
+		KubernetesForce:  ctx.Cfg.Kubernetes.Force,
+		Offline:          ctx.Cfg.Global.Offline,
+		PackagePath:      ctx.PackagesPath,
+		DockerHTTPPort:   ctx.Cfg.Registry.Config.DockerHTTPPort,
+		ContainerdX86Tar: ctx.Cfg.Packages.Containerd.X86_64,
+		ContainerdArmTar: ctx.Cfg.Packages.Containerd.Aarch64,
+		RuncX86Bin:       ctx.Cfg.Packages.Runc.X86_64,
+		RuncArmBin:       ctx.Cfg.Packages.Runc.Aarch64,
+		CniX86Tar:        ctx.Cfg.Packages.Cni.X86_64,
+		CniArmTar:        ctx.Cfg.Packages.Cni.Aarch64,
+	}
+	applyConfig(&t.TaskBase, ctx.ConfigYaml)
+	applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
+	return singleHostAction(ctx.LocalHost, t), nil
+}
+
 // buildDocker 安装 Docker（本地节点执行）。
 func buildDocker(ctx *BuildContext) ([]Action, error) {
 	t := &initcmd.InitDocker{

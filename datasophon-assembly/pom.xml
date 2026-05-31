@@ -62,7 +62,7 @@
                     <appendAssemblyId>false</appendAssemblyId>
                     <outputDirectory>${project.build.directory}</outputDirectory>
                     <descriptors>
-                        <descriptor>src/assembly/assembly.xml</descriptor>
+                        <descriptor>assembly/assembly.xml</descriptor>
                     </descriptors>
                 </configuration>
                 <executions>

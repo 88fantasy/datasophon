@@ -5,7 +5,7 @@ import (
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/handler"
 )
 
-// InitALLRegistry 对应 initALL 的 33 步 DAG。
+// InitALLRegistry 对应 initALL 的 34 步 DAG。
 // 顺序即执行顺序；Condition 全部从 cfg.* 读。
 var InitALLRegistry = []Step{
 	{ID: "init-bin-package", Name: "分发资源包",
@@ -120,9 +120,18 @@ var InitALLRegistry = []Step{
 		Build:     buildK8sRegistryConf},
 
 	{ID: "k8s-docker", Name: "安装 Docker（K8s 阶段）",
-		Scope:     ScopeKubernetesOnly,
-		Condition: func(ctx *BuildContext) bool { return ctx.Cfg.Kubernetes.Enable },
-		Build:     buildDocker},
+		Scope: ScopeKubernetesOnly,
+		Condition: func(ctx *BuildContext) bool {
+			return ctx.Cfg.Kubernetes.Enable && !ctx.Cfg.Kubernetes.K8sTools.Containerd
+		},
+		Build: buildDocker},
+
+	{ID: "k8s-containerd", Name: "安装 containerd（K8s 阶段）",
+		Scope: ScopeKubernetesOnly,
+		Condition: func(ctx *BuildContext) bool {
+			return ctx.Cfg.Kubernetes.Enable && ctx.Cfg.Kubernetes.K8sTools.Containerd
+		},
+		Build: buildContainerd},
 
 	{ID: "k8s-kubectl", Name: "安装 kubectl",
 		Scope:     ScopeKubernetesOnly,
