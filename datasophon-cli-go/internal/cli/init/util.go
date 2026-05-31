@@ -52,4 +52,3 @@ func DownloadFromRegistry(
 	slog.Info("制品下载完成", "path", distPath)
 	return nil
 }
-

@@ -56,8 +56,8 @@ func NewConfigCommand() *cobra.Command {
 }
 
 func (c *createConfigCmd) run() error {
-	if c.typeFlag != "hadoop" && c.typeFlag != "kubernetes" {
-		return fmt.Errorf("--type 必须是 hadoop 或 kubernetes，当前值: %q", c.typeFlag)
+	if _, err := config.ParseClusterType(c.typeFlag); err != nil {
+		return err
 	}
 
 	absOutputPath, err := filepath.Abs(c.OutputPath)

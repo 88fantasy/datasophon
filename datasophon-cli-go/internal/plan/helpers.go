@@ -81,4 +81,3 @@ func slavesOf(all []*config.Host, serverHost *config.Host) []*config.Host {
 	}
 	return result
 }
-

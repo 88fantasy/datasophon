@@ -37,15 +37,19 @@ func (m *recordingExec) Exists(path string) executor.ExecResult {
 	return executor.ExecResult{}
 }
 
-func (m *recordingExec) SendFile(_, _ string, _ bool) executor.ExecResult { return executor.Succeed("") }
-func (m *recordingExec) SendDir(_, _ string, _ bool) executor.ExecResult  { return executor.Succeed("") }
-func (m *recordingExec) GetFileString(_ string) executor.ExecResult        { return executor.Succeed("") }
+func (m *recordingExec) SendFile(_, _ string, _ bool) executor.ExecResult {
+	return executor.Succeed("")
+}
+func (m *recordingExec) SendDir(_, _ string, _ bool) executor.ExecResult { return executor.Succeed("") }
+func (m *recordingExec) GetFileString(_ string) executor.ExecResult      { return executor.Succeed("") }
 func (m *recordingExec) WriteFromStream(_ io.Reader, _ string) executor.ExecResult {
 	return executor.Succeed("")
 }
-func (m *recordingExec) WriteLines(_ []string, _ string) executor.ExecResult { return executor.Succeed("") }
-func (m *recordingExec) GetArch() osinfo.ArchType                            { return m.arch }
-func (m *recordingExec) GetOs() osinfo.OsType                                { return osinfo.OsTypeCentos7 }
+func (m *recordingExec) WriteLines(_ []string, _ string) executor.ExecResult {
+	return executor.Succeed("")
+}
+func (m *recordingExec) GetArch() osinfo.ArchType { return m.arch }
+func (m *recordingExec) GetOs() osinfo.OsType     { return osinfo.OsTypeCentos7 }
 
 // hasCmd reports whether any recorded command contains the given substring.
 func hasCmd(cmds []string, substr string) bool {
@@ -61,8 +65,8 @@ func hasCmd(cmds []string, substr string) bool {
 func allPackageExist(pkgPath, containerdTar, runcBin, cniTar string) map[string]bool {
 	return map[string]bool{
 		pkgPath + "/" + containerdTar: true,
-		pkgPath + "/" + runcBin:      true,
-		pkgPath + "/" + cniTar:       true,
+		pkgPath + "/" + runcBin:       true,
+		pkgPath + "/" + cniTar:        true,
 	}
 }
 

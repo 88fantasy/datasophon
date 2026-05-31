@@ -69,8 +69,8 @@ func TestUniqueHostKeys_Empty(t *testing.T) {
 
 type dummyHandler struct{ name string }
 
-func (d *dummyHandler) Name() string                         { return d.name }
-func (d *dummyHandler) Handle(_ *ssh.Client, _ bool) error   { return nil }
+func (d *dummyHandler) Name() string                       { return d.name }
+func (d *dummyHandler) Handle(_ *ssh.Client, _ bool) error { return nil }
 
 func TestHostsToActions_FieldMapping(t *testing.T) {
 	h := &dummyHandler{name: "test"}

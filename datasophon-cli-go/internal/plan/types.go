@@ -11,9 +11,9 @@ import (
 type ClusterScope int
 
 const (
-	ScopeBoth          ClusterScope = iota // 默认：hadoop 与 kubernetes 集群均执行
-	ScopeHadoopOnly                        // 仅 hadoop 集群执行
-	ScopeKubernetesOnly                    // 仅 kubernetes 集群执行
+	ScopeBoth           ClusterScope = iota // 默认：hadoop 与 kubernetes 集群均执行
+	ScopeHadoopOnly                         // 仅 hadoop 集群执行
+	ScopeKubernetesOnly                     // 仅 kubernetes 集群执行
 )
 
 // Matches 判断该 Step 是否应在给定集群类型下执行。

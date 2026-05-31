@@ -16,12 +16,12 @@ import (
 // ─── mock Executor ────────────────────────────────────────────────────────────
 
 type mockExec struct {
-	existsResult  bool
-	writeSuccess  bool
-	writtenBody   []byte
+	existsResult bool
+	writeSuccess bool
+	writtenBody  []byte
 }
 
-func (m *mockExec) ExecShell(_ string) executor.ExecResult      { return executor.Succeed("") }
+func (m *mockExec) ExecShell(_ string) executor.ExecResult { return executor.Succeed("") }
 func (m *mockExec) Exists(_ string) executor.ExecResult {
 	if m.existsResult {
 		return executor.Succeed("exists")
