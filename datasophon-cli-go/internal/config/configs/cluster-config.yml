@@ -11,7 +11,7 @@ registry:
   enable: true
   type: "nexus"
   config:
-    webPort: 8091
+    webPort: 8081
     user: "admin"
     password: "{{.RegistryPassword}}"
     dockerHttpPort: 8083
@@ -24,7 +24,7 @@ registry:
   node: "app6"
 
 yumServer:
-  enable: true
+  enable: false   # Nexus yum 仓库已接管离线源，不再单独安装 httpd YumServer
   node: "app6"
   listenPort: 4080
 
@@ -99,6 +99,7 @@ kubernetes:
     etcdNodes: ["app3", "app4", "app6"] #至少3个节点
   k8sTools:
     docker: true
+    containerd: false
     helm: true
     helmify: true
     kubectl: true
@@ -141,6 +142,15 @@ packages:
   docker:
     x86_64: "docker-x86-29.3.1.tgz"
     aarch64: "docker-arm-29.3.1.tgz"
+  containerd:
+    x86_64: "containerd-2.3.0-linux-amd64.tar.gz"
+    aarch64: "containerd-2.3.0-linux-arm64.tar.gz"
+  runc:
+    x86_64: "runc.amd64"
+    aarch64: "runc.arm64"
+  cni:
+    x86_64: "cni-plugins-linux-amd64-v1.6.0.tgz"
+    aarch64: "cni-plugins-linux-arm64-v1.6.0.tgz"
   helm:
     x86_64: "helm-v4.0.1-linux-amd64.tar.gz"
     aarch64: "helm-v4.0.1-linux-arm64.tar.gz"

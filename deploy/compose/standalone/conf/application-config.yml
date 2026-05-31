@@ -14,5 +14,4 @@ datasophon:
   migration:
     enable: true
   proxy-grafana:
-    enable: true
-    max-threads: 80
+    enable: false

@@ -1,0 +1,239 @@
+# Datasophon Standalone 部署拓扑模拟（1mw + 2 裸机 app worker）
+#
+# 拓扑说明：
+#   mw-*        ── 模拟 mw1（middleware 节点）的各服务
+#   mw-worker   ── 模拟 mw1 上以 systemd 形式运行的 datasophon-worker（hostname=mw1）
+#   app1-worker ── 模拟应用节点 app1 的 datasophon-worker（hostname=app1）
+#   app2-worker ── 模拟应用节点 app2 的 datasophon-worker（hostname=app2）
+#   无 K8s：不含 containerd / kubelet / etcd 等 K8s 组件
+#
+# 启动：
+#   cd deploy/compose/standalone
+#   docker compose up --build
+#
+# 验证：
+#   curl http://localhost:8082/ddh/actuator/health
+#   docker compose logs mw-api     | grep -i "WorkerRegistry"
+#   docker compose logs mw-worker  | grep -i "registered"
+#   docker compose logs app1-worker| grep -i "registered"
+#   docker compose logs app2-worker| grep -i "registered"
+#
+# 详细部署文档：deploy/deployment-standalone.md
+
+name: datasophon-standalone
+
+services:
+
+  # ── mw1: Middleware Node ─────────────────────────────────────────────
+
+  mw-mysql:
+    image: mysql:8
+    container_name: ddh-sa-mysql
+    environment:
+      TZ: Asia/Shanghai
+      LANG: C.UTF-8
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: datasophon
+      MYSQL_USER: datasophon
+      MYSQL_PASSWORD: datasophon
+    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_general_ci']
+    ports:
+      - "3309:3306"   # host 3309，与 k8s compose（3308）及根 compose（3307）区分
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-udatasophon", "-pdatasophon"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks: [ddh-sa-net]
+
+  mw-nexus:
+    image: sonatype/nexus3
+    container_name: ddh-sa-nexus
+    environment:
+      TZ: Asia/Shanghai
+      INSTALL4J_ADD_VM_PARAMS: >-
+        -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m
+        -Dnexus.security.randompassword=false
+    ports:
+      - "8093:8081"   # host 8093，真实部署端口为 8081；此处错开避免与 k8s compose 冲突
+    volumes:
+      - nexus-data:/nexus-data
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8081/service/rest/v1/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+    networks: [ddh-sa-net]
+
+  mw-nexus-init:
+    # 创建与真实部署一致的 Nexus 仓库：
+    #   yum → 离线 OS 包（app 节点离线 yum 源），路径 /repository/yum/<arch>/<os>/
+    #   raw → 二进制安装包（datasophon-cli sftp 后上传）
+    image: curlimages/curl:latest
+    container_name: ddh-sa-nexus-init
+    depends_on:
+      mw-nexus:
+        condition: service_healthy
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        BASE=http://mw-nexus:8081
+        AUTH="admin:admin123"
+        H="Content-Type: application/json"
+
+        echo "=== Creating yum hosted repository ==="
+        curl -sf -u "$AUTH" -X POST "$BASE/service/rest/v1/repositories/yum/hosted" \
+          -H "$H" -d '{
+            "name":"yum","online":true,
+            "storage":{"blobStoreName":"default","strictContentTypeValidation":false,"writePolicy":"allow"},
+            "yum":{"repodataDepth":2}
+          }' && echo "yum repo created" || echo "yum repo may already exist"
+
+        echo "=== Creating raw hosted repository ==="
+        curl -sf -u "$AUTH" -X POST "$BASE/service/rest/v1/repositories/raw/hosted" \
+          -H "$H" -d '{
+            "name":"raw","online":true,
+            "storage":{"blobStoreName":"default","strictContentTypeValidation":false,"writePolicy":"allow"}
+          }' && echo "raw repo created" || echo "raw repo may already exist"
+
+        echo "=== Nexus init done ==="
+    restart: "no"
+    networks: [ddh-sa-net]
+
+  mw-minio:
+    # MinIO 模拟 Rustfs（S3 兼容对象存储）
+    image: minio/minio:latest
+    container_name: ddh-sa-minio
+    command: server /data --address ":9040" --console-address ":9041"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9044:9040"   # host 9044，与 k8s compose（9040）区分
+      - "9045:9041"   # host 9045，与 k8s compose（9041）区分
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:9040/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks: [ddh-sa-net]
+
+  mw-api:
+    build:
+      context: ../../..
+      dockerfile: deploy/compose/Dockerfile.master
+    container_name: ddh-sa-api
+    depends_on:
+      mw-mysql:
+        condition: service_healthy
+      mw-nexus-init:
+        condition: service_completed_successfully
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "8082:8080"     # host 8082，与 k8s compose（8080）区分
+      - "18084:18081"   # host 18084，与 k8s compose（18081）区分
+    volumes:
+      - ./conf/common.properties:/datasophon/conf/common.properties:ro
+      - ./conf/application-config.yml:/datasophon/conf/profiles/application-config.yml:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/ddh/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    networks: [ddh-sa-net]
+
+  cluster-seed:
+    image: mysql:8
+    container_name: ddh-sa-seed
+    depends_on:
+      mw-api:
+        condition: service_healthy
+    volumes:
+      - ./seed:/seed:ro
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        echo "Seeding standalone topology cluster record..."
+        mysql -h mw-mysql -u datasophon -pdatasophon datasophon < /seed/01-cluster.sql
+        echo "Seed done."
+    restart: "no"
+    networks: [ddh-sa-net]
+
+  # ── mw1 datasophon-worker（systemd 裸机形态）──────────────────────────
+  # hostname=mw1 → WorkerRegistry 注册为 hostname="mw1"
+  # 真实部署：masterHost=127.0.0.1；此处用 Docker DNS 名 mw-api
+
+  mw-worker:
+    build:
+      context: ../../..
+      dockerfile: deploy/compose/Dockerfile.worker
+    container_name: ddh-sa-mw-worker
+    hostname: mw1
+    depends_on:
+      cluster-seed:
+        condition: service_completed_successfully
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "18085:18082"   # host 18085，与 k8s compose（18082）区分
+    volumes:
+      - ./conf/worker.properties:/datasophon-worker/conf/common.properties:ro
+    restart: on-failure
+    networks: [ddh-sa-net]
+
+  # ── 应用节点 app1 datasophon-worker ─────────────────────────────────
+  # hostname=app1 → WorkerRegistry 注册为 hostname="app1"
+  # 真实部署：masterHost=<mw1-ip>；此处用 Docker DNS 名 mw-api
+
+  app1-worker:
+    build:
+      context: ../../..
+      dockerfile: deploy/compose/Dockerfile.worker
+    container_name: ddh-sa-app1-worker
+    hostname: app1
+    depends_on:
+      cluster-seed:
+        condition: service_completed_successfully
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "18086:18082"
+    volumes:
+      - ./conf/worker.properties:/datasophon-worker/conf/common.properties:ro
+    restart: on-failure
+    networks: [ddh-sa-net]
+
+  # ── 应用节点 app2 datasophon-worker ─────────────────────────────────
+
+  app2-worker:
+    build:
+      context: ../../..
+      dockerfile: deploy/compose/Dockerfile.worker
+    container_name: ddh-sa-app2-worker
+    hostname: app2
+    depends_on:
+      cluster-seed:
+        condition: service_completed_successfully
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "18087:18082"
+    volumes:
+      - ./conf/worker.properties:/datasophon-worker/conf/common.properties:ro
+    restart: on-failure
+    networks: [ddh-sa-net]
+
+networks:
+  ddh-sa-net:
+    driver: bridge
+
+volumes:
+  nexus-data:
+  minio-data:
