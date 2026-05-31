@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 
@@ -8,6 +9,8 @@ import (
 )
 
 // Load 读取 cluster.yml 并返回 ClusterConfig（仅支持明文配置文件）。
+// 采用严格解码（KnownFields），配置中出现未知字段会显式报错，
+// 避免旧版本字段（如已上移到顶层的 registry/mysql）被静默忽略。
 func Load(path string) (*ClusterConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -15,7 +18,9 @@ func Load(path string) (*ClusterConfig, error) {
 	}
 
 	var cfg ClusterConfig
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+	dec.KnownFields(true)
+	if err := dec.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("解析配置文件失败: %w", err)
 	}
 	return &cfg, nil

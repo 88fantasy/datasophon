@@ -1,0 +1,10 @@
+# Go 测试覆盖率产物
+cover.out
+coverage.out
+*.cover
+
+# Maven 交叉编译产物目录（pom.xml 输出 dist/datasophon-cli-*）
+dist/
+
+# 本地构建二进制
+/datasophon-cli
