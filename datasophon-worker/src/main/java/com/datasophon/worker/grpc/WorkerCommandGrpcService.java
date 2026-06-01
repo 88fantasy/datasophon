@@ -252,8 +252,10 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         try {
             ServiceRoleOperateCommand cmd = MAPPER.readValue(req.getJsonPayload(), ServiceRoleOperateCommand.class);
             log.info("gRPC startServiceRole: {} {}", cmd.getServiceName(), cmd.getServiceRoleName());
+            Map<String, String> startHookVars = new HashMap<>(
+                    cmd.getVariables() == null ? Collections.emptyMap() : cmd.getVariables());
             result = invokeFunctions(
-                    () -> invokeHook(cmd.getHooks(), HookType.PRE_START, cmd, cmd.getVariables()),
+                    () -> invokeHook(cmd.getHooks(), HookType.PRE_START, cmd, startHookVars),
                     () -> {
                         ServiceRoleStrategy strategy = ServiceRoleStrategyContext.getServiceRoleHandler(cmd.getServiceRoleName());
                         if (Objects.nonNull(strategy)) {
@@ -263,7 +265,7 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
                         return sh.start(cmd.getStartRunner(), cmd.getStatusRunner(), cmd,
                                 cmd.getRunAs(), cmd.isCheckStatus());
                     },
-                    () -> invokeHook(cmd.getHooks(), HookType.POST_START, cmd, cmd.getVariables())
+                    () -> invokeHook(cmd.getHooks(), HookType.POST_START, cmd, startHookVars)
             );
             log.info("gRPC startServiceRole {} {} {}", cmd.getServiceName(), cmd.getServiceRoleName(),
                     result.getExecResult() ? "success" : "failed");
@@ -283,13 +285,15 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         try {
             ServiceRoleOperateCommand cmd = MAPPER.readValue(req.getJsonPayload(), ServiceRoleOperateCommand.class);
             log.info("gRPC stopServiceRole: {} {}", cmd.getServiceName(), cmd.getServiceRoleName());
+            Map<String, String> stopHookVars = new HashMap<>(
+                    cmd.getVariables() == null ? Collections.emptyMap() : cmd.getVariables());
             result = invokeFunctions(
-                    () -> invokeHook(cmd.getHooks(), HookType.PRE_STOP, cmd, cmd.getVariables()),
+                    () -> invokeHook(cmd.getHooks(), HookType.PRE_STOP, cmd, stopHookVars),
                     () -> {
                         ServiceHandler sh = new ServiceHandler(cmd.getServiceName(), cmd.getServiceRoleName());
                         return sh.stop(cmd.getStopRunner(), cmd.getStatusRunner(), cmd, cmd.getRunAs());
                     },
-                    () -> invokeHook(cmd.getHooks(), HookType.POST_STOP, cmd, cmd.getVariables())
+                    () -> invokeHook(cmd.getHooks(), HookType.POST_STOP, cmd, stopHookVars)
             );
             log.info("gRPC stopServiceRole {} {} {}", cmd.getServiceName(), cmd.getServiceRoleName(),
                     result.getExecResult() ? "success" : "failed");

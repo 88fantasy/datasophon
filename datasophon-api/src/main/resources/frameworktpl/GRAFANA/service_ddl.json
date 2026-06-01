@@ -28,17 +28,26 @@
       "cardinality": 1,
       "logFile": "data/log/grafana.log",
       "jmxPort": "3000",
-      "resourceStrategies":[{
-        "type": "download",
-        "from": "script/control.sh",
-        "to": "control.sh",
-        "md5": "31179a30dd4d8c3314a25eb32ddc0c7f"
-      },{
-        "type": "download",
-        "from": "data/grafana.db",
-        "to": "data/grafana.db",
-        "md5": "4841ba20b7940a44f85899d0083287cb"
-      }],
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control.sh",
+            "to": "control.sh",
+            "md5": "31179a30dd4d8c3314a25eb32ddc0c7f"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "data/grafana.db",
+            "to": "data/grafana.db",
+            "md5": "4841ba20b7940a44f85899d0083287cb"
+          }
+        }
+      ],
       "startRunner": {
         "timeout": "60",
         "program": "control.sh",

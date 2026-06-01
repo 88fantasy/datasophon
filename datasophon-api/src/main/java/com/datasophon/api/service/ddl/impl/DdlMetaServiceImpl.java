@@ -242,6 +242,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
                 ServiceRoleJmxMap.put(key, serviceRole.getJmxPort());
             }
             ServiceRoleMap.put(key, serviceRole);
+            serviceRole.setFrameCode(frameCode);
             String serviceRoleJson = JSONObject.toJSONString(serviceRole);
             String serviceRoleJsonMd5 = SecureUtil.md5(serviceRoleJson);
             // 持久化服务角色元信息至数据库

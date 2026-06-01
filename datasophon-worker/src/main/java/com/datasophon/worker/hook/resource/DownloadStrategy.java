@@ -62,9 +62,11 @@ public class DownloadStrategy implements HookAction {
         String url = "http://" + masterHost + ":" + masterPort + "/ddh/api/service/install/downloadResource?" + params;
         // 超时时间为30,约定资源不应该很大
         HttpUtil.downloadFile(url, file, 30 * 1000);
-        if (file.exists()) {
-            ShellUtils.execShell(String.format("chmod 755 %s", basePath + Constants.SLASH + to));
+        if (!file.exists()) {
+            logger.error("下载资源 {} 失败，文件不存在", to);
+            return ExecResult.error(String.format("下载资源 %s 失败，文件不存在", to));
         }
+        ShellUtils.execShell(String.format("chmod 755 %s", basePath + Constants.SLASH + to));
 
         logger.info("end to download resource {} to {} ", from, to);
         return ExecResult.success();

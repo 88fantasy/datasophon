@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Data
@@ -44,13 +44,13 @@ public class AppendLineStrategy implements HookAction {
         logger.info("开始执行资源策略:{}...", getType());
         File file = new File(basePath + Constants.SLASH + source);
         if (file.exists() && ObjectUtil.isNotNull(line)) {
-            List<String> lines = FileUtil.readLines(file, Charset.defaultCharset());
+            List<String> lines = FileUtil.readLines(file, StandardCharsets.UTF_8);
             if (lines.size() >= line) {
                 String lineText = lines.get(line - 1);
                 if (!lineText.equals(text)) {
                     lines.add(line - 1, text);
                 }
-                FileUtil.writeLines(lines, file, Charset.defaultCharset(), false);
+                FileUtil.writeLines(lines, file, StandardCharsets.UTF_8, false);
             }
         }
         return ExecResult.success();
