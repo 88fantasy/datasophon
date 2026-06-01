@@ -23,12 +23,9 @@
 
 package com.datasophon.worker.handler;
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.bean.copier.CopyOptions;
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.BooleanUtil;
-import cn.hutool.core.util.ServiceLoaderUtil;
+
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.MD5;
 import com.alibaba.fastjson2.JSONObject;
@@ -40,8 +37,7 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.common.utils.ZipUtils;
-import com.datasophon.worker.strategy.resource.EmptyStrategy;
-import com.datasophon.worker.strategy.resource.ResourceStrategy;
+
 import com.datasophon.worker.utils.TaskConstants;
 import lombok.Data;
 import org.slf4j.Logger;
@@ -53,14 +49,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+
 
 @Data
 public class InstallServiceHandler {
 
-
-    public static final Map<String, Class<? extends ResourceStrategy>> cache = new ConcurrentHashMap<>();
 
     protected String frameCode;
 
@@ -69,14 +62,6 @@ public class InstallServiceHandler {
     protected String serviceRoleName;
 
     private Logger logger;
-
-    static {
-        List<ResourceStrategy> strategies = ServiceLoaderUtil.loadList(ResourceStrategy.class);
-        for (ResourceStrategy strategy : strategies) {
-            cache.put(strategy.type(), strategy.getClass());
-        }
-    }
-
 
     public void init(InstallServiceRoleCommand command) {
         this.frameCode = command.getFrameCode();
@@ -134,11 +119,6 @@ public class InstallServiceHandler {
                 }
                 ExecResult chmodResult = ShellUtils.execShell(" chmod -R 775 " + Constants.INSTALL_PATH + Constants.SLASH + normalPkgDir);
                 logger.info("chmod {} {}", normalPkgDir, chmodResult.getExecResult() ? "success" : "fail");
-
-                execResult = execResourceStrategies(command, logger);
-                if (!execResult.isSuccess()) {
-                    return execResult;
-                }
             }
         } catch (Exception e) {
             logger.error("安装服务{} {}失败,  {}", command.getServiceName(), command.getServiceRoleName(), e.getMessage(), e);
@@ -259,34 +239,6 @@ public class InstallServiceHandler {
         if (!Paths.get(innerDir).startsWith(Paths.get(baseTempDir))) {
             throw new SecurityException(String.format("can operation dir %s out of %s", innerDir, baseTempDir));
         }
-    }
-
-    protected ExecResult execResourceStrategies(InstallServiceRoleCommand command, Logger logger) {
-        if (CollUtil.isNotEmpty(command.getResourceStrategies())) {
-            logger.info("开始执行资源策略，总共需要执行{}个策略", command.getResourceStrategies().size());
-            for (int i = 0; i < command.getResourceStrategies().size(); i++) {
-                Map<String, Object> strategy = command.getResourceStrategies().get(i);
-                String type = (String) strategy.get(ResourceStrategy.TYPE_KEY);
-                Class<? extends ResourceStrategy> clazz = cache.getOrDefault(type, EmptyStrategy.class);
-                ResourceStrategy rs = BeanUtil.toBean(strategy, clazz, CopyOptions.create().ignoreError());
-
-                Logger rsLogger = LoggerFactory.getLogger(
-                        TaskConstants.createLoggerName(command.getServiceName(), command.getServiceRoleName(), rs.getClass())
-                );
-                rs.setLogger(rsLogger);
-                rs.setFrameCode(frameCode);
-                rs.setService(serviceName);
-                rs.setServiceRole(serviceRoleName);
-                rs.setBasePath(PkgInstallPathUtils.getInstallHome(command));
-                rs.setVariables(command.getVariables());
-                ExecResult exec = rs.exec();
-                if (!exec.getExecResult()) {
-                    logger.error("执行第{}个资源策略失败, {}", i + 1, exec.getExecOut());
-                    return exec;
-                }
-            }
-        }
-        return ExecResult.success();
     }
 
     public ExecResult createLink(InstallServiceRoleCommand command) {

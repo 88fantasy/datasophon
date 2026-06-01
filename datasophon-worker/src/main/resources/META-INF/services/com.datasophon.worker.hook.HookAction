@@ -1,4 +1,11 @@
 com.datasophon.worker.hook.db.InitDbHookAction
-com.datasophon.worker.hook.resource.ResourceStrategyHookAction
 com.datasophon.worker.hook.s3.S3SyncHookAction
 com.datasophon.worker.hook.nacos.InitNacosHookAction
+com.datasophon.worker.hook.resource.DownloadStrategy
+com.datasophon.worker.hook.resource.ShellStrategy
+com.datasophon.worker.hook.resource.ExecShellStrategy
+com.datasophon.worker.hook.resource.LinkStrategy
+com.datasophon.worker.hook.resource.ReplaceStrategy
+com.datasophon.worker.hook.resource.AppendLineStrategy
+com.datasophon.worker.hook.resource.FrontendStrategy
+com.datasophon.worker.hook.resource.NexusResourceStrategy

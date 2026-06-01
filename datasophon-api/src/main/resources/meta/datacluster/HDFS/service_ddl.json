@@ -30,24 +30,6 @@
       "sortNum": 1,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-journalnode-${host}.log",
       "jmxPort": 27003,
-      "resourceStrategies": [
-        {
-          "type": "download",
-          "from": "script/control_hadoop.sh",
-          "to": "control_hadoop.sh",
-          "md5": "63f20147a32a82d18e26ac08e329539b"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
-          "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
-          "target": "jmx/prometheus_config.yml"
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -71,7 +53,34 @@
           "status",
           "journalnode"
         ]
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control_hadoop.sh",
+            "to": "control_hadoop.sh",
+            "md5": "63f20147a32a82d18e26ac08e329539b"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
+            "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
+            "target": "jmx/prometheus_config.yml"
+          }
+        }
+      ]
     },
     {
       "name": "NameNode",
@@ -85,24 +94,6 @@
       "sortNum": 2,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-namenode-${host}.log",
       "jmxPort": "27001",
-      "resourceStrategies": [
-        {
-          "type": "download",
-          "from": "script/control_hadoop.sh",
-          "to": "control_hadoop.sh",
-          "md5": "63f20147a32a82d18e26ac08e329539b"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
-          "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
-          "target": "jmx/prometheus_config.yml"
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -139,7 +130,34 @@
         "name": "NameNode Ui",
         "label": "NameNode Ui",
         "url": "http://${host}:9870"
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control_hadoop.sh",
+            "to": "control_hadoop.sh",
+            "md5": "63f20147a32a82d18e26ac08e329539b"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
+            "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
+            "target": "jmx/prometheus_config.yml"
+          }
+        }
+      ]
     },
     {
       "name": "DataNode",
@@ -153,24 +171,6 @@
       "sortNum": 5,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-namenode-${host}.log",
       "jmxPort": "27002",
-      "resourceStrategies": [
-        {
-          "type": "download",
-          "from": "script/control_hadoop.sh",
-          "to": "control_hadoop.sh",
-          "md5": "63f20147a32a82d18e26ac08e329539b"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
-          "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
-          "target": "jmx/prometheus_config.yml"
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -194,7 +194,34 @@
           "status",
           "datanode"
         ]
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control_hadoop.sh",
+            "to": "control_hadoop.sh",
+            "md5": "63f20147a32a82d18e26ac08e329539b"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
+            "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
+            "target": "jmx/prometheus_config.yml"
+          }
+        }
+      ]
     },
     {
       "name": "ZKFC",
@@ -208,24 +235,6 @@
       "sortNum": 3,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-zkfc-${host}.log",
       "jmxPort": 27004,
-      "resourceStrategies": [
-        {
-          "type": "download",
-          "from": "script/control_hadoop.sh",
-          "to": "control_hadoop.sh",
-          "md5": "63f20147a32a82d18e26ac08e329539b"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
-          "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
-          "target": "jmx/prometheus_config.yml"
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -249,7 +258,34 @@
           "status",
           "zkfc"
         ]
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control_hadoop.sh",
+            "to": "control_hadoop.sh",
+            "md5": "63f20147a32a82d18e26ac08e329539b"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
+            "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
+            "target": "jmx/prometheus_config.yml"
+          }
+        }
+      ]
     },
     {
       "name": "HttpFs",
@@ -263,14 +299,6 @@
       "sortNum": 4,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-httpfs-${host}.log",
       "jmxPort": "",
-      "resourceStrategies": [
-        {
-          "type": "download",
-          "from": "script/control_hadoop.sh",
-          "to": "control_hadoop.sh",
-          "md5": "63f20147a32a82d18e26ac08e329539b"
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -294,7 +322,18 @@
           "status",
           "httpfs"
         ]
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control_hadoop.sh",
+            "to": "control_hadoop.sh",
+            "md5": "63f20147a32a82d18e26ac08e329539b"
+          }
+        }
+      ]
     },
     {
       "name": "HdfsClient",
@@ -423,16 +462,14 @@
         "configFormat": "custom",
         "outputDirectory": "etc/hadoop/",
         "templateName": "properties3.ftl",
-        "includeParams": [
-        ]
+        "includeParams": []
       },
       {
         "filename": "blacklist",
         "configFormat": "custom",
         "outputDirectory": "etc/hadoop/",
         "templateName": "properties3.ftl",
-        "includeParams": [
-        ]
+        "includeParams": []
       }
     ]
   },

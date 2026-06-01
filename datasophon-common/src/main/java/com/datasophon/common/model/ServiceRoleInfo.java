@@ -83,8 +83,6 @@ public class ServiceRoleInfo implements Serializable, ServiceRoleResource {
     
     private String jmxPort;
     
-    private List<Map<String, Object>> resourceStrategies;
-    
     private boolean isSlave = false;
     
     private CommandType commandType;

@@ -47,16 +47,9 @@ public class YarnInstallServiceHandler extends InstallServiceHandler {
             logger.error("yarn依赖于hadoop的安装包，目录{}不存在", hadoopDir.getAbsolutePath());
             return ExecResult.error(String.format("yarn依赖于hadoop的安装包，目录%s不存在", hadoopDir.getAbsolutePath()));
         }
-        ExecResult execResult = new ExecResult();
-        try {
-//            yarn直接复用hadoop安装包，无需解压安装包
-            logger.info("注意！！！yarn复用hadoop的安装包,无需安装。软件包路径：{}", hadoopDir.getAbsolutePath());
-            return execResourceStrategies(command, logger);
-        } catch (Exception e) {
-            logger.error("安装服务{} {}失败,  {}", command.getServiceName(), command.getServiceRoleName(), e.getMessage(), e);
-            execResult.setExecOut(e.getMessage());
-        }
-        return execResult;
+        // yarn直接复用hadoop安装包，无需解压安装包；资源策略通过 POST_INSTALL hook 执行
+        logger.info("注意！！！yarn复用hadoop的安装包,无需安装。软件包路径：{}", hadoopDir.getAbsolutePath());
+        return ExecResult.success();
     }
 
 

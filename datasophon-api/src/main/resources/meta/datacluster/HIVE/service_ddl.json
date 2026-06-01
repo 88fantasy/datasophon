@@ -25,43 +25,6 @@
         "user": "hive",
         "group": "hadoop"
       },
-      "resourceStrategies": [
-        {
-          "type": "sh",
-          "commands": [
-            [
-              "sudo",
-              "-u",
-              "hive",
-              "mkdir",
-              "-p",
-              "logs"
-            ]
-          ]
-        },
-        {
-          "to": "control_hive.sh",
-          "md5": "cddcf101797685c14869e7490ba32e9a",
-          "from": "script/control_hive.sh",
-          "type": "download",
-          "templateId": "2022205086085980162"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
-          "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
-          "target": "jmx/metastore.yaml"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
-          "target": "lib/mysql-connector-java-8.0.28.jar"
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "control_hive.sh",
@@ -95,7 +58,58 @@
         ]
       },
       "externalLink": {},
-      "hooks": []
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "sh",
+          "params": {
+            "commands": [
+              [
+                "sudo",
+                "-u",
+                "hive",
+                "mkdir",
+                "-p",
+                "logs"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "control_hive.sh",
+            "md5": "cddcf101797685c14869e7490ba32e9a",
+            "from": "script/control_hive.sh",
+            "templateId": "2022205086085980162"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
+            "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
+            "target": "jmx/metastore.yaml"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+            "target": "lib/mysql-connector-java-8.0.28.jar"
+          }
+        }
+      ]
     },
     {
       "name": "HiveServer2",
@@ -110,42 +124,6 @@
         "user": "hive",
         "group": "hadoop"
       },
-      "resourceStrategies": [
-        {
-          "type": "sh",
-          "commands": [
-            [
-              "sudo",
-              "-u",
-              "hive",
-              "mkdir",
-              "-p",
-              "logs"
-            ]
-          ]
-        },
-        {
-          "to": "control_hive.sh",
-          "md5": "11f36c034dbbca447fc6b16308169572",
-          "from": "script/control_hive.sh",
-          "type": "download"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
-          "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
-          "target": "jmx/hiveserver2.yaml"
-        },
-        {
-          "type": "link",
-          "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
-          "target": "lib/mysql-connector-java-8.0.28.jar"
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "control_hive.sh",
@@ -183,7 +161,57 @@
         "label": "HiveServer2 UI",
         "url": "http://${host}:10002"
       },
-      "hooks": []
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "sh",
+          "params": {
+            "commands": [
+              [
+                "sudo",
+                "-u",
+                "hive",
+                "mkdir",
+                "-p",
+                "logs"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "control_hive.sh",
+            "md5": "11f36c034dbbca447fc6b16308169572",
+            "from": "script/control_hive.sh"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
+            "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
+            "target": "jmx/hiveserver2.yaml"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+            "target": "lib/mysql-connector-java-8.0.28.jar"
+          }
+        }
+      ]
     },
     {
       "name": "HiveClient",

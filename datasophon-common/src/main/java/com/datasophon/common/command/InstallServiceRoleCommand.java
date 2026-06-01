@@ -67,8 +67,6 @@ public class InstallServiceRoleCommand extends BaseCommand implements Serializab
     
     private ServiceRoleType serviceRoleType;
     
-    private List<Map<String, Object>> resourceStrategies;
-
     private Map<String,String> variables;
 
     private List<HookConfig> hooks;

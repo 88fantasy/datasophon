@@ -23,15 +23,6 @@
       "serverPorts": [],
       "jmxPort": 12345,
       "runAs": {},
-      "resourceStrategies": [
-        {
-          "to": "bin/control_ds.sh",
-          "md5": "069991e599422ce2264d7cb7964e9394",
-          "from": "script/control_ds.sh",
-          "type": "download",
-          "templateId": "2003753396534054913"
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "bin/dolphinscheduler-daemon.sh",
@@ -69,7 +60,18 @@
         "label": "DolphinScheduler Ui",
         "url": "http://${host}:12345/dolphinscheduler/ui"
       },
-      "hooks": []
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "bin/control_ds.sh",
+            "md5": "069991e599422ce2264d7cb7964e9394",
+            "from": "script/control_ds.sh",
+            "templateId": "2003753396534054913"
+          }
+        }
+      ]
     },
     {
       "name": "UMasterServer",
@@ -81,15 +83,6 @@
       "serverPorts": [],
       "jmxPort": 5679,
       "runAs": {},
-      "resourceStrategies": [
-        {
-          "to": "bin/control_ds.sh",
-          "md5": "069991e599422ce2264d7cb7964e9394",
-          "from": "script/control_ds.sh",
-          "type": "download",
-          "templateId": "2003753368964894722"
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "bin/dolphinscheduler-daemon.sh",
@@ -123,7 +116,18 @@
         ]
       },
       "externalLink": {},
-      "hooks": []
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "bin/control_ds.sh",
+            "md5": "069991e599422ce2264d7cb7964e9394",
+            "from": "script/control_ds.sh",
+            "templateId": "2003753368964894722"
+          }
+        }
+      ]
     },
     {
       "name": "UWorkerServer",
@@ -135,15 +139,6 @@
       "serverPorts": [],
       "jmxPort": 1235,
       "runAs": {},
-      "resourceStrategies": [
-        {
-          "to": "bin/control_ds.sh",
-          "md5": "069991e599422ce2264d7cb7964e9394",
-          "from": "script/control_ds.sh",
-          "type": "download",
-          "templateId": "2003753336559702018"
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "bin/dolphinscheduler-daemon.sh",
@@ -178,6 +173,16 @@
       },
       "externalLink": {},
       "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "bin/control_ds.sh",
+            "md5": "069991e599422ce2264d7cb7964e9394",
+            "from": "script/control_ds.sh",
+            "templateId": "2003753336559702018"
+          }
+        },
         {
           "type": "PRE_INSTALL",
           "action": "s3Sync",
@@ -200,15 +205,6 @@
       "serverPorts": [],
       "jmxPort": 50053,
       "runAs": {},
-      "resourceStrategies": [
-        {
-          "to": "bin/control_ds.sh",
-          "md5": "069991e599422ce2264d7cb7964e9394",
-          "from": "script/control_ds.sh",
-          "type": "download",
-          "templateId": "2003753300299943937"
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "bin/dolphinscheduler-daemon.sh",
@@ -243,6 +239,16 @@
       },
       "externalLink": {},
       "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "bin/control_ds.sh",
+            "md5": "069991e599422ce2264d7cb7964e9394",
+            "from": "script/control_ds.sh",
+            "templateId": "2003753300299943937"
+          }
+        },
         {
           "type": "PRE_INSTALL",
           "action": "s3Sync",
@@ -267,25 +273,6 @@
         "user": "hive",
         "group": "hadoop"
       },
-      "resourceStrategies": [
-        {
-          "type": "sh",
-          "commands": [
-            [
-              "mkdir",
-              "-p",
-              "executor/easyflow-web"
-            ]
-          ]
-        },
-        {
-          "to": "executor/easyflow-web/control.sh",
-          "md5": "966967a623776f35d512a22d2a18d10a",
-          "from": "script/control_easyflow.sh",
-          "type": "download",
-          "templateId": "2026548620654071809"
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "executor/easyflow-web/control.sh",
@@ -315,7 +302,31 @@
         ]
       },
       "externalLink": {},
-      "hooks": []
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "sh",
+          "params": {
+            "commands": [
+              [
+                "mkdir",
+                "-p",
+                "executor/easyflow-web"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "executor/easyflow-web/control.sh",
+            "md5": "966967a623776f35d512a22d2a18d10a",
+            "from": "script/control_easyflow.sh",
+            "templateId": "2026548620654071809"
+          }
+        }
+      ]
     }
   ],
   "configWriter": {

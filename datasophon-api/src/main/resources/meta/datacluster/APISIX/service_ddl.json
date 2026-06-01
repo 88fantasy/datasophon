@@ -4,7 +4,7 @@
   "description": "高性能分布式Api网关",
   "version": "2.15.3",
   "sortNum": 89,
-  "dependencies":[],
+  "dependencies": [],
   "packageName": "apisix-2.15.3.tar.gz",
   "decompressPackageName": "apisix-2.15.3",
   "roles": [
@@ -15,12 +15,6 @@
       "cardinality": "1+",
       "logFile": "/usr/local/apisix/logs/access.log",
       "jmxPort": 9091,
-      "resourceStrategies":[{
-        "type": "download",
-        "from": "script/control.sh",
-        "to": "control.sh",
-        "md5": "e00a98fede2df4441a650b83f6374468"
-      }],
       "startRunner": {
         "timeout": "60",
         "program": "apisix",
@@ -52,7 +46,18 @@
           "-c",
           "/usr/local/apisix/conf/config.yaml"
         ]
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control.sh",
+            "to": "control.sh",
+            "md5": "e00a98fede2df4441a650b83f6374468"
+          }
+        }
+      ]
     }
   ],
   "configWriter": {
@@ -105,10 +110,22 @@
       "description": "",
       "required": true,
       "type": "multipleWithMap",
-      "value": [{"name":"admin", "key":"edd1c9f034335f136f87ad84b625c8f1", "role": "admin"}],
+      "value": [
+        {
+          "name": "admin",
+          "key": "edd1c9f034335f136f87ad84b625c8f1",
+          "role": "admin"
+        }
+      ],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": [{"name":"admin", "key":"edd1c9f034335f136f87ad84b625c8f1", "role": "admin"}]
+      "defaultValue": [
+        {
+          "name": "admin",
+          "key": "edd1c9f034335f136f87ad84b625c8f1",
+          "role": "admin"
+        }
+      ]
     },
     {
       "name": "apisixAllowAdmin",
@@ -118,10 +135,14 @@
       "required": true,
       "type": "input",
       "configType": "stringArray",
-      "value": ["0.0.0.0/0"],
+      "value": [
+        "0.0.0.0/0"
+      ],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": ["0.0.0.0/0"]
+      "defaultValue": [
+        "0.0.0.0/0"
+      ]
     },
     {
       "name": "apisixPrometheusAddr",
