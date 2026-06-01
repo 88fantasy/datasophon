@@ -4,18 +4,20 @@
   "description": "Loki日志收集客户端",
   "version": "2.8.11",
   "sortNum": 84,
-  "dependencies":["LOKI"],
+  "dependencies": [
+    "LOKI"
+  ],
   "packageName": "promtail-linux-amd64.zip",
   "decompressPackageName": "promtail-2.8.11",
   "createDecompressDir": true,
-  "arch":{
-      "x86_64": {
-        "packageName": "promtail-linux-amd64.zip"
-      },
-      "aarch64": {
-        "packageName": "promtail-linux-arm64.zip"
-      }
+  "arch": {
+    "x86_64": {
+      "packageName": "promtail-linux-amd64.zip"
     },
+    "aarch64": {
+      "packageName": "promtail-linux-arm64.zip"
+    }
+  },
   "roles": [
     {
       "name": "Promtail",
@@ -23,12 +25,6 @@
       "roleType": "worker",
       "cardinality": "1",
       "logFile": "logs/promtail.out",
-      "resourceStrategies":[{
-        "type": "download",
-        "from": "script/control.sh",
-        "to": "control.sh",
-        "md5": "2a55e9d99c1dfe4881f6666c21f49c5e"
-      }],
       "startRunner": {
         "timeout": "60",
         "program": "control.sh",
@@ -56,7 +52,18 @@
         "args": [
           "restart"
         ]
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control.sh",
+            "to": "control.sh",
+            "md5": "2a55e9d99c1dfe4881f6666c21f49c5e"
+          }
+        }
+      ]
     }
   ],
   "configWriter": {

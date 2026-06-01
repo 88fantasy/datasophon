@@ -18,15 +18,6 @@
       "roleType": "master",
       "cardinality": "1",
       "logFile": "logs/dgmed-framework-portal-server.log",
-      "resourceStrategies": [
-        {
-          "type": "frontend",
-          "meta": "${JUICEFS.juicefsMeta}",
-          "source": "view/gateway-view",
-          "target": "/gateway-view",
-          "conf": "gateway-view.conf"
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "bin/server.sh",
@@ -54,7 +45,19 @@
         "args": [
           "restart"
         ]
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "frontend",
+          "params": {
+            "meta": "${JUICEFS.juicefsMeta}",
+            "source": "view/gateway-view",
+            "target": "/gateway-view",
+            "conf": "gateway-view.conf"
+          }
+        }
+      ]
     }
   ],
   "configWriter": {
@@ -478,7 +481,8 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "portal"
-    },{
+    },
+    {
       "name": "oidcSignKey",
       "label": "oidc协议签名key",
       "description": "oidc的签名密钥",

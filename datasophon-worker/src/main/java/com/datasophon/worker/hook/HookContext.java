@@ -49,7 +49,9 @@ public class HookContext implements ServiceRoleResource {
         result.put("serviceRoleName", serviceRoleName);
         result.put("packageName", packageName);
         result.put("decompressPackageName", decompressPackageName);
-        result.putAll(getParams());
+        if (params != null) {
+            result.putAll(params);
+        }
         return result;
     }
 

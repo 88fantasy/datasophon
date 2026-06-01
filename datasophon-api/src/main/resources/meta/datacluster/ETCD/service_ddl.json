@@ -4,10 +4,10 @@
   "description": "高可用的分布式键值存储系统",
   "version": "3.5.13",
   "sortNum": 90,
-  "dependencies":[],
+  "dependencies": [],
   "packageName": "etcd-v3.5.13-linux-amd64.tar.gz",
   "decompressPackageName": "etcd-v3.5.13-linux",
-  "arch":{
+  "arch": {
     "x86_64": {
       "packageName": "etcd-v3.5.13-linux-amd64.tar.gz"
     },
@@ -23,12 +23,6 @@
       "cardinality": "3",
       "logFile": "logs/etcd.out",
       "jmxPort": 2379,
-      "resourceStrategies":[{
-        "type": "download",
-        "from": "script/control.sh",
-        "to": "control.sh",
-        "md5": "920ca0c530468c5875411614e819880a"
-      }],
       "startRunner": {
         "timeout": "60",
         "program": "control.sh",
@@ -56,7 +50,18 @@
         "args": [
           "restart"
         ]
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control.sh",
+            "to": "control.sh",
+            "md5": "920ca0c530468c5875411614e819880a"
+          }
+        }
+      ]
     }
   ],
   "configWriter": {
@@ -193,7 +198,10 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "new",
-      "selectValue" : ["new","existing"]
+      "selectValue": [
+        "new",
+        "existing"
+      ]
     },
     {
       "name": "custom.etcd.conf.yaml",

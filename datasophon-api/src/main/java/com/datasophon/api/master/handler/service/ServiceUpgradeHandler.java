@@ -40,7 +40,6 @@ public class ServiceUpgradeHandler extends ServiceHandler {
         installServiceRoleCommand.setCreateDecompressDir(serviceRoleInfo.getCreateDecompressDir());
         installServiceRoleCommand.setRunAs(serviceRoleInfo.getRunAs());
         installServiceRoleCommand.setServiceRoleType(serviceRoleInfo.getRoleType());
-        installServiceRoleCommand.setResourceStrategies(serviceRoleInfo.getResourceStrategies());
         installServiceRoleCommand.setVariables(createVariables(serviceRoleInfo));
         installServiceRoleCommand.setHooks(serviceRoleInfo.getMatchedHooks(HookType.PRE_INSTALL, HookType.POST_INSTALL));
 

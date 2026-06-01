@@ -7,7 +7,7 @@
   "dependencies": [],
   "packageName": "minio-8.4.3.tar.gz",
   "decompressPackageName": "minio-8.4.3",
-  "arch":{
+  "arch": {
     "x86_64": {
       "packageName": "minio-8.4.3.tar.gz"
     },
@@ -24,32 +24,43 @@
       "sortNum": 1,
       "logFile": "logs/minio.out",
       "jmxPort": 9000,
-      "resourceStrategies":[{
-        "type": "download",
-        "from": "script/control.sh",
-        "to": "control.sh",
-        "md5": "6c85b70572b51c403ca7d666862769b4"
-      }],
       "startRunner": {
         "timeout": "60",
         "program": "control.sh",
-        "args": ["start"]
+        "args": [
+          "start"
+        ]
       },
       "stopRunner": {
         "timeout": "60",
         "program": "control.sh",
-        "args": ["stop"]
+        "args": [
+          "stop"
+        ]
       },
       "statusRunner": {
         "timeout": "60",
         "program": "control.sh",
-        "args": ["status"]
+        "args": [
+          "status"
+        ]
       },
       "externalLink": {
         "name": "minio Ui",
         "label": "minio Ui",
         "url": "http://${host}:${minioConsolePort}"
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control.sh",
+            "to": "control.sh",
+            "md5": "6c85b70572b51c403ca7d666862769b4"
+          }
+        }
+      ]
     }
   ],
   "configWriter": {

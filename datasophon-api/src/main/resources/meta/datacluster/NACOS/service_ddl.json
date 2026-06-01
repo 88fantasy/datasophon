@@ -7,56 +7,61 @@
   "dependencies": [],
   "packageName": "nacos-server-2.4.3.tar.gz",
   "decompressPackageName": "nacos-2.4.3",
-  "roles": [{
-    "name": "NacosServer",
-    "label": "NacosServer",
-    "roleType": "master",
-    "cardinality": "1",
-    "logFile": "logs/start.out",
-    "jmxPort": 8848,
-    "resourceStrategies":[{
-      "type": "download",
-      "from": "script/control_nacos.sh",
-      "to": "bin/control_nacos.sh",
-      "md5": "66eddd29b1f85d39fcfd98485f5bd9d1"
-    }],
-    "startRunner": {
-      "timeout": "60",
-      "program": "bin/startup.sh",
-      "args": [
-        "-m",
-        "standalone"
+  "roles": [
+    {
+      "name": "NacosServer",
+      "label": "NacosServer",
+      "roleType": "master",
+      "cardinality": "1",
+      "logFile": "logs/start.out",
+      "jmxPort": 8848,
+      "startRunner": {
+        "timeout": "60",
+        "program": "bin/startup.sh",
+        "args": [
+          "-m",
+          "standalone"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "bin/shutdown.sh",
+        "args": []
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "bin/control_nacos.sh",
+        "args": [
+          "status",
+          "standalone"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "bin/control_nacos.sh",
+        "args": [
+          "restart",
+          "standalone"
+        ]
+      },
+      "externalLink": {
+        "name": "Nacos UI",
+        "label": "Nacos UI",
+        "url": "http://${host}:${nacosServerPort}/nacos/"
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control_nacos.sh",
+            "to": "bin/control_nacos.sh",
+            "md5": "66eddd29b1f85d39fcfd98485f5bd9d1"
+          }
+        }
       ]
-    },
-    "stopRunner": {
-      "timeout": "600",
-      "program": "bin/shutdown.sh",
-      "args": [
-
-      ]
-    },
-    "statusRunner": {
-      "timeout": "60",
-      "program": "bin/control_nacos.sh",
-      "args": [
-        "status",
-        "standalone"
-      ]
-    },
-    "restartRunner": {
-      "timeout": "60",
-      "program": "bin/control_nacos.sh",
-      "args": [
-        "restart",
-        "standalone"
-      ]
-    },
-    "externalLink": {
-      "name": "Nacos UI",
-      "label": "Nacos UI",
-      "url": "http://${host}:${nacosServerPort}/nacos/"
     }
-  }],
+  ],
   "configWriter": {
     "generators": [
       {
@@ -65,15 +70,15 @@
         "outputDirectory": "conf",
         "templateName": "nacos-standalone.ftl",
         "includeParams": [
-            "nacosServerPort",
-            "nacosDbUrl",
-            "nacosDbUser",
-            "nacosDbPwd",
-            "nacosAuthEnabled",
-            "nacosTokenSecretKey",
-            "nacosWebUI",
-            "nacosUsername",
-            "nacosPassword"
+          "nacosServerPort",
+          "nacosDbUrl",
+          "nacosDbUser",
+          "nacosDbPwd",
+          "nacosAuthEnabled",
+          "nacosTokenSecretKey",
+          "nacosWebUI",
+          "nacosUsername",
+          "nacosPassword"
         ]
       }
     ]

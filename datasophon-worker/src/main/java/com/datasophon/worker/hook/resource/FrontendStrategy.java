@@ -1,19 +1,24 @@
-package com.datasophon.worker.strategy.resource;
+package com.datasophon.worker.hook.resource;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PlaceholderUtils;
+import com.datasophon.worker.hook.HookAction;
+import com.datasophon.worker.hook.HookContext;
 import com.datasophon.worker.utils.JuicefsUtil;
+import com.datasophon.common.utils.PkgInstallPathUtils;
+import com.datasophon.worker.utils.TaskConstants;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.util.Map;
 
-@EqualsAndHashCode(callSuper = true)
 @Data
-public class FrontendStrategy extends ResourceStrategy {
+public class FrontendStrategy implements HookAction {
 
     public static final String FRONTEND_TYPE = "frontend";
 
@@ -24,13 +29,21 @@ public class FrontendStrategy extends ResourceStrategy {
     private String target;
 
     @Override
-    public String type() {
+    public String getType() {
         return FRONTEND_TYPE;
     }
 
     @Override
-    public ExecResult exec() {
-        logger.info("开始执行资源策略:{}...", type());
+    public ExecResult invoke(HookContext context) {
+        BeanUtil.fillBeanWithMap(context.getParams(), this, CopyOptions.create().ignoreError());
+        Logger logger = LoggerFactory.getLogger(
+                TaskConstants.createLoggerName(context.getServiceName(), context.getServiceRoleName(), getClass()));
+        String basePath = PkgInstallPathUtils.getInstallHome(context);
+        Map<String, String> variables = context.getGlobalVariables();
+        String service = context.getServiceName();
+        String serviceRole = context.getServiceRoleName();
+
+        logger.info("开始执行资源策略:{}...", getType());
         ExecResult execResult = new ExecResult();
         if (StringUtils.isNotEmpty(meta)) {
             String metaUrl = variables.get(meta);

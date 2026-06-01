@@ -4,18 +4,21 @@
   "description": "轻量级日志系统",
   "version": "3.3.2",
   "sortNum": 83,
-  "dependencies":["MINIO","REDIS"],
+  "dependencies": [
+    "MINIO",
+    "REDIS"
+  ],
   "packageName": "loki-linux-amd64.zip",
   "decompressPackageName": "loki-3.3.2",
   "createDecompressDir": true,
-  "arch":{
-      "x86_64": {
-        "packageName": "loki-linux-amd64.zip"
-      },
-      "aarch64": {
-        "packageName": "loki-linux-arm64.zip"
-      }
+  "arch": {
+    "x86_64": {
+      "packageName": "loki-linux-amd64.zip"
     },
+    "aarch64": {
+      "packageName": "loki-linux-arm64.zip"
+    }
+  },
   "roles": [
     {
       "name": "Loki",
@@ -24,12 +27,6 @@
       "cardinality": "1",
       "logFile": "logs/loki.out",
       "jmxPort": 3100,
-      "resourceStrategies":[{
-        "type": "download",
-        "from": "script/control.sh",
-        "to": "control.sh",
-        "md5": "dbf5e8cfed3671cc673f4cef8763b458"
-      }],
       "startRunner": {
         "timeout": "60",
         "program": "control.sh",
@@ -62,7 +59,18 @@
         "name": "Explore",
         "label": "Explore",
         "url": "http://${host}:3000"
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control.sh",
+            "to": "control.sh",
+            "md5": "dbf5e8cfed3671cc673f4cef8763b458"
+          }
+        }
+      ]
     }
   ],
   "configWriter": {

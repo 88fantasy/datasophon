@@ -4,7 +4,9 @@
   "description": "Nginx网关",
   "version": "1.26.2",
   "sortNum": 93,
-  "dependencies":["JUICEFS"],
+  "dependencies": [
+    "JUICEFS"
+  ],
   "packageName": "nginx-1.26.2.tar.gz",
   "decompressPackageName": "nginx-1.26.2",
   "roles": [
@@ -14,12 +16,6 @@
       "roleType": "master",
       "cardinality": "1+",
       "logFile": "nginx/logs/access/access.log",
-      "resourceStrategies":[{
-        "type": "download",
-        "from": "script/control.sh",
-        "to": "bin/control.sh",
-        "md5": "8c31a7ef7b949b52e083cd7d408647b6"
-      }],
       "startRunner": {
         "timeout": "60",
         "program": "bin/control.sh",
@@ -47,7 +43,18 @@
         "args": [
           "restart"
         ]
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control.sh",
+            "to": "bin/control.sh",
+            "md5": "8c31a7ef7b949b52e083cd7d408647b6"
+          }
+        }
+      ]
     },
     {
       "name": "NginxExporter",
@@ -345,12 +352,10 @@
       "required": true,
       "type": "multipleWithMap",
       "configType": "map",
-      "value": [
-      ],
+      "value": [],
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": [
-      ]
+      "defaultValue": []
     }
   ]
 }

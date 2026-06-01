@@ -25,30 +25,6 @@
         "user": "yarn",
         "group": "hadoop"
       },
-      "resourceStrategies": [
-        {
-          "to": "etc/hadoop/fair-scheduler.xml",
-          "md5": "df88de39a103546c7d9e9d05b443f093",
-          "from": "etc/hadoop/fair-scheduler.xml",
-          "type": "download",
-          "templateId": "2028716252782186498"
-        },
-        {
-          "to": "spark-3.4.2-yarn-shuffle.jar",
-          "from": "spark-3.4.2-yarn-shuffle.jar",
-          "type": "nexus"
-        },
-        {
-          "type": "sh",
-          "commands": [
-            [
-              "cp",
-              "/data/datasophon/datasophon-init/packages/spark-3.4.2-yarn-shuffle.jar",
-              "share/hadoop/yarn/lib/"
-            ]
-          ]
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -86,7 +62,39 @@
         "label": "ResourceManager UI",
         "url": "http://${host}:8088/ui2"
       },
-      "hooks": []
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "etc/hadoop/fair-scheduler.xml",
+            "md5": "df88de39a103546c7d9e9d05b443f093",
+            "from": "etc/hadoop/fair-scheduler.xml",
+            "templateId": "2028716252782186498"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "to": "spark-3.4.2-yarn-shuffle.jar",
+            "from": "spark-3.4.2-yarn-shuffle.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "sh",
+          "params": {
+            "commands": [
+              [
+                "cp",
+                "/data/datasophon/datasophon-init/packages/spark-3.4.2-yarn-shuffle.jar",
+                "share/hadoop/yarn/lib/"
+              ]
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "NodeManager",
@@ -100,30 +108,6 @@
         "user": "yarn",
         "group": "hadoop"
       },
-      "resourceStrategies": [
-        {
-          "to": "etc/hadoop/fair-scheduler.xml",
-          "md5": "df88de39a103546c7d9e9d05b443f093",
-          "from": "etc/hadoop/fair-scheduler.xml",
-          "type": "download",
-          "templateId": "2028749055355863042"
-        },
-        {
-          "to": "spark-3.4.2-yarn-shuffle.jar",
-          "from": "spark-3.4.2-yarn-shuffle.jar",
-          "type": "nexus"
-        },
-        {
-          "type": "sh",
-          "commands": [
-            [
-              "cp",
-              "/data/datasophon/datasophon-init/packages/spark-3.4.2-yarn-shuffle.jar",
-              "share/hadoop/yarn/lib/"
-            ]
-          ]
-        }
-      ],
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -147,7 +131,40 @@
           "status",
           "nodemanager"
         ]
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "etc/hadoop/fair-scheduler.xml",
+            "md5": "df88de39a103546c7d9e9d05b443f093",
+            "from": "etc/hadoop/fair-scheduler.xml",
+            "templateId": "2028749055355863042"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "to": "spark-3.4.2-yarn-shuffle.jar",
+            "from": "spark-3.4.2-yarn-shuffle.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "sh",
+          "params": {
+            "commands": [
+              [
+                "cp",
+                "/data/datasophon/datasophon-init/packages/spark-3.4.2-yarn-shuffle.jar",
+                "share/hadoop/yarn/lib/"
+              ]
+            ]
+          }
+        }
+      ]
     },
     {
       "name": "HistoryServer",

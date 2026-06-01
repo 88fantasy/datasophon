@@ -4,7 +4,7 @@
   "description": "统一多租户JDBC网关",
   "version": "1.7.4",
   "sortNum": 30,
-  "dependencies":[],
+  "dependencies": [],
   "packageName": "apache-kyuubi-1.7.4-bin.tgz",
   "decompressPackageName": "apache-kyuubi-1.7.4-bin",
   "roles": [
@@ -19,24 +19,6 @@
       "cardinality": "1+",
       "jmxPort": "10019",
       "logFile": "logs/kyuubi-hive-org.apache.kyuubi.server.KyuubiServer-${host}.out",
-      "resourceStrategies":[
-        {
-          "type": "append_line",
-          "source": "bin/kyuubi",
-          "line": 21,
-          "text": "USER=hive"
-        },
-        {
-        "type": "append_line",
-        "source": "bin/kyuubi",
-        "line": 206,
-        "text": "      exit 1"
-      },{
-        "type": "append_line",
-        "source": "bin/kyuubi",
-        "line": 210,
-        "text": "    exit 1"
-      }],
       "startRunner": {
         "timeout": "60",
         "program": "bin/kyuubi",
@@ -64,7 +46,36 @@
         "args": [
           "restart"
         ]
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/kyuubi",
+            "line": 21,
+            "text": "USER=hive"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/kyuubi",
+            "line": 206,
+            "text": "      exit 1"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "source": "bin/kyuubi",
+            "line": 210,
+            "text": "    exit 1"
+          }
+        }
+      ]
     },
     {
       "name": "KyuubiClient",
@@ -213,7 +224,6 @@
       "hidden": false,
       "value": "2g",
       "configurableInWizard": true,
-      "hidden": false,
       "defaultValue": "2g"
     },
     {
@@ -404,7 +414,7 @@
       "defaultValue": "PROMETHEUS"
     },
     {
-      "name":   "kyuubi.metrics.prometheus.port",
+      "name": "kyuubi.metrics.prometheus.port",
       "label": "监控服务端口",
       "description": "监控服务端口",
       "required": true,
@@ -521,7 +531,7 @@
       "required": false,
       "configType": "kb",
       "type": "input",
-      "value":  "kyuubi/${host}@${realm}",
+      "value": "kyuubi/${host}@${realm}",
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "kyuubi/${host}@${realm}"
@@ -559,7 +569,9 @@
       "required": false,
       "type": "multipleWithKey",
       "value": [
-        {"spark.shuffle.useOldFetchProtocol":"true"}
+        {
+          "spark.shuffle.useOldFetchProtocol": "true"
+        }
       ],
       "configurableInWizard": true,
       "hidden": false,

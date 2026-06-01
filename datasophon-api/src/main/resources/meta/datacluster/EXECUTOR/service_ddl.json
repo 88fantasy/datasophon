@@ -8,8 +8,7 @@
   "packageName": "executor-3.11.0.tar.gz",
   "decompressPackageName": "executor-3.11.0",
   "createDecompressDir": false,
-  "dependencies": [
-  ],
+  "dependencies": [],
   "arch": {
     "common": {
       "packageName": "executor-3.11.0.tar.gz"
@@ -24,8 +23,7 @@
         "user": "hive",
         "group": "hadoop"
       },
-      "cardinality": "1+",
-      "resourceStrategies": []
+      "cardinality": "1+"
     }
   ],
   "configWriter": {

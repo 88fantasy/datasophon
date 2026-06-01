@@ -1,9 +1,0 @@
-com.datasophon.worker.strategy.resource.DownloadStrategy
-com.datasophon.worker.strategy.resource.FrontendStrategy
-com.datasophon.worker.strategy.resource.ReplaceStrategy
-com.datasophon.worker.strategy.resource.AppendLineStrategy
-com.datasophon.worker.strategy.resource.EmptyStrategy
-com.datasophon.worker.strategy.resource.LinkStrategy
-com.datasophon.worker.strategy.resource.ShellStrategy
-com.datasophon.worker.strategy.resource.ExecShellStrategy
-com.datasophon.worker.strategy.resource.NexusResourceStrategy

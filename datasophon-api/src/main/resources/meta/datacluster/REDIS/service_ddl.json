@@ -7,7 +7,7 @@
   "dependencies": [],
   "packageName": "redis-6.2.14.tar.gz",
   "decompressPackageName": "redis-6.2.14",
-  "arch":{
+  "arch": {
     "x86_64": {
       "packageName": "redis-6.2.14.tar.gz"
     },
@@ -22,12 +22,6 @@
       "roleType": "master",
       "cardinality": "1",
       "logFile": "logs/master.log",
-      "resourceStrategies":[{
-        "type": "download",
-        "from": "script/control_redis.sh",
-        "to": "control_redis.sh",
-        "md5": "8b25b0fffa6034c219a68ec988daa0b8"
-      }],
       "startRunner": {
         "timeout": "60",
         "program": "control_redis.sh",
@@ -51,7 +45,18 @@
           "status",
           "master"
         ]
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control_redis.sh",
+            "to": "control_redis.sh",
+            "md5": "8b25b0fffa6034c219a68ec988daa0b8"
+          }
+        }
+      ]
     },
     {
       "name": "RedisExporter",
@@ -61,12 +66,6 @@
       "logFile": "redis-exporter/logs/exporter.log",
       "jmxPort": 9121,
       "sortNum": 2,
-      "resourceStrategies":[{
-        "type": "download",
-        "from": "script/control_redis.sh",
-        "to": "control_redis.sh",
-        "md5": "8b25b0fffa6034c219a68ec988daa0b8"
-      }],
       "startRunner": {
         "timeout": "60",
         "program": "control_redis.sh",
@@ -98,7 +97,18 @@
           "restart",
           "exporter"
         ]
-      }
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control_redis.sh",
+            "to": "control_redis.sh",
+            "md5": "8b25b0fffa6034c219a68ec988daa0b8"
+          }
+        }
+      ]
     }
   ],
   "configWriter": {
@@ -196,7 +206,14 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "volatile-random",
-      "selectValue" : ["volatile-lru", "allkeys-lru", "volatile-random", "allkeys-random", "volatile-ttl", "noeviction"]
+      "selectValue": [
+        "volatile-lru",
+        "allkeys-lru",
+        "volatile-random",
+        "allkeys-random",
+        "volatile-ttl",
+        "noeviction"
+      ]
     },
     {
       "name": "custom.master.conf",

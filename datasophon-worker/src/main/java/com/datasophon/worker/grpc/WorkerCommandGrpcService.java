@@ -76,6 +76,7 @@ import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -198,10 +199,15 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
                     TaskConstants.createLoggerName(cmd.getServiceName(), cmd.getServiceRoleName(), WorkerCommandGrpcService.class));
             taskLog.info("开始安装服务:{} {}", cmd.getServiceName(), cmd.getServiceRoleName());
 
+            // 防御性拷贝，注入 frameCode 供 DownloadStrategy 等 hook 使用，不污染共享变量 map
+            Map<String, String> hookVars = new HashMap<>(
+                    cmd.getVariables() == null ? Collections.emptyMap() : cmd.getVariables());
+            hookVars.put("${__frameCode__}", cmd.getFrameCode());
+
             result = invokeFunctions(
-                    () -> invokeHook(cmd.getHooks(), HookType.PRE_INSTALL, cmd, cmd.getVariables()),
+                    () -> invokeHook(cmd.getHooks(), HookType.PRE_INSTALL, cmd, hookVars),
                     () -> doInstall(cmd, taskLog),
-                    () -> invokeHook(cmd.getHooks(), HookType.POST_INSTALL, cmd, cmd.getVariables())
+                    () -> invokeHook(cmd.getHooks(), HookType.POST_INSTALL, cmd, hookVars)
             );
             taskLog.info("安装 {} {}, 信息: {}", cmd.getPackageName(),
                     result.getExecResult() ? "成功" : "失败", result.getExecOut());
@@ -246,8 +252,10 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         try {
             ServiceRoleOperateCommand cmd = MAPPER.readValue(req.getJsonPayload(), ServiceRoleOperateCommand.class);
             log.info("gRPC startServiceRole: {} {}", cmd.getServiceName(), cmd.getServiceRoleName());
+            Map<String, String> startHookVars = new HashMap<>(
+                    cmd.getVariables() == null ? Collections.emptyMap() : cmd.getVariables());
             result = invokeFunctions(
-                    () -> invokeHook(cmd.getHooks(), HookType.PRE_START, cmd, cmd.getVariables()),
+                    () -> invokeHook(cmd.getHooks(), HookType.PRE_START, cmd, startHookVars),
                     () -> {
                         ServiceRoleStrategy strategy = ServiceRoleStrategyContext.getServiceRoleHandler(cmd.getServiceRoleName());
                         if (Objects.nonNull(strategy)) {
@@ -257,7 +265,7 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
                         return sh.start(cmd.getStartRunner(), cmd.getStatusRunner(), cmd,
                                 cmd.getRunAs(), cmd.isCheckStatus());
                     },
-                    () -> invokeHook(cmd.getHooks(), HookType.POST_START, cmd, cmd.getVariables())
+                    () -> invokeHook(cmd.getHooks(), HookType.POST_START, cmd, startHookVars)
             );
             log.info("gRPC startServiceRole {} {} {}", cmd.getServiceName(), cmd.getServiceRoleName(),
                     result.getExecResult() ? "success" : "failed");
@@ -277,13 +285,15 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         try {
             ServiceRoleOperateCommand cmd = MAPPER.readValue(req.getJsonPayload(), ServiceRoleOperateCommand.class);
             log.info("gRPC stopServiceRole: {} {}", cmd.getServiceName(), cmd.getServiceRoleName());
+            Map<String, String> stopHookVars = new HashMap<>(
+                    cmd.getVariables() == null ? Collections.emptyMap() : cmd.getVariables());
             result = invokeFunctions(
-                    () -> invokeHook(cmd.getHooks(), HookType.PRE_STOP, cmd, cmd.getVariables()),
+                    () -> invokeHook(cmd.getHooks(), HookType.PRE_STOP, cmd, stopHookVars),
                     () -> {
                         ServiceHandler sh = new ServiceHandler(cmd.getServiceName(), cmd.getServiceRoleName());
                         return sh.stop(cmd.getStopRunner(), cmd.getStatusRunner(), cmd, cmd.getRunAs());
                     },
-                    () -> invokeHook(cmd.getHooks(), HookType.POST_STOP, cmd, cmd.getVariables())
+                    () -> invokeHook(cmd.getHooks(), HookType.POST_STOP, cmd, stopHookVars)
             );
             log.info("gRPC stopServiceRole {} {} {}", cmd.getServiceName(), cmd.getServiceRoleName(),
                     result.getExecResult() ? "success" : "failed");
