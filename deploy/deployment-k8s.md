@@ -455,6 +455,22 @@ docker compose -f docker-compose.topology.yml down -v   # 完全重置
 
 ---
 
+## 九、关键文件参考
+
+| 用途 | 文件 |
+|---|---|
+| 端口配置真相之源 | `datasophon-cli-go/internal/config/configs/cluster-config.yml` |
+| containerd 离线 mirror 逻辑 | `datasophon-cli-go/internal/cli/init/containerd.go:144-204` |
+| Kuboard NodePort 30080 | `datasophon-cli-go/internal/cli/init/kuboard.go:95` |
+| Docker daemon 仅 unix socket | `datasophon-cli-go/internal/cli/init/docker.go:99-158` |
+| 组件 → 节点映射逻辑 | `datasophon-cli-go/internal/plan/builders_cluster.go` |
+| K8s baseServices 注册顺序 | `datasophon-cli-go/internal/plan/registry.go` |
+| gRPC 端口常量 | `datasophon-grpc-api/.../GrpcConstants.java` |
+| Nexus yum 仓库创建逻辑 | `datasophon-cli-go/internal/plan/registry_task.go::yumRepoCreate` |
+| 节点 yum 源配置逻辑（Nexus 路径） | `datasophon-cli-go/internal/cli/init/offline_slave.go:43-73` |
+
+---
+
 ## 十、组件版本参考
 
 > 查询时间：2026-05-31。"当前配置版本"来自 `cluster-config.yml` 的 `packages` 字段；"最新稳定版"来自各官方仓库 Release 页。
@@ -502,17 +518,3 @@ docker compose -f docker-compose.topology.yml down -v   # 完全重置
 | ⏳ 观望 | Rustfs | 等待正式 GA 版本后再评估生产使用 |
 
 ---
-
-## 九、关键文件参考
-
-| 用途 | 文件 |
-|---|---|
-| 端口配置真相之源 | `datasophon-cli-go/internal/config/configs/cluster-config.yml` |
-| containerd 离线 mirror 逻辑 | `datasophon-cli-go/internal/cli/init/containerd.go:144-204` |
-| Kuboard NodePort 30080 | `datasophon-cli-go/internal/cli/init/kuboard.go:95` |
-| Docker daemon 仅 unix socket | `datasophon-cli-go/internal/cli/init/docker.go:99-158` |
-| 组件 → 节点映射逻辑 | `datasophon-cli-go/internal/plan/builders_cluster.go` |
-| K8s baseServices 注册顺序 | `datasophon-cli-go/internal/plan/registry.go` |
-| gRPC 端口常量 | `datasophon-grpc-api/.../GrpcConstants.java` |
-| Nexus yum 仓库创建逻辑 | `datasophon-cli-go/internal/plan/registry_task.go::yumRepoCreate` |
-| 节点 yum 源配置逻辑（Nexus 路径） | `datasophon-cli-go/internal/cli/init/offline_slave.go:43-73` |
