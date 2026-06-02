@@ -71,7 +71,8 @@
     "packageName": "flink-2.2.1-bin-scala_2.12.tgz",
     "decompressPackageName": "flink-2.2.1",
     "downloadUrl": "https://downloads.apache.org/flink/flink-2.2.1/flink-2.2.1-bin-scala_2.12.tgz",
-    "status": "public"
+    "status": "public",
+    "note": "备用镜像：https://archive.apache.org/dist/flink/flink-2.2.1/flink-2.2.1-bin-scala_2.12.tgz（代理环境下连接易中断，可直接使用此链接重试）"
   },
   {
     "service": "GRAFANA",
