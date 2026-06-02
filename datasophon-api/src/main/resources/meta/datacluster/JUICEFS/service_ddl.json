@@ -2,20 +2,19 @@
   "name": "JUICEFS",
   "label": "Juicefs",
   "description": "高性能、云原生分布式文件系统",
-  "version": "1.2.1",
+  "version": "1.3.1",
   "sortNum": 81,
   "dependencies": [
     "MINIO"
   ],
-  "packageName": "juicefs-1.2.1-linux-amd64.tar.gz",
-  "decompressPackageName": "juicefs-1.2.1",
+  "decompressPackageName": "juicefs-1.3.1",
   "createDecompressDir": true,
   "arch": {
     "x86_64": {
-      "packageName": "juicefs-1.2.1-linux-amd64.tar.gz"
+      "packageName": "juicefs-1.3.1-linux-amd64.tar.gz"
     },
     "aarch64": {
-      "packageName": "juicefs-1.2.1-linux-arm64.tar.gz"
+      "packageName": "juicefs-1.3.1-linux-arm64.tar.gz"
     }
   },
   "roles": [

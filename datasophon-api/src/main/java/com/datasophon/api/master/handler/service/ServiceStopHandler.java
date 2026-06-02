@@ -44,7 +44,7 @@ public class ServiceStopHandler extends ServiceHandler {
         cmd.setStopRunner(serviceRoleInfo.getStopRunner());
         cmd.setStatusRunner(serviceRoleInfo.getStatusRunner());
         cmd.setRunAs(serviceRoleInfo.getRunAs());
-        cmd.setPackageName(serviceRoleInfo.getPackageName());
+        cmd.setPackageName(resolvePackageName(serviceRoleInfo));
         cmd.setDecompressPackageName(serviceRoleInfo.getDecompressPackageName());
         cmd.setCreateDecompressDir(serviceRoleInfo.getCreateDecompressDir());
         cmd.setHooks(serviceRoleInfo.getMatchedHooks(HookType.PRE_STOP, HookType.POST_STOP));

@@ -353,7 +353,6 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
                 serviceRoleInfo.setCommandType(CommandType.ofCode(hostCommand.getCommandType()));
                 serviceRoleInfo.setServiceInstanceId(cmd.getServiceInstanceId());
 
-                serviceRoleInfo.setPackageName(serviceEntity.getPackageName());
                 serviceRoleInfo.setArchInfoMap(ServicePkgNameUtils.getArchInfo(serviceEntity));
                 serviceRoleInfo.setDecompressPackageName(serviceEntity.getDecompressPackageName());
                 serviceRoleInfo.setFrameCode(serviceEntity.getFrameCode());
@@ -568,7 +567,6 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
 
                 oldOne.setCreateDecompressDir(serviceDef.getCreateDecompressDir());
                 oldOne.setDecompressPackageName(serviceEntity.getDecompressPackageName());
-                oldOne.setPackageName(serviceEntity.getPackageName());
                 oldOne.setArchInfoMap(ServicePkgNameUtils.getArchInfo(serviceEntity));
 
                 Optional.ofNullable(ServiceRoleStrategyContext.getServiceRoleHandler(newOne.getName()))

@@ -2,11 +2,10 @@
   "name": "KYUUBI",
   "label": "Kyuubi",
   "description": "统一多租户JDBC网关",
-  "version": "1.7.4",
+  "version": "1.11.1",
   "sortNum": 30,
   "dependencies": [],
-  "packageName": "apache-kyuubi-1.7.4-bin.tgz",
-  "decompressPackageName": "apache-kyuubi-1.7.4-bin",
+  "decompressPackageName": "apache-kyuubi-1.11.1-bin",
   "roles": [
     {
       "name": "KyuubiServer",
@@ -577,5 +576,10 @@
       "hidden": false,
       "defaultValue": []
     }
-  ]
+  ],
+  "arch": {
+    "common": {
+      "packageName": "apache-kyuubi-1.11.1-bin.tgz"
+    }
+  }
 }

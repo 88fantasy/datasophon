@@ -2,19 +2,18 @@
   "name": "HDFS",
   "label": "HDFS",
   "description": "分布式大数据存储",
-  "version": "3.3.6",
+  "version": "3.5.0",
   "sortNum": 1,
   "dependencies": [
     "ZOOKEEPER"
   ],
-  "packageName": "hadoop-3.3.6.tar.gz",
-  "decompressPackageName": "hadoop-3.3.6",
+  "decompressPackageName": "hadoop-3.5.0",
   "arch": {
     "x86_64": {
-      "packageName": "hadoop-3.3.6.tar.gz"
+      "packageName": "hadoop-3.5.0.tar.gz"
     },
     "aarch64": {
-      "packageName": "hadoop-3.3.6-aarch64.tar.gz"
+      "packageName": "hadoop-3.5.0-aarch64.tar.gz"
     }
   },
   "roles": [

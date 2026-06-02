@@ -28,6 +28,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.load.ServiceRoleJmxMap;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
 import com.datasophon.api.master.transport.WorkerCallAdapter;
+import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.FrameServiceService;
@@ -294,7 +295,7 @@ public class PrometheusService {
         result.setName("Prometheus");
         result.setParentName(frameService.getServiceName());
         result.setDecompressPackageName(frameService.getDecompressPackageName());
-        result.setPackageName(frameService.getPackageName());
+        result.setArchInfoMap(ServicePkgNameUtils.getArchInfo(frameService));
         return result;
     }
 

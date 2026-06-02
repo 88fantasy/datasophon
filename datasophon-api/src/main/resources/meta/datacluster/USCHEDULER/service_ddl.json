@@ -5,7 +5,6 @@
   "description": "数衍调度组件",
   "sortNum": 30,
   "version": "3.0.2-3.11.0",
-  "packageName": "uscheduler3-3.0.2-3.11.0-bin.tar.gz",
   "decompressPackageName": "uscheduler3-3.0.2-3.11.0",
   "createDecompressDir": false,
   "dependencies": [

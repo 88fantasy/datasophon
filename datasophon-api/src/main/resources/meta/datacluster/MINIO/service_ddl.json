@@ -2,17 +2,16 @@
   "name": "MINIO",
   "label": "Minio",
   "description": "S3对象存储",
-  "version": "8.4.3",
+  "version": "9.0.1",
   "sortNum": 22,
   "dependencies": [],
-  "packageName": "minio-8.4.3.tar.gz",
-  "decompressPackageName": "minio-8.4.3",
+  "decompressPackageName": "minio-9.0.1",
   "arch": {
     "x86_64": {
-      "packageName": "minio-8.4.3.tar.gz"
+      "packageName": "minio-9.0.1.tar.gz"
     },
     "aarch64": {
-      "packageName": "minio-8.4.3-arm.tar.gz"
+      "packageName": "minio-9.0.1-arm.tar.gz"
     }
   },
   "roles": [

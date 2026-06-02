@@ -5,7 +5,6 @@
   "description": "数衍执行器",
   "sortNum": 30,
   "version": "3.11.0",
-  "packageName": "executor-3.11.0.tar.gz",
   "decompressPackageName": "executor-3.11.0",
   "createDecompressDir": false,
   "dependencies": [],

@@ -2,14 +2,11 @@ package com.datasophon.api.utils;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.TypeReference;
-import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.model.ArchInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.dao.entity.FrameServiceEntity;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author zhanghuangbin
@@ -17,6 +14,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ServicePkgNameUtils {
 
     public static final String COMMON_ARCH = "common";
+
+    /**
+     * 从角色的 archInfoMap 中按主机架构取包信息；找不到时回退到 "common" 条目。
+     */
     public static ArchInfo getArchInfo(ServiceRoleInfo role, String arch) {
         Map<String, ArchInfo> archInfoMap = role.getArchInfoMap();
         ArchInfo info = archInfoMap.get(arch);
@@ -26,26 +27,12 @@ public class ServicePkgNameUtils {
         return info;
     }
 
+    /**
+     * 解析 FrameServiceEntity.arch JSON 为 arch-map。
+     * arch 字段自 service_ddl.json 统一强制存在，不再有 null 兜底逻辑。
+     */
     public static Map<String, ArchInfo> getArchInfo(FrameServiceEntity frameService) {
-        String arch = frameService.getArch();
-        if (StringUtils.isNotEmpty(arch)) {
-            return JSONObject.parseObject(arch, new TypeReference<Map<String, ArchInfo>>() {
-            });
-        } else {
-            return getDefaultArchInfo(frameService.getPackageName(), frameService.getDecompressPackageName());
-        }
-    }
-
-    public static Map<String, ArchInfo> getDefaultArchInfo(String packageName, String decompressPackageName) {
-        // x86与arm默认一致
-        Map<String, ArchInfo> arch = new ConcurrentHashMap<>();
-        ArchInfo x86 = new ArchInfo();
-        x86.setPackageName(packageName);
-        arch.put(ArchType.X86_64.getArch(), x86);
-
-        ArchInfo arm = new ArchInfo();
-        arm.setPackageName(packageName);
-        arch.put(ArchType.AARCH64.getArch(), arm);
-        return arch;
+        return JSONObject.parseObject(frameService.getArch(), new TypeReference<Map<String, ArchInfo>>() {
+        });
     }
 }

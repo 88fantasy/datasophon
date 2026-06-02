@@ -2,17 +2,16 @@
   "name": "ALERTMANAGER",
   "label": "AlertManager",
   "description": "告警通知管理系统",
-  "version": "0.23.0",
+  "version": "0.32.1",
   "sortNum": 15,
   "dependencies": [],
-  "packageName": "alertmanager-0.23.0.tar.gz",
-  "decompressPackageName": "alertmanager-0.23.0",
-  "arch":{
+  "decompressPackageName": "alertmanager-0.32.1",
+  "arch": {
     "x86_64": {
-      "packageName": "alertmanager-0.23.0.tar.gz"
+      "packageName": "alertmanager-0.32.1.linux-amd64.tar.gz"
     },
     "aarch64": {
-      "packageName": "alertmanager-0.23.0-arm.tar.gz"
+      "packageName": "alertmanager-0.32.1.linux-arm64.tar.gz"
     }
   },
   "roles": [

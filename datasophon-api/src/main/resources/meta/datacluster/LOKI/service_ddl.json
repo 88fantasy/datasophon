@@ -2,14 +2,13 @@
   "name": "LOKI",
   "label": "Loki",
   "description": "轻量级日志系统",
-  "version": "3.3.2",
+  "version": "3.7.2",
   "sortNum": 83,
   "dependencies": [
     "MINIO",
     "REDIS"
   ],
-  "packageName": "loki-linux-amd64.zip",
-  "decompressPackageName": "loki-3.3.2",
+  "decompressPackageName": "loki-3.7.2",
   "createDecompressDir": true,
   "arch": {
     "x86_64": {

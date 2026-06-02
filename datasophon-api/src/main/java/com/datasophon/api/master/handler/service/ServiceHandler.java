@@ -23,16 +23,21 @@
 
 package com.datasophon.api.master.handler.service;
 
+import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.api.utils.ServicePkgNameUtils;
+import com.datasophon.api.utils.SpringTool;
+import com.datasophon.common.model.ArchInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.dao.entity.ClusterHostDO;
 
 import lombok.Data;
 
 @Data
 public abstract class ServiceHandler {
-    
+
     private ServiceHandler next;
-    
+
     public abstract ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception;
 
 
@@ -40,11 +45,23 @@ public abstract class ServiceHandler {
         this.next = next;
         return next;
     }
+
     public ExecResult invokeNext(ServiceRoleInfo srvRoleInfo, ExecResult lastResult) throws Exception {
         boolean canGoOn = lastResult != null && lastResult.isSuccess() && next != null;
         if (!canGoOn) {
             return lastResult;
         }
         return next.handlerRequest(srvRoleInfo);
+    }
+
+    /**
+     * 按主机 CPU 架构从 archInfoMap 中解析当前操作所需的安装包名。
+     * 找不到匹配架构时返回 null，调用方应视为失败。
+     */
+    protected String resolvePackageName(ServiceRoleInfo role) {
+        ClusterHostService hostService = SpringTool.getApplicationContext().getBean(ClusterHostService.class);
+        ClusterHostDO host = hostService.getClusterHostByHostname(role.getHostname());
+        ArchInfo archInfo = ServicePkgNameUtils.getArchInfo(role, host.getCpuArchitecture());
+        return archInfo == null ? null : archInfo.getPackageName();
     }
 }

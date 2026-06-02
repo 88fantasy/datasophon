@@ -63,8 +63,10 @@ public class FrameServiceEntity implements Serializable {
      */
     private String serviceDesc;
     
+    // package_name DB 列保留但停用：包名统一通过 arch 字段按主机架构解析，此处不再映射。
+    @TableField(exist = false)
     private String packageName;
-    
+
     private String arch;
     
     private String dependencies;

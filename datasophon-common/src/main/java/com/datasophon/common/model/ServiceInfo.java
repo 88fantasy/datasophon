@@ -54,8 +54,6 @@ public class ServiceInfo {
     
     private ConfigWriter configWriter;
     
-    private String packageName;
-
     @NotEmpty(message = "decompressPackageName字段不能为空")
     private String decompressPackageName;
 

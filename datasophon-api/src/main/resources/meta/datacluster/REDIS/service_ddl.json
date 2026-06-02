@@ -2,17 +2,16 @@
   "name": "REDIS",
   "label": "Redis",
   "description": "开源的高性能键值对存储系统",
-  "version": "6.2.14",
+  "version": "8.6",
   "sortNum": 91,
   "dependencies": [],
-  "packageName": "redis-6.2.14.tar.gz",
-  "decompressPackageName": "redis-6.2.14",
+  "decompressPackageName": "redis-8.6",
   "arch": {
     "x86_64": {
-      "packageName": "redis-6.2.14.tar.gz"
+      "packageName": "redis-8.6.tar.gz"
     },
     "aarch64": {
-      "packageName": "redis-6.2.14-arm.tar.gz"
+      "packageName": "redis-8.6-arm.tar.gz"
     }
   },
   "roles": [
