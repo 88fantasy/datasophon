@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 验证各部署包的实际解压顶层目录是否与 service_ddl.json 中 decompressPackageName 一致。
-不一致时自动写回修正。
+不一致时自动写回修正（service_ddl.json 和 manifest.json 同步更新）。
 
 用法：python3 package/verify_decompress.py
 """
@@ -23,25 +23,32 @@ def get_top_level_dir(pkg_path, pkg_name):
     返回压缩包内唯一的顶层目录名。
     若包内无子目录（单二进制包）返回 None。
     出错时返回以 "ERROR:" 开头的字符串。
+    流式读取前 20 个含子路径条目即可判断，避免对大包完整解压。
     """
     try:
         if pkg_name.endswith(".tar.gz") or pkg_name.endswith(".tgz"):
             with tarfile.open(pkg_path, "r:*") as tf:
-                members = tf.getmembers()
-                # 含斜杠的条目才表示有顶层目录
-                sub_paths = [m.name for m in members if "/" in m.name and not m.name.startswith(".")]
-                if not sub_paths:
+                tops = Counter()
+                for member in tf:
+                    name = member.name
+                    if "/" in name and not name.startswith("."):
+                        tops[name.split("/")[0]] += 1
+                        if sum(tops.values()) >= 20:
+                            break
+                if not tops:
                     return None
-                tops = Counter(p.split("/")[0] for p in sub_paths)
                 return tops.most_common(1)[0][0]
 
         elif pkg_name.endswith(".zip"):
             with zipfile.ZipFile(pkg_path, "r") as zf:
-                names = zf.namelist()
-                sub_paths = [n for n in names if "/" in n and not n.startswith(".")]
-                if not sub_paths:
+                tops = Counter()
+                for name in zf.namelist():
+                    if "/" in name and not name.startswith("."):
+                        tops[name.split("/")[0]] += 1
+                        if sum(tops.values()) >= 20:
+                            break
+                if not tops:
                     return None
-                tops = Counter(n.split("/")[0] for n in sub_paths)
                 return tops.most_common(1)[0][0]
 
         else:
@@ -51,52 +58,96 @@ def get_top_level_dir(pkg_path, pkg_name):
         return f"ERROR:{e}"
 
 
-def find_ddl_paths_for_package(pkg_name):
-    """找到所有 arch 中使用该 packageName 的 service_ddl.json 路径列表。"""
-    results = []
+def build_ddl_index():
+    """预扫描所有 service_ddl.json，构建 packageName → [ddl_path] 索引，避免每次重扫。"""
+    index = {}
     for service_dir in sorted(META_BASE.iterdir()):
         ddl = service_dir / "service_ddl.json"
         if not ddl.exists():
             continue
         with open(ddl) as f:
             data = json.load(f)
-        arch = data.get("arch", {})
-        for arch_val in arch.values():
-            if arch_val.get("packageName") == pkg_name:
-                results.append(ddl)
+        for arch_val in data.get("arch", {}).values():
+            pkg = arch_val.get("packageName")
+            if pkg:
+                index.setdefault(pkg, []).append(ddl)
                 break
-    return results
+    return index
 
 
 def update_decompress_name(ddl_path, new_name):
+    """原子写入（写临时文件后 os.replace），避免写失败时 DDL 损坏。"""
     with open(ddl_path) as f:
         data = json.load(f)
     old = data.get("decompressPackageName")
     data["decompressPackageName"] = new_name
-    with open(ddl_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-        f.write("\n")
+    tmp = ddl_path.parent / (ddl_path.name + ".tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        os.replace(tmp, ddl_path)
+    except Exception:
+        if tmp.exists():
+            tmp.unlink()
+        raise
     print(f"  [FIXED] {ddl_path.parent.name}/service_ddl.json: {old!r} → {new_name!r}")
+
+
+def update_manifest_decompress_name(manifest_data, pkg_name, new_name):
+    """将 manifest.json 中所有 pkg_name 条目的 decompressPackageName 更新为 new_name。"""
+    changed = False
+    for entry in manifest_data:
+        if entry["packageName"] == pkg_name and entry.get("decompressPackageName") != new_name:
+            entry["decompressPackageName"] = new_name
+            changed = True
+    return changed
+
+
+def save_manifest(manifest_data):
+    """原子写入 manifest.json。"""
+    tmp = MANIFEST_PATH.parent / (MANIFEST_PATH.name + ".tmp")
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(manifest_data, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        os.replace(tmp, MANIFEST_PATH)
+    except Exception:
+        if tmp.exists():
+            tmp.unlink()
+        raise
 
 
 def main():
     with open(MANIFEST_PATH) as f:
         manifest = json.load(f)
 
-    # 多架构服务（同服务有多个不同 packageName）: 若各架构包解压目录含架构后缀，
-    # decompressPackageName 是归一化名称，不应按单包实际目录覆盖。
+    manifest_dirty = False
+
+    # 构建 service → packageName 集合（用于多架构判断）
     service_packages = {}
     for entry in manifest:
         service_packages.setdefault(entry["service"], set()).add(entry["packageName"])
 
     # packageName → (decompressPackageName, is_multi_arch)
+    # 同时记录 packageName → {service: decompressPackageName}，用于跨服务一致性检查
     seen = {}
+    pkg_service_decompress = {}
     for entry in manifest:
         name = entry["packageName"]
         svc = entry["service"]
+        decomp = entry["decompressPackageName"]
         is_multi_arch = len(service_packages[svc]) > 1
+        pkg_service_decompress.setdefault(name, {})[svc] = decomp
         if name not in seen:
-            seen[name] = (entry["decompressPackageName"], is_multi_arch)
+            seen[name] = (decomp, is_multi_arch)
+
+    # 同一包被多个服务共用但 decompressPackageName 不一致时报警
+    for pkg_name, svc_map in pkg_service_decompress.items():
+        if len(set(svc_map.values())) > 1:
+            print(f"[WARN] {pkg_name} 被多个服务共用但 decompressPackageName 不一致：{svc_map}")
+
+    ddl_index = build_ddl_index()
 
     ok = []
     mismatches = []
@@ -127,8 +178,8 @@ def main():
             ok.append(pkg_name)
             print(f"[OK]    {pkg_name}")
             print(f"        顶层目录: {actual!r}")
-        elif is_multi_arch and actual != expected:
-            # 多架构服务：实际目录含架构后缀，decompressPackageName 是归一化名称，不修正
+        elif is_multi_arch and actual.startswith(expected):
+            # 多架构服务：实际目录 = 归一化名称 + 架构后缀，属预期，不修正
             skipped_multi_arch.append((pkg_name, expected, actual))
             print(f"[MULTI-ARCH] {pkg_name}")
             print(f"             decompressPackageName={expected!r}（归一化名称，保留）")
@@ -138,14 +189,20 @@ def main():
             print(f"[MISMATCH] {pkg_name}")
             print(f"           manifest.decompressPackageName = {expected!r}")
             print(f"           实际顶层目录                   = {actual!r}")
-            for ddl_path in find_ddl_paths_for_package(pkg_name):
+            for ddl_path in ddl_index.get(pkg_name, []):
                 update_decompress_name(ddl_path, actual)
+            if update_manifest_decompress_name(manifest, pkg_name, actual):
+                manifest_dirty = True
+
+    if manifest_dirty:
+        save_manifest(manifest)
+        print("\n  [FIXED] manifest.json: decompressPackageName 已同步更新")
 
     print("\n" + "=" * 50)
     print("校验汇总")
     print("=" * 50)
     print(f"  OK:           {len(ok)}")
-    print(f"  MISMATCH:     {len(mismatches)} (已自动修正 service_ddl.json)")
+    print(f"  MISMATCH:     {len(mismatches)} (已自动修正 service_ddl.json + manifest.json)")
     print(f"  MULTI-ARCH:   {len(skipped_multi_arch)} (归一化名称，保留不修改)")
     print(f"  BINARY-ONLY:  {len(binary_only)} (跳过，单二进制包)")
     print(f"  MISSING:      {len(missing)} (未下载/私有包)")

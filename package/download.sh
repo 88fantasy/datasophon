@@ -4,19 +4,15 @@ set -euo pipefail
 MANIFEST="$(cd "$(dirname "$0")" && pwd)/manifest.json"
 PKG_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-if ! command -v wget &>/dev/null && ! command -v curl &>/dev/null; then
-  echo "ERROR: 需要 wget 或 curl"
+if ! command -v curl &>/dev/null; then
+  echo "ERROR: 需要 curl"
   exit 1
 fi
 
-export DATASOPHON_MANIFEST="$MANIFEST"
-export DATASOPHON_PKG_DIR="$PKG_DIR"
-
-python3 - <<'PYEOF'
+python3 - "$MANIFEST" "$PKG_DIR" <<'PYEOF'
 import json, os, subprocess, sys
 
-manifest_path = os.environ["DATASOPHON_MANIFEST"]
-pkg_dir = os.environ["DATASOPHON_PKG_DIR"]
+manifest_path, pkg_dir = sys.argv[1], sys.argv[2]
 
 with open(manifest_path) as f:
     pkgs = json.load(f)
@@ -49,22 +45,26 @@ for pkg in pkgs:
                 ["curl", "-sI", "--max-time", "15", "--location", url],
                 capture_output=True, text=True
             )
+            if head.returncode != 0:
+                # HEAD 请求失败，保守跳过，不删除已有文件
+                print(f"[EXISTS?] {name}  ({local_size / 1024 / 1024:.1f} MB, HEAD 失败 exit={head.returncode}) → 跳过")
+                continue
             content_length = None
             for line in head.stdout.splitlines():
                 if line.lower().startswith("content-length:"):
                     content_length = int(line.split(":", 1)[1].strip())
-            if content_length and local_size >= content_length:
-                size_mb = local_size / 1024 / 1024
-                print(f"[EXISTS] {name}  ({size_mb:.1f} MB)")
+            if content_length is None or content_length == 0:
+                # 服务端未返回有效 Content-Length（chunked 或重定向中间值），无法比对，保守跳过
+                print(f"[EXISTS?] {name}  ({local_size / 1024 / 1024:.1f} MB, 无 Content-Length) → 跳过")
                 continue
-            else:
-                size_mb = local_size / 1024 / 1024
-                remote_mb = (content_length or 0) / 1024 / 1024
-                print(f"[PARTIAL] {name}  (本地 {size_mb:.1f} MB / 远端 {remote_mb:.1f} MB) → 重新下载")
-                os.remove(dest)
+            if local_size >= content_length:
+                print(f"[EXISTS] {name}  ({local_size / 1024 / 1024:.1f} MB)")
+                continue
+            remote_mb = content_length / 1024 / 1024
+            print(f"[PARTIAL] {name}  (本地 {local_size / 1024 / 1024:.1f} MB / 远端 {remote_mb:.1f} MB) → 重新下载")
+            os.remove(dest)
         except Exception:
-            size_mb = local_size / 1024 / 1024
-            print(f"[EXISTS?] {name}  ({size_mb:.1f} MB, 无法验证大小) → 跳过")
+            print(f"[EXISTS?] {name}  ({local_size / 1024 / 1024:.1f} MB, 无法验证大小) → 跳过")
             continue
 
     print(f"[DOWNLOAD] {service}/{arch} → {name}")

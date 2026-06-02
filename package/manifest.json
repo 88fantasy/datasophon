@@ -273,7 +273,7 @@
   {
     "service": "USCHEDULER",
     "arch": "common",
-    "packageName": "uscheduler3-3.0.2-3.4.0-bin.tar.gz",
+    "packageName": "uscheduler3-3.0.2-3.11.0-bin.tar.gz",
     "decompressPackageName": "uscheduler3-3.0.2-3.11.0",
     "downloadUrl": null,
     "status": "private",
