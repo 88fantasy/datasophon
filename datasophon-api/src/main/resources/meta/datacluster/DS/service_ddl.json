@@ -1,11 +1,11 @@
 {
-  "name": "USCHEDULER",
+  "name": "DS",
   "type": "MIDDLEWARE",
-  "label": "UScheduler",
-  "description": "数衍调度组件",
+  "label": "DolphinScheduler",
+  "description": "调度组件",
   "sortNum": 30,
-  "version": "3.0.2-3.11.0",
-  "decompressPackageName": "uscheduler3-3.0.2-3.11.0",
+  "version": "3.4.1",
+  "decompressPackageName": "apache-dolphinscheduler-3.4.1-bin",
   "createDecompressDir": false,
   "dependencies": [
     "SPARK3",
@@ -13,8 +13,8 @@
   ],
   "roles": [
     {
-      "name": "UApiServer",
-      "label": "UApiServer",
+      "name": "ApiServer",
+      "label": "ApiServer",
       "sortNum": 1,
       "roleType": "master",
       "cardinality": "1",
@@ -73,8 +73,8 @@
       ]
     },
     {
-      "name": "UMasterServer",
-      "label": "UMasterServer",
+      "name": "MasterServer",
+      "label": "MasterServer",
       "sortNum": 2,
       "roleType": "master",
       "cardinality": "1+",
@@ -129,8 +129,8 @@
       ]
     },
     {
-      "name": "UWorkerServer",
-      "label": "UWorkerServer",
+      "name": "WorkerServer",
+      "label": "WorkerServer",
       "sortNum": 1,
       "roleType": "worker",
       "cardinality": "1+",
@@ -186,10 +186,10 @@
           "type": "PRE_INSTALL",
           "action": "s3Sync",
           "params": {
-            "bucket": "${USCHEDULER.resource.aws.region}",
-            "endpoint": "${USCHEDULER.resource.aws.s3.endpoint}",
-            "accessKey": "${USCHEDULER.resource.aws.access.key.id}",
-            "secretKey": "${USCHEDULER.resource.aws.secret.access.key}"
+            "bucket": "${DS.resource.aws.region}",
+            "endpoint": "${DS.resource.aws.s3.endpoint}",
+            "accessKey": "${DS.resource.aws.access.key.id}",
+            "secretKey": "${DS.resource.aws.secret.access.key}"
           }
         }
       ]
@@ -252,77 +252,10 @@
           "type": "PRE_INSTALL",
           "action": "s3Sync",
           "params": {
-            "bucket": "${USCHEDULER.resource.aws.region}",
-            "endpoint": "${USCHEDULER.resource.aws.s3.endpoint}",
-            "accessKey": "${USCHEDULER.resource.aws.access.key.id}",
-            "secretKey": "${USCHEDULER.resource.aws.secret.access.key}"
-          }
-        }
-      ]
-    },
-    {
-      "name": "EasyflowServer",
-      "label": "EasyflowServer",
-      "sortNum": 2,
-      "roleType": "worker",
-      "cardinality": "1",
-      "logFile": "executor/easyflow-web/easyflow-web.log",
-      "serverPorts": [],
-      "runAs": {
-        "user": "hive",
-        "group": "hadoop"
-      },
-      "startRunner": {
-        "timeout": "60",
-        "program": "executor/easyflow-web/control.sh",
-        "args": [
-          "start"
-        ]
-      },
-      "stopRunner": {
-        "timeout": "600",
-        "program": "executor/easyflow-web/control.sh",
-        "args": [
-          "stop"
-        ]
-      },
-      "statusRunner": {
-        "timeout": "60",
-        "program": "executor/easyflow-web/control.sh",
-        "args": [
-          "status"
-        ]
-      },
-      "restartRunner": {
-        "timeout": "60",
-        "program": "executor/easyflow-web/control.sh",
-        "args": [
-          "restart"
-        ]
-      },
-      "externalLink": {},
-      "hooks": [
-        {
-          "type": "POST_INSTALL",
-          "action": "sh",
-          "params": {
-            "commands": [
-              [
-                "mkdir",
-                "-p",
-                "executor/easyflow-web"
-              ]
-            ]
-          }
-        },
-        {
-          "type": "POST_INSTALL",
-          "action": "download",
-          "params": {
-            "to": "executor/easyflow-web/control.sh",
-            "md5": "966967a623776f35d512a22d2a18d10a",
-            "from": "script/control_easyflow.sh",
-            "templateId": "2026548620654071809"
+            "bucket": "${DS.resource.aws.region}",
+            "endpoint": "${DS.resource.aws.s3.endpoint}",
+            "accessKey": "${DS.resource.aws.access.key.id}",
+            "secretKey": "${DS.resource.aws.secret.access.key}"
           }
         }
       ]
@@ -336,7 +269,7 @@
         "outputDirectory": "bin/env/",
         "templateType": "DEFAULT",
         "templateId": 2026566417194995713,
-        "templateName": "uscheduler3_env.ftl",
+        "templateName": "dolphinscheduler_env.ftl",
         "includeParams": [
           "databaseUrl",
           "username",
@@ -505,7 +438,7 @@
       "enabled": true,
       "name": "resource.aws.region",
       "value": "dolphinscheduler",
-      "description": "uschduler是定制开发的，存在bug，桶名错误地使用region字段，但是实际是桶名",
+      "description": "MinIO 兼容模式下填写桶名（官方 AWS 填写实际 region）",
       "label": "resource.aws.region",
       "hidden": false,
       "required": true,
@@ -518,7 +451,7 @@
       "enabled": true,
       "name": "resource.aws.s3.bucket.name",
       "value": "dolphinscheduler",
-      "description": "无用处，uschduler是定制开发的，存在bug，桶名错误地使用region字段。",
+      "description": "S3 存储桶名称",
       "label": "resource.aws.s3.bucket.name",
       "hidden": false,
       "required": true,
@@ -647,13 +580,13 @@
     {
       "enabled": true,
       "name": "data-quality.jar.name",
-      "value": "dolphinscheduler-data-quality-dev-SNAPSHOT.jar",
+      "value": "dolphinscheduler-data-quality-3.4.1.jar",
       "description": "",
       "label": "data-quality.jar.name",
       "hidden": false,
       "required": true,
       "type": "input",
-      "defaultValue": "dolphinscheduler-data-quality-dev-SNAPSHOT.jar",
+      "defaultValue": "dolphinscheduler-data-quality-3.4.1.jar",
       "configurableInWizard": true,
       "register": false
     },
@@ -778,7 +711,7 @@
   ],
   "arch": {
     "common": {
-      "packageName": "uscheduler3-3.0.2-3.11.0-bin.tar.gz"
+      "packageName": "apache-dolphinscheduler-3.4.1-bin.tar.gz"
     }
   }
 }

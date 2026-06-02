@@ -479,6 +479,12 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 | **Kafka** | **4.3.0** | **4.3.0** | ✅ 已升级；4.x 默认 KRaft 模式，已移除 ZooKeeper 依赖 |
 | **ZooKeeper** | **3.8.6** | **3.9.5**（当前）/ **3.8.6**（稳定维护版） | ✅ 已升级至 3.8 稳定线最新版 |
 
+#### 调度
+
+| 组件 | 当前配置版本 | 最新稳定版 | 状态 |
+|---|---|---|---|
+| **DS**（DolphinScheduler） | **3.4.1** | **3.4.1**（2026-03-01） | ✅ 已是最新稳定版；包名 `apache-dolphinscheduler-3.4.1-bin.tar.gz`，无架构区分 |
+
 #### 可观测性
 
 | 组件 | 当前配置版本 | 最新稳定版 | 状态 |
@@ -502,8 +508,3 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 | 组件 | 当前配置版本 | 说明 |
 |---|---|---|
 | **DATART** | 3.6.1 | 数据可视化，DataSophon 内部打包 |
-| **EXECUTOR** | 3.11.0 | DataSophon 任务执行器 |
-| **PORTAL** | 3.1.0 | DataSophon 管理门户 |
-| **USCHEDULER** | 3.0.2-3.11.0 | DataSophon 调度服务 |
-| **USTREAM** | 3.4.0 | DataSophon 流处理服务 |
-| **USYNC** | 3.0.0-3.10.0 | DataSophon 数据同步服务 |

@@ -33,6 +33,14 @@
     "note": "内部 BI 服务，需手动上传到 package/"
   },
   {
+    "service": "DS",
+    "arch": "common",
+    "packageName": "apache-dolphinscheduler-3.4.1-bin.tar.gz",
+    "decompressPackageName": "apache-dolphinscheduler-3.4.1-bin",
+    "downloadUrl": "https://downloads.apache.org/dolphinscheduler/3.4.1/apache-dolphinscheduler-3.4.1-bin.tar.gz",
+    "status": "public"
+  },
+  {
     "service": "DORIS",
     "arch": "x86_64",
     "packageName": "apache-doris-4.0.5-bin-x64.tar.gz",
