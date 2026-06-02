@@ -31,6 +31,7 @@ import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.ddl.DdlMetaService;
+import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.storage.MetaStorage;
 import com.datasophon.common.storage.PackageStorage;
@@ -235,7 +236,11 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
             public void afterCommit() {
                new Thread(()-> {
                    PackageStorage packageStorage = StorageUtils.getPackageStorage();
-                   packageStorage.deletePackage(serviceEntity.getPackageName());
+                   // 按 arch 逐一删除各架构的安装包（去重，避免 common/x86/arm 同名时重复删除）
+                   ServicePkgNameUtils.getArchInfo(serviceEntity).values().stream()
+                           .map(archInfo -> archInfo.getPackageName())
+                           .distinct()
+                           .forEach(packageStorage::deletePackage);
 
                    MetaStorage metaStorage = StorageUtils.getMetaStorage();
                    metaStorage.removeVosMeta(serviceEntity.getFrameCode(), serviceEntity.getServiceName());

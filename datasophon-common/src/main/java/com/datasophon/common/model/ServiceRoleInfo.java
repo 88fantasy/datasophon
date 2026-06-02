@@ -66,8 +66,6 @@ public class ServiceRoleInfo implements Serializable, ServiceRoleResource {
     
     private String frameCode;
     
-    private String packageName;
-    
     private Map<String, ArchInfo> archInfoMap;
     
     private String decompressPackageName;
@@ -105,6 +103,16 @@ public class ServiceRoleInfo implements Serializable, ServiceRoleResource {
     @Override
     public String getServiceRoleName() {
         return name;
+    }
+
+    /**
+     * ServiceRoleInfo 是多架构模板，单一包名由 handler 经 archInfoMap 按主机架构解析。
+     * 接口方法仅为满足 ServiceRoleResource 契约，master 侧不应读取此返回值。
+     */
+    @Override
+    public String getPackageName() {
+        throw new UnsupportedOperationException(
+                "ServiceRoleInfo 不支持直接读取 packageName，请通过 archInfoMap 按主机架构解析");
     }
 
     public List<HookConfig> getMatchedHooks(HookType...types) {

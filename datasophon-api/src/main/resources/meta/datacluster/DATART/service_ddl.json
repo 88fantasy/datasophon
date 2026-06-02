@@ -4,8 +4,7 @@
   "description": "数艺",
   "version": "3.6.1",
   "sortNum": 79,
-  "dependencies":[],
-  "packageName": "datart-server.tar.gz",
+  "dependencies": [],
   "decompressPackageName": "datart-server",
   "roles": [
     {
@@ -128,5 +127,10 @@
       "hidden": false,
       "defaultValue": "fI5sQ4yQ4fP5"
     }
-  ]
+  ],
+  "arch": {
+    "common": {
+      "packageName": "datart-server.tar.gz"
+    }
+  }
 }

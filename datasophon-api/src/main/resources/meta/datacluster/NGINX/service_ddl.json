@@ -2,13 +2,12 @@
   "name": "NGINX",
   "label": "Nginx",
   "description": "Nginx网关",
-  "version": "1.26.2",
+  "version": "1.30.2",
   "sortNum": 93,
   "dependencies": [
     "JUICEFS"
   ],
-  "packageName": "nginx-1.26.2.tar.gz",
-  "decompressPackageName": "nginx-1.26.2",
+  "decompressPackageName": "nginx-1.30.2",
   "roles": [
     {
       "name": "Nginx",
@@ -357,5 +356,10 @@
       "hidden": false,
       "defaultValue": []
     }
-  ]
+  ],
+  "arch": {
+    "common": {
+      "packageName": "nginx-1.30.2.tar.gz"
+    }
+  }
 }

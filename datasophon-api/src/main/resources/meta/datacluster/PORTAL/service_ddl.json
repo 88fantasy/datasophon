@@ -9,7 +9,6 @@
     "REDIS",
     "MINIO"
   ],
-  "packageName": "portal-application-3.1.0-RELEASE-install.tar.gz",
   "decompressPackageName": "portal-application-3.1.0-RELEASE",
   "roles": [
     {
@@ -506,5 +505,10 @@
       "hidden": false,
       "defaultValue": "none"
     }
-  ]
+  ],
+  "arch": {
+    "common": {
+      "packageName": "portal-application-3.1.0-RELEASE-install.tar.gz"
+    }
+  }
 }

@@ -2,11 +2,10 @@
   "name": "NACOS",
   "label": "Nacos",
   "description": "服务注册发现、服务配置管理",
-  "version": "2.4.3",
+  "version": "3.2.2",
   "sortNum": 80,
   "dependencies": [],
-  "packageName": "nacos-server-2.4.3.tar.gz",
-  "decompressPackageName": "nacos-2.4.3",
+  "decompressPackageName": "nacos-3.2.2",
   "roles": [
     {
       "name": "NacosServer",
@@ -192,5 +191,10 @@
       "hidden": false,
       "defaultValue": "Td3DM4gAEebqkwrgJtcg"
     }
-  ]
+  ],
+  "arch": {
+    "common": {
+      "packageName": "nacos-server-3.2.2.tar.gz"
+    }
+  }
 }

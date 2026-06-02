@@ -184,8 +184,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         }
 
         if (Objects.isNull(serviceInfo.getArch())) {
-            // 新增架构判断, 兼容旧版本
-            serviceInfo.setArch(ServicePkgNameUtils.getDefaultArchInfo(serviceInfo.getPackageName(), serviceInfo.getDecompressPackageName()));
+            throw new IllegalStateException(String.format("服务%s的ddl文件缺少arch字段，请为每种CPU架构配置packageName。", serviceName));
         }
         log.info("arch:{}", serviceInfo.getArch());
 
@@ -376,7 +375,6 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         serviceEntity.setFrameId(frameInfo.getId());
         serviceEntity.setServiceDesc(serviceInfo.getDescription());
         serviceEntity.setServiceVersion(serviceInfo.getVersion());
-        serviceEntity.setPackageName(serviceInfo.getPackageName());
         serviceEntity.setArch(JSON.toJSONString(serviceInfo.getArch()));
         serviceEntity.setDependencies(StringUtils.join(serviceInfo.getDependencies(), ","));
         serviceEntity.setFrameCode(frameInfo.getFrameCode());

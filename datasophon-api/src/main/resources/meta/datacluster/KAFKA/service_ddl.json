@@ -2,11 +2,12 @@
   "name": "KAFKA",
   "label": "Kafka",
   "description": "高吞吐量的分布式发布订阅消息系统",
-  "version": "2.4.1",
+  "version": "4.3.0",
   "sortNum": 4,
-  "dependencies":["ZOOKEEPER"],
-  "packageName": "kafka-2.4.1.tar.gz",
-  "decompressPackageName": "kafka-2.4.1",
+  "dependencies": [
+    "ZOOKEEPER"
+  ],
+  "decompressPackageName": "kafka_2.13-4.3.0",
   "roles": [
     {
       "name": "KafkaBroker",
@@ -26,14 +27,12 @@
       "stopRunner": {
         "timeout": "600",
         "program": "bin/kafka-server-stop.sh",
-        "args": [
-        ]
+        "args": []
       },
       "statusRunner": {
         "timeout": "60",
         "program": "bin/kafka-server-status.sh",
-        "args": [
-        ]
+        "args": []
       },
       "restartRunner": {
         "timeout": "60",
@@ -119,7 +118,9 @@
       "required": true,
       "type": "multiple",
       "separator": ",",
-      "value": ["/data/kafka-logs"],
+      "value": [
+        "/data/kafka-logs"
+      ],
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": ""
@@ -149,7 +150,8 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "8"
-    },{
+    },
+    {
       "name": "offsets.topic.replication.factor",
       "label": "内置topic副本数",
       "description": "",
@@ -159,7 +161,8 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": "3"
-    },{
+    },
+    {
       "name": "log.retention.hours",
       "label": "数据保留的最长时间",
       "description": "",
@@ -180,7 +183,8 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": ""
-    },{
+    },
+    {
       "name": "default.replication.factor",
       "label": "topic副本数",
       "description": "",
@@ -487,5 +491,10 @@
       "hidden": false,
       "defaultValue": ""
     }
-  ]
+  ],
+  "arch": {
+    "common": {
+      "packageName": "kafka_2.13-4.3.0.tgz"
+    }
+  }
 }

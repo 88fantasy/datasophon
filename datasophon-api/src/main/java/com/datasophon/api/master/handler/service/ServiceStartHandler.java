@@ -56,7 +56,6 @@ public class ServiceStartHandler extends ServiceHandler {
         Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
         ServiceRoleOperateCommand cmd = new ServiceRoleOperateCommand();
         cmd.setServiceName(serviceRoleInfo.getParentName());
-        cmd.setPackageName(serviceRoleInfo.getPackageName());
         cmd.setServiceRoleName(serviceRoleInfo.getName());
         cmd.setStartRunner(serviceRoleInfo.getStartRunner());
         cmd.setDecompressPackageName(serviceRoleInfo.getDecompressPackageName());
@@ -69,9 +68,9 @@ public class ServiceStartHandler extends ServiceHandler {
         cmd.setHooks(serviceRoleInfo.getMatchedHooks(HookType.PRE_START, HookType.POST_START));
         cmd.setVariables(GlobalVariables.getVariables(serviceRoleInfo.getClusterId()));
         cmd.setCheckStatus(checkStatus);
-        
+
         logger.info("service master host is {}", serviceRoleInfo.getMasterHost());
-        
+
         cmd.setEnableRangerPlugin(serviceRoleInfo.getEnableRangerPlugin());
         cmd.setRunAs(serviceRoleInfo.getRunAs());
         Boolean enableKerberos = Boolean.parseBoolean(globalVariables.get("${enable" + serviceRoleInfo.getParentName() + "Kerberos}"));
@@ -85,6 +84,13 @@ public class ServiceStartHandler extends ServiceHandler {
             }
             return execResult;
         }
+        String packageName = resolvePackageName(serviceRoleInfo);
+        if (packageName == null) {
+            ExecResult fail = new ExecResult();
+            fail.setExecOut("主机 [" + serviceRoleInfo.getHostname() + "] 未找到匹配 CPU 架构的安装包");
+            return fail;
+        }
+        cmd.setPackageName(packageName);
         WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
         ExecResult startResult = adapter.startServiceRole(serviceRoleInfo.getHostname(), cmd);
         if (Objects.nonNull(startResult) && startResult.getExecResult()) {

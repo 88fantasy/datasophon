@@ -3,10 +3,9 @@
   "type": "MIDDLEWARE",
   "label": "Flink",
   "description": "实时计算引擎",
-  "version": "1.16.2",
+  "version": "2.2.1",
   "sortNum": 14,
-  "packageName": "flink-1.16.2-3.4.0.tar.gz",
-  "decompressPackageName": "flink-1.16.2",
+  "decompressPackageName": "flink-2.2.1",
   "createDecompressDir": false,
   "dependencies": [
     "YARN"
@@ -406,7 +405,7 @@
   ],
   "arch": {
     "common": {
-      "packageName": "flink-1.16.2-3.4.0.tar.gz"
+      "packageName": "flink-2.2.1-bin-scala_2.12.tgz"
     }
   }
 }

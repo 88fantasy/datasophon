@@ -2,11 +2,10 @@
   "name": "ZOOKEEPER",
   "label": "ZooKeeper",
   "description": "分布式协调系统",
-  "version": "3.8.4",
+  "version": "3.8.6",
   "sortNum": 3,
-  "dependencies":[],
-  "packageName": "apache-zookeeper-3.8.4-bin.tar.gz",
-  "decompressPackageName": "apache-zookeeper-3.8.4",
+  "dependencies": [],
+  "decompressPackageName": "apache-zookeeper-3.8.6",
   "roles": [
     {
       "name": "ZkServer",
@@ -345,12 +344,21 @@
       "required": false,
       "type": "multipleWithKey",
       "value": [
-        {"metricsProvider.exportJvmInfo":"false"},
-        {"admin.enableServer":"false"}
+        {
+          "metricsProvider.exportJvmInfo": "false"
+        },
+        {
+          "admin.enableServer": "false"
+        }
       ],
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": ""
     }
-  ]
+  ],
+  "arch": {
+    "common": {
+      "packageName": "apache-zookeeper-3.8.6-bin.tar.gz"
+    }
+  }
 }

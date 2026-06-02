@@ -2,11 +2,10 @@
   "name": "APISIX",
   "label": "Apisix",
   "description": "高性能分布式Api网关",
-  "version": "2.15.3",
+  "version": "3.16.0",
   "sortNum": 89,
   "dependencies": [],
-  "packageName": "apisix-2.15.3.tar.gz",
-  "decompressPackageName": "apisix-2.15.3",
+  "decompressPackageName": "apache-apisix-3.16.0",
   "roles": [
     {
       "name": "Apisix",
@@ -156,5 +155,10 @@
       "hidden": false,
       "defaultValue": "${ip}"
     }
-  ]
+  ],
+  "arch": {
+    "common": {
+      "packageName": "apache-apisix-3.16.0-src.tgz"
+    }
+  }
 }

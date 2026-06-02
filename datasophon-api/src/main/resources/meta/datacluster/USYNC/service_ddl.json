@@ -5,7 +5,6 @@
   "version": "3.0.0-3.10.0",
   "sortNum": 70,
   "dependencies": [],
-  "packageName": "usync-3.0.0-3.10.0.tar.gz",
   "decompressPackageName": "usync-3.0.0-3.10.0",
   "roles": [
     {
@@ -17,11 +16,12 @@
     }
   ],
   "configWriter": {
-    "generators": [
-
-    ]
+    "generators": []
   },
-  "parameters": [
-
-  ]
+  "parameters": [],
+  "arch": {
+    "common": {
+      "packageName": "usync-3.0.0-3.10.0.tar.gz"
+    }
+  }
 }

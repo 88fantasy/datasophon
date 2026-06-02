@@ -242,12 +242,8 @@ public class MetaUtils {
         });
 
         List<String> packageNames = new ArrayList<>();
-        if (serviceInfo.getArch() == null) {
-            packageNames.add(serviceInfo.getPackageName());
-        } else {
-            serviceInfo.getArch().values().forEach(arch-> {
-                packageNames.add(arch.getPackageName());
-            });
+        if (serviceInfo.getArch() != null) {
+            serviceInfo.getArch().values().forEach(arch -> packageNames.add(arch.getPackageName()));
         }
         meta.setPackageNames(packageNames);
         meta.setVersion(serviceInfo.getVersion());

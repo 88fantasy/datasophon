@@ -2,13 +2,12 @@
   "name": "SPARK3",
   "label": "Spark3",
   "description": "分布式计算系统",
-  "version": "3.4.2",
+  "version": "3.5.8",
   "sortNum": 7,
   "dependencies": [
     "HIVE"
   ],
-  "packageName": "spark-3.4.2-bin-hadoop3.tgz",
-  "decompressPackageName": "spark-3.4.2-bin-hadoop3",
+  "decompressPackageName": "spark-3.5.8-bin-hadoop3",
   "roles": [
     {
       "name": "SparkClient3",
@@ -201,5 +200,10 @@
       "hidden": false,
       "defaultValue": []
     }
-  ]
+  ],
+  "arch": {
+    "common": {
+      "packageName": "spark-3.5.8-bin-hadoop3.tgz"
+    }
+  }
 }
