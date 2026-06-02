@@ -1,0 +1,6 @@
+# 部署包二进制文件，不纳入版本控制
+# 使用 download.sh 脚本按需下载
+*.tar.gz
+*.tgz
+*.zip
+__pycache__/

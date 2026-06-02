@@ -83,20 +83,29 @@ def main():
     with open(MANIFEST_PATH) as f:
         manifest = json.load(f)
 
-    # packageName → decompressPackageName（取第一次出现）
+    # 多架构服务（同服务有多个不同 packageName）: 若各架构包解压目录含架构后缀，
+    # decompressPackageName 是归一化名称，不应按单包实际目录覆盖。
+    service_packages = {}
+    for entry in manifest:
+        service_packages.setdefault(entry["service"], set()).add(entry["packageName"])
+
+    # packageName → (decompressPackageName, is_multi_arch)
     seen = {}
     for entry in manifest:
         name = entry["packageName"]
+        svc = entry["service"]
+        is_multi_arch = len(service_packages[svc]) > 1
         if name not in seen:
-            seen[name] = entry["decompressPackageName"]
+            seen[name] = (entry["decompressPackageName"], is_multi_arch)
 
     ok = []
     mismatches = []
     missing = []
     binary_only = []
     errors = []
+    skipped_multi_arch = []
 
-    for pkg_name, expected in seen.items():
+    for pkg_name, (expected, is_multi_arch) in seen.items():
         pkg_path = PKG_DIR / pkg_name
         if not pkg_path.exists():
             missing.append(pkg_name)
@@ -118,6 +127,12 @@ def main():
             ok.append(pkg_name)
             print(f"[OK]    {pkg_name}")
             print(f"        顶层目录: {actual!r}")
+        elif is_multi_arch and actual != expected:
+            # 多架构服务：实际目录含架构后缀，decompressPackageName 是归一化名称，不修正
+            skipped_multi_arch.append((pkg_name, expected, actual))
+            print(f"[MULTI-ARCH] {pkg_name}")
+            print(f"             decompressPackageName={expected!r}（归一化名称，保留）")
+            print(f"             实际顶层目录         ={actual!r}（含架构后缀，符合预期）")
         else:
             mismatches.append((pkg_name, expected, actual))
             print(f"[MISMATCH] {pkg_name}")
@@ -129,11 +144,12 @@ def main():
     print("\n" + "=" * 50)
     print("校验汇总")
     print("=" * 50)
-    print(f"  OK:          {len(ok)}")
-    print(f"  MISMATCH:    {len(mismatches)} (已自动修正 service_ddl.json)")
-    print(f"  BINARY-ONLY: {len(binary_only)} (跳过，单二进制包)")
-    print(f"  MISSING:     {len(missing)} (未下载/私有包)")
-    print(f"  ERROR:       {len(errors)}")
+    print(f"  OK:           {len(ok)}")
+    print(f"  MISMATCH:     {len(mismatches)} (已自动修正 service_ddl.json)")
+    print(f"  MULTI-ARCH:   {len(skipped_multi_arch)} (归一化名称，保留不修改)")
+    print(f"  BINARY-ONLY:  {len(binary_only)} (跳过，单二进制包)")
+    print(f"  MISSING:      {len(missing)} (未下载/私有包)")
+    print(f"  ERROR:        {len(errors)}")
 
     if mismatches:
         print("\n修正清单：")
@@ -141,6 +157,11 @@ def main():
             print(f"  {pkg}")
             print(f"    {old!r} → {new!r}")
         print("\n请执行：git diff datasophon-api/src/main/resources/meta/datacluster/")
+
+    if skipped_multi_arch:
+        print("\n多架构包（归一化名称保留）：")
+        for pkg, norm, actual in skipped_multi_arch:
+            print(f"  {pkg}: decompressPackageName={norm!r} / 实际目录={actual!r}")
 
     if missing:
         print("\n未下载（私有包需手动上传）：")
