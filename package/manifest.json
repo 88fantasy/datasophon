@@ -1,27 +1,31 @@
 [
   {
-    "service": "ALERTMANAGER", "arch": "x86_64",
+    "service": "ALERTMANAGER",
+    "arch": "x86_64",
     "packageName": "alertmanager-0.32.1.linux-amd64.tar.gz",
     "decompressPackageName": "alertmanager-0.32.1",
     "downloadUrl": "https://github.com/prometheus/alertmanager/releases/download/v0.32.1/alertmanager-0.32.1.linux-amd64.tar.gz",
     "status": "public"
   },
   {
-    "service": "ALERTMANAGER", "arch": "aarch64",
+    "service": "ALERTMANAGER",
+    "arch": "aarch64",
     "packageName": "alertmanager-0.32.1.linux-arm64.tar.gz",
     "decompressPackageName": "alertmanager-0.32.1",
     "downloadUrl": "https://github.com/prometheus/alertmanager/releases/download/v0.32.1/alertmanager-0.32.1.linux-arm64.tar.gz",
     "status": "public"
   },
   {
-    "service": "APISIX", "arch": "common",
+    "service": "APISIX",
+    "arch": "common",
     "packageName": "apache-apisix-3.16.0-src.tgz",
     "decompressPackageName": "apache-apisix-3.16.0",
     "downloadUrl": "https://downloads.apache.org/apisix/3.16.0/apache-apisix-3.16.0-src.tgz",
     "status": "public"
   },
   {
-    "service": "DATART", "arch": "common",
+    "service": "DATART",
+    "arch": "common",
     "packageName": "datart-server.tar.gz",
     "decompressPackageName": "datart-server",
     "downloadUrl": null,
@@ -29,28 +33,32 @@
     "note": "内部 BI 服务，需手动上传到 package/"
   },
   {
-    "service": "DORIS", "arch": "x86_64",
+    "service": "DORIS",
+    "arch": "x86_64",
     "packageName": "apache-doris-4.0.5-bin-x64.tar.gz",
     "decompressPackageName": "apache-doris-4.0.5",
     "downloadUrl": "https://apache-doris-releases.oss-accelerate.aliyuncs.com/apache-doris-4.0.5-bin-x64.tar.gz",
     "status": "public"
   },
   {
-    "service": "DORIS", "arch": "aarch64",
+    "service": "DORIS",
+    "arch": "aarch64",
     "packageName": "apache-doris-4.0.5-bin-arm64.tar.gz",
     "decompressPackageName": "apache-doris-4.0.5",
     "downloadUrl": "https://apache-doris-releases.oss-accelerate.aliyuncs.com/apache-doris-4.0.5-bin-arm64.tar.gz",
     "status": "public"
   },
   {
-    "service": "ELASTICSEARCH", "arch": "common",
+    "service": "ELASTICSEARCH",
+    "arch": "common",
     "packageName": "elasticsearch-9.4.2-linux-x86_64.tar.gz",
     "decompressPackageName": "elasticsearch-9.4.2",
     "downloadUrl": "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-9.4.2-linux-x86_64.tar.gz",
     "status": "public"
   },
   {
-    "service": "EXECUTOR", "arch": "common",
+    "service": "EXECUTOR",
+    "arch": "common",
     "packageName": "executor-3.11.0.tar.gz",
     "decompressPackageName": "executor-3.11.0",
     "downloadUrl": null,
@@ -58,49 +66,56 @@
     "note": "内部调度执行器，需手动上传到 package/"
   },
   {
-    "service": "FLINK", "arch": "common",
+    "service": "FLINK",
+    "arch": "common",
     "packageName": "flink-2.2.1-bin-scala_2.12.tgz",
     "decompressPackageName": "flink-2.2.1",
     "downloadUrl": "https://downloads.apache.org/flink/flink-2.2.1/flink-2.2.1-bin-scala_2.12.tgz",
     "status": "public"
   },
   {
-    "service": "GRAFANA", "arch": "x86_64",
+    "service": "GRAFANA",
+    "arch": "x86_64",
     "packageName": "grafana-13.0.1.linux-amd64.tar.gz",
     "decompressPackageName": "grafana-v13.0.1",
     "downloadUrl": "https://dl.grafana.com/oss/release/grafana-13.0.1.linux-amd64.tar.gz",
     "status": "public"
   },
   {
-    "service": "GRAFANA", "arch": "aarch64",
+    "service": "GRAFANA",
+    "arch": "aarch64",
     "packageName": "grafana-13.0.1.linux-arm64.tar.gz",
     "decompressPackageName": "grafana-v13.0.1",
     "downloadUrl": "https://dl.grafana.com/oss/release/grafana-13.0.1.linux-arm64.tar.gz",
     "status": "public"
   },
   {
-    "service": "HDFS", "arch": "x86_64",
+    "service": "HDFS",
+    "arch": "x86_64",
     "packageName": "hadoop-3.5.0.tar.gz",
     "decompressPackageName": "hadoop-3.5.0",
     "downloadUrl": "https://downloads.apache.org/hadoop/common/hadoop-3.5.0/hadoop-3.5.0.tar.gz",
     "status": "public"
   },
   {
-    "service": "HDFS", "arch": "aarch64",
+    "service": "HDFS",
+    "arch": "aarch64",
     "packageName": "hadoop-3.5.0-aarch64.tar.gz",
     "decompressPackageName": "hadoop-3.5.0",
     "downloadUrl": "https://downloads.apache.org/hadoop/common/hadoop-3.5.0/hadoop-3.5.0-aarch64.tar.gz",
     "status": "public"
   },
   {
-    "service": "HIVE", "arch": "common",
+    "service": "HIVE",
+    "arch": "common",
     "packageName": "apache-hive-4.2.0-bin.tar.gz",
     "decompressPackageName": "apache-hive-4.2.0-bin",
     "downloadUrl": "https://downloads.apache.org/hive/hive-4.2.0/apache-hive-4.2.0-bin.tar.gz",
     "status": "public"
   },
   {
-    "service": "JUICEFS", "arch": "x86_64",
+    "service": "JUICEFS",
+    "arch": "x86_64",
     "packageName": "juicefs-1.3.1-linux-amd64.tar.gz",
     "decompressPackageName": "juicefs-1.3.1",
     "downloadUrl": "https://github.com/juicedata/juicefs/releases/download/v1.3.1/juicefs-1.3.1-linux-amd64.tar.gz",
@@ -108,7 +123,8 @@
     "note": "单二进制包，tarball 内无顶层目录，decompressPackageName 由 datasophon 自行创建"
   },
   {
-    "service": "JUICEFS", "arch": "aarch64",
+    "service": "JUICEFS",
+    "arch": "aarch64",
     "packageName": "juicefs-1.3.1-linux-arm64.tar.gz",
     "decompressPackageName": "juicefs-1.3.1",
     "downloadUrl": "https://github.com/juicedata/juicefs/releases/download/v1.3.1/juicefs-1.3.1-linux-arm64.tar.gz",
@@ -116,21 +132,24 @@
     "note": "单二进制包"
   },
   {
-    "service": "KAFKA", "arch": "common",
+    "service": "KAFKA",
+    "arch": "common",
     "packageName": "kafka_2.13-4.3.0.tgz",
     "decompressPackageName": "kafka_2.13-4.3.0",
     "downloadUrl": "https://downloads.apache.org/kafka/4.3.0/kafka_2.13-4.3.0.tgz",
     "status": "public"
   },
   {
-    "service": "KYUUBI", "arch": "common",
+    "service": "KYUUBI",
+    "arch": "common",
     "packageName": "apache-kyuubi-1.11.1-bin.tgz",
     "decompressPackageName": "apache-kyuubi-1.11.1-bin",
     "downloadUrl": "https://downloads.apache.org/kyuubi/kyuubi-1.11.1/apache-kyuubi-1.11.1-bin.tgz",
     "status": "public"
   },
   {
-    "service": "LOKI", "arch": "x86_64",
+    "service": "LOKI",
+    "arch": "x86_64",
     "packageName": "loki-linux-amd64.zip",
     "decompressPackageName": "loki-3.7.2",
     "downloadUrl": "https://github.com/grafana/loki/releases/download/v3.7.2/loki-linux-amd64.zip",
@@ -138,7 +157,8 @@
     "note": "单二进制 zip，无顶层目录，verify 步跳过目录校验"
   },
   {
-    "service": "LOKI", "arch": "aarch64",
+    "service": "LOKI",
+    "arch": "aarch64",
     "packageName": "loki-linux-arm64.zip",
     "decompressPackageName": "loki-3.7.2",
     "downloadUrl": "https://github.com/grafana/loki/releases/download/v3.7.2/loki-linux-arm64.zip",
@@ -146,7 +166,8 @@
     "note": "单二进制 zip，无顶层目录"
   },
   {
-    "service": "MINIO", "arch": "x86_64",
+    "service": "MINIO",
+    "arch": "x86_64",
     "packageName": "minio-9.0.1.tar.gz",
     "decompressPackageName": "minio-9.0.1",
     "downloadUrl": null,
@@ -154,7 +175,8 @@
     "note": "自定义 MinIO 封装，版本号非官方，需手动上传到 package/"
   },
   {
-    "service": "MINIO", "arch": "aarch64",
+    "service": "MINIO",
+    "arch": "aarch64",
     "packageName": "minio-9.0.1-arm.tar.gz",
     "decompressPackageName": "minio-9.0.1",
     "downloadUrl": null,
@@ -162,7 +184,8 @@
     "note": "自定义 MinIO ARM 版，需手动上传到 package/"
   },
   {
-    "service": "NACOS", "arch": "common",
+    "service": "NACOS",
+    "arch": "common",
     "packageName": "nacos-server-3.2.2.tar.gz",
     "decompressPackageName": "nacos-3.2.2",
     "downloadUrl": "https://github.com/alibaba/nacos/releases/download/3.2.2/nacos-server-3.2.2.tar.gz",
@@ -170,14 +193,16 @@
     "note": "注意：Nacos 官方包实际解压目录为 nacos/（无版本号），需 verify 步确认并修正"
   },
   {
-    "service": "NGINX", "arch": "common",
+    "service": "NGINX",
+    "arch": "common",
     "packageName": "nginx-1.30.2.tar.gz",
     "decompressPackageName": "nginx-1.30.2",
     "downloadUrl": "https://nginx.org/download/nginx-1.30.2.tar.gz",
     "status": "public"
   },
   {
-    "service": "PORTAL", "arch": "common",
+    "service": "PORTAL",
+    "arch": "common",
     "packageName": "portal-application-3.1.0-RELEASE-install.tar.gz",
     "decompressPackageName": "portal-application-3.1.0-RELEASE",
     "downloadUrl": null,
@@ -185,21 +210,24 @@
     "note": "内部门户服务，需手动上传到 package/"
   },
   {
-    "service": "PROMETHEUS", "arch": "x86_64",
+    "service": "PROMETHEUS",
+    "arch": "x86_64",
     "packageName": "prometheus-3.12.0.linux-amd64.tar.gz",
     "decompressPackageName": "prometheus-3.12.0",
     "downloadUrl": "https://github.com/prometheus/prometheus/releases/download/v3.12.0/prometheus-3.12.0.linux-amd64.tar.gz",
     "status": "public"
   },
   {
-    "service": "PROMETHEUS", "arch": "aarch64",
+    "service": "PROMETHEUS",
+    "arch": "aarch64",
     "packageName": "prometheus-3.12.0.linux-arm64.tar.gz",
     "decompressPackageName": "prometheus-3.12.0",
     "downloadUrl": "https://github.com/prometheus/prometheus/releases/download/v3.12.0/prometheus-3.12.0.linux-arm64.tar.gz",
     "status": "public"
   },
   {
-    "service": "PROMTAIL", "arch": "x86_64",
+    "service": "PROMTAIL",
+    "arch": "x86_64",
     "packageName": "promtail-linux-amd64.zip",
     "decompressPackageName": "promtail-2.8.11",
     "downloadUrl": "https://github.com/grafana/loki/releases/download/v2.8.11/promtail-linux-amd64.zip",
@@ -207,7 +235,8 @@
     "note": "单二进制 zip，无顶层目录，verify 步跳过目录校验"
   },
   {
-    "service": "PROMTAIL", "arch": "aarch64",
+    "service": "PROMTAIL",
+    "arch": "aarch64",
     "packageName": "promtail-linux-arm64.zip",
     "decompressPackageName": "promtail-2.8.11",
     "downloadUrl": "https://github.com/grafana/loki/releases/download/v2.8.11/promtail-linux-arm64.zip",
@@ -215,14 +244,17 @@
     "note": "单二进制 zip，无顶层目录"
   },
   {
-    "service": "REDIS", "arch": "x86_64",
+    "service": "REDIS",
+    "arch": "x86_64",
     "packageName": "redis-8.6.tar.gz",
     "decompressPackageName": "redis-8.6",
-    "downloadUrl": "https://download.redis.io/releases/redis-8.6.tar.gz",
-    "status": "public"
+    "downloadUrl": null,
+    "status": "private",
+    "note": "redis-8.6 不在官方 download.redis.io/releases 列表（404），疑为自定义构建，需手动上传"
   },
   {
-    "service": "REDIS", "arch": "aarch64",
+    "service": "REDIS",
+    "arch": "aarch64",
     "packageName": "redis-8.6-arm.tar.gz",
     "decompressPackageName": "redis-8.6",
     "downloadUrl": null,
@@ -230,14 +262,16 @@
     "note": "自定义 ARM 构建，需手动上传到 package/"
   },
   {
-    "service": "SPARK3", "arch": "common",
+    "service": "SPARK3",
+    "arch": "common",
     "packageName": "spark-3.5.8-bin-hadoop3.tgz",
     "decompressPackageName": "spark-3.5.8-bin-hadoop3",
     "downloadUrl": "https://downloads.apache.org/spark/spark-3.5.8/spark-3.5.8-bin-hadoop3.tgz",
     "status": "public"
   },
   {
-    "service": "USCHEDULER", "arch": "common",
+    "service": "USCHEDULER",
+    "arch": "common",
     "packageName": "uscheduler3-3.0.2-3.4.0-bin.tar.gz",
     "decompressPackageName": "uscheduler3-3.0.2-3.11.0",
     "downloadUrl": null,
@@ -245,7 +279,8 @@
     "note": "内部调度器，需手动上传到 package/"
   },
   {
-    "service": "USTREAM", "arch": "common",
+    "service": "USTREAM",
+    "arch": "common",
     "packageName": "ustream-3.4.0-bin.tar.gz",
     "decompressPackageName": "ustream-3.4.0",
     "downloadUrl": null,
@@ -253,7 +288,8 @@
     "note": "内部流处理，需手动上传到 package/"
   },
   {
-    "service": "USYNC", "arch": "common",
+    "service": "USYNC",
+    "arch": "common",
     "packageName": "usync-3.0.0-3.10.0.tar.gz",
     "decompressPackageName": "usync-3.0.0-3.10.0",
     "downloadUrl": null,
@@ -261,7 +297,8 @@
     "note": "内部数据同步，需手动上传到 package/"
   },
   {
-    "service": "YARN", "arch": "x86_64",
+    "service": "YARN",
+    "arch": "x86_64",
     "packageName": "hadoop-3.5.0.tar.gz",
     "decompressPackageName": "hadoop-3.5.0",
     "downloadUrl": "https://downloads.apache.org/hadoop/common/hadoop-3.5.0/hadoop-3.5.0.tar.gz",
@@ -269,7 +306,8 @@
     "note": "与 HDFS 共用同一包，download.sh 按 packageName 去重，不重复下载"
   },
   {
-    "service": "YARN", "arch": "aarch64",
+    "service": "YARN",
+    "arch": "aarch64",
     "packageName": "hadoop-3.5.0-aarch64.tar.gz",
     "decompressPackageName": "hadoop-3.5.0",
     "downloadUrl": "https://downloads.apache.org/hadoop/common/hadoop-3.5.0/hadoop-3.5.0-aarch64.tar.gz",
@@ -277,7 +315,8 @@
     "note": "与 HDFS 共用同一包"
   },
   {
-    "service": "ZOOKEEPER", "arch": "common",
+    "service": "ZOOKEEPER",
+    "arch": "common",
     "packageName": "apache-zookeeper-3.8.6-bin.tar.gz",
     "decompressPackageName": "apache-zookeeper-3.8.6",
     "downloadUrl": "https://downloads.apache.org/zookeeper/zookeeper-3.8.6/apache-zookeeper-3.8.6-bin.tar.gz",

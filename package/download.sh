@@ -40,21 +40,38 @@ for pkg in pkgs:
         continue
 
     dest = os.path.join(pkg_dir, name)
+
+    # 用 HEAD 请求获取 Content-Length，与本地文件对比，跳过完整文件
     if os.path.exists(dest):
-        size_mb = os.path.getsize(dest) / 1024 / 1024
-        print(f"[EXISTS] {name}  ({size_mb:.1f} MB)")
-        continue
+        local_size = os.path.getsize(dest)
+        try:
+            head = subprocess.run(
+                ["curl", "-sI", "--max-time", "15", "--location", url],
+                capture_output=True, text=True
+            )
+            content_length = None
+            for line in head.stdout.splitlines():
+                if line.lower().startswith("content-length:"):
+                    content_length = int(line.split(":", 1)[1].strip())
+            if content_length and local_size >= content_length:
+                size_mb = local_size / 1024 / 1024
+                print(f"[EXISTS] {name}  ({size_mb:.1f} MB)")
+                continue
+            else:
+                size_mb = local_size / 1024 / 1024
+                remote_mb = (content_length or 0) / 1024 / 1024
+                print(f"[PARTIAL] {name}  (本地 {size_mb:.1f} MB / 远端 {remote_mb:.1f} MB) → 重新下载")
+                os.remove(dest)
+        except Exception:
+            size_mb = local_size / 1024 / 1024
+            print(f"[EXISTS?] {name}  ({size_mb:.1f} MB, 无法验证大小) → 跳过")
+            continue
 
     print(f"[DOWNLOAD] {service}/{arch} → {name}")
     print(f"           {url}")
     try:
-        has_wget = subprocess.run(["wget", "--version"], capture_output=True).returncode == 0
-        if has_wget:
-            cmd = ["wget", "--continue", "--timeout=1800", "--tries=3",
-                   "--show-progress", "-O", dest, url]
-        else:
-            cmd = ["curl", "-L", "--continue-at", "-", "--max-time", "1800",
-                   "--retry", "3", "--progress-bar", "-o", dest, url]
+        cmd = ["curl", "-L", "--max-time", "1800", "--retry", "3",
+               "--progress-bar", "-o", dest, url]
         result = subprocess.run(cmd)
         if result.returncode != 0:
             download_errors.append(f"  [ERROR] {name}: 下载失败，exit={result.returncode}")
