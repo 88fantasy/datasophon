@@ -56,12 +56,22 @@ public abstract class ServiceHandler {
 
     /**
      * 按主机 CPU 架构从 archInfoMap 中解析当前操作所需的安装包名。
-     * 找不到匹配架构时返回 null，调用方应视为失败。
+     * 主机不存在或架构无匹配时返回 null，调用方应视为失败。
      */
     protected String resolvePackageName(ServiceRoleInfo role) {
         ClusterHostService hostService = SpringTool.getApplicationContext().getBean(ClusterHostService.class);
         ClusterHostDO host = hostService.getClusterHostByHostname(role.getHostname());
-        ArchInfo archInfo = ServicePkgNameUtils.getArchInfo(role, host.getCpuArchitecture());
+        if (host == null) {
+            return null;
+        }
+        return resolvePackageName(role, host.getCpuArchitecture());
+    }
+
+    /**
+     * 直接按已知架构字符串解析包名，供已持有 ClusterHostDO 的调用方使用以避免重复 DB 查询。
+     */
+    protected String resolvePackageName(ServiceRoleInfo role, String cpuArch) {
+        ArchInfo archInfo = ServicePkgNameUtils.getArchInfo(role, cpuArch);
         return archInfo == null ? null : archInfo.getPackageName();
     }
 }

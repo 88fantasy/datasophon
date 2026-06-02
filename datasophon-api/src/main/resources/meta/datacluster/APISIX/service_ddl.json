@@ -5,8 +5,8 @@
   "version": "3.16.0",
   "sortNum": 89,
   "dependencies": [],
-  "decompressPackageName": "apisix-3.16.0",
   "decompressPackageName": "apache-apisix-3.16.0",
+  "roles": [
     {
       "name": "Apisix",
       "label": "Apisix",

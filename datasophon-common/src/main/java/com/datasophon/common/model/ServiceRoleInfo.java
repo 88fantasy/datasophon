@@ -111,7 +111,8 @@ public class ServiceRoleInfo implements Serializable, ServiceRoleResource {
      */
     @Override
     public String getPackageName() {
-        return null;
+        throw new UnsupportedOperationException(
+                "ServiceRoleInfo 不支持直接读取 packageName，请通过 archInfoMap 按主机架构解析");
     }
 
     public List<HookConfig> getMatchedHooks(HookType...types) {

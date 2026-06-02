@@ -26,8 +26,14 @@ public class ServiceUpgradeHandler extends ServiceHandler {
         ExecResult execResult = new ExecResult();
         ClusterHostService clusterHostService = SpringTool.getApplicationContext().getBean(ClusterHostService.class);
         ClusterHostDO hostEntity = clusterHostService.getClusterHostByHostname(serviceRoleInfo.getHostname());
+        if (hostEntity == null) {
+            log.error("在host {} {} {}, 未找到主机记录", serviceRoleInfo.getHostname(),
+                    serviceRoleInfo.getCommandType().getCommandName(Constants.CN), serviceRoleInfo.getName());
+            execResult.setExecOut("未找到主机 [" + serviceRoleInfo.getHostname() + "] 的记录，无法解析安装包架构 !");
+            return execResult;
+        }
 
-        String packageName = resolvePackageName(serviceRoleInfo);
+        String packageName = resolvePackageName(serviceRoleInfo, hostEntity.getCpuArchitecture());
         if (packageName == null) {
             String arch = hostEntity.getCpuArchitecture();
             log.error("在host {} {} {}, 无法匹配架构{}", serviceRoleInfo.getHostname(), serviceRoleInfo.getCommandType().getCommandName(Constants.CN),

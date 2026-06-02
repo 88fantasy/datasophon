@@ -44,7 +44,6 @@ public class ServiceStopHandler extends ServiceHandler {
         cmd.setStopRunner(serviceRoleInfo.getStopRunner());
         cmd.setStatusRunner(serviceRoleInfo.getStatusRunner());
         cmd.setRunAs(serviceRoleInfo.getRunAs());
-        cmd.setPackageName(resolvePackageName(serviceRoleInfo));
         cmd.setDecompressPackageName(serviceRoleInfo.getDecompressPackageName());
         cmd.setCreateDecompressDir(serviceRoleInfo.getCreateDecompressDir());
         cmd.setHooks(serviceRoleInfo.getMatchedHooks(HookType.PRE_STOP, HookType.POST_STOP));
@@ -56,6 +55,13 @@ public class ServiceStopHandler extends ServiceHandler {
             }
             return execResult;
         }
+        String packageName = resolvePackageName(serviceRoleInfo);
+        if (packageName == null) {
+            ExecResult fail = new ExecResult();
+            fail.setExecOut("主机 [" + serviceRoleInfo.getHostname() + "] 未找到匹配 CPU 架构的安装包");
+            return fail;
+        }
+        cmd.setPackageName(packageName);
         WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
         ExecResult execResult = adapter.stopServiceRole(serviceRoleInfo.getHostname(), cmd);
         if (Objects.nonNull(execResult) && execResult.getExecResult()) {

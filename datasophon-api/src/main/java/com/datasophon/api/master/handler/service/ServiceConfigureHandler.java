@@ -37,9 +37,15 @@ public class ServiceConfigureHandler extends ServiceHandler {
     
     @Override
     public ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception {
+        String packageName = resolvePackageName(serviceRoleInfo);
+        if (packageName == null) {
+            ExecResult fail = new ExecResult();
+            fail.setExecOut("主机 [" + serviceRoleInfo.getHostname() + "] 未找到匹配 CPU 架构的安装包");
+            return fail;
+        }
         // config
         GenerateServiceConfigCommand cmd = new GenerateServiceConfigCommand();
-        cmd.setPackageName(resolvePackageName(serviceRoleInfo));
+        cmd.setPackageName(packageName);
         cmd.setClusterId(serviceRoleInfo.getClusterId());
         cmd.setServiceName(serviceRoleInfo.getParentName());
         cmd.setCofigFileMap(serviceRoleInfo.getConfigFileMap());

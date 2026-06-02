@@ -54,7 +54,6 @@ public class ServiceStatusHandler extends ServiceHandler {
         Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
         ServiceRoleOperateCommand cmd = new ServiceRoleOperateCommand();
         cmd.setServiceName(serviceRoleInfo.getParentName());
-        cmd.setPackageName(resolvePackageName(serviceRoleInfo));
         cmd.setServiceRoleName(serviceRoleInfo.getName());
         cmd.setStartRunner(serviceRoleInfo.getStartRunner());
         cmd.setDecompressPackageName(serviceRoleInfo.getDecompressPackageName());
@@ -69,9 +68,9 @@ public class ServiceStatusHandler extends ServiceHandler {
         if (quickCheck) {
             cmd.setTimes(3);
         }
-        
+
         logger.info("service master host is {}", serviceRoleInfo.getMasterHost());
-        
+
         cmd.setEnableRangerPlugin(serviceRoleInfo.getEnableRangerPlugin());
         cmd.setRunAs(serviceRoleInfo.getRunAs());
         Boolean enableKerberos = Boolean.parseBoolean(globalVariables.get("${enable" + serviceRoleInfo.getParentName() + "Kerberos}"));
@@ -79,10 +78,16 @@ public class ServiceStatusHandler extends ServiceHandler {
         cmd.setEnableKerberos(enableKerberos);
         if (serviceRoleInfo.getRoleType() == ServiceRoleType.CLIENT) {
             return invokeNext(serviceRoleInfo, ExecResult.success());
-        } else {
-            WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
-            ExecResult statusResult = adapter.serviceRoleStatus(serviceRoleInfo.getHostname(), cmd);
-            return invokeNext(serviceRoleInfo, statusResult);
         }
+        String packageName = resolvePackageName(serviceRoleInfo);
+        if (packageName == null) {
+            ExecResult fail = new ExecResult();
+            fail.setExecOut("主机 [" + serviceRoleInfo.getHostname() + "] 未找到匹配 CPU 架构的安装包");
+            return fail;
+        }
+        cmd.setPackageName(packageName);
+        WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        ExecResult statusResult = adapter.serviceRoleStatus(serviceRoleInfo.getHostname(), cmd);
+        return invokeNext(serviceRoleInfo, statusResult);
     }
 }
