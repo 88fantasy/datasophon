@@ -31,6 +31,73 @@ type nexusAssetsResponse struct {
 	} `json:"items"`
 }
 
+// progressReader 包装 io.Reader，在 HTTP 传输期间向 stderr 打印百分比进度条。
+// total 为待传字节数（multipart body 大小），与文件大小近似相等。
+type progressReader struct {
+	r       io.Reader
+	total   int64
+	written int64
+	name    string // 已截断的文件名，最长 40 字符
+}
+
+func newProgressReader(r io.Reader, total int64, name string) *progressReader {
+	if len(name) > 40 {
+		name = name[:37] + "..."
+	}
+	return &progressReader{r: r, total: total, name: name}
+}
+
+func (p *progressReader) Read(b []byte) (int, error) {
+	n, err := p.r.Read(b)
+	p.written += int64(n)
+	p.render()
+	return n, err
+}
+
+func (p *progressReader) render() {
+	const barWidth = 25
+	var pct float64
+	filled := 0
+	if p.total > 0 {
+		pct = float64(p.written) / float64(p.total) * 100
+		if pct > 100 {
+			pct = 100
+		}
+		filled = int(pct / 100 * barWidth)
+		if filled > barWidth {
+			filled = barWidth
+		}
+	}
+	bar := strings.Repeat("=", filled)
+	if filled < barWidth {
+		bar += ">"
+		bar += strings.Repeat(" ", barWidth-filled-1)
+	}
+	fmt.Fprintf(os.Stderr, "\r%-40s [%s] %5.1f%%  %s / %s   ",
+		p.name, bar, pct, formatBytes(p.written), formatBytes(p.total))
+}
+
+// finish 在进度行末尾换行，使后续日志不与进度条混排。
+func (p *progressReader) finish() {
+	fmt.Fprintln(os.Stderr)
+}
+
+// formatBytes 将字节数格式化为人类可读字符串（B / KB / MB）。
+func formatBytes(n int64) string {
+	const (
+		mb = 1024 * 1024
+		kb = 1024
+	)
+	switch {
+	case n >= mb:
+		return fmt.Sprintf("%.1f MB", float64(n)/mb)
+	case n >= kb:
+		return fmt.Sprintf("%.1f KB", float64(n)/kb)
+	default:
+		return fmt.Sprintf("%d B", n)
+	}
+}
+
 // UploadRegistry 将本地安装包批量上传到 Nexus。
 type UploadRegistry struct {
 	initcmd.TaskBase
@@ -256,6 +323,13 @@ func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory strin
 	}
 	defer file.Close()
 
+	fi, err := file.Stat()
+	if err != nil {
+		slog.Error("获取文件信息失败", "path", filePath, "err", err)
+		return false
+	}
+	slog.Info("开始上传", "file", filepath.Base(filePath), "size", formatBytes(fi.Size()), "repo", repoType)
+
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
 
@@ -281,7 +355,8 @@ func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory strin
 	_ = w.Close()
 
 	uploadURL := fmt.Sprintf("%s/service/rest/internal/ui/upload/%s", baseURL, repoType)
-	req, err := http.NewRequest(http.MethodPost, uploadURL, &buf)
+	pr := newProgressReader(&buf, int64(buf.Len()), filepath.Base(filePath))
+	req, err := http.NewRequest(http.MethodPost, uploadURL, pr)
 	if err != nil {
 		slog.Error("构建上传请求失败", "err", err)
 		return false
@@ -294,6 +369,7 @@ func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory strin
 
 	client := &http.Client{Timeout: 10 * time.Minute}
 	resp, err := client.Do(req)
+	pr.finish()
 	if err != nil {
 		slog.Error("上传文件失败", "path", filePath, "err", err)
 		return false
@@ -318,6 +394,13 @@ func (t *UploadRegistry) uploadHelm(baseURL, filePath string) bool {
 	}
 	defer file.Close()
 
+	fi, err := file.Stat()
+	if err != nil {
+		slog.Error("获取文件信息失败", "path", filePath, "err", err)
+		return false
+	}
+	slog.Info("开始上传", "file", filepath.Base(filePath), "size", formatBytes(fi.Size()), "repo", "helm")
+
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
 	part, err := w.CreateFormFile("chart", filepath.Base(filePath))
@@ -332,7 +415,8 @@ func (t *UploadRegistry) uploadHelm(baseURL, filePath string) bool {
 	_ = w.Close()
 
 	uploadURL := fmt.Sprintf("%s/repository/helm/api/charts", baseURL)
-	req, err := http.NewRequest(http.MethodPost, uploadURL, &buf)
+	pr := newProgressReader(&buf, int64(buf.Len()), filepath.Base(filePath))
+	req, err := http.NewRequest(http.MethodPost, uploadURL, pr)
 	if err != nil {
 		slog.Error("构建 helm 上传请求失败", "err", err)
 		return false
@@ -343,6 +427,7 @@ func (t *UploadRegistry) uploadHelm(baseURL, filePath string) bool {
 
 	client := &http.Client{Timeout: 10 * time.Minute}
 	resp, err := client.Do(req)
+	pr.finish()
 	if err != nil {
 		slog.Error("上传 helm chart 失败", "path", filePath, "err", err)
 		return false
