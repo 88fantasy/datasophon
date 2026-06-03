@@ -5,7 +5,6 @@
   "version": "3.6.1",
   "sortNum": 79,
   "dependencies": [],
-  "decompressPackageName": "datart-server",
   "roles": [
     {
       "name": "Datart",
@@ -130,7 +129,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "datart-server.tar.gz"
+      "packageName": "datart-server.tar.gz",
+      "decompressPackageName": "datart-server"
     }
   }
 }

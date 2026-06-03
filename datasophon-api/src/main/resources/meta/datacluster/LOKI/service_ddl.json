@@ -8,14 +8,15 @@
     "MINIO",
     "REDIS"
   ],
-  "decompressPackageName": "loki-3.7.2",
   "createDecompressDir": true,
   "arch": {
     "x86_64": {
-      "packageName": "loki-linux-amd64.zip"
+      "packageName": "loki-linux-amd64.zip",
+      "decompressPackageName": "loki-3.7.2"
     },
     "aarch64": {
-      "packageName": "loki-linux-arm64.zip"
+      "packageName": "loki-linux-arm64.zip",
+      "decompressPackageName": "loki-3.7.2"
     }
   },
   "roles": [

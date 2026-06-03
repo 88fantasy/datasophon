@@ -7,7 +7,6 @@
   "dependencies": [
     "JUICEFS"
   ],
-  "decompressPackageName": "nginx-1.30.2",
   "roles": [
     {
       "name": "Nginx",
@@ -359,7 +358,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "nginx-1.30.2.tar.gz"
+      "packageName": "nginx-1.30.2.tar.gz",
+      "decompressPackageName": "nginx-1.30.2"
     }
   }
 }

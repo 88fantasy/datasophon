@@ -50,7 +50,7 @@ public class ServiceUpgradeHandler extends ServiceHandler {
         installServiceRoleCommand.setServiceRoleName(serviceRoleInfo.getName());
         installServiceRoleCommand.setServiceRoleType(serviceRoleInfo.getRoleType());
         installServiceRoleCommand.setPackageName(packageName);
-        installServiceRoleCommand.setDecompressPackageName(serviceRoleInfo.getDecompressPackageName());
+        installServiceRoleCommand.setDecompressPackageName(resolveDecompressPackageName(serviceRoleInfo, hostEntity.getCpuArchitecture()));
         installServiceRoleCommand.setCreateDecompressDir(serviceRoleInfo.getCreateDecompressDir());
         installServiceRoleCommand.setRunAs(serviceRoleInfo.getRunAs());
         installServiceRoleCommand.setServiceRoleType(serviceRoleInfo.getRoleType());

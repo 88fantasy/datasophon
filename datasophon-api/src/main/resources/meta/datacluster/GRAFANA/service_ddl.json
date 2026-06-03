@@ -5,13 +5,14 @@
   "version": "13.0.1",
   "sortNum": 17,
   "dependencies": [],
-  "decompressPackageName": "grafana-13.0.1",
   "arch": {
     "x86_64": {
-      "packageName": "grafana-13.0.1.linux-amd64.tar.gz"
+      "packageName": "grafana-13.0.1.linux-amd64.tar.gz",
+      "decompressPackageName": "grafana-13.0.1"
     },
     "aarch64": {
-      "packageName": "grafana-13.0.1.linux-arm64.tar.gz"
+      "packageName": "grafana-13.0.1.linux-arm64.tar.gz",
+      "decompressPackageName": "grafana-13.0.1"
     }
   },
   "roles": [

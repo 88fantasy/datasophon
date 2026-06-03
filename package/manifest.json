@@ -217,22 +217,22 @@
     "note": "单二进制 zip，无顶层目录"
   },
   {
-    "service": "REDIS",
+    "service": "VALKEY",
     "arch": "x86_64",
-    "packageName": "redis-8.6.tar.gz",
-    "decompressPackageName": "redis-8.6",
-    "downloadUrl": null,
+    "packageName": "valkey-8.1.7-jammy-x86_64.tar.gz",
+    "decompressPackageName": "valkey-8.1.7-jammy-x86_64",
+    "downloadUrl": "https://download.valkey.io/releases/valkey-8.1.7-jammy-x86_64.tar.gz",
     "status": "private",
-    "note": "redis-8.6 不在官方 download.redis.io/releases 列表（404），疑为自定义构建，需手动上传"
+    "note": "官方 jammy 预编译包重打包并内置 redis-exporter，需手动上传到 package/"
   },
   {
-    "service": "REDIS",
+    "service": "VALKEY",
     "arch": "aarch64",
-    "packageName": "redis-8.6-arm.tar.gz",
-    "decompressPackageName": "redis-8.6",
-    "downloadUrl": null,
+    "packageName": "valkey-8.1.7-jammy-arm64.tar.gz",
+    "decompressPackageName": "valkey-8.1.7-jammy-arm64",
+    "downloadUrl": "https://download.valkey.io/releases/valkey-8.1.7-jammy-arm64.tar.gz",
     "status": "private",
-    "note": "自定义 ARM 构建，需手动上传到 package/"
+    "note": "官方 jammy 预编译包重打包并内置 redis-exporter，需手动上传到 package/"
   },
   {
     "service": "SPARK3",

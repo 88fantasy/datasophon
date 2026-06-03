@@ -31,6 +31,7 @@ import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
+import com.datasophon.common.model.ArchInfo;
 import com.datasophon.common.model.ConfigWriter;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
@@ -179,12 +180,17 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             throw new IllegalStateException(String.format("服务%s的ddl文件不规范，存在错误:\n%s", serviceName, StrUtil.join(";", errorList)));
         }
 //        @see ServiceInstallHandler#createLink
-        if (StringUtils.lowerCase(serviceName).equals(serviceInfo.getDecompressPackageName())) {
-            throw new IllegalStateException(String.format("服务名称%s不能和解压文件名%s一致(忽略大小写)。", serviceName, serviceInfo.getDecompressPackageName()));
+        if (Objects.isNull(serviceInfo.getArch()) || serviceInfo.getArch().isEmpty()) {
+            throw new IllegalStateException(String.format("服务%s的ddl文件缺少arch字段，请为每种CPU架构配置packageName/decompressPackageName。", serviceName));
         }
-
-        if (Objects.isNull(serviceInfo.getArch())) {
-            throw new IllegalStateException(String.format("服务%s的ddl文件缺少arch字段，请为每种CPU架构配置packageName。", serviceName));
+        for (Map.Entry<String, ArchInfo> e : serviceInfo.getArch().entrySet()) {
+            String dcp = e.getValue().getDecompressPackageName();
+            if (StringUtils.isBlank(dcp)) {
+                throw new IllegalStateException(String.format("服务%s的arch.%s缺少decompressPackageName字段。", serviceName, e.getKey()));
+            }
+            if (StringUtils.lowerCase(serviceName).equals(StringUtils.lowerCase(dcp))) {
+                throw new IllegalStateException(String.format("服务名称%s不能和解压文件名%s一致(忽略大小写)。", serviceName, dcp));
+            }
         }
         log.info("arch:{}", serviceInfo.getArch());
 
@@ -197,8 +203,9 @@ public class DdlMetaServiceImpl implements DdlMetaService {
                         serviceConfig -> serviceConfig,
                         (v1, v2) -> v1));
         Map<Generators, List<ServiceConfig>> configFileMap = buildConfigFileMap(serviceInfo, map);
-        PackageUtils.putServicePackageName(frameInfo.getFrameCode(), serviceName, serviceInfo.getDecompressPackageName());
-        putServiceHomeToVariable(frameInfo.getFrameCode(), clusters, serviceName, serviceInfo.getDecompressPackageName());
+        String representativeDcp = representativeDecompressPackageName(serviceInfo);
+        PackageUtils.putServicePackageName(frameInfo.getFrameCode(), serviceName, representativeDcp);
+        putServiceHomeToVariable(frameInfo.getFrameCode(), clusters, serviceName, representativeDcp);
 
 
         // save service and service config
@@ -227,6 +234,24 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         }
     }
 
+
+    /**
+     * 从 arch 块中取代表性 decompressPackageName（优先 "common"，否则取第一个非空值）。
+     * 用于向无架构上下文的消费者（PackageUtils、SERVICE_HOME、DB 实体列）提供单值。
+     * per-arch 精确值由 ServiceHandler.resolveDecompressPackageName() 在运行期按主机架构解析。
+     */
+    private String representativeDecompressPackageName(ServiceInfo serviceInfo) {
+        Map<String, ArchInfo> arch = serviceInfo.getArch();
+        ArchInfo common = arch.get(ServicePkgNameUtils.COMMON_ARCH);
+        if (common != null && StringUtils.isNotBlank(common.getDecompressPackageName())) {
+            return common.getDecompressPackageName();
+        }
+        return arch.values().stream()
+                .map(ArchInfo::getDecompressPackageName)
+                .filter(StringUtils::isNotBlank)
+                .findFirst()
+                .orElse(null);
+    }
 
     private void saveFrameServiceRole(String frameCode, String serviceName, ServiceInfo serviceInfo, FrameServiceEntity serviceEntity) {
         List<ServiceRoleInfo> serviceRoles = serviceInfo.getRoles();
@@ -381,7 +406,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         serviceEntity.setServiceConfig(JSON.toJSONString(serviceInfo.getParameters()));
         serviceEntity.setServiceJson(serviceDdl);
         serviceEntity.setServiceJsonMd5(serviceInfoMd5);
-        serviceEntity.setDecompressPackageName(serviceInfo.getDecompressPackageName());
+        serviceEntity.setDecompressPackageName(representativeDecompressPackageName(serviceInfo));
         serviceEntity.setConfigFileJson(JSONObject.toJSONString(configFileMap));
         serviceEntity.setConfigFileJsonMd5(SecureUtil.md5(serviceEntity.getConfigFileJson()));
         serviceEntity.setSortNum(serviceInfo.getSortNum());

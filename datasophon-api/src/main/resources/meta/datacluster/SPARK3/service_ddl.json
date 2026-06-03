@@ -7,7 +7,6 @@
   "dependencies": [
     "HIVE"
   ],
-  "decompressPackageName": "spark-3.5.8-bin-hadoop3",
   "roles": [
     {
       "name": "SparkClient3",
@@ -203,7 +202,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "spark-3.5.8-bin-hadoop3.tgz"
+      "packageName": "spark-3.5.8-bin-hadoop3.tgz",
+      "decompressPackageName": "spark-3.5.8-bin-hadoop3"
     }
   }
 }

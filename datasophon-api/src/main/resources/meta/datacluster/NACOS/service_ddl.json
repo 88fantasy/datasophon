@@ -5,7 +5,6 @@
   "version": "3.2.2",
   "sortNum": 80,
   "dependencies": [],
-  "decompressPackageName": "nacos",
   "roles": [
     {
       "name": "NacosServer",
@@ -194,7 +193,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "nacos-server-3.2.2.tar.gz"
+      "packageName": "nacos-server-3.2.2.tar.gz",
+      "decompressPackageName": "nacos"
     }
   }
 }
