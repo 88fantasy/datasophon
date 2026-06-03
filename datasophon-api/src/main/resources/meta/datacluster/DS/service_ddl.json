@@ -5,7 +5,6 @@
   "description": "调度组件",
   "sortNum": 30,
   "version": "3.4.1",
-  "decompressPackageName": "apache-dolphinscheduler-3.4.1-bin",
   "createDecompressDir": false,
   "dependencies": [
     "SPARK3",
@@ -711,7 +710,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "apache-dolphinscheduler-3.4.1-bin.tar.gz"
+      "packageName": "apache-dolphinscheduler-3.4.1-bin.tar.gz",
+      "decompressPackageName": "apache-dolphinscheduler-3.4.1-bin"
     }
   }
 }

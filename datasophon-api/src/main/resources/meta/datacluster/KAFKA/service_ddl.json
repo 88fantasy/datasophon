@@ -7,7 +7,6 @@
   "dependencies": [
     "ZOOKEEPER"
   ],
-  "decompressPackageName": "kafka_2.13-4.3.0",
   "roles": [
     {
       "name": "KafkaBroker",
@@ -494,7 +493,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "kafka_2.13-4.3.0.tgz"
+      "packageName": "kafka_2.13-4.3.0.tgz",
+      "decompressPackageName": "kafka_2.13-4.3.0"
     }
   }
 }

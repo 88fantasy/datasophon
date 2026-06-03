@@ -5,7 +5,6 @@
   "description": "实时计算引擎",
   "version": "2.2.1",
   "sortNum": 14,
-  "decompressPackageName": "flink-2.2.1",
   "createDecompressDir": false,
   "dependencies": [
     "YARN"
@@ -405,7 +404,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "flink-2.2.1-bin-scala_2.12.tgz"
+      "packageName": "flink-2.2.1-bin-scala_2.12.tgz",
+      "decompressPackageName": "flink-2.2.1"
     }
   }
 }

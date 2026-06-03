@@ -7,14 +7,15 @@
   "dependencies": [
     "LOKI"
   ],
-  "decompressPackageName": "promtail-2.8.11",
   "createDecompressDir": true,
   "arch": {
     "x86_64": {
-      "packageName": "promtail-linux-amd64.zip"
+      "packageName": "promtail-linux-amd64.zip",
+      "decompressPackageName": "promtail-2.8.11"
     },
     "aarch64": {
-      "packageName": "promtail-linux-arm64.zip"
+      "packageName": "promtail-linux-arm64.zip",
+      "decompressPackageName": "promtail-2.8.11"
     }
   },
   "roles": [

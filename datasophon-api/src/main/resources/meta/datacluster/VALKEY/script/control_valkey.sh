@@ -26,9 +26,9 @@ fi
 startStop=$1
 shift
 command=$1
-REDIS_DIR=$(cd `dirname $0`;pwd)
-export LOG_DIR=$REDIS_DIR/logs
-export PID_DIR=$REDIS_DIR/pid
+VALKEY_DIR=$(cd `dirname $0`;pwd)
+export LOG_DIR=$VALKEY_DIR/logs
+export PID_DIR=$VALKEY_DIR/pid
 
 export HOSTNAME=`hostname`
 
@@ -40,15 +40,15 @@ if [ ! -d "$LOG_DIR" ]; then
   mkdir $LOG_DIR
 fi
 
-DATA_DIR=$(awk -F " " '/^dir / {print $2}' $REDIS_DIR/conf/master.conf)
-port=$(awk -F " " '/^port / {print $2}' $REDIS_DIR/conf/master.conf)
-pwd=$(awk -F " " '/^requirepass / {print $2}' $REDIS_DIR/conf/master.conf)
+DATA_DIR=$(awk -F " " '/^dir / {print $2}' $VALKEY_DIR/conf/master.conf)
+port=$(awk -F " " '/^port / {print $2}' $VALKEY_DIR/conf/master.conf)
+pwd=$(awk -F " " '/^requirepass / {print $2}' $VALKEY_DIR/conf/master.conf)
 
 if [ ! -d "DATA_DIR" ]; then
   mkdir -p $DATA_DIR
 fi
 
-start_redis(){
+start_valkey(){
 	[ -w "$PID_DIR" ] ||  mkdir -p "$PID_DIR"
   if [ -f $pid ]; then
     if kill -0 `cat $pid` > /dev/null 2>&1; then
@@ -57,7 +57,7 @@ start_redis(){
     fi
   fi
   echo starting $command, logging to $log
-  exec_command="$REDIS_DIR/bin/redis-server $REDIS_DIR/conf/master.conf"
+  exec_command="$VALKEY_DIR/bin/valkey-server $VALKEY_DIR/conf/master.conf"
   $exec_command
 }
 start_exporter(){
@@ -69,7 +69,7 @@ start_exporter(){
     fi
   fi
   echo starting $command, logging to $log
-  exec_command="$REDIS_DIR/redis-exporter/redis_exporter -redis.addr 127.0.0.1:$port -web.listen-address 0.0.0.0:9121 -redis.password $pwd -include-config-metrics true -include-system-metrics true"
+  exec_command="$VALKEY_DIR/redis-exporter/redis_exporter -redis.addr 127.0.0.1:$port -web.listen-address 0.0.0.0:9121 -redis.password $pwd -include-config-metrics true -include-system-metrics true"
   echo "nohup $exec_command > $log 2>&1 &"
   nohup $exec_command > $log 2>&1 &
   echo $! > $pid
@@ -93,10 +93,10 @@ stop(){
     echo no $command to stop
   fi
 }
-restart_redis(){
+restart_valkey(){
 	stop
 	sleep 10
-	start_redis
+	start_valkey
 }
 status(){
   if [ -f $pid ]; then
@@ -126,7 +126,7 @@ case $startStop in
   (start)
     case $command in
         (master)
-          start_redis
+          start_valkey
           ;;
         (exporter)
           start_exporter
@@ -168,7 +168,7 @@ case $startStop in
   (restart)
 	  case $command in
         master)
-          restart_redis
+          restart_valkey
           ;;
         exporter)
           restart_exporter

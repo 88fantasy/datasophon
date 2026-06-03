@@ -32,6 +32,7 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterHostDO;
 
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 @Data
 public abstract class ServiceHandler {
@@ -73,5 +74,31 @@ public abstract class ServiceHandler {
     protected String resolvePackageName(ServiceRoleInfo role, String cpuArch) {
         ArchInfo archInfo = ServicePkgNameUtils.getArchInfo(role, cpuArch);
         return archInfo == null ? null : archInfo.getPackageName();
+    }
+
+    /**
+     * 按主机 CPU 架构解析解压目录名。
+     * 从 role.archInfoMap 中取对应架构的 decompressPackageName；
+     * 主机不存在或 archInfoMap 无匹配时回退到 role.getDecompressPackageName()（实体列代表值，
+     * 由 DdlMetaServiceImpl.representativeDecompressPackageName 在 loader 阶段填入）。
+     */
+    protected String resolveDecompressPackageName(ServiceRoleInfo role) {
+        ClusterHostService hostService = SpringTool.getApplicationContext().getBean(ClusterHostService.class);
+        ClusterHostDO host = hostService.getClusterHostByHostname(role.getHostname());
+        if (host == null) {
+            return role.getDecompressPackageName();
+        }
+        return resolveDecompressPackageName(role, host.getCpuArchitecture());
+    }
+
+    /**
+     * 直接按已知架构字符串解析解压目录名，供已持有 ClusterHostDO 的调用方使用以避免重复 DB 查询。
+     */
+    protected String resolveDecompressPackageName(ServiceRoleInfo role, String cpuArch) {
+        ArchInfo archInfo = ServicePkgNameUtils.getArchInfo(role, cpuArch);
+        if (archInfo != null && StringUtils.isNotBlank(archInfo.getDecompressPackageName())) {
+            return archInfo.getDecompressPackageName();   // per-arch（如 valkey-8.1.7-jammy-x86_64）
+        }
+        return role.getDecompressPackageName();           // 回退到实体代表值（arch-less 调用路径，如 RackService）
     }
 }

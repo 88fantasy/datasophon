@@ -1,29 +1,30 @@
 {
-  "name": "REDIS",
-  "label": "Redis",
-  "description": "开源的高性能键值对存储系统",
-  "version": "8.6",
+  "name": "VALKEY",
+  "label": "Valkey",
+  "description": "开源的高性能键值对存储系统(Redis 的 BSD-3 开源分叉)",
+  "version": "8.1.7",
   "sortNum": 91,
   "dependencies": [],
-  "decompressPackageName": "redis-8.6",
   "arch": {
     "x86_64": {
-      "packageName": "redis-8.6.tar.gz"
+      "packageName": "valkey-8.1.7-jammy-x86_64.tar.gz",
+      "decompressPackageName": "valkey-8.1.7-jammy-x86_64"
     },
     "aarch64": {
-      "packageName": "redis-8.6-arm.tar.gz"
+      "packageName": "valkey-8.1.7-jammy-arm64.tar.gz",
+      "decompressPackageName": "valkey-8.1.7-jammy-arm64"
     }
   },
   "roles": [
     {
-      "name": "RedisMaster",
-      "label": "RedisMaster",
+      "name": "ValkeyMaster",
+      "label": "ValkeyMaster",
       "roleType": "master",
       "cardinality": "1",
       "logFile": "logs/master.log",
       "startRunner": {
         "timeout": "60",
-        "program": "control_redis.sh",
+        "program": "control_valkey.sh",
         "args": [
           "start",
           "master"
@@ -31,7 +32,7 @@
       },
       "stopRunner": {
         "timeout": "600",
-        "program": "control_redis.sh",
+        "program": "control_valkey.sh",
         "args": [
           "stop",
           "master"
@@ -39,7 +40,7 @@
       },
       "statusRunner": {
         "timeout": "60",
-        "program": "control_redis.sh",
+        "program": "control_valkey.sh",
         "args": [
           "status",
           "master"
@@ -50,16 +51,16 @@
           "type": "POST_INSTALL",
           "action": "download",
           "params": {
-            "from": "script/control_redis.sh",
-            "to": "control_redis.sh",
-            "md5": "8b25b0fffa6034c219a68ec988daa0b8"
+            "from": "script/control_valkey.sh",
+            "to": "control_valkey.sh",
+            "md5": "3ed8652efa242b859902927513514136"
           }
         }
       ]
     },
     {
-      "name": "RedisExporter",
-      "label": "RedisExporter",
+      "name": "ValkeyExporter",
+      "label": "ValkeyExporter",
       "roleType": "worker",
       "cardinality": "1",
       "logFile": "redis-exporter/logs/exporter.log",
@@ -67,7 +68,7 @@
       "sortNum": 2,
       "startRunner": {
         "timeout": "60",
-        "program": "control_redis.sh",
+        "program": "control_valkey.sh",
         "args": [
           "start",
           "exporter"
@@ -75,7 +76,7 @@
       },
       "stopRunner": {
         "timeout": "600",
-        "program": "control_redis.sh",
+        "program": "control_valkey.sh",
         "args": [
           "stop",
           "exporter"
@@ -83,7 +84,7 @@
       },
       "statusRunner": {
         "timeout": "60",
-        "program": "control_redis.sh",
+        "program": "control_valkey.sh",
         "args": [
           "status",
           "exporter"
@@ -91,7 +92,7 @@
       },
       "restartRunner": {
         "timeout": "60",
-        "program": "control_redis.sh",
+        "program": "control_valkey.sh",
         "args": [
           "restart",
           "exporter"
@@ -102,9 +103,9 @@
           "type": "POST_INSTALL",
           "action": "download",
           "params": {
-            "from": "script/control_redis.sh",
-            "to": "control_redis.sh",
-            "md5": "8b25b0fffa6034c219a68ec988daa0b8"
+            "from": "script/control_valkey.sh",
+            "to": "control_valkey.sh",
+            "md5": "3ed8652efa242b859902927513514136"
           }
         }
       ]
@@ -116,14 +117,14 @@
         "filename": "master.conf",
         "configFormat": "custom",
         "outputDirectory": "conf",
-        "templateName": "redis-master.ftl",
+        "templateName": "valkey-master.ftl",
         "includeParams": [
-          "redisMasterPort",
-          "redisDataDir",
-          "redisDatabases",
-          "redisPass",
-          "redisMaxMemory",
-          "redisMaxMemoryPolicy",
+          "valkeyMasterPort",
+          "valkeyDataDir",
+          "valkeyDatabases",
+          "valkeyPass",
+          "valkeyMaxMemory",
+          "valkeyMaxMemoryPolicy",
           "custom.master.conf"
         ]
       }
@@ -131,7 +132,7 @@
   },
   "parameters": [
     {
-      "name": "redisMasterPort",
+      "name": "valkeyMasterPort",
       "label": "master节点端口号",
       "description": "",
       "configType": "map",
@@ -143,19 +144,19 @@
       "defaultValue": "7501"
     },
     {
-      "name": "redisDataDir",
+      "name": "valkeyDataDir",
       "label": "数据存储目录",
       "description": "数据持久化存储目录",
       "configType": "map",
       "required": true,
       "type": "input",
-      "value": "/data/redis",
+      "value": "/data/valkey",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "/data/redis"
+      "defaultValue": "/data/valkey"
     },
     {
-      "name": "redisPass",
+      "name": "valkeyPass",
       "label": "连接密码",
       "description": "连接密码",
       "configType": "map",
@@ -167,7 +168,7 @@
       "defaultValue": "fX0GzFyWOK4LR^9K"
     },
     {
-      "name": "redisDatabases",
+      "name": "valkeyDatabases",
       "label": "数据库数量",
       "description": "设定数据库库的数量",
       "configType": "map",
@@ -181,7 +182,7 @@
       "defaultValue": "16"
     },
     {
-      "name": "redisMaxMemory",
+      "name": "valkeyMaxMemory",
       "label": "最大内存(bytes)",
       "description": "最大内存限制(按字节)",
       "configType": "map",
@@ -195,7 +196,7 @@
       "defaultValue": 0
     },
     {
-      "name": "redisMaxMemoryPolicy",
+      "name": "valkeyMaxMemoryPolicy",
       "label": "内存过期策略",
       "description": "内存过期策略",
       "configType": "map",

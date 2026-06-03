@@ -6,13 +6,14 @@
   "version": "4.0.5",
   "sortNum": 11,
   "createDecompressDir": false,
-  "decompressPackageName": "apache-doris-4.0.5",
   "arch": {
     "x86_64": {
-      "packageName": "apache-doris-4.0.5-bin-x64.tar.gz"
+      "packageName": "apache-doris-4.0.5-bin-x64.tar.gz",
+      "decompressPackageName": "apache-doris-4.0.5"
     },
     "aarch64": {
-      "packageName": "apache-doris-4.0.5-bin-arm64.tar.gz"
+      "packageName": "apache-doris-4.0.5-bin-arm64.tar.gz",
+      "decompressPackageName": "apache-doris-4.0.5"
     }
   },
   "roles": [

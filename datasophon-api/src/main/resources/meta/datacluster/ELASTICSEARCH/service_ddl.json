@@ -5,7 +5,6 @@
   "description": "高性能搜索引擎",
   "version": "9.4.2",
   "sortNum": 12,
-  "decompressPackageName": "elasticsearch-9.4.2",
   "createDecompressDir": false,
   "dependencies": [],
   "roles": [
@@ -449,7 +448,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "elasticsearch-9.4.2-linux-x86_64.tar.gz"
+      "packageName": "elasticsearch-9.4.2-linux-x86_64.tar.gz",
+      "decompressPackageName": "elasticsearch-9.4.2"
     }
   }
 }

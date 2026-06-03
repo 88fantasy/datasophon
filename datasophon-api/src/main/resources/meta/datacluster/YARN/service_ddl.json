@@ -5,7 +5,6 @@
   "description": "分布式资源调度与管理平台",
   "version": "3.5.0",
   "sortNum": 33,
-  "decompressPackageName": "hadoop-3.5.0",
   "createDecompressDir": false,
   "dependencies": [
     "HDFS"
@@ -1169,10 +1168,12 @@
   ],
   "arch": {
     "aarch64": {
-      "packageName": "hadoop-3.5.0-aarch64.tar.gz"
+      "packageName": "hadoop-3.5.0-aarch64.tar.gz",
+      "decompressPackageName": "hadoop-3.5.0"
     },
     "x86_64": {
-      "packageName": "hadoop-3.5.0.tar.gz"
+      "packageName": "hadoop-3.5.0.tar.gz",
+      "decompressPackageName": "hadoop-3.5.0"
     }
   }
 }
