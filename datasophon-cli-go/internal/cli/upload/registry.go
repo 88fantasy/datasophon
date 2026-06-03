@@ -120,12 +120,14 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 						continue
 					}
 					osDir := filepath.Join(archDir, osEntry.Name())
+					// directory 格式：arch/os，与 Java NexusFileUtils 对齐
+					dir := archEntry.Name() + "/" + osEntry.Name()
 					files, _ := os.ReadDir(osDir)
 					for _, f := range files {
 						if f.IsDir() {
 							continue
 						}
-						ok := t.uploadFile(baseURL, repoType, filepath.Join(osDir, f.Name()))
+						ok := t.uploadFile(baseURL, repoType, filepath.Join(osDir, f.Name()), dir)
 						if ok {
 							success++
 							if t.IsSuccessDelete {
@@ -144,7 +146,7 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 				if f.IsDir() {
 					continue
 				}
-				ok := t.uploadFile(baseURL, repoType, filepath.Join(packagesDir, f.Name()))
+				ok := t.uploadFile(baseURL, repoType, filepath.Join(packagesDir, f.Name()), "/packages")
 				if ok {
 					success++
 					if t.IsSuccessDelete {
@@ -160,7 +162,7 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 				if f.IsDir() {
 					continue
 				}
-				ok := t.uploadFile(baseURL, repoType, filepath.Join(repoDir, f.Name()))
+				ok := t.uploadHelm(baseURL, filepath.Join(repoDir, f.Name()))
 				if ok {
 					success++
 				} else {
@@ -177,7 +179,9 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 }
 
 // uploadFile 用 multipart/form-data 上传单个文件到 Nexus 内部 UI 接口。
-func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath string) bool {
+// directory 非空时写入 directory 文本字段（raw/yum 必填，apt 不填）。
+// 字段布局与 Java NexusFileUtils 对齐：asset0 / asset0.filename / directory。
+func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory string) bool {
 	file, err := os.Open(filePath)
 	if err != nil {
 		slog.Error("打开文件失败", "path", filePath, "err", err)
@@ -187,9 +191,20 @@ func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath string) bool {
 
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
-	part, err := w.CreateFormFile("file", filepath.Base(filePath))
+
+	if directory != "" {
+		if err = w.WriteField("directory", directory); err != nil {
+			slog.Error("写入 directory 字段失败", "err", err)
+			return false
+		}
+	}
+	if err = w.WriteField("asset0.filename", filepath.Base(filePath)); err != nil {
+		slog.Error("写入 asset0.filename 字段失败", "err", err)
+		return false
+	}
+	part, err := w.CreateFormFile("asset0", filepath.Base(filePath))
 	if err != nil {
-		slog.Error("创建 form 字段失败", "err", err)
+		slog.Error("创建 asset0 字段失败", "err", err)
 		return false
 	}
 	if _, err = io.Copy(part, file); err != nil {
@@ -198,14 +213,17 @@ func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath string) bool {
 	}
 	_ = w.Close()
 
-	url := fmt.Sprintf("%s/service/rest/internal/ui/upload/%s", baseURL, repoType)
-	req, err := http.NewRequest(http.MethodPost, url, &buf)
+	uploadURL := fmt.Sprintf("%s/service/rest/internal/ui/upload/%s", baseURL, repoType)
+	req, err := http.NewRequest(http.MethodPost, uploadURL, &buf)
 	if err != nil {
 		slog.Error("构建上传请求失败", "err", err)
 		return false
 	}
 	req.SetBasicAuth(t.Username, t.Password)
 	req.Header.Set("Content-Type", w.FormDataContentType())
+	// 强制走 JSON 响应路径（postComponent），避免 RESTEasy 选中缺少 commons-lang 依赖的
+	// postComponentWithHtmlResponse（IE 兼容包装），否则 Nexus 端抛 NoClassDefFoundError。
+	req.Header.Set("Accept", "application/json")
 
 	client := &http.Client{Timeout: 10 * time.Minute}
 	resp, err := client.Do(req)
@@ -220,6 +238,55 @@ func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath string) bool {
 	}
 	body, _ := io.ReadAll(resp.Body)
 	slog.Error("上传失败", "file", filepath.Base(filePath), "status", resp.StatusCode, "body", string(body))
+	return false
+}
+
+// uploadHelm 上传 Helm Chart 到 Nexus helm 仓库（使用 Chartmuseum API）。
+// URL 与字段名与其他仓库不同，单独处理。
+func (t *UploadRegistry) uploadHelm(baseURL, filePath string) bool {
+	file, err := os.Open(filePath)
+	if err != nil {
+		slog.Error("打开文件失败", "path", filePath, "err", err)
+		return false
+	}
+	defer file.Close()
+
+	var buf bytes.Buffer
+	w := multipart.NewWriter(&buf)
+	part, err := w.CreateFormFile("chart", filepath.Base(filePath))
+	if err != nil {
+		slog.Error("创建 chart 字段失败", "err", err)
+		return false
+	}
+	if _, err = io.Copy(part, file); err != nil {
+		slog.Error("写入文件内容失败", "err", err)
+		return false
+	}
+	_ = w.Close()
+
+	uploadURL := fmt.Sprintf("%s/repository/helm/api/charts", baseURL)
+	req, err := http.NewRequest(http.MethodPost, uploadURL, &buf)
+	if err != nil {
+		slog.Error("构建 helm 上传请求失败", "err", err)
+		return false
+	}
+	req.SetBasicAuth(t.Username, t.Password)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	req.Header.Set("Accept", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Minute}
+	resp, err := client.Do(req)
+	if err != nil {
+		slog.Error("上传 helm chart 失败", "path", filePath, "err", err)
+		return false
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == 200 || resp.StatusCode == 201 || resp.StatusCode == 204 {
+		slog.Info("helm chart 上传成功", "file", filepath.Base(filePath))
+		return true
+	}
+	body, _ := io.ReadAll(resp.Body)
+	slog.Error("helm chart 上传失败", "file", filepath.Base(filePath), "status", resp.StatusCode, "body", string(body))
 	return false
 }
 
