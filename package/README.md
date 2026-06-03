@@ -63,13 +63,7 @@ curl -L --max-time 3600 -C - \
 | 包文件名 | 说明 |
 |---|---|
 | `datart-server.tar.gz` | 内部 BI 服务 |
-| `executor-3.11.0.tar.gz` | 内部调度执行器 |
-| `minio-9.0.1.tar.gz` / `minio-9.0.1-arm.tar.gz` | 自定义 MinIO 封装 |
-| `portal-application-3.1.0-RELEASE-install.tar.gz` | 内部门户服务 |
 | `redis-8.6.tar.gz` / `redis-8.6-arm.tar.gz` | 自定义构建（非官方版本号） |
-| `uscheduler3-3.0.2-3.4.0-bin.tar.gz` | 内部调度器 |
-| `ustream-3.4.0-bin.tar.gz` | 内部流处理 |
-| `usync-3.0.0-3.10.0.tar.gz` | 内部数据同步 |
 
 ## 多架构包说明
 
