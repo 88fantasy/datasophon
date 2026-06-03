@@ -355,8 +355,14 @@ func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory strin
 	_ = w.Close()
 
 	uploadURL := fmt.Sprintf("%s/service/rest/internal/ui/upload/%s", baseURL, repoType)
-	pr := newProgressReader(&buf, int64(buf.Len()), filepath.Base(filePath))
-	req, err := http.NewRequest(http.MethodPost, uploadURL, pr)
+	const progressThreshold = 20 * 1024 * 1024 // 20 MB
+	var pr *progressReader
+	var reqBody io.Reader = &buf
+	if fi.Size() >= progressThreshold {
+		pr = newProgressReader(&buf, int64(buf.Len()), filepath.Base(filePath))
+		reqBody = pr
+	}
+	req, err := http.NewRequest(http.MethodPost, uploadURL, reqBody)
 	if err != nil {
 		slog.Error("构建上传请求失败", "err", err)
 		return false
@@ -369,7 +375,9 @@ func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory strin
 
 	client := &http.Client{Timeout: 10 * time.Minute}
 	resp, err := client.Do(req)
-	pr.finish()
+	if pr != nil {
+		pr.finish()
+	}
 	if err != nil {
 		slog.Error("上传文件失败", "path", filePath, "err", err)
 		return false
@@ -415,8 +423,14 @@ func (t *UploadRegistry) uploadHelm(baseURL, filePath string) bool {
 	_ = w.Close()
 
 	uploadURL := fmt.Sprintf("%s/repository/helm/api/charts", baseURL)
-	pr := newProgressReader(&buf, int64(buf.Len()), filepath.Base(filePath))
-	req, err := http.NewRequest(http.MethodPost, uploadURL, pr)
+	const progressThreshold = 20 * 1024 * 1024 // 20 MB
+	var pr *progressReader
+	var reqBody io.Reader = &buf
+	if fi.Size() >= progressThreshold {
+		pr = newProgressReader(&buf, int64(buf.Len()), filepath.Base(filePath))
+		reqBody = pr
+	}
+	req, err := http.NewRequest(http.MethodPost, uploadURL, reqBody)
 	if err != nil {
 		slog.Error("构建 helm 上传请求失败", "err", err)
 		return false
@@ -427,7 +441,9 @@ func (t *UploadRegistry) uploadHelm(baseURL, filePath string) bool {
 
 	client := &http.Client{Timeout: 10 * time.Minute}
 	resp, err := client.Do(req)
-	pr.finish()
+	if pr != nil {
+		pr.finish()
+	}
 	if err != nil {
 		slog.Error("上传 helm chart 失败", "path", filePath, "err", err)
 		return false
