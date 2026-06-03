@@ -2,12 +2,15 @@ package upload
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,6 +21,15 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh"
 )
+
+// nexusAssetsResponse 对应 /service/rest/v1/search/assets 返回结构。
+type nexusAssetsResponse struct {
+	Items []struct {
+		Checksum struct {
+			MD5 string `json:"md5"`
+		} `json:"checksum"`
+	} `json:"items"`
+}
 
 // UploadRegistry 将本地安装包批量上传到 Nexus。
 type UploadRegistry struct {
@@ -178,10 +190,65 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 	return success, fail
 }
 
+// nexusMD5 通过 Nexus REST API 查询已上传 asset 的 MD5。
+// assetName 为文件在仓库中的完整路径（如 /packages/file.tar.gz）。
+// 文件不存在或查询失败时返回空字符串。
+func (t *UploadRegistry) nexusMD5(baseURL, repo, assetName string) string {
+	queryURL := fmt.Sprintf("%s/service/rest/v1/search/assets?repository=%s&name=%s",
+		baseURL, repo, url.QueryEscape(assetName))
+	req, err := http.NewRequest(http.MethodGet, queryURL, nil)
+	if err != nil {
+		return ""
+	}
+	req.SetBasicAuth(t.Username, t.Password)
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil || resp.StatusCode != 200 {
+		return ""
+	}
+	defer resp.Body.Close()
+	var result nexusAssetsResponse
+	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil || len(result.Items) == 0 {
+		return ""
+	}
+	return result.Items[0].Checksum.MD5
+}
+
+// localMD5 计算本地文件的 MD5 hex 字符串。
+func localMD5(filePath string) (string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := md5.New()
+	if _, err = io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
+
 // uploadFile 用 multipart/form-data 上传单个文件到 Nexus 内部 UI 接口。
 // directory 非空时写入 directory 文本字段（raw/yum 必填，apt 不填）。
 // 字段布局与 Java NexusFileUtils 对齐：asset0 / asset0.filename / directory。
 func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory string) bool {
+	// 构造文件在仓库中的完整路径，用于 MD5 幂等检查
+	assetName := filepath.Base(filePath)
+	if directory != "" {
+		dir := directory
+		if !strings.HasPrefix(dir, "/") {
+			dir = "/" + dir
+		}
+		assetName = dir + "/" + assetName
+	}
+	remoteMD5 := t.nexusMD5(baseURL, repoType, assetName)
+	if remoteMD5 != "" {
+		if sum, err := localMD5(filePath); err == nil && sum == remoteMD5 {
+			slog.Info("文件已存在且 MD5 一致，跳过上传", "file", filepath.Base(filePath))
+			return true
+		}
+	}
+
 	file, err := os.Open(filePath)
 	if err != nil {
 		slog.Error("打开文件失败", "path", filePath, "err", err)
