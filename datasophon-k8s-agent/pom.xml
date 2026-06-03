@@ -163,7 +163,7 @@
                             <workingDirectory>${project.basedir}/helm</workingDirectory>
                             <arguments>
                                 <argument>czf</argument>
-                                <argument>${project.build.directory}/datasophon-k8s-agent-0.1.0.tgz</argument>
+                                <argument>../target/datasophon-k8s-agent-0.1.0.tgz</argument>
                                 <argument>datasophon-k8s-agent</argument>
                             </arguments>
                         </configuration>
