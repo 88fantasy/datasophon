@@ -26,6 +26,7 @@ package com.datasophon.dao.entity;
 import java.io.Serializable;
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -34,9 +35,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 @Data
 @TableName("t_ddh_user_info")
 public class UserInfoEntity implements Serializable {
-    
+
     private static final long serialVersionUID = 1L;
-    
+
     /**
      * 主键
      */
@@ -49,6 +50,7 @@ public class UserInfoEntity implements Serializable {
     /**
      * 密码
      */
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     /**
      * 邮箱
@@ -62,7 +64,7 @@ public class UserInfoEntity implements Serializable {
      * 创建时间
      */
     private Date createTime;
-    
+
     private Integer userType;
-    
+
 }
