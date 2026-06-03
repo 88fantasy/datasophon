@@ -167,7 +167,7 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
 
         String logStr = "can not find log file";
         try {
-            if (logFileName.startsWith(StrUtil.SLASH) && FileUtil.exist(logFileName)) {
+            if (new File(logFileName).isAbsolute() && FileUtil.exist(logFileName)) {
                 logStr = FileUtils.readLastRows(logFileName, Charset.defaultCharset(),
                         PropertyUtils.getInt("rows"));
             } else {
