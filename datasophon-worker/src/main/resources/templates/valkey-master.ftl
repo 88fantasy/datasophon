@@ -4,7 +4,7 @@ protected-mode no
 port ${valkeyMasterPort}
 tcp-backlog 511
 logfile /data/install_datasophon/valkey/logs/master.log
-pidfile /data/install_datasophon/valkey//pid/master.pid
+pidfile /data/install_datasophon/valkey/pid/master.pid
 databases ${valkeyDatabases}
 dir ${valkeyDataDir}
 requirepass ${valkeyPass}

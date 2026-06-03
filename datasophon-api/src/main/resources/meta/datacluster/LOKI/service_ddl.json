@@ -6,7 +6,7 @@
   "sortNum": 83,
   "dependencies": [
     "MINIO",
-    "REDIS"
+    "VALKEY"
   ],
   "createDecompressDir": true,
   "arch": {

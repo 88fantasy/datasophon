@@ -223,7 +223,7 @@
     "decompressPackageName": "valkey-8.1.7-jammy-x86_64",
     "downloadUrl": "https://download.valkey.io/releases/valkey-8.1.7-jammy-x86_64.tar.gz",
     "status": "private",
-    "note": "官方 jammy 预编译包重打包并内置 redis-exporter，需手动上传到 package/"
+    "note": "从 downloadUrl 下载官方 jammy 预编译包后，需手动下载 redis_exporter（https://github.com/oliver006/redis_exporter/releases）并放入包内 redis-exporter/ 目录，重打包后上传到 package/"
   },
   {
     "service": "VALKEY",
@@ -232,7 +232,7 @@
     "decompressPackageName": "valkey-8.1.7-jammy-arm64",
     "downloadUrl": "https://download.valkey.io/releases/valkey-8.1.7-jammy-arm64.tar.gz",
     "status": "private",
-    "note": "官方 jammy 预编译包重打包并内置 redis-exporter，需手动上传到 package/"
+    "note": "从 downloadUrl 下载官方 jammy 预编译包后，需手动下载 redis_exporter（https://github.com/oliver006/redis_exporter/releases）并放入包内 redis-exporter/ 目录，重打包后上传到 package/"
   },
   {
     "service": "SPARK3",
