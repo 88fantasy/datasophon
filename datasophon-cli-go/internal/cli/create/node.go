@@ -40,6 +40,13 @@ func (c *createNodeCmd) run() error {
 
 // runConfigMode 配置模式：从 -c 指定的配置文件读取全局上下文，走 plan 引擎初始化目标新节点。
 func (c *createNodeCmd) runConfigMode() error {
+	// Bug 7: MarkFlagRequired 仅检查 flag 是否出现在命令行，不校验值非空（--ip '' 可通过）。
+	// 此处与 runManualMode 对称做早期非空校验，给出明确错误而非等到 SSH dial 时失败。
+	if c.standaloneIP == "" || c.standaloneUser == "" || c.standalonePassword == "" ||
+		c.standaloneHostname == "" || c.standalonePort == 0 {
+		return fmt.Errorf("配置模式下必须同时提供非空的 --ip --user --password --hostname --port")
+	}
+
 	newNode := &config.Host{
 		IP:       c.standaloneIP,
 		Port:     c.standalonePort,
@@ -53,17 +60,28 @@ func (c *createNodeCmd) runConfigMode() error {
 	}
 
 	ctx := c.toBuildContext()
-	pf, err := plan.GeneratePlan("initNode", plan.InitNodeRegistry, ctx)
-	if err != nil {
-		return fmt.Errorf("生成节点计划失败: %w", err)
-	}
-	if err := plan.Save(c.initPath, pf); err != nil {
-		return err
-	}
-	slog.Info("节点计划已写入", "path", plan.PlanPath(c.initPath, "initNode"))
-	plan.PrintSummary(pf)
 
-	if err := plan.Apply(c.initPath, "initNode", plan.InitNodeRegistry, ctx); err != nil {
+	// Bug 3: 计划文件以目标节点 IP 为后缀区分，避免多次 create node 互相覆盖同一文件。
+	// 同时，若已有计划文件且 clusterHash 匹配，直接从断点继续（不重新生成），
+	// 使断点续跑功能真正生效。
+	action := "initNode-" + newNode.IP
+	if existingPf, loadErr := plan.Load(c.initPath, action); loadErr == nil &&
+		existingPf.ClusterHash == plan.ComputeHash(ctx.Cfg) {
+		slog.Info("发现已有计划文件，从断点继续", "path", plan.PlanPath(c.initPath, action))
+		plan.PrintSummary(existingPf)
+	} else {
+		pf, err := plan.GeneratePlan(action, plan.InitNodeRegistry, ctx)
+		if err != nil {
+			return fmt.Errorf("生成节点计划失败: %w", err)
+		}
+		if err := plan.Save(c.initPath, pf); err != nil {
+			return err
+		}
+		slog.Info("节点计划已写入", "path", plan.PlanPath(c.initPath, action))
+		plan.PrintSummary(pf)
+	}
+
+	if err := plan.Apply(c.initPath, action, plan.InitNodeRegistry, ctx); err != nil {
 		return err
 	}
 
@@ -84,8 +102,9 @@ func (c *createNodeCmd) runManualMode() error {
 		Hostname: c.standaloneHostname,
 	}
 
-	// 解析可选的 -t/--cluster-type
-	var clusterType config.ClusterType
+	// Bug 2: 旧版 create node 始终执行 hadoop_user；此处默认 ClusterTypeHadoop 保持向后兼容。
+	// kubernetes 集群用户须显式传 -t kubernetes 以跳过 hadoop_user 步骤。
+	clusterType := config.ClusterTypeHadoop
 	if c.clusterTypeFlag != "" {
 		ct, err := config.ParseClusterType(c.clusterTypeFlag)
 		if err != nil {

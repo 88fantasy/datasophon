@@ -62,6 +62,34 @@ func TestSetupConfig_DuplicateIP(t *testing.T) {
 	}
 }
 
+// TestSetupConfig_DuplicateHostname 验证目标节点 hostname 已存在（IP 不同）时，setupConfig 返回错误。
+// 修复前：仅检查 IP，同 hostname 节点会通过预检并完整初始化，最后被写回阶段静默跳过。
+func TestSetupConfig_DuplicateHostname(t *testing.T) {
+	cfgPath := writeTemp(t, minimalClusterYAML)
+	defer os.Remove(cfgPath)
+
+	tmpDir := t.TempDir()
+	n := &nodeInitializer{
+		DatasophonPath:  tmpDir,
+		InstallPath:     tmpDir + "/install",
+		ProductPkgsPath: tmpDir + "/pkgs",
+	}
+	_ = os.MkdirAll(tmpDir+"/install", 0755)
+
+	// IP 不同，但 hostname = node1 与配置文件中已有节点重复
+	newNode := &config.Host{IP: "10.0.0.99", Port: 22, User: "root", Password: "pass", Hostname: "node1"}
+	err := n.setupConfig(cfgPath, newNode)
+	if err == nil {
+		t.Fatal("期望 setupConfig 返回错误（重复 hostname），但返回 nil")
+	}
+	if !strings.Contains(err.Error(), "node1") {
+		t.Errorf("错误信息应包含重复 hostname，实际: %v", err)
+	}
+	if !strings.Contains(err.Error(), "已存在") {
+		t.Errorf("错误信息应包含'已存在'，实际: %v", err)
+	}
+}
+
 // TestSetupConfig_NewIP 验证目标节点 IP 不存在于配置文件时，setupConfig 正常返回并填充运行时字段。
 func TestSetupConfig_NewIP(t *testing.T) {
 	cfgPath := writeTemp(t, minimalClusterYAML)
@@ -92,6 +120,11 @@ func TestSetupConfig_NewIP(t *testing.T) {
 		t.Errorf("initConfigYaml 应等于 cfgPath，实际: %s", n.initConfigYaml)
 	}
 	if _, ok := n.globalNodes["node1"]; !ok {
-		t.Error("globalNodes 应包含 node1")
+		t.Error("globalNodes 应包含已有节点 node1")
+	}
+	// Bug 4 修复验证：targetNode 本身也应加入 globalNodes，
+	// 确保 buildNtpSlave 等通过 requireNode 引用新节点时不报"节点不在列表中"
+	if h, ok := n.globalNodes["newnode"]; !ok || h.IP != "10.0.0.99" {
+		t.Error("globalNodes 应包含目标新节点 newnode（IP=10.0.0.99）")
 	}
 }
