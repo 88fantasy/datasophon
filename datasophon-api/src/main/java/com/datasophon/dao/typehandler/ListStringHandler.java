@@ -1,6 +1,5 @@
 package com.datasophon.dao.typehandler;
 
-import cn.hutool.core.util.StrUtil;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeException;
@@ -12,13 +11,14 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import cn.hutool.core.util.StrUtil;
+
 /**
  * @author zhanghuangbin
  * @date 2024/9/11
  */
 public class ListStringHandler extends BaseTypeHandler<List<String>> {
-
-
+    
     @Override
     public void setNonNullParameter(PreparedStatement ps, int i, List<String> parameter, JdbcType jdbcType) throws SQLException {
         if (parameter.isEmpty()) {
@@ -36,32 +36,30 @@ public class ListStringHandler extends BaseTypeHandler<List<String>> {
             ps.setString(i, String.join(",", parameter));
         }
     }
-
+    
     @Override
     public List<String> getNullableResult(ResultSet rs, String columnName) throws SQLException {
         String content = rs.getString(columnName);
         return convertToList(content);
     }
-
-
-
+    
     @Override
     public List<String> getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
         String content = rs.getString(columnIndex);
         return convertToList(content);
     }
-
+    
     @Override
     public List<String> getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
         String content = cs.getString(columnIndex);
         return convertToList(content);
     }
-
+    
     private List<String> convertToList(String content) {
         if (StrUtil.isBlank(content)) {
             return new ArrayList<>(0);
         } else {
-            return StrUtil.split(content,",");
+            return StrUtil.split(content, ",");
         }
     }
 }

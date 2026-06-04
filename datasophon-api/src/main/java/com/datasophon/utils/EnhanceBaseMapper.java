@@ -1,5 +1,10 @@
 package com.datasophon.utils;
 
+import org.apache.ibatis.reflection.property.PropertyNamer;
+
+import java.util.Arrays;
+import java.util.Map;
+
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfo;
@@ -11,16 +16,12 @@ import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
 import com.baomidou.mybatisplus.core.toolkit.support.LambdaMeta;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.toolkit.SqlHelper;
-import org.apache.ibatis.reflection.property.PropertyNamer;
-
-import java.util.Arrays;
-import java.util.Map;
 
 /**
  * @author zhanghuangbin
  */
 public interface EnhanceBaseMapper<T> extends BaseMapper<T> {
-
+    
     /**
      * 对象是否重复
      *
@@ -43,26 +44,26 @@ public interface EnhanceBaseMapper<T> extends BaseMapper<T> {
                 wrapper.ne(tableInfo.getKeyColumn(), idVal);
             }
         }
-
+        
         Arrays.stream(functions)
                 .forEach(func -> {
                     Object val = func.apply(object);
                     LambdaMeta lambda = LambdaUtils.extract(func);
                     String fieldName = PropertyNamer.methodToProperty(lambda.getImplMethodName());
-
+                    
                     Map<String, ColumnCache> columnMap = LambdaUtils.getColumnMap(entityCls);
                     ColumnCache columnCache = columnMap.get(LambdaUtils.formatKey(fieldName));
-
+                    
                     if (val == null || (val instanceof CharSequence && val.toString().trim().isEmpty())) {
                         wrapper.isNotNull(columnCache.getColumn());
                     } else {
                         wrapper.eq(columnCache.getColumn(), val);
                     }
                 });
-
+        
         return selectCount(wrapper) > 0;
     }
-
+    
     /**
      * 对象是否重复
      *

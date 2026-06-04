@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
@@ -49,7 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
 
 public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implements ServiceRoleStrategy {
     
@@ -93,7 +91,7 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
             }
             if (config.getName().contains("Plugin") && !(Boolean) config.getValue()) {
                 String configName = config.getName();
-                ProcessUtils.generateClusterVariable(clusterId, serviceName, configName,"false");
+                ProcessUtils.generateClusterVariable(clusterId, serviceName, configName, "false");
             }
             if ("enableKerberos".equals(config.getName())) {
                 enableKerberos = decideEnableKerberos(clusterId, enableKerberos, config, "RANGER");
@@ -121,7 +119,7 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
         ServiceInstallService serviceInstallService =
                 SpringTool.getApplicationContext().getBean(ServiceInstallService.class);
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
-        String rangerAdminUrl = GlobalVariables.getValueByService(clusterId,serviceName, "rangerAdminUrl");
+        String rangerAdminUrl = GlobalVariables.getValueByService(clusterId, serviceName, "rangerAdminUrl");
         ClusterServiceInstanceEntity serviceInstance =
                 serviceInstanceService.getServiceInstanceByClusterIdAndServiceName(clusterId, serviceName);
         // 查询角色组id

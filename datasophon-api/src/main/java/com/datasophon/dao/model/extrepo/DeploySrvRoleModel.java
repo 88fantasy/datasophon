@@ -1,8 +1,8 @@
 package com.datasophon.dao.model.extrepo;
 
-import lombok.Data;
-
 import java.util.List;
+
+import lombok.Data;
 
 /**
  * @author zhanghuangbin
@@ -10,8 +10,8 @@ import java.util.List;
  */
 @Data
 public class DeploySrvRoleModel {
-
+    
     private String name;
-
+    
     private List<String> deployHosts;
 }

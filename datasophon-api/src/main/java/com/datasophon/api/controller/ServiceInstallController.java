@@ -20,17 +20,21 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.controller;
 
-import com.alibaba.fastjson2.JSONArray;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.utils.ConverterUtils;
 import com.datasophon.common.utils.Result;
+
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,17 +42,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.List;
+import com.alibaba.fastjson2.JSONArray;
 
 @RestController
 @RequestMapping("service/install")
 public class ServiceInstallController extends ApiController {
-
+    
     @Autowired
     ServiceInstallService serviceInstallService;
-
+    
     /**
      * 根据服务名称查询服务配置选项
      */
@@ -56,7 +58,7 @@ public class ServiceInstallController extends ApiController {
     public Result getServiceConfigOption(Integer clusterId, String serviceName) {
         return Result.success(serviceInstallService.getServiceConfigOption(clusterId, serviceName));
     }
-
+    
     /**
      *
      */
@@ -65,8 +67,7 @@ public class ServiceInstallController extends ApiController {
     public Result getServiceConfigFromDdl(Integer clusterId, String serviceName) {
         return Result.success(serviceInstallService.getServiceConfigFromDdl(clusterId, serviceName));
     }
-
-
+    
     /**
      * 保存服务配置
      */
@@ -78,7 +79,7 @@ public class ServiceInstallController extends ApiController {
         serviceInstallService.saveServiceConfig(clusterId, serviceName, list, roleGroupId);
         return Result.success();
     }
-
+    
     /**
      * 保存服务角色与主机对应关系
      */
@@ -88,7 +89,7 @@ public class ServiceInstallController extends ApiController {
         serviceInstallService.saveServiceRoleHostMapping(clusterId, list);
         return Result.success();
     }
-
+    
     /**
      * 查询服务角色与主机对应关系
      */
@@ -97,7 +98,7 @@ public class ServiceInstallController extends ApiController {
     public Result getServiceRoleHostMapping(Integer clusterId) {
         return serviceInstallService.getServiceRoleHostMapping(clusterId);
     }
-
+    
     /**
      * 服务部署总览
      */
@@ -105,7 +106,7 @@ public class ServiceInstallController extends ApiController {
     public Result getServiceRoleDeployOverview(Integer clusterId) {
         return serviceInstallService.getServiceRoleDeployOverview(clusterId);
     }
-
+    
     /**
      * 下载模板
      */
@@ -113,7 +114,7 @@ public class ServiceInstallController extends ApiController {
     public void downloadResource(String templateName, HttpServletResponse response) throws IOException {
         serviceInstallService.downloadTemplate(templateName, response);
     }
-
+    
     /**
      * 下载额外资源
      */
@@ -132,5 +133,5 @@ public class ServiceInstallController extends ApiController {
     public Result checkServiceDependency(Integer clusterId, String serviceIds) {
         return serviceInstallService.checkServiceDependency(clusterId, ConverterUtils.convertIds(serviceIds, Integer::parseInt));
     }
-
+    
 }

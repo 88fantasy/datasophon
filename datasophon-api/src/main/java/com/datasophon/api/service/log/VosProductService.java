@@ -7,10 +7,7 @@ import com.datasophon.api.dto.log.ServiceRoleLogQueryDTO;
  * @author zhanghuangbin
  */
 public interface VosProductService {
-
-
+    
     String getVosServiceRoleRuntimeLog(ServiceRoleLogQueryDTO dto) throws Exception;
-
-
-
+    
 }

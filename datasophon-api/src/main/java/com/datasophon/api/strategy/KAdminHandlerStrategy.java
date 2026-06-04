@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.utils.ProcessUtils;

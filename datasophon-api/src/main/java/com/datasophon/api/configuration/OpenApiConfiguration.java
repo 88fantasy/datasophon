@@ -3,6 +3,7 @@ package com.datasophon.api.configuration;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,8 +14,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class OpenApiConfiguration {
-
-
+    
     @Bean
     @ConditionalOnProperty(name = {"springdoc.api-docs.enabled"})
     public OpenAPI openAPI() {
@@ -25,10 +25,8 @@ public class OpenApiConfiguration {
                 .contact(
                         new Contact()
                                 .name("datasophon")
-                                .email("88fantasy@gmail.com")
-                );
+                                .email("88fantasy@gmail.com"));
         return new OpenAPI().info(info);
     }
-
-
+    
 }

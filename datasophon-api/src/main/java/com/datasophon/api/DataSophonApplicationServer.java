@@ -20,12 +20,16 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api;
 
-import cn.hutool.extra.spring.EnableSpringUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
+
+import jakarta.annotation.PostConstruct;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -35,9 +39,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import jakarta.annotation.PostConstruct;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import cn.hutool.extra.spring.EnableSpringUtil;
 
 @SpringBootApplication
 @ServletComponentScan

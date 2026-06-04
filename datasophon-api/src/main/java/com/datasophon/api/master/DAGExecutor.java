@@ -20,12 +20,14 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master;
 
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.lang.Pair;
-import com.alibaba.fastjson2.JSONObject;
+import static com.datasophon.common.enums.CommandType.INSTALL_SERVICE;
+import static com.datasophon.common.enums.CommandType.RESTART_SERVICE;
+import static com.datasophon.common.enums.CommandType.START_SERVICE;
+import static com.datasophon.common.enums.CommandType.STOP_SERVICE;
+import static com.datasophon.common.enums.CommandType.UPGRADE_SERVICE;
+
 import com.datasophon.api.dag.DAGListener;
 import com.datasophon.api.dag.NodeTask;
 import com.datasophon.api.dag.RepoDAG;
@@ -60,11 +62,6 @@ import com.datasophon.dao.entity.cmd.ClusterServiceCommandHostEntity;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.enums.NeedRestart;
 import com.datasophon.dao.enums.ServiceRoleState;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,11 +72,17 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
-import static com.datasophon.common.enums.CommandType.INSTALL_SERVICE;
-import static com.datasophon.common.enums.CommandType.RESTART_SERVICE;
-import static com.datasophon.common.enums.CommandType.START_SERVICE;
-import static com.datasophon.common.enums.CommandType.STOP_SERVICE;
-import static com.datasophon.common.enums.CommandType.UPGRADE_SERVICE;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import com.alibaba.fastjson2.JSONObject;
+
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.lang.Pair;
 
 /**
  * 物理集群 DAG 执行器（Spring Service）。
@@ -91,17 +94,17 @@ import static com.datasophon.common.enums.CommandType.UPGRADE_SERVICE;
 @Service
 @RequiredArgsConstructor
 public class DAGExecutor {
-
+    
     private static final List<CommandType> DELAY_ACTION_COMMAND_TYPES =
             Arrays.asList(INSTALL_SERVICE, UPGRADE_SERVICE, START_SERVICE, RESTART_SERVICE);
-
+    
     private final DAGService dagService;
     private final ClusterServiceCommandHostCommandService hostCommandService;
     private final ClusterServiceCommandHostService commandHostService;
     private final ClusterServiceCommandService commandService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final ClusterServiceRoleGroupConfigService roleGroupConfigService;
-
+    
     /**
      * 异步执行物理集群 DAG 任务（替代原 {@code DAGExecActor.tell(cmd)}）。
      */
@@ -109,10 +112,10 @@ public class DAGExecutor {
     public void execDAG(DAGExecCommand cmd) {
         try {
             RepoDAG dag = createMultiServiceDAG(cmd);
-
+            
             NodeTask task = (nodeDef) -> {
                 ServiceNode serviceNode = JSONObject.parseObject((String) nodeDef.getNodeConfig(), ServiceNode.class);
-
+                
                 List<Pair<String, List<ServiceRoleInfo>>> tasks = new ArrayList<>();
                 if (STOP_SERVICE.equals(serviceNode.getCommandType())) {
                     tasks.add(new Pair<>("worker", serviceNode.getWorkerRoles()));
@@ -123,7 +126,7 @@ public class DAGExecutor {
                     tasks.add(new Pair<>("client", serviceNode.getClientRoles()));
                     tasks.add(new Pair<>("worker", serviceNode.getWorkerRoles()));
                 }
-
+                
                 for (Pair<String, List<ServiceRoleInfo>> pair : tasks) {
                     List<ServiceRoleInfo> roles = pair.getValue();
                     if (CollectionUtil.isEmpty(roles)) {
@@ -141,22 +144,22 @@ public class DAGExecutor {
                 return String.format("%s %s成功",
                         serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName());
             };
-
+            
             dag.exec(task, cmd.isRestart());
         } catch (Throwable e) {
             log.error("DAG execution failed for dagId={}: {}", cmd.getDagId(), e.getMessage(), e);
         }
     }
-
+    
     // ─── private methods ─────────────────────────────────────────────────────
-
+    
     private RepoDAG createMultiServiceDAG(DAGExecCommand cmd) {
         String dagId = cmd.getDagId();
         log.info("DAGExecutor 开始执行任务，id:{}", dagId);
         DAGRepository repository = dagService;
         RepoDAG dag = new RepoDAG(repository);
         dag.init(dagId, false);
-
+        
         dag.registerListener(new DAGListener() {
             @Override
             public void onNodeFail(NodeDefinition node, Throwable throwable) {
@@ -169,7 +172,7 @@ public class DAGExecutor {
                     updateCmdState(serviceNode, CommandState.FAILED);
                 }
             }
-
+            
             @Override
             public void onNodeCancel(NodeDefinition node, Throwable throwable) {
                 ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);
@@ -181,7 +184,7 @@ public class DAGExecutor {
         });
         return dag;
     }
-
+    
     private void updateCmdState(ServiceNode serviceNode, CommandState commandState) {
         List<String> hostCmdIds = commandHostService.lambdaQuery()
                 .eq(ClusterServiceCommandHostEntity::getCommandId, serviceNode.getCommandId())
@@ -200,7 +203,7 @@ public class DAGExecutor {
                 .in(ClusterServiceCommandEntity::getCommandState, Arrays.asList(CommandState.WAIT, CommandState.RUNNING))
                 .set(ClusterServiceCommandEntity::getCommandState, commandState).update();
     }
-
+    
     private void doExecServiceRoles(ServiceNode serviceNode, List<ServiceRoleInfo> roles) {
         ServiceRoleInfo currentRole = null;
         try {
@@ -209,7 +212,7 @@ public class DAGExecutor {
             for (ServiceRoleInfo role : roles) {
                 map.computeIfAbsent(role.getServiceRoleName(), k -> new ArrayList<>()).add(role);
             }
-
+            
             ExecResult result = null;
             for (String roleName : sortedRoles) {
                 List<ServiceRoleInfo> roleList = map.get(roleName);
@@ -223,7 +226,7 @@ public class DAGExecutor {
                     }
                     successCount++;
                 }
-
+                
                 ExecResult firstError = null;
                 ExecResult lastResult = null;
                 ServiceStatusHandler handler = new ServiceStatusHandler();
@@ -259,7 +262,7 @@ public class DAGExecutor {
                     break;
                 }
             }
-
+            
             if (result == null || result.isSuccess()) {
                 ServiceRoleType type = roles.get(0).getRoleType();
                 log.info("执行{}{}成功, 共{}个角色, 类型为{}",
@@ -289,7 +292,7 @@ public class DAGExecutor {
             throw new ServiceRoleExecException(message, throwable);
         }
     }
-
+    
     private static String buildErrorMessage(ServiceNode serviceNode, Throwable throwable, ServiceRoleInfo currentRole) {
         String tmpMsg = throwable instanceof NullPointerException ? "对象空指针" : throwable.getMessage();
         if (currentRole != null) {
@@ -303,7 +306,7 @@ public class DAGExecutor {
                     serviceNode.getServiceName(), tmpMsg);
         }
     }
-
+    
     private List<String> getSortedRoleNames(CommandType type, List<ServiceRoleInfo> roles) {
         List<SortedRole> tempRoles = roles.stream().map(SortedRole::new).collect(Collectors.toList());
         if (STOP_SERVICE.equals(type)) {
@@ -319,21 +322,21 @@ public class DAGExecutor {
         }
         return sortedRoles;
     }
-
+    
     private ExecResult execServiceRole(ServiceRoleInfo serviceRoleInfo) {
         Map<Generators, List<ServiceConfig>> configFileMap = createConfigFileMap(serviceRoleInfo);
         serviceRoleInfo.setConfigFileMap(configFileMap);
-
+        
         boolean enableRangerPlugin = isEnableRangerPlugin(serviceRoleInfo);
         serviceRoleInfo.setEnableRangerPlugin(enableRangerPlugin);
-
+        
         ClusterServiceRoleInstanceEntity serviceRoleInstance = roleInstanceService.getOneServiceRole(
                 serviceRoleInfo.getName(), serviceRoleInfo.getHostname(), serviceRoleInfo.getClusterId());
         boolean needReConfig = serviceRoleInstance == null || serviceRoleInstance.getNeedRestart() == NeedRestart.YES;
-
+        
         CommandType type = serviceRoleInfo.getCommandType();
         log.info("开始{}服务{}的{}角色", type.getCommandName(Constants.CN), serviceRoleInfo.getParentName(), serviceRoleInfo.getName());
-
+        
         ExecResult execResult;
         switch (type) {
             case INSTALL_SERVICE:
@@ -356,11 +359,11 @@ public class DAGExecutor {
                         serviceRoleInfo.getCommandType().getCommandName(Constants.CN),
                         serviceRoleInfo.getName(), serviceRoleInfo.getHostname()));
         }
-
+        
         log.info("完成{}服务{}的{}角色, 执行结果：{}, 信息：{}",
                 type.getCommandName(Constants.CN), serviceRoleInfo.getParentName(), serviceRoleInfo.getName(),
                 execResult.isSuccess() ? "成功" : "失败", execResult.getExecOut());
-
+        
         boolean needTellResult = !execResult.isSuccess() || !DELAY_ACTION_COMMAND_TYPES.contains(type);
         if (needTellResult) {
             ProcessUtils.handleCommandResult(serviceRoleInfo.getHostCommandId(), execResult.getExecResult(), execResult.getExecOut());
@@ -371,13 +374,13 @@ public class DAGExecutor {
         }
         return execResult;
     }
-
+    
     private Map<Generators, List<ServiceConfig>> createConfigFileMap(ServiceRoleInfo serviceRoleInfo) {
         log.info("服务{}{}创建ConfigFileMap", serviceRoleInfo.getParentName(), serviceRoleInfo.getServiceRoleName());
-
+        
         ClusterServiceRoleInstanceEntity serviceRoleInstance = roleInstanceService.getOneServiceRole(
                 serviceRoleInfo.getName(), serviceRoleInfo.getHostname(), serviceRoleInfo.getClusterId());
-
+        
         ClusterServiceRoleGroupConfig config = null;
         if (Arrays.asList(INSTALL_SERVICE, UPGRADE_SERVICE).contains(serviceRoleInfo.getCommandType())) {
             Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + serviceRoleInfo.getServiceInstanceId());
@@ -388,7 +391,7 @@ public class DAGExecutor {
         } else if (serviceRoleInstance != null && serviceRoleInstance.getNeedRestart() == NeedRestart.YES) {
             config = roleGroupConfigService.getConfigByRoleGroupId(serviceRoleInstance.getRoleGroupId());
         }
-
+        
         Map<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
         if (config != null) {
             ProcessUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
@@ -398,12 +401,12 @@ public class DAGExecutor {
                 generators.setOutputDirectory(PlaceholderUtils.replacePlaceholders(outputDirectory, globalVariables, Constants.REGEX_VARIABLE));
             }
         }
-
+        
         log.info("服务{}{}创建ConfigFileMap成功，总共需要{}个Generators",
                 serviceRoleInfo.getParentName(), serviceRoleInfo.getServiceRoleName(), configFileMap.size());
         return configFileMap;
     }
-
+    
     private boolean isEnableRangerPlugin(ServiceRoleInfo roleInfo) {
         if (!ServiceRoleType.MASTER.equals(roleInfo.getRoleType())) {
             return false;
@@ -412,7 +415,7 @@ public class DAGExecutor {
         String serviceName = roleInfo.getParentName();
         return "true".equals(GlobalVariables.getValueByService(clusterId, serviceName, "enable" + serviceName + "Plugin"));
     }
-
+    
     private ExecResult doServiceAction(ServiceRoleInfo srvInfo, Callable<ExecResult> callable) {
         try {
             log.info("{} {} in host {}", srvInfo.getCommandType().getCommandName(Constants.CN), srvInfo.getName(), srvInfo.getHostname());
@@ -431,7 +434,7 @@ public class DAGExecutor {
             return ExecResult.error(error);
         }
     }
-
+    
     private Runnable getCommandPostAction(ServiceRoleInfo serviceRoleInfo) {
         CommandType type = serviceRoleInfo.getCommandType();
         switch (type) {
@@ -449,13 +452,13 @@ public class DAGExecutor {
                         serviceRoleInfo.getName(), serviceRoleInfo.getHostname()));
         }
     }
-
+    
     private void updateServiceRoleState(ServiceRoleInfo role, ServiceRoleState state) {
         ProcessUtils.updateServiceRoleState(role.getCommandType(), role.getName(), role.getHostname(), role.getClusterId(), state);
     }
-
+    
     // ─── inner types ─────────────────────────────────────────────────────────
-
+    
     /** DAG 节点中单个服务角色执行失败时抛出，由 RepoDAG 的监听器识别并决定是否触发级联取消。 */
     @Data
     public static class ServiceRoleExecException extends RuntimeException {
@@ -466,12 +469,12 @@ public class DAGExecutor {
             super(message, cause);
         }
     }
-
+    
     @Data
     private static class SortedRole {
         private String serviceRoleName;
         private int order;
-
+        
         public SortedRole(ServiceRoleInfo role) {
             serviceRoleName = role.getServiceRoleName();
             order = role.getSortNum() == null ? Integer.MAX_VALUE : role.getSortNum();

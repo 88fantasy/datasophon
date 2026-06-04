@@ -92,7 +92,7 @@ public class MasterRegistryClient implements AutoCloseable {
 
         this.channel = ManagedChannelBuilder
                 .forAddress(masterHost, GrpcConstants.MASTER_GRPC_PORT)
-                .usePlaintext()  // Phase 0 明文，与 Pekko 当前安全模型一致
+                .usePlaintext()
                 .build();
         this.stub = WorkerRegistryServiceGrpc.newBlockingStub(channel);
         this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {

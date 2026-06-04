@@ -20,17 +20,11 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.impl;
 
-import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson2.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.enums.Status;
-import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.grpc.WorkerCommandClient;
+import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.ClusterAlertHistoryService;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
@@ -58,11 +52,9 @@ import com.datasophon.dao.enums.NeedRestart;
 import com.datasophon.dao.enums.RoleType;
 import com.datasophon.dao.enums.ServiceRoleState;
 import com.datasophon.dao.mapper.ClusterServiceRoleInstanceMapper;
+
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -72,66 +64,77 @@ import java.util.Objects;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
+import cn.hutool.core.util.StrUtil;
+
 @Service("clusterServiceRoleInstanceService")
 public class ClusterServiceRoleInstanceServiceImpl
         extends
-        ServiceImpl<ClusterServiceRoleInstanceMapper, ClusterServiceRoleInstanceEntity>
+            ServiceImpl<ClusterServiceRoleInstanceMapper, ClusterServiceRoleInstanceEntity>
         implements
-        ClusterServiceRoleInstanceService {
-
+            ClusterServiceRoleInstanceService {
+    
     private static final Logger logger = LoggerFactory.getLogger(ClusterServiceRoleInstanceServiceImpl.class);
-
+    
     @Autowired
     ClusterInfoService clusterInfoService;
-
+    
     @Autowired
     FrameServiceRoleService frameServiceRoleService;
-
+    
     @Autowired
     FrameServiceService frameService;
-
-
+    
     @Autowired
     private ExtRepoInstallDelegateService extRepoInstallDelegateService;
-
+    
     @Autowired
     private VosProductInstallService vosProductActionService;
-
+    
     @Autowired
     private ClusterServiceInstanceRoleGroupService roleGroupService;
-
+    
     @Autowired
     private ClusterServiceRoleInstanceMapper roleInstanceMapper;
-
+    
     @Autowired
     private WorkerCommandClient workerCommandClient;
-
+    
     @Autowired
     private ClusterAlertHistoryService alertHistoryService;
-
+    
     @Autowired
     private ClusterServiceRoleInstanceWebuisService webuisService;
-
+    
     @Override
     public List<ClusterServiceRoleInstanceEntity> listStoppedServiceRoleListByHostnameAndClusterId(String hostname, Integer clusterId) {
         return roleInstanceMapper.listStoppedServiceRoleListByHostnameAndClusterId(hostname, clusterId);
     }
-
+    
     @Override
     public List<ClusterServiceRoleInstanceEntity> getServiceRoleListByHostnameAndClusterId(String hostname, Integer clusterId) {
         return roleInstanceMapper.getServiceRoleListByHostnameAndClusterId(hostname, clusterId);
     }
-
+    
     @Override
     public ClusterServiceRoleInstanceEntity getOneServiceRole(String serviceRoleName, String hostname, Integer clusterId) {
         return roleInstanceMapper.getOneServiceRole(serviceRoleName, hostname, clusterId);
     }
-
+    
     @Override
     public Result listAll(Integer serviceInstanceId, String hostname, Integer serviceRoleState, String serviceRoleName,
                           Integer roleGroupId, Integer page, Integer pageSize) {
         int offset = (page - 1) * pageSize;
-
+        
         LambdaQueryChainWrapper<ClusterServiceRoleInstanceEntity> wrapper = this.lambdaQuery()
                 .eq(ClusterServiceRoleInstanceEntity::getServiceId, serviceInstanceId)
                 .eq(Objects.nonNull(serviceRoleState), ClusterServiceRoleInstanceEntity::getServiceRoleState,
@@ -147,7 +150,7 @@ public class ClusterServiceRoleInstanceServiceImpl
         if (CollectionUtils.isEmpty(cluServiceRoleInstList)) {
             return Result.successEmptyCount();
         }
-
+        
         for (ClusterServiceRoleInstanceEntity roleInstanceEntity : cluServiceRoleInstList) {
             ClusterServiceInstanceRoleGroup roleGroup = roleGroupService.getById(roleInstanceEntity.getRoleGroupId());
             if (Objects.nonNull(roleGroup)) {
@@ -155,16 +158,16 @@ public class ClusterServiceRoleInstanceServiceImpl
             }
             roleInstanceEntity.setServiceRoleStateCode(roleInstanceEntity.getServiceRoleState().getValue());
         }
-
+        
         return Result.success(cluServiceRoleInstList).put(Constants.TOTAL, count);
     }
-
+    
     @Override
     public Result getLog(Integer serviceRoleInstanceId) throws Exception {
         ClusterServiceRoleInstanceEntity roleInstance = this.getById(serviceRoleInstanceId);
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(roleInstance.getClusterId());
         FrameServiceRoleEntity serviceRole = frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(clusterInfo.getClusterFrame(), roleInstance.getServiceRoleName());
-
+        
         Map<String, String> globalVariables = GlobalVariables.getVariables(roleInstance.getClusterId());
         if (serviceRole.getServiceRoleType() == RoleType.CLIENT) {
             return Result.success("client service role type does not have any log");
@@ -173,8 +176,7 @@ public class ClusterServiceRoleInstanceServiceImpl
         if (StringUtils.isNotBlank(logFile)) {
             logFile = PlaceholderUtils.replacePlaceholders(logFile, globalVariables, Constants.REGEX_VARIABLE);
         }
-
-
+        
         ServiceRoleInfo serviceRoleInfo = JSONObject.parseObject(serviceRole.getServiceRoleJson(), ServiceRoleInfo.class);
         String user = serviceRoleInfo.getRunAs() != null ? serviceRoleInfo.getRunAs().getUser() : null;
         if (StrUtil.isBlank(user)) {
@@ -185,11 +187,11 @@ public class ClusterServiceRoleInstanceServiceImpl
             logFile = PlaceholderUtils.replacePlaceholders(logFile, params, Constants.REGEX_VARIABLE);
             logger.info("logFile is {}", logFile);
         }
-
+        
         GetLogCommand command = new GetLogCommand();
         command.setLogFile(logFile);
         command.setBaseDir(PkgInstallPathUtils.getInstallUniHome(serviceRoleInfo));
-
+        
         logger.info("start to get {} log from {}", serviceRole.getServiceRoleName(), roleInstance.getHostname());
         ExecResult logResult = workerCommandClient.getLog(roleInstance.getHostname(), command.getLogFile(), command.getBaseDir());
         if (Objects.nonNull(logResult) && logResult.getExecResult()) {
@@ -197,18 +199,17 @@ public class ClusterServiceRoleInstanceServiceImpl
         }
         return Result.success();
     }
-
+    
     @Override
     public List<ClusterServiceRoleInstanceEntity> getServiceRoleInstanceListByServiceId(int id) {
         return roleInstanceMapper.getServiceRoleInstanceListByServiceId(id);
     }
-
+    
     @Override
     public List<ClusterServiceRoleInstanceEntity> getServiceRoleInstanceListByClusterId(int clusterId) {
         return roleInstanceMapper.getServiceRoleInstanceListByClusterId(clusterId);
     }
-
-
+    
     @Override
     public Result deleteServiceRole(List<String> idList) {
         Collection<ClusterServiceRoleInstanceEntity> list = this.listByIds(idList);
@@ -230,15 +231,14 @@ public class ClusterServiceRoleInstanceServiceImpl
         }
         return flag ? Result.error(Status.EXIT_RUNNING_INSTANCES.getMsg()) : Result.success();
     }
-
+    
     @Override
     public List<ClusterServiceRoleInstanceEntity> getServiceRoleInstanceListByClusterIdAndRoleName(Integer clusterId,
                                                                                                    String roleName) {
         return this.list(new QueryWrapper<ClusterServiceRoleInstanceEntity>()
                 .eq(Constants.CLUSTER_ID, clusterId).eq(Constants.SERVICE_ROLE_NAME, roleName));
     }
-
-
+    
     @Override
     public Result restartObsoleteService(Integer roleGroupId) {
         ClusterServiceInstanceRoleGroup roleGroup = roleGroupService.getById(roleGroupId);
@@ -253,7 +253,7 @@ public class ClusterServiceRoleInstanceServiceImpl
         }
         return Result.success();
     }
-
+    
     @Override
     public Result decommissionNode(String serviceRoleInstanceIds, String serviceName) throws Exception {
         TreeSet<String> hosts = new TreeSet<>();
@@ -263,7 +263,7 @@ public class ClusterServiceRoleInstanceServiceImpl
             int serviceRoleInstanceId = Integer.parseInt(str);
             ClusterServiceRoleInstanceEntity roleInstanceEntity = this.getById(serviceRoleInstanceId);
             if ("DataNode".equals(roleInstanceEntity.getServiceRoleName())
-                || "NodeManager".equals(roleInstanceEntity.getServiceRoleName())) {
+                    || "NodeManager".equals(roleInstanceEntity.getServiceRoleName())) {
                 hosts.add(roleInstanceEntity.getHostname());
                 serviceInstanceId = roleInstanceEntity.getServiceId();
                 serviceRoleName = roleInstanceEntity.getServiceRoleName();
@@ -291,21 +291,20 @@ public class ClusterServiceRoleInstanceServiceImpl
         }
         return Result.success();
     }
-
+    
     @Override
     public void updateToNeedRestart(Integer roleGroupId) {
         roleInstanceMapper.updateToNeedRestart(roleGroupId);
     }
-
+    
     @Override
     public void updateToNeedRestartByHost(String hostName) {
         roleInstanceMapper.updateToNeedRestartByHost(hostName);
     }
-
+    
     @Override
     public List<ClusterServiceRoleInstanceEntity> listRoleIns(String hostname, String serviceName) {
         return roleInstanceMapper.listRoleIns(hostname, serviceName);
     }
-
-
+    
 }

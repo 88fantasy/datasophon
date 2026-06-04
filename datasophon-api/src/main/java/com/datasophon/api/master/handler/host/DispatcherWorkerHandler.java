@@ -20,13 +20,13 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.handler.host;
 
 import com.datasophon.common.model.HostInfo;
-import com.jcraft.jsch.Session;
 
 import java.net.UnknownHostException;
+
+import com.jcraft.jsch.Session;
 
 public interface DispatcherWorkerHandler {
     

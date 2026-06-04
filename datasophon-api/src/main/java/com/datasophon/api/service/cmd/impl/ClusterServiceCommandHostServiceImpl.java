@@ -20,11 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.cmd.impl;
 
-import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandHostService;
 import com.datasophon.common.Constants;
@@ -32,10 +29,14 @@ import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.cmd.ClusterServiceCommandHostEntity;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.mapper.cmd.ClusterServiceCommandHostMapper;
+
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
 @Service("clusterServiceCommandHostService")
 public class ClusterServiceCommandHostServiceImpl
@@ -61,7 +62,6 @@ public class ClusterServiceCommandHostServiceImpl
                 .orderByDesc(ClusterServiceCommandHostEntity::getCreateTime)
                 .last("limit " + offset + "," + pageSize)
                 .list();
-
         
         return Result.success(list).put(Constants.TOTAL, total);
     }

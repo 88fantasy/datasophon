@@ -20,12 +20,12 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.cmd;
+
+import com.datasophon.dao.entity.cmd.ClusterK8sServiceCommandEntity;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.datasophon.dao.entity.cmd.ClusterK8sServiceCommandEntity;
 
 /**
  * K8s 服务命令执行记录
@@ -34,10 +34,9 @@ import com.datasophon.dao.entity.cmd.ClusterK8sServiceCommandEntity;
  * @date 2026-03-30
  */
 public interface ClusterK8sServiceCommandService extends IService<ClusterK8sServiceCommandEntity> {
-
-
+    
     ClusterK8sServiceCommandEntity getCommandById(String commandId);
-
+    
     /**
      * 分页查询 K8s 服务命令
      *
@@ -48,6 +47,5 @@ public interface ClusterK8sServiceCommandService extends IService<ClusterK8sServ
      * @return 分页结果
      */
     IPage<ClusterK8sServiceCommandEntity> findCommandByPage(Integer clusterId, String serviceName, Integer page, Integer pageSize);
-
-
+    
 }

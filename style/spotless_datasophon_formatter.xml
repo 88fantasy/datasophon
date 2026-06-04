@@ -20,6 +20,7 @@
   ~ SOFTWARE.
   -->
 
+<profiles version="13">
     <profile kind="CodeFormatterProfile" name="'ShardingSphere Apache Current'" version="13">
         <setting id="org.eclipse.jdt.core.compiler.source" value="1.8"/>
         <setting id="org.eclipse.jdt.core.compiler.compliance" value="1.8"/>

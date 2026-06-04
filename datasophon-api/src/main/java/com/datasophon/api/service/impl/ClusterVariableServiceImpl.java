@@ -20,22 +20,23 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.impl;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.dao.entity.ClusterVariable;
 import com.datasophon.dao.mapper.ClusterVariableMapper;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
 @Service("clusterVariableService")
 public class ClusterVariableServiceImpl extends ServiceImpl<ClusterVariableMapper, ClusterVariable>
         implements
-        ClusterVariableService {
-
+            ClusterVariableService {
+    
     @Override
     public ClusterVariable getVariableByVariableName(Integer clusterId, String serviceName, String variableName) {
         return lambdaQuery()
@@ -44,7 +45,7 @@ public class ClusterVariableServiceImpl extends ServiceImpl<ClusterVariableMappe
                 .eq(ClusterVariable::getClusterId, clusterId)
                 .one();
     }
-
+    
     @Override
     public List<ClusterVariable> getVariables(Integer clusterId, String serviceName) {
         return lambdaQuery()

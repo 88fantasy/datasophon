@@ -20,17 +20,18 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.dao.entity.cmd;
 
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.datasophon.common.jackson.annotation.WithEnumDescription;
 import com.datasophon.dao.enums.CommandState;
-import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
+
+import lombok.Data;
+
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 
 @TableName("t_ddh_cluster_service_command_host")
 @Data
@@ -52,7 +53,7 @@ public class ClusterServiceCommandHostEntity implements Serializable {
      */
     @WithEnumDescription(fieldNameTpl = "#field + 'Code'", field = "value")
     private CommandState commandState;
-
+    
     /**
      * 命令进度
      */

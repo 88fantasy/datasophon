@@ -10,20 +10,15 @@ import com.datasophon.api.vo.extrepo.ValidateResultVO;
  * @date 2025/11/7
  */
 public interface ExtRepoMetaService {
-
+    
     ValidateResultVO validMetaFile(InstallComponentDTO dto);
-
+    
     ValidateResultVO validatePkgFile(InstallComponentDTO dto);
-
+    
     ImportCompProgressVO importCmp(InstallComponentDTO dto);
-
-
+    
     ImportCompProgressVO queryProgress(Integer progressId);
-
+    
     void clearProgressCache();
-
-
-
-
-
+    
 }

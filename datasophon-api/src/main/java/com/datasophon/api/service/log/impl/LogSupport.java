@@ -13,8 +13,7 @@ import java.util.Arrays;
  * @author zhanghuangbin
  */
 public class LogSupport {
-
-
+    
     public static String getMasterLog(String path, int rows) {
         String realPath = Constants.MASTER_INSTALL_HOME + "/" + path;
         File file = new File(realPath);

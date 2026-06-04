@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.migration;
 
 import com.datasophon.common.utils.FileUtils;

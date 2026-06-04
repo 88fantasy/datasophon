@@ -529,7 +529,7 @@
             <!--            </plugin>-->
 
             <!-- 代码检查注释掉 -->
-            <!--<plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>${maven-checkstyle-plugin.version}</version>
@@ -574,9 +574,9 @@
                         <phase>process-sources</phase>
                     </execution>
                 </executions>
-            </plugin>-->
+            </plugin>
 
-            <!--<plugin>
+            <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
                 <version>${spotless.version}</version>
@@ -610,7 +610,7 @@
                             <replacement>project</replacement>
                         </replace>
                     </pom>
-                    &lt;!&ndash;<markdown>
+                    <markdown>
                         <includes>
                             <include>docs/**/*.md</include>
                         </includes>
@@ -618,7 +618,7 @@
                             <exclude>**/.github/**/*.md</exclude>
                         </excludes>
                         <flexmark />
-                    </markdown>&ndash;&gt;
+                    </markdown>
                 </configuration>
                 <executions>
                     <execution>
@@ -628,7 +628,7 @@
                         <phase>compile</phase>
                     </execution>
                 </executions>
-            </plugin>-->
+            </plugin>
         </plugins>
     </build>
 

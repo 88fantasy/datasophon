@@ -13,43 +13,37 @@ import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.common.utils.YamlUtils;
 import com.datasophon.dao.mapper.dag.DagDefinitionEntityMapper;
 import com.datasophon.dao.model.extrepo.DeploymentModel;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
+
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * @author zhanghuangbin
  */
 public class ProductDeployHandlerSupport {
-
+    
     @Autowired
     protected UploadTempFileService uploadTempFileService;
-
-
+    
     @Autowired
     protected ClusterInfoService clusterInfoService;
-
-
-
-
+    
     @Autowired
     protected ClusterServiceCommandHostService commandHostService;
-
+    
     @Autowired
     protected ClusterServiceCommandHostCommandService hostCommandService;
-
-
+    
     @Autowired
     protected ClusterServiceCommandService commandService;
-
-
+    
     @Autowired
     protected DAGService dagService;
-
-
+    
     @Autowired
     protected DagDefinitionEntityMapper dagDefinitionEntityMapper;
-
+    
     @Autowired
     protected TransactionalUtils transactionalUtils;
     
@@ -62,5 +56,5 @@ public class ProductDeployHandlerSupport {
         DeploymentModel model = YamlUtils.parseYaml(content, DeploymentModel.class);
         return model;
     }
-
+    
 }

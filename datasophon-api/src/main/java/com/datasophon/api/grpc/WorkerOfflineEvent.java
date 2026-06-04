@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.grpc;
 
 import org.springframework.context.ApplicationEvent;
@@ -34,14 +33,14 @@ import org.springframework.context.ApplicationEvent;
  * </p>
  */
 public class WorkerOfflineEvent extends ApplicationEvent {
-
+    
     private final String hostname;
-
+    
     public WorkerOfflineEvent(Object source, String hostname) {
         super(source);
         this.hostname = hostname;
     }
-
+    
     public String getHostname() {
         return hostname;
     }

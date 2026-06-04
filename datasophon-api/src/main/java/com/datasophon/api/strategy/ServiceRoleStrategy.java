@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.utils.CheckUtils;
@@ -32,8 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ServiceRoleStrategy {
-
-
+    
     /**
      * 处理安装服务在选定主机的后置逻辑
      * 
@@ -42,9 +40,9 @@ public interface ServiceRoleStrategy {
      * @param serviceName 服务名称，标识要处理的具体服务
      */
     default void handler(Integer clusterId, List<String> hosts, String serviceName) {
-    
+        
     }
-
+    
     /**
      * 处理安装服务角色的配置信息的后置逻辑
      *
@@ -53,9 +51,9 @@ public interface ServiceRoleStrategy {
      * @param serviceName 服务名称，标识要处理的具体服务
      */
     default void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
-
+        
     }
-
+    
     /**
      * 获取服务角色的配置信息的拦截器
      *
@@ -63,9 +61,9 @@ public interface ServiceRoleStrategy {
      * @param list 服务配置列表，用于存储获取到的服务配置信息
      */
     default void getConfig(Integer clusterId, List<ServiceConfig> list) {
-
+        
     }
-
+    
     /**
      * 处理服务角色信息，根据主机名更新服务角色状态
      *
@@ -73,10 +71,9 @@ public interface ServiceRoleStrategy {
      * @param hostname 主机名，标识要更新状态的具体主机
      */
     default void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-
+        
     }
-
-
+    
     /**
      * 处理服务角色存活检查
      *
@@ -85,7 +82,7 @@ public interface ServiceRoleStrategy {
      */
     default void handlerServiceRoleCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                          Map<String, ClusterServiceRoleInstanceEntity> map) {
-        //默认执行检测命令
+        // 默认执行检测命令
         CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
     }
 }

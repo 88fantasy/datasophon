@@ -20,20 +20,22 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.dao.entity;
 
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.ClusterState;
+
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+
+import lombok.Data;
+
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 
 @Data
 @TableName("t_ddh_cluster_info")
@@ -78,7 +80,7 @@ public class ClusterInfoEntity implements Serializable {
      * 集群框架id
      */
     private Integer frameId;
-
+    
     @Schema(description = "集群架构，物理机:physical K8S集群:k8s")
     private ClusterArchType archType;
     

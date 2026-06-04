@@ -565,20 +565,3 @@ Worker 进程要小、启动要快、对节点环境无侵入。`WorkerApplicati
 
 ---
 
-## 10. 后续演进方向(读源码时可关注)
-
-代码注释中频繁出现的 Phase/H 标号反映了演进顺序:
-
-| 标号 | 主题 |
-|---|---|
-| Phase 0 | 引入 `datasophon-grpc-api` 模块 + 公共 stub |
-| Phase 1 | Ping / ExecuteCmd / GetLog |
-| Phase 2 | Install / Configure / Start / Stop / Restart / Status |
-| Phase 3 | UnixGroup / UnixUser / FileOperate / GenerateAlertConfig |
-| Phase 4 | Worker 端线程池有界化 + 启动顺序保证 |
-| Phase 5 | 移除 Pekko ActorSystem,Master 内部本地调度收敛为 Spring Service |
-| H1 | Channel 泄漏修复(`WorkerOfflineEvent` 监听) |
-| H2 | 心跳定时器幂等启动(取消旧任务) |
-| H3 | Master 启动预热注册表 |
-
-阅读源码时遇到 `// Phase X` 或 `// Hx` 即可对应到上述背景。

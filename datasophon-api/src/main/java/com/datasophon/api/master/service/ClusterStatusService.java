@@ -20,10 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.service;
 
-import cn.hutool.core.collection.CollectionUtil;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
@@ -35,12 +33,16 @@ import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.ClusterState;
 import com.datasophon.dao.enums.ServiceRoleState;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.stereotype.Service;
+
+import cn.hutool.core.collection.CollectionUtil;
 
 /**
  * 集群整体状态巡检 Spring Service（替代 ClusterStatusActor）。
@@ -52,12 +54,12 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ClusterStatusService {
-
+    
     private final ClusterInfoService clusterInfoService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final K8sService k8sService;
     private final K8sClusterConfigService k8sClusterConfigService;
-
+    
     /**
      * 检查所有集群（或指定集群）的运行状态。
      *
@@ -73,7 +75,7 @@ public class ClusterStatusService {
         } else {
             clusterList.addAll(clusterInfoService.getReadyClusterList());
         }
-
+        
         for (ClusterInfoEntity cluster : clusterList) {
             if (ClusterArchType.physical.equals(cluster.getArchType())) {
                 List<ClusterServiceRoleInstanceEntity> roleInstanceList =
@@ -93,7 +95,8 @@ public class ClusterStatusService {
                     ClusterState state = ClusterState.STOP;
                     if (CollectionUtil.isNotEmpty(status.getNodes())) {
                         state = status.getNodes().stream().anyMatch(node -> "True".equals(node.getStatus()))
-                                ? ClusterState.RUNNING : ClusterState.STOP;
+                                ? ClusterState.RUNNING
+                                : ClusterState.STOP;
                     }
                     clusterInfoService.updateClusterState(cluster.getId(), state.getValue());
                 } catch (Exception e) {

@@ -13,15 +13,14 @@ import java.util.Map;
  * @author zhanghuangbin
  */
 public interface VosProductInstallService extends ExtRepoInstallService {
-
+    
     String generateAndExecSrvRoleCmd(Integer clusterId, CommandType command, Integer serviceInstanceId, List<Integer> ids);
-
+    
     void generateAndExecSrvRoleCommands(Integer clusterId, CommandType commandType, Map<Integer, List<Integer>> instanceIdMap);
-
+    
     List<FrameServiceEntity> listNewestByDeployment(DeploymentDTO dto);
-
+    
     List<FrameServiceRoleEntity> getServiceRoleListByDeployment(ServiceRoleQueryDTO dto);
-
-
+    
     List<FrameServiceRoleEntity> getNonMasterRoleListByDeployment(DeploymentDTO dto);
 }

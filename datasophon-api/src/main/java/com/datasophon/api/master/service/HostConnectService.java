@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.service;
 
 import com.datasophon.api.enums.Status;
@@ -28,20 +27,22 @@ import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.model.CheckResult;
 import com.datasophon.common.model.HostInfo;
 import com.datasophon.common.utils.HostUtils;
-import com.jcraft.jsch.Session;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import com.jcraft.jsch.Session;
 
 /**
  * 主机 SSH 连通性检测 Spring Service，业务逻辑来自 {@link HostConnectActor}。
  */
 @Service
 public class HostConnectService {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(HostConnectService.class);
-
+    
     /**
      * 异步检测主机 SSH 连通性（替代 HostConnectActor.tell(command)）。
      * 结果写入传入的 HostInfo 对象（调用方从缓存 Map 中读取）。
@@ -52,7 +53,7 @@ public class HostConnectService {
         String localHostName = HostUtils.getLocalHostName();
         logger.info("datasophon manager install hostname and ip: {}, {}", localHostName, localIp);
         logger.info("start host check: {}", hostInfo.getHostname());
-
+        
         if (hostInfo.getIp().equals(localIp)) {
             logger.info("datasophon manager node doesn't need to be checked");
             hostInfo.setCheckResult(new CheckResult(

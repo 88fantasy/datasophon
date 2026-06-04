@@ -1,14 +1,15 @@
 package com.datasophon.common.jackson.annotation;
 
 import com.datasophon.common.jackson.serializer.WithEnumSourceDescriptionSerializer;
-import com.fasterxml.jackson.annotation.JacksonAnnotation;
-import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import com.fasterxml.jackson.annotation.JacksonAnnotation;
+import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * 序列化时，输出枚举对象(或者枚举值)的含义
@@ -39,15 +40,13 @@ import java.lang.annotation.Target;
 @JacksonAnnotationsInside
 @JsonSerialize(using = WithEnumSourceDescriptionSerializer.class)
 public @interface WithEnumSourceDescription {
-
-
+    
     String valueMapping();
-
+    
     String descMapping();
-
+    
     Class<? extends Enum<?>> datasource();
-
+    
     String fieldNameTpl() default "#field + 'Name'";
-
-
+    
 }

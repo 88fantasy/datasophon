@@ -20,14 +20,13 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.controller;
 
 import com.datasophon.api.service.ClusterKerberosService;
 
-import java.io.IOException;
-
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;

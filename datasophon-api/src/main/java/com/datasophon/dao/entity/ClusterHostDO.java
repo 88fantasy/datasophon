@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.dao.entity;
 
 import com.datasophon.domain.host.enums.HostState;
@@ -109,17 +108,17 @@ public class ClusterHostDO implements Serializable {
     
     @TableField(exist = false)
     private Integer serviceRoleNum;
-
+    
     /**
      * ssh port
      */
     private Integer sshPort;
-
+    
     /**
      * ssh user
      */
     private String sshUser;
-
+    
     /**
      * ssh password
      */

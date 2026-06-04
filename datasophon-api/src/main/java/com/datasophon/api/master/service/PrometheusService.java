@@ -20,19 +20,16 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.service;
 
-import cn.hutool.http.HttpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.load.ServiceRoleJmxMap;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
 import com.datasophon.api.master.transport.WorkerCallAdapter;
-import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.GenerateAlertConfigCommand;
@@ -47,15 +44,20 @@ import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+
+import cn.hutool.http.HttpUtil;
 
 /**
  * Prometheus 配置生成 Spring Service，业务逻辑完全来自 PrometheusActor。
@@ -63,27 +65,27 @@ import java.util.Map;
  */
 @Service
 public class PrometheusService {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(PrometheusService.class);
-
+    
     private final WorkerCallAdapter workerCallAdapter;
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final ClusterServiceInstanceService serviceInstanceService;
     private final FrameServiceService frameServiceService;
     private final ClusterHostService hostService;
-
+    
     public PrometheusService(WorkerCallAdapter workerCallAdapter,
-                              ClusterServiceRoleInstanceService roleInstanceService,
-                              ClusterServiceInstanceService serviceInstanceService,
-                              FrameServiceService frameServiceService,
-                              ClusterHostService hostService) {
+                             ClusterServiceRoleInstanceService roleInstanceService,
+                             ClusterServiceInstanceService serviceInstanceService,
+                             FrameServiceService frameServiceService,
+                             ClusterHostService hostService) {
         this.workerCallAdapter = workerCallAdapter;
         this.roleInstanceService = roleInstanceService;
         this.serviceInstanceService = serviceInstanceService;
         this.frameServiceService = frameServiceService;
         this.hostService = hostService;
     }
-
+    
     @Async("masterExecutor")
     public void generateAlertConfig(GenerateAlertConfigCommand command) {
         doIfInstancePresent(command.getClusterId(), false, prometheusInstance -> {
@@ -94,39 +96,39 @@ public class PrometheusService {
             }
         });
     }
-
+    
     @Async("masterExecutor")
     public void generatePrometheus(GeneratePrometheusConfigCommand command) {
         ClusterServiceInstanceEntity serviceInstance = serviceInstanceService.getById(command.getServiceInstanceId());
         List<ClusterServiceRoleInstanceEntity> roleInstanceList =
                 roleInstanceService.getServiceRoleInstanceListByServiceId(serviceInstance.getId());
-
+        
         doIfInstancePresent(command.getClusterId(), false, prometheusInstance -> {
             logger.info("start to generate {} prometheus config", serviceInstance.getServiceName());
             HashMap<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
             HashMap<String, List<String>> roleMap = new HashMap<>();
-
+            
             for (ClusterServiceRoleInstanceEntity roleInstance : roleInstanceList) {
                 roleMap.computeIfAbsent(roleInstance.getServiceRoleName(), k -> new ArrayList<>())
                         .add(roleInstance.getHostname());
             }
-
+            
             for (Map.Entry<String, List<String>> roleEntry : roleMap.entrySet()) {
                 Generators generators = new Generators();
                 generators.setFilename(roleEntry.getKey().toLowerCase() + ".json");
                 generators.setOutputDirectory("configs");
                 generators.setConfigFormat("custom");
                 generators.setTemplateName("scrape.ftl");
-
+                
                 List<String> hostnames = roleEntry.getValue();
                 ArrayList<ServiceConfig> serviceConfigs = new ArrayList<>();
                 String serviceName = serviceInstance.getServiceName();
                 String serviceRoleName = roleEntry.getKey();
                 String clusterFrame = command.getClusterFrame();
-
+                
                 for (String hostname : hostnames) {
                     String jmxKey = clusterFrame + Constants.UNDERLINE + serviceName
-                                    + Constants.UNDERLINE + serviceRoleName;
+                            + Constants.UNDERLINE + serviceRoleName;
                     if (ServiceRoleJmxMap.exists(jmxKey)) {
                         ServiceConfig sc = new ServiceConfig();
                         sc.setName(serviceRoleName + Constants.UNDERLINE + hostname);
@@ -138,7 +140,7 @@ public class PrometheusService {
                 }
                 configFileMap.put(generators, serviceConfigs);
             }
-
+            
             ServiceRoleInfo serviceRoleInfo = buildServiceRoleInfo(prometheusInstance);
             serviceRoleInfo.setConfigFileMap(configFileMap);
             serviceRoleInfo.setHostname(prometheusInstance.getHostname());
@@ -148,7 +150,7 @@ public class PrometheusService {
             }
         });
     }
-
+    
     @Async("masterExecutor")
     public void generateHostPrometheusConfig(GenerateHostPrometheusConfig command) {
         Integer clusterId = command.getClusterId();
@@ -156,18 +158,18 @@ public class PrometheusService {
                 new QueryWrapper<ClusterHostDO>()
                         .eq(Constants.MANAGED, 1)
                         .eq(Constants.CLUSTER_ID, clusterId));
-
+        
         doIfInstancePresent(clusterId, false, prometheusInstance -> {
             HashMap<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
-
+            
             Generators workerGenerators = buildGenerators("worker.json");
             Generators nodeGenerators = buildGenerators("linux.json");
             Generators masterGenerators = buildGenerators("master.json");
-
+            
             ArrayList<ServiceConfig> workerConfigs = new ArrayList<>();
             ArrayList<ServiceConfig> nodeConfigs = new ArrayList<>();
             ArrayList<ServiceConfig> masterConfigs = new ArrayList<>();
-
+            
             // master node entry
             ServiceConfig masterConfig = new ServiceConfig();
             masterConfig.setName("master_" + CacheUtils.get(Constants.HOSTNAME));
@@ -175,7 +177,7 @@ public class PrometheusService {
             masterConfig.setRequired(true);
             masterConfig.setEnabled(true);
             masterConfigs.add(masterConfig);
-
+            
             for (ClusterHostDO host : hostList) {
                 ServiceConfig workerConfig = new ServiceConfig();
                 workerConfig.setName("worker_" + host.getHostname());
@@ -183,7 +185,7 @@ public class PrometheusService {
                 workerConfig.setRequired(true);
                 workerConfig.setEnabled(true);
                 workerConfigs.add(workerConfig);
-
+                
                 ServiceConfig nodeConfig = new ServiceConfig();
                 nodeConfig.setName("node_" + host.getHostname());
                 nodeConfig.setValue(host.getHostname() + ":9100");
@@ -191,11 +193,11 @@ public class PrometheusService {
                 nodeConfig.setEnabled(true);
                 nodeConfigs.add(nodeConfig);
             }
-
+            
             configFileMap.put(workerGenerators, workerConfigs);
             configFileMap.put(nodeGenerators, nodeConfigs);
             configFileMap.put(masterGenerators, masterConfigs);
-
+            
             ServiceRoleInfo serviceRoleInfo = buildServiceRoleInfo(prometheusInstance);
             serviceRoleInfo.setConfigFileMap(configFileMap);
             serviceRoleInfo.setHostname(prometheusInstance.getHostname());
@@ -205,59 +207,59 @@ public class PrometheusService {
             }
         });
     }
-
+    
     @Async("masterExecutor")
     public void generateSRPromConfig(GenerateSRPromConfigCommand command) {
         ClusterServiceInstanceEntity serviceInstance = serviceInstanceService.getById(command.getServiceInstanceId());
         List<ClusterServiceRoleInstanceEntity> roleInstanceList =
                 roleInstanceService.getServiceRoleInstanceListByServiceId(serviceInstance.getId());
         logger.info("start to generate {} prometheus config", serviceInstance.getServiceName());
-
+        
         doIfInstancePresent(command.getClusterId(), true, prometheusInstance -> {
             ArrayList<String> feList = new ArrayList<>();
             ArrayList<String> beList = new ArrayList<>();
-
+            
             for (ClusterServiceRoleInstanceEntity roleInstance : roleInstanceList) {
                 String jmxKey = command.getClusterFrame() + Constants.UNDERLINE
-                                + serviceInstance.getServiceName() + Constants.UNDERLINE
-                                + roleInstance.getServiceRoleName();
+                        + serviceInstance.getServiceName() + Constants.UNDERLINE
+                        + roleInstance.getServiceRoleName();
                 logger.info("jmxKey is {}", jmxKey);
                 if ("SRFE".equals(roleInstance.getServiceRoleName())
-                    || "DorisFE".equals(roleInstance.getServiceRoleName())
-                    || "DorisFEObserver".equals(roleInstance.getServiceRoleName())) {
+                        || "DorisFE".equals(roleInstance.getServiceRoleName())
+                        || "DorisFEObserver".equals(roleInstance.getServiceRoleName())) {
                     feList.add(roleInstance.getHostname() + ":" + ServiceRoleJmxMap.get(jmxKey));
                 } else {
                     beList.add(roleInstance.getHostname() + ":" + ServiceRoleJmxMap.get(jmxKey));
                 }
             }
-
+            
             Generators generators = new Generators();
             generators.setFilename(command.getFilename());
             generators.setOutputDirectory("configs");
             generators.setConfigFormat("custom");
             generators.setTemplateName("starrocks-prom.ftl");
-
+            
             ServiceConfig feConfig = new ServiceConfig();
             feConfig.setName("feList");
             feConfig.setValue(feList);
             feConfig.setRequired(true);
             feConfig.setEnabled(true);
             feConfig.setConfigType("map");
-
+            
             ServiceConfig beConfig = new ServiceConfig();
             beConfig.setName("beList");
             beConfig.setValue(beList);
             beConfig.setRequired(true);
             beConfig.setEnabled(true);
             beConfig.setConfigType("map");
-
+            
             ArrayList<ServiceConfig> serviceConfigs = new ArrayList<>();
             serviceConfigs.add(feConfig);
             serviceConfigs.add(beConfig);
-
+            
             HashMap<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
             configFileMap.put(generators, serviceConfigs);
-
+            
             ServiceRoleInfo serviceRoleInfo = buildServiceRoleInfo(prometheusInstance);
             serviceRoleInfo.setConfigFileMap(configFileMap);
             serviceRoleInfo.setHostname(prometheusInstance.getHostname());
@@ -267,9 +269,9 @@ public class PrometheusService {
             }
         });
     }
-
+    
     // ─── private helpers ────────────────────────────────────────────────────────
-
+    
     private void doIfInstancePresent(Integer clusterId, boolean throwIfAbsent,
                                      PrometheusConsumer consumer) {
         ClusterServiceRoleInstanceEntity prometheusInstance =
@@ -284,13 +286,13 @@ public class PrometheusService {
             throw new IllegalStateException("cannot find Prometheus service role instance for cluster " + clusterId);
         }
     }
-
+    
     private ServiceRoleInfo buildServiceRoleInfo(ClusterServiceRoleInstanceEntity roleInstance) {
         ClusterServiceInstanceEntity serviceInstance = serviceInstanceService.lambdaQuery()
                 .eq(ClusterServiceInstanceEntity::getId, roleInstance.getServiceId())
                 .one();
         FrameServiceEntity frameService = frameServiceService.getById(serviceInstance.getFrameServiceId());
-
+        
         ServiceRoleInfo result = new ServiceRoleInfo();
         result.setName("Prometheus");
         result.setParentName(frameService.getServiceName());
@@ -298,7 +300,7 @@ public class PrometheusService {
         result.setArchInfoMap(ServicePkgNameUtils.getArchInfo(frameService));
         return result;
     }
-
+    
     private static Generators buildGenerators(String filename) {
         Generators g = new Generators();
         g.setFilename(filename);
@@ -307,7 +309,7 @@ public class PrometheusService {
         g.setTemplateName("scrape.ftl");
         return g;
     }
-
+    
     @FunctionalInterface
     interface PrometheusConsumer {
         void accept(ClusterServiceRoleInstanceEntity instance) throws Exception;

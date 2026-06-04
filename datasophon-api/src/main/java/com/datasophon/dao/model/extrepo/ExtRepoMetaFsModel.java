@@ -1,9 +1,9 @@
 package com.datasophon.dao.model.extrepo;
 
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import lombok.Data;
 
 /**
  * @author zhanghuangbin
@@ -11,12 +11,11 @@ import java.util.List;
  */
 @Data
 public class ExtRepoMetaFsModel {
-
+    
     private String template;
-
+    
     private String meta;
-
+    
     private List<FrameworkMeta> frameworks = new ArrayList<>();
-
-
+    
 }

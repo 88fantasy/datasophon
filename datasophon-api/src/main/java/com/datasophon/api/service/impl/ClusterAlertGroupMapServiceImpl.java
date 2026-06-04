@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.impl;
 
 import com.datasophon.api.service.ClusterAlertGroupMapService;

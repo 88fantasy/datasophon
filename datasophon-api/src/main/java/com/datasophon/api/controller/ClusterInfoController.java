@@ -20,31 +20,32 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.controller;
 
-import cn.hutool.core.util.ArrayUtil;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.UniEngineService;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterInfoEntity;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import cn.hutool.core.util.ArrayUtil;
+
 @RestController
 @RequestMapping("cluster")
 public class ClusterInfoController extends ApiController {
-
+    
     @Autowired
     private ClusterInfoService clusterInfoService;
-
+    
     @Autowired
     private UniEngineService uniEngineService;
-
+    
     /**
      * 列表
      */
@@ -52,7 +53,7 @@ public class ClusterInfoController extends ApiController {
     public Result list() {
         return Result.success(clusterInfoService.getClusterList());
     }
-
+    
     /**
      * 配置好的集群列表
      */
@@ -60,7 +61,7 @@ public class ClusterInfoController extends ApiController {
     public Result runningClusterList() {
         return Result.success(clusterInfoService.runningClusterList());
     }
-
+    
     /**
      * 信息
      */
@@ -69,7 +70,7 @@ public class ClusterInfoController extends ApiController {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(id);
         return Result.success(clusterInfo);
     }
-
+    
     /**
      * 保存
      */
@@ -78,13 +79,13 @@ public class ClusterInfoController extends ApiController {
     public Result save(@RequestBody ClusterInfoEntity clusterInfo) {
         return Result.success(clusterInfoService.saveCluster(clusterInfo));
     }
-
+    
     @RequestMapping("/updateClusterState")
     public Result updateClusterState(Integer clusterId, Integer clusterState) {
         clusterInfoService.updateClusterState(clusterId, clusterState);
         return Result.success();
     }
-
+    
     /**
      * 修改
      */
@@ -94,7 +95,7 @@ public class ClusterInfoController extends ApiController {
         clusterInfoService.updateCluster(clusterInfo);
         return Result.success();
     }
-
+    
     /**
      * 删除
      */
@@ -104,11 +105,10 @@ public class ClusterInfoController extends ApiController {
         if (ArrayUtil.isNotEmpty(ids)) {
             clusterInfoService.deleteCluster(ids[0]);
         }
-
-
+        
         return Result.success();
     }
-
+    
     /**
      * 提供集群引擎信息给中台引擎
      */
@@ -116,5 +116,5 @@ public class ClusterInfoController extends ApiController {
     public Result engineInfo() {
         return uniEngineService.getEngineInfo();
     }
-
+    
 }

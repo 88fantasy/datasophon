@@ -20,15 +20,15 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.log;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * task log filter
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class TaskLogFilter extends Filter<ILoggingEvent> {
     
     private static Logger logger = LoggerFactory.getLogger(TaskLogFilter.class);
-
+    
     /**
      * level
      */

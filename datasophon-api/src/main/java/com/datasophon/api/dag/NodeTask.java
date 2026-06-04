@@ -1,6 +1,5 @@
 package com.datasophon.api.dag;
 
-
 import com.datasophon.api.dag.model.NodeDefinition;
 
 public interface NodeTask {
@@ -9,6 +8,5 @@ public interface NodeTask {
      * @param node 节点信息
      */
     String exec(NodeDefinition node) throws Exception;
-
+    
 }
-

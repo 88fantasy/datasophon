@@ -20,12 +20,13 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.dao.mapper.cmd;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.datasophon.dao.entity.cmd.ClusterK8sServiceCommandEntity;
+
 import org.apache.ibatis.annotations.Mapper;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
  * K8s 服务命令执行记录
@@ -35,6 +36,5 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface ClusterK8sServiceCommandMapper extends BaseMapper<ClusterK8sServiceCommandEntity> {
-
-
+    
 }

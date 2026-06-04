@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.configuration;
 
 import com.datasophon.api.controller.ApiController;
@@ -29,7 +28,13 @@ import com.datasophon.api.interceptor.CsrfTokenInterceptor;
 import com.datasophon.api.interceptor.LocaleChangeInterceptor;
 import com.datasophon.api.interceptor.LoginHandlerInterceptor;
 import com.datasophon.api.interceptor.UserPermissionHandler;
+
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,162 +48,144 @@ import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.i18n.CookieLocaleResolver;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-
 /**
  * application configuration
  */
 @Configuration
 public class AppConfiguration implements WebMvcConfigurer {
-
-  public static final String LOCALE_LANGUAGE_COOKIE = "language";
-
-  @Value("${datasophon.server.path-prefix}")
-  private String pathPrefix;
-
-  @Value("${springdoc.api-docs.enabled:false}")
-  private boolean enableOpenApi;
-
-  private final LoginHandlerInterceptor loginHandlerInterceptor;
-
-  private final UserPermissionHandler userPermissionHandler;
-
-  private final LocaleChangeInterceptor localeChangeInterceptor;
-
-  private final BasicValidRequestInterceptor basicValidRequestInterceptor;
-
-  private final CsrfTokenInterceptor csrfTokenInterceptor;
-
-
-  @Bean
-  public CorsFilter corsFilter() {
-    CorsConfiguration config = new CorsConfiguration();
-    config.addAllowedOrigin("*");
-    config.addAllowedMethod("*");
-    config.addAllowedHeader("*");
-    UrlBasedCorsConfigurationSource configSource = new UrlBasedCorsConfigurationSource();
-    configSource.registerCorsConfiguration(getPathPrefix() + "/**", config);
-    return new CorsFilter(configSource);
-  }
-
-  public AppConfiguration(LoginHandlerInterceptor loginHandlerInterceptor,
-                          UserPermissionHandler userPermissionHandler,
-                          LocaleChangeInterceptor localeChangeInterceptor,
-                          BasicValidRequestInterceptor basicValidRequestInterceptor,
-                          CsrfTokenInterceptor csrfTokenInterceptor
-  ) {
-    this.loginHandlerInterceptor = loginHandlerInterceptor;
-    this.userPermissionHandler = userPermissionHandler;
-    this.localeChangeInterceptor = localeChangeInterceptor;
-    this.basicValidRequestInterceptor = basicValidRequestInterceptor;
-    this.csrfTokenInterceptor = csrfTokenInterceptor;
-  }
-
-
-  /**
-   * Cookie
-   *
-   * @return local resolver
-   */
-  @Bean(name = "localeResolver")
-  public LocaleResolver localeResolver() {
-    CookieLocaleResolver localeResolver = new CookieLocaleResolver();
-    localeResolver.setCookieName(LOCALE_LANGUAGE_COOKIE);
-    /** set default locale **/
-    localeResolver.setDefaultLocale(Locale.SIMPLIFIED_CHINESE);
-    /** set language tag compliant **/
-    localeResolver.setLanguageTagCompliant(false);
-    return localeResolver;
-  }
-
-
-  @Override
-  public void addInterceptors(InterceptorRegistry registry) {
-    // i18n
-    registry.addInterceptor(localeChangeInterceptor);
-    registry.addInterceptor(userPermissionHandler);
-    // login
-    InterceptorRegistration loginRegistration = registry.addInterceptor(loginHandlerInterceptor)
-        .addPathPatterns(getPathPrefix() + "/**")
-        .excludePathPatterns(
-             "/error",
-            "/grafana/**",
-            "/index.html",
-            "/",
-            "/static/**"
-        )
-        .excludePathPatterns(getRealExcludeUrl(
-                "/login",
-                "/cluster/alert/history/save",
-                "/cluster/kerberos/downloadKeytab",
-                "/service/install/download*"
-        ));
-    if (enableOpenApi) {
-      loginRegistration.excludePathPatterns(
-          "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
-          "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico"
-      );
+    
+    public static final String LOCALE_LANGUAGE_COOKIE = "language";
+    
+    @Value("${datasophon.server.path-prefix}")
+    private String pathPrefix;
+    
+    @Value("${springdoc.api-docs.enabled:false}")
+    private boolean enableOpenApi;
+    
+    private final LoginHandlerInterceptor loginHandlerInterceptor;
+    
+    private final UserPermissionHandler userPermissionHandler;
+    
+    private final LocaleChangeInterceptor localeChangeInterceptor;
+    
+    private final BasicValidRequestInterceptor basicValidRequestInterceptor;
+    
+    private final CsrfTokenInterceptor csrfTokenInterceptor;
+    
+    @Bean
+    public CorsFilter corsFilter() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.addAllowedOrigin("*");
+        config.addAllowedMethod("*");
+        config.addAllowedHeader("*");
+        UrlBasedCorsConfigurationSource configSource = new UrlBasedCorsConfigurationSource();
+        configSource.registerCorsConfiguration(getPathPrefix() + "/**", config);
+        return new CorsFilter(configSource);
     }
-
-    // CSRF token verification — placed after login interceptor
-    InterceptorRegistration csrfRegistration = registry
-        .addInterceptor(csrfTokenInterceptor)
-        .addPathPatterns(getPathPrefix() + "/**")
-        .excludePathPatterns(
-            "/error",
-            "/grafana/**",
-            "/index.html",
-            "/",
-            "/static/**"
-        )
-        .excludePathPatterns(getRealExcludeUrl(
-            "/login",
-            "/cluster/alert/history/save",
-            "/cluster/kerberos/downloadKeytab",
-            "/service/install/download*"
-        ));
-    if (enableOpenApi) {
-      csrfRegistration.excludePathPatterns(
-          "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
-          "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico"
-      );
+    
+    public AppConfiguration(LoginHandlerInterceptor loginHandlerInterceptor,
+                            UserPermissionHandler userPermissionHandler,
+                            LocaleChangeInterceptor localeChangeInterceptor,
+                            BasicValidRequestInterceptor basicValidRequestInterceptor,
+                            CsrfTokenInterceptor csrfTokenInterceptor) {
+        this.loginHandlerInterceptor = loginHandlerInterceptor;
+        this.userPermissionHandler = userPermissionHandler;
+        this.localeChangeInterceptor = localeChangeInterceptor;
+        this.basicValidRequestInterceptor = basicValidRequestInterceptor;
+        this.csrfTokenInterceptor = csrfTokenInterceptor;
     }
-
-      InterceptorRegistration basicValidRegistration = registry
-              .addInterceptor(basicValidRequestInterceptor)
-              .addPathPatterns("/**");
-      if (enableOpenApi) {
-          basicValidRegistration.excludePathPatterns(
-                  "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
-                  "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico"
-          );
-      }
-  }
-
-  private String[] getRealExcludeUrl(String...urls) {
-      List<String> result = new ArrayList<>(urls.length);
-      for (String url : urls) {
-          if (!url.startsWith("/")) {
-              url = "/" + url;
-          }
-          result.add(getPathPrefix() + url);
-      }
-      return result.toArray(new String[0]);
-  }
-
-  //Add request url prefix
-  @Override
-  public void configurePathMatch(PathMatchConfigurer configurer) {
-    configurer.addPathPrefix(getPathPrefix(), aClass -> aClass.getSuperclass().equals(ApiController.class));
-  }
-
-  private String getPathPrefix() {
-    return StringUtils.removeEnd(pathPrefix, "/");
-  }
-
-
-
-
+    
+    /**
+     * Cookie
+     *
+     * @return local resolver
+     */
+    @Bean(name = "localeResolver")
+    public LocaleResolver localeResolver() {
+        CookieLocaleResolver localeResolver = new CookieLocaleResolver();
+        localeResolver.setCookieName(LOCALE_LANGUAGE_COOKIE);
+        /** set default locale **/
+        localeResolver.setDefaultLocale(Locale.SIMPLIFIED_CHINESE);
+        /** set language tag compliant **/
+        localeResolver.setLanguageTagCompliant(false);
+        return localeResolver;
+    }
+    
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        // i18n
+        registry.addInterceptor(localeChangeInterceptor);
+        registry.addInterceptor(userPermissionHandler);
+        // login
+        InterceptorRegistration loginRegistration = registry.addInterceptor(loginHandlerInterceptor)
+                .addPathPatterns(getPathPrefix() + "/**")
+                .excludePathPatterns(
+                        "/error",
+                        "/grafana/**",
+                        "/index.html",
+                        "/",
+                        "/static/**")
+                .excludePathPatterns(getRealExcludeUrl(
+                        "/login",
+                        "/cluster/alert/history/save",
+                        "/cluster/kerberos/downloadKeytab",
+                        "/service/install/download*"));
+        if (enableOpenApi) {
+            loginRegistration.excludePathPatterns(
+                    "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
+                    "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico");
+        }
+        
+        // CSRF token verification — placed after login interceptor
+        InterceptorRegistration csrfRegistration = registry
+                .addInterceptor(csrfTokenInterceptor)
+                .addPathPatterns(getPathPrefix() + "/**")
+                .excludePathPatterns(
+                        "/error",
+                        "/grafana/**",
+                        "/index.html",
+                        "/",
+                        "/static/**")
+                .excludePathPatterns(getRealExcludeUrl(
+                        "/login",
+                        "/cluster/alert/history/save",
+                        "/cluster/kerberos/downloadKeytab",
+                        "/service/install/download*"));
+        if (enableOpenApi) {
+            csrfRegistration.excludePathPatterns(
+                    "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
+                    "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico");
+        }
+        
+        InterceptorRegistration basicValidRegistration = registry
+                .addInterceptor(basicValidRequestInterceptor)
+                .addPathPatterns("/**");
+        if (enableOpenApi) {
+            basicValidRegistration.excludePathPatterns(
+                    "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
+                    "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico");
+        }
+    }
+    
+    private String[] getRealExcludeUrl(String... urls) {
+        List<String> result = new ArrayList<>(urls.length);
+        for (String url : urls) {
+            if (!url.startsWith("/")) {
+                url = "/" + url;
+            }
+            result.add(getPathPrefix() + url);
+        }
+        return result.toArray(new String[0]);
+    }
+    
+    // Add request url prefix
+    @Override
+    public void configurePathMatch(PathMatchConfigurer configurer) {
+        configurer.addPathPrefix(getPathPrefix(), aClass -> aClass.getSuperclass().equals(ApiController.class));
+    }
+    
+    private String getPathPrefix() {
+        return StringUtils.removeEnd(pathPrefix, "/");
+    }
+    
 }

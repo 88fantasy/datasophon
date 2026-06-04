@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
@@ -160,5 +159,5 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
             }
         }
     }
-
+    
 }

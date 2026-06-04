@@ -20,11 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.cmd.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
@@ -36,12 +33,17 @@ import com.datasophon.dao.entity.cmd.ClusterServiceCommandHostCommandEntity;
 import com.datasophon.dao.enums.CommandState;
 import com.datasophon.dao.mapper.cmd.ClusterServiceCommandHostCommandMapper;
 import com.datasophon.dao.mapper.cmd.ClusterServiceCommandMapper;
+
+import java.util.List;
+import java.util.Objects;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.List;
-import java.util.Objects;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
 @Service("clusterServiceCommandHostCommandService")
 public class ClusterServiceCommandHostCommandServiceImpl
@@ -57,13 +59,13 @@ public class ClusterServiceCommandHostCommandServiceImpl
     
     @Autowired
     ClusterInfoService clusterInfoService;
-
+    
     @Autowired
     ClusterServiceCommandMapper commandMapper;
-
+    
     @Autowired
     private WorkerCommandClient workerCommandClient;
-
+    
     @Override
     public Result getHostCommandList(String hostname, String commandHostId, Integer page, Integer pageSize) {
         Integer offset = (page - 1) * pageSize;

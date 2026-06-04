@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.utils.ProcessUtils;
@@ -118,7 +117,7 @@ public abstract class ServiceHandlerAbstract {
             rackConfigs.add(serviceConfig);
         }
     }
-
+    
     /**
      * TODO 将废弃
      * @return
@@ -137,7 +136,7 @@ public abstract class ServiceHandlerAbstract {
         if (config.getValue() != null) {
             enableHA = Boolean.TRUE.equals(config.getValue());
         }
-        ProcessUtils.generateClusterVariable(clusterId, serviceName, "enable" + serviceName + "HA",  enableHA ? "true" : "false");
+        ProcessUtils.generateClusterVariable(clusterId, serviceName, "enable" + serviceName + "HA", enableHA ? "true" : "false");
         return enableHA;
     }
     

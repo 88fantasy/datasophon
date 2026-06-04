@@ -1,14 +1,10 @@
 package com.datasophon.api.dag;
 
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.StrUtil;
 import com.datasophon.api.dag.model.EdgeDefinition;
 import com.datasophon.api.dag.model.NodeDefinition;
 import com.datasophon.api.dag.repo.DAGRepository;
 import com.datasophon.dao.enums.dag.DagStatus;
 import com.datasophon.dao.enums.dag.NodeStatus;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.ArrayDeque;
@@ -24,6 +20,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.StrUtil;
+
 /**
  * @author zhanghuangbin
  */
@@ -31,30 +32,29 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class RepoDAG {
     private String dagId;
-
+    
     protected List<DAGListener> listeners = new ArrayList<>();
-
+    
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
-
+    
     private boolean revered = false;
-
+    
     private final DAGRepository repository;
-
+    
     public RepoDAG(DAGRepository repository) {
         this.repository = repository;
     }
-
-
+    
     public void init(String dagId, boolean revered) {
         this.dagId = dagId;
         listeners.clear();
         isRunning.set(false);
         this.revered = revered;
-
+        
         Map<String, NodeDefinition> nodes = getNodeAsMap(dagId, false);
         List<EdgeDefinition> definitions = getEdges(dagId);
-
-//        检查是否存在环
+        
+        // 检查是否存在环
         Map<String, List<String>> dependencies = new HashMap<>();
         for (EdgeDefinition edge : definitions) {
             String fromNodeId = edge.getFromNodeId();
@@ -62,7 +62,7 @@ public class RepoDAG {
             if (!nodes.containsKey(fromNodeId) || !nodes.containsKey(toNodeId)) {
                 throw new IllegalStateException(String.format("ID为%s或者%s的节点不存在", fromNodeId, toNodeId));
             }
-
+            
             List<String> paths = findPath(dependencies, toNodeId, fromNodeId);
             if (paths.isEmpty()) {
                 dependencies.computeIfAbsent(fromNodeId, k -> new ArrayList<>()).add(toNodeId);
@@ -75,13 +75,11 @@ public class RepoDAG {
             }
         }
     }
-
-
+    
     public void exec(AsyncNodeTask task, boolean restart) {
-       doExec(task, false);
+        doExec(task, false);
     }
-
-
+    
     public void exec(NodeTask task, boolean restart) {
         AsyncNodeTask wrappedTask = (node, callback) -> {
             try {
@@ -93,7 +91,7 @@ public class RepoDAG {
         };
         doExec(wrappedTask, restart);
     }
-
+    
     private void doExec(AsyncNodeTask task, boolean restart) {
         try {
             start(restart);
@@ -126,13 +124,13 @@ public class RepoDAG {
                 task.exec(definition, new NodeExecutionCallback() {
                     @Override
                     public void onSuccess(String result) {
-//                        后继节点入度减1
+                        // 后继节点入度减1
                         endNode(node, NodeStatus.SUCCESS, result, null);
                         Set<String> successors = getReadySuccessors(node);
                         queue.addAll(successors);
                         forward(task, queue, null);
                     }
-
+                    
                     @Override
                     public void onFailure(Throwable throwable) {
                         endNode(node, NodeStatus.FAILED, null, throwable);
@@ -142,8 +140,7 @@ public class RepoDAG {
             }
         }
     }
-
-
+    
     private void handleDagFailure(Throwable e) {
         if (e instanceof InterruptedException) {
             Thread.currentThread().interrupt();
@@ -152,7 +149,7 @@ public class RepoDAG {
         cancel(e);
         throw new RuntimeException(String.format("exec dag %s fail, %s", dagId, e.getMessage()), e);
     }
-
+    
     public void start(boolean ignoreSuccess) {
         if (!isRunning.compareAndSet(false, true)) {
             throw new IllegalStateException("DAG is already running");
@@ -165,9 +162,9 @@ public class RepoDAG {
             repository.markNodesPending(dagId, ignoreSuccess);
         });
     }
-
+    
     public void startNode(String nodeId) {
-
+        
         NodeDefinition node = repository.getNodeById(nodeId);
         node.setStatus(NodeStatus.RUNNING);
         node.setStartedTime(LocalDateTime.now());
@@ -178,7 +175,7 @@ public class RepoDAG {
             repository.updateNode(node);
         });
     }
-
+    
     public void endNode(String nodeId, NodeStatus status, String result, Throwable throwable) {
         NodeDefinition node = repository.getNodeById(nodeId);
         node.setStatus(status);
@@ -195,13 +192,13 @@ public class RepoDAG {
             repository.updateNode(node);
         });
     }
-
+    
     public void cancel(Throwable throwable) {
         Throwable failCause = throwable;
         if (throwable instanceof CancelException) {
             CancelException ex = (CancelException) throwable;
             failCause = ex.getCause();
-//            failCause为空，表示主动取消，打印info日志
+            // failCause为空，表示主动取消，打印info日志
             if (failCause == null) {
                 log.info("dag: {} cancel due to {}", dagId, ex.getMessage());
             } else {
@@ -210,19 +207,19 @@ public class RepoDAG {
         } else {
             log.error("dag: {} stop due to exception, {}", dagId, throwable.getMessage(), throwable);
         }
-
+        
         if (isRunning.compareAndSet(true, false)) {
-//            如果因为失败而取消，则标记为失败
+            // 如果因为失败而取消，则标记为失败
             DagStatus dagStatus = failCause != null ? DagStatus.FAILED : DagStatus.CANCEL;
             for (DAGListener listener : getCombineListeners()) {
                 listener.onCompleted(this, dagStatus, failCause);
             }
             repository.doInNewTransactional(() -> repository.updateDagStatus(dagId, dagStatus));
-
+            
             Throwable cause = failCause;
             Map<String, NodeDefinition> nodes = getNodeAsMap(dagId, true);
             nodes.values().forEach(n -> {
-//                取消正在跑的其他任务
+                // 取消正在跑的其他任务
                 if (Arrays.asList(NodeStatus.RUNNING, NodeStatus.PENDING).contains(n.getStatus())) {
                     for (DAGListener listener : getCombineListeners()) {
                         listener.onNodeCompleted(n, NodeStatus.CANCEL, null, cause);
@@ -232,13 +229,13 @@ public class RepoDAG {
             });
         }
     }
-
+    
     public void finish() {
         if (isRunning.compareAndSet(true, false)) {
             Map<String, NodeDefinition> nodes = getNodeAsMap(dagId, false);
             boolean allSuccess = nodes.values().stream().allMatch(n -> n.getStatus() == NodeStatus.SUCCESS);
             DagStatus finalStatus = allSuccess ? DagStatus.SUCCESS : DagStatus.FAILED;
-
+            
             for (DAGListener listener : getCombineListeners()) {
                 listener.onCompleted(this, finalStatus, null);
             }
@@ -247,16 +244,16 @@ public class RepoDAG {
             });
         }
     }
-
+    
     public boolean isDone() {
         Map<String, NodeDefinition> nodes = getNodeAsMap(dagId, false);
         return nodes.values().stream().noneMatch(n -> Arrays.asList(NodeStatus.PENDING, NodeStatus.RUNNING).contains(n.getStatus()));
     }
-
+    
     public void registerListener(DAGListener listener) {
         listeners.add(listener);
     }
-
+    
     /**
      * 获取入度为0的节点
      *
@@ -266,10 +263,10 @@ public class RepoDAG {
         Set<String> readyNodes = new HashSet<>();
         Map<String, NodeDefinition> nodes = getNodeAsMap(dagId, false);
         Map<String, List<String>> dependencies = getEdgesAsMap();
-
+        
         Map<String, Set<String>> predecessorMap = new HashMap<>();
         dependencies.forEach((key, set) -> set.forEach(item -> predecessorMap.computeIfAbsent(item, i -> new HashSet<>()).add(key)));
-
+        
         for (Map.Entry<String, NodeDefinition> entry : nodes.entrySet()) {
             if (entry.getValue().getStatus().equals(NodeStatus.PENDING)) {
                 String node = entry.getKey();
@@ -285,7 +282,7 @@ public class RepoDAG {
         }
         return readyNodes;
     }
-
+    
     /**
      * 获取node节点的后继节点(这些节点的前置任务已经完成）
      *
@@ -296,10 +293,10 @@ public class RepoDAG {
         Set<String> readyNodes = new HashSet<>();
         Map<String, NodeDefinition> nodes = getNodeAsMap(dagId, false);
         Map<String, List<String>> dependencies = getEdgesAsMap();
-
+        
         Map<String, Set<String>> predecessorMap = new HashMap<>();
         dependencies.forEach((key, set) -> set.forEach(item -> predecessorMap.computeIfAbsent(item, i -> new HashSet<>()).add(key)));
-
+        
         for (String successor : dependencies.getOrDefault(node, new ArrayList<>(0))) {
             NodeDefinition successorNode = nodes.get(successor);
             if (successorNode.getStatus().equals(NodeStatus.PENDING)) {
@@ -315,8 +312,7 @@ public class RepoDAG {
         }
         return readyNodes;
     }
-
-
+    
     /**
      * 查找从 startId 到 endId 的路径
      *
@@ -327,7 +323,7 @@ public class RepoDAG {
     public List<String> findPath(String startId, String endId) {
         return findPath(getEdgesAsMap(), startId, endId);
     }
-
+    
     private List<String> findPath(Map<String, List<String>> dependencies, String startId, String endId) {
         List<String> path = new ArrayList<>();
         if (startId.equals(endId)) {
@@ -341,7 +337,7 @@ public class RepoDAG {
         }
         return new ArrayList<>();
     }
-
+    
     /**
      * 深度优先搜索查找路径的辅助方法
      *
@@ -355,15 +351,15 @@ public class RepoDAG {
         // 标记当前节点为已访问并加入路径
         visited.add(current);
         path.add(current);
-
+        
         // 如果到达目标节点，返回true
         if (current.equals(target)) {
             return true;
         }
-
+        
         // 获取当前节点的后继节点
         List<String> successors = dependencies.getOrDefault(current, new ArrayList<>());
-
+        
         for (String successor : successors) {
             if (!visited.contains(successor)) {
                 if (dfsFindPath(dependencies, successor, target, visited, path)) {
@@ -371,35 +367,31 @@ public class RepoDAG {
                 }
             }
         }
-
+        
         // 如果从当前节点无法到达目标节点，则回溯
         path.remove(path.size() - 1);
         return false;
     }
-
-
+    
     protected List<DAGListener> getCombineListeners() {
         List<DAGListener> result = new ArrayList<>(listeners.size());
         result.addAll(listeners);
         return result;
     }
-
+    
     protected List<NodeDefinition> getNodes(String dagId, boolean allFields) {
         return repository.getNodesByDagId(dagId, allFields);
     }
-
-
+    
     protected List<EdgeDefinition> getEdges(String dagId) {
         return repository.getEdgesByDagId(dagId);
     }
-
-
+    
     protected Map<String, NodeDefinition> getNodeAsMap(String dagId, boolean allFields) {
         List<NodeDefinition> definitions = getNodes(dagId, allFields);
         return CollectionUtil.toMap(definitions, new ConcurrentHashMap<>(), NodeDefinition::getId);
     }
-
-
+    
     /**
      * 返回dag的边，key: 前继节点, value: 后继节点
      * 例如： A-> C, A-> B， 则 A-> [B,C]
@@ -408,12 +400,12 @@ public class RepoDAG {
      */
     protected Map<String, List<String>> getEdgesAsMap() {
         List<EdgeDefinition> edges = getEdges(dagId);
-
+        
         Map<String, List<String>> dependencies = new ConcurrentHashMap<>();
         for (EdgeDefinition edge : edges) {
             String fromNodeId = edge.getFromNodeId();
             String toNodeId = edge.getToNodeId();
-
+            
             if (revered) {
                 String temp = fromNodeId;
                 fromNodeId = toNodeId;

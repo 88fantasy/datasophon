@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.host;
 
 import com.datasophon.common.utils.Result;
@@ -33,7 +32,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface ClusterHostService extends IService<ClusterHostDO> {
     
     ClusterHostDO getClusterHostByHostname(String hostname);
-
+    
     ClusterHostDO getClusterHostByIp(String ip);
     
     Result listByPage(Integer clusterId, String hostname, String ip, String cpuArchitecture, Integer hostState,
@@ -63,5 +62,5 @@ public interface ClusterHostService extends IService<ClusterHostDO> {
     List<ClusterHostDO> getHostListByIds(List<String> ids);
     
     Result assignRack(Integer clusterId, String rack, String hostIds);
-
+    
 }

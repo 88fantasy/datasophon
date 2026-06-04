@@ -8,8 +8,8 @@ import lombok.Data;
  */
 @Data
 public class DagIdDto {
-
+    
     @Schema(description = "dagId")
     private String dagId;
-
+    
 }

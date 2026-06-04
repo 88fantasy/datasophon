@@ -20,14 +20,13 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.utils;
 
 import com.datasophon.common.Constants;
 
-import org.apache.commons.lang3.StringUtils;
-
 import jakarta.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang3.StringUtils;
 
 public class HttpUtils {
     

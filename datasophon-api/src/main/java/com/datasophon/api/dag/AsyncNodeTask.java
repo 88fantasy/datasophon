@@ -9,6 +9,5 @@ public interface AsyncNodeTask {
      * @param callback 执行完成后的回调
      */
     void exec(NodeDefinition node, NodeExecutionCallback callback);
-
+    
 }
-

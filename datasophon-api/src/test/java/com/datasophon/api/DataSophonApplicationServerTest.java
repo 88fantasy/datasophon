@@ -20,22 +20,22 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.datasophon.api.load.LoadServiceMeta;
+
+import javax.sql.DataSource;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
-
-import javax.sql.DataSource;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * 服务启动冒烟测试（Smoke Test）
@@ -58,26 +58,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 class DataSophonApplicationServerTest {
-
+    
     /**
      * 注入完整的 Spring ApplicationContext，用于断言 Bean 注册情况
      */
     @Autowired
     private ApplicationContext context;
-
+    
     /**
      * 拦截 LoadServiceMeta（ApplicationRunner）的 run()，
      * 避免启动时对空 H2 库发起真实查询
      */
     @MockitoBean
     private LoadServiceMeta loadServiceMeta;
-
+    
     /**
      * Spring Boot 测试框架注入的随机端口号
      */
     @LocalServerPort
     private int port;
-
+    
     /**
      * 核心启动测试：验证 Spring 上下文完整加载
      *
@@ -89,7 +89,7 @@ class DataSophonApplicationServerTest {
     void contextLoads() {
         assertThat(context).isNotNull();
     }
-
+    
     /**
      * 验证内嵌 Web 服务器已在随机端口绑定并启动
      */
@@ -100,7 +100,7 @@ class DataSophonApplicationServerTest {
                 .as("服务器端口应为正整数（OS 随机分配）")
                 .isPositive();
     }
-
+    
     /**
      * 验证 DataSource Bean 已注册——即数据源配置（H2）正确解析
      */

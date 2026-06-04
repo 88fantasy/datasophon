@@ -11,17 +11,14 @@ import java.util.List;
  * @author zhanghuangbin
  */
 public interface DdlMetaService {
-
-
-    FrameInfoEntity initFramework(String  frameCode);
-
-
+    
+    FrameInfoEntity initFramework(String frameCode);
+    
     FrameServiceEntity loadServiceVosDdl(List<ClusterInfoEntity> clusters, FrameInfoEntity frameInfo, String serviceName, String serviceDdl);
-
+    
     FrameK8sServiceEntity loadServiceK8sDdl(FrameInfoEntity frameInfo, String serviceName, String serviceDdl);
-
+    
     void updateServiceVosDdl(Integer serviceId, String serviceDdl);
-
-
+    
     String getServiceVosDdl(Integer serviceId);
 }

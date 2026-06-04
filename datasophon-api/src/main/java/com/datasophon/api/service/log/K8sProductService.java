@@ -10,10 +10,10 @@ import java.util.List;
  * @author zhanghuangbin
  */
 public interface K8sProductService {
-
+    
     String getK8sExecLog(String commandId, int rows);
-
+    
     String getK8sRuntimeLog(K8sRuntimeLogQueryDTO dto);
-
+    
     List<K8sEventInfo> getK8sEvents(K8sRuntimeEventQueryDTO query);
 }

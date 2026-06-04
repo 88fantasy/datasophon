@@ -20,20 +20,20 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.handler.host;
 
 import com.datasophon.api.utils.CommonUtils;
-import com.datasophon.api.utils.MessageResolverUtils;
 import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.InstallState;
 import com.datasophon.common.model.HostInfo;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.JschUtils;
-import com.jcraft.jsch.Session;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.jcraft.jsch.Session;
 
 public class DecompressWorkerHandler implements DispatcherWorkerHandler {
     

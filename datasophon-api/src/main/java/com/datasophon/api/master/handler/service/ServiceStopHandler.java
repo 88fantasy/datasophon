@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.handler.service;
 
 import com.datasophon.api.master.transport.WorkerCallAdapter;

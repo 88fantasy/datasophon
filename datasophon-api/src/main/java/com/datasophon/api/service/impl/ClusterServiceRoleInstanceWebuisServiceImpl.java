@@ -20,14 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.impl;
 
-import cn.hutool.core.map.MapUtil;
-import cn.hutool.core.stream.StreamUtil;
-import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.common.Constants;
@@ -39,48 +33,55 @@ import com.datasophon.dao.entity.ClusterServiceRoleInstanceWebuis;
 import com.datasophon.dao.mapper.ClusterServiceInstanceMapper;
 import com.datasophon.dao.mapper.ClusterServiceRoleInstanceWebuisMapper;
 import com.datasophon.dao.model.WebuisVO;
-import com.github.yulichang.wrapper.MPJLambdaWrapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.github.yulichang.wrapper.MPJLambdaWrapper;
+
+import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.StrUtil;
+
 @Service("clusterServiceRoleInstanceWebuisService")
 public class ClusterServiceRoleInstanceWebuisServiceImpl
         extends
-        ServiceImpl<ClusterServiceRoleInstanceWebuisMapper, ClusterServiceRoleInstanceWebuis>
+            ServiceImpl<ClusterServiceRoleInstanceWebuisMapper, ClusterServiceRoleInstanceWebuis>
         implements
-        ClusterServiceRoleInstanceWebuisService {
-
+            ClusterServiceRoleInstanceWebuisService {
+    
     private static final String ACTIVE = "(Active)";
-
+    
     private static final String STANDBY = "(Standby)";
-
+    
     @Autowired
     ClusterServiceInstanceMapper clusterServiceInstanceMapper;
-
+    
     @Override
     public Result getWebUis(Integer serviceInstanceId) {
-
+        
         MPJLambdaWrapper<ClusterServiceRoleInstanceWebuis> wrapper = new MPJLambdaWrapper<ClusterServiceRoleInstanceWebuis>()
                 .selectAll(ClusterServiceRoleInstanceWebuis.class)
                 .select(ClusterHostDO::getIp)
                 .innerJoin(ClusterServiceRoleInstanceEntity.class, ClusterServiceRoleInstanceEntity::getId, ClusterServiceRoleInstanceWebuis::getServiceRoleInstanceId)
                 .innerJoin(ClusterHostDO.class, ClusterHostDO::getHostname, ClusterServiceRoleInstanceEntity::getHostname)
                 .eq(ClusterServiceRoleInstanceWebuis::getServiceInstanceId, serviceInstanceId);
-
+        
         List<WebuisVO> list = getBaseMapper().selectJoinList(WebuisVO.class, wrapper);
-
-//        List<ClusterServiceRoleInstanceWebuis> list = this.list(
-//                new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
-//                        .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
+        
+        // List<ClusterServiceRoleInstanceWebuis> list = this.list(
+        // new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
+        // .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
         Integer clusterId = clusterServiceInstanceMapper.selectById(serviceInstanceId).getClusterId();
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         return Result.success(list.stream().peek(ui -> {
-//            存在脏数据，直接忽略
+            // 存在脏数据，直接忽略
             if (StrUtil.isBlank(ui.getWebUrl())) {
                 return;
             }
@@ -89,45 +90,45 @@ public class ClusterServiceRoleInstanceWebuisServiceImpl
             ui.setWebUrl(newUrl);
         }).collect(Collectors.toList()));
     }
-
+    
     @Override
     public void removeByServiceInsId(Integer serviceInstanceId) {
         this.remove(
                 new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
                         .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
     }
-
+    
     @Override
     public void updateWebUiToActive(Integer roleInstanceId) {
         updateWebUiName(roleInstanceId, ACTIVE);
     }
-
+    
     @Override
     public ClusterServiceRoleInstanceWebuis getRoleInstanceWebUi(Integer roleInstanceId) {
         return this.lambdaQuery()
                 .eq(ClusterServiceRoleInstanceWebuis::getServiceRoleInstanceId, roleInstanceId)
                 .one();
     }
-
+    
     @Override
     public void removeByRoleInsIds(ArrayList<Integer> needRemoveList) {
         this.lambdaUpdate()
                 .in(ClusterServiceRoleInstanceWebuis::getServiceRoleInstanceId, needRemoveList)
                 .remove();
     }
-
+    
     @Override
     public void updateWebUiToStandby(Integer roleInstanceId) {
         updateWebUiName(roleInstanceId, STANDBY);
     }
-
+    
     @Override
     public List<ClusterServiceRoleInstanceWebuis> listWebUisByServiceInstanceId(Integer serviceInstanceId) {
         return this.list(
                 new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
                         .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
     }
-
+    
     private void updateWebUiName(Integer roleInstanceId, String state) {
         ClusterServiceRoleInstanceWebuis webuis =
                 this.lambdaQuery()

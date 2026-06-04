@@ -20,17 +20,22 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.controller;
 
-import cn.hutool.core.io.IoUtil;
 import com.datasophon.api.dto.ddl.UpdateDdlDTO;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.ddl.DdlMetaService;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.FrameServiceEntity;
+
 import io.swagger.v3.oas.annotations.Operation;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,9 +44,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
+import cn.hutool.core.io.IoUtil;
 
 @Slf4j
 @RestController
@@ -51,7 +54,6 @@ public class FrameServiceController extends ApiController {
     @Autowired
     private FrameServiceService frameServiceService;
     
-
     @Autowired
     private DdlMetaService ddlMetaService;
     
@@ -62,14 +64,13 @@ public class FrameServiceController extends ApiController {
     public Result list(Integer clusterId) {
         return Result.success(frameServiceService.getFrameServiceList(clusterId));
     }
-
+    
     @RequestMapping("/listNewest")
     @Operation(summary = "获取组件列表(最高版本)")
     public Result listNewest(Integer clusterId, Boolean newest) {
-        return Result.success(frameServiceService.listNewest(clusterId,newest));
+        return Result.success(frameServiceService.listNewest(clusterId, newest));
     }
-
-
+    
     /**
      * 列表
      */
@@ -78,8 +79,6 @@ public class FrameServiceController extends ApiController {
     public Result listBasicFrameService(Integer clusterId) {
         return Result.success(frameServiceService.getBasicFrameServiceList(clusterId));
     }
-
-
     
     /**
      * 根据servce id列表查询服务
@@ -127,8 +126,7 @@ public class FrameServiceController extends ApiController {
         frameServiceService.removeById(id);
         return Result.success();
     }
-
-
+    
     @PostMapping("/updateDdl/{serviceId}")
     @Operation(summary = "更新service_ddl")
     public Result updateDdl(@PathVariable("serviceId") Integer serviceId, MultipartFile file) throws IOException {
@@ -136,16 +134,14 @@ public class FrameServiceController extends ApiController {
         ddlMetaService.updateServiceVosDdl(serviceId, content);
         return Result.success();
     }
-
+    
     @PostMapping("/updateDdl2/{serviceId}")
     @Operation(summary = "更新service_ddl2")
-    public Result updateDdl2(@PathVariable("serviceId") Integer serviceId,@RequestBody UpdateDdlDTO dto) {
+    public Result updateDdl2(@PathVariable("serviceId") Integer serviceId, @RequestBody UpdateDdlDTO dto) {
         ddlMetaService.updateServiceVosDdl(serviceId, dto.getContent());
         return Result.success();
     }
-
-
-
+    
     @RequestMapping("/getServiceDdl/{serviceId}")
     @Operation(summary = "查看serviceDdl定义")
     public Result getServiceDdl(@PathVariable("serviceId") Integer serviceId) {

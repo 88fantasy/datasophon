@@ -20,12 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.controller;
 
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.EnumUtil;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.cmd.ClusterServiceCommandService;
@@ -37,8 +33,14 @@ import com.datasophon.common.utils.ConverterUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.cmd.ClusterServiceCommandEntity;
 import com.datasophon.dao.entity.dag.DagDefinitionEntity;
+
 import io.swagger.v3.oas.annotations.Operation;
+
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,8 +48,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Arrays;
-import java.util.List;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.EnumUtil;
 
 @RestController
 @RequestMapping("cluster/service/command")
@@ -55,17 +59,16 @@ public class ClusterServiceCommandController extends ApiController {
     
     @Autowired
     private ClusterServiceCommandService clusterServiceCommandService;
-
-
+    
     @Autowired
     private ExtRepoInstallDelegateService extRepoInstallDelegateService;
-
+    
     @Autowired
     private VosProductInstallService vosProductActionService;
-
+    
     @Autowired
     private DAGService dagService;
-
+    
     /**
      * 查询集群服务指令列表
      */
@@ -73,16 +76,13 @@ public class ClusterServiceCommandController extends ApiController {
     public Result list(Integer clusterId, Integer page, Integer pageSize) {
         return clusterServiceCommandService.getServiceCommandlist(clusterId, page, pageSize);
     }
-
-
+    
     @RequestMapping("/findDagByPage")
     public Result findDagByPage(Integer clusterId, Integer page, Integer pageSize) {
-        IPage<DagDefinitionEntity>  result = dagService.findDagByPage(clusterId, page, pageSize);
+        IPage<DagDefinitionEntity> result = dagService.findDagByPage(clusterId, page, pageSize);
         return Result.success(result.getTotal(), result.getRecords());
     }
-
-
-
+    
     @UserPermission
     @RequestMapping("/generateGenericInstallCommand")
     @Operation(summary = "生成通用安装命令")
@@ -90,9 +90,7 @@ public class ClusterServiceCommandController extends ApiController {
         List<String> list = Arrays.asList(serviceNames.split(","));
         return Result.success(extRepoInstallDelegateService.generateGenericInstallCommand(clusterId, list));
     }
-
-
-
+    
     @PostMapping("/generateAndExecSrvInstCmd")
     @UserPermission
     @Operation(summary = "执行服务通用操作(启停,不含安装)")
@@ -105,12 +103,11 @@ public class ClusterServiceCommandController extends ApiController {
             return Result.error(Status.NO_SERVICE_EXECUTE.getMsg());
         }
     }
-
-
+    
     @PostMapping("/generateAndSrvRoleCmd")
     @UserPermission
     public Result generateAndSrvRoleCmd(Integer clusterId, String commandType, Integer serviceInstanceId,
-                                             String serviceRoleInstancesIds) {
+                                        String serviceRoleInstancesIds) {
         List<Integer> ids = ConverterUtils.convertIds(serviceRoleInstancesIds, Integer::parseInt);
         if (CollectionUtil.isNotEmpty(ids)) {
             CommandType command = EnumUtil.fromString(CommandType.class, commandType);
@@ -158,7 +155,5 @@ public class ClusterServiceCommandController extends ApiController {
         clusterServiceCommandService.removeByIds(Arrays.asList(ids));
         return Result.success();
     }
-
-
-
+    
 }

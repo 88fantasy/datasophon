@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.service;
 
 import com.datasophon.api.grpc.WorkerCommandClient;
@@ -37,15 +36,18 @@ import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.ServiceRoleState;
 import com.datasophon.domain.host.enums.HostState;
 import com.datasophon.domain.host.enums.MANAGED;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.stereotype.Service;
 
 /**
  * 节点状态巡检 Spring Service（替代 HostCheckActor）。
@@ -57,12 +59,12 @@ import java.util.concurrent.TimeoutException;
 @Service
 @RequiredArgsConstructor
 public class HostCheckService {
-
+    
     private final ClusterInfoService clusterInfoService;
     private final ClusterHostService clusterHostService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final WorkerCommandClient workerCommandClient;
-
+    
     /**
      * 检测所有物理集群主机的在线状态。
      *
@@ -81,11 +83,11 @@ public class HostCheckService {
             }
         }
     }
-
+    
     private void checkCluster(ClusterInfoEntity cluster, HostInfo hostInfo) {
         ClusterServiceRoleInstanceEntity prometheusInstance =
                 roleInstanceService.getOneServiceRole("Prometheus", "", cluster.getId());
-
+        
         List<ClusterHostDO> list = clusterHostService.getHostListByClusterId(cluster.getId());
         List<ClusterHostDO> updates = new ArrayList<>();
         for (ClusterHostDO host : list) {
@@ -106,7 +108,7 @@ public class HostCheckService {
             clusterHostService.updateBatchById(updates);
         }
     }
-
+    
     private void checkHostByPingPong(ClusterHostDO host) {
         host.setCheckTime(new Date());
         try {
@@ -129,7 +131,7 @@ public class HostCheckService {
             host.setHostState(HostState.OFFLINE);
         }
     }
-
+    
     private void checkHostByPrometheus(ClusterHostDO host, String promUrl) {
         try {
             String hostname = host.getHostname();

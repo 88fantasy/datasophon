@@ -20,10 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.service;
 
-import com.baomidou.mybatisplus.core.toolkit.Constants;
 import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
@@ -38,27 +36,30 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import com.baomidou.mybatisplus.core.toolkit.Constants;
 
 /**
  * Rack 属性文件生成 Spring Service，业务逻辑来自 {@link RackActor}。
  */
 @Service
 public class RackService {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(RackService.class);
-
+    
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final ClusterHostService hostService;
     private final ClusterInfoService clusterInfoService;
-
+    
     public RackService(ClusterServiceRoleInstanceService roleInstanceService,
                        ClusterHostService hostService,
                        ClusterInfoService clusterInfoService) {
@@ -66,7 +67,7 @@ public class RackService {
         this.hostService = hostService;
         this.clusterInfoService = clusterInfoService;
     }
-
+    
     /**
      * 异步生成 rack.properties 并推送到所有 NameNode（替代 RackActor.tell(command)）。
      */
@@ -75,12 +76,12 @@ public class RackService {
         List<ClusterServiceRoleInstanceEntity> roleList = roleInstanceService
                 .getServiceRoleInstanceListByClusterIdAndRoleName(command.getClusterId(), "NameNode");
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(command.getClusterId());
-
+        
         Generators generators = new Generators();
         generators.setFilename("rack.properties");
         generators.setOutputDirectory("etc/hadoop");
         generators.setConfigFormat("properties2");
-
+        
         ArrayList<ServiceConfig> serviceConfigs = new ArrayList<>();
         List<ClusterHostDO> hostList = hostService.list();
         for (ClusterHostDO host : hostList) {
@@ -88,10 +89,10 @@ public class RackService {
                     host.getIp(), Constants.SLASH + host.getRack(), "input");
             serviceConfigs.add(sc);
         }
-
+        
         HashMap<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
         configFileMap.put(generators, serviceConfigs);
-
+        
         for (ClusterServiceRoleInstanceEntity roleInstance : roleList) {
             ServiceRoleInfo serviceRoleInfo = new ServiceRoleInfo();
             serviceRoleInfo.setName("NameNode");

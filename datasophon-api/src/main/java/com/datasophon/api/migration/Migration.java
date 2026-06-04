@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.migration;
 
 import static com.datasophon.api.migration.DatabaseMigration.SPLIT;

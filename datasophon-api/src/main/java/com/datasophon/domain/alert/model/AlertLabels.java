@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.domain.alert.model;
 
 import lombok.Data;

@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.impl;
 
 import com.datasophon.api.interceptor.CsrfTokenInterceptor;
@@ -31,14 +30,14 @@ import com.datasophon.dao.entity.SessionEntity;
 import com.datasophon.dao.entity.UserInfoEntity;
 import com.datasophon.dao.mapper.SessionMapper;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,7 +98,7 @@ public class SessionServiceImpl extends ServiceImpl<SessionMapper, SessionEntity
     @Transactional(rollbackFor = Exception.class)
     public String createSession(UserInfoEntity user, String ip) {
         Date now = new Date();
-
+        
         // 清理该用户所有已存在的 session（互踢策略）
         List<SessionEntity> sessionList = sessionMapper.queryByUserId(user.getId());
         if (CollectionUtils.isNotEmpty(sessionList)) {
@@ -108,16 +107,16 @@ public class SessionServiceImpl extends ServiceImpl<SessionMapper, SessionEntity
                 sessionMapper.deleteById(old.getId());
             }
         }
-
+        
         // 创建全新 session
         SessionEntity session = new SessionEntity();
         session.setId(UUID.randomUUID().toString());
         session.setIp(ip);
         session.setUserId(user.getId());
         session.setLastLoginTime(now);
-
+        
         sessionMapper.insertSession(session);
-
+        
         return session.getId();
     }
     
@@ -135,7 +134,7 @@ public class SessionServiceImpl extends ServiceImpl<SessionMapper, SessionEntity
              * query session by user id and ip
              */
             SessionEntity session = sessionMapper.queryByUserIdAndIp(loginUser.getId(), ip);
-
+            
             // delete session and CSRF token
             CsrfTokenInterceptor.removeToken(session.getId());
             sessionMapper.deleteById(session.getId());

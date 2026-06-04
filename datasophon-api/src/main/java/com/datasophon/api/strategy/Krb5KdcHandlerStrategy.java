@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.utils.ProcessUtils;
@@ -35,5 +34,5 @@ public class Krb5KdcHandlerStrategy implements ServiceRoleStrategy {
             ProcessUtils.generateClusterVariable(clusterId, serviceName, "kdcHost", hosts.get(0));
         }
     }
-
+    
 }

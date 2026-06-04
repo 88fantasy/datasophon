@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.transport;
 
 import com.datasophon.common.command.ExecuteCmdCommand;
@@ -41,34 +40,34 @@ import com.datasophon.common.utils.ExecResult;
  * <p>Handler 注入此接口，唯一实现为 {@link GrpcWorkerCallAdapter}（{@code @Primary}）。</p>
  */
 public interface WorkerCallAdapter {
-
+    
     ExecResult executeCmd(String hostname, ExecuteCmdCommand cmd);
-
+    
     // ─── Service Role ─────────────────────────────────────────────────────────
-
+    
     ExecResult installServiceRole(String hostname, InstallServiceRoleCommand cmd);
-
+    
     ExecResult configureServiceRole(String hostname, GenerateServiceConfigCommand cmd);
-
+    
     ExecResult startServiceRole(String hostname, ServiceRoleOperateCommand cmd);
-
+    
     ExecResult stopServiceRole(String hostname, ServiceRoleOperateCommand cmd);
-
+    
     ExecResult restartServiceRole(String hostname, ServiceRoleOperateCommand cmd);
-
+    
     ExecResult serviceRoleStatus(String hostname, ServiceRoleOperateCommand cmd);
-
+    
     // ─── Auxiliary ───────────────────────────────────────────────────────────
-
+    
     ExecResult createUnixGroup(String hostname, CreateUnixGroupCommand cmd);
-
+    
     ExecResult deleteUnixGroup(String hostname, DelUnixGroupCommand cmd);
-
+    
     ExecResult createUnixUser(String hostname, CreateUnixUserCommand cmd);
-
+    
     ExecResult deleteUnixUser(String hostname, DelUnixUserCommand cmd);
-
+    
     ExecResult operateFile(String hostname, FileOperateCommand cmd);
-
+    
     ExecResult generateAlertConfig(String hostname, GenerateAlertConfigCommand cmd);
 }

@@ -20,31 +20,29 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.log;
-
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.sift.AbstractDiscriminator;
 
 import java.util.Arrays;
 import java.util.List;
+
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.sift.AbstractDiscriminator;
 
 /**
  * Task Log Discriminator
  */
 public class TaskLogDiscriminator extends AbstractDiscriminator<ILoggingEvent> {
-
-
+    
     /**
      * key
      */
     private String key;
-
+    
     /**
      * log base
      */
     private String logBase;
-
+    
     /**
      * logger name should be like:
      * Task Logger name should be like: Task-{xx}-{xxx}-{xxx}
@@ -63,25 +61,25 @@ public class TaskLogDiscriminator extends AbstractDiscriminator<ILoggingEvent> {
         }
         return "k8s/unknown_task";
     }
-
+    
     @Override
     public void start() {
         started = true;
     }
-
+    
     @Override
     public String getKey() {
         return key;
     }
-
+    
     public void setKey(String key) {
         this.key = key;
     }
-
+    
     public String getLogBase() {
         return logBase;
     }
-
+    
     public void setLogBase(String logBase) {
         this.logBase = logBase;
     }

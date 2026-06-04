@@ -20,15 +20,13 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.dao.mapper;
 
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceWebuis;
 
-import com.github.yulichang.base.MPJBaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.github.yulichang.base.MPJBaseMapper;
 
 /**
  * 集群服务角色对应web ui表 

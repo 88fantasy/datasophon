@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.utils;
 
 import com.datasophon.common.Constants;
@@ -29,11 +28,8 @@ import com.datasophon.common.enums.SSHAuthType;
 import com.datasophon.common.function.ThrowableConsumer;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.JschUtils;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-import lombok.Data;
+
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -43,6 +39,13 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 
+import lombok.Data;
+
+import org.slf4j.LoggerFactory;
+
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+
 public class MinaUtils {
     
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(MinaUtils.class);
@@ -51,10 +54,10 @@ public class MinaUtils {
      * 打开远程会话
      */
     public static Session openConnection(String sshHost, Integer sshPort, String sshUser, String password) throws JSchException {
-        if(Objects.isNull(sshPort)){
+        if (Objects.isNull(sshPort)) {
             sshPort = Constants.PORT_DEFAULT;
         }
-        if(StringUtils.isBlank(sshUser)){
+        if (StringUtils.isBlank(sshUser)) {
             sshUser = Constants.ROOT;
         }
         return JschUtils.getJSchSession(SSHAuthType.AUTO, sshHost, sshPort, sshUser, password);
@@ -95,12 +98,11 @@ public class MinaUtils {
     public static String execCmdWithResult(Session session, String command) {
         return JschUtils.execForStr(session, command).getExecOut();
     }
-
+    
     public static ExecResult execCmd(Session session, String command) {
         return JschUtils.execForStr(session, command);
     }
-
-
+    
     /**
      * 上传文件,相同路径ui覆盖
      *
@@ -126,14 +128,12 @@ public class MinaUtils {
         String arch = MinaUtils.execCmdWithResult(session, Constants.OS_ARCH_CMD);
         return ArchType.of(arch);
     }
-
-    public static String getFileString(Session session, String path){
+    
+    public static String getFileString(Session session, String path) {
         return JschUtils.getFileString(session, path, 5);
     }
-
-
-
-    public static void doWithSession(SessionCredential credential, ThrowableConsumer<Session> action) throws Exception{
+    
+    public static void doWithSession(SessionCredential credential, ThrowableConsumer<Session> action) throws Exception {
         Session session = null;
         try {
             session = openConnection(credential.getHost(), credential.getPort(), credential.getUsername(), credential.getPassword());
@@ -144,19 +144,19 @@ public class MinaUtils {
             }
         }
     }
-
+    
     @Data
     public static class SessionCredential {
-
+        
         private String host;
-
+        
         private Integer port = 22;
-
+        
         private String username;
-
+        
         private String password;
-
-        public SessionCredential(String host, Integer port,  String username, String password) {
+        
+        public SessionCredential(String host, Integer port, String username, String password) {
             this.host = host;
             this.password = password;
             this.port = port == null ? 22 : port;

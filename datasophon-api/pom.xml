@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ MIT License
   ~
@@ -156,7 +157,6 @@
             <artifactId>jetty-ee10-proxy</artifactId>
         </dependency>
 
-
         <dependency>
             <groupId>com.github.xiaoymin</groupId>
             <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
@@ -227,18 +227,19 @@
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
                 <version>4.9.10</version>
+                <configuration>
+                    <generateGitPropertiesFile>false</generateGitPropertiesFile>
+                </configuration>
                 <executions>
                     <execution>
                         <id>get-the-git-infos</id>
                         <goals>
                             <goal>revision</goal>
                         </goals>
-                        <phase>initialize</phase> <!-- 在资源处理前执行 -->
+                        <phase>initialize</phase>
+                        <!-- 在资源处理前执行 -->
                     </execution>
                 </executions>
-                <configuration>
-                    <generateGitPropertiesFile>false</generateGitPropertiesFile>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -247,10 +248,10 @@
                 <executions>
                     <execution>
                         <id>copy-release-notes</id>
-                        <phase>process-resources</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
+                        <phase>process-resources</phase>
                         <configuration>
                             <outputDirectory>${project.build.directory}</outputDirectory>
                             <resources>
@@ -259,7 +260,8 @@
                                     <includes>
                                         <include>release.txt</include>
                                     </includes>
-                                    <filtering>true</filtering> <!-- 开启属性过滤 -->
+                                    <filtering>true</filtering>
+                                    <!-- 开启属性过滤 -->
                                 </resource>
                             </resources>
                         </configuration>

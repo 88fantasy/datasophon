@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.dao.enums;
 
 import java.util.Arrays;

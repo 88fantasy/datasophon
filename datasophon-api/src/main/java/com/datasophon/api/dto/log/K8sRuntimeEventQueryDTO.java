@@ -8,10 +8,8 @@ import lombok.Data;
  */
 @Data
 public class K8sRuntimeEventQueryDTO {
-
+    
     @Schema(description = "服务实例ID")
     private Integer instanceId;
-
-
-
+    
 }

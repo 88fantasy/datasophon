@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service;
 
 import com.datasophon.common.utils.Result;
@@ -40,15 +39,11 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface ClusterServiceInstanceService extends IService<ClusterServiceInstanceEntity> {
     
     ClusterServiceInstanceEntity getServiceInstanceByClusterIdAndServiceName(Integer clusterId, String parentName);
-
-
+    
     List<ClusterServiceInstanceEntity> getServiceInstanceByClusterId(Integer clusterId);
-
-
-
+    
     List<ClusterServiceInstanceEntity> listAll(Integer clusterId);
     
-
     Result getServiceRoleType(Integer serviceInstanceId);
     
     Result configVersionCompare(Integer serviceInstanceId, Integer roleGroupId);
@@ -58,5 +53,5 @@ public interface ClusterServiceInstanceService extends IService<ClusterServiceIn
     List<ClusterServiceInstanceEntity> listRunningServiceInstance(Integer clusterId);
     
     boolean hasRunningRoleInstance(Integer serviceInstanceId);
-
+    
 }

@@ -1,8 +1,6 @@
 package com.datasophon.api.service.tmpfile.comp;
 
-import cn.hutool.core.util.StrUtil;
 import com.datasophon.api.vo.extrepo.DownloadProgressVO;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -14,6 +12,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import lombok.extern.slf4j.Slf4j;
+import cn.hutool.core.util.StrUtil;
+
 /**
  * CP 文件下载器
  * 支持 URL 格式： cp:///path/to/local/file
@@ -21,21 +22,21 @@ import java.nio.file.Paths;
  */
 @Slf4j
 public class CpFileDownloader implements RemoteFileDownloader {
-
+    
     private static final int BUFFER_SIZE = 8192;
-
+    
     @Override
     public boolean supports(String url) {
         return url != null && url.startsWith("cp://");
     }
-
+    
     @Override
     public void download(String url, File destFile, DownloadProgressVO progress) throws IOException {
         try {
             CpConnectionInfo connInfo = parseCpUrl(url);
-
+            
             Path sourcePath;
-
+            
             // 如果有 host 且不是 localhost，尝试作为网络路径处理
             if (StrUtil.isNotBlank(connInfo.host) && !"localhost".equals(connInfo.host) && !"127.0.0.1".equals(connInfo.host)) {
                 // 网络路径 (NFS/SMB 等)，直接使用路径
@@ -44,47 +45,48 @@ public class CpFileDownloader implements RemoteFileDownloader {
                 // 本地路径
                 sourcePath = Paths.get(connInfo.remotePath);
             }
-
+            
             log.info("开始拷贝文件：{} -> {}", sourcePath, destFile.getAbsolutePath());
-
+            
             // 确保目标文件父目录存在
             File parentDir = destFile.getParentFile();
             if (parentDir != null && !parentDir.exists()) {
                 parentDir.mkdirs();
             }
-
+            
             // 如果源文件是本地可访问的，使用 Files.copy
             if (Files.isReadable(sourcePath)) {
                 long fileSize = Files.size(sourcePath);
                 progress.setTotal(fileSize);
                 log.info("源文件大小：{} bytes", fileSize);
-
+                
                 int turn = 1;
-                try (InputStream in = Files.newInputStream(sourcePath);
-                     FileOutputStream out = new FileOutputStream(destFile)) {
-
+                try (
+                        InputStream in = Files.newInputStream(sourcePath);
+                        FileOutputStream out = new FileOutputStream(destFile)) {
+                    
                     byte[] buffer = new byte[BUFFER_SIZE];
                     int bytesRead;
                     long totalRead = 0;
-
+                    
                     while ((bytesRead = in.read(buffer)) != -1) {
                         if (progress.isCancel()) {
                             progress.setState(-2);
                             progress.setError("用户取消下载");
                             return;
                         }
-
+                        
                         out.write(buffer, 0, bytesRead);
                         totalRead += bytesRead;
                         progress.plusDownloaded(bytesRead);
-
+                        
                         // 每 100MB 输出进度
                         if (totalRead > (100L * 1024 * 1024 * turn)) {
                             turn++;
                             log.info("cp downloader 已经下载：{} bytes, 进度 {}%", totalRead, totalRead * 100 / fileSize);
                         }
                     }
-
+                    
                     log.info("CP 下载完成：{} bytes", totalRead);
                 }
             } else {
@@ -95,8 +97,7 @@ public class CpFileDownloader implements RemoteFileDownloader {
             throw new IOException("无效的 CP URL 格式：" + url, e);
         }
     }
-
-
+    
     /**
      * 解析 CP URL
      * 格式：cp:///path
@@ -106,20 +107,20 @@ public class CpFileDownloader implements RemoteFileDownloader {
      */
     private CpConnectionInfo parseCpUrl(String url) throws IOException, URISyntaxException {
         URI uri = new URI(url);
-
+        
         String host = uri.getHost();
         String path = uri.getPath();
-
+        
         if (StrUtil.isBlank(path)) {
             throw new IOException("CP URL 中缺少文件路径");
         }
         return new CpConnectionInfo(host, path);
     }
-
+    
     private static class CpConnectionInfo {
         String host;
         String remotePath;
-
+        
         CpConnectionInfo(String host, String remotePath) {
             this.host = host;
             this.remotePath = remotePath;

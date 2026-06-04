@@ -20,21 +20,23 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.grpc;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.common.Constants;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.mapper.ClusterHostMapper;
 import com.datasophon.domain.host.enums.HostState;
 import com.datasophon.grpc.api.GrpcConstants;
+
 import jakarta.annotation.PostConstruct;
+
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 /**
  * Master 启动时预热 {@link WorkerRegistry}，消除重启窗口期（H3 修复）。
@@ -48,19 +50,19 @@ import java.util.List;
  */
 @Component
 public class WorkerRegistryPrewarmer {
-
+    
     private static final Logger log = LoggerFactory.getLogger(WorkerRegistryPrewarmer.class);
-
+    
     // 端口常量统一从 GrpcConstants 读取，与 Worker 侧保持单点事实（SSOT）
-
+    
     private final WorkerRegistry workerRegistry;
     private final ClusterHostMapper clusterHostMapper;
-
+    
     public WorkerRegistryPrewarmer(WorkerRegistry workerRegistry, ClusterHostMapper clusterHostMapper) {
         this.workerRegistry = workerRegistry;
         this.clusterHostMapper = clusterHostMapper;
     }
-
+    
     @PostConstruct
     public void prewarm() {
         try {
@@ -68,12 +70,12 @@ public class WorkerRegistryPrewarmer {
                     new QueryWrapper<ClusterHostDO>()
                             .eq(Constants.MANAGED, 1)
                             .eq(Constants.HOST_STATE, HostState.RUNNING));
-
+            
             if (hosts.isEmpty()) {
                 log.info("WorkerRegistry prewarm: no managed+running hosts found in DB");
                 return;
             }
-
+            
             for (ClusterHostDO host : hosts) {
                 workerRegistry.preRegister(host.getHostname(), GrpcConstants.WORKER_GRPC_PORT, host.getClusterId(), host.getIp());
             }

@@ -20,16 +20,15 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.configuration;
+
+import java.util.concurrent.Executor;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-
-import java.util.concurrent.Executor;
 
 /**
  * 为 Master 端本地 Actor 收敛后的异步执行配置：
@@ -40,7 +39,7 @@ import java.util.concurrent.Executor;
  */
 @Configuration
 public class MasterAsyncConfig {
-
+    
     /**
      * 通用异步执行线程池，供 @Async("masterExecutor") 使用。
      * 核心 10 线程 / 最大 50 线程 / 队列 200，对应原 Pekka my-forkjoin-dispatcher。
@@ -57,7 +56,7 @@ public class MasterAsyncConfig {
         executor.initialize();
         return executor;
     }
-
+    
     /**
      * 任务调度器，供延迟执行（scheduleOnce 等价）以及 @Scheduled 方法使用。
      * Spring Boot 的 @EnableScheduling 默认使用此 bean（名称固定为 "taskScheduler"）。

@@ -20,11 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master;
 
-import cn.hutool.extra.spring.SpringUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.api.master.service.ClusterStatusService;
 import com.datasophon.api.master.service.HostCheckService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
@@ -33,16 +30,22 @@ import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.common.model.HostInfo;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+
+import cn.hutool.extra.spring.SpringUtil;
 
 /**
  * Master 侧周期性巡检 Spring Service，替代 {@link ActorUtils#init()} 中的三个
@@ -59,10 +62,10 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class MasterScheduledService {
-
+    
     private final HostCheckService hostCheckService;
     private final ClusterStatusService clusterStatusService;
-
+    
     /**
      * 节点检测任务，每 5 分钟巡检一次所有物理集群主机的在线状态。
      * 等价于原 ActorUtils: scheduleWithFixedDelay(30s, 300s, hostCheckActor)
@@ -76,7 +79,7 @@ public class MasterScheduledService {
             log.error("Scheduled host check failed: {}", e.getMessage(), e);
         }
     }
-
+    
     /**
      * 服务角色状态检测，每 30s 巡检一次所有服务角色实例。
      * 等价于原 ActorUtils: scheduleWithFixedDelay(15s, 30s, serviceRoleCheckActor)
@@ -110,7 +113,7 @@ public class MasterScheduledService {
             log.error("Scheduled service role check failed: {}", e.getMessage(), e);
         }
     }
-
+    
     /**
      * 集群整体状态检测，每 60s 检查一次所有集群的运行状态。
      * 等价于原 ActorUtils: scheduleWithFixedDelay(30s, 60s, clusterCheckActor)
@@ -124,7 +127,7 @@ public class MasterScheduledService {
             log.error("Scheduled cluster status check failed: {}", e.getMessage(), e);
         }
     }
-
+    
     /**
      * 延迟后对单个主机执行状态检测（替代 actorSystem.scheduler().scheduleOnce + HostCheckActor）。
      * 用于 generateHostAgentCommand 等场景：等待 worker 重启后再检测状态。

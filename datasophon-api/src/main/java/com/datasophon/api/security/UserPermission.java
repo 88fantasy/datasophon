@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.security;
 
 import static java.lang.annotation.ElementType.METHOD;

@@ -8,8 +8,8 @@ import lombok.Data;
  */
 @Data
 public class DeploySrvConfig {
-
+    
     private String name;
-
+    
     private Object value;
 }

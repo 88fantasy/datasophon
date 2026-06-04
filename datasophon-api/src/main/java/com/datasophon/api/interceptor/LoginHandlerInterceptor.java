@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.interceptor;
 
 import com.datasophon.api.security.Authenticator;
@@ -28,10 +27,10 @@ import com.datasophon.common.Constants;
 import com.datasophon.dao.entity.UserInfoEntity;
 import com.datasophon.dao.mapper.UserInfoMapper;
 
-import org.apache.commons.lang3.StringUtils;
-
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang3.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +69,7 @@ public class LoginHandlerInterceptor implements HandlerInterceptor {
         if (StringUtils.isEmpty(token)) {
             user = authenticator.getAuthUser(request);
             String url = request.getRequestURI();
-
+            
             // 跳过拦截的接口
             if (url.startsWith("/ddh/api/cluster/engineInfo")) {
                 logger.info("url:{}", url);

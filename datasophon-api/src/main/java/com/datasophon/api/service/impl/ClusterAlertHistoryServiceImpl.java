@@ -20,12 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.impl;
 
-import com.alibaba.fastjson2.JSONObject;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.master.service.AlertService;
 import com.datasophon.api.master.service.PrometheusService;
 import com.datasophon.api.service.ClusterAlertHistoryService;
@@ -39,6 +35,9 @@ import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.mapper.ClusterAlertHistoryMapper;
 import com.datasophon.dao.mapper.ClusterServiceRoleInstanceMapper;
 import com.datasophon.domain.alert.model.AlertMessage;
+
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +45,9 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import com.alibaba.fastjson2.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
 @Service("clusterAlertHistoryService")
 @Transactional
@@ -61,14 +62,14 @@ public class ClusterAlertHistoryServiceImpl extends ServiceImpl<ClusterAlertHist
     
     @Autowired
     private ClusterInfoService clusterInfoService;
-
+    
     @Autowired
     private AlertService alertService;
-
+    
     @Lazy
     @Autowired
     private PrometheusService prometheusService;
-
+    
     @Override
     public void saveAlertHistory(String alertMessage) {
         logger.warn("Receive Alert Message : {}", alertMessage);

@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.exceptions;
 
 import com.datasophon.api.enums.Status;

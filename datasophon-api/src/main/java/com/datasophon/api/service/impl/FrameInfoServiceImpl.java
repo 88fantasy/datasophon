@@ -20,11 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.frame.FrameK8sServiceService;
@@ -34,8 +31,6 @@ import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 import com.datasophon.dao.mapper.FrameInfoMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,24 +39,31 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
+import cn.hutool.core.bean.BeanUtil;
+
 @Service("frameInfoService")
 public class FrameInfoServiceImpl extends ServiceImpl<FrameInfoMapper, FrameInfoEntity> implements FrameInfoService {
-
+    
     @Autowired
     private FrameServiceService frameServiceService;
-
+    
     @Autowired
     private FrameK8sServiceService frameK8sServiceService;
-
+    
     @Override
     public List<FrameInfoVO> getAllClusterFrame() {
         List<FrameInfoEntity> entities = this.list();
         if (CollectionUtils.isEmpty(entities)) {
             return new ArrayList<>(0);
         }
-
+        
         List<FrameInfoVO> result = BeanUtil.copyToList(entities, FrameInfoVO.class);
-
+        
         Set<Integer> frameInfoIds = entities.stream().map(FrameInfoEntity::getId).collect(Collectors.toSet());
         Map<Integer, List<FrameServiceEntity>> frameServiceGroupBys = frameServiceService.lambdaQuery()
                 .select(FrameServiceEntity::getId, FrameServiceEntity::getFrameId, FrameServiceEntity::getFrameCode,
@@ -72,10 +74,9 @@ public class FrameInfoServiceImpl extends ServiceImpl<FrameInfoMapper, FrameInfo
                 .list()
                 .stream()
                 .collect(Collectors.groupingBy(FrameServiceEntity::getFrameId));
-
+        
         result.forEach(f -> f.setFrameServiceList(frameServiceGroupBys.get(f.getId())));
-
-
+        
         Map<Integer, List<FrameK8sServiceEntity>> k8sServiceGroupBys = frameK8sServiceService.lambdaQuery()
                 .select(FrameK8sServiceEntity::getId, FrameK8sServiceEntity::getFrameId,
                         FrameK8sServiceEntity::getServiceName, FrameK8sServiceEntity::getServiceVersion,
@@ -86,10 +87,10 @@ public class FrameInfoServiceImpl extends ServiceImpl<FrameInfoMapper, FrameInfo
                 .stream()
                 .collect(Collectors.groupingBy(FrameK8sServiceEntity::getFrameId));
         result.forEach(f -> f.setFrameK8sServiceList(k8sServiceGroupBys.get(f.getId())));
-
+        
         return result;
     }
-
+    
     @Override
     public FrameInfoEntity saveFrameIfAbsent(String frameCode) {
         FrameInfoEntity frameInfo = lambdaQuery().eq(FrameInfoEntity::getFrameCode, frameCode).one();
@@ -100,7 +101,7 @@ public class FrameInfoServiceImpl extends ServiceImpl<FrameInfoMapper, FrameInfo
         }
         return frameInfo;
     }
-
+    
     @Override
     public FrameInfoEntity getByFrameCode(String frameCode) {
         return lambdaQuery().eq(FrameInfoEntity::getFrameCode, frameCode).one();

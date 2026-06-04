@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.exceptions;
 
 import org.apache.commons.lang3.StringUtils;
@@ -32,12 +31,11 @@ public class BusinessException extends RuntimeException {
     public BusinessException(String message) {
         super(message);
     }
-
+    
     public BusinessException(List<String> message) {
         super(StringUtils.joinWith(";", message));
     }
-
-
+    
     public BusinessException(String message, Throwable cause) {
         super(message, cause);
     }

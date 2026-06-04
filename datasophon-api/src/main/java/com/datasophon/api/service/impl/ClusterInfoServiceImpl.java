@@ -20,11 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.load.GlobalVariables;
@@ -51,64 +48,68 @@ import com.datasophon.dao.entity.UserInfoEntity;
 import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.ClusterState;
 import com.datasophon.dao.mapper.ClusterInfoMapper;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
 @Slf4j
 @Service("clusterInfoService")
 @Transactional
 public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, ClusterInfoEntity>
         implements
-        ClusterInfoService {
-
+            ClusterInfoService {
+    
     @Autowired
     private ClusterInfoMapper clusterInfoMapper;
-
+    
     @Autowired
     private ClusterRoleUserService clusterUserService;
-
+    
     @Autowired
     private AlertGroupService alertGroupService;
-
+    
     @Autowired
     private ClusterAlertGroupMapService groupMapService;
-
-
+    
     @Autowired
     private ClusterYarnSchedulerService yarnSchedulerService;
-
+    
     @Autowired
     private ClusterNodeLabelService nodeLabelService;
-
+    
     @Autowired
     private ClusterQueueCapacityService queueCapacityService;
-
+    
     @Autowired
     private ClusterRackService rackService;
-
+    
     @Autowired
     private ClusterServiceInstanceService clusterServiceInstanceService;
-
+    
     @Autowired
     private K8sServiceInstanceService k8sServiceInstanceService;
-
+    
     @Autowired
     private ClusterDeleteService clusterDeleteService;
-
+    
     @Override
     public ClusterInfoEntity getClusterByClusterCode(String clusterCode) {
         return clusterInfoMapper.getClusterByClusterCode(clusterCode);
     }
-
+    
     @Override
     public ClusterInfoEntity saveCluster(ClusterInfoEntity clusterInfo) {
         if (getBaseMapper().isDuplicate(clusterInfo, ClusterInfoEntity::getClusterCode)) {
@@ -118,7 +119,7 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
         clusterInfo.setCreateBy(SecurityUtils.getAuthUser().getUsername());
         clusterInfo.setClusterState(ClusterState.NEED_CONFIG);
         save(clusterInfo);
-
+        
         if (ClusterArchType.physical.equals(clusterInfo.getArchType())) {
             List<AlertGroupEntity> alertGroupList = alertGroupService.list();
             for (AlertGroupEntity alertGroupEntity : alertGroupList) {
@@ -127,31 +128,30 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
                 alertGroupMap.setClusterId(clusterInfo.getId());
                 groupMapService.save(alertGroupMap);
             }
-
+            
             yarnSchedulerService.createDefaultYarnScheduler(clusterInfo.getId());
-
+            
             nodeLabelService.createDefaultNodeLabel(clusterInfo.getId());
-
+            
             queueCapacityService.createDefaultQueue(clusterInfo.getId());
-
+            
             rackService.createDefaultRack(clusterInfo.getId());
-
+            
             putClusterVariable(clusterInfo);
         }
-
+        
         return clusterInfo;
-
+        
     }
-
+    
     private void putClusterVariable(ClusterInfoEntity clusterInfo) {
         ConcurrentHashMap<String, String> globalVariables = GlobalVariables.genDefaultGlobalVariables();
         globalVariables.put(GlobalVariables.surroundKey("HADOOP_HOME"),
-                Constants.INSTALL_PATH + Constants.SLASH + PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "HDFS")
-        );
+                Constants.INSTALL_PATH + Constants.SLASH + PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "HDFS"));
         globalVariables.put(GlobalVariables.surroundKey(GlobalVariables.CLUSTER_CODE), clusterInfo.getClusterFrame());
         GlobalVariables.put(clusterInfo.getId(), globalVariables);
     }
-
+    
     @Override
     public List<ClusterInfoEntity> getClusterList() {
         List<ClusterInfoEntity> list = this.list();
@@ -162,19 +162,19 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
         }
         return list;
     }
-
+    
     @Override
     public List<ClusterInfoEntity> runningClusterList() {
         return lambdaQuery().eq(ClusterInfoEntity::getClusterState, ClusterState.RUNNING).list();
     }
-
+    
     @Override
     public List<ClusterInfoEntity> getReadyClusterList() {
         return lambdaQuery()
                 .notIn(ClusterInfoEntity::getClusterState, Arrays.asList(ClusterState.NEED_CONFIG, ClusterState.DELETING))
                 .list();
     }
-
+    
     @Override
     public void updateClusterState(Integer clusterId, Integer clusterState) {
         ClusterInfoEntity clusterInfo = this.getById(clusterId);
@@ -186,12 +186,12 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
             throw new BusinessHintException("未知状态");
         }
     }
-
+    
     @Override
     public List<ClusterInfoEntity> getClusterByFrameCode(String frameCode) {
         return this.list(new QueryWrapper<ClusterInfoEntity>().eq(Constants.CLUSTER_FRAME, frameCode));
     }
-
+    
     @Override
     public void updateCluster(ClusterInfoEntity clusterInfo) {
         ClusterInfoEntity db = getById(clusterInfo.getId());
@@ -209,7 +209,7 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
         db.setClusterName(clusterInfo.getClusterName());
         updateById(db);
     }
-
+    
     @Override
     public void deleteCluster(Integer clusterId) {
         ClusterInfoEntity clusterInfo = this.getById(clusterId);
@@ -219,7 +219,7 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
         if (ClusterState.DELETING.equals(clusterInfo.getClusterState())) {
             throw new BusinessHintException("集群已经在删除中，不能重复删除");
         }
-
+        
         if (ClusterArchType.physical.equals(clusterInfo.getArchType())) {
             boolean canDelete = false;
             if (ClusterState.STOP.equals(clusterInfo.getClusterState())) {
@@ -245,5 +245,5 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
             }
         });
     }
-
+    
 }

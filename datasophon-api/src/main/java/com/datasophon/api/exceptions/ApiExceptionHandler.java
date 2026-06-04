@@ -20,11 +20,17 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.exceptions;
 
 import com.datasophon.api.enums.Status;
 import com.datasophon.common.utils.Result;
+
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -32,11 +38,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.ConstraintViolationException;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Exception Handler
@@ -82,7 +83,7 @@ public class ApiExceptionHandler {
         logger.error(e.getMessage(), e);
         return Result.error(e.getMessage());
     }
-
+    
     @ExceptionHandler(BusinessHintException.class)
     public Result businessHintException(BusinessHintException e) {
         return Result.error(e.getMessage());

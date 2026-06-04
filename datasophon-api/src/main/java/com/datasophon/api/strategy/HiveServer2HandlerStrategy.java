@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
@@ -32,12 +31,13 @@ import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implements ServiceRoleStrategy {
     
@@ -45,7 +45,7 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         CacheUtils.put("enableHiveServer2HA", false);
-        if(!hosts.isEmpty()) {
+        if (!hosts.isEmpty()) {
             ProcessUtils.generateClusterVariable(clusterId, serviceName, "masterHiveServer2", hosts.get(0));
         }
         if (hosts.size() > 1) {
@@ -111,11 +111,11 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
     
     @Override
     public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-        if (GlobalVariables.containsValueByServerce(serviceRoleInfo.getClusterId(),serviceRoleInfo.getServiceName(), "masterHiveServer2")
-                && !hostname.equals(GlobalVariables.getValueByService(serviceRoleInfo.getClusterId(), serviceRoleInfo.getServiceName(),"masterHiveServer2"))) {
+        if (GlobalVariables.containsValueByServerce(serviceRoleInfo.getClusterId(), serviceRoleInfo.getServiceName(), "masterHiveServer2")
+                && !hostname.equals(GlobalVariables.getValueByService(serviceRoleInfo.getClusterId(), serviceRoleInfo.getServiceName(), "masterHiveServer2"))) {
             logger.info("set to slave hiveserver2");
             serviceRoleInfo.setSlave(true);
         }
     }
-
+    
 }

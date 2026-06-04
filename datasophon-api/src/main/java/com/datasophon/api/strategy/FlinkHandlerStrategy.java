@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
@@ -36,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 
 public class FlinkHandlerStrategy extends ServiceHandlerAbstract implements ServiceRoleStrategy {
-
     
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {

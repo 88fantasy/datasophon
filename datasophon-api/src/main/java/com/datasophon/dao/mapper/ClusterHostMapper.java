@@ -20,19 +20,18 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.dao.mapper;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.datasophon.common.Constants;
 import com.datasophon.dao.entity.ClusterHostDO;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-
 import java.util.List;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
  * 集群主机表 
@@ -45,14 +44,14 @@ import java.util.List;
 public interface ClusterHostMapper extends BaseMapper<ClusterHostDO> {
     
     ClusterHostDO getClusterHostByHostname(@Param("hostname") String hostname);
-
+    
     ClusterHostDO getClusterHostByIp(@Param("ip") String ip);
     
     void updateBatchNodeLabel(@Param("hostIds") String hostIds, @Param("nodeLabel") String nodeLabel);
-
+    
     default List<ClusterHostDO> getClusterHostByRack(Integer clusterId, String rack) {
         return selectList(new QueryWrapper<ClusterHostDO>()
-            .eq(Constants.CLUSTER_ID, clusterId)
-            .eq(Constants.RACK, rack));
+                .eq(Constants.CLUSTER_ID, clusterId)
+                .eq(Constants.RACK, rack));
     }
 }

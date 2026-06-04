@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service;
 
 import com.datasophon.common.utils.Result;
@@ -38,7 +37,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @date 2022-04-18 14:38:53
  */
 public interface FrameServiceRoleService extends IService<FrameServiceRoleEntity> {
-
+    
     List<FrameServiceRoleEntity> getServiceRoleList(Integer clusterId, List<Integer> serviceIds, Integer serviceRoleType);
     
     FrameServiceRoleEntity getServiceRoleByServiceIdAndServiceRoleName(Integer id, String name);
@@ -50,6 +49,6 @@ public interface FrameServiceRoleService extends IService<FrameServiceRoleEntity
     Result getServiceRoleByServiceName(Integer clusterId, String serviceName);
     
     List<FrameServiceRoleEntity> getAllServiceRoleList(Integer frameServiceId);
-
+    
     String getServiceName(String frameCode, String serviceRoleName);
 }

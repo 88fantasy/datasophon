@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.security;
 
 import org.apache.commons.lang3.StringUtils;

@@ -8,7 +8,7 @@ import lombok.Data;
  */
 @Data
 public class MetaParseOption {
-
+    
     private String root;
-
+    
 }

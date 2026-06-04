@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import org.apache.commons.lang3.StringUtils;
@@ -32,7 +31,6 @@ public class ServiceRoleStrategyContext {
     
     private static final Map<String, ServiceRoleStrategy> strategyMap = new ConcurrentHashMap<>();
     
-
     static {
         strategyMap.put("NameNode", new NameNodeHandlerStrategy());
         strategyMap.put("ResourceManager", new RMHandlerStrategy());
@@ -60,15 +58,14 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("HBASE", new HBaseHandlerStrategy());
         strategyMap.put("FLINK", new FlinkHandlerStrategy());
         strategyMap.put("Etcd", new EtcdHandlerStrategy());
-
+        
     }
-
+    
     public static ServiceRoleStrategy getServiceRoleHandler(String type) {
         if (StringUtils.isBlank(type)) {
             return null;
         }
         return strategyMap.get(type);
     }
-
-
+    
 }

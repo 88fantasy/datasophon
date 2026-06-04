@@ -20,29 +20,32 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.cmd.impl;
 
-import cn.hutool.core.date.BetweenFormatter;
-import cn.hutool.core.date.DateUnit;
-import cn.hutool.core.date.DateUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.datasophon.api.service.cmd.ClusterServiceCommandService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.cmd.ClusterServiceCommandEntity;
 import com.datasophon.dao.mapper.cmd.ClusterServiceCommandMapper;
-import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
+import org.springframework.stereotype.Service;
+
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
+import cn.hutool.core.date.BetweenFormatter;
+import cn.hutool.core.date.DateUnit;
+import cn.hutool.core.date.DateUtil;
+
 @Service("clusterServiceCommandService")
 public class ClusterServiceCommandServiceImpl extends ServiceImpl<ClusterServiceCommandMapper, ClusterServiceCommandEntity>
-        implements ClusterServiceCommandService {
-
+        implements
+            ClusterServiceCommandService {
+    
     @Override
     public Result getServiceCommandlist(Integer clusterId, Integer page, Integer pageSize) {
         Integer offset = (page - 1) * pageSize;
@@ -63,11 +66,10 @@ public class ClusterServiceCommandServiceImpl extends ServiceImpl<ClusterService
         }
         return Result.success(total, list);
     }
-
+    
     @Override
     public ClusterServiceCommandEntity getCommandById(String commandId) {
-       return lambdaQuery().eq(ClusterServiceCommandEntity::getCommandId, commandId).one();
+        return lambdaQuery().eq(ClusterServiceCommandEntity::getCommandId, commandId).one();
     }
-
-
+    
 }

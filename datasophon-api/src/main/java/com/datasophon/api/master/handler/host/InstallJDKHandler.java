@@ -20,22 +20,24 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.handler.host;
 
 import com.datasophon.api.utils.MinaUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.model.HostInfo;
-import com.jcraft.jsch.Session;
+
 import org.apache.commons.lang3.StringUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.jcraft.jsch.Session;
+
 public class InstallJDKHandler implements DispatcherWorkerHandler {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(InstallJDKHandler.class);
-
+    
     @Override
     public boolean handle(Session session, HostInfo hostInfo) {
         hostInfo.setProgress(60);
@@ -46,19 +48,19 @@ public class InstallJDKHandler implements DispatcherWorkerHandler {
             String pkg = null;
             if (ArchType.X86_64 == arch) {
                 pkg = Constants.X86JDK;
-            } else  if (ArchType.AARCH64 == arch) {
+            } else if (ArchType.AARCH64 == arch) {
                 pkg = Constants.ARMJDK;
             }
             if (pkg == null) {
                 hostInfo.setMessage(String.format("安装jdk失败，未找到适配架构%s的jdk安装包", arch));
                 return false;
             }
-
+            
             hostInfo.setMessage("开始安装JDK");
             MinaUtils.uploadFile(session, "/usr/local", Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + pkg);
             MinaUtils.execCmdWithResult(session, String.format("tar -zxvf /usr/local/%s -C /usr/local/", pkg));
         }
-
+        
         return true;
     }
 }

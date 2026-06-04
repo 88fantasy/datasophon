@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.dao.entity;
 
 import com.datasophon.dao.enums.UserType;

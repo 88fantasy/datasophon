@@ -1,12 +1,7 @@
 package com.datasophon.api.service.ddl.impl;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.SecureUtil;
-import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
-import com.alibaba.fastjson2.TypeReference;
+import static com.datasophon.common.Constants.FRAMEWORK_TPL;
+
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.load.GlobalVariables;
@@ -51,17 +46,12 @@ import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.FrameServiceRoleEntity;
 import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 import com.datasophon.dao.enums.NeedRestart;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.PropertyResolver;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
+
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -74,7 +64,23 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.datasophon.common.Constants.FRAMEWORK_TPL;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.PropertyResolver;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.TypeReference;
+
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
 
 /**
  * @author zhanghuangbin
@@ -82,46 +88,44 @@ import static com.datasophon.common.Constants.FRAMEWORK_TPL;
 @Slf4j
 @Service("ddlMetaService")
 public class DdlMetaServiceImpl implements DdlMetaService {
-
+    
     @Autowired
     private PropertyResolver propertyResolver;
-
+    
     @Autowired
     private FrameServiceService frameServiceService;
-
+    
     @Autowired
     private FrameServiceRoleService roleService;
-
+    
     @Autowired
     private FrameInfoService frameInfoService;
-
+    
     @Autowired
     private ClusterInfoService clusterInfoService;
-
+    
     @Autowired
     private ClusterServiceInstanceService serviceInstanceService;
-
+    
     @Autowired
     private ClusterServiceRoleInstanceService clusterServiceRoleInstanceService;
-
+    
     @Autowired
     private ClusterServiceInstanceRoleGroupService roleGroupService;
-
+    
     @Autowired
     private ClusterServiceRoleGroupConfigService roleGroupConfigService;
-
+    
     @Autowired
     private Validator validator;
-
+    
     @Autowired
     private FrameK8sServiceService frameK8sServiceService;
-
-
+    
     private static final String HDFS = "HDFS";
-
+    
     private static final String HADOOP = "HADOOP";
-
-
+    
     /**
      * 内存数据无法回滚，在新的事务提交，防止外部事务回滚
      * @return
@@ -130,15 +134,15 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     public FrameInfoEntity initFramework(String frameCode) {
         FrameInfoEntity exists = frameInfoService.getByFrameCode(frameCode);
         if (exists != null) {
-           return exists;
+            return exists;
         }
         FrameInfoEntity entity = frameInfoService.saveFrameIfAbsent(frameCode);
         log.info("使用框架模板{}初始化框架{}", FileUtil.file(FRAMEWORK_TPL).getAbsolutePath(), entity.getFrameCode());
-
+        
         File tplDir = FileUtil.file(FRAMEWORK_TPL);
         MetaStorage metaStorage = StorageUtils.getMetaStorage();
         try {
-            metaStorage.moveToStorage(tplDir, relative-> "meta/" + entity.getFrameCode() + "/" + MetaStorage.VOS_DDL + "/" + relative);
+            metaStorage.moveToStorage(tplDir, relative -> "meta/" + entity.getFrameCode() + "/" + MetaStorage.VOS_DDL + "/" + relative);
         } catch (IOException e) {
             throw new BusinessException(String.format("初始化框架失败，%s", e.getMessage()), e);
         }
@@ -159,13 +163,12 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         }
         return entity;
     }
-
-
+    
     @Override
     public FrameServiceEntity loadServiceVosDdl(List<ClusterInfoEntity> clusters, FrameInfoEntity frameInfo, String serviceName, String serviceDdl) {
         ServiceInfo serviceInfo = JSONObject.parseObject(serviceDdl, new TypeReference<ServiceInfo>() {
         });
-
+        
         if (StrUtil.isNotBlank(serviceName)) {
             if (!serviceName.equals(serviceInfo.getName())) {
                 throw new IllegalStateException(String.format("服务名称%s与ddl定义的不一致", serviceName));
@@ -173,13 +176,13 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         } else {
             serviceName = serviceInfo.getName();
         }
-        Set<ConstraintViolation<ServiceInfo>>  errors = validator.validate(serviceInfo);
+        Set<ConstraintViolation<ServiceInfo>> errors = validator.validate(serviceInfo);
         if (!errors.isEmpty()) {
             List<String> errorList = new ArrayList<>();
-            errors.forEach(e-> errorList.add(e.getMessage()));
+            errors.forEach(e -> errorList.add(e.getMessage()));
             throw new IllegalStateException(String.format("服务%s的ddl文件不规范，存在错误:\n%s", serviceName, StrUtil.join(";", errorList)));
         }
-//        @see ServiceInstallHandler#createLink
+        // @see ServiceInstallHandler#createLink
         if (Objects.isNull(serviceInfo.getArch()) || serviceInfo.getArch().isEmpty()) {
             throw new IllegalStateException(String.format("服务%s的ddl文件缺少arch字段，请为每种CPU架构配置packageName/decompressPackageName。", serviceName));
         }
@@ -193,8 +196,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             }
         }
         log.info("arch:{}", serviceInfo.getArch());
-
-
+        
         // save service config
         List<ServiceConfig> allParameters = serviceInfo.getParameters();
         Map<String, ServiceConfig> map = allParameters.stream().collect(
@@ -206,18 +208,14 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         String representativeDcp = representativeDecompressPackageName(serviceInfo);
         PackageUtils.putServicePackageName(frameInfo.getFrameCode(), serviceName, representativeDcp);
         putServiceHomeToVariable(frameInfo.getFrameCode(), clusters, serviceName, representativeDcp);
-
-
+        
         // save service and service config
         FrameServiceEntity serviceEntity = saveFrameService(frameInfo, serviceName, serviceDdl, serviceInfo, configFileMap);
         // save frame service role
         saveFrameServiceRole(frameInfo.getFrameCode(), serviceName, serviceInfo, serviceEntity);
         return serviceEntity;
     }
-
-
-
-
+    
     /**
      * @deprecated 解决完HADOOP_HOME后，可以去掉该方法的调用
      */
@@ -233,8 +231,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             }
         }
     }
-
-
+    
     /**
      * 从 arch 块中取代表性 decompressPackageName（优先 "common"，否则取第一个非空值）。
      * 用于向无架构上下文的消费者（PackageUtils、SERVICE_HOME、DB 实体列）提供单值。
@@ -252,10 +249,10 @@ public class DdlMetaServiceImpl implements DdlMetaService {
                 .findFirst()
                 .orElse(null);
     }
-
+    
     private void saveFrameServiceRole(String frameCode, String serviceName, ServiceInfo serviceInfo, FrameServiceEntity serviceEntity) {
         List<ServiceRoleInfo> serviceRoles = serviceInfo.getRoles();
-
+        
         for (int i = 0; i < serviceRoles.size(); i++) {
             ServiceRoleInfo serviceRole = serviceRoles.get(i);
             serviceRole.setParentName(serviceName);
@@ -289,7 +286,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         log.info("put {} {} service info into cache", frameCode, serviceName);
         ServiceInfoMap.put(frameCode + Constants.UNDERLINE + serviceName, serviceInfo);
     }
-
+    
     private FrameServiceEntity saveFrameService(FrameInfoEntity frameInfo, String serviceName, String serviceDdl,
                                                 ServiceInfo serviceInfo, Map<Generators, List<ServiceConfig>> configFileMap) {
         List<ServiceConfig> allParameters = serviceInfo.getParameters();
@@ -313,13 +310,13 @@ public class DdlMetaServiceImpl implements DdlMetaService {
                 frameServiceService.updateById(serviceEntity);
             }
         }
-
+        
         ServiceConfigMap.put(frameInfo.getFrameCode() + Constants.UNDERLINE + serviceInfo.getName() + Constants.CONFIG, allParameters);
         ServiceConfigFileMap.put(frameInfo.getFrameCode() + Constants.UNDERLINE + serviceInfo.getName() + Constants.CONFIG_FILE, configFileMap);
-
+        
         return serviceEntity;
     }
-
+    
     private Map<Generators, List<ServiceConfig>> buildConfigFileMap(ServiceInfo serviceInfo, Map<String, ServiceConfig> map) {
         Map<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
         ConfigWriter configWriter = serviceInfo.getConfigWriter();
@@ -329,7 +326,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             }
             return true;
         }).collect(Collectors.toList());
-
+        
         for (Generators generator : generators) {
             List<ServiceConfig> list = new ArrayList<>();
             List<String> includeParams = generator.getIncludeParams();
@@ -347,11 +344,10 @@ public class DdlMetaServiceImpl implements DdlMetaService {
                 configFileMap.put(generator, list);
             }
         }
-
+        
         return configFileMap;
     }
-
-
+    
     private void updateServiceInstanceConfig(String frameCode, String serviceName, List<ServiceConfig> parameters) {
         // 查询frameCode相同的集群
         List<ClusterInfoEntity> clusters = clusterInfoService.getClusterByFrameCode(frameCode);
@@ -361,11 +357,10 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             if (serviceInstance == null) {
                 continue;
             }
-
-
+            
             ClusterServiceRoleGroupConfig config = roleGroupService.getRoleGroupConfigByServiceId(serviceInstance.getId());
             updateServiceRoleGroupConfig(config, parameters);
-
+            
             Integer roleGroupId = (Integer) CacheUtils.get("UseRoleGroup_" + serviceInstance.getId());
             if (roleGroupId != null) {
                 ClusterServiceRoleGroupConfig cacheConfig = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
@@ -373,7 +368,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
                     updateServiceRoleGroupConfig(config, parameters);
                 }
             }
-
+            
             clusterServiceRoleInstanceService.lambdaUpdate()
                     .eq(ClusterServiceRoleInstanceEntity::getServiceId, serviceInstance.getId())
                     .eq(ClusterServiceRoleInstanceEntity::getRoleGroupId, config.getRoleGroupId())
@@ -381,8 +376,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
                     .update();
         }
     }
-
-
+    
     private void updateServiceRoleGroupConfig(ClusterServiceRoleGroupConfig config, List<ServiceConfig> parameters) {
         String configJson = config.getConfigJson();
         List<ServiceConfig> serviceConfigs = JSONArray.parseArray(configJson, ServiceConfig.class);
@@ -391,7 +385,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         config.setConfigJson(JSONObject.toJSONString(serviceConfigs));
         roleGroupConfigService.updateById(config);
     }
-
+    
     private void buildServiceEntity(FrameInfoEntity frameInfo, String serviceName, String serviceDdl,
                                     ServiceInfo serviceInfo, String serviceInfoMd5, FrameServiceEntity serviceEntity,
                                     Map<Generators, List<ServiceConfig>> configFileMap) {
@@ -412,12 +406,11 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         serviceEntity.setSortNum(serviceInfo.getSortNum());
         serviceEntity.setType(serviceInfo.getType());
     }
-
-
+    
     @Override
     public FrameK8sServiceEntity loadServiceK8sDdl(FrameInfoEntity frameInfo, String serviceName, String serviceDdl) {
         K8sServiceInfo serviceInfo = YamlUtils.parseYaml(serviceDdl, K8sServiceInfo.class);
-
+        
         if (StrUtil.isNotBlank(serviceName)) {
             if (!serviceName.equals(serviceInfo.getName())) {
                 throw new BusinessHintException(String.format("服务名称%s与ddl定义的不一致", serviceName));
@@ -437,14 +430,14 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         if (supportArtifacts.isEmpty()) {
             throw new BusinessHintException("服务%s的manifest文件不规范，artifact字段，至少支持一种部署方式");
         }
-
-        Set<ConstraintViolation<K8sServiceInfo>>  errors = validator.validate(serviceInfo);
+        
+        Set<ConstraintViolation<K8sServiceInfo>> errors = validator.validate(serviceInfo);
         if (!errors.isEmpty()) {
             List<String> errorList = new ArrayList<>();
-            errors.forEach(e-> errorList.add(e.getMessage()));
+            errors.forEach(e -> errorList.add(e.getMessage()));
             throw new BusinessHintException(String.format("服务%s的manifest文件不规范，存在错误:\n%s", serviceName, StrUtil.join(";", errorList)));
         }
-
+        
         FrameK8sServiceEntity entity = frameK8sServiceService.lambdaQuery()
                 .eq(FrameK8sServiceEntity::getFrameId, frameInfo.getId())
                 .eq(FrameK8sServiceEntity::getServiceName, serviceName)
@@ -463,10 +456,10 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         entity.setSupportArtifacts(supportArtifacts);
         entity.setServiceVersion(serviceInfo.getVersion());
         frameK8sServiceService.saveOrUpdate(entity);
-
+        
         return entity;
     }
-
+    
     @Override
     public void updateServiceVosDdl(Integer serviceId, String serviceDdl) {
         FrameServiceEntity service = frameServiceService.getById(serviceId);
@@ -474,35 +467,35 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         FrameInfoEntity frameInfo = frameInfoService.getById(service.getFrameId());
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
         loadServiceVosDdl(clusters, frameInfo, service.getServiceName(), serviceDdl);
-
+        
         ServiceMetaItem item = new ServiceMetaItem();
         item.setServiceName(service.getServiceName());
         item.setType(MetaStorage.VOS_DDL);
         item.setFramework(frameInfo.getFrameCode());
-        MetaStorage metaStorage =  StorageUtils.getMetaStorage();
+        MetaStorage metaStorage = StorageUtils.getMetaStorage();
         try {
             metaStorage.saveServiceDdl(item, serviceDdl);
         } catch (IOException e) {
             throw new IllegalStateException(String.format("IO异常，%s", e.getMessage()), e);
         }
     }
-
+    
     @Override
     public String getServiceVosDdl(Integer serviceId) {
         FrameServiceEntity service = frameServiceService.getById(serviceId);
         Objects.requireNonNull(service);
         FrameInfoEntity frameInfo = frameInfoService.getById(service.getFrameId());
-
+        
         ServiceMetaItem item = new ServiceMetaItem();
         item.setServiceName(service.getServiceName());
         item.setType(MetaStorage.VOS_DDL);
         item.setFramework(frameInfo.getFrameCode());
-        MetaStorage metaStorage =  StorageUtils.getMetaStorage();
+        MetaStorage metaStorage = StorageUtils.getMetaStorage();
         try {
             return metaStorage.getServiceDdL(item);
         } catch (FileNotFoundException e) {
             throw new IllegalArgumentException(String.format("服务%s的定义不存在", service.getServiceName()));
         }
     }
-
+    
 }

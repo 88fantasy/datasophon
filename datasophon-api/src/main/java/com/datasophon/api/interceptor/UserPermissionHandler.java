@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.interceptor;
 
 import com.datasophon.api.enums.Status;
@@ -30,16 +29,18 @@ import com.datasophon.api.service.ClusterRoleUserService;
 import com.datasophon.api.utils.SecurityUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.dao.entity.UserInfoEntity;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.util.Map;
 
 @Component
 public class UserPermissionHandler implements HandlerInterceptor {
@@ -57,7 +58,7 @@ public class UserPermissionHandler implements HandlerInterceptor {
             UserPermission annotation = handlerMethod.getMethod().getAnnotation(UserPermission.class);
             requireCheckAdminIdentity = annotation != null;
         }
-
+        
         if (requireCheckAdminIdentity) {
             boolean hasRight = false;
             UserInfoEntity authUser = (UserInfoEntity) request.getSession().getAttribute(Constants.SESSION_USER);
@@ -73,7 +74,7 @@ public class UserPermissionHandler implements HandlerInterceptor {
             }
             throw new ServiceException(Status.USER_NO_OPERATION_PERM);
         }
-
+        
         return true;
     }
 }

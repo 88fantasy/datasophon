@@ -20,11 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.service;
 
-import cn.hutool.core.date.DateUtil;
-import com.alibaba.fastjson2.JSONArray;
 import com.datasophon.api.master.handler.k8s.K8sAgentUninstallHandler;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
@@ -49,10 +46,6 @@ import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.enums.ClusterArchType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
@@ -60,15 +53,24 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
+import com.alibaba.fastjson2.JSONArray;
+
+import cn.hutool.core.date.DateUtil;
+
 /**
  * 集群删除 Spring Service，业务逻辑完全来自 {@link ClusterDeleteActor}。
  */
 @Service
 public class ClusterDeleteService {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(ClusterDeleteService.class);
     private static final String DEPRECATED = "Deprecated";
-
+    
     private final ClusterInfoService clusterInfoService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final ClusterServiceRoleGroupConfigService roleGroupConfigService;
@@ -79,17 +81,17 @@ public class ClusterDeleteService {
     private final K8sServiceInstanceValuesService k8sServiceInstanceValuesService;
     private final K8sClusterNamespaceService k8sClusterNamespaceService;
     private final K8sService k8sService;
-
+    
     public ClusterDeleteService(ClusterInfoService clusterInfoService,
-                                 ClusterServiceRoleInstanceService roleInstanceService,
-                                 ClusterServiceRoleGroupConfigService roleGroupConfigService,
-                                 ClusterServiceInstanceService serviceInstanceService,
-                                 ClusterHostService hostService,
-                                 K8sClusterConfigService k8sClusterConfigService,
-                                 K8sServiceInstanceService k8sServiceInstanceService,
-                                 K8sServiceInstanceValuesService k8sServiceInstanceValuesService,
-                                 K8sClusterNamespaceService k8sClusterNamespaceService,
-                                 K8sService k8sService) {
+                                ClusterServiceRoleInstanceService roleInstanceService,
+                                ClusterServiceRoleGroupConfigService roleGroupConfigService,
+                                ClusterServiceInstanceService serviceInstanceService,
+                                ClusterHostService hostService,
+                                K8sClusterConfigService k8sClusterConfigService,
+                                K8sServiceInstanceService k8sServiceInstanceService,
+                                K8sServiceInstanceValuesService k8sServiceInstanceValuesService,
+                                K8sClusterNamespaceService k8sClusterNamespaceService,
+                                K8sService k8sService) {
         this.clusterInfoService = clusterInfoService;
         this.roleInstanceService = roleInstanceService;
         this.roleGroupConfigService = roleGroupConfigService;
@@ -101,7 +103,7 @@ public class ClusterDeleteService {
         this.k8sClusterNamespaceService = k8sClusterNamespaceService;
         this.k8sService = k8sService;
     }
-
+    
     /**
      * 异步删除集群（替代 ClusterDeleteActor.tell(new ClusterCommand(DELETE, clusterId))）。
      */
@@ -129,9 +131,9 @@ public class ClusterDeleteService {
         }
         clusterInfoService.removeById(clusterId);
     }
-
+    
     // ─── private helpers ─────────────────────────────────────────────────────
-
+    
     private boolean deleteK8sAgent(Integer clusterId) {
         K8sClusterConfig config = k8sClusterConfigService.getByClusterId(clusterId);
         if (config == null) {
@@ -144,14 +146,14 @@ public class ClusterDeleteService {
         new K8sAgentUninstallHandler().execute(config);
         return true;
     }
-
+    
     private void deleteK8sClusterComponents(Integer clusterId) {
         k8sServiceInstanceService.removeByClusterId(clusterId);
         k8sServiceInstanceValuesService.removeByClusterId(clusterId);
         k8sClusterNamespaceService.removeByClusterId(clusterId);
         k8sClusterConfigService.removeByClusterId(clusterId);
     }
-
+    
     private boolean backupServiceConfigFiles(ClusterInfoEntity clusterInfo) {
         List<ClusterServiceRoleInstanceEntity> roleInstanceList =
                 roleInstanceService.getServiceRoleInstanceListByClusterId(clusterInfo.getId());
@@ -165,14 +167,14 @@ public class ClusterDeleteService {
         }
         return true;
     }
-
+    
     private boolean doMoveRoleConfigPath(ClusterInfoEntity clusterInfo,
-                                          ClusterServiceRoleInstanceEntity roleInstance) {
+                                         ClusterServiceRoleInstanceEntity roleInstance) {
         Map<Generators, List<ServiceConfig>> tempConfigMap = new ConcurrentHashMap<>();
         ClusterServiceRoleGroupConfig config =
                 roleGroupConfigService.getConfigByRoleGroupId(roleInstance.getRoleGroupId());
         ProcessUtils.generateConfigFileMap(tempConfigMap, config, clusterInfo.getId());
-
+        
         Map<Generators, List<ServiceConfig>> configFileMap = new ConcurrentHashMap<>();
         tempConfigMap.forEach((generators, configs) -> {
             List<ServiceConfig> serviceConfigs = configs.stream()
@@ -202,7 +204,7 @@ public class ClusterDeleteService {
                 configFileMap.put(generators, serviceConfigs);
             }
         });
-
+        
         if (configFileMap.isEmpty()) {
             return true;
         }
@@ -223,14 +225,14 @@ public class ClusterDeleteService {
             return false;
         }
     }
-
+    
     private String getPathNewName(String path, Integer clusterId) {
         if (!path.contains(DEPRECATED)) {
             return String.format("%s_%s_%s_%s", path, DEPRECATED, clusterId, DateUtil.today());
         }
         return null;
     }
-
+    
     private void deletePhysicalClusterComponents(Integer clusterId) {
         List<ClusterServiceInstanceEntity> serviceInstanceList = serviceInstanceService.listAll(clusterId);
         boolean success = true;

@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.configuration;
 
 import com.datasophon.api.migration.DatabaseMigration;

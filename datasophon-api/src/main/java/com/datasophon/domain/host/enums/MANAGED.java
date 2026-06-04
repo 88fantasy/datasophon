@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.domain.host.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;

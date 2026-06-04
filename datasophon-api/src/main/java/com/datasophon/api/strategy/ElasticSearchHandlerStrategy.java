@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.utils.ProcessUtils;
@@ -31,20 +30,20 @@ public class ElasticSearchHandlerStrategy implements ServiceRoleStrategy {
     
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-
-        if(!hosts.isEmpty()) {
-            ProcessUtils.generateClusterVariable( clusterId, serviceName, "initMasterNodes",
+        
+        if (!hosts.isEmpty()) {
+            ProcessUtils.generateClusterVariable(clusterId, serviceName, "initMasterNodes",
                     String.join(",", hosts));
             String join = String.join(":9300,", hosts);
             String seedHosts = join + ":9300";
             ProcessUtils.generateClusterVariable(clusterId, serviceName, "seedHosts", seedHosts);
-
+            
             String elasticSearchHostPorts = String.join(":9200,", hosts) + ":9200";
             ProcessUtils.generateClusterVariable(clusterId, serviceName, "elasticSearchHostPorts", elasticSearchHostPorts);
-
+            
             ProcessUtils.generateClusterVariable(clusterId, serviceName, "elasticSearchHost",
                     hosts.get(0));
         }
     }
-
+    
 }

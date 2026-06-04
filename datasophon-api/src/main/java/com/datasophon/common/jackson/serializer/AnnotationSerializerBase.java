@@ -1,6 +1,10 @@
 package com.datasophon.common.jackson.serializer;
 
-import cn.hutool.core.util.StrUtil;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanProperty;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -8,10 +12,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.ContextualSerializer;
 
-import java.io.IOException;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import cn.hutool.core.util.StrUtil;
 
 /**
  * 扩展JsonSerializer的功能。
@@ -22,22 +23,22 @@ import java.lang.reflect.Type;
  * @date 2024/10/8
  */
 public abstract class AnnotationSerializerBase<T, A extends Annotation> extends JsonSerializer<T> implements ContextualSerializer {
-
+    
     protected A annotation;
-
+    
     protected boolean allowAnnotationAbsent;
-
+    
     protected final Class<A> annotationCls;
-
+    
     protected AnnotationSerializerBase() {
         this(false);
     }
-
+    
     protected AnnotationSerializerBase(A annotation) {
         this(annotation == null);
         this.annotation = annotation;
     }
-
+    
     private AnnotationSerializerBase(boolean allowAnnotationAbsent) {
         Type superClass = getClass().getGenericSuperclass();
         if (superClass instanceof Class<?>) { // sanity check, should never happen
@@ -47,7 +48,7 @@ public abstract class AnnotationSerializerBase<T, A extends Annotation> extends 
         annotationCls = (Class<A>) parameterizedType.getActualTypeArguments()[1];
         this.allowAnnotationAbsent = allowAnnotationAbsent;
     }
-
+    
     @Override
     public JsonSerializer<?> createContextual(SerializerProvider prov, BeanProperty property) throws JsonMappingException {
         if (property == null) {
@@ -61,18 +62,15 @@ public abstract class AnnotationSerializerBase<T, A extends Annotation> extends 
                     StrUtil.format(
                             "use {} require the field annotated by @{}",
                             this.getClass().getSimpleName(),
-                            annotationCls.getSimpleName()
-                    )
-            );
+                            annotationCls.getSimpleName()));
         }
         return withAnnotationType(annotation);
     }
-
-
+    
     protected String getCurrentFieldName(JsonGenerator gen) {
         return gen.getOutputContext().getCurrentName();
     }
-
+    
     protected void writeVal(JsonGenerator gen, Object val) throws IOException {
         if (val == null) {
             gen.writeNull();
@@ -80,6 +78,6 @@ public abstract class AnnotationSerializerBase<T, A extends Annotation> extends 
             gen.writeObject(val);
         }
     }
-
+    
     protected abstract JsonSerializer<T> withAnnotationType(A annotation);
 }

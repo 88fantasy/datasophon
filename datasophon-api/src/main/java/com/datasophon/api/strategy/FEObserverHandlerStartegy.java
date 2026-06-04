@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
@@ -70,7 +69,7 @@ public class FEObserverHandlerStartegy implements ServiceRoleStrategy {
         if (roleInstanceEntity.getHostname().equals(feMaster)
                 && roleInstanceEntity.getServiceRoleState() == ServiceRoleState.RUNNING) {
             try {
-                List<ProcInfo> frontends = OlapUtils.showFrontends(feMaster,rootPassword);
+                List<ProcInfo> frontends = OlapUtils.showFrontends(feMaster, rootPassword);
                 resolveProcInfoAlert(roleInstanceEntity.getServiceRoleName(), frontends, map);
             } catch (Exception e) {
                 

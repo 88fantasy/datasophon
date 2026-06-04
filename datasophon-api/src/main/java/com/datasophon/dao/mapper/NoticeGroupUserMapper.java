@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.dao.mapper;
 
 import com.datasophon.dao.entity.NoticeGroupUserEntity;

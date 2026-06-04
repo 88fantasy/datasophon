@@ -20,14 +20,14 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.datasophon.api.vo.frameinfo.FrameInfoVO;
 import com.datasophon.dao.entity.FrameInfoEntity;
 
 import java.util.List;
+
+import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
  * 集群框架表
@@ -37,10 +37,10 @@ import java.util.List;
  * @date 2022-03-15 17:36:08
  */
 public interface FrameInfoService extends IService<FrameInfoEntity> {
-
+    
     List<FrameInfoVO> getAllClusterFrame();
-
+    
     FrameInfoEntity saveFrameIfAbsent(String frameCode);
-
+    
     FrameInfoEntity getByFrameCode(String frameCode);
 }

@@ -4,13 +4,13 @@ import static com.datasophon.common.Constants.GRAFANA_PATH;
 
 import com.datasophon.api.service.ClusterServiceDashboardService;
 
-import java.io.IOException;
-import java.util.List;
-
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.util.List;
 
 import lombok.SneakyThrows;
 
@@ -31,15 +31,15 @@ import cn.hutool.core.util.StrUtil;
 @Configuration
 @ConditionalOnProperty(name = "datasophon.proxy-grafana.enable", havingValue = "true")
 public class GrafanaProxyConfiguration {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(GrafanaProxyConfiguration.class);
-
+    
     @Value("${datasophon.proxy-grafana.max-threads:80}")
     String maxThreads;
-
+    
     @Autowired
     private ClusterServiceDashboardService clusterServiceDashboardService;
-
+    
     @Bean
     public ServletRegistrationBean<Servlet> grafanaHttpProxy() {
         ServletRegistrationBean<Servlet> servlet = new ServletRegistrationBean<>(new GrafanaProxyServlet(),
@@ -48,15 +48,15 @@ public class GrafanaProxyConfiguration {
                 .put("preserveHost", "true").build());
         return servlet;
     }
-
+    
     public class GrafanaProxyServlet extends ProxyServlet {
-
+        
         @SneakyThrows
         @Override
         protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
             super.service(request, response);
         }
-
+        
         @Override
         protected String rewriteTarget(HttpServletRequest request) {
             Integer clusterId = getCluster(request.getRequestURI());
@@ -71,7 +71,7 @@ public class GrafanaProxyConfiguration {
             }
         }
     }
-
+    
     private Integer getCluster(String requestUrl) {
         try {
             List<String> paths = StrUtil.splitTrim(requestUrl, "/");
@@ -84,5 +84,5 @@ public class GrafanaProxyConfiguration {
             return null;
         }
     }
-
+    
 }

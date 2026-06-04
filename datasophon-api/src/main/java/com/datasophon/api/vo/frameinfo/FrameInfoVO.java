@@ -20,16 +20,17 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.vo.frameinfo;
 
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
-import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
+
+import lombok.Data;
+
+import com.baomidou.mybatisplus.annotation.TableId;
 
 @Data
 public class FrameInfoVO implements Serializable {
@@ -54,9 +55,8 @@ public class FrameInfoVO implements Serializable {
      */
     private String frameVersion;
     
-
     private List<FrameServiceEntity> frameServiceList;
-
+    
     private List<FrameK8sServiceEntity> frameK8sServiceList;
     
 }

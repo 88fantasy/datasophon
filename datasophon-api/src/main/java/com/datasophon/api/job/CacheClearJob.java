@@ -2,6 +2,7 @@ package com.datasophon.api.job;
 
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -12,14 +13,13 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class CacheClearJob {
-
-
+    
     @Autowired
     private UploadTempFileService uploadTempFileService;
-
+    
     @Autowired
     private ExtRepoMetaService extRepoMetaService;
-
+    
     /**
      * 每隔两分钟执行一次
      */
@@ -27,7 +27,7 @@ public class CacheClearJob {
     public void clearMergeFileProgress() {
         uploadTempFileService.clearProgressCache();
     }
-
+    
     /**
      * 每隔5分钟执行一次
      */
@@ -35,7 +35,7 @@ public class CacheClearJob {
     public void clearCache() {
         extRepoMetaService.clearProgressCache();
     }
-
+    
     /**
      * 凌晨执行，每天一次
      */

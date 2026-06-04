@@ -20,13 +20,13 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 
 import java.util.List;
+
+import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
  * 集群信息表
@@ -38,16 +38,15 @@ import java.util.List;
 public interface ClusterInfoService extends IService<ClusterInfoEntity> {
     
     ClusterInfoEntity getClusterByClusterCode(String clusterCode);
-
+    
     ClusterInfoEntity saveCluster(ClusterInfoEntity clusterInf);
-
+    
     List<ClusterInfoEntity> getClusterList();
-
+    
     List<ClusterInfoEntity> runningClusterList();
-
-
+    
     List<ClusterInfoEntity> getReadyClusterList();
-
+    
     void updateClusterState(Integer clusterId, Integer clusterState);
     
     List<ClusterInfoEntity> getClusterByFrameCode(String frameCode);

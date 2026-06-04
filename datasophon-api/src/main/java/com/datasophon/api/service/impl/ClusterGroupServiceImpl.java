@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.impl;
 
 import com.datasophon.api.enums.Status;
@@ -94,7 +93,7 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
                         "create unix group " + groupName + " failed at " + clusterHost.getHostname());
             }
         }
-
+        
         return Result.success();
     }
     
@@ -170,7 +169,7 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
     public void createUnixGroupOnHost(String hostname, String groupName) {
         createUnixGroup(hostname, groupName);
     }
-
+    
     private void createUnixGroup(String hostname, String groupName) {
         CreateUnixGroupCommand createUnixGroupCommand = new CreateUnixGroupCommand();
         createUnixGroupCommand.setGroupName(groupName);

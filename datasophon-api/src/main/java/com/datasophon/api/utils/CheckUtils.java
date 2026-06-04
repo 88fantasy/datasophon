@@ -20,10 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.utils;
 
-import cn.hutool.core.util.StrUtil;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.load.ServiceInfoMap;
@@ -36,6 +34,7 @@ import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.AlertLevel;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.text.MessageFormat;
@@ -43,6 +42,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import cn.hutool.core.util.StrUtil;
 
 public class CheckUtils {
     
@@ -143,31 +144,31 @@ public class CheckUtils {
         
         return pattern.matcher(str).matches();
     }
-
+    
     /**
      * statusRunner检测状态
      * @param roleInstanceEntity
      * @param map
      */
     public static void handlerServiceRoleStatusRunnerCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
-                                        Map<String, ClusterServiceRoleInstanceEntity> map) {
+                                                           Map<String, ClusterServiceRoleInstanceEntity> map) {
         Integer clusterId = roleInstanceEntity.getClusterId();
-
+        
         ClusterInfoEntity cluster = ProcessUtils.getClusterInfo(clusterId);
         String frameCode = cluster.getClusterFrame();
-
+        
         String key = frameCode + Constants.UNDERLINE + roleInstanceEntity.getServiceName() + Constants.UNDERLINE
                 + roleInstanceEntity.getServiceRoleName();
         ServiceRoleInfo serviceRoleInfo = ServiceRoleMap.get(key);
         ServiceInfo serviceInfo =
                 ServiceInfoMap.get(frameCode + Constants.UNDERLINE + roleInstanceEntity.getServiceName());
-
-        if(serviceRoleInfo.getStatusRunner() == null
-                || StrUtil.isBlank(serviceRoleInfo.getStatusRunner().getProgram())){
-            //不写则不执行检测命令
+        
+        if (serviceRoleInfo.getStatusRunner() == null
+                || StrUtil.isBlank(serviceRoleInfo.getStatusRunner().getProgram())) {
+            // 不写则不执行检测命令
             return;
         }
-
+        
         String linkDirName = PkgInstallPathUtils.getLinkDirName(serviceRoleInfo);
         ArrayList<String> commandList = new ArrayList<>();
         commandList.add(linkDirName + Constants.SLASH + serviceRoleInfo.getStatusRunner().getProgram());

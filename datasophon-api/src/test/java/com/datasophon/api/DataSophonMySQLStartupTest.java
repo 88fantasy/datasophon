@@ -20,26 +20,27 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api;
 
-import com.datasophon.api.load.LoadServiceMeta;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.ApplicationContext;
-import org.springframework.test.context.ActiveProfiles;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
-import javax.sql.DataSource;
+import com.datasophon.api.load.LoadServiceMeta;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
+import javax.sql.DataSource;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.ApplicationContext;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 /**
  * MySQL 集成启动测试（Integration Smoke Test）
@@ -68,23 +69,23 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("integration")
 class DataSophonMySQLStartupTest {
-
+    
     @Autowired
     private ApplicationContext context;
-
+    
     /**
      * 拦截 LoadServiceMeta，避免启动时对服务元数据表发起复杂查询
      * （数据库可能尚无业务数据，仅验证结构迁移与上下文加载）
      */
     @MockitoBean
     private LoadServiceMeta loadServiceMeta;
-
+    
     @LocalServerPort
     private int port;
-
+    
     @Autowired
     private DataSource dataSource;
-
+    
     /**
      * 核心启动测试：验证使用真实 MySQL 时 Spring 上下文可完整加载
      */
@@ -93,7 +94,7 @@ class DataSophonMySQLStartupTest {
     void contextLoads() {
         assertThat(context).isNotNull();
     }
-
+    
     /**
      * 验证内嵌 Web 服务器已绑定随机端口
      */
@@ -104,7 +105,7 @@ class DataSophonMySQLStartupTest {
                 .as("服务器端口应为正整数（OS 随机分配）")
                 .isPositive();
     }
-
+    
     /**
      * 验证 Druid DataSource Bean 已注册
      */
@@ -118,7 +119,7 @@ class DataSophonMySQLStartupTest {
                 .as("应使用 Druid 连接池")
                 .contains("DruidDataSource");
     }
-
+    
     /**
      * 验证 Druid 能与真实 MySQL 建立连接并执行查询
      */
@@ -126,9 +127,10 @@ class DataSophonMySQLStartupTest {
     @DisplayName("可成功连接 MySQL 并执行查询")
     void canConnectToMysql() {
         assertThatNoException().isThrownBy(() -> {
-            try (Connection conn = dataSource.getConnection();
-                 Statement stmt = conn.createStatement();
-                 ResultSet rs = stmt.executeQuery("SELECT 1")) {
+            try (
+                    Connection conn = dataSource.getConnection();
+                    Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery("SELECT 1")) {
                 assertThat(rs.next()).isTrue();
                 assertThat(rs.getInt(1)).isEqualTo(1);
             }

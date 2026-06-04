@@ -1,10 +1,9 @@
 package com.datasophon.api.service.extrepo.utils;
 
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.lang.Pair;
+import static com.datasophon.common.enums.CommandType.STOP_SERVICE;
+
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.model.ServiceRoleInfo;
-import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -13,22 +12,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.datasophon.common.enums.CommandType.STOP_SERVICE;
+import lombok.Data;
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.lang.Pair;
 
 /**
  * @author zhanghuangbin
  */
 public class ServiceNodeExecUtils {
-
-
-    public static  List<Pair<String, List<ServiceRoleInfo>>> getSortedRoleInfo(CommandType type, List<ServiceRoleInfo> roles) {
+    
+    public static List<Pair<String, List<ServiceRoleInfo>>> getSortedRoleInfo(CommandType type, List<ServiceRoleInfo> roles) {
         if (CollectionUtil.isEmpty(roles)) {
             return new ArrayList<>(0);
         }
         List<String> sortedRoles = getSortedRoleNames(type, roles);
         Map<String, List<ServiceRoleInfo>> map = new HashMap<>();
         for (ServiceRoleInfo role : roles) {
-//                保留列表的原有顺序
+            // 保留列表的原有顺序
             map.computeIfAbsent(role.getServiceRoleName(), k -> new ArrayList<>()).add(role);
         }
         List<Pair<String, List<ServiceRoleInfo>>> result = new ArrayList<>();
@@ -37,8 +37,7 @@ public class ServiceNodeExecUtils {
         }
         return result;
     }
-
-
+    
     private static List<String> getSortedRoleNames(CommandType type, List<ServiceRoleInfo> roles) {
         List<SortedRole> tempRoles = roles.stream().map(SortedRole::new).collect(Collectors.toList());
         if (STOP_SERVICE.equals(type)) {
@@ -54,16 +53,14 @@ public class ServiceNodeExecUtils {
         }
         return sortedRoles;
     }
-
-
-
+    
     @Data
     private static class SortedRole {
-
+        
         private String serviceRoleName;
-
+        
         private int order;
-
+        
         public SortedRole(ServiceRoleInfo role) {
             serviceRoleName = role.getServiceRoleName();
             order = role.getSortNum() == null ? Integer.MAX_VALUE : role.getSortNum();

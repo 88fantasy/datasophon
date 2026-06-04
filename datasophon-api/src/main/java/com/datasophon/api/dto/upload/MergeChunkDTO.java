@@ -9,13 +9,13 @@ import lombok.Data;
  */
 @Data
 public class MergeChunkDTO {
-
+    
     @Schema(description = "附件ID")
     private Integer attachId;
-
+    
     @Schema(description = "md5")
     private String md5;
-
+    
     @Schema(description = "是否异步合并", defaultValue = "false")
     private boolean async;
 }

@@ -20,18 +20,18 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.dao.entity.ClusterHostDO;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EtcdHandlerStrategy implements ServiceRoleStrategy {
     
@@ -46,11 +46,11 @@ public class EtcdHandlerStrategy implements ServiceRoleStrategy {
             // initial-cluster
             String etcdNodeList = hs.stream().map(s -> s.getHostname() + "=http://" + s.getIp() + ":2380").collect(Collectors.joining(","));
             ProcessUtils.generateClusterVariable(clusterId, serviceName, "etcd-node-list", etcdNodeList);
-
+            
             // advertise-client-urls
             String advertiseClientUrls = hs.stream().map(s -> "http://" + s.getIp() + ":2379").collect(Collectors.joining(","));
             ProcessUtils.generateClusterVariable(clusterId, serviceName, "etcd-advertise-client-urls", advertiseClientUrls);
         }
     }
-
+    
 }

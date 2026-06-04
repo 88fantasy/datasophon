@@ -12,8 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Component
 public class TransactionalUtils {
-
-
+    
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
     public void doInNewTx(Runnable runnable) {
         try {
@@ -24,7 +23,7 @@ public class TransactionalUtils {
             throw new RuntimeException(e);
         }
     }
-
+    
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
     public <T> T doInNewTx(Callable<T> callable) {
         try {
@@ -35,15 +34,14 @@ public class TransactionalUtils {
             throw new RuntimeException(e);
         }
     }
-
-
+    
     public interface Callable<T> {
-
+        
         T call() throws Exception;
     }
-
+    
     public interface Runnable {
         void run() throws Exception;
     }
-
+    
 }

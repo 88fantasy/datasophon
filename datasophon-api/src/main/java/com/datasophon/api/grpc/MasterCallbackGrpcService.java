@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.grpc;
 
 import com.datasophon.api.master.service.MasterNodeProcessingService;
@@ -30,10 +29,12 @@ import com.datasophon.grpc.api.MasterCallbackServiceGrpc;
 import com.datasophon.grpc.api.OlapNodeType;
 import com.datasophon.grpc.api.OlapRegistrationRequest;
 import com.datasophon.grpc.api.OlapRegistrationResponse;
+
 import io.grpc.stub.StreamObserver;
-import net.devh.boot.grpc.server.service.GrpcService;
 
 import java.util.Map;
+
+import net.devh.boot.grpc.server.service.GrpcService;
 
 /**
  * Worker → Master 反向回调 gRPC 服务。
@@ -43,13 +44,13 @@ import java.util.Map;
  */
 @GrpcService
 public class MasterCallbackGrpcService extends MasterCallbackServiceGrpc.MasterCallbackServiceImplBase {
-
+    
     private final MasterNodeProcessingService processingService;
-
+    
     public MasterCallbackGrpcService(MasterNodeProcessingService processingService) {
         this.processingService = processingService;
     }
-
+    
     @Override
     public void registerOlapNode(OlapRegistrationRequest request,
                                  StreamObserver<OlapRegistrationResponse> responseObserver) {
@@ -58,20 +59,24 @@ public class MasterCallbackGrpcService extends MasterCallbackServiceGrpc.MasterC
         command.setHostName(request.getHostname());
         command.setOpsType(toOpsType(request.getNodeType()));
         command.setVariables(Map.of("${DORIS.root_password}", request.getRootPassword()));
-
+        
         // @Async — 立即返回，异步执行注册 SQL（fire-and-forget 语义）
         processingService.processOlapNode(command);
-
+        
         responseObserver.onNext(OlapRegistrationResponse.newBuilder().setSuccess(true).build());
         responseObserver.onCompleted();
     }
-
+    
     private OlapOpsType toOpsType(OlapNodeType nodeType) {
         switch (nodeType) {
-            case ADD_BE:          return OlapOpsType.ADD_BE;
-            case ADD_FE_FOLLOWER: return OlapOpsType.ADD_FE_FOLLOWER;
-            case ADD_FE_OBSERVER: return OlapOpsType.ADD_FE_OBSERVER;
-            default: throw new IllegalArgumentException("Unknown OlapNodeType: " + nodeType);
+            case ADD_BE:
+                return OlapOpsType.ADD_BE;
+            case ADD_FE_FOLLOWER:
+                return OlapOpsType.ADD_FE_FOLLOWER;
+            case ADD_FE_OBSERVER:
+                return OlapOpsType.ADD_FE_OBSERVER;
+            default:
+                throw new IllegalArgumentException("Unknown OlapNodeType: " + nodeType);
         }
     }
 }

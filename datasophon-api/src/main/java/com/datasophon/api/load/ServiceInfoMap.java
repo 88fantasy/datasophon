@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.load;
 
 import com.datasophon.common.model.ServiceInfo;

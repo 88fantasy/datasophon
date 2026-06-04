@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.handler.service;
 
 import com.datasophon.api.load.GlobalVariables;
@@ -34,10 +33,10 @@ import com.datasophon.common.enums.ServiceRoleType;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
 
-import lombok.Data;
-
 import java.util.Map;
 import java.util.Objects;
+
+import lombok.Data;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,9 +45,9 @@ import org.slf4j.LoggerFactory;
 public class ServiceStartHandler extends ServiceHandler {
     
     private static final Logger logger = LoggerFactory.getLogger(ServiceStartHandler.class);
-
+    
     private boolean checkStatus = true;
-
+    
     @Override
     public ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception {
         logger.info("start to start service {} in {}", serviceRoleInfo.getName(), serviceRoleInfo.getHostname());
@@ -68,9 +67,9 @@ public class ServiceStartHandler extends ServiceHandler {
         cmd.setHooks(serviceRoleInfo.getMatchedHooks(HookType.PRE_START, HookType.POST_START));
         cmd.setVariables(GlobalVariables.getVariables(serviceRoleInfo.getClusterId()));
         cmd.setCheckStatus(checkStatus);
-
+        
         logger.info("service master host is {}", serviceRoleInfo.getMasterHost());
-
+        
         cmd.setEnableRangerPlugin(serviceRoleInfo.getEnableRangerPlugin());
         cmd.setRunAs(serviceRoleInfo.getRunAs());
         Boolean enableKerberos = Boolean.parseBoolean(globalVariables.get("${enable" + serviceRoleInfo.getParentName() + "Kerberos}"));

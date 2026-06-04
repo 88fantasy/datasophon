@@ -1,11 +1,9 @@
 package com.datasophon.api.service.log.impl;
 
-import cn.hutool.core.util.StrUtil;
-import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.api.dto.log.ServiceRoleLogQueryDTO;
 import com.datasophon.api.exceptions.BusinessException;
-import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.grpc.WorkerCommandClient;
+import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.log.VosProductService;
@@ -18,14 +16,20 @@ import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.FrameServiceRoleEntity;
 import com.datasophon.dao.enums.RoleType;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+
 import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.alibaba.fastjson2.JSONObject;
+
+import cn.hutool.core.util.StrUtil;
 
 /**
  * vos 制品日志服务
@@ -34,32 +38,31 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service("vosProductService")
 public class VosProductServiceImpl implements VosProductService {
-
-
+    
     @Autowired
     private ClusterInfoService clusterInfoService;
-
+    
     @Autowired
     private FrameServiceRoleService frameServiceRoleService;
-
+    
     @Autowired
     private WorkerCommandClient workerCommandClient;
-
+    
     @Override
     public String getVosServiceRoleRuntimeLog(ServiceRoleLogQueryDTO dto) throws Exception {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
         FrameServiceRoleEntity serviceRole = frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(clusterInfo.getClusterFrame(), dto.getServiceRoleName());
-
+        
         if (serviceRole.getServiceRoleType() == RoleType.CLIENT) {
             return "client service role type does not have any log";
         }
-
+        
         Map<String, String> globalVariables = GlobalVariables.getVariables(dto.getClusterId());
         String logFile = serviceRole.getLogFile();
         if (StringUtils.isNotBlank(logFile)) {
             logFile = PlaceholderUtils.replacePlaceholders(logFile, globalVariables, Constants.REGEX_VARIABLE);
         }
-
+        
         ServiceRoleInfo serviceRoleInfo = JSONObject.parseObject(
                 serviceRole.getServiceRoleJson(), ServiceRoleInfo.class);
         String user = serviceRoleInfo.getRunAs() != null ? serviceRoleInfo.getRunAs().getUser() : null;
@@ -74,7 +77,7 @@ public class VosProductServiceImpl implements VosProductService {
         GetLogCommand command = new GetLogCommand();
         command.setLogFile(logFile);
         command.setBaseDir(PkgInstallPathUtils.getInstallUniHome(serviceRoleInfo));
-
+        
         log.info("start to get {} log from {}", serviceRole.getServiceRoleName(), dto.getHost());
         ExecResult logResult = workerCommandClient.getLog(dto.getHost(), command.getLogFile(), command.getBaseDir());
         if (logResult == null) {

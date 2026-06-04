@@ -8,6 +8,6 @@ import lombok.Data;
  */
 @Data
 public class LongIdDTO {
-
+    
     private Long id;
 }

@@ -20,12 +20,12 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.cmd;
 
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.cmd.ClusterServiceCommandEntity;
+
+import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
  * 集群服务操作指令表
@@ -35,11 +35,9 @@ import com.datasophon.dao.entity.cmd.ClusterServiceCommandEntity;
  * @date 2022-04-12 11:28:06
  */
 public interface ClusterServiceCommandService extends IService<ClusterServiceCommandEntity> {
-
-
+    
     Result getServiceCommandlist(Integer clusterId, Integer page, Integer pageSize);
     
-
     ClusterServiceCommandEntity getCommandById(String commandId);
-
+    
 }

@@ -7,8 +7,8 @@ import lombok.Data;
  */
 @Data
 public class K8sNamespace {
-
+    
     private String name;
-
+    
     private String status;
 }

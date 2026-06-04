@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service;
 
 import com.datasophon.common.model.ServiceConfig;
@@ -28,32 +27,28 @@ import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.utils.Result;
 
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.List;
 
 public interface ServiceInstallService {
-
-    List<ServiceConfig> getServiceConfigOption(Integer clusterId, String serviceName);
-
-
-    List<ServiceConfig> getServiceConfigFromDdl(Integer clusterId, String serviceName);
-
-    void saveServiceConfig(Integer clusterId, String serviceName, List<ServiceConfig> configJson,
-                             Integer roleGroupId);
-
-    void saveServiceRoleHostMapping(Integer clusterId, List<ServiceRoleHostMapping> list);
-
-
-    Result getServiceRoleDeployOverview(Integer clusterId);
-
     
-
+    List<ServiceConfig> getServiceConfigOption(Integer clusterId, String serviceName);
+    
+    List<ServiceConfig> getServiceConfigFromDdl(Integer clusterId, String serviceName);
+    
+    void saveServiceConfig(Integer clusterId, String serviceName, List<ServiceConfig> configJson,
+                           Integer roleGroupId);
+    
+    void saveServiceRoleHostMapping(Integer clusterId, List<ServiceRoleHostMapping> list);
+    
+    Result getServiceRoleDeployOverview(Integer clusterId);
+    
     void downloadResource(String frameCode, String serviceRoleName,
                           String resource, HttpServletResponse response) throws Exception;
-
-
+    
     void downloadTemplate(String templateName, HttpServletResponse response) throws IOException;
-
+    
     Result getServiceRoleHostMapping(Integer clusterId);
     
     Result checkServiceDependency(Integer clusterId, List<Integer> serviceIds);

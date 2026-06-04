@@ -11,22 +11,21 @@ import com.datasophon.dao.entity.cluster.K8sClusterConfig;
  * @author zhanghuangbin
  */
 public abstract class K8sAgentHandler {
-
+    
     public static final String RELEASE_NAME = "datasophon-k8s-agent";
     public static final String HELM_CHART = "datasophon-k8s-agent";
     public static final String NAMESPACE = "vos";
     protected K8sClusterNamespaceService k8sClusterNamespaceService;
-
+    
     protected K8sService k8sService;
-
+    
     public K8sAgentHandler() {
         k8sClusterNamespaceService = getBean(K8sClusterNamespaceService.class);
         k8sService = getBean(K8sService.class);
     }
-
+    
     abstract public void execute(K8sClusterConfig config);
-
-
+    
     /**
      * 根据 K8sClusterConfig 构建 Helm Client 配置
      */
@@ -40,7 +39,7 @@ public abstract class K8sAgentHandler {
         options.setServerName(config.getServerHost());
         return new HelmClient(options);
     }
-
+    
     protected <E> E getBean(Class<E> clazz) {
         return SpringTool.getApplicationContext().getBean(clazz);
     }

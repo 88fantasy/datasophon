@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.migration;
 
 import org.apache.commons.lang3.StringUtils;

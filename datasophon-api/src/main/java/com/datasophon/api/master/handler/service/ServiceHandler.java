@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.handler.service;
 
 import com.datasophon.api.service.host.ClusterHostService;
@@ -31,22 +30,22 @@ import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterHostDO;
 
-import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
+
+import lombok.Data;
 
 @Data
 public abstract class ServiceHandler {
-
+    
     private ServiceHandler next;
-
+    
     public abstract ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception;
-
-
+    
     public ServiceHandler thenNext(ServiceHandler next) {
         this.next = next;
         return next;
     }
-
+    
     public ExecResult invokeNext(ServiceRoleInfo srvRoleInfo, ExecResult lastResult) throws Exception {
         boolean canGoOn = lastResult != null && lastResult.isSuccess() && next != null;
         if (!canGoOn) {
@@ -54,7 +53,7 @@ public abstract class ServiceHandler {
         }
         return next.handlerRequest(srvRoleInfo);
     }
-
+    
     /**
      * 按主机 CPU 架构从 archInfoMap 中解析当前操作所需的安装包名。
      * 主机不存在或架构无匹配时返回 null，调用方应视为失败。
@@ -67,7 +66,7 @@ public abstract class ServiceHandler {
         }
         return resolvePackageName(role, host.getCpuArchitecture());
     }
-
+    
     /**
      * 直接按已知架构字符串解析包名，供已持有 ClusterHostDO 的调用方使用以避免重复 DB 查询。
      */
@@ -75,7 +74,7 @@ public abstract class ServiceHandler {
         ArchInfo archInfo = ServicePkgNameUtils.getArchInfo(role, cpuArch);
         return archInfo == null ? null : archInfo.getPackageName();
     }
-
+    
     /**
      * 按主机 CPU 架构解析解压目录名。
      * 从 role.archInfoMap 中取对应架构的 decompressPackageName；
@@ -90,15 +89,15 @@ public abstract class ServiceHandler {
         }
         return resolveDecompressPackageName(role, host.getCpuArchitecture());
     }
-
+    
     /**
      * 直接按已知架构字符串解析解压目录名，供已持有 ClusterHostDO 的调用方使用以避免重复 DB 查询。
      */
     protected String resolveDecompressPackageName(ServiceRoleInfo role, String cpuArch) {
         ArchInfo archInfo = ServicePkgNameUtils.getArchInfo(role, cpuArch);
         if (archInfo != null && StringUtils.isNotBlank(archInfo.getDecompressPackageName())) {
-            return archInfo.getDecompressPackageName();   // per-arch（如 valkey-8.1.7-jammy-x86_64）
+            return archInfo.getDecompressPackageName(); // per-arch（如 valkey-8.1.7-jammy-x86_64）
         }
-        return role.getDecompressPackageName();           // 回退到实体代表值（arch-less 调用路径，如 RackService）
+        return role.getDecompressPackageName(); // 回退到实体代表值（arch-less 调用路径，如 RackService）
     }
 }

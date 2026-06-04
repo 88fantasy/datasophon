@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service.impl;
 
 import com.datasophon.api.enums.Status;
@@ -64,10 +63,10 @@ public class ClusterYarnQueueServiceImpl extends ServiceImpl<ClusterYarnQueueMap
     
     @Autowired
     private ClusterServiceRoleInstanceService roleInstanceService;
-
+    
     @Autowired
     private WorkerCommandClient workerCommandClient;
-
+    
     @Override
     public Result listByPage(Integer clusterId, Integer page, Integer pageSize) {
         Integer offset = (page - 1) * pageSize;

@@ -20,35 +20,35 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.service;
 
 import com.datasophon.common.command.OlapSqlExecCommand;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.OlapUtils;
+
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * OLAP 节点注册 Spring Service，业务逻辑来自 {@link MasterNodeProcessingActor}。
  */
 @Service
 public class MasterNodeProcessingService {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(MasterNodeProcessingService.class);
-
+    
     @Async("masterExecutor")
     public void processOlapNode(OlapSqlExecCommand command) {
         ExecResult execResult = new ExecResult();
         String tip = command.getOpsType().getDesc();
         Map<String, String> globalVariables = command.getVariables();
         String rootPassword = globalVariables.getOrDefault("${DORIS.root_password}", "");
-
+        
         switch (command.getOpsType()) {
             case ADD_BE:
                 execResult = OlapUtils.addBackend(command.getFeMaster(), command.getHostName(), rootPassword);
@@ -62,13 +62,13 @@ public class MasterNodeProcessingService {
             default:
                 break;
         }
-
+        
         if (execResult.getExecResult()) {
             logger.info("{} {} added success", command.getHostName(), tip);
         } else {
             logger.info("{} {} added failed", command.getHostName(), tip);
         }
-
+        
         int tryTimes = 0;
         while (!execResult.getExecResult() && tryTimes < 3) {
             try {

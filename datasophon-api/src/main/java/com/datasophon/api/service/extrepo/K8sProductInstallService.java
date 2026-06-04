@@ -11,14 +11,10 @@ import java.util.List;
  * @author zhanghuangbin
  */
 public interface K8sProductInstallService extends ExtRepoInstallService {
-
-
+    
     List<FrameK8sServiceEntity> listNewestByDeployment(DeploymentDTO dto);
-
+    
     void saveServiceNamespaceMapping(Integer clusterId, List<K8sProductDeployMapping> mappings);
-
-
-
-
+    
     List<Integer> saveConfigValueList(List<K8sServiceInstanceValuesSaveDTO> list);
 }

@@ -1,10 +1,5 @@
 package com.datasophon.api.service.dag.impl;
 
-import cn.hutool.core.bean.BeanUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.datasophon.api.dag.model.DagDefinition;
 import com.datasophon.api.dag.model.EdgeDefinition;
 import com.datasophon.api.dag.model.NodeDefinition;
@@ -17,36 +12,44 @@ import com.datasophon.dao.enums.dag.NodeStatus;
 import com.datasophon.dao.mapper.dag.DagDefinitionEntityMapper;
 import com.datasophon.dao.mapper.dag.EdgeDefinitionEntityMapper;
 import com.datasophon.dao.mapper.dag.NodeDefinitionEntityMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
+import cn.hutool.core.bean.BeanUtil;
+
 /**
  * @author zhanghuangbin
  */
 @Service("dagService")
 public class DAGServiceServiceImpl implements DAGService {
-
+    
     @Autowired
     private DagDefinitionEntityMapper dagDefinitionEntityMapper;
-
+    
     @Autowired
     private NodeDefinitionEntityMapper nodeDefinitionEntityMapper;
-
+    
     @Autowired
     private EdgeDefinitionEntityMapper edgeDefinitionEntityMapper;
-
+    
     @Override
     public DagDefinition getDagById(String dagId) {
         return BeanUtil.toBean(dagDefinitionEntityMapper.selectById(dagId), DagDefinition.class);
     }
-
+    
     @Override
     public int updateDagStatus(String dagId, DagStatus status) {
         DagDefinitionEntity dag = dagDefinitionEntityMapper.selectById(dagId);
@@ -62,58 +65,57 @@ public class DAGServiceServiceImpl implements DAGService {
         dag.setStatus(status);
         return dagDefinitionEntityMapper.updateById(dag);
     }
-
+    
     @Override
     public int markNodesPending(String dagId, boolean ignoreSuccess) {
         LambdaQueryWrapper<NodeDefinitionEntity> query = Wrappers.lambdaQuery(NodeDefinitionEntity.class)
                 .eq(NodeDefinitionEntity::getDagId, dagId);
-
+        
         List<NodeDefinitionEntity> nodes = nodeDefinitionEntityMapper.selectList(query);
-
+        
         List<NodeDefinitionEntity> result = new ArrayList<>();
-        for(NodeDefinitionEntity node : nodes) {
+        for (NodeDefinitionEntity node : nodes) {
             boolean ignore = ignoreSuccess && NodeStatus.SUCCESS.equals(node.getStatus());
             if (!ignore) {
                 result.add(node);
             }
         }
-        for(NodeDefinitionEntity node : result) {
+        for (NodeDefinitionEntity node : result) {
             node.setStatus(NodeStatus.PENDING);
             if (node.getStartedTime() == null) {
                 node.setStartedTime(LocalDateTime.now());
             }
             nodeDefinitionEntityMapper.updateById(node);
         }
-
+        
         return result.size();
     }
-
+    
     @Override
     public NodeDefinition getNodeById(String nodeId) {
         return BeanUtil.toBean(nodeDefinitionEntityMapper.selectById(nodeId), NodeDefinition.class);
     }
-
+    
     @Override
     public List<NodeDefinition> getNodesByDagId(String dagId, boolean allFields) {
-       LambdaQueryWrapper<NodeDefinitionEntity> query = Wrappers.lambdaQuery(NodeDefinitionEntity.class).eq(NodeDefinitionEntity::getDagId, dagId);
-       if (!allFields) {
-           query = query.select(
-                   NodeDefinitionEntity::getId,
-                   NodeDefinitionEntity::getDagId,
-                   NodeDefinitionEntity::getNodeName,
-                   NodeDefinitionEntity::getStatus
-           );
-       }
-       return BeanUtil.copyToList(nodeDefinitionEntityMapper.selectList(query), NodeDefinition.class);
+        LambdaQueryWrapper<NodeDefinitionEntity> query = Wrappers.lambdaQuery(NodeDefinitionEntity.class).eq(NodeDefinitionEntity::getDagId, dagId);
+        if (!allFields) {
+            query = query.select(
+                    NodeDefinitionEntity::getId,
+                    NodeDefinitionEntity::getDagId,
+                    NodeDefinitionEntity::getNodeName,
+                    NodeDefinitionEntity::getStatus);
+        }
+        return BeanUtil.copyToList(nodeDefinitionEntityMapper.selectList(query), NodeDefinition.class);
     }
-
+    
     @Override
     public void updateNode(NodeDefinition node) {
-        NodeDefinitionEntity db =  nodeDefinitionEntityMapper.selectById(node.getId());
+        NodeDefinitionEntity db = nodeDefinitionEntityMapper.selectById(node.getId());
         BeanUtil.copyProperties(node, db);
         nodeDefinitionEntityMapper.updateById(db);
     }
-
+    
     @Override
     public int updateNodeStatus(String nodeId, NodeStatus status) {
         NodeDefinitionEntity node = nodeDefinitionEntityMapper.selectById(nodeId);
@@ -126,13 +128,13 @@ public class DAGServiceServiceImpl implements DAGService {
         node.setStatus(status);
         return nodeDefinitionEntityMapper.updateById(node);
     }
-
+    
     @Override
     public List<EdgeDefinition> getEdgesByDagId(String dagId) {
         List<EdgeDefinitionEntity> entities = edgeDefinitionEntityMapper.selectList(Wrappers.lambdaQuery(EdgeDefinitionEntity.class).eq(EdgeDefinitionEntity::getDagId, dagId));
         return BeanUtil.copyToList(entities, EdgeDefinition.class);
     }
-
+    
     @Override
     public String saveDAG(Integer clusterId, DagDefinition definition) {
         DagDefinitionEntity dag = BeanUtil.toBean(definition, DagDefinitionEntity.class);
@@ -142,10 +144,10 @@ public class DAGServiceServiceImpl implements DAGService {
         dagDefinitionEntityMapper.insert(dag);
         return dag.getId();
     }
-
+    
     @Override
     public List<NodeDefinitionEntity> saveNodes(String dagId, List<NodeDefinitionEntity> nodes) {
-        nodes.forEach(node-> {
+        nodes.forEach(node -> {
             node.setDagId(dagId);
             node.setCreatedTime(LocalDateTime.now());
             node.setStatus(NodeStatus.PENDING);
@@ -153,7 +155,7 @@ public class DAGServiceServiceImpl implements DAGService {
         nodeDefinitionEntityMapper.insert(nodes, 20);
         return nodes;
     }
-
+    
     @Override
     public EdgeDefinitionEntity saveEdge(String dagId, NodeDefinitionEntity start, NodeDefinitionEntity end) {
         EdgeDefinitionEntity edge = new EdgeDefinitionEntity();
@@ -164,16 +166,15 @@ public class DAGServiceServiceImpl implements DAGService {
         edgeDefinitionEntityMapper.insert(edge);
         return edge;
     }
-
+    
     @Override
     public IPage<DagDefinitionEntity> findDagByPage(Integer clusterId, Integer page, Integer pageSize) {
         return dagDefinitionEntityMapper.selectPage(new Page<>(page, pageSize),
                 Wrappers.lambdaQuery(DagDefinitionEntity.class)
                         .eq(DagDefinitionEntity::getClusterId, clusterId)
-                        .orderByDesc(DagDefinitionEntity::getCreatedTime)
-        );
+                        .orderByDesc(DagDefinitionEntity::getCreatedTime));
     }
-
+    
     @Override
     @Transactional(rollbackFor = Exception.class, propagation = Propagation.REQUIRES_NEW)
     public void doInNewTransactional(Runnable runnable) {

@@ -1,12 +1,14 @@
 package com.datasophon.api.dag.model;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.datasophon.dao.enums.dag.NodeStatus;
-import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+
+import lombok.Data;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
 
 @Data
 public class NodeDefinition implements Serializable {
@@ -21,5 +23,5 @@ public class NodeDefinition implements Serializable {
     private LocalDateTime startedTime;
     private LocalDateTime completedTime;
     private String executionLog;
-
+    
 }

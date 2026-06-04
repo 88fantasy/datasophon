@@ -20,39 +20,37 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.model.ServiceRoleInfo;
+
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-
 public class ZKFCHandlerStrategy implements ServiceRoleStrategy {
-
-  private static final Logger logger = LoggerFactory.getLogger(ZKFCHandlerStrategy.class);
-
-  @Override
-  public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-    if (hosts.size() == 2) {
-      ProcessUtils.generateClusterVariable(clusterId, serviceName, "ZKFC1", hosts.get(0));
-      ProcessUtils.generateClusterVariable(clusterId, serviceName, "ZKFC2", hosts.get(1));
+    
+    private static final Logger logger = LoggerFactory.getLogger(ZKFCHandlerStrategy.class);
+    
+    @Override
+    public void handler(Integer clusterId, List<String> hosts, String serviceName) {
+        if (hosts.size() == 2) {
+            ProcessUtils.generateClusterVariable(clusterId, serviceName, "ZKFC1", hosts.get(0));
+            ProcessUtils.generateClusterVariable(clusterId, serviceName, "ZKFC2", hosts.get(1));
+        }
     }
-  }
-
-
-  @Override
-  public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
-    String zkfc2 = GlobalVariables.getValueByService(serviceRoleInfo.getClusterId(), serviceRoleInfo.getServiceName(),"ZKFC2");
-    if (hostname.equals(zkfc2)) {
-      logger.info("set to slave zkfc");
-      serviceRoleInfo.setSlave(true);
-      serviceRoleInfo.setSortNum(6);
+    
+    @Override
+    public void handlerServiceRoleInfo(ServiceRoleInfo serviceRoleInfo, String hostname) {
+        String zkfc2 = GlobalVariables.getValueByService(serviceRoleInfo.getClusterId(), serviceRoleInfo.getServiceName(), "ZKFC2");
+        if (hostname.equals(zkfc2)) {
+            logger.info("set to slave zkfc");
+            serviceRoleInfo.setSlave(true);
+            serviceRoleInfo.setSortNum(6);
+        }
     }
-  }
-
+    
 }

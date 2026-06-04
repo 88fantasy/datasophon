@@ -20,10 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.service;
 
-import cn.hutool.core.collection.CollectionUtil;
 import com.datasophon.api.master.handler.k8s.K8sAgentInstallHandler;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
@@ -33,9 +31,13 @@ import com.datasophon.common.command.DispatcherK8sAgentCommand;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 import com.datasophon.dao.enums.ClusterState;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import cn.hutool.core.collection.CollectionUtil;
 
 /**
  * K8s Agent 安装 Spring Service，业务逻辑来自 {@link DispatcherK8sAgentActor}。
@@ -43,19 +45,19 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class DispatcherK8sAgentService {
-
+    
     private final ClusterInfoService clusterInfoService;
     private final K8sClusterConfigService k8sClusterConfigService;
     private final K8sService k8sService;
-
+    
     public DispatcherK8sAgentService(ClusterInfoService clusterInfoService,
-                                      K8sClusterConfigService k8sClusterConfigService,
-                                      K8sService k8sService) {
+                                     K8sClusterConfigService k8sClusterConfigService,
+                                     K8sService k8sService) {
         this.clusterInfoService = clusterInfoService;
         this.k8sClusterConfigService = k8sClusterConfigService;
         this.k8sService = k8sService;
     }
-
+    
     /**
      * 异步安装 K8s Agent（替代 DispatcherK8sAgentActor.tell(command)）。
      */
@@ -69,7 +71,7 @@ public class DispatcherK8sAgentService {
             log.warn("cluster {} is not running, ignore install agent", cluster.getClusterName());
         }
     }
-
+    
     private boolean updateClusterState(ClusterInfoEntity cluster, K8sClusterConfig config) {
         try {
             K8sClusterStatus status = k8sService.getState(config);
@@ -77,7 +79,8 @@ public class DispatcherK8sAgentService {
             if (CollectionUtil.isNotEmpty(status.getNodes())) {
                 state = status.getNodes().stream()
                         .anyMatch(node -> "True".equals(node.getStatus()))
-                        ? ClusterState.RUNNING : ClusterState.STOP;
+                                ? ClusterState.RUNNING
+                                : ClusterState.STOP;
             }
             clusterInfoService.updateClusterState(config.getClusterId(), state.getValue());
             return ClusterState.RUNNING.equals(state);

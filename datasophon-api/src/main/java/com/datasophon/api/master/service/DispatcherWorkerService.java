@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.service;
 
 import com.datasophon.api.master.handler.host.CheckWorkerMd5Handler;
@@ -39,21 +38,22 @@ import com.datasophon.common.storage.PackageStorage;
 import com.datasophon.common.storage.StorageUtils;
 import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.JschUtils;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import com.jcraft.jsch.Session;
 
 /**
  * Worker Agent 分发安装 Spring Service，业务逻辑来自 {@link DispatcherWorkerActor}。
  */
 @Service
 public class DispatcherWorkerService {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(DispatcherWorkerService.class);
-
+    
     /**
      * 异步分发并安装 Worker Agent（替代 DispatcherWorkerActor.tell(command)）。
      */
@@ -63,12 +63,12 @@ public class DispatcherWorkerService {
         String localIp = HostUtils.getLocalIp();
         logger.info("start dispatcher host agent: {}, ip: {}", hostInfo.getHostname(), hostInfo.getIp());
         hostInfo.setMessage("开始分发worker agent安装包");
-
+        
         Session session = null;
         try {
             PackageStorage packageStorage = StorageUtils.getPackageStorage();
             packageStorage.downloadPackageToLocal(Constants.WORKER_PACKAGE_NAME);
-
+            
             DispatcherWorkerHandlerChain handlerChain = new DispatcherWorkerHandlerChain();
             if (!localIp.equals(hostInfo.getIp())) {
                 handlerChain.addHandler(new UploadWorkerHandler());
@@ -77,7 +77,7 @@ public class DispatcherWorkerService {
             handlerChain.addHandler(new DecompressWorkerHandler());
             handlerChain.addHandler(new InstallJDKHandler());
             handlerChain.addHandler(new StartWorkerHandler(command.getClusterId(), command.getClusterFrame()));
-
+            
             Integer port = hostInfo.getSshPort() == null ? 22 : hostInfo.getSshPort();
             session = JschUtils.getJSchSession(SSHAuthType.AUTO,
                     hostInfo.getHostname(), port,

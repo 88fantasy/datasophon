@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.controller;
 
 import static com.datasophon.api.enums.Status.IP_IS_EMPTY;
@@ -34,13 +33,13 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.UserInfoEntity;
 
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Map;
-
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,7 +104,7 @@ public class LoginController extends ApiController {
             cookie.setHttpOnly(true);
             response.addCookie(cookie);
         }
-
+        
         // Generate CSRF token and set it as a non-HttpOnly cookie for JS access
         String sessionId = cookieMap.get(Constants.SESSION_ID);
         if (StringUtils.isNotBlank(sessionId)) {
@@ -114,7 +113,7 @@ public class LoginController extends ApiController {
             csrfCookie.setHttpOnly(false);
             response.addCookie(csrfCookie);
         }
-
+        
         return result;
     }
     
@@ -131,18 +130,18 @@ public class LoginController extends ApiController {
                           HttpServletResponse response) {
         logger.info("login user:{} sign out", loginUser.getUsername());
         String ip = HttpUtils.getClientIpAddress(request);
-
+        
         // signOut cleans up both session and CSRF token internally
         sessionService.signOut(ip, loginUser);
         // clear session
         request.removeAttribute(Constants.SESSION_USER);
-
+        
         // Clear CSRF cookie on client side
         Cookie csrfCookie = new Cookie(Constants.CSRF_TOKEN, "");
         csrfCookie.setMaxAge(0);
         csrfCookie.setPath("/");
         response.addCookie(csrfCookie);
-
+        
         return Result.success();
     }
 }

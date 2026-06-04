@@ -8,10 +8,10 @@ import lombok.Data;
  */
 @Data
 public class K8sServiceInstanceValuesVO {
-
+    
     @Schema(description = "原始yaml的文本")
     private String values;
-
+    
     @Schema(description = "用户新增的配置项，yaml")
     private String deltaValues;
 }

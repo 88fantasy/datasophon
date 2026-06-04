@@ -20,14 +20,14 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.dao.entity;
+
+import java.io.Serializable;
+
+import lombok.Data;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.Data;
-
-import java.io.Serializable;
 
 @Data
 @TableName("t_ddh_frame_info")
@@ -52,6 +52,5 @@ public class FrameInfoEntity implements Serializable {
      * 框架版本
      */
     private String frameVersion;
-
     
 }

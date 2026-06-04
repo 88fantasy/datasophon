@@ -20,11 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.load;
 
-import cn.hutool.core.collection.CollUtil;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.api.service.FrameInfoService;
@@ -35,6 +32,13 @@ import com.datasophon.common.storage.vo.ServiceMetaItem;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterVariable;
 import com.datasophon.dao.entity.FrameInfoEntity;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,40 +47,35 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+
+import cn.hutool.core.collection.CollUtil;
 
 @Component
 public class LoadServiceMeta implements ApplicationRunner {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(LoadServiceMeta.class);
-
-
+    
     @Autowired
     private FrameInfoService frameInfoService;
-
-
+    
     @Autowired
     private ClusterVariableService variableService;
-
+    
     @Autowired
     private ClusterInfoService clusterInfoService;
-
+    
     @Autowired
     private DdlMetaService ddlMetaService;
-
-
+    
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void run(ApplicationArguments args) {
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
         loadGlobalVariables(clusters);
-
+        
         Map<String, FrameInfoEntity> frameworkCache = new HashMap<>();
-
+        
         MetaStorage metaStorage;
         try {
             metaStorage = StorageUtils.getMetaStorage();
@@ -86,8 +85,8 @@ public class LoadServiceMeta implements ApplicationRunner {
         }
         List<ServiceMetaItem> vosDdlItems = metaStorage.listService(MetaStorage.VOS_DDL);
         Map<String, List<ServiceMetaItem>> groupeVosDdldMap = vosDdlItems.stream().collect(Collectors.groupingBy(ServiceMetaItem::getFramework));
-        groupeVosDdldMap.forEach((frameCode, items)-> {
-            FrameInfoEntity frameInfo = frameworkCache.computeIfAbsent(frameCode, c-> frameInfoService.saveFrameIfAbsent(frameCode));
+        groupeVosDdldMap.forEach((frameCode, items) -> {
+            FrameInfoEntity frameInfo = frameworkCache.computeIfAbsent(frameCode, c -> frameInfoService.saveFrameIfAbsent(frameCode));
             for (ServiceMetaItem item : items) {
                 try {
                     String serviceDdl = metaStorage.getServiceDdL(item);
@@ -99,8 +98,8 @@ public class LoadServiceMeta implements ApplicationRunner {
         });
         List<ServiceMetaItem> k8sItems = metaStorage.listService(MetaStorage.K8S);
         Map<String, List<ServiceMetaItem>> groupedK8sMap = k8sItems.stream().collect(Collectors.groupingBy(ServiceMetaItem::getFramework));
-        groupedK8sMap.forEach((frameCode, items)-> {
-            FrameInfoEntity frameInfo = frameworkCache.computeIfAbsent(frameCode, c-> frameInfoService.saveFrameIfAbsent(frameCode));
+        groupedK8sMap.forEach((frameCode, items) -> {
+            FrameInfoEntity frameInfo = frameworkCache.computeIfAbsent(frameCode, c -> frameInfoService.saveFrameIfAbsent(frameCode));
             for (ServiceMetaItem item : items) {
                 try {
                     String serviceDdl = metaStorage.getServiceDdL(item);
@@ -111,8 +110,7 @@ public class LoadServiceMeta implements ApplicationRunner {
             }
         });
     }
-
-
+    
     public void loadGlobalVariables(List<ClusterInfoEntity> clusters) {
         if (CollUtil.isNotEmpty(clusters)) {
             for (ClusterInfoEntity cluster : clusters) {
@@ -127,6 +125,5 @@ public class LoadServiceMeta implements ApplicationRunner {
             }
         }
     }
-
-
+    
 }

@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.enums;
 
 import com.alibaba.fastjson2.JSONObject;

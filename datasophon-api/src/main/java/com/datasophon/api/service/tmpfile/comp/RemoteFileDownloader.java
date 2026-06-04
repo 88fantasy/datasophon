@@ -1,6 +1,5 @@
 package com.datasophon.api.service.tmpfile.comp;
 
-import cn.hutool.core.util.StrUtil;
 import com.datasophon.api.dto.download.DownloadTaskDTO;
 import com.datasophon.api.vo.extrepo.DownloadProgressVO;
 
@@ -10,21 +9,23 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
+import cn.hutool.core.util.StrUtil;
+
 /**
  * 远程文件下载器接口
  */
 public interface RemoteFileDownloader {
-
+    
     /**
      * 是否支持该 URL 协议
      */
     boolean supports(String url);
-
+    
     /**
      * 下载文件
      */
     void download(String url, File destFile, DownloadProgressVO progress) throws IOException;
-
+    
     /**
      * 确定文件名
      *
@@ -45,7 +46,7 @@ public interface RemoteFileDownloader {
             } else {
                 fileName = "download_" + System.currentTimeMillis();
             }
-
+            
             // URL 解码
             fileName = URLDecoder.decode(fileName, StandardCharsets.UTF_8.name());
             return fileName;

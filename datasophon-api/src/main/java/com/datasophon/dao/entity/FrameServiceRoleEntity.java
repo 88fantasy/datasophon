@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.dao.entity;
 
 import com.datasophon.dao.enums.RoleType;
@@ -71,13 +70,12 @@ public class FrameServiceRoleEntity implements Serializable {
     private String frameCode;
     
     private String jmxPort;
-
+    
     @TableField(exist = false)
     private List<String> hosts;
-
+    
     private String logFile;
-
-
+    
     private Integer sortNum;
     
 }

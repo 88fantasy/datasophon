@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
@@ -57,5 +56,5 @@ public class HBaseHandlerStrategy extends ServiceHandlerAbstract implements Serv
         }
         list.addAll(kbConfigs);
     }
-
+    
 }

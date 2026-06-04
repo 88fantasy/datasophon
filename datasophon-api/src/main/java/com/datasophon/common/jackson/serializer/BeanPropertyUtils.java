@@ -1,23 +1,24 @@
 package com.datasophon.common.jackson.serializer;
 
-import cn.hutool.core.util.ReflectUtil;
-import cn.hutool.core.util.StrUtil;
-import com.fasterxml.jackson.databind.BeanProperty;
-import org.springframework.core.annotation.AnnotatedElementUtils;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 
+import org.springframework.core.annotation.AnnotatedElementUtils;
+
+import com.fasterxml.jackson.databind.BeanProperty;
+
+import cn.hutool.core.util.ReflectUtil;
+import cn.hutool.core.util.StrUtil;
+
 /**
  * @author zhanghuangbin
  * @date 2024/9/14
  */
 public class BeanPropertyUtils {
-
-
+    
     /**
      * 获取annotation，同时，利用spring的alias功能
      *
@@ -28,7 +29,7 @@ public class BeanPropertyUtils {
      */
     public static <A extends Annotation> A findAnnotation(BeanProperty property, Class<A> annotationCls) {
         Member member = property.getMember().getMember();
-
+        
         A annotation = null;
         if (member instanceof AnnotatedElement) {
             AnnotatedElement element = (AnnotatedElement) member;
@@ -40,18 +41,17 @@ public class BeanPropertyUtils {
                     element = getBeanGetter((Field) element);
                 }
             }
-
+            
             annotation = AnnotatedElementUtils.findMergedAnnotation(element, annotationCls);
         }
-
+        
         if (annotation == null) {
             annotation = property.getAnnotation(annotationCls);
         }
-
-
+        
         return annotation;
     }
-
+    
     private static Field getField(Method method) {
         if (!ReflectUtil.isGetterOrSetterIgnoreCase(method)) {
             throw new IllegalArgumentException(String.format("method %s is not getter/setter", method.getName()));
@@ -60,7 +60,7 @@ public class BeanPropertyUtils {
         String fieldName = getFieldName(method.getName());
         return ReflectUtil.getField(clazz, fieldName);
     }
-
+    
     private static Method getBeanGetter(Field field) {
         Class clazz = field.getDeclaringClass();
         String methodName = "get" + StrUtil.upperFirst(field.getName());
@@ -71,7 +71,7 @@ public class BeanPropertyUtils {
         methodName = "is" + StrUtil.upperFirst(field.getName());
         return ReflectUtil.getMethod(clazz, methodName);
     }
-
+    
     private static String getFieldName(String methodName) {
         String fieldName = methodName;
         if (methodName.startsWith("get") || methodName.startsWith("set")) {
@@ -81,5 +81,5 @@ public class BeanPropertyUtils {
         }
         return StrUtil.lowerFirst(fieldName);
     }
-
+    
 }

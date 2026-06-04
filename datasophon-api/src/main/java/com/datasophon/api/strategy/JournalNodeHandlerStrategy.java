@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.utils.ProcessUtils;
@@ -40,5 +39,5 @@ public class JournalNodeHandlerStrategy implements ServiceRoleStrategy {
                     hosts.get(2));
         }
     }
-
+    
 }

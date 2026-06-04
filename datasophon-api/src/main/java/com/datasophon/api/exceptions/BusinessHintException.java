@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.exceptions;
 
 import org.apache.commons.lang3.StringUtils;
@@ -28,15 +27,15 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 
 public class BusinessHintException extends RuntimeException {
-
+    
     public BusinessHintException(String message) {
         super(message);
     }
-
+    
     public BusinessHintException(List<String> message) {
         super(StringUtils.joinWith(";", message));
     }
-
+    
     @Override
     public synchronized Throwable fillInStackTrace() {
         return this;

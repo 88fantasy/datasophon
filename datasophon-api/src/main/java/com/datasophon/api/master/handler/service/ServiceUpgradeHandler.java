@@ -1,6 +1,5 @@
 package com.datasophon.api.master.handler.service;
 
-import cn.hutool.core.collection.CollectionUtil;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.host.ClusterHostService;
@@ -12,15 +11,17 @@ import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterHostDO;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
+import cn.hutool.core.collection.CollectionUtil;
+
 @Slf4j
 public class ServiceUpgradeHandler extends ServiceHandler {
-
+    
     @Override
     public ExecResult handlerRequest(ServiceRoleInfo serviceRoleInfo) throws Exception {
         ExecResult execResult = new ExecResult();
@@ -32,7 +33,7 @@ public class ServiceUpgradeHandler extends ServiceHandler {
             execResult.setExecOut("未找到主机 [" + serviceRoleInfo.getHostname() + "] 的记录，无法解析安装包架构 !");
             return execResult;
         }
-
+        
         String packageName = resolvePackageName(serviceRoleInfo, hostEntity.getCpuArchitecture());
         if (packageName == null) {
             String arch = hostEntity.getCpuArchitecture();
@@ -43,7 +44,7 @@ public class ServiceUpgradeHandler extends ServiceHandler {
         }
         log.info("在host {} {} {}, 使用包{}", serviceRoleInfo.getHostname(), serviceRoleInfo.getCommandType().getCommandName(Constants.CN),
                 serviceRoleInfo.getName(), packageName);
-
+        
         InstallServiceRoleCommand installServiceRoleCommand = new InstallServiceRoleCommand();
         installServiceRoleCommand.setFrameCode(serviceRoleInfo.getFrameCode());
         installServiceRoleCommand.setServiceName(serviceRoleInfo.getParentName());
@@ -56,22 +57,22 @@ public class ServiceUpgradeHandler extends ServiceHandler {
         installServiceRoleCommand.setServiceRoleType(serviceRoleInfo.getRoleType());
         installServiceRoleCommand.setVariables(createVariables(serviceRoleInfo));
         installServiceRoleCommand.setHooks(serviceRoleInfo.getMatchedHooks(HookType.PRE_INSTALL, HookType.POST_INSTALL));
-
+        
         log.info("开始在主机{}执行{}{}命令", serviceRoleInfo.getHostname(),
                 serviceRoleInfo.getCommandType().getCommandName(Constants.CN), serviceRoleInfo.getName());
         WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
         ExecResult installResult = adapter.installServiceRole(serviceRoleInfo.getHostname(), installServiceRoleCommand);
         return this.invokeNext(serviceRoleInfo, installResult);
     }
-
+    
     private Map<String, String> createVariables(ServiceRoleInfo roleInfo) {
         Map<String, String> variables = new HashMap<>(GlobalVariables.getVariables(roleInfo.getClusterId()));
         if (CollectionUtil.isNotEmpty(roleInfo.getConfigFileMap())) {
             List<ServiceConfig> configs = roleInfo.getConfigFileMap().values().iterator().next();
-//            注意和ProcessUtils#createMergeVariables的逻辑保持一致
-            configs.forEach(config-> {
+            // 注意和ProcessUtils#createMergeVariables的逻辑保持一致
+            configs.forEach(config -> {
                 String name = config.getOriginalName();
-//                如果存在占位符，则忽略(即不支持递归占位符)。
+                // 如果存在占位符，则忽略(即不支持递归占位符)。
                 if (name.contains("${") || Boolean.TRUE.equals(config.getRegister())) {
                     return;
                 }

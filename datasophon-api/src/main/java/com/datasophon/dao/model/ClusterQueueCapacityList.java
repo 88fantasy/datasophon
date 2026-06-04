@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.dao.model;
 
 import com.datasophon.dao.entity.ClusterQueueCapacity;

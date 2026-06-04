@@ -1,8 +1,8 @@
 package com.datasophon.dao.model.extrepo;
 
-import lombok.Data;
-
 import java.util.List;
+
+import lombok.Data;
 
 /**
  * @author zhanghuangbin
@@ -10,18 +10,17 @@ import java.util.List;
  */
 @Data
 public class VosDdLServiceMeta {
-
+    
     private String ddl;
-
+    
     private String name;
-
+    
     private String version;
-
+    
     private List<String> packageNames;
-
-
+    
     private String frameCode;
-
+    
     private List<String> dependencies;
-
+    
 }

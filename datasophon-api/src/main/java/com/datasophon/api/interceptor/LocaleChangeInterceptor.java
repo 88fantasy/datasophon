@@ -20,16 +20,15 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.interceptor;
 
 import com.datasophon.common.Constants;
 
-import java.util.Locale;
-
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.Locale;
 
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.lang.Nullable;

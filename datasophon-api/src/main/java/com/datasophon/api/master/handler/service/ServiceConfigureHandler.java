@@ -20,14 +20,12 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.handler.service;
 
 import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
-import com.datasophon.common.enums.HookType;
 import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
 
@@ -52,7 +50,7 @@ public class ServiceConfigureHandler extends ServiceHandler {
         cmd.setDecompressPackageName(resolveDecompressPackageName(serviceRoleInfo));
         cmd.setCreateDecompressDir(serviceRoleInfo.getCreateDecompressDir());
         cmd.setRunAs(serviceRoleInfo.getRunAs());
-
+        
         if ("zkserver".equalsIgnoreCase(serviceRoleInfo.getName())) {
             cmd.setMyid((Integer) CacheUtils.get("zkserver_" + serviceRoleInfo.getHostname()));
         }

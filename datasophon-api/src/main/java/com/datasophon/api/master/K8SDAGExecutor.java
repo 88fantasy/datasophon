@@ -20,10 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master;
 
-import com.alibaba.fastjson2.JSONObject;
 import com.datasophon.api.dag.DAGListener;
 import com.datasophon.api.dag.NodeTask;
 import com.datasophon.api.dag.RepoDAG;
@@ -44,12 +42,16 @@ import com.datasophon.common.model.k8s.K8sServiceNode;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.cmd.ClusterK8sServiceCommandEntity;
 import com.datasophon.dao.enums.CommandState;
+
+import java.util.Date;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
+import com.alibaba.fastjson2.JSONObject;
 
 /**
  * K8s DAG 执行器（Spring Service）。
@@ -61,10 +63,10 @@ import java.util.Date;
 @Service
 @RequiredArgsConstructor
 public class K8SDAGExecutor {
-
+    
     private final DAGService dagService;
     private final ClusterK8sServiceCommandService commandService;
-
+    
     /**
      * 异步执行 K8s DAG 任务（替代原 {@code K8SDAGExecActor.tell(cmd)}）。
      */
@@ -72,29 +74,29 @@ public class K8SDAGExecutor {
     public void execK8SDAG(DAGExecCommand cmd) {
         try {
             RepoDAG dag = createMultiServiceDAG(cmd);
-
+            
             NodeTask task = (nodeDef) -> {
                 K8sServiceNode serviceNode = JSONObject.parseObject((String) nodeDef.getNodeConfig(), K8sServiceNode.class);
                 doExecServiceNode(serviceNode);
                 return String.format("%s %s成功",
                         serviceNode.getCommandType().getCommandName(Constants.CN), serviceNode.getServiceName());
             };
-
+            
             dag.exec(task, cmd.isRestart());
         } catch (Throwable e) {
             log.error("K8S DAG execution failed for dagId={}: {}", cmd.getDagId(), e.getMessage(), e);
         }
     }
-
+    
     // ─── private methods ─────────────────────────────────────────────────────
-
+    
     private RepoDAG createMultiServiceDAG(DAGExecCommand cmd) {
         String dagId = cmd.getDagId();
         log.info("K8SDAGExecutor 开始执行 DAG 任务，dagId:{}", dagId);
         DAGRepository repository = dagService;
         RepoDAG dag = new RepoDAG(repository);
         dag.init(dagId, false);
-
+        
         dag.registerListener(new DAGListener() {
             @Override
             public void onNodeSuccess(NodeDefinition node, String result) {
@@ -102,14 +104,14 @@ public class K8SDAGExecutor {
                 K8sServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), K8sServiceNode.class);
                 updateCmdState(serviceNode, CommandState.SUCCESS);
             }
-
+            
             @Override
             public void onNodeFail(NodeDefinition node, Throwable throwable) {
                 log.error("DAG 节点执行失败：{}, 错误：{}", node.getNodeName(), throwable.getMessage());
                 K8sServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), K8sServiceNode.class);
                 updateCmdState(serviceNode, CommandState.FAILED);
             }
-
+            
             @Override
             public void onNodeCancel(NodeDefinition node, Throwable throwable) {
                 log.warn("DAG 节点执行取消：{}, 原因：{}", node.getNodeName(), throwable.getMessage());
@@ -119,7 +121,7 @@ public class K8SDAGExecutor {
         });
         return dag;
     }
-
+    
     private void updateCmdState(K8sServiceNode serviceNode, CommandState commandState) {
         log.info("更新{}{}的状态为{}",
                 serviceNode.getCommandType().getCommandName(Constants.CN),
@@ -131,7 +133,7 @@ public class K8SDAGExecutor {
                 .set(ClusterK8sServiceCommandEntity::getEndTime, new Date())
                 .update();
     }
-
+    
     private void doExecServiceNode(K8sServiceNode serviceNode) {
         CommandType type = serviceNode.getCommandType();
         ServiceHandler handler;

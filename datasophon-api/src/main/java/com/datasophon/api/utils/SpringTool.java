@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.utils;
 
 import org.springframework.beans.BeansException;

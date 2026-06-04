@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.service;
 
 import com.datasophon.dao.entity.ClusterGroup;

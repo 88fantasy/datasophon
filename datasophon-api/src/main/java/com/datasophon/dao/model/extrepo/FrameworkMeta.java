@@ -1,9 +1,9 @@
 package com.datasophon.dao.model.extrepo;
 
-import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import lombok.Data;
 
 /**
  * @author zhanghuangbin
@@ -11,10 +11,10 @@ import java.util.List;
  */
 @Data
 public class FrameworkMeta {
-
+    
     private String frameCode;
-
+    
     private List<VosDdLServiceMeta> vosDdlServices = new ArrayList<>();
-
+    
     private List<K8sDdLServiceMeta> k8sDdLServices = new ArrayList<>();
 }

@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.master.transport;
 
 import com.datasophon.api.grpc.WorkerCommandClient;
@@ -35,6 +34,7 @@ import com.datasophon.common.command.remote.CreateUnixUserCommand;
 import com.datasophon.common.command.remote.DelUnixGroupCommand;
 import com.datasophon.common.command.remote.DelUnixUserCommand;
 import com.datasophon.common.utils.ExecResult;
+
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
@@ -47,13 +47,13 @@ import org.springframework.stereotype.Component;
 @Primary
 @Component
 public class GrpcWorkerCallAdapter implements WorkerCallAdapter {
-
+    
     private final WorkerCommandClient client;
-
+    
     public GrpcWorkerCallAdapter(WorkerCommandClient client) {
         this.client = client;
     }
-
+    
     @Override
     public ExecResult executeCmd(String hostname, ExecuteCmdCommand cmd) {
         if (cmd.getCommandLine() != null && !cmd.getCommandLine().isEmpty()) {
@@ -61,64 +61,64 @@ public class GrpcWorkerCallAdapter implements WorkerCallAdapter {
         }
         return client.executeCmd(hostname, cmd.getCommands());
     }
-
+    
     @Override
     public ExecResult installServiceRole(String hostname, InstallServiceRoleCommand cmd) {
         return client.installServiceRole(hostname, cmd);
     }
-
+    
     @Override
     public ExecResult configureServiceRole(String hostname, GenerateServiceConfigCommand cmd) {
         return client.configureServiceRole(hostname, cmd);
     }
-
+    
     @Override
     public ExecResult startServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
         return client.startServiceRole(hostname, cmd);
     }
-
+    
     @Override
     public ExecResult stopServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
         return client.stopServiceRole(hostname, cmd);
     }
-
+    
     @Override
     public ExecResult restartServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
         return client.restartServiceRole(hostname, cmd);
     }
-
+    
     @Override
     public ExecResult serviceRoleStatus(String hostname, ServiceRoleOperateCommand cmd) {
         return client.serviceRoleStatus(hostname, cmd);
     }
-
+    
     // ─── Phase 3 ──────────────────────────────────────────────────────────────
-
+    
     @Override
     public ExecResult createUnixGroup(String hostname, CreateUnixGroupCommand cmd) {
         return client.createUnixGroup(hostname, cmd);
     }
-
+    
     @Override
     public ExecResult deleteUnixGroup(String hostname, DelUnixGroupCommand cmd) {
         return client.deleteUnixGroup(hostname, cmd);
     }
-
+    
     @Override
     public ExecResult createUnixUser(String hostname, CreateUnixUserCommand cmd) {
         return client.createUnixUser(hostname, cmd);
     }
-
+    
     @Override
     public ExecResult deleteUnixUser(String hostname, DelUnixUserCommand cmd) {
         return client.deleteUnixUser(hostname, cmd);
     }
-
+    
     @Override
     public ExecResult operateFile(String hostname, FileOperateCommand cmd) {
         return client.operateFile(hostname, cmd);
     }
-
+    
     @Override
     public ExecResult generateAlertConfig(String hostname, GenerateAlertConfigCommand cmd) {
         return client.generateAlertConfig(hostname, cmd);

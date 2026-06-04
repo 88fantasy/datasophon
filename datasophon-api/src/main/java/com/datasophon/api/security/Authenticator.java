@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.security;
 
 import com.datasophon.common.utils.Result;

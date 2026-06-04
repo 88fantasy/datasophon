@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class WebuisVO {
-
+    
     private Integer id;
     /**
      * 服务角色id
@@ -14,10 +14,10 @@ public class WebuisVO {
      * URL地址
      */
     private String webUrl;
-
+    
     private Integer serviceInstanceId;
-
+    
     private String name;
-
+    
     private String ip;
 }

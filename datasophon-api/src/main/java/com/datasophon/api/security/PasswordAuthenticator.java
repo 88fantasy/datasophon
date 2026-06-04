@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.security;
 
 import com.datasophon.api.enums.Status;
@@ -32,9 +31,9 @@ import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.SessionEntity;
 import com.datasophon.dao.entity.UserInfoEntity;
 
-import java.util.Collections;
-
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Collections;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

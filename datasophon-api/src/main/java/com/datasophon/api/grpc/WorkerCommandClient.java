@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.grpc;
 
 import com.datasophon.common.command.FileOperateCommand;
@@ -45,20 +44,24 @@ import com.datasophon.grpc.api.ServiceRoleRequest;
 import com.datasophon.grpc.api.UnixGroupRequest;
 import com.datasophon.grpc.api.UnixUserRequest;
 import com.datasophon.grpc.api.WorkerCommandServiceGrpc;
-import cn.hutool.core.util.StrUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import jakarta.annotation.PreDestroy;
+
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import cn.hutool.core.util.StrUtil;
 
 /**
  * Master 端 gRPC 客户端：向目标 Worker 发送命令。
@@ -69,60 +72,56 @@ import java.util.concurrent.TimeUnit;
  */
 @Component
 public class WorkerCommandClient {
-
+    
     private static final Logger log = LoggerFactory.getLogger(WorkerCommandClient.class);
-
+    
     private final WorkerRegistry workerRegistry;
     private final ObjectMapper objectMapper;
     private final ConcurrentHashMap<String, ManagedChannel> channelCache = new ConcurrentHashMap<>();
-
+    
     public WorkerCommandClient(WorkerRegistry workerRegistry, ObjectMapper objectMapper) {
         this.workerRegistry = workerRegistry;
         this.objectMapper = objectMapper;
     }
-
+    
     // ─── Phase 1 API ─────────────────────────────────────────────────────────
-
+    
     public ExecResult ping(String hostname) {
-        return callWorker(hostname, "ping", () ->
-                getStub(hostname)
-                        .withDeadlineAfter(30, TimeUnit.SECONDS)
-                        .ping(PingRequest.newBuilder().setMessage("ping").build()));
+        return callWorker(hostname, "ping", () -> getStub(hostname)
+                .withDeadlineAfter(30, TimeUnit.SECONDS)
+                .ping(PingRequest.newBuilder().setMessage("ping").build()));
     }
-
+    
     /** 执行命令列表（ExecuteCmdActor 模式）。 */
     public ExecResult executeCmd(String hostname, List<String> commands) {
-        return callWorker(hostname, "executeCmd", () ->
-                getStub(hostname)
-                        .withDeadlineAfter(90, TimeUnit.SECONDS)
-                        .executeCmd(ExecuteCmdRequest.newBuilder()
-                                .addAllCommands(commands)
-                                .build()));
+        return callWorker(hostname, "executeCmd", () -> getStub(hostname)
+                .withDeadlineAfter(90, TimeUnit.SECONDS)
+                .executeCmd(ExecuteCmdRequest.newBuilder()
+                        .addAllCommands(commands)
+                        .build()));
     }
-
+    
     /** 执行单行 shell 命令（RMStateActor / NMStateActor 模式）。 */
     public ExecResult executeCmdLine(String hostname, String commandLine) {
-        return callWorker(hostname, "executeCmdLine", () ->
-                getStub(hostname)
-                        .withDeadlineAfter(90, TimeUnit.SECONDS)
-                        .executeCmd(ExecuteCmdRequest.newBuilder()
-                                .setCommandLine(commandLine)
-                                .build()));
+        return callWorker(hostname, "executeCmdLine", () -> getStub(hostname)
+                .withDeadlineAfter(90, TimeUnit.SECONDS)
+                .executeCmd(ExecuteCmdRequest.newBuilder()
+                        .setCommandLine(commandLine)
+                        .build()));
     }
-
+    
     /** 读取 Worker 节点日志（LogActor 模式）。 */
     public ExecResult getLog(String hostname, String logFile, String baseDir) {
-        return callWorker(hostname, "getLog", () ->
-                getStub(hostname)
-                        .withDeadlineAfter(30, TimeUnit.SECONDS)
-                        .getLog(GetLogRequest.newBuilder()
-                                .setLogFile(logFile)
-                                .setBaseDir(baseDir)
-                                .build()));
+        return callWorker(hostname, "getLog", () -> getStub(hostname)
+                .withDeadlineAfter(30, TimeUnit.SECONDS)
+                .getLog(GetLogRequest.newBuilder()
+                        .setLogFile(logFile)
+                        .setBaseDir(baseDir)
+                        .build()));
     }
-
+    
     // ─── Phase 2 API ─────────────────────────────────────────────────────────
-
+    
     /** 安装服务角色（对应 InstallServiceActor）。 */
     public ExecResult installServiceRole(String hostname, InstallServiceRoleCommand cmd) {
         return callWorker(hostname, "installServiceRole", () -> {
@@ -137,7 +136,7 @@ public class WorkerCommandClient {
                     .installServiceRole(req);
         });
     }
-
+    
     /**
      * 配置服务角色（对应 ConfigureServiceActor）。
      *
@@ -161,83 +160,75 @@ public class WorkerCommandClient {
                     .configureServiceRole(req);
         });
     }
-
+    
     /** 启动服务角色（对应 StartServiceActor）。 */
     public ExecResult startServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
-        return callWorker(hostname, "startServiceRole", () ->
-                getStub(hostname)
-                        .withDeadlineAfter(180, TimeUnit.SECONDS)
-                        .startServiceRole(buildServiceRoleRequest(cmd)));
+        return callWorker(hostname, "startServiceRole", () -> getStub(hostname)
+                .withDeadlineAfter(180, TimeUnit.SECONDS)
+                .startServiceRole(buildServiceRoleRequest(cmd)));
     }
-
+    
     /** 停止服务角色（对应 StopServiceActor）。 */
     public ExecResult stopServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
-        return callWorker(hostname, "stopServiceRole", () ->
-                getStub(hostname)
-                        .withDeadlineAfter(180, TimeUnit.SECONDS)
-                        .stopServiceRole(buildServiceRoleRequest(cmd)));
+        return callWorker(hostname, "stopServiceRole", () -> getStub(hostname)
+                .withDeadlineAfter(180, TimeUnit.SECONDS)
+                .stopServiceRole(buildServiceRoleRequest(cmd)));
     }
-
+    
     /** 重启服务角色（对应 RestartServiceActor）。 */
     public ExecResult restartServiceRole(String hostname, ServiceRoleOperateCommand cmd) {
-        return callWorker(hostname, "restartServiceRole", () ->
-                getStub(hostname)
-                        .withDeadlineAfter(180, TimeUnit.SECONDS)
-                        .restartServiceRole(buildServiceRoleRequest(cmd)));
+        return callWorker(hostname, "restartServiceRole", () -> getStub(hostname)
+                .withDeadlineAfter(180, TimeUnit.SECONDS)
+                .restartServiceRole(buildServiceRoleRequest(cmd)));
     }
-
+    
     /** 检查服务角色状态（对应 ServiceStatusActor）。 */
     public ExecResult serviceRoleStatus(String hostname, ServiceRoleOperateCommand cmd) {
-        return callWorker(hostname, "serviceRoleStatus", () ->
-                getStub(hostname)
-                        .withDeadlineAfter(180, TimeUnit.SECONDS)
-                        .serviceRoleStatus(buildServiceRoleRequest(cmd)));
+        return callWorker(hostname, "serviceRoleStatus", () -> getStub(hostname)
+                .withDeadlineAfter(180, TimeUnit.SECONDS)
+                .serviceRoleStatus(buildServiceRoleRequest(cmd)));
     }
-
+    
     // ─── Phase 3 API ─────────────────────────────────────────────────────────
-
+    
     /** 创建 Unix 组（对应 UnixGroupActor create）。 */
     public ExecResult createUnixGroup(String hostname, CreateUnixGroupCommand cmd) {
-        return callWorker(hostname, "createUnixGroup", () ->
-                getStub(hostname)
-                        .withDeadlineAfter(180, TimeUnit.SECONDS)
-                        .createUnixGroup(UnixGroupRequest.newBuilder()
-                                .setGroupName(nullToEmpty(cmd.getGroupName()))
-                                .build()));
+        return callWorker(hostname, "createUnixGroup", () -> getStub(hostname)
+                .withDeadlineAfter(180, TimeUnit.SECONDS)
+                .createUnixGroup(UnixGroupRequest.newBuilder()
+                        .setGroupName(nullToEmpty(cmd.getGroupName()))
+                        .build()));
     }
-
+    
     /** 删除 Unix 组（对应 UnixGroupActor delete）。 */
     public ExecResult deleteUnixGroup(String hostname, DelUnixGroupCommand cmd) {
-        return callWorker(hostname, "deleteUnixGroup", () ->
-                getStub(hostname)
-                        .withDeadlineAfter(180, TimeUnit.SECONDS)
-                        .deleteUnixGroup(UnixGroupRequest.newBuilder()
-                                .setGroupName(nullToEmpty(cmd.getGroupName()))
-                                .build()));
+        return callWorker(hostname, "deleteUnixGroup", () -> getStub(hostname)
+                .withDeadlineAfter(180, TimeUnit.SECONDS)
+                .deleteUnixGroup(UnixGroupRequest.newBuilder()
+                        .setGroupName(nullToEmpty(cmd.getGroupName()))
+                        .build()));
     }
-
+    
     /** 创建 Unix 用户（对应 UnixUserActor create）。 */
     public ExecResult createUnixUser(String hostname, CreateUnixUserCommand cmd) {
-        return callWorker(hostname, "createUnixUser", () ->
-                getStub(hostname)
-                        .withDeadlineAfter(180, TimeUnit.SECONDS)
-                        .createUnixUser(UnixUserRequest.newBuilder()
-                                .setUsername(nullToEmpty(cmd.getUsername()))
-                                .setMainGroup(nullToEmpty(cmd.getMainGroup()))
-                                .setOtherGroups(nullToEmpty(cmd.getOtherGroups()))
-                                .build()));
+        return callWorker(hostname, "createUnixUser", () -> getStub(hostname)
+                .withDeadlineAfter(180, TimeUnit.SECONDS)
+                .createUnixUser(UnixUserRequest.newBuilder()
+                        .setUsername(nullToEmpty(cmd.getUsername()))
+                        .setMainGroup(nullToEmpty(cmd.getMainGroup()))
+                        .setOtherGroups(nullToEmpty(cmd.getOtherGroups()))
+                        .build()));
     }
-
+    
     /** 删除 Unix 用户（对应 UnixUserActor delete）。 */
     public ExecResult deleteUnixUser(String hostname, DelUnixUserCommand cmd) {
-        return callWorker(hostname, "deleteUnixUser", () ->
-                getStub(hostname)
-                        .withDeadlineAfter(180, TimeUnit.SECONDS)
-                        .deleteUnixUser(UnixUserRequest.newBuilder()
-                                .setUsername(nullToEmpty(cmd.getUsername()))
-                                .build()));
+        return callWorker(hostname, "deleteUnixUser", () -> getStub(hostname)
+                .withDeadlineAfter(180, TimeUnit.SECONDS)
+                .deleteUnixUser(UnixUserRequest.newBuilder()
+                        .setUsername(nullToEmpty(cmd.getUsername()))
+                        .build()));
     }
-
+    
     /** 文件写入操作（对应 FileOperateActor）。 */
     public ExecResult operateFile(String hostname, FileOperateCommand cmd) {
         return callWorker(hostname, "operateFile", () -> {
@@ -252,7 +243,7 @@ public class WorkerCommandClient {
                     .operateFile(reqBuilder.build());
         });
     }
-
+    
     /**
      * 生成告警配置（对应 AlertConfigActor）。
      *
@@ -272,9 +263,9 @@ public class WorkerCommandClient {
                     .generateAlertConfig(req);
         });
     }
-
+    
     // ─── lifecycle ────────────────────────────────────────────────────────────
-
+    
     /**
      * 监听 Worker 离线事件（注销、重注册、心跳超时），立即关闭并移除对应 Channel。
      * 这是 H1（Channel 泄漏）的核心修复：Channel 生命周期与 WorkerEndpoint 保持同步。
@@ -287,7 +278,7 @@ public class WorkerCommandClient {
             log.info("gRPC channel closed for offline worker: {}", event.getHostname());
         }
     }
-
+    
     @PreDestroy
     public void destroy() {
         channelCache.forEach((hostname, channel) -> {
@@ -304,9 +295,9 @@ public class WorkerCommandClient {
         channelCache.clear();
         log.info("WorkerCommandClient: all channels closed");
     }
-
+    
     // ─── private helpers ─────────────────────────────────────────────────────
-
+    
     /**
      * 统一的 gRPC 调用包装器，消除各方法中的重复 try-catch。
      *
@@ -329,13 +320,13 @@ public class WorkerCommandClient {
             return ExecResult.error("gRPC " + method + " failed: " + e.getMessage());
         }
     }
-
+    
     /** 供 callWorker 使用的 checked-exception 版 Supplier。 */
     @FunctionalInterface
     private interface WorkerCall<T> {
         T call() throws Exception;
     }
-
+    
     /** 将 ServiceRoleOperateCommand 序列化为 ServiceRoleRequest proto。 */
     private ServiceRoleRequest buildServiceRoleRequest(ServiceRoleOperateCommand cmd) {
         try {
@@ -349,11 +340,11 @@ public class WorkerCommandClient {
             throw new RuntimeException("Failed to serialize ServiceRoleOperateCommand", e);
         }
     }
-
+    
     private static String nullToEmpty(String s) {
         return s != null ? s : "";
     }
-
+    
     /**
      * 构建到指定 Worker 的 gRPC Channel。
      * 测试子类可重写此方法注入 in-process channel，无需真实 TCP 连接。
@@ -363,7 +354,7 @@ public class WorkerCommandClient {
                 .usePlaintext()
                 .build();
     }
-
+    
     private WorkerCommandServiceGrpc.WorkerCommandServiceBlockingStub getStub(String hostname) {
         // address 求值在 lambda 内部，确保每次建立 Channel 时读取注册表中最新的端点信息，
         // 避免 Worker IP 变更时用旧地址建立新连接的竞态窗口。
@@ -378,7 +369,7 @@ public class WorkerCommandClient {
         });
         return WorkerCommandServiceGrpc.newBlockingStub(channel);
     }
-
+    
     private static ExecResult toExecResult(ExecResultPb pb) {
         ExecResult result = new ExecResult();
         result.setExecResult(pb.getExecResult());

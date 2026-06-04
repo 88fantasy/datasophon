@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.grpc;
 
 import com.datasophon.api.master.service.WorkerStartService;
@@ -44,16 +43,16 @@ import net.devh.boot.grpc.server.service.GrpcService;
  */
 @GrpcService
 public class WorkerRegistryGrpcService extends WorkerRegistryServiceGrpc.WorkerRegistryServiceImplBase {
-
+    
     private final WorkerRegistry workerRegistry;
     private final WorkerStartService workerStartService;
-
+    
     public WorkerRegistryGrpcService(WorkerRegistry workerRegistry,
                                      WorkerStartService workerStartService) {
         this.workerRegistry = workerRegistry;
         this.workerStartService = workerStartService;
     }
-
+    
     @Override
     public void register(RegisterRequest request, StreamObserver<RegisterResponse> responseObserver) {
         WorkerEndpoint endpoint = new WorkerEndpoint(
@@ -63,28 +62,28 @@ public class WorkerRegistryGrpcService extends WorkerRegistryServiceGrpc.WorkerR
                 request.getCpuArchitecture(),
                 request.getClusterId());
         workerRegistry.register(endpoint);
-
+        
         // 触发 Worker 首次注册处理（Prometheus 配置更新、服务自动启动等）
         StartWorkerMessage msg = new StartWorkerMessage();
         msg.setHostname(request.getHostname());
         msg.setClusterId(request.getClusterId());
         msg.setCpuArchitecture(request.getCpuArchitecture());
         workerStartService.handleWorkerRegistration(msg);
-
+        
         responseObserver.onNext(RegisterResponse.newBuilder()
                 .setSuccess(true)
                 .setMessage("registered")
                 .build());
         responseObserver.onCompleted();
     }
-
+    
     @Override
     public void heartbeat(HeartbeatRequest request, StreamObserver<HeartbeatResponse> responseObserver) {
         boolean ok = workerRegistry.heartbeat(request.getHostname());
         responseObserver.onNext(HeartbeatResponse.newBuilder().setSuccess(ok).build());
         responseObserver.onCompleted();
     }
-
+    
     @Override
     public void unregister(UnregisterRequest request, StreamObserver<UnregisterResponse> responseObserver) {
         workerRegistry.unregister(request.getHostname());

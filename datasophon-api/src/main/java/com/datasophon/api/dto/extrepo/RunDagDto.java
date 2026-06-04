@@ -8,11 +8,11 @@ import lombok.Data;
  */
 @Data
 public class RunDagDto {
-
+    
     @Schema(description = "dagId")
     private String dagId;
-
+    
     @Schema(description = "是否重启，true会忽略已成功的节点")
     private boolean restart;
-
+    
 }

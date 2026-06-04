@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.api.utils;
 
 import com.datasophon.common.enums.InstallState;
