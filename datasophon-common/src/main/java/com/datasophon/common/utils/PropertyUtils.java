@@ -45,7 +45,8 @@ import java.util.Properties;
  */
 public class PropertyUtils {
 
-    public static final String CONFIG_HOME = "conf/common.properties";
+    // api 进程默认配置文件；worker 进程通过 -DconfigFileName=conf/worker.properties 覆盖
+    public static final String CONFIG_HOME = "conf/api.properties";
 
     private static final String FUNCTIONAL_FILE_PATH;
     /**
@@ -91,7 +92,7 @@ public class PropertyUtils {
         }
         FUNCTIONAL_FILE_PATH = usedFileName;
         if (usedFileName == null) {
-            logger.error("can not load common.properties from {}", StrUtil.join(",", propertyFiles));
+            logger.error("can not load config file from {}", StrUtil.join(",", propertyFiles));
             System.exit(1);
         } else {
             logger.info("used {} file as the functional properties", usedFileName);

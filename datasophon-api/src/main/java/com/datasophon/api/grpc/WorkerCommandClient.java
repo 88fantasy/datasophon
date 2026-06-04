@@ -365,14 +365,17 @@ public class WorkerCommandClient {
     }
 
     private WorkerCommandServiceGrpc.WorkerCommandServiceBlockingStub getStub(String hostname) {
-        WorkerEndpoint endpoint = workerRegistry.getEndpoint(hostname)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Worker not registered in gRPC registry: " + hostname));
-        // ip 优先：Worker 上报的可达 IP（k8s hostNetwork 场景集群外可达）。
-        // ip 为空时回落 hostname（裸机兼容模式、旧版 Worker 或 Master 重启预热窗口）。
-        String address = StrUtil.isNotBlank(endpoint.getIp()) ? endpoint.getIp() : endpoint.getHostname();
-        ManagedChannel channel = channelCache.computeIfAbsent(hostname, h ->
-                buildChannel(address, endpoint.getGrpcPort()));
+        // address 求值在 lambda 内部，确保每次建立 Channel 时读取注册表中最新的端点信息，
+        // 避免 Worker IP 变更时用旧地址建立新连接的竞态窗口。
+        ManagedChannel channel = channelCache.computeIfAbsent(hostname, h -> {
+            WorkerEndpoint ep = workerRegistry.getEndpoint(h)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Worker not registered in gRPC registry: " + h));
+            // ip 优先：Worker 上报的可达 IP（k8s hostNetwork 场景集群外可达）。
+            // ip 为空时回落 hostname（裸机兼容模式、旧版 Worker 或 Master 重启预热窗口）。
+            String address = StrUtil.isNotBlank(ep.getIp()) ? ep.getIp() : ep.getHostname();
+            return buildChannel(address, ep.getGrpcPort());
+        });
         return WorkerCommandServiceGrpc.newBlockingStub(channel);
     }
 

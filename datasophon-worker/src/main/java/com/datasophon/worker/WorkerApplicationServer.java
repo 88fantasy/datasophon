@@ -59,7 +59,13 @@ public class WorkerApplicationServer {
     private static final String HADOOP = "hadoop";
 
     public static void main(String[] args) throws UnknownHostException {
-        String hostname = InetAddress.getLocalHost().getHostName();
+        // worker.hostname：可选配置，留空则自动探测。
+        // 若 /etc/hostname 是短名但 getHostName() 返回 FQDN，需显式指定以与 Master DB 对齐。
+        String configuredHostname = PropertyUtils.getString("worker.hostname");
+        String hostname = StrUtil.isNotBlank(configuredHostname)
+                ? configuredHostname
+                : InetAddress.getLocalHost().getHostName();
+        logger.info("Worker resolved hostname={} (configured={})", hostname, configuredHostname);
         String workDir = System.getProperty(USER_DIR);
         String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
         String cpuArchitecture = ShellUtils.getCpuArchitecture();

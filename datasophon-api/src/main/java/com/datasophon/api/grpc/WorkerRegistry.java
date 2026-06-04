@@ -86,12 +86,15 @@ public class WorkerRegistry {
      * 以关闭旧 Channel，再写入新端点。
      */
     public void register(WorkerEndpoint endpoint) {
-        WorkerEndpoint old = registry.put(endpoint.getHostname(), endpoint);
+        WorkerEndpoint old = registry.get(endpoint.getHostname());
         if (old != null) {
-            // worker 重新注册（重启/端口变更）—— 旧 channel 需要关闭
+            // 先发布离线事件清理旧 Channel，再写入新端点。
+            // 顺序保证：事件处理（Channel remove）完成后，新端点才对 getStub 可见，
+            // 避免新建 Channel 被事件处理误删的竞态。
             log.info("Worker re-registered, closing old channel: hostname={}", endpoint.getHostname());
             eventPublisher.publishEvent(new WorkerOfflineEvent(this, endpoint.getHostname()));
         }
+        registry.put(endpoint.getHostname(), endpoint);
         log.info("Worker registered: hostname={}, port={}, arch={}",
                 endpoint.getHostname(), endpoint.getGrpcPort(), endpoint.getCpuArchitecture());
     }
