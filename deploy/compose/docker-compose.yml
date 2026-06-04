@@ -75,7 +75,7 @@ services:
       - "18081:18081"
       - "8586:8586"
     volumes:
-      - ./conf/common.properties:/datasophon/conf/common.properties:ro
+      - ./conf/api.properties:/datasophon/conf/api.properties:ro
       - ./conf/application-config.yml:/datasophon/conf/profiles/application-config.yml:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fs http://localhost:8080/ddh/actuator/health || curl -fs http://localhost:8080/ddh/ > /dev/null 2>&1"]
@@ -112,7 +112,7 @@ services:
     environment:
       TZ: Asia/Shanghai
     volumes:
-      - ./conf/common.properties:/datasophon-worker/conf/common.properties:ro
+      - ./conf/worker.properties:/datasophon-worker/conf/worker.properties:ro
     restart: on-failure
 
 volumes:

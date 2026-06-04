@@ -60,14 +60,15 @@ class WorkerRegistryTest {
     // ─── 注册 ─────────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("register 后 getEndpoint 可取到 endpoint")
+    @DisplayName("register 后 getEndpoint 可取到 endpoint，且 ip 被正确存储")
     void register_thenGetEndpoint_returnsEndpoint() {
-        WorkerEndpoint ep = new WorkerEndpoint("host1", 18082, "x86_64", 1);
+        WorkerEndpoint ep = new WorkerEndpoint("host1", "10.0.0.1", 18082, "x86_64", 1);
         registry.register(ep);
 
         Optional<WorkerEndpoint> result = registry.getEndpoint("host1");
         assertThat(result).isPresent();
         assertThat(result.get().getHostname()).isEqualTo("host1");
+        assertThat(result.get().getIp()).isEqualTo("10.0.0.1");
         assertThat(result.get().getGrpcPort()).isEqualTo(18082);
     }
 
@@ -80,11 +81,11 @@ class WorkerRegistryTest {
     @Test
     @DisplayName("重复 register 同一 hostname 不产生多条记录（覆盖更新）且发布 WorkerOfflineEvent")
     void register_sameHostname_overwrites() {
-        registry.register(new WorkerEndpoint("host2", 18082, "x86_64", 1));
+        registry.register(new WorkerEndpoint("host2", "10.0.0.2", 18082, "x86_64", 1));
         // 第一次注册不应发布事件
         assertThat(publishedEvents).isEmpty();
 
-        registry.register(new WorkerEndpoint("host2", 18083, "aarch64", 2));
+        registry.register(new WorkerEndpoint("host2", "10.0.0.3", 18083, "aarch64", 2));
         // 第二次注册（重注册）应发布离线事件以关闭旧 Channel
         assertThat(publishedEvents).hasSize(1);
         assertThat(publishedEvents.get(0)).isInstanceOf(WorkerOfflineEvent.class);
@@ -100,7 +101,7 @@ class WorkerRegistryTest {
     @Test
     @DisplayName("heartbeat 更新 lastHeartbeat 时间戳，返回 true")
     void heartbeat_knownHost_updatesTimestampAndReturnsTrue() throws InterruptedException {
-        WorkerEndpoint ep = new WorkerEndpoint("host3", 18082, "x86_64", 1);
+        WorkerEndpoint ep = new WorkerEndpoint("host3", "10.0.0.3", 18082, "x86_64", 1);
         registry.register(ep);
         Instant before = ep.getLastHeartbeat();
 
@@ -122,7 +123,7 @@ class WorkerRegistryTest {
     @Test
     @DisplayName("unregister 后 getEndpoint 返回 empty，且发布 WorkerOfflineEvent")
     void unregister_thenGetEndpoint_returnsEmpty() {
-        registry.register(new WorkerEndpoint("host4", 18082, "x86_64", 1));
+        registry.register(new WorkerEndpoint("host4", "10.0.0.4", 18082, "x86_64", 1));
         publishedEvents.clear(); // 忽略 register 阶段可能的事件
 
         registry.unregister("host4");
@@ -138,7 +139,7 @@ class WorkerRegistryTest {
     @Test
     @DisplayName("心跳超时（>90s）时 getEndpoint 返回 empty，并主动从注册表移除、发布 WorkerOfflineEvent")
     void getEndpoint_heartbeatTimedOut_returnsEmpty() throws Exception {
-        WorkerEndpoint ep = new WorkerEndpoint("host5", 18082, "x86_64", 1);
+        WorkerEndpoint ep = new WorkerEndpoint("host5", "10.0.0.5", 18082, "x86_64", 1);
         registry.register(ep);
         publishedEvents.clear();
 
@@ -157,8 +158,8 @@ class WorkerRegistryTest {
     @Test
     @DisplayName("getAllOnline 过滤超时节点，只返回在线节点")
     void getAllOnline_filtersTimedOutWorkers() throws Exception {
-        WorkerEndpoint alive = new WorkerEndpoint("host6", 18082, "x86_64", 1);
-        WorkerEndpoint timedOut = new WorkerEndpoint("host7", 18082, "x86_64", 1);
+        WorkerEndpoint alive = new WorkerEndpoint("host6", "10.0.0.6", 18082, "x86_64", 1);
+        WorkerEndpoint timedOut = new WorkerEndpoint("host7", "10.0.0.7", 18082, "x86_64", 1);
         registry.register(alive);
         registry.register(timedOut);
 
@@ -172,20 +173,21 @@ class WorkerRegistryTest {
     // ─── preRegister（H3 修复）────────────────────────────────────────────────
 
     @Test
-    @DisplayName("preRegister 后 getEndpoint 可取到端点（Master 重启预热场景）")
+    @DisplayName("preRegister 后 getEndpoint 可取到端点（Master 重启预热场景），ip 被正确存储")
     void preRegister_thenGetEndpoint_returnsEndpoint() {
-        registry.preRegister("host-pre", 18082, 1);
+        registry.preRegister("host-pre", 18082, 1, "192.168.1.10");
 
         Optional<WorkerEndpoint> result = registry.getEndpoint("host-pre");
         assertThat(result).isPresent();
         assertThat(result.get().getHostname()).isEqualTo("host-pre");
         assertThat(result.get().getGrpcPort()).isEqualTo(18082);
+        assertThat(result.get().getIp()).isEqualTo("192.168.1.10");
     }
 
     @Test
     @DisplayName("preRegister 不发布 WorkerOfflineEvent（预热不是替换离线节点）")
     void preRegister_doesNotPublishOfflineEvent() {
-        registry.preRegister("host-pre2", 18082, 1);
+        registry.preRegister("host-pre2", 18082, 1, "192.168.1.11");
         assertThat(publishedEvents).isEmpty();
     }
 
@@ -193,11 +195,11 @@ class WorkerRegistryTest {
     @DisplayName("preRegister 若节点已真实注册则 putIfAbsent 不覆盖，register 真实更新时才发 OfflineEvent")
     void preRegister_doesNotOverwriteExistingRealEndpoint() {
         // 真实注册
-        registry.register(new WorkerEndpoint("host-pre3", 18082, "x86_64", 1));
+        registry.register(new WorkerEndpoint("host-pre3", "192.168.1.12", 18082, "x86_64", 1));
         publishedEvents.clear();
 
         // 预热不应覆盖真实注册
-        registry.preRegister("host-pre3", 19999, 1);
+        registry.preRegister("host-pre3", 19999, 1, "192.168.1.99");
         assertThat(registry.getEndpoint("host-pre3").get().getGrpcPort()).isEqualTo(18082);
         assertThat(publishedEvents).isEmpty(); // putIfAbsent → 不触发 OfflineEvent
     }
@@ -205,11 +207,11 @@ class WorkerRegistryTest {
     @Test
     @DisplayName("preRegister 后 Worker 真实注册会覆盖预热条目并发布 WorkerOfflineEvent")
     void preRegister_thenRealRegister_overwritesAndPublishesEvent() {
-        registry.preRegister("host-pre4", 18082, 1);
+        registry.preRegister("host-pre4", 18082, 1, "192.168.1.13");
         publishedEvents.clear(); // 预热不发事件
 
         // Worker 真实注册覆盖预热条目
-        registry.register(new WorkerEndpoint("host-pre4", 18082, "x86_64", 1));
+        registry.register(new WorkerEndpoint("host-pre4", "192.168.1.13", 18082, "x86_64", 1));
         // register() 发现 putIfAbsent 条目存在 → 视为旧端点发 OfflineEvent（关旧 Channel）
         assertThat(publishedEvents).hasSize(1);
         assertThat(((WorkerOfflineEvent) publishedEvents.get(0)).getHostname()).isEqualTo("host-pre4");

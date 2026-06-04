@@ -10,7 +10,7 @@ public interface RegisterRequestOrBuilder extends
 
   /**
    * <pre>
-   * worker 主机名，作为唯一标识
+   * worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
    * </pre>
    *
    * <code>string hostname = 1;</code>
@@ -19,7 +19,7 @@ public interface RegisterRequestOrBuilder extends
   java.lang.String getHostname();
   /**
    * <pre>
-   * worker 主机名，作为唯一标识
+   * worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
    * </pre>
    *
    * <code>string hostname = 1;</code>
@@ -67,4 +67,24 @@ public interface RegisterRequestOrBuilder extends
    * @return The clusterId.
    */
   int getClusterId();
+
+  /**
+   * <pre>
+   * worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
+   * </pre>
+   *
+   * <code>string ip = 5;</code>
+   * @return The ip.
+   */
+  java.lang.String getIp();
+  /**
+   * <pre>
+   * worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
+   * </pre>
+   *
+   * <code>string ip = 5;</code>
+   * @return The bytes for ip.
+   */
+  com.google.protobuf.ByteString
+      getIpBytes();
 }
