@@ -1,8 +1,8 @@
 # DAG 步骤参考表
 
-本页列出两套执行序列的完整步骤。数据来源：`internal/plan/registry.go`（initALL）和 `internal/cli/create/initializer.go`（standalone 10 步硬编码）。
+本页列出三套执行序列的完整步骤。数据来源：`internal/plan/registry.go`（initALL）、`internal/plan/registry_node.go`（initNode 配置模式）、`internal/cli/create/initializer.go`（手动模式硬编码）。
 
-> `initSingleNode` 17 步 DAG 已随 `addNodes` 批量模式一并移除，新增节点统一通过 `create node`（独立模式，10 步 standalone）完成。
+> `initSingleNode` 17 步 DAG 已随 `addNodes` 批量模式一并移除，新增节点统一通过 `create node` 完成。
 
 ## initALL — 33 步（全量集群初始化）
 
@@ -24,7 +24,7 @@
 | 7 | `init-registry-upload` | 上传安装包到 Nexus | both | 本机（执行节点） | `registry.enable` | [upload registry](../commands/upload/registry.md) |
 | 8 | `init-jdk8` | 安装 JDK 8 | both | 全节点 | 无 | [jdk8](../commands/init/packages/jdk8.md) |
 | 9 | `init-jdk17` | 安装 JDK 17 | both | 全节点 | 无 | [jdk17](../commands/init/packages/jdk17.md) |
-| 10 | `init-osuser` | 创建 hadoop 用户和组 | **hadoop-only** | 全节点 | 无 | [osUser](../commands/init/system/osuser.md) |
+| 10 | `init-osuser` | 创建 hadoop 用户和组 | **hadoop-only** | 全节点 | 无 | [hadoop_user](../commands/init/system/osuser.md) |
 | 11 | `init-firewall` | 关闭防火墙 | both | 全节点 | 无 | [firewall](../commands/init/system/firewall.md) |
 | 12 | `init-selinux` | 关闭 SELinux | both | 全节点 | 无 | [selinux](../commands/init/system/selinux.md) |
 | 13 | `init-swap` | 关闭 Swap | both | 全节点 | 无 | [swap](../commands/init/system/swap.md) |
@@ -49,24 +49,54 @@
 | 32 | `k8s-helmify` | 安装 Helmify | **k8s-only** | K8s 节点 | `kubernetes.enable` | [helmify](../commands/init/k8s/helmify.md) |
 | 33 | `init-hugepage` | 关闭透明大页 | both | 全节点 | 无 | [hugePage](../commands/init/system/hugepage.md) |
 
-## standalone — 10 步（新增节点初始化）
+## initNode — 12 步（新增节点初始化，配置模式）
 
-由 `create node --ip <IP> --user <user> --password <pass> --port <port> --hostname <hn>` 触发，**不使用 plan 引擎**，由 `initializer.go` 硬编码顺序执行，不支持断点续跑（所有步骤幂等，可直接重跑）。
+由 `create node -c <cluster.yml> ...` 触发，**走 plan 引擎**，生成 `state/initNode.plan.json`，支持断点续跑。
+数据来源：`internal/plan/registry_node.go`（`InitNodeRegistry`）。
 
-| 序号 | 步骤名 | 对应命令页 |
+步骤的执行有两个维度的过滤（同 initALL）：
+- **Scope**：由 `cluster-sample.yml global.cluster-type` 字段控制
+- **Condition**：由配置文件各模块开关控制
+
+| 序号 | Step ID | 步骤名 | Scope | 节点范围 | 触发条件（Condition） |
+|---|---|---|---|---|---|
+| 1 | `node-bash` | shell bash 设置 | both | 目标节点 | 无 |
+| 2 | `node-hadoopuser` | 创建 hadoop 用户和组 | **hadoop-only** | 目标节点 | 无（Scope 控制） |
+| 3 | `node-firewall` | 关闭防火墙 | both | 目标节点 | 无 |
+| 4 | `node-selinux` | 关闭 selinux | both | 目标节点 | 无 |
+| 5 | `node-swap` | 关闭 swap | both | 目标节点 | 无 |
+| 6 | `node-offline-slave` | yum/apt 离线源节点配置 | both | 目标节点 | `global.offline=true` |
+| 7 | `node-ntp-slave` | 配置 NTP Slave | both | 目标节点 | `ntpServer.enable=true` |
+| 8 | `node-library` | 初始化依赖库 | both | 目标节点 | 无 |
+| 9 | `node-os-safe-conf` | 安全配置 | both | 目标节点 | 无 |
+| 10 | `node-system-conf` | 优化系统配置 | both | 目标节点 | 无 |
+| 11 | `node-hostname` | 配置 hostname | both | 目标节点 | 无 |
+| 12 | `node-hugepage` | 关闭透明大页 | both | 目标节点 | 无 |
+
+> **步骤顺序设计**：offline_slave（6）在 library（8）之前，先配源再装包；ntp_slave（7）在 offline_slave 后，chrony 安装依赖源。
+>
+> **offline_slave 依赖**：`global.offline=true` 时，配置文件须包含有效的 `registry.node`（registry 启用时）或 `yumServer.node`，否则 ServerIP 为空会报错。
+>
+> **ntp_slave 与 server 排除**：若目标新节点恰好是 NTP server 本身（IP 相同），`slavesOf` 会将其从 slave 列表中过滤，ntp_slave 步骤对该节点无目标。
+
+## standalone — 9~10 步（新增节点初始化，手动模式）
+
+由 `create node --ip <IP> ...`（不传 `-c`）触发，**不使用 plan 引擎**，由 `initializer.go` 硬编码顺序执行，不支持断点续跑（所有步骤幂等，可直接重跑）。
+
+| 序号 | 步骤名 | 触发条件 |
 |---|---|---|
-| 1 | shell bash 设置 | [bash](../commands/init/system/bash.md) |
-| 2 | 创建 hadoop 用户和组 | [osUser](../commands/init/system/osuser.md) |
-| 3 | 关闭防火墙 | [firewall](../commands/init/system/firewall.md) |
-| 4 | 关闭 SELinux | [selinux](../commands/init/system/selinux.md) |
-| 5 | 关闭 Swap | [swap](../commands/init/system/swap.md) |
-| 6 | 初始化依赖库 | [library](../commands/init/system/library.md) |
-| 7 | 安全配置 | [osSafeConf](../commands/init/system/ossafeconf.md) |
-| 8 | 优化系统配置 | [system-conf](../commands/init/system/system-conf.md) |
-| 9 | 配置 hostname | [hostname](../commands/init/network/hostname.md) |
-| 10 | 关闭透明大页 | [hugePage](../commands/init/system/hugepage.md) |
+| 1 | shell bash 设置 | 始终 |
+| 2 | 创建 hadoop 用户和组 | 仅 `-t hadoop` |
+| 3 | 关闭防火墙 | 始终 |
+| 4 | 关闭 SELinux | 始终 |
+| 5 | 关闭 Swap | 始终 |
+| 6 | 初始化依赖库 | 始终 |
+| 7 | 安全配置 | 始终 |
+| 8 | 优化系统配置 | 始终 |
+| 9 | 配置 hostname | 始终 |
+| 10 | 关闭透明大页 | 始终 |
 
-> standalone 模式不生成 `state/*.plan.json`，中途失败需从第 1 步重跑（幂等设计，重跑安全）。
+> 手动模式不支持 ntp_slave/offline_slave，需要服务端 IP 上下文时请使用配置模式（`-c`）。
 
 ## 各步骤的过滤字段
 
@@ -93,3 +123,11 @@
 | `global.mysql.enable` | init-mysql、init-mysql-app-db |
 | `global.kubernetes.enable` | k8s-base-services、k8s-kuboard（部分）、k8s-registry-conf、k8s-docker（k8s 阶段）、k8s-kubectl、k8s-helm、k8s-helmify、init-docker-for-registry（部分） |
 | `global.kubernetes.kuboard.enable` | k8s-kuboard |
+
+**initNode（配置模式）专属条件字段**：
+
+| 条件字段 | 控制的 initNode 步骤 |
+|---|---|
+| `global.cluster-type=hadoop`（Scope） | `node-hadoopuser` |
+| `global.offline=true` | `node-offline-slave` |
+| `ntpServer.enable=true` | `node-ntp-slave` |

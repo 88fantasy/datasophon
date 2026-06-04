@@ -32,7 +32,7 @@ datasophon-cli [--dry-run]
 │   ├── nmap-server                 # 在指定节点安装 nmap
 │   └── yum-server                  # 配置 httpd/apache2 离线包源
 ├── init                            # 单步节点初始化（27 条子命令）
-│   ├── system/   firewall  selinux  swap  library  osSafeConf  system-conf  osUser  bash  hugePage
+│   ├── system/   firewall  selinux  swap  library  osSafeConf  system-conf  hadoop_user  bash  hugePage
 │   ├── network/  hostname  allHost  ntpslave  ssh
 │   ├── packages/ bin_packages  tar  jdk8  jdk17
 │   ├── repo/     offlineSlave  registryDecode

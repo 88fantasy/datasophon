@@ -52,7 +52,7 @@ func (t *InitHadoopUser) doRun(exec executor.Executor) error {
 
 func (t *InitHadoopUser) Command(dryRun *bool) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "hadoopUser",
+		Use:   "hadoop_user",
 		Short: "创建 hadoop 用户和组",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runLocal(*dryRun, t.doRun)

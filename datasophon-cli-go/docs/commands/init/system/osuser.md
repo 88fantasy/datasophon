@@ -1,4 +1,4 @@
-# datasophon-cli init osUser
+# datasophon-cli init hadoop_user
 
 ## 用途
 
@@ -7,7 +7,7 @@
 ## 用法 (Synopsis)
 
 ```bash
-datasophon-cli [--dry-run] init osUser [公共 flag]
+datasophon-cli [--dry-run] init hadoop_user [公共 flag]
 ```
 
 ## 参数 / Flags
@@ -26,14 +26,14 @@ datasophon-cli [--dry-run] init osUser [公共 flag]
 ### dry-run 预检
 
 ```bash
-datasophon-cli --dry-run init osUser \
+datasophon-cli --dry-run init hadoop_user \
   --config /data/datasophon/datasophon-init/config/cluster-sample.yml
 ```
 
 ### 实际执行
 
 ```bash
-datasophon-cli init osUser \
+datasophon-cli init hadoop_user \
   --config /data/datasophon/datasophon-init/config/cluster-sample.yml
 ```
 

@@ -68,8 +68,9 @@ type BuildContext struct {
 	LocalIP                string
 	GlobalNodes            map[string]*config.Host
 	SSHAuthType            config.SSHAuthType
-	InitPathOverwriteForce bool // 仅本地 datasophon-init 目录覆盖控制，保留为运行时参数
+	InitPathOverwriteForce bool         // 仅本地 datasophon-init 目录覆盖控制，保留为运行时参数
 	DryRun                 bool
+	TargetNode             *config.Host // create node 单节点目标；initALL 不使用，置 nil 即可
 }
 
 // Action = 一次 (host, handler) 调用对。

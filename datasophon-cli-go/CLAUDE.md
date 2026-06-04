@@ -48,7 +48,7 @@ go test -cover ./...   # 测试 + 覆盖率
 
 ### 33 个 Step 声明式定义（initALL）
 
-`internal/plan/registry.go` 中 `InitALLRegistry` 数组是核心：每个 `Step` 含 `ID / Name / Scope / Condition / Build`，按数组顺序即 DAG 顺序执行。
+`internal/plan/registry.go` 中 `InitALLRegistry` 数组是 `create cluster` 的核心；`internal/plan/registry_node.go` 中 `InitNodeRegistry` 是 `create node` 配置模式的 12 步 DAG。两者共享相同的 `Step` 结构（含 `ID / Name / Scope / Condition / Build`），按数组顺序即 DAG 顺序执行。
 
 - `Scope`：`ScopeBoth`（默认）/ `ScopeHadoopOnly` / `ScopeKubernetesOnly`，由 `ClusterType`（`hadoop` | `kubernetes`）匹配。
 - `Condition`：必须从 `ctx.Cfg.*` 读布尔字段（如 `ctx.Cfg.Registry.Enable`、`ctx.Cfg.Kubernetes.Enable`），**禁止**走 CLI flag —— flag 只覆盖 type/auth 等全局项。
@@ -101,12 +101,12 @@ datasophon-cli [--dry-run]
 ├── create                                  # 集群创建/扩容/远程安装
 │   ├── cluster   [plan|apply] [-y] [-t hadoop|kubernetes]
 │   ├── config                              # 交互式生成 cluster-sample.yml
-│   ├── node                                # 节点管理
+│   ├── node   [-c file] [-t hadoop|kubernetes]  # 节点管理（配置模式或手动模式）
 │   ├── mysql / nmap-server / ntp-server    # 单节点远程安装命令
 │   ├── registry / rustfs / yum-server
 │   └── ...
 ├── init                                    # 27 条独立单步初始化（system/network/packages/repo/db/k8s）
-│   ├── firewall / selinux / swap / osUser / bash
+│   ├── firewall / selinux / swap / hadoop_user / bash
 │   ├── library / osSafeConf / system-conf / hugePage
 │   ├── hostname / allHost / ntpslave / ssh
 │   ├── bin_packages / tar / jdk8 / jdk17
@@ -133,9 +133,9 @@ go test -cover ./...           # 带覆盖率
 
 测试分层：
 
-- `internal/plan/` 内联单测：`builders_common_test.go` / `helpers_test.go` / `plan_test.go`，覆盖 plan 生成、scope 匹配、condition 分支。
+- `internal/plan/` 内联单测：`builders_common_test.go` / `helpers_test.go` / `plan_test.go` / `registry_node_test.go`，覆盖 plan 生成、scope 匹配、condition 分支、initNode 配置模式 DAG。
 - `internal/executor/`：`batch_test.go` / `result_test.go`，覆盖批执行与结果聚合。
-- `internal/cli/init/containerd_test.go` / `internal/cli/create/append_yaml_test.go`：handler 与 YAML 解析单测。
+- `internal/cli/init/containerd_test.go` / `internal/cli/create/append_yaml_test.go` / `internal/cli/create/node_setup_test.go`：handler 与 YAML 解析单测、setupConfig 重复检测单测。
 - `internal/osinfo/`：`arch_test.go` / `os_test.go`，覆盖架构与 OS 探测（用于跨平台分发逻辑）。
 - `test/`：跨包集成测试。`test/fixtures/cluster-sample.yml` 是集成测试用的样例配置；`test/config/loader_test.go` 验证 loader；`test/executor/local_test.go` 验证本地执行器。
 

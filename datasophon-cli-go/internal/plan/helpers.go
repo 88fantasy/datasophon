@@ -1,6 +1,8 @@
 package plan
 
 import (
+	"log/slog"
+
 	initcmd "github.com/88fantasy/datasophon/datasophon-cli-go/internal/cli/init"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/config"
 	"github.com/88fantasy/datasophon/datasophon-cli-go/internal/handler"
@@ -70,6 +72,18 @@ type nodeSelector func(ctx *BuildContext) []config.Host
 
 // allNodes 选取 cfg.Nodes。
 func allNodes(ctx *BuildContext) []config.Host { return ctx.Cfg.Nodes }
+
+// targetNode 选取 BuildContext.TargetNode（单节点目标，供 create node 使用）。
+// TargetNode 为 nil 属于编程错误：InitNodeRegistry 必须通过 setupConfig 初始化后才能调用。
+// 此时记录 Error 日志并返回空切片，使调用方（GeneratePlan/Apply）以零目标执行步骤，
+// 而非静默成功——调用方应在此之前通过参数校验保证 TargetNode 非 nil。
+func targetNode(ctx *BuildContext) []config.Host {
+	if ctx.TargetNode == nil {
+		slog.Error("targetNode: BuildContext.TargetNode 为 nil，步骤将无目标节点（无操作）；确认已通过 setupConfig 初始化")
+		return nil
+	}
+	return []config.Host{*ctx.TargetNode}
+}
 
 // slavesOf 过滤掉 serverNode，返回其他节点（对应 nodeInitializer.slavesNodesExec）。
 func slavesOf(all []*config.Host, serverHost *config.Host) []*config.Host {
