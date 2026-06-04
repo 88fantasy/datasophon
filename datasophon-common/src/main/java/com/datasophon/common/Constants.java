@@ -38,9 +38,9 @@ public final class Constants {
     public static final String DATA = "data";
     public static final String INSTALL_TYPE = "install_type";
     public static final String TOTAL = "total";
-    
+
     public static final String DATASOPHON = "datasophon";
-    
+
     public static final String HOST_MAP = "_host_map";
     public static final String COMMAND_HOST_ID = "command_host_id";
     public static final String HOST_MD5 = "_host_md5";
@@ -53,12 +53,12 @@ public final class Constants {
     public static final String UNZIP_DDH_WORKER_CMD =
             "tar -zxf " + MASTER_MANAGE_PACKAGE_PATH + "/datasophon-worker.tar.gz -C " + INSTALL_PATH;
     public static final String START_DDH_WORKER_CMD = "service datasophon-worker restart";
-    
+
     public static final String WORKER_PACKAGE_NAME = "datasophon-worker.tar.gz";
     public static final String WORKER_SCRIPT_PATH = INSTALL_PATH + "/datasophon-worker/script/";
     public static final String WORKER_PATH = INSTALL_PATH + "/datasophon-worker";
     public static final String SHELL_SCRIPT_PATH = "/scripts";
-    
+
     public static final String FRAMEWORK_TPL = "frameworktpl";
     public static final String SERVICE_DDL = "service_ddl.json";
     public static final String MANIFEST_DDL = "manifest.yaml";
@@ -88,15 +88,15 @@ public final class Constants {
     public static final String UPDATE_COMMON_CMD = "sh " + INSTALL_PATH + "/datasophon-worker/script/sed_common.sh ";
     public static final String MASTER_HOST = "masterHost";
     public static final String MASTER_WEB_PORT = "server.port";
-    
+
     public static final String HOST_COMMAND_ID = "host_command_id";
-    
+
     public static final String CONFIG_VERSION = "config_version";
     public static final String HAS_EN = ".*[a-zA-z].*";
     public static final String ALERT_TARGET_NAME = "alert_target_name";
     public static final String USER_INFO = "userInfo";
     public static final String CUSTOM = "custom";
-    
+
     public static final String NACOS = "nacos";
     public static final String INPUT = "input";
     public static final String SERVICE_ROLE_JMX_MAP = "service_role_jmx_port";
@@ -106,7 +106,7 @@ public final class Constants {
     public static final String NUMBER = "number";
     public static final String CLUSTER_STATE = "cluster_state";
     public static final String PATH = "path";
-    
+
     public static final String MV_PATH = "mv_path";
     public static final String SERVICE_INSTANCE_ID = "service_instance_id";
     public static final String IS_ENABLED = "is_enabled";
@@ -124,7 +124,7 @@ public final class Constants {
     public static final String ROLE_GROUP_ID = "role_group_id";
     public static final String ROLE_GROUP_TYPE = "role_group_type";
     public static final String NEET_RESTART = "need_restart";
-    
+
     public static final String CPU_ARCHITECTURE = "cpu_architecture";
     public static final String HOST_STATE = "host_state";
     public static final String FAILED = "failed";
@@ -151,41 +151,41 @@ public final class Constants {
     private Constants() {
         throw new IllegalStateException("Constants Exception");
     }
-    
+
     public static final String USERNAME = "username";
-    
+
     public static final String PASSWORD = "password";
     /**
      * session user
      */
     public static final String SESSION_USER = "session.user";
-    
+
     public static final String SESSION_ID = "sessionId";
     /**
      * session timeout
      */
     public static final int SESSION_TIME_OUT = 7200;
-    
+
     /**
      * http header
      */
     public static final String HTTP_HEADER_UNKNOWN = "unKnown";
-    
+
     /**
      * http X-Forwarded-For
      */
     public static final String HTTP_X_FORWARDED_FOR = "X-Forwarded-For";
-    
+
     /**
      * http X-Real-IP
      */
     public static final String HTTP_X_REAL_IP = "X-Real-IP";
-    
+
     /**
      * UTF-8
      */
     public static final String UTF_8 = "UTF-8";
-    
+
     /**
      * user name regex
      */
@@ -194,22 +194,22 @@ public final class Constants {
      * comma ,
      */
     public static final String COMMA = ",";
-    
+
     /**
      * dot ,
      */
     public static final String DOT = ".";
-    
+
     /**
      * slash /
      */
     public static final String SLASH = "/";
-    
+
     /**
      * SPACE " "
      */
     public static final String SPACE = " ";
-    
+
     /**
      * SINGLE_SLASH /
      */
@@ -218,53 +218,53 @@ public final class Constants {
      * status
      */
     public static final String STATUS = "status";
-    
+
     /**
      * message
      */
     public static final String MSG = "msg";
-    
+
     public static final String REGEX_VARIABLE = "\\$\\{(.*?)\\}";
-    
+
     /**
      * email regex
      */
     public static final Pattern REGEX_MAIL_NAME = Pattern.compile("^([a-z0-9A-Z]+[_|\\-|\\.]?)+[a-z0-9A-Z]@([a-z0-9A-Z]+(-[a-z0-9A-Z]+)?\\.)+[a-zA-Z]{2,}$");
-    
+
     /**
      * 常量-数值100
      */
     public static final int ONE_HUNDRRD = 100;
-    
+
     /**
      * 常量-数值200
      */
     public static final int TWO_HUNDRRD = 200;
-    
+
     /**
      * 常量-数值10
      */
     public static final int TEN = 10;
-    
+
     /**
      * 常量-zkserver
      */
     public static final String ZKSERVER = "zkserver";
-    
+
     public static final String CENTER_BRACKET_LEFT = "[";
-    
+
     public static final String CENTER_BRACKET_RIGHT = "]";
     /**
      * 常量-连接号
      */
     public static final String HYPHEN = "-";
-    
+
     public static final String TASK_MANAGER = "taskmanager";
     public static final String JOB_MANAGER = "jobmanager";
     public static final String X86_64 = "x86_64";
-    
+
     public static final String PROMETHEUS = "prometheus";
-    
+
     public static final String XML = "xml";
     public static final String PROPERTIES = "properties";
     public static final String PROPERTIES2 = "properties2";
@@ -277,12 +277,12 @@ public final class Constants {
      * os name properties
      */
     public static final String OSNAME_PROPERTIES = "os.name";
-    
+
     /**
      * windows os name
      */
     public static final String OSNAME_WINDOWS = "Windows";
-    
+
     /**
      * windows hosts file basedir
      */
@@ -293,9 +293,9 @@ public final class Constants {
     public static final String ROOT = "root";
 
     public static final Integer PORT_DEFAULT = PropertyUtils.getInt("ssh_port");
-    
+
     //public static final String DISPATCHER_WORK = "dispatcher-worker.sh";
-    
+
     public static final String GRAFANA_PATH = "/grafana";
 
     public static final Boolean NEXUS_ENABLE = PropertyUtils.getBoolean("nexus.enable");
@@ -307,4 +307,13 @@ public final class Constants {
     public static final String MD5 = "md5";
 
     //public static final String SECRET_KEY = PropertyUtils.getString("secret.key");
+
+    /**
+     * CSRF token cookie name
+     */
+    public static final String CSRF_TOKEN = "XSRF-TOKEN";
+    /**
+     * CSRF token header name
+     */
+    public static final String CSRF_HEADER = "X-XSRF-TOKEN";
 }

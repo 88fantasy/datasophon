@@ -23,6 +23,7 @@
 
 package com.datasophon.api.service.impl;
 
+import com.datasophon.api.interceptor.CsrfTokenInterceptor;
 import com.datasophon.api.service.SessionService;
 import com.datasophon.api.utils.HttpUtils;
 import com.datasophon.common.Constants;
@@ -87,6 +88,8 @@ public class SessionServiceImpl extends ServiceImpl<SessionMapper, SessionEntity
     
     /**
      * create session
+     * <p>
+     * "后登录者赢"策略：每次登录创建全新 session，踢掉该用户所有旧 session。
      *
      * @param user user
      * @param ip   ip
@@ -95,51 +98,26 @@ public class SessionServiceImpl extends ServiceImpl<SessionMapper, SessionEntity
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String createSession(UserInfoEntity user, String ip) {
-        SessionEntity session = null;
-        
-        // logined
-        List<SessionEntity> sessionList = sessionMapper.queryByUserId(user.getId());
-        
         Date now = new Date();
-        
-        /**
-         * if you have logged in and are still valid, return directly
-         */
+
+        // 清理该用户所有已存在的 session（互踢策略）
+        List<SessionEntity> sessionList = sessionMapper.queryByUserId(user.getId());
         if (CollectionUtils.isNotEmpty(sessionList)) {
-            // is session list greater 1 ， delete other ，get one
-            if (sessionList.size() > 1) {
-                for (int i = 1; i < sessionList.size(); i++) {
-                    sessionMapper.deleteById(sessionList.get(i).getId());
-                }
-            }
-            session = sessionList.get(0);
-            if (now.getTime() - session.getLastLoginTime().getTime() <= Constants.SESSION_TIME_OUT * 1000) {
-                /**
-                 * updateProcessInstance the latest login time
-                 */
-                session.setLastLoginTime(now);
-                sessionMapper.updateById(session);
-                
-                return session.getId();
-                
-            } else {
-                /**
-                 * session expired, then delete this session first
-                 */
-                sessionMapper.deleteById(session.getId());
+            for (SessionEntity old : sessionList) {
+                CsrfTokenInterceptor.removeToken(old.getId());
+                sessionMapper.deleteById(old.getId());
             }
         }
-        
-        // assign new session
-        session = new SessionEntity();
-        
+
+        // 创建全新 session
+        SessionEntity session = new SessionEntity();
         session.setId(UUID.randomUUID().toString());
         session.setIp(ip);
         session.setUserId(user.getId());
         session.setLastLoginTime(now);
-        
+
         sessionMapper.insertSession(session);
-        
+
         return session.getId();
     }
     
@@ -157,8 +135,9 @@ public class SessionServiceImpl extends ServiceImpl<SessionMapper, SessionEntity
              * query session by user id and ip
              */
             SessionEntity session = sessionMapper.queryByUserIdAndIp(loginUser.getId(), ip);
-            
-            // delete session
+
+            // delete session and CSRF token
+            CsrfTokenInterceptor.removeToken(session.getId());
             sessionMapper.deleteById(session.getId());
         } catch (Exception e) {
             logger.warn("userId : {} , ip : {} , find more one session", loginUser.getId(), ip);
