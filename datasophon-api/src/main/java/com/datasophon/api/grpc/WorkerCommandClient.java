@@ -45,6 +45,7 @@ import com.datasophon.grpc.api.ServiceRoleRequest;
 import com.datasophon.grpc.api.UnixGroupRequest;
 import com.datasophon.grpc.api.UnixUserRequest;
 import com.datasophon.grpc.api.WorkerCommandServiceGrpc;
+import cn.hutool.core.util.StrUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -367,8 +368,11 @@ public class WorkerCommandClient {
         WorkerEndpoint endpoint = workerRegistry.getEndpoint(hostname)
                 .orElseThrow(() -> new IllegalStateException(
                         "Worker not registered in gRPC registry: " + hostname));
+        // ip 优先：Worker 上报的可达 IP（k8s hostNetwork 场景集群外可达）。
+        // ip 为空时回落 hostname（裸机兼容模式、旧版 Worker 或 Master 重启预热窗口）。
+        String address = StrUtil.isNotBlank(endpoint.getIp()) ? endpoint.getIp() : endpoint.getHostname();
         ManagedChannel channel = channelCache.computeIfAbsent(hostname, h ->
-                buildChannel(endpoint.getHostname(), endpoint.getGrpcPort()));
+                buildChannel(address, endpoint.getGrpcPort()));
         return WorkerCommandServiceGrpc.newBlockingStub(channel);
     }
 

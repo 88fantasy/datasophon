@@ -34,8 +34,15 @@ import java.time.Instant;
 @Data
 public class WorkerEndpoint {
 
-    /** Worker 主机名（唯一标识） */
+    /** Worker 主机名（唯一标识，用于注册表 key / DB 主键 / DAG 派发，不作拨号地址） */
     private final String hostname;
+
+    /**
+     * Worker 可达 IP，Master 用于 gRPC 回拨（{@link WorkerCommandClient#getStub} 优先使用）。
+     * 由 Worker 上报（可在 common.properties 配置 worker.ip，空则自动探测）；
+     * 为空时回落到 {@code hostname} DNS 解析（裸机兼容模式）。
+     */
+    private final String ip;
 
     /** Worker gRPC server 端口（默认 18082） */
     private final int grpcPort;
@@ -49,8 +56,9 @@ public class WorkerEndpoint {
     /** 最近一次心跳时间（注册时初始化，心跳时更新） */
     private volatile Instant lastHeartbeat;
 
-    public WorkerEndpoint(String hostname, int grpcPort, String cpuArchitecture, int clusterId) {
+    public WorkerEndpoint(String hostname, String ip, int grpcPort, String cpuArchitecture, int clusterId) {
         this.hostname = hostname;
+        this.ip = ip;
         this.grpcPort = grpcPort;
         this.cpuArchitecture = cpuArchitecture;
         this.clusterId = clusterId;

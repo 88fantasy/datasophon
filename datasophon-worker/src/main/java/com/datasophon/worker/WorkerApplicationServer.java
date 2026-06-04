@@ -26,6 +26,7 @@ package com.datasophon.worker;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.lifecycle.ServerLifeCycleManager;
+import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.grpc.MasterCallbackClient;
@@ -33,6 +34,7 @@ import com.datasophon.worker.grpc.MasterRegistryClient;
 import com.datasophon.worker.grpc.WorkerGrpcServer;
 import com.datasophon.worker.utils.UnixUtils;
 
+import cn.hutool.core.util.StrUtil;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -63,6 +65,13 @@ public class WorkerApplicationServer {
         String cpuArchitecture = ShellUtils.getCpuArchitecture();
         int clusterId = PropertyUtils.getInt("clusterId");
 
+        // worker.ip：可选配置，留空则自动探测本机 IP。
+        // k8s hostNetwork 模式下 getLocalIp() 即节点 IP，通常集群外可达。
+        // 多网卡裸机若自动探测选错网卡，请在 common.properties 中显式指定 worker.ip。
+        String configuredIp = PropertyUtils.getString("worker.ip");
+        String ip = StrUtil.isNotBlank(configuredIp) ? configuredIp : HostUtils.getLocalIp();
+        logger.info("Worker resolved ip={} (configured={})", ip, configuredIp);
+
         CacheUtils.put(Constants.HOSTNAME, hostname);
         CacheUtils.put(Constants.CPU_ARCH, cpuArchitecture);
 
@@ -84,9 +93,9 @@ public class WorkerApplicationServer {
         MasterCallbackClient.init(masterHost);
 
         MasterRegistryClient registryClient =
-                new MasterRegistryClient(masterHost, hostname, cpuArchitecture, clusterId);
+                new MasterRegistryClient(masterHost, hostname, ip, cpuArchitecture, clusterId);
         registryClient.register();
-        logger.info("Worker started, hostname={}", hostname);
+        logger.info("Worker started, hostname={}, ip={}", hostname, ip);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (!ServerLifeCycleManager.isStopped()) {

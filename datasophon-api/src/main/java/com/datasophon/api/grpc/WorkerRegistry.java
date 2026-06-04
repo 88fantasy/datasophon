@@ -74,10 +74,10 @@ public class WorkerRegistry {
      * @param grpcPort  Worker gRPC 端口（通常 18082）
      * @param clusterId 所属集群 ID
      */
-    public void preRegister(String hostname, int grpcPort, int clusterId) {
+    public void preRegister(String hostname, int grpcPort, int clusterId, String ip) {
         // 仅在节点尚未注册时才预热，避免覆盖已在线 Worker 的真实端点
-        registry.putIfAbsent(hostname, new WorkerEndpoint(hostname, grpcPort, "", clusterId));
-        log.debug("Worker pre-registered from DB: hostname={}, port={}", hostname, grpcPort);
+        registry.putIfAbsent(hostname, new WorkerEndpoint(hostname, ip != null ? ip : "", grpcPort, "", clusterId));
+        log.debug("Worker pre-registered from DB: hostname={}, ip={}, port={}", hostname, ip, grpcPort);
     }
 
     /**

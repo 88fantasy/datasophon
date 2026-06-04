@@ -58,6 +58,7 @@ public class WorkerRegistryGrpcService extends WorkerRegistryServiceGrpc.WorkerR
     public void register(RegisterRequest request, StreamObserver<RegisterResponse> responseObserver) {
         WorkerEndpoint endpoint = new WorkerEndpoint(
                 request.getHostname(),
+                request.getIp(),
                 request.getGrpcPort(),
                 request.getCpuArchitecture(),
                 request.getClusterId());

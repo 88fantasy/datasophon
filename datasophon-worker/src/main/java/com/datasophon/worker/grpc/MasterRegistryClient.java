@@ -68,6 +68,7 @@ public class MasterRegistryClient implements AutoCloseable {
     private ScheduledFuture<?> heartbeatTask;
 
     private final String hostname;
+    private final String ip;
     private final String masterHost;
     private final String cpuArchitecture;
     private final int clusterId;
@@ -75,15 +76,17 @@ public class MasterRegistryClient implements AutoCloseable {
     /**
      * 构造 MasterRegistryClient。
      *
-     * @param masterHost      master 主机名（从 PropertyUtils 读取 Constants.MASTER_HOST）
-     * @param hostname         本机主机名
+     * @param masterHost      Master 可达地址（IP 或 hostname，从 PropertyUtils 读取 Constants.MASTER_HOST）
+     * @param hostname         本机主机名（作为注册表唯一标识，不变）
+     * @param ip               本机可达 IP，Master 用于 gRPC 回拨（空时由 Master 回落 hostname 解析）
      * @param cpuArchitecture CPU 架构（x86_64 / aarch64）
      * @param clusterId        所属集群 ID
      */
-    public MasterRegistryClient(String masterHost, String hostname,
+    public MasterRegistryClient(String masterHost, String hostname, String ip,
                                  String cpuArchitecture, int clusterId) {
         this.masterHost = masterHost;
         this.hostname = hostname;
+        this.ip = ip;
         this.cpuArchitecture = cpuArchitecture;
         this.clusterId = clusterId;
 
@@ -108,6 +111,7 @@ public class MasterRegistryClient implements AutoCloseable {
                 .setGrpcPort(GrpcConstants.WORKER_GRPC_PORT)
                 .setCpuArchitecture(cpuArchitecture)
                 .setClusterId(clusterId)
+                .setIp(ip != null ? ip : "")
                 .build();
         try {
             RegisterResponse resp = stub

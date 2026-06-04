@@ -75,7 +75,7 @@ public class WorkerRegistryPrewarmer {
             }
 
             for (ClusterHostDO host : hosts) {
-                workerRegistry.preRegister(host.getHostname(), GrpcConstants.WORKER_GRPC_PORT, host.getClusterId());
+                workerRegistry.preRegister(host.getHostname(), GrpcConstants.WORKER_GRPC_PORT, host.getClusterId(), host.getIp());
             }
             log.info("WorkerRegistry prewarm: pre-registered {} hosts from DB (port={})",
                     hosts.size(), GrpcConstants.WORKER_GRPC_PORT);
