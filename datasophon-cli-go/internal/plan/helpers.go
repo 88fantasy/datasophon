@@ -71,6 +71,15 @@ type nodeSelector func(ctx *BuildContext) []config.Host
 // allNodes 选取 cfg.Nodes。
 func allNodes(ctx *BuildContext) []config.Host { return ctx.Cfg.Nodes }
 
+// targetNode 选取 BuildContext.TargetNode（单节点目标，供 create node 使用）。
+// TargetNode 为 nil 时返回空切片，对应 Step 将产生空 targets。
+func targetNode(ctx *BuildContext) []config.Host {
+	if ctx.TargetNode == nil {
+		return nil
+	}
+	return []config.Host{*ctx.TargetNode}
+}
+
 // slavesOf 过滤掉 serverNode，返回其他节点（对应 nodeInitializer.slavesNodesExec）。
 func slavesOf(all []*config.Host, serverHost *config.Host) []*config.Host {
 	var result []*config.Host

@@ -36,6 +36,7 @@ type nodeInitializer struct {
 	globalNodes    map[string]*config.Host
 	localHost      *config.Host
 	currentCfg     *config.ClusterConfig // setup() 后赋值
+	targetNode     *config.Host          // create node 配置模式：目标新节点
 }
 
 func (n *nodeInitializer) bindCommonFlags(cmd *cobra.Command) {
@@ -136,17 +137,64 @@ func (n *nodeInitializer) toBuildContext() *plan.BuildContext {
 		SSHAuthType:            n.sshAuthType,
 		InitPathOverwriteForce: n.InitPathOverwriteForce,
 		DryRun:                 n.dryRun,
+		TargetNode:             n.targetNode,
 	}
 }
 
-// initStandaloneNode 独立模式 10 步节点级 DAG（不依赖集群上下文，不走 plan 引擎）。
-func (n *nodeInitializer) initStandaloneNode(host *config.Host) error {
+// setupConfig 配置模式初始化：从 cpath 加载配置，校验新节点不与已有节点冲突。
+// 若 newNode.IP 已存在于配置文件 nodes 列表中，返回错误（提示并停止）。
+func (n *nodeInitializer) setupConfig(cpath string, newNode *config.Host) error {
+	if !strings.HasPrefix(n.DatasophonPath, "/") || !strings.HasPrefix(n.InstallPath, "/") {
+		return fmt.Errorf("datasophonPath、installPath 必须是绝对路径（以 / 开头）")
+	}
+	n.DatasophonPath = strings.TrimSuffix(n.DatasophonPath, "/")
+
+	if _, err := os.Stat(n.DatasophonPath); err != nil {
+		return fmt.Errorf("路径不存在: %s", n.DatasophonPath)
+	}
+
+	cfg, err := config.Load(cpath)
+	if err != nil {
+		return err
+	}
+
+	// 重复检测：按 IP 判断新节点是否已存在
+	for _, node := range cfg.Nodes {
+		if node.IP == newNode.IP {
+			return fmt.Errorf("节点 %s 已存在于配置文件 nodes 列表中，已停止", newNode.IP)
+		}
+	}
+
+	n.initPath = n.DatasophonPath + "/datasophon-init"
+	n.initConfigPath = n.initPath + "/config"
+	n.packagesPath = n.initPath + "/packages"
+	n.initConfigYaml = cpath // 配置模式：写回目标即 -c 指定文件
+
+	n.sshAuthType = cfg.Global.SSHAuthType
+	n.globalNodes = make(map[string]*config.Host, len(cfg.Nodes))
+	for i := range cfg.Nodes {
+		n.globalNodes[cfg.Nodes[i].Hostname] = &cfg.Nodes[i]
+	}
+	n.localHost = nil
+	n.currentCfg = cfg
+	n.targetNode = newNode
+
+	slog.Info("配置模式路径信息",
+		"DATASOPHON_PATH", n.DatasophonPath,
+		"CONFIG_FILE", cpath,
+		"TARGET_NODE", newNode.IP)
+	return nil
+}
+
+// initStandaloneNode 手动模式节点级 DAG（不依赖集群上下文，不走 plan 引擎）。
+// clusterType 为 hadoop 时执行"创建 hadoop 用户和组"，否则跳过。
+// 不支持断点续跑；所有步骤均为幂等操作，中途失败可直接重跑。
+func (n *nodeInitializer) initStandaloneNode(host *config.Host, clusterType config.ClusterType) error {
 	steps := []struct {
 		name string
 		fn   func() error
 	}{
 		{"shell bash 设置", func() error { return n.singleNodeExecDirect(host, &initcmd.InitBash{}) }},
-		{"创建 hadoop 用户和组", func() error { return n.singleNodeExecDirect(host, &initcmd.InitHadoopUser{}) }},
 		{"关闭防火墙", func() error { return n.singleNodeExecDirect(host, &initcmd.InitFirewall{}) }},
 		{"关闭 selinux", func() error { return n.singleNodeExecDirect(host, &initcmd.InitSelinux{}) }},
 		{"关闭 swap", func() error { return n.singleNodeExecDirect(host, &initcmd.InitSwap{}) }},
@@ -157,6 +205,19 @@ func (n *nodeInitializer) initStandaloneNode(host *config.Host) error {
 			return n.singleNodeExecDirect(host, &initcmd.InitHostname{Hostname: host.Hostname})
 		}},
 		{"关闭透明大页", func() error { return n.singleNodeExecDirect(host, &initcmd.InitHugePage{}) }},
+	}
+
+	// hadoop_user 仅在 hadoop 集群类型下执行
+	if clusterType == config.ClusterTypeHadoop {
+		hadoopStep := struct {
+			name string
+			fn   func() error
+		}{"创建 hadoop 用户和组", func() error { return n.singleNodeExecDirect(host, &initcmd.InitHadoopUser{}) }}
+		// 插入到 bash 之后（索引 1）
+		steps = append(steps[:1], append([]struct {
+			name string
+			fn   func() error
+		}{hadoopStep}, steps[1:]...)...)
 	}
 
 	for _, s := range steps {

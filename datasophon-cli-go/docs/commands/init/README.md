@@ -15,7 +15,7 @@
 | [firewall](./system/firewall.md) | 关闭防火墙（firewalld / ufw） |
 | [selinux](./system/selinux.md) | 关闭 SELinux |
 | [swap](./system/swap.md) | 关闭 Swap 分区 |
-| [osUser](./system/osuser.md) | 创建 hadoop 用户和组 |
+| [hadoop_user](./system/osuser.md) | 创建 hadoop 用户和组 |
 | [bash](./system/bash.md) | 确保 /bin/sh 指向 bash |
 | [library](./system/library.md) | 安装运行时依赖库 |
 | [osSafeConf](./system/ossafeconf.md) | 初始化基线安全配置 |
