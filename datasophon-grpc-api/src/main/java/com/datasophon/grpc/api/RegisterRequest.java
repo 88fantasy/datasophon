@@ -19,6 +19,7 @@ private static final long serialVersionUID = 0L;
   private RegisterRequest() {
     hostname_ = "";
     cpuArchitecture_ = "";
+    ip_ = "";
   }
 
   @java.lang.Override
@@ -46,7 +47,7 @@ private static final long serialVersionUID = 0L;
   private volatile java.lang.Object hostname_ = "";
   /**
    * <pre>
-   * worker 主机名，作为唯一标识
+   * worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
    * </pre>
    *
    * <code>string hostname = 1;</code>
@@ -67,7 +68,7 @@ private static final long serialVersionUID = 0L;
   }
   /**
    * <pre>
-   * worker 主机名，作为唯一标识
+   * worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
    * </pre>
    *
    * <code>string hostname = 1;</code>
@@ -165,6 +166,53 @@ private static final long serialVersionUID = 0L;
     return clusterId_;
   }
 
+  public static final int IP_FIELD_NUMBER = 5;
+  @SuppressWarnings("serial")
+  private volatile java.lang.Object ip_ = "";
+  /**
+   * <pre>
+   * worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
+   * </pre>
+   *
+   * <code>string ip = 5;</code>
+   * @return The ip.
+   */
+  @java.lang.Override
+  public java.lang.String getIp() {
+    java.lang.Object ref = ip_;
+    if (ref instanceof java.lang.String) {
+      return (java.lang.String) ref;
+    } else {
+      com.google.protobuf.ByteString bs = 
+          (com.google.protobuf.ByteString) ref;
+      java.lang.String s = bs.toStringUtf8();
+      ip_ = s;
+      return s;
+    }
+  }
+  /**
+   * <pre>
+   * worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
+   * </pre>
+   *
+   * <code>string ip = 5;</code>
+   * @return The bytes for ip.
+   */
+  @java.lang.Override
+  public com.google.protobuf.ByteString
+      getIpBytes() {
+    java.lang.Object ref = ip_;
+    if (ref instanceof java.lang.String) {
+      com.google.protobuf.ByteString b = 
+          com.google.protobuf.ByteString.copyFromUtf8(
+              (java.lang.String) ref);
+      ip_ = b;
+      return b;
+    } else {
+      return (com.google.protobuf.ByteString) ref;
+    }
+  }
+
   private byte memoizedIsInitialized = -1;
   @java.lang.Override
   public final boolean isInitialized() {
@@ -191,6 +239,9 @@ private static final long serialVersionUID = 0L;
     if (clusterId_ != 0) {
       output.writeInt32(4, clusterId_);
     }
+    if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(ip_)) {
+      com.google.protobuf.GeneratedMessageV3.writeString(output, 5, ip_);
+    }
     getUnknownFields().writeTo(output);
   }
 
@@ -213,6 +264,9 @@ private static final long serialVersionUID = 0L;
     if (clusterId_ != 0) {
       size += com.google.protobuf.CodedOutputStream
         .computeInt32Size(4, clusterId_);
+    }
+    if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(ip_)) {
+      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(5, ip_);
     }
     size += getUnknownFields().getSerializedSize();
     memoizedSize = size;
@@ -237,6 +291,8 @@ private static final long serialVersionUID = 0L;
         .equals(other.getCpuArchitecture())) return false;
     if (getClusterId()
         != other.getClusterId()) return false;
+    if (!getIp()
+        .equals(other.getIp())) return false;
     if (!getUnknownFields().equals(other.getUnknownFields())) return false;
     return true;
   }
@@ -256,6 +312,8 @@ private static final long serialVersionUID = 0L;
     hash = (53 * hash) + getCpuArchitecture().hashCode();
     hash = (37 * hash) + CLUSTER_ID_FIELD_NUMBER;
     hash = (53 * hash) + getClusterId();
+    hash = (37 * hash) + IP_FIELD_NUMBER;
+    hash = (53 * hash) + getIp().hashCode();
     hash = (29 * hash) + getUnknownFields().hashCode();
     memoizedHashCode = hash;
     return hash;
@@ -391,6 +449,7 @@ private static final long serialVersionUID = 0L;
       grpcPort_ = 0;
       cpuArchitecture_ = "";
       clusterId_ = 0;
+      ip_ = "";
       return this;
     }
 
@@ -435,6 +494,9 @@ private static final long serialVersionUID = 0L;
       }
       if (((from_bitField0_ & 0x00000008) != 0)) {
         result.clusterId_ = clusterId_;
+      }
+      if (((from_bitField0_ & 0x00000010) != 0)) {
+        result.ip_ = ip_;
       }
     }
 
@@ -498,6 +560,11 @@ private static final long serialVersionUID = 0L;
       if (other.getClusterId() != 0) {
         setClusterId(other.getClusterId());
       }
+      if (!other.getIp().isEmpty()) {
+        ip_ = other.ip_;
+        bitField0_ |= 0x00000010;
+        onChanged();
+      }
       this.mergeUnknownFields(other.getUnknownFields());
       onChanged();
       return this;
@@ -544,6 +611,11 @@ private static final long serialVersionUID = 0L;
               bitField0_ |= 0x00000008;
               break;
             } // case 32
+            case 42: {
+              ip_ = input.readStringRequireUtf8();
+              bitField0_ |= 0x00000010;
+              break;
+            } // case 42
             default: {
               if (!super.parseUnknownField(input, extensionRegistry, tag)) {
                 done = true; // was an endgroup tag
@@ -564,7 +636,7 @@ private static final long serialVersionUID = 0L;
     private java.lang.Object hostname_ = "";
     /**
      * <pre>
-     * worker 主机名，作为唯一标识
+     * worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
      * </pre>
      *
      * <code>string hostname = 1;</code>
@@ -584,7 +656,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * worker 主机名，作为唯一标识
+     * worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
      * </pre>
      *
      * <code>string hostname = 1;</code>
@@ -605,7 +677,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * worker 主机名，作为唯一标识
+     * worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
      * </pre>
      *
      * <code>string hostname = 1;</code>
@@ -622,7 +694,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * worker 主机名，作为唯一标识
+     * worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
      * </pre>
      *
      * <code>string hostname = 1;</code>
@@ -636,7 +708,7 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <pre>
-     * worker 主机名，作为唯一标识
+     * worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
      * </pre>
      *
      * <code>string hostname = 1;</code>
@@ -829,6 +901,98 @@ private static final long serialVersionUID = 0L;
     public Builder clearClusterId() {
       bitField0_ = (bitField0_ & ~0x00000008);
       clusterId_ = 0;
+      onChanged();
+      return this;
+    }
+
+    private java.lang.Object ip_ = "";
+    /**
+     * <pre>
+     * worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
+     * </pre>
+     *
+     * <code>string ip = 5;</code>
+     * @return The ip.
+     */
+    public java.lang.String getIp() {
+      java.lang.Object ref = ip_;
+      if (!(ref instanceof java.lang.String)) {
+        com.google.protobuf.ByteString bs =
+            (com.google.protobuf.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        ip_ = s;
+        return s;
+      } else {
+        return (java.lang.String) ref;
+      }
+    }
+    /**
+     * <pre>
+     * worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
+     * </pre>
+     *
+     * <code>string ip = 5;</code>
+     * @return The bytes for ip.
+     */
+    public com.google.protobuf.ByteString
+        getIpBytes() {
+      java.lang.Object ref = ip_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        ip_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    /**
+     * <pre>
+     * worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
+     * </pre>
+     *
+     * <code>string ip = 5;</code>
+     * @param value The ip to set.
+     * @return This builder for chaining.
+     */
+    public Builder setIp(
+        java.lang.String value) {
+      if (value == null) { throw new NullPointerException(); }
+      ip_ = value;
+      bitField0_ |= 0x00000010;
+      onChanged();
+      return this;
+    }
+    /**
+     * <pre>
+     * worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
+     * </pre>
+     *
+     * <code>string ip = 5;</code>
+     * @return This builder for chaining.
+     */
+    public Builder clearIp() {
+      ip_ = getDefaultInstance().getIp();
+      bitField0_ = (bitField0_ & ~0x00000010);
+      onChanged();
+      return this;
+    }
+    /**
+     * <pre>
+     * worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
+     * </pre>
+     *
+     * <code>string ip = 5;</code>
+     * @param value The bytes for ip to set.
+     * @return This builder for chaining.
+     */
+    public Builder setIpBytes(
+        com.google.protobuf.ByteString value) {
+      if (value == null) { throw new NullPointerException(); }
+      checkByteStringIsUtf8(value);
+      ip_ = value;
+      bitField0_ |= 0x00000010;
       onChanged();
       return this;
     }

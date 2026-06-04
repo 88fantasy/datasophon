@@ -38,10 +38,11 @@ service WorkerRegistryService {
 // ─── Register ──────────────────────────────────────────────────────────────
 
 message RegisterRequest {
-    string hostname        = 1;  // worker 主机名，作为唯一标识
+    string hostname        = 1;  // worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
     int32  grpc_port       = 2;  // worker gRPC server 监听端口（默认 18082）
     string cpu_architecture = 3; // x86_64 / aarch64
     int32  cluster_id      = 4;  // 所属集群 ID
+    string ip              = 5;  // worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
 }
 
 message RegisterResponse {

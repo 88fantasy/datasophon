@@ -109,7 +109,7 @@ class WorkerCommandClientTest {
                 .build();
 
         registry = mock(WorkerRegistry.class);
-        WorkerEndpoint endpoint = new WorkerEndpoint(HOSTNAME, 18082, "x86_64", 1);
+        WorkerEndpoint endpoint = new WorkerEndpoint(HOSTNAME, "10.0.0.1", 18082, "x86_64", 1);
         when(registry.getEndpoint(HOSTNAME)).thenReturn(Optional.of(endpoint));
 
         client = new TestableWorkerCommandClient(registry, MAPPER, inProcessChannel);
@@ -458,6 +458,34 @@ class WorkerCommandClientTest {
         assertThat(entries.get(0).getAlertItems().get(0).getAlertName()).isEqualTo("NameNodeDown");
     }
 
+    // ─── 拨号地址策略（ip 优先，空则回落 hostname）─────────────────────────────
+
+    @Test
+    @DisplayName("endpoint 有 ip 时 buildChannel 使用 ip 作为拨号地址")
+    void getStub_withIp_dialsByIp() {
+        WorkerRegistry mockRegistry = mock(WorkerRegistry.class);
+        WorkerEndpoint endpoint = new WorkerEndpoint("dial-host", "10.9.8.7", 18082, "x86_64", 1);
+        when(mockRegistry.getEndpoint("dial-host")).thenReturn(Optional.of(endpoint));
+
+        AddressCapturingClient dialClient = new AddressCapturingClient(mockRegistry, MAPPER, inProcessChannel);
+        dialClient.ping("dial-host");
+
+        assertThat(dialClient.lastAddress).isEqualTo("10.9.8.7");
+    }
+
+    @Test
+    @DisplayName("endpoint ip 为空时 buildChannel 回落到 hostname 作为拨号地址")
+    void getStub_withEmptyIp_dialsByHostname() {
+        WorkerRegistry mockRegistry = mock(WorkerRegistry.class);
+        WorkerEndpoint endpoint = new WorkerEndpoint("fallback-host", "", 18082, "x86_64", 1);
+        when(mockRegistry.getEndpoint("fallback-host")).thenReturn(Optional.of(endpoint));
+
+        AddressCapturingClient dialClient = new AddressCapturingClient(mockRegistry, MAPPER, inProcessChannel);
+        dialClient.ping("fallback-host");
+
+        assertThat(dialClient.lastAddress).isEqualTo("fallback-host");
+    }
+
     // ─── helpers ─────────────────────────────────────────────────────────────
 
     /**
@@ -475,6 +503,26 @@ class WorkerCommandClientTest {
 
         @Override
         protected ManagedChannel buildChannel(String hostname, int port) {
+            return testChannel;
+        }
+    }
+
+    /**
+     * 记录 buildChannel() 收到的 address 参数，用于验证拨号地址选择逻辑（ip vs hostname 回落）。
+     */
+    static class AddressCapturingClient extends WorkerCommandClient {
+        private final ManagedChannel testChannel;
+        String lastAddress;
+
+        AddressCapturingClient(WorkerRegistry registry, ObjectMapper objectMapper,
+                ManagedChannel testChannel) {
+            super(registry, objectMapper);
+            this.testChannel = testChannel;
+        }
+
+        @Override
+        protected ManagedChannel buildChannel(String address, int port) {
+            this.lastAddress = address;
             return testChannel;
         }
     }

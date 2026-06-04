@@ -81,7 +81,7 @@ pid=$DDH_PID_DIR/$command.pid
 cd $DDH_HOME
 
 if [ "$command" = "worker" ]; then
-  LOG_FILE="-Dlogging.config=classpath:logback.xml -Dspring.profiles.active=worker"
+  LOG_FILE="-Dlogging.config=classpath:logback.xml"
   JMX="-javaagent:$DDH_HOME/jmx/jmx_prometheus_javaagent-0.16.1.jar=8585:$DDH_HOME/jmx/jmx_exporter_config.yaml"
   CLASS=com.datasophon.worker.WorkerApplicationServer
   export DDH_OPTS="$HEAP_OPTS $DDH_OPTS $JAVA_OPTS"
@@ -103,7 +103,7 @@ case $startStop in
 
     echo starting $command, logging to $log
 
-    exec_command="$DDH_OPTS $LOG_FILE $JMX -classpath $DDH_CONF_DIR:$DDH_LIB_JARS $CLASS"
+    exec_command="$DDH_OPTS $LOG_FILE $JMX -DconfigFileName=conf/worker.properties -classpath $DDH_CONF_DIR:$DDH_LIB_JARS $CLASS"
 
     echo "nohup $JAVA_HOME/bin/java $exec_command > $log 2>&1 &"
     nohup $JAVA_HOME/bin/java $exec_command > $log 2>&1 &
@@ -169,7 +169,7 @@ case $startStop in
       fi
       echo starting $command, logging to $log
 
-      exec_command="$DDH_OPTS $LOG_FILE $JMX -classpath $DDH_CONF_DIR:$DDH_LIB_JARS $CLASS"
+      exec_command="$DDH_OPTS $LOG_FILE $JMX -DconfigFileName=conf/worker.properties -classpath $DDH_CONF_DIR:$DDH_LIB_JARS $CLASS"
 
       echo "nohup $JAVA_HOME/bin/java $exec_command > $log 2>&1 &"
       nohup $JAVA_HOME/bin/java $exec_command > $log 2>&1 &

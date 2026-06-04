@@ -159,7 +159,7 @@ services:
       - "8080:8080"
       - "18081:18081"
     volumes:
-      - ./conf/common.properties:/datasophon/conf/common.properties:ro
+      - ./conf/api.properties:/datasophon/conf/api.properties:ro
       - ./conf/application-config.yml:/datasophon/conf/profiles/application-config.yml:ro
     healthcheck:
       test: ["CMD", "curl", "-fs", "http://localhost:8080/ddh/actuator/health"]
@@ -204,7 +204,7 @@ services:
     ports:
       - "18082:18082"
     volumes:
-      - ./conf/worker.properties:/datasophon-worker/conf/common.properties:ro
+      - ./conf/worker.properties:/datasophon-worker/conf/worker.properties:ro
     restart: on-failure
     networks: [ddh-k8s-net]
 
@@ -226,7 +226,7 @@ services:
     ports:
       - "18083:18082"   # host 18083 避免与 mw-worker 的 18082 冲突
     volumes:
-      - ./conf/worker.properties:/datasophon-worker/conf/common.properties:ro
+      - ./conf/worker.properties:/datasophon-worker/conf/worker.properties:ro
     restart: on-failure
     networks: [ddh-k8s-net]
 
