@@ -20,8 +20,9 @@
 
 import { message } from "antd";
 import axios from "axios";
+import Cookie from "js-cookie";
 import { VUE_APP_PUBLIC_PATH } from "../config";
-import { removeAuthorization } from "../utils/request";
+import { removeAuthorization, CSRF_COOKIE_NAME } from "../utils/request";
 import { invokeRelogin } from "../utils/authorityUtils";
 import { account } from "../utils/account";
 
@@ -65,6 +66,17 @@ export const errorCb = (error) => {
         invokeRelogin();
       }, 2 * 1000);
       // return true;
+    }
+
+    if (response?.status === 403) {
+      message.error("安全验证失败，请重新登录！");
+      Cookie.remove(CSRF_COOKIE_NAME);
+      account.clear();
+      removeAuthorization();
+
+      setTimeout(() => {
+        invokeRelogin();
+      }, 2 * 1000);
     }
 
     const data = {

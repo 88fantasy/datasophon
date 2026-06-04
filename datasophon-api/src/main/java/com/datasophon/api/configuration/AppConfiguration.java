@@ -25,6 +25,7 @@ package com.datasophon.api.configuration;
 
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.interceptor.BasicValidRequestInterceptor;
+import com.datasophon.api.interceptor.CsrfTokenInterceptor;
 import com.datasophon.api.interceptor.LocaleChangeInterceptor;
 import com.datasophon.api.interceptor.LoginHandlerInterceptor;
 import com.datasophon.api.interceptor.UserPermissionHandler;
@@ -68,6 +69,7 @@ public class AppConfiguration implements WebMvcConfigurer {
 
   private final BasicValidRequestInterceptor basicValidRequestInterceptor;
 
+  private final CsrfTokenInterceptor csrfTokenInterceptor;
 
 
   @Bean
@@ -84,12 +86,14 @@ public class AppConfiguration implements WebMvcConfigurer {
   public AppConfiguration(LoginHandlerInterceptor loginHandlerInterceptor,
                           UserPermissionHandler userPermissionHandler,
                           LocaleChangeInterceptor localeChangeInterceptor,
-                          BasicValidRequestInterceptor basicValidRequestInterceptor
+                          BasicValidRequestInterceptor basicValidRequestInterceptor,
+                          CsrfTokenInterceptor csrfTokenInterceptor
   ) {
     this.loginHandlerInterceptor = loginHandlerInterceptor;
     this.userPermissionHandler = userPermissionHandler;
     this.localeChangeInterceptor = localeChangeInterceptor;
     this.basicValidRequestInterceptor = basicValidRequestInterceptor;
+    this.csrfTokenInterceptor = csrfTokenInterceptor;
   }
 
 
@@ -133,6 +137,30 @@ public class AppConfiguration implements WebMvcConfigurer {
         ));
     if (enableOpenApi) {
       loginRegistration.excludePathPatterns(
+          "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
+          "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico"
+      );
+    }
+
+    // CSRF token verification — placed after login interceptor
+    InterceptorRegistration csrfRegistration = registry
+        .addInterceptor(csrfTokenInterceptor)
+        .addPathPatterns(getPathPrefix() + "/**")
+        .excludePathPatterns(
+            "/error",
+            "/grafana/**",
+            "/index.html",
+            "/",
+            "/static/**"
+        )
+        .excludePathPatterns(getRealExcludeUrl(
+            "/login",
+            "/cluster/alert/history/save",
+            "/cluster/kerberos/downloadKeytab",
+            "/service/install/download*"
+        ));
+    if (enableOpenApi) {
+      csrfRegistration.excludePathPatterns(
           "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
           "/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/favicon.ico"
       );

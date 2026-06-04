@@ -5,11 +5,29 @@ import { message } from "antd";
 
 // 跨域认证信息 header 名
 const xsrfHeaderName = "sessionId";
+// CSRF token cookie/header names (must match backend Constants.CSRF_TOKEN / CSRF_HEADER)
+const CSRF_COOKIE_NAME = "XSRF-TOKEN";
+const CSRF_HEADER_NAME = "X-XSRF-TOKEN";
 
 axios.defaults.timeout = 60 * 60 * 60 * 24;
 axios.defaults.withCredentials = true;
 axios.defaults.xsrfHeaderName = xsrfHeaderName;
 axios.defaults.xsrfCookieName = xsrfHeaderName;
+
+// Request interceptor: attach CSRF token to non-safe methods
+axios.interceptors.request.use(
+    (config) => {
+        const method = (config.method || "get").toLowerCase();
+        if (method !== "get" && method !== "head" && method !== "options") {
+            const csrfToken = Cookie.get(CSRF_COOKIE_NAME);
+            if (csrfToken) {
+                config.headers[CSRF_HEADER_NAME] = csrfToken;
+            }
+        }
+        return config;
+    },
+    (error) => Promise.reject(error)
+);
 // 认证类型
 const AUTH_TYPE = {
   BEARER: "Bearer",
@@ -221,4 +239,5 @@ export {
   checkAuthorization,
   // loadInterceptors,
   parseUrlParams,
+  CSRF_COOKIE_NAME,
 };
