@@ -79,7 +79,7 @@
             <directoryMode>0755</directoryMode>
             <fileMode>0755</fileMode>
             <includes>
-                <include>common.properties</include>
+                <include>worker.properties</include>
             </includes>
         </fileSet>
 

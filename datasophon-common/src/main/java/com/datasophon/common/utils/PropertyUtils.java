@@ -62,7 +62,10 @@ public class PropertyUtils {
 
     static {
         List<String> propertyFiles = new ArrayList<>();
-        propertyFiles.add(FileUtils.concatPath(System.getenv("DDH_HOME"), CONFIG_HOME));
+        // configFileName 系统属性允许每个进程选择各自的配置文件（api.properties / worker.properties）。
+        // 未指定时回落 CONFIG_HOME（"conf/common.properties"），保持向后兼容。
+        String configFileName = System.getProperty("configFileName", CONFIG_HOME);
+        propertyFiles.add(FileUtils.concatPath(System.getenv("DDH_HOME"), configFileName));
 
         String path = System.getProperty("commonPropertiesLocation");
         if (StrUtil.isNotBlank(path)) {

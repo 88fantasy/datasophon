@@ -103,7 +103,7 @@ case $startStop in
 
     echo starting $command, logging to $log
 
-    exec_command="$DDH_OPTS $LOG_FILE $JMX -classpath $DDH_CONF_DIR:$DDH_LIB_JARS $CLASS"
+    exec_command="$DDH_OPTS $LOG_FILE $JMX -DconfigFileName=conf/worker.properties -classpath $DDH_CONF_DIR:$DDH_LIB_JARS $CLASS"
 
     echo "nohup $JAVA_HOME/bin/java $exec_command > $log 2>&1 &"
     nohup $JAVA_HOME/bin/java $exec_command > $log 2>&1 &
@@ -169,7 +169,7 @@ case $startStop in
       fi
       echo starting $command, logging to $log
 
-      exec_command="$DDH_OPTS $LOG_FILE $JMX -classpath $DDH_CONF_DIR:$DDH_LIB_JARS $CLASS"
+      exec_command="$DDH_OPTS $LOG_FILE $JMX -DconfigFileName=conf/worker.properties -classpath $DDH_CONF_DIR:$DDH_LIB_JARS $CLASS"
 
       echo "nohup $JAVA_HOME/bin/java $exec_command > $log 2>&1 &"
       nohup $JAVA_HOME/bin/java $exec_command > $log 2>&1 &

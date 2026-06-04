@@ -7,5 +7,6 @@ EXPOSE 18082
 WORKDIR /datasophon-worker
 ENTRYPOINT ["java", "-server", "-Xms512m", "-Xmx512m", \
             "-Dfile.encoding=UTF-8", \
+            "-DconfigFileName=conf/worker.properties", \
             "-classpath", "/datasophon-worker/conf:/datasophon-worker/lib/*", \
             "com.datasophon.worker.WorkerApplicationServer"]

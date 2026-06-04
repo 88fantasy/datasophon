@@ -47,7 +47,7 @@ services:
     networks: [ddh-sa-net]
 
   mw-nexus:
-    image: sonatype/nexus3
+    image: sonatype/nexus3:3.92.3-alpine
     container_name: ddh-sa-nexus
     environment:
       TZ: Asia/Shanghai
@@ -139,7 +139,7 @@ services:
       - "8082:8080"     # host 8082，与 k8s compose（8080）区分
       - "18084:18081"   # host 18084，与 k8s compose（18081）区分
     volumes:
-      - ./conf/common.properties:/datasophon/conf/common.properties:ro
+      - ./conf/api.properties:/datasophon/conf/api.properties:ro
       - ./conf/application-config.yml:/datasophon/conf/profiles/application-config.yml:ro
     healthcheck:
       test: ["CMD", "curl", "-fs", "http://localhost:8080/ddh/actuator/health"]
@@ -184,7 +184,7 @@ services:
     ports:
       - "18085:18082"   # host 18085，与 k8s compose（18082）区分
     volumes:
-      - ./conf/worker.properties:/datasophon-worker/conf/common.properties:ro
+      - ./conf/worker.properties:/datasophon-worker/conf/worker.properties:ro
     restart: on-failure
     networks: [ddh-sa-net]
 
@@ -206,7 +206,7 @@ services:
     ports:
       - "18086:18082"
     volumes:
-      - ./conf/worker.properties:/datasophon-worker/conf/common.properties:ro
+      - ./conf/worker.properties:/datasophon-worker/conf/worker.properties:ro
     restart: on-failure
     networks: [ddh-sa-net]
 
@@ -226,7 +226,7 @@ services:
     ports:
       - "18087:18082"
     volumes:
-      - ./conf/worker.properties:/datasophon-worker/conf/common.properties:ro
+      - ./conf/worker.properties:/datasophon-worker/conf/worker.properties:ro
     restart: on-failure
     networks: [ddh-sa-net]
 
