@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0              http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -24,8 +22,10 @@
                 <executions>
                     <execution>
                         <id>go-build-linux-amd64</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
                         <phase>compile</phase>
-                        <goals><goal>exec</goal></goals>
                         <configuration>
                             <executable>go</executable>
                             <workingDirectory>${project.basedir}</workingDirectory>
@@ -44,8 +44,10 @@
                     </execution>
                     <execution>
                         <id>go-build-linux-arm64</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
                         <phase>compile</phase>
-                        <goals><goal>exec</goal></goals>
                         <configuration>
                             <executable>go</executable>
                             <workingDirectory>${project.basedir}</workingDirectory>
@@ -70,16 +72,18 @@
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
                 <version>4.9.10</version>
-                <executions>
-                    <execution>
-                        <id>get-the-git-infos</id>
-                        <goals><goal>revision</goal></goals>
-                        <phase>initialize</phase>
-                    </execution>
-                </executions>
                 <configuration>
                     <generateGitPropertiesFile>false</generateGitPropertiesFile>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- 生成 target/release.txt -->
@@ -90,8 +94,10 @@
                 <executions>
                     <execution>
                         <id>copy-release-notes</id>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
                         <phase>process-resources</phase>
-                        <goals><goal>copy-resources</goal></goals>
                         <configuration>
                             <outputDirectory>${project.build.directory}</outputDirectory>
                             <resources>

@@ -9,13 +9,11 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class DownloadResult {
-
-
+    
     private boolean change;
-
+    
     private String target;
-
+    
     private String md5;
-
-
+    
 }

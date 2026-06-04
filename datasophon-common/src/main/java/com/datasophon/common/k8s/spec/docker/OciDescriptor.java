@@ -7,5 +7,5 @@ public class OciDescriptor {
     private String mediaType;
     private String digest;
     private long size;
-
+    
 }

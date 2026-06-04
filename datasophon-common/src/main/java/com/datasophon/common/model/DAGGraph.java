@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.model;
 
 import org.apache.commons.collections.CollectionUtils;

@@ -20,13 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.strategy;
 
-import cn.hutool.db.DbUtil;
-import cn.hutool.db.ds.simple.SimpleDataSource;
-import cn.hutool.db.handler.RsHandler;
-import cn.hutool.db.sql.SqlExecutor;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
@@ -34,12 +29,7 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -47,12 +37,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class HiveMetaStoreHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
+import cn.hutool.db.DbUtil;
+import cn.hutool.db.ds.simple.SimpleDataSource;
+import cn.hutool.db.handler.RsHandler;
+import cn.hutool.db.sql.SqlExecutor;
+
+public class HiveMetaStoreHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
+    
     public HiveMetaStoreHandlerStrategy(String serviceName, String serviceRoleName) {
         super(serviceName, serviceRoleName);
     }
-
+    
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) {
         ExecResult startResult;
@@ -70,7 +72,7 @@ public class HiveMetaStoreHandlerStrategy extends AbstractHandlerStrategy implem
         }
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(), command, command.getRunAs(), command.isCheckStatus());
     }
-
+    
     private ExecResult initDb(String workPath, String hiveSitePath) {
         boolean ready = true;
         Map<String, String> hiveSiteProps = getHiveSiteProps(hiveSitePath);
@@ -122,7 +124,7 @@ public class HiveMetaStoreHandlerStrategy extends AbstractHandlerStrategy implem
         }
         return ExecResult.success();
     }
-
+    
     private Map<String, String> getHiveSiteProps(String hiveSitePath) {
         Map<String, String> props = new HashMap<>();
         try {
@@ -130,7 +132,7 @@ public class HiveMetaStoreHandlerStrategy extends AbstractHandlerStrategy implem
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document document = builder.parse(hiveSitePath);
             Element root = document.getDocumentElement();
-
+            
             NodeList propertyNodes = root.getElementsByTagName("property");
             for (int i = 0; i < propertyNodes.getLength(); i++) {
                 Element node = (Element) propertyNodes.item(i);

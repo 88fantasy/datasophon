@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.utils;
 
 import com.datasophon.common.Constants;
@@ -43,9 +42,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OlapUtils {
-
+    
     private static final String DOIRS_INSTALLED_PATH = Constants.INSTALL_PATH + Constants.SLASH + "doris";
-
+    
     private static final Logger logger = LoggerFactory.getLogger(OlapUtils.class);
     
     public static ExecResult addFollower(String feMaster, String hostname, String rootPassword) {
@@ -149,14 +148,14 @@ public class OlapUtils {
         String url = "jdbc:mysql://" + feMaster + ":9030";
         // 加载驱动
         Class.forName("com.mysql.cj.jdbc.Driver");
-        //获取安装路径
-        //logger.info("doris fe配置密码 = {}", rootPassword);
+        // 获取安装路径
+        // logger.info("doris fe配置密码 = {}", rootPassword);
         String password = rootPassword;
         try {
             connection = DriverManager.getConnection(url, username, password);
         } catch (Exception e) {
             logger.warn("doris密码可能还没初始化，使用空密码连接");
-            //部署初始化密码为空
+            // 部署初始化密码为空
             password = "";
             connection = DriverManager.getConnection(url, username, password);
         }
@@ -242,8 +241,8 @@ public class OlapUtils {
         }
         return deadList;
     }
-
-    public static String getUniPassword(String feUniConfPath){
+    
+    public static String getUniPassword(String feUniConfPath) {
         String root_password = "";
         File feUniConFile = new File(feUniConfPath);
         if (feUniConFile.exists()) {
@@ -253,11 +252,11 @@ public class OlapUtils {
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
             }
-            if(Objects.nonNull(properties.getProperty("root_password"))){
+            if (Objects.nonNull(properties.getProperty("root_password"))) {
                 root_password = properties.getProperty("root_password");
             }
         }
         return root_password;
     }
-
+    
 }

@@ -4,43 +4,41 @@
 // Protobuf Java Version: 3.25.5
 package com.datasophon.grpc.api;
 
-public interface GetLogRequestOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.GetLogRequest)
-    com.google.protobuf.MessageOrBuilder {
-
-  /**
-   * <code>string log_file = 1;</code>
-   * @return The logFile.
-   */
-  java.lang.String getLogFile();
-  /**
-   * <code>string log_file = 1;</code>
-   * @return The bytes for logFile.
-   */
-  com.google.protobuf.ByteString
-      getLogFileBytes();
-
-  /**
-   * <code>string base_dir = 2;</code>
-   * @return The baseDir.
-   */
-  java.lang.String getBaseDir();
-  /**
-   * <code>string base_dir = 2;</code>
-   * @return The bytes for baseDir.
-   */
-  com.google.protobuf.ByteString
-      getBaseDirBytes();
-
-  /**
-   * <code>string run_as_user = 3;</code>
-   * @return The runAsUser.
-   */
-  java.lang.String getRunAsUser();
-  /**
-   * <code>string run_as_user = 3;</code>
-   * @return The bytes for runAsUser.
-   */
-  com.google.protobuf.ByteString
-      getRunAsUserBytes();
+public interface GetLogRequestOrBuilder
+        extends
+            // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.GetLogRequest)
+            com.google.protobuf.MessageOrBuilder {
+    
+    /**
+     * <code>string log_file = 1;</code>
+     * @return The logFile.
+     */
+    java.lang.String getLogFile();
+    /**
+     * <code>string log_file = 1;</code>
+     * @return The bytes for logFile.
+     */
+    com.google.protobuf.ByteString getLogFileBytes();
+    
+    /**
+     * <code>string base_dir = 2;</code>
+     * @return The baseDir.
+     */
+    java.lang.String getBaseDir();
+    /**
+     * <code>string base_dir = 2;</code>
+     * @return The bytes for baseDir.
+     */
+    com.google.protobuf.ByteString getBaseDirBytes();
+    
+    /**
+     * <code>string run_as_user = 3;</code>
+     * @return The runAsUser.
+     */
+    java.lang.String getRunAsUser();
+    /**
+     * <code>string run_as_user = 3;</code>
+     * @return The bytes for runAsUser.
+     */
+    com.google.protobuf.ByteString getRunAsUserBytes();
 }

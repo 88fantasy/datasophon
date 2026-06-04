@@ -4,13 +4,14 @@
 // Protobuf Java Version: 3.25.5
 package com.datasophon.grpc.api;
 
-public interface UnregisterResponseOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.UnregisterResponse)
-    com.google.protobuf.MessageOrBuilder {
-
-  /**
-   * <code>bool success = 1;</code>
-   * @return The success.
-   */
-  boolean getSuccess();
+public interface UnregisterResponseOrBuilder
+        extends
+            // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.UnregisterResponse)
+            com.google.protobuf.MessageOrBuilder {
+    
+    /**
+     * <code>bool success = 1;</code>
+     * @return The success.
+     */
+    boolean getSuccess();
 }

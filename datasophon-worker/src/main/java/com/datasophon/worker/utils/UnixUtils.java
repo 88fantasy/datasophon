@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.utils;
 
 import com.datasophon.common.Constants;

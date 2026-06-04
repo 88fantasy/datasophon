@@ -20,12 +20,7 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.utils;
-
-import cn.hutool.core.util.StrUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -39,40 +34,44 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import cn.hutool.core.util.StrUtil;
+
 /**
  * property utils
  * single instance
  */
 public class PropertyUtils {
-
+    
     // api 进程默认配置文件；worker 进程通过 -DconfigFileName=conf/worker.properties 覆盖
     public static final String CONFIG_HOME = "conf/api.properties";
-
+    
     private static final String FUNCTIONAL_FILE_PATH;
     /**
      * logger
      */
     private static final Logger logger = LoggerFactory.getLogger(PropertyUtils.class);
-
+    
     private static final Properties properties = new Properties();
-
+    
     private PropertyUtils() {
         throw new UnsupportedOperationException("Construct PropertyUtils");
     }
-
-
+    
     static {
         List<String> propertyFiles = new ArrayList<>();
         // configFileName 系统属性允许每个进程选择各自的配置文件（api.properties / worker.properties）。
         // 未指定时回落 CONFIG_HOME（"conf/common.properties"），保持向后兼容。
         String configFileName = System.getProperty("configFileName", CONFIG_HOME);
         propertyFiles.add(FileUtils.concatPath(System.getenv("DDH_HOME"), configFileName));
-
+        
         String path = System.getProperty("commonPropertiesLocation");
         if (StrUtil.isNotBlank(path)) {
             propertyFiles.add(path);
         }
-
+        
         String usedFileName = null;
         for (String fileName : propertyFiles) {
             File file = new File(fileName);
@@ -98,8 +97,7 @@ public class PropertyUtils {
             logger.info("used {} file as the functional properties", usedFileName);
         }
     }
-
-
+    
     public static File getFunctionalPropertyFile() {
         return new File(FUNCTIONAL_FILE_PATH);
     }
@@ -112,7 +110,7 @@ public class PropertyUtils {
     public static String getString(String key) {
         return properties.getProperty(key.trim());
     }
-
+    
     /**
      * get property value with upper case
      *
@@ -122,7 +120,7 @@ public class PropertyUtils {
     public static String getUpperCaseString(String key) {
         return properties.getProperty(key.trim()).toUpperCase();
     }
-
+    
     /**
      * get property value
      *
@@ -134,7 +132,7 @@ public class PropertyUtils {
         String val = properties.getProperty(key.trim());
         return val == null ? defaultVal : val;
     }
-
+    
     /**
      * get property value
      *
@@ -144,7 +142,7 @@ public class PropertyUtils {
     public static int getInt(String key) {
         return getInt(key, -1);
     }
-
+    
     /**
      * @param key          key
      * @param defaultValue default value
@@ -155,7 +153,7 @@ public class PropertyUtils {
         if (value == null) {
             return defaultValue;
         }
-
+        
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
@@ -163,7 +161,7 @@ public class PropertyUtils {
         }
         return defaultValue;
     }
-
+    
     /**
      * get property value
      *
@@ -175,10 +173,10 @@ public class PropertyUtils {
         if (null != value) {
             return Boolean.parseBoolean(value);
         }
-
+        
         return false;
     }
-
+    
     /**
      * get property value
      *
@@ -191,10 +189,10 @@ public class PropertyUtils {
         if (null != value) {
             return Boolean.parseBoolean(value);
         }
-
+        
         return defaultValue;
     }
-
+    
     /**
      * get property long value
      *
@@ -206,7 +204,7 @@ public class PropertyUtils {
         String val = getString(key);
         return val == null ? defaultVal : Long.parseLong(val);
     }
-
+    
     /**
      * @param key key
      * @return property value
@@ -214,7 +212,7 @@ public class PropertyUtils {
     public static long getLong(String key) {
         return getLong(key, -1);
     }
-
+    
     /**
      * @param key        key
      * @param defaultVal default value
@@ -224,7 +222,7 @@ public class PropertyUtils {
         String val = getString(key);
         return val == null ? defaultVal : Double.parseDouble(val);
     }
-
+    
     /**
      * get array
      *
@@ -244,7 +242,7 @@ public class PropertyUtils {
         }
         return new String[0];
     }
-
+    
     /**
      * @param key          key
      * @param type         type
@@ -257,7 +255,7 @@ public class PropertyUtils {
         String val = getString(key);
         return val == null ? defaultValue : Enum.valueOf(type, val);
     }
-
+    
     /**
      * get all properties with specified prefix, like: fs.
      *
@@ -273,12 +271,12 @@ public class PropertyUtils {
         }
         return matchedProperties;
     }
-
+    
     /**
      *
      */
     public static void setValue(String key, String value) {
         properties.setProperty(key, value);
     }
-
+    
 }

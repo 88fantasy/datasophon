@@ -39,11 +39,12 @@ datasophon-cli init system-conf \
 
 ## 退出码 / 常见错误
 
-| 情况 | 说明 |
-|---|---|
+|       情况       |      说明       |
+|----------------|---------------|------------------------------|
 | `sysctl -p` 失败 | 内核版本过旧，不支持某参数 | 手动注释 `/etc/sysctl.conf` 中对应行 |
 
 ## 相关命令
 
 - [`init osSafeConf`](./ossafeconf.md) — 安全加固（互补）
 - [DAG 步骤表](../../../reference/init-all-dag.md)
+

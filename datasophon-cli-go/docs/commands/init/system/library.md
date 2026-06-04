@@ -39,13 +39,14 @@ datasophon-cli init library \
 
 ## 退出码 / 常见错误
 
-| 错误信息 | 根因 | 处置 |
-|---|---|---|
-| `yum install` 失败 | 离线环境无 yum 源 | 先执行 `create yum-server` 启动离线源 + `init offlineSlave` 配置节点 |
-| `apt-get install` 失败 | Ubuntu 节点无 apt 源 | 同上 |
+|         错误信息         |        根因        |                            处置                            |
+|----------------------|------------------|----------------------------------------------------------|
+| `yum install` 失败     | 离线环境无 yum 源      | 先执行 `create yum-server` 启动离线源 + `init offlineSlave` 配置节点 |
+| `apt-get install` 失败 | Ubuntu 节点无 apt 源 | 同上                                                       |
 
 ## 相关命令
 
 - [`create yum-server`](../../create/yum-server.md) — 启动 httpd/apache2 离线 yum/apt 源
 - [`init offlineSlave`](../repo/offlineslave.md) — 节点侧消费离线源
 - [DAG 步骤表](../../../reference/init-all-dag.md)
+

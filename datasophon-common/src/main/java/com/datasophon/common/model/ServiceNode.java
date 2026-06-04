@@ -20,27 +20,26 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.model;
 
 import com.datasophon.common.enums.CommandType;
-import lombok.Data;
 
 import java.util.List;
+
+import lombok.Data;
 
 @Data
 public class ServiceNode {
     
     private String serviceName;
     private List<ServiceRoleInfo> masterRoles;
-
+    
     private List<ServiceRoleInfo> workerRoles;
-
+    
     private List<ServiceRoleInfo> clientRoles;
-
+    
     private String commandId;
-
+    
     private CommandType commandType;
-
     
 }

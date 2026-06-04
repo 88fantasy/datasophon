@@ -1,6 +1,5 @@
 package com.datasophon.worker.strategy;
 
-import cn.hutool.core.io.FileUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
@@ -8,6 +7,8 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.worker.utils.KerberosUtils;
 
 import java.sql.SQLException;
+
+import cn.hutool.core.io.FileUtil;
 
 /**
  * flink
@@ -30,7 +31,7 @@ public class FlinkHandlerStrategy extends AbstractHandlerStrategy implements Ser
             if (!FileUtil.exist("/etc/security/keytab/flink.keytab")) {
                 KerberosUtils.downloadKeytabFromMaster("flink/" + hostname, "flink.keytab");
             }
-
+            
         }
         ExecResult startResult = new ExecResult();
         startResult.setExecResult(true);

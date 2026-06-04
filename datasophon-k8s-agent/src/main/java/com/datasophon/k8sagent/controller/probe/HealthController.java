@@ -1,12 +1,13 @@
 package com.datasophon.k8sagent.controller.probe;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 健康检查控制器
@@ -15,7 +16,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/v1")
 public class HealthController {
-
+    
     /**
      * 健康检查端点
      *
@@ -29,7 +30,7 @@ public class HealthController {
         log.debug("Health check requested");
         return status;
     }
-
+    
     /**
      * 就绪检查端点
      *

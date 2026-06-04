@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.strategy;
 
 import com.datasophon.common.Constants;
@@ -81,7 +80,7 @@ public class HiveServer2HandlerStrategy extends AbstractHandlerStrategy implemen
             ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir -p /tmp/hive");
             ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir -p /tmp/hadoop-yarn/staging/history/done");
             ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -mkdir -p /tmp/hadoop-yarn/staging/hive");
-
+            
             ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chown -R hdfs:hadoop /tmp");
             ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chmod -R 775 /tmp");
             ShellUtils.execShell("sudo -u hdfs " + hadoopHome + "/bin/hdfs dfs -chown -R hive:hadoop /user/hive");
@@ -99,7 +98,7 @@ public class HiveServer2HandlerStrategy extends AbstractHandlerStrategy implemen
         }
         
         startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-                command, command.getRunAs(),command.isCheckStatus());
+                command, command.getRunAs(), command.isCheckStatus());
         return startResult;
     }
 }

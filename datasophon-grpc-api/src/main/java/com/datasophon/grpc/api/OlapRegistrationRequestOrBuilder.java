@@ -4,86 +4,84 @@
 // Protobuf Java Version: 3.25.5
 package com.datasophon.grpc.api;
 
-public interface OlapRegistrationRequestOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.OlapRegistrationRequest)
-    com.google.protobuf.MessageOrBuilder {
-
-  /**
-   * <pre>
-   * FE Leader 主机名
-   * </pre>
-   *
-   * <code>string fe_master = 1;</code>
-   * @return The feMaster.
-   */
-  java.lang.String getFeMaster();
-  /**
-   * <pre>
-   * FE Leader 主机名
-   * </pre>
-   *
-   * <code>string fe_master = 1;</code>
-   * @return The bytes for feMaster.
-   */
-  com.google.protobuf.ByteString
-      getFeMasterBytes();
-
-  /**
-   * <pre>
-   * 新节点主机名
-   * </pre>
-   *
-   * <code>string hostname = 2;</code>
-   * @return The hostname.
-   */
-  java.lang.String getHostname();
-  /**
-   * <pre>
-   * 新节点主机名
-   * </pre>
-   *
-   * <code>string hostname = 2;</code>
-   * @return The bytes for hostname.
-   */
-  com.google.protobuf.ByteString
-      getHostnameBytes();
-
-  /**
-   * <pre>
-   * 节点类型
-   * </pre>
-   *
-   * <code>.com.datasophon.grpc.OlapNodeType node_type = 3;</code>
-   * @return The enum numeric value on the wire for nodeType.
-   */
-  int getNodeTypeValue();
-  /**
-   * <pre>
-   * 节点类型
-   * </pre>
-   *
-   * <code>.com.datasophon.grpc.OlapNodeType node_type = 3;</code>
-   * @return The nodeType.
-   */
-  com.datasophon.grpc.api.OlapNodeType getNodeType();
-
-  /**
-   * <pre>
-   * Doris root 密码（Master 执行 JDBC，不落 Worker 日志）
-   * </pre>
-   *
-   * <code>string root_password = 4;</code>
-   * @return The rootPassword.
-   */
-  java.lang.String getRootPassword();
-  /**
-   * <pre>
-   * Doris root 密码（Master 执行 JDBC，不落 Worker 日志）
-   * </pre>
-   *
-   * <code>string root_password = 4;</code>
-   * @return The bytes for rootPassword.
-   */
-  com.google.protobuf.ByteString
-      getRootPasswordBytes();
+public interface OlapRegistrationRequestOrBuilder
+        extends
+            // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.OlapRegistrationRequest)
+            com.google.protobuf.MessageOrBuilder {
+    
+    /**
+     * <pre>
+     * FE Leader 主机名
+     * </pre>
+     *
+     * <code>string fe_master = 1;</code>
+     * @return The feMaster.
+     */
+    java.lang.String getFeMaster();
+    /**
+     * <pre>
+     * FE Leader 主机名
+     * </pre>
+     *
+     * <code>string fe_master = 1;</code>
+     * @return The bytes for feMaster.
+     */
+    com.google.protobuf.ByteString getFeMasterBytes();
+    
+    /**
+     * <pre>
+     * 新节点主机名
+     * </pre>
+     *
+     * <code>string hostname = 2;</code>
+     * @return The hostname.
+     */
+    java.lang.String getHostname();
+    /**
+     * <pre>
+     * 新节点主机名
+     * </pre>
+     *
+     * <code>string hostname = 2;</code>
+     * @return The bytes for hostname.
+     */
+    com.google.protobuf.ByteString getHostnameBytes();
+    
+    /**
+     * <pre>
+     * 节点类型
+     * </pre>
+     *
+     * <code>.com.datasophon.grpc.OlapNodeType node_type = 3;</code>
+     * @return The enum numeric value on the wire for nodeType.
+     */
+    int getNodeTypeValue();
+    /**
+     * <pre>
+     * 节点类型
+     * </pre>
+     *
+     * <code>.com.datasophon.grpc.OlapNodeType node_type = 3;</code>
+     * @return The nodeType.
+     */
+    com.datasophon.grpc.api.OlapNodeType getNodeType();
+    
+    /**
+     * <pre>
+     * Doris root 密码（Master 执行 JDBC，不落 Worker 日志）
+     * </pre>
+     *
+     * <code>string root_password = 4;</code>
+     * @return The rootPassword.
+     */
+    java.lang.String getRootPassword();
+    /**
+     * <pre>
+     * Doris root 密码（Master 执行 JDBC，不落 Worker 日志）
+     * </pre>
+     *
+     * <code>string root_password = 4;</code>
+     * @return The bytes for rootPassword.
+     */
+    com.google.protobuf.ByteString getRootPasswordBytes();
 }

@@ -20,28 +20,26 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.utils;
+
+import java.io.Serializable;
 
 import lombok.Getter;
 import lombok.Setter;
 
-import java.io.Serializable;
-
 @Setter
 public class ExecResult implements Serializable {
-
-
+    
     private static final long serialVersionUID = -6542233431946706943L;
-
+    
     private boolean execResult = false;
-
+    
     /**
      * 命令行的输出
      */
     @Getter
     private String execOut;
-
+    
     /**
      * 调用程序的异常信息
      */
@@ -51,29 +49,28 @@ public class ExecResult implements Serializable {
     public boolean getExecResult() {
         return execResult;
     }
-
-
+    
     public boolean isSuccess() {
         return execResult;
     }
     public static ExecResult success() {
         return success(null);
     }
-
+    
     public String getErrorTraceMessage() {
         if (execErrOut != null) {
             return "堆栈信息：" + execErrOut;
         }
         return "错误信息:" + execOut;
     }
-
+    
     public static ExecResult success(String out) {
         ExecResult exec = new ExecResult();
         exec.setExecResult(true);
         exec.setExecOut(out);
         return exec;
     }
-
+    
     public static ExecResult error(String out) {
         ExecResult exec = new ExecResult();
         exec.setExecResult(false);

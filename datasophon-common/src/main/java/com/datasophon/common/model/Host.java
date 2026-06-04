@@ -6,9 +6,9 @@ import lombok.Getter;
 @Data
 @Getter
 public class Host {
-
+    
     private Long projectEnvDetailId;
-
+    
     private String ip;
     
     private Integer port;
@@ -18,5 +18,5 @@ public class Host {
     private String password;
     
     private String hostname;
-
+    
 }

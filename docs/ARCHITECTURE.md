@@ -67,14 +67,14 @@ flowchart LR
 
 ### 关键边界
 
-| 接口 / 边界 | 协议 | 用途 |
-|---|---|---|
-| UI → API | HTTP/JSON,`/ddh/api/**` | 用户操作入口 |
-| Master gRPC Server `:18081` | gRPC | 接收 Worker 注册/心跳;接收 Worker 的 OLAP 反向回调 |
-| Worker gRPC Server `:18082` | gRPC | 接收 Master 的命令(Install/Start/Stop/Configure/...) |
-| Worker → Master 心跳 | 30s 间隔,超过 90s 视为离线 | 注册表中心化维护 Worker 列表 |
-| API → K8s Agent | HTTP + RSA 签名 | 触发 Pod 内 K8s 操作(Helm/kubectl) |
-| Master/Worker → DB | MyBatis-Plus,Druid 池 | 唯一真源,Flyway 升级 |
+|           接口 / 边界           |           协议            |                       用途                        |
+|-----------------------------|-------------------------|-------------------------------------------------|
+| UI → API                    | HTTP/JSON,`/ddh/api/**` | 用户操作入口                                          |
+| Master gRPC Server `:18081` | gRPC                    | 接收 Worker 注册/心跳;接收 Worker 的 OLAP 反向回调           |
+| Worker gRPC Server `:18082` | gRPC                    | 接收 Master 的命令(Install/Start/Stop/Configure/...) |
+| Worker → Master 心跳          | 30s 间隔,超过 90s 视为离线      | 注册表中心化维护 Worker 列表                              |
+| API → K8s Agent             | HTTP + RSA 签名           | 触发 Pod 内 K8s 操作(Helm/kubectl)                   |
+| Master/Worker → DB          | MyBatis-Plus,Druid 池    | 唯一真源,Flyway 升级                                  |
 
 ---
 
@@ -82,16 +82,16 @@ flowchart LR
 
 ### 3.1 Maven 模块矩阵
 
-| 模块 | 角色 | 运行形态 | 端口 | 主要技术栈 |
-|---|---|---|---|---|
-| `datasophon-api` | Master 主服务 | Spring Boot 进程 | HTTP 8081(`/ddh`)、gRPC 18081 | Spring Boot 3.4.5、MyBatis-Plus 3.5.9、Flyway 9 |
-| `datasophon-worker` | Worker 节点进程 | 每节点 1 进程,纯 main | gRPC 18082 | grpc-java 1.68.1、Hutool 5.8.40 |
-| `datasophon-grpc-api` | gRPC 共享 stub | 库,无进程 | — | protobuf 3.25.5(stub 已 checked-in) |
-| `datasophon-common` | 公共库(K8s 客户端、模型、命令消息、Nexus) | 库,无进程 | — | fabric8 K8s client、fastjson2、Jackson |
-| `datasophon-cli-go` | 节点初始化 CLI | Go 二进制 `datasophon-cli` | — | Go 1.21、Cobra、`golang.org/x/crypto/ssh` |
-| `datasophon-k8s-agent` | K8s 内 Agent | Spring Boot Web | HTTP(可配置) | RSA 签名鉴权 |
-| `datasophon-ui` | 前端 | 静态资源,Nginx/Spring 静态服务 | — | React 19、Antd 6、Antd Pro 2.8、Vite、pnpm |
-| `datasophon-cli`(Java) | **历史遗留**,逐步被 `cli-go` 替代 | 命令行 | — | 仅用于兼容 |
+|           模块           |             角色             |          运行形态           |              端口              |                     主要技术栈                     |
+|------------------------|----------------------------|-------------------------|------------------------------|-----------------------------------------------|
+| `datasophon-api`       | Master 主服务                 | Spring Boot 进程          | HTTP 8081(`/ddh`)、gRPC 18081 | Spring Boot 3.4.5、MyBatis-Plus 3.5.9、Flyway 9 |
+| `datasophon-worker`    | Worker 节点进程                | 每节点 1 进程,纯 main         | gRPC 18082                   | grpc-java 1.68.1、Hutool 5.8.40                |
+| `datasophon-grpc-api`  | gRPC 共享 stub               | 库,无进程                   | —                            | protobuf 3.25.5(stub 已 checked-in)            |
+| `datasophon-common`    | 公共库(K8s 客户端、模型、命令消息、Nexus) | 库,无进程                   | —                            | fabric8 K8s client、fastjson2、Jackson          |
+| `datasophon-cli-go`    | 节点初始化 CLI                  | Go 二进制 `datasophon-cli` | —                            | Go 1.21、Cobra、`golang.org/x/crypto/ssh`       |
+| `datasophon-k8s-agent` | K8s 内 Agent                | Spring Boot Web         | HTTP(可配置)                    | RSA 签名鉴权                                      |
+| `datasophon-ui`        | 前端                         | 静态资源,Nginx/Spring 静态服务  | —                            | React 19、Antd 6、Antd Pro 2.8、Vite、pnpm        |
+| `datasophon-cli`(Java) | **历史遗留**,逐步被 `cli-go` 替代   | 命令行                     | —                            | 仅用于兼容                                         |
 
 > ⚠️ **Pekko(原 Akka)已于 2026-05-23 完全移除**(commit `d0b93b09`)。Master↔Worker 跨进程通信改为 gRPC,Master 内部本地调度改为 Spring `@Async` / `@Scheduled`。后文涉及"原 Actor"字样均为代码注释中的历史脚注,不再真实存在。
 
@@ -363,11 +363,11 @@ sequenceDiagram
 
 `MasterScheduledService` 用 `@Scheduled` 替代原 Pekko `scheduleWithFixedDelay`,每个独立的 `try-catch` 防止一个异常打断后续巡检:
 
-| 任务 | 初始延迟 | 频率 | 实现 |
-|---|---|---|---|
-| 节点存活检测 | 30s | 300s | `HostCheckService.checkHosts(null)` |
-| 服务角色状态检测 | 15s | 30s | 遍历 `ClusterServiceRoleInstance`,通过 `serviceRoleStatus` RPC 查询 |
-| 集群状态聚合 | 30s | 60s | `ClusterStatusService` 汇总角色状态 → 集群健康度 |
+|    任务    | 初始延迟 |  频率  |                              实现                               |
+|----------|------|------|---------------------------------------------------------------|
+| 节点存活检测   | 30s  | 300s | `HostCheckService.checkHosts(null)`                           |
+| 服务角色状态检测 | 15s  | 30s  | 遍历 `ClusterServiceRoleInstance`,通过 `serviceRoleStatus` RPC 查询 |
+| 集群状态聚合   | 30s  | 60s  | `ClusterStatusService` 汇总角色状态 → 集群健康度                         |
 
 告警链路:Worker 端的 `AlertConfigActor`(代码遗留命名)→ gRPC `GenerateAlertConfig` → Prometheus AlertManager → `ClusterAlertHistory`。
 
@@ -452,15 +452,15 @@ erDiagram
 
 ## 6. 前端(datasophon-ui)
 
-| 项 | 内容 |
-|---|---|
-| 框架 | React 19 + Antd 6 + Ant Design Pro 2.8 |
-| 状态/数据 | 主要靠 ProTable `request` + ProForm,没有引入 Redux/Zustand |
-| 路由 | `react-router-dom` 7(`routes/index.tsx`) |
-| HTTP | Axios,封装在 `src/api/httpApi`,业务 API 在 `src/api/services` |
-| 编辑器 | `@monaco-editor/react` + Shiki + sql-formatter |
-| 拓扑可视化 | `@antv/x6` + `@antv/g6` + `@dagrejs/dagre` |
-| 构建 | Vite + pnpm;Maven `frontend-maven-plugin` 自动下载 Node 20 |
+|   项   |                           内容                            |
+|-------|---------------------------------------------------------|
+| 框架    | React 19 + Antd 6 + Ant Design Pro 2.8                  |
+| 状态/数据 | 主要靠 ProTable `request` + ProForm,没有引入 Redux/Zustand     |
+| 路由    | `react-router-dom` 7(`routes/index.tsx`)                |
+| HTTP  | Axios,封装在 `src/api/httpApi`,业务 API 在 `src/api/services` |
+| 编辑器   | `@monaco-editor/react` + Shiki + sql-formatter          |
+| 拓扑可视化 | `@antv/x6` + `@antv/g6` + `@dagrejs/dagre`              |
+| 构建    | Vite + pnpm;Maven `frontend-maven-plugin` 自动下载 Node 20  |
 
 页面目录:`AlarmManage`、`Cluster`、`Colony`、`Dashboard`、`HostManage`、`Login`、`Proxy`、`ServiceManage`、`SystemCenter`、`User`。
 
@@ -470,12 +470,12 @@ erDiagram
 
 ### 7.1 构建产物
 
-| 模块 | 产物 |
-|---|---|
-| datasophon-api | `target/datasophon-manager-3.0-SNAPSHOT.tar.gz`(assembly 内嵌前端 `dist/`) |
-| datasophon-worker | `target/` 包含可执行脚本 + 全量 jar |
-| datasophon-cli-go | `dist/datasophon-cli-{linux,darwin}-{amd64,arm64}` |
-| datasophon-k8s-agent | Docker 镜像(`docker/`)+ Helm Chart(`helm/`) |
+|          模块          |                                   产物                                   |
+|----------------------|------------------------------------------------------------------------|
+| datasophon-api       | `target/datasophon-manager-3.0-SNAPSHOT.tar.gz`(assembly 内嵌前端 `dist/`) |
+| datasophon-worker    | `target/` 包含可执行脚本 + 全量 jar                                             |
+| datasophon-cli-go    | `dist/datasophon-cli-{linux,darwin}-{amd64,arm64}`                     |
+| datasophon-k8s-agent | Docker 镜像(`docker/`)+ Helm Chart(`helm/`)                              |
 
 ### 7.2 部署形态
 
@@ -503,13 +503,13 @@ flowchart TB
 
 ### 7.3 默认账号 / 端口
 
-| 项 | 值 |
-|---|---|
-| 默认账号 | `admin / admin123` |
-| API HTTP | `8081`,上下文路径 `/ddh` |
-| Master gRPC | `18081` |
-| Worker gRPC | `18082` |
-| K8s Agent | 由 Helm Chart 配置 |
+|      项      |          值          |
+|-------------|---------------------|
+| 默认账号        | `admin / admin123`  |
+| API HTTP    | `8081`,上下文路径 `/ddh` |
+| Master gRPC | `18081`             |
+| Worker gRPC | `18082`             |
+| K8s Agent   | 由 Helm Chart 配置     |
 
 ---
 
@@ -545,23 +545,23 @@ Worker 进程要小、启动要快、对节点环境无侵入。`WorkerApplicati
 
 ## 9. 关键文件速查
 
-| 关注点 | 文件 |
-|---|---|
-| Master 入口 | `datasophon-api/src/main/java/com/datasophon/api/DataSophonApplicationServer.java` |
-| Worker 入口 | `datasophon-worker/src/main/java/com/datasophon/worker/WorkerApplicationServer.java` |
-| gRPC 端口/心跳常量 | `datasophon-grpc-api/src/main/java/com/datasophon/grpc/api/GrpcConstants.java` |
-| gRPC proto 契约 | `datasophon-grpc-api/src/main/proto/{registry,worker,master,common}.proto` |
-| Worker 注册表 | `datasophon-api/.../grpc/WorkerRegistry.java` |
-| Master 命令客户端 | `datasophon-api/.../grpc/WorkerCommandClient.java` |
-| Worker 命令服务端 | `datasophon-worker/.../grpc/WorkerCommandGrpcService.java` |
-| 物理集群 DAG | `datasophon-api/.../master/DAGExecutor.java` |
-| K8s 集群 DAG | `datasophon-api/.../master/K8SDAGExecutor.java` |
-| 周期巡检 | `datasophon-api/.../master/MasterScheduledService.java` |
-| 服务元数据样例 | `datasophon-api/src/main/resources/meta/datacluster/HDFS/service_ddl.json` |
-| CLI 入口 | `datasophon-cli-go/cmd/datasophon-cli/main.go` |
-| CLI initALL DAG | `datasophon-cli-go/internal/plan/registry.go` |
-| 集群配置示例 | `datasophon-init/config/cluster-sample.yml`(运行期文件) |
-| DB 迁移 | `datasophon-api/src/main/resources/db/migration/` |
+|       关注点       |                                          文件                                          |
+|-----------------|--------------------------------------------------------------------------------------|
+| Master 入口       | `datasophon-api/src/main/java/com/datasophon/api/DataSophonApplicationServer.java`   |
+| Worker 入口       | `datasophon-worker/src/main/java/com/datasophon/worker/WorkerApplicationServer.java` |
+| gRPC 端口/心跳常量    | `datasophon-grpc-api/src/main/java/com/datasophon/grpc/api/GrpcConstants.java`       |
+| gRPC proto 契约   | `datasophon-grpc-api/src/main/proto/{registry,worker,master,common}.proto`           |
+| Worker 注册表      | `datasophon-api/.../grpc/WorkerRegistry.java`                                        |
+| Master 命令客户端    | `datasophon-api/.../grpc/WorkerCommandClient.java`                                   |
+| Worker 命令服务端    | `datasophon-worker/.../grpc/WorkerCommandGrpcService.java`                           |
+| 物理集群 DAG        | `datasophon-api/.../master/DAGExecutor.java`                                         |
+| K8s 集群 DAG      | `datasophon-api/.../master/K8SDAGExecutor.java`                                      |
+| 周期巡检            | `datasophon-api/.../master/MasterScheduledService.java`                              |
+| 服务元数据样例         | `datasophon-api/src/main/resources/meta/datacluster/HDFS/service_ddl.json`           |
+| CLI 入口          | `datasophon-cli-go/cmd/datasophon-cli/main.go`                                       |
+| CLI initALL DAG | `datasophon-cli-go/internal/plan/registry.go`                                        |
+| 集群配置示例          | `datasophon-init/config/cluster-sample.yml`(运行期文件)                                   |
+| DB 迁移           | `datasophon-api/src/main/resources/db/migration/`                                    |
 
 ---
 

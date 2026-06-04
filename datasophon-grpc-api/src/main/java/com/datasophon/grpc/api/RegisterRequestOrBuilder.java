@@ -4,87 +4,85 @@
 // Protobuf Java Version: 3.25.5
 package com.datasophon.grpc.api;
 
-public interface RegisterRequestOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.RegisterRequest)
-    com.google.protobuf.MessageOrBuilder {
-
-  /**
-   * <pre>
-   * worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
-   * </pre>
-   *
-   * <code>string hostname = 1;</code>
-   * @return The hostname.
-   */
-  java.lang.String getHostname();
-  /**
-   * <pre>
-   * worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
-   * </pre>
-   *
-   * <code>string hostname = 1;</code>
-   * @return The bytes for hostname.
-   */
-  com.google.protobuf.ByteString
-      getHostnameBytes();
-
-  /**
-   * <pre>
-   * worker gRPC server 监听端口（默认 18082）
-   * </pre>
-   *
-   * <code>int32 grpc_port = 2;</code>
-   * @return The grpcPort.
-   */
-  int getGrpcPort();
-
-  /**
-   * <pre>
-   * x86_64 / aarch64
-   * </pre>
-   *
-   * <code>string cpu_architecture = 3;</code>
-   * @return The cpuArchitecture.
-   */
-  java.lang.String getCpuArchitecture();
-  /**
-   * <pre>
-   * x86_64 / aarch64
-   * </pre>
-   *
-   * <code>string cpu_architecture = 3;</code>
-   * @return The bytes for cpuArchitecture.
-   */
-  com.google.protobuf.ByteString
-      getCpuArchitectureBytes();
-
-  /**
-   * <pre>
-   * 所属集群 ID
-   * </pre>
-   *
-   * <code>int32 cluster_id = 4;</code>
-   * @return The clusterId.
-   */
-  int getClusterId();
-
-  /**
-   * <pre>
-   * worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
-   * </pre>
-   *
-   * <code>string ip = 5;</code>
-   * @return The ip.
-   */
-  java.lang.String getIp();
-  /**
-   * <pre>
-   * worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
-   * </pre>
-   *
-   * <code>string ip = 5;</code>
-   * @return The bytes for ip.
-   */
-  com.google.protobuf.ByteString
-      getIpBytes();
+public interface RegisterRequestOrBuilder
+        extends
+            // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.RegisterRequest)
+            com.google.protobuf.MessageOrBuilder {
+    
+    /**
+     * <pre>
+     * worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
+     * </pre>
+     *
+     * <code>string hostname = 1;</code>
+     * @return The hostname.
+     */
+    java.lang.String getHostname();
+    /**
+     * <pre>
+     * worker 主机名，作为唯一标识（注册表 key / DB 主键，不变）
+     * </pre>
+     *
+     * <code>string hostname = 1;</code>
+     * @return The bytes for hostname.
+     */
+    com.google.protobuf.ByteString getHostnameBytes();
+    
+    /**
+     * <pre>
+     * worker gRPC server 监听端口（默认 18082）
+     * </pre>
+     *
+     * <code>int32 grpc_port = 2;</code>
+     * @return The grpcPort.
+     */
+    int getGrpcPort();
+    
+    /**
+     * <pre>
+     * x86_64 / aarch64
+     * </pre>
+     *
+     * <code>string cpu_architecture = 3;</code>
+     * @return The cpuArchitecture.
+     */
+    java.lang.String getCpuArchitecture();
+    /**
+     * <pre>
+     * x86_64 / aarch64
+     * </pre>
+     *
+     * <code>string cpu_architecture = 3;</code>
+     * @return The bytes for cpuArchitecture.
+     */
+    com.google.protobuf.ByteString getCpuArchitectureBytes();
+    
+    /**
+     * <pre>
+     * 所属集群 ID
+     * </pre>
+     *
+     * <code>int32 cluster_id = 4;</code>
+     * @return The clusterId.
+     */
+    int getClusterId();
+    
+    /**
+     * <pre>
+     * worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
+     * </pre>
+     *
+     * <code>string ip = 5;</code>
+     * @return The ip.
+     */
+    java.lang.String getIp();
+    /**
+     * <pre>
+     * worker 可达 IP，Master 用于 gRPC 回拨；空则 Master 回落 hostname
+     * </pre>
+     *
+     * <code>string ip = 5;</code>
+     * @return The bytes for ip.
+     */
+    com.google.protobuf.ByteString getIpBytes();
 }

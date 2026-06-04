@@ -7,13 +7,13 @@ import lombok.Data;
  */
 @Data
 public class NexusUri {
-
+    
     private boolean enabled;
-
+    
     private String user;
-
+    
     private String password;
-
+    
     private String uri;
-
+    
 }

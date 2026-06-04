@@ -30,30 +30,30 @@ import java.util.function.Function;
  * @author zhanghuangbin
  */
 public interface MetaStorage {
-
+    
     /**
      * VOS DDL 类型标识
      */
     String VOS_DDL = "vos_ddl";
-
+    
     /**
      * K8s 类型标识
      */
     String K8S = "k8s";
-
+    
     /**
      * 检查当前存储是否启用
      * @return 如果存储已启用返回 true，否则返回 false
      */
     boolean isEnabled();
-
+    
     /**
      * 列出指定类型的所有服务元数据项
      * @param type 服务类型（如 VOS_DDL 或 K8S）
      * @return 服务元数据项列表
      */
     List<ServiceMetaItem> listService(String type);
-
+    
     /**
      * 获取服务的 DDL 文件内容
      * @param item 服务元数据项
@@ -70,7 +70,7 @@ public interface MetaStorage {
             throw new IllegalStateException(e.getMessage(), e);
         }
     }
-
+    
     /**
      * 保存服务的 DDL 内容到存储系统
      * @param item 服务元数据项
@@ -78,8 +78,7 @@ public interface MetaStorage {
      * @throws IOException 当写入失败时抛出
      */
     void saveServiceDdl(ServiceMetaItem item, String content) throws IOException;
-
-
+    
     /**
      * 获取 Helm chart 的 values.yaml 配置文件内容
      * @param item 服务元数据项
@@ -88,8 +87,7 @@ public interface MetaStorage {
      * @throws IOException 当读取失败时抛出
      */
     String getHelmValuesYaml(ServiceMetaItem item, String chartName) throws IOException;
-
-
+    
     /**
      * 下载服务资源文件到输出流
      * @param item 服务元数据项
@@ -99,7 +97,7 @@ public interface MetaStorage {
      * @throws IOException 当读取或写入失败时抛出
      */
     void downResource(ServiceMetaItem item, String relativePath, OutputStreamSupplier supplier) throws FileNotFoundException, IOException;
-
+    
     /**
      * 将服务资源文件作为字符串读取
      * @param item 服务元数据项
@@ -127,7 +125,7 @@ public interface MetaStorage {
             return null;
         }
     }
-
+    
     /**
      * 将目录文件迁移到存储系统
      * @param dir 要迁移的目录
@@ -142,8 +140,7 @@ public interface MetaStorage {
             return relative;
         });
     }
-
-
+    
     /**
      * 将目录文件迁移到存储系统，支持自定义路径处理
      * @param dir 要迁移的目录
@@ -151,7 +148,7 @@ public interface MetaStorage {
      * @throws IOException 当迁移失败时抛出
      */
     void moveToStorage(File dir, Function<String, String> relativePathHandler) throws IOException;
-
+    
     /**
      * 删除 VOS 服务的元数据
      * @param frameCode 框架代码
@@ -160,7 +157,7 @@ public interface MetaStorage {
     default void removeVosMeta(String frameCode, String serviceName) {
         removeMeta(frameCode, serviceName, VOS_DDL);
     }
-
+    
     /**
      * 删除 K8s 服务的元数据
      * @param frameCode 框架代码
@@ -169,7 +166,7 @@ public interface MetaStorage {
     default void removeK8sMeta(String frameCode, String serviceName) {
         removeMeta(frameCode, serviceName, K8S);
     }
-
+    
     /**
      * 删除指定类型的服务元数据
      * @param frameCode 框架代码
@@ -177,7 +174,7 @@ public interface MetaStorage {
      * @param type 元数据类型（VOS_DDL 或 K8S）
      */
     void removeMeta(String frameCode, String serviceName, String type);
-
+    
     /**
      * 输出流提供者函数式接口
      */

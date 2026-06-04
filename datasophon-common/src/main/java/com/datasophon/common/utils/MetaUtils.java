@@ -1,12 +1,5 @@
 package com.datasophon.common.utils;
 
-import cn.hutool.core.codec.Base64;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IORuntimeException;
-import cn.hutool.crypto.SmUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -14,6 +7,14 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import cn.hutool.core.codec.Base64;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.crypto.SmUtil;
 
 /**
  * 安装包的解析工具。 安装包的结构如下：
@@ -39,7 +40,7 @@ import java.util.List;
  * @date 2025/11/7
  */
 public class MetaUtils {
-
+    
     /**
      * 需要解密文件内容的文件
      * cluster-sample.yml不需要解密输出文件
@@ -48,14 +49,13 @@ public class MetaUtils {
             "**/config/common.properties",
             "**/config/application.conf",
             "**/config/datasophon.conf",
-            "**/meta/**/service_ddl.json"
-    );
+            "**/meta/**/service_ddl.json");
     private static final Logger log = LoggerFactory.getLogger(MetaUtils.class);
-
+    
     public static void decodeMatchedFiles(String dir, String cipherKey) throws IOException {
         commonMatchedFiles(dir, cipherKey, "decode");
     }
-
+    
     public static void encodeMatchedFiles(String dir, String cipherKey) throws IOException {
         commonMatchedFiles(dir, cipherKey, "encode");
     }
@@ -68,14 +68,14 @@ public class MetaUtils {
      */
     public static void commonMatchedFiles(String dir, String cipherKey, String type) throws IOException {
         PathMatcher matcher = new PathMatcher(dir, ENCRYPT_FILES);
-//        解密文件内容
+        // 解密文件内容
         Files.walkFileTree(Paths.get(dir), new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
                 try {
                     String relative = PathUtils.unixStyle(PathUtils.relative(path.toString(), dir));
                     if (matcher.isMatch(relative)) {
-                        if(type.equals("decode")) {
+                        if (type.equals("decode")) {
                             decodeFile(path.toFile(), cipherKey);
                         } else {
                             encodeFile(path.toFile(), cipherKey);
@@ -89,15 +89,15 @@ public class MetaUtils {
                 }
                 return FileVisitResult.CONTINUE;
             }
-
+            
             @Override
             public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
                 throw exc;
             }
         });
-
+        
     }
-
+    
     /**
      * 解密文件内容,并覆盖原文件
      *
@@ -111,7 +111,7 @@ public class MetaUtils {
         FileUtil.writeBytes(decryptedBytes, file);
         log.info("decode file: {}", file.getName());
     }
-
+    
     /**
      * 解密文件内容，并返回bytes
      * @param file
@@ -122,7 +122,7 @@ public class MetaUtils {
         byte[] encryptedBytes = Base64.decode(context);
         return SmUtil.sm4(Base64.decode(cipherKey)).decrypt(encryptedBytes);
     }
-
+    
     /**
      * 加密文件内容,并覆盖原文件
      *

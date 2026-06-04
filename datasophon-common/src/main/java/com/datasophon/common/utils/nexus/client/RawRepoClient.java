@@ -1,12 +1,10 @@
 package com.datasophon.common.utils.nexus.client;
 
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.SecureUtil;
 import com.datasophon.common.enums.RepositoriesType;
 import com.datasophon.common.utils.nexus.dto.AssertQueryDTO;
 import com.datasophon.common.utils.nexus.vo.Assert;
 import com.datasophon.common.utils.nexus.vo.ExecResult;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -21,20 +19,22 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+import lombok.extern.slf4j.Slf4j;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
+
 /**
  * @author zhanghuangbin
  */
 @Slf4j
 public class RawRepoClient extends CommonNexusClient {
-
-
+    
     public String repo;
-
+    
     public RawRepoClient(String repo) {
         this.repo = repo;
     }
-
-
+    
     public ExecResult uploadFileToRawRepo(String path, File file) throws IOException {
         if (!file.isFile()) {
             throw new IllegalArgumentException(String.format("file %s is not a file", file.getAbsoluteFile()));
@@ -46,8 +46,7 @@ public class RawRepoClient extends CommonNexusClient {
         if (!"/".equals(path) && path.endsWith("/")) {
             path = path.substring(0, path.length() - 1);
         }
-
-
+        
         Assert nexusAssert = getAssert(repo, AssertQueryDTO.builder().group(path).name(String.format("%s/%s", path, file.getName())).build());
         if (nexusAssert != null) {
             String md5 = SecureUtil.md5(file);
@@ -59,28 +58,28 @@ public class RawRepoClient extends CommonNexusClient {
                 deleteAssert(nexusAssert.getId());
             }
         }
-
+        
         String url = String.format("%s/service/rest/internal/ui/upload/%s", uri.getUri(), repo);
-
+        
         try (CloseableHttpClient httpClient = newLongTimeClient()) {
-
+            
             HttpPost post = new HttpPost(url);
             prepareAuth(post);
-
+            
             // 构建 multipart/form-data（流式，不加载到内存）
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             FileBody fileBody = new FileBody(file, ContentType.DEFAULT_BINARY);
             builder.addPart("asset0", fileBody);
-
+            
             // 根据仓库类型添加额外参数
             builder.addTextBody("asset0.filename", file.getName(), ContentType.TEXT_PLAIN);
             builder.addTextBody("directory", path, ContentType.TEXT_PLAIN);
-
+            
             HttpEntity entity = builder.build();
             post.setEntity(entity);
-
+            
             log.info("开始上传 {} 到 {}", file.getAbsolutePath(), url);
-
+            
             try (CloseableHttpResponse response = httpClient.execute(post)) {
                 int status = response.getStatusLine().getStatusCode();
                 String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
@@ -92,7 +91,7 @@ public class RawRepoClient extends CommonNexusClient {
             }
         }
     }
-
+    
     public ExecResult uploadFileToRawRepo(String path, String fileName, String content) throws IOException {
         path = StrUtil.isBlank(path) ? "/" : path;
         if (!path.startsWith("/")) {
@@ -101,31 +100,30 @@ public class RawRepoClient extends CommonNexusClient {
         if (!"/".equals(path) && path.endsWith("/")) {
             path = path.substring(0, path.length() - 1);
         }
-
+        
         Assert nexusAssert = getAssert(repo, AssertQueryDTO.builder().group(path).name(String.format("%s/%s", path, fileName)).build());
         if (nexusAssert != null) {
             deleteAssert(nexusAssert.getId());
         }
-
-
+        
         String url = String.format("%s/service/rest/internal/ui/upload/%s", uri.getUri(), RepositoriesType.RAW.getDesc());
         try (CloseableHttpClient httpClient = newLongTimeClient()) {
             HttpPost post = new HttpPost(url);
             prepareAuth(post);
-
+            
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             StringBody contentBody = new StringBody(content, ContentType.create("text/plain", StandardCharsets.UTF_8));
             builder.addPart("asset0", contentBody);
-
+            
             // 根据仓库类型添加额外参数
             builder.addTextBody("asset0.filename", fileName, ContentType.TEXT_PLAIN);
             builder.addTextBody("directory", path, ContentType.TEXT_PLAIN);
-
+            
             HttpEntity entity = builder.build();
             post.setEntity(entity);
-
+            
             log.info("开始上传 {} 到 {}", fileName, url);
-
+            
             try (CloseableHttpResponse response = httpClient.execute(post)) {
                 int status = response.getStatusLine().getStatusCode();
                 String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
@@ -137,7 +135,7 @@ public class RawRepoClient extends CommonNexusClient {
             }
         }
     }
-
+    
     public String getAssertMd5FromRawRepo(String relativePathFromRawRepo) {
         String group = getGroupOfRaw(relativePathFromRawRepo);
         try {
@@ -147,7 +145,7 @@ public class RawRepoClient extends CommonNexusClient {
             return null;
         }
     }
-
+    
     private static String getGroupOfRaw(String relativePathFromRawRepo) {
         String group = null;
         int idx = relativePathFromRawRepo.lastIndexOf("/");
@@ -162,7 +160,7 @@ public class RawRepoClient extends CommonNexusClient {
         }
         return group;
     }
-
+    
     public void removeFileFromRawRepo(String relativePathFromRawRepo) {
         try {
             String group = getGroupOfRaw(relativePathFromRawRepo);
@@ -175,15 +173,14 @@ public class RawRepoClient extends CommonNexusClient {
             log.warn("remove file: {} fail, {}", relativePathFromRawRepo, e.getMessage(), e);
         }
     }
-
+    
     public void removeFolderFromRawRepo(String folder) {
-       removeFolder(repo, folder);
+        removeFolder(repo, folder);
     }
-
+    
     public String getNexusRawObjectUrl(String objectName) {
         objectName = objectName.startsWith("/") ? objectName : "/" + objectName;
         return String.format("%s/repository/%s%s", uri.getUri(), repo, objectName);
     }
-
-
+    
 }

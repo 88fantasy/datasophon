@@ -4,19 +4,19 @@
 // Protobuf Java Version: 3.25.5
 package com.datasophon.grpc.api;
 
-public interface UnregisterRequestOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.UnregisterRequest)
-    com.google.protobuf.MessageOrBuilder {
-
-  /**
-   * <code>string hostname = 1;</code>
-   * @return The hostname.
-   */
-  java.lang.String getHostname();
-  /**
-   * <code>string hostname = 1;</code>
-   * @return The bytes for hostname.
-   */
-  com.google.protobuf.ByteString
-      getHostnameBytes();
+public interface UnregisterRequestOrBuilder
+        extends
+            // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.UnregisterRequest)
+            com.google.protobuf.MessageOrBuilder {
+    
+    /**
+     * <code>string hostname = 1;</code>
+     * @return The hostname.
+     */
+    java.lang.String getHostname();
+    /**
+     * <code>string hostname = 1;</code>
+     * @return The bytes for hostname.
+     */
+    com.google.protobuf.ByteString getHostnameBytes();
 }

@@ -1,8 +1,8 @@
 package com.datasophon.common.k8s.spec.docker;
 
-import lombok.Data;
-
 import java.util.List;
+
+import lombok.Data;
 
 @Data
 public class OciManifest {
@@ -10,5 +10,5 @@ public class OciManifest {
     private String mediaType;
     private OciDescriptor config;
     private List<OciDescriptor> layers;
-
+    
 }

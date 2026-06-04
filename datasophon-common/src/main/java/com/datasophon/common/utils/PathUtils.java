@@ -1,8 +1,5 @@
 package com.datasophon.common.utils;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.RandomUtil;
-import cn.hutool.core.util.StrUtil;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.io.File;
@@ -10,13 +7,16 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
+
 /**
  * @author zhanghuangbin
  * @date 2025/11/10
  */
 public class PathUtils {
-
-
+    
     public static String getTmpDir() {
         String tmpDir = PropertyUtils.getString("temp.dir");
         if (StrUtil.isBlank(tmpDir)) {
@@ -24,7 +24,7 @@ public class PathUtils {
         }
         return tmpDir;
     }
-
+    
     public static File getTmpDir(String subDir) {
         String tmpDir = getTmpDir();
         File file = Paths.get(tmpDir, subDir).toFile();
@@ -33,7 +33,7 @@ public class PathUtils {
         }
         return file;
     }
-
+    
     public static File createTmpFile(String subDir, String suffix) {
         File tmpDir = getTmpDir(subDir);
         File tmpFile = new File(tmpDir, RandomUtil.randomString(12) + suffix);
@@ -47,27 +47,25 @@ public class PathUtils {
         tmpFile.deleteOnExit();
         return tmpFile;
     }
-
+    
     public static Path join(String root, String... others) {
         return Paths.get(root, others);
     }
-
+    
     public static Path join(Path root, String... other) {
         return Paths.get(root.toString(), other);
     }
-
+    
     public static String relative(String current, String parent) {
         return Paths.get(parent).relativize(Paths.get(current)).toString();
     }
-
-
+    
     public static String relative(File current, String parent) {
         return relative(current.getAbsolutePath(), parent);
     }
-
+    
     public static String unixStyle(String path) {
         return path.replaceAll("\\\\", "/");
     }
-
-
+    
 }

@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.command;
 
 public enum OlapOpsType {

@@ -1,9 +1,5 @@
 package com.datasophon.worker.strategy;
 
-import cn.hutool.crypto.digest.BCrypt;
-import cn.hutool.db.DbUtil;
-import cn.hutool.db.ds.simple.SimpleDataSource;
-import cn.hutool.db.sql.SqlExecutor;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
@@ -21,12 +17,17 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
 
-public class NacosMasterHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
+import cn.hutool.crypto.digest.BCrypt;
+import cn.hutool.db.DbUtil;
+import cn.hutool.db.ds.simple.SimpleDataSource;
+import cn.hutool.db.sql.SqlExecutor;
 
+public class NacosMasterHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
+    
     public NacosMasterHandlerStrategy(String serviceName, String serviceRoleName) {
         super(serviceName, serviceRoleName);
     }
-
+    
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) throws SQLException, ClassNotFoundException {
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
@@ -70,11 +71,10 @@ public class NacosMasterHandlerStrategy extends AbstractHandlerStrategy implemen
                         List<String> sqlList = FileUtils.loadFileSQL(sqlPath);
                         con = DbUtil.use(new SimpleDataSource(jdbcUrl, user, password)).getConnection();
                         SqlExecutor.executeBatch(con, sqlList);
-
+                        
                         SqlExecutor.execute(con, "INSERT INTO users (username, password, enabled) VALUES (?, ? , 1 )", "nacos", encoderPwd);
                         SqlExecutor.execute(con, "INSERT INTO roles (username, role) VALUES (?, ?)", "nacos", "ROLE_ADMIN");
-
-
+                        
                         logger.info("initialize nacos database success");
                     }
                 } catch (Exception e) {

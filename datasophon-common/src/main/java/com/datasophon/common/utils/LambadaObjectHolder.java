@@ -7,8 +7,7 @@ import lombok.Data;
  */
 @Data
 public class LambadaObjectHolder<T> {
-
+    
     private T value;
-
-
+    
 }

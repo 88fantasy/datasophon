@@ -9,11 +9,11 @@ import java.io.File;
  * @author zhanghuangbin
  */
 public abstract class NexusStorageSupport {
-
+    
     public boolean isEnabled() {
         return getNexusUri().isEnabled();
     }
-
+    
     protected void ensureDirValid(File dir) {
         if (!dir.exists()) {
             throw new IllegalStateException(dir.getAbsolutePath() + " not exists");
@@ -22,7 +22,7 @@ public abstract class NexusStorageSupport {
             throw new IllegalArgumentException(dir.getAbsolutePath() + " is not a dir");
         }
     }
-
+    
     protected void ensureFileValid(File file) {
         if (!file.exists()) {
             throw new IllegalStateException(file.getAbsolutePath() + " not exists");
@@ -31,14 +31,14 @@ public abstract class NexusStorageSupport {
             throw new IllegalArgumentException(file.getAbsolutePath() + " is not a file");
         }
     }
-
+    
     protected void ensureNexusEnable() {
         NexusUri registry = getNexusUri();
         if (!registry.isEnabled()) {
             throw new IllegalStateException("datasophon require an nexus available, but nexus is disabled");
         }
     }
-
+    
     protected static NexusUri getNexusUri() {
         NexusUri uri = new NexusUri();
         uri.setEnabled(Constants.NEXUS_ENABLE);

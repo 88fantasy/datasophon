@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.handler;
 
 import com.datasophon.common.Constants;
@@ -33,15 +32,18 @@ import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.utils.TaskConstants;
-import lombok.Data;
+
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import lombok.Data;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Data
 public class ServiceHandler {
@@ -58,9 +60,7 @@ public class ServiceHandler {
         String loggerName = TaskConstants.createLoggerName(serviceName, serviceRoleName, ServiceHandler.class);
         logger = LoggerFactory.getLogger(loggerName);
     }
-
-
-
+    
     public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, ServiceRoleResource resource,
                             RunAs runAs, boolean checkStatus) {
         logger.info("开始执行服务{} {}的启动命令", resource.getServiceName(), resource.getServiceRoleName());
@@ -72,10 +72,10 @@ public class ServiceHandler {
             execResult.setExecResult(true);
             return execResult;
         }
-
+        
         // start service
         ExecResult startResult = execRunner(startRunner, linkName, runAs);
-
+        
         // check start result
         if (startResult.getExecResult() && checkStatus) {
             int times = PropertyUtils.getInt("times");
@@ -90,7 +90,7 @@ public class ServiceHandler {
                     try {
                         Thread.sleep(5 * 1000);
                     } catch (InterruptedException ignored) {
-
+                        
                     }
                 }
                 count++;
@@ -100,10 +100,10 @@ public class ServiceHandler {
                 startResult.setExecResult(false);
             }
         }
-
+        
         return startResult;
     }
-
+    
     public ExecResult start(ServiceRoleRunner startRunner, ServiceRoleRunner statusRunner, ServiceRoleResource resource, RunAs runAs) {
         return start(startRunner, statusRunner, resource, runAs, true);
     }

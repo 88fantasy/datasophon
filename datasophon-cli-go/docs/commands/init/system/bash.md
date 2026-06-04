@@ -39,10 +39,11 @@ datasophon-cli init bash \
 
 ## 退出码 / 常见错误
 
-| 情况 | 说明 |
-|---|---|
+|        情况        |      说明       |
+|------------------|---------------|
 | CentOS 节点已是 bash | 跳过，打印 Info 日志 |
 
 ## 相关命令
 
 - [DAG 步骤表](../../../reference/init-all-dag.md)
+

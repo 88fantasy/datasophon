@@ -4,44 +4,42 @@
 // Protobuf Java Version: 3.25.5
 package com.datasophon.grpc.api;
 
-public interface ExecuteCmdRequestOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.ExecuteCmdRequest)
-    com.google.protobuf.MessageOrBuilder {
-
-  /**
-   * <code>repeated string commands = 1;</code>
-   * @return A list containing the commands.
-   */
-  java.util.List<java.lang.String>
-      getCommandsList();
-  /**
-   * <code>repeated string commands = 1;</code>
-   * @return The count of commands.
-   */
-  int getCommandsCount();
-  /**
-   * <code>repeated string commands = 1;</code>
-   * @param index The index of the element to return.
-   * @return The commands at the given index.
-   */
-  java.lang.String getCommands(int index);
-  /**
-   * <code>repeated string commands = 1;</code>
-   * @param index The index of the value to return.
-   * @return The bytes of the commands at the given index.
-   */
-  com.google.protobuf.ByteString
-      getCommandsBytes(int index);
-
-  /**
-   * <code>string command_line = 2;</code>
-   * @return The commandLine.
-   */
-  java.lang.String getCommandLine();
-  /**
-   * <code>string command_line = 2;</code>
-   * @return The bytes for commandLine.
-   */
-  com.google.protobuf.ByteString
-      getCommandLineBytes();
+public interface ExecuteCmdRequestOrBuilder
+        extends
+            // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.ExecuteCmdRequest)
+            com.google.protobuf.MessageOrBuilder {
+    
+    /**
+     * <code>repeated string commands = 1;</code>
+     * @return A list containing the commands.
+     */
+    java.util.List<java.lang.String> getCommandsList();
+    /**
+     * <code>repeated string commands = 1;</code>
+     * @return The count of commands.
+     */
+    int getCommandsCount();
+    /**
+     * <code>repeated string commands = 1;</code>
+     * @param index The index of the element to return.
+     * @return The commands at the given index.
+     */
+    java.lang.String getCommands(int index);
+    /**
+     * <code>repeated string commands = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the commands at the given index.
+     */
+    com.google.protobuf.ByteString getCommandsBytes(int index);
+    
+    /**
+     * <code>string command_line = 2;</code>
+     * @return The commandLine.
+     */
+    java.lang.String getCommandLine();
+    /**
+     * <code>string command_line = 2;</code>
+     * @return The bytes for commandLine.
+     */
+    com.google.protobuf.ByteString getCommandLineBytes();
 }

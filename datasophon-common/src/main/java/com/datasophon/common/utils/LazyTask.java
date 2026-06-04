@@ -1,23 +1,21 @@
 package com.datasophon.common.utils;
 
-
 public class LazyTask {
-
-
+    
     private volatile Runnable task;
-
+    
     private volatile boolean hasRun = false;
-
+    
     private final Object lock = new Object();
-
+    
     private LazyTask(Runnable task) {
         this.task = task;
     }
-
+    
     public static LazyTask of(Runnable task) {
         return new LazyTask(task);
     }
-
+    
     public boolean hasExec() {
         return task == null;
     }

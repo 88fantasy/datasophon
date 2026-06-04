@@ -4,10 +4,10 @@
 
 为单个新增节点执行基础初始化。支持两种模式：
 
-| 模式 | 触发方式 | 特点 |
-|---|---|---|
+|    模式    |          触发方式           |                     特点                      |
+|----------|-------------------------|---------------------------------------------|
 | **配置模式** | 指定 `-c/--config <file>` | 从配置文件读取集群上下文，走 plan 引擎执行 12 步条件化 DAG，支持断点续跑 |
-| **手动模式** | 不传 `-c`（默认） | 直接用 CLI 参数初始化，不依赖配置文件，不生成 plan 文件 |
+| **手动模式** | 不传 `-c`（默认）             | 直接用 CLI 参数初始化，不依赖配置文件，不生成 plan 文件           |
 
 > 增加多个节点时请对每个节点分别执行 `create node`。安装完成后，新节点会自动**追加**到配置文件的 `nodes` 列表（同 IP 或 hostname 已存在时跳过追加）。
 
@@ -33,19 +33,19 @@ datasophon-cli [--dry-run] create node \
 
 ## 参数 / Flags
 
-| flag | 简写 | 类型 | 默认 | 必填 | 说明 |
-|---|---|---|---|---|---|
-| `--datasophonPath` | `-p` | string | — | 是 | datasophon 根目录绝对路径（须以 `/` 开头且目录存在） |
-| `--installPath` | 无 | string | — | 是 | 组件安装根目录绝对路径，不存在时自动创建 |
-| `--productPackagesPath` | `-n` | string | — | 是 | 组件安装包目录路径 |
-| `--initPathOverwriteForce` | 无 | bool | `false` | 否 | 是否覆盖已存在的 `datasophon-init` 目录 |
-| `--ip` | 无 | string | — | 是 | 目标节点 IP |
-| `--user` | 无 | string | — | 是 | SSH 用户 |
-| `--password` | 无 | string | — | 是 | SSH 密码 |
-| `--port` | 无 | int | — | 是 | SSH 端口 |
-| `--hostname` | 无 | string | — | 是 | 目标节点 hostname |
-| `--config` | `-c` | string | — | 否 | **配置模式**：配置文件路径，提供集群上下文与 ntp/offline 服务端 IP |
-| `--cluster-type` | `-t` | string | — | 否 | **手动模式**：集群类型 `hadoop\|kubernetes`，仅 `hadoop` 时创建 hadoop 用户 |
+|            flag            |  简写  |   类型   |   默认    | 必填 |                             说明                              |
+|----------------------------|------|--------|---------|----|-------------------------------------------------------------|
+| `--datasophonPath`         | `-p` | string | —       | 是  | datasophon 根目录绝对路径（须以 `/` 开头且目录存在）                          |
+| `--installPath`            | 无    | string | —       | 是  | 组件安装根目录绝对路径，不存在时自动创建                                        |
+| `--productPackagesPath`    | `-n` | string | —       | 是  | 组件安装包目录路径                                                   |
+| `--initPathOverwriteForce` | 无    | bool   | `false` | 否  | 是否覆盖已存在的 `datasophon-init` 目录                               |
+| `--ip`                     | 无    | string | —       | 是  | 目标节点 IP                                                     |
+| `--user`                   | 无    | string | —       | 是  | SSH 用户                                                      |
+| `--password`               | 无    | string | —       | 是  | SSH 密码                                                      |
+| `--port`                   | 无    | int    | —       | 是  | SSH 端口                                                      |
+| `--hostname`               | 无    | string | —       | 是  | 目标节点 hostname                                               |
+| `--config`                 | `-c` | string | —       | 否  | **配置模式**：配置文件路径，提供集群上下文与 ntp/offline 服务端 IP                 |
+| `--cluster-type`           | `-t` | string | —       | 否  | **手动模式**：集群类型 `hadoop\|kubernetes`，仅 `hadoop` 时创建 hadoop 用户 |
 
 > 5 个节点定位参数（`--ip / --user / --password / --port / --hostname`）在两种模式下均必填。
 > 继承全局 flag：`--dry-run` —— 详见 [global-flags.md](../../global-flags.md)
@@ -60,20 +60,20 @@ datasophon-cli [--dry-run] create node \
 4. 调用 plan 引擎生成 `state/initNode.plan.json`，打印摘要
 5. 按下列 12 步条件化 DAG 顺序执行：
 
-| 序号 | 步骤 ID | 步骤名 | Scope / Condition |
-|---|---|---|---|
-| 1 | `node-bash` | shell bash 设置 | 始终执行 |
-| 2 | `node-hadoopuser` | 创建 hadoop 用户和组 | `cluster-type=hadoop` 时执行 |
-| 3 | `node-firewall` | 关闭防火墙 | 始终执行 |
-| 4 | `node-selinux` | 关闭 selinux | 始终执行 |
-| 5 | `node-swap` | 关闭 swap | 始终执行 |
-| 6 | `node-offline-slave` | yum/apt 离线源节点配置 | `global.offline=true` 时执行 |
-| 7 | `node-ntp-slave` | 配置 NTP Slave | `ntpServer.enable=true` 时执行 |
-| 8 | `node-library` | 初始化依赖库 | 始终执行 |
-| 9 | `node-os-safe-conf` | 安全配置 | 始终执行 |
-| 10 | `node-system-conf` | 优化系统配置 | 始终执行 |
-| 11 | `node-hostname` | 配置 hostname | 始终执行 |
-| 12 | `node-hugepage` | 关闭透明大页 | 始终执行 |
+| 序号 |        步骤 ID         |       步骤名       |      Scope / Condition      |
+|----|----------------------|-----------------|-----------------------------|
+| 1  | `node-bash`          | shell bash 设置   | 始终执行                        |
+| 2  | `node-hadoopuser`    | 创建 hadoop 用户和组  | `cluster-type=hadoop` 时执行   |
+| 3  | `node-firewall`      | 关闭防火墙           | 始终执行                        |
+| 4  | `node-selinux`       | 关闭 selinux      | 始终执行                        |
+| 5  | `node-swap`          | 关闭 swap         | 始终执行                        |
+| 6  | `node-offline-slave` | yum/apt 离线源节点配置 | `global.offline=true` 时执行   |
+| 7  | `node-ntp-slave`     | 配置 NTP Slave    | `ntpServer.enable=true` 时执行 |
+| 8  | `node-library`       | 初始化依赖库          | 始终执行                        |
+| 9  | `node-os-safe-conf`  | 安全配置            | 始终执行                        |
+| 10 | `node-system-conf`   | 优化系统配置          | 始终执行                        |
+| 11 | `node-hostname`      | 配置 hostname     | 始终执行                        |
+| 12 | `node-hugepage`      | 关闭透明大页          | 始终执行                        |
 
 6. 成功后将新节点追加到配置文件 `nodes` 列表
 
@@ -97,18 +97,18 @@ datasophon-cli [--dry-run] create node \
 3. 若传入 `-t/--cluster-type` 则校验合法性（`hadoop` 或 `kubernetes`）
 4. SSH 到目标节点，按下列顺序顺序执行（9 步基础 + 可选 hadoop_user）：
 
-| 序号 | 步骤名 | 说明 |
-|---|---|---|
-| 1 | shell bash 设置 | 始终执行 |
-| 2 | 创建 hadoop 用户和组 | 仅 `-t hadoop` 时执行 |
-| 3 | 关闭防火墙 | 始终执行 |
-| 4 | 关闭 SELinux | 始终执行 |
-| 5 | 关闭 Swap | 始终执行 |
-| 6 | 初始化依赖库 | 始终执行 |
-| 7 | 安全配置 | 始终执行 |
-| 8 | 优化系统配置 | 始终执行 |
-| 9 | 配置 hostname | 始终执行 |
-| 10 | 关闭透明大页 | 始终执行 |
+| 序号 |      步骤名       |        说明         |
+|----|----------------|-------------------|
+| 1  | shell bash 设置  | 始终执行              |
+| 2  | 创建 hadoop 用户和组 | 仅 `-t hadoop` 时执行 |
+| 3  | 关闭防火墙          | 始终执行              |
+| 4  | 关闭 SELinux     | 始终执行              |
+| 5  | 关闭 Swap        | 始终执行              |
+| 6  | 初始化依赖库         | 始终执行              |
+| 7  | 安全配置           | 始终执行              |
+| 8  | 优化系统配置         | 始终执行              |
+| 9  | 配置 hostname    | 始终执行              |
+| 10 | 关闭透明大页         | 始终执行              |
 
 5. 如果 `<datasophonPath>/datasophon-init/config/cluster-sample.yml` 存在，将新节点追加到 `nodes` 列表
 
@@ -192,17 +192,18 @@ datasophon-cli create node \
 
 ## 退出码 / 常见错误
 
-| 错误信息 | 根因 | 处置 |
-|---|---|---|
-| `节点 <ip> 已存在于配置文件 nodes 列表中，已停止` | 配置模式：目标 IP 已在 nodes 列表 | 检查 `--ip` 是否是真正的新节点 |
-| `--ip 模式下必须同时提供 --user --password --hostname --port` | 手动模式：5 个定位参数缺一 | 补齐所有 5 个 flag |
-| `datasophonPath、installPath 必须是绝对路径` | 传入了相对路径 | 改用 `/` 开头的绝对路径 |
-| `路径不存在: <path>` | `--datasophonPath` 指定的目录不存在 | 确认 `datasophonPath` 已创建 |
-| `--type 必须是 hadoop 或 kubernetes` | 手动模式 `-t` 值非法 | 只传 `hadoop` 或 `kubernetes` |
-| `cluster-sample.yml 不存在，跳过写回` | 手动模式配置文件不存在 | 非错误（仅 Info 日志），节点初始化已完成 |
-| `同 IP 或 hostname 节点已存在，跳过写回` | 节点已存在于 `nodes` 列表 | 非错误（仅 Warn 日志），节点初始化已完成 |
+|                         错误信息                         |             根因              |             处置             |
+|------------------------------------------------------|-----------------------------|----------------------------|
+| `节点 <ip> 已存在于配置文件 nodes 列表中，已停止`                     | 配置模式：目标 IP 已在 nodes 列表      | 检查 `--ip` 是否是真正的新节点        |
+| `--ip 模式下必须同时提供 --user --password --hostname --port` | 手动模式：5 个定位参数缺一              | 补齐所有 5 个 flag              |
+| `datasophonPath、installPath 必须是绝对路径`                 | 传入了相对路径                     | 改用 `/` 开头的绝对路径             |
+| `路径不存在: <path>`                                      | `--datasophonPath` 指定的目录不存在 | 确认 `datasophonPath` 已创建    |
+| `--type 必须是 hadoop 或 kubernetes`                     | 手动模式 `-t` 值非法               | 只传 `hadoop` 或 `kubernetes` |
+| `cluster-sample.yml 不存在，跳过写回`                        | 手动模式配置文件不存在                 | 非错误（仅 Info 日志），节点初始化已完成    |
+| `同 IP 或 hostname 节点已存在，跳过写回`                         | 节点已存在于 `nodes` 列表           | 非错误（仅 Warn 日志），节点初始化已完成    |
 
 ## 相关命令
 
 - [`create cluster`](./cluster.md) — 全量初始化
 - [DAG 步骤表](../../reference/init-all-dag.md) — initNode 12 步详解
+

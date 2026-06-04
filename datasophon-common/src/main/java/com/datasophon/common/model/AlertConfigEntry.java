@@ -20,16 +20,15 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.model;
-
-import lombok.Data;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import lombok.Data;
 
 /**
  * {@code GenerateAlertConfigCommand.configFileMap} 的 JSON 传输桥接类。
@@ -47,10 +46,10 @@ import java.util.Map;
  */
 @Data
 public class AlertConfigEntry implements Serializable {
-
+    
     private Generators generators;
     private List<AlertItem> alertItems;
-
+    
     public static List<AlertConfigEntry> fromMap(HashMap<Generators, List<AlertItem>> map) {
         if (map == null) {
             return null;
@@ -64,7 +63,7 @@ public class AlertConfigEntry implements Serializable {
         }
         return entries;
     }
-
+    
     public static HashMap<Generators, List<AlertItem>> toMap(List<AlertConfigEntry> entries) {
         if (entries == null) {
             return new HashMap<>();

@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.lifecycle;
 
 public class ServerLifeCycleException extends Exception {

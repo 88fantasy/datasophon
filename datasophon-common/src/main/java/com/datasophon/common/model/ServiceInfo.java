@@ -20,35 +20,35 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.model;
-
-import lombok.Data;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+
 import java.util.List;
 import java.util.Map;
 
+import lombok.Data;
+
 @Data
 public class ServiceInfo {
-
+    
     @NotBlank(message = "name字段不能为空")
     private String name;
     
     private String label;
-
+    
     @NotBlank(message = "version字段不能为空")
     private String version;
     
     private String description;
-
+    
     @NotEmpty(message = "roles字段不能为空")
     private List<ServiceRoleInfo> roles;
     
     private List<ServiceConfig> parameters;
-
+    
     @NotNull(message = "dependencies字段不能为空")
     private List<String> dependencies;
     
@@ -62,13 +62,13 @@ public class ServiceInfo {
     private Map<String, ArchInfo> arch;
     
     private ExternalLink externalLink;
-
+    
     /**
      * @deprecated
      */
     @Deprecated
     private Integer sortNum;
-
+    
     private String type;
     
 }

@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.strategy;
 
 import com.datasophon.common.Constants;
@@ -52,7 +51,7 @@ public class ZkServerHandlerStrategy extends AbstractHandlerStrategy implements 
                 KerberosUtils.downloadKeytabFromMaster("zkcli/" + hostname, "zkclient.service.keytab");
             }
         }
-        ExecResult startResult  = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
+        ExecResult startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
                 command, command.getRunAs(), command.isCheckStatus());
         return startResult;
     }

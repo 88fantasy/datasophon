@@ -13,9 +13,9 @@ datasophon-cli [--dry-run] init tar \
 
 ## 参数 / Flags
 
-| flag | 简写 | 类型 | 默认 | 必填 | 说明 |
-|---|---|---|---|---|---|
-| `--packagePath` | `-p` | string | `""` | 否 | 安装包目录（不填则仅检测 tar 是否存在） |
+|      flag       |  简写  |   类型   |  默认  | 必填 |           说明           |
+|-----------------|------|--------|------|----|------------------------|
+| `--packagePath` | `-p` | string | `""` | 否  | 安装包目录（不填则仅检测 tar 是否存在） |
 
 > 继承 init 公共 flag（`--config`、`--registryIp` 等）—— 详见 [global-flags.md#init-公共-flag](../../../global-flags.md#init-公共-flag)
 > 继承全局 flag：`--dry-run` —— 详见 [global-flags.md](../../../global-flags.md)
@@ -43,11 +43,12 @@ datasophon-cli init tar \
 
 ## 退出码 / 常见错误
 
-| 情况 | 说明 |
-|---|---|
-| tar 已存在 | 直接返回成功，不做任何操作 |
-| tar 不存在且未指定 `--packagePath` | 报错退出 |
+|             情况              |      说明       |
+|-----------------------------|---------------|
+| tar 已存在                     | 直接返回成功，不做任何操作 |
+| tar 不存在且未指定 `--packagePath` | 报错退出          |
 
 ## 相关命令
 
 - [DAG 步骤表](../../../reference/init-all-dag.md)
+

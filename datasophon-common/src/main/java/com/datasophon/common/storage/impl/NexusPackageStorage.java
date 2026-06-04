@@ -1,13 +1,10 @@
 package com.datasophon.common.storage.impl;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.crypto.digest.DigestUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.storage.PackageStorage;
 import com.datasophon.common.storage.vo.DownloadResult;
 import com.datasophon.common.utils.NexusFileUtils;
 import com.datasophon.common.utils.PathUtils;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -26,15 +23,18 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import lombok.extern.slf4j.Slf4j;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.crypto.digest.DigestUtil;
+
 /**
  * @author zhanghuangbin
  */
 @Slf4j
 public class NexusPackageStorage extends NexusStorageSupport implements PackageStorage {
-
+    
     private static final Map<String, ReentrantLock> LOCK_MAP = new ConcurrentHashMap<>();
-
-
+    
     @Override
     public void moveToStorage(File src, boolean includeDir) throws IOException {
         ensureDirValid(src);
@@ -47,20 +47,19 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
                     relative = src.getName() + "/" + relative;
                 }
                 relative = PathUtils.unixStyle(relative);
-
+                
                 log.info("upload {} to raw repo, path: {}", path, relative);
                 NexusFileUtils.uploadFileToRawRepo(relative, path.toFile());
                 return FileVisitResult.CONTINUE;
             }
-
+            
             @Override
             public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
                 throw exc;
             }
         });
     }
-
-
+    
     @Override
     public void moveToStorage(File file, Function<File, String> relativePathHandler) throws IOException {
         if (!file.exists()) {
@@ -69,20 +68,20 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
         if (!file.isFile()) {
             throw new IllegalArgumentException(file.getAbsolutePath() + " is not file");
         }
-
+        
         String relativePath = relativePathHandler.apply(file);
         relativePath = PathUtils.unixStyle(relativePath);
-
+        
         log.info("upload {} to raw repo, path: {}", file, relativePath);
         NexusFileUtils.uploadFileToRawRepo(relativePath, file);
     }
-
+    
     @Override
     public String readPackageMd5(String packageName) {
         ensureNexusEnable();
         String fileName = getPkgMd5FileName(packageName);
         String path = "packages/" + fileName;
-
+        
         log.info("read the md5 of package:{}", packageName);
         try {
             String md5 = NexusFileUtils.downloadAsString(NexusFileUtils.getNexusRawObjectUrl(path));
@@ -94,21 +93,21 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
             throw new RuntimeException(e);
         }
     }
-
+    
     private String getPkgMd5FileName(String packageName) {
         return packageName.endsWith(".md5") ? packageName : packageName + ".md5";
     }
-
+    
     @Override
     public DownloadResult downloadPackageToLocal(String packageName) {
         return doDownload(packageName, () -> readPackageMd5(packageName));
     }
-
+    
     @Override
     public DownloadResult downloadResourceToLocal(String resourceName) {
         return doDownload(resourceName, () -> NexusFileUtils.getAssertMd5FromRawRepo(resourceName));
     }
-
+    
     @Override
     public void deletePackage(String packageName) {
         File pkgFile = Paths.get(Constants.MASTER_MANAGE_PACKAGE_PATH, packageName).toFile();
@@ -122,8 +121,7 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
         NexusFileUtils.removeFileFromRawRepo("/packages/" + packageName);
         NexusFileUtils.removeFileFromRawRepo("/packages/" + getPkgMd5FileName(packageName));
     }
-
-
+    
     private DownloadResult doDownload(String resourceName, Supplier<String> remoteResourceMd5) {
         ensureNexusEnable();
         Lock lock = LOCK_MAP.computeIfAbsent(resourceName, k -> new ReentrantLock());
@@ -156,7 +154,7 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
             } else {
                 log.info("package {} exists, we do need to download", resourceName);
             }
-
+            
             result.setChange(needDownload);
             result.setTarget(file.getAbsolutePath());
             return result;
@@ -165,5 +163,5 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
             lock.unlock();
         }
     }
-
+    
 }

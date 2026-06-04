@@ -1,9 +1,10 @@
 package com.datasophon.common.k8s.vo.k8s;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Map;
+
 import lombok.Data;
 
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * @author zhanghuangbin
@@ -11,12 +12,11 @@ import java.util.Map;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class K8sResource {
-
+    
     private String apiVersion;
     private String kind;
     private Metadata metadata;
-
-
+    
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Metadata {

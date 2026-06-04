@@ -20,13 +20,12 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.model;
 
 import java.io.Serializable;
 
-import cn.hutool.core.util.StrUtil;
 import lombok.Data;
+import cn.hutool.core.util.StrUtil;
 
 @Data
 public class RunAs implements Serializable {
@@ -34,7 +33,7 @@ public class RunAs implements Serializable {
     private String user;
     
     private String group;
-
+    
     public String getOwner() {
         StringBuilder sb = new StringBuilder();
         if (StrUtil.isNotBlank(user)) {
@@ -45,7 +44,7 @@ public class RunAs implements Serializable {
         }
         return sb.toString();
     }
-
+    
     public boolean hasOwner() {
         return StrUtil.isNotBlank(user) || StrUtil.isNotBlank(group);
     }

@@ -4,57 +4,56 @@
 // Protobuf Java Version: 3.25.5
 package com.datasophon.grpc.api;
 
-public interface ExecResultPbOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.ExecResultPb)
-    com.google.protobuf.MessageOrBuilder {
-
-  /**
-   * <pre>
-   * true=成功
-   * </pre>
-   *
-   * <code>bool exec_result = 1;</code>
-   * @return The execResult.
-   */
-  boolean getExecResult();
-
-  /**
-   * <pre>
-   * 标准输出
-   * </pre>
-   *
-   * <code>string exec_out = 2;</code>
-   * @return The execOut.
-   */
-  java.lang.String getExecOut();
-  /**
-   * <pre>
-   * 标准输出
-   * </pre>
-   *
-   * <code>string exec_out = 2;</code>
-   * @return The bytes for execOut.
-   */
-  com.google.protobuf.ByteString
-      getExecOutBytes();
-
-  /**
-   * <pre>
-   * 错误输出
-   * </pre>
-   *
-   * <code>string exec_err_out = 3;</code>
-   * @return The execErrOut.
-   */
-  java.lang.String getExecErrOut();
-  /**
-   * <pre>
-   * 错误输出
-   * </pre>
-   *
-   * <code>string exec_err_out = 3;</code>
-   * @return The bytes for execErrOut.
-   */
-  com.google.protobuf.ByteString
-      getExecErrOutBytes();
+public interface ExecResultPbOrBuilder
+        extends
+            // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.ExecResultPb)
+            com.google.protobuf.MessageOrBuilder {
+    
+    /**
+     * <pre>
+     * true=成功
+     * </pre>
+     *
+     * <code>bool exec_result = 1;</code>
+     * @return The execResult.
+     */
+    boolean getExecResult();
+    
+    /**
+     * <pre>
+     * 标准输出
+     * </pre>
+     *
+     * <code>string exec_out = 2;</code>
+     * @return The execOut.
+     */
+    java.lang.String getExecOut();
+    /**
+     * <pre>
+     * 标准输出
+     * </pre>
+     *
+     * <code>string exec_out = 2;</code>
+     * @return The bytes for execOut.
+     */
+    com.google.protobuf.ByteString getExecOutBytes();
+    
+    /**
+     * <pre>
+     * 错误输出
+     * </pre>
+     *
+     * <code>string exec_err_out = 3;</code>
+     * @return The execErrOut.
+     */
+    java.lang.String getExecErrOut();
+    /**
+     * <pre>
+     * 错误输出
+     * </pre>
+     *
+     * <code>string exec_err_out = 3;</code>
+     * @return The bytes for execErrOut.
+     */
+    com.google.protobuf.ByteString getExecErrOutBytes();
 }

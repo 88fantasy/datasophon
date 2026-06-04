@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.log;
 
 import com.datasophon.worker.utils.TaskConstants;

@@ -1,10 +1,11 @@
 package com.datasophon.common.k8s.vo.k8s;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
+
+import lombok.Data;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * K8s Node 资源
@@ -16,7 +17,7 @@ public class K8sNode {
     private Metadata metadata;
     private NodeSpec spec;
     private NodeStatus status;
-
+    
     @Data
     public static class Metadata {
         private String name;
@@ -30,7 +31,7 @@ public class K8sNode {
         private String finalizers;
         private String managedFields;
     }
-
+    
     @Data
     public static class OwnerReference {
         private String apiVersion;
@@ -40,7 +41,7 @@ public class K8sNode {
         private Boolean controller;
         private Boolean blockOwnerDeletion;
     }
-
+    
     @Data
     public static class NodeSpec {
         @JsonProperty("providerID")
@@ -58,7 +59,7 @@ public class K8sNode {
         @JsonProperty("externalID")
         private String externalID;
     }
-
+    
     @Data
     public static class Taint {
         @JsonProperty("key")
@@ -70,12 +71,12 @@ public class K8sNode {
         @JsonProperty("timeAdded")
         private String timeAdded;
     }
-
+    
     @Data
     public static class NodeConfigSource {
         private ConfigMapRef configMap;
     }
-
+    
     @Data
     public static class ConfigMapRef {
         private String namespace;
@@ -83,7 +84,7 @@ public class K8sNode {
         private String uid;
         private String resourceVersion;
     }
-
+    
     @Data
     public static class NodeStatus {
         @JsonProperty("capacity")
@@ -109,7 +110,7 @@ public class K8sNode {
         @JsonProperty("resources")
         private ResourceStatus resources;
     }
-
+    
     @Data
     public static class NodeCondition {
         @JsonProperty("type")
@@ -125,7 +126,7 @@ public class K8sNode {
         @JsonProperty("lastTransitionTime")
         private String lastTransitionTime;
     }
-
+    
     @Data
     public static class NodeAddress {
         @JsonProperty("type")
@@ -133,7 +134,7 @@ public class K8sNode {
         @JsonProperty("address")
         private String address;
     }
-
+    
     @Data
     public static class NodeInfo {
         @JsonProperty("machineID")
@@ -159,13 +160,13 @@ public class K8sNode {
         @JsonProperty("swap")
         private MemorySwapInfo swap;
     }
-
+    
     @Data
     public static class MemorySwapInfo {
         @JsonProperty("swapCapacityMB")
         private Long swapCapacityMB;
     }
-
+    
     @Data
     public static class ContainerImage {
         @JsonProperty("names")
@@ -173,7 +174,7 @@ public class K8sNode {
         @JsonProperty("sizeBytes")
         private Long sizeBytes;
     }
-
+    
     @Data
     public static class AttachedVolume {
         @JsonProperty("name")
@@ -181,7 +182,7 @@ public class K8sNode {
         @JsonProperty("devicePath")
         private String devicePath;
     }
-
+    
     @Data
     public static class NodeConfigStatus {
         @JsonProperty("active")
@@ -193,13 +194,13 @@ public class K8sNode {
         @JsonProperty("error")
         private String error;
     }
-
+    
     @Data
     public static class ResourceStatus {
         @JsonProperty("resourceClaimStatusList")
         private List<ResourceClaimStatus> resourceClaimStatusList;
     }
-
+    
     @Data
     public static class ResourceClaimStatus {
         private String name;

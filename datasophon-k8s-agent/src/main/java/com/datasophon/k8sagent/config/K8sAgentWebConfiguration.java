@@ -20,10 +20,10 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.k8sagent.config;
 
 import com.datasophon.k8sagent.auth.K8sAgentAuthInterceptor;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -33,13 +33,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  */
 @Configuration
 public class K8sAgentWebConfiguration implements WebMvcConfigurer {
-
+    
     private final K8sAgentAuthInterceptor authInterceptor;
-
+    
     public K8sAgentWebConfiguration(K8sAgentAuthInterceptor authInterceptor) {
         this.authInterceptor = authInterceptor;
     }
-
+    
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)

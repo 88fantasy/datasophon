@@ -7,13 +7,11 @@ import lombok.Data;
  */
 @Data
 public class ServiceMetaItem {
-
-
+    
     private String framework;
-
+    
     private String serviceName;
-
+    
     private String type;
-
-
+    
 }

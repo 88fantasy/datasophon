@@ -21,18 +21,18 @@ datasophon-cli [--dry-run] create ntp-server
 
 ## 参数 / Flags
 
-| flag | 简写 | 类型 | 默认 | 必填 | 说明 |
-|---|---|---|---|---|---|
-| `--config` | `-c` | string | `""` | 否 | 配置文件路径；指定后进入配置文件模式 |
+|    flag    |  简写  |   类型   |  默认  | 必填 |         说明         |
+|------------|------|--------|------|----|--------------------|
+| `--config` | `-c` | string | `""` | 否  | 配置文件路径；指定后进入配置文件模式 |
 
 > 继承全局 flag：`--dry-run` —— 详见 [global-flags.md](../../global-flags.md)
 
 ## 配置文件依赖（配置文件模式）
 
-| 字段 | 说明 |
-|---|---|
+|           字段            |                 说明                 |
+|-------------------------|------------------------------------|
 | `global.ntpServer.node` | NTP 服务端节点 hostname（须在 `nodes` 列表中） |
-| `global.sshAuthType` | SSH 鉴权方式 |
+| `global.sshAuthType`    | SSH 鉴权方式                           |
 
 ## 写入的 chrony.conf 内容
 
@@ -52,10 +52,10 @@ logdir /var/log/chrony
 
 ## OS 差异
 
-| OS 类型 | 包安装命令 | 配置路径 | 服务名 |
-|---|---|---|---|
-| CentOS / openEuler / RHEL | `yum -y install chrony` | `/etc/chrony.conf` | `chronyd` |
-| Ubuntu / Debian | `DEBIAN_FRONTEND=noninteractive apt install chrony -y` | `/etc/chrony/chrony.conf` | `chrony` / `chronyd` |
+|           OS 类型           |                         包安装命令                          |           配置路径            |         服务名          |
+|---------------------------|--------------------------------------------------------|---------------------------|----------------------|
+| CentOS / openEuler / RHEL | `yum -y install chrony`                                | `/etc/chrony.conf`        | `chronyd`            |
+| Ubuntu / Debian           | `DEBIAN_FRONTEND=noninteractive apt install chrony -y` | `/etc/chrony/chrony.conf` | `chrony` / `chronyd` |
 
 ## 示例
 
@@ -81,13 +81,14 @@ datasophon-cli --dry-run create ntp-server -c /data/datasophon/datasophon-init/c
 
 ## 退出码 / 常见错误
 
-| 错误信息 | 根因 | 处置 |
-|---|---|---|
-| `配置中未找到 ntpServer 节点: <hostname>` | `global.ntpServer.node` 不在 `nodes` 列表中 | 检查 hostname 拼写 |
-| `chrony 安装失败` | yum/apt 源不可用 | 检查节点网络或先配置 `create yum-server` 离线源 |
-| `安装成功但写回配置文件失败` | 配置文件写权限不足 | 检查写权限 |
+|               错误信息                |                   根因                   |                 处置                 |
+|-----------------------------------|----------------------------------------|------------------------------------|
+| `配置中未找到 ntpServer 节点: <hostname>` | `global.ntpServer.node` 不在 `nodes` 列表中 | 检查 hostname 拼写                     |
+| `chrony 安装失败`                     | yum/apt 源不可用                           | 检查节点网络或先配置 `create yum-server` 离线源 |
+| `安装成功但写回配置文件失败`                   | 配置文件写权限不足                              | 检查写权限                              |
 
 ## 相关命令
 
 - [`init ntpslave`](../init/network/ntpslave.md) — 其余节点配置为 NTP 客户端，指向本命令安装的 server
 - [`create cluster`](./cluster.md) — 集群初始化（DAG 步骤 22 `init-ntp-server` 复用同一 `ntpServerTask`）
+

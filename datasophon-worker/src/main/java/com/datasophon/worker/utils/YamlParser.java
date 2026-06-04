@@ -2,11 +2,6 @@ package com.datasophon.worker.utils;
 
 import org.apache.commons.collections.list.GrowthList;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.LoaderOptions;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.Constructor;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -14,10 +9,16 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
 public class YamlParser {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(YamlParser.class);
-
+    
     /**
      * yml文件流转成单层map
      * 转Properties 改变了顺序
@@ -27,16 +28,16 @@ public class YamlParser {
      */
     public static Map<String, Object> yamlToFlattenedMap(String yamlContent) {
         Yaml yaml = createYaml();
-        Map<String, Object> map=new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         for (Object object : yaml.loadAll(yamlContent)) {
             if (object != null) {
                 map = asMap(object);
-                map=getFlattenedMap(map);
+                map = getFlattenedMap(map);
             }
         }
         return map;
     }
-
+    
     /**
      * yml文件流转成多次嵌套map
      *
@@ -53,7 +54,7 @@ public class YamlParser {
         }
         return result;
     }
-
+    
     /**
      * 多次嵌套map转成yml
      *
@@ -64,7 +65,7 @@ public class YamlParser {
         Yaml yaml = createYaml();
         return yaml.dumpAsMap(map);
     }
-
+    
     /**
      * 单层map转成yml
      *
@@ -75,7 +76,7 @@ public class YamlParser {
         Yaml yaml = createYaml();
         return yaml.dumpAsMap(flattenedMapToMultilayerMap(map));
     }
-
+    
     /**
      * 单层map转换多层map
      *
@@ -86,11 +87,11 @@ public class YamlParser {
         Map<String, Object> result = getMultilayerMap(map);
         return result;
     }
-
+    
     private static Yaml createYaml() {
         return new Yaml(new Constructor(new LoaderOptions()));
     }
-
+    
     @SuppressWarnings("unchecked")
     private static Map<String, Object> asMap(Object object) {
         Map<String, Object> result = new LinkedHashMap<>();
@@ -98,7 +99,7 @@ public class YamlParser {
             result.put("document", object);
             return result;
         }
-
+        
         Map<Object, Object> map = (Map<Object, Object>) object;
         for (Map.Entry<Object, Object> entry : map.entrySet()) {
             Object value = entry.getValue();
@@ -114,13 +115,13 @@ public class YamlParser {
         }
         return result;
     }
-
+    
     private static Map<String, Object> getFlattenedMap(Map<String, Object> source) {
         Map<String, Object> result = new LinkedHashMap<>();
         buildFlattenedMap(result, source, null);
         return result;
     }
-
+    
     private static void buildFlattenedMap(Map<String, Object> result, Map<String, Object> source, String path) {
         for (Map.Entry<String, Object> entry : source.entrySet()) {
             String key = entry.getKey();
@@ -150,54 +151,52 @@ public class YamlParser {
             }
         }
     }
-
+    
     private static Map<String, Object> getMultilayerMap(Map<String, Object> source) {
         Map<String, Object> rootResult = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : source.entrySet()) {
             String key = entry.getKey();
-            buildMultilayerMap(rootResult, key,entry.getValue());
+            buildMultilayerMap(rootResult, key, entry.getValue());
         }
         return rootResult;
     }
-
+    
     @SuppressWarnings("unchecked")
-    private static void buildMultilayerMap(Map<String, Object> parent, String path,Object value) {
-        String[] keys = StringUtils.split(path,".");
+    private static void buildMultilayerMap(Map<String, Object> parent, String path, Object value) {
+        String[] keys = StringUtils.split(path, ".");
         String key = keys[0];
         if (key.endsWith("]")) {
-            String listKey=key.substring(0,key.indexOf("["));
-            String listPath=path.substring(key.indexOf("["));
-            List<Object> chlid =  bulidChlidList(parent, listKey);
+            String listKey = key.substring(0, key.indexOf("["));
+            String listPath = path.substring(key.indexOf("["));
+            List<Object> chlid = bulidChlidList(parent, listKey);
             buildMultilayerList(chlid, listPath, value);
-        }else{
+        } else {
             if (keys.length == 1) {
                 parent.put(key, value);
-            }else{
+            } else {
                 String newpath = path.substring(path.indexOf(".") + 1);
                 Map<String, Object> chlid = bulidChlidMap(parent, key);;
-                buildMultilayerMap(chlid, newpath,value);
+                buildMultilayerMap(chlid, newpath, value);
             }
         }
     }
-
-
+    
     @SuppressWarnings("unchecked")
-    private static void buildMultilayerList(List<Object> parent,String path,Object value) {
-        String[] keys = StringUtils.split(path,".");
+    private static void buildMultilayerList(List<Object> parent, String path, Object value) {
+        String[] keys = StringUtils.split(path, ".");
         String key = keys[0];
-        int index=Integer.valueOf(key.replace("[", "").replace("]", ""));
+        int index = Integer.valueOf(key.replace("[", "").replace("]", ""));
         if (keys.length == 1) {
-            parent.add(index,stringToObj(value.toString()));
+            parent.add(index, stringToObj(value.toString()));
         } else {
             String newpath = path.substring(path.indexOf(".") + 1);
             Map<String, Object> chlid = bulidChlidMap(parent, index);;
             buildMultilayerMap(chlid, newpath, value);
         }
     }
-
-
+    
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> bulidChlidMap(Map<String, Object> parent,String key){
+    private static Map<String, Object> bulidChlidMap(Map<String, Object> parent, String key) {
         if (parent.containsKey(key)) {
             return (Map<String, Object>) parent.get(key);
         } else {
@@ -206,28 +205,28 @@ public class YamlParser {
             return chlid;
         }
     }
-
+    
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> bulidChlidMap(List<Object> parent,int index){
+    private static Map<String, Object> bulidChlidMap(List<Object> parent, int index) {
         Map<String, Object> chlid = null;
-        try{
-            Object obj=parent.get(index);
-            if(null != obj){
-                chlid = (Map<String, Object>)obj;
+        try {
+            Object obj = parent.get(index);
+            if (null != obj) {
+                chlid = (Map<String, Object>) obj;
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             logger.warn("get list error");
         }
-
+        
         if (null == chlid) {
             chlid = new LinkedHashMap<>(16);
-            parent.add(index,chlid);
+            parent.add(index, chlid);
         }
         return chlid;
     }
-
+    
     @SuppressWarnings("unchecked")
-    private static List<Object> bulidChlidList(Map<String, Object> parent,String key){
+    private static List<Object> bulidChlidList(Map<String, Object> parent, String key) {
         if (parent.containsKey(key)) {
             return (List<Object>) parent.get(key);
         } else {
@@ -236,48 +235,47 @@ public class YamlParser {
             return chlid;
         }
     }
-
-    private static Object stringToObj(String obj){
-        Object result=null;
-        if(obj.equals("true") || obj.equals("false")){
-            result=Boolean.valueOf(obj);
-        }else if(isBigDecimal(obj)){
-            if(obj.indexOf(".") == -1){
-                result=Long.valueOf(obj.toString());
-            }else{
-                result=Double.valueOf(obj.toString());
+    
+    private static Object stringToObj(String obj) {
+        Object result = null;
+        if (obj.equals("true") || obj.equals("false")) {
+            result = Boolean.valueOf(obj);
+        } else if (isBigDecimal(obj)) {
+            if (obj.indexOf(".") == -1) {
+                result = Long.valueOf(obj.toString());
+            } else {
+                result = Double.valueOf(obj.toString());
             }
-        }else{
-            result=obj;
+        } else {
+            result = obj;
         }
         return result;
     }
-
-
-    public static boolean isBigDecimal(String str){
-        if(str==null || str.trim().length() == 0){
+    
+    public static boolean isBigDecimal(String str) {
+        if (str == null || str.trim().length() == 0) {
             return false;
         }
         char[] chars = str.toCharArray();
         int sz = chars.length;
         int i = (chars[0] == '-') ? 1 : 0;
-        if(i == sz) return false;
-
-        if(chars[i] == '.') return false;//除了负号，第一位不能为'小数点'
-
+        if (i == sz)
+            return false;
+        
+        if (chars[i] == '.')
+            return false;// 除了负号，第一位不能为'小数点'
+            
         boolean radixPoint = false;
-        for(; i < sz; i++){
-            if(chars[i] == '.'){
-                if(radixPoint) return false;
+        for (; i < sz; i++) {
+            if (chars[i] == '.') {
+                if (radixPoint)
+                    return false;
                 radixPoint = true;
-            }else if(!(chars[i] >= '0' && chars[i] <= '9')){
+            } else if (!(chars[i] >= '0' && chars[i] <= '9')) {
                 return false;
             }
         }
         return true;
     }
-
-
-
-
+    
 }

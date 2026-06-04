@@ -18,7 +18,7 @@ import java.sql.SQLException;
  * @since 2024-11-29 11:30
  */
 public class SparkThriftHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
-
+    
     public SparkThriftHandlerStrategy(String serviceName, String serviceRoleName) {
         super(serviceName, serviceRoleName);
     }
@@ -34,7 +34,7 @@ public class SparkThriftHandlerStrategy extends AbstractHandlerStrategy implemen
             String localSparkJarsPath = workPath + Constants.SLASH + "jars";
             String hadoopHome = PropertyUtils.getString("HADOOP_HOME");
             ExecResult result = ShellUtils.execShell(String.format("sudo -u hdfs %s/bin/hdfs dfs -ls %s | wc -l", hadoopHome, hdfsSparkJarsPath));
-            if(result.getExecResult() && Integer.parseInt(result.getExecOut()) > 0) {
+            if (result.getExecResult() && Integer.parseInt(result.getExecOut()) > 0) {
                 logger.info("hdfs {}已初始化", hdfsSparkJarsPath);
             } else {
                 ShellUtils.execShell(String.format("sudo -u hdfs %s/bin/hdfs dfs -mkdir -p %s", hadoopHome, hdfsSparkJarsPath));

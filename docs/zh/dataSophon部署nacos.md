@@ -39,16 +39,19 @@ touch nacos-server-master.ftl
 ```
 
 添加prometheus.ftl
+
 ```shell
-  - job_name: 'nacos'
-    file_sd_configs:
-    - files:
-    - configs/nacos.json
+- job_name: 'nacos'
+  file_sd_configs:
+  - files:
+  - configs/nacos.json
 ```
 
 ### 4、nacos数据库表初始化代码
+
 添加类`NacosMasterHandlerStrategy`
-设置`ServiceRoleStrategyContext` 增加 
+设置`ServiceRoleStrategyContext` 增加
+
 ```shell
 map.put("NacosServer", new NacosMasterHandlerStrategy("NACOS", "NacosServer"));
 ```
@@ -70,11 +73,13 @@ sh /opt/apps/datasophon-manager-1.2.0/bin/datasophon-api.sh restart api
 ### 6、安装服务
 
 配置host
+
 ```shell
 xx.xx.xx.xx mysql-node-1 kyuubiServer
 ```
 
 初始化数据库
+
 ```sql
 -- 创建nacos数据库
 CREATE DATABASE nacos DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;

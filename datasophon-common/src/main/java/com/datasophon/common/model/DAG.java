@@ -20,14 +20,7 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.model;
-
-import cn.hutool.core.collection.CollectionUtil;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -42,6 +35,14 @@ import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import cn.hutool.core.collection.CollectionUtil;
+
 /**
  * analysis of DAG
  * Node: node
@@ -51,8 +52,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class DAG<Node, NodeInfo, EdgeInfo> {
     
     private static final Logger logger = LoggerFactory.getLogger(DAG.class);
-
-
+    
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     
     /**
@@ -152,9 +152,6 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
         }
         
     }
-
-
-
     
     /**
      * whether this node is contained
@@ -513,8 +510,7 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
         return resultMap;
         
     }
-
-
+    
     /**
      * 获取全部节点
      * @return
@@ -522,30 +518,29 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
     public Map<Node, NodeInfo> getNodes() {
         return new HashMap<>(nodesMap);
     }
-
-
+    
     @Data
     @RequiredArgsConstructor
-    public static class Edge<N,  E> {
+    public static class Edge<N, E> {
         private final N start;
         private final N end;
         private final E edge;
     }
-
+    
     /**
      * 获取全部的边
      * @return
      */
     public List<Edge<Node, EdgeInfo>> getEdges() {
         List<Edge<Node, EdgeInfo>> edges = new ArrayList<>(getEdgesCount());
-        edgesMap.forEach((start, next)-> {
-            next.forEach((end, ed)-> {
+        edgesMap.forEach((start, next) -> {
+            next.forEach((end, ed) -> {
                 edges.add(new Edge<>(start, end, ed));
             });
         });
         return edges;
     }
-
+    
     /**
      * 从有向无环图中，查找start->end的路径
      * @param start
@@ -561,8 +556,7 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
         boolean find = backtrace(result, start, end);
         return find ? result : null;
     }
-
-
+    
     /***
      * 回溯法查找路径
      * @param ctx
@@ -575,23 +569,23 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
             return true;
         }
         Set<Node> nextNodes = getSubsequentNodes(current);
-        for(Node node : nextNodes) {
+        for (Node node : nextNodes) {
             ctx.add(node);
             boolean find = backtrace(ctx, node, end);
             if (find) {
                 return true;
             }
-//            回溯
+            // 回溯
             ctx.remove(ctx.size() - 1);
         }
-
+        
         return false;
     }
-
+    
     public DAG<Node, NodeInfo, EdgeInfo> getReverseDag() {
         DAG<Node, NodeInfo, EdgeInfo> reverse = new DAG<>();
         reverse.nodesMap = nodesMap;
-
+        
         Map<Node, Map<Node, EdgeInfo>> temp = edgesMap;
         reverse.edgesMap = reverseEdgesMap;
         reverse.reverseEdgesMap = temp;

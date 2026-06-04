@@ -8,7 +8,7 @@ import lombok.Getter;
 @Getter
 public enum ArchType {
     X86_64("x86_64"),
-
+    
     AARCH64("aarch64"),
     
     OTHER("other");

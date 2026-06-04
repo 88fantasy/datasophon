@@ -20,18 +20,19 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.grpc;
 
 import com.datasophon.grpc.api.GrpcConstants;
+
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Worker 端 gRPC 服务器（Phase 1）。
@@ -41,9 +42,9 @@ import java.util.concurrent.TimeUnit;
  * 时启动。</p>
  */
 public class WorkerGrpcServer {
-
+    
     private static final Logger log = LoggerFactory.getLogger(WorkerGrpcServer.class);
-
+    
     /**
      * gRPC 服务线程池上界：max(8, 2 × CPU 核数)。
      *
@@ -52,9 +53,9 @@ public class WorkerGrpcServer {
      */
     private static final int GRPC_THREAD_POOL_SIZE =
             Math.max(8, Runtime.getRuntime().availableProcessors() * 2);
-
+    
     private final Server server;
-
+    
     public WorkerGrpcServer() {
         this.server = ServerBuilder.forPort(GrpcConstants.WORKER_GRPC_PORT)
                 .executor(Executors.newFixedThreadPool(GRPC_THREAD_POOL_SIZE, r -> {
@@ -65,19 +66,19 @@ public class WorkerGrpcServer {
                 .addService(new WorkerCommandGrpcService())
                 .build();
     }
-
+    
     /** 启动服务器，阻塞直到端口绑定完成。 */
     public void start() throws IOException {
         server.start();
         log.info("Worker gRPC server started on port {} (threadPool={})",
                 GrpcConstants.WORKER_GRPC_PORT, GRPC_THREAD_POOL_SIZE);
     }
-
+    
     /** 阻塞主线程直到 gRPC server 关闭（容器/前台运行时调用，防止 JVM 因无非守护线程而提前退出）。 */
     public void awaitTermination() throws InterruptedException {
         server.awaitTermination();
     }
-
+    
     /** 优雅关闭：等待 5s，超时后强制终止。 */
     public void stop() {
         if (server == null || server.isShutdown()) {

@@ -20,25 +20,25 @@ datasophon-cli [--dry-run] init kuboard \
 
 ## 参数 / Flags
 
-| flag | 简写 | 类型 | 默认 | 必填 | 说明 |
-|---|---|---|---|---|---|
-| `--enableKubernetesCluster` | 无 | bool | `true` | 否 | 为 false 时跳过 Kuboard 安装 |
-| `--kuboardX86Tar` | 无 | string | `""` | 否 | x86_64 Kuboard sealos 镜像 tar 包文件名 |
-| `--kuboardArmTar` | 无 | string | `""` | 否 | aarch64 Kuboard sealos 镜像 tar 包文件名 |
-| `--etcds` | `-e` | []string | — | 是 | etcd 节点 hostname 列表（用于打标签，可多次指定） |
-| `--packagePath` | 无 | string | — | 是 | 安装包目录 |
-| `--kubernetesForce` | 无 | bool | `false` | 否 | 已存在时是否覆盖安装 |
+|            flag             |  简写  |    类型    |   默认    | 必填 |                 说明                 |
+|-----------------------------|------|----------|---------|----|------------------------------------|
+| `--enableKubernetesCluster` | 无    | bool     | `true`  | 否  | 为 false 时跳过 Kuboard 安装             |
+| `--kuboardX86Tar`           | 无    | string   | `""`    | 否  | x86_64 Kuboard sealos 镜像 tar 包文件名  |
+| `--kuboardArmTar`           | 无    | string   | `""`    | 否  | aarch64 Kuboard sealos 镜像 tar 包文件名 |
+| `--etcds`                   | `-e` | []string | —       | 是  | etcd 节点 hostname 列表（用于打标签，可多次指定）   |
+| `--packagePath`             | 无    | string   | —       | 是  | 安装包目录                              |
+| `--kubernetesForce`         | 无    | bool     | `false` | 否  | 已存在时是否覆盖安装                         |
 
 > 继承 init 公共 flag（`--config`、`--registryIp` 等）—— 详见 [global-flags.md#init-公共-flag](../../../global-flags.md#init-公共-flag)
 > 继承全局 flag：`--dry-run` —— 详见 [global-flags.md](../../../global-flags.md)
 
 ## 配置文件依赖
 
-| 字段 | 说明 |
-|---|---|
-| `global.kubernetes.enable` | 若为 false，DAG 跳过此步 |
-| `global.kubernetes.etcds` | DAG 自动传入 `-e` |
-| `global.packages.kuboard.x86_64` / `aarch64` | 包文件名 |
+|                      字段                      |        说明         |
+|----------------------------------------------|-------------------|
+| `global.kubernetes.enable`                   | 若为 false，DAG 跳过此步 |
+| `global.kubernetes.etcds`                    | DAG 自动传入 `-e`     |
+| `global.packages.kuboard.x86_64` / `aarch64` | 包文件名              |
 
 ## 示例
 
@@ -64,13 +64,14 @@ datasophon-cli init kuboard \
 
 ## 退出码 / 常见错误
 
-| 错误信息 | 根因 | 处置 |
-|---|---|---|
-| `etcd 节点打标签失败` | kubectl 命令失败或节点名不对 | 确认节点 hostname 已注册到集群（`kubectl get nodes`） |
-| `安装 kuboard 失败` | sealos run 失败 | 检查 sealos 版本与 kuboard 包兼容性 |
-| `kuboard pods 已存在，跳过` | 重复执行 | 正常，不报错 |
+|         错误信息          |         根因         |                    处置                     |
+|-----------------------|--------------------|-------------------------------------------|
+| `etcd 节点打标签失败`        | kubectl 命令失败或节点名不对 | 确认节点 hostname 已注册到集群（`kubectl get nodes`） |
+| `安装 kuboard 失败`       | sealos run 失败      | 检查 sealos 版本与 kuboard 包兼容性                |
+| `kuboard pods 已存在，跳过` | 重复执行               | 正常，不报错                                    |
 
 ## 相关命令
 
 - [`init k8sBaseServices`](./k8sbaseservices.md) — 先部署 K8s 集群
 - [DAG 步骤表](../../../reference/init-all-dag.md)
+

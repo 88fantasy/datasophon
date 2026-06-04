@@ -20,12 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.grpc;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.ServiceLoaderUtil;
-import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.command.InstallServiceRoleCommand;
@@ -39,8 +35,8 @@ import com.datasophon.common.model.ConfigFileEntry;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.HookConfig;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.PkgInstallPathUtils;
+import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.grpc.api.AlertConfigRequest;
@@ -64,13 +60,8 @@ import com.datasophon.worker.utils.FileUtils;
 import com.datasophon.worker.utils.FreemakerUtils;
 import com.datasophon.worker.utils.TaskConstants;
 import com.datasophon.worker.utils.UnixUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+
 import io.grpc.stub.StreamObserver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.InetAddress;
@@ -83,6 +74,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeSet;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.ServiceLoaderUtil;
+import cn.hutool.core.util.StrUtil;
 
 /**
  * Worker 端 gRPC 服务实现（Phase 1 + Phase 2）。
@@ -108,16 +111,16 @@ import java.util.TreeSet;
  * {@code ServerBuilder}。</p>
  */
 public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCommandServiceImplBase {
-
+    
     private static final Logger log = LoggerFactory.getLogger(WorkerCommandGrpcService.class);
-
+    
     /** 用于反序列化 ServiceRoleRequest.json_payload 的 ObjectMapper（Worker 无 Spring 容器）。 */
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-
+    
     // ─── Phase 1: Ping ────────────────────────────────────────────────────────
-
+    
     @Override
     public void ping(PingRequest request, StreamObserver<ExecResultPb> responseObserver) {
         responseObserver.onNext(ExecResultPb.newBuilder()
@@ -126,9 +129,9 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
                 .build());
         responseObserver.onCompleted();
     }
-
+    
     // ─── Phase 1: ExecuteCmd ─────────────────────────────────────────────────
-
+    
     /**
      * 执行 Shell 命令。
      *
@@ -150,9 +153,9 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         responseObserver.onNext(toProto(execResult));
         responseObserver.onCompleted();
     }
-
+    
     // ─── Phase 1: GetLog ─────────────────────────────────────────────────────
-
+    
     @Override
     public void getLog(GetLogRequest request, StreamObserver<ExecResultPb> responseObserver) {
         Map<String, String> paramMap = new HashMap<>();
@@ -164,7 +167,7 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         String logFileName = PlaceholderUtils.replacePlaceholders(
                 request.getLogFile(), paramMap, Constants.REGEX_VARIABLE);
         log.info("gRPC getLog: {}", logFileName);
-
+        
         String logStr = "can not find log file";
         try {
             if (logFileName.startsWith(StrUtil.SLASH) && FileUtil.exist(logFileName)) {
@@ -187,9 +190,9 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
                 .build());
         responseObserver.onCompleted();
     }
-
+    
     // ─── Phase 2: InstallServiceRole ─────────────────────────────────────────
-
+    
     @Override
     public void installServiceRole(ServiceRoleRequest req, StreamObserver<ExecResultPb> obs) {
         ExecResult result;
@@ -198,17 +201,16 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
             Logger taskLog = LoggerFactory.getLogger(
                     TaskConstants.createLoggerName(cmd.getServiceName(), cmd.getServiceRoleName(), WorkerCommandGrpcService.class));
             taskLog.info("开始安装服务:{} {}", cmd.getServiceName(), cmd.getServiceRoleName());
-
+            
             // 防御性拷贝，注入 frameCode 供 DownloadStrategy 等 hook 使用，不污染共享变量 map
             Map<String, String> hookVars = new HashMap<>(
                     cmd.getVariables() == null ? Collections.emptyMap() : cmd.getVariables());
             hookVars.put("${__frameCode__}", cmd.getFrameCode());
-
+            
             result = invokeFunctions(
                     () -> invokeHook(cmd.getHooks(), HookType.PRE_INSTALL, cmd, hookVars),
                     () -> doInstall(cmd, taskLog),
-                    () -> invokeHook(cmd.getHooks(), HookType.POST_INSTALL, cmd, hookVars)
-            );
+                    () -> invokeHook(cmd.getHooks(), HookType.POST_INSTALL, cmd, hookVars));
             taskLog.info("安装 {} {}, 信息: {}", cmd.getPackageName(),
                     result.getExecResult() ? "成功" : "失败", result.getExecOut());
             log.info("gRPC installServiceRole {} {} {}", cmd.getServiceName(), cmd.getServiceRoleName(),
@@ -220,9 +222,9 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         obs.onNext(toProto(result));
         obs.onCompleted();
     }
-
+    
     // ─── Phase 2: ConfigureServiceRole ───────────────────────────────────────
-
+    
     @Override
     public void configureServiceRole(ServiceRoleRequest req, StreamObserver<ExecResultPb> obs) {
         ExecResult result;
@@ -230,7 +232,8 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
             GenerateServiceConfigCommand cmd = MAPPER.readValue(req.getJsonPayload(), GenerateServiceConfigCommand.class);
             if (!req.getConfigMapJson().isEmpty()) {
                 List<ConfigFileEntry> entries = MAPPER.readValue(
-                        req.getConfigMapJson(), new TypeReference<List<ConfigFileEntry>>() {});
+                        req.getConfigMapJson(), new TypeReference<List<ConfigFileEntry>>() {
+                        });
                 cmd.setCofigFileMap(ConfigFileEntry.toMap(entries));
             }
             log.info("gRPC configureServiceRole: {} {}", cmd.getServiceName(), cmd.getServiceRoleName());
@@ -243,9 +246,9 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         obs.onNext(toProto(result));
         obs.onCompleted();
     }
-
+    
     // ─── Phase 2: StartServiceRole ───────────────────────────────────────────
-
+    
     @Override
     public void startServiceRole(ServiceRoleRequest req, StreamObserver<ExecResultPb> obs) {
         ExecResult result;
@@ -265,8 +268,7 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
                         return sh.start(cmd.getStartRunner(), cmd.getStatusRunner(), cmd,
                                 cmd.getRunAs(), cmd.isCheckStatus());
                     },
-                    () -> invokeHook(cmd.getHooks(), HookType.POST_START, cmd, startHookVars)
-            );
+                    () -> invokeHook(cmd.getHooks(), HookType.POST_START, cmd, startHookVars));
             log.info("gRPC startServiceRole {} {} {}", cmd.getServiceName(), cmd.getServiceRoleName(),
                     result.getExecResult() ? "success" : "failed");
         } catch (Exception e) {
@@ -276,9 +278,9 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         obs.onNext(toProto(result));
         obs.onCompleted();
     }
-
+    
     // ─── Phase 2: StopServiceRole ────────────────────────────────────────────
-
+    
     @Override
     public void stopServiceRole(ServiceRoleRequest req, StreamObserver<ExecResultPb> obs) {
         ExecResult result;
@@ -293,8 +295,7 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
                         ServiceHandler sh = new ServiceHandler(cmd.getServiceName(), cmd.getServiceRoleName());
                         return sh.stop(cmd.getStopRunner(), cmd.getStatusRunner(), cmd, cmd.getRunAs());
                     },
-                    () -> invokeHook(cmd.getHooks(), HookType.POST_STOP, cmd, stopHookVars)
-            );
+                    () -> invokeHook(cmd.getHooks(), HookType.POST_STOP, cmd, stopHookVars));
             log.info("gRPC stopServiceRole {} {} {}", cmd.getServiceName(), cmd.getServiceRoleName(),
                     result.getExecResult() ? "success" : "failed");
         } catch (Exception e) {
@@ -304,9 +305,9 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         obs.onNext(toProto(result));
         obs.onCompleted();
     }
-
+    
     // ─── Phase 2: RestartServiceRole ─────────────────────────────────────────
-
+    
     @Override
     public void restartServiceRole(ServiceRoleRequest req, StreamObserver<ExecResultPb> obs) {
         ExecResult result;
@@ -324,9 +325,9 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         obs.onNext(toProto(result));
         obs.onCompleted();
     }
-
+    
     // ─── Phase 2: ServiceRoleStatus ──────────────────────────────────────────
-
+    
     @Override
     public void serviceRoleStatus(ServiceRoleRequest req, StreamObserver<ExecResultPb> obs) {
         ExecResult result = new ExecResult();
@@ -363,9 +364,9 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         obs.onNext(toProto(result));
         obs.onCompleted();
     }
-
+    
     // ─── Phase 3: UnixGroup ───────────────────────────────────────────────────
-
+    
     @Override
     public void createUnixGroup(UnixGroupRequest req, StreamObserver<ExecResultPb> obs) {
         try {
@@ -381,7 +382,7 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
             obs.onCompleted();
         }
     }
-
+    
     @Override
     public void deleteUnixGroup(UnixGroupRequest req, StreamObserver<ExecResultPb> obs) {
         try {
@@ -397,9 +398,9 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
             obs.onCompleted();
         }
     }
-
+    
     // ─── Phase 3: UnixUser ────────────────────────────────────────────────────
-
+    
     @Override
     public void createUnixUser(UnixUserRequest req, StreamObserver<ExecResultPb> obs) {
         try {
@@ -416,7 +417,7 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
             obs.onCompleted();
         }
     }
-
+    
     @Override
     public void deleteUnixUser(UnixUserRequest req, StreamObserver<ExecResultPb> obs) {
         try {
@@ -432,9 +433,9 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
             obs.onCompleted();
         }
     }
-
+    
     // ─── Phase 3: FileOperate ─────────────────────────────────────────────────
-
+    
     @Override
     public void operateFile(FileOperateRequest req, StreamObserver<ExecResultPb> obs) {
         ExecResult execResult = new ExecResult();
@@ -455,16 +456,17 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         obs.onNext(toProto(execResult));
         obs.onCompleted();
     }
-
+    
     // ─── Phase 3: AlertConfig ─────────────────────────────────────────────────
-
+    
     @Override
     public void generateAlertConfig(AlertConfigRequest req, StreamObserver<ExecResultPb> obs) {
         ExecResult execResult = new ExecResult();
         try {
             log.info("gRPC generateAlertConfig clusterId={}", req.getClusterId());
             List<AlertConfigEntry> entries = MAPPER.readValue(req.getConfigMapJson(),
-                    new TypeReference<List<AlertConfigEntry>>() {});
+                    new TypeReference<List<AlertConfigEntry>>() {
+                    });
             HashMap<Generators, List<AlertItem>> configFileMap = AlertConfigEntry.toMap(entries);
             for (Generators generators : configFileMap.keySet()) {
                 List<AlertItem> alertItems = configFileMap.get(generators);
@@ -480,9 +482,9 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         obs.onNext(toProto(execResult));
         obs.onCompleted();
     }
-
+    
     // ─── private helpers ──────────────────────────────────────────────────────
-
+    
     private static ExecResult doInstall(InstallServiceRoleCommand command, Logger taskLog) {
         taskLog.info("开始安装软件包{}", command.getPackageName());
         String normalPkgDir = PkgInstallPathUtils.getInstallHomeName(command);
@@ -494,7 +496,7 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         }
         return installResult;
     }
-
+    
     private static InstallServiceHandler getInstallHandler(InstallServiceRoleCommand command) {
         List<InstallServiceHandler> handlers = ServiceLoaderUtil.loadList(InstallServiceHandler.class);
         handlers.sort(Comparator.comparing(InstallServiceHandler::getOrder));
@@ -509,7 +511,7 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         fallback.init(command);
         return fallback;
     }
-
+    
     @SafeVarargs
     private static ExecResult invokeFunctions(ThrowableSupplier<ExecResult>... actions) throws Exception {
         ExecResult result = ExecResult.error("no task called");
@@ -521,9 +523,9 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         }
         return result;
     }
-
+    
     private static ExecResult invokeHook(List<HookConfig> hooks, HookType type,
-            ServiceRoleResource resource, Map<String, String> globalVariables) {
+                                         ServiceRoleResource resource, Map<String, String> globalVariables) {
         if (hooks == null || hooks.isEmpty()) {
             return ExecResult.success();
         }
@@ -549,7 +551,7 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         }
         return result;
     }
-
+    
     private static ExecResultPb toProto(ExecResult r) {
         return ExecResultPb.newBuilder()
                 .setExecResult(r.getExecResult())

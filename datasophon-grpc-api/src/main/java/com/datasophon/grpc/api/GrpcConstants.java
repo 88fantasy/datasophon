@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.grpc.api;
 
 /**
@@ -37,25 +36,25 @@ package com.datasophon.grpc.api;
  * </ul>
  */
 public final class GrpcConstants {
-
+    
     /** Master gRPC server 默认端口（WorkerRegistryService + MasterCallbackService）。 */
     public static final int MASTER_GRPC_PORT = 18081;
-
+    
     /** Worker gRPC server 默认端口（WorkerCommandService）。 */
     public static final int WORKER_GRPC_PORT = 18082;
-
+    
     /**
      * Worker 心跳发送间隔（秒）。
      * Worker 侧 {@code MasterRegistryClient} 的 {@code scheduleWithFixedDelay} 使用此值。
      */
     public static final int HEARTBEAT_INTERVAL_SECONDS = 30;
-
+    
     /**
      * Master 侧心跳超时阈值（秒）= {@link #HEARTBEAT_INTERVAL_SECONDS} × 3。
      * 连续 3 次心跳缺失后，{@code WorkerRegistry} 将该 Worker 标记为离线。
      */
     public static final int HEARTBEAT_TIMEOUT_SECONDS = HEARTBEAT_INTERVAL_SECONDS * 3;
-
+    
     private GrpcConstants() {
         // 工具类，禁止实例化
     }

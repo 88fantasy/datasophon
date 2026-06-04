@@ -9,7 +9,7 @@ public class RawRepository {
     private Storage storage = new Storage();
     private Component component = new Component();
     private Raw raw = new Raw();
-
+    
     @Data
     public static class Raw {
         private ContentDisposition contentDisposition = ContentDisposition.ATTACHMENT;

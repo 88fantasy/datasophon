@@ -20,45 +20,44 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.command;
 
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.HookConfig;
 import com.datasophon.common.model.RunAs;
 import com.datasophon.common.model.ServiceConfig;
-import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
+import lombok.Data;
+
 @Data
 public class GenerateServiceConfigCommand implements Serializable, ServiceRoleResource {
-
+    
     private static final long serialVersionUID = -4211566568993105684L;
-
+    
     private Integer clusterId;
-
+    
     private String serviceName;
-
+    
     private String decompressPackageName;
     /**
      * 创建解压目录
      */
     private Boolean createDecompressDir;
-
+    
     private Integer myid;
-
+    
     private Map<Generators, List<ServiceConfig>> cofigFileMap;
-
+    
     private String serviceRoleName;
-
+    
     private RunAs runAs;
-
+    
     private String packageName;
-
+    
     private List<HookConfig> hooks;
-
-
+    
 }

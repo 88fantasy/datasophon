@@ -7,10 +7,9 @@ import lombok.Data;
  */
 @Data
 public class DAGExecCommand {
-
-
+    
     private String dagId;
-
+    
     private boolean restart;
-
+    
 }

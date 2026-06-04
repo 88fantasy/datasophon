@@ -20,15 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.strategy;
 
-import cn.hutool.core.net.NetUtil;
-import cn.hutool.db.DbUtil;
-import cn.hutool.db.ds.simple.SimpleDataSource;
-import cn.hutool.db.sql.SqlExecutor;
-import cn.hutool.json.JSONUtil;
-import cn.hutool.setting.dialect.Props;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
@@ -41,17 +34,16 @@ import com.datasophon.common.utils.ThrowableUtils;
 import com.datasophon.grpc.api.OlapNodeType;
 import com.datasophon.worker.grpc.MasterCallbackClient;
 import com.datasophon.worker.handler.ServiceHandler;
-import org.apache.commons.lang3.StringUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
+
+import cn.hutool.core.net.NetUtil;
+import cn.hutool.db.DbUtil;
+import cn.hutool.db.ds.simple.SimpleDataSource;
+import cn.hutool.db.sql.SqlExecutor;
+import cn.hutool.setting.dialect.Props;
 
 public class FEHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
     
@@ -104,7 +96,7 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
                 logger.info("第一次启动FE, 当前角色为master");
                 startResult = serviceHandler.start(command.getStartRunner(), command.getStatusRunner(), command, command.getRunAs());
                 // fe leader安装成功,初始化登录账号
-                if (startResult.getExecResult()){
+                if (startResult.getExecResult()) {
                     String password = OlapUtils.getUniPassword(feUniConfPath);
                     passwordInit(workPath, HostUtils.getLocalHostName(), password);
                 }
@@ -114,8 +106,8 @@ public class FEHandlerStrategy extends AbstractHandlerStrategy implements Servic
         }
         return startResult;
     }
-
-    private void passwordInit(String workPath, String masterHost, String password){
+    
+    private void passwordInit(String workPath, String masterHost, String password) {
         String feConfPath = workPath + Constants.SLASH + "fe" + Constants.SLASH + "conf" + Constants.SLASH + "fe.conf";
         Props props = Props.getProp(feConfPath, Charset.defaultCharset());
         String queryPort = props.getProperty("query_port");

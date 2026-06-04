@@ -12,149 +12,148 @@ package com.datasophon.grpc.api;
  * Protobuf enum {@code com.datasophon.grpc.OlapNodeType}
  */
 public enum OlapNodeType
-    implements com.google.protobuf.ProtocolMessageEnum {
-  /**
-   * <code>OLAP_NODE_TYPE_UNSPECIFIED = 0;</code>
-   */
-  OLAP_NODE_TYPE_UNSPECIFIED(0),
-  /**
-   * <pre>
-   * 添加 Backend（Doris BE / StarRocks BE）
-   * </pre>
-   *
-   * <code>ADD_BE = 1;</code>
-   */
-  ADD_BE(1),
-  /**
-   * <pre>
-   * 添加 FE Follower
-   * </pre>
-   *
-   * <code>ADD_FE_FOLLOWER = 2;</code>
-   */
-  ADD_FE_FOLLOWER(2),
-  /**
-   * <pre>
-   * 添加 FE Observer
-   * </pre>
-   *
-   * <code>ADD_FE_OBSERVER = 3;</code>
-   */
-  ADD_FE_OBSERVER(3),
-  UNRECOGNIZED(-1),
-  ;
-
-  /**
-   * <code>OLAP_NODE_TYPE_UNSPECIFIED = 0;</code>
-   */
-  public static final int OLAP_NODE_TYPE_UNSPECIFIED_VALUE = 0;
-  /**
-   * <pre>
-   * 添加 Backend（Doris BE / StarRocks BE）
-   * </pre>
-   *
-   * <code>ADD_BE = 1;</code>
-   */
-  public static final int ADD_BE_VALUE = 1;
-  /**
-   * <pre>
-   * 添加 FE Follower
-   * </pre>
-   *
-   * <code>ADD_FE_FOLLOWER = 2;</code>
-   */
-  public static final int ADD_FE_FOLLOWER_VALUE = 2;
-  /**
-   * <pre>
-   * 添加 FE Observer
-   * </pre>
-   *
-   * <code>ADD_FE_OBSERVER = 3;</code>
-   */
-  public static final int ADD_FE_OBSERVER_VALUE = 3;
-
-
-  public final int getNumber() {
-    if (this == UNRECOGNIZED) {
-      throw new java.lang.IllegalArgumentException(
-          "Can't get the number of an unknown enum value.");
+        implements
+            com.google.protobuf.ProtocolMessageEnum {
+    /**
+     * <code>OLAP_NODE_TYPE_UNSPECIFIED = 0;</code>
+     */
+    OLAP_NODE_TYPE_UNSPECIFIED(0),
+    /**
+     * <pre>
+     * 添加 Backend（Doris BE / StarRocks BE）
+     * </pre>
+     *
+     * <code>ADD_BE = 1;</code>
+     */
+    ADD_BE(1),
+    /**
+     * <pre>
+     * 添加 FE Follower
+     * </pre>
+     *
+     * <code>ADD_FE_FOLLOWER = 2;</code>
+     */
+    ADD_FE_FOLLOWER(2),
+    /**
+     * <pre>
+     * 添加 FE Observer
+     * </pre>
+     *
+     * <code>ADD_FE_OBSERVER = 3;</code>
+     */
+    ADD_FE_OBSERVER(3),
+    UNRECOGNIZED(-1),
+    ;
+    
+    /**
+     * <code>OLAP_NODE_TYPE_UNSPECIFIED = 0;</code>
+     */
+    public static final int OLAP_NODE_TYPE_UNSPECIFIED_VALUE = 0;
+    /**
+     * <pre>
+     * 添加 Backend（Doris BE / StarRocks BE）
+     * </pre>
+     *
+     * <code>ADD_BE = 1;</code>
+     */
+    public static final int ADD_BE_VALUE = 1;
+    /**
+     * <pre>
+     * 添加 FE Follower
+     * </pre>
+     *
+     * <code>ADD_FE_FOLLOWER = 2;</code>
+     */
+    public static final int ADD_FE_FOLLOWER_VALUE = 2;
+    /**
+     * <pre>
+     * 添加 FE Observer
+     * </pre>
+     *
+     * <code>ADD_FE_OBSERVER = 3;</code>
+     */
+    public static final int ADD_FE_OBSERVER_VALUE = 3;
+    
+    public final int getNumber() {
+        if (this == UNRECOGNIZED) {
+            throw new java.lang.IllegalArgumentException(
+                    "Can't get the number of an unknown enum value.");
+        }
+        return value;
     }
-    return value;
-  }
-
-  /**
-   * @param value The numeric wire value of the corresponding enum entry.
-   * @return The enum associated with the given numeric wire value.
-   * @deprecated Use {@link #forNumber(int)} instead.
-   */
-  @java.lang.Deprecated
-  public static OlapNodeType valueOf(int value) {
-    return forNumber(value);
-  }
-
-  /**
-   * @param value The numeric wire value of the corresponding enum entry.
-   * @return The enum associated with the given numeric wire value.
-   */
-  public static OlapNodeType forNumber(int value) {
-    switch (value) {
-      case 0: return OLAP_NODE_TYPE_UNSPECIFIED;
-      case 1: return ADD_BE;
-      case 2: return ADD_FE_FOLLOWER;
-      case 3: return ADD_FE_OBSERVER;
-      default: return null;
+    
+    /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
+     * @deprecated Use {@link #forNumber(int)} instead.
+     */
+    @java.lang.Deprecated
+    public static OlapNodeType valueOf(int value) {
+        return forNumber(value);
     }
-  }
-
-  public static com.google.protobuf.Internal.EnumLiteMap<OlapNodeType>
-      internalGetValueMap() {
-    return internalValueMap;
-  }
-  private static final com.google.protobuf.Internal.EnumLiteMap<
-      OlapNodeType> internalValueMap =
-        new com.google.protobuf.Internal.EnumLiteMap<OlapNodeType>() {
-          public OlapNodeType findValueByNumber(int number) {
-            return OlapNodeType.forNumber(number);
-          }
-        };
-
-  public final com.google.protobuf.Descriptors.EnumValueDescriptor
-      getValueDescriptor() {
-    if (this == UNRECOGNIZED) {
-      throw new java.lang.IllegalStateException(
-          "Can't get the descriptor of an unrecognized enum value.");
+    
+    /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
+     */
+    public static OlapNodeType forNumber(int value) {
+        switch (value) {
+            case 0:
+                return OLAP_NODE_TYPE_UNSPECIFIED;
+            case 1:
+                return ADD_BE;
+            case 2:
+                return ADD_FE_FOLLOWER;
+            case 3:
+                return ADD_FE_OBSERVER;
+            default:
+                return null;
+        }
     }
-    return getDescriptor().getValues().get(ordinal());
-  }
-  public final com.google.protobuf.Descriptors.EnumDescriptor
-      getDescriptorForType() {
-    return getDescriptor();
-  }
-  public static final com.google.protobuf.Descriptors.EnumDescriptor
-      getDescriptor() {
-    return com.datasophon.grpc.api.MasterProto.getDescriptor().getEnumTypes().get(0);
-  }
-
-  private static final OlapNodeType[] VALUES = values();
-
-  public static OlapNodeType valueOf(
-      com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
-    if (desc.getType() != getDescriptor()) {
-      throw new java.lang.IllegalArgumentException(
-        "EnumValueDescriptor is not for this type.");
+    
+    public static com.google.protobuf.Internal.EnumLiteMap<OlapNodeType> internalGetValueMap() {
+        return internalValueMap;
     }
-    if (desc.getIndex() == -1) {
-      return UNRECOGNIZED;
+    private static final com.google.protobuf.Internal.EnumLiteMap<OlapNodeType> internalValueMap =
+            new com.google.protobuf.Internal.EnumLiteMap<OlapNodeType>() {
+                public OlapNodeType findValueByNumber(int number) {
+                    return OlapNodeType.forNumber(number);
+                }
+            };
+    
+    public final com.google.protobuf.Descriptors.EnumValueDescriptor getValueDescriptor() {
+        if (this == UNRECOGNIZED) {
+            throw new java.lang.IllegalStateException(
+                    "Can't get the descriptor of an unrecognized enum value.");
+        }
+        return getDescriptor().getValues().get(ordinal());
     }
-    return VALUES[desc.getIndex()];
-  }
-
-  private final int value;
-
-  private OlapNodeType(int value) {
-    this.value = value;
-  }
-
-  // @@protoc_insertion_point(enum_scope:com.datasophon.grpc.OlapNodeType)
+    public final com.google.protobuf.Descriptors.EnumDescriptor getDescriptorForType() {
+        return getDescriptor();
+    }
+    public static final com.google.protobuf.Descriptors.EnumDescriptor getDescriptor() {
+        return com.datasophon.grpc.api.MasterProto.getDescriptor().getEnumTypes().get(0);
+    }
+    
+    private static final OlapNodeType[] VALUES = values();
+    
+    public static OlapNodeType valueOf(
+                                       com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+        if (desc.getType() != getDescriptor()) {
+            throw new java.lang.IllegalArgumentException(
+                    "EnumValueDescriptor is not for this type.");
+        }
+        if (desc.getIndex() == -1) {
+            return UNRECOGNIZED;
+        }
+        return VALUES[desc.getIndex()];
+    }
+    
+    private final int value;
+    
+    private OlapNodeType(int value) {
+        this.value = value;
+    }
+    
+    // @@protoc_insertion_point(enum_scope:com.datasophon.grpc.OlapNodeType)
 }
-

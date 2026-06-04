@@ -7,18 +7,17 @@ import lombok.Data;
  */
 @Data
 public class ClientOptions {
-
+    
     private String kubeConfig;
-
+    
     private String serverName;
-
+    
     private String serverCert;
-
+    
     private String token;
-
+    
     private String username;
-
+    
     private String password;
-
-
+    
 }

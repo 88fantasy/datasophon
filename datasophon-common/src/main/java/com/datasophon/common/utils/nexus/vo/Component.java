@@ -1,8 +1,8 @@
 package com.datasophon.common.utils.nexus.vo;
 
-import lombok.Data;
-
 import java.util.List;
+
+import lombok.Data;
 
 /**
  * @author zhanghuangbin
@@ -14,6 +14,6 @@ public class Component {
     private String format;
     private String name;
     private List<Assert> assets;
-
+    
     private String version;
 }

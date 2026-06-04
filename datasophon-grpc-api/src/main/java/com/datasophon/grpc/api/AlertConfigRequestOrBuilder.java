@@ -4,25 +4,25 @@
 // Protobuf Java Version: 3.25.5
 package com.datasophon.grpc.api;
 
-public interface AlertConfigRequestOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.AlertConfigRequest)
-    com.google.protobuf.MessageOrBuilder {
-
-  /**
-   * <code>int32 cluster_id = 1;</code>
-   * @return The clusterId.
-   */
-  int getClusterId();
-
-  /**
-   * <code>string config_map_json = 2;</code>
-   * @return The configMapJson.
-   */
-  java.lang.String getConfigMapJson();
-  /**
-   * <code>string config_map_json = 2;</code>
-   * @return The bytes for configMapJson.
-   */
-  com.google.protobuf.ByteString
-      getConfigMapJsonBytes();
+public interface AlertConfigRequestOrBuilder
+        extends
+            // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.AlertConfigRequest)
+            com.google.protobuf.MessageOrBuilder {
+    
+    /**
+     * <code>int32 cluster_id = 1;</code>
+     * @return The clusterId.
+     */
+    int getClusterId();
+    
+    /**
+     * <code>string config_map_json = 2;</code>
+     * @return The configMapJson.
+     */
+    java.lang.String getConfigMapJson();
+    /**
+     * <code>string config_map_json = 2;</code>
+     * @return The bytes for configMapJson.
+     */
+    com.google.protobuf.ByteString getConfigMapJsonBytes();
 }

@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.strategy;
 
 import com.datasophon.common.Constants;
@@ -30,28 +29,21 @@ import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
-import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.handler.ServiceHandler;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 
-import java.io.File;
-import java.net.URI;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 
 public class ApisixHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
-
+    
     public ApisixHandlerStrategy(String serviceName, String serviceRoleName) {
         super(serviceName, serviceRoleName);
     }
-
+    
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) {
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
@@ -59,7 +51,7 @@ public class ApisixHandlerStrategy extends AbstractHandlerStrategy implements Se
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {
             OsType os = ShellUtils.getOs();
             ArchType arch = ShellUtils.getArch();
-
+            
             ArrayList<String> commands = new ArrayList<>();
             sudo(command, commands);
             String rpmPath = workPath + Constants.SLASH + arch.getArch() + Constants.SLASH + os.getDesc();
@@ -83,7 +75,7 @@ public class ApisixHandlerStrategy extends AbstractHandlerStrategy implements Se
             }
             ExecResult execResult = ShellUtils.execShell(String.join(" ", commands));
             logger.info("install output: {}", execResult.getExecOut());
-
+            
             if (!execResult.getExecResult()) {
                 return execResult;
             }
@@ -94,8 +86,7 @@ public class ApisixHandlerStrategy extends AbstractHandlerStrategy implements Se
                 || CommandType.START_SERVICE.equals(command.getCommandType())
                 || CommandType.START_WITH_CONFIG.equals(command.getCommandType())
                 || CommandType.RESTART_SERVICE.equals(command.getCommandType())
-                || CommandType.RESTART_WITH_CONFIG.equals(command.getCommandType())
-        ) {
+                || CommandType.RESTART_WITH_CONFIG.equals(command.getCommandType())) {
             ArrayList<String> delConfigCommands = new ArrayList<>();
             sudo(command, delConfigCommands);
             delConfigCommands.add("rm");
@@ -107,8 +98,7 @@ public class ApisixHandlerStrategy extends AbstractHandlerStrategy implements Se
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
                 command, command.getRunAs(), command.isCheckStatus());
     }
-
-
+    
     private void sudo(ServiceRoleOperateCommand command, List<String> commands) {
         if (Objects.nonNull(command.getRunAs()) && StringUtils.isNotBlank(command.getRunAs().getUser())) {
             commands.add("sudo");

@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.utils;
 
 import org.apache.commons.collections.BeanMap;
@@ -52,8 +51,6 @@ public class CollectionUtils {
     private CollectionUtils() {
         throw new IllegalStateException("CollectionUtils class");
     }
-    
-
     
     public static boolean isNotEmpty(Collection coll) {
         return !isEmpty(coll);

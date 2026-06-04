@@ -4,19 +4,19 @@
 // Protobuf Java Version: 3.25.5
 package com.datasophon.grpc.api;
 
-public interface PingRequestOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.PingRequest)
-    com.google.protobuf.MessageOrBuilder {
-
-  /**
-   * <code>string message = 1;</code>
-   * @return The message.
-   */
-  java.lang.String getMessage();
-  /**
-   * <code>string message = 1;</code>
-   * @return The bytes for message.
-   */
-  com.google.protobuf.ByteString
-      getMessageBytes();
+public interface PingRequestOrBuilder
+        extends
+            // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.PingRequest)
+            com.google.protobuf.MessageOrBuilder {
+    
+    /**
+     * <code>string message = 1;</code>
+     * @return The message.
+     */
+    java.lang.String getMessage();
+    /**
+     * <code>string message = 1;</code>
+     * @return The bytes for message.
+     */
+    com.google.protobuf.ByteString getMessageBytes();
 }

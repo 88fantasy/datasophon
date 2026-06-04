@@ -1,16 +1,15 @@
 package com.datasophon.worker.utils;
 
-
-import cn.hutool.db.handler.RsHandler;
-import cn.hutool.db.sql.SqlExecutor;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SqlUtils {
+import cn.hutool.db.handler.RsHandler;
+import cn.hutool.db.sql.SqlExecutor;
 
+public class SqlUtils {
+    
     public static List<String> getTableList(Connection con) throws SQLException {
         return SqlExecutor.query(con, "SHOW TABLES", (RsHandler<List<String>>) rs -> {
             final List<String> result = new ArrayList<>();
@@ -20,23 +19,23 @@ public class SqlUtils {
             return result;
         });
     }
-
+    
     public static String removeCommentSql(String sql) {
         SqlCommentParser sqlCommentParser = new SqlCommentParser(sql);
         return sqlCommentParser.removeCommentSql();
     }
-
+    
     public static class SqlCommentParser {
-
+        
         private final String sql;
         private int pos;
         private int start = 0;
-
+        
         public SqlCommentParser(String sql) {
             this.sql = sql;
             this.pos = 0;
         }
-
+        
         public String removeCommentSql() {
             StringBuilder newSQL = new StringBuilder();
             int startIndex = 0;
@@ -55,9 +54,9 @@ public class SqlUtils {
                 }
             }
             return newSQL.toString();
-
+            
         }
-
+        
         /**
          * Get next comment of sql
          * <p>
@@ -82,7 +81,7 @@ public class SqlUtils {
                             }
                         }
                         break;
-
+                    
                     case '`':
                         start = pos;
                         ++pos;
@@ -94,7 +93,7 @@ public class SqlUtils {
                             }
                         }
                         break;
-
+                    
                     case '\"':
                         start = pos;
                         ++pos;
@@ -106,7 +105,7 @@ public class SqlUtils {
                             }
                         }
                         break;
-
+                    
                     // parse the type of comment
                     case '/':
                         // possible start of '/*'
@@ -125,7 +124,7 @@ public class SqlUtils {
                                 return new Comment(startIndex, endIndex);
                             }
                         }
-
+                        
                     case '-':
                         // possible start of '--' comment
                         if (c == '-' && pos + 1 < sql.length() && sql.charAt(pos + 1) == '-') {
@@ -134,15 +133,14 @@ public class SqlUtils {
                             Integer endIndex = pos;
                             return new Comment(startIndex, endIndex);
                         }
-
+                        
                     default:
                         if (isOpenQuote(c)) {
                             break;
                         } else {
                             // parse the type of ID
                             ++pos;
-                            loop:
-                            while (pos < sql.length()) {
+                            loop: while (pos < sql.length()) {
                                 c = sql.charAt(pos);
                                 switch (c) {
                                     case '\'':
@@ -164,7 +162,7 @@ public class SqlUtils {
             }
             return null;
         }
-
+        
         private boolean isOpenQuote(char character) {
             if (character == '\"') {
                 return true;
@@ -175,7 +173,7 @@ public class SqlUtils {
             }
             return false;
         }
-
+        
         private int indexOfLineEnd(String sql, int i) {
             int length = sql.length();
             while (i < length) {
@@ -191,12 +189,12 @@ public class SqlUtils {
             return i;
         }
     }
-
+    
     public static class Comment {
-
+        
         private Integer startIndex;
         private Integer endIndex;
-
+        
         Comment(Integer startIndex, Integer endIndex) {
             this.startIndex = startIndex;
             this.endIndex = endIndex;

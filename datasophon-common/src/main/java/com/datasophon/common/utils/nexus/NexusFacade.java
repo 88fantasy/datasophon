@@ -5,6 +5,7 @@ import com.datasophon.common.model.uni.NexusUri;
 import com.datasophon.common.utils.nexus.client.CommonNexusClient;
 import com.datasophon.common.utils.nexus.client.HelmRepoClient;
 import com.datasophon.common.utils.nexus.client.RawRepoClient;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -12,10 +13,10 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class NexusFacade {
-
+    
     public static final String RAW_REPO = "raw";
     public static final String HELM_REPO = "helm";
-
+    
     public static NexusUri getNexusUri() {
         NexusUri uri = new NexusUri();
         uri.setEnabled(Constants.NEXUS_ENABLE);
@@ -26,19 +27,17 @@ public class NexusFacade {
         uri.setPassword(Constants.NEXUS_PASSWORD);
         return uri;
     }
-
+    
     public static RawRepoClient getRawRepoClient() {
         return new RawRepoClient(RAW_REPO);
     }
-
+    
     public static HelmRepoClient getHelmClient() {
         return new HelmRepoClient(HELM_REPO);
     }
-
-
+    
     public static CommonNexusClient getCommonClient() {
         return new CommonNexusClient();
     }
-
-
+    
 }

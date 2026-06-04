@@ -20,24 +20,20 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.command;
-
-import lombok.Data;
 
 import java.io.Serializable;
 
-@Data
-public class GetLogCommand implements Serializable{
+import lombok.Data;
 
+@Data
+public class GetLogCommand implements Serializable {
+    
     private static final long serialVersionUID = 7545190998721469036L;
     private String logFile;
-
-
+    
     private String baseDir;
-
-
+    
     private String runAsUser;
-
     
 }

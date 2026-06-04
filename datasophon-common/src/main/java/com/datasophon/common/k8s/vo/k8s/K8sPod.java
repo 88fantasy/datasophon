@@ -1,10 +1,11 @@
 package com.datasophon.common.k8s.vo.k8s;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
+
+import lombok.Data;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * K8s Pod 资源
@@ -16,7 +17,7 @@ public class K8sPod {
     private Metadata metadata;
     private PodSpec spec;
     private PodStatus status;
-
+    
     @Data
     public static class Metadata {
         private String name;
@@ -30,7 +31,7 @@ public class K8sPod {
         private String finalizers;
         private String managedFields;
     }
-
+    
     @Data
     public static class OwnerReference {
         private String apiVersion;
@@ -40,16 +41,16 @@ public class K8sPod {
         private Boolean controller;
         private Boolean blockOwnerDeletion;
     }
-
+    
     @Data
     public static class PodSpec {
         @JsonProperty("nodeName")
         private String nodeName;
         @JsonProperty("serviceAccountName")
         private String serviceAccountName;
-
+        
         private String serviceAccount;
-
+        
         @JsonProperty("containers")
         private List<Container> containers;
         @JsonProperty("initContainers")
@@ -64,7 +65,7 @@ public class K8sPod {
         private List<HostAlias> hostAliases;
         @JsonProperty("nodeSelector")
         private Map<String, String> nodeSelector;
-
+        
         @JsonProperty("volumes")
         private List<Volume> volumes;
         @JsonProperty("runtimeClassName")
@@ -79,7 +80,7 @@ public class K8sPod {
         private Boolean hostPID;
         @JsonProperty("hostIPC")
         private Boolean hostIPC;
-
+        
         @JsonProperty("imagePullSecrets")
         private List<LocalObjectReference> imagePullSecrets;
         @JsonProperty("enableServiceLinks")
@@ -97,7 +98,7 @@ public class K8sPod {
         @JsonProperty("resourceClaims")
         private List<ResourceClaim> resourceClaims;
     }
-
+    
     @Data
     public static class Container {
         @JsonProperty("name")
@@ -145,7 +146,7 @@ public class K8sPod {
         @JsonProperty("tty")
         private Boolean tty;
     }
-
+    
     @Data
     public static class ContainerPort {
         @JsonProperty("name")
@@ -159,7 +160,7 @@ public class K8sPod {
         @JsonProperty("protocol")
         private String protocol;
     }
-
+    
     @Data
     public static class EnvVar {
         @JsonProperty("name")
@@ -169,7 +170,7 @@ public class K8sPod {
         @JsonProperty("valueFrom")
         private EnvVarSource valueFrom;
     }
-
+    
     @Data
     public static class EnvVarSource {
         @JsonProperty("configMapKeyRef")
@@ -181,34 +182,34 @@ public class K8sPod {
         @JsonProperty("resourceFieldRef")
         private ResourceFieldRef resourceFieldRef;
     }
-
+    
     @Data
     public static class ConfigMapKeyRef {
         private String name;
         private String key;
         private Boolean optional;
     }
-
+    
     @Data
     public static class SecretKeyRef {
         private String name;
         private String key;
         private Boolean optional;
     }
-
+    
     @Data
     public static class FieldRef {
         private String apiVersion;
         private String fieldPath;
     }
-
+    
     @Data
     public static class ResourceFieldRef {
         private String containerName;
         private String resource;
         private String divisor;
     }
-
+    
     @Data
     public static class VolumeMount {
         private String name;
@@ -225,13 +226,13 @@ public class K8sPod {
         @JsonProperty("recursiveReadOnly")
         private String recursiveReadOnly;
     }
-
+    
     @Data
     public static class VolumeDevice {
         private String name;
         private String devicePath;
     }
-
+    
     @Data
     public static class EnvFromSource {
         private String prefix;
@@ -240,19 +241,19 @@ public class K8sPod {
         @JsonProperty("secretRef")
         private SecretRef secretRef;
     }
-
+    
     @Data
     public static class ConfigMapRef {
         private String name;
         private Boolean optional;
     }
-
+    
     @Data
     public static class SecretRef {
         private String name;
         private Boolean optional;
     }
-
+    
     @Data
     public static class Probe {
         @JsonProperty("httpGet")
@@ -276,7 +277,7 @@ public class K8sPod {
         @JsonProperty("terminationGracePeriodSeconds")
         private Integer terminationGracePeriodSeconds;
     }
-
+    
     @Data
     public static class HTTPGet {
         private String path;
@@ -287,30 +288,30 @@ public class K8sPod {
         private List<HTTPHeader> httpHeaders;
         private String host;
     }
-
+    
     @Data
     public static class HTTPHeader {
         private String name;
         private String value;
     }
-
+    
     @Data
     public static class Exec {
         private List<String> command;
     }
-
+    
     @Data
     public static class TCPSocket {
         private String port;
         private String host;
     }
-
+    
     @Data
     public static class GRPC {
         private Integer port;
         private String service;
     }
-
+    
     @Data
     public static class Lifecycle {
         @JsonProperty("postStart")
@@ -318,7 +319,7 @@ public class K8sPod {
         @JsonProperty("preStop")
         private Handler preStop;
     }
-
+    
     @Data
     public static class Handler {
         @JsonProperty("httpGet")
@@ -330,12 +331,12 @@ public class K8sPod {
         @JsonProperty("sleep")
         private Sleep sleep;
     }
-
+    
     @Data
     public static class Sleep {
         private Long seconds;
     }
-
+    
     @Data
     public static class ContainerSecurityContext {
         @JsonProperty("privileged")
@@ -357,19 +358,19 @@ public class K8sPod {
         @JsonProperty("procMount")
         private String procMount;
     }
-
+    
     @Data
     public static class Capabilities {
         private List<String> add;
         private List<String> drop;
     }
-
+    
     @Data
     public static class SeccompProfile {
         private String type;
         private String localhostProfile;
     }
-
+    
     @Data
     public static class ResourceRequirements {
         @JsonProperty("requests")
@@ -379,18 +380,18 @@ public class K8sPod {
         @JsonProperty("claims")
         private List<ResourceClaim> claims;
     }
-
+    
     @Data
     public static class ResourceClaim {
         private String name;
     }
-
+    
     @Data
     public static class HostAlias {
         private String ip;
         private List<String> hostnames;
     }
-
+    
     @Data
     public static class NodeAffinity {
         @JsonProperty("requiredDuringSchedulingIgnoredDuringExecution")
@@ -398,56 +399,51 @@ public class K8sPod {
         @JsonProperty("preferredDuringSchedulingIgnoredDuringExecution")
         private List<PreferredSchedulingTerm> preferredDuringSchedulingIgnoredDuringExecution;
     }
-
+    
     @Data
     public static class NodeSelector {
         private List<NodeSelectorTerm> nodeSelectorTerms;
     }
-
+    
     @Data
     public static class NodeSelectorTerm {
         private List<NodeSelectorRequirement> matchExpressions;
         private List<NodeSelectorRequirement> matchFields;
     }
-
+    
     @Data
     public static class NodeSelectorRequirement {
         private String key;
         private String operator;
         private List<String> values;
     }
-
+    
     @Data
     public static class PreferredSchedulingTerm {
         private Integer weight;
         private NodeSelectorTerm preference;
     }
-
-
-
+    
     @Data
     public static class Volume {
         private String name;
     }
-
-
+    
     @Data
     public static class LocalObjectReference {
         private String name;
     }
-
-
-
+    
     @Data
     public static class PodOS {
         private String name;
     }
-
+    
     @Data
     public static class SchedulingGate {
         private String name;
     }
-
+    
     @Data
     public static class PodStatus {
         @JsonProperty("phase")
@@ -477,17 +473,17 @@ public class K8sPod {
         @JsonProperty("resourceClaimStatuses")
         private List<ResourceClaimStatus> resourceClaimStatuses;
     }
-
+    
     @Data
     public static class PodIP {
         private String ip;
     }
-
+    
     @Data
     public static class HostIP {
         private String ip;
     }
-
+    
     @Data
     public static class ContainerStatus {
         @JsonProperty("name")
@@ -509,7 +505,7 @@ public class K8sPod {
         @JsonProperty("containerID")
         private String containerID;
     }
-
+    
     @Data
     public static class ContainerState {
         @JsonProperty("waiting")
@@ -519,7 +515,7 @@ public class K8sPod {
         @JsonProperty("terminated")
         private TerminatedState terminated;
     }
-
+    
     @Data
     public static class WaitingState {
         @JsonProperty("reason")
@@ -527,13 +523,13 @@ public class K8sPod {
         @JsonProperty("message")
         private String message;
     }
-
+    
     @Data
     public static class RunningState {
         @JsonProperty("startedAt")
         private String startedAt;
     }
-
+    
     @Data
     public static class TerminatedState {
         @JsonProperty("exitCode")
@@ -551,7 +547,7 @@ public class K8sPod {
         @JsonProperty("containerID")
         private String containerID;
     }
-
+    
     @Data
     public static class Condition {
         @JsonProperty("type")
@@ -569,7 +565,7 @@ public class K8sPod {
         @JsonProperty("lastProbeTime")
         private String lastProbeTime;
     }
-
+    
     @Data
     public static class ResourceClaimStatus {
         private String name;

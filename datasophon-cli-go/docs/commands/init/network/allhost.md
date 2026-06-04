@@ -20,9 +20,9 @@ datasophon-cli [--dry-run] init allHost \
 
 ## 配置文件依赖
 
-| 字段 | 说明 |
-|---|---|
-| `nodes[*].ip` | 节点 IP，写入 /etc/hosts |
+|         字段          |         说明          |
+|---------------------|---------------------|
+| `nodes[*].ip`       | 节点 IP，写入 /etc/hosts |
 | `nodes[*].hostname` | 节点 hostname，与 ip 对应 |
 
 ## 示例
@@ -43,12 +43,13 @@ datasophon-cli init allHost \
 
 ## 退出码 / 常见错误
 
-| 错误信息 | 根因 | 处置 |
-|---|---|---|
-| `nodes 列表为空` | 配置文件中未填写 nodes | 检查 cluster-sample.yml 的 nodes 列表 |
-| 文件权限错误 | /etc/hosts 写入失败 | 确认以 root 用户运行 |
+|     错误信息     |       根因        |                处置                |
+|--------------|-----------------|----------------------------------|
+| `nodes 列表为空` | 配置文件中未填写 nodes  | 检查 cluster-sample.yml 的 nodes 列表 |
+| 文件权限错误       | /etc/hosts 写入失败 | 确认以 root 用户运行                    |
 
 ## 相关命令
 
 - [`init hostname`](./hostname.md) — 先设置单节点主机名
 - [DAG 步骤表](../../../reference/init-all-dag.md)
+

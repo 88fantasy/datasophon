@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.grpc;
 
 import com.datasophon.grpc.api.GrpcConstants;
@@ -28,13 +27,15 @@ import com.datasophon.grpc.api.MasterCallbackServiceGrpc;
 import com.datasophon.grpc.api.OlapNodeType;
 import com.datasophon.grpc.api.OlapRegistrationRequest;
 import com.datasophon.grpc.api.OlapRegistrationResponse;
+
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Worker 端 → Master 反向回调 gRPC 客户端（静态 Holder）。
@@ -46,15 +47,15 @@ import java.util.concurrent.TimeUnit;
  * 独立 Channel 以便单独关闭。</p>
  */
 public class MasterCallbackClient implements AutoCloseable {
-
+    
     private static final Logger log = LoggerFactory.getLogger(MasterCallbackClient.class);
-
+    
     /** 静态单例，由 init() 设置，策略类通过 getInstance() 获取 */
     private static MasterCallbackClient instance;
-
+    
     private final ManagedChannel channel;
     private final MasterCallbackServiceGrpc.MasterCallbackServiceBlockingStub stub;
-
+    
     private MasterCallbackClient(String masterHost) {
         this.channel = ManagedChannelBuilder
                 .forAddress(masterHost, GrpcConstants.MASTER_GRPC_PORT)
@@ -62,7 +63,7 @@ public class MasterCallbackClient implements AutoCloseable {
                 .build();
         this.stub = MasterCallbackServiceGrpc.newBlockingStub(channel);
     }
-
+    
     /**
      * 在 Worker 启动时初始化单例。必须在策略类使用前调用。
      *
@@ -72,14 +73,14 @@ public class MasterCallbackClient implements AutoCloseable {
         instance = new MasterCallbackClient(masterHost);
         log.info("MasterCallbackClient initialized, master={}", masterHost);
     }
-
+    
     /**
      * 获取单例。若未初始化则返回 null（调用方应降级到本地 OlapUtils）。
      */
     public static MasterCallbackClient getInstance() {
         return instance;
     }
-
+    
     /**
      * 通知 Master 将本节点注册到 OLAP 集群。
      *
@@ -113,7 +114,7 @@ public class MasterCallbackClient implements AutoCloseable {
             return false;
         }
     }
-
+    
     @Override
     public void close() {
         channel.shutdown();

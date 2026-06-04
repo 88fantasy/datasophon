@@ -1,17 +1,7 @@
 package com.datasophon.common.utils;
 
-import cn.hutool.core.io.IoUtil;
 import com.datasophon.common.enums.SSHAuthType;
-import com.jcraft.jsch.Channel;
-import com.jcraft.jsch.ChannelExec;
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.ChannelShell;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-import com.jcraft.jsch.SftpATTRS;
-import com.jcraft.jsch.SftpException;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedReader;
@@ -30,6 +20,20 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import lombok.extern.slf4j.Slf4j;
+
+import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelExec;
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.ChannelShell;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.SftpATTRS;
+import com.jcraft.jsch.SftpException;
+
+import cn.hutool.core.io.IoUtil;
+
 @Slf4j
 public class JschUtils {
     
@@ -37,22 +41,22 @@ public class JschUtils {
         JSch jSch = new JSch();
         Session session;
         try {
-            if(StringUtils.isEmpty(userName)) {
+            if (StringUtils.isEmpty(userName)) {
                 userName = "root";
             }
             // 创建连接
             log.info("正在连接服务器{}@{}", userName, ip);
             session = jSch.getSession(userName, ip, port);
             String publicKey = String.format("/%s/.ssh/id_rsa", userName);
-            if(!"root".equals(userName)) {
+            if (!"root".equals(userName)) {
                 publicKey = String.format("/home/%s/.ssh/id_rsa", userName);
             }
             if (sshAuthType == SSHAuthType.PASSWORD) {
                 session.setPassword(password);
-            } else if(sshAuthType == SSHAuthType.PUBLICKEY) {
+            } else if (sshAuthType == SSHAuthType.PUBLICKEY) {
                 jSch.addIdentity(publicKey);
-            } else if(sshAuthType == SSHAuthType.AUTO) {
-                if(new File(publicKey).exists()) {
+            } else if (sshAuthType == SSHAuthType.AUTO) {
+                if (new File(publicKey).exists()) {
                     jSch.addIdentity(publicKey);
                 } else {
                     session.setPassword(password);
@@ -83,7 +87,7 @@ public class JschUtils {
         }
     }
     
-    public static ExecResult execForStr(Session session, String command){
+    public static ExecResult execForStr(Session session, String command) {
         InputStream in = null;
         Channel channel = null;
         ExecResult result = new ExecResult();
@@ -124,7 +128,7 @@ public class JschUtils {
         }
         return result;
     }
-    public static ExecResult shellForExp(Session session, String command, Map<String, String> expects){
+    public static ExecResult shellForExp(Session session, String command, Map<String, String> expects) {
         InputStream is = null;
         BufferedReader bufReader = null;
         OutputStream os = null;
@@ -136,35 +140,35 @@ public class JschUtils {
             channel = (ChannelShell) session.openChannel("shell");
             is = channel.getInputStream();
             os = channel.getOutputStream();
-
-            os.write(command.getBytes()); //输入命令
-            os.write('\n'); //输入换行执行
+            
+            os.write(command.getBytes()); // 输入命令
+            os.write('\n'); // 输入换行执行
             os.flush();
             // FIXME 由于读取执行结果是阻塞的，必须等待指令执行一段时间，具体多少不好斟酌
             TimeUnit.SECONDS.sleep(500);
-
+            
             // 读取通道的输出
             bufReader = new BufferedReader(new InputStreamReader(is));
             String line = "";
-            while (Objects.nonNull((line = bufReader.readLine()))){
+            while (Objects.nonNull((line = bufReader.readLine()))) {
                 execOut.append(line);
                 if (Objects.nonNull(expects)) {
-                    for(Map.Entry<String, String> entry : expects.entrySet()) {
-                        if(line.contains(entry.getKey())) {
+                    for (Map.Entry<String, String> entry : expects.entrySet()) {
+                        if (line.contains(entry.getKey())) {
                             os.write(entry.getValue().getBytes());
-                            os.write('\n'); //输入换行执行
+                            os.write('\n'); // 输入换行执行
                             os.flush();
                             break;
                         }
                     }
                 }
             }
-            os.write("exit".getBytes()); //退出命令
-            os.write('\n'); //输入换行执行
+            os.write("exit".getBytes()); // 退出命令
+            os.write('\n'); // 输入换行执行
             os.flush();
             result.setExecResult(true);
             result.setExecOut(execOut.toString());
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {
             IoUtil.close(os);
@@ -252,7 +256,7 @@ public class JschUtils {
         return Arrays.asList(fileString.split("\n"));
     }
     
-    public static String getFileString(Session session, String path, int connectTimeout){
+    public static String getFileString(Session session, String path, int connectTimeout) {
         ChannelSftp channel = null;
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -304,7 +308,7 @@ public class JschUtils {
         return result;
     }
     
-    public static ExecResult sendDir(Session session, String localDirPath, String remoteDirPath, int connectTimeout,boolean isVisual) {
+    public static ExecResult sendDir(Session session, String localDirPath, String remoteDirPath, int connectTimeout, boolean isVisual) {
         ExecResult result = new ExecResult();
         ChannelSftp channel = null;
         try {
@@ -318,15 +322,14 @@ public class JschUtils {
             log.error(e.getMessage(), e);
             result.setExecErrOut(e.getMessage());
             throw new RuntimeException(e);
-        }  finally {
+        } finally {
             if (channel != null && channel.isConnected()) {
                 channel.disconnect();
             }
         }
         return result;
     }
-
-
+    
     public static ExecResult ensureRemotePathExists(Session session, String remotePath) {
         ExecResult result = new ExecResult();
         ChannelSftp channel = null;
@@ -337,20 +340,20 @@ public class JschUtils {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             result.setExecErrOut(e.getMessage());
-        }  finally {
+        } finally {
             if (channel != null && channel.isConnected()) {
                 channel.disconnect();
             }
         }
         return result;
     }
-
+    
     private static ExecResult ensureRemotePathExists(String host, ChannelSftp channel, String remotePath) {
         if (remotePath == null || !remotePath.startsWith("/")) {
             return ExecResult.error("Invalid remote path: must be non-null and absolute (start with '/').");
         }
-
-        String normalizedPath = remotePath.equals("/") ? "/" : remotePath.endsWith("/") ? remotePath.substring(0, remotePath.length() -1) : remotePath;
+        
+        String normalizedPath = remotePath.equals("/") ? "/" : remotePath.endsWith("/") ? remotePath.substring(0, remotePath.length() - 1) : remotePath;
         try {
             channel.stat(normalizedPath);
             log.info("dir:{} is exist, host:{}", remotePath, host);
@@ -360,14 +363,14 @@ public class JschUtils {
                 return ExecResult.error("Failed to check existence of remote path '" + normalizedPath + "': " + e.getMessage());
             }
         }
-
+        
         log.info("create dir: {} at {}", remotePath, host);
-
+        
         String[] parts = normalizedPath.substring(1).split("/");
         StringBuilder currentPath = new StringBuilder("/");
-
+        
         for (String part : parts) {
-            if (part.isEmpty()){
+            if (part.isEmpty()) {
                 continue;
             }
             currentPath.append(part);
@@ -387,13 +390,13 @@ public class JschUtils {
             }
             currentPath.append("/");
         }
-
+        
         return ExecResult.success();
     }
-
+    
     private static ExecResult sendDirChannel(ChannelSftp channel, String localDirPath, String remoteDirPath, boolean isVisual) {
         log.info("sendDirChannel localDirPath:{}, remoteDirPath:{} start", localDirPath, remoteDirPath);
-
+        
         ExecResult result = new ExecResult();
         try {
             File src = new File(localDirPath);
@@ -434,7 +437,7 @@ public class JschUtils {
         log.info("sendDirChannel localDirPath:{}, remoteDirPath:{} end", localDirPath, remoteDirPath);
         return result;
     }
-
+    
     public static ExecResult exists(Session session, String path, int connectTimeout) {
         ExecResult result = new ExecResult();
         ChannelSftp channel = null;
@@ -447,14 +450,14 @@ public class JschUtils {
         } catch (Exception e) {
             log.warn(path, e.getMessage());
             result.setExecErrOut(e.getMessage());
-        }  finally {
+        } finally {
             if (channel != null && channel.isConnected()) {
                 channel.disconnect();
             }
         }
         return result;
     }
-
+    
     public static ExecResult createDir(Session session, String dirPath, int connectTimeout) {
         ChannelSftp channel = null;
         ExecResult result = new ExecResult();
@@ -468,7 +471,7 @@ public class JschUtils {
                     continue;
                 }
                 currentDir += "/" + dir;
-                if (!isDirExist(channel,currentDir)) {
+                if (!isDirExist(channel, currentDir)) {
                     channel.mkdir(currentDir);
                 }
             }
@@ -483,7 +486,7 @@ public class JschUtils {
         }
         return result;
     }
-
+    
     private static boolean isDirExist(ChannelSftp channelSftp, String dir) {
         try {
             SftpATTRS attrs = channelSftp.lstat(dir);

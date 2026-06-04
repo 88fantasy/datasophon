@@ -6,6 +6,5 @@ import lombok.Data;
 public class ImageHostPlatform {
     private String architecture;
     private String os;
-
-
+    
 }

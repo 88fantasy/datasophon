@@ -20,12 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.grpc;
 
-import com.datasophon.common.Constants;
-import com.datasophon.common.cache.CacheUtils;
-import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.grpc.api.GrpcConstants;
 import com.datasophon.grpc.api.HeartbeatRequest;
 import com.datasophon.grpc.api.HeartbeatResponse;
@@ -37,13 +33,14 @@ import com.datasophon.grpc.api.WorkerRegistryServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Worker 端 gRPC 客户端：向 Master 注册节点并维持心跳。
@@ -57,22 +54,22 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  */
 public class MasterRegistryClient implements AutoCloseable {
-
+    
     private static final Logger log = LoggerFactory.getLogger(MasterRegistryClient.class);
-
+    
     // 端口与心跳常量统一从 GrpcConstants 读取，避免两端各自硬编码
-
+    
     private final ManagedChannel channel;
     private final WorkerRegistryServiceGrpc.WorkerRegistryServiceBlockingStub stub;
     private final ScheduledExecutorService scheduler;
     private ScheduledFuture<?> heartbeatTask;
-
+    
     private final String hostname;
     private final String ip;
     private final String masterHost;
     private final String cpuArchitecture;
     private final int clusterId;
-
+    
     /**
      * 构造 MasterRegistryClient。
      *
@@ -83,13 +80,13 @@ public class MasterRegistryClient implements AutoCloseable {
      * @param clusterId        所属集群 ID
      */
     public MasterRegistryClient(String masterHost, String hostname, String ip,
-                                 String cpuArchitecture, int clusterId) {
+                                String cpuArchitecture, int clusterId) {
         this.masterHost = masterHost;
         this.hostname = hostname;
         this.ip = ip;
         this.cpuArchitecture = cpuArchitecture;
         this.clusterId = clusterId;
-
+        
         this.channel = ManagedChannelBuilder
                 .forAddress(masterHost, GrpcConstants.MASTER_GRPC_PORT)
                 .usePlaintext()
@@ -101,7 +98,7 @@ public class MasterRegistryClient implements AutoCloseable {
             return t;
         });
     }
-
+    
     /**
      * 向 Master 注册本节点，注册成功后启动心跳定时器。
      */
@@ -131,7 +128,7 @@ public class MasterRegistryClient implements AutoCloseable {
             startHeartbeat();
         }
     }
-
+    
     /** 主动注销并取消心跳。 */
     public void unregister() {
         if (heartbeatTask != null) {
@@ -145,7 +142,7 @@ public class MasterRegistryClient implements AutoCloseable {
             log.warn("Worker gRPC unregister failed: {}", e.getStatus());
         }
     }
-
+    
     @Override
     public void close() {
         unregister();
@@ -166,9 +163,9 @@ public class MasterRegistryClient implements AutoCloseable {
             Thread.currentThread().interrupt();
         }
     }
-
+    
     // ─── private helpers ──────────────────────────────────────────────────────
-
+    
     private void startHeartbeat() {
         // 先取消旧任务，保证同一时刻只有一个心跳定时器在运行（H2 修复）
         if (heartbeatTask != null) {
@@ -180,7 +177,7 @@ public class MasterRegistryClient implements AutoCloseable {
                 GrpcConstants.HEARTBEAT_INTERVAL_SECONDS,
                 TimeUnit.SECONDS);
     }
-
+    
     private void sendHeartbeat() {
         try {
             HeartbeatResponse resp = stub

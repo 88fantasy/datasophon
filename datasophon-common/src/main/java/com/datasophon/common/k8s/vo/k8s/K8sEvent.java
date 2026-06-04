@@ -1,7 +1,8 @@
 package com.datasophon.common.k8s.vo.k8s;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * K8s Event 资源
@@ -23,7 +24,7 @@ public class K8sEvent {
     private String eventTime;
     private String reportingComponent;
     private String reportingInstance;
-
+    
     @Data
     public static class Metadata {
         private String name;
@@ -32,7 +33,7 @@ public class K8sEvent {
         private String resourceVersion;
         private String creationTimestamp;
     }
-
+    
     @Data
     public static class InvolvedObject {
         @JsonProperty("kind")
@@ -50,7 +51,7 @@ public class K8sEvent {
         @JsonProperty("fieldPath")
         private String fieldPath;
     }
-
+    
     @Data
     public static class EventSource {
         @JsonProperty("component")

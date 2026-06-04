@@ -25,23 +25,23 @@ datasophon-cli [--dry-run] create yum-server \
 
 ## 参数 / Flags
 
-| flag | 简写 | 类型 | 默认 | 必填 | 说明 |
-|---|---|---|---|---|---|
-| `--config` | `-c` | string | `""` | 否 | 配置文件路径；指定后进入配置文件模式 |
-| `--datasophonPath` | 无 | string | `""` | 配置文件模式必填 | datasophon 根目录（推导 `<datasophonPath>/datasophon-init/packages`） |
-| `--packagePath` | `-p` | string | `""` | 手动模式必填 | 安装包根目录（须包含 `os/<arch>/<os>/` 结构） |
-| `--serverIp` | 无 | string | `""` | 手动模式必填 | httpd 服务绑定 IP |
-| `--serverPort` | 无 | string | `""` | 手动模式必填 | httpd 服务端口 |
+|        flag        |  简写  |   类型   |  默认  |    必填    |                               说明                               |
+|--------------------|------|--------|------|----------|----------------------------------------------------------------|
+| `--config`         | `-c` | string | `""` | 否        | 配置文件路径；指定后进入配置文件模式                                             |
+| `--datasophonPath` | 无    | string | `""` | 配置文件模式必填 | datasophon 根目录（推导 `<datasophonPath>/datasophon-init/packages`） |
+| `--packagePath`    | `-p` | string | `""` | 手动模式必填   | 安装包根目录（须包含 `os/<arch>/<os>/` 结构）                               |
+| `--serverIp`       | 无    | string | `""` | 手动模式必填   | httpd 服务绑定 IP                                                  |
+| `--serverPort`     | 无    | string | `""` | 手动模式必填   | httpd 服务端口                                                     |
 
 > 继承全局 flag：`--dry-run` —— 详见 [global-flags.md](../../global-flags.md)
 
 ## 配置文件依赖（配置文件模式）
 
-| 字段 | 说明 |
-|---|---|
-| `global.yumServer.node` | yumServer 节点 hostname（须在 `nodes` 列表中；其 `ip` 用作 `serverIp`） |
-| `global.yumServer.listenPort` | httpd 监听端口（用作 `serverPort`） |
-| `global.sshAuthType` | SSH 鉴权方式 |
+|              字段               |                             说明                             |
+|-------------------------------|------------------------------------------------------------|
+| `global.yumServer.node`       | yumServer 节点 hostname（须在 `nodes` 列表中；其 `ip` 用作 `serverIp`） |
+| `global.yumServer.listenPort` | httpd 监听端口（用作 `serverPort`）                                |
+| `global.sshAuthType`          | SSH 鉴权方式                                                   |
 
 ## 包目录结构约定
 
@@ -82,15 +82,16 @@ datasophon-cli create yum-server \
 
 ## 退出码 / 常见错误
 
-| 错误信息 | 根因 | 处置 |
-|---|---|---|
-| `配置文件模式下 --datasophonPath 为必填项` | 指定了 `-c` 但未给 `--datasophonPath` | 补全 `--datasophonPath` |
-| `--datasophonPath 必须是绝对路径（以 / 开头）` | 传入了相对路径 | 改用 `/` 开头的绝对路径 |
-| `配置中未找到 yumServer 节点: <hostname>` | `global.yumServer.node` 不在 `nodes` 列表中 | 检查 hostname 拼写 |
-| `手动模式下以下参数为必填项: <list>` | 手动模式缺参数 | 补全 `--packagePath` / `--serverIp` / `--serverPort` |
-| `安装成功但写回配置文件失败` | 配置文件写权限不足 | 检查写权限 |
+|                错误信息                |                   根因                   |                         处置                         |
+|------------------------------------|----------------------------------------|----------------------------------------------------|
+| `配置文件模式下 --datasophonPath 为必填项`    | 指定了 `-c` 但未给 `--datasophonPath`        | 补全 `--datasophonPath`                              |
+| `--datasophonPath 必须是绝对路径（以 / 开头）` | 传入了相对路径                                | 改用 `/` 开头的绝对路径                                     |
+| `配置中未找到 yumServer 节点: <hostname>`  | `global.yumServer.node` 不在 `nodes` 列表中 | 检查 hostname 拼写                                     |
+| `手动模式下以下参数为必填项: <list>`            | 手动模式缺参数                                | 补全 `--packagePath` / `--serverIp` / `--serverPort` |
+| `安装成功但写回配置文件失败`                    | 配置文件写权限不足                              | 检查写权限                                              |
 
 ## 相关命令
 
 - [`init offlineSlave`](../init/repo/offlineslave.md) — 其他节点配置使用本命令安装的离线源
 - [`create cluster`](./cluster.md) — 集群初始化（DAG 步骤 14 `init-offline-server` 复用同一 `InitOfflineServer` Task）
+

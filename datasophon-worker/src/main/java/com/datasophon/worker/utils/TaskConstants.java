@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.utils;
 
 public class TaskConstants {
@@ -112,10 +111,9 @@ public class TaskConstants {
      * get output log service
      */
     public static final String GET_OUTPUT_LOG_SERVICE = "-getOutputLogService";
-
-
+    
     public static String createLoggerName(String serviceName, String serviceRoleName, Class<?> handler) {
         return String.format("%s-%s-%s-%s", TASK_LOG_LOGGER_NAME, serviceName, serviceRoleName, handler.getSimpleName());
-
+        
     }
 }

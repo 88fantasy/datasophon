@@ -1,10 +1,11 @@
 package com.datasophon.common.k8s.vo.k8s;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
+
+import lombok.Data;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * K8s Service 资源
@@ -16,7 +17,7 @@ public class K8sService {
     private Metadata metadata;
     private ServiceSpec spec;
     private ServiceStatus status;
-
+    
     @Data
     public static class Metadata {
         private String name;
@@ -27,7 +28,7 @@ public class K8sService {
         private String resourceVersion;
         private String uid;
     }
-
+    
     @Data
     public static class ServiceSpec {
         private String type;
@@ -53,7 +54,7 @@ public class K8sService {
         private List<LoadBalancerSourceRange> loadBalancerSourceRangesList;
         private Boolean publishNotReadyAddresses;
     }
-
+    
     /**
      *  {
      *         "appProtocol": "http",
@@ -76,22 +77,22 @@ public class K8sService {
         @JsonProperty("appProtocol")
         private String appProtocol;
     }
-
+    
     @Data
     public static class LoadBalancerSourceRange {
         private String cidr;
     }
-
+    
     @Data
     public static class ServiceStatus {
         private LoadBalancerStatus loadBalancer;
     }
-
+    
     @Data
     public static class LoadBalancerStatus {
         private List<LoadBalancerIngress> ingress;
     }
-
+    
     @Data
     public static class LoadBalancerIngress {
         private String ip;

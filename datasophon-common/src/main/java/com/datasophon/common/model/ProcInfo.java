@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.model;
 
 import lombok.Data;
@@ -29,9 +28,9 @@ import lombok.Data;
 public class ProcInfo {
     
     private String hostName;
-
+    
     private String ip;
-
+    
     private Boolean alive;
     
     private String errMsg;

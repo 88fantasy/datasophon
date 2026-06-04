@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.command;
 
 import com.datasophon.common.enums.ClusterCommandType;

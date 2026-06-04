@@ -20,12 +20,8 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.strategy;
 
-import cn.hutool.core.io.file.FileReader;
-import cn.hutool.db.DbUtil;
-import cn.hutool.db.ds.simple.SimpleDataSource;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ExecResult;
@@ -39,6 +35,10 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import cn.hutool.core.io.file.FileReader;
+import cn.hutool.db.DbUtil;
+import cn.hutool.db.ds.simple.SimpleDataSource;
 
 public class DSMasterHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {
     

@@ -46,7 +46,6 @@
             <artifactId>swagger-annotations</artifactId>
         </dependency>
 
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -69,8 +68,8 @@
     <build>
         <resources>
             <resource>
-                <directory>src/main/resources</directory>
                 <filtering>false</filtering>
+                <directory>src/main/resources</directory>
             </resource>
         </resources>
         <plugins>
@@ -82,6 +81,9 @@
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
                 <version>4.9.10</version>
+                <configuration>
+                    <generateGitPropertiesFile>false</generateGitPropertiesFile>
+                </configuration>
                 <executions>
                     <execution>
                         <id>get-the-git-infos</id>
@@ -91,9 +93,6 @@
                         <phase>initialize</phase>
                     </execution>
                 </executions>
-                <configuration>
-                    <generateGitPropertiesFile>false</generateGitPropertiesFile>
-                </configuration>
             </plugin>
 
             <plugin>
@@ -103,10 +102,10 @@
                 <executions>
                     <execution>
                         <id>copy-release-file</id>
-                        <phase>process-resources</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
+                        <phase>process-resources</phase>
                         <configuration>
                             <outputDirectory>${project.build.directory}</outputDirectory>
                             <resources>
@@ -154,10 +153,10 @@
                 <executions>
                     <execution>
                         <id>package-helm-chart</id>
-                        <phase>package</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
+                        <phase>package</phase>
                         <configuration>
                             <executable>tar</executable>
                             <workingDirectory>${project.basedir}/helm</workingDirectory>
@@ -174,7 +173,6 @@
         </plugins>
     </build>
 
-
     <profiles>
         <profile>
             <id>docker</id>
@@ -182,7 +180,7 @@
                 <skipDocker>false</skipDocker>
             </properties>
             <build>
-               <plugins>
+                <plugins>
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <version>3.3.0</version>
@@ -228,10 +226,10 @@
                         <executions>
                             <execution>
                                 <id>docker-build-windows</id>
-                                <phase>package</phase>
                                 <goals>
                                     <goal>exec</goal>
                                 </goals>
+                                <phase>package</phase>
                                 <configuration>
                                     <skip>${skipDocker}</skip>
                                     <executable>cmd</executable>
@@ -273,10 +271,10 @@
                         <executions>
                             <execution>
                                 <id>docker-build-unix</id>
-                                <phase>package</phase>
                                 <goals>
                                     <goal>exec</goal>
                                 </goals>
+                                <phase>package</phase>
                                 <configuration>
                                     <skip>${skipDocker}</skip>
                                     <executable>bash</executable>

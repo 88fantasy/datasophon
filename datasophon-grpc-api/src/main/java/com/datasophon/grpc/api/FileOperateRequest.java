@@ -11,717 +11,135 @@ package com.datasophon.grpc.api;
  *
  * Protobuf type {@code com.datasophon.grpc.FileOperateRequest}
  */
-public final class FileOperateRequest extends
-    com.google.protobuf.GeneratedMessageV3 implements
-    // @@protoc_insertion_point(message_implements:com.datasophon.grpc.FileOperateRequest)
-    FileOperateRequestOrBuilder {
-private static final long serialVersionUID = 0L;
-  // Use FileOperateRequest.newBuilder() to construct.
-  private FileOperateRequest(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
-    super(builder);
-  }
-  private FileOperateRequest() {
-    path_ = "";
-    content_ = "";
-    lines_ =
-        com.google.protobuf.LazyStringArrayList.emptyList();
-  }
-
-  @java.lang.Override
-  @SuppressWarnings({"unused"})
-  protected java.lang.Object newInstance(
-      UnusedPrivateParameter unused) {
-    return new FileOperateRequest();
-  }
-
-  public static final com.google.protobuf.Descriptors.Descriptor
-      getDescriptor() {
-    return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_FileOperateRequest_descriptor;
-  }
-
-  @java.lang.Override
-  protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internalGetFieldAccessorTable() {
-    return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_FileOperateRequest_fieldAccessorTable
-        .ensureFieldAccessorsInitialized(
-            com.datasophon.grpc.api.FileOperateRequest.class, com.datasophon.grpc.api.FileOperateRequest.Builder.class);
-  }
-
-  public static final int PATH_FIELD_NUMBER = 1;
-  @SuppressWarnings("serial")
-  private volatile java.lang.Object path_ = "";
-  /**
-   * <code>string path = 1;</code>
-   * @return The path.
-   */
-  @java.lang.Override
-  public java.lang.String getPath() {
-    java.lang.Object ref = path_;
-    if (ref instanceof java.lang.String) {
-      return (java.lang.String) ref;
-    } else {
-      com.google.protobuf.ByteString bs = 
-          (com.google.protobuf.ByteString) ref;
-      java.lang.String s = bs.toStringUtf8();
-      path_ = s;
-      return s;
+public final class FileOperateRequest
+        extends
+            com.google.protobuf.GeneratedMessageV3
+        implements
+            // @@protoc_insertion_point(message_implements:com.datasophon.grpc.FileOperateRequest)
+            FileOperateRequestOrBuilder {
+    private static final long serialVersionUID = 0L;
+    // Use FileOperateRequest.newBuilder() to construct.
+    private FileOperateRequest(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+        super(builder);
     }
-  }
-  /**
-   * <code>string path = 1;</code>
-   * @return The bytes for path.
-   */
-  @java.lang.Override
-  public com.google.protobuf.ByteString
-      getPathBytes() {
-    java.lang.Object ref = path_;
-    if (ref instanceof java.lang.String) {
-      com.google.protobuf.ByteString b = 
-          com.google.protobuf.ByteString.copyFromUtf8(
-              (java.lang.String) ref);
-      path_ = b;
-      return b;
-    } else {
-      return (com.google.protobuf.ByteString) ref;
+    private FileOperateRequest() {
+        path_ = "";
+        content_ = "";
+        lines_ =
+                com.google.protobuf.LazyStringArrayList.emptyList();
     }
-  }
-
-  public static final int CONTENT_FIELD_NUMBER = 2;
-  @SuppressWarnings("serial")
-  private volatile java.lang.Object content_ = "";
-  /**
-   * <code>string content = 2;</code>
-   * @return The content.
-   */
-  @java.lang.Override
-  public java.lang.String getContent() {
-    java.lang.Object ref = content_;
-    if (ref instanceof java.lang.String) {
-      return (java.lang.String) ref;
-    } else {
-      com.google.protobuf.ByteString bs = 
-          (com.google.protobuf.ByteString) ref;
-      java.lang.String s = bs.toStringUtf8();
-      content_ = s;
-      return s;
-    }
-  }
-  /**
-   * <code>string content = 2;</code>
-   * @return The bytes for content.
-   */
-  @java.lang.Override
-  public com.google.protobuf.ByteString
-      getContentBytes() {
-    java.lang.Object ref = content_;
-    if (ref instanceof java.lang.String) {
-      com.google.protobuf.ByteString b = 
-          com.google.protobuf.ByteString.copyFromUtf8(
-              (java.lang.String) ref);
-      content_ = b;
-      return b;
-    } else {
-      return (com.google.protobuf.ByteString) ref;
-    }
-  }
-
-  public static final int LINES_FIELD_NUMBER = 3;
-  @SuppressWarnings("serial")
-  private com.google.protobuf.LazyStringArrayList lines_ =
-      com.google.protobuf.LazyStringArrayList.emptyList();
-  /**
-   * <code>repeated string lines = 3;</code>
-   * @return A list containing the lines.
-   */
-  public com.google.protobuf.ProtocolStringList
-      getLinesList() {
-    return lines_;
-  }
-  /**
-   * <code>repeated string lines = 3;</code>
-   * @return The count of lines.
-   */
-  public int getLinesCount() {
-    return lines_.size();
-  }
-  /**
-   * <code>repeated string lines = 3;</code>
-   * @param index The index of the element to return.
-   * @return The lines at the given index.
-   */
-  public java.lang.String getLines(int index) {
-    return lines_.get(index);
-  }
-  /**
-   * <code>repeated string lines = 3;</code>
-   * @param index The index of the value to return.
-   * @return The bytes of the lines at the given index.
-   */
-  public com.google.protobuf.ByteString
-      getLinesBytes(int index) {
-    return lines_.getByteString(index);
-  }
-
-  private byte memoizedIsInitialized = -1;
-  @java.lang.Override
-  public final boolean isInitialized() {
-    byte isInitialized = memoizedIsInitialized;
-    if (isInitialized == 1) return true;
-    if (isInitialized == 0) return false;
-
-    memoizedIsInitialized = 1;
-    return true;
-  }
-
-  @java.lang.Override
-  public void writeTo(com.google.protobuf.CodedOutputStream output)
-                      throws java.io.IOException {
-    if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(path_)) {
-      com.google.protobuf.GeneratedMessageV3.writeString(output, 1, path_);
-    }
-    if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(content_)) {
-      com.google.protobuf.GeneratedMessageV3.writeString(output, 2, content_);
-    }
-    for (int i = 0; i < lines_.size(); i++) {
-      com.google.protobuf.GeneratedMessageV3.writeString(output, 3, lines_.getRaw(i));
-    }
-    getUnknownFields().writeTo(output);
-  }
-
-  @java.lang.Override
-  public int getSerializedSize() {
-    int size = memoizedSize;
-    if (size != -1) return size;
-
-    size = 0;
-    if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(path_)) {
-      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, path_);
-    }
-    if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(content_)) {
-      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, content_);
-    }
-    {
-      int dataSize = 0;
-      for (int i = 0; i < lines_.size(); i++) {
-        dataSize += computeStringSizeNoTag(lines_.getRaw(i));
-      }
-      size += dataSize;
-      size += 1 * getLinesList().size();
-    }
-    size += getUnknownFields().getSerializedSize();
-    memoizedSize = size;
-    return size;
-  }
-
-  @java.lang.Override
-  public boolean equals(final java.lang.Object obj) {
-    if (obj == this) {
-     return true;
-    }
-    if (!(obj instanceof com.datasophon.grpc.api.FileOperateRequest)) {
-      return super.equals(obj);
-    }
-    com.datasophon.grpc.api.FileOperateRequest other = (com.datasophon.grpc.api.FileOperateRequest) obj;
-
-    if (!getPath()
-        .equals(other.getPath())) return false;
-    if (!getContent()
-        .equals(other.getContent())) return false;
-    if (!getLinesList()
-        .equals(other.getLinesList())) return false;
-    if (!getUnknownFields().equals(other.getUnknownFields())) return false;
-    return true;
-  }
-
-  @java.lang.Override
-  public int hashCode() {
-    if (memoizedHashCode != 0) {
-      return memoizedHashCode;
-    }
-    int hash = 41;
-    hash = (19 * hash) + getDescriptor().hashCode();
-    hash = (37 * hash) + PATH_FIELD_NUMBER;
-    hash = (53 * hash) + getPath().hashCode();
-    hash = (37 * hash) + CONTENT_FIELD_NUMBER;
-    hash = (53 * hash) + getContent().hashCode();
-    if (getLinesCount() > 0) {
-      hash = (37 * hash) + LINES_FIELD_NUMBER;
-      hash = (53 * hash) + getLinesList().hashCode();
-    }
-    hash = (29 * hash) + getUnknownFields().hashCode();
-    memoizedHashCode = hash;
-    return hash;
-  }
-
-  public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
-      java.nio.ByteBuffer data)
-      throws com.google.protobuf.InvalidProtocolBufferException {
-    return PARSER.parseFrom(data);
-  }
-  public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
-      java.nio.ByteBuffer data,
-      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-      throws com.google.protobuf.InvalidProtocolBufferException {
-    return PARSER.parseFrom(data, extensionRegistry);
-  }
-  public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
-      com.google.protobuf.ByteString data)
-      throws com.google.protobuf.InvalidProtocolBufferException {
-    return PARSER.parseFrom(data);
-  }
-  public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
-      com.google.protobuf.ByteString data,
-      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-      throws com.google.protobuf.InvalidProtocolBufferException {
-    return PARSER.parseFrom(data, extensionRegistry);
-  }
-  public static com.datasophon.grpc.api.FileOperateRequest parseFrom(byte[] data)
-      throws com.google.protobuf.InvalidProtocolBufferException {
-    return PARSER.parseFrom(data);
-  }
-  public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
-      byte[] data,
-      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-      throws com.google.protobuf.InvalidProtocolBufferException {
-    return PARSER.parseFrom(data, extensionRegistry);
-  }
-  public static com.datasophon.grpc.api.FileOperateRequest parseFrom(java.io.InputStream input)
-      throws java.io.IOException {
-    return com.google.protobuf.GeneratedMessageV3
-        .parseWithIOException(PARSER, input);
-  }
-  public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
-      java.io.InputStream input,
-      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-      throws java.io.IOException {
-    return com.google.protobuf.GeneratedMessageV3
-        .parseWithIOException(PARSER, input, extensionRegistry);
-  }
-
-  public static com.datasophon.grpc.api.FileOperateRequest parseDelimitedFrom(java.io.InputStream input)
-      throws java.io.IOException {
-    return com.google.protobuf.GeneratedMessageV3
-        .parseDelimitedWithIOException(PARSER, input);
-  }
-
-  public static com.datasophon.grpc.api.FileOperateRequest parseDelimitedFrom(
-      java.io.InputStream input,
-      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-      throws java.io.IOException {
-    return com.google.protobuf.GeneratedMessageV3
-        .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
-  }
-  public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
-      com.google.protobuf.CodedInputStream input)
-      throws java.io.IOException {
-    return com.google.protobuf.GeneratedMessageV3
-        .parseWithIOException(PARSER, input);
-  }
-  public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
-      com.google.protobuf.CodedInputStream input,
-      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-      throws java.io.IOException {
-    return com.google.protobuf.GeneratedMessageV3
-        .parseWithIOException(PARSER, input, extensionRegistry);
-  }
-
-  @java.lang.Override
-  public Builder newBuilderForType() { return newBuilder(); }
-  public static Builder newBuilder() {
-    return DEFAULT_INSTANCE.toBuilder();
-  }
-  public static Builder newBuilder(com.datasophon.grpc.api.FileOperateRequest prototype) {
-    return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
-  }
-  @java.lang.Override
-  public Builder toBuilder() {
-    return this == DEFAULT_INSTANCE
-        ? new Builder() : new Builder().mergeFrom(this);
-  }
-
-  @java.lang.Override
-  protected Builder newBuilderForType(
-      com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-    Builder builder = new Builder(parent);
-    return builder;
-  }
-  /**
-   * <pre>
-   ** 文件写入操作请求。lines 与 content 互斥，优先判断 lines 是否非空。 
-   * </pre>
-   *
-   * Protobuf type {@code com.datasophon.grpc.FileOperateRequest}
-   */
-  public static final class Builder extends
-      com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
-      // @@protoc_insertion_point(builder_implements:com.datasophon.grpc.FileOperateRequest)
-      com.datasophon.grpc.api.FileOperateRequestOrBuilder {
-    public static final com.google.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_FileOperateRequest_descriptor;
-    }
-
+    
     @java.lang.Override
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_FileOperateRequest_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              com.datasophon.grpc.api.FileOperateRequest.class, com.datasophon.grpc.api.FileOperateRequest.Builder.class);
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+                                           UnusedPrivateParameter unused) {
+        return new FileOperateRequest();
     }
-
-    // Construct using com.datasophon.grpc.api.FileOperateRequest.newBuilder()
-    private Builder() {
-
+    
+    public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
+        return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_FileOperateRequest_descriptor;
     }
-
-    private Builder(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-      super(parent);
-
-    }
+    
     @java.lang.Override
-    public Builder clear() {
-      super.clear();
-      bitField0_ = 0;
-      path_ = "";
-      content_ = "";
-      lines_ =
-          com.google.protobuf.LazyStringArrayList.emptyList();
-      return this;
+    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internalGetFieldAccessorTable() {
+        return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_FileOperateRequest_fieldAccessorTable
+                .ensureFieldAccessorsInitialized(
+                        com.datasophon.grpc.api.FileOperateRequest.class, com.datasophon.grpc.api.FileOperateRequest.Builder.class);
     }
-
-    @java.lang.Override
-    public com.google.protobuf.Descriptors.Descriptor
-        getDescriptorForType() {
-      return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_FileOperateRequest_descriptor;
-    }
-
-    @java.lang.Override
-    public com.datasophon.grpc.api.FileOperateRequest getDefaultInstanceForType() {
-      return com.datasophon.grpc.api.FileOperateRequest.getDefaultInstance();
-    }
-
-    @java.lang.Override
-    public com.datasophon.grpc.api.FileOperateRequest build() {
-      com.datasophon.grpc.api.FileOperateRequest result = buildPartial();
-      if (!result.isInitialized()) {
-        throw newUninitializedMessageException(result);
-      }
-      return result;
-    }
-
-    @java.lang.Override
-    public com.datasophon.grpc.api.FileOperateRequest buildPartial() {
-      com.datasophon.grpc.api.FileOperateRequest result = new com.datasophon.grpc.api.FileOperateRequest(this);
-      if (bitField0_ != 0) { buildPartial0(result); }
-      onBuilt();
-      return result;
-    }
-
-    private void buildPartial0(com.datasophon.grpc.api.FileOperateRequest result) {
-      int from_bitField0_ = bitField0_;
-      if (((from_bitField0_ & 0x00000001) != 0)) {
-        result.path_ = path_;
-      }
-      if (((from_bitField0_ & 0x00000002) != 0)) {
-        result.content_ = content_;
-      }
-      if (((from_bitField0_ & 0x00000004) != 0)) {
-        lines_.makeImmutable();
-        result.lines_ = lines_;
-      }
-    }
-
-    @java.lang.Override
-    public Builder clone() {
-      return super.clone();
-    }
-    @java.lang.Override
-    public Builder setField(
-        com.google.protobuf.Descriptors.FieldDescriptor field,
-        java.lang.Object value) {
-      return super.setField(field, value);
-    }
-    @java.lang.Override
-    public Builder clearField(
-        com.google.protobuf.Descriptors.FieldDescriptor field) {
-      return super.clearField(field);
-    }
-    @java.lang.Override
-    public Builder clearOneof(
-        com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-      return super.clearOneof(oneof);
-    }
-    @java.lang.Override
-    public Builder setRepeatedField(
-        com.google.protobuf.Descriptors.FieldDescriptor field,
-        int index, java.lang.Object value) {
-      return super.setRepeatedField(field, index, value);
-    }
-    @java.lang.Override
-    public Builder addRepeatedField(
-        com.google.protobuf.Descriptors.FieldDescriptor field,
-        java.lang.Object value) {
-      return super.addRepeatedField(field, value);
-    }
-    @java.lang.Override
-    public Builder mergeFrom(com.google.protobuf.Message other) {
-      if (other instanceof com.datasophon.grpc.api.FileOperateRequest) {
-        return mergeFrom((com.datasophon.grpc.api.FileOperateRequest)other);
-      } else {
-        super.mergeFrom(other);
-        return this;
-      }
-    }
-
-    public Builder mergeFrom(com.datasophon.grpc.api.FileOperateRequest other) {
-      if (other == com.datasophon.grpc.api.FileOperateRequest.getDefaultInstance()) return this;
-      if (!other.getPath().isEmpty()) {
-        path_ = other.path_;
-        bitField0_ |= 0x00000001;
-        onChanged();
-      }
-      if (!other.getContent().isEmpty()) {
-        content_ = other.content_;
-        bitField0_ |= 0x00000002;
-        onChanged();
-      }
-      if (!other.lines_.isEmpty()) {
-        if (lines_.isEmpty()) {
-          lines_ = other.lines_;
-          bitField0_ |= 0x00000004;
-        } else {
-          ensureLinesIsMutable();
-          lines_.addAll(other.lines_);
-        }
-        onChanged();
-      }
-      this.mergeUnknownFields(other.getUnknownFields());
-      onChanged();
-      return this;
-    }
-
-    @java.lang.Override
-    public final boolean isInitialized() {
-      return true;
-    }
-
-    @java.lang.Override
-    public Builder mergeFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10: {
-              path_ = input.readStringRequireUtf8();
-              bitField0_ |= 0x00000001;
-              break;
-            } // case 10
-            case 18: {
-              content_ = input.readStringRequireUtf8();
-              bitField0_ |= 0x00000002;
-              break;
-            } // case 18
-            case 26: {
-              java.lang.String s = input.readStringRequireUtf8();
-              ensureLinesIsMutable();
-              lines_.add(s);
-              break;
-            } // case 26
-            default: {
-              if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                done = true; // was an endgroup tag
-              }
-              break;
-            } // default:
-          } // switch (tag)
-        } // while (!done)
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.unwrapIOException();
-      } finally {
-        onChanged();
-      } // finally
-      return this;
-    }
-    private int bitField0_;
-
-    private java.lang.Object path_ = "";
+    
+    public static final int PATH_FIELD_NUMBER = 1;
+    @SuppressWarnings("serial")
+    private volatile java.lang.Object path_ = "";
     /**
      * <code>string path = 1;</code>
      * @return The path.
      */
+    @java.lang.Override
     public java.lang.String getPath() {
-      java.lang.Object ref = path_;
-      if (!(ref instanceof java.lang.String)) {
-        com.google.protobuf.ByteString bs =
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        path_ = s;
-        return s;
-      } else {
-        return (java.lang.String) ref;
-      }
+        java.lang.Object ref = path_;
+        if (ref instanceof java.lang.String) {
+            return (java.lang.String) ref;
+        } else {
+            com.google.protobuf.ByteString bs =
+                    (com.google.protobuf.ByteString) ref;
+            java.lang.String s = bs.toStringUtf8();
+            path_ = s;
+            return s;
+        }
     }
     /**
      * <code>string path = 1;</code>
      * @return The bytes for path.
      */
-    public com.google.protobuf.ByteString
-        getPathBytes() {
-      java.lang.Object ref = path_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        path_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
+    @java.lang.Override
+    public com.google.protobuf.ByteString getPathBytes() {
+        java.lang.Object ref = path_;
+        if (ref instanceof java.lang.String) {
+            com.google.protobuf.ByteString b =
+                    com.google.protobuf.ByteString.copyFromUtf8(
+                            (java.lang.String) ref);
+            path_ = b;
+            return b;
+        } else {
+            return (com.google.protobuf.ByteString) ref;
+        }
     }
-    /**
-     * <code>string path = 1;</code>
-     * @param value The path to set.
-     * @return This builder for chaining.
-     */
-    public Builder setPath(
-        java.lang.String value) {
-      if (value == null) { throw new NullPointerException(); }
-      path_ = value;
-      bitField0_ |= 0x00000001;
-      onChanged();
-      return this;
-    }
-    /**
-     * <code>string path = 1;</code>
-     * @return This builder for chaining.
-     */
-    public Builder clearPath() {
-      path_ = getDefaultInstance().getPath();
-      bitField0_ = (bitField0_ & ~0x00000001);
-      onChanged();
-      return this;
-    }
-    /**
-     * <code>string path = 1;</code>
-     * @param value The bytes for path to set.
-     * @return This builder for chaining.
-     */
-    public Builder setPathBytes(
-        com.google.protobuf.ByteString value) {
-      if (value == null) { throw new NullPointerException(); }
-      checkByteStringIsUtf8(value);
-      path_ = value;
-      bitField0_ |= 0x00000001;
-      onChanged();
-      return this;
-    }
-
-    private java.lang.Object content_ = "";
+    
+    public static final int CONTENT_FIELD_NUMBER = 2;
+    @SuppressWarnings("serial")
+    private volatile java.lang.Object content_ = "";
     /**
      * <code>string content = 2;</code>
      * @return The content.
      */
+    @java.lang.Override
     public java.lang.String getContent() {
-      java.lang.Object ref = content_;
-      if (!(ref instanceof java.lang.String)) {
-        com.google.protobuf.ByteString bs =
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        content_ = s;
-        return s;
-      } else {
-        return (java.lang.String) ref;
-      }
+        java.lang.Object ref = content_;
+        if (ref instanceof java.lang.String) {
+            return (java.lang.String) ref;
+        } else {
+            com.google.protobuf.ByteString bs =
+                    (com.google.protobuf.ByteString) ref;
+            java.lang.String s = bs.toStringUtf8();
+            content_ = s;
+            return s;
+        }
     }
     /**
      * <code>string content = 2;</code>
      * @return The bytes for content.
      */
-    public com.google.protobuf.ByteString
-        getContentBytes() {
-      java.lang.Object ref = content_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        content_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
+    @java.lang.Override
+    public com.google.protobuf.ByteString getContentBytes() {
+        java.lang.Object ref = content_;
+        if (ref instanceof java.lang.String) {
+            com.google.protobuf.ByteString b =
+                    com.google.protobuf.ByteString.copyFromUtf8(
+                            (java.lang.String) ref);
+            content_ = b;
+            return b;
+        } else {
+            return (com.google.protobuf.ByteString) ref;
+        }
     }
-    /**
-     * <code>string content = 2;</code>
-     * @param value The content to set.
-     * @return This builder for chaining.
-     */
-    public Builder setContent(
-        java.lang.String value) {
-      if (value == null) { throw new NullPointerException(); }
-      content_ = value;
-      bitField0_ |= 0x00000002;
-      onChanged();
-      return this;
-    }
-    /**
-     * <code>string content = 2;</code>
-     * @return This builder for chaining.
-     */
-    public Builder clearContent() {
-      content_ = getDefaultInstance().getContent();
-      bitField0_ = (bitField0_ & ~0x00000002);
-      onChanged();
-      return this;
-    }
-    /**
-     * <code>string content = 2;</code>
-     * @param value The bytes for content to set.
-     * @return This builder for chaining.
-     */
-    public Builder setContentBytes(
-        com.google.protobuf.ByteString value) {
-      if (value == null) { throw new NullPointerException(); }
-      checkByteStringIsUtf8(value);
-      content_ = value;
-      bitField0_ |= 0x00000002;
-      onChanged();
-      return this;
-    }
-
+    
+    public static final int LINES_FIELD_NUMBER = 3;
+    @SuppressWarnings("serial")
     private com.google.protobuf.LazyStringArrayList lines_ =
-        com.google.protobuf.LazyStringArrayList.emptyList();
-    private void ensureLinesIsMutable() {
-      if (!lines_.isModifiable()) {
-        lines_ = new com.google.protobuf.LazyStringArrayList(lines_);
-      }
-      bitField0_ |= 0x00000004;
-    }
+            com.google.protobuf.LazyStringArrayList.emptyList();
     /**
      * <code>repeated string lines = 3;</code>
      * @return A list containing the lines.
      */
-    public com.google.protobuf.ProtocolStringList
-        getLinesList() {
-      lines_.makeImmutable();
-      return lines_;
+    public com.google.protobuf.ProtocolStringList getLinesList() {
+        return lines_;
     }
     /**
      * <code>repeated string lines = 3;</code>
      * @return The count of lines.
      */
     public int getLinesCount() {
-      return lines_.size();
+        return lines_.size();
     }
     /**
      * <code>repeated string lines = 3;</code>
@@ -729,147 +147,729 @@ private static final long serialVersionUID = 0L;
      * @return The lines at the given index.
      */
     public java.lang.String getLines(int index) {
-      return lines_.get(index);
+        return lines_.get(index);
     }
     /**
      * <code>repeated string lines = 3;</code>
      * @param index The index of the value to return.
      * @return The bytes of the lines at the given index.
      */
-    public com.google.protobuf.ByteString
-        getLinesBytes(int index) {
-      return lines_.getByteString(index);
+    public com.google.protobuf.ByteString getLinesBytes(int index) {
+        return lines_.getByteString(index);
     }
-    /**
-     * <code>repeated string lines = 3;</code>
-     * @param index The index to set the value at.
-     * @param value The lines to set.
-     * @return This builder for chaining.
-     */
-    public Builder setLines(
-        int index, java.lang.String value) {
-      if (value == null) { throw new NullPointerException(); }
-      ensureLinesIsMutable();
-      lines_.set(index, value);
-      bitField0_ |= 0x00000004;
-      onChanged();
-      return this;
+    
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized == 1)
+            return true;
+        if (isInitialized == 0)
+            return false;
+        
+        memoizedIsInitialized = 1;
+        return true;
     }
-    /**
-     * <code>repeated string lines = 3;</code>
-     * @param value The lines to add.
-     * @return This builder for chaining.
-     */
-    public Builder addLines(
-        java.lang.String value) {
-      if (value == null) { throw new NullPointerException(); }
-      ensureLinesIsMutable();
-      lines_.add(value);
-      bitField0_ |= 0x00000004;
-      onChanged();
-      return this;
+    
+    @java.lang.Override
+    public void writeTo(com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
+        if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(path_)) {
+            com.google.protobuf.GeneratedMessageV3.writeString(output, 1, path_);
+        }
+        if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(content_)) {
+            com.google.protobuf.GeneratedMessageV3.writeString(output, 2, content_);
+        }
+        for (int i = 0; i < lines_.size(); i++) {
+            com.google.protobuf.GeneratedMessageV3.writeString(output, 3, lines_.getRaw(i));
+        }
+        getUnknownFields().writeTo(output);
     }
-    /**
-     * <code>repeated string lines = 3;</code>
-     * @param values The lines to add.
-     * @return This builder for chaining.
-     */
-    public Builder addAllLines(
-        java.lang.Iterable<java.lang.String> values) {
-      ensureLinesIsMutable();
-      com.google.protobuf.AbstractMessageLite.Builder.addAll(
-          values, lines_);
-      bitField0_ |= 0x00000004;
-      onChanged();
-      return this;
+    
+    @java.lang.Override
+    public int getSerializedSize() {
+        int size = memoizedSize;
+        if (size != -1)
+            return size;
+        
+        size = 0;
+        if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(path_)) {
+            size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, path_);
+        }
+        if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(content_)) {
+            size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, content_);
+        }
+        {
+            int dataSize = 0;
+            for (int i = 0; i < lines_.size(); i++) {
+                dataSize += computeStringSizeNoTag(lines_.getRaw(i));
+            }
+            size += dataSize;
+            size += 1 * getLinesList().size();
+        }
+        size += getUnknownFields().getSerializedSize();
+        memoizedSize = size;
+        return size;
     }
-    /**
-     * <code>repeated string lines = 3;</code>
-     * @return This builder for chaining.
-     */
-    public Builder clearLines() {
-      lines_ =
-        com.google.protobuf.LazyStringArrayList.emptyList();
-      bitField0_ = (bitField0_ & ~0x00000004);;
-      onChanged();
-      return this;
+    
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof com.datasophon.grpc.api.FileOperateRequest)) {
+            return super.equals(obj);
+        }
+        com.datasophon.grpc.api.FileOperateRequest other = (com.datasophon.grpc.api.FileOperateRequest) obj;
+        
+        if (!getPath()
+                .equals(other.getPath()))
+            return false;
+        if (!getContent()
+                .equals(other.getContent()))
+            return false;
+        if (!getLinesList()
+                .equals(other.getLinesList()))
+            return false;
+        if (!getUnknownFields().equals(other.getUnknownFields()))
+            return false;
+        return true;
     }
-    /**
-     * <code>repeated string lines = 3;</code>
-     * @param value The bytes of the lines to add.
-     * @return This builder for chaining.
-     */
-    public Builder addLinesBytes(
-        com.google.protobuf.ByteString value) {
-      if (value == null) { throw new NullPointerException(); }
-      checkByteStringIsUtf8(value);
-      ensureLinesIsMutable();
-      lines_.add(value);
-      bitField0_ |= 0x00000004;
-      onChanged();
-      return this;
+    
+    @java.lang.Override
+    public int hashCode() {
+        if (memoizedHashCode != 0) {
+            return memoizedHashCode;
+        }
+        int hash = 41;
+        hash = (19 * hash) + getDescriptor().hashCode();
+        hash = (37 * hash) + PATH_FIELD_NUMBER;
+        hash = (53 * hash) + getPath().hashCode();
+        hash = (37 * hash) + CONTENT_FIELD_NUMBER;
+        hash = (53 * hash) + getContent().hashCode();
+        if (getLinesCount() > 0) {
+            hash = (37 * hash) + LINES_FIELD_NUMBER;
+            hash = (53 * hash) + getLinesList().hashCode();
+        }
+        hash = (29 * hash) + getUnknownFields().hashCode();
+        memoizedHashCode = hash;
+        return hash;
+    }
+    
+    public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
+                                                                       java.nio.ByteBuffer data) throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+    }
+    public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
+                                                                       java.nio.ByteBuffer data,
+                                                                       com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
+                                                                       com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+    }
+    public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
+                                                                       com.google.protobuf.ByteString data,
+                                                                       com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.datasophon.grpc.api.FileOperateRequest parseFrom(byte[] data) throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+    }
+    public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
+                                                                       byte[] data,
+                                                                       com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.datasophon.grpc.api.FileOperateRequest parseFrom(java.io.InputStream input) throws java.io.IOException {
+        return com.google.protobuf.GeneratedMessageV3
+                .parseWithIOException(PARSER, input);
+    }
+    public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
+                                                                       java.io.InputStream input,
+                                                                       com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+        return com.google.protobuf.GeneratedMessageV3
+                .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    
+    public static com.datasophon.grpc.api.FileOperateRequest parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+        return com.google.protobuf.GeneratedMessageV3
+                .parseDelimitedWithIOException(PARSER, input);
+    }
+    
+    public static com.datasophon.grpc.api.FileOperateRequest parseDelimitedFrom(
+                                                                                java.io.InputStream input,
+                                                                                com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+        return com.google.protobuf.GeneratedMessageV3
+                .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
+                                                                       com.google.protobuf.CodedInputStream input) throws java.io.IOException {
+        return com.google.protobuf.GeneratedMessageV3
+                .parseWithIOException(PARSER, input);
+    }
+    public static com.datasophon.grpc.api.FileOperateRequest parseFrom(
+                                                                       com.google.protobuf.CodedInputStream input,
+                                                                       com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+        return com.google.protobuf.GeneratedMessageV3
+                .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    
+    @java.lang.Override
+    public Builder newBuilderForType() {
+        return newBuilder();
+    }
+    public static Builder newBuilder() {
+        return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(com.datasophon.grpc.api.FileOperateRequest prototype) {
+        return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
     @java.lang.Override
-    public final Builder setUnknownFields(
-        final com.google.protobuf.UnknownFieldSet unknownFields) {
-      return super.setUnknownFields(unknownFields);
+    public Builder toBuilder() {
+        return this == DEFAULT_INSTANCE
+                ? new Builder()
+                : new Builder().mergeFrom(this);
     }
-
+    
     @java.lang.Override
-    public final Builder mergeUnknownFields(
-        final com.google.protobuf.UnknownFieldSet unknownFields) {
-      return super.mergeUnknownFields(unknownFields);
+    protected Builder newBuilderForType(
+                                        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
     }
-
-
-    // @@protoc_insertion_point(builder_scope:com.datasophon.grpc.FileOperateRequest)
-  }
-
-  // @@protoc_insertion_point(class_scope:com.datasophon.grpc.FileOperateRequest)
-  private static final com.datasophon.grpc.api.FileOperateRequest DEFAULT_INSTANCE;
-  static {
-    DEFAULT_INSTANCE = new com.datasophon.grpc.api.FileOperateRequest();
-  }
-
-  public static com.datasophon.grpc.api.FileOperateRequest getDefaultInstance() {
-    return DEFAULT_INSTANCE;
-  }
-
-  private static final com.google.protobuf.Parser<FileOperateRequest>
-      PARSER = new com.google.protobuf.AbstractParser<FileOperateRequest>() {
+    /**
+     * <pre>
+     ** 文件写入操作请求。lines 与 content 互斥，优先判断 lines 是否非空。 
+     * </pre>
+     *
+     * Protobuf type {@code com.datasophon.grpc.FileOperateRequest}
+     */
+    public static final class Builder
+            extends
+                com.google.protobuf.GeneratedMessageV3.Builder<Builder>
+            implements
+                // @@protoc_insertion_point(builder_implements:com.datasophon.grpc.FileOperateRequest)
+                com.datasophon.grpc.api.FileOperateRequestOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
+            return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_FileOperateRequest_descriptor;
+        }
+        
+        @java.lang.Override
+        protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internalGetFieldAccessorTable() {
+            return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_FileOperateRequest_fieldAccessorTable
+                    .ensureFieldAccessorsInitialized(
+                            com.datasophon.grpc.api.FileOperateRequest.class, com.datasophon.grpc.api.FileOperateRequest.Builder.class);
+        }
+        
+        // Construct using com.datasophon.grpc.api.FileOperateRequest.newBuilder()
+        private Builder() {
+            
+        }
+        
+        private Builder(
+                        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+            super(parent);
+            
+        }
+        @java.lang.Override
+        public Builder clear() {
+            super.clear();
+            bitField0_ = 0;
+            path_ = "";
+            content_ = "";
+            lines_ =
+                    com.google.protobuf.LazyStringArrayList.emptyList();
+            return this;
+        }
+        
+        @java.lang.Override
+        public com.google.protobuf.Descriptors.Descriptor getDescriptorForType() {
+            return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_FileOperateRequest_descriptor;
+        }
+        
+        @java.lang.Override
+        public com.datasophon.grpc.api.FileOperateRequest getDefaultInstanceForType() {
+            return com.datasophon.grpc.api.FileOperateRequest.getDefaultInstance();
+        }
+        
+        @java.lang.Override
+        public com.datasophon.grpc.api.FileOperateRequest build() {
+            com.datasophon.grpc.api.FileOperateRequest result = buildPartial();
+            if (!result.isInitialized()) {
+                throw newUninitializedMessageException(result);
+            }
+            return result;
+        }
+        
+        @java.lang.Override
+        public com.datasophon.grpc.api.FileOperateRequest buildPartial() {
+            com.datasophon.grpc.api.FileOperateRequest result = new com.datasophon.grpc.api.FileOperateRequest(this);
+            if (bitField0_ != 0) {
+                buildPartial0(result);
+            }
+            onBuilt();
+            return result;
+        }
+        
+        private void buildPartial0(com.datasophon.grpc.api.FileOperateRequest result) {
+            int from_bitField0_ = bitField0_;
+            if (((from_bitField0_ & 0x00000001) != 0)) {
+                result.path_ = path_;
+            }
+            if (((from_bitField0_ & 0x00000002) != 0)) {
+                result.content_ = content_;
+            }
+            if (((from_bitField0_ & 0x00000004) != 0)) {
+                lines_.makeImmutable();
+                result.lines_ = lines_;
+            }
+        }
+        
+        @java.lang.Override
+        public Builder clone() {
+            return super.clone();
+        }
+        @java.lang.Override
+        public Builder setField(
+                                com.google.protobuf.Descriptors.FieldDescriptor field,
+                                java.lang.Object value) {
+            return super.setField(field, value);
+        }
+        @java.lang.Override
+        public Builder clearField(
+                                  com.google.protobuf.Descriptors.FieldDescriptor field) {
+            return super.clearField(field);
+        }
+        @java.lang.Override
+        public Builder clearOneof(
+                                  com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+            return super.clearOneof(oneof);
+        }
+        @java.lang.Override
+        public Builder setRepeatedField(
+                                        com.google.protobuf.Descriptors.FieldDescriptor field,
+                                        int index, java.lang.Object value) {
+            return super.setRepeatedField(field, index, value);
+        }
+        @java.lang.Override
+        public Builder addRepeatedField(
+                                        com.google.protobuf.Descriptors.FieldDescriptor field,
+                                        java.lang.Object value) {
+            return super.addRepeatedField(field, value);
+        }
+        @java.lang.Override
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+            if (other instanceof com.datasophon.grpc.api.FileOperateRequest) {
+                return mergeFrom((com.datasophon.grpc.api.FileOperateRequest) other);
+            } else {
+                super.mergeFrom(other);
+                return this;
+            }
+        }
+        
+        public Builder mergeFrom(com.datasophon.grpc.api.FileOperateRequest other) {
+            if (other == com.datasophon.grpc.api.FileOperateRequest.getDefaultInstance())
+                return this;
+            if (!other.getPath().isEmpty()) {
+                path_ = other.path_;
+                bitField0_ |= 0x00000001;
+                onChanged();
+            }
+            if (!other.getContent().isEmpty()) {
+                content_ = other.content_;
+                bitField0_ |= 0x00000002;
+                onChanged();
+            }
+            if (!other.lines_.isEmpty()) {
+                if (lines_.isEmpty()) {
+                    lines_ = other.lines_;
+                    bitField0_ |= 0x00000004;
+                } else {
+                    ensureLinesIsMutable();
+                    lines_.addAll(other.lines_);
+                }
+                onChanged();
+            }
+            this.mergeUnknownFields(other.getUnknownFields());
+            onChanged();
+            return this;
+        }
+        
+        @java.lang.Override
+        public final boolean isInitialized() {
+            return true;
+        }
+        
+        @java.lang.Override
+        public Builder mergeFrom(
+                                 com.google.protobuf.CodedInputStream input,
+                                 com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+            if (extensionRegistry == null) {
+                throw new java.lang.NullPointerException();
+            }
+            try {
+                boolean done = false;
+                while (!done) {
+                    int tag = input.readTag();
+                    switch (tag) {
+                        case 0:
+                            done = true;
+                            break;
+                        case 10: {
+                            path_ = input.readStringRequireUtf8();
+                            bitField0_ |= 0x00000001;
+                            break;
+                        } // case 10
+                        case 18: {
+                            content_ = input.readStringRequireUtf8();
+                            bitField0_ |= 0x00000002;
+                            break;
+                        } // case 18
+                        case 26: {
+                            java.lang.String s = input.readStringRequireUtf8();
+                            ensureLinesIsMutable();
+                            lines_.add(s);
+                            break;
+                        } // case 26
+                        default: {
+                            if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                                done = true; // was an endgroup tag
+                            }
+                            break;
+                        } // default:
+                    } // switch (tag)
+                } // while (!done)
+            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+                throw e.unwrapIOException();
+            } finally {
+                onChanged();
+            } // finally
+            return this;
+        }
+        private int bitField0_;
+        
+        private java.lang.Object path_ = "";
+        /**
+         * <code>string path = 1;</code>
+         * @return The path.
+         */
+        public java.lang.String getPath() {
+            java.lang.Object ref = path_;
+            if (!(ref instanceof java.lang.String)) {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                java.lang.String s = bs.toStringUtf8();
+                path_ = s;
+                return s;
+            } else {
+                return (java.lang.String) ref;
+            }
+        }
+        /**
+         * <code>string path = 1;</code>
+         * @return The bytes for path.
+         */
+        public com.google.protobuf.ByteString getPathBytes() {
+            java.lang.Object ref = path_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8(
+                                (java.lang.String) ref);
+                path_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+        /**
+         * <code>string path = 1;</code>
+         * @param value The path to set.
+         * @return This builder for chaining.
+         */
+        public Builder setPath(
+                               java.lang.String value) {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+            path_ = value;
+            bitField0_ |= 0x00000001;
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>string path = 1;</code>
+         * @return This builder for chaining.
+         */
+        public Builder clearPath() {
+            path_ = getDefaultInstance().getPath();
+            bitField0_ = (bitField0_ & ~0x00000001);
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>string path = 1;</code>
+         * @param value The bytes for path to set.
+         * @return This builder for chaining.
+         */
+        public Builder setPathBytes(
+                                    com.google.protobuf.ByteString value) {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+            checkByteStringIsUtf8(value);
+            path_ = value;
+            bitField0_ |= 0x00000001;
+            onChanged();
+            return this;
+        }
+        
+        private java.lang.Object content_ = "";
+        /**
+         * <code>string content = 2;</code>
+         * @return The content.
+         */
+        public java.lang.String getContent() {
+            java.lang.Object ref = content_;
+            if (!(ref instanceof java.lang.String)) {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                java.lang.String s = bs.toStringUtf8();
+                content_ = s;
+                return s;
+            } else {
+                return (java.lang.String) ref;
+            }
+        }
+        /**
+         * <code>string content = 2;</code>
+         * @return The bytes for content.
+         */
+        public com.google.protobuf.ByteString getContentBytes() {
+            java.lang.Object ref = content_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8(
+                                (java.lang.String) ref);
+                content_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+        /**
+         * <code>string content = 2;</code>
+         * @param value The content to set.
+         * @return This builder for chaining.
+         */
+        public Builder setContent(
+                                  java.lang.String value) {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+            content_ = value;
+            bitField0_ |= 0x00000002;
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>string content = 2;</code>
+         * @return This builder for chaining.
+         */
+        public Builder clearContent() {
+            content_ = getDefaultInstance().getContent();
+            bitField0_ = (bitField0_ & ~0x00000002);
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>string content = 2;</code>
+         * @param value The bytes for content to set.
+         * @return This builder for chaining.
+         */
+        public Builder setContentBytes(
+                                       com.google.protobuf.ByteString value) {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+            checkByteStringIsUtf8(value);
+            content_ = value;
+            bitField0_ |= 0x00000002;
+            onChanged();
+            return this;
+        }
+        
+        private com.google.protobuf.LazyStringArrayList lines_ =
+                com.google.protobuf.LazyStringArrayList.emptyList();
+        private void ensureLinesIsMutable() {
+            if (!lines_.isModifiable()) {
+                lines_ = new com.google.protobuf.LazyStringArrayList(lines_);
+            }
+            bitField0_ |= 0x00000004;
+        }
+        /**
+         * <code>repeated string lines = 3;</code>
+         * @return A list containing the lines.
+         */
+        public com.google.protobuf.ProtocolStringList getLinesList() {
+            lines_.makeImmutable();
+            return lines_;
+        }
+        /**
+         * <code>repeated string lines = 3;</code>
+         * @return The count of lines.
+         */
+        public int getLinesCount() {
+            return lines_.size();
+        }
+        /**
+         * <code>repeated string lines = 3;</code>
+         * @param index The index of the element to return.
+         * @return The lines at the given index.
+         */
+        public java.lang.String getLines(int index) {
+            return lines_.get(index);
+        }
+        /**
+         * <code>repeated string lines = 3;</code>
+         * @param index The index of the value to return.
+         * @return The bytes of the lines at the given index.
+         */
+        public com.google.protobuf.ByteString getLinesBytes(int index) {
+            return lines_.getByteString(index);
+        }
+        /**
+         * <code>repeated string lines = 3;</code>
+         * @param index The index to set the value at.
+         * @param value The lines to set.
+         * @return This builder for chaining.
+         */
+        public Builder setLines(
+                                int index, java.lang.String value) {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+            ensureLinesIsMutable();
+            lines_.set(index, value);
+            bitField0_ |= 0x00000004;
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>repeated string lines = 3;</code>
+         * @param value The lines to add.
+         * @return This builder for chaining.
+         */
+        public Builder addLines(
+                                java.lang.String value) {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+            ensureLinesIsMutable();
+            lines_.add(value);
+            bitField0_ |= 0x00000004;
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>repeated string lines = 3;</code>
+         * @param values The lines to add.
+         * @return This builder for chaining.
+         */
+        public Builder addAllLines(
+                                   java.lang.Iterable<java.lang.String> values) {
+            ensureLinesIsMutable();
+            com.google.protobuf.AbstractMessageLite.Builder.addAll(
+                    values, lines_);
+            bitField0_ |= 0x00000004;
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>repeated string lines = 3;</code>
+         * @return This builder for chaining.
+         */
+        public Builder clearLines() {
+            lines_ =
+                    com.google.protobuf.LazyStringArrayList.emptyList();
+            bitField0_ = (bitField0_ & ~0x00000004);;
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>repeated string lines = 3;</code>
+         * @param value The bytes of the lines to add.
+         * @return This builder for chaining.
+         */
+        public Builder addLinesBytes(
+                                     com.google.protobuf.ByteString value) {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+            checkByteStringIsUtf8(value);
+            ensureLinesIsMutable();
+            lines_.add(value);
+            bitField0_ |= 0x00000004;
+            onChanged();
+            return this;
+        }
+        @java.lang.Override
+        public final Builder setUnknownFields(
+                                              final com.google.protobuf.UnknownFieldSet unknownFields) {
+            return super.setUnknownFields(unknownFields);
+        }
+        
+        @java.lang.Override
+        public final Builder mergeUnknownFields(
+                                                final com.google.protobuf.UnknownFieldSet unknownFields) {
+            return super.mergeUnknownFields(unknownFields);
+        }
+        
+        // @@protoc_insertion_point(builder_scope:com.datasophon.grpc.FileOperateRequest)
+    }
+    
+    // @@protoc_insertion_point(class_scope:com.datasophon.grpc.FileOperateRequest)
+    private static final com.datasophon.grpc.api.FileOperateRequest DEFAULT_INSTANCE;
+    static {
+        DEFAULT_INSTANCE = new com.datasophon.grpc.api.FileOperateRequest();
+    }
+    
+    public static com.datasophon.grpc.api.FileOperateRequest getDefaultInstance() {
+        return DEFAULT_INSTANCE;
+    }
+    
+    private static final com.google.protobuf.Parser<FileOperateRequest> PARSER = new com.google.protobuf.AbstractParser<FileOperateRequest>() {
+        @java.lang.Override
+        public FileOperateRequest parsePartialFrom(
+                                                   com.google.protobuf.CodedInputStream input,
+                                                   com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws com.google.protobuf.InvalidProtocolBufferException {
+            Builder builder = newBuilder();
+            try {
+                builder.mergeFrom(input, extensionRegistry);
+            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+                throw e.setUnfinishedMessage(builder.buildPartial());
+            } catch (com.google.protobuf.UninitializedMessageException e) {
+                throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+            } catch (java.io.IOException e) {
+                throw new com.google.protobuf.InvalidProtocolBufferException(e)
+                        .setUnfinishedMessage(builder.buildPartial());
+            }
+            return builder.buildPartial();
+        }
+    };
+    
+    public static com.google.protobuf.Parser<FileOperateRequest> parser() {
+        return PARSER;
+    }
+    
     @java.lang.Override
-    public FileOperateRequest parsePartialFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      Builder builder = newBuilder();
-      try {
-        builder.mergeFrom(input, extensionRegistry);
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(builder.buildPartial());
-      } catch (com.google.protobuf.UninitializedMessageException e) {
-        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-      } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(e)
-            .setUnfinishedMessage(builder.buildPartial());
-      }
-      return builder.buildPartial();
+    public com.google.protobuf.Parser<FileOperateRequest> getParserForType() {
+        return PARSER;
     }
-  };
-
-  public static com.google.protobuf.Parser<FileOperateRequest> parser() {
-    return PARSER;
-  }
-
-  @java.lang.Override
-  public com.google.protobuf.Parser<FileOperateRequest> getParserForType() {
-    return PARSER;
-  }
-
-  @java.lang.Override
-  public com.datasophon.grpc.api.FileOperateRequest getDefaultInstanceForType() {
-    return DEFAULT_INSTANCE;
-  }
-
+    
+    @java.lang.Override
+    public com.datasophon.grpc.api.FileOperateRequest getDefaultInstanceForType() {
+        return DEFAULT_INSTANCE;
+    }
+    
 }
-

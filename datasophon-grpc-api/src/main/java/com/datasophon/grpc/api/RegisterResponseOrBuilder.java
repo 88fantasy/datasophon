@@ -4,25 +4,25 @@
 // Protobuf Java Version: 3.25.5
 package com.datasophon.grpc.api;
 
-public interface RegisterResponseOrBuilder extends
-    // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.RegisterResponse)
-    com.google.protobuf.MessageOrBuilder {
-
-  /**
-   * <code>bool success = 1;</code>
-   * @return The success.
-   */
-  boolean getSuccess();
-
-  /**
-   * <code>string message = 2;</code>
-   * @return The message.
-   */
-  java.lang.String getMessage();
-  /**
-   * <code>string message = 2;</code>
-   * @return The bytes for message.
-   */
-  com.google.protobuf.ByteString
-      getMessageBytes();
+public interface RegisterResponseOrBuilder
+        extends
+            // @@protoc_insertion_point(interface_extends:com.datasophon.grpc.RegisterResponse)
+            com.google.protobuf.MessageOrBuilder {
+    
+    /**
+     * <code>bool success = 1;</code>
+     * @return The success.
+     */
+    boolean getSuccess();
+    
+    /**
+     * <code>string message = 2;</code>
+     * @return The message.
+     */
+    java.lang.String getMessage();
+    /**
+     * <code>string message = 2;</code>
+     * @return The bytes for message.
+     */
+    com.google.protobuf.ByteString getMessageBytes();
 }

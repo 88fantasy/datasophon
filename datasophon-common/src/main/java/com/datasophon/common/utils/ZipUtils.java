@@ -1,7 +1,5 @@
 package com.datasophon.common.utils;
 
-import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.StrUtil;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
@@ -16,15 +14,18 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.StrUtil;
+
 /**
  * @author zhanghuangbin
  */
 public class ZipUtils {
-
+    
     public static void unzip(String zipFile, String targetDir) throws IOException {
         unzip(zipFile, targetDir, 0);
     }
-
+    
     /**
      *
      * @param zipFile
@@ -38,7 +39,7 @@ public class ZipUtils {
         }
         InputStream in = null;
         ArchiveInputStream archiveInputStream = null;
-
+        
         try {
             in = Files.newInputStream(Paths.get(zipFile));
             archiveInputStream = new ArchiveStreamFactory().createArchiveInputStream(ArchiveStreamFactory.ZIP, in);
@@ -50,11 +51,11 @@ public class ZipUtils {
             IoUtil.close(in);
         }
     }
-
+    
     private static void extractArchive(ArchiveInputStream ais, String targetDir, int stripComponents) throws IOException {
         ArchiveEntry entry;
         Path targetPath = Paths.get(targetDir);
-
+        
         // 创建目标目录
         if (!Files.exists(targetPath)) {
             Files.createDirectories(targetPath);
@@ -70,7 +71,7 @@ public class ZipUtils {
                     if (entry.isDirectory()) {
                         continue;
                     }
-                    throw new IllegalStateException(String.format("fileName: %s only has %d components, can not strip %d components", name,  components.size(), stripComponents));
+                    throw new IllegalStateException(String.format("fileName: %s only has %d components, can not strip %d components", name, components.size(), stripComponents));
                 }
                 String newName = StrUtil.join("/", components.subList(stripComponents, components.size()));
                 name = name.endsWith("/") ? newName + "/" : newName;
@@ -79,7 +80,7 @@ public class ZipUtils {
             if (!entryPath.normalize().startsWith(targetPath.normalize())) {
                 throw new IOException("恶意路径: " + entry.getName());
             }
-
+            
             if (entry.isDirectory()) {
                 // 创建目录
                 Files.createDirectories(entryPath);
@@ -89,7 +90,7 @@ public class ZipUtils {
                 if (parent != null && !Files.exists(parent)) {
                     Files.createDirectories(parent);
                 }
-
+                
                 // 写入文件
                 try (OutputStream os = Files.newOutputStream(entryPath)) {
                     IoUtil.copy(ais, os);
@@ -97,5 +98,5 @@ public class ZipUtils {
             }
         }
     }
-
+    
 }

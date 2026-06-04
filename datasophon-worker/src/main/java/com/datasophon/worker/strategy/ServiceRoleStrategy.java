@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.strategy;
 
 import com.datasophon.common.command.ServiceRoleOperateCommand;
@@ -34,6 +33,6 @@ public interface ServiceRoleStrategy {
     default ExecResult handler(ServiceRoleOperateCommand command) throws SQLException, ClassNotFoundException {
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         return serviceHandler.start(command.getStartRunner(), command.getStatusRunner(),
-            command, command.getRunAs());
+                command, command.getRunAs());
     }
 }

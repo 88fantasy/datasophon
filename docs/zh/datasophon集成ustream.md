@@ -20,7 +20,9 @@ mkdir USTREAM
 cd USTREAM
 touch service_ddl.json
 ```
+
 参数样例：
+
 ```shell
 {
     "name": "loginUsername",
@@ -44,14 +46,16 @@ touch ustream-yaml.ftl
 ```
 
 添加prometheus.ftl
+
 ```shell
-  - job_name: 'ustream'
-    file_sd_configs:
-    - files:
-      - configs/ustreamserver.json
+- job_name: 'ustream'
+  file_sd_configs:
+  - files:
+    - configs/ustreamserver.json
 ```
 
 ### 4、ustream初始化代码
+
 添加类`UstreamMasterHandlerStrategy`
 设置`ServiceRoleStrategyContext`
 
@@ -70,12 +74,15 @@ sh /opt/apps/datasophon-manager-1.2.0/bin/datasophon-api.sh restart api
 ```
 
 ### 4、安装服务
+
 配置host
+
 ```shell
 xx.xx.xx.xx flinkHistoryserver mysql-node-1
 ```
 
 初始化数据库
+
 ```sql
 CREATE DATABASE ustream DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
 create user 'ustream'@'%' identified by 'BALB4g6hNsWJAw94E3mFJA';

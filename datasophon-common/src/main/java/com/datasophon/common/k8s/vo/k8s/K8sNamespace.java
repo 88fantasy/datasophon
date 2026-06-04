@@ -1,10 +1,11 @@
 package com.datasophon.common.k8s.vo.k8s;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
+
+import lombok.Data;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * K8s Namespace 资源
@@ -16,7 +17,7 @@ public class K8sNamespace {
     private Metadata metadata;
     private NamespaceSpec spec;
     private NamespaceStatus status;
-
+    
     @Data
     public static class Metadata {
         private String name;
@@ -28,7 +29,7 @@ public class K8sNamespace {
         private List<OwnerReference> ownerReferences;
         private String finalizers;
         private String managedFields;
-
+        
         @Data
         public static class OwnerReference {
             private String apiVersion;
@@ -39,20 +40,20 @@ public class K8sNamespace {
             private Boolean blockOwnerDeletion;
         }
     }
-
+    
     @Data
     public static class NamespaceSpec {
         @JsonProperty("finalizers")
         private List<String> finalizers;
     }
-
+    
     @Data
     public static class NamespaceStatus {
         @JsonProperty("phase")
         private String phase;
         @JsonProperty("conditions")
         private List<Condition> conditions;
-
+        
         @Data
         public static class Condition {
             @JsonProperty("type")

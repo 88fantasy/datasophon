@@ -11,812 +11,812 @@ package com.datasophon.grpc.api;
  *
  * Protobuf type {@code com.datasophon.grpc.UnixUserRequest}
  */
-public final class UnixUserRequest extends
-    com.google.protobuf.GeneratedMessageV3 implements
-    // @@protoc_insertion_point(message_implements:com.datasophon.grpc.UnixUserRequest)
-    UnixUserRequestOrBuilder {
-private static final long serialVersionUID = 0L;
-  // Use UnixUserRequest.newBuilder() to construct.
-  private UnixUserRequest(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
-    super(builder);
-  }
-  private UnixUserRequest() {
-    username_ = "";
-    mainGroup_ = "";
-    otherGroups_ = "";
-  }
-
-  @java.lang.Override
-  @SuppressWarnings({"unused"})
-  protected java.lang.Object newInstance(
-      UnusedPrivateParameter unused) {
-    return new UnixUserRequest();
-  }
-
-  public static final com.google.protobuf.Descriptors.Descriptor
-      getDescriptor() {
-    return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_UnixUserRequest_descriptor;
-  }
-
-  @java.lang.Override
-  protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internalGetFieldAccessorTable() {
-    return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_UnixUserRequest_fieldAccessorTable
-        .ensureFieldAccessorsInitialized(
-            com.datasophon.grpc.api.UnixUserRequest.class, com.datasophon.grpc.api.UnixUserRequest.Builder.class);
-  }
-
-  public static final int USERNAME_FIELD_NUMBER = 1;
-  @SuppressWarnings("serial")
-  private volatile java.lang.Object username_ = "";
-  /**
-   * <code>string username = 1;</code>
-   * @return The username.
-   */
-  @java.lang.Override
-  public java.lang.String getUsername() {
-    java.lang.Object ref = username_;
-    if (ref instanceof java.lang.String) {
-      return (java.lang.String) ref;
-    } else {
-      com.google.protobuf.ByteString bs = 
-          (com.google.protobuf.ByteString) ref;
-      java.lang.String s = bs.toStringUtf8();
-      username_ = s;
-      return s;
+public final class UnixUserRequest
+        extends
+            com.google.protobuf.GeneratedMessageV3
+        implements
+            // @@protoc_insertion_point(message_implements:com.datasophon.grpc.UnixUserRequest)
+            UnixUserRequestOrBuilder {
+    private static final long serialVersionUID = 0L;
+    // Use UnixUserRequest.newBuilder() to construct.
+    private UnixUserRequest(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+        super(builder);
     }
-  }
-  /**
-   * <code>string username = 1;</code>
-   * @return The bytes for username.
-   */
-  @java.lang.Override
-  public com.google.protobuf.ByteString
-      getUsernameBytes() {
-    java.lang.Object ref = username_;
-    if (ref instanceof java.lang.String) {
-      com.google.protobuf.ByteString b = 
-          com.google.protobuf.ByteString.copyFromUtf8(
-              (java.lang.String) ref);
-      username_ = b;
-      return b;
-    } else {
-      return (com.google.protobuf.ByteString) ref;
+    private UnixUserRequest() {
+        username_ = "";
+        mainGroup_ = "";
+        otherGroups_ = "";
     }
-  }
-
-  public static final int MAIN_GROUP_FIELD_NUMBER = 2;
-  @SuppressWarnings("serial")
-  private volatile java.lang.Object mainGroup_ = "";
-  /**
-   * <code>string main_group = 2;</code>
-   * @return The mainGroup.
-   */
-  @java.lang.Override
-  public java.lang.String getMainGroup() {
-    java.lang.Object ref = mainGroup_;
-    if (ref instanceof java.lang.String) {
-      return (java.lang.String) ref;
-    } else {
-      com.google.protobuf.ByteString bs = 
-          (com.google.protobuf.ByteString) ref;
-      java.lang.String s = bs.toStringUtf8();
-      mainGroup_ = s;
-      return s;
-    }
-  }
-  /**
-   * <code>string main_group = 2;</code>
-   * @return The bytes for mainGroup.
-   */
-  @java.lang.Override
-  public com.google.protobuf.ByteString
-      getMainGroupBytes() {
-    java.lang.Object ref = mainGroup_;
-    if (ref instanceof java.lang.String) {
-      com.google.protobuf.ByteString b = 
-          com.google.protobuf.ByteString.copyFromUtf8(
-              (java.lang.String) ref);
-      mainGroup_ = b;
-      return b;
-    } else {
-      return (com.google.protobuf.ByteString) ref;
-    }
-  }
-
-  public static final int OTHER_GROUPS_FIELD_NUMBER = 3;
-  @SuppressWarnings("serial")
-  private volatile java.lang.Object otherGroups_ = "";
-  /**
-   * <code>string other_groups = 3;</code>
-   * @return The otherGroups.
-   */
-  @java.lang.Override
-  public java.lang.String getOtherGroups() {
-    java.lang.Object ref = otherGroups_;
-    if (ref instanceof java.lang.String) {
-      return (java.lang.String) ref;
-    } else {
-      com.google.protobuf.ByteString bs = 
-          (com.google.protobuf.ByteString) ref;
-      java.lang.String s = bs.toStringUtf8();
-      otherGroups_ = s;
-      return s;
-    }
-  }
-  /**
-   * <code>string other_groups = 3;</code>
-   * @return The bytes for otherGroups.
-   */
-  @java.lang.Override
-  public com.google.protobuf.ByteString
-      getOtherGroupsBytes() {
-    java.lang.Object ref = otherGroups_;
-    if (ref instanceof java.lang.String) {
-      com.google.protobuf.ByteString b = 
-          com.google.protobuf.ByteString.copyFromUtf8(
-              (java.lang.String) ref);
-      otherGroups_ = b;
-      return b;
-    } else {
-      return (com.google.protobuf.ByteString) ref;
-    }
-  }
-
-  private byte memoizedIsInitialized = -1;
-  @java.lang.Override
-  public final boolean isInitialized() {
-    byte isInitialized = memoizedIsInitialized;
-    if (isInitialized == 1) return true;
-    if (isInitialized == 0) return false;
-
-    memoizedIsInitialized = 1;
-    return true;
-  }
-
-  @java.lang.Override
-  public void writeTo(com.google.protobuf.CodedOutputStream output)
-                      throws java.io.IOException {
-    if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(username_)) {
-      com.google.protobuf.GeneratedMessageV3.writeString(output, 1, username_);
-    }
-    if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(mainGroup_)) {
-      com.google.protobuf.GeneratedMessageV3.writeString(output, 2, mainGroup_);
-    }
-    if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(otherGroups_)) {
-      com.google.protobuf.GeneratedMessageV3.writeString(output, 3, otherGroups_);
-    }
-    getUnknownFields().writeTo(output);
-  }
-
-  @java.lang.Override
-  public int getSerializedSize() {
-    int size = memoizedSize;
-    if (size != -1) return size;
-
-    size = 0;
-    if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(username_)) {
-      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, username_);
-    }
-    if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(mainGroup_)) {
-      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, mainGroup_);
-    }
-    if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(otherGroups_)) {
-      size += com.google.protobuf.GeneratedMessageV3.computeStringSize(3, otherGroups_);
-    }
-    size += getUnknownFields().getSerializedSize();
-    memoizedSize = size;
-    return size;
-  }
-
-  @java.lang.Override
-  public boolean equals(final java.lang.Object obj) {
-    if (obj == this) {
-     return true;
-    }
-    if (!(obj instanceof com.datasophon.grpc.api.UnixUserRequest)) {
-      return super.equals(obj);
-    }
-    com.datasophon.grpc.api.UnixUserRequest other = (com.datasophon.grpc.api.UnixUserRequest) obj;
-
-    if (!getUsername()
-        .equals(other.getUsername())) return false;
-    if (!getMainGroup()
-        .equals(other.getMainGroup())) return false;
-    if (!getOtherGroups()
-        .equals(other.getOtherGroups())) return false;
-    if (!getUnknownFields().equals(other.getUnknownFields())) return false;
-    return true;
-  }
-
-  @java.lang.Override
-  public int hashCode() {
-    if (memoizedHashCode != 0) {
-      return memoizedHashCode;
-    }
-    int hash = 41;
-    hash = (19 * hash) + getDescriptor().hashCode();
-    hash = (37 * hash) + USERNAME_FIELD_NUMBER;
-    hash = (53 * hash) + getUsername().hashCode();
-    hash = (37 * hash) + MAIN_GROUP_FIELD_NUMBER;
-    hash = (53 * hash) + getMainGroup().hashCode();
-    hash = (37 * hash) + OTHER_GROUPS_FIELD_NUMBER;
-    hash = (53 * hash) + getOtherGroups().hashCode();
-    hash = (29 * hash) + getUnknownFields().hashCode();
-    memoizedHashCode = hash;
-    return hash;
-  }
-
-  public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
-      java.nio.ByteBuffer data)
-      throws com.google.protobuf.InvalidProtocolBufferException {
-    return PARSER.parseFrom(data);
-  }
-  public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
-      java.nio.ByteBuffer data,
-      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-      throws com.google.protobuf.InvalidProtocolBufferException {
-    return PARSER.parseFrom(data, extensionRegistry);
-  }
-  public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
-      com.google.protobuf.ByteString data)
-      throws com.google.protobuf.InvalidProtocolBufferException {
-    return PARSER.parseFrom(data);
-  }
-  public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
-      com.google.protobuf.ByteString data,
-      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-      throws com.google.protobuf.InvalidProtocolBufferException {
-    return PARSER.parseFrom(data, extensionRegistry);
-  }
-  public static com.datasophon.grpc.api.UnixUserRequest parseFrom(byte[] data)
-      throws com.google.protobuf.InvalidProtocolBufferException {
-    return PARSER.parseFrom(data);
-  }
-  public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
-      byte[] data,
-      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-      throws com.google.protobuf.InvalidProtocolBufferException {
-    return PARSER.parseFrom(data, extensionRegistry);
-  }
-  public static com.datasophon.grpc.api.UnixUserRequest parseFrom(java.io.InputStream input)
-      throws java.io.IOException {
-    return com.google.protobuf.GeneratedMessageV3
-        .parseWithIOException(PARSER, input);
-  }
-  public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
-      java.io.InputStream input,
-      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-      throws java.io.IOException {
-    return com.google.protobuf.GeneratedMessageV3
-        .parseWithIOException(PARSER, input, extensionRegistry);
-  }
-
-  public static com.datasophon.grpc.api.UnixUserRequest parseDelimitedFrom(java.io.InputStream input)
-      throws java.io.IOException {
-    return com.google.protobuf.GeneratedMessageV3
-        .parseDelimitedWithIOException(PARSER, input);
-  }
-
-  public static com.datasophon.grpc.api.UnixUserRequest parseDelimitedFrom(
-      java.io.InputStream input,
-      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-      throws java.io.IOException {
-    return com.google.protobuf.GeneratedMessageV3
-        .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
-  }
-  public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
-      com.google.protobuf.CodedInputStream input)
-      throws java.io.IOException {
-    return com.google.protobuf.GeneratedMessageV3
-        .parseWithIOException(PARSER, input);
-  }
-  public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
-      com.google.protobuf.CodedInputStream input,
-      com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-      throws java.io.IOException {
-    return com.google.protobuf.GeneratedMessageV3
-        .parseWithIOException(PARSER, input, extensionRegistry);
-  }
-
-  @java.lang.Override
-  public Builder newBuilderForType() { return newBuilder(); }
-  public static Builder newBuilder() {
-    return DEFAULT_INSTANCE.toBuilder();
-  }
-  public static Builder newBuilder(com.datasophon.grpc.api.UnixUserRequest prototype) {
-    return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
-  }
-  @java.lang.Override
-  public Builder toBuilder() {
-    return this == DEFAULT_INSTANCE
-        ? new Builder() : new Builder().mergeFrom(this);
-  }
-
-  @java.lang.Override
-  protected Builder newBuilderForType(
-      com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-    Builder builder = new Builder(parent);
-    return builder;
-  }
-  /**
-   * <pre>
-   ** Unix 用户操作请求（create / delete 共用；delete 只需 username）。 
-   * </pre>
-   *
-   * Protobuf type {@code com.datasophon.grpc.UnixUserRequest}
-   */
-  public static final class Builder extends
-      com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
-      // @@protoc_insertion_point(builder_implements:com.datasophon.grpc.UnixUserRequest)
-      com.datasophon.grpc.api.UnixUserRequestOrBuilder {
-    public static final com.google.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_UnixUserRequest_descriptor;
-    }
-
+    
     @java.lang.Override
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_UnixUserRequest_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              com.datasophon.grpc.api.UnixUserRequest.class, com.datasophon.grpc.api.UnixUserRequest.Builder.class);
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+                                           UnusedPrivateParameter unused) {
+        return new UnixUserRequest();
     }
-
-    // Construct using com.datasophon.grpc.api.UnixUserRequest.newBuilder()
-    private Builder() {
-
+    
+    public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
+        return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_UnixUserRequest_descriptor;
     }
-
-    private Builder(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-      super(parent);
-
-    }
+    
     @java.lang.Override
-    public Builder clear() {
-      super.clear();
-      bitField0_ = 0;
-      username_ = "";
-      mainGroup_ = "";
-      otherGroups_ = "";
-      return this;
+    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internalGetFieldAccessorTable() {
+        return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_UnixUserRequest_fieldAccessorTable
+                .ensureFieldAccessorsInitialized(
+                        com.datasophon.grpc.api.UnixUserRequest.class, com.datasophon.grpc.api.UnixUserRequest.Builder.class);
     }
-
-    @java.lang.Override
-    public com.google.protobuf.Descriptors.Descriptor
-        getDescriptorForType() {
-      return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_UnixUserRequest_descriptor;
-    }
-
-    @java.lang.Override
-    public com.datasophon.grpc.api.UnixUserRequest getDefaultInstanceForType() {
-      return com.datasophon.grpc.api.UnixUserRequest.getDefaultInstance();
-    }
-
-    @java.lang.Override
-    public com.datasophon.grpc.api.UnixUserRequest build() {
-      com.datasophon.grpc.api.UnixUserRequest result = buildPartial();
-      if (!result.isInitialized()) {
-        throw newUninitializedMessageException(result);
-      }
-      return result;
-    }
-
-    @java.lang.Override
-    public com.datasophon.grpc.api.UnixUserRequest buildPartial() {
-      com.datasophon.grpc.api.UnixUserRequest result = new com.datasophon.grpc.api.UnixUserRequest(this);
-      if (bitField0_ != 0) { buildPartial0(result); }
-      onBuilt();
-      return result;
-    }
-
-    private void buildPartial0(com.datasophon.grpc.api.UnixUserRequest result) {
-      int from_bitField0_ = bitField0_;
-      if (((from_bitField0_ & 0x00000001) != 0)) {
-        result.username_ = username_;
-      }
-      if (((from_bitField0_ & 0x00000002) != 0)) {
-        result.mainGroup_ = mainGroup_;
-      }
-      if (((from_bitField0_ & 0x00000004) != 0)) {
-        result.otherGroups_ = otherGroups_;
-      }
-    }
-
-    @java.lang.Override
-    public Builder clone() {
-      return super.clone();
-    }
-    @java.lang.Override
-    public Builder setField(
-        com.google.protobuf.Descriptors.FieldDescriptor field,
-        java.lang.Object value) {
-      return super.setField(field, value);
-    }
-    @java.lang.Override
-    public Builder clearField(
-        com.google.protobuf.Descriptors.FieldDescriptor field) {
-      return super.clearField(field);
-    }
-    @java.lang.Override
-    public Builder clearOneof(
-        com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-      return super.clearOneof(oneof);
-    }
-    @java.lang.Override
-    public Builder setRepeatedField(
-        com.google.protobuf.Descriptors.FieldDescriptor field,
-        int index, java.lang.Object value) {
-      return super.setRepeatedField(field, index, value);
-    }
-    @java.lang.Override
-    public Builder addRepeatedField(
-        com.google.protobuf.Descriptors.FieldDescriptor field,
-        java.lang.Object value) {
-      return super.addRepeatedField(field, value);
-    }
-    @java.lang.Override
-    public Builder mergeFrom(com.google.protobuf.Message other) {
-      if (other instanceof com.datasophon.grpc.api.UnixUserRequest) {
-        return mergeFrom((com.datasophon.grpc.api.UnixUserRequest)other);
-      } else {
-        super.mergeFrom(other);
-        return this;
-      }
-    }
-
-    public Builder mergeFrom(com.datasophon.grpc.api.UnixUserRequest other) {
-      if (other == com.datasophon.grpc.api.UnixUserRequest.getDefaultInstance()) return this;
-      if (!other.getUsername().isEmpty()) {
-        username_ = other.username_;
-        bitField0_ |= 0x00000001;
-        onChanged();
-      }
-      if (!other.getMainGroup().isEmpty()) {
-        mainGroup_ = other.mainGroup_;
-        bitField0_ |= 0x00000002;
-        onChanged();
-      }
-      if (!other.getOtherGroups().isEmpty()) {
-        otherGroups_ = other.otherGroups_;
-        bitField0_ |= 0x00000004;
-        onChanged();
-      }
-      this.mergeUnknownFields(other.getUnknownFields());
-      onChanged();
-      return this;
-    }
-
-    @java.lang.Override
-    public final boolean isInitialized() {
-      return true;
-    }
-
-    @java.lang.Override
-    public Builder mergeFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      if (extensionRegistry == null) {
-        throw new java.lang.NullPointerException();
-      }
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            case 10: {
-              username_ = input.readStringRequireUtf8();
-              bitField0_ |= 0x00000001;
-              break;
-            } // case 10
-            case 18: {
-              mainGroup_ = input.readStringRequireUtf8();
-              bitField0_ |= 0x00000002;
-              break;
-            } // case 18
-            case 26: {
-              otherGroups_ = input.readStringRequireUtf8();
-              bitField0_ |= 0x00000004;
-              break;
-            } // case 26
-            default: {
-              if (!super.parseUnknownField(input, extensionRegistry, tag)) {
-                done = true; // was an endgroup tag
-              }
-              break;
-            } // default:
-          } // switch (tag)
-        } // while (!done)
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.unwrapIOException();
-      } finally {
-        onChanged();
-      } // finally
-      return this;
-    }
-    private int bitField0_;
-
-    private java.lang.Object username_ = "";
+    
+    public static final int USERNAME_FIELD_NUMBER = 1;
+    @SuppressWarnings("serial")
+    private volatile java.lang.Object username_ = "";
     /**
      * <code>string username = 1;</code>
      * @return The username.
      */
+    @java.lang.Override
     public java.lang.String getUsername() {
-      java.lang.Object ref = username_;
-      if (!(ref instanceof java.lang.String)) {
-        com.google.protobuf.ByteString bs =
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        username_ = s;
-        return s;
-      } else {
-        return (java.lang.String) ref;
-      }
+        java.lang.Object ref = username_;
+        if (ref instanceof java.lang.String) {
+            return (java.lang.String) ref;
+        } else {
+            com.google.protobuf.ByteString bs =
+                    (com.google.protobuf.ByteString) ref;
+            java.lang.String s = bs.toStringUtf8();
+            username_ = s;
+            return s;
+        }
     }
     /**
      * <code>string username = 1;</code>
      * @return The bytes for username.
      */
-    public com.google.protobuf.ByteString
-        getUsernameBytes() {
-      java.lang.Object ref = username_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        username_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
+    @java.lang.Override
+    public com.google.protobuf.ByteString getUsernameBytes() {
+        java.lang.Object ref = username_;
+        if (ref instanceof java.lang.String) {
+            com.google.protobuf.ByteString b =
+                    com.google.protobuf.ByteString.copyFromUtf8(
+                            (java.lang.String) ref);
+            username_ = b;
+            return b;
+        } else {
+            return (com.google.protobuf.ByteString) ref;
+        }
     }
-    /**
-     * <code>string username = 1;</code>
-     * @param value The username to set.
-     * @return This builder for chaining.
-     */
-    public Builder setUsername(
-        java.lang.String value) {
-      if (value == null) { throw new NullPointerException(); }
-      username_ = value;
-      bitField0_ |= 0x00000001;
-      onChanged();
-      return this;
-    }
-    /**
-     * <code>string username = 1;</code>
-     * @return This builder for chaining.
-     */
-    public Builder clearUsername() {
-      username_ = getDefaultInstance().getUsername();
-      bitField0_ = (bitField0_ & ~0x00000001);
-      onChanged();
-      return this;
-    }
-    /**
-     * <code>string username = 1;</code>
-     * @param value The bytes for username to set.
-     * @return This builder for chaining.
-     */
-    public Builder setUsernameBytes(
-        com.google.protobuf.ByteString value) {
-      if (value == null) { throw new NullPointerException(); }
-      checkByteStringIsUtf8(value);
-      username_ = value;
-      bitField0_ |= 0x00000001;
-      onChanged();
-      return this;
-    }
-
-    private java.lang.Object mainGroup_ = "";
+    
+    public static final int MAIN_GROUP_FIELD_NUMBER = 2;
+    @SuppressWarnings("serial")
+    private volatile java.lang.Object mainGroup_ = "";
     /**
      * <code>string main_group = 2;</code>
      * @return The mainGroup.
      */
+    @java.lang.Override
     public java.lang.String getMainGroup() {
-      java.lang.Object ref = mainGroup_;
-      if (!(ref instanceof java.lang.String)) {
-        com.google.protobuf.ByteString bs =
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        mainGroup_ = s;
-        return s;
-      } else {
-        return (java.lang.String) ref;
-      }
+        java.lang.Object ref = mainGroup_;
+        if (ref instanceof java.lang.String) {
+            return (java.lang.String) ref;
+        } else {
+            com.google.protobuf.ByteString bs =
+                    (com.google.protobuf.ByteString) ref;
+            java.lang.String s = bs.toStringUtf8();
+            mainGroup_ = s;
+            return s;
+        }
     }
     /**
      * <code>string main_group = 2;</code>
      * @return The bytes for mainGroup.
      */
-    public com.google.protobuf.ByteString
-        getMainGroupBytes() {
-      java.lang.Object ref = mainGroup_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        mainGroup_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
+    @java.lang.Override
+    public com.google.protobuf.ByteString getMainGroupBytes() {
+        java.lang.Object ref = mainGroup_;
+        if (ref instanceof java.lang.String) {
+            com.google.protobuf.ByteString b =
+                    com.google.protobuf.ByteString.copyFromUtf8(
+                            (java.lang.String) ref);
+            mainGroup_ = b;
+            return b;
+        } else {
+            return (com.google.protobuf.ByteString) ref;
+        }
     }
-    /**
-     * <code>string main_group = 2;</code>
-     * @param value The mainGroup to set.
-     * @return This builder for chaining.
-     */
-    public Builder setMainGroup(
-        java.lang.String value) {
-      if (value == null) { throw new NullPointerException(); }
-      mainGroup_ = value;
-      bitField0_ |= 0x00000002;
-      onChanged();
-      return this;
-    }
-    /**
-     * <code>string main_group = 2;</code>
-     * @return This builder for chaining.
-     */
-    public Builder clearMainGroup() {
-      mainGroup_ = getDefaultInstance().getMainGroup();
-      bitField0_ = (bitField0_ & ~0x00000002);
-      onChanged();
-      return this;
-    }
-    /**
-     * <code>string main_group = 2;</code>
-     * @param value The bytes for mainGroup to set.
-     * @return This builder for chaining.
-     */
-    public Builder setMainGroupBytes(
-        com.google.protobuf.ByteString value) {
-      if (value == null) { throw new NullPointerException(); }
-      checkByteStringIsUtf8(value);
-      mainGroup_ = value;
-      bitField0_ |= 0x00000002;
-      onChanged();
-      return this;
-    }
-
-    private java.lang.Object otherGroups_ = "";
+    
+    public static final int OTHER_GROUPS_FIELD_NUMBER = 3;
+    @SuppressWarnings("serial")
+    private volatile java.lang.Object otherGroups_ = "";
     /**
      * <code>string other_groups = 3;</code>
      * @return The otherGroups.
      */
+    @java.lang.Override
     public java.lang.String getOtherGroups() {
-      java.lang.Object ref = otherGroups_;
-      if (!(ref instanceof java.lang.String)) {
-        com.google.protobuf.ByteString bs =
-            (com.google.protobuf.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        otherGroups_ = s;
-        return s;
-      } else {
-        return (java.lang.String) ref;
-      }
+        java.lang.Object ref = otherGroups_;
+        if (ref instanceof java.lang.String) {
+            return (java.lang.String) ref;
+        } else {
+            com.google.protobuf.ByteString bs =
+                    (com.google.protobuf.ByteString) ref;
+            java.lang.String s = bs.toStringUtf8();
+            otherGroups_ = s;
+            return s;
+        }
     }
     /**
      * <code>string other_groups = 3;</code>
      * @return The bytes for otherGroups.
      */
-    public com.google.protobuf.ByteString
-        getOtherGroupsBytes() {
-      java.lang.Object ref = otherGroups_;
-      if (ref instanceof String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        otherGroups_ = b;
-        return b;
-      } else {
-        return (com.google.protobuf.ByteString) ref;
-      }
+    @java.lang.Override
+    public com.google.protobuf.ByteString getOtherGroupsBytes() {
+        java.lang.Object ref = otherGroups_;
+        if (ref instanceof java.lang.String) {
+            com.google.protobuf.ByteString b =
+                    com.google.protobuf.ByteString.copyFromUtf8(
+                            (java.lang.String) ref);
+            otherGroups_ = b;
+            return b;
+        } else {
+            return (com.google.protobuf.ByteString) ref;
+        }
     }
-    /**
-     * <code>string other_groups = 3;</code>
-     * @param value The otherGroups to set.
-     * @return This builder for chaining.
-     */
-    public Builder setOtherGroups(
-        java.lang.String value) {
-      if (value == null) { throw new NullPointerException(); }
-      otherGroups_ = value;
-      bitField0_ |= 0x00000004;
-      onChanged();
-      return this;
+    
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+        byte isInitialized = memoizedIsInitialized;
+        if (isInitialized == 1)
+            return true;
+        if (isInitialized == 0)
+            return false;
+        
+        memoizedIsInitialized = 1;
+        return true;
     }
-    /**
-     * <code>string other_groups = 3;</code>
-     * @return This builder for chaining.
-     */
-    public Builder clearOtherGroups() {
-      otherGroups_ = getDefaultInstance().getOtherGroups();
-      bitField0_ = (bitField0_ & ~0x00000004);
-      onChanged();
-      return this;
+    
+    @java.lang.Override
+    public void writeTo(com.google.protobuf.CodedOutputStream output) throws java.io.IOException {
+        if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(username_)) {
+            com.google.protobuf.GeneratedMessageV3.writeString(output, 1, username_);
+        }
+        if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(mainGroup_)) {
+            com.google.protobuf.GeneratedMessageV3.writeString(output, 2, mainGroup_);
+        }
+        if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(otherGroups_)) {
+            com.google.protobuf.GeneratedMessageV3.writeString(output, 3, otherGroups_);
+        }
+        getUnknownFields().writeTo(output);
     }
-    /**
-     * <code>string other_groups = 3;</code>
-     * @param value The bytes for otherGroups to set.
-     * @return This builder for chaining.
-     */
-    public Builder setOtherGroupsBytes(
-        com.google.protobuf.ByteString value) {
-      if (value == null) { throw new NullPointerException(); }
-      checkByteStringIsUtf8(value);
-      otherGroups_ = value;
-      bitField0_ |= 0x00000004;
-      onChanged();
-      return this;
+    
+    @java.lang.Override
+    public int getSerializedSize() {
+        int size = memoizedSize;
+        if (size != -1)
+            return size;
+        
+        size = 0;
+        if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(username_)) {
+            size += com.google.protobuf.GeneratedMessageV3.computeStringSize(1, username_);
+        }
+        if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(mainGroup_)) {
+            size += com.google.protobuf.GeneratedMessageV3.computeStringSize(2, mainGroup_);
+        }
+        if (!com.google.protobuf.GeneratedMessageV3.isStringEmpty(otherGroups_)) {
+            size += com.google.protobuf.GeneratedMessageV3.computeStringSize(3, otherGroups_);
+        }
+        size += getUnknownFields().getSerializedSize();
+        memoizedSize = size;
+        return size;
+    }
+    
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof com.datasophon.grpc.api.UnixUserRequest)) {
+            return super.equals(obj);
+        }
+        com.datasophon.grpc.api.UnixUserRequest other = (com.datasophon.grpc.api.UnixUserRequest) obj;
+        
+        if (!getUsername()
+                .equals(other.getUsername()))
+            return false;
+        if (!getMainGroup()
+                .equals(other.getMainGroup()))
+            return false;
+        if (!getOtherGroups()
+                .equals(other.getOtherGroups()))
+            return false;
+        if (!getUnknownFields().equals(other.getUnknownFields()))
+            return false;
+        return true;
+    }
+    
+    @java.lang.Override
+    public int hashCode() {
+        if (memoizedHashCode != 0) {
+            return memoizedHashCode;
+        }
+        int hash = 41;
+        hash = (19 * hash) + getDescriptor().hashCode();
+        hash = (37 * hash) + USERNAME_FIELD_NUMBER;
+        hash = (53 * hash) + getUsername().hashCode();
+        hash = (37 * hash) + MAIN_GROUP_FIELD_NUMBER;
+        hash = (53 * hash) + getMainGroup().hashCode();
+        hash = (37 * hash) + OTHER_GROUPS_FIELD_NUMBER;
+        hash = (53 * hash) + getOtherGroups().hashCode();
+        hash = (29 * hash) + getUnknownFields().hashCode();
+        memoizedHashCode = hash;
+        return hash;
+    }
+    
+    public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
+                                                                    java.nio.ByteBuffer data) throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+    }
+    public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
+                                                                    java.nio.ByteBuffer data,
+                                                                    com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
+                                                                    com.google.protobuf.ByteString data) throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+    }
+    public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
+                                                                    com.google.protobuf.ByteString data,
+                                                                    com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.datasophon.grpc.api.UnixUserRequest parseFrom(byte[] data) throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data);
+    }
+    public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
+                                                                    byte[] data,
+                                                                    com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws com.google.protobuf.InvalidProtocolBufferException {
+        return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static com.datasophon.grpc.api.UnixUserRequest parseFrom(java.io.InputStream input) throws java.io.IOException {
+        return com.google.protobuf.GeneratedMessageV3
+                .parseWithIOException(PARSER, input);
+    }
+    public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
+                                                                    java.io.InputStream input,
+                                                                    com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+        return com.google.protobuf.GeneratedMessageV3
+                .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    
+    public static com.datasophon.grpc.api.UnixUserRequest parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+        return com.google.protobuf.GeneratedMessageV3
+                .parseDelimitedWithIOException(PARSER, input);
+    }
+    
+    public static com.datasophon.grpc.api.UnixUserRequest parseDelimitedFrom(
+                                                                             java.io.InputStream input,
+                                                                             com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+        return com.google.protobuf.GeneratedMessageV3
+                .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
+                                                                    com.google.protobuf.CodedInputStream input) throws java.io.IOException {
+        return com.google.protobuf.GeneratedMessageV3
+                .parseWithIOException(PARSER, input);
+    }
+    public static com.datasophon.grpc.api.UnixUserRequest parseFrom(
+                                                                    com.google.protobuf.CodedInputStream input,
+                                                                    com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+        return com.google.protobuf.GeneratedMessageV3
+                .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    
+    @java.lang.Override
+    public Builder newBuilderForType() {
+        return newBuilder();
+    }
+    public static Builder newBuilder() {
+        return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(com.datasophon.grpc.api.UnixUserRequest prototype) {
+        return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
     }
     @java.lang.Override
-    public final Builder setUnknownFields(
-        final com.google.protobuf.UnknownFieldSet unknownFields) {
-      return super.setUnknownFields(unknownFields);
+    public Builder toBuilder() {
+        return this == DEFAULT_INSTANCE
+                ? new Builder()
+                : new Builder().mergeFrom(this);
     }
-
+    
     @java.lang.Override
-    public final Builder mergeUnknownFields(
-        final com.google.protobuf.UnknownFieldSet unknownFields) {
-      return super.mergeUnknownFields(unknownFields);
+    protected Builder newBuilderForType(
+                                        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        Builder builder = new Builder(parent);
+        return builder;
     }
-
-
-    // @@protoc_insertion_point(builder_scope:com.datasophon.grpc.UnixUserRequest)
-  }
-
-  // @@protoc_insertion_point(class_scope:com.datasophon.grpc.UnixUserRequest)
-  private static final com.datasophon.grpc.api.UnixUserRequest DEFAULT_INSTANCE;
-  static {
-    DEFAULT_INSTANCE = new com.datasophon.grpc.api.UnixUserRequest();
-  }
-
-  public static com.datasophon.grpc.api.UnixUserRequest getDefaultInstance() {
-    return DEFAULT_INSTANCE;
-  }
-
-  private static final com.google.protobuf.Parser<UnixUserRequest>
-      PARSER = new com.google.protobuf.AbstractParser<UnixUserRequest>() {
+    /**
+     * <pre>
+     ** Unix 用户操作请求（create / delete 共用；delete 只需 username）。 
+     * </pre>
+     *
+     * Protobuf type {@code com.datasophon.grpc.UnixUserRequest}
+     */
+    public static final class Builder
+            extends
+                com.google.protobuf.GeneratedMessageV3.Builder<Builder>
+            implements
+                // @@protoc_insertion_point(builder_implements:com.datasophon.grpc.UnixUserRequest)
+                com.datasophon.grpc.api.UnixUserRequestOrBuilder {
+        public static final com.google.protobuf.Descriptors.Descriptor getDescriptor() {
+            return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_UnixUserRequest_descriptor;
+        }
+        
+        @java.lang.Override
+        protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internalGetFieldAccessorTable() {
+            return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_UnixUserRequest_fieldAccessorTable
+                    .ensureFieldAccessorsInitialized(
+                            com.datasophon.grpc.api.UnixUserRequest.class, com.datasophon.grpc.api.UnixUserRequest.Builder.class);
+        }
+        
+        // Construct using com.datasophon.grpc.api.UnixUserRequest.newBuilder()
+        private Builder() {
+            
+        }
+        
+        private Builder(
+                        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+            super(parent);
+            
+        }
+        @java.lang.Override
+        public Builder clear() {
+            super.clear();
+            bitField0_ = 0;
+            username_ = "";
+            mainGroup_ = "";
+            otherGroups_ = "";
+            return this;
+        }
+        
+        @java.lang.Override
+        public com.google.protobuf.Descriptors.Descriptor getDescriptorForType() {
+            return com.datasophon.grpc.api.WorkerProto.internal_static_com_datasophon_grpc_UnixUserRequest_descriptor;
+        }
+        
+        @java.lang.Override
+        public com.datasophon.grpc.api.UnixUserRequest getDefaultInstanceForType() {
+            return com.datasophon.grpc.api.UnixUserRequest.getDefaultInstance();
+        }
+        
+        @java.lang.Override
+        public com.datasophon.grpc.api.UnixUserRequest build() {
+            com.datasophon.grpc.api.UnixUserRequest result = buildPartial();
+            if (!result.isInitialized()) {
+                throw newUninitializedMessageException(result);
+            }
+            return result;
+        }
+        
+        @java.lang.Override
+        public com.datasophon.grpc.api.UnixUserRequest buildPartial() {
+            com.datasophon.grpc.api.UnixUserRequest result = new com.datasophon.grpc.api.UnixUserRequest(this);
+            if (bitField0_ != 0) {
+                buildPartial0(result);
+            }
+            onBuilt();
+            return result;
+        }
+        
+        private void buildPartial0(com.datasophon.grpc.api.UnixUserRequest result) {
+            int from_bitField0_ = bitField0_;
+            if (((from_bitField0_ & 0x00000001) != 0)) {
+                result.username_ = username_;
+            }
+            if (((from_bitField0_ & 0x00000002) != 0)) {
+                result.mainGroup_ = mainGroup_;
+            }
+            if (((from_bitField0_ & 0x00000004) != 0)) {
+                result.otherGroups_ = otherGroups_;
+            }
+        }
+        
+        @java.lang.Override
+        public Builder clone() {
+            return super.clone();
+        }
+        @java.lang.Override
+        public Builder setField(
+                                com.google.protobuf.Descriptors.FieldDescriptor field,
+                                java.lang.Object value) {
+            return super.setField(field, value);
+        }
+        @java.lang.Override
+        public Builder clearField(
+                                  com.google.protobuf.Descriptors.FieldDescriptor field) {
+            return super.clearField(field);
+        }
+        @java.lang.Override
+        public Builder clearOneof(
+                                  com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+            return super.clearOneof(oneof);
+        }
+        @java.lang.Override
+        public Builder setRepeatedField(
+                                        com.google.protobuf.Descriptors.FieldDescriptor field,
+                                        int index, java.lang.Object value) {
+            return super.setRepeatedField(field, index, value);
+        }
+        @java.lang.Override
+        public Builder addRepeatedField(
+                                        com.google.protobuf.Descriptors.FieldDescriptor field,
+                                        java.lang.Object value) {
+            return super.addRepeatedField(field, value);
+        }
+        @java.lang.Override
+        public Builder mergeFrom(com.google.protobuf.Message other) {
+            if (other instanceof com.datasophon.grpc.api.UnixUserRequest) {
+                return mergeFrom((com.datasophon.grpc.api.UnixUserRequest) other);
+            } else {
+                super.mergeFrom(other);
+                return this;
+            }
+        }
+        
+        public Builder mergeFrom(com.datasophon.grpc.api.UnixUserRequest other) {
+            if (other == com.datasophon.grpc.api.UnixUserRequest.getDefaultInstance())
+                return this;
+            if (!other.getUsername().isEmpty()) {
+                username_ = other.username_;
+                bitField0_ |= 0x00000001;
+                onChanged();
+            }
+            if (!other.getMainGroup().isEmpty()) {
+                mainGroup_ = other.mainGroup_;
+                bitField0_ |= 0x00000002;
+                onChanged();
+            }
+            if (!other.getOtherGroups().isEmpty()) {
+                otherGroups_ = other.otherGroups_;
+                bitField0_ |= 0x00000004;
+                onChanged();
+            }
+            this.mergeUnknownFields(other.getUnknownFields());
+            onChanged();
+            return this;
+        }
+        
+        @java.lang.Override
+        public final boolean isInitialized() {
+            return true;
+        }
+        
+        @java.lang.Override
+        public Builder mergeFrom(
+                                 com.google.protobuf.CodedInputStream input,
+                                 com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws java.io.IOException {
+            if (extensionRegistry == null) {
+                throw new java.lang.NullPointerException();
+            }
+            try {
+                boolean done = false;
+                while (!done) {
+                    int tag = input.readTag();
+                    switch (tag) {
+                        case 0:
+                            done = true;
+                            break;
+                        case 10: {
+                            username_ = input.readStringRequireUtf8();
+                            bitField0_ |= 0x00000001;
+                            break;
+                        } // case 10
+                        case 18: {
+                            mainGroup_ = input.readStringRequireUtf8();
+                            bitField0_ |= 0x00000002;
+                            break;
+                        } // case 18
+                        case 26: {
+                            otherGroups_ = input.readStringRequireUtf8();
+                            bitField0_ |= 0x00000004;
+                            break;
+                        } // case 26
+                        default: {
+                            if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                                done = true; // was an endgroup tag
+                            }
+                            break;
+                        } // default:
+                    } // switch (tag)
+                } // while (!done)
+            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+                throw e.unwrapIOException();
+            } finally {
+                onChanged();
+            } // finally
+            return this;
+        }
+        private int bitField0_;
+        
+        private java.lang.Object username_ = "";
+        /**
+         * <code>string username = 1;</code>
+         * @return The username.
+         */
+        public java.lang.String getUsername() {
+            java.lang.Object ref = username_;
+            if (!(ref instanceof java.lang.String)) {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                java.lang.String s = bs.toStringUtf8();
+                username_ = s;
+                return s;
+            } else {
+                return (java.lang.String) ref;
+            }
+        }
+        /**
+         * <code>string username = 1;</code>
+         * @return The bytes for username.
+         */
+        public com.google.protobuf.ByteString getUsernameBytes() {
+            java.lang.Object ref = username_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8(
+                                (java.lang.String) ref);
+                username_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+        /**
+         * <code>string username = 1;</code>
+         * @param value The username to set.
+         * @return This builder for chaining.
+         */
+        public Builder setUsername(
+                                   java.lang.String value) {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+            username_ = value;
+            bitField0_ |= 0x00000001;
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>string username = 1;</code>
+         * @return This builder for chaining.
+         */
+        public Builder clearUsername() {
+            username_ = getDefaultInstance().getUsername();
+            bitField0_ = (bitField0_ & ~0x00000001);
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>string username = 1;</code>
+         * @param value The bytes for username to set.
+         * @return This builder for chaining.
+         */
+        public Builder setUsernameBytes(
+                                        com.google.protobuf.ByteString value) {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+            checkByteStringIsUtf8(value);
+            username_ = value;
+            bitField0_ |= 0x00000001;
+            onChanged();
+            return this;
+        }
+        
+        private java.lang.Object mainGroup_ = "";
+        /**
+         * <code>string main_group = 2;</code>
+         * @return The mainGroup.
+         */
+        public java.lang.String getMainGroup() {
+            java.lang.Object ref = mainGroup_;
+            if (!(ref instanceof java.lang.String)) {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                java.lang.String s = bs.toStringUtf8();
+                mainGroup_ = s;
+                return s;
+            } else {
+                return (java.lang.String) ref;
+            }
+        }
+        /**
+         * <code>string main_group = 2;</code>
+         * @return The bytes for mainGroup.
+         */
+        public com.google.protobuf.ByteString getMainGroupBytes() {
+            java.lang.Object ref = mainGroup_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8(
+                                (java.lang.String) ref);
+                mainGroup_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+        /**
+         * <code>string main_group = 2;</code>
+         * @param value The mainGroup to set.
+         * @return This builder for chaining.
+         */
+        public Builder setMainGroup(
+                                    java.lang.String value) {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+            mainGroup_ = value;
+            bitField0_ |= 0x00000002;
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>string main_group = 2;</code>
+         * @return This builder for chaining.
+         */
+        public Builder clearMainGroup() {
+            mainGroup_ = getDefaultInstance().getMainGroup();
+            bitField0_ = (bitField0_ & ~0x00000002);
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>string main_group = 2;</code>
+         * @param value The bytes for mainGroup to set.
+         * @return This builder for chaining.
+         */
+        public Builder setMainGroupBytes(
+                                         com.google.protobuf.ByteString value) {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+            checkByteStringIsUtf8(value);
+            mainGroup_ = value;
+            bitField0_ |= 0x00000002;
+            onChanged();
+            return this;
+        }
+        
+        private java.lang.Object otherGroups_ = "";
+        /**
+         * <code>string other_groups = 3;</code>
+         * @return The otherGroups.
+         */
+        public java.lang.String getOtherGroups() {
+            java.lang.Object ref = otherGroups_;
+            if (!(ref instanceof java.lang.String)) {
+                com.google.protobuf.ByteString bs =
+                        (com.google.protobuf.ByteString) ref;
+                java.lang.String s = bs.toStringUtf8();
+                otherGroups_ = s;
+                return s;
+            } else {
+                return (java.lang.String) ref;
+            }
+        }
+        /**
+         * <code>string other_groups = 3;</code>
+         * @return The bytes for otherGroups.
+         */
+        public com.google.protobuf.ByteString getOtherGroupsBytes() {
+            java.lang.Object ref = otherGroups_;
+            if (ref instanceof String) {
+                com.google.protobuf.ByteString b =
+                        com.google.protobuf.ByteString.copyFromUtf8(
+                                (java.lang.String) ref);
+                otherGroups_ = b;
+                return b;
+            } else {
+                return (com.google.protobuf.ByteString) ref;
+            }
+        }
+        /**
+         * <code>string other_groups = 3;</code>
+         * @param value The otherGroups to set.
+         * @return This builder for chaining.
+         */
+        public Builder setOtherGroups(
+                                      java.lang.String value) {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+            otherGroups_ = value;
+            bitField0_ |= 0x00000004;
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>string other_groups = 3;</code>
+         * @return This builder for chaining.
+         */
+        public Builder clearOtherGroups() {
+            otherGroups_ = getDefaultInstance().getOtherGroups();
+            bitField0_ = (bitField0_ & ~0x00000004);
+            onChanged();
+            return this;
+        }
+        /**
+         * <code>string other_groups = 3;</code>
+         * @param value The bytes for otherGroups to set.
+         * @return This builder for chaining.
+         */
+        public Builder setOtherGroupsBytes(
+                                           com.google.protobuf.ByteString value) {
+            if (value == null) {
+                throw new NullPointerException();
+            }
+            checkByteStringIsUtf8(value);
+            otherGroups_ = value;
+            bitField0_ |= 0x00000004;
+            onChanged();
+            return this;
+        }
+        @java.lang.Override
+        public final Builder setUnknownFields(
+                                              final com.google.protobuf.UnknownFieldSet unknownFields) {
+            return super.setUnknownFields(unknownFields);
+        }
+        
+        @java.lang.Override
+        public final Builder mergeUnknownFields(
+                                                final com.google.protobuf.UnknownFieldSet unknownFields) {
+            return super.mergeUnknownFields(unknownFields);
+        }
+        
+        // @@protoc_insertion_point(builder_scope:com.datasophon.grpc.UnixUserRequest)
+    }
+    
+    // @@protoc_insertion_point(class_scope:com.datasophon.grpc.UnixUserRequest)
+    private static final com.datasophon.grpc.api.UnixUserRequest DEFAULT_INSTANCE;
+    static {
+        DEFAULT_INSTANCE = new com.datasophon.grpc.api.UnixUserRequest();
+    }
+    
+    public static com.datasophon.grpc.api.UnixUserRequest getDefaultInstance() {
+        return DEFAULT_INSTANCE;
+    }
+    
+    private static final com.google.protobuf.Parser<UnixUserRequest> PARSER = new com.google.protobuf.AbstractParser<UnixUserRequest>() {
+        @java.lang.Override
+        public UnixUserRequest parsePartialFrom(
+                                                com.google.protobuf.CodedInputStream input,
+                                                com.google.protobuf.ExtensionRegistryLite extensionRegistry) throws com.google.protobuf.InvalidProtocolBufferException {
+            Builder builder = newBuilder();
+            try {
+                builder.mergeFrom(input, extensionRegistry);
+            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+                throw e.setUnfinishedMessage(builder.buildPartial());
+            } catch (com.google.protobuf.UninitializedMessageException e) {
+                throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+            } catch (java.io.IOException e) {
+                throw new com.google.protobuf.InvalidProtocolBufferException(e)
+                        .setUnfinishedMessage(builder.buildPartial());
+            }
+            return builder.buildPartial();
+        }
+    };
+    
+    public static com.google.protobuf.Parser<UnixUserRequest> parser() {
+        return PARSER;
+    }
+    
     @java.lang.Override
-    public UnixUserRequest parsePartialFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      Builder builder = newBuilder();
-      try {
-        builder.mergeFrom(input, extensionRegistry);
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(builder.buildPartial());
-      } catch (com.google.protobuf.UninitializedMessageException e) {
-        throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
-      } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(e)
-            .setUnfinishedMessage(builder.buildPartial());
-      }
-      return builder.buildPartial();
+    public com.google.protobuf.Parser<UnixUserRequest> getParserForType() {
+        return PARSER;
     }
-  };
-
-  public static com.google.protobuf.Parser<UnixUserRequest> parser() {
-    return PARSER;
-  }
-
-  @java.lang.Override
-  public com.google.protobuf.Parser<UnixUserRequest> getParserForType() {
-    return PARSER;
-  }
-
-  @java.lang.Override
-  public com.datasophon.grpc.api.UnixUserRequest getDefaultInstanceForType() {
-    return DEFAULT_INSTANCE;
-  }
-
+    
+    @java.lang.Override
+    public com.datasophon.grpc.api.UnixUserRequest getDefaultInstanceForType() {
+        return DEFAULT_INSTANCE;
+    }
+    
 }
-

@@ -2,22 +2,24 @@ package com.datasophon.common.utils;
 
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
+
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class OsUtils {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(OsUtils.class);
-
+    
     public static OsType getOs(String result) {
         List<String> lines = new ArrayList<>();
-        if(StringUtils.isNoneEmpty()) {
+        if (StringUtils.isNoneEmpty()) {
             lines.addAll(Arrays.asList(result.split(System.lineSeparator())));
         }
         Optional<String> optionalOsName = lines.stream().filter(s -> s.startsWith("ID=")).findAny();
@@ -37,7 +39,7 @@ public class OsUtils {
                             .replaceAll("\\)", "").replaceAll(" ", "-");
                 }
             } else if ("Ubuntu".equalsIgnoreCase(osName)) {
-                if(prettyName.isPresent()){
+                if (prettyName.isPresent()) {
                     osDetail = prettyName.get().replaceAll("\"", "").split("=")[1].replaceAll(" ", "-");
                 }
             } else {
@@ -49,14 +51,14 @@ public class OsUtils {
                     // ERSION="7 (Core)"
                     osVersion = optionalOsVersion.get().replaceAll("\"", "").split("=")[1].split("\\(")[0].trim();
                 }
-                osDetail = String.format("%s-%s",osName, osVersion);
+                osDetail = String.format("%s-%s", osName, osVersion);
             }
             osType = OsType.of(osDetail);
         }
         logger.info("[dist] os:{}, version:{}, osDetail:{}, osType:{}", osName, osVersion, osDetail, osType.getDesc());
         return osType;
     }
-
+    
     public static ArchType getArch(String result) {
         logger.info("arch:{}", result);
         return ArchType.of(result);

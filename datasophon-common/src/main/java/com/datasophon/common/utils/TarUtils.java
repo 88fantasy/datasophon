@@ -1,7 +1,5 @@
 package com.datasophon.common.utils;
 
-import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.RandomUtil;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -20,13 +18,15 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.RandomUtil;
+
 /**
  * @author zhanghuangbin
  * @date 2025/11/7
  */
 public class TarUtils {
-
-
+    
     /**
      * 解压tar文件(支持tar,tag.gz)
      *
@@ -40,19 +40,20 @@ public class TarUtils {
         if (!Files.exists(outputPath)) {
             Files.createDirectories(outputPath);
         }
-
+        
         String fileName = tarPath.getFileName().toString().toLowerCase();
-        try (InputStream fileInputStream = Files.newInputStream(tarPath);
-             InputStream decompressedInputStream = getDecompressedStream(fileInputStream, fileName);
-             TarArchiveInputStream tarInputStream = new TarArchiveInputStream(decompressedInputStream)) {
-
+        try (
+                InputStream fileInputStream = Files.newInputStream(tarPath);
+                InputStream decompressedInputStream = getDecompressedStream(fileInputStream, fileName);
+                TarArchiveInputStream tarInputStream = new TarArchiveInputStream(decompressedInputStream)) {
+            
             TarArchiveEntry entry;
             while ((entry = (TarArchiveEntry) tarInputStream.getNextEntry()) != null) {
                 Path outputFilePath = outputPath.resolve(entry.getName());
                 if (!outputFilePath.startsWith(outputPath)) {
                     throw new SecurityException("路径遍历攻击检测: " + entry.getName());
                 }
-
+                
                 if (entry.isDirectory()) {
                     Files.createDirectories(outputFilePath);
                 } else {
@@ -60,7 +61,7 @@ public class TarUtils {
                     if (parentDir != null && !Files.exists(parentDir)) {
                         Files.createDirectories(parentDir);
                     }
-
+                    
                     try (OutputStream outputFileStream = Files.newOutputStream(outputFilePath)) {
                         byte[] buffer = new byte[4096];
                         int bytesRead;
@@ -72,8 +73,7 @@ public class TarUtils {
             }
         }
     }
-
-
+    
     private static InputStream getDecompressedStream(InputStream inputStream, String fileName) throws IOException {
         if (fileName.endsWith(".tar.gz") || fileName.endsWith(".tgz") || fileName.endsWith(".taz")) {
             return new GzipCompressorInputStream(inputStream);
@@ -85,23 +85,23 @@ public class TarUtils {
             throw new IllegalArgumentException("不支持的文件格式: " + fileName);
         }
     }
-
+    
     public static String decompressToTemp(String zipFilePath) throws IOException {
         String dest = Paths.get(PathUtils.getTmpDir(), "ddp_unzip", RandomUtil.randomNumbers(12)).toString();
         decompress(zipFilePath, dest);
         return dest;
     }
-
-
+    
     public static List<String> getEntry(String tarFilePath) throws IOException {
         Path tarPath = Paths.get(tarFilePath);
         String fileName = tarPath.getFileName().toString().toLowerCase();
-
+        
         List<String> paths = new ArrayList<>();
-
-        try (InputStream fileInputStream = Files.newInputStream(tarPath);
-             InputStream decompressedInputStream = getDecompressedStream(fileInputStream, fileName);
-             TarArchiveInputStream tarInputStream = new TarArchiveInputStream(decompressedInputStream)) {
+        
+        try (
+                InputStream fileInputStream = Files.newInputStream(tarPath);
+                InputStream decompressedInputStream = getDecompressedStream(fileInputStream, fileName);
+                TarArchiveInputStream tarInputStream = new TarArchiveInputStream(decompressedInputStream)) {
             ArchiveEntry entry;
             while ((entry = tarInputStream.getNextEntry()) != null) {
                 if (!entry.isDirectory()) {
@@ -111,27 +111,27 @@ public class TarUtils {
         }
         return paths;
     }
-
-
-    public static String  readEntryContent(String tarFilePath, String target) throws IOException {
-        try (FileInputStream fis = new FileInputStream(tarFilePath);
-             TarArchiveInputStream tarInputStream = new TarArchiveInputStream(fis)) {
-
+    
+    public static String readEntryContent(String tarFilePath, String target) throws IOException {
+        try (
+                FileInputStream fis = new FileInputStream(tarFilePath);
+                TarArchiveInputStream tarInputStream = new TarArchiveInputStream(fis)) {
+            
             TarArchiveEntry entry;
             while ((entry = tarInputStream.getNextTarEntry()) != null) {
                 // 跳过目录
                 if (entry.isDirectory()) {
                     continue;
                 }
-
+                
                 // 匹配目标文件（注意：路径分隔符可能与操作系统有关，TAR 内部通常使用 "/")
                 if (entry.getName().equals(target)) {
-                   return IoUtil.read(tarInputStream, StandardCharsets.UTF_8);
+                    return IoUtil.read(tarInputStream, StandardCharsets.UTF_8);
                 }
             }
         }
-
+        
         throw new FileNotFoundException("File not found in TAR: " + target);
     }
-
+    
 }

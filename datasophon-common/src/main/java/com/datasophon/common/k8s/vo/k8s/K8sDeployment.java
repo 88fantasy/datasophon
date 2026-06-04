@@ -1,10 +1,11 @@
 package com.datasophon.common.k8s.vo.k8s;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
+
+import lombok.Data;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * K8s Deployment 资源
@@ -16,7 +17,7 @@ public class K8sDeployment {
     private Metadata metadata;
     private DeploymentSpec spec;
     private DeploymentStatus status;
-
+    
     @Data
     public static class Metadata {
         private String name;
@@ -28,7 +29,7 @@ public class K8sDeployment {
         private String uid;
         private Long generation;
     }
-
+    
     @Data
     public static class DeploymentSpec {
         private Integer replicas;
@@ -43,27 +44,27 @@ public class K8sDeployment {
         private Boolean paused;
         private Integer progressDeadlineSeconds;
     }
-
+    
     @Data
     public static class LabelSelector {
         private Map<String, String> matchLabels;
         private List<LabelSelectorRequirement> matchExpressions;
     }
-
+    
     @Data
     public static class LabelSelectorRequirement {
         private String key;
         private String operator;
         private List<String> values;
     }
-
+    
     @Data
     public static class DeploymentStrategy {
         private String type;
         @JsonProperty("rollingUpdate")
         private RollingUpdate rollingUpdate;
     }
-
+    
     @Data
     public static class RollingUpdate {
         @JsonProperty("maxUnavailable")
@@ -71,20 +72,20 @@ public class K8sDeployment {
         @JsonProperty("maxSurge")
         private String maxSurge;
     }
-
+    
     @Data
     public static class PodTemplateSpec {
         private PodTemplateMetadata metadata;
         @JsonProperty("spec")
         private PodSpec spec;
     }
-
+    
     @Data
     public static class PodTemplateMetadata {
         private Map<String, String> labels;
         private Map<String, String> annotations;
     }
-
+    
     @Data
     public static class PodSpec {
         private List<Container> containers;
@@ -111,12 +112,12 @@ public class K8sDeployment {
         @JsonProperty("securityContext")
         private PodSecurityContext securityContext;
     }
-
+    
     @Data
     public static class PodVolume {
         private String name;
     }
-
+    
     @Data
     public static class Container {
         private String name;
@@ -158,7 +159,7 @@ public class K8sDeployment {
         @JsonProperty("terminationMessagePolicy")
         private String terminationMessagePolicy;
     }
-
+    
     @Data
     public static class ContainerPort {
         @JsonProperty("name")
@@ -172,7 +173,7 @@ public class K8sDeployment {
         @JsonProperty("hostIP")
         private String hostIP;
     }
-
+    
     @Data
     public static class EnvVar {
         @JsonProperty("name")
@@ -182,7 +183,7 @@ public class K8sDeployment {
         @JsonProperty("valueFrom")
         private EnvVarSource valueFrom;
     }
-
+    
     @Data
     public static class EnvVarSource {
         private ConfigMapKeyRef configMapKeyRef;
@@ -190,29 +191,29 @@ public class K8sDeployment {
         private FieldRef fieldRef;
         private ResourceFieldRef resourceFieldRef;
     }
-
+    
     @Data
     public static class ConfigMapKeyRef {
         private String name;
         private String key;
     }
-
+    
     @Data
     public static class SecretKeyRef {
         private String name;
         private String key;
     }
-
+    
     @Data
     public static class FieldRef {
         private String fieldPath;
     }
-
+    
     @Data
     public static class ResourceFieldRef {
         private String resource;
     }
-
+    
     @Data
     public static class VolumeMount {
         private String name;
@@ -222,24 +223,24 @@ public class K8sDeployment {
         private String mountPropagation;
         private Boolean readOnlyRootFilesystem;
     }
-
+    
     @Data
     public static class EnvFromSource {
         private String prefix;
         private ConfigMapRef configMapRef;
         private SecretRef secretRef;
     }
-
+    
     @Data
     public static class ConfigMapRef {
         private String name;
     }
-
+    
     @Data
     public static class SecretRef {
         private String name;
     }
-
+    
     @Data
     public static class Probe {
         private HTTPGet httpGet;
@@ -252,7 +253,7 @@ public class K8sDeployment {
         private Integer failureThreshold;
         private Integer terminationGracePeriodSeconds;
     }
-
+    
     @Data
     public static class HTTPGet {
         private String path;
@@ -260,39 +261,37 @@ public class K8sDeployment {
         private String scheme;
         private List<HTTPHeader> httpHeaders;
     }
-
+    
     @Data
     public static class HTTPHeader {
         private String name;
         private String value;
     }
-
+    
     @Data
     public static class Exec {
         private List<String> command;
     }
-
+    
     @Data
     public static class TCPSocket {
         private String port;
         private String host;
     }
-
+    
     @Data
     public static class Lifecycle {
         private Handler postStart;
         private Handler preStop;
     }
-
+    
     @Data
     public static class Handler {
         private HTTPGet httpGet;
         private Exec exec;
         private TCPSocket tcpSocket;
     }
-
-
-
+    
     @Data
     public static class ResourceRequirements {
         @JsonProperty("requests")
@@ -302,12 +301,12 @@ public class K8sDeployment {
         @JsonProperty("claims")
         private List<ResourceClaim> claims;
     }
-
+    
     @Data
     public static class ResourceClaim {
         private String name;
     }
-
+    
     @Data
     public static class PodSecurityContext {
         private Long runAsUser;
@@ -319,7 +318,7 @@ public class K8sDeployment {
         private String fsGroupChangePolicy;
         private String sysctls;
     }
-
+    
     @Data
     public static class DeploymentStatus {
         private Integer replicas;
@@ -337,7 +336,7 @@ public class K8sDeployment {
         private List<DeploymentCondition> conditions;
         private String unavailableNodes;
     }
-
+    
     @Data
     public static class DeploymentCondition {
         @JsonProperty("type")

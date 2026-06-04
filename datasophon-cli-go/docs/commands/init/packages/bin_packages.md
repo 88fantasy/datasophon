@@ -18,11 +18,11 @@ datasophon-cli [--dry-run] init bin_packages \
 
 ## 参数 / Flags
 
-| flag | 简写 | 类型 | 默认 | 必填 | 说明 |
-|---|---|---|---|---|---|
-| `--datasophonInitPath` | `-i` | string | — | 是 | 本地 datasophon-init 目录路径（源） |
-| `--installPath` | `-n` | string | — | 是 | 目标节点安装根目录（目的地） |
-| `--initPathOverwriteForce` | 无 | bool | `false` | 否 | 目标路径已存在时是否强制覆盖 |
+|            flag            |  简写  |   类型   |   默认    | 必填 |             说明             |
+|----------------------------|------|--------|---------|----|----------------------------|
+| `--datasophonInitPath`     | `-i` | string | —       | 是  | 本地 datasophon-init 目录路径（源） |
+| `--installPath`            | `-n` | string | —       | 是  | 目标节点安装根目录（目的地）             |
+| `--initPathOverwriteForce` | 无    | bool   | `false` | 否  | 目标路径已存在时是否强制覆盖             |
 
 > 继承 init 公共 flag（`--config`、`--registryIp` 等）—— 详见 [global-flags.md#init-公共-flag](../../../global-flags.md#init-公共-flag)
 > 继承全局 flag：`--dry-run` —— 详见 [global-flags.md](../../../global-flags.md)
@@ -63,11 +63,12 @@ datasophon-cli init bin_packages \
 
 ## 退出码 / 常见错误
 
-| 错误信息 | 根因 | 处置 |
-|---|---|---|
-| `required flag(s) "datasophonInitPath" not set` | 未提供 `-i` | 补上 `-i` 参数 |
-| `目标路径已存在` | 目标路径已有旧版本 | 加 `--initPathOverwriteForce` 或手动删除 |
+|                      错误信息                       |    根因     |                 处置                 |
+|-------------------------------------------------|-----------|------------------------------------|
+| `required flag(s) "datasophonInitPath" not set` | 未提供 `-i`  | 补上 `-i` 参数                         |
+| `目标路径已存在`                                       | 目标路径已有旧版本 | 加 `--initPathOverwriteForce` 或手动删除 |
 
 ## 相关命令
 
 - [DAG 步骤表](../../../reference/init-all-dag.md)
+

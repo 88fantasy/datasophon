@@ -1,8 +1,8 @@
 package com.datasophon.common.k8s.vo.k8s;
 
-import lombok.Data;
-
 import java.util.Map;
+
+import lombok.Data;
 
 /**
  * K8s Secret 资源
@@ -13,7 +13,7 @@ public class K8sSecret {
     private String kind;
     private Metadata metadata;
     private String type;
-
+    
     @Data
     public static class Metadata {
         private String name;
@@ -22,6 +22,5 @@ public class K8sSecret {
         private Map<String, String> annotations;
         private String creationTimestamp;
     }
-
-
+    
 }

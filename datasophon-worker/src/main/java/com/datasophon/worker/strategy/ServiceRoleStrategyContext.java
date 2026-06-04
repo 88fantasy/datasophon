@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.strategy;
 
 import org.apache.commons.lang3.StringUtils;
@@ -68,11 +67,11 @@ public class ServiceRoleStrategyContext {
         map.put("MasterServer", new DSMasterHandlerStrategy("DS", "MasterServer"));
         // nacos
         map.put("NacosServer", new NacosMasterHandlerStrategy("NACOS", "NacosServer"));
-
+        
         // apisix
         map.put("Apisix", new ApisixHandlerStrategy("APISIX", "Apisix"));
-
-        //nginx
+        
+        // nginx
         map.put("Nginx", new NginxHandlerStrategy("NGINX", "Nginx"));
     }
     

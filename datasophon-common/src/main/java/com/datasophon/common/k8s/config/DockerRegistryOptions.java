@@ -1,7 +1,7 @@
 package com.datasophon.common.k8s.config;
 
-import cn.hutool.core.util.StrUtil;
 import lombok.Data;
+import cn.hutool.core.util.StrUtil;
 
 /**
  * Docker 客户端配置选项
@@ -10,7 +10,7 @@ import lombok.Data;
  */
 @Data
 public class DockerRegistryOptions {
-
+    
     /**
      * 是否采用http
      */
@@ -19,28 +19,27 @@ public class DockerRegistryOptions {
      *   地址
      */
     private String host;
-
+    
     /**
      * 端口
      */
     private Integer port;
-
+    
     /**
      * nexus的仓库才会有值，harbor没有值
      */
     private String repo;
-
+    
     /**
      * Registry 用户名
      */
     private String username;
-
+    
     /**
      * Registry 密码
      */
     private String password;
-
-
+    
     public String getRegistry() {
         StringBuilder sb = new StringBuilder();
         sb.append(host);
@@ -51,7 +50,7 @@ public class DockerRegistryOptions {
         }
         return sb.toString();
     }
-
+    
     /**
      *  镜像仓库地址
      *  查看文档：https://help.sonatype.com/en/docker-registry.html
@@ -63,5 +62,5 @@ public class DockerRegistryOptions {
         }
         return repository;
     }
-
+    
 }

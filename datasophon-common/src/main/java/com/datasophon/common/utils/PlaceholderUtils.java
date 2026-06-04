@@ -20,11 +20,9 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.utils;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -34,67 +32,63 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PlaceholderUtils {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(PlaceholderUtils.class);
-
-
+    
     public static String replacePlaceholders(String value, Map<String, String> paramsMap, String regex) {
-//        Pattern pattern = Pattern.compile(regex);
-//        Matcher matcher = pattern.matcher(value);
-//        // 自旋进行最小匹配，直到无法匹配
-//        while (matcher.find()) {
-//            String group = matcher.group();
-//            // 替换匹配内容
-//            // logger.info("find match value {}",group);
-//            if (paramsMap.containsKey(group)) {
-//                value = value.replace(group, paramsMap.get(group));
-//            }
-//        }
-//        return value;
+        // Pattern pattern = Pattern.compile(regex);
+        // Matcher matcher = pattern.matcher(value);
+        // // 自旋进行最小匹配，直到无法匹配
+        // while (matcher.find()) {
+        // String group = matcher.group();
+        // // 替换匹配内容
+        // // logger.info("find match value {}",group);
+        // if (paramsMap.containsKey(group)) {
+        // value = value.replace(group, paramsMap.get(group));
+        // }
+        // }
+        // return value;
         return replacePlaceholdersRecursive(value, paramsMap, regex);
     }
-
-
+    
     public static String replacePlaceholdersRecursive(String input, Map<String, String> paramsMap, String regex) {
         Pattern pattern = Pattern.compile(regex);
         int depth = 0;
-
+        
         String result = input;
         while (true) {
             String originalVal = result;
-
+            
             StringBuffer sb = new StringBuffer();
             Matcher matcher = pattern.matcher(result);
             while (matcher.find()) {
                 String group = matcher.group();
-                String replaceValue =  paramsMap.getOrDefault(group, group);
+                String replaceValue = paramsMap.getOrDefault(group, group);
                 matcher.appendReplacement(sb, Matcher.quoteReplacement(replaceValue));
             }
             matcher.appendTail(sb);
             result = sb.toString();
-
-//            如果没有变化，说明已经替换完毕
+            
+            // 如果没有变化，说明已经替换完毕
             if (originalVal.equals(result)) {
                 break;
             }
-
-
+            
             depth++;
-//            超过10次替换，则认为变量中存在循环引用
+            // 超过10次替换，则认为变量中存在循环引用
             if (depth > 10) {
                 throw new IllegalStateException(String.format(
                         "replacing placeholder has reached the max depth 10, is the following string contains a recursive placeholder? \n input value: %s",
-                        input
-                ));
+                        input));
             }
         }
         return result;
     }
-
+    
     public static List<String> getMatchValue(String value) {
         String regex = "\\[.*?\\]";
         ArrayList<String> list = new ArrayList<>();
-
+        
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(value);
         // 自旋进行最小匹配，直到无法匹配
@@ -105,7 +99,7 @@ public class PlaceholderUtils {
         }
         return list;
     }
-
+    
     public static List<String> getNewEquipmentNoList(String pre, String last) {
         int length = pre.length();
         ArrayList<String> list = new ArrayList<>();
@@ -120,5 +114,5 @@ public class PlaceholderUtils {
         }
         return list;
     }
-
+    
 }

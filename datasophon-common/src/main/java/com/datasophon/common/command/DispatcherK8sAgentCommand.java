@@ -20,14 +20,13 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.command;
 
 import lombok.Data;
 
 @Data
 public class DispatcherK8sAgentCommand {
-
+    
     private Integer clusterId;
-
+    
 }

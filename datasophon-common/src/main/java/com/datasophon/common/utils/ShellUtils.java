@@ -20,18 +20,13 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.utils;
 
-import cn.hutool.core.io.IORuntimeException;
-import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
+
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -49,12 +44,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.StrUtil;
+
 public class ShellUtils {
-
-
+    
     private static final Logger logger = LoggerFactory.getLogger(ShellUtils.class);
-
-
+    
     /**
      * 执行 shell 命令（通过 sh -c 包装）
      *
@@ -94,8 +94,7 @@ public class ShellUtils {
             return exec(workPath, Arrays.asList("bash", "-c", cmd), timeoutInSecond);
         }
     }
-
-
+    
     /**
      * 执行命令，不使用shell执行
      *
@@ -107,8 +106,7 @@ public class ShellUtils {
     public static ExecResult exec(String workPath, List<String> processCmdArgs, long timeout) {
         return execWithStdin(workPath, processCmdArgs, null, timeout);
     }
-
-
+    
     /**
      * 执行命令，通过 stdin 传递输入
      *
@@ -122,42 +120,42 @@ public class ShellUtils {
         if (CollectionUtils.isEmpty(processCmdArgs)) {
             throw new IllegalArgumentException("Command must not be null or empty");
         }
-
+        
         ExecResult result = new ExecResult();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         Process process = null;
         Thread outputReader = null;
         try {
             ProcessBuilder processBuilder = new ProcessBuilder();
-
+            
             if (StrUtil.isNotBlank(workPath)) {
                 processBuilder.directory(new File(workPath));
             }
-
+            
             processBuilder.command(processCmdArgs);
             processBuilder.redirectErrorStream(true);
-
+            
             logger.info("exec cmd: {}, workspace: {}", StrUtil.join(" ", processCmdArgs), workPath);
             process = processBuilder.start();
-
+            
             // 通过 stdin 传递输入
             if (stdinInput != null) {
                 process.getOutputStream().write(stdinInput.getBytes(StandardCharsets.UTF_8));
                 process.getOutputStream().flush();
                 process.getOutputStream().close();
             }
-
+            
             Process finalProcess = process;
             outputReader = new Thread(() -> {
                 try {
                     IoUtil.copy(finalProcess.getInputStream(), out);
                 } catch (IORuntimeException ignore) {
-
+                    
                 }
             });
             outputReader.setDaemon(true);
             outputReader.start();
-
+            
             boolean finished;
             if (timeout <= 0) {
                 process.waitFor();
@@ -187,8 +185,7 @@ public class ShellUtils {
             }
         }
     }
-
-
+    
     /**
      * @param pathOrCommand 脚本路径或者命令
      * @return
@@ -224,15 +221,14 @@ public class ShellUtils {
                 result.setExecOut("call shell failed. error code is :" + exitValue);
                 logger.error("exec command {}, cmd out is : {} {},exitValue:{}", pathOrCommand, System.lineSeparator(), execOut, exitValue);
             }
-
+            
         } catch (Exception e) {
             result.setExecOut(e.getMessage());
             logger.error(e.getMessage(), e);
         }
         return result;
     }
-
-
+    
     // 获取cpu架构 arm或x86
     public static String getCpuArchitecture() {
         try {
@@ -257,7 +253,7 @@ public class ShellUtils {
         }
         return null;
     }
-
+    
     /**
      * @param workPath
      * @param command
@@ -292,7 +288,7 @@ public class ShellUtils {
         }
         return result;
     }
-
+    
     public static ExecResult execWithStatus(String workPath, List<String> command, long timeout, Logger logger) {
         logger.info("exec cmd, workdir: {}, commands {}", workPath, StrUtil.join(" ", command));
         Process process = null;
@@ -319,10 +315,10 @@ public class ShellUtils {
         }
         return result;
     }
-
+    
     public static void getOutput(String workPath, List<String> command, Process process, Logger logger) {
         ExecutorService getOutputLogService = Executors.newSingleThreadExecutor();
-
+        
         getOutputLogService.submit(() -> {
             BufferedReader inReader = null;
             try {
@@ -365,7 +361,7 @@ public class ShellUtils {
         });
         getOutputLogService.shutdown();
     }
-
+    
     public static void getOutput(Process process) {
         ExecutorService getOutputLogService = Executors.newSingleThreadExecutor();
         getOutputLogService.submit(() -> {
@@ -387,8 +383,7 @@ public class ShellUtils {
         });
         getOutputLogService.shutdown();
     }
-
-
+    
     public static void destroy(Process process, boolean force) {
         if (process == null) {
             return;
@@ -396,7 +391,7 @@ public class ShellUtils {
         IOUtils.closeQuietly(process.getInputStream());
         IOUtils.closeQuietly(process.getErrorStream());
         IOUtils.closeQuietly(process.getOutputStream());
-
+        
         boolean stop = false;
         if (!force) {
             process.destroy();
@@ -409,7 +404,7 @@ public class ShellUtils {
             process.destroyForcibly();
         }
     }
-
+    
     public static void addChmod(String path, String chmod) {
         ArrayList<String> command = new ArrayList<>();
         command.add("chmod");
@@ -418,7 +413,7 @@ public class ShellUtils {
         command.add(path);
         execWithStatus(Constants.INSTALL_PATH, command, 60, logger);
     }
-
+    
     public static void addChown(String path, String user, String group) {
         ArrayList<String> command = new ArrayList<>();
         command.add("chown");
@@ -427,12 +422,12 @@ public class ShellUtils {
         command.add(path);
         execWithStatus(Constants.INSTALL_PATH, command, 60, logger);
     }
-
+    
     public static ArchType getArch() {
         String result = execShell(Constants.OS_ARCH_CMD).getExecOut();
         return OsUtils.getArch(result);
     }
-
+    
     public static OsType getOs() {
         String result = execShell(Constants.OS_VERSION_CMD).getExecOut();
         return OsUtils.getOs(result);

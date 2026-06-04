@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ MIT License
   ~
@@ -19,8 +20,7 @@
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   ~ SOFTWARE.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -36,7 +36,6 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-expression</artifactId>
         </dependency>
-
 
         <dependency>
             <groupId>com.datasophon</groupId>
@@ -157,16 +156,18 @@
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
                 <version>4.9.10</version>
-                <executions>
-                    <execution>
-                        <id>get-the-git-infos</id>
-                        <goals><goal>revision</goal></goals>
-                        <phase>initialize</phase>
-                    </execution>
-                </executions>
                 <configuration>
                     <generateGitPropertiesFile>false</generateGitPropertiesFile>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- 生成 target/release.txt -->
@@ -177,8 +178,10 @@
                 <executions>
                     <execution>
                         <id>copy-release-notes</id>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
                         <phase>process-resources</phase>
-                        <goals><goal>copy-resources</goal></goals>
                         <configuration>
                             <outputDirectory>${project.build.directory}</outputDirectory>
                             <resources>
@@ -260,11 +263,9 @@
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <echo message="Generating MD5 file"/>
-                                <checksum algorithm="MD5" file="${project.build.directory}/datasophon-worker.tar.gz"
-                                          forceoverwrite="yes"/>
-                                <move file="${project.build.directory}/datasophon-worker.tar.gz.MD5"
-                                      tofile="${project.build.directory}/datasophon-worker.tar.gz.md5"/>
+                                <echo message="Generating MD5 file" />
+                                <checksum algorithm="MD5" file="${project.build.directory}/datasophon-worker.tar.gz" forceoverwrite="yes" />
+                                <move file="${project.build.directory}/datasophon-worker.tar.gz.MD5" tofile="${project.build.directory}/datasophon-worker.tar.gz.md5" />
                             </target>
                         </configuration>
                     </execution>

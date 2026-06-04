@@ -2,9 +2,9 @@
 
 ## 退出码
 
-| 退出码 | 含义 |
-|---|---|
-| `0` | 成功 |
+| 退出码 |               含义                |
+|-----|---------------------------------|
+| `0` | 成功                              |
 | `1` | 失败（所有非零错误均为 1，具体原因在 stderr 日志中） |
 
 所有错误通过 `slog.Error(...)` 打印到标准错误，再以 `exit 1` 退出。Cobra 的 `RunE` 返回 error 时框架自动打印并退出。
@@ -104,15 +104,16 @@ datasophon-cli create cluster apply \
 
 ## 常见错误排查
 
-| 错误信息 | 根因 | 处置 |
-|---|---|---|
-| `计划文件不存在，请先执行 plan` | 执行 `apply` 前未生成 plan | 先执行 `create cluster --plan-only` 或直接运行 `create cluster` |
-| `配置已变更（hash 不一致），请重新生成 plan` | cluster-sample.yml 修改后未更新 plan | 删除旧 plan 文件，重新运行 |
-| `ssh 连接失败` | 节点不可达或密码错误 | 检查 nodes[*].ip / port / password；确认 SSH 服务正常 |
-| `步骤执行失败: <step-id>` | 具体步骤报错 | 查看 slog 错误日志；参考对应步骤的命令页排查 |
-| `required flag(s) "xxx" not set` | Cobra 必填 flag 未提供 | 补全缺失的 flag |
+|               错误信息               |               根因               |                           处置                            |
+|----------------------------------|--------------------------------|---------------------------------------------------------|
+| `计划文件不存在，请先执行 plan`              | 执行 `apply` 前未生成 plan           | 先执行 `create cluster --plan-only` 或直接运行 `create cluster` |
+| `配置已变更（hash 不一致），请重新生成 plan`     | cluster-sample.yml 修改后未更新 plan | 删除旧 plan 文件，重新运行                                        |
+| `ssh 连接失败`                       | 节点不可达或密码错误                     | 检查 nodes[*].ip / port / password；确认 SSH 服务正常            |
+| `步骤执行失败: <step-id>`              | 具体步骤报错                         | 查看 slog 错误日志；参考对应步骤的命令页排查                               |
+| `required flag(s) "xxx" not set` | Cobra 必填 flag 未提供              | 补全缺失的 flag                                              |
 
 ## 相关页面
 
 - [create cluster — plan / apply 子命令](../commands/create/cluster.md)
 - [initALL / standalone DAG 步骤表](./init-all-dag.md)
+

@@ -1,19 +1,20 @@
 package com.datasophon.common.k8s.client;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.RandomUtil;
-import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.k8s.exception.HelmifyException;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PathUtils;
 import com.datasophon.common.utils.ShellUtils;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
 
 /**
  * helmify 命令封装客户端
@@ -22,10 +23,10 @@ import java.util.List;
 @Slf4j
 @Data
 public class HelmifyClient implements AutoCloseable {
-
+    
     private final String helmifyPath;
     private final File tempDir;
-
+    
     public static String detectHelmifyPath() {
         String path = System.getProperty("helmify.install_path");
         if (StrUtil.isNotBlank(path)) {
@@ -33,7 +34,7 @@ public class HelmifyClient implements AutoCloseable {
         }
         return "helmify";
     }
-
+    
     public HelmifyClient() {
         this.helmifyPath = detectHelmifyPath();
         this.tempDir = PathUtils.getTmpDir("helmify/" + RandomUtil.randomString(12));
@@ -42,7 +43,7 @@ public class HelmifyClient implements AutoCloseable {
             ShellUtils.execWithBash(null, Arrays.asList("chmod", "-R", "0700", tempDir.getAbsolutePath()), -1);
         }
     }
-
+    
     /**
      * 执行 helmify 命令的基础方法
      *
@@ -53,10 +54,10 @@ public class HelmifyClient implements AutoCloseable {
         List<String> commandParts = new java.util.ArrayList<>();
         commandParts.add(helmifyPath);
         commandParts.addAll(subCommandParts);
-
+        
         return ShellUtils.execWithBash(tempDir.getAbsolutePath(), commandParts, timeoutSeconds);
     }
-
+    
     /**
      * 将 Kubernetes YAML 文件转换为 Helm Chart 并打包
      *
@@ -85,26 +86,25 @@ public class HelmifyClient implements AutoCloseable {
         try {
             // 2. 执行 helmify 命令生成 Chart
             List<String> args = Arrays.asList(
-                    "-f", yamlPath
-            );
+                    "-f", yamlPath);
             ExecResult result = execute(args, 60);
             if (!result.isSuccess()) {
                 throw new HelmifyException("helmify 命令执行失败：" + result.getErrorTraceMessage());
             }
-
+            
             // 3. 修改 Chart.yaml 中的 version
             File chartYaml = new File(chartTempDir, "Chart.yaml");
             if (!chartYaml.exists()) {
                 throw new HelmifyException("Chart.yaml 未生成：" + chartYaml.getAbsolutePath());
             }
-
+            
             modifyChartVersion(chartYaml, version);
-
+            
             // 4. 打包 Chart 为 tar 文件
             File targetDirectory = PathUtils.getTmpDir("helmify-tar/" + RandomUtil.randomString(12));
             String tarFileName = chartName + "-" + version + ".tgz";
             File tarFile = new File(targetDirectory, tarFileName);
-
+            
             packageChart(chartTempDir, tarFile);
             log.info("Helm Chart 打包成功：{}", tarFile.getAbsolutePath());
             return tarFile.getAbsolutePath();
@@ -114,7 +114,7 @@ public class HelmifyClient implements AutoCloseable {
             FileUtil.del(chartTempDir);
         }
     }
-
+    
     /**
      * 修改 Chart.yaml 中的 version 字段
      *
@@ -124,17 +124,17 @@ public class HelmifyClient implements AutoCloseable {
     private void modifyChartVersion(File chartYamlFile, String targetVersion) throws HelmifyException {
         try {
             String content = FileUtil.readString(chartYamlFile, StandardCharsets.UTF_8);
-
+            
             // 使用正则替换 appVersion 字段
             String updatedContent = content.replaceAll("(?m)^appVersion:\\s*.*$", "appVersion: " + targetVersion);
-
+            
             FileUtil.writeString(updatedContent, chartYamlFile, StandardCharsets.UTF_8);
             log.debug("已更新 Chart.yaml version 为：{}", targetVersion);
         } catch (Exception e) {
             throw new HelmifyException("修改 Chart.yaml version 失败：" + e.getMessage(), e);
         }
     }
-
+    
     /**
      * 将 Chart 目录打包为 tar.gz 文件
      *
@@ -143,7 +143,7 @@ public class HelmifyClient implements AutoCloseable {
      */
     private void packageChart(File chartDir, File tarFile) throws HelmifyException {
         String osName = System.getProperty("os.name").toLowerCase();
-
+        
         if (osName.contains("window")) {
             // Windows 系统，使用 PowerShell 或 tar 命令
             try {
@@ -151,8 +151,7 @@ public class HelmifyClient implements AutoCloseable {
                 List<String> command = Arrays.asList(
                         "tar", "-czf", tarFile.getAbsolutePath(), "-C",
                         chartDir.getParentFile().getAbsolutePath(),
-                        chartDir.getName()
-                );
+                        chartDir.getName());
                 ExecResult result = ShellUtils.execWithBash(null, command, 60);
                 if (!result.isSuccess()) {
                     throw new HelmifyException("tar 打包失败：" + result.getErrorTraceMessage());
@@ -166,8 +165,7 @@ public class HelmifyClient implements AutoCloseable {
                 List<String> command = Arrays.asList(
                         "tar", "-czf", tarFile.getAbsolutePath(), "-C",
                         chartDir.getParentFile().getAbsolutePath(),
-                        chartDir.getName()
-                );
+                        chartDir.getName());
                 ExecResult result = ShellUtils.execWithBash(null, command, 60);
                 if (!result.isSuccess()) {
                     throw new HelmifyException("tar 打包失败：" + result.getErrorTraceMessage());
@@ -177,7 +175,7 @@ public class HelmifyClient implements AutoCloseable {
             }
         }
     }
-
+    
     @Override
     public void close() {
         if (tempDir != null) {

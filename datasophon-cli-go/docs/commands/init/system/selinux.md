@@ -39,11 +39,12 @@ datasophon-cli init selinux \
 
 ## 退出码 / 常见错误
 
-| 情况 | 说明 |
-|---|---|
+|         情况         |          说明          |
+|--------------------|----------------------|
 | Ubuntu 节点无 SELinux | 命令会跳过，打印 Info 日志，不报错 |
 
 ## 相关命令
 
 - [`init firewall`](./firewall.md) — 同属系统安全关闭步骤
 - [DAG 步骤表](../../../reference/init-all-dag.md)
+

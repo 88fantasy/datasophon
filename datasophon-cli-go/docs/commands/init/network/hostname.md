@@ -13,9 +13,9 @@ datasophon-cli [--dry-run] init hostname \
 
 ## 参数 / Flags
 
-| flag | 简写 | 类型 | 默认 | 必填 | 说明 |
-|---|---|---|---|---|---|
-| `--hostname` | `-H` | string | — | 是 | 要设置的主机名 |
+|     flag     |  简写  |   类型   | 默认 | 必填 |   说明    |
+|--------------|------|--------|----|----|---------|
+| `--hostname` | `-H` | string | —  | 是  | 要设置的主机名 |
 
 > 继承 init 公共 flag（`--config`、`--registryIp` 等）—— 详见 [global-flags.md#init-公共-flag](../../../global-flags.md#init-公共-flag)
 > 继承全局 flag：`--dry-run` —— 详见 [global-flags.md](../../../global-flags.md)
@@ -44,11 +44,12 @@ datasophon-cli init hostname \
 
 ## 退出码 / 常见错误
 
-| 错误信息 | 根因 | 处置 |
-|---|---|---|
+|                 错误信息                  |     根因      |         处置         |
+|---------------------------------------|-------------|--------------------|
 | `required flag(s) "hostname" not set` | 未提供 `-H` 参数 | 补上 `-H <hostname>` |
 
 ## 相关命令
 
 - [`init allHost`](./allhost.md) — 把所有节点 hostname 写入 /etc/hosts
 - [DAG 步骤表](../../../reference/init-all-dag.md)
+

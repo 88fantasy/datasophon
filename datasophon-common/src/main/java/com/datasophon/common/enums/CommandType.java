@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.enums;
 
 import com.datasophon.common.Constants;
@@ -38,8 +37,7 @@ public enum CommandType {
     START_WITH_CONFIG(5, "START_WITH_CONFIG", "更新配置后启动"),
     RESTART_WITH_CONFIG(6, "RESTART_WITH_CONFIG", "更新配置后重启"),
     UPGRADE_SERVICE(7, "UPGRADE_SERVICE", "升级"),
-    CHECK_STATUS(8, "CHECK_STATUS", "检查状态")
-    ;
+    CHECK_STATUS(8, "CHECK_STATUS", "检查状态");
     
     private int value;
     
@@ -85,7 +83,7 @@ public enum CommandType {
             return this.desc;
         }
     }
-
+    
     public static CommandType ofCode(Integer type) {
         for (CommandType cmd : values()) {
             if (cmd.value == type) {
@@ -107,10 +105,10 @@ public enum CommandType {
         }
         return null;
     }
-
+    
     @Override
     public String toString() {
         return this.desc;
     }
-
+    
 }

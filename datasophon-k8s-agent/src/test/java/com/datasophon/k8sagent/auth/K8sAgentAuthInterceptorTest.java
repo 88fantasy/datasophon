@@ -20,35 +20,35 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.k8sagent.auth;
-
-import com.datasophon.common.K8sAgentAuthConstants;
-import com.datasophon.common.utils.PropertyUtils;
-import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.mock.web.MockHttpServletResponse;
-
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.Signature;
-import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mockStatic;
 
-class K8sAgentAuthInterceptorTest {
+import com.datasophon.common.K8sAgentAuthConstants;
+import com.datasophon.common.utils.PropertyUtils;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.Signature;
+import java.util.Base64;
+
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+
+class K8sAgentAuthInterceptorTest {
+    
     static {
         System.setProperty("commonPropertiesLocation",
                 K8sAgentAuthInterceptorTest.class.getClassLoader().getResource("common.properties").getPath());
     }
-
+    
     private static KeyPair keyPair;
-
+    
     static {
         try {
             KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
@@ -58,11 +58,11 @@ class K8sAgentAuthInterceptorTest {
             throw new RuntimeException(e);
         }
     }
-
+    
     private String getPublicKeyPem() {
         return Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
     }
-
+    
     private String sign(String timestamp, String nonce) throws Exception {
         String data = timestamp + nonce;
         Signature sig = Signature.getInstance("SHA256withRSA");
@@ -70,20 +70,20 @@ class K8sAgentAuthInterceptorTest {
         sig.update(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         return Base64.getEncoder().encodeToString(sig.sign());
     }
-
+    
     @Test
     void testAuthDisabled() throws Exception {
         try (MockedStatic<PropertyUtils> mocked = mockStatic(PropertyUtils.class)) {
             mocked.when(() -> PropertyUtils.getBoolean(K8sAgentAuthConstants.AUTH_ENABLED, false))
                     .thenReturn(false);
             K8sAgentAuthInterceptor interceptor = new K8sAgentAuthInterceptor();
-
+            
             MockHttpServletRequest request = new MockHttpServletRequest();
             MockHttpServletResponse response = new MockHttpServletResponse();
             assertTrue(interceptor.preHandle(request, response, new Object()));
         }
     }
-
+    
     @Test
     void testMissingHeaders() throws Exception {
         try (MockedStatic<PropertyUtils> mocked = mockStatic(PropertyUtils.class)) {
@@ -93,16 +93,16 @@ class K8sAgentAuthInterceptorTest {
                     .thenReturn(getPublicKeyPem());
             mocked.when(() -> PropertyUtils.getInt(K8sAgentAuthConstants.AUTH_REPLAY_WINDOW, 300))
                     .thenReturn(300);
-
+            
             K8sAgentAuthInterceptor interceptor = new K8sAgentAuthInterceptor();
-
+            
             MockHttpServletRequest request = new MockHttpServletRequest();
             MockHttpServletResponse response = new MockHttpServletResponse();
             assertFalse(interceptor.preHandle(request, response, new Object()));
             assertEquals(401, response.getStatus());
         }
     }
-
+    
     @Test
     void testExpiredTimestamp() throws Exception {
         try (MockedStatic<PropertyUtils> mocked = mockStatic(PropertyUtils.class)) {
@@ -112,20 +112,20 @@ class K8sAgentAuthInterceptorTest {
                     .thenReturn(getPublicKeyPem());
             mocked.when(() -> PropertyUtils.getInt(K8sAgentAuthConstants.AUTH_REPLAY_WINDOW, 300))
                     .thenReturn(300);
-
+            
             K8sAgentAuthInterceptor interceptor = new K8sAgentAuthInterceptor();
-
+            
             MockHttpServletRequest request = new MockHttpServletRequest();
             request.addHeader(K8sAgentAuthConstants.HEADER_TIMESTAMP, "1000000000000");
             request.addHeader(K8sAgentAuthConstants.HEADER_NONCE, "test-nonce");
             request.addHeader(K8sAgentAuthConstants.HEADER_SIGNATURE, "some-signature");
-
+            
             MockHttpServletResponse response = new MockHttpServletResponse();
             assertFalse(interceptor.preHandle(request, response, new Object()));
             assertEquals(401, response.getStatus());
         }
     }
-
+    
     @Test
     void testValidRequest() throws Exception {
         try (MockedStatic<PropertyUtils> mocked = mockStatic(PropertyUtils.class)) {
@@ -135,17 +135,17 @@ class K8sAgentAuthInterceptorTest {
                     .thenReturn(getPublicKeyPem());
             mocked.when(() -> PropertyUtils.getInt(K8sAgentAuthConstants.AUTH_REPLAY_WINDOW, 300))
                     .thenReturn(300);
-
+            
             K8sAgentAuthInterceptor interceptor = new K8sAgentAuthInterceptor();
-
+            
             long now = System.currentTimeMillis();
             String sig = sign(String.valueOf(now), "test-nonce");
-
+            
             MockHttpServletRequest request = new MockHttpServletRequest();
             request.addHeader(K8sAgentAuthConstants.HEADER_TIMESTAMP, String.valueOf(now));
             request.addHeader(K8sAgentAuthConstants.HEADER_NONCE, "test-nonce");
             request.addHeader(K8sAgentAuthConstants.HEADER_SIGNATURE, sig);
-
+            
             MockHttpServletResponse response = new MockHttpServletResponse();
             assertTrue(interceptor.preHandle(request, response, new Object()));
         }

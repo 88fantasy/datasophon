@@ -1,14 +1,11 @@
 package com.datasophon.common.utils;
 
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.http.HttpRequest;
-import cn.hutool.http.HttpResponse;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.ArchType;
 import com.datasophon.common.enums.OsType;
 import com.datasophon.common.enums.RepositoriesType;
 import com.datasophon.common.utils.nexus.NexusFacade;
-import lombok.Data;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
@@ -21,8 +18,6 @@ import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -34,15 +29,24 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
+import lombok.Data;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+
 /**
  * @deprecated
  * @see NexusFacade
  */
 @Deprecated
 public class NexusFileUtils {
-
+    
     private static final Logger log = LoggerFactory.getLogger(NexusFileUtils.class);
-
+    
     /**
      * 下载文件
      * @deprecated
@@ -67,21 +71,19 @@ public class NexusFileUtils {
         }
         throw new IllegalStateException(String.format("download fail, response status is %s, message is %s", response.getStatus(), response.body()));
     }
-
-
+    
     public static void downStream(String url, OutputStream out) throws IOException {
         NexusFacade.getCommonClient().download(url, out);
     }
-
+    
     public static String downloadAsString(String url) throws IOException {
         return NexusFacade.getCommonClient().downloadAsString(url);
     }
-
-
+    
     public static String getNexusRawObjectUrl(String objectName) {
         return NexusFacade.getRawRepoClient().getNexusRawObjectUrl(objectName);
     }
-
+    
     /**
      * 批量上传仓库文件:
      *
@@ -95,7 +97,7 @@ public class NexusFileUtils {
         File[] repoFiles = FileUtil.ls(packageFullDir);
         Map<String, String> uploadSucess = new HashMap<>();
         Map<String, String> uploadFails = new HashMap<>();
-
+        
         for (File repoFile : repoFiles) {
             log.info("repoFile:{}", repoFile.getAbsolutePath());
             RepositoriesType repositoriesType = RepositoriesType.of(repoFile.getName());
@@ -107,12 +109,12 @@ public class NexusFileUtils {
                         log.info("archFile:{}", archFile.getAbsolutePath());
                         ArchType archType = ArchType.of(archFile.getName());
                         File[] osFiles = FileUtil.ls(archFile.getAbsolutePath());
-
+                        
                         for (File osFile : osFiles) {
                             log.info("osFile:{}", osFile.getAbsolutePath());
                             File[] files = FileUtil.ls(osFile.getAbsolutePath());
                             OsType osType = OsType.of(osFile.getName());
-
+                            
                             for (File file : files) {
                                 repositoryUploadFile(baseUrl, repositoriesType, archType, osType, file, username, password, uploadSucess, uploadFails, isSuccessDelete);
                             }
@@ -126,20 +128,20 @@ public class NexusFileUtils {
                         repositoryUploadFile(baseUrl, repositoriesType, null, null, file, username, password, uploadSucess, uploadFails, isSuccessDelete);
                     }
                     String osArmPath = repoFile.getAbsolutePath() + Constants.SLASH + "os" + Constants.SLASH + ArchType.AARCH64.getArch();
-                    if(FileUtil.exist(osArmPath)) {
+                    if (FileUtil.exist(osArmPath)) {
                         for (File file : files) {
                             repositoryUploadFile(baseUrl, repositoriesType, null, null, file, username, password, uploadSucess, uploadFails, isSuccessDelete);
                         }
                     }
                     String osX86Path = repoFile.getAbsolutePath() + Constants.SLASH + "os" + Constants.SLASH + ArchType.X86_64.getArch();
-                    if(FileUtil.exist(osX86Path)) {
+                    if (FileUtil.exist(osX86Path)) {
                         for (File file : files) {
                             repositoryUploadFile(baseUrl, repositoriesType, null, null, file, username, password, uploadSucess, uploadFails, isSuccessDelete);
                         }
                     }
                     break;
                 case DOCKER:
-                    //单独命令推送
+                    // 单独命令推送
                     break;
                 case HELM:
                     String helmPath = repoFile.getAbsolutePath();
@@ -154,33 +156,34 @@ public class NexusFileUtils {
         }
         return Pair.of(uploadSucess, uploadFails);
     }
-
+    
     private static void repositoryUploadFile(String baseUrl, RepositoriesType repository, ArchType archType,
                                              OsType os, File file, String username, String password,
                                              Map<String, String> uploadSuccess, Map<String, String> uploadFails, boolean isSuccessDelete) {
         if (file.isDirectory()) {
             return;
         }
-
+        
         String url = String.format("%s/service/rest/internal/ui/upload/%s", baseUrl, repository.getDesc());
-
+        
         // 配置超时（根据文件大小调整）
         RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(30000)      // 连接超时 30s
-                .setSocketTimeout(600000)      // 上传超时 10分钟
+                .setConnectTimeout(30000) // 连接超时 30s
+                .setSocketTimeout(600000) // 上传超时 10分钟
                 .build();
-
-        try (CloseableHttpClient httpClient = HttpClients.custom()
-                .setDefaultRequestConfig(config)
-                .build()) {
-
+        
+        try (
+                CloseableHttpClient httpClient = HttpClients.custom()
+                        .setDefaultRequestConfig(config)
+                        .build()) {
+            
             HttpPost post = new HttpPost(url);
             prepareAuth(post);
-
+            
             // 构建 multipart/form-data（流式，不加载到内存）
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             FileBody fileBody = new FileBody(file, ContentType.DEFAULT_BINARY);
-
+            
             // 根据仓库类型添加额外参数
             switch (repository) {
                 case YUM:
@@ -209,10 +212,10 @@ public class NexusFileUtils {
                 default:
                     log.info("不支持:{},跳过", repository);
             }
-
+            
             HttpEntity entity = builder.build();
             post.setEntity(entity);
-
+            
             log.info("开始上传 {}", file.getAbsolutePath());
             try (CloseableHttpResponse response = httpClient.execute(post)) {
                 int status = response.getStatusLine().getStatusCode();
@@ -236,55 +239,50 @@ public class NexusFileUtils {
             uploadFails.put(file.getAbsolutePath(), e.toString());
         }
     }
-
+    
     public static ExecResult uploadFileToRawRepo(String path, File file) throws IOException {
-        com.datasophon.common.utils.nexus.vo.ExecResult result =  NexusFacade.getRawRepoClient().uploadFileToRawRepo(path, file);
+        com.datasophon.common.utils.nexus.vo.ExecResult result = NexusFacade.getRawRepoClient().uploadFileToRawRepo(path, file);
         return new ExecResult(result.isSuccess(), result.getMessage());
     }
-
+    
     public static ExecResult uploadFileToRawRepo(String path, String fileName, String content) throws IOException {
-        com.datasophon.common.utils.nexus.vo.ExecResult result =  NexusFacade.getRawRepoClient().uploadFileToRawRepo(path, fileName, content);
+        com.datasophon.common.utils.nexus.vo.ExecResult result = NexusFacade.getRawRepoClient().uploadFileToRawRepo(path, fileName, content);
         return new ExecResult(result.isSuccess(), result.getMessage());
     }
-
+    
     public static String getAssertMd5FromRawRepo(String relativePathFromRawRepo) {
-       return NexusFacade.getRawRepoClient().getAssertMd5FromRawRepo(relativePathFromRawRepo);
+        return NexusFacade.getRawRepoClient().getAssertMd5FromRawRepo(relativePathFromRawRepo);
     }
-
-
+    
     public static void removeFileFromRawRepo(String relativePathFromRawRepo) {
         NexusFacade.getRawRepoClient().removeFileFromRawRepo(relativePathFromRawRepo);
     }
-
+    
     public static void removeFolderFromRawRepo(String folder) {
         NexusFacade.getRawRepoClient().removeFolderFromRawRepo(folder);
-
+        
     }
-
+    
     private static void prepareAuth(HttpEntityEnclosingRequestBase req) {
         String auth = Base64.getEncoder().encodeToString((Constants.NEXUS_USERNAME + ":" + Constants.NEXUS_PASSWORD).getBytes(StandardCharsets.UTF_8));
         req.setHeader("Authorization", "Basic " + auth);
     }
-
-
-
+    
     @Data
     public static class ExecResult {
-
+        
         private final boolean success;
-
+        
         private final String message;
-
-
+        
         public static ExecResult success(String message) {
             return new ExecResult(true, message);
         }
-
-
+        
         public static ExecResult fail(String message) {
             return new ExecResult(false, message);
         }
-
+        
     }
-
+    
 }

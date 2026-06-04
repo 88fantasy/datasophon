@@ -1,8 +1,8 @@
 package com.datasophon.common.k8s.spec.docker;
 
-import lombok.Data;
-
 import java.util.Map;
+
+import lombok.Data;
 
 /**
  * @author zhanghuangbin
@@ -13,5 +13,5 @@ public class OciManifestRef {
     private String digest;
     private ImageHostPlatform platform;
     private Map<String, String> annotations;
-
+    
 }

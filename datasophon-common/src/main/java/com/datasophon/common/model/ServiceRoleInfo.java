@@ -20,14 +20,12 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.model;
 
 import com.datasophon.common.command.ServiceRoleResource;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.HookType;
 import com.datasophon.common.enums.ServiceRoleType;
-import lombok.Data;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -36,10 +34,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import lombok.Data;
+
 @Data
 public class ServiceRoleInfo implements Serializable, ServiceRoleResource {
-
-
+    
     private String name;
     
     private ServiceRoleType roleType;
@@ -69,7 +68,7 @@ public class ServiceRoleInfo implements Serializable, ServiceRoleResource {
     private Map<String, ArchInfo> archInfoMap;
     
     private String decompressPackageName;
-
+    
     /**
      * 创建解压目录
      */
@@ -92,19 +91,19 @@ public class ServiceRoleInfo implements Serializable, ServiceRoleResource {
     private Integer serviceInstanceId;
     
     private RunAs runAs;
-
+    
     private List<HookConfig> hooks;
-
+    
     @Override
     public String getServiceName() {
         return parentName;
     }
-
+    
     @Override
     public String getServiceRoleName() {
         return name;
     }
-
+    
     /**
      * ServiceRoleInfo 是多架构模板，单一包名由 handler 经 archInfoMap 按主机架构解析。
      * 接口方法仅为满足 ServiceRoleResource 契约，master 侧不应读取此返回值。
@@ -114,10 +113,10 @@ public class ServiceRoleInfo implements Serializable, ServiceRoleResource {
         throw new UnsupportedOperationException(
                 "ServiceRoleInfo 不支持直接读取 packageName，请通过 archInfoMap 按主机架构解析");
     }
-
-    public List<HookConfig> getMatchedHooks(HookType...types) {
+    
+    public List<HookConfig> getMatchedHooks(HookType... types) {
         List<HookType> typeList = Arrays.asList(types);
         List<HookConfig> tmp = hooks == null ? new ArrayList<>(0) : hooks;
-        return tmp.stream().filter(hook-> typeList.contains(hook.getType())).collect(Collectors.toList());
+        return tmp.stream().filter(hook -> typeList.contains(hook.getType())).collect(Collectors.toList());
     }
 }

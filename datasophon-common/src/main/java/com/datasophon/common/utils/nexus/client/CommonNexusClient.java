@@ -1,8 +1,5 @@
 package com.datasophon.common.utils.nexus.client;
 
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.util.StrUtil;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.uni.NexusUri;
 import com.datasophon.common.utils.JacksonUtils;
@@ -12,8 +9,7 @@ import com.datasophon.common.utils.nexus.vo.Assert;
 import com.datasophon.common.utils.nexus.vo.AssertResponse;
 import com.datasophon.common.utils.nexus.vo.Component;
 import com.datasophon.common.utils.nexus.vo.ComponentResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
+
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
@@ -34,18 +30,26 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.util.StrUtil;
+
 /**
  * @author zhanghuangbin
  */
 @Slf4j
 public class CommonNexusClient {
-
+    
     protected NexusUri uri;
-
+    
     public CommonNexusClient() {
         uri = NexusFacade.getNexusUri();
     }
-
+    
     public void download(String url, OutputStream out) throws IOException {
         try (CloseableHttpClient client = newLongTimeClient()) {
             String realUrl = url.startsWith("http") ? url : String.format("%s%s", uri.getUri(), url);
@@ -72,23 +76,21 @@ public class CommonNexusClient {
             }
         }
     }
-
+    
     public String downloadAsString(String url) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         download(url, out);
         return new String(out.toByteArray(), StandardCharsets.UTF_8);
     }
-
+    
     public List<Component> listMatchedItem(String repo, String namePattern) throws IOException {
         String encodedFolder = encodePath(namePattern);
         String nameParam = StrUtil.EMPTY.equals(encodedFolder) ? "*" : encodedFolder;
         String baseUrl = String.format("http://%s:%s/service/rest/v1/search?repository=%s&name=%s",
-                Constants.NEXUS_IP, Constants.NEXUS_PORT, repo, nameParam
-        );
+                Constants.NEXUS_IP, Constants.NEXUS_PORT, repo, nameParam);
         return doListMatchedItem(baseUrl);
     }
-
-
+    
     public void removeFolder(String repo, String folder) {
         String baseUrl = String.format("%s/service/rest/v1/components?repository=%s", uri.getUri(), repo);
         try {
@@ -105,7 +107,7 @@ public class CommonNexusClient {
             log.warn("remove file: {} fail, {}", folder, e.getMessage(), e);
         }
     }
-
+    
     /**
      * 对路径进行 URL 编码，保留斜杠分隔符
      * 例如：输入 "releases/app/v1.0" 输出 "releases/app/v1.0"（各部分编码后重组）
@@ -128,28 +130,27 @@ public class CommonNexusClient {
         }
         return encoded.toString();
     }
-
+    
     protected CloseableHttpClient newLongTimeClient() {
         RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(30000)      // 连接超时 30s
-                .setSocketTimeout(600000)      // 上传超时 10分钟
+                .setConnectTimeout(30000) // 连接超时 30s
+                .setSocketTimeout(600000) // 上传超时 10分钟
                 .build();
-
+        
         return HttpClients.custom()
                 .setDefaultRequestConfig(config)
                 .build();
     }
-
+    
     protected CloseableHttpClient newClient() {
         return HttpClients.custom().build();
     }
-
-
+    
     protected void prepareAuth(HttpRequestBase req) {
         String auth = Base64.getEncoder().encodeToString((uri.getUser() + ":" + uri.getPassword()).getBytes(StandardCharsets.UTF_8));
         req.setHeader("Authorization", "Basic " + auth);
     }
-
+    
     protected Assert getAssert(String repo, AssertQueryDTO query) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append(String.format("%s/service/rest/v1/search/assets?repository=%s", uri.getUri(), repo));
@@ -163,11 +164,11 @@ public class CommonNexusClient {
             sb.append("&format=").append(query.getFormat());
         }
         String url = sb.toString();
-
+        
         try (CloseableHttpClient httpClient = newClient()) {
             HttpGet get = new HttpGet(url);
             prepareAuth(get);
-
+            
             try (CloseableHttpResponse response = httpClient.execute(get)) {
                 int status = response.getStatusLine().getStatusCode();
                 String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
@@ -184,14 +185,13 @@ public class CommonNexusClient {
             }
         }
     }
-
-
+    
     protected void deleteAssert(String assertId) throws IOException {
         String url = String.format("%s/service/rest/v1/assets/%s", uri.getUri(), assertId);
         try (CloseableHttpClient httpClient = newClient()) {
             HttpDelete req = new HttpDelete(url);
             prepareAuth(req);
-
+            
             try (CloseableHttpResponse response = httpClient.execute(req)) {
                 int status = response.getStatusLine().getStatusCode();
                 boolean isSuccess = status >= 200 && status < 300;
@@ -202,7 +202,7 @@ public class CommonNexusClient {
             }
         }
     }
-
+    
     protected List<Component> doListMatchedItem(String baseUrl) throws IOException {
         List<Component> components = new ArrayList<>();
         try (CloseableHttpClient httpClient = newClient()) {
@@ -213,9 +213,9 @@ public class CommonNexusClient {
                     url += "&continuationToken=" + continuationToken;
                 }
                 HttpGet get = new HttpGet(url);
-
+                
                 prepareAuth(get);
-
+                
                 try (CloseableHttpResponse response = httpClient.execute(get)) {
                     int status = response.getStatusLine().getStatusCode();
                     String body = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
@@ -232,6 +232,5 @@ public class CommonNexusClient {
         }
         return components;
     }
-
-
+    
 }

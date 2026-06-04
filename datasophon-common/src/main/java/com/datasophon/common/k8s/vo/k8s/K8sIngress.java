@@ -1,10 +1,11 @@
 package com.datasophon.common.k8s.vo.k8s;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.util.List;
 import java.util.Map;
+
+import lombok.Data;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * K8s Ingress 资源 (networking.k8s.io/v1)
@@ -16,7 +17,7 @@ public class K8sIngress {
     private Metadata metadata;
     private IngressSpec spec;
     private IngressStatus status;
-
+    
     @Data
     public static class Metadata {
         private String name;
@@ -28,7 +29,7 @@ public class K8sIngress {
         private String uid;
         private Long generation;
     }
-
+    
     @Data
     public static class IngressSpec {
         @JsonProperty("ingressClassName")
@@ -40,7 +41,7 @@ public class K8sIngress {
         @JsonProperty("defaultBackend")
         private IngressBackend defaultBackend;
     }
-
+    
     @Data
     public static class IngressRule {
         @JsonProperty("host")
@@ -48,13 +49,13 @@ public class K8sIngress {
         @JsonProperty("http")
         private HTTP http;
     }
-
+    
     @Data
     public static class HTTP {
         @JsonProperty("paths")
         private List<HTTPPath> paths;
     }
-
+    
     @Data
     public static class HTTPPath {
         @JsonProperty("path")
@@ -64,7 +65,7 @@ public class K8sIngress {
         @JsonProperty("backend")
         private IngressBackend backend;
     }
-
+    
     @Data
     public static class TLS {
         @JsonProperty("hosts")
@@ -72,7 +73,7 @@ public class K8sIngress {
         @JsonProperty("secretName")
         private String secretName;
     }
-
+    
     @Data
     public static class IngressBackend {
         @JsonProperty("service")
@@ -80,7 +81,7 @@ public class K8sIngress {
         @JsonProperty("resource")
         private TypedLocalObjectReference resource;
     }
-
+    
     @Data
     public static class Service {
         @JsonProperty("name")
@@ -88,7 +89,7 @@ public class K8sIngress {
         @JsonProperty("port")
         private ServicePort port;
     }
-
+    
     @Data
     public static class ServicePort {
         @JsonProperty("number")
@@ -96,7 +97,7 @@ public class K8sIngress {
         @JsonProperty("name")
         private String name;
     }
-
+    
     @Data
     public static class TypedLocalObjectReference {
         @JsonProperty("apiGroup")
@@ -106,19 +107,19 @@ public class K8sIngress {
         @JsonProperty("name")
         private String name;
     }
-
+    
     @Data
     public static class IngressStatus {
         @JsonProperty("loadBalancer")
         private LoadBalancerStatus loadBalancer;
     }
-
+    
     @Data
     public static class LoadBalancerStatus {
         @JsonProperty("ingress")
         private List<LoadBalancerIngress> ingress;
     }
-
+    
     @Data
     public static class LoadBalancerIngress {
         @JsonProperty("ip")
@@ -128,7 +129,7 @@ public class K8sIngress {
         @JsonProperty("ports")
         private List<PortStatus> ports;
     }
-
+    
     @Data
     public static class PortStatus {
         @JsonProperty("port")

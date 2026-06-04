@@ -33,14 +33,16 @@ touch amoro-config-yaml.ftl
 ```
 
 添加prometheus.ftl
+
 ```shell
-  - job_name: 'amoro'
-    file_sd_configs:
-    - files:
-    - configs/amoro.json
+- job_name: 'amoro'
+  file_sd_configs:
+  - files:
+  - configs/amoro.json
 ```
 
 ### 4、amoro初始化代码
+
 无，数据库表自动初始化
 
 ### 5、重启
@@ -58,12 +60,15 @@ sh /opt/apps/datasophon-manager-1.2.0/bin/datasophon-api.sh restart api
 ```
 
 ### 4、安装服务
+
 配置host
+
 ```shell
 xx.xx.xx.xx mysql-node-1 kyuubiServer
 ```
 
 初始化数据库
+
 ```sql
 -- 创建amoro数据库
 CREATE DATABASE ustream DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;

@@ -20,10 +20,7 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.model;
-
-import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -31,6 +28,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import lombok.Data;
 
 /**
  * 传输层辅助类：将 {@code Map<Generators, List<ServiceConfig>>} 转换为
@@ -40,12 +39,12 @@ import java.util.stream.Collectors;
  */
 @Data
 public class ConfigFileEntry implements Serializable {
-
+    
     private static final long serialVersionUID = 1L;
-
+    
     private Generators generators;
     private List<ServiceConfig> configs;
-
+    
     public static List<ConfigFileEntry> fromMap(Map<Generators, List<ServiceConfig>> map) {
         if (map == null || map.isEmpty()) {
             return Collections.emptyList();
@@ -57,7 +56,7 @@ public class ConfigFileEntry implements Serializable {
             return entry;
         }).collect(Collectors.toList());
     }
-
+    
     public static Map<Generators, List<ServiceConfig>> toMap(List<ConfigFileEntry> entries) {
         if (entries == null || entries.isEmpty()) {
             return new LinkedHashMap<>();

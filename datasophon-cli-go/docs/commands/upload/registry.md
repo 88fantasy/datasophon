@@ -22,20 +22,20 @@ datasophon-cli [--dry-run] upload registry \
 
 ## 参数 / Flags
 
-| flag | 简写 | 类型 | 默认 | 必填 | 说明 |
-|---|---|---|---|---|---|
-| `--productPackagesPath` | 无 | string | — | 是 | 本地安装包根目录（须存在） |
-| `--webHost` | 无 | string | — | 是 | Nexus 主机 IP 或 hostname |
-| `--webPort` | 无 | string | — | 是 | Nexus Web UI 端口（如 `8091`） |
-| `--username` | `-u` | string | — | 是 | Nexus 管理员用户名 |
-| `--password` | `-p` | string | — | 是 | Nexus 管理员密码 |
-| `--dockerHttpPort` | 无 | int | — | 是 | Docker 仓库 HTTP 端口（如 `8083`） |
-| `--isSuccessDelete` | `-e` | bool | `false` | 否 | 上传成功后删除本地文件（节省磁盘空间） |
-| `--disableUploadRegistry` | 无 | bool | `false` | 否 | 设为 `true` 时跳过整个上传流程（调试用） |
+|           flag            |  简写  |   类型   |   默认    | 必填 |             说明              |
+|---------------------------|------|--------|---------|----|-----------------------------|
+| `--productPackagesPath`   | 无    | string | —       | 是  | 本地安装包根目录（须存在）               |
+| `--webHost`               | 无    | string | —       | 是  | Nexus 主机 IP 或 hostname      |
+| `--webPort`               | 无    | string | —       | 是  | Nexus Web UI 端口（如 `8091`）   |
+| `--username`              | `-u` | string | —       | 是  | Nexus 管理员用户名                |
+| `--password`              | `-p` | string | —       | 是  | Nexus 管理员密码                 |
+| `--dockerHttpPort`        | 无    | int    | —       | 是  | Docker 仓库 HTTP 端口（如 `8083`） |
+| `--isSuccessDelete`       | `-e` | bool   | `false` | 否  | 上传成功后删除本地文件（节省磁盘空间）         |
+| `--disableUploadRegistry` | 无    | bool   | `false` | 否  | 设为 `true` 时跳过整个上传流程（调试用）    |
 
 > 继承 init 公共 flag（`--config`、`--registryIp` 等）—— 详见 [global-flags.md#init-公共-flag](../../global-flags.md#init-公共-flag)
 > 继承全局 flag：`--dry-run` —— 详见 [global-flags.md](../../global-flags.md)
-
+>
 > **注意**：若继承的 `--enableRegistry` 为 `false`（默认值），上传流程会被跳过。
 > 独立调用此命令时，需确保 `--enableRegistry` 为 `true` 或通过 `--config` 传入含 `registry.enable: true` 的配置文件。
 
@@ -121,15 +121,16 @@ datasophon-cli upload registry \
 
 ## 退出码 / 常见错误
 
-| 错误信息 | 根因 | 处置 |
-|---|---|---|
-| `本地安装包目录不存在` | `--productPackagesPath` 目录不存在 | 确认路径正确且目录已创建 |
-| `enableRegistry=false，跳过上传` | 未设置 `--enableRegistry`（默认 false） | 加 `--enableRegistry` 参数 |
-| 上传失败（status 401） | Nexus 认证失败 | 检查 `--username` / `--password` |
-| 上传失败（status 404） | Nexus 仓库不存在 | 确认 Nexus 已创建对应仓库（yum/raw/apt/docker/helm） |
-| docker push 失败 | Docker 未安装或 Nexus Docker 仓库端口不通 | 确认 Docker 服务正常、防火墙开放 `dockerHttpPort` |
+|            错误信息             |                根因                |                    处置                     |
+|-----------------------------|----------------------------------|-------------------------------------------|
+| `本地安装包目录不存在`                | `--productPackagesPath` 目录不存在    | 确认路径正确且目录已创建                              |
+| `enableRegistry=false，跳过上传` | 未设置 `--enableRegistry`（默认 false） | 加 `--enableRegistry` 参数                   |
+| 上传失败（status 401）            | Nexus 认证失败                       | 检查 `--username` / `--password`            |
+| 上传失败（status 404）            | Nexus 仓库不存在                      | 确认 Nexus 已创建对应仓库（yum/raw/apt/docker/helm） |
+| docker push 失败              | Docker 未安装或 Nexus Docker 仓库端口不通  | 确认 Docker 服务正常、防火墙开放 `dockerHttpPort`     |
 
 ## 相关命令
 
 - [`create registry`](../create/registry.md) — 先安装 Nexus，再上传包
 - [`create cluster`](../create/cluster.md) — 上传完成后执行集群初始化
+

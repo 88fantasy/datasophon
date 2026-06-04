@@ -7,7 +7,6 @@ import lombok.Data;
  */
 @Data
 public class EchoDTO {
-
-
+    
     private String echo;
 }

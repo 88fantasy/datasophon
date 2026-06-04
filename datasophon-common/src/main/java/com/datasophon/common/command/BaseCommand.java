@@ -20,14 +20,14 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.command;
 
 import com.datasophon.common.enums.ServiceRoleType;
 import com.datasophon.common.model.ServiceRoleRunner;
-import lombok.Data;
 
 import java.io.Serializable;
+
+import lombok.Data;
 
 @Data
 public class BaseCommand implements Serializable, ServiceRoleResource {
@@ -47,7 +47,7 @@ public class BaseCommand implements Serializable, ServiceRoleResource {
     private String packageName;
     
     private Integer clusterId;
-
+    
     private String decompressPackageName;
     
     private ServiceRoleRunner startRunner;

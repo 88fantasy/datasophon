@@ -5,67 +5,58 @@
 package com.datasophon.grpc.api;
 
 public final class MasterProto {
-  private MasterProto() {}
-  public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistryLite registry) {
-  }
-
-  public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistry registry) {
-    registerAllExtensions(
-        (com.google.protobuf.ExtensionRegistryLite) registry);
-  }
-  static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_com_datasophon_grpc_OlapRegistrationRequest_descriptor;
-  static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internal_static_com_datasophon_grpc_OlapRegistrationRequest_fieldAccessorTable;
-  static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_com_datasophon_grpc_OlapRegistrationResponse_descriptor;
-  static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internal_static_com_datasophon_grpc_OlapRegistrationResponse_fieldAccessorTable;
-
-  public static com.google.protobuf.Descriptors.FileDescriptor
-      getDescriptor() {
-    return descriptor;
-  }
-  private static  com.google.protobuf.Descriptors.FileDescriptor
-      descriptor;
-  static {
-    java.lang.String[] descriptorData = {
-      "\n\014master.proto\022\023com.datasophon.grpc\"\213\001\n\027" +
-      "OlapRegistrationRequest\022\021\n\tfe_master\030\001 \001" +
-      "(\t\022\020\n\010hostname\030\002 \001(\t\0224\n\tnode_type\030\003 \001(\0162" +
-      "!.com.datasophon.grpc.OlapNodeType\022\025\n\rro" +
-      "ot_password\030\004 \001(\t\"<\n\030OlapRegistrationRes" +
-      "ponse\022\017\n\007success\030\001 \001(\010\022\017\n\007message\030\002 \001(\t*" +
-      "d\n\014OlapNodeType\022\036\n\032OLAP_NODE_TYPE_UNSPEC" +
-      "IFIED\020\000\022\n\n\006ADD_BE\020\001\022\023\n\017ADD_FE_FOLLOWER\020\002" +
-      "\022\023\n\017ADD_FE_OBSERVER\020\0032\210\001\n\025MasterCallback" +
-      "Service\022o\n\020RegisterOlapNode\022,.com.dataso" +
-      "phon.grpc.OlapRegistrationRequest\032-.com." +
-      "datasophon.grpc.OlapRegistrationResponse" +
-      "B(\n\027com.datasophon.grpc.apiB\013MasterProto" +
-      "P\001b\006proto3"
-    };
-    descriptor = com.google.protobuf.Descriptors.FileDescriptor
-      .internalBuildGeneratedFileFrom(descriptorData,
-        new com.google.protobuf.Descriptors.FileDescriptor[] {
-        });
-    internal_static_com_datasophon_grpc_OlapRegistrationRequest_descriptor =
-      getDescriptor().getMessageTypes().get(0);
-    internal_static_com_datasophon_grpc_OlapRegistrationRequest_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_com_datasophon_grpc_OlapRegistrationRequest_descriptor,
-        new java.lang.String[] { "FeMaster", "Hostname", "NodeType", "RootPassword", });
-    internal_static_com_datasophon_grpc_OlapRegistrationResponse_descriptor =
-      getDescriptor().getMessageTypes().get(1);
-    internal_static_com_datasophon_grpc_OlapRegistrationResponse_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_com_datasophon_grpc_OlapRegistrationResponse_descriptor,
-        new java.lang.String[] { "Success", "Message", });
-  }
-
-  // @@protoc_insertion_point(outer_class_scope)
+    private MasterProto() {
+    }
+    public static void registerAllExtensions(
+                                             com.google.protobuf.ExtensionRegistryLite registry) {
+    }
+    
+    public static void registerAllExtensions(
+                                             com.google.protobuf.ExtensionRegistry registry) {
+        registerAllExtensions(
+                (com.google.protobuf.ExtensionRegistryLite) registry);
+    }
+    static final com.google.protobuf.Descriptors.Descriptor internal_static_com_datasophon_grpc_OlapRegistrationRequest_descriptor;
+    static final com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internal_static_com_datasophon_grpc_OlapRegistrationRequest_fieldAccessorTable;
+    static final com.google.protobuf.Descriptors.Descriptor internal_static_com_datasophon_grpc_OlapRegistrationResponse_descriptor;
+    static final com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internal_static_com_datasophon_grpc_OlapRegistrationResponse_fieldAccessorTable;
+    
+    public static com.google.protobuf.Descriptors.FileDescriptor getDescriptor() {
+        return descriptor;
+    }
+    private static com.google.protobuf.Descriptors.FileDescriptor descriptor;
+    static {
+        java.lang.String[] descriptorData = {
+                "\n\014master.proto\022\023com.datasophon.grpc\"\213\001\n\027" +
+                        "OlapRegistrationRequest\022\021\n\tfe_master\030\001 \001" +
+                        "(\t\022\020\n\010hostname\030\002 \001(\t\0224\n\tnode_type\030\003 \001(\0162" +
+                        "!.com.datasophon.grpc.OlapNodeType\022\025\n\rro" +
+                        "ot_password\030\004 \001(\t\"<\n\030OlapRegistrationRes" +
+                        "ponse\022\017\n\007success\030\001 \001(\010\022\017\n\007message\030\002 \001(\t*" +
+                        "d\n\014OlapNodeType\022\036\n\032OLAP_NODE_TYPE_UNSPEC" +
+                        "IFIED\020\000\022\n\n\006ADD_BE\020\001\022\023\n\017ADD_FE_FOLLOWER\020\002" +
+                        "\022\023\n\017ADD_FE_OBSERVER\020\0032\210\001\n\025MasterCallback" +
+                        "Service\022o\n\020RegisterOlapNode\022,.com.dataso" +
+                        "phon.grpc.OlapRegistrationRequest\032-.com." +
+                        "datasophon.grpc.OlapRegistrationResponse" +
+                        "B(\n\027com.datasophon.grpc.apiB\013MasterProto" +
+                        "P\001b\006proto3"
+        };
+        descriptor = com.google.protobuf.Descriptors.FileDescriptor
+                .internalBuildGeneratedFileFrom(descriptorData,
+                        new com.google.protobuf.Descriptors.FileDescriptor[]{
+                        });
+        internal_static_com_datasophon_grpc_OlapRegistrationRequest_descriptor =
+                getDescriptor().getMessageTypes().get(0);
+        internal_static_com_datasophon_grpc_OlapRegistrationRequest_fieldAccessorTable = new com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+                internal_static_com_datasophon_grpc_OlapRegistrationRequest_descriptor,
+                new java.lang.String[]{"FeMaster", "Hostname", "NodeType", "RootPassword",});
+        internal_static_com_datasophon_grpc_OlapRegistrationResponse_descriptor =
+                getDescriptor().getMessageTypes().get(1);
+        internal_static_com_datasophon_grpc_OlapRegistrationResponse_fieldAccessorTable = new com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+                internal_static_com_datasophon_grpc_OlapRegistrationResponse_descriptor,
+                new java.lang.String[]{"Success", "Message",});
+    }
+    
+    // @@protoc_insertion_point(outer_class_scope)
 }

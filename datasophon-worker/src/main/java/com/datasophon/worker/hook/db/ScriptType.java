@@ -22,8 +22,9 @@
 
 package com.datasophon.worker.hook.db;
 
-import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
+
+import lombok.Getter;
 
 @Getter
 public enum ScriptType {

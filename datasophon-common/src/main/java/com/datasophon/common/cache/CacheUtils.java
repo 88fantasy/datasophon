@@ -20,13 +20,12 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.cache;
+
+import java.util.function.Function;
 
 import cn.hutool.cache.Cache;
 import cn.hutool.cache.CacheUtil;
-
-import java.util.function.Function;
 
 /**
  * Cache工具类
@@ -38,12 +37,11 @@ public class CacheUtils {
     public static Object get(String key) {
         return cache.get(key);
     }
-
+    
     public static Object get(Namespace namespace) {
         return cache.get(namespace.toString());
     }
-
-
+    
     public static void put(String key, Object value) {
         cache.put(key, value);
     }
@@ -70,8 +68,7 @@ public class CacheUtils {
         Object data = cache.get(key);
         return (String) data;
     }
-
-
+    
     /**
      * 线程不安全，但是勉强够用
      * @param key
@@ -82,7 +79,7 @@ public class CacheUtils {
     public static <T> T computeIfAbsent(String key, Function<String, T> function) {
         if (containsKey(key)) {
             return (T) get(key);
-        }else {
+        } else {
             final T t = function.apply(key);
             cache.put(key, t);
             return t;

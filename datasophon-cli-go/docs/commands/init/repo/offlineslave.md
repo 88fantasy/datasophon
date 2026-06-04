@@ -15,10 +15,10 @@ datasophon-cli [--dry-run] init offlineSlave \
 
 ## 参数 / Flags
 
-| flag | 简写 | 类型 | 默认 | 必填 | 说明 |
-|---|---|---|---|---|---|
-| `--serverIp` | 无 | string | — | 是 | 离线源服务器 IP（对应 `create yum-server` 的 `--serverIp`） |
-| `--serverPort` | 无 | string | — | 是 | 离线源 HTTP 端口 |
+|      flag      | 简写 |   类型   | 默认 | 必填 |                        说明                        |
+|----------------|----|--------|----|----|--------------------------------------------------|
+| `--serverIp`   | 无  | string | —  | 是  | 离线源服务器 IP（对应 `create yum-server` 的 `--serverIp`） |
+| `--serverPort` | 无  | string | —  | 是  | 离线源 HTTP 端口                                      |
 
 > 继承 init 公共 flag（`--config`、`--registryIp` 等）—— 详见 [global-flags.md#init-公共-flag](../../../global-flags.md#init-公共-flag)
 > 继承全局 flag：`--dry-run` —— 详见 [global-flags.md](../../../global-flags.md)
@@ -49,11 +49,12 @@ datasophon-cli init offlineSlave \
 
 ## 退出码 / 常见错误
 
-| 错误信息 | 根因 | 处置 |
-|---|---|---|
+|      错误信息      |   根因   |                处置                |
+|----------------|--------|----------------------------------|
 | `yum/apt 测试失败` | 离线源不可达 | 确认 `create yum-server` 已成功且端口可访问 |
 
 ## 相关命令
 
 - [`create yum-server`](../../create/yum-server.md) — 先在离线源节点启动 httpd/apache2 服务
 - [DAG 步骤表](../../../reference/init-all-dag.md)
+

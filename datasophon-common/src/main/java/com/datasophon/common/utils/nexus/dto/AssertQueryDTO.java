@@ -9,11 +9,11 @@ import lombok.Data;
 @Data
 @Builder
 public class AssertQueryDTO {
-
+    
     private String format;
-
+    
     private String group;
-
+    
     private String name;
-
+    
 }

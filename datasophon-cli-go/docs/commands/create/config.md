@@ -10,9 +10,9 @@
 
 根据 `--type` 不同，生成内容有所区别：
 
-| `--type` | 包含内容 |
-|---|---|
-| `hadoop` | 基础服务（registry / mysql / ntpServer / rustfs 等）；**不含** `kubernetes:` 节和 k8s 安装包 |
+|   `--type`   |                                                                                   包含内容                                                                                   |
+|--------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `hadoop`     | 基础服务（registry / mysql / ntpServer / rustfs 等）；**不含** `kubernetes:` 节和 k8s 安装包                                                                                            |
 | `kubernetes` | 全部基础服务 **+** `kubernetes:` 节（baseServices / kuboardI / k8sTools）及对应安装包（sealos / kubernetesI / helmI / calicoI / ingressI / kuboardI / helmify / docker / helm / kubectl） |
 
 生成后**必须手动编辑**以下内容（密码外的其他字段均为示例值）：
@@ -28,11 +28,11 @@ datasophon-cli create config -t <hadoop|kubernetes> [flags]
 
 ## 参数 / Flags
 
-| flag | 简写 | 类型 | 默认 | 必填 | 说明 |
-|---|---|---|---|---|---|
-| `--type` | `-t` | string | — | **是** | 集群类型：`hadoop` 或 `kubernetes` |
-| `--output` | `-o` | string | `cluster-config.yml` | 否 | 输出文件路径（相对或绝对均可） |
-| `--force` | `-f` | bool | `false` | 否 | 文件已存在时强制覆盖 |
+|    flag    |  简写  |   类型   |          默认          |  必填   |              说明              |
+|------------|------|--------|----------------------|-------|------------------------------|
+| `--type`   | `-t` | string | —                    | **是** | 集群类型：`hadoop` 或 `kubernetes` |
+| `--output` | `-o` | string | `cluster-config.yml` | 否     | 输出文件路径（相对或绝对均可）              |
+| `--force`  | `-f` | bool   | `false`              | 否     | 文件已存在时强制覆盖                   |
 
 > 不继承 init 公共 flag；也不需要 `--dry-run`（仅生成文件，无 SSH 操作）。
 
@@ -76,13 +76,14 @@ datasophon-cli create config -t hadoop \
 
 ## 退出码 / 常见错误
 
-| 错误信息 | 根因 | 处置 |
-|---|---|---|
-| `--type 必须是 hadoop 或 kubernetes` | `--type` 值不合法 | 使用 `hadoop` 或 `kubernetes` |
-| `输出文件已存在: <path>` | 文件已存在且未指定 `--force` | 加 `--force` 或先备份旧文件 |
-| `未找到非 loopback 的 IPv4 地址` | 机器无可用网卡或网卡未启动 | 手动在生成的配置文件中填写 `nodes[0].ip` |
+|               错误信息               |         根因          |             处置              |
+|----------------------------------|---------------------|-----------------------------|
+| `--type 必须是 hadoop 或 kubernetes` | `--type` 值不合法       | 使用 `hadoop` 或 `kubernetes`  |
+| `输出文件已存在: <path>`                | 文件已存在且未指定 `--force` | 加 `--force` 或先备份旧文件         |
+| `未找到非 loopback 的 IPv4 地址`        | 机器无可用网卡或网卡未启动       | 手动在生成的配置文件中填写 `nodes[0].ip` |
 
 ## 相关命令
 
 - [`create cluster`](./cluster.md) — 使用生成的配置文件初始化集群
 - [配置文件参考](../../config-reference.md) — 所有字段详解
+

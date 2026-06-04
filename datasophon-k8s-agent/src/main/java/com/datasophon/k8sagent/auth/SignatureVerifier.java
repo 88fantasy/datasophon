@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.k8sagent.auth;
 
 import java.security.KeyFactory;
@@ -33,16 +32,16 @@ import java.util.Base64;
  * RSA signature verifier (immutable utility)
  */
 public class SignatureVerifier {
-
+    
     private static final String ALGORITHM = "SHA256withRSA";
     private static final String KEY_FACTORY = "RSA";
-
+    
     private final PublicKey publicKey;
-
+    
     public SignatureVerifier(String publicKeyPem) {
         this.publicKey = parsePublicKey(publicKeyPem);
     }
-
+    
     /**
      * Verify signature for timestamp+nonce
      *
@@ -63,7 +62,7 @@ public class SignatureVerifier {
             return false;
         }
     }
-
+    
     private static PublicKey parsePublicKey(String pem) {
         try {
             String cleaned = pem

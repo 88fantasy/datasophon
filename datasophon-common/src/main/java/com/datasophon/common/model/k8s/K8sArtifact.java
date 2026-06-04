@@ -7,8 +7,8 @@ import lombok.Data;
  */
 @Data
 public class K8sArtifact {
-
+    
     private String helm;
-
+    
     private String yaml;
 }

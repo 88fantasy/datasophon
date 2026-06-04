@@ -20,19 +20,19 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.model;
 
 import com.datasophon.common.enums.InstallState;
-import lombok.Data;
 
 import java.util.Date;
 
+import lombok.Data;
+
 @Data
 public class HostInfo {
-
+    
     private Integer id;
-
+    
     private String hostname;
     
     private String ip;
@@ -49,7 +49,7 @@ public class HostInfo {
     private String sshUser;
     
     private Integer sshPort;
-
+    
     private String sshPassword;
     /**
      * 安装进度

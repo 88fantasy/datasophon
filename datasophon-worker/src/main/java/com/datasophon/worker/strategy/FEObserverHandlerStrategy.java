@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker.strategy;
 
 import com.datasophon.common.command.ServiceRoleOperateCommand;
@@ -33,8 +32,9 @@ import com.datasophon.grpc.api.OlapNodeType;
 import com.datasophon.worker.grpc.MasterCallbackClient;
 import com.datasophon.worker.handler.ServiceHandler;
 
-import cn.hutool.core.net.NetUtil;
 import java.util.ArrayList;
+
+import cn.hutool.core.net.NetUtil;
 import cn.hutool.json.JSONUtil;
 
 public class FEObserverHandlerStrategy extends AbstractHandlerStrategy implements ServiceRoleStrategy {

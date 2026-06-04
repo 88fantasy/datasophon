@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.worker;
 
 import com.datasophon.common.Constants;
@@ -34,7 +33,6 @@ import com.datasophon.worker.grpc.MasterRegistryClient;
 import com.datasophon.worker.grpc.WorkerGrpcServer;
 import com.datasophon.worker.utils.UnixUtils;
 
-import cn.hutool.core.util.StrUtil;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -44,20 +42,22 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import cn.hutool.core.util.StrUtil;
+
 /**
  * Worker 进程入口。
  *
  * <p>Phase 5：移除 Pekka ActorSystem；全量走 gRPC 通信。</p>
  */
 public class WorkerApplicationServer {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(WorkerApplicationServer.class);
-
+    
     private static final String USER_DIR = "user.dir";
     private static final String SH = "sh";
     private static final String NODE = "node";
     private static final String HADOOP = "hadoop";
-
+    
     public static void main(String[] args) throws UnknownHostException {
         // worker.hostname：可选配置，留空则自动探测。
         // 若 /etc/hostname 是短名但 getHostName() 返回 FQDN，需显式指定以与 Master DB 对齐。
@@ -70,23 +70,23 @@ public class WorkerApplicationServer {
         String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
         String cpuArchitecture = ShellUtils.getCpuArchitecture();
         int clusterId = PropertyUtils.getInt("clusterId");
-
+        
         // worker.ip：可选配置，留空则自动探测本机 IP。
         // k8s hostNetwork 模式下 getLocalIp() 即节点 IP，通常集群外可达。
         // 多网卡裸机若自动探测选错网卡，请在 common.properties 中显式指定 worker.ip。
         String configuredIp = PropertyUtils.getString("worker.ip");
         String ip = StrUtil.isNotBlank(configuredIp) ? configuredIp : HostUtils.getLocalIp();
         logger.info("Worker resolved ip={} (configured={})", ip, configuredIp);
-
+        
         CacheUtils.put(Constants.HOSTNAME, hostname);
         CacheUtils.put(Constants.CPU_ARCH, cpuArchitecture);
-
+        
         startNodeExporter(workDir, cpuArchitecture);
-
+        
         Map<String, String> userMap = new HashMap<>(16);
         initUserMap(userMap);
         createDefaultUser(userMap);
-
+        
         // 启动 gRPC Server，再向 Master 注册，确保注册成功时 Server 已就绪
         WorkerGrpcServer workerGrpcServer = new WorkerGrpcServer();
         try {
@@ -94,15 +94,15 @@ public class WorkerApplicationServer {
         } catch (Exception e) {
             logger.error("Failed to start worker gRPC server, communication with master will fail", e);
         }
-
+        
         // 初始化 Master 回调客户端（供策略类静态获取），在注册前就绪
         MasterCallbackClient.init(masterHost);
-
+        
         MasterRegistryClient registryClient =
                 new MasterRegistryClient(masterHost, hostname, ip, cpuArchitecture, clusterId);
         registryClient.register();
         logger.info("Worker started, hostname={}, ip={}", hostname, ip);
-
+        
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (!ServerLifeCycleManager.isStopped()) {
                 try {
@@ -118,7 +118,7 @@ public class WorkerApplicationServer {
                 close("WorkerServer shutdown hook");
             }
         }));
-
+        
         // 阻塞主线程，防止 JVM 因无非守护线程退出（容器/前台运行）
         try {
             workerGrpcServer.awaitTermination();
@@ -126,7 +126,7 @@ public class WorkerApplicationServer {
             Thread.currentThread().interrupt();
         }
     }
-
+    
     private static void initUserMap(Map<String, String> userMap) {
         userMap.put("hdfs", HADOOP);
         userMap.put("yarn", HADOOP);
@@ -137,7 +137,7 @@ public class WorkerApplicationServer {
         userMap.put("flink", HADOOP);
         userMap.put("elastic", "elastic");
     }
-
+    
     private static void createDefaultUser(Map<String, String> userMap) {
         for (Map.Entry<String, String> entry : userMap.entrySet()) {
             String user = entry.getKey();
@@ -148,22 +148,22 @@ public class WorkerApplicationServer {
             UnixUtils.createUnixUser(user, group, null);
         }
     }
-
+    
     public static void close(String cause) {
         stopNodeExporter();
         logger.info("Worker server stopped, cause: {}", cause);
     }
-
+    
     private static void stopNodeExporter() {
         String workDir = System.getProperty(USER_DIR);
         String cpuArchitecture = ShellUtils.getCpuArchitecture();
         operateNodeExporter(workDir, cpuArchitecture, "stop");
     }
-
+    
     private static void startNodeExporter(String workDir, String cpuArchitecture) {
         operateNodeExporter(workDir, cpuArchitecture, "restart");
     }
-
+    
     private static void operateNodeExporter(String workDir, String cpuArchitecture, String operate) {
         ArrayList<String> commands = new ArrayList<>();
         commands.add(SH);

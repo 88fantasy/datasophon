@@ -10,22 +10,22 @@
 
 ### 集群与节点
 
-| 命令 | 说明 |
-|---|---|
+|           命令            |                   说明                   |
+|-------------------------|----------------------------------------|
 | [cluster](./cluster.md) | 完整集群初始化，走 plan → apply 两阶段流程（33 步 DAG） |
-| [node](./node.md) | 新增单个节点的基础初始化（独立模式，10 步） |
-| [config](./config.md) | 生成带随机密码的 `cluster-sample.yml` 配置模板 |
+| [node](./node.md)       | 新增单个节点的基础初始化（独立模式，10 步）                |
+| [config](./config.md)   | 生成带随机密码的 `cluster-sample.yml` 配置模板     |
 
 ### 基础组件安装（双模式）
 
-| 命令 | 说明 | 主要写回字段 |
-|---|---|---|
-| [registry](./registry.md) | 在 registry 节点安装 Sonatype Nexus 制品库 | `registry.enable=true` |
-| [mysql](./mysql.md) | 在 mysql 节点安装 MySQL 8（配置文件模式下顺带创建 appDbs） | `mysql.enable=true` |
-| [rustfs](./rustfs.md) | 在 rustfs 节点安装并启动 Rustfs 对象存储 | `rustfs.enable=true` |
-| [ntp-server](./ntp-server.md) | 在 ntpServer 节点安装并配置 chrony NTP 服务端 | `ntpServer.enable=true` |
-| [nmap-server](./nmap-server.md) | 在 nmapServer 节点安装 nmap | `nmapServer.enable=true` |
-| [yum-server](./yum-server.md) | 在 yumServer 节点配置 httpd/apache2 离线包源 | `yumServer.enable=true` |
+|               命令                |                    说明                    |          主要写回字段          |
+|---------------------------------|------------------------------------------|--------------------------|
+| [registry](./registry.md)       | 在 registry 节点安装 Sonatype Nexus 制品库       | `registry.enable=true`   |
+| [mysql](./mysql.md)             | 在 mysql 节点安装 MySQL 8（配置文件模式下顺带创建 appDbs） | `mysql.enable=true`      |
+| [rustfs](./rustfs.md)           | 在 rustfs 节点安装并启动 Rustfs 对象存储             | `rustfs.enable=true`     |
+| [ntp-server](./ntp-server.md)   | 在 ntpServer 节点安装并配置 chrony NTP 服务端       | `ntpServer.enable=true`  |
+| [nmap-server](./nmap-server.md) | 在 nmapServer 节点安装 nmap                   | `nmapServer.enable=true` |
+| [yum-server](./yum-server.md)   | 在 yumServer 节点配置 httpd/apache2 离线包源      | `yumServer.enable=true`  |
 
 ## 典型使用顺序
 
@@ -54,3 +54,4 @@ datasophon-cli --dry-run create cluster -p /data/datasophon ...
 
 - [DAG 步骤表](../../reference/init-all-dag.md) — initALL 33 步与各步骤对应的 `create *` 命令
 - [配置文件参考](../../config-reference.md) — `cluster-sample.yml` 各字段含义
+

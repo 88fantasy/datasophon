@@ -20,12 +20,11 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.command;
 
-import lombok.Data;
-
 import java.io.Serializable;
+
+import lombok.Data;
 
 /**
  * 没有使用
@@ -39,5 +38,5 @@ public class ServiceCheckCommand extends BaseCommand implements Serializable {
     private Integer serviceRoleInstanceId;
     
     private Long deliveryId;
-
+    
 }

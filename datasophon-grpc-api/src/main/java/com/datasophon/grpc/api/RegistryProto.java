@@ -5,115 +5,90 @@
 package com.datasophon.grpc.api;
 
 public final class RegistryProto {
-  private RegistryProto() {}
-  public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistryLite registry) {
-  }
-
-  public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistry registry) {
-    registerAllExtensions(
-        (com.google.protobuf.ExtensionRegistryLite) registry);
-  }
-  static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_com_datasophon_grpc_RegisterRequest_descriptor;
-  static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internal_static_com_datasophon_grpc_RegisterRequest_fieldAccessorTable;
-  static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_com_datasophon_grpc_RegisterResponse_descriptor;
-  static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internal_static_com_datasophon_grpc_RegisterResponse_fieldAccessorTable;
-  static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_com_datasophon_grpc_HeartbeatRequest_descriptor;
-  static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internal_static_com_datasophon_grpc_HeartbeatRequest_fieldAccessorTable;
-  static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_com_datasophon_grpc_HeartbeatResponse_descriptor;
-  static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internal_static_com_datasophon_grpc_HeartbeatResponse_fieldAccessorTable;
-  static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_com_datasophon_grpc_UnregisterRequest_descriptor;
-  static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internal_static_com_datasophon_grpc_UnregisterRequest_fieldAccessorTable;
-  static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_com_datasophon_grpc_UnregisterResponse_descriptor;
-  static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internal_static_com_datasophon_grpc_UnregisterResponse_fieldAccessorTable;
-
-  public static com.google.protobuf.Descriptors.FileDescriptor
-      getDescriptor() {
-    return descriptor;
-  }
-  private static  com.google.protobuf.Descriptors.FileDescriptor
-      descriptor;
-  static {
-    java.lang.String[] descriptorData = {
-      "\n\016registry.proto\022\023com.datasophon.grpc\"p\n" +
-      "\017RegisterRequest\022\020\n\010hostname\030\001 \001(\t\022\021\n\tgr" +
-      "pc_port\030\002 \001(\005\022\030\n\020cpu_architecture\030\003 \001(\t\022" +
-      "\022\n\ncluster_id\030\004 \001(\005\022\n\n\002ip\030\005 \001(\t\"4\n\020Regis" +
-      "terResponse\022\017\n\007success\030\001 \001(\010\022\017\n\007message\030" +
-      "\002 \001(\t\"$\n\020HeartbeatRequest\022\020\n\010hostname\030\001 " +
-      "\001(\t\"$\n\021HeartbeatResponse\022\017\n\007success\030\001 \001(" +
-      "\010\"%\n\021UnregisterRequest\022\020\n\010hostname\030\001 \001(\t" +
-      "\"%\n\022UnregisterResponse\022\017\n\007success\030\001 \001(\0102" +
-      "\253\002\n\025WorkerRegistryService\022W\n\010Register\022$." +
-      "com.datasophon.grpc.RegisterRequest\032%.co" +
-      "m.datasophon.grpc.RegisterResponse\022Z\n\tHe" +
-      "artbeat\022%.com.datasophon.grpc.HeartbeatR" +
-      "equest\032&.com.datasophon.grpc.HeartbeatRe" +
-      "sponse\022]\n\nUnregister\022&.com.datasophon.gr" +
-      "pc.UnregisterRequest\032\'.com.datasophon.gr" +
-      "pc.UnregisterResponseB*\n\027com.datasophon." +
-      "grpc.apiB\rRegistryProtoP\001b\006proto3"
-    };
-    descriptor = com.google.protobuf.Descriptors.FileDescriptor
-      .internalBuildGeneratedFileFrom(descriptorData,
-        new com.google.protobuf.Descriptors.FileDescriptor[] {
-        });
-    internal_static_com_datasophon_grpc_RegisterRequest_descriptor =
-      getDescriptor().getMessageTypes().get(0);
-    internal_static_com_datasophon_grpc_RegisterRequest_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_com_datasophon_grpc_RegisterRequest_descriptor,
-        new java.lang.String[] { "Hostname", "GrpcPort", "CpuArchitecture", "ClusterId", "Ip", });
-    internal_static_com_datasophon_grpc_RegisterResponse_descriptor =
-      getDescriptor().getMessageTypes().get(1);
-    internal_static_com_datasophon_grpc_RegisterResponse_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_com_datasophon_grpc_RegisterResponse_descriptor,
-        new java.lang.String[] { "Success", "Message", });
-    internal_static_com_datasophon_grpc_HeartbeatRequest_descriptor =
-      getDescriptor().getMessageTypes().get(2);
-    internal_static_com_datasophon_grpc_HeartbeatRequest_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_com_datasophon_grpc_HeartbeatRequest_descriptor,
-        new java.lang.String[] { "Hostname", });
-    internal_static_com_datasophon_grpc_HeartbeatResponse_descriptor =
-      getDescriptor().getMessageTypes().get(3);
-    internal_static_com_datasophon_grpc_HeartbeatResponse_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_com_datasophon_grpc_HeartbeatResponse_descriptor,
-        new java.lang.String[] { "Success", });
-    internal_static_com_datasophon_grpc_UnregisterRequest_descriptor =
-      getDescriptor().getMessageTypes().get(4);
-    internal_static_com_datasophon_grpc_UnregisterRequest_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_com_datasophon_grpc_UnregisterRequest_descriptor,
-        new java.lang.String[] { "Hostname", });
-    internal_static_com_datasophon_grpc_UnregisterResponse_descriptor =
-      getDescriptor().getMessageTypes().get(5);
-    internal_static_com_datasophon_grpc_UnregisterResponse_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_com_datasophon_grpc_UnregisterResponse_descriptor,
-        new java.lang.String[] { "Success", });
-  }
-
-  // @@protoc_insertion_point(outer_class_scope)
+    private RegistryProto() {
+    }
+    public static void registerAllExtensions(
+                                             com.google.protobuf.ExtensionRegistryLite registry) {
+    }
+    
+    public static void registerAllExtensions(
+                                             com.google.protobuf.ExtensionRegistry registry) {
+        registerAllExtensions(
+                (com.google.protobuf.ExtensionRegistryLite) registry);
+    }
+    static final com.google.protobuf.Descriptors.Descriptor internal_static_com_datasophon_grpc_RegisterRequest_descriptor;
+    static final com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internal_static_com_datasophon_grpc_RegisterRequest_fieldAccessorTable;
+    static final com.google.protobuf.Descriptors.Descriptor internal_static_com_datasophon_grpc_RegisterResponse_descriptor;
+    static final com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internal_static_com_datasophon_grpc_RegisterResponse_fieldAccessorTable;
+    static final com.google.protobuf.Descriptors.Descriptor internal_static_com_datasophon_grpc_HeartbeatRequest_descriptor;
+    static final com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internal_static_com_datasophon_grpc_HeartbeatRequest_fieldAccessorTable;
+    static final com.google.protobuf.Descriptors.Descriptor internal_static_com_datasophon_grpc_HeartbeatResponse_descriptor;
+    static final com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internal_static_com_datasophon_grpc_HeartbeatResponse_fieldAccessorTable;
+    static final com.google.protobuf.Descriptors.Descriptor internal_static_com_datasophon_grpc_UnregisterRequest_descriptor;
+    static final com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internal_static_com_datasophon_grpc_UnregisterRequest_fieldAccessorTable;
+    static final com.google.protobuf.Descriptors.Descriptor internal_static_com_datasophon_grpc_UnregisterResponse_descriptor;
+    static final com.google.protobuf.GeneratedMessageV3.FieldAccessorTable internal_static_com_datasophon_grpc_UnregisterResponse_fieldAccessorTable;
+    
+    public static com.google.protobuf.Descriptors.FileDescriptor getDescriptor() {
+        return descriptor;
+    }
+    private static com.google.protobuf.Descriptors.FileDescriptor descriptor;
+    static {
+        java.lang.String[] descriptorData = {
+                "\n\016registry.proto\022\023com.datasophon.grpc\"p\n" +
+                        "\017RegisterRequest\022\020\n\010hostname\030\001 \001(\t\022\021\n\tgr" +
+                        "pc_port\030\002 \001(\005\022\030\n\020cpu_architecture\030\003 \001(\t\022" +
+                        "\022\n\ncluster_id\030\004 \001(\005\022\n\n\002ip\030\005 \001(\t\"4\n\020Regis" +
+                        "terResponse\022\017\n\007success\030\001 \001(\010\022\017\n\007message\030" +
+                        "\002 \001(\t\"$\n\020HeartbeatRequest\022\020\n\010hostname\030\001 " +
+                        "\001(\t\"$\n\021HeartbeatResponse\022\017\n\007success\030\001 \001(" +
+                        "\010\"%\n\021UnregisterRequest\022\020\n\010hostname\030\001 \001(\t" +
+                        "\"%\n\022UnregisterResponse\022\017\n\007success\030\001 \001(\0102" +
+                        "\253\002\n\025WorkerRegistryService\022W\n\010Register\022$." +
+                        "com.datasophon.grpc.RegisterRequest\032%.co" +
+                        "m.datasophon.grpc.RegisterResponse\022Z\n\tHe" +
+                        "artbeat\022%.com.datasophon.grpc.HeartbeatR" +
+                        "equest\032&.com.datasophon.grpc.HeartbeatRe" +
+                        "sponse\022]\n\nUnregister\022&.com.datasophon.gr" +
+                        "pc.UnregisterRequest\032\'.com.datasophon.gr" +
+                        "pc.UnregisterResponseB*\n\027com.datasophon." +
+                        "grpc.apiB\rRegistryProtoP\001b\006proto3"
+        };
+        descriptor = com.google.protobuf.Descriptors.FileDescriptor
+                .internalBuildGeneratedFileFrom(descriptorData,
+                        new com.google.protobuf.Descriptors.FileDescriptor[]{
+                        });
+        internal_static_com_datasophon_grpc_RegisterRequest_descriptor =
+                getDescriptor().getMessageTypes().get(0);
+        internal_static_com_datasophon_grpc_RegisterRequest_fieldAccessorTable = new com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+                internal_static_com_datasophon_grpc_RegisterRequest_descriptor,
+                new java.lang.String[]{"Hostname", "GrpcPort", "CpuArchitecture", "ClusterId", "Ip",});
+        internal_static_com_datasophon_grpc_RegisterResponse_descriptor =
+                getDescriptor().getMessageTypes().get(1);
+        internal_static_com_datasophon_grpc_RegisterResponse_fieldAccessorTable = new com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+                internal_static_com_datasophon_grpc_RegisterResponse_descriptor,
+                new java.lang.String[]{"Success", "Message",});
+        internal_static_com_datasophon_grpc_HeartbeatRequest_descriptor =
+                getDescriptor().getMessageTypes().get(2);
+        internal_static_com_datasophon_grpc_HeartbeatRequest_fieldAccessorTable = new com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+                internal_static_com_datasophon_grpc_HeartbeatRequest_descriptor,
+                new java.lang.String[]{"Hostname",});
+        internal_static_com_datasophon_grpc_HeartbeatResponse_descriptor =
+                getDescriptor().getMessageTypes().get(3);
+        internal_static_com_datasophon_grpc_HeartbeatResponse_fieldAccessorTable = new com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+                internal_static_com_datasophon_grpc_HeartbeatResponse_descriptor,
+                new java.lang.String[]{"Success",});
+        internal_static_com_datasophon_grpc_UnregisterRequest_descriptor =
+                getDescriptor().getMessageTypes().get(4);
+        internal_static_com_datasophon_grpc_UnregisterRequest_fieldAccessorTable = new com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+                internal_static_com_datasophon_grpc_UnregisterRequest_descriptor,
+                new java.lang.String[]{"Hostname",});
+        internal_static_com_datasophon_grpc_UnregisterResponse_descriptor =
+                getDescriptor().getMessageTypes().get(5);
+        internal_static_com_datasophon_grpc_UnregisterResponse_fieldAccessorTable = new com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+                internal_static_com_datasophon_grpc_UnregisterResponse_descriptor,
+                new java.lang.String[]{"Success",});
+    }
+    
+    // @@protoc_insertion_point(outer_class_scope)
 }

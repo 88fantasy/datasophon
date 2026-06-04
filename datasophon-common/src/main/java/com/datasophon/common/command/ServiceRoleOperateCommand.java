@@ -20,17 +20,17 @@
  * SOFTWARE.
  */
 
-
 package com.datasophon.common.command;
 
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.model.HookConfig;
 import com.datasophon.common.model.RunAs;
-import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+
+import lombok.Data;
 
 @Data
 public class ServiceRoleOperateCommand extends BaseCommand implements Serializable {
@@ -41,8 +41,7 @@ public class ServiceRoleOperateCommand extends BaseCommand implements Serializab
     private CommandType commandType;
     
     private Long deliveryId;
-
-
+    
     /**
      * 创建解压目录
      */
@@ -55,17 +54,17 @@ public class ServiceRoleOperateCommand extends BaseCommand implements Serializab
     private String managerHost;
     
     private Boolean enableRangerPlugin;
-
+    
     private RunAs runAs;
     
     private Boolean enableKerberos;
-
+    
     private List<HookConfig> hooks;
-
-    private Map<String,String> variables;
-
+    
+    private Map<String, String> variables;
+    
     private Integer times;
-
+    
     private boolean checkStatus = true;
     
     public ServiceRoleOperateCommand() {
