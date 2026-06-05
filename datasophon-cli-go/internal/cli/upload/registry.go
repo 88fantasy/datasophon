@@ -206,7 +206,7 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 						if f.IsDir() {
 							continue
 						}
-						ok := t.uploadFile(baseURL, repoType, filepath.Join(osDir, f.Name()), dir)
+						ok := t.uploadFile(baseURL, repoType, filepath.Join(osDir, f.Name()), dir, false)
 						if ok {
 							success++
 							if t.IsSuccessDelete {
@@ -219,22 +219,44 @@ func (t *UploadRegistry) repositoryUploadBatch(baseURL string) (int, int) {
 				}
 			}
 		case "raw":
-			packagesDir := filepath.Join(repoDir, "packages")
-			files, _ := os.ReadDir(packagesDir)
-			for _, f := range files {
-				if f.IsDir() {
-					continue
+			_ = filepath.Walk(repoDir, func(path string, info os.FileInfo, err error) error {
+				if err != nil || info.IsDir() {
+					return nil
 				}
-				ok := t.uploadFile(baseURL, repoType, filepath.Join(packagesDir, f.Name()), "/packages")
+				if strings.HasSuffix(path, ".md5") {
+					return nil // sidecar 文件本身不上传
+				}
+				rel, _ := filepath.Rel(repoDir, path)
+				dir := filepath.ToSlash(filepath.Dir(rel))
+				if dir == "." {
+					dir = ""
+				} else {
+					dir = "/" + dir
+				}
+				// 优先用同名 .md5 sidecar 文件做幂等检查
+				if data, readErr := os.ReadFile(path + ".md5"); readErr == nil {
+					localSum := strings.TrimSpace(string(data))
+					assetName := filepath.Base(path)
+					if dir != "" {
+						assetName = dir + "/" + assetName
+					}
+					if remoteMD5 := t.nexusMD5(baseURL, repoType, assetName); remoteMD5 != "" && strings.EqualFold(localSum, remoteMD5) {
+						slog.Info("MD5 sidecar 一致，跳过上传", "file", filepath.Base(path))
+						return nil
+					}
+				}
+				// 无 sidecar 或 MD5 不匹配：强制覆盖上传
+				ok := t.uploadFile(baseURL, repoType, path, dir, true)
 				if ok {
 					success++
 					if t.IsSuccessDelete {
-						_ = os.Remove(filepath.Join(packagesDir, f.Name()))
+						_ = os.Remove(path)
 					}
 				} else {
 					fail++
 				}
-			}
+				return nil
+			})
 		case "helm":
 			files, _ := os.ReadDir(repoDir)
 			for _, f := range files {
@@ -298,7 +320,8 @@ func localMD5(filePath string) (string, error) {
 // uploadFile 用 multipart/form-data 上传单个文件到 Nexus 内部 UI 接口。
 // directory 非空时写入 directory 文本字段（raw/yum 必填，apt 不填）。
 // 字段布局与 Java NexusFileUtils 对齐：asset0 / asset0.filename / directory。
-func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory string) bool {
+// force=true 时跳过远端 MD5 检查，直接覆盖上传。
+func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory string, force bool) bool {
 	// 构造文件在仓库中的完整路径，用于 MD5 幂等检查
 	assetName := filepath.Base(filePath)
 	if directory != "" {
@@ -308,11 +331,13 @@ func (t *UploadRegistry) uploadFile(baseURL, repoType, filePath, directory strin
 		}
 		assetName = dir + "/" + assetName
 	}
-	remoteMD5 := t.nexusMD5(baseURL, repoType, assetName)
-	if remoteMD5 != "" {
-		if sum, err := localMD5(filePath); err == nil && sum == remoteMD5 {
-			slog.Info("文件已存在且 MD5 一致，跳过上传", "file", filepath.Base(filePath))
-			return true
+	if !force {
+		remoteMD5 := t.nexusMD5(baseURL, repoType, assetName)
+		if remoteMD5 != "" {
+			if sum, err := localMD5(filePath); err == nil && sum == remoteMD5 {
+				slog.Info("文件已存在且 MD5 一致，跳过上传", "file", filepath.Base(filePath))
+				return true
+			}
 		}
 	}
 

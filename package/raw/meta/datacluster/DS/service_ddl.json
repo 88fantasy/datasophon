@@ -1,0 +1,717 @@
+{
+  "name": "DS",
+  "type": "MIDDLEWARE",
+  "label": "DolphinScheduler",
+  "description": "调度组件",
+  "sortNum": 30,
+  "version": "3.4.1",
+  "createDecompressDir": false,
+  "dependencies": [
+    "SPARK3",
+    "ZOOKEEPER"
+  ],
+  "roles": [
+    {
+      "name": "ApiServer",
+      "label": "ApiServer",
+      "sortNum": 1,
+      "roleType": "master",
+      "cardinality": "1",
+      "logFile": "api-server/logs/dolphinscheduler-api.log",
+      "serverPorts": [],
+      "jmxPort": 12345,
+      "runAs": {},
+      "startRunner": {
+        "timeout": "60",
+        "program": "bin/dolphinscheduler-daemon.sh",
+        "args": [
+          "start",
+          "api-server"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "bin/dolphinscheduler-daemon.sh",
+        "args": [
+          "stop",
+          "api-server"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "bin/dolphinscheduler-daemon.sh",
+        "args": [
+          "status",
+          "api-server"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "bin/control_ds.sh",
+        "args": [
+          "restart",
+          "api-server"
+        ]
+      },
+      "externalLink": {
+        "name": "DolphinScheduler Ui",
+        "label": "DolphinScheduler Ui",
+        "url": "http://${host}:12345/dolphinscheduler/ui"
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "bin/control_ds.sh",
+            "md5": "069991e599422ce2264d7cb7964e9394",
+            "from": "script/control_ds.sh",
+            "templateId": "2003753396534054913"
+          }
+        }
+      ]
+    },
+    {
+      "name": "MasterServer",
+      "label": "MasterServer",
+      "sortNum": 2,
+      "roleType": "master",
+      "cardinality": "1+",
+      "logFile": "master-server/logs/dolphinscheduler-master.log",
+      "serverPorts": [],
+      "jmxPort": 5679,
+      "runAs": {},
+      "startRunner": {
+        "timeout": "60",
+        "program": "bin/dolphinscheduler-daemon.sh",
+        "args": [
+          "start",
+          "master-server"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "bin/dolphinscheduler-daemon.sh",
+        "args": [
+          "stop",
+          "master-server"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "bin/dolphinscheduler-daemon.sh",
+        "args": [
+          "status",
+          "master-server"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "bin/control_ds.sh",
+        "args": [
+          "restart",
+          "master-server"
+        ]
+      },
+      "externalLink": {},
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "bin/control_ds.sh",
+            "md5": "069991e599422ce2264d7cb7964e9394",
+            "from": "script/control_ds.sh",
+            "templateId": "2003753368964894722"
+          }
+        }
+      ]
+    },
+    {
+      "name": "WorkerServer",
+      "label": "WorkerServer",
+      "sortNum": 1,
+      "roleType": "worker",
+      "cardinality": "1+",
+      "logFile": "worker-server/logs/dolphinscheduler-worker.log",
+      "serverPorts": [],
+      "jmxPort": 1235,
+      "runAs": {},
+      "startRunner": {
+        "timeout": "60",
+        "program": "bin/dolphinscheduler-daemon.sh",
+        "args": [
+          "start",
+          "worker-server"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "bin/dolphinscheduler-daemon.sh",
+        "args": [
+          "stop",
+          "worker-server"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "bin/dolphinscheduler-daemon.sh",
+        "args": [
+          "status",
+          "worker-server"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "bin/control_ds.sh",
+        "args": [
+          "restart",
+          "worker-server"
+        ]
+      },
+      "externalLink": {},
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "bin/control_ds.sh",
+            "md5": "069991e599422ce2264d7cb7964e9394",
+            "from": "script/control_ds.sh",
+            "templateId": "2003753336559702018"
+          }
+        },
+        {
+          "type": "PRE_INSTALL",
+          "action": "s3Sync",
+          "params": {
+            "bucket": "${DS.resource.aws.region}",
+            "endpoint": "${DS.resource.aws.s3.endpoint}",
+            "accessKey": "${DS.resource.aws.access.key.id}",
+            "secretKey": "${DS.resource.aws.secret.access.key}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "UAlertServer",
+      "label": "UAlertServer",
+      "sortNum": 3,
+      "roleType": "master",
+      "cardinality": "1",
+      "logFile": "alert-server/logs/dolphinscheduler-alert.log",
+      "serverPorts": [],
+      "jmxPort": 50053,
+      "runAs": {},
+      "startRunner": {
+        "timeout": "60",
+        "program": "bin/dolphinscheduler-daemon.sh",
+        "args": [
+          "start",
+          "alert-server"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "bin/dolphinscheduler-daemon.sh",
+        "args": [
+          "stop",
+          "alert-server"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "bin/dolphinscheduler-daemon.sh",
+        "args": [
+          "status",
+          "alert-server"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "bin/control_ds.sh",
+        "args": [
+          "restart",
+          "alert-server"
+        ]
+      },
+      "externalLink": {},
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "bin/control_ds.sh",
+            "md5": "069991e599422ce2264d7cb7964e9394",
+            "from": "script/control_ds.sh",
+            "templateId": "2003753300299943937"
+          }
+        },
+        {
+          "type": "PRE_INSTALL",
+          "action": "s3Sync",
+          "params": {
+            "bucket": "${DS.resource.aws.region}",
+            "endpoint": "${DS.resource.aws.s3.endpoint}",
+            "accessKey": "${DS.resource.aws.access.key.id}",
+            "secretKey": "${DS.resource.aws.secret.access.key}"
+          }
+        }
+      ]
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "dolphinscheduler_env.sh",
+        "configFormat": "custom",
+        "outputDirectory": "bin/env/",
+        "templateType": "DEFAULT",
+        "templateId": 2026566417194995713,
+        "templateName": "dolphinscheduler_env.ftl",
+        "includeParams": [
+          "databaseUrl",
+          "username",
+          "password",
+          "zkUrls"
+        ]
+      },
+      {
+        "filename": "common.properties",
+        "configFormat": "properties",
+        "outputDirectory": "api-server/conf,master-server/conf,worker-server/conf,alert-server/conf",
+        "includeParams": [
+          "data.basedir.path",
+          "resource.storage.type",
+          "resource.storage.upload.base.path",
+          "resource.aws.access.key.id",
+          "resource.aws.secret.access.key",
+          "resource.aws.region",
+          "resource.aws.s3.bucket.name",
+          "resource.aws.s3.endpoint",
+          "resource.hdfs.root.user",
+          "resource.hdfs.fs.defaultFS",
+          "resource.manager.httpaddress.port",
+          "yarn.resourcemanager.ha.rm.ids",
+          "yarn.application.status.address",
+          "yarn.job.history.status.address",
+          "datasource.encryption.enable",
+          "datasource.encryption.salt",
+          "data-quality.jar.name",
+          "support.hive.oneSession",
+          "sudo.enable",
+          "setTaskDirToTenant.enable",
+          "development.state",
+          "alert.rpc.port",
+          "conda.path",
+          "task.resource.limit.state",
+          "ml.mlflow.preset_repository",
+          "custom.common.properties"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "enabled": true,
+      "name": "databaseUrl",
+      "value": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/dolphinscheduler?useUnicode=true&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&useSSL=false",
+      "description": "",
+      "label": "DolphinScheduler数据库地址",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/dolphinscheduler?useUnicode=true&allowPublicKeyRetrieval=true&characterEncoding=UTF-8&useSSL=false",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "username",
+      "value": "dolphinscheduler",
+      "description": "",
+      "label": "DolphinScheduler数据库用户名",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "dolphinscheduler",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "password",
+      "value": "fI5sQ4yQ4fP5",
+      "description": "",
+      "label": "DolphinScheduler数据库密码",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "fI5sQ4yQ4fP5",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "zkUrls",
+      "value": "${ZOOKEEPER.zkUrls}",
+      "description": "",
+      "label": "ZK地址",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "${ZOOKEEPER.zkUrls}",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
+      "enabled": true,
+      "name": "data.basedir.path",
+      "value": "/tmp/dolphinscheduler",
+      "description": "",
+      "label": "data.basedir.path",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "/tmp/dolphinscheduler",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "resource.storage.type",
+      "value": "S3",
+      "description": "",
+      "label": "resource.storage.type",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "S3",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "resource.storage.upload.base.path",
+      "value": "/dolphinscheduler",
+      "description": "",
+      "label": "resource.storage.upload.base.path",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "/dolphinscheduler",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "resource.aws.access.key.id",
+      "value": "${MINIO.minioAccessKey}",
+      "description": "",
+      "label": "resource.aws.access.key.id",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "${MINIO.minioAccessKey}",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "resource.aws.secret.access.key",
+      "value": "${MINIO.minioSecretKey}",
+      "description": "",
+      "label": "resource.aws.secret.access.key",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "${MINIO.minioSecretKey}",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "resource.aws.region",
+      "value": "dolphinscheduler",
+      "description": "MinIO 兼容模式下填写桶名（官方 AWS 填写实际 region）",
+      "label": "resource.aws.region",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "dolphinscheduler",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "resource.aws.s3.bucket.name",
+      "value": "dolphinscheduler",
+      "description": "S3 存储桶名称",
+      "label": "resource.aws.s3.bucket.name",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "dolphinscheduler",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "resource.aws.s3.endpoint",
+      "value": "http://${MINIO.MinioServer.__hostIp__}:${MINIO.minioApiPort}",
+      "description": "",
+      "label": "resource.aws.s3.endpoint",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "http://${MINIO.MinioServer.__hostIp__}:${MINIO.minioApiPort}",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "resource.hdfs.root.user",
+      "value": "hdfs",
+      "description": "",
+      "label": "resource.hdfs.root.user",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "hdfs",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "resource.hdfs.fs.defaultFS",
+      "value": "hdfs://${HDFS.dfs.nameservices}",
+      "description": "",
+      "label": "resource.hdfs.fs.defaultFS",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "hdfs://${HDFS.dfs.nameservices}",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "resource.manager.httpaddress.port",
+      "value": "8088",
+      "description": "",
+      "label": "resource.manager.httpaddress.port",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "8088",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.ha.rm.ids",
+      "value": "${YARN.rmHost}",
+      "description": "",
+      "label": "yarn.resourcemanager.ha.rm.ids",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "${YARN.rmHost}",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.application.status.address",
+      "value": "http://ds1:%s/ws/v1/cluster/apps/%s",
+      "description": "",
+      "label": "yarn.application.status.address",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "http://ds1:%s/ws/v1/cluster/apps/%s",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.job.history.status.address",
+      "value": "http://${YARN.HistoryServer.__host__}:19888/ws/v1/history/mapreduce/jobs/%s",
+      "description": "",
+      "label": "yarn.job.history.status.address",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "http://${YARN.HistoryServer.__host__}:19888/ws/v1/history/mapreduce/jobs/%s",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "datasource.encryption.enable",
+      "value": "false",
+      "description": "",
+      "label": "datasource.encryption.enable",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "false",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "datasource.encryption.salt",
+      "value": "!@#$%^&*",
+      "description": "",
+      "label": "datasource.encryption.salt",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "!@#$%^&*",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "data-quality.jar.name",
+      "value": "dolphinscheduler-data-quality-3.4.1.jar",
+      "description": "",
+      "label": "data-quality.jar.name",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "dolphinscheduler-data-quality-3.4.1.jar",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "support.hive.oneSession",
+      "value": "false",
+      "description": "",
+      "label": "support.hive.oneSession",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "false",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "sudo.enable",
+      "value": "true",
+      "description": "",
+      "label": "sudo.enable",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "true",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "setTaskDirToTenant.enable",
+      "value": "false",
+      "description": "",
+      "label": "setTaskDirToTenant.enable",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "false",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "development.state",
+      "value": "false",
+      "description": "",
+      "label": "development.state",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "false",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "alert.rpc.port",
+      "value": "50052",
+      "description": "",
+      "label": "alert.rpc.port",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "50052",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "conda.path",
+      "value": "/opt/anaconda3/etc/profile.d/conda.sh",
+      "description": "",
+      "label": "conda.path",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "/opt/anaconda3/etc/profile.d/conda.sh",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "task.resource.limit.state",
+      "value": "false",
+      "description": "",
+      "label": "task.resource.limit.state",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "false",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "ml.mlflow.preset_repository",
+      "value": "https://github.com/apache/dolphinscheduler-mlflow",
+      "description": "",
+      "label": "ml.mlflow.preset_repository",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "https://github.com/apache/dolphinscheduler-mlflow",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "custom.common.properties",
+      "value": [],
+      "description": "自定义配置",
+      "label": "自定义配置common.properties",
+      "hidden": false,
+      "required": false,
+      "configType": "custom",
+      "type": "multipleWithKey",
+      "defaultValue": [],
+      "configurableInWizard": true,
+      "register": false
+    }
+  ],
+  "arch": {
+    "common": {
+      "packageName": "apache-dolphinscheduler-3.4.1-bin.tar.gz",
+      "decompressPackageName": "apache-dolphinscheduler-3.4.1-bin"
+    }
+  }
+}

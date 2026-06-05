@@ -1,0 +1,800 @@
+{
+  "name": "HIVE",
+  "type": "MIDDLEWARE",
+  "label": "Hive",
+  "description": "离线数据仓库",
+  "version": "4.2.0",
+  "sortNum": 17,
+  "createDecompressDir": false,
+  "dependencies": [
+    "HDFS"
+  ],
+  "roles": [
+    {
+      "name": "HiveMetaStore",
+      "label": "HiveMetaStore",
+      "sortNum": 2,
+      "roleType": "master",
+      "cardinality": "1+",
+      "logFile": "logs/hivemetastore.out",
+      "serverPorts": [],
+      "jmxPort": 12000,
+      "runAs": {
+        "user": "hive",
+        "group": "hadoop"
+      },
+      "startRunner": {
+        "timeout": "60",
+        "program": "control_hive.sh",
+        "args": [
+          "start",
+          "hivemetastore"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "control_hive.sh",
+        "args": [
+          "stop",
+          "hivemetastore"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control_hive.sh",
+        "args": [
+          "status",
+          "hivemetastore"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "control_hive.sh",
+        "args": [
+          "restart",
+          "hivemetastore"
+        ]
+      },
+      "externalLink": {},
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "sh",
+          "params": {
+            "commands": [
+              [
+                "sudo",
+                "-u",
+                "hive",
+                "mkdir",
+                "-p",
+                "logs"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "control_hive.sh",
+            "md5": "cddcf101797685c14869e7490ba32e9a",
+            "from": "script/control_hive.sh",
+            "templateId": "2022205086085980162"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
+            "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
+            "target": "jmx/metastore.yaml"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+            "target": "lib/mysql-connector-java-8.0.28.jar"
+          }
+        }
+      ]
+    },
+    {
+      "name": "HiveServer2",
+      "label": "HiveServer2",
+      "sortNum": 1,
+      "roleType": "worker",
+      "cardinality": "1+",
+      "logFile": "logs/hiveserver2.out",
+      "serverPorts": [],
+      "jmxPort": 11000,
+      "runAs": {
+        "user": "hive",
+        "group": "hadoop"
+      },
+      "startRunner": {
+        "timeout": "60",
+        "program": "control_hive.sh",
+        "args": [
+          "start",
+          "hiveserver2"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "control_hive.sh",
+        "args": [
+          "stop",
+          "hiveserver2"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control_hive.sh",
+        "args": [
+          "status",
+          "hiveserver2"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "control_hive.sh",
+        "args": [
+          "restart",
+          "hiveserver2"
+        ]
+      },
+      "externalLink": {
+        "name": "HiveServer2 UI",
+        "label": "HiveServer2 UI",
+        "url": "http://${host}:10002"
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "sh",
+          "params": {
+            "commands": [
+              [
+                "sudo",
+                "-u",
+                "hive",
+                "mkdir",
+                "-p",
+                "logs"
+              ]
+            ]
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "control_hive.sh",
+            "md5": "11f36c034dbbca447fc6b16308169572",
+            "from": "script/control_hive.sh"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_prometheus_javaagent-0.16.1.jar",
+            "target": "jmx/jmx_prometheus_javaagent-0.16.1.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/jmx/jmx_exporter_config.yaml",
+            "target": "jmx/hiveserver2.yaml"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "link",
+          "params": {
+            "source": "/data/install_datasophon/datasophon-worker/lib/mysql-connector-java-8.0.28.jar",
+            "target": "lib/mysql-connector-java-8.0.28.jar"
+          }
+        }
+      ]
+    },
+    {
+      "name": "HiveClient",
+      "label": "HiveClient",
+      "roleType": "client",
+      "cardinality": "1+",
+      "runAs": {
+        "user": "hive",
+        "group": "hadoop"
+      }
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "hive-site.xml",
+        "configFormat": "xml",
+        "outputDirectory": "conf",
+        "templateType": "CUSTOM",
+        "includeParams": [
+          "javax.jdo.option.ConnectionDriverName",
+          "javax.jdo.option.ConnectionUserName",
+          "javax.jdo.option.ConnectionPassword",
+          "javax.jdo.option.ConnectionURL",
+          "hive.server2.enable.doAs",
+          "hive.metastore.schema.verification",
+          "hive.metastore.warehouse.dir",
+          "hive.metastore.port",
+          "hive.metastore.uris",
+          "hive.server2.map.fair.scheduler.queue",
+          "hive.server2.authentication",
+          "hive.server2.authentication.kerberos.principal",
+          "hive.server2.authentication.kerberos.keytab",
+          "hive.metastore.sasl.enabled",
+          "hive.metastore.kerberos.keytab.file",
+          "hive.metastore.kerberos.principal",
+          "hive.server2.support.dynamic.service.discovery",
+          "hive.server2.zookeeper.namespace",
+          "hive.zookeeper.quorum",
+          "hive.zookeeper.client.port",
+          "hive.server2.thrift.bind.host",
+          "hive.server2.thrift.port",
+          "custom.hive.site.xml",
+          "mapreduce.framework.name",
+          "hive.execution.engine",
+          "hive.merge.mapfiles",
+          "hive.merge.mapredfiles",
+          "hive.merge.size.per.task",
+          "hive.merge.smallfiles.avgsize",
+          "hive.exec.submit.local.task.via.child"
+        ]
+      },
+      {
+        "filename": "hive-env.sh",
+        "configFormat": "custom",
+        "outputDirectory": "conf",
+        "templateType": "DEFAULT",
+        "templateId": 2003728613536763905,
+        "templateName": "hive-env.ftl",
+        "includeParams": [
+          "hiveHeapSize",
+          "hadoopHome",
+          "custom.hive.env.sh"
+        ]
+      },
+      {
+        "filename": "install.properties",
+        "configFormat": "custom",
+        "outputDirectory": "ranger-hive-plugin",
+        "templateType": "DEFAULT",
+        "templateId": 2003728729404411906,
+        "templateName": "ranger-hive.ftl",
+        "includeParams": [
+          "rangerAdminUrl",
+          "hiveHome"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "enabled": true,
+      "name": "javax.jdo.option.ConnectionDriverName",
+      "value": "com.mysql.cj.jdbc.Driver",
+      "description": "",
+      "label": "jdbc链接驱动类名",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "com.mysql.cj.jdbc.Driver",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "javax.jdo.option.ConnectionUserName",
+      "value": "hive",
+      "description": "",
+      "label": "数据库用户名",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "hive",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "javax.jdo.option.ConnectionPassword",
+      "value": "fI5sQ4yQ4fP5",
+      "description": "",
+      "label": "数据库密码",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "fI5sQ4yQ4fP5",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "javax.jdo.option.ConnectionURL",
+      "value": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/hive?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;allowPublicKeyRetrieval=true",
+      "description": "",
+      "label": "数据库链接地址",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "jdbc:mysql://${ROOT.Mysql.mysqlHostPort}/hive?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;allowPublicKeyRetrieval=true",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hive.server2.enable.doAs",
+      "value": "false",
+      "description": "",
+      "label": "启用doAs",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "false",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hive.metastore.schema.verification",
+      "value": "true",
+      "description": "",
+      "label": "是否验证schema",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "true",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hive.metastore.warehouse.dir",
+      "value": "/user/hive/warehouse",
+      "description": "",
+      "label": "hive默认hdfs数据存储目录",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "/user/hive/warehouse",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hive.metastore.port",
+      "value": "9083",
+      "description": "",
+      "label": "hive metastore服务端口",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "9083",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hive.metastore.uris",
+      "value": "thrift://${HIVE.HiveMetaStore.__host__}:9083",
+      "description": "",
+      "label": "hive metastore服务地址",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "thrift://${HIVE.HiveMetaStore.__host__}:9083",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
+      "enabled": true,
+      "name": "hive.server2.map.fair.scheduler.queue",
+      "value": "false",
+      "description": "",
+      "label": "HiveServer2是否使用公平调度队列",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "false",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "enableKerberos",
+      "value": false,
+      "description": "启用Kerberos认证",
+      "label": "启用Kerberos认证",
+      "hidden": false,
+      "required": true,
+      "type": "switch",
+      "defaultValue": false,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "mapreduce.framework.name",
+      "value": "yarn",
+      "description": "MapReduce作业是在哪种运行时框架下执行的",
+      "label": "mr执行引擎",
+      "hidden": false,
+      "required": true,
+      "type": "select",
+      "defaultValue": "yarn",
+      "selectValue": [
+        "local",
+        "classic",
+        "yarn"
+      ],
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hive.execution.engine",
+      "value": "mr",
+      "description": "Hive执行引擎",
+      "label": "Hive执行引擎",
+      "hidden": false,
+      "required": true,
+      "type": "select",
+      "defaultValue": "mr",
+      "selectValue": [
+        "mr",
+        "tez",
+        "spark"
+      ],
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hive.merge.mapfiles",
+      "value": true,
+      "description": "在 map-only 作业结束时合并小文件。如启用，将创建 map-only 作业以合并目标表/分区中的文件",
+      "label": "启用(Map-Only)小文件合并",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "switch",
+      "defaultValue": true,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hive.merge.mapredfiles",
+      "value": true,
+      "description": "在 map-reduce 作业结束时合并小文件。如启用，将创建 map-only 作业以合并目标表/分区中的文件",
+      "label": "启用(Map-Reduce)小文件合并",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "switch",
+      "defaultValue": true,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hive.merge.size.per.task",
+      "value": "268435456",
+      "description": "合并后所需的文件大小。应大于 hive.merge.smallfiles.avgsize",
+      "label": "合并后所需的文件大小",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "268435456",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hive.merge.smallfiles.avgsize",
+      "value": "104857600",
+      "description": "当作业的平均输出文件大小小于此属性的值时，Hive 将启动额外的 map-only 作业来将输出文件合并成大文件。仅当 hive.merge.mapfiles 为 true 对map-only 作业执行，当 hive.merge.mapredfiles 为 true 时对 map-reduce 作业执行，以及当 hive.merge.sparkfiles 为 true 时对 Spark 作业执行",
+      "label": "小文件平均大小合并阈值",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "104857600",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hive.exec.submit.local.task.via.child",
+      "value": false,
+      "description": "决定本地任务（通常是mapjoin的哈希表生成阶段）是否在单独的JVM中运行",
+      "label": "本地任务是否单独启动进程",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "switch",
+      "defaultValue": false,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": false,
+      "name": "hive.server2.authentication",
+      "value": "simple",
+      "description": "",
+      "label": "hive认证方式",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "simple",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": false,
+      "name": "hive.server2.authentication.kerberos.principal",
+      "value": "hive/${ROOT.VosManager.__host__}@${realm}",
+      "description": "HiveServer2服务的Kerberos主体",
+      "label": "HiveServer2服务的Kerberos主体",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "hive/${ROOT.VosManager.__host__}@${realm}",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": false,
+      "name": "hive.server2.authentication.kerberos.keytab",
+      "value": "/etc/security/keytab/hive.service.keytab",
+      "description": "HiveServer2服务的Kerberos密钥文件",
+      "label": "HiveServer2服务的Kerberos密钥文件",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "/etc/security/keytab/hive.service.keytab",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": false,
+      "name": "hive.metastore.sasl.enabled",
+      "value": true,
+      "description": "Metastore启动认证",
+      "label": "Metastore启动认证",
+      "hidden": true,
+      "required": false,
+      "type": "switch",
+      "defaultValue": true,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": false,
+      "name": "hive.metastore.kerberos.principal",
+      "value": "hive/_HOST@${realm}",
+      "description": "Metastore Kerberos主体",
+      "label": "Metastore Kerberos主体",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "hive/_HOST@${realm}",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": false,
+      "name": "hive.metastore.kerberos.keytab.file",
+      "value": "/etc/security/keytab/hive.service.keytab",
+      "description": "Metastore Kerberos密钥文件",
+      "label": "Metastore Kerberos密钥文件",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "/etc/security/keytab/hive.service.keytab",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": false,
+      "name": "hive.server2.support.dynamic.service.discovery",
+      "value": true,
+      "description": "",
+      "label": "开启HiveServer2动态发现",
+      "hidden": true,
+      "required": false,
+      "configType": "ha",
+      "type": "switch",
+      "defaultValue": true,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": false,
+      "name": "hive.server2.zookeeper.namespace",
+      "value": "hiveserver2",
+      "description": "",
+      "label": "HiveServer2在zk命名空间",
+      "hidden": true,
+      "required": false,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "hiveserver2",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": false,
+      "name": "hive.zookeeper.quorum",
+      "value": "${ZOOKEEPER.zkUrls}",
+      "description": "",
+      "label": "zk地址",
+      "hidden": true,
+      "required": false,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "${ZOOKEEPER.zkUrls}",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": false,
+      "name": "hive.zookeeper.client.port",
+      "value": "2181",
+      "description": "",
+      "label": "zk端口",
+      "hidden": true,
+      "required": false,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "2181",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hive.server2.thrift.bind.host",
+      "value": "${ROOT.VosManager.__host__}",
+      "description": "",
+      "label": "hive.server2.thrift.bind.host",
+      "hidden": true,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "${ROOT.VosManager.__host__}",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hive.server2.thrift.port",
+      "value": "10000",
+      "description": "",
+      "label": "hiveserver2 thrift端口",
+      "hidden": true,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "10000",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hiveHeapSize",
+      "value": "8192",
+      "description": "Hive最大堆内存,单位MB",
+      "label": "Hive最大堆内存(MB)",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "8192",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": false,
+      "name": "rangerAdminUrl",
+      "value": "",
+      "description": "",
+      "label": "Ranger访问地址",
+      "hidden": true,
+      "required": false,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hadoopHome",
+      "value": "${HADOOP_HOME}",
+      "description": "Hadoop的安装目录",
+      "label": "HADOOP_HOME",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "${HADOOP_HOME}",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hiveHome",
+      "value": "${ROOT.HIVE.INSTALL_PATH}",
+      "description": "Hive的安装目录",
+      "label": "HIVE_HOME",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "${ROOT.HIVE.INSTALL_PATH}",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "custom.hive.site.xml",
+      "value": [],
+      "description": "自定义配置",
+      "label": "自定义配置hive-site.xml",
+      "hidden": false,
+      "required": false,
+      "configType": "custom",
+      "type": "multipleWithKey",
+      "defaultValue": [],
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "custom.hive.env.sh",
+      "value": [],
+      "description": "自定义配置",
+      "label": "自定义配置hive-env.sh",
+      "hidden": false,
+      "required": false,
+      "configType": "custom",
+      "type": "multipleWithKey",
+      "defaultValue": [],
+      "configurableInWizard": true,
+      "register": false
+    }
+  ],
+  "arch": {
+    "common": {
+      "packageName": "apache-hive-4.2.0-bin.tar.gz",
+      "decompressPackageName": "apache-hive-4.2.0-bin"
+    }
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "name": "DATART",
+  "label": "Datart",
+  "description": "数艺",
+  "version": "3.6.1",
+  "sortNum": 79,
+  "dependencies": [],
+  "roles": [
+    {
+      "name": "Datart",
+      "label": "Datart",
+      "roleType": "master",
+      "cardinality": "1",
+      "logFile": "logs/datart-server.log",
+      "startRunner": {
+        "timeout": "60",
+        "program": "bin/datart-server.sh",
+        "args": [
+          "start"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "60",
+        "program": "bin/datart-server.sh",
+        "args": [
+          "stop"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "bin/datart-server.sh",
+        "args": [
+          "status"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "bin/datart-server.sh",
+        "args": [
+          "restart"
+        ]
+      },
+      "externalLink": {
+        "name": "Datart UI",
+        "label": "Datart UI",
+        "url": "http://${host}:${datartServerPort}/datart"
+      }
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "config/datart.conf",
+        "configFormat": "custom",
+        "outputDirectory": "",
+        "templateName": "datart-master.ftl",
+        "includeParams": [
+          "datartServerPort",
+          "datartMysqlHost",
+          "datartMysqlPort",
+          "datartMysqlUrl",
+          "datartMysqlUsername",
+          "datartMysqlPassword"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "name": "datartServerPort",
+      "label": "datart应用服务端口",
+      "description": "datart应用服务端口",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "8080",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "8989"
+    },
+    {
+      "name": "datartMysqlHost",
+      "label": "datart数据库Host",
+      "description": "datart数据库Host",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${mysqlHost}"
+    },
+    {
+      "name": "datartMysqlPort",
+      "label": "datart数据库Port",
+      "description": "datart数据库Port",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${mysqlPort}"
+    },
+    {
+      "name": "datartMysqlUsername",
+      "label": "datart数据库账号",
+      "description": "datart数据库账号",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "datart",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "datart"
+    },
+    {
+      "name": "datartMysqlPassword",
+      "label": "datart数据库密码",
+      "description": "datart数据库密码",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "fI5sQ4yQ4fP5",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "fI5sQ4yQ4fP5"
+    }
+  ],
+  "arch": {
+    "common": {
+      "packageName": "datart-server.tar.gz",
+      "decompressPackageName": "datart-server"
+    }
+  }
+}

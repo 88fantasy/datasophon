@@ -1,0 +1,1179 @@
+{
+  "name": "YARN",
+  "type": "MIDDLEWARE",
+  "label": "YARN",
+  "description": "分布式资源调度与管理平台",
+  "version": "3.5.0",
+  "sortNum": 33,
+  "createDecompressDir": false,
+  "dependencies": [
+    "HDFS"
+  ],
+  "roles": [
+    {
+      "name": "ResourceManager",
+      "label": "ResourceManager",
+      "sortNum": 1,
+      "roleType": "master",
+      "cardinality": "1+",
+      "logFile": "logs/hadoop-yarn-resourcemanager-${ROOT.VosManager.__host__}.log",
+      "serverPorts": [],
+      "jmxPort": 9323,
+      "runAs": {
+        "user": "yarn",
+        "group": "hadoop"
+      },
+      "startRunner": {
+        "timeout": "60",
+        "program": "control_hadoop.sh",
+        "args": [
+          "start",
+          "resourcemanager"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "control_hadoop.sh",
+        "args": [
+          "stop",
+          "resourcemanager"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control_hadoop.sh",
+        "args": [
+          "status",
+          "resourcemanager"
+        ]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "control_hadoop.sh",
+        "args": [
+          "restart",
+          "resourcemanager"
+        ]
+      },
+      "externalLink": {
+        "name": "ResourceManager UI",
+        "label": "ResourceManager UI",
+        "url": "http://${host}:8088/ui2"
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "etc/hadoop/fair-scheduler.xml",
+            "md5": "df88de39a103546c7d9e9d05b443f093",
+            "from": "etc/hadoop/fair-scheduler.xml",
+            "templateId": "2028716252782186498"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "to": "spark-3.4.2-yarn-shuffle.jar",
+            "from": "spark-3.4.2-yarn-shuffle.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "sh",
+          "params": {
+            "commands": [
+              [
+                "cp",
+                "/data/datasophon/datasophon-init/packages/spark-3.4.2-yarn-shuffle.jar",
+                "share/hadoop/yarn/lib/"
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "NodeManager",
+      "label": "NodeManager",
+      "sortNum": 3,
+      "roleType": "worker",
+      "cardinality": "1+",
+      "logFile": "logs/hadoop-yarn-nodemanager-${ROOT.VosManager.__host__}.log",
+      "jmxPort": 9324,
+      "runAs": {
+        "user": "yarn",
+        "group": "hadoop"
+      },
+      "startRunner": {
+        "timeout": "60",
+        "program": "control_hadoop.sh",
+        "args": [
+          "start",
+          "nodemanager"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "control_hadoop.sh",
+        "args": [
+          "stop",
+          "nodemanager"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control_hadoop.sh",
+        "args": [
+          "status",
+          "nodemanager"
+        ]
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "to": "etc/hadoop/fair-scheduler.xml",
+            "md5": "df88de39a103546c7d9e9d05b443f093",
+            "from": "etc/hadoop/fair-scheduler.xml",
+            "templateId": "2028749055355863042"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "nexus",
+          "params": {
+            "to": "spark-3.4.2-yarn-shuffle.jar",
+            "from": "spark-3.4.2-yarn-shuffle.jar"
+          }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "sh",
+          "params": {
+            "commands": [
+              [
+                "cp",
+                "/data/datasophon/datasophon-init/packages/spark-3.4.2-yarn-shuffle.jar",
+                "share/hadoop/yarn/lib/"
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "HistoryServer",
+      "label": "HistoryServer",
+      "sortNum": 2,
+      "roleType": "master",
+      "cardinality": "1",
+      "logFile": "logs/hadoop-mapred-historyserver-${ROOT.VosManager.__host__}.log",
+      "jmxPort": 9325,
+      "runAs": {
+        "user": "mapred",
+        "group": "hadoop"
+      },
+      "startRunner": {
+        "timeout": "60",
+        "program": "control_hadoop.sh",
+        "args": [
+          "start",
+          "historyserver"
+        ]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "control_hadoop.sh",
+        "args": [
+          "stop",
+          "historyserver"
+        ]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control_hadoop.sh",
+        "args": [
+          "status",
+          "historyserver"
+        ]
+      }
+    },
+    {
+      "name": "YarnClient",
+      "label": "YarnClient",
+      "roleType": "client",
+      "cardinality": "1+",
+      "runAs": {
+        "user": "yarn",
+        "group": "hadoop"
+      }
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "yarn-site.xml",
+        "configFormat": "xml",
+        "outputDirectory": "etc/hadoop/",
+        "templateType": "DEFAULT",
+        "includeParams": [
+          "yarn.webapp.ui2.enable",
+          "yarn.nodemanager.resource.cpu-vcores",
+          "yarn.nodemanager.resource.memory-mb",
+          "yarn.scheduler.minimum-allocation-mb",
+          "yarn.scheduler.minimum-allocation-vcores",
+          "yarn.scheduler.maximum-allocation-mb",
+          "yarn.scheduler.maximum-allocation-vcores",
+          "yarn.nodemanager.vmem-pmem-ratio",
+          "yarn.nodemanager.aux-services",
+          "yarn.nodemanager.aux-services.spark_shuffle.class",
+          "yarn.log-aggregation-enable",
+          "yarn.log.server.url",
+          "yarn.log-aggregation.retain-seconds",
+          "yarn.nodemanager.remote-app-log-dir",
+          "yarn.nodemanager.remote-app-log-dir-suffix",
+          "yarn.resourcemanager.scheduler.class",
+          "yarn.scheduler.fair.allocation.file",
+          "yarn.scheduler.fair.preemption",
+          "yarn.resourcemanager.ha.enabled",
+          "yarn.resourcemanager.cluster-id",
+          "yarn.resourcemanager.ha.rm-ids",
+          "yarn.resourcemanager.hostname.rm1",
+          "yarn.resourcemanager.hostname.rm2",
+          "yarn.resourcemanager.address.rm1",
+          "yarn.resourcemanager.address.rm2",
+          "yarn.resourcemanager.webapp.address.rm1",
+          "yarn.resourcemanager.webapp.address.rm2",
+          "yarn.resourcemanager.scheduler.address.rm1",
+          "yarn.resourcemanager.scheduler.address.rm2",
+          "yarn.resourcemanager.resource-tracker.address.rm1",
+          "yarn.resourcemanager.resource-tracker.address.rm2",
+          "yarn.resourcemanager.zk-address",
+          "yarn.resourcemanager.recovery.enabled",
+          "yarn.resourcemanager.store.class",
+          "yarn.application.classpath",
+          "yarn.nodemanager.local-dirs",
+          "yarn.nodemanager.log-dirs",
+          "yarn.nodemanager.address",
+          "yarn.nodemanager.resource.count-logical-processors-as-cores",
+          "yarn.nodemanager.resource.detect-hardware-capabilities",
+          "yarn.nodemanager.resource.pcores-vcores-multiplier",
+          "yarn.resourcemanager.am.max-attempts",
+          "yarn.node-labels.enabled",
+          "yarn.node-labels.fs-store.root-dir",
+          "yarn.resourcemanager.principal",
+          "yarn.resourcemanager.keytab",
+          "yarn.nodemanager.principal",
+          "yarn.nodemanager.keytab",
+          "yarn.nodemanager.container-executor.class",
+          "yarn.nodemanager.linux-container-executor.group",
+          "yarn.nodemanager.linux-container-executor.path",
+          "custom.yarn.site.xml"
+        ]
+      },
+      {
+        "filename": "mapred-site.xml",
+        "configFormat": "xml",
+        "outputDirectory": "etc/hadoop/",
+        "templateType": "DEFAULT",
+        "includeParams": [
+          "mapreduce.jobhistory.keytab",
+          "mapreduce.jobhistory.principal",
+          "mapreduce.cluster.local.dir",
+          "mapreduce.jobhistory.address",
+          "mapreduce.jobhistory.webapp.address",
+          "mapreduce.jobhistory.done-dir",
+          "mapreduce.jobhistory.intermediate-done-dir",
+          "custom.mapred.site.xml"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "enabled": true,
+      "name": "yarn.webapp.ui2.enable",
+      "value": true,
+      "description": "启用webui2",
+      "label": "启用webui2",
+      "hidden": false,
+      "required": true,
+      "type": "switch",
+      "defaultValue": true,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.node-labels.fs-store.root-dir",
+      "value": "hdfs://${dfs.nameservices}/user/yarn/nodeLabels",
+      "description": "Node Label存储目录",
+      "label": "Node Label存储目录",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "hdfs://${dfs.nameservices}/user/yarn/nodeLabels",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.resource.cpu-vcores",
+      "value": "-1",
+      "description": "nodemanager虚拟核数",
+      "label": "nodemanager虚拟核数",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "-1",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.resource.count-logical-processors-as-cores",
+      "value": true,
+      "description": "是否将物理核数作为虚拟核数",
+      "label": "是否将物理核数作为虚拟核数",
+      "hidden": false,
+      "required": true,
+      "type": "switch",
+      "defaultValue": true,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.resource.detect-hardware-capabilities",
+      "value": true,
+      "description": "是否让yarn自己检测硬件进行配置",
+      "label": "是否让yarn自己检测硬件进行配置",
+      "hidden": false,
+      "required": true,
+      "type": "switch",
+      "defaultValue": true,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.resource.pcores-vcores-multiplier",
+      "value": "0.75",
+      "description": "",
+      "label": "虚拟核数与物理核数比例",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "0.75",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.am.max-attempts",
+      "value": "4",
+      "description": "",
+      "label": "AM重试次数",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "4",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.resource.memory-mb",
+      "value": "65536",
+      "description": "可分配给容器的内存",
+      "label": "nodemanager内存",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "65536",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.scheduler.minimum-allocation-mb",
+      "value": "1024",
+      "description": "RM上每个容器请求的最小分配量（MB）",
+      "label": "RM上每个容器请求的最小分配量（MB）",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "1024",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.scheduler.maximum-allocation-mb",
+      "value": "65536",
+      "description": "RM上每个容器请求的最大分配量（MB）",
+      "label": "RM上每个容器请求的最大分配量（MB）",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "65536",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.scheduler.minimum-allocation-vcores",
+      "value": "1",
+      "description": "RM上每个容器请求的虚拟CPU核的最小分配数",
+      "label": "RM上每个容器请求的虚拟CPU核的最小分配数",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "1",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.scheduler.maximum-allocation-vcores",
+      "value": "16",
+      "description": "RM上每个容器请求的虚拟CPU核的最大分配数",
+      "label": "RM上每个容器请求的虚拟CPU核的最大分配数",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "16",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.vmem-pmem-ratio",
+      "value": "2.1",
+      "description": "为容器设置内存限制时，虚拟内存与物理内存之间的比率。",
+      "label": "虚拟内存与物理内存之间的比率",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "2.1",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.aux-services",
+      "value": "spark_shuffle,mapreduce_shuffle",
+      "description": "yarn服务机制",
+      "label": "yarn服务机制",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "spark_shuffle,mapreduce_shuffle",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.aux-services.spark_shuffle.class",
+      "value": "org.apache.spark.network.yarn.YarnShuffleService",
+      "description": "spark_shuffle类",
+      "label": "spark_shuffle类",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "org.apache.spark.network.yarn.YarnShuffleService",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.log-aggregation-enable",
+      "value": true,
+      "description": "开启yarn日志聚合",
+      "label": "是否开启yarn日志聚合",
+      "hidden": false,
+      "required": true,
+      "type": "switch",
+      "defaultValue": true,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.scheduler.class",
+      "value": "org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler",
+      "description": "选择资源调度器，容量调度器或公平调度器",
+      "label": "资源调度器",
+      "hidden": false,
+      "required": true,
+      "type": "select",
+      "defaultValue": "org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler",
+      "selectValue": [
+        "org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler",
+        "org.apache.hadoop.yarn.server.resourcemanager.scheduler.fair.FairScheduler"
+      ],
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.scheduler.fair.allocation.file",
+      "value": "${HADOOP_HOME}/etc/hadoop/fair-scheduler.xml",
+      "description": "指明公平调度器队列分配配置文件",
+      "label": "公平调度器配置文件位置",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "${HADOOP_HOME}/etc/hadoop/fair-scheduler.xml",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.scheduler.fair.preemption",
+      "value": false,
+      "description": "是否允许队列间资源抢占",
+      "label": "是否允许队列间资源抢占",
+      "hidden": false,
+      "required": true,
+      "type": "switch",
+      "defaultValue": false,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.ha.enabled",
+      "value": true,
+      "description": "是否启用resourcemanager ha",
+      "label": "是否启用resourcemanager ha",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "switch",
+      "defaultValue": true,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.cluster-id",
+      "value": "cluster-yarn1",
+      "description": "",
+      "label": "resourcemanager高可用集群id",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "cluster-yarn1",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.ha.rm-ids",
+      "value": "rm1,rm2",
+      "description": "",
+      "label": "resourcemanager高可用节点",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "rm1,rm2",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.hostname.rm1",
+      "value": "${YARN.rm1}",
+      "description": "",
+      "label": "rm1主机名",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "${YARN.rm1}",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.hostname.rm2",
+      "value": "${YARN.rm2}",
+      "description": "",
+      "label": "rm2主机名",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "${YARN.rm2}",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.webapp.address.rm1",
+      "value": "${YARN.rm1}:8088",
+      "description": "",
+      "label": "rm1 web地址",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "${YARN.rm1}:8088",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.webapp.address.rm2",
+      "value": "${YARN.rm2}:8088",
+      "description": "",
+      "label": "rm2 web地址",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "${YARN.rm2}:8088",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.address.rm1",
+      "value": "${YARN.rm1}:8032",
+      "description": "",
+      "label": "ResourceManager对客户端暴露的地址rm1",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "${YARN.rm1}:8032",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.address.rm2",
+      "value": "${YARN.rm2}:8032",
+      "description": "",
+      "label": "ResourceManager对客户端暴露的地址rm2",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "${YARN.rm2}:8032",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.scheduler.address.rm1",
+      "value": "${YARN.rm1}:8030",
+      "description": "",
+      "label": "ResourceManager对ApplicationMaster暴露的访问地址rm1",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "${YARN.rm1}:8030",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.scheduler.address.rm2",
+      "value": "${YARN.rm2}:8030",
+      "description": "",
+      "label": "ResourceManager对ApplicationMaster暴露的访问地址rm2",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "${YARN.rm2}:8030",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.resource-tracker.address.rm1",
+      "value": "${YARN.rm1}:8031",
+      "description": "",
+      "label": "ResourceManager对NodeManager暴露的地址rm1",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "${YARN.rm1}:8031",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.resource-tracker.address.rm2",
+      "value": "${YARN.rm2}:8031",
+      "description": "",
+      "label": "ResourceManager对NodeManager暴露的地址rm2",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "${YARN.rm2}:8031",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.zk-address",
+      "value": "${ZOOKEEPER.zkUrls}",
+      "description": "",
+      "label": "zk地址",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "${ZOOKEEPER.zkUrls}",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.recovery.enabled",
+      "value": true,
+      "description": "",
+      "label": "启用自动恢复",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "switch",
+      "defaultValue": true,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.store.class",
+      "value": "org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore",
+      "description": "",
+      "label": "yarn状态信息存储类",
+      "hidden": false,
+      "required": true,
+      "configType": "ha",
+      "type": "input",
+      "defaultValue": "org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.address",
+      "value": "0.0.0.0:45454",
+      "description": "",
+      "label": "nodemanager地址",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "0.0.0.0:45454",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.log.server.url",
+      "value": "http://${YARN.HistoryServer.__host__}`:19888/jobhistory/logs",
+      "description": "",
+      "label": "historyserver地址",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "http://${YARN.HistoryServer.__host__}`:19888/jobhistory/logs",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.log-aggregation.retain-seconds",
+      "value": "2592000",
+      "description": "",
+      "label": "日志保留时长",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "2592000",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.remote-app-log-dir",
+      "value": "/tmp/logs",
+      "description": "",
+      "label": "日志保留位置",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "/tmp/logs",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.remote-app-log-dir-suffix",
+      "value": "logs",
+      "description": "",
+      "label": "日志后缀",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "logs",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.local-dirs",
+      "value": [
+        ""
+      ],
+      "description": "NodeManager本地存储目录，可配置多个，按逗号分隔",
+      "label": "NodeManager本地存储目录",
+      "hidden": false,
+      "required": true,
+      "separator": ",",
+      "configType": "path",
+      "type": "multiple",
+      "defaultValue": [
+        ""
+      ],
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.log-dirs",
+      "value": [
+        ""
+      ],
+      "description": "NodeManager日志存储目录，可配置多个，按逗号分隔",
+      "label": "NodeManager日志存储目录",
+      "hidden": false,
+      "required": true,
+      "separator": ",",
+      "configType": "path",
+      "type": "multiple",
+      "defaultValue": [
+        ""
+      ],
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "mapreduce.cluster.local.dir",
+      "value": "/data/mapred/local",
+      "description": "MapReduce本地存储目录",
+      "label": "MapReduce本地存储目录",
+      "hidden": false,
+      "required": true,
+      "separator": ",",
+      "configType": "path",
+      "type": "input",
+      "defaultValue": "/data/mapred/local",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "mapreduce.jobhistory.address",
+      "value": "${YARN.HistoryServer.__host__}:10020",
+      "description": "",
+      "label": "mapreduce.jobhistory.address",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "${YARN.HistoryServer.__host__}:10020",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "mapreduce.jobhistory.webapp.address",
+      "value": "${YARN.HistoryServer.__host__}:19888",
+      "description": "",
+      "label": "mapreduce.jobhistory.webapp.address",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "${YARN.HistoryServer.__host__}:19888",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "mapreduce.jobhistory.done-dir",
+      "value": "/tmp/history/done",
+      "description": "",
+      "label": "mapreduce.jobhistory.done-dir",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "/tmp/history/done",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "mapreduce.jobhistory.intermediate-done-dir",
+      "value": "/tmp/history/done_intermediate",
+      "description": "",
+      "label": "mapreduce.jobhistory.intermediate-done-dir",
+      "hidden": false,
+      "required": true,
+      "type": "input",
+      "defaultValue": "/tmp/history/done_intermediate",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.application.classpath",
+      "value": [
+        "${HADOOP_HOME}/etc/hadoop",
+        "${HADOOP_HOME}/share/hadoop/common/lib/*",
+        "${HADOOP_HOME}/share/hadoop/common/*",
+        "${HADOOP_HOME}/share/hadoop/hdfs",
+        "${HADOOP_HOME}/share/hadoop/hdfs/lib/*",
+        "${HADOOP_HOME}/share/hadoop/hdfs/*",
+        "${HADOOP_HOME}/share/hadoop/mapreduce/lib/*",
+        "${HADOOP_HOME}/share/hadoop/mapreduce/*",
+        "${HADOOP_HOME}/share/hadoop/yarn",
+        "${HADOOP_HOME}/share/hadoop/yarn/lib/*",
+        "${HADOOP_HOME}/share/hadoop/yarn/*"
+      ],
+      "description": "yarn应用程序加载的classpath",
+      "label": "yarn应用程序加载的classpath",
+      "hidden": false,
+      "required": true,
+      "separator": ",",
+      "type": "multiple",
+      "defaultValue": [
+        "${HADOOP_HOME}/etc/hadoop",
+        "${HADOOP_HOME}/share/hadoop/common/lib/*",
+        "${HADOOP_HOME}/share/hadoop/common/*",
+        "${HADOOP_HOME}/share/hadoop/hdfs",
+        "${HADOOP_HOME}/share/hadoop/hdfs/lib/*",
+        "${HADOOP_HOME}/share/hadoop/hdfs/*",
+        "${HADOOP_HOME}/share/hadoop/mapreduce/lib/*",
+        "${HADOOP_HOME}/share/hadoop/mapreduce/*",
+        "${HADOOP_HOME}/share/hadoop/yarn",
+        "${HADOOP_HOME}/share/hadoop/yarn/lib/*",
+        "${HADOOP_HOME}/share/hadoop/yarn/*"
+      ],
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.principal",
+      "value": "",
+      "description": "",
+      "label": "ResourceManager服务的Kerberos主体",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "configWithKerberos": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.resourcemanager.keytab",
+      "value": "",
+      "description": "",
+      "label": "ResourceManager服务的Kerberos密钥文件路径",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "configWithKerberos": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.principal",
+      "value": "",
+      "description": "",
+      "label": "NodeManager服务的Kerberos主体",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "configWithKerberos": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.keytab",
+      "value": "",
+      "description": "",
+      "label": "NodeManager服务的Kerberos密钥文件路径",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "configWithKerberos": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "mapreduce.jobhistory.principal",
+      "value": "",
+      "description": "",
+      "label": "JobHistory服务的Kerberos主体",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "configWithKerberos": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "mapreduce.jobhistory.keytab",
+      "value": "",
+      "description": "",
+      "label": "JobHistory服务的Kerberos密钥文件路径",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "configWithKerberos": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.container-executor.class",
+      "value": "",
+      "description": "",
+      "label": "使用LinuxContainerExecutor管理Container",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "configWithKerberos": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.linux-container-executor.group",
+      "value": "hadoop",
+      "description": "",
+      "label": "NodeManager的启动用户的所属组",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "hadoop",
+      "configurableInWizard": true,
+      "configWithKerberos": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.nodemanager.linux-container-executor.path",
+      "value": "",
+      "description": "",
+      "label": "LinuxContainerExecutor脚本路径",
+      "hidden": true,
+      "required": false,
+      "configType": "kb",
+      "type": "input",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "configWithKerberos": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "yarn.node-labels.enabled",
+      "value": false,
+      "description": "开启 YARN Node Labels",
+      "label": "启用YARN标签调度",
+      "hidden": false,
+      "required": true,
+      "type": "switch",
+      "defaultValue": false,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "enableKerberos",
+      "value": false,
+      "description": "启用Kerberos认证",
+      "label": "启用Kerberos认证",
+      "hidden": false,
+      "required": true,
+      "type": "switch",
+      "defaultValue": false,
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "custom.yarn.site.xml",
+      "value": "",
+      "description": "自定义配置",
+      "label": "自定义配置yarn-site.xml",
+      "hidden": false,
+      "required": false,
+      "configType": "custom",
+      "type": "multipleWithKey",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "custom.mapred.site.xml",
+      "value": "",
+      "description": "自定义配置",
+      "label": "自定义配置mapred-site.xml",
+      "hidden": false,
+      "required": false,
+      "configType": "custom",
+      "type": "multipleWithKey",
+      "defaultValue": "",
+      "configurableInWizard": true,
+      "register": false
+    }
+  ],
+  "arch": {
+    "aarch64": {
+      "packageName": "hadoop-3.5.0-aarch64.tar.gz",
+      "decompressPackageName": "hadoop-3.5.0"
+    },
+    "x86_64": {
+      "packageName": "hadoop-3.5.0.tar.gz",
+      "decompressPackageName": "hadoop-3.5.0"
+    }
+  }
+}
