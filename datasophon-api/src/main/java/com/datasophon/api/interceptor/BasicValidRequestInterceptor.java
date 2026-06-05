@@ -18,6 +18,7 @@
 
 package com.datasophon.api.interceptor;
 
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -42,8 +43,13 @@ public class BasicValidRequestInterceptor implements HandlerInterceptor {
     
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // Only intercept initial REQUEST dispatches; let FORWARD/ERROR/INCLUDE pass through
+        // to prevent infinite dispatch loops when the error handler is also intercepted.
+        if (DispatcherType.REQUEST != request.getDispatcherType()) {
+            return true;
+        }
         if (!isValidRequest(request)) {
-            request.getRequestDispatcher("/").forward(request, response);
+            request.getRequestDispatcher("/index.html").forward(request, response);
             return false;
         }
         return true;

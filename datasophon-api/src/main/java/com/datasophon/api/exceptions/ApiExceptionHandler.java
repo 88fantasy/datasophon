@@ -25,6 +25,7 @@ package com.datasophon.api.exceptions;
 import com.datasophon.api.enums.Status;
 import com.datasophon.common.utils.Result;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.HandlerMapping;
 
 /**
  * Exception Handler
@@ -49,16 +51,19 @@ public class ApiExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(ApiExceptionHandler.class);
     
     @ExceptionHandler(Exception.class)
-    public Result exceptionHandler(Exception e, HandlerMethod hm) {
-        ApiException ce = hm.getMethodAnnotation(ApiException.class);
-        if (ce == null) {
-            String message = e instanceof NullPointerException ? "对象空指针" : e.getMessage();
-            logger.error(e.getMessage(), e);
-            return Result.error(Status.INTERNAL_SERVER_ERROR_ARGS.getCode(), message);
+    public Result exceptionHandler(Exception e, HttpServletRequest request) {
+        Object handler = request.getAttribute(HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE);
+        if (handler instanceof HandlerMethod hm) {
+            ApiException ce = hm.getMethodAnnotation(ApiException.class);
+            if (ce != null) {
+                Status st = ce.value();
+                logger.error(st.getMsg(), e);
+                return Result.error(st.getCode(), st.getMsg());
+            }
         }
-        Status st = ce.value();
-        logger.error(st.getMsg(), e);
-        return Result.error(st.getCode(), st.getMsg());
+        String message = e instanceof NullPointerException ? "对象空指针" : e.getMessage();
+        logger.error(e.getMessage(), e);
+        return Result.error(Status.INTERNAL_SERVER_ERROR_ARGS.getCode(), message);
     }
     
     @ExceptionHandler(ConstraintViolationException.class)

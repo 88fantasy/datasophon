@@ -105,12 +105,14 @@ public class LoginController extends ApiController {
             response.addCookie(cookie);
         }
         
-        // Generate CSRF token and set it as a non-HttpOnly cookie for JS access
+        // Generate CSRF token and set it as a non-HttpOnly cookie for JS access.
+        // path must be "/" so JS on any page (e.g. /ddh/Colony/) can read it via document.cookie.
         String sessionId = cookieMap.get(Constants.SESSION_ID);
         if (StringUtils.isNotBlank(sessionId)) {
             String csrfToken = CsrfTokenInterceptor.generateToken(sessionId);
             Cookie csrfCookie = new Cookie(Constants.CSRF_TOKEN, csrfToken);
             csrfCookie.setHttpOnly(false);
+            csrfCookie.setPath("/");
             response.addCookie(csrfCookie);
         }
         
