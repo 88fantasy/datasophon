@@ -45,7 +45,7 @@ public class HbaseHandlerStrategy extends AbstractHandlerStrategy implements Ser
     
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) {
-        ExecResult startResult = new ExecResult();
+        ExecResult startResult;
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         if (command.getEnableRangerPlugin()) {
             logger.info("start to enable  hbase plugin");

@@ -54,7 +54,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,8 +134,6 @@ public class FreemakerUtils {
     /**
      * 获取模板名
      *
-     * @param generators
-     * @return
      */
     private static String determinateTplName(Generators generators) {
         String configFormat = generators.getConfigFormat();
@@ -172,10 +169,6 @@ public class FreemakerUtils {
      * 渲染模板。
      * 注意保留public，方便写单元测试代码
      *
-     * @param generators
-     * @param template
-     * @param configs
-     * @return
      */
     public static String renderTemplate(Generators generators, Template template, List<ServiceConfig> configs) throws TemplateException, IOException {
         String configFormat = generators.getConfigFormat();
@@ -207,7 +200,7 @@ public class FreemakerUtils {
             }
         });
         
-        data.put("itemList", configs.stream().filter(e -> !"map".equals(e.getConfigType())).collect(Collectors.toList()));
+        data.put("itemList", configs.stream().filter(e -> !"map".equals(e.getConfigType())).toList());
         StringWriter out = new StringWriter();
         template.process(data, out);
         return out.toString();
@@ -221,7 +214,7 @@ public class FreemakerUtils {
         List<String> includeParams = generators.getIncludeParams();
         List<ServiceConfig> finalConfigs = configs.stream()
                 .filter(config -> includeParams.contains(config.getName()))
-                .collect(Collectors.toList());
+                .toList();
         
         Map<String, Object> configMap = new LinkedHashMap<>();
         finalConfigs.parallelStream().forEach(serviceConfig -> {
@@ -243,10 +236,6 @@ public class FreemakerUtils {
     /**
      * TODO 改为SPI实现
      *
-     * @param generators
-     * @param configs
-     * @param serviceInstallHome
-     * @param content
      * @throws UnknownHostException
      */
     private static void writeContent(Generators generators, List<ServiceConfig> configs, String serviceInstallHome, String content) throws UnknownHostException {

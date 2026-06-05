@@ -49,7 +49,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
- * 告警处理 Spring Service，业务逻辑完全来自 {@link AlertActor}。
+ * 告警处理 Spring Service（Pekko 移除后替代原 AlertActor）。
  * {@code handleAlertMessage()} 标注 @Async，保持原有的 fire-and-forget 语义。
  */
 @Service

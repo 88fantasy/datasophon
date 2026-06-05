@@ -7,7 +7,6 @@ import com.datasophon.api.vo.extrepo.ValidateResultVO;
 /**
  * 软件外部源的元数据业务逻辑处理类
  * @author zhanghuangbin
- * @date 2025/11/7
  */
 public interface ExtRepoMetaService {
     

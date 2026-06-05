@@ -227,8 +227,6 @@ public class InstallServiceHandler {
     /**
      * 检查是否越权，防止innerDir存在 ../../之类的路径，造成越权
      *
-     * @param baseTempDir
-     * @param innerDir
      */
     protected void checkIfPathOutOfBox(String baseTempDir, String innerDir) {
         if (!Paths.get(innerDir).startsWith(Paths.get(baseTempDir))) {

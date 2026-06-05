@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Worker 端 gRPC 服务器（Phase 1）。
  *
- * <p>监听端口 {@value #PORT}，注册 {@link WorkerCommandGrpcService}。
+ * <p>监听端口 {@value GrpcConstants#WORKER_GRPC_PORT}，注册 {@link WorkerCommandGrpcService}。
  * 由 {@link com.datasophon.worker.WorkerApplicationServer} 在 {@code transport=grpc|both}
  * 时启动。</p>
  */

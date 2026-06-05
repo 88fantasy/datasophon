@@ -94,7 +94,7 @@ public class AlertGroupController extends ApiController {
         
         // 校验是否绑定告警指标
         List<ClusterAlertQuota> list =
-                alertQuotaService.lambdaQuery().in(ClusterAlertQuota::getAlertGroupId, ids).list();
+                alertQuotaService.lambdaQuery().in(ClusterAlertQuota::getAlertGroupId, Arrays.asList(ids)).list();
         if (list.size() > 0) {
             return Result.error(Status.ALERT_GROUP_TIPS_ONE.getMsg());
         }

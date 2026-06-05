@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 /**
  * 下载进度 VO
  * @author zhanghuangbin
- * @date 2026/04/20
  */
 @Data
 @NoArgsConstructor

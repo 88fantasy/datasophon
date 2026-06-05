@@ -32,7 +32,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  * // output: { "type": "sms", "typeName": "短信"}
  *
  * @author zhanghuangbin
- * @date 2024/10/9
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.ANNOTATION_TYPE})

@@ -28,7 +28,6 @@ public interface EnhanceBaseMapper<T> extends BaseMapper<T> {
      * @param object    查询对象
      * @param entityCls  entity类型
      * @param functions 需要检查的属性
-     * @return
      */
     @SuppressWarnings("unchecked")
     default <DTO> boolean isDuplicate(DTO object, Class<T> entityCls, SFunction<DTO, ?>... functions) {
@@ -69,7 +68,6 @@ public interface EnhanceBaseMapper<T> extends BaseMapper<T> {
      *
      * @param object    查询对象
      * @param functions 需要检查的属性
-     * @return
      */
     @SuppressWarnings("unchecked")
     default boolean isDuplicate(T object, SFunction<T, ?>... functions) {

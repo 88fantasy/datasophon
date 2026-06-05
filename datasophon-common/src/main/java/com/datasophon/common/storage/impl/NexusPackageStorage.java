@@ -31,6 +31,7 @@ import cn.hutool.crypto.digest.DigestUtil;
  * @author zhanghuangbin
  */
 @Slf4j
+@SuppressWarnings("deprecated")
 public class NexusPackageStorage extends NexusStorageSupport implements PackageStorage {
     
     private static final Map<String, ReentrantLock> LOCK_MAP = new ConcurrentHashMap<>();

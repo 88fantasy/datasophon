@@ -4,28 +4,16 @@ import com.datasophon.common.enums.SSHAuthType;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 import lombok.extern.slf4j.Slf4j;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
@@ -128,134 +116,6 @@ public class JschUtils {
         }
         return result;
     }
-    public static ExecResult shellForExp(Session session, String command, Map<String, String> expects) {
-        InputStream is = null;
-        BufferedReader bufReader = null;
-        OutputStream os = null;
-        ChannelShell channel = null;
-        ExecResult result = new ExecResult();
-        StringBuilder execOut = new StringBuilder();
-        try {
-            // 创建执行通道
-            channel = (ChannelShell) session.openChannel("shell");
-            is = channel.getInputStream();
-            os = channel.getOutputStream();
-            
-            os.write(command.getBytes()); // 输入命令
-            os.write('\n'); // 输入换行执行
-            os.flush();
-            // FIXME 由于读取执行结果是阻塞的，必须等待指令执行一段时间，具体多少不好斟酌
-            TimeUnit.SECONDS.sleep(500);
-            
-            // 读取通道的输出
-            bufReader = new BufferedReader(new InputStreamReader(is));
-            String line = "";
-            while (Objects.nonNull((line = bufReader.readLine()))) {
-                execOut.append(line);
-                if (Objects.nonNull(expects)) {
-                    for (Map.Entry<String, String> entry : expects.entrySet()) {
-                        if (line.contains(entry.getKey())) {
-                            os.write(entry.getValue().getBytes());
-                            os.write('\n'); // 输入换行执行
-                            os.flush();
-                            break;
-                        }
-                    }
-                }
-            }
-            os.write("exit".getBytes()); // 退出命令
-            os.write('\n'); // 输入换行执行
-            os.flush();
-            result.setExecResult(true);
-            result.setExecOut(execOut.toString());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            IoUtil.close(os);
-            IoUtil.close(bufReader);
-            IoUtil.close(is);
-            if (channel != null && channel.isConnected()) {
-                channel.disconnect();
-            }
-        }
-        return result;
-    }
-    
-    public static Map<String, String> shellForStr(Session session, List<String> commands) throws Exception {
-        Map<String, String> result = new ConcurrentHashMap<>();
-        InputStream is = null;
-        OutputStream os = null;
-        ChannelShell channel = null;
-        try {
-            // 创建执行通道
-            channel = (ChannelShell) session.openChannel("shell");
-            is = channel.getInputStream();
-            os = channel.getOutputStream();
-            
-            for (String cmd : commands) {
-                os.write(cmd.getBytes()); // 输入命令
-                os.write('\n'); // 输入换行执行
-                os.flush();
-                // FIXME 由于读取执行结果是阻塞的，必须等待指令执行一段时间，具体多少不好斟酌
-                TimeUnit.SECONDS.sleep(500);
-                // 读取通道的输出
-                String rs = IoUtil.read(is, Charset.defaultCharset());
-                result.put(cmd, rs);
-            }
-            return result;
-        } finally {
-            IoUtil.close(os);
-            IoUtil.close(is);
-            if (channel != null && channel.isConnected()) {
-                channel.disconnect();
-            }
-        }
-    }
-    
-    public static List<String> shellForLines(Session session, String command, int connectTimeout, int cmdWaitSeconds) throws Exception {
-        Map<String, List<String>> map = shellForLines(session, Collections.singletonList(command), connectTimeout, cmdWaitSeconds);
-        return map.get(command);
-    }
-    
-    public static Map<String, List<String>> shellForLines(Session session, List<String> commands, int connectTimeout, int cmdWaitSeconds) throws Exception {
-        Map<String, List<String>> result = new ConcurrentHashMap<>();
-        InputStream is = null;
-        OutputStream os = null;
-        ChannelShell channel = null;
-        try {
-            // 创建执行通道
-            channel = (ChannelShell) session.openChannel("shell");
-            channel.connect(connectTimeout * 1000);
-            is = channel.getInputStream();
-            os = channel.getOutputStream();
-            
-            for (String cmd : commands) {
-                os.write(cmd.getBytes()); // 输入命令
-                os.write('\n'); // 输入换行执行
-                os.flush();
-                
-                // FIXME 由于读取执行结果是阻塞的，必须等待指令执行一段时间，具体多少不好斟酌
-                TimeUnit.SECONDS.sleep(cmdWaitSeconds);
-                
-                // 读取通道的输出
-                ArrayList<String> readLines = IoUtil.readLines(is, Charset.defaultCharset(), new ArrayList<>());
-                result.put(cmd, readLines);
-            }
-            return result;
-        } finally {
-            IoUtil.close(os);
-            IoUtil.close(is);
-            if (channel != null && channel.isConnected()) {
-                channel.disconnect();
-            }
-        }
-    }
-    
-    public static List<String> getFileLines(Session session, String path, int connectTimeout) throws Exception {
-        String fileString = getFileString(session, path, connectTimeout);
-        return Arrays.asList(fileString.split("\n"));
-    }
-    
     public static String getFileString(Session session, String path, int connectTimeout) {
         ChannelSftp channel = null;
         try {
@@ -435,26 +295,6 @@ public class JschUtils {
             result.setExecErrOut(e.getMessage());
         }
         log.info("sendDirChannel localDirPath:{}, remoteDirPath:{} end", localDirPath, remoteDirPath);
-        return result;
-    }
-    
-    public static ExecResult exists(Session session, String path, int connectTimeout) {
-        ExecResult result = new ExecResult();
-        ChannelSftp channel = null;
-        try {
-            channel = (ChannelSftp) session.openChannel("sftp");
-            channel.connect(connectTimeout * 1000);
-            channel.ls(path);
-            result.setExecResult(true);
-            log.info("path exists :{}", path);
-        } catch (Exception e) {
-            log.warn(path, e.getMessage());
-            result.setExecErrOut(e.getMessage());
-        } finally {
-            if (channel != null && channel.isConnected()) {
-                channel.disconnect();
-            }
-        }
         return result;
     }
     

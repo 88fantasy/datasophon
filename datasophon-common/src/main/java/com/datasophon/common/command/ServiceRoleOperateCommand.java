@@ -31,7 +31,9 @@ import java.util.List;
 import java.util.Map;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class ServiceRoleOperateCommand extends BaseCommand implements Serializable {
     

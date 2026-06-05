@@ -32,7 +32,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * K8s 服务命令执行记录
  *
  * @author zhanghuangbin
- * @date 2026-03-30
  */
 @Mapper
 public interface ClusterK8sServiceCommandMapper extends BaseMapper<ClusterK8sServiceCommandEntity> {

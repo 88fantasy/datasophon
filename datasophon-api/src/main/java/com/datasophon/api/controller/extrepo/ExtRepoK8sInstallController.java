@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @author zhanghuangbin
- * @date 2025/11/5
  */
 @RestController
 @RequestMapping("extrepo/k8s")
@@ -57,8 +56,6 @@ public class ExtRepoK8sInstallController extends ApiController {
     /**
      * @deprecated
      * @see #saveConfigValueList(List)
-     * @param dto
-     * @return
      */
     @PostMapping("saveConfigValues")
     @Operation(summary = "保存配置 values", deprecated = true, description = "该为调用saveConfigValueList方法")

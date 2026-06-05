@@ -29,6 +29,7 @@ import cn.hutool.core.io.FileUtil;
 /**
  * @author zhanghuangbin
  */
+@SuppressWarnings("deprecated")
 @Slf4j
 public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage {
     

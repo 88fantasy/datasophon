@@ -71,9 +71,6 @@ public class CacheUtils {
     
     /**
      * 线程不安全，但是勉强够用
-     * @param key
-     * @param function
-     * @return
      * @param <T>
      */
     public static <T> T computeIfAbsent(String key, Function<String, T> function) {

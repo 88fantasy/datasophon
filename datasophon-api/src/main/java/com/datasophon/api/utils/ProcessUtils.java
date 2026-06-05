@@ -487,8 +487,6 @@ public class ProcessUtils {
     }
     
     /**
-     * @param configFileMap
-     * @param config
      * @Description: 生成configFileMap
      */
     public static void generateConfigFileMap(Map<Generators, List<ServiceConfig>> configFileMap,
@@ -587,9 +585,6 @@ public class ProcessUtils {
     /**
      * 并集：左边集合与右边集合合并
      *
-     * @param left
-     * @param right
-     * @return
      */
     public static List<ServiceConfig> addAll(List<ServiceConfig> left, List<ServiceConfig> right) {
         if (left == null) {

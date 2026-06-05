@@ -98,10 +98,6 @@ public class ShellUtils {
     /**
      * 执行命令，不使用shell执行
      *
-     * @param workPath
-     * @param processCmdArgs
-     * @param timeout
-     * @return
      */
     public static ExecResult exec(String workPath, List<String> processCmdArgs, long timeout) {
         return execWithStdin(workPath, processCmdArgs, null, timeout);
@@ -188,7 +184,6 @@ public class ShellUtils {
     
     /**
      * @param pathOrCommand 脚本路径或者命令
-     * @return
      */
     public static ExecResult execShell(String pathOrCommand) {
         logger.info("command:{}", pathOrCommand);
@@ -255,10 +250,6 @@ public class ShellUtils {
     }
     
     /**
-     * @param workPath
-     * @param command
-     * @param timeout
-     * @return
      * @see #exec(String, List, long)
      * @deprecated
      */
@@ -369,7 +360,7 @@ public class ShellUtils {
             try {
                 inReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 String line;
-                StringBuffer stringBuffer = new StringBuffer();
+                StringBuilder stringBuffer = new StringBuilder();
                 while ((line = inReader.readLine()) != null) {
                     stringBuffer.append(line);
                     stringBuffer.append(System.lineSeparator());

@@ -82,10 +82,6 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfoEnt
     }
     
     /**
-     * @param userName
-     * @param password
-     * @param email
-     * @param phone
      * @return if check failed return the field, otherwise return null
      */
     private String checkUserParams(String userName, String password, String email, String phone) {

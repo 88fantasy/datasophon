@@ -112,16 +112,6 @@ public class PropertyUtils {
     }
     
     /**
-     * get property value with upper case
-     *
-     * @param key property name
-     * @return property value  with upper case
-     */
-    public static String getUpperCaseString(String key) {
-        return properties.getProperty(key.trim()).toUpperCase();
-    }
-    
-    /**
      * get property value
      *
      * @param key        property name
@@ -211,49 +201,6 @@ public class PropertyUtils {
      */
     public static long getLong(String key) {
         return getLong(key, -1);
-    }
-    
-    /**
-     * @param key        key
-     * @param defaultVal default value
-     * @return property value
-     */
-    public double getDouble(String key, double defaultVal) {
-        String val = getString(key);
-        return val == null ? defaultVal : Double.parseDouble(val);
-    }
-    
-    /**
-     * get array
-     *
-     * @param key      property name
-     * @param splitStr separator
-     * @return property value through array
-     */
-    public static String[] getArray(String key, String splitStr) {
-        String value = getString(key);
-        if (value == null) {
-            return new String[0];
-        }
-        try {
-            return value.split(splitStr);
-        } catch (NumberFormatException e) {
-            logger.info(e.getMessage(), e);
-        }
-        return new String[0];
-    }
-    
-    /**
-     * @param key          key
-     * @param type         type
-     * @param defaultValue default value
-     * @param <T>          T
-     * @return get enum value
-     */
-    public <T extends Enum<T>> T getEnum(String key, Class<T> type,
-                                         T defaultValue) {
-        String val = getString(key);
-        return val == null ? defaultValue : Enum.valueOf(type, val);
     }
     
     /**

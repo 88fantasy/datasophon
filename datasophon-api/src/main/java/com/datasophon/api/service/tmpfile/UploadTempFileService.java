@@ -18,7 +18,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
  * @author zhanghuangbin
- * @date 2025/11/5
  */
 public interface UploadTempFileService extends IService<UploadTempFile> {
     
@@ -31,42 +30,31 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
     
     /**
      * 创建分片任务
-     * @param info
-     * @return
      */
     UploadTempFile createShardUploadTask(BigFileDTO info);
     
     /**
      * 上传分片
-     * @param info
-     * @return
      */
     UploadTempFileChunk uploadChunk(ChunkDTO info);
     
     /**
      * 判断chunk是否已经上传
-     * @param dto
-     * @return
      */
     UploadTempFileChunk isChunkUploaded(CheckChunkDTO dto);
     /**
      * 合并分片
-     * @param vo
      * @return 进度信息
      */
     MergeProgressVO mergeChunk(MergeChunkDTO vo);
     
     /**
      * 查询合并进度
-     * @param attachId
-     * @return
      */
     MergeProgressVO queryMergeProgress(Integer attachId);
     
     /**
      * 获取附件ID代表的临时文件
-     * @param attachId
-     * @return
      */
     File getTempFile(Integer attachId);
     

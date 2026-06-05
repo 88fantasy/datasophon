@@ -35,12 +35,12 @@ public class OsUtils {
             osVersion = "";
             if ("openEuler".equals(osName)) {
                 if (prettyName.isPresent()) {
-                    osDetail = prettyName.get().replaceAll("\"", "").split("=")[1].replaceAll("\\(", "")
-                            .replaceAll("\\)", "").replaceAll(" ", "-");
+                    osDetail = prettyName.get().replace("\"", "").split("=")[1].replace("(", "")
+                            .replace(")", "").replace(" ", "-");
                 }
             } else if ("Ubuntu".equalsIgnoreCase(osName)) {
                 if (prettyName.isPresent()) {
-                    osDetail = prettyName.get().replaceAll("\"", "").split("=")[1].replaceAll(" ", "-");
+                    osDetail = prettyName.get().replace("\"", "").split("=")[1].replace(" ", "-");
                 }
             } else {
                 logger.info("other");

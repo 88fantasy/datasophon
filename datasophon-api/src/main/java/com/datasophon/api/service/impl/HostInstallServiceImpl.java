@@ -116,12 +116,8 @@ public class HostInstallServiceImpl implements HostInstallService {
      * 2、存在则根据分页返回数据
      * 3、不存在则解析hosts，产生主机列表并放入缓存中
      *
-     * @param clusterId
-     * @param hosts
-     * @param sshUser
-     * @param sshPort
-     * @return
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Result analysisHostList(Integer clusterId, String hosts, String sshUser, String sshPass,
                                    Integer sshPort, Integer page, Integer pageSize) {
@@ -244,6 +240,7 @@ public class HostInstallServiceImpl implements HostInstallService {
     public Result getHostCheckStatus(Integer clusterId, String sshUser, Integer sshPort) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
+        @SuppressWarnings("unchecked")
         Map<String, HostInfo> map =
                 (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
         List<HostInfo> list =
@@ -259,6 +256,7 @@ public class HostInstallServiceImpl implements HostInstallService {
         // 开启主机校验
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
+        @SuppressWarnings("unchecked")
         Map<String, HostInfo> map =
                 (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
         for (String hostname : hostnames.split(",")) {
@@ -279,6 +277,7 @@ public class HostInstallServiceImpl implements HostInstallService {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
         String distributeAgentKey = clusterCode + Constants.UNDERLINE + Constants.START_DISTRIBUTE_AGENT;
+        @SuppressWarnings("unchecked")
         Map<String, HostInfo> map = (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
         List<HostInfo> list =
                 map.entrySet().stream()
@@ -330,6 +329,7 @@ public class HostInstallServiceImpl implements HostInstallService {
     public Result reStartDispatcherHostAgent(Integer clusterId, String hostnames) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
+        @SuppressWarnings("unchecked")
         Map<String, HostInfo> map = (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
         if (map == null) {
             map = new ConcurrentHashMap<>();
@@ -374,6 +374,7 @@ public class HostInstallServiceImpl implements HostInstallService {
     public Result hostCheckCompleted(Integer clusterId) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
+        @SuppressWarnings("unchecked")
         Map<String, HostInfo> map = (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
         for (Map.Entry<String, HostInfo> hostInfoEntry : map.entrySet()) {
             HostInfo value = hostInfoEntry.getValue();
@@ -393,6 +394,7 @@ public class HostInstallServiceImpl implements HostInstallService {
     public Result dispatcherHostAgentCompleted(Integer clusterId) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String clusterCode = clusterInfo.getClusterCode();
+        @SuppressWarnings("unchecked")
         Map<String, HostInfo> map = (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
         for (Map.Entry<String, HostInfo> hostInfoEntry : map.entrySet()) {
             HostInfo hostInfo = hostInfoEntry.getValue();
@@ -433,9 +435,6 @@ public class HostInstallServiceImpl implements HostInstallService {
     /**
      * 一键 启动 主机上安装的服务
      *
-     * @param clusterHostIds
-     * @param commandType
-     * @return
      * @throws Exception
      */
     @Override

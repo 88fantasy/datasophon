@@ -32,8 +32,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * 
  * 
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-07-13 19:34:14
  */
 @Mapper
 public interface ClusterYarnQueueMapper extends BaseMapper<ClusterYarnQueue> {

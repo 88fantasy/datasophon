@@ -32,8 +32,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * 
  * 
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-08-16 16:56:00
  */
 @Mapper
 public interface ClusterServiceInstanceRoleGroupMapper extends BaseMapper<ClusterServiceInstanceRoleGroup> {

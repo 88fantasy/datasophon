@@ -33,8 +33,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * 集群框架版本服务表
  *
  * @author dygao2
- * @email gaodayu2022@163.com
- * @date 2022-03-15 17:36:08
  */
 public interface FrameServiceService extends IService<FrameServiceEntity> {
     

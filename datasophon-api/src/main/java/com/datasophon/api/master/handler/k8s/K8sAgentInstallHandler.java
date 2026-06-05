@@ -150,7 +150,6 @@ public class K8sAgentInstallHandler extends K8sAgentHandler {
     /**
      * 生成helm的运行时变量
      *
-     * @param params
      */
     private void prepareParameter(UpgradeParams params) {
         // 读取 master 的 common.properties，通过 --set-file 传入 Helm Chart

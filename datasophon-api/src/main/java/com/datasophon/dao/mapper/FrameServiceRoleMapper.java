@@ -33,8 +33,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * 框架服务角色表
  *
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-04-18 14:38:53
  */
 @Mapper
 public interface FrameServiceRoleMapper extends BaseMapper<FrameServiceRoleEntity> {

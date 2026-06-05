@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  *
  * <ul>
  *   <li>启动时调用 {@link #register()} 注册自身</li>
- *   <li>每 {@value #HEARTBEAT_INTERVAL_SECONDS}s 发送一次心跳</li>
+ *   <li>每 {@value GrpcConstants#HEARTBEAT_INTERVAL_SECONDS}s 发送一次心跳</li>
  *   <li>关闭时调用 {@link #close()} 注销并释放 Channel</li>
  * </ul>
  */

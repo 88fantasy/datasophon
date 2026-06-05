@@ -23,8 +23,6 @@ public class YamlParser {
      * yml文件流转成单层map
      * 转Properties 改变了顺序
      *
-     * @param yamlContent
-     * @return
      */
     public static Map<String, Object> yamlToFlattenedMap(String yamlContent) {
         Yaml yaml = createYaml();
@@ -41,8 +39,6 @@ public class YamlParser {
     /**
      * yml文件流转成多次嵌套map
      *
-     * @param yamlContent
-     * @return
      */
     public static Map<String, Object> yamlToMultilayerMap(String yamlContent) {
         Yaml yaml = createYaml();
@@ -58,8 +54,6 @@ public class YamlParser {
     /**
      * 多次嵌套map转成yml
      *
-     * @param map
-     * @return
      */
     public static String multilayerMapToYaml(Map<String, Object> map) {
         Yaml yaml = createYaml();
@@ -69,8 +63,6 @@ public class YamlParser {
     /**
      * 单层map转成yml
      *
-     * @param map
-     * @return
      */
     public static String flattenedMapToYaml(Map<String, Object> map) {
         Yaml yaml = createYaml();
@@ -80,8 +72,6 @@ public class YamlParser {
     /**
      * 单层map转换多层map
      *
-     * @param map
-     * @return
      */
     private static Map<String, Object> flattenedMapToMultilayerMap(Map<String, Object> map) {
         Map<String, Object> result = getMultilayerMap(map);

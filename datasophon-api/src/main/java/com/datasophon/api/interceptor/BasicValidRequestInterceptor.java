@@ -25,6 +25,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -42,7 +43,7 @@ public class BasicValidRequestInterceptor implements HandlerInterceptor {
     private static final String staticPath = "/static";
     
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
         // Only intercept initial REQUEST dispatches; let FORWARD/ERROR/INCLUDE pass through
         // to prevent infinite dispatch loops when the error handler is also intercepted.
         if (DispatcherType.REQUEST != request.getDispatcherType()) {

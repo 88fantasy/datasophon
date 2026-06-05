@@ -32,8 +32,6 @@ import com.github.yulichang.base.MPJBaseMapper;
  * 集群服务角色对应web ui表 
  * 
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-04-24 16:25:17
  */
 @Mapper
 public interface ClusterServiceRoleInstanceWebuisMapper extends MPJBaseMapper<ClusterServiceRoleInstanceWebuis> {

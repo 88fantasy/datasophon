@@ -12,7 +12,6 @@ import com.baomidou.mybatisplus.annotation.TableName;
 /**
  * 临时文件文件
  * @author zhanghuangbin
- * @date 2025/11/5
  */
 @Data
 @TableName("t_ddh_upload_temp_file_chunk")

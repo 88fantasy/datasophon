@@ -55,9 +55,9 @@ public class OlapUtils {
             executeSql(feMaster, hostname, sql, rootPassword);
             execResult.setExecResult(true);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            logger.error("Driver not found when adding follower {}", hostname, e);
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.error("SQL error when adding follower {}", hostname, throwables);
         }
         return execResult;
     }
@@ -70,9 +70,9 @@ public class OlapUtils {
             executeSql(feMaster, hostname, sql, rootPassword);
             execResult.setExecResult(true);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            logger.error("Driver not found when adding observer {}", hostname, e);
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.error("SQL error when adding observer {}", hostname, throwables);
         }
         return execResult;
     }
@@ -86,9 +86,9 @@ public class OlapUtils {
             executeSql(feMaster, hostname, sql, rootPassword);
             execResult.setExecResult(true);
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            logger.error("Driver not found when adding backend {}", hostname, e);
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            logger.error("SQL error when adding backend {}", hostname, throwables);
         }
         return execResult;
     }

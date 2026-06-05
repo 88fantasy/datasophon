@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -145,9 +146,8 @@ public class S3SyncService {
         }
         List<ZipFileInfo> zipFiles = new ArrayList<>();
         Pattern pattern = Pattern.compile("^oss-((\\d)(\\.\\d){0,2}).*\\.zip$");
-        try {
-            Files.walk(dir.toPath())
-                    .filter(Files::isRegularFile)
+        try (Stream<Path> stream = Files.walk(dir.toPath())) {
+            stream.filter(Files::isRegularFile)
                     .forEach(path -> {
                         String filename = path.getFileName().toString();
                         Matcher matcher = pattern.matcher(filename);
@@ -200,16 +200,17 @@ public class S3SyncService {
             ZipUtils.unzip(zipFile.getFilePath(), dest);
             
             Path root = Paths.get(dest);
-            Files.walk(root)
-                    .filter(Files::isRegularFile)
-                    .forEach(file -> {
-                        try {
-                            String key = root.relativize(file).toString().replace("\\", "/");
-                            uploadFileToS3(key, file);
-                        } catch (IOException e) {
-                            throw new IllegalStateException("IO异常，" + e.getMessage(), e);
-                        }
-                    });
+            try (Stream<Path> walkStream = Files.walk(root)) {
+                walkStream.filter(Files::isRegularFile)
+                        .forEach(file -> {
+                            try {
+                                String key = root.relativize(file).toString().replace("\\", "/");
+                                uploadFileToS3(key, file);
+                            } catch (IOException e) {
+                                throw new IllegalStateException("IO异常，" + e.getMessage(), e);
+                            }
+                        });
+            }
             
             log.info("上传S3, 处理版本: {}", zipFile.getVersion());
         } catch (IOException e) {

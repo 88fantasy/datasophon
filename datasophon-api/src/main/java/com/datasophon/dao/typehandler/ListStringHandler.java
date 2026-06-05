@@ -15,7 +15,6 @@ import cn.hutool.core.util.StrUtil;
 
 /**
  * @author zhanghuangbin
- * @date 2024/9/11
  */
 public class ListStringHandler extends BaseTypeHandler<List<String>> {
     

@@ -9,7 +9,6 @@ import cn.hutool.core.collection.CollectionUtil;
 
 /**
  * @author zhanghuangbin
- * @date 2025/11/12
  */
 @Data
 public class ValidateResultVO {

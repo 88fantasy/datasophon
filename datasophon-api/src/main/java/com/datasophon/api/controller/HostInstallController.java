@@ -123,9 +123,6 @@ public class HostInstallController extends ApiController {
     /**
      * 主机管理agent分发安装重试
      *
-     * @param clusterId
-     * @param hostnames
-     * @return
      */
     @PostMapping("/reStartDispatcherHostAgent")
     public Result reStartDispatcherHostAgent(Integer clusterId, String hostnames) {
@@ -134,9 +131,6 @@ public class HostInstallController extends ApiController {
     
     /**
      * 主机管理agent操作(启动(start)、停止(stop)、重启(restart))
-     * @param clusterHostIds
-     * @param commandType
-     * @return
      */
     @PostMapping("/generateHostAgentCommand")
     public Result generateHostAgentCommand(
@@ -147,9 +141,6 @@ public class HostInstallController extends ApiController {
     
     /**
      * 启动/停止 主机上服务启动
-     * @param clusterHostIds
-     * @param commandType
-     * @return
      */
     @PostMapping("/generateHostServiceCommand")
     public Result generateHostServiceCommand(

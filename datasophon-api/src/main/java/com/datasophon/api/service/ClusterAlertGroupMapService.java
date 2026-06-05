@@ -30,8 +30,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * 
  *
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-07-13 10:01:06
  */
 public interface ClusterAlertGroupMapService extends IService<ClusterAlertGroupMap> {
     

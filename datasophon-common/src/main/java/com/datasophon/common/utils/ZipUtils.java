@@ -28,8 +28,6 @@ public class ZipUtils {
     
     /**
      *
-     * @param zipFile
-     * @param targetDir
      * @param stripComponents 类似于tar --strip-components参数的功能
      * @throws IOException
      */

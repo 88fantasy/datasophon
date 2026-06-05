@@ -31,6 +31,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.Locale;
 
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -41,7 +42,7 @@ import org.springframework.web.util.WebUtils;
 public class LocaleChangeInterceptor implements HandlerInterceptor {
     
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
         Cookie cookie = WebUtils.getCookie(request, Constants.LOCALE_LANGUAGE);
         if (cookie != null) {
             // Proceed in cookie

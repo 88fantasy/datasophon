@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * @author zhanghuangbin
- * @date 2025/11/7
  */
 @Data
 public class ImportCompProgressVO {

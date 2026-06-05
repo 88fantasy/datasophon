@@ -117,8 +117,6 @@ public class MinaUtils {
     /**
      * 创建目录
      *
-     * @param path
-     * @return
      */
     public static boolean createDir(Session session, String path) {
         return JschUtils.createDir(session, path, 5).getExecResult();

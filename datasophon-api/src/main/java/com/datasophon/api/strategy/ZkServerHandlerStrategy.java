@@ -117,8 +117,6 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
     
     /**
      *
-     * @param clusterId
-     * @param list
      */
     @Override
     public void getConfig(Integer clusterId, List<ServiceConfig> list) {
@@ -127,6 +125,7 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         
         String hostMapKey = clusterInfo.getClusterCode() + Constants.UNDERLINE + Constants.SERVICE_ROLE_HOST_MAPPING;
+        @SuppressWarnings("unchecked")
         HashMap<String, List<String>> hostMap = (HashMap<String, List<String>>) CacheUtils.get(hostMapKey);
         
         if (Objects.nonNull(hostMap)) {

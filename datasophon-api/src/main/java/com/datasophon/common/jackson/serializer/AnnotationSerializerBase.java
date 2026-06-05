@@ -20,7 +20,6 @@ import cn.hutool.core.util.StrUtil;
  * 1. 继承该类的Serializer，可以通过{@link #annotation}字段获取注解在属性字段上的注解
  * 2. 简化jackson的api的使用
  * @author zhanghuangbin
- * @date 2024/10/8
  */
 public abstract class AnnotationSerializerBase<T, A extends Annotation> extends JsonSerializer<T> implements ContextualSerializer {
     

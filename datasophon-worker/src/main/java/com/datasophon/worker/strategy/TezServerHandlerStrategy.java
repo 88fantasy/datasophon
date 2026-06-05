@@ -111,7 +111,6 @@ public class TezServerHandlerStrategy extends AbstractHandlerStrategy implements
     /**
      * tez 的元数据
      *
-     * @param workPath
      */
     String createEnvPath(final String workPath) {
         Configuration conf = new Configuration();
