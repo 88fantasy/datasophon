@@ -32,7 +32,7 @@ import cn.hutool.core.io.FileUtil;
 @Slf4j
 public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage {
     
-    public final static String REPO = "raw";
+    public static final String REPO = "raw";
     
     @Override
     public List<ServiceMetaItem> listService(String type) {

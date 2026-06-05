@@ -32,7 +32,7 @@
 
     <properties>
         <build.node.version>v20.19.2</build.node.version>
-        <build.npm.version>10.8.2</build.npm.version>
+        <build.pnpm.version>10.11.0</build.pnpm.version>
         <deployed.dir>.deployed</deployed.dir>
         <dist.dir>dist</dist.dir>
         <nodemodules.dir>node_modules</nodemodules.dir>
@@ -69,23 +69,22 @@
                 <version>1.15.4</version>
                 <configuration>
                     <nodeVersion>${build.node.version}</nodeVersion>
-                    <npmVersion>${build.npm.version}</npmVersion>
-
+                    <pnpmVersion>${build.pnpm.version}</pnpmVersion>
                     <nodeDownloadRoot>https://npmmirror.com/mirrors/node/</nodeDownloadRoot>
-                    <npmDownloadRoot>https://registry.npmmirror.com/npm/-/</npmDownloadRoot>
+                    <pnpmDownloadRoot>https://registry.npmmirror.com/pnpm/-/</pnpmDownloadRoot>
                 </configuration>
                 <executions>
                     <execution>
-                        <id>install node and npm</id>
+                        <id>install node and pnpm</id>
                         <goals>
-                            <goal>install-node-and-npm</goal>
+                            <goal>install-node-and-pnpm</goal>
                         </goals>
                         <phase>generate-resources</phase>
                     </execution>
                     <execution>
-                        <id>npm run build</id>
+                        <id>pnpm run build</id>
                         <goals>
-                            <goal>npm</goal>
+                            <goal>pnpm</goal>
                         </goals>
                         <phase>generate-resources</phase>
                         <configuration>

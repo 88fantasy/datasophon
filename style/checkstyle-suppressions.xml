@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
   ~ MIT License
   ~
@@ -20,11 +21,20 @@
   ~ SOFTWARE.
   -->
 
+<!DOCTYPE suppressions PUBLIC
         "-//Puppy Crawl//DTD Suppressions 1.1//EN"
         "http://www.puppycrawl.com/dtds/suppressions_1_1.dtd">
 
 <suppressions>
     <suppress files="DataTypes.java" checks="MethodNameCheck"/>
+
+    <!-- Docker manifest JSON requires PascalCase field names for deserialization -->
+    <suppress files="DockerManifestEntry\.java" checks="MemberName"/>
+    <!-- Architecture identifiers (x86_64, aarch64) cannot match camelCase convention -->
+    <suppress files="com[\\/]datasophon[\\/]common[\\/]model[\\/]uni[\\/]Package\.java" checks="MemberName"/>
+
+    <!-- protobuf generated stubs follow protoc naming conventions, not Java style -->
+    <suppress files="com[\\/]datasophon[\\/]grpc[\\/]api[\\/]" checks=".*"/>
 
     <!-- target directory is not relevant for checkstyle -->
     <suppress

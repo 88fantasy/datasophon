@@ -159,7 +159,7 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
         if (pods != null && !pods.isEmpty()) {
             // 检查是否有运行中的 Pod（状态为 Running 或 Pending）
             for (K8sPodInfo pod : pods) {
-                if (Arrays.asList(K8sService.Pending, K8sService.Running, K8sService.READY).contains(pod.getStatus())) {
+                if (Arrays.asList(K8sService.PENDING, K8sService.RUNNING, K8sService.READY).contains(pod.getStatus())) {
                     return true;
                 }
             }

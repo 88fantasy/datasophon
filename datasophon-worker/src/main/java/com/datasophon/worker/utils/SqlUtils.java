@@ -124,7 +124,7 @@ public class SqlUtils {
                                 return new Comment(startIndex, endIndex);
                             }
                         }
-                        
+                        // fall through
                     case '-':
                         // possible start of '--' comment
                         if (c == '-' && pos + 1 < sql.length() && sql.charAt(pos + 1) == '-') {
@@ -133,7 +133,7 @@ public class SqlUtils {
                             Integer endIndex = pos;
                             return new Comment(startIndex, endIndex);
                         }
-                        
+                        // fall through
                     default:
                         if (isOpenQuote(c)) {
                             break;
@@ -153,6 +153,7 @@ public class SqlUtils {
                                         if (c == '-' && pos + 1 < sql.length() && sql.charAt(pos + 1) == '-') {
                                             break loop;
                                         }
+                                        // fall through
                                     default:
                                         ++pos;
                                 }

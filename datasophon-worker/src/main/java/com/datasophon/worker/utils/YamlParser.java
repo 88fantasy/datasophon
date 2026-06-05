@@ -259,17 +259,18 @@ public class YamlParser {
         char[] chars = str.toCharArray();
         int sz = chars.length;
         int i = (chars[0] == '-') ? 1 : 0;
-        if (i == sz)
+        if (i == sz) {
             return false;
-        
-        if (chars[i] == '.')
+        }
+        if (chars[i] == '.') {
             return false;// 除了负号，第一位不能为'小数点'
-            
+        }
         boolean radixPoint = false;
         for (; i < sz; i++) {
             if (chars[i] == '.') {
-                if (radixPoint)
+                if (radixPoint) {
                     return false;
+                }
                 radixPoint = true;
             } else if (!(chars[i] >= '0' && chars[i] <= '9')) {
                 return false;

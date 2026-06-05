@@ -24,7 +24,7 @@ public abstract class K8sAgentHandler {
         k8sService = getBean(K8sService.class);
     }
     
-    abstract public void execute(K8sClusterConfig config);
+    public abstract void execute(K8sClusterConfig config);
     
     /**
      * 根据 K8sClusterConfig 构建 Helm Client 配置
