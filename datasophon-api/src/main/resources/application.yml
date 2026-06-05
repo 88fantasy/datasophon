@@ -19,18 +19,22 @@ spring:
     time-zone: GMT+8
     date-format: yyyy-MM-dd HH:mm:ss
   mvc:
-    date-format: yyyy-MM-dd HH:mm:ss
+    # SB3: spring.mvc.date-format → spring.mvc.format.date-time
+    format:
+      date-time: yyyy-MM-dd HH:mm:ss
     static-path-pattern: /**
   web:
     resources:
       static-locations: classpath:/static/
       add-mappings: true
-  resources:
-    chain:
-      strategy:
-        content:
-          enabled: true
-          paths: /**
+      # spring.resources.chain (SB2) was dead config in SB3 — moved here.
+      # Vite already outputs content-hashed filenames so fingerprinting is
+      # handled on the frontend; Spring-side content versioning is optional.
+      chain:
+        strategy:
+          content:
+            enabled: true
+            paths: /**
   #国际化配置
   messages:
     basename: i18n/messages

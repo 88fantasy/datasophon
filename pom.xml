@@ -459,6 +459,7 @@
                 <configuration>
                     <release>${java.version}</release>
                     <encoding>UTF-8</encoding>
+                    <parameters>true</parameters>
                 </configuration>
             </plugin>
 
@@ -562,7 +563,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>8.30</version>
+                        <version>9.3</version>
                     </dependency>
                 </dependencies>
                 <executions>
