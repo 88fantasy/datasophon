@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ MIT License
   ~
@@ -20,10 +21,13 @@
   ~ SOFTWARE.
   -->
 
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
 
 <mapper namespace="com.datasophon.dao.mapper.FrameInfoMapper">
 
     <!--    getFrameServiceByFrameCode-->
+
     <select id="getFrameInfoByFrameCode" resultType="com.datasophon.dao.entity.FrameInfoEntity">
         select *
         from t_ddh_frame_info
