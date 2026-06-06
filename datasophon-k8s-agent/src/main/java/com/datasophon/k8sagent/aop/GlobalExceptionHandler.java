@@ -39,8 +39,7 @@ public final class GlobalExceptionHandler {
         String message = exception.getMessage();
         if (exception instanceof NullPointerException) {
             message = "对象空值";
-        } else if (exception instanceof MethodArgumentNotValidException) {
-            MethodArgumentNotValidException methodArgumentNotValidException = (MethodArgumentNotValidException) exception;
+        } else if (exception instanceof MethodArgumentNotValidException methodArgumentNotValidException) {
             List<ObjectError> allErrors = methodArgumentNotValidException.getBindingResult().getAllErrors();
             if (CollUtil.isNotEmpty(allErrors)) {
                 String split = "<===>";
@@ -55,8 +54,7 @@ public final class GlobalExceptionHandler {
                 
                 message = stringBuilder.toString();
             }
-        } else if (exception instanceof BindException) {
-            BindException bindException = (BindException) exception;
+        } else if (exception instanceof BindException bindException) {
             message = bindException.getAllErrors().get(0).getDefaultMessage();
         } else if (exception instanceof HttpMessageNotReadableException) {
             message = "框架内部类型转换失败";

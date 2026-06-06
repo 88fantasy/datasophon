@@ -31,8 +31,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-03-16 11:40:00
  */
 public interface SessionService extends IService<SessionEntity> {
     

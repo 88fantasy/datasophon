@@ -145,9 +145,6 @@ public interface K8sService {
     
     /**
      * 获取k8s日志
-     * @param config
-     * @param dto
-     * @return
      */
     String getPodLog(K8sClusterConfig config, K8sRuntimeLogQueryDTO dto);
     
@@ -162,8 +159,6 @@ public interface K8sService {
     
     /**
      * 删除与实例相关的资源
-     * @param config
-     * @param instanceId
      */
     void uninstallRelease(K8sClusterConfig config, Integer instanceId);
 }

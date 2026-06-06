@@ -32,8 +32,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * 
  * 
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-06-14 15:50:36
  */
 @Mapper
 public interface ClusterVariableMapper extends BaseMapper<ClusterVariable> {

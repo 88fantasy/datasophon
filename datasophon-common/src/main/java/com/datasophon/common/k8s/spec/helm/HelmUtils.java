@@ -27,8 +27,6 @@ public class HelmUtils {
     
     /**
      * Helm 的 release name 必须遵循 Kubernetes DNS 子域名命名规范
-     * @param serviceName
-     * @return
      */
     public static String createReleaseName(String serviceName) {
         return serviceName.toLowerCase();

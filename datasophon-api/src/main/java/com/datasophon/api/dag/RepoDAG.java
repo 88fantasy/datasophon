@@ -257,7 +257,6 @@ public class RepoDAG {
     /**
      * 获取入度为0的节点
      *
-     * @return
      */
     public Set<String> getReadNodes() {
         Set<String> readyNodes = new HashSet<>();
@@ -286,8 +285,6 @@ public class RepoDAG {
     /**
      * 获取node节点的后继节点(这些节点的前置任务已经完成）
      *
-     * @param node
-     * @return
      */
     public Set<String> getReadySuccessors(String node) {
         Set<String> readyNodes = new HashSet<>();
@@ -396,7 +393,6 @@ public class RepoDAG {
      * 返回dag的边，key: 前继节点, value: 后继节点
      * 例如： A-> C, A-> B， 则 A-> [B,C]
      *
-     * @return
      */
     protected Map<String, List<String>> getEdgesAsMap() {
         List<EdgeDefinition> edges = getEdges(dagId);

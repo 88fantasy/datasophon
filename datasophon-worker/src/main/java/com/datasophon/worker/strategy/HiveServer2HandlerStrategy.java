@@ -45,7 +45,7 @@ public class HiveServer2HandlerStrategy extends AbstractHandlerStrategy implemen
     
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) {
-        ExecResult startResult = new ExecResult();
+        ExecResult startResult;
         final String workPath = PkgInstallPathUtils.getInstallHome(command);
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         if (command.getEnableRangerPlugin()) {

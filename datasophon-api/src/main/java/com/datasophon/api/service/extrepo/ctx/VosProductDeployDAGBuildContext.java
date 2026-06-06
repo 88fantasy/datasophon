@@ -25,7 +25,6 @@ import cn.hutool.core.util.StrUtil;
 
 /**
  * @author zhanghuangbin
- * @date 2025/11/11
  */
 @Data
 public class VosProductDeployDAGBuildContext {
@@ -79,8 +78,6 @@ public class VosProductDeployDAGBuildContext {
     /**
      * 直接加入依赖关系，不生成中间节点
      *
-     * @param dag
-     * @param serviceList
      */
     private void addDirectEdge(DAG<String, ?, Integer> dag, List<? extends ServiceResource> serviceList) {
         int edgeIdCounter = 0;

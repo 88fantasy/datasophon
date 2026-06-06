@@ -73,6 +73,7 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -460,6 +461,7 @@ public class DAGExecutor {
     // ─── inner types ─────────────────────────────────────────────────────────
     
     /** DAG 节点中单个服务角色执行失败时抛出，由 RepoDAG 的监听器识别并决定是否触发级联取消。 */
+    @EqualsAndHashCode(callSuper = false)
     @Data
     public static class ServiceRoleExecException extends RuntimeException {
         public ServiceRoleExecException(String message) {

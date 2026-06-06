@@ -37,10 +37,12 @@ import java.util.Map;
 import java.util.Objects;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@EqualsAndHashCode(callSuper = false)
 @Data
 public class ServiceStartHandler extends ServiceHandler {
     

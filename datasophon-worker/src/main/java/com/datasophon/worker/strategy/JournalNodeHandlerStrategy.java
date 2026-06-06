@@ -44,7 +44,7 @@ public class JournalNodeHandlerStrategy extends AbstractHandlerStrategy implemen
     
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) throws SQLException, ClassNotFoundException {
-        ExecResult startResult = new ExecResult();
+        ExecResult startResult;
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         if (command.getEnableKerberos()) {
             logger.info("start to get journalnode keytab file");

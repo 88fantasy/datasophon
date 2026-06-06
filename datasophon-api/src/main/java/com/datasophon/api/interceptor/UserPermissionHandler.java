@@ -35,9 +35,8 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -45,16 +44,13 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class UserPermissionHandler implements HandlerInterceptor {
     
-    private static final Logger logger = LoggerFactory.getLogger(UserPermissionHandler.class);
-    
     @Autowired
     private ClusterRoleUserService clusterUserService;
     
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
         boolean requireCheckAdminIdentity = false;
-        if (handler instanceof HandlerMethod) {
-            HandlerMethod handlerMethod = (HandlerMethod) handler;
+        if (handler instanceof HandlerMethod handlerMethod) {
             UserPermission annotation = handlerMethod.getMethod().getAnnotation(UserPermission.class);
             requireCheckAdminIdentity = annotation != null;
         }

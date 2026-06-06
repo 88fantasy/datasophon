@@ -32,8 +32,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * 
  * 
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-04-11 10:18:18
  */
 @Mapper
 public interface InstallStepMapper extends BaseMapper<InstallStepEntity> {

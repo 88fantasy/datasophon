@@ -42,7 +42,6 @@ import com.alibaba.fastjson2.JSON;
 import cn.hutool.http.HttpUtil;
 
 /**
- * @Title: prometheus工具类
  * @Description:
  */
 public class PromInfoUtils {

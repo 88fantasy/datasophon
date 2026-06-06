@@ -33,8 +33,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * 集群告警历史表 
  *
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-06-07 12:04:38
  */
 public interface ClusterAlertHistoryService extends IService<ClusterAlertHistory> {
     

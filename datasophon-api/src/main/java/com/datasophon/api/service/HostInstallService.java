@@ -49,9 +49,6 @@ public interface HostInstallService {
     
     /**
      * 启动/停止 主机上安装的服务启动
-     * @param clusterHostIds
-     * @param commandType
-     * @return
      * @throws Exception
      */
     Result generateHostServiceCommand(String clusterHostIds, String commandType) throws Exception;

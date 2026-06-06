@@ -103,9 +103,6 @@ public class FileUtils {
     /**
      * 从 tar.gz 的压缩包内读取一个 文本文件
      *
-     * @param targz
-     * @param name
-     * @return
      * @throws IOException
      */
     public static String readTargzTextFile(File targz, String name, Charset charset) throws IOException {
@@ -137,8 +134,6 @@ public class FileUtils {
     /**
      * 读取文件第一行，第一行的非空行
      *
-     * @param file
-     * @return
      * @throws Exception
      */
     public static String readFirstLine(File file) throws Exception {
@@ -164,8 +159,6 @@ public class FileUtils {
     /**
      * 连接路径
      *
-     * @param paths
-     * @return
      */
     public static String concatPath(String... paths) {
         StringBuilder stringBuilder = new StringBuilder();

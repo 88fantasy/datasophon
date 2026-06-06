@@ -6,7 +6,6 @@ import lombok.Data;
 
 /**
  * @author zhanghuangbin
- * @date 2025/11/7
  */
 @Data
 public class VosDdLServiceMeta {

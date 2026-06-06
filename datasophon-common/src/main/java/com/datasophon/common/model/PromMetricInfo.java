@@ -28,7 +28,6 @@ import com.alibaba.fastjson2.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * @Title: prometheus指标属性（这里只反序列化了需要的属性，用户可根据需要做增减）
  */
 @Data
 public class PromMetricInfo {

@@ -30,8 +30,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * 
  *
  * @author dygao2
- * @email dygao2@datasophon.com
- * @date 2022-11-25 15:02:11
  */
 public interface ClusterYarnSchedulerService extends IService<ClusterYarnScheduler> {
     

@@ -147,8 +147,6 @@ public class CheckUtils {
     
     /**
      * statusRunner检测状态
-     * @param roleInstanceEntity
-     * @param map
      */
     public static void handlerServiceRoleStatusRunnerCheck(ClusterServiceRoleInstanceEntity roleInstanceEntity,
                                                            Map<String, ClusterServiceRoleInstanceEntity> map) {

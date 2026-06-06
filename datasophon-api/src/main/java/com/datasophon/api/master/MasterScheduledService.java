@@ -48,8 +48,8 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import cn.hutool.extra.spring.SpringUtil;
 
 /**
- * Master 侧周期性巡检 Spring Service，替代 {@link ActorUtils#init()} 中的三个
- * {@code actorSystem.scheduler().scheduleWithFixedDelay()} 调用。
+ * Master 侧周期性巡检 Spring Service（Pekko 移除后替代原 ActorUtils 中的三个
+ * scheduleWithFixedDelay 调用）。
  *
  *
  * <ul>

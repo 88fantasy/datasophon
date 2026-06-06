@@ -36,6 +36,7 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
     private static final Map<String, ReentrantLock> LOCK_MAP = new ConcurrentHashMap<>();
     
     @Override
+    @SuppressWarnings("deprecated")
     public void moveToStorage(File src, boolean includeDir) throws IOException {
         ensureDirValid(src);
         ensureNexusEnable();
@@ -61,6 +62,7 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
     }
     
     @Override
+    @SuppressWarnings("deprecated")
     public void moveToStorage(File file, Function<File, String> relativePathHandler) throws IOException {
         if (!file.exists()) {
             throw new FileNotFoundException(file.getAbsolutePath() + " not exists");
@@ -77,6 +79,7 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
     }
     
     @Override
+    @SuppressWarnings("deprecated")
     public String readPackageMd5(String packageName) {
         ensureNexusEnable();
         String fileName = getPkgMd5FileName(packageName);
@@ -104,11 +107,13 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
     }
     
     @Override
+    @SuppressWarnings("deprecated")
     public DownloadResult downloadResourceToLocal(String resourceName) {
         return doDownload(resourceName, () -> NexusFileUtils.getAssertMd5FromRawRepo(resourceName));
     }
     
     @Override
+    @SuppressWarnings("deprecated")
     public void deletePackage(String packageName) {
         File pkgFile = Paths.get(Constants.MASTER_MANAGE_PACKAGE_PATH, packageName).toFile();
         if (pkgFile.exists()) {
@@ -122,6 +127,7 @@ public class NexusPackageStorage extends NexusStorageSupport implements PackageS
         NexusFileUtils.removeFileFromRawRepo("/packages/" + getPkgMd5FileName(packageName));
     }
     
+    @SuppressWarnings("deprecated")
     private DownloadResult doDownload(String resourceName, Supplier<String> remoteResourceMd5) {
         ensureNexusEnable();
         Lock lock = LOCK_MAP.computeIfAbsent(resourceName, k -> new ReentrantLock());

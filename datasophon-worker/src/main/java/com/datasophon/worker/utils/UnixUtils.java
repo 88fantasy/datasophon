@@ -65,14 +65,14 @@ public class UnixUtils {
         commands.add("userdel");
         commands.add("-r");
         commands.add(username);
-        return ShellUtils.execWithStatus(Constants.INSTALL_PATH, commands, TIME_OUT);
+        return ShellUtils.exec(Constants.INSTALL_PATH, commands, TIME_OUT);
     }
     
     public static boolean isUserExists(String username) {
         ArrayList<String> commands = new ArrayList<>();
         commands.add("id");
         commands.add(username);
-        ExecResult execResult = ShellUtils.execWithStatus(Constants.INSTALL_PATH, commands, TIME_OUT);
+        ExecResult execResult = ShellUtils.exec(Constants.INSTALL_PATH, commands, TIME_OUT);
         return execResult.getExecResult();
     }
     
@@ -85,14 +85,14 @@ public class UnixUtils {
         ArrayList<String> commands = new ArrayList<>();
         commands.add("groupadd");
         commands.add(groupName);
-        return ShellUtils.execWithStatus(Constants.INSTALL_PATH, commands, TIME_OUT);
+        return ShellUtils.exec(Constants.INSTALL_PATH, commands, TIME_OUT);
     }
     
     public static ExecResult delUnixGroup(String groupName) {
         ArrayList<String> commands = new ArrayList<>();
         commands.add("groupdel");
         commands.add(groupName);
-        return ShellUtils.execWithStatus(Constants.INSTALL_PATH, commands, TIME_OUT);
+        return ShellUtils.exec(Constants.INSTALL_PATH, commands, TIME_OUT);
     }
     
     public static boolean isGroupExists(String groupName) {

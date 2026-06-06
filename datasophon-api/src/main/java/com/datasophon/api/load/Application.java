@@ -3,8 +3,6 @@ package com.datasophon.api.load;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.uni.NexusUri;
 
-import org.apache.commons.lang3.StringUtils;
-
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,24 +44,11 @@ public class Application implements ApplicationContextAware {
         return context.getEnvironment().getProperty(key, defaultVal);
     }
     
-    public static String userDir() {
-        return StringUtils.removeEnd(System.getProperty("user.dir"), "/");
-    }
-    
     public static boolean swagger() {
         return Boolean.parseBoolean(getProperty("springdoc.api-docs.enabled=", "false"));
     }
     
-    public static String getApiPrefix() {
-        return getProperty("datasophon.server.path-prefix");
-    }
-    
-    public static String getServerPrefix() {
-        return getProperty("server.servlet.context-path", "/");
-    }
-    
     /**
-     * @return
      * @see #getNexusUri()
      * @deprecated
      */

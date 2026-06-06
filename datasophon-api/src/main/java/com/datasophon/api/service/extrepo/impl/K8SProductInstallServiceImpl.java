@@ -276,6 +276,7 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
         
         ClusterInfoEntity cluster = clusterInfoService.getById(clusterId);
         String cacheKey = String.format("%s_%s", cluster.getClusterCode(), K8S_SERVICE_NAMESPACE_MAPPING);
+        @SuppressWarnings("unchecked")
         Map<String, K8sProductDeployMapping> mappingMap = (Map<String, K8sProductDeployMapping>) CacheUtils.get(cacheKey);
         if (mappingMap == null) {
             throw new BusinessHintException("缓存已经失效，请刷新页面重试");

@@ -128,7 +128,6 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     
     /**
      * 内存数据无法回滚，在新的事务提交，防止外部事务回滚
-     * @return
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public FrameInfoEntity initFramework(String frameCode) {

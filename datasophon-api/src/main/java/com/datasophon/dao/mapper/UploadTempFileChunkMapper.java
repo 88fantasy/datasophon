@@ -8,7 +8,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
  * @author zhanghuangbin
- * @date 2025/11/5
  */
 @Mapper
 public interface UploadTempFileChunkMapper extends BaseMapper<UploadTempFileChunk> {

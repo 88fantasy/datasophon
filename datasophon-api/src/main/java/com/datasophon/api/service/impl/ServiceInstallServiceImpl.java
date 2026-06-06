@@ -53,9 +53,9 @@ import com.datasophon.common.storage.vo.ServiceMetaItem;
 import com.datasophon.common.utils.CollectionUtils;
 import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.IOUtils;
-import com.datasophon.common.utils.NexusFileUtils;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.Result;
+import com.datasophon.common.utils.nexus.NexusFacade;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
@@ -265,6 +265,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         return frameServiceRoleService.getServiceName(frameCode, serviceRoleName);
     }
     
+    @SuppressWarnings("unchecked")
     @Override
     public void saveServiceRoleHostMapping(Integer clusterId, List<ServiceRoleHostMapping> list) {
         checkOnSameNode(clusterId, list);
@@ -310,6 +311,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     @Override
     public Result getServiceRoleDeployOverview(Integer clusterId) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
+        @SuppressWarnings("unchecked")
         HashMap<String, List<String>> map =
                 (HashMap<String, List<String>>) CacheUtils.get(
                         clusterInfo.getClusterCode()
@@ -347,11 +349,11 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     @Override
     public void downloadTemplate(String templateName, HttpServletResponse response) throws IOException {
         try {
-            String url = NexusFileUtils.getNexusRawObjectUrl(String.format("/template/%s", templateName));
+            String url = NexusFacade.getRawRepoClient().getNexusRawObjectUrl(String.format("/template/%s", templateName));
             response.reset();
             response.setContentType("application/octet-stream");
-            response.setHeader("Content-Disposition", "attachment;filename=" + templateName.replaceAll("/", "_"));
-            NexusFileUtils.downStream(url, response.getOutputStream());
+            response.setHeader("Content-Disposition", "attachment;filename=" + templateName.replace("/", "_"));
+            NexusFacade.getCommonClient().download(url, response.getOutputStream());
         } finally {
             IOUtils.closeQuietly(response.getOutputStream());
         }

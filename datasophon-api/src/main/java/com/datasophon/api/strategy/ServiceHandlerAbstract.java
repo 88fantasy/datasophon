@@ -120,7 +120,6 @@ public abstract class ServiceHandlerAbstract {
     
     /**
      * TODO 将废弃
-     * @return
      */
     public boolean decideEnableKerberos(Integer clusterId, boolean defaultVal, ServiceConfig config, String serviceName) {
         boolean enableKerberos = defaultVal;

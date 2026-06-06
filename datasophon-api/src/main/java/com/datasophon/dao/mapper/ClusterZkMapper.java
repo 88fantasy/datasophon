@@ -33,8 +33,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * 
  * 
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-09-07 10:04:16
  */
 @Mapper
 public interface ClusterZkMapper extends BaseMapper<ClusterZk> {

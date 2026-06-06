@@ -33,8 +33,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * 
  *
  * @author dygao2
- * @email dygao2@datasophon.com
- * @date 2022-11-25 11:31:59
  */
 public interface ClusterRackService extends IService<ClusterRack> {
     

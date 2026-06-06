@@ -173,8 +173,6 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
      * 其次删除主机 worker，同时移除 Prometheus hosts
      * 然后删除主机运行的实例
      *
-     * @param hostIds
-     * @return
      */
     @Override
     @Transactional
@@ -224,6 +222,7 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
             prometheusService.generateHostPrometheusConfig(prometheusConfigCommand);
             
             // remove the host from the cache
+            @SuppressWarnings("unchecked")
             Map<String, HostInfo> map =
                     (Map<String, HostInfo>) CacheUtils.get(clusterCode + Constants.HOST_MAP);
             String md5 = SecureUtil.md5(host.getHostname());

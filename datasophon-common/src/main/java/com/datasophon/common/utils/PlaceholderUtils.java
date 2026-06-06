@@ -59,7 +59,7 @@ public class PlaceholderUtils {
         while (true) {
             String originalVal = result;
             
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             Matcher matcher = pattern.matcher(result);
             while (matcher.find()) {
                 String group = matcher.group();

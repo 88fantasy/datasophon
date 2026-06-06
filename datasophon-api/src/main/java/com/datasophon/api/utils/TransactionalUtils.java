@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
  * 事务处理工具，用于在方法中，开启一个新的事务
  *
  * @author zhanghuangbin
- * @date 2025/5/22
  */
 @Component
 public class TransactionalUtils {

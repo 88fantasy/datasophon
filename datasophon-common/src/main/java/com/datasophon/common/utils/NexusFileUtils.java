@@ -52,8 +52,6 @@ public class NexusFileUtils {
      * @deprecated
      * @see #downStream(String, OutputStream)
      * @param url:     http://ip:port/repository/raw/linux/x86_64/centos7/tree-1.6.0-10.el7.x86_64.rpm
-     * @param username
-     * @param password
      */
     @Deprecated
     public static InputStream downStream(String url, String username, String password) throws FileNotFoundException {
@@ -89,8 +87,6 @@ public class NexusFileUtils {
      *
      * @param packageFullDir: /data/packages
      * @param baseUrl:        http://ip:port
-     * @param username
-     * @param password
      */
     public static Pair<Map<String, String>, Map<String, String>> repositoryUploadBatch(String packageFullDir, String baseUrl,
                                                                                        String username, String password, boolean isSuccessDelete) {

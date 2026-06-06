@@ -256,6 +256,7 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
         commandService.save(cmd);
         log.info("保存{}{}命令成功, 命令ID:{}", commandType.getCommandName(Constants.CN), frameService.getServiceName(), cmd.getCommandId());
         
+        @SuppressWarnings("unchecked")
         Map<String, List<String>> serviceRoleHostMap = (Map<String, List<String>>) CacheUtils.get(Namespace.of(cluster.getClusterCode(), Constants.SERVICE_ROLE_HOST_MAPPING));
         // 保存commandHost的相关数据
         List<ClusterServiceCommandHostEntity> hostEntityList = new ArrayList<>();
@@ -497,7 +498,6 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
     /**
      * 更新节点的状态以及配置
      *
-     * @param node
      */
     private void updateNode(NodeDefinition node) {
         ServiceNode serviceNode = JSONObject.parseObject((String) node.getNodeConfig(), ServiceNode.class);

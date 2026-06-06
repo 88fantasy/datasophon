@@ -56,7 +56,6 @@ import cn.hutool.core.lang.Pair;
 
 /**
  * @author zhanghuangbin
- * @date 2025/11/18
  */
 @Service("extRepoInstallDelegateService")
 @Transactional(rollbackFor = Exception.class)

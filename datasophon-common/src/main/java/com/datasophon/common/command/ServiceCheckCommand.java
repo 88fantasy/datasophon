@@ -25,12 +25,14 @@ package com.datasophon.common.command;
 import java.io.Serializable;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 没有使用
  * @deprecated
  *
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
 @Deprecated
 public class ServiceCheckCommand extends BaseCommand implements Serializable {

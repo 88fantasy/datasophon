@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @author zhanghuangbin
- * @date 2025/11/5
  */
 @RestController
 @RequestMapping("extrepo")

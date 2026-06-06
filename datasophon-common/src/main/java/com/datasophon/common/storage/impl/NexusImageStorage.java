@@ -30,7 +30,7 @@ public class NexusImageStorage extends NexusStorageSupport implements ImageStora
         
         List<File> files = FileUtil.loopFiles(dir).stream()
                 .filter(file -> file.getName().endsWith(".tar"))
-                .collect(Collectors.toList());
+                .toList();
         
         List<LoadImageResult> results = new ArrayList<>();
         DockerRegistryOptions options = newOptions();

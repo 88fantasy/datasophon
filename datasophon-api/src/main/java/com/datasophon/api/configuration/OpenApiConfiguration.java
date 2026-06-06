@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * @author zhanghuangbin
- * @date 2025/11/5
  */
 @Configuration
 public class OpenApiConfiguration {

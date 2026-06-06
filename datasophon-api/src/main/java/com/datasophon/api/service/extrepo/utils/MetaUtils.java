@@ -59,7 +59,6 @@ import cn.hutool.crypto.SmUtil;
  * </pre>
  *
  * @author zhanghuangbin
- * @date 2025/11/7
  */
 public class MetaUtils {
     
@@ -76,8 +75,6 @@ public class MetaUtils {
     /**
      * 对需要解压的文件，进行文件内容解压
      *
-     * @param dir
-     * @param cipherKey
      * @throws IOException
      */
     public static void decodeMatchedFiles(String dir, String cipherKey) throws IOException {
@@ -115,8 +112,6 @@ public class MetaUtils {
     /**
      * 解密文件内容，并写回原文件
      *
-     * @param file
-     * @param cipherKey
      */
     public static String decodeFile(File file, String cipherKey) {
         if (file.length() == 0) {
@@ -145,7 +140,6 @@ public class MetaUtils {
     /**
      * 解析meta文件的信息
      *
-     * @return
      */
     public static ExtRepoMetaFsModel parseRepoMeta(MetaParseOption option) {
         String root = option.getRoot();

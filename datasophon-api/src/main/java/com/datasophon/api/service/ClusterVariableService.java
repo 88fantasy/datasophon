@@ -32,8 +32,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  *
  *
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-06-14 15:50:36
  */
 public interface ClusterVariableService extends IService<ClusterVariable> {
     

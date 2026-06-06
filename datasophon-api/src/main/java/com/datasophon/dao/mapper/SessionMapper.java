@@ -35,8 +35,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * 
  * 
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-03-16 11:40:00
  */
 @Mapper
 public interface SessionMapper extends BaseMapper<SessionEntity> {

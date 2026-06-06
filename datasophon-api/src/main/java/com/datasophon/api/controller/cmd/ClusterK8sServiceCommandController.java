@@ -44,7 +44,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
  * K8s 服务命令执行记录
  *
  * @author zhanghuangbin
- * @date 2026-03-30
  */
 @RestController
 @RequestMapping("cluster/k8sService/command")

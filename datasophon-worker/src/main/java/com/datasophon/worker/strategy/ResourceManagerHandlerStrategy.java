@@ -44,7 +44,6 @@ public class ResourceManagerHandlerStrategy extends AbstractHandlerStrategy impl
     
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) throws SQLException, ClassNotFoundException {
-        ExecResult startResult = new ExecResult();
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         if (command.getEnableKerberos()) {
             logger.info("start to get resourcemanager keytab file");

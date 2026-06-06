@@ -193,12 +193,10 @@ public class ConfigureServiceHandler {
             execResult.setExecResult(true);
         } catch (Exception e) {
             execResult.setExecErrOut(e.getMessage());
-            if (e instanceof TemplateNotFoundException) {
-                TemplateNotFoundException ex = (TemplateNotFoundException) e;
+            if (e instanceof TemplateNotFoundException ex) {
                 logger.error("生成服务{} {}的配置失败, 模板{}不存在, 信息：{}", srvRoleResource.getServiceName(), srvRoleResource.getServiceRoleName(),
                         ex.getTemplateName(), e.getMessage(), e);
-            } else if (e instanceof TemplateException) {
-                TemplateException ex = (TemplateException) e;
+            } else if (e instanceof TemplateException ex) {
                 logger.error("生成服务{} {}的配置失败, \n\t模板名称{},\n\t出错行数{}， \n\t出错列数{}, \n\t原因:{}, \n\t出错细节：\n",
                         srvRoleResource.getServiceName(), srvRoleResource.getServiceRoleName(),
                         ex.getTemplateSourceName(), ex.getLineNumber(), ex.getColumnNumber(), ex.getMessage(), e);

@@ -29,8 +29,6 @@ public class ServiceDAGBuilder<N extends ServiceDAGBuilder.Node> {
     /**
      * 直接加入依赖关系，不生成中间节点
      *
-     * @param dag
-     * @param serviceList
      */
     private void addDirectEdge(DAG<String, N, Integer> dag, List<N> serviceList) {
         int edgeIdCounter = 0;

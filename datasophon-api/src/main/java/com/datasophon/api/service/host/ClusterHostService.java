@@ -48,8 +48,6 @@ public interface ClusterHostService extends IService<ClusterHostDO> {
      * 其次删除主机 worker，同时移除 Prometheus hosts
      * 然后删除主机运行的实例
      *
-     * @param hostIds
-     * @return
      */
     Result deleteHosts(String hostIds);
     

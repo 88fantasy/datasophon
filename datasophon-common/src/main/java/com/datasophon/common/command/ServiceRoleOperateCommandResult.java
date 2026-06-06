@@ -25,7 +25,9 @@ package com.datasophon.common.command;
 import java.io.Serializable;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 public class ServiceRoleOperateCommandResult extends BaseCommandResult implements Serializable {
     

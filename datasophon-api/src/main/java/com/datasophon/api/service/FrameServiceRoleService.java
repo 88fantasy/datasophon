@@ -33,8 +33,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * 框架服务角色表
  *
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-04-18 14:38:53
  */
 public interface FrameServiceRoleService extends IService<FrameServiceRoleEntity> {
     

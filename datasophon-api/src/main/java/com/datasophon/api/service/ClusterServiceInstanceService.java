@@ -33,8 +33,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * 集群服务表
  *
  * @author dygao2
- * @email gaodayu2022@163.com
- * @date 2022-04-24 16:25:17
  */
 public interface ClusterServiceInstanceService extends IService<ClusterServiceInstanceEntity> {
     

@@ -31,7 +31,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * K8s 服务命令执行记录
  *
  * @author zhanghuangbin
- * @date 2026-03-30
  */
 public interface ClusterK8sServiceCommandService extends IService<ClusterK8sServiceCommandEntity> {
     

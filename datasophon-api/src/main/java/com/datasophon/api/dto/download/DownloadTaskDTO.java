@@ -7,7 +7,6 @@ import lombok.Data;
 /**
  * 外部文件下载请求 DTO
  * @author zhanghuangbin
- * @date 2026/04/20
  */
 @Data
 public class DownloadTaskDTO {

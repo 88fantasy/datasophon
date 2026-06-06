@@ -15,17 +15,13 @@ import cn.hutool.core.util.StrUtil;
 
 /**
  * @author zhanghuangbin
- * @date 2024/9/14
  */
 public class BeanPropertyUtils {
     
     /**
      * 获取annotation，同时，利用spring的alias功能
      *
-     * @param property
-     * @param annotationCls
      * @param <A>
-     * @return
      */
     public static <A extends Annotation> A findAnnotation(BeanProperty property, Class<A> annotationCls) {
         Member member = property.getMember().getMember();

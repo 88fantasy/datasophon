@@ -480,7 +480,7 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
          * indicating that there is a ring, and return directly
          */
         if (zeroIndegreeNodeQueue.isEmpty()) {
-            return new AbstractMap.SimpleEntry(false, topoResultList);
+            return new AbstractMap.SimpleEntry<>(false, topoResultList);
         }
         
         // The topology algorithm is used to delete nodes with 0 degree of entry and its associated edges
@@ -505,15 +505,14 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
         }
         
         // if notZeroIndegreeNodeMap is empty,there is no ring!
-        AbstractMap.SimpleEntry resultMap =
-                new AbstractMap.SimpleEntry(notZeroIndegreeNodeMap.size() == 0, topoResultList);
+        Map.Entry<Boolean, List<Node>> resultMap =
+                new AbstractMap.SimpleEntry<>(notZeroIndegreeNodeMap.size() == 0, topoResultList);
         return resultMap;
         
     }
     
     /**
      * 获取全部节点
-     * @return
      */
     public Map<Node, NodeInfo> getNodes() {
         return new HashMap<>(nodesMap);
@@ -529,7 +528,6 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
     
     /**
      * 获取全部的边
-     * @return
      */
     public List<Edge<Node, EdgeInfo>> getEdges() {
         List<Edge<Node, EdgeInfo>> edges = new ArrayList<>(getEdgesCount());
@@ -543,9 +541,6 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
     
     /**
      * 从有向无环图中，查找start->end的路径
-     * @param start
-     * @param end
-     * @return
      */
     public List<Node> findPath(Node start, Node end) {
         if (!containsNode(start) || !containsNode(end)) {
@@ -559,10 +554,6 @@ public class DAG<Node, NodeInfo, EdgeInfo> {
     
     /***
      * 回溯法查找路径
-     * @param ctx
-     * @param current
-     * @param end
-     * @return
      */
     private boolean backtrace(List<Node> ctx, Node current, Node end) {
         if (current.equals(end)) {

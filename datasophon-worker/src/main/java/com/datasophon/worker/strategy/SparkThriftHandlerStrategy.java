@@ -25,7 +25,7 @@ public class SparkThriftHandlerStrategy extends AbstractHandlerStrategy implemen
     
     @Override
     public ExecResult handler(ServiceRoleOperateCommand command) throws SQLException, ClassNotFoundException {
-        ExecResult startResult = new ExecResult();
+        ExecResult startResult;
         String workPath = PkgInstallPathUtils.getInstallHome(command);
         ServiceHandler serviceHandler = new ServiceHandler(command.getServiceName(), command.getServiceRoleName());
         if (command.getCommandType().equals(CommandType.INSTALL_SERVICE)) {

@@ -103,6 +103,7 @@ public class WorkerStartService {
         
         logger.info("Host install set to 100%");
         if (CacheUtils.containsKey(cluster.getClusterCode() + Constants.HOST_MAP)) {
+            @SuppressWarnings("unchecked")
             Map<String, HostInfo> map =
                     (Map<String, HostInfo>) CacheUtils.get(cluster.getClusterCode() + Constants.HOST_MAP);
             HostInfo hostInfo = map.get(hostname);

@@ -37,8 +37,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * 集群主机表 
  * 
  * @author gaodayu
- * @email gaodayu2022@163.com
- * @date 2022-04-14 20:32:39
  */
 @Mapper
 public interface ClusterHostMapper extends BaseMapper<ClusterHostDO> {
