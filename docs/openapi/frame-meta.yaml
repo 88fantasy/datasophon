@@ -1,0 +1,459 @@
+openapi: "3.0.3"
+info:
+  title: Datasophon API — 服务框架元数据 (Frame Meta)
+  version: "3.0-SNAPSHOT"
+  description: >-
+    服务框架（Frame）、框架服务（FrameService）、框架服务角色（FrameServiceRole）的元数据管理。
+    对应 Controllers：FrameInfoController、FrameServiceController、FrameServiceRoleController。
+    元数据由 LoadServiceMeta（ApplicationRunner）从 meta/datacluster/**/service_ddl.json 自动加载，
+    大部分情况下无需手动 save/update；updateDdl 接口用于热更新 DDL 文件。
+
+servers:
+  - url: /ddh/api
+    description: 统一基址
+
+tags:
+  - name: 框架信息
+    description: 服务框架版本管理（FrameInfoController）
+  - name: 框架服务
+    description: 框架内具体服务元数据（FrameServiceController）
+  - name: 框架服务角色
+    description: 服务角色定义查询（FrameServiceRoleController）
+
+security:
+  - sessionCookie: []
+    csrfHeader: []
+
+components:
+  securitySchemes:
+    sessionCookie:
+      $ref: './_common.yaml#/components/securitySchemes/sessionCookie'
+    csrfHeader:
+      $ref: './_common.yaml#/components/securitySchemes/csrfHeader'
+  schemas:
+    Result:
+      $ref: './_common.yaml#/components/schemas/Result'
+    FrameInfoEntity:
+      $ref: './_common.yaml#/components/schemas/FrameInfoEntity'
+    FrameServiceEntity:
+      $ref: './_common.yaml#/components/schemas/FrameServiceEntity'
+    FrameServiceRoleEntity:
+      $ref: './_common.yaml#/components/schemas/FrameServiceRoleEntity'
+    UpdateDdlDTO:
+      $ref: './_common.yaml#/components/schemas/UpdateDdlDTO'
+
+paths:
+  # ═══ 框架信息 ════════════════════════════════════════════════════════════
+  /frame/list:
+    get:
+      tags: [框架信息]
+      operationId: frameList
+      summary: 框架列表（全量）
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/info/{id}:
+    get:
+      tags: [框架信息]
+      operationId: frameInfo
+      summary: 框架详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/save:
+    post:
+      tags: [框架信息]
+      operationId: frameSave
+      summary: 新增框架
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrameInfoEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/update:
+    post:
+      tags: [框架信息]
+      operationId: frameUpdate
+      summary: 修改框架
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrameInfoEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/delete:
+    post:
+      tags: [框架信息]
+      operationId: frameDelete
+      summary: 删除框架（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 框架服务 ════════════════════════════════════════════════════════════
+  /frame/service/list:
+    get:
+      tags: [框架服务]
+      operationId: frameServiceList
+      summary: 框架服务列表（按集群，含已安装标记）
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/listNewest:
+    get:
+      tags: [框架服务]
+      operationId: frameServiceListNewest
+      summary: 最新版本服务列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: newest
+          in: query
+          schema:
+            type: boolean
+          description: 是否只返回最新版本
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/listBasicFrameService:
+    get:
+      tags: [框架服务]
+      operationId: frameServiceListBasic
+      summary: 基础框架服务列表（依赖/基础服务）
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/getServiceListByServiceIds:
+    get:
+      tags: [框架服务]
+      operationId: frameServiceGetByIds
+      summary: 按 serviceId 列表查询服务
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: serviceIds
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
+          style: form
+          explode: true
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/info/{id}:
+    get:
+      tags: [框架服务]
+      operationId: frameServiceInfo
+      summary: 框架服务详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/save:
+    post:
+      tags: [框架服务]
+      operationId: frameServiceSave
+      summary: 新增框架服务
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrameServiceEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/update:
+    post:
+      tags: [框架服务]
+      operationId: frameServiceUpdate
+      summary: 修改框架服务
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrameServiceEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/delete/{id}:
+    post:
+      tags: [框架服务]
+      operationId: frameServiceDelete
+      summary: 删除框架服务
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/updateDdl/{serviceId}:
+    post:
+      tags: [框架服务]
+      operationId: frameServiceUpdateDdlFile
+      summary: 上传 service_ddl.json 文件热更新（multipart 方式）
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: service_ddl.json 文件
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/updateDdl2/{serviceId}:
+    post:
+      tags: [框架服务]
+      operationId: frameServiceUpdateDdlJson
+      summary: 通过 JSON 体更新 DDL（非文件上传方式）
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDdlDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/getServiceDdl/{serviceId}:
+    get:
+      tags: [框架服务]
+      operationId: frameServiceGetDdl
+      summary: 查询服务的 DDL 定义内容
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 框架服务角色 ════════════════════════════════════════════════════════
+  /frame/service/role/getServiceRoleList:
+    get:
+      tags: [框架服务角色]
+      operationId: frameServiceRoleList
+      summary: 查询服务角色列表（Master/Worker 类型过滤）
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: serviceIds
+          in: query
+          schema:
+            type: string
+          description: 服务 id 列表，逗号分隔
+        - name: serviceRoleType
+          in: query
+          schema:
+            type: integer
+          description: 角色类型（0=Master,1=Worker...）
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/role/getNonMasterRoleList:
+    get:
+      tags: [框架服务角色]
+      operationId: frameServiceRoleNonMasterList
+      summary: 查询非 Master 角色列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: serviceIds
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/role/getServiceRoleByServiceName:
+    get:
+      tags: [框架服务角色]
+      operationId: frameServiceRoleByServiceName
+      summary: 按服务名查询角色（用于告警组配置）
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: alertGroupId
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/role/info/{id}:
+    get:
+      tags: [框架服务角色]
+      operationId: frameServiceRoleInfo
+      summary: 服务角色详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/role/save:
+    post:
+      tags: [框架服务角色]
+      operationId: frameServiceRoleSave
+      summary: 新增服务角色
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrameServiceRoleEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/role/update:
+    post:
+      tags: [框架服务角色]
+      operationId: frameServiceRoleUpdate
+      summary: 修改服务角色
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrameServiceRoleEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/service/role/delete:
+    post:
+      tags: [框架服务角色]
+      operationId: frameServiceRoleDelete
+      summary: 删除服务角色（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'

@@ -58,7 +58,7 @@ const Login = () => {
       <div className="flex-1 flex  items-center justify-center h-full bg-white">
         <div className="w-[500px] bg-white p-8 sm:p-10 transition-all duration-300">
           <div className="text-center mb-8">
-            <Title level={3} className="!mb-2">VOS登录</Title>
+            <Title level={3} className="!mb-2">DataSophon登录</Title>
             <Text type="secondary">请输入您的账户信息</Text>
           </div>
 

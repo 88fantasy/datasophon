@@ -1,0 +1,298 @@
+openapi: "3.0.3"
+info:
+  title: Datasophon API — 集群管理 (Cluster)
+  version: "3.0-SNAPSHOT"
+  description: >-
+    集群信息、集群分组、Kerberos 管理。
+    对应 Controllers：ClusterInfoController、ClusterGroupController、ClusterKerberosController。
+
+servers:
+  - url: /ddh/api
+    description: 统一基址
+
+tags:
+  - name: 集群信息
+    description: 集群 CRUD 与状态管理（ClusterInfoController）
+  - name: 集群分组
+    description: 集群内主机分组（ClusterGroupController）
+  - name: Kerberos
+    description: Kerberos keytab 上传/下载（ClusterKerberosController）
+
+security:
+  - sessionCookie: []
+    csrfHeader: []
+
+components:
+  securitySchemes:
+    sessionCookie:
+      $ref: './_common.yaml#/components/securitySchemes/sessionCookie'
+    csrfHeader:
+      $ref: './_common.yaml#/components/securitySchemes/csrfHeader'
+  schemas:
+    Result:
+      $ref: './_common.yaml#/components/schemas/Result'
+    ResultPage:
+      $ref: './_common.yaml#/components/schemas/ResultPage'
+    ClusterInfoEntity:
+      $ref: './_common.yaml#/components/schemas/ClusterInfoEntity'
+
+paths:
+  # ═══ 集群信息 ════════════════════════════════════════════════════════════
+  /cluster/list:
+    get:
+      tags: [集群信息]
+      operationId: clusterList
+      summary: 集群列表（全量）
+      description: 后端裸 @RequestMapping，建议 GET。
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/runningClusterList:
+    get:
+      tags: [集群信息]
+      operationId: clusterRunningList
+      summary: 运行中集群列表
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/info/{id}:
+    get:
+      tags: [集群信息]
+      operationId: clusterInfo
+      summary: 集群详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/engineInfo:
+    get:
+      tags: [集群信息]
+      operationId: clusterEngineInfo
+      summary: 集群引擎信息
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/save:
+    post:
+      tags: [集群信息]
+      operationId: clusterSave
+      summary: 新增集群
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterInfoEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/updateClusterState:
+    post:
+      tags: [集群信息]
+      operationId: clusterUpdateState
+      summary: 更新集群状态
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: clusterState
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 集群状态码
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/update:
+    post:
+      tags: [集群信息]
+      operationId: clusterUpdate
+      summary: 修改集群
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterInfoEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/delete:
+    post:
+      tags: [集群信息]
+      operationId: clusterDelete
+      summary: 删除集群（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 集群分组 ════════════════════════════════════════════════════════════
+  /cluster/group/list:
+    get:
+      tags: [集群分组]
+      operationId: clusterGroupList
+      summary: 分组分页列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: groupName
+          in: query
+          schema:
+            type: string
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /cluster/group/info/{id}:
+    get:
+      tags: [集群分组]
+      operationId: clusterGroupInfo
+      summary: 分组详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/group/save:
+    post:
+      tags: [集群分组]
+      operationId: clusterGroupSave
+      summary: 新增分组
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: groupName
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/group/delete:
+    post:
+      tags: [集群分组]
+      operationId: clusterGroupDelete
+      summary: 删除分组
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/group/refreshUserGroupToHost:
+    post:
+      tags: [集群分组]
+      operationId: clusterGroupRefreshToHost
+      summary: 下发用户组至主机
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ Kerberos ════════════════════════════════════════════════════════════
+  /cluster/kerberos/downloadKeytab:
+    get:
+      tags: [Kerberos]
+      operationId: kerberosDownloadKeytab
+      summary: 下载 keytab 文件
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: keytab 二进制文件流
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /cluster/kerberos/uploadKeytab:
+    post:
+      tags: [Kerberos]
+      operationId: kerberosUploadKeytab
+      summary: 上传 keytab 文件
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, hostname]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: keytab 文件
+                hostname:
+                  type: string
+                  description: 目标主机名
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'

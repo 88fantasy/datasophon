@@ -1,0 +1,103 @@
+openapi: "3.0.3"
+info:
+  title: Datasophon API — 认证 (Auth)
+  version: "3.0-SNAPSHOT"
+  description: >-
+    登录、登出接口。对应 Controller：LoginController。
+    登录成功后服务端写入两个 Cookie：
+      - sessionId（HttpOnly）：会话标识
+      - XSRF-TOKEN（非 HttpOnly）：CSRF Token，JS 可通过 document.cookie 读取
+    后续所有 POST/PUT/DELETE 请求需在请求头 X-XSRF-TOKEN 中携带该值。
+
+servers:
+  - url: /ddh/api
+    description: 统一基址（context-path=/ddh + path-prefix=/api）
+
+tags:
+  - name: 认证
+    description: 登录与登出
+
+security:
+  - sessionCookie: []
+    csrfHeader: []
+
+components:
+  securitySchemes:
+    sessionCookie:
+      $ref: './_common.yaml#/components/securitySchemes/sessionCookie'
+    csrfHeader:
+      $ref: './_common.yaml#/components/securitySchemes/csrfHeader'
+  schemas:
+    Result:
+      $ref: './_common.yaml#/components/schemas/Result'
+
+paths:
+  /login:
+    post:
+      tags: [认证]
+      operationId: authLogin
+      summary: 用户登录
+      description: >-
+        验证用户名密码，成功后写入 sessionId 和 XSRF-TOKEN Cookie。
+        data 字段返回 sessionId 字符串。
+        **此接口不需要 CSRF 头和会话 Cookie。**
+        后端实际不限 HTTP 方法（裸 @RequestMapping），建议前端使用 POST。
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  description: 用户名
+                  example: admin
+                password:
+                  type: string
+                  format: password
+                  description: 密码
+                  example: admin123
+      responses:
+        '200':
+          description: 登录结果（code=200 成功，code=10013 用户名或密码错误，code=10004 用户名为空）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+              examples:
+                success:
+                  summary: 登录成功
+                  value:
+                    code: 200
+                    msg: success
+                    data: "abc123sessionid"
+                wrongPassword:
+                  summary: 密码错误
+                  value:
+                    code: 10013
+                    msg: "用户名或密码错误"
+
+  /signOut:
+    post:
+      tags: [认证]
+      operationId: authSignOut
+      summary: 用户登出
+      description: >-
+        清除服务端 Session 和 CSRF Token，并清除客户端 XSRF-TOKEN Cookie。
+        需要携带 sessionId Cookie 和 X-XSRF-TOKEN 请求头。
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      responses:
+        '200':
+          description: 登出成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+              example:
+                code: 200
+                msg: success

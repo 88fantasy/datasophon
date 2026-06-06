@@ -1,0 +1,299 @@
+openapi: "3.0.3"
+info:
+  title: Datasophon API — 日志与临时文件 (Log & Misc)
+  version: "3.0-SNAPSHOT"
+  description: >-
+    运行日志查询、K8s 事件查询、临时文件上传（单文件/分片）与 URL 下载任务管理。
+    对应 Controllers：ScheduleLogController（路径前缀 /log）、TempFileController（路径前缀 /tempfile）。
+
+servers:
+  - url: /ddh/api
+    description: 统一基址
+
+tags:
+  - name: 日志
+    description: 服务角色日志、K8s 日志、K8s 事件查询（ScheduleLogController）
+  - name: 临时文件
+    description: 文件上传、分片合并、URL 下载（TempFileController）
+
+security:
+  - sessionCookie: []
+    csrfHeader: []
+
+components:
+  securitySchemes:
+    sessionCookie:
+      $ref: './_common.yaml#/components/securitySchemes/sessionCookie'
+    csrfHeader:
+      $ref: './_common.yaml#/components/securitySchemes/csrfHeader'
+  schemas:
+    Result:
+      $ref: './_common.yaml#/components/schemas/Result'
+    ServiceRoleLogQueryDTO:
+      $ref: './_common.yaml#/components/schemas/ServiceRoleLogQueryDTO'
+    K8sRuntimeLogQueryDTO:
+      $ref: './_common.yaml#/components/schemas/K8sRuntimeLogQueryDTO'
+    K8sRuntimeEventQueryDTO:
+      $ref: './_common.yaml#/components/schemas/K8sRuntimeEventQueryDTO'
+    BigFileDTO:
+      $ref: './_common.yaml#/components/schemas/BigFileDTO'
+    CheckChunkDTO:
+      $ref: './_common.yaml#/components/schemas/CheckChunkDTO'
+    MergeChunkDTO:
+      $ref: './_common.yaml#/components/schemas/MergeChunkDTO'
+    IntegerIdDTO:
+      $ref: './_common.yaml#/components/schemas/IntegerIdDTO'
+    IdDTO:
+      $ref: './_common.yaml#/components/schemas/IdDTO'
+    DownloadTaskDTO:
+      $ref: './_common.yaml#/components/schemas/DownloadTaskDTO'
+
+paths:
+  # ═══ 日志 ════════════════════════════════════════════════════════════════
+  /log/getScheduleLog:
+    get:
+      tags: [日志]
+      operationId: logGetScheduleLog
+      summary: 查询 Master 调度日志（最近 N 行）
+      description: 后端裸 @RequestMapping，建议 GET。
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: lines
+          in: query
+          schema:
+            type: integer
+            default: 200
+          description: 返回日志行数
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /log/getVosServiceRoleRuntimeLog:
+    post:
+      tags: [日志]
+      operationId: logGetVosRoleLog
+      summary: 查询 VOS（物理机）服务角色运行时日志
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRoleLogQueryDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /log/getK8sRuntimeLog:
+    post:
+      tags: [日志]
+      operationId: logGetK8sRuntimeLog
+      summary: 查询 K8s Pod 运行时日志
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/K8sRuntimeLogQueryDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /log/getK8sEvents:
+    post:
+      tags: [日志]
+      operationId: logGetK8sEvents
+      summary: 查询 K8s 事件（Events）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/K8sRuntimeEventQueryDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /log/getK8sExecLog/{commandId}:
+    get:
+      tags: [日志]
+      operationId: logGetK8sExecLog
+      summary: 查询 K8s 命令执行日志（最近 N 行）
+      description: 后端裸 @RequestMapping，建议 GET。
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: commandId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: lines
+          in: query
+          schema:
+            type: integer
+            default: 200
+          description: 返回日志行数
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 临时文件 ════════════════════════════════════════════════════════════
+  /tempfile/upload:
+    post:
+      tags: [临时文件]
+      operationId: tempfileUpload
+      summary: 单文件上传（multipart，@Validated）
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 上传的文件（@RequestPart）
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /tempfile/createShardUploadTask:
+    post:
+      tags: [临时文件]
+      operationId: tempfileCreateShardTask
+      summary: 创建分片上传任务（获取 taskId）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BigFileDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /tempfile/uploadChunk:
+    post:
+      tags: [临时文件]
+      operationId: tempfileUploadChunk
+      summary: 上传单个分片
+      description: >-
+        分片上传任务的单次分片上传。具体参数结构参见
+        datasophon-api/.../controller/TempFileController.java#uploadChunk 方法签名。
+        通常通过 multipart/form-data 传递 chunkNumber、totalChunks、taskId 及二进制块。
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                taskId:
+                  type: string
+                  description: 创建任务时返回的 taskId
+                chunkNumber:
+                  type: integer
+                  description: 当前分片序号（从 1 开始）
+                totalChunks:
+                  type: integer
+                  description: 总分片数
+                file:
+                  type: string
+                  format: binary
+                  description: 分片二进制数据
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /tempfile/isChunkUploaded:
+    post:
+      tags: [临时文件]
+      operationId: tempfileIsChunkUploaded
+      summary: 检查指定分片是否已上传（断点续传校验）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckChunkDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /tempfile/mergeChunk:
+    post:
+      tags: [临时文件]
+      operationId: tempfileMergeChunk
+      summary: 合并所有分片为完整文件
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MergeChunkDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /tempfile/queryMergeProgress:
+    post:
+      tags: [临时文件]
+      operationId: tempfileQueryMergeProgress
+      summary: 查询分片合并进度
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegerIdDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /tempfile/downloadFromUrl:
+    post:
+      tags: [临时文件]
+      operationId: tempfileDownloadFromUrl
+      summary: 从 URL 下载文件到服务端（异步任务）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DownloadTaskDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /tempfile/queryDownloadProgress:
+    post:
+      tags: [临时文件]
+      operationId: tempfileQueryDownloadProgress
+      summary: 查询 URL 下载进度
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /tempfile/cancelDownload:
+    post:
+      tags: [临时文件]
+      operationId: tempfileCancelDownload
+      summary: 取消 URL 下载任务
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'

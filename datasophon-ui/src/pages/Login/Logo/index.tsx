@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 const App = () => {
     const [activeNode, setActiveNode] = useState('Full Stack');
-    const [aiAnalysis, setAiAnalysis] = useState('点击节点以分析该模块在 VOS 系统中的运作状态...');
+    const [aiAnalysis, setAiAnalysis] = useState('点击节点以分析该模块在 DataSophon 系统中的运作状态...');
     const [loading, setLoading] = useState(false);
     const [isPanelVisible, setIsPanelVisible] = useState(false);
 
@@ -31,8 +31,8 @@ const App = () => {
         // setLoading(true);
         // setAiAnalysis(`正在深度分析 ${target} 的链路状态...`);
 
-        // const systemPrompt = "你是一个专业的云原生运维专家。请简要分析 VOS 系统中该组件的作用及优化方向。语言简洁，富有科技感。";
-        // const userQuery = `分析 VOS 运维拓扑中 "${target}" 的角色。拓扑结构为：ARTIFACTS -> CONTAINERS -> KUBERNETES -> SERVICES，最终汇聚于中心运维核心。请给出 3 条专业洞察。`;
+        // const systemPrompt = "你是一个专业的云原生运维专家。请简要分析 DataSophon 系统中该组件的作用及优化方向。语言简洁，富有科技感。";
+        // const userQuery = `分析 DataSophon 运维拓扑中 "${target}" 的角色。拓扑结构为：ARTIFACTS -> CONTAINERS -> KUBERNETES -> SERVICES，最终汇聚于中心运维核心。请给出 3 条专业洞察。`;
 
         // try {
         //   const response = await fetchWithRetry(
@@ -164,7 +164,7 @@ const App = () => {
                     </g>
 
                     {/* CENTER CORE */}
-                    <g className="center-group cursor-pointer" onClick={() => analyze('VOS Core')}>
+                    <g className="center-group cursor-pointer" onClick={() => analyze('DataSophon Core')}>
                         <g transform="translate(175, 175) scale(1.25)" fill="none" stroke="url(#mainGrad)" strokeWidth="2.5">
                             <path d="M8 28 A13 13 0 1 1 32 28" strokeWidth="2" />
                             <circle cx="20" cy="20" r="16" strokeDasharray="2,6" opacity="0.3" />

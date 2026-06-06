@@ -1,0 +1,282 @@
+openapi: "3.0.3"
+info:
+  title: Datasophon API — 扩展仓库与部署 (ExtRepo)
+  version: "3.0-SNAPSHOT"
+  description: >-
+    外部扩展仓库的元数据校验、组件部署（物理机）、K8s 部署、VOS 部署相关接口。
+    注意：ExtRepoController、ExtRepoInstallController、ExtRepoVosInstallController
+    均映射到 `extrepo/` 前缀，ExtRepoK8sInstallController 映射到 `extrepo/k8s/`。
+    对应 Controllers：ExtRepoController、ExtRepoInstallController、
+    ExtRepoK8sInstallController、ExtRepoVosInstallController。
+
+servers:
+  - url: /ddh/api
+    description: 统一基址
+
+tags:
+  - name: 扩展仓库元数据
+    description: 组件元数据文件校验与安装包校验（ExtRepoController）
+  - name: 物理机部署
+    description: 部署文件校验、执行部署、进度查询（ExtRepoInstallController）
+  - name: K8s 部署
+    description: K8s 命名空间映射、Values 配置（ExtRepoK8sInstallController）
+  - name: VOS 部署
+    description: VOS 框架服务列表与角色查询（ExtRepoVosInstallController）
+
+security:
+  - sessionCookie: []
+    csrfHeader: []
+
+components:
+  securitySchemes:
+    sessionCookie:
+      $ref: './_common.yaml#/components/securitySchemes/sessionCookie'
+    csrfHeader:
+      $ref: './_common.yaml#/components/securitySchemes/csrfHeader'
+  schemas:
+    Result:
+      $ref: './_common.yaml#/components/schemas/Result'
+    InstallComponentDTO:
+      $ref: './_common.yaml#/components/schemas/InstallComponentDTO'
+    IntegerIdDTO:
+      $ref: './_common.yaml#/components/schemas/IntegerIdDTO'
+    DeploymentDTO:
+      $ref: './_common.yaml#/components/schemas/DeploymentDTO'
+    DagIdDto:
+      $ref: './_common.yaml#/components/schemas/DagIdDto'
+    RunDagDto:
+      $ref: './_common.yaml#/components/schemas/RunDagDto'
+    K8sProductDeployMapping:
+      $ref: './_common.yaml#/components/schemas/K8sProductDeployMapping'
+    K8sServiceInstanceValuesSaveDTO:
+      $ref: './_common.yaml#/components/schemas/K8sServiceInstanceValuesSaveDTO'
+    ServiceRoleQueryDTO:
+      $ref: './_common.yaml#/components/schemas/ServiceRoleQueryDTO'
+
+paths:
+  # ═══ 扩展仓库元数据 ══════════════════════════════════════════════════════
+  /extrepo/validMetaFile:
+    post:
+      tags: [扩展仓库元数据]
+      operationId: extRepoValidMetaFile
+      summary: 校验组件 Meta 文件（service_ddl.json 等）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstallComponentDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /extrepo/validatePkgFile:
+    post:
+      tags: [扩展仓库元数据]
+      operationId: extRepoValidatePkgFile
+      summary: 校验安装包文件
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstallComponentDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /extrepo/queryProgress:
+    post:
+      tags: [扩展仓库元数据]
+      operationId: extRepoQueryProgress
+      summary: 查询操作进度
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegerIdDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 物理机部署 ══════════════════════════════════════════════════════════
+  /extrepo/validDeploymentFile:
+    post:
+      tags: [物理机部署]
+      operationId: extRepoValidDeployment
+      summary: 校验部署文件（部署前检查）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeploymentDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /extrepo/deploy:
+    post:
+      tags: [物理机部署]
+      operationId: extRepoDeploy
+      summary: 执行部署
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeploymentDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /extrepo/getDeployProgressDAG2:
+    post:
+      tags: [物理机部署]
+      operationId: extRepoGetDeployProgressDag
+      summary: 查询部署 DAG 进度（第二版）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DagIdDto'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /extrepo/redeploy:
+    post:
+      tags: [物理机部署]
+      operationId: extRepoRedeploy
+      summary: 重新部署（重跑 DAG）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RunDagDto'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ K8s 部署 ════════════════════════════════════════════════════════════
+  /extrepo/k8s/listNewestByDeployment:
+    post:
+      tags: [K8s 部署]
+      operationId: extRepoK8sListNewest
+      summary: 按部署配置查询最新 K8s 服务列表
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeploymentDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /extrepo/k8s/saveServiceNamespaceMapping/{clusterId}:
+    post:
+      tags: [K8s 部署]
+      operationId: extRepoK8sSaveNsMapping
+      summary: 保存服务-命名空间映射关系
+      parameters:
+        - name: clusterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/K8sProductDeployMapping'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /extrepo/k8s/saveConfigValues:
+    post:
+      tags: [K8s 部署]
+      operationId: extRepoK8sSaveConfigValues
+      summary: 保存单个服务 Values 配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/K8sServiceInstanceValuesSaveDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /extrepo/k8s/saveConfigValueList:
+    post:
+      tags: [K8s 部署]
+      operationId: extRepoK8sSaveConfigValueList
+      summary: 批量保存多个服务 Values 配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/K8sServiceInstanceValuesSaveDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ VOS 部署 ════════════════════════════════════════════════════════════
+  /extrepo/listNewestByDeployment:
+    post:
+      tags: [VOS 部署]
+      operationId: extRepoVosListNewest
+      summary: 按部署配置查询最新 VOS 服务列表
+      description: >-
+        注意：此路径与 ExtRepoK8sInstallController 的 `/extrepo/k8s/listNewestByDeployment`
+        不同，此处无 `/k8s/` 中间路径段，为 VOS（物理机/非 K8s）场景专用。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeploymentDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /extrepo/getServiceRoleListByDeployment:
+    post:
+      tags: [VOS 部署]
+      operationId: extRepoVosGetRoleList
+      summary: 查询服务角色列表（VOS 部署）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRoleQueryDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /extrepo/getNonMasterRoleListByDeployment:
+    post:
+      tags: [VOS 部署]
+      operationId: extRepoVosGetNonMasterRoleList
+      summary: 查询非 Master 角色列表（VOS 部署）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeploymentDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'

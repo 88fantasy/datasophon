@@ -1,0 +1,476 @@
+openapi: "3.0.3"
+info:
+  title: Datasophon API — YARN / 节点标签 / 机架 (YARN)
+  version: "3.0-SNAPSHOT"
+  description: >-
+    YARN 队列、调度器、队列容量配置、机架管理、节点标签管理。
+    对应 Controllers：ClusterYarnQueueController、ClusterYarnSchedulerController、
+    ClusterQueueCapacityController、ClusterRackController、ClusterNodeLabelController。
+
+servers:
+  - url: /ddh/api
+    description: 统一基址
+
+tags:
+  - name: YARN 队列
+    description: YARN 队列 CRUD 与刷新（ClusterYarnQueueController）
+  - name: YARN 调度器
+    description: 调度器配置（ClusterYarnSchedulerController）
+  - name: 队列容量
+    description: Capacity Scheduler 队列容量配置（ClusterQueueCapacityController）
+  - name: 机架管理
+    description: 集群机架 CRUD（ClusterRackController）
+  - name: 节点标签
+    description: YARN 节点标签管理（ClusterNodeLabelController）
+
+security:
+  - sessionCookie: []
+    csrfHeader: []
+
+components:
+  securitySchemes:
+    sessionCookie:
+      $ref: './_common.yaml#/components/securitySchemes/sessionCookie'
+    csrfHeader:
+      $ref: './_common.yaml#/components/securitySchemes/csrfHeader'
+  schemas:
+    Result:
+      $ref: './_common.yaml#/components/schemas/Result'
+    ResultPage:
+      $ref: './_common.yaml#/components/schemas/ResultPage'
+    ClusterYarnQueue:
+      $ref: './_common.yaml#/components/schemas/ClusterYarnQueue'
+    ClusterYarnScheduler:
+      $ref: './_common.yaml#/components/schemas/ClusterYarnScheduler'
+    ClusterQueueCapacity:
+      $ref: './_common.yaml#/components/schemas/ClusterQueueCapacity'
+
+paths:
+  # ═══ YARN 队列 ════════════════════════════════════════════════════════════
+  /cluster/yarn/queue/list:
+    get:
+      tags: [YARN 队列]
+      operationId: yarnQueueList
+      summary: YARN 队列分页列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /cluster/yarn/queue/refreshQueues:
+    post:
+      tags: [YARN 队列]
+      operationId: yarnQueueRefresh
+      summary: 刷新 YARN 队列（下发到 ResourceManager）
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/yarn/queue/info/{id}:
+    get:
+      tags: [YARN 队列]
+      operationId: yarnQueueInfo
+      summary: 队列详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/yarn/queue/save:
+    post:
+      tags: [YARN 队列]
+      operationId: yarnQueueSave
+      summary: 新增 YARN 队列
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterYarnQueue'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/yarn/queue/update:
+    post:
+      tags: [YARN 队列]
+      operationId: yarnQueueUpdate
+      summary: 修改 YARN 队列
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterYarnQueue'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/yarn/queue/delete:
+    post:
+      tags: [YARN 队列]
+      operationId: yarnQueueDelete
+      summary: 删除 YARN 队列（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ YARN 调度器 ══════════════════════════════════════════════════════════
+  /cluster/yarn/scheduler/list:
+    get:
+      tags: [YARN 调度器]
+      operationId: yarnSchedulerList
+      summary: 调度器列表（全量）
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/yarn/scheduler/info:
+    get:
+      tags: [YARN 调度器]
+      operationId: yarnSchedulerInfo
+      summary: 查询集群调度器配置
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/yarn/scheduler/save:
+    post:
+      tags: [YARN 调度器]
+      operationId: yarnSchedulerSave
+      summary: 新增调度器配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterYarnScheduler'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/yarn/scheduler/update:
+    post:
+      tags: [YARN 调度器]
+      operationId: yarnSchedulerUpdate
+      summary: 修改调度器配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterYarnScheduler'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/yarn/scheduler/delete:
+    post:
+      tags: [YARN 调度器]
+      operationId: yarnSchedulerDelete
+      summary: 删除调度器配置（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 队列容量 ════════════════════════════════════════════════════════════
+  /cluster/queue/capacity/list:
+    get:
+      tags: [队列容量]
+      operationId: queueCapacityList
+      summary: 队列容量列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/queue/capacity/info/{id}:
+    get:
+      tags: [队列容量]
+      operationId: queueCapacityInfo
+      summary: 队列容量详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/queue/capacity/save:
+    post:
+      tags: [队列容量]
+      operationId: queueCapacitySave
+      summary: 新增队列容量配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterQueueCapacity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/queue/capacity/update:
+    post:
+      tags: [队列容量]
+      operationId: queueCapacityUpdate
+      summary: 修改队列容量配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterQueueCapacity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/queue/capacity/delete:
+    post:
+      tags: [队列容量]
+      operationId: queueCapacityDelete
+      summary: 删除队列容量配置
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/queue/capacity/refreshToYarn:
+    post:
+      tags: [队列容量]
+      operationId: queueCapacityRefreshToYarn
+      summary: 将队列容量配置下发到 YARN
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 机架管理 ════════════════════════════════════════════════════════════
+  /cluster/rack/list:
+    get:
+      tags: [机架管理]
+      operationId: rackList
+      summary: 机架列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/rack/info/{id}:
+    get:
+      tags: [机架管理]
+      operationId: rackInfo
+      summary: 机架详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/rack/save:
+    post:
+      tags: [机架管理]
+      operationId: rackSave
+      summary: 新增机架
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: rack
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 机架名称（如 /rack01）
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/rack/delete:
+    post:
+      tags: [机架管理]
+      operationId: rackDelete
+      summary: 删除机架
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: rackId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 节点标签 ════════════════════════════════════════════════════════════
+  /cluster/node/label/list:
+    get:
+      tags: [节点标签]
+      operationId: nodeLabelList
+      summary: 节点标签列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/node/label/save:
+    post:
+      tags: [节点标签]
+      operationId: nodeLabelSave
+      summary: 新增节点标签
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: nodeLabel
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 标签名称
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/node/label/delete:
+    post:
+      tags: [节点标签]
+      operationId: nodeLabelDelete
+      summary: 删除节点标签
+      parameters:
+        - name: nodeLabelId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/node/label/assign:
+    post:
+      tags: [节点标签]
+      operationId: nodeLabelAssign
+      summary: 为主机分配节点标签
+      parameters:
+        - name: nodeLabelId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: hostIds
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 主机 id，逗号分隔
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'

@@ -1,0 +1,510 @@
+openapi: "3.0.3"
+info:
+  title: Datasophon API — 用户与权限 (User & RBAC)
+  version: "3.0-SNAPSHOT"
+  description: >-
+    用户管理、角色管理、集群用户/用户组、集群角色用户映射。
+    对应 Controllers：UserInfoController、RoleInfoController、
+    ClusterUserController、ClusterUserGroupController、ClusterRoleUserController。
+
+servers:
+  - url: /ddh/api
+    description: 统一基址
+
+tags:
+  - name: 用户管理
+    description: 系统用户 CRUD（UserInfoController）
+  - name: 角色管理
+    description: 系统角色 CRUD（RoleInfoController）
+  - name: 集群用户
+    description: 集群级 Linux 用户管理（ClusterUserController）
+  - name: 集群用户组
+    description: 集群用户组管理（ClusterUserGroupController）
+  - name: 集群角色用户
+    description: 集群管理员授权（ClusterRoleUserController）
+
+security:
+  - sessionCookie: []
+    csrfHeader: []
+
+components:
+  securitySchemes:
+    sessionCookie:
+      $ref: './_common.yaml#/components/securitySchemes/sessionCookie'
+    csrfHeader:
+      $ref: './_common.yaml#/components/securitySchemes/csrfHeader'
+  schemas:
+    Result:
+      $ref: './_common.yaml#/components/schemas/Result'
+    ResultPage:
+      $ref: './_common.yaml#/components/schemas/ResultPage'
+    UserInfoEntity:
+      $ref: './_common.yaml#/components/schemas/UserInfoEntity'
+    RoleInfoEntity:
+      $ref: './_common.yaml#/components/schemas/RoleInfoEntity'
+    ClusterUser:
+      $ref: './_common.yaml#/components/schemas/ClusterUser'
+    ClusterUserGroup:
+      $ref: './_common.yaml#/components/schemas/ClusterUserGroup'
+    ClusterRoleUserEntity:
+      $ref: './_common.yaml#/components/schemas/ClusterRoleUserEntity'
+
+paths:
+  # ═══ 用户管理 ════════════════════════════════════════════════════════════
+  /user/list:
+    get:
+      tags: [用户管理]
+      operationId: userList
+      summary: 用户分页列表
+      description: 后端裸 @RequestMapping，不限方法，建议 GET。
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: username
+          in: query
+          required: false
+          schema:
+            type: string
+          description: 用户名（可选过滤）
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 当前页（从 1 开始）
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 每页条数
+      responses:
+        '200':
+          description: 分页用户列表（data 为数组，附 total）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultPage'
+
+  /user/all:
+    get:
+      tags: [用户管理]
+      operationId: userAll
+      summary: 所有用户（不分页）
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /user/info/{id}:
+    get:
+      tags: [用户管理]
+      operationId: userInfo
+      summary: 用户详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /user/save:
+    post:
+      tags: [用户管理]
+      operationId: userSave
+      summary: 新增用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInfoEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /user/update:
+    post:
+      tags: [用户管理]
+      operationId: userUpdate
+      summary: 修改用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInfoEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /user/delete:
+    post:
+      tags: [用户管理]
+      operationId: userDelete
+      summary: 删除用户（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+              description: 用户 id 数组
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 角色管理 ════════════════════════════════════════════════════════════
+  /role/info/list:
+    get:
+      tags: [角色管理]
+      operationId: roleInfoList
+      summary: 角色列表
+      description: 后端裸 @RequestMapping，params 为 Map（前端可传任意查询键值对）。
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /role/info/info/{id}:
+    get:
+      tags: [角色管理]
+      operationId: roleInfoDetail
+      summary: 角色详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /role/info/save:
+    post:
+      tags: [角色管理]
+      operationId: roleInfoSave
+      summary: 新增角色
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleInfoEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /role/info/update:
+    post:
+      tags: [角色管理]
+      operationId: roleInfoUpdate
+      summary: 修改角色
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleInfoEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /role/info/delete:
+    post:
+      tags: [角色管理]
+      operationId: roleInfoDelete
+      summary: 删除角色（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 集群用户 ════════════════════════════════════════════════════════════
+  /cluster/user/list:
+    get:
+      tags: [集群用户]
+      operationId: clusterUserList
+      summary: 集群用户分页列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: username
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /cluster/user/info/{id}:
+    get:
+      tags: [集群用户]
+      operationId: clusterUserInfo
+      summary: 集群用户详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/user/create:
+    post:
+      tags: [集群用户]
+      operationId: clusterUserCreate
+      summary: 新增集群用户
+      description: 以 query/form 传参，非 @RequestBody。
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: mainGroupId
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 主用户组 id
+        - name: otherGroupIds
+          in: query
+          schema:
+            type: string
+          description: 其他用户组 id，逗号分隔
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/user/update:
+    post:
+      tags: [集群用户]
+      operationId: clusterUserUpdate
+      summary: 修改集群用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterUser'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/user/delete:
+    post:
+      tags: [集群用户]
+      operationId: clusterUserDelete
+      summary: 删除集群用户
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 集群用户组 ══════════════════════════════════════════════════════════
+  /clusterusergroup/list:
+    get:
+      tags: [集群用户组]
+      operationId: clusterUserGroupList
+      summary: 集群用户组列表（全量）
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /clusterusergroup/save:
+    post:
+      tags: [集群用户组]
+      operationId: clusterUserGroupSave
+      summary: 新增集群用户组
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterUserGroup'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /clusterusergroup/update:
+    post:
+      tags: [集群用户组]
+      operationId: clusterUserGroupUpdate
+      summary: 修改集群用户组
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterUserGroup'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /clusterusergroup/delete:
+    post:
+      tags: [集群用户组]
+      operationId: clusterUserGroupDelete
+      summary: 删除集群用户组（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 集群角色用户 ════════════════════════════════════════════════════════
+  /cluster/roleUser/list:
+    get:
+      tags: [集群角色用户]
+      operationId: clusterRoleUserList
+      summary: 集群角色用户列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /cluster/roleUser/info/{id}:
+    get:
+      tags: [集群角色用户]
+      operationId: clusterRoleUserInfo
+      summary: 集群角色用户详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/roleUser/saveClusterManager:
+    post:
+      tags: [集群角色用户]
+      operationId: clusterRoleUserSaveClusterManager
+      summary: 授权集群管理员
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: userIds
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 用户 id，逗号分隔
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/roleUser/update:
+    post:
+      tags: [集群角色用户]
+      operationId: clusterRoleUserUpdate
+      summary: 修改集群角色用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterRoleUserEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/roleUser/delete:
+    post:
+      tags: [集群角色用户]
+      operationId: clusterRoleUserDelete
+      summary: 删除集群角色用户（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'

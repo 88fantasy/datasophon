@@ -1,0 +1,443 @@
+openapi: "3.0.3"
+info:
+  title: Datasophon API — 公共组件库
+  version: "3.0-SNAPSHOT"
+  description: >-
+    本文件仅用于被其他域 YAML 通过 $ref 引用，不直接暴露 paths。
+    域 YAML 通过相对路径引用：`$ref: './_common.yaml#/components/schemas/Result'`
+
+# ─── 安全方案 ─────────────────────────────────────────────────────────────────
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: sessionId
+      description: >-
+        登录成功后由服务端写入 sessionId Cookie。所有受保护接口均需携带。
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-XSRF-TOKEN
+      description: >-
+        登录成功后，服务端同时写入 XSRF-TOKEN Cookie（非 HttpOnly，JS 可读）。
+        所有 POST/PUT/DELETE 请求需在请求头 X-XSRF-TOKEN 中携带该值。
+        GET/HEAD/OPTIONS 请求无需 CSRF 头。
+
+  # ─── 通用响应结构 ───────────────────────────────────────────────────────────
+  schemas:
+    Result:
+      type: object
+      description: >-
+        所有接口统一返回壳（com.datasophon.common.utils.Result extends HashMap）。
+        除 code/msg/data 三个固定键外，部分接口会额外 put 附加键（如 total、
+        clusterServiceInstance 等），请结合各接口说明查阅。
+      properties:
+        code:
+          type: integer
+          example: 200
+          description: 状态码（200=成功，其余见错误码表）
+        msg:
+          type: string
+          example: success
+        data:
+          description: 业务数据，类型随接口而异（对象/数组/null）
+          nullable: true
+      additionalProperties: true
+
+    ResultPage:
+      allOf:
+        - $ref: '#/components/schemas/Result'
+      description: >-
+        分页列表响应。data 为数组，同时附带 total 键表示总条数。
+        额外键：total (integer)。
+      example:
+        code: 200
+        msg: success
+        data: []
+        total: 0
+
+    # ─── 通用 DTO / 简单请求体 ───────────────────────────────────────────────
+    IntegerIdDTO:
+      type: object
+      description: >-
+        包含单个整型 id 的请求体（com.datasophon.api.dto.IntegerIdDTO 或同构对象）。
+      properties:
+        id:
+          type: integer
+      required: [id]
+      additionalProperties: false
+
+    IdDTO:
+      type: object
+      description: >-
+        通用 id 请求体，id 为字符串类型。
+      properties:
+        id:
+          type: string
+      required: [id]
+      additionalProperties: false
+
+    # ─── 告警域实体 ──────────────────────────────────────────────────────────
+    AlertGroupEntity:
+      type: object
+      description: >-
+        告警组实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/AlertGroupEntity.java
+      additionalProperties: true
+
+    ClusterAlertGroupMap:
+      type: object
+      description: >-
+        集群告警组映射实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterAlertGroupMap.java
+      additionalProperties: true
+
+    ClusterAlertHistory:
+      type: object
+      description: >-
+        集群告警历史实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterAlertHistory.java
+      additionalProperties: true
+
+    ClusterAlertQuota:
+      type: object
+      description: >-
+        集群告警指标实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterAlertQuota.java
+      additionalProperties: true
+
+    NoticeGroupUserEntity:
+      type: object
+      description: >-
+        通知组用户实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/NoticeGroupUserEntity.java
+      additionalProperties: true
+
+    # ─── 集群域实体 ──────────────────────────────────────────────────────────
+    ClusterInfoEntity:
+      type: object
+      description: >-
+        集群信息实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterInfoEntity.java
+      additionalProperties: true
+
+    # ─── 主机域实体 ──────────────────────────────────────────────────────────
+    ClusterHostDO:
+      type: object
+      description: >-
+        集群主机数据对象。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterHostDO.java
+      additionalProperties: true
+
+    # ─── 用户/RBAC 实体 ──────────────────────────────────────────────────────
+    UserInfoEntity:
+      type: object
+      description: >-
+        用户信息实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/UserInfoEntity.java
+      additionalProperties: true
+
+    RoleInfoEntity:
+      type: object
+      description: >-
+        角色信息实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/RoleInfoEntity.java
+      additionalProperties: true
+
+    ClusterUser:
+      type: object
+      description: >-
+        集群用户实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterUser.java
+      additionalProperties: true
+
+    ClusterUserGroup:
+      type: object
+      description: >-
+        集群用户组实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterUserGroup.java
+      additionalProperties: true
+
+    ClusterRoleUserEntity:
+      type: object
+      description: >-
+        集群角色-用户映射实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterRoleUserEntity.java
+      additionalProperties: true
+
+    # ─── 框架元数据实体 ──────────────────────────────────────────────────────
+    FrameInfoEntity:
+      type: object
+      description: >-
+        服务框架信息实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/FrameInfoEntity.java
+      additionalProperties: true
+
+    FrameServiceEntity:
+      type: object
+      description: >-
+        框架服务实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/FrameServiceEntity.java
+      additionalProperties: true
+
+    FrameServiceRoleEntity:
+      type: object
+      description: >-
+        框架服务角色实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/FrameServiceRoleEntity.java
+      additionalProperties: true
+
+    UpdateDdlDTO:
+      type: object
+      description: >-
+        更新 DDL 请求体（JSON 方式）。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/UpdateDdlDTO.java
+      additionalProperties: true
+
+    # ─── 服务实例域实体 ──────────────────────────────────────────────────────
+    ClusterServiceInstanceEntity:
+      type: object
+      description: >-
+        集群服务实例实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterServiceInstanceEntity.java
+      additionalProperties: true
+
+    ClusterServiceInstanceConfigEntity:
+      type: object
+      description: >-
+        集群服务实例配置实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterServiceInstanceConfigEntity.java
+      additionalProperties: true
+
+    ClusterServiceRoleGroupConfig:
+      type: object
+      description: >-
+        服务角色组配置实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterServiceRoleGroupConfig.java
+      additionalProperties: true
+
+    ClusterServiceRoleInstanceEntity:
+      type: object
+      description: >-
+        集群服务角色实例实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterServiceRoleInstanceEntity.java
+      additionalProperties: true
+
+    ClusterServiceRoleInstanceConfigEntity:
+      type: object
+      description: >-
+        集群服务角色实例配置实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterServiceRoleInstanceConfigEntity.java
+      additionalProperties: true
+
+    ClusterServiceRoleInstanceWebuis:
+      type: object
+      description: >-
+        服务角色实例 Web UI 配置实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterServiceRoleInstanceWebuis.java
+      additionalProperties: true
+
+    ServiceRoleHostMapping:
+      type: object
+      description: >-
+        服务角色-主机映射请求对象（安装向导分配节点时使用）。
+        源码：datasophon-api/src/main/java/com/datasophon/api/vo/ServiceRoleHostMapping.java（或同构 DTO）
+      additionalProperties: true
+
+    # ─── 命令域实体 ──────────────────────────────────────────────────────────
+    ClusterServiceCommandEntity:
+      type: object
+      description: >-
+        集群服务命令实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterServiceCommandEntity.java
+      additionalProperties: true
+
+    ClusterServiceCommandHostEntity:
+      type: object
+      description: >-
+        集群服务命令-主机实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterServiceCommandHostEntity.java
+      additionalProperties: true
+
+    ClusterServiceCommandHostCommandEntity:
+      type: object
+      description: >-
+        集群服务命令-主机-命令步骤实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterServiceCommandHostCommandEntity.java
+      additionalProperties: true
+
+    # ─── YARN 域实体 ─────────────────────────────────────────────────────────
+    ClusterYarnQueue:
+      type: object
+      description: >-
+        Yarn 队列实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterYarnQueue.java
+      additionalProperties: true
+
+    ClusterYarnScheduler:
+      type: object
+      description: >-
+        Yarn 调度器实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterYarnScheduler.java
+      additionalProperties: true
+
+    ClusterQueueCapacity:
+      type: object
+      description: >-
+        队列容量实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/ClusterQueueCapacity.java
+      additionalProperties: true
+
+    # ─── K8s 域实体 ──────────────────────────────────────────────────────────
+    K8sClusterConfig:
+      type: object
+      description: >-
+        K8s 集群配置实体（@Validated 注解，字段有约束）。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity（或 DTO 路径）K8sClusterConfig.java
+      additionalProperties: true
+
+    K8sNamespaceIdentityDTO:
+      type: object
+      description: >-
+        K8s 命名空间标识 DTO。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/K8sNamespaceIdentityDTO.java
+      additionalProperties: true
+
+    K8sServiceInstanceQueryDTO:
+      type: object
+      description: >-
+        K8s 服务实例查询 DTO。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/K8sServiceInstanceQueryDTO.java
+      additionalProperties: true
+
+    K8sServiceInstanceValuesUpdateDTO:
+      type: object
+      description: >-
+        K8s 服务实例 Values 更新 DTO（@Validated）。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/K8sServiceInstanceValuesUpdateDTO.java
+      additionalProperties: true
+
+    K8sProductDeployMapping:
+      type: object
+      description: >-
+        K8s 产品部署命名空间映射实体。
+        源码：datasophon-api/src/main/java/com/datasophon/dao/entity/K8sProductDeployMapping.java
+      additionalProperties: true
+
+    K8sServiceInstanceValuesSaveDTO:
+      type: object
+      description: >-
+        K8s 服务实例 Values 保存 DTO（@Validated）。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/K8sServiceInstanceValuesSaveDTO.java
+      additionalProperties: true
+
+    # ─── 扩展仓库域 DTO ──────────────────────────────────────────────────────
+    InstallComponentDTO:
+      type: object
+      description: >-
+        安装组件请求 DTO（@Validated）。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/InstallComponentDTO.java
+      additionalProperties: true
+
+    DeploymentDTO:
+      type: object
+      description: >-
+        部署请求 DTO（@Validated）。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/DeploymentDTO.java
+      additionalProperties: true
+
+    DagIdDto:
+      type: object
+      description: >-
+        DAG id 请求体（@Validated）。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/DagIdDto.java
+      additionalProperties: true
+
+    RunDagDto:
+      type: object
+      description: >-
+        重跑 DAG 请求体（@Validated）。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/RunDagDto.java
+      additionalProperties: true
+
+    ServiceRoleQueryDTO:
+      type: object
+      description: >-
+        服务角色查询 DTO（@Validated）。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/ServiceRoleQueryDTO.java
+      additionalProperties: true
+
+    # ─── 日志 / 临时文件域 DTO ───────────────────────────────────────────────
+    ServiceRoleLogQueryDTO:
+      type: object
+      description: >-
+        服务角色运行日志查询 DTO。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/ServiceRoleLogQueryDTO.java
+      additionalProperties: true
+
+    K8sRuntimeLogQueryDTO:
+      type: object
+      description: >-
+        K8s 运行时日志查询 DTO。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/K8sRuntimeLogQueryDTO.java
+      additionalProperties: true
+
+    K8sRuntimeEventQueryDTO:
+      type: object
+      description: >-
+        K8s 运行时事件查询 DTO。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/K8sRuntimeEventQueryDTO.java
+      additionalProperties: true
+
+    BigFileDTO:
+      type: object
+      description: >-
+        大文件分片上传任务创建 DTO（@Validated）。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/BigFileDTO.java
+      additionalProperties: true
+
+    CheckChunkDTO:
+      type: object
+      description: >-
+        检查分片是否已上传的 DTO（@Validated）。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/CheckChunkDTO.java
+      additionalProperties: true
+
+    MergeChunkDTO:
+      type: object
+      description: >-
+        分片合并请求 DTO（@Validated）。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/MergeChunkDTO.java
+      additionalProperties: true
+
+    DownloadTaskDTO:
+      type: object
+      description: >-
+        从 URL 下载文件任务 DTO（@Validated）。
+        源码：datasophon-api/src/main/java/com/datasophon/api/dto/DownloadTaskDTO.java
+      additionalProperties: true
+
+  # ─── 通用响应定义 ────────────────────────────────────────────────────────
+  responses:
+    Result200:
+      description: 操作成功
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Result'
+    ResultPage200:
+      description: 分页查询成功
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ResultPage'
+    Result500:
+      description: 服务端异常
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Result'
+          example:
+            code: 500
+            msg: 未知异常，请联系管理员

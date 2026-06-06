@@ -1,0 +1,1007 @@
+openapi: "3.0.3"
+info:
+  title: Datasophon API — 服务实例管理 (Service Instance)
+  version: "3.0-SNAPSHOT"
+  description: >-
+    服务实例、服务实例配置、角色组管理、角色组配置、角色实例、角色实例配置、Web UI、
+    Dashboard、服务安装向导。
+    对应 Controllers（9 个）：
+      ClusterServiceInstanceController、ClusterServiceInstanceConfigController、
+      ClusterServiceInstanceRoleGroupController、ClusterServiceRoleGroupConfigController、
+      ClusterServiceRoleInstanceController、ClusterServiceRoleInstanceConfigController、
+      ClusterServiceRoleInstanceWebuisController、ClusterServiceDashboardController、
+      ServiceInstallController。
+
+servers:
+  - url: /ddh/api
+    description: 统一基址
+
+tags:
+  - name: 服务实例
+    description: 集群已安装服务实例管理（ClusterServiceInstanceController）
+  - name: 服务实例配置
+    description: 服务实例的配置版本查看与保存（ClusterServiceInstanceConfigController）
+  - name: 角色组
+    description: 服务角色组管理（ClusterServiceInstanceRoleGroupController）
+  - name: 角色组配置
+    description: 角色组配置项（ClusterServiceRoleGroupConfigController）
+  - name: 角色实例
+    description: 服务角色实例列表与运维（ClusterServiceRoleInstanceController）
+  - name: 角色实例配置
+    description: 角色实例配置（ClusterServiceRoleInstanceConfigController）
+  - name: Web UI
+    description: 服务角色 Web UI 地址（ClusterServiceRoleInstanceWebuisController）
+  - name: Dashboard
+    description: Grafana Dashboard URL（ClusterServiceDashboardController）
+  - name: 服务安装向导
+    description: 安装向导配置、角色-节点映射、依赖检查（ServiceInstallController）
+
+security:
+  - sessionCookie: []
+    csrfHeader: []
+
+components:
+  securitySchemes:
+    sessionCookie:
+      $ref: './_common.yaml#/components/securitySchemes/sessionCookie'
+    csrfHeader:
+      $ref: './_common.yaml#/components/securitySchemes/csrfHeader'
+  schemas:
+    Result:
+      $ref: './_common.yaml#/components/schemas/Result'
+    ResultPage:
+      $ref: './_common.yaml#/components/schemas/ResultPage'
+    ClusterServiceInstanceEntity:
+      $ref: './_common.yaml#/components/schemas/ClusterServiceInstanceEntity'
+    ClusterServiceInstanceConfigEntity:
+      $ref: './_common.yaml#/components/schemas/ClusterServiceInstanceConfigEntity'
+    ClusterServiceRoleGroupConfig:
+      $ref: './_common.yaml#/components/schemas/ClusterServiceRoleGroupConfig'
+    ClusterServiceRoleInstanceEntity:
+      $ref: './_common.yaml#/components/schemas/ClusterServiceRoleInstanceEntity'
+    ClusterServiceRoleInstanceConfigEntity:
+      $ref: './_common.yaml#/components/schemas/ClusterServiceRoleInstanceConfigEntity'
+    ClusterServiceRoleInstanceWebuis:
+      $ref: './_common.yaml#/components/schemas/ClusterServiceRoleInstanceWebuis'
+    ServiceRoleHostMapping:
+      $ref: './_common.yaml#/components/schemas/ServiceRoleHostMapping'
+
+paths:
+  # ═══ 服务实例 ════════════════════════════════════════════════════════════
+  /cluster/service/instance/list:
+    get:
+      tags: [服务实例]
+      operationId: serviceInstanceList
+      summary: 集群已安装服务实例列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/instance/getServiceRoleType:
+    get:
+      tags: [服务实例]
+      operationId: serviceInstanceGetRoleType
+      summary: 查询服务的角色类型列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: serviceInstanceId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/instance/configVersionCompare:
+    get:
+      tags: [服务实例]
+      operationId: serviceInstanceConfigVersionCompare
+      summary: 配置版本对比
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: serviceInstanceId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: roleGroupId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/instance/info/{id}:
+    get:
+      tags: [服务实例]
+      operationId: serviceInstanceInfo
+      summary: 服务实例详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 含 clusterServiceInstance 键的 Result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+              example:
+                code: 200
+                msg: success
+                clusterServiceInstance: {}
+
+  /cluster/service/instance/save:
+    post:
+      tags: [服务实例]
+      operationId: serviceInstanceSave
+      summary: 新增服务实例
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceInstanceEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/instance/update:
+    post:
+      tags: [服务实例]
+      operationId: serviceInstanceUpdate
+      summary: 修改服务实例
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceInstanceEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/instance/delete:
+    post:
+      tags: [服务实例]
+      operationId: serviceInstanceDelete
+      summary: 删除服务实例
+      parameters:
+        - name: serviceInstanceId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 服务实例配置 ════════════════════════════════════════════════════════
+  /cluster/service/instance/config/getConfigVersion:
+    get:
+      tags: [服务实例配置]
+      operationId: svcInstanceConfigGetVersion
+      summary: 查询配置版本列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: serviceInstanceId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: roleGroupId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/instance/config/info:
+    get:
+      tags: [服务实例配置]
+      operationId: svcInstanceConfigInfo
+      summary: 查询配置项（分页，按版本和角色组）
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: serviceInstanceId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: version
+          in: query
+          schema:
+            type: integer
+        - name: roleGroupId
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /cluster/service/instance/config/save:
+    post:
+      tags: [服务实例配置]
+      operationId: svcInstanceConfigSave
+      summary: 新增配置项
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceInstanceConfigEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/instance/config/update:
+    post:
+      tags: [服务实例配置]
+      operationId: svcInstanceConfigUpdate
+      summary: 修改配置项
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceInstanceConfigEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/instance/config/delete:
+    post:
+      tags: [服务实例配置]
+      operationId: svcInstanceConfigDelete
+      summary: 删除配置项（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 角色组 ══════════════════════════════════════════════════════════════
+  /cluster/service/instance/role/group/list:
+    get:
+      tags: [角色组]
+      operationId: roleGroupList
+      summary: 服务的角色组列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: serviceInstanceId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/instance/role/group/info/{id}:
+    get:
+      tags: [角色组]
+      operationId: roleGroupInfo
+      summary: 角色组详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/instance/role/group/save:
+    post:
+      tags: [角色组]
+      operationId: roleGroupSave
+      summary: 创建新角色组（克隆）
+      parameters:
+        - name: serviceInstanceId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: roleGroupId
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 基于此角色组克隆
+        - name: roleGroupName
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/instance/role/group/bind:
+    post:
+      tags: [角色组]
+      operationId: roleGroupBind
+      summary: 将角色实例绑定到指定角色组
+      parameters:
+        - name: roleInstanceIds
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 角色实例 id，逗号分隔
+        - name: roleGroupId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/instance/role/group/rename:
+    post:
+      tags: [角色组]
+      operationId: roleGroupRename
+      summary: 重命名角色组
+      parameters:
+        - name: roleGroupId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: roleGroupName
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/instance/role/group/delete:
+    post:
+      tags: [角色组]
+      operationId: roleGroupDelete
+      summary: 删除角色组
+      parameters:
+        - name: roleGroupId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 角色组配置 ══════════════════════════════════════════════════════════
+  /cluster/service/role/group/config/list:
+    get:
+      tags: [角色组配置]
+      operationId: roleGroupConfigList
+      summary: 角色组配置列表（全量）
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/role/group/config/info/{id}:
+    get:
+      tags: [角色组配置]
+      operationId: roleGroupConfigInfo
+      summary: 角色组配置详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/role/group/config/save:
+    post:
+      tags: [角色组配置]
+      operationId: roleGroupConfigSave
+      summary: 新增角色组配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceRoleGroupConfig'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/role/group/config/update:
+    post:
+      tags: [角色组配置]
+      operationId: roleGroupConfigUpdate
+      summary: 修改角色组配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceRoleGroupConfig'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/role/group/config/delete:
+    post:
+      tags: [角色组配置]
+      operationId: roleGroupConfigDelete
+      summary: 删除角色组配置（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 角色实例 ════════════════════════════════════════════════════════════
+  /cluster/service/role/instance/list:
+    get:
+      tags: [角色实例]
+      operationId: roleInstanceList
+      summary: 角色实例列表（支持多条件过滤）
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: serviceInstanceId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: hostname
+          in: query
+          schema:
+            type: string
+        - name: serviceRoleState
+          in: query
+          schema:
+            type: integer
+          description: 角色状态码
+        - name: serviceRoleName
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /cluster/service/role/instance/getLog:
+    get:
+      tags: [角色实例]
+      operationId: roleInstanceGetLog
+      summary: 查看角色实例日志
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: serviceRoleInstanceId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/role/instance/decommissionNode:
+    post:
+      tags: [角色实例]
+      operationId: roleInstanceDecommission
+      summary: 下线节点（Decommission）
+      parameters:
+        - name: serviceRoleInstanceIds
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 角色实例 id，逗号分隔
+        - name: serviceName
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/role/instance/restartObsoleteService:
+    post:
+      tags: [角色实例]
+      operationId: roleInstanceRestartObsolete
+      summary: 重启过时服务（配置变更后）
+      parameters:
+        - name: roleGroupId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/role/instance/save:
+    post:
+      tags: [角色实例]
+      operationId: roleInstanceSave
+      summary: 新增角色实例
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceRoleInstanceEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/role/instance/update:
+    post:
+      tags: [角色实例]
+      operationId: roleInstanceUpdate
+      summary: 修改角色实例
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceRoleInstanceEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/role/instance/delete:
+    post:
+      tags: [角色实例]
+      operationId: roleInstanceDelete
+      summary: 删除角色实例（批量，id 逗号分隔）
+      parameters:
+        - name: serviceRoleInstancesIds
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 角色实例配置 ════════════════════════════════════════════════════════
+  /clusterserviceroleinstanceconfig/list:
+    get:
+      tags: [角色实例配置]
+      operationId: roleInstanceConfigList
+      summary: 角色实例配置列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /clusterserviceroleinstanceconfig/info/{id}:
+    get:
+      tags: [角色实例配置]
+      operationId: roleInstanceConfigInfo
+      summary: 角色实例配置详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /clusterserviceroleinstanceconfig/save:
+    post:
+      tags: [角色实例配置]
+      operationId: roleInstanceConfigSave
+      summary: 新增角色实例配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceRoleInstanceConfigEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /clusterserviceroleinstanceconfig/update:
+    post:
+      tags: [角色实例配置]
+      operationId: roleInstanceConfigUpdate
+      summary: 修改角色实例配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceRoleInstanceConfigEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /clusterserviceroleinstanceconfig/delete:
+    post:
+      tags: [角色实例配置]
+      operationId: roleInstanceConfigDelete
+      summary: 删除角色实例配置（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ Web UI ══════════════════════════════════════════════════════════════
+  /cluster/webuis/getWebUis:
+    get:
+      tags: [Web UI]
+      operationId: serviceWebUiList
+      summary: 查询服务的 Web UI 地址列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: serviceInstanceId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/webuis/info/{id}:
+    get:
+      tags: [Web UI]
+      operationId: serviceWebUiInfo
+      summary: Web UI 详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/webuis/save:
+    post:
+      tags: [Web UI]
+      operationId: serviceWebUiSave
+      summary: 新增 Web UI 配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceRoleInstanceWebuis'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/webuis/update:
+    post:
+      tags: [Web UI]
+      operationId: serviceWebUiUpdate
+      summary: 修改 Web UI 配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceRoleInstanceWebuis'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/webuis/delete:
+    post:
+      tags: [Web UI]
+      operationId: serviceWebUiDelete
+      summary: 删除 Web UI 配置（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ Dashboard ═══════════════════════════════════════════════════════════
+  /cluster/service/dashboard/getDashboardUrl:
+    get:
+      tags: [Dashboard]
+      operationId: serviceDashboardGetUrl
+      summary: 查询集群总览 Grafana Dashboard URL
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 服务安装向导 ════════════════════════════════════════════════════════
+  /service/install/getServiceConfigOption:
+    get:
+      tags: [服务安装向导]
+      operationId: serviceInstallGetConfigOption
+      summary: 查询服务配置项选项（DDL 驱动）
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: serviceName
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 服务名称，如 HDFS、KAFKA
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /service/install/getServiceConfigFromDdl:
+    get:
+      tags: [服务安装向导]
+      operationId: serviceInstallGetConfigFromDdl
+      summary: 从 DDL 获取服务配置模板
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: serviceName
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /service/install/saveServiceConfig:
+    post:
+      tags: [服务安装向导]
+      operationId: serviceInstallSaveConfig
+      summary: 保存服务配置（安装向导步骤）
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: serviceName
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: serviceConfig
+          in: query
+          required: true
+          schema:
+            type: string
+          description: JSON 字符串，服务配置内容
+        - name: roleGroupId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /service/install/saveServiceRoleHostMapping/{clusterId}:
+    post:
+      tags: [服务安装向导]
+      operationId: serviceInstallSaveRoleHostMapping
+      summary: 保存服务角色-节点分配（安装向导步骤）
+      parameters:
+        - name: clusterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ServiceRoleHostMapping'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /service/install/getServiceRoleHostMapping:
+    get:
+      tags: [服务安装向导]
+      operationId: serviceInstallGetRoleHostMapping
+      summary: 查询服务角色-节点分配（当前状态）
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /service/install/getServiceRoleDeployOverview:
+    get:
+      tags: [服务安装向导]
+      operationId: serviceInstallGetDeployOverview
+      summary: 查询服务角色部署总览
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /service/install/downloadTemplate:
+    get:
+      tags: [服务安装向导]
+      operationId: serviceInstallDownloadTemplate
+      summary: 下载配置模板文件
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: 文件流
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /service/install/downloadResource:
+    get:
+      tags: [服务安装向导]
+      operationId: serviceInstallDownloadResource
+      summary: 下载资源文件
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: 文件流
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /service/install/checkServiceDependency:
+    get:
+      tags: [服务安装向导]
+      operationId: serviceInstallCheckDependency
+      summary: 检查服务依赖是否满足
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: serviceIds
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 服务 id，逗号分隔
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'

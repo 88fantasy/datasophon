@@ -1,0 +1,543 @@
+openapi: "3.0.3"
+info:
+  title: Datasophon API — 告警管理 (Alert)
+  version: "3.0-SNAPSHOT"
+  description: >-
+    告警组、集群告警组映射、告警历史、告警指标、通知组用户管理。
+    对应 Controllers：AlertGroupController、ClusterAlertGroupMapController、
+    ClusterAlertHistoryController、ClusterAlertQuotaController、NoticeGroupUserController。
+
+servers:
+  - url: /ddh/api
+    description: 统一基址
+
+tags:
+  - name: 告警组
+    description: 告警组 CRUD（AlertGroupController）
+  - name: 集群告警组映射
+    description: 集群与告警组的绑定（ClusterAlertGroupMapController）
+  - name: 告警历史
+    description: 历史告警查询（ClusterAlertHistoryController）
+  - name: 告警指标
+    description: 告警指标配置与启停（ClusterAlertQuotaController）
+  - name: 通知组用户
+    description: 告警通知组成员管理（NoticeGroupUserController）
+
+security:
+  - sessionCookie: []
+    csrfHeader: []
+
+components:
+  securitySchemes:
+    sessionCookie:
+      $ref: './_common.yaml#/components/securitySchemes/sessionCookie'
+    csrfHeader:
+      $ref: './_common.yaml#/components/securitySchemes/csrfHeader'
+  schemas:
+    Result:
+      $ref: './_common.yaml#/components/schemas/Result'
+    ResultPage:
+      $ref: './_common.yaml#/components/schemas/ResultPage'
+    AlertGroupEntity:
+      $ref: './_common.yaml#/components/schemas/AlertGroupEntity'
+    ClusterAlertGroupMap:
+      $ref: './_common.yaml#/components/schemas/ClusterAlertGroupMap'
+    ClusterAlertHistory:
+      $ref: './_common.yaml#/components/schemas/ClusterAlertHistory'
+    ClusterAlertQuota:
+      $ref: './_common.yaml#/components/schemas/ClusterAlertQuota'
+    NoticeGroupUserEntity:
+      $ref: './_common.yaml#/components/schemas/NoticeGroupUserEntity'
+
+paths:
+  # ═══ 告警组 ══════════════════════════════════════════════════════════════
+  /alert/group/list:
+    get:
+      tags: [告警组]
+      operationId: alertGroupList
+      summary: 告警组分页列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: alertGroupName
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /alert/group/info/{id}:
+    get:
+      tags: [告警组]
+      operationId: alertGroupInfo
+      summary: 告警组详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /alert/group/save:
+    post:
+      tags: [告警组]
+      operationId: alertGroupSave
+      summary: 新增告警组
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertGroupEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /alert/group/update:
+    post:
+      tags: [告警组]
+      operationId: alertGroupUpdate
+      summary: 修改告警组
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertGroupEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /alert/group/delete:
+    post:
+      tags: [告警组]
+      operationId: alertGroupDelete
+      summary: 删除告警组（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 集群告警组映射 ═══════════════════════════════════════════════════════
+  /cluster/alert/group/map/list:
+    get:
+      tags: [集群告警组映射]
+      operationId: clusterAlertGroupMapList
+      summary: 集群告警组映射列表（全量）
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/alert/group/map/info/{id}:
+    get:
+      tags: [集群告警组映射]
+      operationId: clusterAlertGroupMapInfo
+      summary: 映射详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/alert/group/map/save:
+    post:
+      tags: [集群告警组映射]
+      operationId: clusterAlertGroupMapSave
+      summary: 新增集群-告警组绑定
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterAlertGroupMap'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/alert/group/map/update:
+    post:
+      tags: [集群告警组映射]
+      operationId: clusterAlertGroupMapUpdate
+      summary: 修改集群-告警组绑定
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterAlertGroupMap'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/alert/group/map/delete:
+    post:
+      tags: [集群告警组映射]
+      operationId: clusterAlertGroupMapDelete
+      summary: 删除集群-告警组绑定（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 告警历史 ════════════════════════════════════════════════════════════
+  /cluster/alert/history/getAlertList:
+    get:
+      tags: [告警历史]
+      operationId: alertHistoryGetByService
+      summary: 查询服务的告警列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: serviceInstanceId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/alert/history/getAllAlertList:
+    get:
+      tags: [告警历史]
+      operationId: alertHistoryGetAll
+      summary: 查询集群所有告警历史（分页）
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /cluster/alert/history/info/{id}:
+    get:
+      tags: [告警历史]
+      operationId: alertHistoryInfo
+      summary: 告警历史详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/alert/history/save:
+    post:
+      tags: [告警历史]
+      operationId: alertHistorySave
+      summary: 新增告警历史（Alertmanager 回调）
+      description: requestBody 为 JSON 字符串（alertMessage）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+              description: Alertmanager webhook 原始 JSON 消息体
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/alert/history/update:
+    post:
+      tags: [告警历史]
+      operationId: alertHistoryUpdate
+      summary: 修改告警历史
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterAlertHistory'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/alert/history/delete:
+    post:
+      tags: [告警历史]
+      operationId: alertHistoryDelete
+      summary: 删除告警历史（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 告警指标 ════════════════════════════════════════════════════════════
+  /cluster/alert/quota/list:
+    get:
+      tags: [告警指标]
+      operationId: alertQuotaList
+      summary: 告警指标分页列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: alertGroupId
+          in: query
+          schema:
+            type: integer
+        - name: quotaName
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /cluster/alert/quota/start:
+    post:
+      tags: [告警指标]
+      operationId: alertQuotaStart
+      summary: 启用告警指标
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: alertQuotaIds
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 指标 id，逗号分隔
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/alert/quota/stop:
+    post:
+      tags: [告警指标]
+      operationId: alertQuotaStop
+      summary: 停用告警指标
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: alertQuotaIds
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/alert/quota/save:
+    post:
+      tags: [告警指标]
+      operationId: alertQuotaSave
+      summary: 新增告警指标
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterAlertQuota'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/alert/quota/update:
+    post:
+      tags: [告警指标]
+      operationId: alertQuotaUpdate
+      summary: 修改告警指标
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterAlertQuota'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/alert/quota/delete:
+    post:
+      tags: [告警指标]
+      operationId: alertQuotaDelete
+      summary: 删除告警指标（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 通知组用户 ══════════════════════════════════════════════════════════
+  /notice/group/user/list:
+    get:
+      tags: [通知组用户]
+      operationId: noticeGroupUserList
+      summary: 通知组用户列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /notice/group/user/info/{id}:
+    get:
+      tags: [通知组用户]
+      operationId: noticeGroupUserInfo
+      summary: 通知组用户详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /notice/group/user/save:
+    post:
+      tags: [通知组用户]
+      operationId: noticeGroupUserSave
+      summary: 新增通知组用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeGroupUserEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /notice/group/user/update:
+    post:
+      tags: [通知组用户]
+      operationId: noticeGroupUserUpdate
+      summary: 修改通知组用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeGroupUserEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /notice/group/user/delete:
+    post:
+      tags: [通知组用户]
+      operationId: noticeGroupUserDelete
+      summary: 删除通知组用户（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'

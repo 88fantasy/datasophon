@@ -1,0 +1,316 @@
+openapi: "3.0.3"
+info:
+  title: Datasophon API — Kubernetes 管理 (K8s)
+  version: "3.0-SNAPSHOT"
+  description: >-
+    K8s 集群配置、命名空间、K8s 服务实例、Values 配置、K8s 框架服务元数据、K8s 服务命令。
+    对应 Controllers：K8sClusterConfigController、K8sClusterNamespaceController、
+    K8sServiceInstanceController、K8sServiceInstanceValuesController、
+    FrameK8sServiceController、ClusterK8sServiceCommandController。
+
+servers:
+  - url: /ddh/api
+    description: 统一基址
+
+tags:
+  - name: K8s 集群配置
+    description: kubeconfig 连接配置（K8sClusterConfigController）
+  - name: K8s 命名空间
+    description: K8s 命名空间查询（K8sClusterNamespaceController）
+  - name: K8s 服务实例
+    description: K8s 上已部署的服务实例（K8sServiceInstanceController）
+  - name: K8s Values
+    description: Helm/K8s Values 配置（K8sServiceInstanceValuesController）
+  - name: K8s 框架服务
+    description: K8s 服务框架元数据（FrameK8sServiceController）
+  - name: K8s 服务命令
+    description: K8s 服务命令（ClusterK8sServiceCommandController）
+
+security:
+  - sessionCookie: []
+    csrfHeader: []
+
+components:
+  securitySchemes:
+    sessionCookie:
+      $ref: './_common.yaml#/components/securitySchemes/sessionCookie'
+    csrfHeader:
+      $ref: './_common.yaml#/components/securitySchemes/csrfHeader'
+  schemas:
+    Result:
+      $ref: './_common.yaml#/components/schemas/Result'
+    ResultPage:
+      $ref: './_common.yaml#/components/schemas/ResultPage'
+    K8sClusterConfig:
+      $ref: './_common.yaml#/components/schemas/K8sClusterConfig'
+    K8sNamespaceIdentityDTO:
+      $ref: './_common.yaml#/components/schemas/K8sNamespaceIdentityDTO'
+    K8sServiceInstanceQueryDTO:
+      $ref: './_common.yaml#/components/schemas/K8sServiceInstanceQueryDTO'
+    K8sServiceInstanceValuesUpdateDTO:
+      $ref: './_common.yaml#/components/schemas/K8sServiceInstanceValuesUpdateDTO'
+
+paths:
+  # ═══ K8s 集群配置 ════════════════════════════════════════════════════════
+  /cluster/k8sConfig/testConnection:
+    post:
+      tags: [K8s 集群配置]
+      operationId: k8sConfigTestConnection
+      summary: 测试 K8s 连接（kubeconfig 验证）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/K8sClusterConfig'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/k8sConfig/saveOrUpdateConfig:
+    post:
+      tags: [K8s 集群配置]
+      operationId: k8sConfigSaveOrUpdate
+      summary: 保存或更新 K8s 集群配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/K8sClusterConfig'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/k8sConfig/getConfigByClusterId/{clusterId}:
+    get:
+      tags: [K8s 集群配置]
+      operationId: k8sConfigGetByClusterId
+      summary: 查询集群的 K8s 配置
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ K8s 命名空间 ════════════════════════════════════════════════════════
+  /cluster/k8sNamespace/listByClusterId/{clusterId}:
+    get:
+      tags: [K8s 命名空间]
+      operationId: k8sNamespaceList
+      summary: 查询集群的命名空间列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ K8s 服务实例 ════════════════════════════════════════════════════════
+  /cluster/k8sInstance/queryInstanceList:
+    post:
+      tags: [K8s 服务实例]
+      operationId: k8sInstanceList
+      summary: 查询 K8s 服务实例列表
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/K8sNamespaceIdentityDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/k8sInstance/listResourceType:
+    post:
+      tags: [K8s 服务实例]
+      operationId: k8sInstanceListResourceType
+      summary: 查询可用的 K8s 资源类型列表
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/K8sServiceInstanceQueryDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/k8sInstance/listResource:
+    post:
+      tags: [K8s 服务实例]
+      operationId: k8sInstanceListResource
+      summary: 查询指定类型的 K8s 资源
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/K8sServiceInstanceQueryDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/k8sInstance/removeInstanceId/{instanceId}:
+    post:
+      tags: [K8s 服务实例]
+      operationId: k8sInstanceRemove
+      summary: 移除 K8s 服务实例记录
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ K8s Values ══════════════════════════════════════════════════════════
+  /frame/k8sInstanceValues/listSimpleByInstanceId/{instanceId}:
+    get:
+      tags: [K8s Values]
+      operationId: k8sValuesListByInstance
+      summary: 查询实例的 Values 列表（简要）
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/k8sInstanceValues/getById/{valueId}:
+    get:
+      tags: [K8s Values]
+      operationId: k8sValuesGetById
+      summary: 查询 Values 详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: valueId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/k8sInstanceValues/getValueFromRepo/{serviceId}:
+    get:
+      tags: [K8s Values]
+      operationId: k8sValuesGetFromRepo
+      summary: 从制品仓库获取 Values 模板
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: artifactType
+          in: query
+          schema:
+            type: string
+            enum: [helm, k8s]
+          description: 部署类型（helm 或 k8s）
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/k8sInstanceValues/update:
+    post:
+      tags: [K8s Values]
+      operationId: k8sValuesUpdate
+      summary: 更新实例 Values 配置（@Validated）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/K8sServiceInstanceValuesUpdateDTO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ K8s 框架服务 ════════════════════════════════════════════════════════
+  /frame/k8sService/listNewest:
+    get:
+      tags: [K8s 框架服务]
+      operationId: k8sFrameServiceListNewest
+      summary: 查询最新版本 K8s 框架服务列表
+      description: 后端裸 @RequestMapping，建议 GET。
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /frame/k8sService/delete/{serviceId}:
+    post:
+      tags: [K8s 框架服务]
+      operationId: k8sFrameServiceDelete
+      summary: 删除 K8s 框架服务
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ K8s 服务命令 ════════════════════════════════════════════════════════
+  /cluster/k8sService/command/findCommandByPage:
+    post:
+      tags: [K8s 服务命令]
+      operationId: k8sCommandFindByPage
+      summary: 分页查询 K8s 服务命令
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: serviceName
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'

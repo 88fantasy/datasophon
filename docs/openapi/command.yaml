@@ -1,0 +1,456 @@
+openapi: "3.0.3"
+info:
+  title: Datasophon API — 服务命令 (Command)
+  version: "3.0-SNAPSHOT"
+  description: >-
+    服务命令（安装/启动/停止/重启等 DAG 命令）的生成、查询与详情。
+    对应 Controllers：ClusterServiceCommandController、ClusterServiceCommandHostController、
+    ClusterServiceCommandHostCommandController。
+
+servers:
+  - url: /ddh/api
+    description: 统一基址
+
+tags:
+  - name: 服务命令
+    description: 集群服务命令 DAG（ClusterServiceCommandController）
+  - name: 命令-主机
+    description: 命令在各主机上的执行状态（ClusterServiceCommandHostController）
+  - name: 命令-主机-步骤
+    description: 单主机命令步骤详情与日志（ClusterServiceCommandHostCommandController）
+
+security:
+  - sessionCookie: []
+    csrfHeader: []
+
+components:
+  securitySchemes:
+    sessionCookie:
+      $ref: './_common.yaml#/components/securitySchemes/sessionCookie'
+    csrfHeader:
+      $ref: './_common.yaml#/components/securitySchemes/csrfHeader'
+  schemas:
+    Result:
+      $ref: './_common.yaml#/components/schemas/Result'
+    ResultPage:
+      $ref: './_common.yaml#/components/schemas/ResultPage'
+    ClusterServiceCommandEntity:
+      $ref: './_common.yaml#/components/schemas/ClusterServiceCommandEntity'
+    ClusterServiceCommandHostEntity:
+      $ref: './_common.yaml#/components/schemas/ClusterServiceCommandHostEntity'
+    ClusterServiceCommandHostCommandEntity:
+      $ref: './_common.yaml#/components/schemas/ClusterServiceCommandHostCommandEntity'
+
+paths:
+  # ═══ 服务命令 ════════════════════════════════════════════════════════════
+  /cluster/service/command/getServiceCommandlist:
+    get:
+      tags: [服务命令]
+      operationId: commandList
+      summary: 服务命令分页列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /cluster/service/command/findDagByPage:
+    get:
+      tags: [服务命令]
+      operationId: commandFindDag
+      summary: 分页查询 DAG 命令列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /cluster/service/command/generateGenericInstallCommand:
+    post:
+      tags: [服务命令]
+      operationId: commandGenericInstall
+      summary: 生成通用安装命令（不执行）
+      description: 后端裸 @RequestMapping，不限方法。
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: serviceNames
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 服务名，逗号分隔（如 HDFS,ZOOKEEPER）
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/command/generateAndExecSrvInstCmd:
+    post:
+      tags: [服务命令]
+      operationId: commandGenAndExecInstall
+      summary: 生成并执行服务安装/操作命令
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: commandType
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 命令类型（INSTALL/START/STOP/RESTART/CONFIG 等）
+        - name: serviceInstanceIds
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 服务实例 id，逗号分隔
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/command/generateAndSrvRoleCmd:
+    post:
+      tags: [服务命令]
+      operationId: commandGenAndExecRoleCmd
+      summary: 生成并执行指定角色命令
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: commandType
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: serviceInstanceId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: serviceRoleInstanceIds
+          in: query
+          schema:
+            type: string
+          description: 角色实例 id，逗号分隔（可选，为空则对整个服务操作）
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/command/info/{id}:
+    get:
+      tags: [服务命令]
+      operationId: commandInfo
+      summary: 命令详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/command/save:
+    post:
+      tags: [服务命令]
+      operationId: commandSave
+      summary: 新增命令记录（内部使用）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceCommandEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/command/update:
+    post:
+      tags: [服务命令]
+      operationId: commandUpdate
+      summary: 修改命令记录（内部使用）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceCommandEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/command/delete:
+    post:
+      tags: [服务命令]
+      operationId: commandDelete
+      summary: 删除命令记录（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 命令-主机 ════════════════════════════════════════════════════════════
+  /cluster/service/command/host/list:
+    get:
+      tags: [命令-主机]
+      operationId: commandHostList
+      summary: 命令在各主机上的执行列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: commandId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /cluster/service/command/host/info/{id}:
+    get:
+      tags: [命令-主机]
+      operationId: commandHostInfo
+      summary: 命令-主机详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/command/host/save:
+    post:
+      tags: [命令-主机]
+      operationId: commandHostSave
+      summary: 新增命令-主机记录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceCommandHostEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/command/host/update:
+    post:
+      tags: [命令-主机]
+      operationId: commandHostUpdate
+      summary: 修改命令-主机记录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceCommandHostEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/command/host/delete:
+    post:
+      tags: [命令-主机]
+      operationId: commandHostDelete
+      summary: 删除命令-主机记录（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 命令-主机-步骤 ══════════════════════════════════════════════════════
+  /cluster/service/command/host/command/list:
+    get:
+      tags: [命令-主机-步骤]
+      operationId: commandHostStepList
+      summary: 命令步骤列表（单主机）
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: hostname
+          in: query
+          schema:
+            type: string
+        - name: commandHostId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /cluster/service/command/host/command/getHostCommandLog:
+    get:
+      tags: [命令-主机-步骤]
+      operationId: commandHostStepGetLog
+      summary: 查看步骤日志
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: hostCommandId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/command/host/command/info/{id}:
+    get:
+      tags: [命令-主机-步骤]
+      operationId: commandHostStepInfo
+      summary: 步骤详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/command/host/command/save:
+    post:
+      tags: [命令-主机-步骤]
+      operationId: commandHostStepSave
+      summary: 新增步骤记录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceCommandHostCommandEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/command/host/command/update:
+    post:
+      tags: [命令-主机-步骤]
+      operationId: commandHostStepUpdate
+      summary: 修改步骤记录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterServiceCommandHostCommandEntity'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/service/command/host/command/delete:
+    post:
+      tags: [命令-主机-步骤]
+      operationId: commandHostStepDelete
+      summary: 删除步骤记录（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'

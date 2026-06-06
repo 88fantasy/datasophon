@@ -70,7 +70,7 @@ const headerTitleRender = (logo) => {
             {
                 logo
             }
-            VOS
+            DataSophon
         </div>
     )
 }

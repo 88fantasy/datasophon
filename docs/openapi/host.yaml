@@ -1,0 +1,492 @@
+openapi: "3.0.3"
+info:
+  title: Datasophon API — 主机管理 (Host)
+  version: "3.0-SNAPSHOT"
+  description: >-
+    主机列表、主机接入安装向导。
+    对应 Controllers：ClusterHostController、HostInstallController。
+
+servers:
+  - url: /ddh/api
+    description: 统一基址
+
+tags:
+  - name: 主机管理
+    description: 集群主机 CRUD 与机架/角色查询（ClusterHostController）
+  - name: 主机安装
+    description: 新主机接入流程（分析→校验→分发 Agent→生成命令）（HostInstallController）
+
+security:
+  - sessionCookie: []
+    csrfHeader: []
+
+components:
+  securitySchemes:
+    sessionCookie:
+      $ref: './_common.yaml#/components/securitySchemes/sessionCookie'
+    csrfHeader:
+      $ref: './_common.yaml#/components/securitySchemes/csrfHeader'
+  schemas:
+    Result:
+      $ref: './_common.yaml#/components/schemas/Result'
+    ResultPage:
+      $ref: './_common.yaml#/components/schemas/ResultPage'
+    ClusterHostDO:
+      $ref: './_common.yaml#/components/schemas/ClusterHostDO'
+
+paths:
+  # ═══ 主机管理 ════════════════════════════════════════════════════════════
+  /cluster/host/all:
+    get:
+      tags: [主机管理]
+      operationId: clusterHostAll
+      summary: 集群主机列表（全量，不分页）
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/host/list:
+    get:
+      tags: [主机管理]
+      operationId: clusterHostList
+      summary: 主机分页列表（支持多条件过滤）
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: hostname
+          in: query
+          schema:
+            type: string
+        - name: ip
+          in: query
+          schema:
+            type: string
+        - name: cpuArchitecture
+          in: query
+          schema:
+            type: string
+          description: CPU 架构，如 x86_64、aarch64
+        - name: hostState
+          in: query
+          schema:
+            type: integer
+          description: 主机状态码
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /cluster/host/getRoleListByHostname:
+    get:
+      tags: [主机管理]
+      operationId: clusterHostRoleList
+      summary: 按主机名查询该主机上运行的角色列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: hostname
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/host/getRack:
+    get:
+      tags: [主机管理]
+      operationId: clusterHostGetRack
+      summary: 查询集群机架信息
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/host/assignRack:
+    post:
+      tags: [主机管理]
+      operationId: clusterHostAssignRack
+      summary: 为主机分配机架
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: rack
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 机架名称
+        - name: hostIds
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 主机 id，逗号分隔
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/host/info/{id}:
+    get:
+      tags: [主机管理]
+      operationId: clusterHostInfo
+      summary: 主机详情
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/host/save:
+    post:
+      tags: [主机管理]
+      operationId: clusterHostSave
+      summary: 新增主机
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterHostDO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/host/update:
+    post:
+      tags: [主机管理]
+      operationId: clusterHostUpdate
+      summary: 修改主机
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClusterHostDO'
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /cluster/host/delete:
+    post:
+      tags: [主机管理]
+      operationId: clusterHostDelete
+      summary: 删除主机（批量，hostIds 逗号分隔）
+      parameters:
+        - name: hostIds
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 主机 id，逗号分隔
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  # ═══ 主机安装流程 ════════════════════════════════════════════════════════
+  /host/install/getInstallStep:
+    get:
+      tags: [主机安装]
+      operationId: hostInstallGetStep
+      summary: 获取安装步骤列表
+      security:
+        - sessionCookie: []
+      parameters:
+        - name: type
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 安装类型（如物理机 vs Docker）
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /host/install/analysisHostList:
+    post:
+      tags: [主机安装]
+      operationId: hostInstallAnalysis
+      summary: 解析主机列表（校验 SSH 连通性）
+      description: >-
+        入参通过 @RequestParam 传递（application/x-www-form-urlencoded 或 form-data），
+        非 JSON body。
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [clusterId, hosts, sshUser, sshPort, page, pageSize]
+              properties:
+                clusterId:
+                  type: integer
+                hosts:
+                  type: string
+                  description: 主机列表（逗号或换行分隔）
+                sshUser:
+                  type: string
+                  description: SSH 用户名（正则限制：[a-zA-Z0-9._-]{1,30}）
+                sshPass:
+                  type: string
+                  description: SSH 密码（可选，密钥认证时不传）
+                sshPort:
+                  type: integer
+                  minimum: 1
+                  maximum: 65535
+                  description: SSH 端口
+                page:
+                  type: integer
+                pageSize:
+                  type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /host/install/getHostCheckStatus:
+    post:
+      tags: [主机安装]
+      operationId: hostInstallGetCheckStatus
+      summary: 查询主机校验状态
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: sshUser
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: sshPort
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /host/install/rehostCheck:
+    post:
+      tags: [主机安装]
+      operationId: hostInstallRehostCheck
+      summary: 重新校验指定主机
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: hostnames
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 主机名，逗号分隔
+        - name: sshUser
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: sshPort
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /host/install/hostCheckCompleted:
+    post:
+      tags: [主机安装]
+      operationId: hostInstallCheckCompleted
+      summary: 确认主机校验完成（进入下一步）
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /host/install/dispatcherHostAgentList:
+    post:
+      tags: [主机安装]
+      operationId: hostInstallDispatcherList
+      summary: 查询分发 Agent 任务列表
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: installStateCode
+          in: query
+          schema:
+            type: integer
+          description: 安装状态码过滤
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/ResultPage200'
+
+  /host/install/dispatcherHostAgentCompleted:
+    post:
+      tags: [主机安装]
+      operationId: hostInstallDispatcherCompleted
+      summary: 确认分发 Agent 完成
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /host/install/cancelDispatcherHostAgent:
+    post:
+      tags: [主机安装]
+      operationId: hostInstallCancelDispatcher
+      summary: 取消分发 Agent（单主机）
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: hostname
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: installStateCode
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /host/install/reStartDispatcherHostAgent:
+    post:
+      tags: [主机安装]
+      operationId: hostInstallRestartDispatcher
+      summary: 重新分发 Agent（批量主机）
+      parameters:
+        - name: clusterId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: hostnames
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 主机名，逗号分隔
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /host/install/generateHostAgentCommand:
+    post:
+      tags: [主机安装]
+      operationId: hostInstallGenAgentCommand
+      summary: 生成主机 Agent 命令（批量）
+      parameters:
+        - name: clusterHostIds
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 集群主机 id，逗号分隔
+        - name: commandType
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 命令类型（如 START/STOP/RESTART）
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'
+
+  /host/install/generateHostServiceCommand:
+    post:
+      tags: [主机安装]
+      operationId: hostInstallGenServiceCommand
+      summary: 生成主机服务命令（批量）
+      parameters:
+        - name: clusterHostIds
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 集群主机 id，逗号分隔
+        - name: commandType
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: './_common.yaml#/components/responses/Result200'

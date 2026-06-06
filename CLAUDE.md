@@ -185,6 +185,7 @@ datasophon/
 ├── mvnw / .mvn/                  # Maven Wrapper(3.8.4)
 ├── style/                        # Spotless + Checkstyle 配置(license_header / formatter / importorder)
 ├── docs/ARCHITECTURE.md          # 架构与关键文件速查
+├── docs/openapi/README.md        # OpenAPI 文档
 ├── datasophon-api/               # Master 主服务
 ├── datasophon-worker/            # Worker 节点进程
 ├── datasophon-grpc-api/          # gRPC proto + stub
