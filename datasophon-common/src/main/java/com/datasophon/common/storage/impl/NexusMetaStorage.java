@@ -29,7 +29,6 @@ import cn.hutool.core.io.FileUtil;
 /**
  * @author zhanghuangbin
  */
-@SuppressWarnings("deprecated")
 @Slf4j
 public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage {
     
@@ -66,6 +65,7 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
     }
     
     @Override
+    @SuppressWarnings("deprecated")
     public void saveServiceDdl(ServiceMetaItem item, String content) throws IOException {
         String path = String.format("/meta/%s/%s/%s", item.getFramework(), item.getType(), item.getServiceName());
         NexusFileUtils.uploadFileToRawRepo(path, Constants.SERVICE_DDL, content);
@@ -103,6 +103,7 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
     }
     
     @Override
+    @SuppressWarnings("deprecated")
     public void moveToStorage(File dir, Function<String, String> relativePathHandler) throws IOException {
         ensureDirValid(dir);
         ensureNexusEnable();
@@ -126,6 +127,7 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
     }
     
     @Override
+    @SuppressWarnings("deprecated")
     public void removeMeta(String frameCode, String serviceName, String type) {
         NexusFileUtils.removeFolderFromRawRepo(String.format("/meta/%s/%s/%s", frameCode, type, serviceName));
     }

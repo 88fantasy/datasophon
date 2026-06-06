@@ -19,7 +19,7 @@ public class OsUtils {
     
     public static OsType getOs(String result) {
         List<String> lines = new ArrayList<>();
-        if (StringUtils.isNoneEmpty()) {
+        if (StringUtils.isNoneEmpty(result)) {
             lines.addAll(Arrays.asList(result.split(System.lineSeparator())));
         }
         Optional<String> optionalOsName = lines.stream().filter(s -> s.startsWith("ID=")).findAny();

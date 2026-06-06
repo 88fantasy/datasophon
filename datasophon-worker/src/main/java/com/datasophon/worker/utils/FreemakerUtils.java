@@ -217,7 +217,7 @@ public class FreemakerUtils {
                 .toList();
         
         Map<String, Object> configMap = new LinkedHashMap<>();
-        finalConfigs.parallelStream().forEach(serviceConfig -> {
+        finalConfigs.stream().forEach(serviceConfig -> {
             String key = StringUtils.isEmpty(serviceConfig.getKey()) ? serviceConfig.getName() : serviceConfig.getKey();
             configMap.put(key, serviceConfig.getValue());
         });
