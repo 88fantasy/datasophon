@@ -127,6 +127,7 @@ public class AppConfiguration implements WebMvcConfigurer {
                         "/static/**")
                 .excludePathPatterns(getRealExcludeUrl(
                         "/login",
+                        "/v2/login/account",
                         "/cluster/alert/history/save",
                         "/cluster/kerberos/downloadKeytab",
                         "/service/install/download*"));
@@ -148,6 +149,7 @@ public class AppConfiguration implements WebMvcConfigurer {
                         "/static/**")
                 .excludePathPatterns(getRealExcludeUrl(
                         "/login",
+                        "/v2/login/account",
                         "/cluster/alert/history/save",
                         "/cluster/kerberos/downloadKeytab",
                         "/service/install/download*"));
