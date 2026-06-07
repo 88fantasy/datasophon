@@ -2,11 +2,21 @@ import {
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
+  RightCircleOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
 import { PageContainer, ProCard } from '@ant-design/pro-components';
-import { useRequest } from '@umijs/max';
-import { Button, Col, Popconfirm, Row, Space, Tag, Typography, message } from 'antd';
+import { history, useRequest } from '@umijs/max';
+import {
+  Button,
+  Col,
+  message,
+  Popconfirm,
+  Row,
+  Space,
+  Tag,
+  Typography,
+} from 'antd';
 import React from 'react';
 import { deleteCluster, listClusters } from '@/services/datasophon/cluster';
 import AuthModal from './AuthModal';
@@ -45,7 +55,9 @@ const ColonyManage: React.FC = () => {
               loading={loading}
               title={
                 <Space>
-                  <Typography.Text strong>{cluster.clusterName}</Typography.Text>
+                  <Typography.Text strong>
+                    {cluster.clusterName}
+                  </Typography.Text>
                   {cluster.clusterState && (
                     <Tag color={STATE_COLOR[cluster.clusterState] ?? 'default'}>
                       {cluster.clusterState}
@@ -55,18 +67,34 @@ const ColonyManage: React.FC = () => {
               }
               extra={
                 <Space>
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<RightCircleOutlined />}
+                    onClick={() => history.push(`/cluster/${cluster.id}/host`)}
+                  >
+                    进入
+                  </Button>
                   <BuildOrEditModal
                     cluster={cluster}
                     onSuccess={refresh}
                     trigger={
-                      <Button type="link" size="small" icon={<EditOutlined />} />
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<EditOutlined />}
+                      />
                     }
                   />
                   <AuthModal
                     cluster={cluster}
                     onSuccess={refresh}
                     trigger={
-                      <Button type="link" size="small" icon={<TeamOutlined />} />
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<TeamOutlined />}
+                      />
                     }
                   />
                   <Popconfirm
@@ -75,7 +103,12 @@ const ColonyManage: React.FC = () => {
                     okText="确认"
                     cancelText="取消"
                   >
-                    <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+                    <Button
+                      type="link"
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                    />
                   </Popconfirm>
                 </Space>
               }
@@ -89,7 +122,9 @@ const ColonyManage: React.FC = () => {
                 <div style={{ marginTop: 4 }}>
                   <Tag>{cluster.clusterFrame}</Tag>
                   {cluster.archType && (
-                    <Tag color={cluster.archType === 'k8s' ? 'blue' : 'geekblue'}>
+                    <Tag
+                      color={cluster.archType === 'k8s' ? 'blue' : 'geekblue'}
+                    >
                       {cluster.archType === 'k8s' ? 'K8s' : '物理集群'}
                     </Tag>
                   )}
@@ -99,7 +134,9 @@ const ColonyManage: React.FC = () => {
                 <div style={{ marginTop: 8 }}>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     管理员：
-                    {cluster.clusterManagerList!.map((m) => m.username).join('、')}
+                    {cluster
+                      .clusterManagerList!.map((m) => m.username)
+                      .join('、')}
                   </Typography.Text>
                 </div>
               )}

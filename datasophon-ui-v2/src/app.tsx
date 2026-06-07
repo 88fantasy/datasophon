@@ -91,9 +91,7 @@ export const layout: RunTimeLayoutConfig = ({
       // `locale` prop is a locale string, so narrow to the boolean toggle here.
       const localeEnabled =
         (initialState?.settings as { locale?: boolean })?.locale !== false;
-      return [
-        localeEnabled && <LangDropdown key="lang" />,
-      ].filter(Boolean);
+      return [localeEnabled && <LangDropdown key="lang" />].filter(Boolean);
     },
     avatarProps: {
       src: initialState?.currentUser?.avatar,

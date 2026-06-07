@@ -52,4 +52,7 @@ export default {
   'menu.chatbot': 'AI 助手',
   'menu.colony': '集群管理',
   'menu.colony.manage': '集群列表',
+  'menu.frame': '集群框架',
+  'menu.host': '主机管理',
+  'menu.user': '用户管理',
 };

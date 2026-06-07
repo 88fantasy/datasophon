@@ -10,10 +10,10 @@ import {
 import { Alert } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { startTransition, useState } from 'react';
-import Logo from './Logo';
 import { Footer } from '@/components';
 import { login } from '@/services/datasophon/auth';
 import Settings from '../../../../config/defaultSettings';
+import Logo from './Logo';
 
 const useStyles = createStyles(({ token }) => ({
   lang: {

@@ -114,4 +114,33 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfoEnt
                 Constants.USERNAME, username));
         return Result.success().put(Constants.DATA, list).put(Constants.TOTAL, total);
     }
+    
+    @Override
+    public Result updateUser(UserInfoEntity userInfo) {
+        // 用户名判重（排除自身）
+        List<UserInfoEntity> list =
+                this.list(new QueryWrapper<UserInfoEntity>().eq(Constants.USERNAME, userInfo.getUsername()));
+        if (Objects.nonNull(list) && list.size() >= 1) {
+            UserInfoEntity existing = list.get(0);
+            if (!existing.getId().equals(userInfo.getId())) {
+                return Result.error(Status.USER_NAME_EXIST.getCode(), Status.USER_NAME_EXIST.getMsg());
+            }
+        }
+        // 不传 password，依赖 MyBatis-Plus updateById 只更新非 null 字段，密码列不被触碰
+        userInfo.setPassword(null);
+        this.updateById(userInfo);
+        return Result.success();
+    }
+    
+    @Override
+    public Result resetPassword(Integer id, String rawPassword) {
+        if (!CheckUtils.checkPassword(rawPassword)) {
+            return Result.error(Status.REQUEST_PARAMS_NOT_VALID_ERROR.getCode(), rawPassword);
+        }
+        UserInfoEntity update = new UserInfoEntity();
+        update.setId(id);
+        update.setPassword(EncryptionUtils.getMd5(rawPassword));
+        this.updateById(update);
+        return Result.success();
+    }
 }

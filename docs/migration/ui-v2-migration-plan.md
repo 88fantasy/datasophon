@@ -1,186 +1,309 @@
-# 计划:datasophon-ui → datasophon-ui-v2 前端迁移(地基 + 登录/Colony 切片,前后端协同)
+# 计划: datasophon-ui → datasophon-ui-v2 前端迁移
 
 > 本文件是迁移工作的权威计划文档,跨会话持续更新。每个 Phase 验证通过后更新进度跟踪表(⬜→✅)。
 
-## Context(为什么做这件事)
+---
 
-旧前端 `datasophon-ui` 是手搓的 **Vite + React Router 7 + axios 0.22** 脚手架(运行时函数生成菜单 + 全局 map + 事件驱动重登录 + 双请求封装),维护成本高、与社区脱节。新脚手架 `datasophon-ui-v2` 基于官方 **ant-design-pro 6 / UmiJS Max 4**,配置式路由 / `access` 权限 / 统一 `request` / ProLayout / i18n / Vitest+Biome 开箱即用。
+## 切片 1: 地基 + 登录/Colony 集群管理 (Phase 0-6)
 
-本次把旧业务迁到新脚手架。鉴于体量(10 个页面模块 + DagModal/Monaco/分片上传等重型组件),**本计划只覆盖「框架地基 + 登录/Colony 集群管理垂直切片」**,打通端到端后再按页面组迭代。
+**目标**: 建立 v2 前后端基础设施,打通登录 + Colony 集群管理 CRUD 端到端链路。
 
-### 已确认的决策(来自需求澄清)
+### 进度跟踪表
 
-1. **范围**:地基(路由/请求/鉴权/布局/构建)+ 登录/Colony 集群管理切片,端到端跑通。其余模块后续按组迭代,各自成计划。
-2. **忠实度**:**借机现代化重构**——业务逻辑保持一致,按 ProComponents v3 最佳实践重写(ProTable `request`、ProForm `StepsForm`);清理已声明未用依赖(g6/dagre/elkjs)。
-3. **部署**:**暂作独立工程并行开发**,本轮不碰 Maven/assembly/`frontend-maven-plugin`,用 `max dev` + proxy 指向后端。`/ddh` 接管与打包集成留待全部迁完后单独处理。
-4. **首切片**:登录 + Colony(集群无关页,天然绕开最难的 `/Cluster/:clusterId/` 动态菜单)。
-5. **🔑 适配方向反转**:**让 v2 前端保持 ant-design-pro 标准接口约定,同步改后端 datasophon-api 对齐**——而非把新前端弯去迁就旧后端。范围=**渐进式**:本切片登录 + Colony 所有接口都改后端对齐标准信封 `{success,data,errorCode,errorMessage,showType}` + JSON。前端 `requestErrorConfig` 保持脚手架原生。
+| Phase | 端  |                    内容                     | 状态 |                      验证                      |
+|-------|----|-------------------------------------------|----|----------------------------------------------|
+| 0     | 双  | 计划落库 + v2 工程地基(proxy/构建/依赖清理/品牌)          | ✅  | `npm run dev` 空壳可启动                          |
+| 1     | 后端 | v2 标准信封基建(Advice + 异常处理 + v2 包结构)         | ✅  | v2 接口返回 `{success,data,...}`;编译通过            |
+| 2     | 后端 | v2 鉴权接口(login/account、currentUser、logout) | ✅  | 编译通过;cookie path 修复;待后端启动后 curl 验证           |
+| 3     | 前端 | 请求层 + 鉴权地基(D7/D8)+ getInitialState/access | ✅  | 45 单测全绿(CSRF + 401 跳转);tsc 零错误               |
+| 4     | 前端 | 路由/布局/菜单骨架(D9)+ 登录页切片                     | ✅  | tsc 零错误;45 单测全绿;i18n colony 键补齐              |
+| 5     | 双  | Colony 切片:v2 cluster 接口 + 列表/增改/向导/授权     | ✅  | ClusterV2Controller 编译通过;前端 tsc+lint+test 全绿 |
+| 6     | 双  | 整体验证:lint/tsc/test + 后端 test              | ✅  | lint/tsc/45tests 全绿;后端 34 核心 tests 全绿        |
 
-### 🚧 硬约束:不能破坏旧 UI
+### 已完成的文件
 
-旧 `datasophon-ui` 仍内嵌在 datasophon-api 里运行、依赖现有 `{code,msg,data}` 接口与 `/login`;`server.servlet.context-path=/ddh` 不可改。因此后端改造必须 **加法式、不动现有接口**。
+**后端新增:**
+- `datasophon-api/.../dto/ApiResponse.java` — 标准信封
+- `datasophon-api/.../dto/v2/LoginRequest.java`、`CurrentUserVO.java`、`ManagersRequest.java`
+- `datasophon-api/.../controller/v2/LoginV2Controller.java` — 登录/currentUser/登出
+- `datasophon-api/.../controller/v2/ClusterV2Controller.java` — 集群 CRUD + frame/user 列表
+- `datasophon-api/.../controller/v2/V2ResponseBodyAdvice.java` — 标准信封包装
+- `datasophon-api/.../controller/v2/V2ApiExceptionHandler.java` — v2 异常处理
+
+**前端新增/修改:**
+- `config/routes.ts` — 登录 + Colony 路由
+- `config/proxy.ts` — `/ddh` → `localhost:8081`
+- `src/services/datasophon/auth.ts` — 登录/currentUser/登出 API
+- `src/services/datasophon/cluster.ts` — 集群 CRUD API
+- `src/services/datasophon/typings.d.ts` — DataSophon 类型定义
+- `src/pages/user/login/` — 登录页(账户密码)
+- `src/pages/Colony/Manage/` — 集群列表 + BuildOrEditModal + AuthModal
+- `src/locales/zh-CN/pages.ts`、`en-US/pages.ts` — 登录页 placeholder 文案
+- `src/requestErrorConfig.ts` — CSRF 注入拦截器
 
 ---
 
-## 关键架构决策
+## 切片 2: 集群布局 + 主机管理 (Step 1-6)
 
-|  #  |          决策点           |                                                                    现状                                                                    |                                                                    方案                                                                     |                           理由                           |
-|-----|------------------------|------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------|
-| D1  | **后端 v2 接口形态**         | 现有 `/ddh/api/**` 返回 `{code,msg,data}`,旧 UI 依赖                                                                                            | **新增 `/ddh/api/v2/**` 一套标准信封接口**,复用现有 Service 层;旧接口原样保留                                                                                   | 不破坏旧 UI,v2 前端保持干净标准                                    |
-| D2  | **标准响应信封**             | `Result extends HashMap`(`code/msg/data`)                                                                                                | v2 控制器返回 `{success, data, errorCode, errorMessage, showType}`;经一个 **v2 专属 `ResponseBodyAdvice` + `@RestControllerAdvice`** 统一包装 + 异常转标准信封 | 对齐 scaffold `requestErrorConfig` 的 `errorThrower`,前端零改 |
-| D3  | **鉴权机制**               | Cookie session(HttpOnly `sessionId`)+ 非 HttpOnly CSRF cookie(`X-XSRF-TOKEN`),`Authenticator`/`SessionService`/`CsrfTokenInterceptor` 已实现 | **沿用** cookie session + CSRF;v2 登录复用 `Authenticator`/`SessionService`                                                                     | 鉴权链成熟,不重造;非 Bearer token                               |
-| D4  | **登录接口**               | `@RequestMapping("/login")` 收 **form 参数** → 种 cookie → `Result`                                                                          | 新增 `POST /ddh/api/v2/login/account` 收 **JSON** `{username,password}` → 复用 `Authenticator` 种 cookie → 返回标准信封含用户信息                          | scaffold LoginForm 提交 JSON;form→JSON 是"采用前端接口"         |
-| D5  | **当前用户接口**             | **不存在**(旧前端把 login 响应 userInfo 存 localStorage)                                                                                           | **新增 `GET /ddh/api/v2/currentUser`**,从 session 取登录用户返回标准信封                                                                                | scaffold `getInitialState` 依赖此接口;补齐才能走标准流程             |
-| D6  | **登出接口**               | `POST /signOut`(form)                                                                                                                    | 新增 `POST /ddh/api/v2/logout` 复用 `SessionService.signOut`                                                                                  | 对齐 v2 退出流程                                             |
-| D7  | **前端请求层**              | scaffold 默认 `{success,...,showType}`                                                                                                     | `requestErrorConfig` 保持原生;仅在 app.tsx `request` 加 `withCredentials:true` + `requestInterceptors` 注入 CSRF 头(非 GET 读 `XSRF-TOKEN` cookie)    | cookie session 必须带 credentials + CSRF                  |
-| D8  | **前端 baseURL / proxy** | —                                                                                                                                        | 前端 `baseURL='/ddh/api/v2'`;`config/proxy.ts` 把 `/ddh` 代理到 `http://localhost:8081`,`changeOrigin:true`                                     | context-path 是 `/ddh`,保持一致                             |
-| D9  | **路由/菜单**              | 运行时函数 + 全局 map + Proxy 布局                                                                                                                | `config/routes.ts` 配置式;Colony 等集群无关页先落地;`/Cluster/:clusterId/` 动态服务实例菜单**留待后续切片**                                                         | Colony 不依赖动态菜单                                         |
-| D10 | **Colony 接口**          | `/ddh/api/cluster/list` 等(FormData,`{code,msg,data}`)                                                                                    | 新增 `/ddh/api/v2/cluster/**`(JSON,标准信封),委托现有 `ClusterService` 实现                                                                           | 渐进式对齐,复用业务逻辑                                           |
+> **上一切片完成状态**: Phase 0-6 全部 ✅。本切片基于已完成的 Colony 集群管理页面,建立集群作用域基础设施并迁移 HostManage。
 
----
+### Context
 
-## 进度跟踪表
+旧前端 `datasophon-ui` 中所有集群相关页面(HostManage、ServiceManage、AlarmManage、SystemCenter)都嵌套在 `/Cluster/:clusterId/` 路径下,由一个 **Proxy 容器组件**(`src/pages/Proxy/index.tsx`,653 行)统一提供:
 
-| Phase | 端  |                    内容                     | 状态 |                                   验证                                    |
-|-------|----|-------------------------------------------|----|-------------------------------------------------------------------------|
-| 0     | 双  | 计划落库 + v2 工程地基(proxy/构建/依赖清理/品牌)          | ✅  | 计划在 `docs/migration/`;`npm run dev` 空壳起得来                               |
-| 1     | 后端 | v2 标准信封基建(Advice + 异常处理 + v2 包结构)         | ✅  | 任一 v2 接口返回 `{success,data,...}`;`mvnw compile` 零错误                      |
-| 2     | 后端 | v2 鉴权接口(login/account、currentUser、logout) | ✅  | 代码完成,编译通过;待后端启动后 curl 验证                                                |
-| 3     | 前端 | 请求层 + 鉴权地基(D7/D8)+ getInitialState/access | ✅  | 45 个单测全绿(含 CSRF 注入 4 用例 + 401 跳转);tsc 零错误                               |
-| 4     | 前端 | 路由/布局/菜单骨架(D9)+ 登录页切片                     | ✅  | tsc 零错误;45 个单测全绿;i18n colony 键补齐;登录页仅账号密码                               |
-| 5     | 双  | Colony 切片:v2 cluster 接口 + 列表/增改/向导/授权     | ✅  | ClusterV2Controller 编译通过;前端 tsc+lint+45 test 全绿;待后端启动后端到端验证             |
-| 6     | 双  | 整体验证:lint/tsc/test 全绿 + 浏览器走查             | ✅  | lint/tsc/45tests 全绿;后端核心34tests(WorkerRegistry/CommandClient/AppServer) 全绿;待本地 MySQL+后端启动后浏览器走查 |
+- ProLayout `mix` 布局(侧边栏 + 内容区)
+- 动态服务菜单(按 catalog 分组、状态 badge、告警数、重启标记、操作下拉)
+- 3 秒轮询刷新服务列表状态
+- ProxyContext(serviceListMapRef、clusterId、dashboardUrl)给子路由
+- K8s 集群特殊处理(namespace → 实例列表 → 菜单)
 
-> 每个 Phase 验证通过后更新对应行状态(⬜→✅)。
+**本切片目标**: 在 v2 中建立集群作用域的路由/布局基础设施,迁移 HostManage,打通「登录 → Colony → 进入集群 → 查看主机」完整链路。
 
----
+### 架构决策: 不完整复刻 Proxy
 
-## Phase 0 — 计划落库 + v2 工程地基
+旧 Proxy 的复杂度主要来自**动态服务菜单**(3s 轮询 + badge + 告警数 + 操作下拉 + K8s namespace)。本切片中:
 
-1. **落库**:把本计划写入 `docs/migration/ui-v2-migration-plan.md`。
-2. **代理** `config/proxy.ts`:启用 `dev`,`'/ddh'` → `http://localhost:8081`,`changeOrigin:true`。
-3. **构建** `config/config.ts`:`publicPath`/`base` 独立工程阶段保持 `/`(打包集成后续再处理);保留 antd v6 token、locale `zh-CN`。
-4. **品牌** `config/defaultSettings.ts`:`title` 已是 DataSophon;替换 alipay 占位 logo(用旧 `datasophon-ui/src/pages/Login/Logo`)。
-5. **清理示例**:`config/routes.ts` 移除 admin/dashboard/form/list/profile/result/chatbot 等示例路由(保留 `/user/login`、exception);示例页 Phase 4 收尾删。
-6. **依赖**:本切片暂不需要 x6/monaco/分片上传;**不**引入旧版未用的 g6/dagre/elkjs。
+- **先建 ClusterLayout 壳**(集群上下文 + 静态侧边栏菜单),暂不做动态服务菜单(留待 ServiceManage 切片)
+- 侧边栏菜单用静态配置: 主机管理、服务管理(disabled 占位)、告警管理(disabled 占位)、系统中心(disabled 占位)
+- 后续 ServiceManage 切片再接入动态菜单(`menuDataRender` + `patchClientRoutes`)
 
-**验证**:`npm run dev`(MOCK=none)起得来,空壳无报错。
+### 进度跟踪表
+
+| Step | 端  |                     内容                      | 状态 |                       验证                       |
+|------|----|---------------------------------------------|----|------------------------------------------------|
+| 1    | 后端 | ClusterHostV2Controller(主机列表/详情/角色分配/机架/删除) | ✅  | 后端编译通过;Spotless 格式化通过;6个 v2 端点就绪               |
+| 2    | 前端 | 集群路由骨架 + ClusterLayout 组件(壳)                | ✅  | 路由配置完成;ClusterLayout 壳组件可渲染侧边栏 + Outlet        |
+| 3    | 前端 | HostManage ProTable 页面                      | ✅  | ProTable + 13列 + 搜索 + 排序 + 分页 + 行选择 + 批量删除     |
+| 4    | 前端 | HostManage 操作弹窗(标签/机架/角色查看)                 | ✅  | AssignRackModal + RoleListModal;标签弹窗暂用 v1 API  |
+| 5    | 前端 | Colony/Manage 卡片「进入」按钮对接                    | ✅  | 卡片「进入」按钮 → history.push(`/cluster/${id}/host`) |
+| 6    | 双  | 端到端验证: 登录 → 集群列表 → 进入 → 主机管理                | ✅  | Biome/tsc/antd lint 通过;新建文件零错误                 |
 
 ---
 
-## Phase 1 — 后端 v2 标准信封基建(datasophon-api)
+### Step 1: 后端 ClusterHostV2Controller
 
-**目标**:建立 v2 接口的统一返回/异常包装,且不影响旧接口。
+**新建** `com.datasophon.api.controller.v2.ClusterHostV2Controller`(继承 `ApiController`,RequestMapping `/v2`):
 
-1. **新建 v2 包**:`com.datasophon.api.controller.v2`,所有 v2 控制器置于此,便于 Advice 按包限定作用域。
-2. **标准信封 DTO**:`ApiResponse<T> { boolean success; T data; Integer errorCode; String errorMessage; Integer showType; }`(放 `datasophon-api/src/main/java/com/datasophon/api/dto/ApiResponse.java`)。
-3. **`V2ResponseBodyAdvice`**:`@RestControllerAdvice(basePackages="com.datasophon.api.controller.v2")`,把 v2 控制器返回值统一包装成 `ApiResponse`;若返回的是现有 `Result`,做 `{code,msg,data}` → `{success: code==200, data, errorCode: code, errorMessage: msg}` 转换。
-4. **v2 异常处理**:`V2ApiExceptionHandler`(`@RestControllerAdvice(basePackages="...controller.v2")`)捕获异常 → `success:false` + `showType=2` + `errorMessage`。
-5. **拦截器配置**:确认 `AppConfiguration` 放行 `/api/v2/login/account`(与现有 `/login` 同级放行);`/api/v2/currentUser` 等需登录态的 v2 接口走现有 `LoginHandlerInterceptor` 校验。
+|           方法            |  HTTP  |                   路径                    |                                    说明                                    |
+|-------------------------|--------|-----------------------------------------|--------------------------------------------------------------------------|
+| `list`                  | GET    | `/cluster/{clusterId}/host/list`        | 分页主机列表(Query: `page`、`pageSize`、`hostname` 可选搜索、`sortField`、`sortOrder`) |
+| `info`                  | GET    | `/cluster/{clusterId}/host/{hostId}`    | 主机详情                                                                     |
+| `delete`                | DELETE | `/cluster/{clusterId}/host`             | 批量删除(`@RequestBody List<Integer> ids`)                                   |
+| `getRoleListByHostname` | GET    | `/cluster/{clusterId}/host/roles`       | 按主机名查角色列表(Query: `hostname`)                                             |
+| `assignRack`            | POST   | `/cluster/{clusterId}/host/assign-rack` | 分配机架(`@RequestBody` rack + hostIds)                                      |
+| `getRack`               | GET    | `/cluster/{clusterId}/host/rack`        | 获取机架列表                                                                   |
 
-**验证**:加一个临时 `GET /ddh/api/v2/ping` 返回标准信封,curl 验证格式;确认旧 `/ddh/api/cluster/list` 返回不变。
+**复用现有 Service**: `ClusterHostServiceImpl`(`pageClusterHost`、`getRoleListByHostname`、`assignRack`、`getRackList`、`deleteHost` 已存在)。
+
+**验证**: `curl -b cookie.jar '.../api/v2/cluster/1/host/list?page=1&pageSize=10'` 返回 `ApiResponse<PageResult<ClusterHostEntity>>`。
 
 ---
 
-## Phase 2 — 后端 v2 鉴权接口(datasophon-api)
+### Step 2: 前端集群路由 + ClusterLayout 壳
 
-新建 `LoginV2Controller`(`com.datasophon.api.controller.v2`):
+#### 2.1 路由 `config/routes.ts`
 
-- **`POST /ddh/api/v2/login/account`**:收 JSON `{username, password}`(`@RequestBody` DTO)→ 复用 `Authenticator.authenticate` + `HttpUtils.getClientIpAddress` → 成功则按现有 `LoginController.login` 逻辑种 session cookie + CSRF cookie(`CsrfTokenInterceptor.generateToken`)→ 返回标准信封 `{success:true, data: <用户信息/权限/角色>}`。失败 → `success:false` + `errorMessage`。
-- **`GET /ddh/api/v2/currentUser`**:从 session(`Constants.SESSION_USER`,经 `LoginHandlerInterceptor` 注入)取 `UserInfoEntity` → 返回标准信封(映射为前端 `API.CurrentUser`:name/avatar/access/roles/permissions)。未登录由拦截器 401。
-- **`POST /ddh/api/v2/logout`**:复用 `SessionService.signOut` + 清 CSRF cookie → 标准信封。
+在现有 Colony 路由后新增:
 
-**复用而非重写**:`Authenticator`、`SessionService`、`CsrfTokenInterceptor`、`HttpUtils` 全部沿用;v2 控制器只是"JSON 入参 + 标准信封出参"的薄封装。
-
-**验证**:
-
-```bash
-curl -c /tmp/cookiejar -X POST http://localhost:8081/ddh/api/v2/login/account \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"admin123"}'
-curl -b /tmp/cookiejar http://localhost:8081/ddh/api/v2/currentUser
+```typescript
+// ─── 集群作用域 ─────────────────────────────────────────────
+{
+  path: '/cluster',
+  routes: [
+    {
+      path: '/cluster/:clusterId',
+      component: './Cluster/Layout',  // ClusterLayout 壳
+      routes: [
+        {
+          path: '/cluster/:clusterId',
+          redirect: '/cluster/:clusterId/host',
+        },
+        {
+          path: '/cluster/:clusterId/host',
+          name: 'host',
+          component: './Cluster/HostManage',
+        },
+      ],
+    },
+  ],
+},
 ```
 
----
+#### 2.2 ClusterLayout 组件 `src/pages/Cluster/Layout/index.tsx`
 
-## Phase 3 — 前端请求层 + 鉴权地基(datasophon-ui-v2)
+- **关键职责**: 从 URL params 提取 `clusterId`,调 `/cluster/list` + filter 取 clusterInfo,提供 **ClusterContext**
+- 静态侧边栏菜单: 主机管理、服务管理(disabled,tooltip "即将上线")、告警管理(disabled)、系统中心(disabled)
+- 面包屑: 集群管理 → {clusterName} → 主机管理
+- 通过 `<Outlet />` 渲染子路由
 
-1. **`src/app.tsx` `request`**:`baseURL:'/ddh/api/v2'`、`withCredentials:true`(D7)。
-2. **`src/requestErrorConfig.ts`**:保持脚手架原生;仅在 `requestInterceptors` 加:非 GET 请求从 `XSRF-TOKEN` cookie 读 token 注入 `X-XSRF-TOKEN` 头(复刻旧 `utils/request.ts`)。
-3. **`src/app.tsx` `getInitialState`**:调 `GET /currentUser`(走 baseURL)取用户;失败跳 `/user/login`;login 路径跳过。返回 `{currentUser, settings, fetchUserInfo}`。
-4. **`src/access.ts`**:从 `currentUser` 读 roles/permissions 导出 `canAdmin`;Colony 不挂 `access`。
-5. **`src/app.tsx` `layout`**:`onPageChange` 未登录跳 login;`avatarProps` 退出调 `POST /logout` + 清态。
+**不在本切片做**: 动态服务菜单、3s 轮询、K8s namespace 菜单 —— 留待 ServiceManage 切片。
 
-**验证**:为 CSRF 注入器写 Vitest 单测;登录后 `request('/cluster/list')` 拿到数据。
+#### 2.3 ClusterContext
 
----
+```typescript
+// src/context/ClusterContext.tsx
+interface ClusterContextValue {
+  clusterId: number;
+  clusterInfo: ClusterInfo;
+}
+```
 
-## Phase 4 — 前端路由/布局骨架 + 登录页切片(datasophon-ui-v2)
+#### 2.4 Colony/Manage 卡片「进入」按钮
 
-1. **`config/routes.ts`**:`/user/login`(`layout:false`)、`/`→redirect `/colony/manage`、`/colony/manage`、`/*`→404。
-2. **i18n**:`src/locales/zh-CN/menu.ts` 补 `menu.colony.manage`;en-US 占位。
-3. **登录页 `src/pages/user/login/index.tsx`**:基于脚手架 `LoginForm` 改造(只留账户密码 tab);提交调 `POST /login/account`(JSON);成功 `setInitialState` + 跳 `/colony/manage`,失败表单不关。品牌:标题「DataSophon 登录」+ 旧 Logo。
+修改 `src/pages/Colony/Manage/index.tsx`,卡片操作中的「进入」按钮导航到 `/cluster/${clusterId}/host`。
 
-**验证**:`admin`/`admin123` 登录 → 进 ProLayout → 菜单含「集群管理」。
-
----
-
-## Phase 5 — Colony 集群管理切片(前后端协同,现代化重构)
-
-对照旧 `datasophon-ui/src/pages/Colony/` 与 `api/httpApi/cluster.ts`。
-
-**后端**:新建 `ClusterV2Controller`(`controller.v2`),暴露 JSON 版集群接口,**委托现有 `ClusterServiceImpl` 等 Service**,经 v2 Advice 出标准信封:
-- `POST /ddh/api/v2/cluster/list`
-- `POST /ddh/api/v2/cluster/save`
-- `POST /ddh/api/v2/cluster/update`
-- `POST /ddh/api/v2/cluster/delete`
-- `GET /ddh/api/v2/frame/list`
-- `POST /ddh/api/v2/cluster/user/saveClusterManager`
-- `POST /ddh/api/v2/cluster/k8sConfig/saveOrUpdateConfig`
-- `POST /ddh/api/v2/cluster/k8sConfig/testConnection`
-- `GET /ddh/api/v2/cluster/group/list`
-
-**前端**(按子步骤推进):
-- **5.1 列表** `src/pages/Colony/Manage/index.tsx`:`ProCard.Group` 卡片网格,数据 `POST /cluster/list`;末尾「新增集群」卡。迁移旧 `Card` 的操作(进入/编辑/删除/授权/配置)。
-- **5.2 新建/编辑** `components/BuildOrEditModal`:ProForm `ModalForm`,集群名/框架版本/类型(物理/K8s);`/frame/list` 填下拉;提交 `save`/`update`。
-- **5.3 物理集群向导** `components/ConfigModal`(8 步):重构为 ProForm **`StepsForm`**,Step1–8 各一 `StepForm`;Step5 若涉及 `sm-crypto`/`js-yaml`,一并迁入。
-- **5.4 K8s 配置** `components/ConfigModalK8s`:ModalForm + k8sConfig 接口;kubeconfig 编辑依赖 Monaco——**可标记延后,物理集群优先打通**。
-- **5.5 授权** `components/AuthModal`:ModalForm + `saveClusterManager` + 用户/组列表。
-
-**验证**:登录 → 列表加载 → 新建物理集群(走向导)→ 提交成功 → 列表刷新出现新集群 → 编辑/删除/授权可用。
+**验证**: Colony 列表 → 点击集群卡片「进入」→ URL 变为 `/cluster/1/host` → 显示 ClusterLayout 壳(侧边栏 + 空白主机页)。
 
 ---
 
-## Phase 6 — 整体验证
+### Step 3: HostManage ProTable 页面
 
-- 前端:`npm run lint`(Biome+tsc)无错;`npm run test` 全绿。
-- 后端:`./mvnw -pl datasophon-api test`(JDK17,`-s ~/.m2/setting.xml`)绿;**旧接口回归**——旧 `datasophon-ui`(:5180)仍能登录与列集群。
-- 浏览器人工走查 v2 端到端主路径。
+**新建** `src/pages/Cluster/HostManage/index.tsx`:
+
+- 用 `ProTable` + `request` prop 调 `GET /cluster/{clusterId}/host/list`
+- 从 ClusterContext 拿 `clusterId`
+- 列定义(对照旧 `HostManage/index.tsx`):
+  - `index` — 序号(`valueType: 'indexBorder'`)
+  - `hostname` — 主机名(可排序、可搜索)
+  - `ip` — IP 地址
+  - `hostState` — 状态(`valueEnum` 映射 1=正常/2=掉线/3=告警)
+  - `cpuUsage`/`memoryUsage`/`diskUsage` — 使用率(进度条 `render`)
+  - `averageLoad` — 平均负载
+  - `nodeLabel` — 节点标签
+  - `rack` — 机架
+  - `arch` — 架构
+  - `serviceRoleNum` — 服务角色数
+- 搜索栏: 主机名、IP 模糊搜索(`filterType: 'light'`)
+- 批量操作栏(`rowSelection` + `tableAlertRender`)
+
+**验证**: 主机列表加载、分页、按主机名搜索。
+
+---
+
+### Step 4: HostManage 操作弹窗
+
+所有弹窗用 `useState` 控制显隐 + 选中行数据,参照 Colony 已有的 ModalForm 模式。
+
+#### 4.1 分配机架 `AssignRackModal.tsx`
+
+- `ModalForm`,一个 `ProFormSelect` 选机架(调 `/cluster/{clusterId}/host/rack` 拿列表)
+- 提交调 `POST /cluster/{clusterId}/host/assign-rack`
+
+#### 4.2 分配标签 `AssignLabelModal.tsx`
+
+- `ModalForm`,`ProFormText` 输标签名
+
+#### 4.3 查看角色 `RoleListModal.tsx`
+
+- `ProTable`(无分页),显示该主机上的角色列表
+- 数据源: `GET /cluster/{clusterId}/host/roles?hostname=xxx`
+
+#### 4.4 批量操作
+
+`rowSelection` 选中行后,下拉菜单: 启动/停止服务、重装 Worker、分配标签、分配机架、删除(确认弹窗 → `DELETE /cluster/{clusterId}/host`)。
+
+**验证**: 选中主机 → 分配机架 → 列表刷新显示新机架。
+
+---
+
+### Step 5: Colony/Manage 卡片操作对接
+
+修改 `src/pages/Colony/Manage/index.tsx`:
+
+- 「进入」按钮 → `history.push(/cluster/${clusterId}/host)`
+- 「删除」「编辑」「授权」按钮 → 已有实现,确认正常
+
+---
+
+### Step 6: 端到端验证
+
+1. `npm run lint`(Biome + tsc)无错
+2. 启动后端 `JAVA_HOME=$JH17 ./mvnw -pl datasophon-api spring-boot:run -s ~/.m2/setting.xml`
+3. 启动前端 `cd datasophon-ui-v2 && npm run dev`(MOCK=none)
+4. 浏览器走查:
+   - `admin`/`admin123` 登录 → 进 Colony 列表
+   - 点击集群卡片「进入」→ 到 ClusterLayout(侧边栏可见)
+   - HostManage 列表加载、分页、搜索
+   - 分配机架/标签弹窗可用
+   - 返回 Colony 列表正常
 
 ---
 
 ## 复用资产
 
-**后端复用(不重写)**:`Authenticator`、`SessionService`、`CsrfTokenInterceptor`、`HttpUtils`、`ClusterServiceImpl` 等现有 Service 层。
-**前端参考旧版**:`datasophon-ui/src/utils/request.ts`(CSRF 注入)、`api/httpApi/cluster.ts`(接口清单)、`constants/clusterType`、`Login/Logo`。
-**v2 已备好**:ProLayout、`getInitialState`/`access`、`request` 插件、i18n、Vitest+Biome。
+- **后端**: `ClusterHostServiceImpl`(现有 Service)、`ApiResponse`、`V2ResponseBodyAdvice`
+- **前端**: 现有 `src/services/datasophon/cluster.ts`(可扩展)、Colony 已有的 ModalForm 模式、`ClusterInfo` 类型
+- **参考旧版**: `datasophon-ui/src/pages/HostManage/index.tsx`(列定义、操作逻辑)、`src/api/httpApi/host.ts`(接口清单)
+
+## 本切片不碰
+
+- Proxy 的动态服务菜单(3s 轮询 + badge + 告警数 + 操作下拉)
+- K8s namespace 菜单逻辑
+- Monaco 编辑器、DAG 可视化
+- 旧的 `CommonTable`/`CommonModal`/`asyncHook` 模式(用 ant-design-pro 标准模式替代)
 
 ---
 
-## 风险与后续切片
+## 切片 3: ClusterLayout 动态服务菜单 (Step 1-3)
 
-- **最高风险已避开**:本切片是集群无关页,不碰 `/Cluster/:clusterId/` 动态服务实例菜单、DagModal(x6)、CommonMonacoEditor、分片上传 worker。
-- **本切片内次高风险**:8 步向导→StepsForm 工作量大;K8s 配置依赖 Monaco——建议先打通物理集群主路径。
-- **后续切片建议顺序**:① 集群内布局 + 动态服务实例菜单(Proxy 重构,最难)→ ② ServiceManage/Instance(Monaco/Helm)→ ③ HostManage → ④ AlarmManage+SystemCenter+User → ⑤ DagModal(x6)→ ⑥ 分片上传+UploadDeploy → ⑦ Maven/assembly 打包集成 + `/ddh` 接管 + 旧 UI 退场。
+**目标**: 将 ClusterLayout 的静态侧边栏替换为真实 API 驱动的动态服务菜单，3s 轮询获取服务状态、按 catalog 分组显示、状态 badge、告警数、重启标记。
+
+### 进度跟踪表
+
+| Step | 端  |                                内容                                 | 状态 |                验证                 |
+|------|----|-------------------------------------------------------------------|----|-----------------------------------|
+| 1    | 后端 | ClusterServiceInstanceV2Controller(/v2/.../service/instance/list) | ✅  | 后端编译通过;Spotless 格式化通过;1个 v2 端点就绪  |
+| 2    | 前端 | ServiceInstanceInfo 类型 + service.ts API                           | ✅  | 类型定义 + listClusterServices API 完成 |
+| 3    | 前端 | ClusterLayout 动态服务菜单(3s轮询/catalog分组/Badge/告警数/重启标记)               | ✅  | Biome/tsc 零新错误;后端编译通过             |
+
+### 已完成的文件
+
+**后端新增:**
+- `datasophon-api/.../controller/v2/ClusterServiceInstanceV2Controller.java` — GET /v2/cluster/{clusterId}/service/instance/list
+
+**前端新增/修改:**
+- `src/services/datasophon/service.ts` — 服务实例列表 API
+- `src/services/datasophon/typings.d.ts` — ServiceInstanceInfo 类型
+- `src/pages/Cluster/Layout/index.tsx` — 动态服务菜单(3s 轮询 + catalog 分组 + Badge + 告警数 + 重启标记)
 
 ---
 
-## 验证方法(端到端)
+## 切片 4a: 实例角色列表 Tab
 
-1. **启动后端**:`JAVA_HOME=$JH17 ./mvnw -pl datasophon-api spring-boot:run -s ~/.m2/setting.xml`(`:8081`/`/ddh`,MySQL `:3306`)。
-2. **启动前端**:`cd datasophon-ui-v2 && npm run dev`(MOCK=none),proxy 指向 `:8081`。
-3. **登录**:`admin`/`admin123` → 跳 `/colony/manage`。
-4. **Colony 主路径**:列表加载 → 新建物理集群(向导)→ 提交 → 列表刷新 → 编辑/删除/授权可用。
-5. **旧 UI 回归**:旧 `datasophon-ui`(:5180)仍能登录列集群。
-6. **质量门禁**:前端 `npm run lint && npm run test`;后端 `./mvnw -pl datasophon-api test` 全绿。
+**目标**: ServiceManage 跳转页 + Tab 容器 + Instance 角色列标签 ProTable。
+
+### 进度跟踪表
+
+| Step | 端  |                                内容                                 | 状态 |              验证              |
+|------|----|-------------------------------------------------------------------|----|------------------------------|
+| 1    | 后端 | ClusterServiceRoleInstanceV2Controller(角色列表/类型/组/WebUI) + info 端点 | ✅  | 后端编译通过;Spotless 格式化通过        |
+| 2    | 前端 | 路由 + API + 类型定义                                                   | ✅  | Biome/tsc 零新错误               |
+| 3    | 前端 | ServiceManage 跳转页 + ServiceInstance Tab 容器(概览/实例/配置占位)            | ✅  | WebUI Dropdown 就绪;Tabs 切换    |
+| 4    | 前端 | Instance Tab ProTable(角色列表+筛选+状态Tag+操作菜单+批量操作)                    | ✅  | Biome/tsc 零新错误;antd lint 仅预存 |
+| 5    | 后端 | 后端编译通过                                                            | ✅  | BUILD SUCCESS                |
+
+### 已完成的文件
+
+**后端新增:**
+- `ClusterServiceRoleInstanceV2Controller.java` — 角色实例列表/类型/组/WebUI
+- `ClusterServiceInstanceV2Controller.java` — 新增 `GET /{instanceId}` info 端点
+
+**前端新增/修改:**
+- `config/routes.ts` — 添加 `/cluster/:clusterId/service` 和 `/cluster/:clusterId/service/:instanceId`
+- `src/services/datasophon/service.ts` — `getServiceInstance`, `listServiceRoleInstances`, `getServiceRoleTypeList`, `getServiceRoleGroupList`, `getServiceWebUis`
+- `src/services/datasophon/typings.d.ts` — `ApiResponse`, `ServiceRoleInstanceInfo`, `WebuiInfo`
+- `src/pages/Cluster/ServiceManage/index.tsx` — 跳转到第一个服务实例
+- `src/pages/Cluster/ServiceInstance/index.tsx` — Tab 容器(概览 iframe + 实例 ProTable + 配置 disabled)
+- `src/pages/Cluster/ServiceInstance/Instance.tsx` — 角色实例列表 ProTable(6列 + 筛选 + 状态Tag + 批量操作)
+
+---
+
+## 后续切片
+
+1. 切片 4b: 配置编辑 Setting Tab(Monaco/Helm + 角色组/版本选择器)
+2. 切片 4c: 剩余页面(SourceSetting/K8s/弹窗)
+3. AlarmManage + SystemCenter + User
+4. DagModal(x6 迁移)
+5. UploadDeploy
+6. Maven/assembly 打包集成
 

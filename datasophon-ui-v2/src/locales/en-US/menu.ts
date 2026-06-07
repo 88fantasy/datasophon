@@ -52,4 +52,7 @@ export default {
   'menu.chatbot': 'AI Assistant',
   'menu.colony': 'Cluster Management',
   'menu.colony.manage': 'Cluster List',
+  'menu.frame': 'Cluster Frameworks',
+  'menu.host': 'Host Management',
+  'menu.user': 'User Management',
 };

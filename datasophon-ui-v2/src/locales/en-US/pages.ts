@@ -1,5 +1,6 @@
 export default {
-  'pages.layouts.userLayout.title': 'Big Data Cluster Automation & Operations Platform',
+  'pages.layouts.userLayout.title':
+    'Big Data Cluster Automation & Operations Platform',
   'pages.login.accountLogin.tab': 'Account Login',
   'pages.login.accountLogin.errorMessage': 'Incorrect username or password',
   'pages.login.failure': 'Login failed, please try again!',

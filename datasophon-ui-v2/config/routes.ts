@@ -34,23 +34,59 @@ export default [
     path: '/colony',
     name: 'colony',
     icon: 'cluster',
+    component: './Colony/Manage',
+  },
+
+  // ─── 集群框架 ──────────────────────────────────────────────────
+  {
+    path: '/frame',
+    name: 'frame',
+    icon: 'appstore',
+    component: './Frame',
+  },
+
+  // ─── 集群作用域 ────────────────────────────────────────────────
+  {
+    path: '/cluster',
     routes: [
       {
-        path: '/colony',
-        redirect: '/colony/manage',
-      },
-      {
-        path: '/colony/manage',
-        name: 'manage',
-        component: './Colony/Manage',
+        path: '/cluster/:clusterId',
+        component: './Cluster/Layout',
+        routes: [
+          {
+            path: '/cluster/:clusterId',
+            redirect: '/cluster/:clusterId/host',
+          },
+          {
+            path: '/cluster/:clusterId/host',
+            name: 'host',
+            component: './Cluster/HostManage',
+          },
+          {
+            path: '/cluster/:clusterId/service',
+            component: './Cluster/ServiceManage',
+          },
+          {
+            path: '/cluster/:clusterId/service/:instanceId',
+            component: './Cluster/ServiceInstance',
+          },
+        ],
       },
     ],
+  },
+
+  // ─── 用户管理 ──────────────────────────────────────────────────
+  {
+    path: '/user-manage',
+    name: 'user',
+    icon: 'user',
+    component: './User/Manage',
   },
 
   // ─── 根路径重定向 ─────────────────────────────────────────────────
   {
     path: '/',
-    redirect: '/colony/manage',
+    redirect: '/colony',
   },
 
   // ─── 404 兜底 ─────────────────────────────────────────────────────
