@@ -28,6 +28,14 @@ export default [
     ],
   },
 
+  // ─── AI 助手 ───────────────────────────────────────────────────
+  {
+    path: '/chatbot',
+    name: 'chatbot',
+    icon: 'robot',
+    component: './chatbot',
+  },
+
   // ─── 集群管理（Colony）────────────────────────────────────────────
   // Phase 4 实现登录页后解注释；Phase 5 实现 Colony 页面
   {
