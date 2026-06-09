@@ -22,6 +22,10 @@
 
 package com.datasophon.api.configuration;
 
+import jakarta.annotation.PostConstruct;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -29,9 +33,19 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "datasophon.ai")
 public class AiProperties {
     
+    private static final Logger log = LoggerFactory.getLogger(AiProperties.class);
+    
     private String sidecarUrl = "http://localhost:18090";
     
     private String internalToken = "change-me";
+    
+    @PostConstruct
+    public void validate() {
+        if ("change-me".equals(internalToken)) {
+            log.warn("datasophon.ai.internal-token is using the default insecure value. "
+                    + "Set DDH_AI_INTERNAL_TOKEN environment variable in production.");
+        }
+    }
     
     public String getSidecarUrl() {
         return sidecarUrl;

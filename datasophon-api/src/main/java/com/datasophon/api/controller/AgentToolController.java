@@ -42,6 +42,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * AI Agent 工具回调的内部只读端点（供 datasophon-ai-agent sidecar 调用）。
+ *
+ * <p>此控制器不继承 {@link ApiController}，因此路径为 {@code /ddh/internal/agent/**}
+ * 而非 {@code /ddh/api/internal/agent/**}。登录/CSRF 拦截器仅覆盖 {@code /ddh/api/**}，
+ * 故这些端点不在拦截范围内——这是故意设计的，鉴权通过 X-Agent-Token 共享 token 完成。
+ */
 @RestController
 @RequestMapping("/internal/agent")
 public class AgentToolController {

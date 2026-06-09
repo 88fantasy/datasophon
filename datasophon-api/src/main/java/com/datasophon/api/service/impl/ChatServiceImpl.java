@@ -31,6 +31,7 @@ import com.datasophon.dao.mapper.ChatConversationMapper;
 import com.datasophon.dao.mapper.ChatMessageMapper;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -53,6 +54,11 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public SseEmitter chat(ChatRequest req, UserInfoEntity user) {
         SseEmitter emitter = new SseEmitter(600_000L);
+        // Filter out any messages with roles other than user/assistant to prevent prompt injection
+        List<Map<String, String>> safeMessages = req.getMessages().stream()
+                .filter(m -> "user".equals(m.get("role")) || "assistant".equals(m.get("role")))
+                .toList();
+        req.setMessages(safeMessages);
         ChatConversationEntity conv = resolveConversation(req, user.getId());
         String userContent = req.getMessages().stream()
                 .filter(m -> "user".equals(m.get("role")))

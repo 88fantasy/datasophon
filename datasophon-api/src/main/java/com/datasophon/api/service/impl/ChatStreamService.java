@@ -90,6 +90,9 @@ public class ChatStreamService {
                     httpReq, HttpResponse.BodyHandlers.ofInputStream());
             
             if (resp.statusCode() != 200) {
+                emitter.send(SseEmitter.event()
+                        .name("error")
+                        .data("AI sidecar returned " + resp.statusCode()));
                 emitter.send(SseEmitter.event().data("[DONE]"));
                 emitter.complete();
                 return;
