@@ -17,7 +17,11 @@ import React, {
 } from 'react';
 
 import type { ConversationItem, ParsedMessage } from './data';
-import { createChatProvider } from './service';
+import {
+  createChatProvider,
+  deleteConversation,
+  fetchConversations,
+} from './service';
 import { useStyles } from './style';
 
 const WELCOME_TEXT = '🤖 你好，有什么可以帮你？';
@@ -118,53 +122,32 @@ const ChatbotPage: React.FC = () => {
   const idCounter = useRef(0);
   const generateId = useCallback(() => `conv-${++idCounter.current}`, []);
 
-  const [conversations, setConversations] = useState<ConversationItem[]>([
-    { key: 'default', label: '💬 新对话', group: '今天', isDraft: true },
-    {
-      key: 'preset-1',
-      label: '🧩 Ant Design 的 Form 表单如何做联动校验？',
-      group: '今天',
-    },
-    {
-      key: 'preset-2',
-      label: '📋 ProTable 如何自定义工具栏按钮？',
-      group: '今天',
-    },
-    {
-      key: 'preset-3',
-      label: '🎨 如何用 antd-style 实现暗色主题切换？',
-      group: '昨天',
-    },
-    {
-      key: 'preset-4',
-      label: '🗂️ ProLayout 侧边菜单如何动态生成？',
-      group: '昨天',
-    },
-    {
-      key: 'preset-5',
-      label: '📊 Ant Design Charts 折线图数据格式',
-      group: '昨天',
-    },
-    {
-      key: 'preset-6',
-      label: '🚀 Ant Design Pro 如何接入后端权限系统？',
-      group: '更早',
-    },
-    {
-      key: 'preset-7',
-      label: '🔍 ProForm 中 Select 远程搜索怎么实现？',
-      group: '更早',
-    },
-    {
-      key: 'preset-8',
-      label: '⚙️ Ant Design Token 定制主题最佳实践',
-      group: '更早',
-    },
-  ]);
-  const [activeKey, setActiveKey] = useState<string>('default');
+  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [activeKey, setActiveKey] = useState<string>('');
   const [inputValue, setInputValue] = useState('');
+  const [activeConvId, setActiveConvId] = useState<number | undefined>();
 
-  const provider = useMemo(() => createChatProvider() as any, []);
+  useEffect(() => {
+    fetchConversations()
+      .then((convs) => {
+        if (convs.length > 0) {
+          setConversations(convs);
+          setActiveKey(convs[0].key);
+          setActiveConvId(Number(convs[0].key));
+        } else {
+          newChat();
+        }
+      })
+      .catch(() => {
+        newChat();
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const provider = useMemo(
+    () => createChatProvider(activeConvId) as any,
+    [activeConvId],
+  );
   const { onRequest, abort, isRequesting, parsedMessages } = useXChat<
     any,
     ParsedMessage
@@ -174,6 +157,14 @@ const ChatbotPage: React.FC = () => {
     parser,
     requestPlaceholder: { role: 'assistant', content: '' },
   });
+
+  const handleActiveChange = (key: string) => {
+    setActiveKey(key);
+    const convId = Number(key);
+    if (!Number.isNaN(convId)) {
+      setActiveConvId(convId);
+    }
+  };
 
   const sendMessage = (content: string) => {
     setInputValue('');
@@ -185,6 +176,11 @@ const ChatbotPage: React.FC = () => {
       ),
     );
     onRequest({ messages: [{ role: 'user', content }] });
+    setTimeout(() => {
+      fetchConversations()
+        .then(setConversations)
+        .catch(() => {});
+    }, 2000);
   };
 
   const newChat = () => {
@@ -258,27 +254,28 @@ const ChatbotPage: React.FC = () => {
               <Conversations
                 items={conversations}
                 activeKey={activeKey}
-                onActiveChange={setActiveKey}
+                onActiveChange={handleActiveChange}
                 groupable
                 menu={(conversation) => ({
                   items: [{ key: 'delete', label: '删除', danger: true }],
                   onClick: ({ key }) => {
                     if (key === 'delete') {
+                      const convId = Number(conversation.key);
+                      if (!Number.isNaN(convId)) {
+                        deleteConversation(convId).catch(console.error);
+                      }
                       setConversations((prev) => {
                         const next = prev.filter(
                           (c) => c.key !== conversation.key,
                         );
                         if (next.length === 0) {
-                          const key = generateId();
-                          next.push({
-                            key,
-                            label: '💬 新对话',
-                            group: '今天',
-                            isDraft: true,
-                          });
-                          setActiveKey(key);
+                          newChat();
                         } else if (activeKey === conversation.key) {
                           setActiveKey(next[0]?.key ?? '');
+                          const nextConvId = Number(next[0]?.key);
+                          if (!Number.isNaN(nextConvId)) {
+                            setActiveConvId(nextConvId);
+                          }
                         }
                         return next;
                       });
