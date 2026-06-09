@@ -130,7 +130,8 @@ public class AppConfiguration implements WebMvcConfigurer {
                         "/v2/login/account",
                         "/cluster/alert/history/save",
                         "/cluster/kerberos/downloadKeytab",
-                        "/service/install/download*"));
+                        "/service/install/download*",
+                        "/internal/agent/**"));
         if (enableOpenApi) {
             loginRegistration.excludePathPatterns(
                     "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
@@ -152,7 +153,8 @@ public class AppConfiguration implements WebMvcConfigurer {
                         "/v2/login/account",
                         "/cluster/alert/history/save",
                         "/cluster/kerberos/downloadKeytab",
-                        "/service/install/download*"));
+                        "/service/install/download*",
+                        "/internal/agent/**"));
         if (enableOpenApi) {
             csrfRegistration.excludePathPatterns(
                     "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",
