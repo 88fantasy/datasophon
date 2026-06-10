@@ -22,6 +22,7 @@ import {
   deleteConversation,
   fetchChatConfig,
   fetchConversations,
+  fetchMessages,
 } from './service';
 import { useStyles } from './style';
 import ToolCalls from './ToolCalls';
@@ -105,6 +106,31 @@ const parser = (message: { content: string; role: string }): ParsedMessage => {
 const STREAMING_ACTIVE = { hasNextChunk: true, enableAnimation: true };
 const STREAMING_IDLE = { hasNextChunk: false, enableAnimation: true };
 
+function toHistoryBubbleItems(
+  msgs: Array<{ id: number; role: string; content: string }>,
+): BubbleItemType[] {
+  return msgs.map((m) => {
+    const parsed = parser({ role: m.role, content: m.content });
+    const item: BubbleItemType = {
+      key: `hist-${m.id}`,
+      role: parsed.role === 'assistant' ? 'ai' : 'user',
+      content: parsed.content,
+    };
+    if (
+      parsed.role === 'assistant' &&
+      (parsed.thinkContent || parsed.toolCalls?.length)
+    ) {
+      item.header = (
+        <>
+          {parsed.toolCalls?.length ? <ToolCalls items={parsed.toolCalls} /> : null}
+          {parsed.thinkContent ? <Think>{parsed.thinkContent}</Think> : null}
+        </>
+      );
+    }
+    return item;
+  });
+}
+
 const roleConfig: BubbleListProps['role'] = {
   user: {
     placement: 'end',
@@ -154,6 +180,7 @@ const ChatbotPage: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [activeConvId, setActiveConvId] = useState<number | undefined>();
   const [chatModel, setChatModel] = useState<string>('claude-sonnet-4-6');
+  const [historyBubbles, setHistoryBubbles] = useState<Record<string, BubbleItemType[]>>({});
 
   useEffect(() => {
     fetchChatConfig()
@@ -167,7 +194,13 @@ const ChatbotPage: React.FC = () => {
         if (convs.length > 0) {
           setConversations(convs);
           setActiveKey(convs[0].key);
-          setActiveConvId(Number(convs[0].key));
+          const firstId = Number(convs[0].key);
+          setActiveConvId(firstId);
+          fetchMessages(firstId)
+            .then((msgs) =>
+              setHistoryBubbles({ [convs[0].key]: toHistoryBubbleItems(msgs) }),
+            )
+            .catch(() => {});
         } else {
           newChat();
         }
@@ -197,6 +230,16 @@ const ChatbotPage: React.FC = () => {
     const convId = Number(key);
     if (!Number.isNaN(convId)) {
       setActiveConvId(convId);
+      if (!historyBubbles[key]) {
+        fetchMessages(convId)
+          .then((msgs) =>
+            setHistoryBubbles((prev) => ({
+              ...prev,
+              [key]: toHistoryBubbleItems(msgs),
+            })),
+          )
+          .catch(() => {});
+      }
     }
   };
 
@@ -258,7 +301,12 @@ const ChatbotPage: React.FC = () => {
     [parsedMessages],
   );
 
-  const hasMessages = parsedMessages.length > 0;
+  const allBubbleItems = useMemo(
+    () => [...(historyBubbles[activeKey] ?? []), ...bubbleItems],
+    [historyBubbles, activeKey, bubbleItems],
+  );
+
+  const hasMessages = allBubbleItems.length > 0;
 
   return (
     <PageContainer
@@ -331,7 +379,7 @@ const ChatbotPage: React.FC = () => {
               {hasMessages && (
                 <div className={styles.messages}>
                   <Bubble.List
-                    items={bubbleItems}
+                    items={allBubbleItems}
                     role={roleConfig}
                     autoScroll
                     styles={{ root: { maxWidth: 940 } }}
