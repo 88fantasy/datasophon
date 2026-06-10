@@ -530,14 +530,50 @@ interface ClusterContextValue {
 
 ---
 
+---
+
+## 切片 6b: DAG 图可视化（@antv/x6 全屏页）(Step 1-6)
+
+**目标**: 全屏 DAG 图路由（`layout:false`），@antv/x6 渲染节点拓扑 + 边动画 + 节点进度 + 3s 轮询，顶部「重新运行」+「调度日志」按钮，节点点击查看主机执行日志。
+
+### 进度跟踪表
+
+| Step | 端  |                                    内容                                    | 状态 |                         验证                         |
+|------|----|--------------------------------------------------------------------------|----|----------------------------------------------------|
+| 1    | 前端 | 依赖安装 + `antvUtils.ts` + `dagEvent.ts` + `dagStatus.ts` 工具迁移              | ✅  | 依赖已装；工具文件零 tsc 错误                                  |
+| 2    | 后端 | `ClusterDagV2Controller` 扩 2 端点（dag graph + redeploy）—— 6a 同步完成          | ✅  | 后端编译通过                                             |
+| 3    | 前端 | `dag.ts` 扩 2 API + `typings.d.ts` 新增 Graph 类型—— 6a 同步完成                  | ✅  | Biome/tsc 零新错误                                     |
+| 4    | 前端 | `DataProcessingDagNode.tsx`（x6-react-shape 节点 + 简化单文本日志 Modal）           | ✅  | tsc 零错误                                            |
+| 5    | 前端 | `DagGraph/index.tsx`（全屏 Graph + LR 拓扑布局 + 3s 轮询 + 按钮）+ 路由 `layout:false` | ✅  | tsc 零错误；build x6 async chunk (1.5MB)               |
+| 6    | 双  | lint/tsc/test/build 全绿；后端编译通过                                            | ✅  | Biome 零 error；tsc 零错误；50/50 tests；后端 BUILD SUCCESS |
+
+### 已完成的文件
+
+**前端新增/修改:**
+- `src/pages/Cluster/DagGraph/antvUtils.ts` — x6 端口/连线生成工具（invokeGenPort / invokeGenSourceAndTarget）
+- `src/pages/Cluster/DagGraph/dagEvent.ts` — DAG 事件总线（updateNodeSize / updateNodeData）
+- `src/pages/Cluster/DagGraph/dagStatus.ts` — 五态状态常量 + 图标渲染（PENDING/RUNNING/SUCCESS/FAILED/CANCEL）
+- `src/pages/Cluster/DagGraph/DataProcessingDagNode.tsx` — x6-react-shape 节点组件（物理/K8s 双分支 + 内联简化日志 Modal）
+- `src/pages/Cluster/DagGraph/index.tsx` — DAG 全屏图容器（Graph 初始化 + LR 拓扑 + 3s 轮询 + 边动画 + 按钮）
+- `config/routes.ts` — `/cluster/:clusterId/dag/:dagId` 移出 ClusterLayout，设 `layout:false`
+- 顺带修复（tsc 全量零错误）:
+- `AlarmManage/index.tsx`: ClusterContext 默认导入
+- `AlarmManage/Group.tsx` / `Metric.tsx` / `Queue/index.tsx`: `useRef<ActionType>()` → `useRef<ActionType|undefined>(undefined)`
+- `typings.d.ts`: 新增 `insert-css` / `lodash-es` 模块声明
+- `app.tsx`: 本地 PageLoading 定义
+- `user/login/Logo/index.tsx`: SVG title + analyze 参数类型
+- `.umi/core/route.tsx` + `config/routes.ts`: User/Manage 路径大小写对齐
+
+---
+
 ## 后续切片
 
-1. 切片 6b: DAG 图可视化（@antv/x6 忠实移植）
-2. 切片 4b Step 5: 物理集群配置 Tab 浏览器端到端验证
-3. 切片 4b-2 Step 8: K8s 集群浏览器端到端走查
-4. 切片 4c 浏览器验证: 实例 Tab 运维操作（启停/删除/日志/角色组）
-5. 切片 4d Step 5: YARN 资源配置浏览器验证
-6. 切片 5a/5b 浏览器验证: 告警管理 + 标签管理（批量走查）
+1. 切片 4b Step 5: 物理集群配置 Tab 浏览器端到端验证
+2. 切片 4b-2 Step 8: K8s 集群浏览器端到端走查
+3. 切片 4c 浏览器验证: 实例 Tab 运维操作（启停/删除/日志/角色组）
+4. 切片 4d Step 5: YARN 资源配置浏览器验证
+5. 切片 5a/5b 浏览器验证: 告警管理 + 标签管理（批量走查）
+6. 切片 6b 浏览器验证: 命令历史 + DAG 图全屏可视化 + 节点日志
 7. UploadDeploy
 8. Maven/assembly 打包集成
 
