@@ -498,15 +498,46 @@ interface ClusterContextValue {
 
 ---
 
+---
+
+## 切片 6a: 命令历史列表 (Step 1-5)
+
+**目标**: ClusterLayout 侧栏新增「命令历史」入口，迁移旧 DagListModal 为 v2 页面——命令列表 ProTable + 2s 轮询 + 「查看」打开 DAG 图。
+
+### 进度跟踪表
+
+| Step | 端  |                                                                 内容                                                                  | 状态 |       验证       |
+|------|----|-------------------------------------------------------------------------------------------------------------------------------------|----|----------------|
+| 1    | 后端 | `ClusterDagV2Controller`: `GET /command/list`（委托 DAGService.findDagByPage）+ 6b 端点（getDagGraph/redeploy）一并就绪                         | ✅  | 后端编译通过         |
+| 2    | 前端 | `dag.ts`（listDagCommands/getDagGraph/redeployDag API）+ `typings.d.ts` 新增 `DagCommand`/`DagGraph`/`DagNode`/`DagEdge`/`DagStatus` 类型 | ✅  | Biome/tsc 零新错误 |
+| 3    | 前端 | `Cluster/Command/index.tsx`（ProTable + 状态 Badge + 2s 轮询 + 「查看」window.open）                                                          | ✅  | Biome/tsc 零新错误 |
+| 4    | 前端 | 路由 `/cluster/:clusterId/command` + ClusterLayout `menuItems` 新增「命令历史」                                                               | ✅  | 路由挂载；侧栏可点      |
+| 5    | 双  | lint 预存 1 err；50/50 tests；后端编译通过                                                                                                    | ✅  | 全绿             |
+
+### 已完成的文件
+
+**后端新增:**
+
+- `datasophon-api/.../controller/v2/ClusterDagV2Controller.java` — 3 端点：command/list + dag/{dagId}/graph + dag/{dagId}/redeploy
+
+**前端新增/修改:**
+
+- `datasophon-ui-v2/src/services/datasophon/dag.ts` — 3 个 DAG API 函数
+- `datasophon-ui-v2/src/services/datasophon/typings.d.ts` — 新增 `DagStatus`/`DagCommand`/`DagNode`/`DagEdge`/`DagGraph` 类型
+- `datasophon-ui-v2/src/pages/Cluster/Command/index.tsx` — ProTable（8 列 + 2s 轮询 + 状态 Badge + 「查看」）
+- `datasophon-ui-v2/config/routes.ts` — 新增 `/cluster/:clusterId/command` + `/cluster/:clusterId/dag/:dagId`
+- `datasophon-ui-v2/src/pages/Cluster/Layout/index.tsx` — 新增「命令历史」侧栏菜单项（HistoryOutlined）
+
+---
+
 ## 后续切片
 
-1. 切片 4b Step 5: 物理集群配置 Tab 浏览器端到端验证
-2. 切片 4b-2 Step 8: K8s 集群浏览器端到端走查
-3. 切片 4c 浏览器验证: 实例 Tab 运维操作（启停/删除/日志/角色组）
-4. 切片 4d Step 5: YARN 资源配置浏览器验证
-5. 切片 5a 浏览器验证: 告警管理（与上述 4 批一并）
-6. 切片 5b 浏览器验证: 标签管理（与上述 5 批一并）
-7. DagModal(x6 迁移)
-8. UploadDeploy
-9. Maven/assembly 打包集成
+1. 切片 6b: DAG 图可视化（@antv/x6 忠实移植）
+2. 切片 4b Step 5: 物理集群配置 Tab 浏览器端到端验证
+3. 切片 4b-2 Step 8: K8s 集群浏览器端到端走查
+4. 切片 4c 浏览器验证: 实例 Tab 运维操作（启停/删除/日志/角色组）
+5. 切片 4d Step 5: YARN 资源配置浏览器验证
+6. 切片 5a/5b 浏览器验证: 告警管理 + 标签管理（批量走查）
+7. UploadDeploy
+8. Maven/assembly 打包集成
 

@@ -2,6 +2,7 @@ import {
   AlertOutlined,
   ClusterOutlined,
   DesktopOutlined,
+  HistoryOutlined,
   ReloadOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
@@ -251,6 +252,11 @@ const ClusterLayout: React.FC = () => {
         key: `/cluster/${numericClusterId}/alarm`,
         icon: <AlertOutlined />,
         label: '告警管理',
+      },
+      {
+        key: `/cluster/${numericClusterId}/command`,
+        icon: <HistoryOutlined />,
+        label: '命令历史',
       },
       {
         key: 'system-center',

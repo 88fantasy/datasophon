@@ -82,6 +82,14 @@ export default [
             path: '/cluster/:clusterId/alarm',
             component: './Cluster/AlarmManage',
           },
+          {
+            path: '/cluster/:clusterId/command',
+            component: './Cluster/Command',
+          },
+          {
+            path: '/cluster/:clusterId/dag/:dagId',
+            component: './Cluster/DagGraph',
+          },
         ],
       },
     ],
