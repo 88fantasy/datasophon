@@ -78,6 +78,10 @@ export default [
             path: '/cluster/:clusterId/service/:instanceId',
             component: './Cluster/ServiceInstance',
           },
+          {
+            path: '/cluster/:clusterId/alarm',
+            component: './Cluster/AlarmManage',
+          },
         ],
       },
     ],

@@ -1,4 +1,4 @@
-import { DeleteOutlined, PartitionOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PartitionOutlined, TagsOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import {
@@ -16,7 +16,9 @@ import {
   deleteClusterHosts,
   listClusterHosts,
 } from '@/services/datasophon/host';
+import AssignLabelModal from './components/AssignLabelModal';
 import AssignRackModal from './components/AssignRackModal';
+import LabelManageModal from './components/LabelManageModal';
 import RoleListModal from './components/RoleListModal';
 
 const HOST_STATE_MAP: Record<number, { text: string; color: string }> = {
@@ -209,6 +211,19 @@ const HostManage: React.FC = () => {
         />
       ),
     },
+    {
+      key: 'assign-label',
+      label: (
+        <AssignLabelModal
+          clusterId={clusterId}
+          hostIds={selectedRowKeys}
+          trigger={<span>分配标签</span>}
+          onSuccess={() => {
+            actionRef.current?.reload();
+          }}
+        />
+      ),
+    },
     { type: 'divider' as const },
     {
       key: 'delete',
@@ -231,6 +246,15 @@ const HostManage: React.FC = () => {
       actionRef={actionRef}
       rowKey="id"
       headerTitle="主机列表"
+      toolBarRender={() => [
+        <LabelManageModal
+          key="label-manage"
+          clusterId={clusterId}
+          trigger={
+            <Button icon={<TagsOutlined />}>标签管理</Button>
+          }
+        />,
+      ]}
       search={{ filterType: 'light' }}
       params={{ clusterId }}
       request={async (params) => {

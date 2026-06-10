@@ -248,10 +248,9 @@ const ClusterLayout: React.FC = () => {
         disabled: true,
       },
       {
-        key: 'alarm-manage',
+        key: `/cluster/${numericClusterId}/alarm`,
         icon: <AlertOutlined />,
         label: '告警管理',
-        disabled: true,
       },
       {
         key: 'system-center',

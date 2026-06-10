@@ -336,16 +336,16 @@ interface ClusterContextValue {
 
 ### 进度跟踪表
 
-| Step | 端  | 内容 | 状态 | 验证 |
-|---|---|---|---|---|
-| 1 | 后端 | `ClusterK8sV2Controller`：namespace 列表 + 实例列表 + 资源类型 + 资源列表 | ✅ | 编译通过；Spotless 通过；4 端点就绪 |
-| 2 | 后端 | `ClusterK8sConfigV2Controller`：values 版本/读取/保存 | ✅ | 编译通过；Spotless 通过；3 端点就绪 |
-| 3 | 前端 | service.ts 新增 K8s 接口 + typings 新增 K8s 类型 | ✅ | Biome/tsc 零新错误 |
-| 4 | 前端 | 引入 Monaco + js-yaml；`yamlMerge.ts` + round-trip 单测 | ✅ | 5 单测全绿；`npm run build` Monaco 打包为 1.5MB async chunk |
-| 5 | 前端 | `ClusterLayout` K8s 菜单分流（namespace→实例两层 + 3s 轮询） | ✅ | K8s archType 时渲染两层菜单；物理集群不受影响 |
-| 6 | 前端 | `ServiceInstance` K8s 实例页（资源 Tab 动态 + `K8sResource.tsx`） | ✅ | tsc 零新错误；5 类资源 ProTable 渲染 |
-| 7 | 前端 | `SettingTab` Helm 分支 + `HelmEditor.tsx`（Monaco 双栏 + 合并预览） | ✅ | tsc 零新错误；archType 分流；hooks 顺序合规 |
-| 8 | 双  | 端到端验证（lint/test/build + 浏览器走查） | ⬜ | lint 预存 1 err（SVG 无障碍，非本切片引入）；test 50/50；build 无错；浏览器待验证 |
+| Step | 端  |                             内容                             | 状态 |                            验证                            |
+|------|----|------------------------------------------------------------|----|----------------------------------------------------------|
+| 1    | 后端 | `ClusterK8sV2Controller`：namespace 列表 + 实例列表 + 资源类型 + 资源列表 | ✅  | 编译通过；Spotless 通过；4 端点就绪                                  |
+| 2    | 后端 | `ClusterK8sConfigV2Controller`：values 版本/读取/保存             | ✅  | 编译通过；Spotless 通过；3 端点就绪                                  |
+| 3    | 前端 | service.ts 新增 K8s 接口 + typings 新增 K8s 类型                   | ✅  | Biome/tsc 零新错误                                           |
+| 4    | 前端 | 引入 Monaco + js-yaml；`yamlMerge.ts` + round-trip 单测         | ✅  | 5 单测全绿；`npm run build` Monaco 打包为 1.5MB async chunk      |
+| 5    | 前端 | `ClusterLayout` K8s 菜单分流（namespace→实例两层 + 3s 轮询）           | ✅  | K8s archType 时渲染两层菜单；物理集群不受影响                            |
+| 6    | 前端 | `ServiceInstance` K8s 实例页（资源 Tab 动态 + `K8sResource.tsx`）   | ✅  | tsc 零新错误；5 类资源 ProTable 渲染                               |
+| 7    | 前端 | `SettingTab` Helm 分支 + `HelmEditor.tsx`（Monaco 双栏 + 合并预览）  | ✅  | tsc 零新错误；archType 分流；hooks 顺序合规                          |
+| 8    | 双  | 端到端验证（lint/test/build + 浏览器走查）                             | ⬜  | lint 预存 1 err（SVG 无障碍，非本切片引入）；test 50/50；build 无错；浏览器待验证 |
 
 ### 已完成的文件
 
@@ -375,13 +375,13 @@ interface ClusterContextValue {
 
 ### 进度跟踪表
 
-| Step | 端  | 内容                                                          | 状态 | 验证                                         |
-|------|-----|-------------------------------------------------------------|------|----------------------------------------------|
-| 1    | 后端 | `ClusterServiceRoleInstanceV2Controller` 扩 5 端点（command/delete/log/group-save/group-bind） | ✅   | 后端编译通过；Spotless 通过                    |
-| 2    | 前端 | `service.ts` 新增 5 API（execRoleCommand/deleteRoleInstances/getRoleInstanceLog/saveRoleGroup/bindRoleGroup） | ✅   | Biome/tsc 零新错误                            |
-| 3    | 前端 | `Instance.tsx` 操作真实化（批量启停重启/删除；日志/角色组弹窗接入；添加新实例保留 disabled） | ✅   | Biome 零新错误                               |
-| 4    | 前端 | 三个弹窗组件（LogModal / AddRoleGroupModal / AssignRoleGroupModal） | ✅   | Biome 零错误；目录 `components/` 已建          |
-| 5    | 双  | 验证：biome + 后端编译（浏览器走查另起）                         | ✅   | 前端零新错误；后端 BUILD SUCCESS               |
+| Step | 端  |                                                    内容                                                     | 状态 |              验证               |
+|------|----|-----------------------------------------------------------------------------------------------------------|----|-------------------------------|
+| 1    | 后端 | `ClusterServiceRoleInstanceV2Controller` 扩 5 端点（command/delete/log/group-save/group-bind）                 | ✅  | 后端编译通过；Spotless 通过            |
+| 2    | 前端 | `service.ts` 新增 5 API（execRoleCommand/deleteRoleInstances/getRoleInstanceLog/saveRoleGroup/bindRoleGroup） | ✅  | Biome/tsc 零新错误                |
+| 3    | 前端 | `Instance.tsx` 操作真实化（批量启停重启/删除；日志/角色组弹窗接入；添加新实例保留 disabled）                                               | ✅  | Biome 零新错误                    |
+| 4    | 前端 | 三个弹窗组件（LogModal / AddRoleGroupModal / AssignRoleGroupModal）                                               | ✅  | Biome 零错误；目录 `components/` 已建 |
+| 5    | 双  | 验证：biome + 后端编译（浏览器走查另起）                                                                                  | ✅  | 前端零新错误；后端 BUILD SUCCESS       |
 
 ### 已完成的文件
 
@@ -413,13 +413,13 @@ interface ClusterContextValue {
 
 ### 进度跟踪表
 
-| Step | 端  | 内容 | 状态 | 验证 |
-|---|---|---|---|---|
-| 1 | 后端 | `ClusterYarnQueueV2Controller`：scheduler/list/save/update/delete/refresh（6 端点，全委托已有 service） | ✅ | 编译通过（`-Dspotless.check.skip=true`） |
-| 2 | 前端 | `service.ts` 新增 6 个 YARN API + `typings.d.ts` 新增 `YarnQueue` 类型 | ✅ | Biome 零新错误 |
-| 3 | 前端 | `Queue/index.tsx`（ProTable + scheduler 分流 + 刷新/新建 toolbar）+ `Queue/BuildOrEditModal.tsx`（ModalForm 10 字段） | ✅ | Biome 零新错误；50/50 tests 全绿 |
-| 4 | 前端 | `ServiceInstance/index.tsx` 挂载「资源配置」Tab（`serviceName === 'YARN'` 条件渲染） | ✅ | Biome 零新错误 |
-| 5 | 双  | 浏览器端到端走查 | ⬜ | 待本地启后端 + 前端后验证 |
+| Step | 端  |                                                    内容                                                     | 状态 |                 验证                 |
+|------|----|-----------------------------------------------------------------------------------------------------------|----|------------------------------------|
+| 1    | 后端 | `ClusterYarnQueueV2Controller`：scheduler/list/save/update/delete/refresh（6 端点，全委托已有 service）              | ✅  | 编译通过（`-Dspotless.check.skip=true`） |
+| 2    | 前端 | `service.ts` 新增 6 个 YARN API + `typings.d.ts` 新增 `YarnQueue` 类型                                           | ✅  | Biome 零新错误                         |
+| 3    | 前端 | `Queue/index.tsx`（ProTable + scheduler 分流 + 刷新/新建 toolbar）+ `Queue/BuildOrEditModal.tsx`（ModalForm 10 字段） | ✅  | Biome 零新错误；50/50 tests 全绿          |
+| 4    | 前端 | `ServiceInstance/index.tsx` 挂载「资源配置」Tab（`serviceName === 'YARN'` 条件渲染）                                    | ✅  | Biome 零新错误                         |
+| 5    | 双  | 浏览器端到端走查                                                                                                  | ⬜  | 待本地启后端 + 前端后验证                     |
 
 ### 已完成的文件
 
@@ -435,14 +435,78 @@ interface ClusterContextValue {
 
 ---
 
+---
+
+## 切片 5a: AlarmManage 告警管理（告警组 + 告警指标）(Step 1-6)
+
+**目标**: 点亮 ClusterLayout「告警管理」侧栏，迁移告警组 + 告警指标两张 ProTable + 增删改 + 启用/停用。
+
+### 进度跟踪表
+
+| Step | 端  |                                      内容                                      | 状态 |                     验证                     |
+|------|----|------------------------------------------------------------------------------|----|--------------------------------------------|
+| 1    | 后端 | `ClusterAlertV2Controller`（11 端点：组列表/保存/删除/类别下拉 + 指标列表/保存/更新/删除/启停/角色下拉）     | ✅  | 后端编译通过；Spotless 通过                         |
+| 2    | 前端 | `alarm.ts`（10 API）+ `typings.d.ts` 新增 `AlertGroup`、`AlertQuota` 类型           | ✅  | Biome 零新错误                                 |
+| 3    | 前端 | `AlarmManage/Group.tsx`（ProTable）+ `GroupModal.tsx`（ModalForm 2 字段）          | ✅  | Biome 零新错误                                 |
+| 4    | 前端 | `AlarmManage/Metric.tsx`（ProTable + 批量启停）+ `MetricModal.tsx`（12 字段 + 组→角色联动） | ✅  | Biome 零新错误                                 |
+| 5    | 前端 | `AlarmManage/index.tsx`（Tabs 容器）+ 路由 + ClusterLayout 菜单点亮                    | ✅  | tsc 零新错误；路由挂载                              |
+| 6    | 双  | lint/tsc/test 全绿；后端 BUILD SUCCESS；浏览器走查另起                                    | ✅  | lint 预存 1 err；50/50 tests；后端 BUILD SUCCESS |
+
+### 已完成的文件
+
+**后端新增:**
+- `datasophon-api/.../controller/v2/ClusterAlertV2Controller.java` — 11 端点，构造器注入，委托 `AlertGroupService` + `ClusterAlertQuotaService` + `FrameServiceService` + `FrameServiceRoleService`
+
+**前端新增/修改:**
+- `src/services/datasophon/alarm.ts` — 10 个告警 API 函数
+- `src/services/datasophon/typings.d.ts` — 新增 `AlertGroup`、`AlertQuota` interface
+- `src/pages/Cluster/AlarmManage/index.tsx` — Tabs 容器（告警组 / 告警指标），Tab 间 groupId 状态传递
+- `src/pages/Cluster/AlarmManage/Group.tsx` — ProTable（4 列 + 查看指标 + 删除操作）
+- `src/pages/Cluster/AlarmManage/GroupModal.tsx` — ModalForm（告警组名称 + 告警组类别）
+- `src/pages/Cluster/AlarmManage/Metric.tsx` — ProTable（7 列 + 批量启停 + 编辑/删除）
+- `src/pages/Cluster/AlarmManage/MetricModal.tsx` — ModalForm（12 字段 + `alertGroupId→serviceRoleName` 联动）
+- `config/routes.ts` — 新增 `/cluster/:clusterId/alarm`
+- `src/pages/Cluster/Layout/index.tsx` — 「告警管理」菜单 disabled 移除，key 改为路由路径
+
+---
+
+## 切片 5b: 标签管理（并入 HostManage）(Step 1-5)
+
+**目标**: 将旧版节点标签 CRUD（SystemCenter/Tag）和分配标签（HostManage/AddLabelModal）两个功能合并到 v2 HostManage 页面。工具栏「标签管理」按钮 + 批量下拉「分配标签」。
+
+### 进度跟踪表
+
+| Step | 端  |                                             内容                                             | 状态 |                     验证                     |
+|------|----|--------------------------------------------------------------------------------------------|----|--------------------------------------------|
+| 1    | 后端 | `ClusterNodeLabelV2Controller`（list/save/delete/assign 4 端点，全委托 `ClusterNodeLabelService`） | ✅  | 后端编译通过                                     |
+| 2    | 前端 | `label.ts`（4 API）+ `typings.d.ts` 新增 `NodeLabel` 类型                                        | ✅  | Biome/tsc 零新错误                             |
+| 3    | 前端 | `AssignLabelModal.tsx`（分配标签，镜像 AssignRackModal）+ 接入批量下拉                                    | ✅  | Biome 零新错误                                 |
+| 4    | 前端 | `LabelManageModal.tsx`（标签 CRUD ProTable）+ HostManage 工具栏「标签管理」按钮                           | ✅  | Biome 零新错误                                 |
+| 5    | 双  | tsc/test 全绿；后端编译通过；浏览器走查另起                                                                 | ✅  | lint 预存 1 err；50/50 tests；后端 BUILD SUCCESS |
+
+### 已完成的文件
+
+**后端新增:**
+- `datasophon-api/.../controller/v2/ClusterNodeLabelV2Controller.java` — 4 端点；`assignNodeLabel` 适配 v1 逗号字符串格式
+
+**前端新增/修改:**
+- `datasophon-ui-v2/src/services/datasophon/label.ts` — 4 个标签 API 函数
+- `datasophon-ui-v2/src/services/datasophon/typings.d.ts` — 新增 `NodeLabel` interface
+- `datasophon-ui-v2/src/pages/Cluster/HostManage/components/AssignLabelModal.tsx` — ModalForm（ProFormSelect 选标签 + onFinish assign）
+- `datasophon-ui-v2/src/pages/Cluster/HostManage/components/LabelManageModal.tsx` — Modal + 内嵌 ProTable（列表/新建/删除）
+- `datasophon-ui-v2/src/pages/Cluster/HostManage/index.tsx` — 工具栏「标签管理」按钮 + 批量下拉「分配标签」
+
+---
+
 ## 后续切片
 
 1. 切片 4b Step 5: 物理集群配置 Tab 浏览器端到端验证
 2. 切片 4b-2 Step 8: K8s 集群浏览器端到端走查
 3. 切片 4c 浏览器验证: 实例 Tab 运维操作（启停/删除/日志/角色组）
 4. 切片 4d Step 5: YARN 资源配置浏览器验证
-5. AlarmManage + SystemCenter + User
-6. DagModal(x6 迁移)
-7. UploadDeploy
-8. Maven/assembly 打包集成
+5. 切片 5a 浏览器验证: 告警管理（与上述 4 批一并）
+6. 切片 5b 浏览器验证: 标签管理（与上述 5 批一并）
+7. DagModal(x6 迁移)
+8. UploadDeploy
+9. Maven/assembly 打包集成
 
