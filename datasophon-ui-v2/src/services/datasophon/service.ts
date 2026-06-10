@@ -164,3 +164,124 @@ export async function saveK8sConfig(
     { method: 'POST', data: body },
   );
 }
+
+// ── 角色实例运维操作 API ──────────────────────────────────────────────────────
+
+/** 批量操作角色实例（启动/停止/重启） */
+export async function execRoleCommand(
+  clusterId: number,
+  instanceId: number,
+  params: { commandType: string; serviceRoleInstancesIds: string },
+) {
+  return request<DATASOPHON.ApiResponse<{ data: string }>>(
+    `/cluster/${clusterId}/service/instance/${instanceId}/role/command`,
+    { method: 'POST', params },
+  );
+}
+
+/** 删除角色实例 */
+export async function deleteRoleInstances(
+  clusterId: number,
+  instanceId: number,
+  serviceRoleInstancesIds: string,
+) {
+  return request<DATASOPHON.ApiResponse<void>>(
+    `/cluster/${clusterId}/service/instance/${instanceId}/role/delete`,
+    { method: 'POST', params: { serviceRoleInstancesIds } },
+  );
+}
+
+/** 查看角色实例日志 */
+export async function getRoleInstanceLog(
+  clusterId: number,
+  instanceId: number,
+  roleInstanceId: number,
+) {
+  return request<DATASOPHON.ApiResponse<{ data: string }>>(
+    `/cluster/${clusterId}/service/instance/${instanceId}/role/${roleInstanceId}/log`,
+    { method: 'GET' },
+  );
+}
+
+/** 添加角色组 */
+export async function saveRoleGroup(
+  clusterId: number,
+  instanceId: number,
+  params: { roleGroupId?: number; roleGroupName: string },
+) {
+  return request<DATASOPHON.ApiResponse<void>>(
+    `/cluster/${clusterId}/service/instance/${instanceId}/role/group/save`,
+    { method: 'POST', params },
+  );
+}
+
+/** 批量分配角色组 */
+export async function bindRoleGroup(
+  clusterId: number,
+  instanceId: number,
+  params: { roleInstanceIds: string; roleGroupId: number },
+) {
+  return request<DATASOPHON.ApiResponse<void>>(
+    `/cluster/${clusterId}/service/instance/${instanceId}/role/group/bind`,
+    { method: 'POST', params },
+  );
+}
+
+// ── YARN 队列管理 API ──────────────────────────────────────────────────────
+
+/** 获取 YARN 调度器类型（fair / capacity / …） */
+export async function getYarnSchedulerInfo(clusterId: number) {
+  return request<DATASOPHON.ApiResponse<string>>(
+    `/cluster/${clusterId}/yarn/queue/scheduler`,
+    { method: 'GET' },
+  );
+}
+
+/** YARN 队列列表（分页） */
+export async function listYarnQueues(
+  clusterId: number,
+  params: { page?: number; pageSize?: number },
+) {
+  return request<DATASOPHON.ApiResponse<DATASOPHON.YarnQueue[]>>(
+    `/cluster/${clusterId}/yarn/queue/list`,
+    { method: 'GET', params },
+  );
+}
+
+/** 新建 YARN 队列 */
+export async function saveYarnQueue(
+  clusterId: number,
+  body: Omit<DATASOPHON.YarnQueue, 'id' | 'createTime'>,
+) {
+  return request<DATASOPHON.ApiResponse<void>>(
+    `/cluster/${clusterId}/yarn/queue/save`,
+    { method: 'POST', data: body },
+  );
+}
+
+/** 修改 YARN 队列 */
+export async function updateYarnQueue(
+  clusterId: number,
+  body: DATASOPHON.YarnQueue,
+) {
+  return request<DATASOPHON.ApiResponse<void>>(
+    `/cluster/${clusterId}/yarn/queue/update`,
+    { method: 'POST', data: body },
+  );
+}
+
+/** 删除 YARN 队列（批量） */
+export async function deleteYarnQueues(clusterId: number, ids: number[]) {
+  return request<DATASOPHON.ApiResponse<void>>(
+    `/cluster/${clusterId}/yarn/queue/delete`,
+    { method: 'POST', data: ids },
+  );
+}
+
+/** 刷新队列到 YARN */
+export async function refreshYarnQueues(clusterId: number) {
+  return request<DATASOPHON.ApiResponse<void>>(
+    `/cluster/${clusterId}/yarn/queue/refresh`,
+    { method: 'POST' },
+  );
+}

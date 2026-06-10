@@ -183,6 +183,24 @@ declare namespace DATASOPHON {
     version: number;
   }
 
+  /** YARN 队列，对应后端 ClusterYarnQueue 实体 */
+  interface YarnQueue {
+    id?: number;
+    queueName: string;
+    minCore: number;
+    minMem: number;
+    maxCore: number;
+    maxMem: number;
+    appNum: number;
+    schedulePolicy: string;
+    weight: number;
+    /** 1 = 是，2 = 否 */
+    allowPreemption: number;
+    amShare: string;
+    clusterId?: number;
+    createTime?: string;
+  }
+
   /**
    * 服务配置参数项，对应后端 ServiceConfig 模型。
    * type 决定前端渲染控件类型：

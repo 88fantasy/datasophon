@@ -28,9 +28,13 @@ import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
+import com.datasophon.api.service.extrepo.VosProductInstallService;
+import com.datasophon.common.enums.CommandType;
+import com.datasophon.common.utils.ConverterUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceInstanceRoleGroup;
 
+import java.util.Arrays;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
@@ -38,9 +42,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import cn.hutool.core.util.EnumUtil;
 
 /**
  * v2 服务角色实例管理接口。
@@ -62,11 +69,15 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
     @Autowired
     private ClusterServiceRoleInstanceWebuisService webuisService;
     
+    @Autowired
+    private VosProductInstallService vosProductInstallService;
+    
     /**
      * 服务角色实例列表（分页）。
      */
     @GetMapping("/list")
-    public ApiResponse<Result> list(@PathVariable Integer instanceId,
+    public ApiResponse<Result> list(@PathVariable Integer clusterId,
+                                    @PathVariable Integer instanceId,
                                     @RequestParam(defaultValue = "1") Integer page,
                                     @RequestParam(defaultValue = "20") Integer pageSize,
                                     @RequestParam(required = false) String hostname,
@@ -104,6 +115,60 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
     @GetMapping("/webuis")
     public ApiResponse<Result> getWebUis(@PathVariable Integer instanceId) {
         Result result = webuisService.getWebUis(instanceId);
+        return ApiResponse.ok(result);
+    }
+    
+    /**
+     * 批量操作角色实例（启动/停止/重启）。
+     */
+    @PostMapping("/command")
+    public ApiResponse<Result> command(@PathVariable Integer clusterId,
+                                       @PathVariable Integer instanceId,
+                                       @RequestParam String commandType,
+                                       @RequestParam String serviceRoleInstancesIds) {
+        List<Integer> ids = ConverterUtils.convertIds(serviceRoleInstancesIds, Integer::parseInt);
+        CommandType command = EnumUtil.fromString(CommandType.class, commandType);
+        String result = vosProductInstallService.generateAndExecSrvRoleCmd(clusterId, command, instanceId, ids);
+        return ApiResponse.ok(Result.success().put("data", result));
+    }
+    
+    /**
+     * 删除角色实例。
+     */
+    @PostMapping("/delete")
+    public ApiResponse<Result> delete(@RequestParam String serviceRoleInstancesIds) {
+        List<String> idList = Arrays.asList(serviceRoleInstancesIds.split(","));
+        Result result = clusterServiceRoleInstanceService.deleteServiceRole(idList);
+        return ApiResponse.ok(result);
+    }
+    
+    /**
+     * 查看角色实例日志。
+     */
+    @GetMapping("/{roleInstanceId}/log")
+    public ApiResponse<Result> getLog(@PathVariable Integer roleInstanceId) throws Exception {
+        Result result = clusterServiceRoleInstanceService.getLog(roleInstanceId);
+        return ApiResponse.ok(result);
+    }
+    
+    /**
+     * 添加角色组。
+     */
+    @PostMapping("/group/save")
+    public ApiResponse<Result> saveRoleGroup(@PathVariable Integer instanceId,
+                                             @RequestParam(required = false) Integer roleGroupId,
+                                             @RequestParam String roleGroupName) {
+        roleGroupService.saveRoleGroup(instanceId, roleGroupId, roleGroupName);
+        return ApiResponse.ok(Result.success());
+    }
+    
+    /**
+     * 批量分配角色组。
+     */
+    @PostMapping("/group/bind")
+    public ApiResponse<Result> bindRoleGroup(@RequestParam String roleInstanceIds,
+                                             @RequestParam Integer roleGroupId) {
+        Result result = roleGroupService.bind(roleInstanceIds, roleGroupId);
         return ApiResponse.ok(result);
     }
 }

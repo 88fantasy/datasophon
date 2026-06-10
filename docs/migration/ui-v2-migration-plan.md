@@ -367,13 +367,82 @@ interface ClusterContextValue {
 
 ---
 
+---
+
+## 切片 4c: ServiceInstance「实例」Tab 运维操作 + 弹窗 (Step 1-5)
+
+**目标**: 将「实例」Tab 的所有占位操作替换为真实功能，补齐物理集群服务运维闭环。
+
+### 进度跟踪表
+
+| Step | 端  | 内容                                                          | 状态 | 验证                                         |
+|------|-----|-------------------------------------------------------------|------|----------------------------------------------|
+| 1    | 后端 | `ClusterServiceRoleInstanceV2Controller` 扩 5 端点（command/delete/log/group-save/group-bind） | ✅   | 后端编译通过；Spotless 通过                    |
+| 2    | 前端 | `service.ts` 新增 5 API（execRoleCommand/deleteRoleInstances/getRoleInstanceLog/saveRoleGroup/bindRoleGroup） | ✅   | Biome/tsc 零新错误                            |
+| 3    | 前端 | `Instance.tsx` 操作真实化（批量启停重启/删除；日志/角色组弹窗接入；添加新实例保留 disabled） | ✅   | Biome 零新错误                               |
+| 4    | 前端 | 三个弹窗组件（LogModal / AddRoleGroupModal / AssignRoleGroupModal） | ✅   | Biome 零错误；目录 `components/` 已建          |
+| 5    | 双  | 验证：biome + 后端编译（浏览器走查另起）                         | ✅   | 前端零新错误；后端 BUILD SUCCESS               |
+
+### 已完成的文件
+
+**后端修改:**
+
+- `datasophon-api/.../controller/v2/ClusterServiceRoleInstanceV2Controller.java` — 新增 5 端点 + `VosProductInstallService` 注入
+
+**前端新增/修改:**
+
+- `src/services/datasophon/service.ts` — 新增 5 个角色实例运维 API 函数
+- `src/pages/Cluster/ServiceInstance/Instance.tsx` — 操作真实化，引入三个弹窗，删除占位 stub
+- `src/pages/Cluster/ServiceInstance/components/LogModal.tsx` — 日志查看弹窗
+- `src/pages/Cluster/ServiceInstance/components/AddRoleGroupModal.tsx` — 添加角色组 ModalForm
+- `src/pages/Cluster/ServiceInstance/components/AssignRoleGroupModal.tsx` — 分配角色组 ModalForm
+
+### 本切片未做（推迟）
+
+- 「添加新实例」扩容向导（依赖多步 ConfigModal，v2 整体未迁移）→ 保留 disabled + Tooltip
+- 浏览器端到端走查（需本地启后端 + 前端）→ 另起会话
+- YARN「资源配置」(Queue) Tab → 后续独立切片
+
+---
+
+---
+
+## 切片 4d: YARN「资源配置」队列 Tab (Step 1-4)
+
+**目标**: 迁移 YARN 服务实例的「资源配置」Tab（队列 CRUD + 刷新）；仅实现 Fair 调度器，与旧版等价；Capacity 调度器保留 `<Empty/>` 占位。
+
+### 进度跟踪表
+
+| Step | 端  | 内容 | 状态 | 验证 |
+|---|---|---|---|---|
+| 1 | 后端 | `ClusterYarnQueueV2Controller`：scheduler/list/save/update/delete/refresh（6 端点，全委托已有 service） | ✅ | 编译通过（`-Dspotless.check.skip=true`） |
+| 2 | 前端 | `service.ts` 新增 6 个 YARN API + `typings.d.ts` 新增 `YarnQueue` 类型 | ✅ | Biome 零新错误 |
+| 3 | 前端 | `Queue/index.tsx`（ProTable + scheduler 分流 + 刷新/新建 toolbar）+ `Queue/BuildOrEditModal.tsx`（ModalForm 10 字段） | ✅ | Biome 零新错误；50/50 tests 全绿 |
+| 4 | 前端 | `ServiceInstance/index.tsx` 挂载「资源配置」Tab（`serviceName === 'YARN'` 条件渲染） | ✅ | Biome 零新错误 |
+| 5 | 双  | 浏览器端到端走查 | ⬜ | 待本地启后端 + 前端后验证 |
+
+### 已完成的文件
+
+**后端新增:**
+- `datasophon-api/.../controller/v2/ClusterYarnQueueV2Controller.java` — 6 端点，构造器注入，委托 `ClusterYarnQueueService` + `ClusterYarnSchedulerService`
+
+**前端新增/修改:**
+- `src/services/datasophon/service.ts` — 新增 6 个 YARN API 函数
+- `src/services/datasophon/typings.d.ts` — 新增 `YarnQueue` interface
+- `src/pages/Cluster/ServiceInstance/Queue/index.tsx` — ProTable（Fair 调度器）/ Empty（Capacity）分流
+- `src/pages/Cluster/ServiceInstance/Queue/BuildOrEditModal.tsx` — ModalForm，ProFormDigit 扁平化（替代旧版嵌套 SourceDom）
+- `src/pages/Cluster/ServiceInstance/index.tsx` — 条件挂载「资源配置」Tab
+
+---
+
 ## 后续切片
 
 1. 切片 4b Step 5: 物理集群配置 Tab 浏览器端到端验证
 2. 切片 4b-2 Step 8: K8s 集群浏览器端到端走查
-3. 切片 4c: 剩余页面(SourceSetting/K8s/弹窗)
-4. AlarmManage + SystemCenter + User
-5. DagModal(x6 迁移)
-6. UploadDeploy
-7. Maven/assembly 打包集成
+3. 切片 4c 浏览器验证: 实例 Tab 运维操作（启停/删除/日志/角色组）
+4. 切片 4d Step 5: YARN 资源配置浏览器验证
+5. AlarmManage + SystemCenter + User
+6. DagModal(x6 迁移)
+7. UploadDeploy
+8. Maven/assembly 打包集成
 

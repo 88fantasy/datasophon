@@ -1,15 +1,22 @@
 import { history, useParams } from '@umijs/max';
 import { Button, Dropdown, Spin, Tabs } from 'antd';
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import ClusterContext from '@/context/ClusterContext';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { RESOURCE_TYPE_LABELS } from '@/constants/resourceType';
+import ClusterContext from '@/context/ClusterContext';
 import {
   getServiceInstance,
   getServiceWebUis,
   listK8sResourceTypes,
 } from '@/services/datasophon/service';
-import K8sResource from './K8sResource';
 import InstanceTab from './Instance';
+import K8sResource from './K8sResource';
+import QueueTab from './Queue';
 import SettingTab from './Setting';
 
 const ServiceInstance: React.FC = () => {
@@ -38,9 +45,14 @@ const ServiceInstance: React.FC = () => {
     const fetchData = async () => {
       try {
         if (isK8s) {
-          const res = await listK8sResourceTypes(numericClusterId, numericInstanceId);
+          const res = await listK8sResourceTypes(
+            numericClusterId,
+            numericInstanceId,
+          );
           if (!cancelled) {
-            setK8sResourceTypes(Array.isArray(res) ? res : ((res as any).data ?? []));
+            setK8sResourceTypes(
+              Array.isArray(res) ? res : ((res as any).data ?? []),
+            );
           }
         } else {
           const [infoRes, webuiRes] = await Promise.all([
@@ -100,6 +112,9 @@ const ServiceInstance: React.FC = () => {
         case 'setting':
           history.push(`${base}/setting`);
           break;
+        case 'queue':
+          history.push(`${base}/queue`);
+          break;
       }
     },
     [numericClusterId, numericInstanceId],
@@ -127,7 +142,10 @@ const ServiceInstance: React.FC = () => {
           </Tabs.TabPane>
         ))}
         <Tabs.TabPane tab="配置" key="setting">
-          <SettingTab clusterId={numericClusterId} instanceId={numericInstanceId} />
+          <SettingTab
+            clusterId={numericClusterId}
+            instanceId={numericInstanceId}
+          />
         </Tabs.TabPane>
       </Tabs>
     );
@@ -162,6 +180,11 @@ const ServiceInstance: React.FC = () => {
           instanceId={numericInstanceId}
         />
       </Tabs.TabPane>
+      {serviceInfo?.serviceName === 'YARN' && (
+        <Tabs.TabPane tab="资源配置" key="queue">
+          <QueueTab clusterId={numericClusterId} />
+        </Tabs.TabPane>
+      )}
     </Tabs>
   );
 };
