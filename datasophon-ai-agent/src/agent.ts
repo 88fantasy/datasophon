@@ -11,13 +11,13 @@ if (RAW_BASE_URL?.endsWith("/v1")) {
   console.warn(
     `[agent] WARNING: ANTHROPIC_BASE_URL ends with "/v1" (${RAW_BASE_URL}). ` +
       "The SDK appends /v1/messages automatically — this creates a double /v1/v1/messages path. " +
-      "Remove the /v1 suffix from ANTHROPIC_BASE_URL."
+      "Remove the /v1 suffix from ANTHROPIC_BASE_URL.",
   );
 }
 console.log(
   `[agent] baseURL=${RAW_BASE_URL ?? "(default api.anthropic.com)"}  ` +
     `authToken=${process.env.ANTHROPIC_AUTH_TOKEN ? "set" : "NOT SET"}  ` +
-    `model=${MODEL}  workdir=${WORKDIR}`
+    `model=${MODEL}  workdir=${WORKDIR}`,
 );
 
 const SYSTEM_PROMPT =
@@ -53,7 +53,7 @@ function buildPrompt(messages: ChatMessage[]): string {
   const hist = messages
     .map(
       (m) =>
-        `${m.role === "user" ? "用户" : "助手"}：${contentToText(m.content)}`
+        `${m.role === "user" ? "用户" : "助手"}：${contentToText(m.content)}`,
     )
     .join("\n\n");
   return `${hist}\n\n请作为运维助手回应用户最新的问题。`;
@@ -126,7 +126,7 @@ export async function testConnectivity(): Promise<{
 
 export async function runAgentLoop(
   messages: ChatMessage[],
-  res: Response
+  res: Response,
 ): Promise<void> {
   const pendingTools = new Map<string, PendingTool>();
 
@@ -134,12 +134,17 @@ export async function runAgentLoop(
     for await (const message of query({
       prompt: buildPrompt(messages),
       options: {
-        model: MODEL,
-        cwd: WORKDIR,
+        // model: MODEL,
+        cwd: process.cwd(),
         // settingSources: [] — do not load ~/.claude or project CLAUDE.md settings;
         // keeps sidecar behaviour predictable across environments.
-        settingSources: [],
-        systemPrompt: SYSTEM_PROMPT,
+        // settingSources: [],
+        // systemPrompt: SYSTEM_PROMPT,
+        systemPrompt: {
+          type: "preset",
+          preset: "claude_code",
+          append: SYSTEM_PROMPT,
+        },
         mcpServers: { datasophon: datasophonMcpServer },
         // allowedTools: auto-approve these tools so the agent loop runs unattended.
         // permissionMode "dontAsk" rejects everything NOT in this list — safe for headless servers.
@@ -158,9 +163,10 @@ export async function runAgentLoop(
         // includePartialMessages: true streams text deltas so we can forward
         // them as OpenAI-compatible SSE chunks without waiting for the full response.
         includePartialMessages: true,
-        env: sdkEnv(),
+        // env: sdkEnv(),
       },
     })) {
+      console.log("message", message);
       if (message.type === "stream_event") {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const ev = (message as any).event;

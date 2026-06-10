@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "tsx src/server.ts"
+    "dev": "pnpm install && tsx src/server.ts"
   },
   "engines": { "node": ">=22" },
   "dependencies": {

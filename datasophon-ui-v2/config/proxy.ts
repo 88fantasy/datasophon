@@ -14,7 +14,7 @@ export default {
     // 将所有 /ddh 开头的请求代理到 datasophon-api 后端
     // 后端 context-path=/ddh，前端 baseURL=/ddh/api/v2
     '/ddh': {
-      target: 'http://localhost:8080',
+      target: 'http://localhost:8081',
       changeOrigin: true,
     },
   },
