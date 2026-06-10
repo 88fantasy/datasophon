@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@antv/layout": "^2.0.0",
+    "@antv/x6": "^3.1.7",
+    "@antv/x6-react-shape": "^3.0.1",
+    "insert-css": "^2.0.0"
+  }
+}

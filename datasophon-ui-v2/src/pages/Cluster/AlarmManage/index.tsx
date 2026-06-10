@@ -1,12 +1,13 @@
 import { PageContainer } from '@ant-design/pro-components';
 import { Tabs } from 'antd';
 import React, { useContext, useState } from 'react';
-import { ClusterContext } from '@/context/ClusterContext';
+import ClusterContext from '@/context/ClusterContext';
 import GroupTab from './Group';
 import MetricTab from './Metric';
 
 const AlarmManage: React.FC = () => {
-  const { clusterId } = useContext(ClusterContext);
+  const ctx = useContext(ClusterContext);
+  const clusterId = ctx?.clusterId ?? 0;
   const [activeTab, setActiveTab] = useState('group');
   const [filterGroupId, setFilterGroupId] = useState<number | undefined>();
 

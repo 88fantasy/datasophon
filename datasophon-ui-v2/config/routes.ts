@@ -86,13 +86,16 @@ export default [
             path: '/cluster/:clusterId/command',
             component: './Cluster/Command',
           },
-          {
-            path: '/cluster/:clusterId/dag/:dagId',
-            component: './Cluster/DagGraph',
-          },
         ],
       },
     ],
+  },
+
+  // ─── DAG 图全屏页（layout:false，window.open 新窗口）─────────────────────
+  {
+    path: '/cluster/:clusterId/dag/:dagId',
+    component: './Cluster/DagGraph',
+    layout: false,
   },
 
   // ─── 用户管理 ──────────────────────────────────────────────────
@@ -100,7 +103,7 @@ export default [
     path: '/user-manage',
     name: 'user',
     icon: 'user',
-    component: './User/Manage',
+    component: './user/Manage',
   },
 
   // ─── 根路径重定向 ─────────────────────────────────────────────────

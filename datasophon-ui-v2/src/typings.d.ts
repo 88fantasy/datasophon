@@ -14,6 +14,8 @@ declare module '*.md' {
   export default content;
 }
 declare module 'mockjs';
+declare module 'insert-css';
+declare module 'lodash-es';
 
 declare const __APP_VERSION__: string;
 declare const __UMI_VERSION__: string;

@@ -28,7 +28,7 @@ const App = () => {
   //     throw new Error("Failed after retries");
   //   };
 
-  const analyze = async (target) => {
+  const analyze = async (target: string) => {
     // setActiveNode(target);
     // setLoading(true);
     // setAiAnalysis(`正在深度分析 ${target} 的链路状态...`);
@@ -59,7 +59,8 @@ const App = () => {
   return (
     <div className="flex-1 flex flex-col items-center justify-center min-h-screen  bg-slate-50 p-4 font-sans overflow-hidden">
       <div className="relative w-full max-w-2xl aspect-square flex items-center justify-center">
-        <svg viewBox="0 0 400 400" className="w-full h-full">
+        <svg viewBox="0 0 400 400" className="w-full h-full" aria-label="Datasophon Logo">
+          <title>Datasophon Logo</title>
           <defs>
             <linearGradient id="mainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="#3b82f6" />

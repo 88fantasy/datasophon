@@ -22,7 +22,7 @@ interface Props {
 
 const MetricTab: React.FC<Props> = ({ clusterId, defaultGroupId }) => {
   const { modal, message } = App.useApp();
-  const actionRef = useRef<ActionType>();
+  const actionRef = useRef<ActionType | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
   const [editRecord, setEditRecord] = useState<DATASOPHON.AlertQuota | null>(
     null,

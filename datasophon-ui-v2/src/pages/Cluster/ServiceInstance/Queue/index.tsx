@@ -20,7 +20,7 @@ interface Props {
 
 const QueueTab: React.FC<Props> = ({ clusterId }) => {
   const { modal, message } = App.useApp();
-  const actionRef = useRef<ActionType>();
+  const actionRef = useRef<ActionType | undefined>(undefined);
 
   const [schedulerType, setSchedulerType] = useState<string | null>(null);
   const [schedulerLoading, setSchedulerLoading] = useState(true);

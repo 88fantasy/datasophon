@@ -19,7 +19,7 @@ interface Props {
 
 const GroupTab: React.FC<Props> = ({ clusterId, onViewMetrics }) => {
   const { modal, message } = App.useApp();
-  const actionRef = useRef<ActionType>();
+  const actionRef = useRef<ActionType | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleDelete = (record: DATASOPHON.AlertGroup) => {
