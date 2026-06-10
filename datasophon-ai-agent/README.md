@@ -18,7 +18,7 @@ npm start
 |------|--------|------|
 | `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | 自建 Anthropic 兼容网关地址（**不要带 /v1 后缀**） |
 | `ANTHROPIC_AUTH_TOKEN` | （无） | 网关 Bearer token（`Authorization: Bearer <token>`）。**替代原 `ANTHROPIC_API_KEY`** |
-| `ANTHROPIC_MODEL` | `qwen3.7-plus` | 模型 ID，原样透传网关 |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-6` | 模型 ID，原样透传网关 |
 | `AGENT_WORKDIR` | `/tmp/ddh-agent` | Read / Bash 工具的沙箱根目录，限制文件操作范围 |
 | `DATASOPHON_API_URL` | `http://localhost:8080/ddh` | Java 服务根地址（**不含 /api**，内部端点在 `/ddh/internal/agent/**`） |
 | `AGENT_INTERNAL_TOKEN` | `change-me` | 与 `DDH_AI_INTERNAL_TOKEN` 保持一致 |
@@ -80,7 +80,7 @@ docker build -t datasophon/ai-agent:latest .
 docker run \
   -e ANTHROPIC_AUTH_TOKEN=your-token \
   -e ANTHROPIC_BASE_URL=http://your-gateway:port \
-  -e ANTHROPIC_MODEL=qwen3.7-plus \
+  -e ANTHROPIC_MODEL=claude-sonnet-4-6 \
   -e DATASOPHON_API_URL=http://api:8080/ddh \
   -e AGENT_INTERNAL_TOKEN=your-token \
   -e AGENT_WORKDIR=/var/ddh-agent \

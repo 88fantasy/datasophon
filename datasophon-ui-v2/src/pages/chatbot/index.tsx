@@ -16,7 +16,7 @@ import React, {
   useState,
 } from 'react';
 
-import type { ConversationItem, ParsedMessage } from './data';
+import type { ConversationItem, ParsedMessage, ToolCallInfo } from './data';
 import {
   createChatProvider,
   deleteConversation,
@@ -24,6 +24,7 @@ import {
   fetchConversations,
 } from './service';
 import { useStyles } from './style';
+import ToolCalls from './ToolCalls';
 
 const WELCOME_TEXT = '🤖 你好，有什么可以帮你？';
 
@@ -53,27 +54,52 @@ const TypewriterTitle: React.FC = () => {
   );
 };
 
+function parseToolCall(b64: string): ToolCallInfo | null {
+  try {
+    return JSON.parse(atob(b64)) as ToolCallInfo;
+  } catch {
+    return null;
+  }
+}
+
 const parser = (message: { content: string; role: string }): ParsedMessage => {
   const { content, role } = message;
   if (role !== 'assistant') return { role: 'user', content };
 
-  const trimmed = content.trimStart();
+  const toolCalls: ToolCallInfo[] = [];
+  // Extract all <tool-call>BASE64</tool-call> blocks and collect them
+  const withoutTools = content.replace(
+    /<tool-call>([A-Za-z0-9+/=]+)<\/tool-call>/g,
+    (_match, b64: string) => {
+      const info = parseToolCall(b64);
+      if (info) toolCalls.push(info);
+      return '';
+    },
+  );
+
+  const trimmed = withoutTools.trimStart();
+
+  let thinkContent: string | undefined;
+  let textContent = trimmed;
 
   const fullMatch = trimmed.match(/^<think>([\s\S]*?)<\/think>([\s\S]*)$/);
   if (fullMatch) {
-    return {
-      role: 'assistant',
-      thinkContent: fullMatch[1],
-      content: fullMatch[2].trimStart(),
-    };
+    thinkContent = fullMatch[1];
+    textContent = fullMatch[2].trimStart();
+  } else {
+    const partialMatch = trimmed.match(/^<think>([\s\S]*)$/);
+    if (partialMatch) {
+      thinkContent = partialMatch[1];
+      textContent = '';
+    }
   }
 
-  const partialMatch = trimmed.match(/^<think>([\s\S]*)$/);
-  if (partialMatch) {
-    return { role: 'assistant', thinkContent: partialMatch[1], content: '' };
-  }
-
-  return { role: 'assistant', content };
+  return {
+    role: 'assistant',
+    content: textContent,
+    ...(thinkContent !== undefined ? { thinkContent } : {}),
+    ...(toolCalls.length > 0 ? { toolCalls } : {}),
+  };
 };
 
 const STREAMING_ACTIVE = { hasNextChunk: true, enableAnimation: true };
@@ -127,7 +153,7 @@ const ChatbotPage: React.FC = () => {
   const [activeKey, setActiveKey] = useState<string>('');
   const [inputValue, setInputValue] = useState('');
   const [activeConvId, setActiveConvId] = useState<number | undefined>();
-  const [chatModel, setChatModel] = useState<string>('qwen3.7-plus');
+  const [chatModel, setChatModel] = useState<string>('claude-sonnet-4-6');
 
   useEffect(() => {
     fetchChatConfig()
@@ -207,6 +233,8 @@ const ChatbotPage: React.FC = () => {
         const isAI = parsed.role === 'assistant';
         const thinkContent =
           parsed.role === 'assistant' ? parsed.thinkContent : undefined;
+        const toolCalls =
+          parsed.role === 'assistant' ? parsed.toolCalls : undefined;
 
         const item: BubbleItemType = {
           key: msg.id,
@@ -216,8 +244,13 @@ const ChatbotPage: React.FC = () => {
           status: msg.status,
         };
 
-        if (isAI && thinkContent) {
-          item.header = <Think>{thinkContent}</Think>;
+        if (isAI && (thinkContent || toolCalls?.length)) {
+          item.header = (
+            <>
+              {toolCalls?.length ? <ToolCalls items={toolCalls} /> : null}
+              {thinkContent ? <Think>{thinkContent}</Think> : null}
+            </>
+          );
         }
 
         return item;

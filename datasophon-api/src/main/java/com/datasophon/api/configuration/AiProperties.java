@@ -39,7 +39,7 @@ public class AiProperties {
     
     private String internalToken = "change-me";
     
-    private String model = "qwen3.7-plus";
+    private String model = "claude-sonnet-4-6";
     
     @PostConstruct
     public void validate() {

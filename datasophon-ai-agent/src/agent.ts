@@ -3,7 +3,7 @@ import { Response } from "express";
 import { datasophonMcpServer } from "./tools.js";
 import type { ChatMessage } from "./types.js";
 
-const MODEL = process.env.ANTHROPIC_MODEL ?? "qwen3.7-plus";
+const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
 const WORKDIR = process.env.AGENT_WORKDIR ?? "/tmp/ddh-agent";
 
 const RAW_BASE_URL = process.env.ANTHROPIC_BASE_URL;
@@ -66,6 +66,30 @@ function sendChunk(res: Response, content: string): void {
   res.write(`data: ${chunk}\n\n`);
 }
 
+interface ToolCallInfo {
+  name: string;
+  args: unknown;
+  result: string;
+  durationMs: number;
+  isError: boolean;
+}
+
+interface PendingTool {
+  name: string;
+  args: unknown;
+  startTime: number;
+}
+
+function normalizeToolName(name: string): string {
+  return name.replace(/^mcp__[^_]+__/, "");
+}
+
+function sendToolEvent(res: Response, info: ToolCallInfo): void {
+  const payload = JSON.stringify(info);
+  const b64 = Buffer.from(payload).toString("base64");
+  sendChunk(res, `<tool-call>${b64}</tool-call>`);
+}
+
 /**
  * Minimal HTTP call to validate gateway connectivity.
  * Uses a direct fetch (not the full SDK subprocess) to keep /debug lightweight.
@@ -104,6 +128,8 @@ export async function runAgentLoop(
   messages: ChatMessage[],
   res: Response
 ): Promise<void> {
+  const pendingTools = new Map<string, PendingTool>();
+
   try {
     for await (const message of query({
       prompt: buildPrompt(messages),
@@ -124,6 +150,7 @@ export async function runAgentLoop(
           "Bash",
           "Edit",
           "WebSearch",
+          "WebFetch",
         ],
         // Scoped disallow rules: keep Bash available but block high-risk patterns.
         disallowedTools: ["Bash(rm *)", "Bash(sudo *)"],
@@ -142,6 +169,53 @@ export async function runAgentLoop(
           ev.delta?.type === "text_delta"
         ) {
           sendChunk(res, ev.delta.text as string);
+        }
+      } else if (message.type === "assistant") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const content = (message as any).message?.content;
+        if (Array.isArray(content)) {
+          for (const block of content) {
+            if (block?.type === "tool_use") {
+              pendingTools.set(block.id, {
+                name: normalizeToolName(block.name),
+                args: block.input ?? {},
+                startTime: Date.now(),
+              });
+            }
+          }
+        }
+      } else if (message.type === "user") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const content = (message as any).message?.content;
+        if (Array.isArray(content)) {
+          for (const block of content) {
+            if (block?.type === "tool_result") {
+              const pending = pendingTools.get(block.tool_use_id);
+              if (pending) {
+                pendingTools.delete(block.tool_use_id);
+                const rawResult =
+                  typeof block.content === "string"
+                    ? block.content
+                    : Array.isArray(block.content)
+                      ? block.content
+                          .filter((b: any) => b?.type === "text")
+                          .map((b: any) => b.text ?? "")
+                          .join("")
+                      : JSON.stringify(block.content ?? "");
+                const result =
+                  rawResult.length > 500
+                    ? rawResult.slice(0, 500) + "…"
+                    : rawResult;
+                sendToolEvent(res, {
+                  name: pending.name,
+                  args: pending.args,
+                  result,
+                  durationMs: Date.now() - pending.startTime,
+                  isError: !!block.is_error,
+                });
+              }
+            }
+          }
         }
       }
     }

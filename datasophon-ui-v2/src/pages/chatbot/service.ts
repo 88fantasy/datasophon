@@ -36,7 +36,7 @@ export const createChatProvider = (
         },
       } as any,
       params: {
-        model: model ?? 'qwen3.7-plus',
+        model: model ?? 'claude-sonnet-4-6',
         stream: true,
         ...(conversationId ? { conversationId } : {}),
         ...(clusterId ? { clusterId } : {}),
@@ -48,7 +48,7 @@ export async function fetchChatConfig(): Promise<{ model: string }> {
   const res = await request<{ data: { model: string } }>('/chat/config', {
     method: 'GET',
   });
-  return res.data ?? { model: 'qwen3.7-plus' };
+  return res.data ?? { model: 'claude-sonnet-4-6' };
 }
 
 export async function fetchConversations(): Promise<ConversationItem[]> {

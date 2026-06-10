@@ -72,4 +72,54 @@ export const useStyles = createStyles(({ css, token }) => ({
       50% { opacity: 0; }
     }
   `,
+
+  toolCallsPanel: css`
+    margin-bottom: 4px;
+  `,
+
+  toolCallHeader: css`
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+  `,
+
+  toolCallName: css`
+    font-weight: 500;
+  `,
+
+  toolCallSuccess: css`
+    color: ${token.colorSuccess};
+  `,
+
+  toolCallError: css`
+    color: ${token.colorError};
+  `,
+
+  toolCallDuration: css`
+    color: ${token.colorTextTertiary};
+    font-size: 12px;
+  `,
+
+  toolCallBody: css`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  `,
+
+  toolCallLabel: css`
+    font-size: 12px;
+  `,
+
+  toolCallPre: css`
+    margin: 0;
+    padding: 8px;
+    background: ${token.colorFillTertiary};
+    border-radius: ${token.borderRadiusSM}px;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 200px;
+    overflow-y: auto;
+  `,
 }));
