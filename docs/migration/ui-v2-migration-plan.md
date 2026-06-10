@@ -298,9 +298,39 @@ interface ClusterContextValue {
 
 ---
 
+## 切片 4b: 配置编辑 Setting Tab (Step 1-5)
+
+**目标**: 物理集群服务实例配置编辑 — 角色组菜单 + 历史版本选择 + 动态表单 + 保存(自动版本递增 + needRestart 打标)。K8s Helm 编辑拆到切片 4b-2。
+
+### 进度跟踪表
+
+| Step | 端  |                                   内容                                   | 状态 |                                     验证                                     |
+|------|----|------------------------------------------------------------------------|----|----------------------------------------------------------------------------|
+| 1    | 后端 | ClusterServiceConfigV2Controller(版本列表/按版本读/保存) + SaveConfigRequest DTO | ✅  | 后端编译通过;Spotless 格式化通过;3 个 v2 端点就绪                                          |
+| 2    | 前端 | service.ts 新增配置 API + typings.d.ts 新增 ConfigField 类型                   | ✅  | Biome/tsc 零新错误                                                             |
+| 3    | 前端 | ConfigForm.tsx(8 种控件动态渲染) + configTransform.ts(双向转换,原样移植)              | ✅  | Biome/tsc 零新错误;structuredClone 替代 lodash-es                                |
+| 4    | 前端 | Setting/index.tsx(角色组菜单+版本选择+ProForm) + ServiceInstance/index.tsx 挂载   | ✅  | Biome/tsc 零新错误;配置 Tab disabled 已移除                                         |
+| 5    | 双  | 端到端验证(浏览器走查)                                                           | ⬜  | 待后端 spring-boot:run + npm run dev 后手动走查:配置Tab可读/改/保存;版本列表+1;needRestart 打标 |
+
+### 已完成的文件
+
+**后端新增:**
+- `datasophon-api/.../controller/v2/ClusterServiceConfigV2Controller.java` — GET /versions / GET / POST
+- `datasophon-api/.../dto/v2/SaveConfigRequest.java` — 保存配置请求体 DTO
+
+**前端新增/修改:**
+- `src/services/datasophon/service.ts` — `listConfigVersions`, `getServiceConfig`, `saveServiceConfig`
+- `src/services/datasophon/typings.d.ts` — `ConfigField` 类型
+- `src/pages/Cluster/ServiceInstance/Setting/configTransform.ts` — 双向转换工具(5 种类型 round-trip)
+- `src/pages/Cluster/ServiceInstance/Setting/ConfigForm.tsx` — 动态表单渲染器(8 种控件)
+- `src/pages/Cluster/ServiceInstance/Setting/index.tsx` — 配置 Tab 主组件
+- `src/pages/Cluster/ServiceInstance/index.tsx` — 去掉 disabled,挂载 SettingTab
+
+---
+
 ## 后续切片
 
-1. 切片 4b: 配置编辑 Setting Tab(Monaco/Helm + 角色组/版本选择器)
+1. 切片 4b-2: K8s Helm 配置编辑(双栏编辑器 + deltaValues 提交)
 2. 切片 4c: 剩余页面(SourceSetting/K8s/弹窗)
 3. AlarmManage + SystemCenter + User
 4. DagModal(x6 迁移)

@@ -20,6 +20,7 @@ import type { ConversationItem, ParsedMessage } from './data';
 import {
   createChatProvider,
   deleteConversation,
+  fetchChatConfig,
   fetchConversations,
 } from './service';
 import { useStyles } from './style';
@@ -126,6 +127,13 @@ const ChatbotPage: React.FC = () => {
   const [activeKey, setActiveKey] = useState<string>('');
   const [inputValue, setInputValue] = useState('');
   const [activeConvId, setActiveConvId] = useState<number | undefined>();
+  const [chatModel, setChatModel] = useState<string>('qwen3.7-plus');
+
+  useEffect(() => {
+    fetchChatConfig()
+      .then((cfg) => setChatModel(cfg.model))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetchConversations()
@@ -145,8 +153,8 @@ const ChatbotPage: React.FC = () => {
   }, []);
 
   const provider = useMemo(
-    () => createChatProvider(activeConvId) as any,
-    [activeConvId],
+    () => createChatProvider(activeConvId, undefined, chatModel) as any,
+    [activeConvId, chatModel],
   );
   const { onRequest, abort, isRequesting, parsedMessages } = useXChat<
     any,

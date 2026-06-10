@@ -22,6 +22,7 @@
 
 package com.datasophon.api.controller.v2;
 
+import com.datasophon.api.configuration.AiProperties;
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.v2.ChatRequest;
@@ -34,6 +35,7 @@ import com.datasophon.dao.entity.UserInfoEntity;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -52,7 +54,15 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class ChatbotV2Controller extends ApiController {
     
     @Autowired
+    private AiProperties aiProperties;
+    
+    @Autowired
     private ChatService chatService;
+    
+    @GetMapping("/config")
+    public ApiResponse<Map<String, String>> config() {
+        return ApiResponse.ok(Map.of("model", aiProperties.getModel()));
+    }
     
     @PostMapping(value = "/completions", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter completions(

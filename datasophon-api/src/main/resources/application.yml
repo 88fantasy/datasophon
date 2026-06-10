@@ -84,6 +84,7 @@ datasophon:
   ai:
     sidecar-url: ${DDH_AI_SIDECAR_URL:http://localhost:18090}
     internal-token: ${DDH_AI_INTERNAL_TOKEN:change-me}
+    model: ${ANTHROPIC_MODEL:qwen3.7-plus}
 
 # gRPC server（Netty，与 Jetty 8081 端口独立）
 grpc:

@@ -161,7 +161,10 @@ public class AppConfiguration implements WebMvcConfigurer {
         
         InterceptorRegistration basicValidRegistration = registry
                 .addInterceptor(basicValidRequestInterceptor)
-                .addPathPatterns("/**");
+                .addPathPatterns("/**")
+                // Internal sidecar endpoints are not browser-navigable routes; exclude them
+                // so the SPA-forward logic doesn't serve index.html for /internal/** paths.
+                .excludePathPatterns("/internal/**");
         if (enableOpenApi) {
             basicValidRegistration.excludePathPatterns(
                     "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",

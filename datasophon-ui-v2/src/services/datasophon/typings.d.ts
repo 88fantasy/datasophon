@@ -131,4 +131,30 @@ declare namespace DATASOPHON {
     frameServiceList?: FrameServiceItem[];
     frameK8sServiceList?: FrameK8sServiceItem[];
   }
+
+  /**
+   * 服务配置参数项，对应后端 ServiceConfig 模型。
+   * type 决定前端渲染控件类型：
+   *   input / password / slider / switch / select / multipleSelect /
+   *   multiple / multipleWithKey / multipleWithMap
+   */
+  interface ConfigField {
+    name: string;
+    label: string;
+    value: any;
+    defaultValue?: any;
+    description?: string;
+    required: boolean;
+    enabled: boolean;
+    hidden?: boolean;
+    type: string;
+    configType?: string;
+    minValue?: number;
+    maxValue?: number;
+    unit?: string;
+    selectValue?: string[];
+    key?: string;
+    originalName?: string;
+    separator?: string;
+  }
 }

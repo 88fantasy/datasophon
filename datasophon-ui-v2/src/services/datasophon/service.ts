@@ -61,3 +61,40 @@ export async function getServiceWebUis(clusterId: number, instanceId: number) {
     { method: 'GET' },
   );
 }
+
+/** 配置历史版本列表（仅物理集群，K8s 另有接口） */
+export async function listConfigVersions(
+  clusterId: number,
+  instanceId: number,
+  roleGroupId: number,
+) {
+  return request<DATASOPHON.ApiResponse<number[]>>(
+    `/cluster/${clusterId}/service/instance/${instanceId}/config/versions`,
+    { method: 'GET', params: { roleGroupId } },
+  );
+}
+
+/** 按版本获取配置参数列表（version=undefined 时后端返回最新版） */
+export async function getServiceConfig(
+  clusterId: number,
+  instanceId: number,
+  roleGroupId: number,
+  version?: number,
+) {
+  return request<DATASOPHON.ApiResponse<DATASOPHON.ConfigField[]>>(
+    `/cluster/${clusterId}/service/instance/${instanceId}/config`,
+    { method: 'GET', params: { roleGroupId, version } },
+  );
+}
+
+/** 保存配置（自动版本递增 + needRestart 打标） */
+export async function saveServiceConfig(
+  clusterId: number,
+  instanceId: number,
+  body: { roleGroupId: number; serviceConfig: DATASOPHON.ConfigField[] },
+) {
+  return request<DATASOPHON.ApiResponse<void>>(
+    `/cluster/${clusterId}/service/instance/${instanceId}/config`,
+    { method: 'POST', data: body },
+  );
+}

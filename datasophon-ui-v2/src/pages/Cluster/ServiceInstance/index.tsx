@@ -6,6 +6,7 @@ import {
   getServiceWebUis,
 } from '@/services/datasophon/service';
 import InstanceTab from './Instance';
+import SettingTab from './Setting';
 
 const ServiceInstance: React.FC = () => {
   const { clusterId, instanceId } = useParams<{
@@ -115,8 +116,11 @@ const ServiceInstance: React.FC = () => {
           instanceId={numericInstanceId}
         />
       </Tabs.TabPane>
-      <Tabs.TabPane tab="配置" key="setting" disabled>
-        {/* 将在子切片 4b 实现 */}
+      <Tabs.TabPane tab="配置" key="setting">
+        <SettingTab
+          clusterId={numericClusterId}
+          instanceId={numericInstanceId}
+        />
       </Tabs.TabPane>
     </Tabs>
   );

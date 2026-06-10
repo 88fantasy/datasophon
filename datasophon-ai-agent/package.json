@@ -1,22 +1,24 @@
 {
   "name": "datasophon-ai-agent",
   "version": "1.0.0",
-  "description": "Datasophon AI Assistant sidecar — Anthropic SDK tool-calling agent",
+  "description": "Datasophon AI Assistant sidecar — claude-agent-sdk with in-process MCP tools",
+  "type": "module",
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "ts-node src/server.ts"
+    "dev": "tsx src/server.ts"
   },
   "engines": { "node": ">=22" },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.52.0",
-    "express": "^4.21.1"
+    "@anthropic-ai/claude-agent-sdk": "latest",
+    "express": "^4.21.1",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.19.0",
     "typescript": "^5.7.3"
   }
 }

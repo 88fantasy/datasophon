@@ -39,6 +39,8 @@ public class AiProperties {
     
     private String internalToken = "change-me";
     
+    private String model = "qwen3.7-plus";
+    
     @PostConstruct
     public void validate() {
         if ("change-me".equals(internalToken)) {
@@ -61,5 +63,13 @@ public class AiProperties {
     
     public void setInternalToken(String internalToken) {
         this.internalToken = internalToken;
+    }
+    
+    public String getModel() {
+        return model;
+    }
+    
+    public void setModel(String model) {
+        this.model = model;
     }
 }

@@ -6,8 +6,8 @@
  */
 
 import { ProForm } from '@ant-design/pro-components';
-import { Menu, Select, Spin, message } from 'antd';
 import type { MenuProps } from 'antd';
+import { Menu, message, Select, Spin } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
@@ -18,25 +18,36 @@ import {
 } from '@/services/datasophon/service';
 
 import ConfigForm from './ConfigForm';
-import { invokeFormatTemplateData, invokeHandleTemplateData } from './configTransform';
+import {
+  invokeFormatTemplateData,
+  invokeHandleTemplateData,
+} from './configTransform';
 
 interface SettingTabProps {
   clusterId: number;
   instanceId: number;
 }
 
-type RoleGroup = { id: number; roleGroupName: string; serviceInstanceId: number };
+type RoleGroup = {
+  id: number;
+  roleGroupName: string;
+  serviceInstanceId: number;
+};
 
 const SettingTab: React.FC<SettingTabProps> = ({ clusterId, instanceId }) => {
   const [roleGroups, setRoleGroups] = useState<RoleGroup[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [versions, setVersions] = useState<number[]>([]);
-  const [selectedVersion, setSelectedVersion] = useState<number | undefined>(undefined);
+  const [selectedVersion, setSelectedVersion] = useState<number | undefined>(
+    undefined,
+  );
 
   /** 从后端拿到的原始（未转换）配置数据，提交时用于还原格式 */
   const [rawConfig, setRawConfig] = useState<DATASOPHON.ConfigField[]>([]);
   /** 经 invokeHandleTemplateData 转换后的数据，用作 ProForm initialValues */
-  const [templateData, setTemplateData] = useState<DATASOPHON.ConfigField[]>([]);
+  const [templateData, setTemplateData] = useState<DATASOPHON.ConfigField[]>(
+    [],
+  );
 
   const [configLoading, setConfigLoading] = useState(false);
   const [formKey, setFormKey] = useState(0); // 强制 ProForm 重置 initialValues
@@ -155,7 +166,9 @@ const SettingTab: React.FC<SettingTabProps> = ({ clusterId, instanceId }) => {
       <div style={{ width: 200, flexShrink: 0 }}>
         <Menu
           mode="inline"
-          selectedKeys={selectedGroupId != null ? [String(selectedGroupId)] : []}
+          selectedKeys={
+            selectedGroupId != null ? [String(selectedGroupId)] : []
+          }
           onClick={onMenuClick}
           items={menuItems}
           style={{ border: '1px solid #f0f0f0', borderRadius: 8 }}
@@ -165,7 +178,14 @@ const SettingTab: React.FC<SettingTabProps> = ({ clusterId, instanceId }) => {
       {/* 右侧内容区 */}
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* 版本选择器 */}
-        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div
+          style={{
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
           <span style={{ flexShrink: 0 }}>配置版本：</span>
           <Select
             style={{ width: 160 }}
@@ -193,7 +213,9 @@ const SettingTab: React.FC<SettingTabProps> = ({ clusterId, instanceId }) => {
             </ProForm>
           )}
           {!configLoading && templateData.length === 0 && (
-            <div style={{ color: '#999', padding: '32px 0', textAlign: 'center' }}>
+            <div
+              style={{ color: '#999', padding: '32px 0', textAlign: 'center' }}
+            >
               暂无配置项
             </div>
           )}

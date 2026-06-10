@@ -33,7 +33,11 @@ interface ConfigFormProps {
   className?: string;
 }
 
-const ConfigForm: React.FC<ConfigFormProps> = ({ templateData, className = '', namePrefix }) => {
+const ConfigForm: React.FC<ConfigFormProps> = ({
+  templateData,
+  className = '',
+  namePrefix,
+}) => {
   const { token } = theme.useToken();
 
   const renderItem = (item: ConfigField): React.ReactNode => {
@@ -41,7 +45,10 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ templateData, className = '', n
     const label: React.ReactNode = item.name ? (
       <div className="text-left">
         {item.label}
-        <div className="text-[12px] text-left" style={{ color: token.colorTextTertiary }}>
+        <div
+          className="text-[12px] text-left"
+          style={{ color: token.colorTextTertiary }}
+        >
           {item.name}
         </div>
       </div>
@@ -60,7 +67,10 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ templateData, className = '', n
       initialValue: item.value ?? item.defaultValue,
     };
 
-    const requiredRule = { required: item.required, message: `${item.label}不能为空！` };
+    const requiredRule = {
+      required: item.required,
+      message: `${item.label}不能为空！`,
+    };
 
     // ── 非列表型控件 ─────────────────────────────────────────────────────
     if (
@@ -76,7 +86,11 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ templateData, className = '', n
       if (item.type === 'slider') {
         const min = item.minValue ?? 0;
         const max = item.maxValue ?? 100;
-        const fieldProps = { min, max, marks: { 0: String(min), [max]: String(max) } };
+        const fieldProps = {
+          min,
+          max,
+          marks: { 0: String(min), [max]: String(max) },
+        };
         return (
           <ProFormSlider
             {...commonProps}
@@ -94,7 +108,10 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ templateData, className = '', n
           <ProFormSelect
             {...commonProps}
             mode={item.type === 'multipleSelect' ? 'multiple' : undefined}
-            options={(item.selectValue ?? []).map((val) => ({ label: val, value: val }))}
+            options={(item.selectValue ?? []).map((val) => ({
+              label: val,
+              value: val,
+            }))}
             rules={[requiredRule]}
           />
         );
@@ -127,7 +144,11 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ templateData, className = '', n
               width="xl"
               name="value"
               rules={[
-                { required: item.required, whitespace: true, message: `${item.label}不能为空！` },
+                {
+                  required: item.required,
+                  whitespace: true,
+                  message: `${item.label}不能为空！`,
+                },
               ]}
             />
           </ProFormGroup>
@@ -154,12 +175,22 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ templateData, className = '', n
             <ProFormText
               width="md"
               name="key"
-              rules={[{ required: item.required, message: `${item.label} key 不能为空！` }]}
+              rules={[
+                {
+                  required: item.required,
+                  message: `${item.label} key 不能为空！`,
+                },
+              ]}
             />
             <ProFormText
               width="md"
               name="value"
-              rules={[{ required: item.required, message: `${item.label} value 不能为空！` }]}
+              rules={[
+                {
+                  required: item.required,
+                  message: `${item.label} value 不能为空！`,
+                },
+              ]}
             />
           </ProFormGroup>
         </ProFormList>
@@ -168,9 +199,17 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ templateData, className = '', n
 
     // ── multipleWithMap：嵌套分组（key 锁死只改 value） ──────────────────
     if (item.type === 'multipleWithMap') {
-      let creatorRecord: { items: { key: string; value: unknown }[] } = { items: [] };
-      const firstVal = (item.value as { items: { key: string; value: unknown }[] }[])?.[0];
-      if (firstVal && typeof firstVal === 'object' && Array.isArray(firstVal.items)) {
+      let creatorRecord: { items: { key: string; value: unknown }[] } = {
+        items: [],
+      };
+      const firstVal = (
+        item.value as { items: { key: string; value: unknown }[] }[]
+      )?.[0];
+      if (
+        firstVal &&
+        typeof firstVal === 'object' &&
+        Array.isArray(firstVal.items)
+      ) {
         creatorRecord = {
           items: firstVal.items.map((kv) => ({ key: kv.key, value: '' })),
         };
@@ -212,7 +251,13 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ templateData, className = '', n
               <ProFormText
                 width="md"
                 name="value"
-                rules={[{ required: item.required, whitespace: true, message: '不能为空！' }]}
+                rules={[
+                  {
+                    required: item.required,
+                    whitespace: true,
+                    message: '不能为空！',
+                  },
+                ]}
               />
             </ProFormGroup>
           </ProFormList>
@@ -231,7 +276,9 @@ const ConfigForm: React.FC<ConfigFormProps> = ({ templateData, className = '', n
           const fieldName = namePrefix
             ? [...namePrefix, item.name].filter(Boolean)
             : item.name;
-          const fieldKey = Array.isArray(fieldName) ? fieldName.join('.') : fieldName ?? item.name;
+          const fieldKey = Array.isArray(fieldName)
+            ? fieldName.join('.')
+            : (fieldName ?? item.name);
           const content = renderItem(item);
           if (!content) return null;
           return <React.Fragment key={fieldKey}>{content}</React.Fragment>;

@@ -1,8 +1,7 @@
-import { PageContainer } from '@ant-design/pro-components';
 import type { ProColumns } from '@ant-design/pro-components';
-import { ProTable } from '@ant-design/pro-components';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
-import { message, Modal, Popconfirm, Segmented, Space, Spin, Tabs } from 'antd';
+import { Modal, message, Popconfirm, Segmented, Space, Spin, Tabs } from 'antd';
 import hljs from 'highlight.js/lib/core';
 import json from 'highlight.js/lib/languages/json';
 import 'highlight.js/styles/github.min.css';
@@ -56,7 +55,11 @@ const FrameManage: React.FC = () => {
     });
     try {
       const result = await getFrameServiceDdl(record.id);
-      setDdlModal((prev) => ({ ...prev, content: result?.data ?? '', loading: false }));
+      setDdlModal((prev) => ({
+        ...prev,
+        content: result?.data ?? '',
+        loading: false,
+      }));
     } catch {
       setDdlModal((prev) => ({ ...prev, loading: false }));
     }
@@ -119,7 +122,9 @@ const FrameManage: React.FC = () => {
       dataIndex: 'supportArtifacts',
       ellipsis: true,
       render: (_, record) =>
-        Array.isArray(record.supportArtifacts) ? record.supportArtifacts.join(', ') : '-',
+        Array.isArray(record.supportArtifacts)
+          ? record.supportArtifacts.join(', ')
+          : '-',
     },
     {
       title: '操作',
@@ -183,11 +188,7 @@ const FrameManage: React.FC = () => {
 
   return (
     <PageContainer>
-      {loading ? (
-        <Spin />
-      ) : (
-        <Tabs items={tabItems} />
-      )}
+      {loading ? <Spin /> : <Tabs items={tabItems} />}
 
       <Modal
         title={`编辑 DDL — ${ddlModal.serviceName}`}
@@ -218,7 +219,8 @@ const FrameManage: React.FC = () => {
                 setDdlModal((prev) => ({ ...prev, content }))
               }
               highlight={(code) =>
-                hljs.highlight(code, { language: 'json', ignoreIllegals: true }).value
+                hljs.highlight(code, { language: 'json', ignoreIllegals: true })
+                  .value
               }
               padding={12}
               style={{ minHeight: 200 }}

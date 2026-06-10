@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
-import Anthropic from "@anthropic-ai/sdk";
-import { runAgentLoop } from "./agent.js";
+import { runAgentLoop, testConnectivity } from "./agent.js";
+import type { ChatMessage } from "./types.js";
 
 const app = express();
 app.use(express.json({ limit: "4mb" }));
@@ -16,7 +16,7 @@ app.post("/agent/chat", async (req: Request, res: Response) => {
   }
 
   const { messages } = req.body as {
-    messages: Anthropic.MessageParam[];
+    messages: ChatMessage[];
     conversationId?: number;
     clusterId?: number;
     userId?: number;
@@ -43,6 +43,13 @@ app.post("/agent/chat", async (req: Request, res: Response) => {
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
+});
+
+// Debug endpoint: runs a minimal HTTP call to validate gateway connectivity.
+// No auth required — diagnostic only, returns no sensitive data.
+app.get("/debug", async (_req, res) => {
+  const result = await testConnectivity();
+  res.status(result.ok ? 200 : 502).json(result);
 });
 
 app.listen(PORT, () => {

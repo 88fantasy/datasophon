@@ -15,7 +15,8 @@ const isPlainObject = (val: unknown): val is Record<string, unknown> => {
 
 /** 判断一个配置项是否为「单值列表」类型（multiple 或 input+stringArray） */
 export function invokeMapShowMultiply(item: ConfigField): boolean {
-  const inputStringArray = item.type === 'input' && item.configType === 'stringArray';
+  const inputStringArray =
+    item.type === 'input' && item.configType === 'stringArray';
   return ['multiple'].includes(item.type) || inputStringArray;
 }
 
@@ -35,7 +36,10 @@ export function invokeReFormatMultiplyValue(value: unknown): unknown {
 }
 
 /** 表单 → 后端：把 [{value}] 结构还原为数组（stringArray 时 join 为逗号串） */
-export function invokeFormatMultiplyValue(config: ConfigField, value: unknown): unknown {
+export function invokeFormatMultiplyValue(
+  config: ConfigField,
+  value: unknown,
+): unknown {
   if (!Array.isArray(value)) return value;
   const result = (value as { value: unknown }[]).map((v) => v.value);
   if (config.type === 'input' && config.configType === 'stringArray') {

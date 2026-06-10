@@ -5,25 +5,38 @@ import type { ConversationItem } from './data';
 
 export const CHAT_API_URL = '/ddh/api/v2/chat/completions';
 
-function getCsrfHeaders(): Record<string, string> {
+function getCsrfToken(): string {
   const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
-  const token = match ? decodeURIComponent(match[1]) : '';
-  return token ? { 'X-XSRF-TOKEN': token } : {};
+  return match ? decodeURIComponent(match[1]) : '';
 }
 
 export const createChatProvider = (
   conversationId?: number,
   clusterId?: number,
+  model?: string,
 ) =>
   new OpenAIChatProvider({
     request: XRequest(CHAT_API_URL, {
       manual: true,
       credentials: 'include' as RequestCredentials,
-      headers: {
-        ...getCsrfHeaders(),
-      },
+      // Read CSRF token at request time to avoid stale-token issues.
+      // XRequest's middlewares.onRequest receives (url, requestInit) at runtime;
+      // the SDK's TS types are overly strict, so we cast to any here.
+      middlewares: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onRequest: (url: string, init: any) => {
+          const token = getCsrfToken();
+          return [
+            url,
+            {
+              ...init,
+              headers: { ...init.headers, ...(token ? { 'X-XSRF-TOKEN': token } : {}) },
+            },
+          ];
+        },
+      } as any,
       params: {
-        model: 'claude-opus-4-8',
+        model: model ?? 'qwen3.7-plus',
         stream: true,
         ...(conversationId ? { conversationId } : {}),
         ...(clusterId ? { clusterId } : {}),
@@ -31,10 +44,17 @@ export const createChatProvider = (
     }),
   });
 
+export async function fetchChatConfig(): Promise<{ model: string }> {
+  const res = await request<{ data: { model: string } }>('/chat/config', {
+    method: 'GET',
+  });
+  return res.data ?? { model: 'qwen3.7-plus' };
+}
+
 export async function fetchConversations(): Promise<ConversationItem[]> {
   const res = await request<{
     data: Array<{ id: number; title: string; updateTime: string }>;
-  }>('/ddh/api/v2/chat/conversations', { method: 'GET' });
+  }>('/chat/conversations', { method: 'GET' });
   return (res.data ?? []).map((c) => ({
     key: String(c.id),
     label: c.title,
@@ -50,14 +70,14 @@ export async function fetchMessages(conversationId: number) {
       content: string;
       createTime: string;
     }>;
-  }>(`/ddh/api/v2/chat/conversations/${conversationId}/messages`, {
+  }>(`/chat/conversations/${conversationId}/messages`, {
     method: 'GET',
   });
   return res.data ?? [];
 }
 
 export async function deleteConversation(conversationId: number) {
-  await request(`/ddh/api/v2/chat/conversations/${conversationId}`, {
+  await request(`/chat/conversations/${conversationId}`, {
     method: 'DELETE',
   });
 }
