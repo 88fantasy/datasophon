@@ -11,7 +11,11 @@ import { Badge, Layout, Menu, Spin, Tag } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import { listClusters } from '@/services/datasophon/cluster';
-import { listClusterServices } from '@/services/datasophon/service';
+import {
+  listClusterServices,
+  listK8sInstances,
+  listK8sNamespaces,
+} from '@/services/datasophon/service';
 
 const { Sider, Content } = Layout;
 
@@ -29,6 +33,36 @@ const STATE_BADGE_COLOR: Record<
   2: 'success',
   3: 'warning',
   4: 'error',
+};
+
+/** K8s 实例状态：0 初始化 / 1 成功 / 2 失败 */
+const K8S_STATE_BADGE_COLOR: Record<number, 'success' | 'error' | 'default'> = {
+  0: 'default',
+  1: 'success',
+  2: 'error',
+};
+
+interface K8sInstanceMenuItemProps {
+  instance: DATASOPHON.K8sServiceInstanceVO;
+}
+
+const K8sInstanceMenuItem: React.FC<K8sInstanceMenuItemProps> = ({ instance }) => {
+  const badgeStatus = K8S_STATE_BADGE_COLOR[instance.state] ?? 'default';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+      <Badge status={badgeStatus} />
+      <span
+        style={{
+          marginLeft: 8,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {instance.serviceName}
+      </span>
+    </div>
+  );
 };
 
 interface ServiceMenuItemProps {
@@ -120,12 +154,14 @@ const ClusterLayout: React.FC = () => {
     };
   }, [numericClusterId]);
 
-  // ── 服务列表轮询（3 秒间隔）────────────────────────────
+  // ── 物理集群：服务列表轮询（3 秒间隔）────────────────────────────
   const [serviceList, setServiceList] = useState<
     DATASOPHON.ServiceInstanceInfo[]
   >([]);
 
   useEffect(() => {
+    if (clusterInfo?.archType === 'k8s') return; // K8s 由独立 effect 处理
+
     let cancelled = false;
     const fetchServices = async () => {
       try {
@@ -144,7 +180,45 @@ const ClusterLayout: React.FC = () => {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [numericClusterId]);
+  }, [numericClusterId, clusterInfo?.archType]);
+
+  // ── K8s 集群：namespace + 实例列表轮询（3 秒间隔）──────────────
+  const [k8sNamespaces, setK8sNamespaces] = useState<DATASOPHON.K8sNamespace[]>([]);
+  const [k8sInstancesMap, setK8sInstancesMap] = useState<
+    Record<string, DATASOPHON.K8sServiceInstanceVO[]>
+  >({});
+
+  useEffect(() => {
+    if (clusterInfo?.archType !== 'k8s') return;
+
+    let cancelled = false;
+    const fetchK8s = async () => {
+      try {
+        const nsRes = await listK8sNamespaces(numericClusterId);
+        const namespaces = Array.isArray(nsRes) ? nsRes : (nsRes.data ?? []);
+        if (cancelled) return;
+        setK8sNamespaces(namespaces);
+
+        const map: Record<string, DATASOPHON.K8sServiceInstanceVO[]> = {};
+        await Promise.all(
+          namespaces.map(async (ns) => {
+            const iRes = await listK8sInstances(numericClusterId, ns.namespace);
+            map[ns.namespace] = Array.isArray(iRes) ? iRes : (iRes.data ?? []);
+          }),
+        );
+        if (!cancelled) setK8sInstancesMap(map);
+      } catch {
+        /* global error handler */
+      }
+    };
+
+    fetchK8s();
+    const timer = setInterval(fetchK8s, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [numericClusterId, clusterInfo?.archType]);
 
   // ── 按 catalog 分组 ────────────────────────────────────
   const groupedServices = useMemo(() => {
@@ -159,30 +233,14 @@ const ClusterLayout: React.FC = () => {
 
   // ── 菜单项 ────────────────────────────────────────────
   const menuItems = useMemo(() => {
-    const items: any[] = [
-      {
-        key: `/cluster/${numericClusterId}/host`,
-        icon: <DesktopOutlined />,
-        label: '主机管理',
-      },
-    ];
+    const baseItem = {
+      key: `/cluster/${numericClusterId}/host`,
+      icon: <DesktopOutlined />,
+      label: '主机管理',
+    };
 
-    const catalogOrder = ['ENVIRONMENT', 'MIDDLEWARE', 'APPLICATION'];
-    for (const cat of catalogOrder) {
-      const services = groupedServices[cat];
-      if (!services?.length) continue;
-      items.push({
-        key: `cat-${cat}`,
-        label: CATALOG_LABEL[cat] || cat,
-        children: services.map((s) => ({
-          key: `/cluster/${numericClusterId}/service/${s.id}`,
-          label: <ServiceMenuItem service={s} />,
-        })),
-      });
-    }
-
-    items.push(
-      { type: 'divider' },
+    const bottomItems = [
+      { type: 'divider' as const },
       {
         key: 'service-manage',
         icon: <ClusterOutlined />,
@@ -201,10 +259,47 @@ const ClusterLayout: React.FC = () => {
         label: '系统中心',
         disabled: true,
       },
-    );
+    ];
 
-    return items;
-  }, [groupedServices, numericClusterId]);
+    if (clusterInfo?.archType === 'k8s') {
+      // K8s：两层菜单 namespace → 实例
+      const nsItems = k8sNamespaces.map((ns) => {
+        const instances = k8sInstancesMap[ns.namespace] ?? [];
+        return {
+          key: `ns-${ns.namespace}`,
+          label: ns.namespace,
+          children: instances.map((inst) => ({
+            key: `/cluster/${numericClusterId}/service/${inst.id}`,
+            label: <K8sInstanceMenuItem instance={inst} />,
+          })),
+        };
+      });
+      return [baseItem, ...nsItems, ...bottomItems];
+    }
+
+    // 物理集群：按 catalog 分组（原有逻辑不变）
+    const items: any[] = [baseItem];
+    const catalogOrder = ['ENVIRONMENT', 'MIDDLEWARE', 'APPLICATION'];
+    for (const cat of catalogOrder) {
+      const services = groupedServices[cat];
+      if (!services?.length) continue;
+      items.push({
+        key: `cat-${cat}`,
+        label: CATALOG_LABEL[cat] || cat,
+        children: services.map((s) => ({
+          key: `/cluster/${numericClusterId}/service/${s.id}`,
+          label: <ServiceMenuItem service={s} />,
+        })),
+      });
+    }
+    return [...items, ...bottomItems];
+  }, [
+    clusterInfo?.archType,
+    groupedServices,
+    k8sNamespaces,
+    k8sInstancesMap,
+    numericClusterId,
+  ]);
 
   // ── 渲染 ──────────────────────────────────────────────
   if (clusterLoading) {

@@ -1,15 +1,16 @@
 /**
- * 服务配置编辑 Tab（物理集群）。
+ * 服务配置编辑 Tab。
  *
- * 布局：左侧角色组菜单 + 右上版本选择器 + 主体 ProForm（ConfigForm 动态渲染）。
- * K8s Helm 编辑路径在切片 4b-2 实现，本组件仅处理 archType=physical。
+ * - archType=k8s   → HelmEditor（Monaco 双栏，切片 4b-2 新增）
+ * - archType=physical → PhysicalSettingContent（角色组菜单 + ProForm）
  */
 
 import { ProForm } from '@ant-design/pro-components';
 import type { MenuProps } from 'antd';
 import { Menu, message, Select, Spin } from 'antd';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 
+import ClusterContext from '@/context/ClusterContext';
 import {
   getServiceConfig,
   getServiceRoleGroupList,
@@ -22,6 +23,7 @@ import {
   invokeFormatTemplateData,
   invokeHandleTemplateData,
 } from './configTransform';
+import HelmEditor from './HelmEditor';
 
 interface SettingTabProps {
   clusterId: number;
@@ -34,7 +36,9 @@ type RoleGroup = {
   serviceInstanceId: number;
 };
 
-const SettingTab: React.FC<SettingTabProps> = ({ clusterId, instanceId }) => {
+// ── 物理集群配置 ProForm（原 SettingTab 主体，无改动）────────────────────
+
+const PhysicalSettingContent: React.FC<SettingTabProps> = ({ clusterId, instanceId }) => {
   const [roleGroups, setRoleGroups] = useState<RoleGroup[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [versions, setVersions] = useState<number[]>([]);
@@ -223,6 +227,18 @@ const SettingTab: React.FC<SettingTabProps> = ({ clusterId, instanceId }) => {
       </div>
     </div>
   );
+};
+
+// ── SettingTab：根据 archType 调度到对应实现 ───────────────────────────────
+
+const SettingTab: React.FC<SettingTabProps> = ({ clusterId, instanceId }) => {
+  const clusterCtx = useContext(ClusterContext);
+  const isK8s = clusterCtx?.clusterInfo?.archType === 'k8s';
+
+  if (isK8s) {
+    return <HelmEditor clusterId={clusterId} instanceId={instanceId} />;
+  }
+  return <PhysicalSettingContent clusterId={clusterId} instanceId={instanceId} />;
 };
 
 export default SettingTab;

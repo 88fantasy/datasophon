@@ -328,12 +328,52 @@ interface ClusterContextValue {
 
 ---
 
+---
+
+## 切片 4b-2: K8s 集群链路 + Helm 配置编辑 (Step 1-8)
+
+**目标**: 打通 K8s 集群完整链路 — namespace→实例侧边栏菜单、实例页动态资源 Tab、Helm 双栏 Monaco 配置编辑器。
+
+### 进度跟踪表
+
+| Step | 端  | 内容 | 状态 | 验证 |
+|---|---|---|---|---|
+| 1 | 后端 | `ClusterK8sV2Controller`：namespace 列表 + 实例列表 + 资源类型 + 资源列表 | ✅ | 编译通过；Spotless 通过；4 端点就绪 |
+| 2 | 后端 | `ClusterK8sConfigV2Controller`：values 版本/读取/保存 | ✅ | 编译通过；Spotless 通过；3 端点就绪 |
+| 3 | 前端 | service.ts 新增 K8s 接口 + typings 新增 K8s 类型 | ✅ | Biome/tsc 零新错误 |
+| 4 | 前端 | 引入 Monaco + js-yaml；`yamlMerge.ts` + round-trip 单测 | ✅ | 5 单测全绿；`npm run build` Monaco 打包为 1.5MB async chunk |
+| 5 | 前端 | `ClusterLayout` K8s 菜单分流（namespace→实例两层 + 3s 轮询） | ✅ | K8s archType 时渲染两层菜单；物理集群不受影响 |
+| 6 | 前端 | `ServiceInstance` K8s 实例页（资源 Tab 动态 + `K8sResource.tsx`） | ✅ | tsc 零新错误；5 类资源 ProTable 渲染 |
+| 7 | 前端 | `SettingTab` Helm 分支 + `HelmEditor.tsx`（Monaco 双栏 + 合并预览） | ✅ | tsc 零新错误；archType 分流；hooks 顺序合规 |
+| 8 | 双  | 端到端验证（lint/test/build + 浏览器走查） | ⬜ | lint 预存 1 err（SVG 无障碍，非本切片引入）；test 50/50；build 无错；浏览器待验证 |
+
+### 已完成的文件
+
+**后端新增:**
+- `datasophon-api/.../controller/v2/ClusterK8sV2Controller.java` — 4 端点：namespace 列表/实例列表/资源类型/资源列表
+- `datasophon-api/.../controller/v2/ClusterK8sConfigV2Controller.java` — 3 端点：versions/getById/update
+
+**前端新增/修改:**
+- `src/services/datasophon/typings.d.ts` — 新增 `K8sNamespace`、`K8sServiceInstanceVO`、`K8sInstanceValues`、`K8sInstanceValuesSimple`
+- `src/services/datasophon/service.ts` — 新增 7 个 K8s API 函数
+- `src/constants/resourceType.ts` — 资源类型常量（T_POD / T_DEPLOYMENT / T_SERVICE / T_INGRESS / T_CONFIGMAP + RESOURCE_TYPE_LABELS）
+- `src/pages/Cluster/ServiceInstance/Setting/yamlMerge.ts` — Helm values 深合并工具（js-yaml + structuredClone）
+- `src/pages/Cluster/ServiceInstance/Setting/yamlMerge.test.ts` — 5 单测（scalar/深嵌套/空 override/parse error/空 base）
+- `src/pages/Cluster/Layout/index.tsx` — K8s 菜单分流（两层 namespace→实例 + 3s 轮询 effect）
+- `src/pages/Cluster/ServiceInstance/K8sResource.tsx` — 5 类 K8s 资源 ProTable（Pod/Service/Deployment/Ingress/ConfigMap）
+- `src/pages/Cluster/ServiceInstance/index.tsx` — K8s 实例页（资源 Tab 动态 + 配置 Tab）
+- `src/pages/Cluster/ServiceInstance/Setting/HelmEditor.tsx` — Monaco 双栏编辑器（左 deltaValues 可编辑 + 右合并预览只读）
+- `src/pages/Cluster/ServiceInstance/Setting/index.tsx` — 重构为 PhysicalSettingContent + SettingTab(dispatcher)
+
+---
+
 ## 后续切片
 
-1. 切片 4b-2: K8s Helm 配置编辑(双栏编辑器 + deltaValues 提交)
-2. 切片 4c: 剩余页面(SourceSetting/K8s/弹窗)
-3. AlarmManage + SystemCenter + User
-4. DagModal(x6 迁移)
-5. UploadDeploy
-6. Maven/assembly 打包集成
+1. 切片 4b Step 5: 物理集群配置 Tab 浏览器端到端验证
+2. 切片 4b-2 Step 8: K8s 集群浏览器端到端走查
+3. 切片 4c: 剩余页面(SourceSetting/K8s/弹窗)
+4. AlarmManage + SystemCenter + User
+5. DagModal(x6 迁移)
+6. UploadDeploy
+7. Maven/assembly 打包集成
 
