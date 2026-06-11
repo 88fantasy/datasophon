@@ -36,6 +36,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,7 +64,11 @@ public class ChatStreamService {
     @Autowired
     private AiProperties aiProperties;
     
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
+            .connectTimeout(Duration.ofSeconds(60))
+            .build();
+    
     private final ObjectMapper objectMapper = new ObjectMapper();
     
     @Async
@@ -90,10 +95,10 @@ public class ChatStreamService {
                     httpReq, HttpResponse.BodyHandlers.ofInputStream());
             
             if (resp.statusCode() != 200) {
-                emitter.send(SseEmitter.event()
+                safeSend(emitter, SseEmitter.event()
                         .name("error")
                         .data("AI sidecar returned " + resp.statusCode()));
-                emitter.send(SseEmitter.event().data("[DONE]"));
+                safeSend(emitter, SseEmitter.event().data("[DONE]"));
                 emitter.complete();
                 return;
             }
@@ -101,12 +106,23 @@ public class ChatStreamService {
             try (
                     BufferedReader reader = new BufferedReader(
                             new InputStreamReader(resp.body(), StandardCharsets.UTF_8))) {
+                StringBuilder dataBuilder = new StringBuilder();
                 String line;
                 while ((line = reader.readLine()) != null) {
                     if (line.startsWith("data: ")) {
-                        String payload = line.substring(6).trim();
+                        if (dataBuilder.length() > 0) {
+                            dataBuilder.append("\n");
+                        }
+                        dataBuilder.append(line.substring(6));
+                    } else if (line.isEmpty()) {
+                        if (dataBuilder.length() == 0) {
+                            continue;
+                        }
+                        String payload = dataBuilder.toString().trim();
+                        dataBuilder.setLength(0);
+                        
                         if ("[DONE]".equals(payload)) {
-                            emitter.send(SseEmitter.event().data("[DONE]"));
+                            safeSend(emitter, SseEmitter.event().data("[DONE]"));
                             break;
                         }
                         try {
@@ -125,7 +141,7 @@ public class ChatStreamService {
                             }
                         } catch (Exception ignored) {
                         }
-                        emitter.send(SseEmitter.event().data(payload));
+                        safeSend(emitter, SseEmitter.event().data(payload));
                     }
                 }
             }
@@ -138,6 +154,14 @@ public class ChatStreamService {
         } catch (Exception e) {
             log.error("chat stream error", e);
             emitter.completeWithError(e);
+        }
+    }
+    
+    private void safeSend(SseEmitter emitter, SseEmitter.SseEventBuilder event) {
+        try {
+            emitter.send(event);
+        } catch (Exception e) {
+            log.debug("failed to send SSE event, client may have disconnected", e);
         }
     }
     

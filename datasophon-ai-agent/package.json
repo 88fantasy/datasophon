@@ -3,22 +3,26 @@
   "version": "1.0.0",
   "description": "Datasophon AI Assistant sidecar — claude-agent-sdk with in-process MCP tools",
   "type": "module",
-  "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "dev": "pnpm install && tsx src/server.ts"
+    "dev": "pnpm install && next dev -p 18090",
+    "build": "pnpm install && next build",
+    "start": "next start -p 18090",
+    "lint": "next lint"
   },
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "latest",
-    "express": "^4.21.1",
+    "next": "^15.3.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
-    "tsx": "^4.19.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
     "typescript": "^5.7.3"
   }
 }

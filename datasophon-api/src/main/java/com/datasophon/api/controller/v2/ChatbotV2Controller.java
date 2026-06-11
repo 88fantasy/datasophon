@@ -32,6 +32,7 @@ import com.datasophon.dao.entity.ChatConversationEntity;
 import com.datasophon.dao.entity.ChatMessageEntity;
 import com.datasophon.dao.entity.UserInfoEntity;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -67,7 +68,11 @@ public class ChatbotV2Controller extends ApiController {
     @PostMapping(value = "/completions", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter completions(
                                   @Valid @RequestBody ChatRequest req,
-                                  @RequestAttribute(Constants.SESSION_USER) UserInfoEntity loginUser) {
+                                  @RequestAttribute(Constants.SESSION_USER) UserInfoEntity loginUser,
+                                  HttpServletResponse response) {
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache, no-transform");
+        response.setHeader("Connection", "keep-alive");
         return chatService.chat(req, loginUser);
     }
     
