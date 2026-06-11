@@ -35,6 +35,9 @@
     "defaults"
   ],
   "dependencies": {
+    "@antv/x6": "^3.1.7",
+    "@antv/x6-react-shape": "^3.0.1",
+    "insert-css": "^2.0.0",
     "@ant-design/icons": "^6.2.3",
     "@ant-design/plots": "^2.6.8",
     "@ant-design/pro-components": "^3.1.12-0",
