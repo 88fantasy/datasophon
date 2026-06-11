@@ -150,6 +150,9 @@ public class AppConfiguration implements WebMvcConfigurer {
                 .excludePathPatterns(getRealExcludeUrl(
                         "/login",
                         "/v2/login/account",
+                        // Logout does not need CSRF protection: the login interceptor already
+                        // validates the session, and a forced logout causes no data loss.
+                        "/v2/logout",
                         "/cluster/alert/history/save",
                         "/cluster/kerberos/downloadKeytab",
                         "/service/install/download*"));

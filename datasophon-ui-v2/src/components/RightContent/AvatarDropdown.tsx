@@ -18,7 +18,12 @@ export const AvatarDropdown: React.FC<GlobalHeaderRightProps> = ({
   children,
 }) => {
   const loginOut = async () => {
-    await outLogin();
+    try {
+      await outLogin({ skipErrorHandler: true });
+    } catch {
+      // Always proceed with client-side logout even if the server request fails
+      // (e.g. expired CSRF cookie from a stale session).
+    }
     const { search, pathname } = window.location;
     const urlParams = new URL(window.location.href).searchParams;
     const searchParams = new URLSearchParams({
