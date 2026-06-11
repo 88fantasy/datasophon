@@ -105,7 +105,7 @@ GOOS=linux  GOARCH=arm64 go build -o dist/datasophon-cli-linux-arm64  ./cmd/data
 
 | 项 | 值 |
 |---|---|
-| 默认账号 | `admin` / `admin123` |
+| 默认账号 | `admin` / `DJEutbydS@U%f7Jb` |
 | API HTTP | `8081`,上下文 `/ddh` |
 | Master gRPC | `18081` |
 | Worker gRPC | `18082` |
