@@ -3,12 +3,14 @@ import {
   ClusterOutlined,
   DesktopOutlined,
   HistoryOutlined,
+  PlusOutlined,
   ReloadOutlined,
   SettingOutlined,
+  UploadOutlined,
 } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
 import { history, Outlet, useParams } from '@umijs/max';
-import { Badge, Layout, Menu, Spin, Tag } from 'antd';
+import { Badge, Button, Dropdown, Layout, Menu, Spin, Tag } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import { listClusters } from '@/services/datasophon/cluster';
@@ -17,6 +19,9 @@ import {
   listK8sInstances,
   listK8sNamespaces,
 } from '@/services/datasophon/service';
+import AddServiceModal from '../AddService/AddServiceModal';
+import UploadManifestModal from '../Deploy/UploadManifestModal';
+import UploadPackageModal from '../Deploy/UploadPackageModal';
 
 const { Sider, Content } = Layout;
 
@@ -47,7 +52,9 @@ interface K8sInstanceMenuItemProps {
   instance: DATASOPHON.K8sServiceInstanceVO;
 }
 
-const K8sInstanceMenuItem: React.FC<K8sInstanceMenuItemProps> = ({ instance }) => {
+const K8sInstanceMenuItem: React.FC<K8sInstanceMenuItemProps> = ({
+  instance,
+}) => {
   const badgeStatus = K8S_STATE_BADGE_COLOR[instance.state] ?? 'default';
   return (
     <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
@@ -135,6 +142,11 @@ const ClusterLayout: React.FC = () => {
   );
   const [clusterLoading, setClusterLoading] = useState(true);
 
+  // ── 部署/添加服务弹窗可见状态 ─────────────────────────────
+  const [manifestModalOpen, setManifestModalOpen] = useState(false);
+  const [packageModalOpen, setPackageModalOpen] = useState(false);
+  const [addServiceModalOpen, setAddServiceModalOpen] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     setClusterLoading(true);
@@ -184,7 +196,9 @@ const ClusterLayout: React.FC = () => {
   }, [numericClusterId, clusterInfo?.archType]);
 
   // ── K8s 集群：namespace + 实例列表轮询（3 秒间隔）──────────────
-  const [k8sNamespaces, setK8sNamespaces] = useState<DATASOPHON.K8sNamespace[]>([]);
+  const [k8sNamespaces, setK8sNamespaces] = useState<DATASOPHON.K8sNamespace[]>(
+    [],
+  );
   const [k8sInstancesMap, setK8sInstancesMap] = useState<
     Record<string, DATASOPHON.K8sServiceInstanceVO[]>
   >({});
@@ -335,6 +349,22 @@ const ClusterLayout: React.FC = () => {
     <ClusterContext.Provider
       value={{ clusterId: numericClusterId, clusterInfo }}
     >
+      {clusterInfo.archType !== 'k8s' && (
+        <>
+          <UploadManifestModal
+            open={manifestModalOpen}
+            onClose={() => setManifestModalOpen(false)}
+          />
+          <UploadPackageModal
+            open={packageModalOpen}
+            onClose={() => setPackageModalOpen(false)}
+          />
+          <AddServiceModal
+            open={addServiceModalOpen}
+            onClose={() => setAddServiceModalOpen(false)}
+          />
+        </>
+      )}
       <Layout style={{ minHeight: 'calc(100vh - 56px)' }}>
         <Sider
           width={200}
@@ -352,6 +382,45 @@ const ClusterLayout: React.FC = () => {
           >
             {clusterInfo.clusterName}
           </div>
+          {/* 上传部署 / 添加服务工具栏 —— 仅物理集群可见 */}
+          {clusterInfo.archType !== 'k8s' && (
+            <div
+              style={{
+                padding: '8px 12px',
+                borderBottom: '1px solid #f0f0f0',
+                display: 'flex',
+                gap: 6,
+              }}
+            >
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: 'manifest',
+                      label: '部署清单',
+                      onClick: () => setManifestModalOpen(true),
+                    },
+                    {
+                      key: 'package',
+                      label: '部署包',
+                      onClick: () => setPackageModalOpen(true),
+                    },
+                  ],
+                }}
+              >
+                <Button size="small" icon={<UploadOutlined />}>
+                  上传部署
+                </Button>
+              </Dropdown>
+              <Button
+                size="small"
+                icon={<PlusOutlined />}
+                onClick={() => setAddServiceModalOpen(true)}
+              >
+                添加服务
+              </Button>
+            </div>
+          )}
           <Menu
             mode="inline"
             selectedKeys={[currentPath]}

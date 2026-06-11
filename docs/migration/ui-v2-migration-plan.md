@@ -566,6 +566,99 @@ interface ClusterContextValue {
 
 ---
 
+## 切片 7a: 部署清单 + 共享上传基建 (Step 1-5)
+
+**目标**: 为物理集群 Sider 工具栏新增「上传部署」入口，实现「导入部署清单」单弹窗闭环（上传 yaml + 密码 → 校验 → 部署 → 跳 DAG 图）。同步建好 7b/7c 复用的上传管线。
+
+### 进度跟踪表
+
+| Step | 端  | 内容 | 状态 | 验证 |
+|------|-----|------|------|------|
+| 1 | 后端 | `ClusterDeployV2Controller`：upload + validate-deployment-file + deploy（3 端点） | ✅ | 后端编译通过 |
+| 2 | 前端 | `deploy.ts`（3 API）+ `typings.d.ts` 新增 `UploadedFile`/`ValidateResult`/`DeployResult` | ✅ | Biome/tsc 零新错误 |
+| 3 | 前端 | `ClusterLayout` Sider 工具栏（上传部署 Dropdown + 添加服务按钮 disabled，仅物理集群显示） | ✅ | tsc 零新错误 |
+| 4 | 前端 | `Cluster/Deploy/UploadManifestModal.tsx`（ModalForm + 自定义上传 + 校验 + 部署跳 DAG） | ✅ | tsc 零新错误 |
+| 5 | 双  | lint/tsc + 后端编译；浏览器走查另起 | ✅ | Biome 预存 1 err；tsc 零新错误；后端 BUILD SUCCESS |
+
+### 已完成的文件
+
+**后端新增:**
+- `datasophon-api/.../controller/v2/ClusterDeployV2Controller.java` — 3 端点，委托 `UploadTempFileService` + `ExtRepoInstallDelegateService`
+
+**前端新增/修改:**
+- `datasophon-ui-v2/src/services/datasophon/deploy.ts` — `uploadDeployFile`/`validateDeploymentFile`/`deployManifest` 3 个 API
+- `datasophon-ui-v2/src/services/datasophon/typings.d.ts` — 新增 `UploadedFile`/`ValidateResult`/`DeployResult`
+- `datasophon-ui-v2/src/pages/Cluster/Deploy/UploadManifestModal.tsx` — 部署清单弹窗（`ModalForm` + `UploadRequestOption` customUpload + 两步提交）
+- `datasophon-ui-v2/src/pages/Cluster/Layout/index.tsx` — 新增 Sider 工具栏（上传部署 Dropdown + 添加服务按钮）+ 引入 `UploadManifestModal`
+
+---
+
+## 切片 7b: 部署包（分片上传 + 3 步向导）(Step 1-5)
+
+**目标**: 为物理集群实现大文件分片上传（支持断点续传 + 秒传）+ 3 步部署包导入向导（配置文件 → 包文件 → 导入进度）。
+
+### 进度跟踪表
+
+| Step | 端  | 内容 | 状态 | 验证 |
+|------|-----|------|------|------|
+| 1 | 后端 | `ClusterDeployV2Controller` 扩 9 端点：valid-meta-file / validate-pkg-file / import-cmp / query-progress + 分片：create-shard-task / upload-chunk / is-chunk-uploaded / merge-chunk / query-merge-progress | ✅ | 后端编译通过 |
+| 2 | 前端 | `spark-md5` 安装；`ChunkedUploader.ts`（MD5→创建任务→逐片上传→异步合并）；`typings.d.ts` 新增 `MergeProgress`/`ImportCompProgress`/`InstallComponentReq` | ✅ | tsc 零新错误 |
+| 3 | 前端 | `deploy.ts` 扩 4 API：validMetaFile / importComponent / queryImportProgress / queryMergeProgress | ✅ | tsc 零新错误 |
+| 4 | 前端 | `Cluster/Deploy/UploadPackageModal.tsx`（3 步 StepsForm：上传配置文件 → 分片上传包 + 合并进度 → 导入进度仪表盘） | ✅ | Biome/tsc 零新错误 |
+| 5 | 双  | lint/tsc + 后端编译；ClusterLayout 启用"部署包"条目；浏览器走查另起 | ✅ | tsc 零新错误；后端 BUILD SUCCESS |
+
+### 已完成的文件
+
+**后端修改:**
+- `datasophon-api/.../controller/v2/ClusterDeployV2Controller.java` — 新增 9 端点，`ExtRepoMetaService` 构造器注入
+
+**前端新增/修改:**
+- `datasophon-ui-v2/package.json` — 新增 `spark-md5 ^3.0.2`
+- `datasophon-ui-v2/src/utils/ChunkedUploader.ts` — 分片上传工具（SparkMD5 + v2 API）
+- `datasophon-ui-v2/src/services/datasophon/deploy.ts` — 新增 `validMetaFile`/`importComponent`/`queryImportProgress`/`queryMergeProgress`
+- `datasophon-ui-v2/src/services/datasophon/typings.d.ts` — 新增 `MergeProgress`/`ImportCompProgress`/`InstallComponentReq`
+- `datasophon-ui-v2/src/pages/Cluster/Deploy/UploadPackageModal.tsx` — 3 步部署包弹窗
+- `datasophon-ui-v2/src/pages/Cluster/Layout/index.tsx` — 启用"部署包"条目 + 引入 `UploadPackageModal`
+
+---
+
+## 切片 7c: 添加服务向导（6 步）(Step 1-5)
+
+**目标**: 补齐 v2「给已建集群追加服务」的核心功能缺口（物理集群路径）。6 步向导：导入清单 → 选服务 → 分配 Master 角色 → 分配 Worker 角色 → 服务配置 → 安装并启动（跳 DAG 全屏图）。
+
+### 进度跟踪表
+
+| Step | 端  | 内容 | 状态 | 验证 |
+|------|-----|------|------|------|
+| 1 | 后端 | `ClusterAddServiceV2Controller` 9 端点：list-newest / check-dependency / service-roles / non-master-roles / hosts / role-host-mapping / config-from-ddl / save-config / install（生成命令+redeploy 合并为一） | ✅ | 后端编译通过 |
+| 2 | 前端 | `addService.ts`（9 API）+ `typings.d.ts` 新增 `ManifestContext`/`FrameService`/`FrameServiceRole`/`RoleHostMapping` | ✅ | tsc 零新错误 |
+| 3 | 前端 | `Cluster/AddService/AddServiceModal.tsx`（6 步 StepsForm 容器，跨步数据 state+ref） | ✅ | tsc/Biome 零新错误 |
+| 4 | 前端 | 步骤组件：StepManifest / StepSelectService / StepRoleAssign（Master/Worker 共用）/ StepConfig（复用 4b ConfigForm+configTransform）/ StepInstall；ClusterLayout 启用「添加服务」按钮 | ✅ | tsc/Biome 零新错误 |
+| 5 | 双  | tsc/Biome/vitest（50 测试全过）+ build + 后端编译；浏览器走查另起 | ✅ | 全绿 |
+
+### 关键决策
+
+- **install 端点合并**：v1 的 `generateGenericInstallCommand`（生成 DAG）+ `redeploy`（执行）两段式在 v2 合并为单个 `/install` 端点，前端一次调用拿 `dagId` 直接跳 DAG 全屏图。
+- **第 5 步配置完全复用切片 4b**：`ConfigForm` + `configTransform`（invokeHandleTemplateData/invokeFormatTemplateData），配置 Tabs 必须 `forceRender: true`，否则未访问 Tab 的字段不注册、保存时覆盖默认值。
+- **Master/Worker 角色分配共用 `StepRoleAssign`**：差异仅 API（service-roles vs non-master-roles）与必填性，由 `roleType` prop 区分；`cardinality === "1"` 单选、否则多选。
+- **save-config 请求体与 `ClusterServiceConfigV2Controller` 同构**（Jackson 直接收 `List<ServiceConfig>`），不走 v1 的 JSON 字符串。
+- **修复预存 vitest 启动失败**：Umi 的 `@umijs/bundler-vite` peer 拉入 vite 4.5.2，vitest 4 需要 vite ≥6 的 `module-runner` 导出；devDependencies 显式加 `vite ^7` 后 vitest 解析正确，50 测试全过、`npm run build` 不受影响。
+
+### 已完成的文件
+
+**后端新增:**
+- `datasophon-api/.../controller/v2/ClusterAddServiceV2Controller.java` — 9 端点，构造器注入，全量委托现有 service
+
+**前端新增/修改:**
+- `datasophon-ui-v2/src/services/datasophon/addService.ts` — 9 API 封装
+- `datasophon-ui-v2/src/services/datasophon/typings.d.ts` — 新增添加服务相关类型
+- `datasophon-ui-v2/src/pages/Cluster/AddService/AddServiceModal.tsx` — 6 步 StepsForm 容器
+- `datasophon-ui-v2/src/pages/Cluster/AddService/Step{Manifest,SelectService,RoleAssign,Config,Install}.tsx` — 步骤组件
+- `datasophon-ui-v2/src/pages/Cluster/Layout/index.tsx` — 启用「添加服务」按钮
+- `datasophon-ui-v2/package.json` — devDependencies 新增 `vite ^7`（修 vitest 启动）
+
+---
+
 ## 后续切片
 
 1. 切片 4b Step 5: 物理集群配置 Tab 浏览器端到端验证
@@ -574,6 +667,8 @@ interface ClusterContextValue {
 4. 切片 4d Step 5: YARN 资源配置浏览器验证
 5. 切片 5a/5b 浏览器验证: 告警管理 + 标签管理（批量走查）
 6. 切片 6b 浏览器验证: 命令历史 + DAG 图全屏可视化 + 节点日志
-7. UploadDeploy
-8. Maven/assembly 打包集成
+7. 切片 7a 浏览器验证: 上传部署清单 → 跳 DAG 图
+8. 切片 7b 浏览器验证: 上传部署包（3 步向导 + 分片进度）
+9. 切片 7c 浏览器验证: 添加服务 6 步向导 → 跳 DAG 图
+10. Maven/assembly 打包集成
 
