@@ -129,7 +129,7 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
     @Override
     @SuppressWarnings("deprecated")
     public void removeMeta(String frameCode, String serviceName, String type) {
-        NexusFileUtils.removeFolderFromRawRepo(String.format("/meta/%s/%s", frameCode,  serviceName));
+        NexusFileUtils.removeFolderFromRawRepo(String.format("/meta/%s/%s", frameCode, serviceName));
     }
     
     private void validType(String type) {

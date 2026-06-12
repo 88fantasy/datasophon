@@ -572,13 +572,13 @@ interface ClusterContextValue {
 
 ### 进度跟踪表
 
-| Step | 端  | 内容 | 状态 | 验证 |
-|------|-----|------|------|------|
-| 1 | 后端 | `ClusterDeployV2Controller`：upload + validate-deployment-file + deploy（3 端点） | ✅ | 后端编译通过 |
-| 2 | 前端 | `deploy.ts`（3 API）+ `typings.d.ts` 新增 `UploadedFile`/`ValidateResult`/`DeployResult` | ✅ | Biome/tsc 零新错误 |
-| 3 | 前端 | `ClusterLayout` Sider 工具栏（上传部署 Dropdown + 添加服务按钮 disabled，仅物理集群显示） | ✅ | tsc 零新错误 |
-| 4 | 前端 | `Cluster/Deploy/UploadManifestModal.tsx`（ModalForm + 自定义上传 + 校验 + 部署跳 DAG） | ✅ | tsc 零新错误 |
-| 5 | 双  | lint/tsc + 后端编译；浏览器走查另起 | ✅ | Biome 预存 1 err；tsc 零新错误；后端 BUILD SUCCESS |
+| Step | 端  |                                          内容                                          | 状态 |                    验证                    |
+|------|----|--------------------------------------------------------------------------------------|----|------------------------------------------|
+| 1    | 后端 | `ClusterDeployV2Controller`：upload + validate-deployment-file + deploy（3 端点）         | ✅  | 后端编译通过                                   |
+| 2    | 前端 | `deploy.ts`（3 API）+ `typings.d.ts` 新增 `UploadedFile`/`ValidateResult`/`DeployResult` | ✅  | Biome/tsc 零新错误                           |
+| 3    | 前端 | `ClusterLayout` Sider 工具栏（上传部署 Dropdown + 添加服务按钮 disabled，仅物理集群显示）                   | ✅  | tsc 零新错误                                 |
+| 4    | 前端 | `Cluster/Deploy/UploadManifestModal.tsx`（ModalForm + 自定义上传 + 校验 + 部署跳 DAG）           | ✅  | tsc 零新错误                                 |
+| 5    | 双  | lint/tsc + 后端编译；浏览器走查另起                                                              | ✅  | Biome 预存 1 err；tsc 零新错误；后端 BUILD SUCCESS |
 
 ### 已完成的文件
 
@@ -599,13 +599,13 @@ interface ClusterContextValue {
 
 ### 进度跟踪表
 
-| Step | 端  | 内容 | 状态 | 验证 |
-|------|-----|------|------|------|
-| 1 | 后端 | `ClusterDeployV2Controller` 扩 9 端点：valid-meta-file / validate-pkg-file / import-cmp / query-progress + 分片：create-shard-task / upload-chunk / is-chunk-uploaded / merge-chunk / query-merge-progress | ✅ | 后端编译通过 |
-| 2 | 前端 | `spark-md5` 安装；`ChunkedUploader.ts`（MD5→创建任务→逐片上传→异步合并）；`typings.d.ts` 新增 `MergeProgress`/`ImportCompProgress`/`InstallComponentReq` | ✅ | tsc 零新错误 |
-| 3 | 前端 | `deploy.ts` 扩 4 API：validMetaFile / importComponent / queryImportProgress / queryMergeProgress | ✅ | tsc 零新错误 |
-| 4 | 前端 | `Cluster/Deploy/UploadPackageModal.tsx`（3 步 StepsForm：上传配置文件 → 分片上传包 + 合并进度 → 导入进度仪表盘） | ✅ | Biome/tsc 零新错误 |
-| 5 | 双  | lint/tsc + 后端编译；ClusterLayout 启用"部署包"条目；浏览器走查另起 | ✅ | tsc 零新错误；后端 BUILD SUCCESS |
+| Step | 端  |                                                                                                 内容                                                                                                  | 状态 |            验证             |
+|------|----|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----|---------------------------|
+| 1    | 后端 | `ClusterDeployV2Controller` 扩 9 端点：valid-meta-file / validate-pkg-file / import-cmp / query-progress + 分片：create-shard-task / upload-chunk / is-chunk-uploaded / merge-chunk / query-merge-progress | ✅  | 后端编译通过                    |
+| 2    | 前端 | `spark-md5` 安装；`ChunkedUploader.ts`（MD5→创建任务→逐片上传→异步合并）；`typings.d.ts` 新增 `MergeProgress`/`ImportCompProgress`/`InstallComponentReq`                                                                | ✅  | tsc 零新错误                  |
+| 3    | 前端 | `deploy.ts` 扩 4 API：validMetaFile / importComponent / queryImportProgress / queryMergeProgress                                                                                                      | ✅  | tsc 零新错误                  |
+| 4    | 前端 | `Cluster/Deploy/UploadPackageModal.tsx`（3 步 StepsForm：上传配置文件 → 分片上传包 + 合并进度 → 导入进度仪表盘）                                                                                                              | ✅  | Biome/tsc 零新错误            |
+| 5    | 双  | lint/tsc + 后端编译；ClusterLayout 启用"部署包"条目；浏览器走查另起                                                                                                                                                     | ✅  | tsc 零新错误；后端 BUILD SUCCESS |
 
 ### 已完成的文件
 
@@ -628,13 +628,13 @@ interface ClusterContextValue {
 
 ### 进度跟踪表
 
-| Step | 端  | 内容 | 状态 | 验证 |
-|------|-----|------|------|------|
-| 1 | 后端 | `ClusterAddServiceV2Controller` 9 端点：list-newest / check-dependency / service-roles / non-master-roles / hosts / role-host-mapping / config-from-ddl / save-config / install（生成命令+redeploy 合并为一） | ✅ | 后端编译通过 |
-| 2 | 前端 | `addService.ts`（9 API）+ `typings.d.ts` 新增 `ManifestContext`/`FrameService`/`FrameServiceRole`/`RoleHostMapping` | ✅ | tsc 零新错误 |
-| 3 | 前端 | `Cluster/AddService/AddServiceModal.tsx`（6 步 StepsForm 容器，跨步数据 state+ref） | ✅ | tsc/Biome 零新错误 |
-| 4 | 前端 | 步骤组件：StepManifest / StepSelectService / StepRoleAssign（Master/Worker 共用）/ StepConfig（复用 4b ConfigForm+configTransform）/ StepInstall；ClusterLayout 启用「添加服务」按钮 | ✅ | tsc/Biome 零新错误 |
-| 5 | 双  | tsc/Biome/vitest（50 测试全过）+ build + 后端编译；浏览器走查另起 | ✅ | 全绿 |
+| Step | 端  |                                                                                                内容                                                                                                | 状态 |       验证       |
+|------|----|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----|----------------|
+| 1    | 后端 | `ClusterAddServiceV2Controller` 9 端点：list-newest / check-dependency / service-roles / non-master-roles / hosts / role-host-mapping / config-from-ddl / save-config / install（生成命令+redeploy 合并为一） | ✅  | 后端编译通过         |
+| 2    | 前端 | `addService.ts`（9 API）+ `typings.d.ts` 新增 `ManifestContext`/`FrameService`/`FrameServiceRole`/`RoleHostMapping`                                                                                  | ✅  | tsc 零新错误       |
+| 3    | 前端 | `Cluster/AddService/AddServiceModal.tsx`（6 步 StepsForm 容器，跨步数据 state+ref）                                                                                                                        | ✅  | tsc/Biome 零新错误 |
+| 4    | 前端 | 步骤组件：StepManifest / StepSelectService / StepRoleAssign（Master/Worker 共用）/ StepConfig（复用 4b ConfigForm+configTransform）/ StepInstall；ClusterLayout 启用「添加服务」按钮                                     | ✅  | tsc/Biome 零新错误 |
+| 5    | 双  | tsc/Biome/vitest（50 测试全过）+ build + 后端编译；浏览器走查另起                                                                                                                                                  | ✅  | 全绿             |
 
 ### 关键决策
 
