@@ -180,15 +180,15 @@ public class CheckUtils {
             ExecResult execResult = workerCommandClient.executeCmd(
                     roleInstanceEntity.getHostname(), commandList, STATUS_CHECK_DEADLINE_SECONDS);
             if (execResult.getExecResult()) {
-                ProcessUtils.recoverAlert(roleInstanceEntity);
+                ServiceAlertUtils.recoverAlert(roleInstanceEntity);
             } else {
                 String alertTargetName = roleInstanceEntity.getServiceRoleName() + " Survive";
-                ProcessUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
+                ServiceAlertUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
             }
         } catch (Exception e) {
             // save alert
             String alertTargetName = roleInstanceEntity.getServiceRoleName() + " Survive";
-            ProcessUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
+            ServiceAlertUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
         }
     }
 }

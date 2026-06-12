@@ -24,26 +24,18 @@ package com.datasophon.api.utils;
 
 import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.master.transport.WorkerCallAdapter;
-import com.datasophon.api.service.ClusterAlertHistoryService;
-import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.FileOperateCommand;
 import com.datasophon.common.command.remote.CreateUnixGroupCommand;
 import com.datasophon.common.command.remote.DelUnixGroupCommand;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.dao.entity.ClusterAlertHistory;
 import com.datasophon.dao.entity.ClusterHostDO;
-import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
-import com.datasophon.dao.enums.AlertLevel;
-import com.datasophon.dao.enums.ServiceRoleState;
-import com.datasophon.dao.enums.ServiceState;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.TreeSet;
@@ -53,8 +45,6 @@ import java.util.concurrent.RejectedExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 public class ProcessUtils {
     
@@ -148,76 +138,6 @@ public class ProcessUtils {
             });
         }
         runConcurrently(tasks);
-    }
-    
-    public static void recoverAlert(ClusterServiceRoleInstanceEntity roleInstanceEntity) {
-        ClusterServiceRoleInstanceService roleInstanceService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
-        ClusterAlertHistoryService alertHistoryService =
-                SpringTool.getApplicationContext().getBean(ClusterAlertHistoryService.class);
-        ClusterAlertHistory clusterAlertHistory = alertHistoryService.getOne(new QueryWrapper<ClusterAlertHistory>()
-                .eq(Constants.ALERT_TARGET_NAME, roleInstanceEntity.getServiceRoleName() + " Survive")
-                .eq(Constants.CLUSTER_ID, roleInstanceEntity.getClusterId())
-                .eq(Constants.HOSTNAME, roleInstanceEntity.getHostname())
-                .eq(Constants.IS_ENABLED, 1));
-        if (Objects.nonNull(clusterAlertHistory)) {
-            clusterAlertHistory.setIsEnabled(2);
-            alertHistoryService.updateById(clusterAlertHistory);
-        }
-        // update service role instance state
-        if (roleInstanceEntity.getServiceRoleState() != ServiceRoleState.RUNNING) {
-            roleInstanceEntity.setServiceRoleState(ServiceRoleState.RUNNING);
-            roleInstanceService.updateById(roleInstanceEntity);
-        }
-    }
-    
-    public static void saveAlert(ClusterServiceRoleInstanceEntity roleInstanceEntity, String alertTargetName,
-                                 AlertLevel alertLevel, String alertAdvice) {
-        ClusterServiceRoleInstanceService roleInstanceService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class);
-        ClusterAlertHistoryService alertHistoryService =
-                SpringTool.getApplicationContext().getBean(ClusterAlertHistoryService.class);
-        ClusterServiceInstanceService serviceInstanceService =
-                SpringTool.getApplicationContext().getBean(ClusterServiceInstanceService.class);
-        
-        logger.info("alertTargetName:{},clusterId:{},hostname:{}", alertTargetName, roleInstanceEntity.getClusterId(), roleInstanceEntity.getHostname());
-        ClusterAlertHistory clusterAlertHistory = alertHistoryService.getOne(new QueryWrapper<ClusterAlertHistory>()
-                .eq(Objects.nonNull(alertTargetName), Constants.ALERT_TARGET_NAME, alertTargetName)
-                .eq(Objects.nonNull(roleInstanceEntity.getClusterId()), Constants.CLUSTER_ID, roleInstanceEntity.getClusterId())
-                .eq(Objects.nonNull(roleInstanceEntity.getHostname()), Constants.HOSTNAME, roleInstanceEntity.getHostname())
-                .eq(Objects.nonNull(alertTargetName), Constants.IS_ENABLED, 1));
-        
-        ClusterServiceInstanceEntity serviceInstanceEntity =
-                serviceInstanceService.getById(roleInstanceEntity.getServiceId());
-        if (Objects.isNull(clusterAlertHistory)) {
-            clusterAlertHistory = ClusterAlertHistory.builder()
-                    .clusterId(roleInstanceEntity.getClusterId())
-                    .alertGroupName(roleInstanceEntity.getServiceName().toLowerCase())
-                    .alertTargetName(alertTargetName)
-                    .createTime(new Date())
-                    .updateTime(new Date())
-                    .alertLevel(alertLevel)
-                    .alertInfo("")
-                    .alertAdvice(alertAdvice)
-                    .hostname(roleInstanceEntity.getHostname())
-                    .serviceRoleInstanceId(roleInstanceEntity.getId())
-                    .serviceInstanceId(roleInstanceEntity.getServiceId())
-                    .isEnabled(1)
-                    .serviceInstanceId(roleInstanceEntity.getServiceId())
-                    .build();
-            
-            alertHistoryService.save(clusterAlertHistory);
-        }
-        // update service role instance state
-        serviceInstanceEntity.setServiceState(ServiceState.EXISTS_EXCEPTION);
-        roleInstanceEntity.setServiceRoleState(ServiceRoleState.STOP);
-        if (alertLevel == AlertLevel.WARN) {
-            serviceInstanceEntity.setServiceState(ServiceState.EXISTS_ALARM);
-            roleInstanceEntity.setServiceRoleState(ServiceRoleState.EXISTS_ALARM);
-        }
-        serviceInstanceService.updateById(serviceInstanceEntity);
-        roleInstanceService.updateById(roleInstanceEntity);
-        
     }
     
 }
