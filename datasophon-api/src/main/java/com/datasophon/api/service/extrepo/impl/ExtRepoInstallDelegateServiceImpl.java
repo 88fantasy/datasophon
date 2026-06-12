@@ -95,10 +95,8 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
     }
     
     private DeploymentModel doParseDeploymentFile(DeploymentDTO dto) {
-        File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId());
-        if (deploymentFile == null) {
-            throw new BusinessHintException("部署清单文件不存在");
-        }
+        File deploymentFile = uploadTempFileService.getTempFile(dto.getDeployFileId())
+                .orElseThrow(() -> new BusinessHintException("部署清单文件不存在"));
         String content = MetaUtils.decodeFile(deploymentFile, dto.getContentDecodePasswd());
         DeploymentModel model = YamlUtils.parseYaml(content, DeploymentModel.class);
         return model;

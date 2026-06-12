@@ -42,6 +42,7 @@ import com.datasophon.domain.host.enums.HostState;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,11 +147,12 @@ public class AlertService {
     private void handleResolvedAlert(Alerts alertInfo) {
         AlertLabels labels = alertInfo.getLabels();
         String hostname = labels.getInstance().split(":")[0];
-        AlertHistory alertHistory = alertHistoryGateway.getEnabledAlertHistory(
+        Optional<AlertHistory> alertHistoryOpt = alertHistoryGateway.getEnabledAlertHistory(
                 labels.getAlertname(), labels.getClusterId(), hostname);
-        if (alertHistory == null) {
+        if (alertHistoryOpt.isEmpty()) {
             return;
         }
+        AlertHistory alertHistory = alertHistoryOpt.get();
         boolean nodeHasWarn = alertHistoryGateway.nodeHasWarnAlertList(
                 hostname, labels.getServiceRoleName(), alertHistory.getId());
         

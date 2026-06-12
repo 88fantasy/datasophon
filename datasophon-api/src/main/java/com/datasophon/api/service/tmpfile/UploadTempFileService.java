@@ -11,6 +11,7 @@ import com.datasophon.dao.entity.UploadTempFile;
 import com.datasophon.dao.entity.UploadTempFileChunk;
 
 import java.io.File;
+import java.util.Optional;
 
 import org.springframework.web.multipart.MultipartFile;
 
@@ -56,7 +57,7 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
     /**
      * 获取附件ID代表的临时文件
      */
-    File getTempFile(Integer attachId);
+    Optional<File> getTempFile(Integer attachId);
     
     /**
      * 清理缓存

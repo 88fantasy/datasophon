@@ -129,10 +129,8 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     }
     
     private <T> T unzipMetaFile(InstallComponentDTO dto, Function<String, T> mapper) {
-        File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId());
-        if (metaFile == null) {
-            throw new BusinessException("元信息文件不存在");
-        }
+        File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId())
+                .orElseThrow(() -> new BusinessException("元信息文件不存在"));
         String unzipDir = null;
         try {
             unzipDir = TarUtils.decompressToTemp(metaFile.getAbsolutePath());
@@ -191,15 +189,11 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ImportCompProgressVO importCmp(InstallComponentDTO dto) {
-        File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId());
-        if (metaFile == null) {
-            throw new BusinessException("元信息文件不存在");
-        }
+        File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId())
+                .orElseThrow(() -> new BusinessException("元信息文件不存在"));
         if (dto.getPkgFileId() != null) {
-            File pkg = uploadTempFileService.getTempFile(dto.getPkgFileId());
-            if (pkg == null) {
-                throw new BusinessException("安装包文件不存在");
-            }
+            uploadTempFileService.getTempFile(dto.getPkgFileId())
+                    .orElseThrow(() -> new BusinessException("安装包文件不存在"));
         }
         
         int progressId = RandomUtil.randomInt(1, Integer.MAX_VALUE);
@@ -219,7 +213,8 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             transactionalUtils.doInNewTx(() -> {
                 log.info("【导入第三方软件源】 进度ID:{}，开始解析meta数据", progress.getProgressId());
                 // 解析元数据
-                File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId());
+                File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId())
+                        .orElseThrow(() -> new BusinessException("元信息文件不存在"));
                 String metaUnzipPath = unpackMetaFile(metaFile, dto, progress);
                 pathPair.setMetaUnzipPath(metaUnzipPath);
                 
@@ -234,7 +229,8 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
                 String pkgUnzipPath = null;
                 if (dto.getPkgFileId() != null) {
                     log.info("【导入第三方软件源】 进度ID:{}，开始解压软件安装包", progress.getProgressId());
-                    File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
+                    File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId())
+                            .orElseThrow(() -> new BusinessException("安装包文件不存在"));
                     pkgUnzipPath = decompressPkgFile(pkgFile, vo, progress);
                     pathPair.setPkgUnzipPath(pkgUnzipPath);
                     log.info("【导入第三方软件源】 进度ID:{}，解压软件安装包成功, 解压路径{}", progress.getProgressId(), pkgUnzipPath);
