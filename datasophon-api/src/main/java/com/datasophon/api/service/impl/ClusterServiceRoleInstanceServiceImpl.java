@@ -151,8 +151,18 @@ public class ClusterServiceRoleInstanceServiceImpl
             return Result.successEmptyCount();
         }
         
+        // 去重后一次查回角色组，避免分页内逐行 getById 的 N+1 查询
+        List<Integer> roleGroupIds = cluServiceRoleInstList.stream()
+                .map(ClusterServiceRoleInstanceEntity::getRoleGroupId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Integer, ClusterServiceInstanceRoleGroup> roleGroupMap = roleGroupIds.isEmpty()
+                ? Collections.emptyMap()
+                : roleGroupService.listByIds(roleGroupIds).stream()
+                        .collect(Collectors.toMap(ClusterServiceInstanceRoleGroup::getId, rg -> rg));
         for (ClusterServiceRoleInstanceEntity roleInstanceEntity : cluServiceRoleInstList) {
-            ClusterServiceInstanceRoleGroup roleGroup = roleGroupService.getById(roleInstanceEntity.getRoleGroupId());
+            ClusterServiceInstanceRoleGroup roleGroup = roleGroupMap.get(roleInstanceEntity.getRoleGroupId());
             if (Objects.nonNull(roleGroup)) {
                 roleInstanceEntity.setRoleGroupName(roleGroup.getRoleGroupName());
             }

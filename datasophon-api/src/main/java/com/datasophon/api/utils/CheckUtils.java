@@ -47,6 +47,9 @@ import cn.hutool.core.util.StrUtil;
 
 public class CheckUtils {
     
+    /** 巡检 statusRunner 的 gRPC deadline（秒）：周期性检测无需默认 90s，收紧避免慢 Worker 长时间占用线程。 */
+    private static final long STATUS_CHECK_DEADLINE_SECONDS = 30;
+    
     private CheckUtils() {
         throw new IllegalStateException("CheckUtils class");
     }
@@ -174,7 +177,8 @@ public class CheckUtils {
         try {
             WorkerCommandClient workerCommandClient =
                     SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
-            ExecResult execResult = workerCommandClient.executeCmd(roleInstanceEntity.getHostname(), commandList);
+            ExecResult execResult = workerCommandClient.executeCmd(
+                    roleInstanceEntity.getHostname(), commandList, STATUS_CHECK_DEADLINE_SECONDS);
             if (execResult.getExecResult()) {
                 ProcessUtils.recoverAlert(roleInstanceEntity);
             } else {

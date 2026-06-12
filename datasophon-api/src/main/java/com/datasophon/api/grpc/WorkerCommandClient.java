@@ -92,10 +92,15 @@ public class WorkerCommandClient {
                 .ping(PingRequest.newBuilder().setMessage("ping").build()));
     }
     
-    /** 执行命令列表（ExecuteCmdActor 模式）。 */
+    /** 执行命令列表（ExecuteCmdActor 模式），默认 90s deadline。 */
     public ExecResult executeCmd(String hostname, List<String> commands) {
+        return executeCmd(hostname, commands, 90);
+    }
+    
+    /** 执行命令列表，可指定 deadline（如巡检等周期性场景收紧为 30s）。 */
+    public ExecResult executeCmd(String hostname, List<String> commands, long deadlineSeconds) {
         return callWorker(hostname, "executeCmd", () -> getStub(hostname)
-                .withDeadlineAfter(90, TimeUnit.SECONDS)
+                .withDeadlineAfter(deadlineSeconds, TimeUnit.SECONDS)
                 .executeCmd(ExecuteCmdRequest.newBuilder()
                         .addAllCommands(commands)
                         .build()));

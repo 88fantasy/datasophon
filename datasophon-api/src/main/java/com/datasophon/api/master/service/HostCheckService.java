@@ -42,11 +42,14 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 /**
@@ -57,13 +60,25 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class HostCheckService {
     
     private final ClusterInfoService clusterInfoService;
     private final ClusterHostService clusterHostService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final WorkerCommandClient workerCommandClient;
+    private final Executor masterExecutor;
+    
+    public HostCheckService(ClusterInfoService clusterInfoService,
+                            ClusterHostService clusterHostService,
+                            ClusterServiceRoleInstanceService roleInstanceService,
+                            WorkerCommandClient workerCommandClient,
+                            @Qualifier("masterExecutor") Executor masterExecutor) {
+        this.clusterInfoService = clusterInfoService;
+        this.clusterHostService = clusterHostService;
+        this.roleInstanceService = roleInstanceService;
+        this.workerCommandClient = workerCommandClient;
+        this.masterExecutor = masterExecutor;
+    }
     
     /**
      * 检测所有物理集群主机的在线状态。
@@ -87,6 +102,11 @@ public class HostCheckService {
     private void checkCluster(ClusterInfoEntity cluster, HostInfo hostInfo) {
         ClusterServiceRoleInstanceEntity prometheusInstance =
                 roleInstanceService.getOneServiceRole("Prometheus", "", cluster.getId());
+        boolean promReady = prometheusInstance != null
+                && ServiceRoleState.RUNNING.equals(prometheusInstance.getServiceRoleState());
+        String promUrl = promReady
+                ? "http://" + prometheusInstance.getHostname() + ":9090/api/v1/query"
+                : null;
         
         List<ClusterHostDO> list = clusterHostService.getHostListByClusterId(cluster.getId());
         List<ClusterHostDO> updates = new ArrayList<>();
@@ -94,16 +114,28 @@ public class HostCheckService {
             if (hostInfo != null && !StringUtils.equals(host.getHostname(), hostInfo.getHostname())) {
                 continue;
             }
-            checkHostByPingPong(host);
-            if (!HostState.OFFLINE.equals(host.getHostState())) {
-                if (prometheusInstance != null
-                        && ServiceRoleState.RUNNING.equals(prometheusInstance.getServiceRoleState())) {
-                    String promUrl = "http://" + prometheusInstance.getHostname() + ":9090/api/v1/query";
-                    checkHostByPrometheus(host, promUrl);
-                }
-            }
             updates.add(host);
         }
+        
+        // 阻塞的 ping/Prometheus 调用按主机 fan-out 到 masterExecutor，
+        // 避免在 5 线程的调度池里串行累积（单轮耗时 ≈ 最慢主机而非 Σ 所有主机）。
+        List<CompletableFuture<Void>> futures = new ArrayList<>(updates.size());
+        for (ClusterHostDO host : updates) {
+            Runnable task = () -> {
+                checkHostByPingPong(host);
+                if (!HostState.OFFLINE.equals(host.getHostState()) && promUrl != null) {
+                    checkHostByPrometheus(host, promUrl);
+                }
+            };
+            try {
+                futures.add(CompletableFuture.runAsync(task, masterExecutor));
+            } catch (RejectedExecutionException e) {
+                // 池满时退化为调用线程串行执行，等价旧行为
+                task.run();
+            }
+        }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        
         if (!updates.isEmpty()) {
             clusterHostService.updateBatchById(updates);
         }

@@ -3,20 +3,26 @@ package com.datasophon.api.load;
 import static com.datasophon.api.load.Application.getProperty;
 
 import com.datasophon.common.Constants;
+import com.datasophon.common.utils.PropertyUtils;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.datasophon.common.utils.PropertyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * fixme 由于历史代码的原因(需要修改的地方太多)，该类无法做到线程安全
+ * 集群全局变量缓存。
+ *
+ * <p>线程安全策略：内部以 clusterId 为粒度持有 live map；所有写操作
+ * （{@link #put} / {@link #putValue}）对同一 live map 加锁互斥，
+ * {@link #getVariables} 在锁内返回不可变快照，避免 live 引用逃逸到
+ * gRPC 序列化等读取路径导致 CME / 半填充脏读。</p>
  */
 public class GlobalVariables {
     
@@ -49,8 +55,18 @@ public class GlobalVariables {
         }
     }
     
+    /**
+     * 返回指定集群变量的快照副本；集群不存在时返回空 map。
+     * 调用方可安全遍历/序列化/修改返回值，不会影响全局状态。
+     */
     public static Map<String, String> getVariables(Integer clusterId) {
-        return clusterVariablesMap.get(clusterId);
+        Map<String, String> vars = clusterVariablesMap.get(clusterId);
+        if (vars == null) {
+            return new HashMap<>();
+        }
+        synchronized (vars) {
+            return new HashMap<>(vars);
+        }
     }
     
     public static boolean containsValue(Integer clusterId, String key) {
@@ -63,7 +79,9 @@ public class GlobalVariables {
     
     public static void putValue(Integer clusterId, String key, String value) {
         Map<String, String> valueMap = clusterVariablesMap.computeIfAbsent(clusterId, k -> new ConcurrentHashMap<>());
-        valueMap.put(surroundKey(key), value);
+        synchronized (valueMap) {
+            valueMap.put(surroundKey(key), value);
+        }
     }
     
     public static void putValue(Integer clusterId, String serviceName, String variableName, String value) {

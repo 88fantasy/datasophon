@@ -36,6 +36,8 @@ import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -43,6 +45,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import cn.hutool.core.convert.Convert;
 
 public class ServletUtils {
+    
+    private static final Logger logger = LoggerFactory.getLogger(ServletUtils.class);
     
     /**
      * 获取String参数
@@ -137,7 +141,7 @@ public class ServletUtils {
             response.setCharacterEncoding("utf-8");
             response.getWriter().print(string);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("render string to response failed", e);
         }
         return null;
     }
