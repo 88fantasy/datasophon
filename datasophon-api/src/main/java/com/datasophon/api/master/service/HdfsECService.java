@@ -23,7 +23,7 @@
 package com.datasophon.api.master.service;
 
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.WorkerFanOutUtils;
 import com.datasophon.common.command.HdfsEcCommand;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 
@@ -62,7 +62,7 @@ public class HdfsECService {
                 .map(ClusterServiceRoleInstanceEntity::getHostname)
                 .collect(Collectors.toCollection(TreeSet::new));
         try {
-            ProcessUtils.hdfsEcMethond(command.getServiceInstanceId(), roleInstanceService, hostnameSet,
+            WorkerFanOutUtils.hdfsEcMethond(command.getServiceInstanceId(), roleInstanceService, hostnameSet,
                     "whitelist", "NameNode");
         } catch (Exception e) {
             log.error("HDFS EC manage failed for serviceInstanceId={}: {}",

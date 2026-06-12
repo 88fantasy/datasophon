@@ -44,7 +44,7 @@ public class GlobalVariables {
     public static final String INSTALL_PATH = "INSTALL_PATH";
     // cluster variable
     // notes: 必须保证clusterId对应的map，始终都同一个对象
-    // @see ProcessUtils#generateClusterVariable的说明
+    // @see ServiceConfigUtils#generateClusterVariable的说明
     private static final Map<Integer, Map<String, String>> clusterVariablesMap = new ConcurrentHashMap<>();
     
     public static void put(Integer clusterId, Map<String, String> value) {

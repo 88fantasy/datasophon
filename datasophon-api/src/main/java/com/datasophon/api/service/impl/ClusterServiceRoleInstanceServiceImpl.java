@@ -34,7 +34,7 @@ import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
 import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.WorkerFanOutUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.GetLogCommand;
 import com.datasophon.common.enums.CommandType;
@@ -300,7 +300,7 @@ public class ClusterServiceRoleInstanceServiceImpl
             roleName = "ResourceManager";
         }
         if (!hosts.isEmpty()) {
-            ProcessUtils.hdfsEcMethond(serviceInstanceId, this, hosts, "blacklist", roleName);
+            WorkerFanOutUtils.hdfsEcMethond(serviceInstanceId, this, hosts, "blacklist", roleName);
         }
         return Result.success();
     }

@@ -28,8 +28,8 @@ import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.ClusterGroupService;
 import com.datasophon.api.service.ClusterUserGroupService;
 import com.datasophon.api.service.host.ClusterHostService;
-import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.SpringTool;
+import com.datasophon.api.utils.WorkerFanOutUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.remote.CreateUnixGroupCommand;
 import com.datasophon.common.command.remote.DelUnixGroupCommand;
@@ -112,7 +112,7 @@ public class ClusterGroupServiceImpl extends ServiceImpl<ClusterGroupMapper, Clu
         List<ClusterHostDO> hostList = hostService.getHostListByClusterId(clusterId);
         List<ClusterGroup> groupList = this.list();
         for (ClusterGroup clusterGroup : groupList) {
-            ProcessUtils.syncUserGroupToHosts(hostList, clusterGroup.getGroupName(), "groupadd");
+            WorkerFanOutUtils.syncUserGroupToHosts(hostList, clusterGroup.getGroupName(), "groupadd");
         }
     }
     

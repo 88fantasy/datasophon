@@ -33,8 +33,6 @@ import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -46,9 +44,13 @@ import java.util.concurrent.RejectedExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProcessUtils {
+/** 向多台 Worker 主机并发(fan-out)下发操作的工具(原 ProcessUtils 拆出)。 */
+public class WorkerFanOutUtils {
     
-    private static final Logger logger = LoggerFactory.getLogger(ProcessUtils.class);
+    private static final Logger logger = LoggerFactory.getLogger(WorkerFanOutUtils.class);
+    
+    private WorkerFanOutUtils() {
+    }
     
     public static void hdfsEcMethond(Integer serviceInstanceId, ClusterServiceRoleInstanceService roleInstanceService,
                                      TreeSet<String> list, String type, String roleName) throws Exception {
@@ -86,36 +88,6 @@ public class ProcessUtils {
         runConcurrently(tasks);
     }
     
-    /**
-     * 把一组阻塞任务（通常是逐主机 gRPC 调用）fan-out 到 masterExecutor 并发执行并等待全部完成。
-     * 线程池满时退化为调用线程串行执行；任一任务异常经 join 以 CompletionException 抛出。
-     */
-    private static void runConcurrently(List<Runnable> tasks) {
-        Executor executor = (Executor) SpringTool.getApplicationContext().getBean("masterExecutor");
-        List<CompletableFuture<Void>> futures = new ArrayList<>(tasks.size());
-        for (Runnable task : tasks) {
-            try {
-                futures.add(CompletableFuture.runAsync(task, executor));
-            } catch (RejectedExecutionException e) {
-                task.run();
-            }
-        }
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-    }
-    
-    public static String getExceptionMessage(Exception ex) {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        PrintStream pout = new PrintStream(out);
-        ex.printStackTrace(pout);
-        String ret = out.toString();
-        pout.close();
-        try {
-            out.close();
-        } catch (Exception ignored) {
-        }
-        return ret;
-    }
-    
     public static void syncUserGroupToHosts(List<ClusterHostDO> hostList, String groupName, String operate) {
         WorkerCallAdapter workerCallAdapter =
                 SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
@@ -140,4 +112,20 @@ public class ProcessUtils {
         runConcurrently(tasks);
     }
     
+    /**
+     * 把一组阻塞任务（通常是逐主机 gRPC 调用）fan-out 到 masterExecutor 并发执行并等待全部完成。
+     * 线程池满时退化为调用线程串行执行；任一任务异常经 join 以 CompletionException 抛出。
+     */
+    private static void runConcurrently(List<Runnable> tasks) {
+        Executor executor = (Executor) SpringTool.getApplicationContext().getBean("masterExecutor");
+        List<CompletableFuture<Void>> futures = new ArrayList<>(tasks.size());
+        for (Runnable task : tasks) {
+            try {
+                futures.add(CompletableFuture.runAsync(task, executor));
+            } catch (RejectedExecutionException e) {
+                task.run();
+            }
+        }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+    }
 }

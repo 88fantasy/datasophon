@@ -42,7 +42,7 @@ import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandHostService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandService;
 import com.datasophon.api.service.dag.DAGService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.CommonUtils;
 import com.datasophon.api.utils.ServiceCommandUtils;
 import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.api.utils.ServiceLifecycleUtils;
@@ -434,7 +434,7 @@ public class DAGExecutor {
             log.error(e.getMessage(), e);
             String error = String.format("%s %s失败, 堆栈信息：%s",
                     srvInfo.getParentName(), srvInfo.getCommandType().getCommandName(Constants.CN),
-                    ProcessUtils.getExceptionMessage(e));
+                    CommonUtils.getExceptionMessage(e));
             return ExecResult.error(error);
         }
     }
