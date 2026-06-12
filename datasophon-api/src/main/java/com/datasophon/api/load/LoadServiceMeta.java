@@ -83,14 +83,14 @@ public class LoadServiceMeta implements ApplicationRunner {
             logger.warn("No MetaStorage available, skipping service meta load: {}", e.getMessage());
             return;
         }
-        List<ServiceMetaItem> vosDdlItems = metaStorage.listService(MetaStorage.VOS_DDL);
-        Map<String, List<ServiceMetaItem>> groupeVosDdldMap = vosDdlItems.stream().collect(Collectors.groupingBy(ServiceMetaItem::getFramework));
-        groupeVosDdldMap.forEach((frameCode, items) -> {
+        List<ServiceMetaItem> physicalDdlItems = metaStorage.listService(MetaStorage.PHYSICAL);
+        Map<String, List<ServiceMetaItem>> groupedPhysicalMap = physicalDdlItems.stream().collect(Collectors.groupingBy(ServiceMetaItem::getFramework));
+        groupedPhysicalMap.forEach((frameCode, items) -> {
             FrameInfoEntity frameInfo = frameworkCache.computeIfAbsent(frameCode, c -> frameInfoService.saveFrameIfAbsent(frameCode));
             for (ServiceMetaItem item : items) {
                 try {
                     String serviceDdl = metaStorage.getServiceDdL(item);
-                    ddlMetaService.loadServiceVosDdl(clusters, frameInfo, item.getServiceName(), serviceDdl);
+                    ddlMetaService.loadServicePhysicalDdl(clusters, frameInfo, item.getServiceName(), serviceDdl);
                 } catch (Exception e) {
                     logger.error("invalid service ddl file: {} {}", frameCode, item.getServiceName(), e);
                 }

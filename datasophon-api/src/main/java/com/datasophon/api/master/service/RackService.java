@@ -98,8 +98,6 @@ public class RackService {
             serviceRoleInfo.setName("NameNode");
             serviceRoleInfo.setParentName("HDFS");
             serviceRoleInfo.setConfigFileMap(configFileMap);
-            serviceRoleInfo.setDecompressPackageName(
-                    PackageUtils.getServiceDcPackageName(clusterInfo.getClusterFrame(), "HDFS"));
             serviceRoleInfo.setHostname(roleInstance.getHostname());
             try {
                 ExecResult result = new ServiceConfigureHandler().handlerRequest(serviceRoleInfo);

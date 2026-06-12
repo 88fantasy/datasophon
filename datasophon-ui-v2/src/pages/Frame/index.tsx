@@ -1,7 +1,7 @@
 import type { ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
-import { Modal, message, Popconfirm, Segmented, Space, Spin, Tabs } from 'antd';
+import { Empty, Modal, message, Popconfirm, Segmented, Space, Spin, Tabs } from 'antd';
 import hljs from 'highlight.js/lib/core';
 import json from 'highlight.js/lib/languages/json';
 import 'highlight.js/styles/github.min.css';
@@ -38,8 +38,9 @@ const INITIAL_DDL_MODAL: DdlModalState = {
 };
 
 const FrameManage: React.FC = () => {
-  const { data: frames, refresh, loading } = useRequest(listFrameServices);
-  const [clusterType, setClusterType] = useState<ClusterType>('physical');
+  const { data: frames = [], refresh, loading } = useRequest(listFrameServices, {
+    formatResult: (res: any) => (res?.data ?? []) as DATASOPHON.FrameWithServices[],
+  });
   const [ddlModal, setDdlModal] = useState<DdlModalState>(INITIAL_DDL_MODAL);
 
   // ── DDL 编辑 ──────────────────────────────────────────────────────────
@@ -147,21 +148,12 @@ const FrameManage: React.FC = () => {
 
   // ── Tab 数据 ──────────────────────────────────────────────────────────
 
-  const tabItems = (frames ?? []).map((frame) => ({
+  const tabItems = frames.map((frame) => ({
     key: String(frame.id),
     label: frame.frameCode,
     children: (
       <div>
-        <Segmented<ClusterType>
-          options={[
-            { label: '物理机', value: 'physical' },
-            { label: 'K8s', value: 'k8s' },
-          ]}
-          value={clusterType}
-          onChange={setClusterType}
-          style={{ marginBottom: 16 }}
-        />
-        {clusterType === 'physical' ? (
+        {frame.frameCode.endsWith('-physical') ? (
           <ProTable<DATASOPHON.FrameServiceItem>
             rowKey="id"
             search={false}
@@ -188,7 +180,13 @@ const FrameManage: React.FC = () => {
 
   return (
     <PageContainer>
-      {loading ? <Spin /> : <Tabs items={tabItems} />}
+      {loading ? (
+        <Spin />
+      ) : frames.length === 0 ? (
+        <Empty description="暂无数据" />
+      ) : (
+        <Tabs items={tabItems} />
+      )}
 
       <Modal
         title={`编辑 DDL — ${ddlModal.serviceName}`}

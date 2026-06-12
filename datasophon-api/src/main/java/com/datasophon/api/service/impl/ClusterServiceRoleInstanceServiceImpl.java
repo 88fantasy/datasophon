@@ -33,7 +33,7 @@ import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
-import com.datasophon.api.service.extrepo.VosProductInstallService;
+import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.GetLogCommand;
@@ -98,7 +98,7 @@ public class ClusterServiceRoleInstanceServiceImpl
     private ExtRepoInstallDelegateService extRepoInstallDelegateService;
     
     @Autowired
-    private VosProductInstallService vosProductActionService;
+    private PhysicalProductInstallService vosProductActionService;
     
     @Autowired
     private ClusterServiceInstanceRoleGroupService roleGroupService;

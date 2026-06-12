@@ -28,7 +28,7 @@ import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
 import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
-import com.datasophon.api.service.extrepo.VosProductInstallService;
+import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
@@ -68,17 +68,17 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 @RequestMapping("/v2/cluster/{clusterId}/add-service")
 public class ClusterAddServiceV2Controller extends ApiController {
     
-    private final VosProductInstallService vosProductInstallService;
+    private final PhysicalProductInstallService physicalProductInstallService;
     private final ServiceInstallService serviceInstallService;
     private final ClusterHostService clusterHostService;
     private final ExtRepoInstallDelegateService extRepoInstallDelegateService;
     
     public ClusterAddServiceV2Controller(
-                                         VosProductInstallService vosProductInstallService,
+                                         PhysicalProductInstallService physicalProductInstallService,
                                          ServiceInstallService serviceInstallService,
                                          ClusterHostService clusterHostService,
                                          ExtRepoInstallDelegateService extRepoInstallDelegateService) {
-        this.vosProductInstallService = vosProductInstallService;
+        this.physicalProductInstallService = physicalProductInstallService;
         this.serviceInstallService = serviceInstallService;
         this.clusterHostService = clusterHostService;
         this.extRepoInstallDelegateService = extRepoInstallDelegateService;
@@ -95,7 +95,7 @@ public class ClusterAddServiceV2Controller extends ApiController {
         dto.setClusterId(clusterId);
         dto.setDeployFileId(req.getDeployFileId());
         dto.setContentDecodePasswd(passwd(req.getContentDecodePasswd()));
-        return Result.success(vosProductInstallService.listNewestByDeployment(dto));
+        return Result.success(physicalProductInstallService.listNewestByDeployment(dto));
     }
     
     /** 校验所选服务的依赖完整性（缺依赖时返回错误信息）。 */
@@ -119,7 +119,7 @@ public class ClusterAddServiceV2Controller extends ApiController {
         dto.setContentDecodePasswd(passwd(req.getContentDecodePasswd()));
         dto.setServiceIds(joinIds(req.getServiceIds()));
         dto.setServiceRoleType(1);
-        return Result.success(vosProductInstallService.getServiceRoleListByDeployment(dto));
+        return Result.success(physicalProductInstallService.getServiceRoleListByDeployment(dto));
     }
     
     /** 获取非 Master（Worker/Client）角色列表（按部署清单回填 hosts）。 */
@@ -132,7 +132,7 @@ public class ClusterAddServiceV2Controller extends ApiController {
         dto.setDeployFileId(req.getDeployFileId());
         dto.setContentDecodePasswd(passwd(req.getContentDecodePasswd()));
         dto.setServiceIds(joinIds(req.getServiceIds()));
-        return Result.success(vosProductInstallService.getNonMasterRoleListByDeployment(dto));
+        return Result.success(physicalProductInstallService.getNonMasterRoleListByDeployment(dto));
     }
     
     /** 查询集群全部已纳管主机（角色分配候选）。 */

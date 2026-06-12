@@ -2,6 +2,7 @@ package com.datasophon.api.service.ddl.impl;
 
 import static com.datasophon.common.Constants.FRAMEWORK_TPL;
 
+import com.alibaba.fastjson2.JSONWriter;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.load.GlobalVariables;
@@ -141,7 +142,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         File tplDir = FileUtil.file(FRAMEWORK_TPL);
         MetaStorage metaStorage = StorageUtils.getMetaStorage();
         try {
-            metaStorage.moveToStorage(tplDir, relative -> "meta/" + entity.getFrameCode() + "/" + MetaStorage.VOS_DDL + "/" + relative);
+            metaStorage.moveToStorage(tplDir, relative -> "meta/" + entity.getFrameCode() + "/" + MetaStorage.PHYSICAL + "/" + relative);
         } catch (IOException e) {
             throw new BusinessException(String.format("初始化框架失败，%s", e.getMessage()), e);
         }
@@ -152,10 +153,10 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         for (String cmp : installingCmp) {
             ServiceMetaItem item = new ServiceMetaItem();
             item.setServiceName(cmp);
-            item.setType(MetaStorage.VOS_DDL);
+            item.setType(MetaStorage.PHYSICAL);
             item.setFramework(entity.getFrameCode());
             try {
-                loadServiceVosDdl(clusters, entity, cmp, metaStorage.getServiceDdL(item));
+                loadServicePhysicalDdl(clusters, entity, cmp, metaStorage.getServiceDdL(item));
             } catch (Exception e) {
                 log.error("invalid service ddl file: {}/{}", entity.getFrameCode(), cmp, e);
             }
@@ -164,7 +165,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     }
     
     @Override
-    public FrameServiceEntity loadServiceVosDdl(List<ClusterInfoEntity> clusters, FrameInfoEntity frameInfo, String serviceName, String serviceDdl) {
+    public FrameServiceEntity loadServicePhysicalDdl(List<ClusterInfoEntity> clusters, FrameInfoEntity frameInfo, String serviceName, String serviceDdl) {
         ServiceInfo serviceInfo = JSONObject.parseObject(serviceDdl, new TypeReference<ServiceInfo>() {
         });
         
@@ -263,7 +264,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             }
             ServiceRoleMap.put(key, serviceRole);
             serviceRole.setFrameCode(frameCode);
-            String serviceRoleJson = JSONObject.toJSONString(serviceRole);
+            String serviceRoleJson = JSONObject.toJSONString(serviceRole, JSONWriter.Feature.IgnoreErrorGetter);
             String serviceRoleJsonMd5 = SecureUtil.md5(serviceRoleJson);
             // 持久化服务角色元信息至数据库
             FrameServiceRoleEntity role = roleService.getServiceRoleByServiceIdAndServiceRoleName(serviceEntity.getId(), serviceRole.getName());
@@ -465,11 +466,11 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         Objects.requireNonNull(service);
         FrameInfoEntity frameInfo = frameInfoService.getById(service.getFrameId());
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
-        loadServiceVosDdl(clusters, frameInfo, service.getServiceName(), serviceDdl);
+        loadServicePhysicalDdl(clusters, frameInfo, service.getServiceName(), serviceDdl);
         
         ServiceMetaItem item = new ServiceMetaItem();
         item.setServiceName(service.getServiceName());
-        item.setType(MetaStorage.VOS_DDL);
+        item.setType(MetaStorage.PHYSICAL);
         item.setFramework(frameInfo.getFrameCode());
         MetaStorage metaStorage = StorageUtils.getMetaStorage();
         try {
@@ -487,7 +488,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         
         ServiceMetaItem item = new ServiceMetaItem();
         item.setServiceName(service.getServiceName());
-        item.setType(MetaStorage.VOS_DDL);
+        item.setType(MetaStorage.PHYSICAL);
         item.setFramework(frameInfo.getFrameCode());
         MetaStorage metaStorage = StorageUtils.getMetaStorage();
         try {

@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * @author zhanghuangbin
  */
-public interface VosProductInstallService extends ExtRepoInstallService {
+public interface PhysicalProductInstallService extends ExtRepoInstallService {
     
     String generateAndExecSrvRoleCmd(Integer clusterId, CommandType command, Integer serviceInstanceId, List<Integer> ids);
     

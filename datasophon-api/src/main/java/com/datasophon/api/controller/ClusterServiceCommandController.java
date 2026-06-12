@@ -27,7 +27,7 @@ import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.cmd.ClusterServiceCommandService;
 import com.datasophon.api.service.dag.DAGService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
-import com.datasophon.api.service.extrepo.VosProductInstallService;
+import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ConverterUtils;
 import com.datasophon.common.utils.Result;
@@ -64,7 +64,7 @@ public class ClusterServiceCommandController extends ApiController {
     private ExtRepoInstallDelegateService extRepoInstallDelegateService;
     
     @Autowired
-    private VosProductInstallService vosProductActionService;
+    private PhysicalProductInstallService vosProductActionService;
     
     @Autowired
     private DAGService dagService;

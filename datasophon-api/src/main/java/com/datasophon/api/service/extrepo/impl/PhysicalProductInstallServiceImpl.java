@@ -15,7 +15,7 @@ import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandHostService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandService;
-import com.datasophon.api.service.extrepo.VosProductInstallService;
+import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
 import com.datasophon.api.service.extrepo.ctx.SimpleServiceResource;
 import com.datasophon.api.service.extrepo.ctx.VosProductCmdSrvMappingContext;
 import com.datasophon.api.service.extrepo.ctx.VosProductDeployDAGBuildContext;
@@ -95,7 +95,7 @@ import cn.hutool.core.util.StrUtil;
  */
 @Component("vosProductInstallService")
 @Slf4j
-public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport implements VosProductInstallService {
+public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSupport implements PhysicalProductInstallService {
     
     @Autowired
     private ServiceInstallService serviceInstallService;
@@ -345,7 +345,6 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
                 serviceRoleInfo.setServiceInstanceId(cmd.getServiceInstanceId());
                 
                 serviceRoleInfo.setArchInfoMap(ServicePkgNameUtils.getArchInfo(serviceEntity));
-                serviceRoleInfo.setDecompressPackageName(serviceEntity.getDecompressPackageName());
                 serviceRoleInfo.setFrameCode(serviceEntity.getFrameCode());
                 
                 ServiceInfo serviceInfo = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
@@ -549,7 +548,6 @@ public class VosProductInstallServiceImpl extends ProductDeployHandlerSupport im
                 BeanUtil.copyProperties(newOne, oldOne, cpOpt);
                 
                 oldOne.setCreateDecompressDir(serviceDef.getCreateDecompressDir());
-                oldOne.setDecompressPackageName(serviceEntity.getDecompressPackageName());
                 oldOne.setArchInfoMap(ServicePkgNameUtils.getArchInfo(serviceEntity));
                 
                 Optional.ofNullable(ServiceRoleStrategyContext.getServiceRoleHandler(newOne.getName()))

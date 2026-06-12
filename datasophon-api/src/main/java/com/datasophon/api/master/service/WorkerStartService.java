@@ -28,7 +28,7 @@ import static java.util.stream.Collectors.toList;
 
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
-import com.datasophon.api.service.extrepo.VosProductInstallService;
+import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.common.Constants;
@@ -70,13 +70,13 @@ public class WorkerStartService {
     private final ClusterHostService clusterHostService;
     private final ClusterInfoService clusterInfoService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
-    private final VosProductInstallService vosProductActionService;
+    private final PhysicalProductInstallService vosProductActionService;
     private final PrometheusService prometheusService;
     
     public WorkerStartService(ClusterHostService clusterHostService,
                               ClusterInfoService clusterInfoService,
                               ClusterServiceRoleInstanceService roleInstanceService,
-                              VosProductInstallService vosProductActionService,
+                              PhysicalProductInstallService vosProductActionService,
                               PrometheusService prometheusService) {
         this.clusterHostService = clusterHostService;
         this.clusterInfoService = clusterInfoService;

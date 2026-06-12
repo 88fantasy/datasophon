@@ -38,8 +38,8 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
     public List<ServiceMetaItem> listService(String type) {
         validType(type);
         try {
-            String ddlName = VOS_DDL.equals(type) ? Constants.SERVICE_DDL : Constants.MANIFEST_DDL;
-            List<Component> components = NexusFacade.getCommonClient().listMatchedItem(REPO, String.format("/meta/*/%s/*/%s", type, ddlName));
+            String ddlName = PHYSICAL.equals(type) ? Constants.SERVICE_DDL : Constants.MANIFEST_DDL;
+            List<Component> components = NexusFacade.getCommonClient().listMatchedItem(REPO, String.format("/meta/*/*/%s", ddlName));
             List<ServiceMetaItem> items = new ArrayList<>();
             for (Component component : components) {
                 ServiceMetaItem item = new ServiceMetaItem();
@@ -51,7 +51,7 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
                     }
                     String[] parts = name.split("/");
                     item.setFramework(parts[1]);
-                    item.setServiceName(parts[3]);
+                    item.setServiceName(parts[2]);
                 } catch (ArrayIndexOutOfBoundsException exception) {
                     log.warn("ddl file: {} matched query pattern, but can not be parsed, ignore it", component.getName());
                     continue;
@@ -67,7 +67,7 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
     @Override
     @SuppressWarnings("deprecated")
     public void saveServiceDdl(ServiceMetaItem item, String content) throws IOException {
-        String path = String.format("/meta/%s/%s/%s", item.getFramework(), item.getType(), item.getServiceName());
+        String path = String.format("/meta/%s/%s", item.getFramework(), item.getServiceName());
         NexusFileUtils.uploadFileToRawRepo(path, Constants.SERVICE_DDL, content);
     }
     
@@ -97,7 +97,7 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
     
     @Override
     public void downResource(ServiceMetaItem item, String relativePath, OutputStreamSupplier supplier) throws IOException {
-        String downloadUrl = String.format("/meta/%s/%s/%s/%s", item.getFramework(), item.getType(), item.getServiceName(), relativePath);
+        String downloadUrl = String.format("/meta/%s/%s/%s", item.getFramework(), item.getServiceName(), relativePath);
         downloadUrl = NexusFacade.getRawRepoClient().getNexusRawObjectUrl(downloadUrl);
         NexusFacade.getCommonClient().download(downloadUrl, supplier.get());
     }
@@ -129,11 +129,11 @@ public class NexusMetaStorage extends NexusStorageSupport implements MetaStorage
     @Override
     @SuppressWarnings("deprecated")
     public void removeMeta(String frameCode, String serviceName, String type) {
-        NexusFileUtils.removeFolderFromRawRepo(String.format("/meta/%s/%s/%s", frameCode, type, serviceName));
+        NexusFileUtils.removeFolderFromRawRepo(String.format("/meta/%s/%s", frameCode,  serviceName));
     }
     
     private void validType(String type) {
-        if (!Arrays.asList(VOS_DDL, K8S).contains(type)) {
+        if (!Arrays.asList(PHYSICAL, K8S).contains(type)) {
             throw new IllegalArgumentException(String.format("type %s is allowed", type));
         }
     }

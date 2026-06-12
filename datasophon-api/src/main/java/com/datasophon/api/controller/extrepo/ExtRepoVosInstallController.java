@@ -3,7 +3,7 @@ package com.datasophon.api.controller.extrepo;
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
-import com.datasophon.api.service.extrepo.VosProductInstallService;
+import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
 import com.datasophon.common.utils.Result;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ExtRepoVosInstallController extends ApiController {
     
     @Autowired
-    private VosProductInstallService vosProductActionService;
+    private PhysicalProductInstallService vosProductActionService;
     
     @PostMapping("/listNewestByDeployment")
     @Operation(summary = "获取最新的服务列表(并更加部署清单对服务列表进行勾选)")

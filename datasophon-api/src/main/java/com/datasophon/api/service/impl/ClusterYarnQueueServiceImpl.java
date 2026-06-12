@@ -128,7 +128,6 @@ public class ClusterYarnQueueServiceImpl extends ServiceImpl<ClusterYarnQueueMap
             serviceRoleInfo.setName("ResourceManager");
             serviceRoleInfo.setParentName("YARN");
             serviceRoleInfo.setConfigFileMap(configFileMap);
-            serviceRoleInfo.setDecompressPackageName("hadoop");
             serviceRoleInfo.setHostname(roleInstanceEntity.getHostname());
             ServiceConfigureHandler configureHandler = new ServiceConfigureHandler();
             ExecResult execResult = configureHandler.handlerRequest(serviceRoleInfo);

@@ -341,7 +341,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             framework.getVosDdlServices().forEach(srv -> {
                 String ddl = FileUtil.readString(Paths.get(unzipDir, srv.getDdl()).toFile(), StandardCharsets.UTF_8);
                 try {
-                    ddlMetaService.loadServiceVosDdl(clusters, db, srv.getName(), ddl);
+                    ddlMetaService.loadServicePhysicalDdl(clusters, db, srv.getName(), ddl);
                 } catch (Exception e) {
                     throw new BusinessException(String.format("解析服务%s的定义失败，%s。请检测service_ddl.json是否符合定义", srv.getName(), e.getMessage()), e);
                 }

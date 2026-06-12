@@ -328,7 +328,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         
         ServiceMetaItem item = new ServiceMetaItem();
         item.setServiceName(roleInfo.getServiceName());
-        item.setType(MetaStorage.VOS_DDL);
+        item.setType(MetaStorage.PHYSICAL);
         item.setFramework(frameCode);
         MetaStorage metaStorage = StorageUtils.getMetaStorage();
         

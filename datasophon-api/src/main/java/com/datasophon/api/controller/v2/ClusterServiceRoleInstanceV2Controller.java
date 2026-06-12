@@ -28,7 +28,7 @@ import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
-import com.datasophon.api.service.extrepo.VosProductInstallService;
+import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ConverterUtils;
 import com.datasophon.common.utils.Result;
@@ -70,7 +70,7 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
     private ClusterServiceRoleInstanceWebuisService webuisService;
     
     @Autowired
-    private VosProductInstallService vosProductInstallService;
+    private PhysicalProductInstallService physicalProductInstallService;
     
     /**
      * 服务角色实例列表（分页）。
@@ -128,7 +128,7 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
                                        @RequestParam String serviceRoleInstancesIds) {
         List<Integer> ids = ConverterUtils.convertIds(serviceRoleInstancesIds, Integer::parseInt);
         CommandType command = EnumUtil.fromString(CommandType.class, commandType);
-        String result = vosProductInstallService.generateAndExecSrvRoleCmd(clusterId, command, instanceId, ids);
+        String result = physicalProductInstallService.generateAndExecSrvRoleCmd(clusterId, command, instanceId, ids);
         return ApiResponse.ok(Result.success().put("data", result));
     }
     

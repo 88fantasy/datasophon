@@ -14,7 +14,7 @@ public interface DdlMetaService {
     
     FrameInfoEntity initFramework(String frameCode);
     
-    FrameServiceEntity loadServiceVosDdl(List<ClusterInfoEntity> clusters, FrameInfoEntity frameInfo, String serviceName, String serviceDdl);
+    FrameServiceEntity loadServicePhysicalDdl(List<ClusterInfoEntity> clusters, FrameInfoEntity frameInfo, String serviceName, String serviceDdl);
     
     FrameK8sServiceEntity loadServiceK8sDdl(FrameInfoEntity frameInfo, String serviceName, String serviceDdl);
     

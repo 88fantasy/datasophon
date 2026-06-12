@@ -185,7 +185,7 @@ public class MetaUtils {
         FrameworkMeta meta = new FrameworkMeta();
         meta.setFrameCode(frameDir.getName());
         
-        File vosDdlDir = new File(frameDir, MetaStorage.VOS_DDL);
+        File vosDdlDir = new File(frameDir, MetaStorage.PHYSICAL);
         if (vosDdlDir.exists()) {
             File[] services = vosDdlDir.listFiles();
             if (services != null) {
@@ -217,7 +217,7 @@ public class MetaUtils {
     
     private static List<VosDdLServiceMeta> parseVosDdlServiceMeta(SrvParseCtx ctx, File serviceDir) {
         String root = ctx.getOption().getRoot();
-        Path currentPath = PathUtils.join(getConfPath(ctx.getOption().getRoot()), "meta", ctx.getFramework(), MetaStorage.VOS_DDL, serviceDir.getName());
+        Path currentPath = PathUtils.join(getConfPath(ctx.getOption().getRoot()), "meta", ctx.getFramework(), MetaStorage.PHYSICAL, serviceDir.getName());
         
         File ddl = currentPath.resolve(Constants.SERVICE_DDL).toFile();
         if (!ddl.exists()) {
