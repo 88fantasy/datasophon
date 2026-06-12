@@ -23,12 +23,6 @@
 package com.datasophon.api.utils;
 
 import com.datasophon.api.grpc.WorkerCommandClient;
-import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
-import com.datasophon.api.master.handler.service.ServiceHandler;
-import com.datasophon.api.master.handler.service.ServiceInstallHandler;
-import com.datasophon.api.master.handler.service.ServiceStartHandler;
-import com.datasophon.api.master.handler.service.ServiceStopHandler;
-import com.datasophon.api.master.handler.service.ServiceUpgradeHandler;
 import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.ClusterAlertHistoryService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
@@ -37,13 +31,9 @@ import com.datasophon.common.Constants;
 import com.datasophon.common.command.FileOperateCommand;
 import com.datasophon.common.command.remote.CreateUnixGroupCommand;
 import com.datasophon.common.command.remote.DelUnixGroupCommand;
-import com.datasophon.common.model.Generators;
-import com.datasophon.common.model.ServiceConfig;
-import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterAlertHistory;
 import com.datasophon.dao.entity.ClusterHostDO;
-import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.AlertLevel;
@@ -55,7 +45,6 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
@@ -135,83 +124,6 @@ public class ProcessUtils {
         } catch (Exception ignored) {
         }
         return ret;
-    }
-    
-    public static ExecResult restartService(ServiceRoleInfo serviceRoleInfo, boolean needReConfig) throws Exception {
-        ServiceHandler serviceStartHandler = new ServiceStartHandler();
-        ServiceHandler serviceStopHandler = new ServiceStopHandler();
-        if (needReConfig) {
-            ServiceConfigureHandler serviceConfigureHandler = new ServiceConfigureHandler();
-            serviceStopHandler.setNext(serviceConfigureHandler);
-            serviceConfigureHandler.setNext(serviceStartHandler);
-        } else {
-            serviceStopHandler.setNext(serviceStartHandler);
-        }
-        return serviceStopHandler.handlerRequest(serviceRoleInfo);
-    }
-    
-    public static ExecResult startService(ServiceRoleInfo serviceRoleInfo, boolean needReConfig) throws Exception {
-        ExecResult execResult;
-        if (needReConfig) {
-            ServiceConfigureHandler serviceHandler = new ServiceConfigureHandler();
-            ServiceHandler serviceStartHandler = new ServiceStartHandler();
-            serviceHandler.setNext(serviceStartHandler);
-            execResult = serviceHandler.handlerRequest(serviceRoleInfo);
-        } else {
-            ServiceHandler serviceStartHandler = new ServiceStartHandler();
-            execResult = serviceStartHandler.handlerRequest(serviceRoleInfo);
-        }
-        return execResult;
-    }
-    
-    public static ExecResult stopService(ServiceRoleInfo serviceRoleInfo) throws Exception {
-        ServiceHandler serviceStopHandler = new ServiceStopHandler();
-        return serviceStopHandler.handlerRequest(serviceRoleInfo);
-    }
-    
-    public static ExecResult startInstallService(ServiceRoleInfo serviceRoleInfo) throws Exception {
-        ServiceHandler serviceInstallHandler = new ServiceInstallHandler();
-        ServiceHandler serviceConfigureHandler = new ServiceConfigureHandler();
-        
-        // 安装时，不见是否启动成功(部分软件，需要全部节点启动成功后，状态才能成功)
-        ServiceStartHandler serviceStartHandler = new ServiceStartHandler();
-        serviceStartHandler.setCheckStatus(false);
-        
-        serviceInstallHandler.setNext(serviceConfigureHandler);
-        serviceConfigureHandler.setNext(serviceStartHandler);
-        ExecResult execResult = serviceInstallHandler.handlerRequest(serviceRoleInfo);
-        return execResult;
-    }
-    
-    /**
-     * 升级角色服务，操作链
-     * 1. 停止服务
-     * 2. 安装软件
-     * 3. 生成配置
-     * 4. 启动应用
-     */
-    public static ExecResult upgradeService(ServiceRoleInfo serviceRoleInfo) throws Exception {
-        ServiceHandler handler = new ServiceStopHandler();
-        
-        handler
-                .thenNext(new ServiceUpgradeHandler())
-                .thenNext(new ServiceConfigureHandler())
-                .thenNext(new ServiceStartHandler());
-        
-        ExecResult execResult = handler.handlerRequest(serviceRoleInfo);
-        return execResult;
-    }
-    
-    public static ExecResult configServiceRoleInstance(ClusterInfoEntity clusterInfo,
-                                                       Map<Generators, List<ServiceConfig>> configFileMap,
-                                                       ClusterServiceRoleInstanceEntity roleInstanceEntity) throws Exception {
-        ServiceRoleInfo serviceRoleInfo = new ServiceRoleInfo();
-        serviceRoleInfo.setName(roleInstanceEntity.getServiceRoleName());
-        serviceRoleInfo.setParentName(roleInstanceEntity.getServiceName());
-        serviceRoleInfo.setConfigFileMap(configFileMap);
-        serviceRoleInfo.setHostname(roleInstanceEntity.getHostname());
-        ServiceConfigureHandler configureHandler = new ServiceConfigureHandler();
-        return configureHandler.handlerRequest(serviceRoleInfo);
     }
     
     public static void syncUserGroupToHosts(List<ClusterHostDO> hostList, String groupName, String operate) {

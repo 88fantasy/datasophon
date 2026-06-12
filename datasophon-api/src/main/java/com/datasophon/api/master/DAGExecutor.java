@@ -45,6 +45,7 @@ import com.datasophon.api.service.dag.DAGService;
 import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.ServiceCommandUtils;
 import com.datasophon.api.utils.ServiceConfigUtils;
+import com.datasophon.api.utils.ServiceLifecycleUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.dag.DAGExecCommand;
@@ -343,19 +344,19 @@ public class DAGExecutor {
         ExecResult execResult;
         switch (type) {
             case INSTALL_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ProcessUtils.startInstallService(serviceRoleInfo));
+                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.startInstallService(serviceRoleInfo));
                 break;
             case START_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ProcessUtils.startService(serviceRoleInfo, needReConfig));
+                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.startService(serviceRoleInfo, needReConfig));
                 break;
             case STOP_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ProcessUtils.stopService(serviceRoleInfo));
+                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.stopService(serviceRoleInfo));
                 break;
             case RESTART_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ProcessUtils.restartService(serviceRoleInfo, needReConfig));
+                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.restartService(serviceRoleInfo, needReConfig));
                 break;
             case UPGRADE_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ProcessUtils.upgradeService(serviceRoleInfo));
+                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.upgradeService(serviceRoleInfo));
                 break;
             default:
                 throw new BusinessException(String.format("unknown cmd type: %s of srv %s in host %s{}",

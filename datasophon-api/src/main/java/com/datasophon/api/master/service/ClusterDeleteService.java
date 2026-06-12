@@ -33,8 +33,8 @@ import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
 import com.datasophon.api.service.k8s.K8sService;
-import com.datasophon.api.utils.ProcessUtils;
 import com.datasophon.api.utils.ServiceConfigUtils;
+import com.datasophon.api.utils.ServiceLifecycleUtils;
 import com.datasophon.api.vo.k8s.K8sConnectionResult;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.Generators;
@@ -213,7 +213,7 @@ public class ClusterDeleteService {
         String hostname = roleInstance.getHostname();
         try {
             logger.info("start to uninstall {} in host {}", roleName, hostname);
-            ExecResult execResult = ProcessUtils.configServiceRoleInstance(clusterInfo, configFileMap, roleInstance);
+            ExecResult execResult = ServiceLifecycleUtils.configServiceRoleInstance(clusterInfo, configFileMap, roleInstance);
             boolean success = Objects.nonNull(execResult) && execResult.getExecResult();
             if (success) {
                 logger.info("{} uninstall success in {}", roleName, hostname);
