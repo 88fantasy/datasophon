@@ -35,6 +35,7 @@ import java.net.URLEncoder;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,66 +53,56 @@ public class ServletUtils {
      * 获取String参数
      */
     public static String getParameter(String name) {
-        return getRequest().getParameter(name);
+        return getRequest().map(request -> request.getParameter(name)).orElse(null);
     }
     
     /**
      * 获取String参数
      */
     public static String getParameter(String name, String defaultValue) {
-        return Convert.toStr(getRequest().getParameter(name), defaultValue);
+        return Convert.toStr(getParameter(name), defaultValue);
     }
     
     /**
      * 获取Integer参数
      */
     public static Integer getParameterToInt(String name) {
-        return Convert.toInt(getRequest().getParameter(name));
+        return Convert.toInt(getParameter(name));
     }
     
     /**
      * 获取Integer参数
      */
     public static Integer getParameterToInt(String name, Integer defaultValue) {
-        return Convert.toInt(getRequest().getParameter(name), defaultValue);
+        return Convert.toInt(getParameter(name), defaultValue);
     }
     
     /**
      * 获取request
      */
-    public static HttpServletRequest getRequest() {
-        try {
-            return getRequestAttributes().getRequest();
-        } catch (Exception e) {
-            return null;
-        }
+    public static Optional<HttpServletRequest> getRequest() {
+        return getRequestAttributes().map(ServletRequestAttributes::getRequest);
     }
     
     /**
      * 获取response
      */
-    public static HttpServletResponse getResponse() {
-        try {
-            return getRequestAttributes().getResponse();
-        } catch (Exception e) {
-            return null;
-        }
+    public static Optional<HttpServletResponse> getResponse() {
+        return getRequestAttributes().map(ServletRequestAttributes::getResponse);
     }
     
     /**
      * 获取session
      */
-    public static HttpSession getSession() {
-        return getRequest().getSession();
+    public static Optional<HttpSession> getSession() {
+        return getRequest().map(HttpServletRequest::getSession);
     }
     
-    public static ServletRequestAttributes getRequestAttributes() {
-        try {
-            RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
-            return (ServletRequestAttributes) attributes;
-        } catch (Exception e) {
-            return null;
-        }
+    public static Optional<ServletRequestAttributes> getRequestAttributes() {
+        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+        return attributes instanceof ServletRequestAttributes servletAttributes
+                ? Optional.of(servletAttributes)
+                : Optional.empty();
     }
     
     public static Map<String, String> getHeaders(HttpServletRequest request) {
@@ -132,9 +123,8 @@ public class ServletUtils {
      *
      * @param response 渲染对象
      * @param string   待渲染的字符串
-     * @return null
      */
-    public static String renderString(HttpServletResponse response, String string) {
+    public static void renderString(HttpServletResponse response, String string) {
         try {
             response.setStatus(200);
             response.setContentType("application/json");
@@ -143,7 +133,6 @@ public class ServletUtils {
         } catch (IOException e) {
             logger.error("render string to response failed", e);
         }
-        return null;
     }
     
     /**

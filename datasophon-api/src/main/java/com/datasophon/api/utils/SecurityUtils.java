@@ -58,7 +58,9 @@ public class SecurityUtils {
      * 获取用户ID
      */
     public static Long getUserId() {
-        return Convert.toLong(ServletUtils.getRequest().getHeader(Constants.DETAILS_USER_ID));
+        return ServletUtils.getRequest()
+                .map(request -> Convert.toLong(request.getHeader(Constants.DETAILS_USER_ID)))
+                .orElse(null);
     }
     
     /**
