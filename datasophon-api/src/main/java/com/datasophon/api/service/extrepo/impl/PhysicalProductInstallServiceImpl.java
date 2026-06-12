@@ -21,7 +21,7 @@ import com.datasophon.api.service.extrepo.ctx.VosProductCmdSrvMappingContext;
 import com.datasophon.api.service.extrepo.ctx.VosProductDeployDAGBuildContext;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceCommandUtils;
 import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.api.vo.extrepo.DAGNode;
 import com.datasophon.api.vo.extrepo.InstallResult;
@@ -249,7 +249,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
     private String doGenerateInstallCmd(ClusterInfoEntity cluster, FrameServiceEntity frameService) {
         ClusterServiceInstanceEntity serviceInstance = clusterServiceInstanceService.getServiceInstanceByClusterIdAndServiceName(cluster.getId(), frameService.getServiceName());
         CommandType commandType = ServiceState.WAIT_INSTALL.equals(serviceInstance.getServiceState()) ? CommandType.INSTALL_SERVICE : CommandType.UPGRADE_SERVICE;
-        ClusterServiceCommandEntity cmd = ProcessUtils.generateCommandEntity(cluster.getId(), commandType, frameService.getServiceName());
+        ClusterServiceCommandEntity cmd = ServiceCommandUtils.generateCommandEntity(cluster.getId(), commandType, frameService.getServiceName());
         cmd.setServiceInstanceId(serviceInstance.getId());
         commandService.save(cmd);
         log.info("保存{}{}命令成功, 命令ID:{}", commandType.getCommandName(Constants.CN), frameService.getServiceName(), cmd.getCommandId());
@@ -264,7 +264,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
         for (FrameServiceRoleEntity serviceRole : serviceRoleList) {
             hostnames.addAll(serviceRoleHostMap.getOrDefault(serviceRole.getServiceRoleName(), new ArrayList<>(0)));
         }
-        hostnames.forEach(host -> hostEntityList.add(ProcessUtils.generateCommandHostEntity(cmd.getCommandId(), host)));
+        hostnames.forEach(host -> hostEntityList.add(ServiceCommandUtils.generateCommandHostEntity(cmd.getCommandId(), host)));
         commandHostService.saveBatch(hostEntityList);
         log.info("命令:{}{}保存各主机总命令信息成功,共涉及{}台主机",
                 CommandType.ofCode(cmd.getCommandType()).getCommandName(Constants.CN),
@@ -292,7 +292,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
                 boolean exists = existingRoleHosts.contains(serviceRole.getServiceRoleName() + "@" + hostname);
                 
                 CommandType roleCmdType = exists ? CommandType.UPGRADE_SERVICE : CommandType.INSTALL_SERVICE;
-                ClusterServiceCommandHostCommandEntity hostCommand = ProcessUtils.generateCommandHostCommandEntity(
+                ClusterServiceCommandHostCommandEntity hostCommand = ServiceCommandUtils.generateCommandHostCommandEntity(
                         roleCmdType, cmd.getCommandId(),
                         serviceRole.getServiceRoleName(), serviceRole.getServiceRoleType(),
                         cache.get(hostname));
@@ -635,7 +635,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
     }
     
     private String doGenerateSrvInstOpCommand(ClusterServiceInstanceEntity serviceInstance, List<ClusterServiceRoleInstanceEntity> roleInstanceList, CommandType commandType) {
-        ClusterServiceCommandEntity command = ProcessUtils.generateCommandEntity(serviceInstance.getClusterId(), commandType, serviceInstance.getServiceName());
+        ClusterServiceCommandEntity command = ServiceCommandUtils.generateCommandEntity(serviceInstance.getClusterId(), commandType, serviceInstance.getServiceName());
         command.setServiceInstanceId(serviceInstance.getId());
         commandService.save(command);
         
@@ -644,8 +644,8 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
         for (ClusterServiceRoleInstanceEntity roleInstance : roleInstanceList) {
             ClusterServiceCommandHostEntity commandHost = map.computeIfAbsent(
                     roleInstance.getHostname(),
-                    i -> ProcessUtils.generateCommandHostEntity(command.getCommandId(), roleInstance.getHostname()));
-            ClusterServiceCommandHostCommandEntity hostCommand = ProcessUtils.generateCommandHostCommandEntity(commandType,
+                    i -> ServiceCommandUtils.generateCommandHostEntity(command.getCommandId(), roleInstance.getHostname()));
+            ClusterServiceCommandHostCommandEntity hostCommand = ServiceCommandUtils.generateCommandHostCommandEntity(commandType,
                     command.getCommandId(), roleInstance.getServiceRoleName(), roleInstance.getRoleType(), commandHost);
             hostCommand.setSort(0);
             hostCommands.add(hostCommand);

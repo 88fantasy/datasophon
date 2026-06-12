@@ -43,6 +43,7 @@ import com.datasophon.api.service.cmd.ClusterServiceCommandHostService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandService;
 import com.datasophon.api.service.dag.DAGService;
 import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceCommandUtils;
 import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
@@ -250,7 +251,7 @@ public class DAGExecutor {
                         } else {
                             getCommandPostAction(role).run();
                         }
-                        ProcessUtils.handleCommandResult(role.getHostCommandId(), lastResult.getExecResult(), lastResult.getExecOut());
+                        ServiceCommandUtils.handleCommandResult(role.getHostCommandId(), lastResult.getExecResult(), lastResult.getExecOut());
                     }
                 }
                 if (firstError != null) {
@@ -368,7 +369,7 @@ public class DAGExecutor {
         
         boolean needTellResult = !execResult.isSuccess() || !DELAY_ACTION_COMMAND_TYPES.contains(type);
         if (needTellResult) {
-            ProcessUtils.handleCommandResult(serviceRoleInfo.getHostCommandId(), execResult.getExecResult(), execResult.getExecOut());
+            ServiceCommandUtils.handleCommandResult(serviceRoleInfo.getHostCommandId(), execResult.getExecResult(), execResult.getExecOut());
         } else {
             ClusterServiceCommandHostCommandEntity hostCommand = hostCommandService.getByHostCommandId(serviceRoleInfo.getHostCommandId());
             hostCommand.setCommandProgress(90);
@@ -442,7 +443,7 @@ public class DAGExecutor {
         switch (type) {
             case INSTALL_SERVICE:
             case UPGRADE_SERVICE:
-                return () -> ProcessUtils.saveServiceInstallInfo(serviceRoleInfo);
+                return () -> ServiceCommandUtils.saveServiceInstallInfo(serviceRoleInfo);
             case START_SERVICE:
             case RESTART_SERVICE:
                 return () -> updateServiceRoleState(serviceRoleInfo, ServiceRoleState.RUNNING);
@@ -456,7 +457,7 @@ public class DAGExecutor {
     }
     
     private void updateServiceRoleState(ServiceRoleInfo role, ServiceRoleState state) {
-        ProcessUtils.updateServiceRoleState(role.getCommandType(), role.getName(), role.getHostname(), role.getClusterId(), state);
+        ServiceCommandUtils.updateServiceRoleState(role.getCommandType(), role.getName(), role.getHostname(), role.getClusterId(), state);
     }
     
     // ─── inner types ─────────────────────────────────────────────────────────

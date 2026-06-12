@@ -30,7 +30,7 @@ import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
 import com.datasophon.api.service.host.ClusterHostService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceCommandUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.GenerateHostPrometheusConfig;
@@ -117,7 +117,7 @@ public class WorkerStartService {
         
         ClusterHostDO hostEntity = clusterHostService.getClusterHostByHostname(hostname);
         if (ObjectUtil.isNull(hostEntity)) {
-            ProcessUtils.saveHostInstallInfo(msg, cluster.getClusterCode(), clusterHostService);
+            ServiceCommandUtils.saveHostInstallInfo(msg, cluster.getClusterCode(), clusterHostService);
             logger.info("Host install save to database");
         } else {
             hostEntity.setCpuArchitecture(msg.getCpuArchitecture());
