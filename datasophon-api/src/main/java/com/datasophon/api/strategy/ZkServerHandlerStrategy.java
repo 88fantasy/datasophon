@@ -25,7 +25,7 @@ package com.datasophon.api.strategy;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.service.ClusterInfoService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
@@ -53,26 +53,26 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
         // 保存zkUrls到全局变量
         String join = String.join(":2181,", hosts);
         String zkUrls = join + ":2181";
-        ProcessUtils.generateClusterVariable(clusterId, serviceName, "zkUrls", zkUrls);
+        ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "zkUrls", zkUrls);
         // 保存hbaseZkUrls到全局变量
         String hbaseZkUrls = String.join(",", hosts);
-        ProcessUtils.generateClusterVariable(clusterId, serviceName, "zkHostsUrl", hbaseZkUrls);
+        ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "zkHostsUrl", hbaseZkUrls);
     }
     
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
-        ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
+        ClusterInfoEntity clusterInfo = ServiceConfigUtils.getClusterInfo(clusterId);
         boolean enableKerberos = false;
-        Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
+        Map<String, ServiceConfig> map = ServiceConfigUtils.translateToMap(list);
         
         for (ServiceConfig config : list) {
             if ("enableKerberos".equals(config.getName())) {
                 if ((Boolean) config.getValue()) {
                     enableKerberos = true;
-                    ProcessUtils.generateClusterVariable(clusterId, serviceName, "enableZOOKEEPERKerberos", "true");
+                    ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "enableZOOKEEPERKerberos", "true");
                 } else {
-                    ProcessUtils.generateClusterVariable(clusterId, serviceName, "enableZOOKEEPERKerberos", "false");
+                    ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "enableZOOKEEPERKerberos", "false");
                 }
             }
         }
@@ -131,7 +131,7 @@ public class ZkServerHandlerStrategy implements ServiceRoleStrategy {
         if (Objects.nonNull(hostMap)) {
             List<String> zkServers = hostMap.get("ZkServer");
             
-            Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
+            Map<String, ServiceConfig> map = ServiceConfigUtils.translateToMap(list);
             
             Integer myid = 1;
             for (String server : zkServers) {

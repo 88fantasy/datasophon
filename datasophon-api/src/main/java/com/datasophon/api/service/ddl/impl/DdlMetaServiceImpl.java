@@ -22,7 +22,7 @@ import com.datasophon.api.service.ddl.DdlMetaService;
 import com.datasophon.api.service.frame.FrameK8sServiceService;
 import com.datasophon.api.utils.CommonUtils;
 import com.datasophon.api.utils.PackageUtils;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
@@ -380,7 +380,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     private void updateServiceRoleGroupConfig(ClusterServiceRoleGroupConfig config, List<ServiceConfig> parameters) {
         String configJson = config.getConfigJson();
         List<ServiceConfig> serviceConfigs = JSONArray.parseArray(configJson, ServiceConfig.class);
-        ProcessUtils.addAll(serviceConfigs, parameters);
+        ServiceConfigUtils.addAll(serviceConfigs, parameters);
         // 更新服务实例的配置
         config.setConfigJson(JSONObject.toJSONString(serviceConfigs));
         roleGroupConfigService.updateById(config);

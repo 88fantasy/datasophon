@@ -24,7 +24,7 @@ package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.model.ServiceConfig;
@@ -46,7 +46,7 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         CacheUtils.put("enableHiveServer2HA", false);
         if (!hosts.isEmpty()) {
-            ProcessUtils.generateClusterVariable(clusterId, serviceName, "masterHiveServer2", hosts.get(0));
+            ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "masterHiveServer2", hosts.get(0));
         }
         if (hosts.size() > 1) {
             CacheUtils.put("enableHiveServer2HA", true);
@@ -56,9 +56,9 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
-        ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
+        ClusterInfoEntity clusterInfo = ServiceConfigUtils.getClusterInfo(clusterId);
         boolean enableKerberos = false;
-        Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
+        Map<String, ServiceConfig> map = ServiceConfigUtils.translateToMap(list);
         for (ServiceConfig config : list) {
             if ("enableKerberos".equals(config.getName())) {
                 enableKerberos = decideEnableKerberos(clusterId, enableKerberos, config, "HIVE");
@@ -80,7 +80,7 @@ public class HiveServer2HandlerStrategy extends ServiceHandlerAbstract implement
     @Override
     public void getConfig(Integer clusterId, List<ServiceConfig> list) {
         // if enabled hiveserver2 ha
-        ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
+        ClusterInfoEntity clusterInfo = ServiceConfigUtils.getClusterInfo(clusterId);
         List<ServiceConfig> serviceConfigs =
                 ServiceConfigMap.get(clusterInfo.getClusterFrame() + Constants.UNDERLINE + "HIVE" + Constants.CONFIG);
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);

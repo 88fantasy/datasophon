@@ -40,7 +40,7 @@ import com.datasophon.api.service.cmd.ClusterServiceCommandService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.strategy.ServiceRoleStrategy;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.model.Generators;
@@ -197,7 +197,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             String variableValue = String.valueOf(serviceConfig.getValue());
             // add to global variable
             if (Boolean.TRUE.equals(serviceConfig.getRegister())) {
-                ProcessUtils.generateClusterVariable(clusterId, serviceName, variableName, variableValue);
+                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, variableName, variableValue);
             }
         }
         
@@ -280,9 +280,9 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             
             if (!hosts.isEmpty()) {
                 String serviceRole = serviceRoleHostMapping.getServiceRole();
-                ProcessUtils.generateClusterVariable(clusterId, serviceName,
+                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName,
                         String.format("%s.%s", serviceRole, GlobalVariables.HOST), String.join(",", hosts));
-                ProcessUtils.generateClusterVariable(clusterId, serviceName,
+                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName,
                         String.format("%s.%s", serviceRole, GlobalVariables.HOST_IP),
                         hosts.stream().map(HostUtils::getIp).collect(Collectors.joining(",")));
             }

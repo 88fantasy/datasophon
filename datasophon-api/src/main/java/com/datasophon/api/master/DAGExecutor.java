@@ -43,6 +43,7 @@ import com.datasophon.api.service.cmd.ClusterServiceCommandHostService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandService;
 import com.datasophon.api.service.dag.DAGService;
 import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.dag.DAGExecCommand;
@@ -395,7 +396,7 @@ public class DAGExecutor {
         
         Map<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
         if (config != null) {
-            ProcessUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
+            ServiceConfigUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
             Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
             for (Generators generators : configFileMap.keySet()) {
                 String outputDirectory = generators.getOutputDirectory();

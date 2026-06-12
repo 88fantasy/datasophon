@@ -26,7 +26,7 @@ import com.datasophon.api.master.handler.service.ServiceConfigureHandler;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.host.ClusterHostService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.command.GenerateRackPropCommand;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
@@ -84,7 +84,7 @@ public class RackService {
         ArrayList<ServiceConfig> serviceConfigs = new ArrayList<>();
         List<ClusterHostDO> hostList = hostService.list();
         for (ClusterHostDO host : hostList) {
-            ServiceConfig sc = ProcessUtils.createServiceConfig(
+            ServiceConfig sc = ServiceConfigUtils.createServiceConfig(
                     host.getIp(), Constants.SLASH + host.getRack(), "input");
             serviceConfigs.add(sc);
         }

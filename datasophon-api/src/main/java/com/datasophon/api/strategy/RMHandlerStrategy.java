@@ -27,7 +27,7 @@ import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.api.service.ClusterYarnSchedulerService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
@@ -53,9 +53,9 @@ public class RMHandlerStrategy extends ServiceHandlerAbstract implements Service
     
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        ProcessUtils.generateClusterVariable(clusterId, serviceName, "rm1", hosts.get(0));
-        ProcessUtils.generateClusterVariable(clusterId, serviceName, "rm2", hosts.get(1));
-        ProcessUtils.generateClusterVariable(clusterId, serviceName, "rmHost", String.join(",", hosts));
+        ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "rm1", hosts.get(0));
+        ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "rm2", hosts.get(1));
+        ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "rmHost", String.join(",", hosts));
     }
     
     @Override
@@ -63,9 +63,9 @@ public class RMHandlerStrategy extends ServiceHandlerAbstract implements Service
         ClusterYarnSchedulerService schedulerService =
                 SpringTool.getApplicationContext().getBean(ClusterYarnSchedulerService.class);
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
-        ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
+        ClusterInfoEntity clusterInfo = ServiceConfigUtils.getClusterInfo(clusterId);
         boolean enableKerberos = false;
-        Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
+        Map<String, ServiceConfig> map = ServiceConfigUtils.translateToMap(list);
         for (ServiceConfig config : list) {
             if ("yarn.resourcemanager.scheduler.class".equals(config.getName())) {
                 ClusterYarnScheduler scheduler = schedulerService.getScheduler(clusterId);

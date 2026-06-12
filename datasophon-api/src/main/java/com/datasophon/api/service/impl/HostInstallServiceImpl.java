@@ -32,7 +32,7 @@ import com.datasophon.api.service.HostInstallService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.MessageResolverUtils;
 import com.datasophon.api.utils.MinaUtils;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.DispatcherHostAgentCommand;
@@ -116,7 +116,7 @@ public class HostInstallServiceImpl implements HostInstallService {
     @Override
     public Result analysisHostList(Integer clusterId, String hosts, String sshUser, String sshPass,
                                    Integer sshPort, Integer page, Integer pageSize) {
-        ProcessUtils.generateClusterVariable(clusterId, null, SSHUSER, sshUser);
+        ServiceConfigUtils.generateClusterVariable(clusterId, null, SSHUSER, sshUser);
         
         hosts = hosts.replace(" ", "");
         String md5 = SecureUtil.md5(hosts);

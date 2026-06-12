@@ -25,7 +25,7 @@ package com.datasophon.api.service.impl;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.service.ClusterQueueCapacityService;
 import com.datasophon.api.utils.HadoopUtils;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
@@ -70,7 +70,7 @@ public class ClusterQueueCapacityServiceImpl extends ServiceImpl<ClusterQueueCap
     public Result refreshToYarn(Integer clusterId) throws Exception {
         List<ClusterQueueCapacity> list = this.list(new QueryWrapper<ClusterQueueCapacity>()
                 .eq(Constants.CLUSTER_ID, clusterId));
-        ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
+        ClusterInfoEntity clusterInfo = ServiceConfigUtils.getClusterInfo(clusterId);
         List<ClusterServiceRoleInstanceEntity> roleList =
                 roleInstanceMapper.getServiceRoleInstanceListByClusterIdAndRoleName(clusterId, "ResourceManager");
         

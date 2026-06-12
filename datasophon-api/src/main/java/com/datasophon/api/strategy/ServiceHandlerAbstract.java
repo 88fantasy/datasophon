@@ -22,7 +22,7 @@
 
 package com.datasophon.api.strategy;
 
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.utils.PlaceholderUtils;
@@ -126,7 +126,7 @@ public abstract class ServiceHandlerAbstract {
         if (config.getValue() != null) {
             enableKerberos = Boolean.TRUE.equals(config.getValue());
         }
-        ProcessUtils.generateClusterVariable(clusterId, serviceName, "enable" + serviceName + "Kerberos", enableKerberos ? "true" : "false");
+        ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "enable" + serviceName + "Kerberos", enableKerberos ? "true" : "false");
         return enableKerberos;
     }
     
@@ -135,7 +135,7 @@ public abstract class ServiceHandlerAbstract {
         if (config.getValue() != null) {
             enableHA = Boolean.TRUE.equals(config.getValue());
         }
-        ProcessUtils.generateClusterVariable(clusterId, serviceName, "enable" + serviceName + "HA", enableHA ? "true" : "false");
+        ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "enable" + serviceName + "HA", enableHA ? "true" : "false");
         return enableHA;
     }
     

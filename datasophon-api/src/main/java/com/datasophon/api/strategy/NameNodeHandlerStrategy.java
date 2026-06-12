@@ -26,7 +26,7 @@ import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
@@ -54,18 +54,18 @@ public class NameNodeHandlerStrategy extends ServiceHandlerAbstract implements S
     
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
-        ProcessUtils.generateClusterVariable(clusterId, serviceName, "nn1", hosts.get(0));
-        ProcessUtils.generateClusterVariable(clusterId, serviceName, "nn2", hosts.get(1));
+        ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "nn1", hosts.get(0));
+        ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "nn2", hosts.get(1));
     }
     
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
-        ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
+        ClusterInfoEntity clusterInfo = ServiceConfigUtils.getClusterInfo(clusterId);
         
         boolean enableRack = false;
         boolean enableKerberos = false;
-        Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
+        Map<String, ServiceConfig> map = ServiceConfigUtils.translateToMap(list);
         
         String key = clusterInfo.getClusterFrame() + Constants.UNDERLINE + "HDFS" + Constants.CONFIG;
         List<ServiceConfig> configs = ServiceConfigMap.get(key);

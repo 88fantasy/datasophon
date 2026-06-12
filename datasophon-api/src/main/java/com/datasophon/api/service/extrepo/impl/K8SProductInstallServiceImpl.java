@@ -18,7 +18,7 @@ import com.datasophon.api.service.extrepo.vo.K8sCommandNode;
 import com.datasophon.api.service.frame.FrameK8sServiceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
@@ -368,7 +368,7 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
         String cacheKey = String.format("%s_%s", cluster.getClusterCode(), K8S_SERVICE_NAMESPACE_MAPPING);
         Map<String, K8sProductDeployMapping> map = CacheUtils.computeIfAbsent(cacheKey, k -> new ConcurrentHashMap<>());
         for (K8sProductDeployMapping mapping : mappings) {
-            ProcessUtils.generateClusterVariable(clusterId, mapping.getServiceName(),
+            ServiceConfigUtils.generateClusterVariable(clusterId, mapping.getServiceName(),
                     String.format("%s.%s", mapping.getServiceName(), GlobalVariables.NAMESPACE), mapping.getNamespace());
             map.put(mapping.getServiceName(), mapping);
         }

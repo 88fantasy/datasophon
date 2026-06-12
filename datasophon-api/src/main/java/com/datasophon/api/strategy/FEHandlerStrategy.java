@@ -25,6 +25,7 @@ package com.datasophon.api.strategy;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.model.ProcInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
@@ -51,7 +52,7 @@ public class FEHandlerStrategy implements ServiceRoleStrategy {
         // Prevent FE Observer nodes from starting and FE Master nodes from changing
         if (!GlobalVariables.containsValue(clusterId, serviceName + "." + "feMaster")) {
             if (!hosts.isEmpty()) {
-                ProcessUtils.generateClusterVariable(clusterId, serviceName, "feMaster", hosts.get(0));
+                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "feMaster", hosts.get(0));
             }
         }
     }

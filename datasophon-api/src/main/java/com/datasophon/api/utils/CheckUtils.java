@@ -155,7 +155,7 @@ public class CheckUtils {
                                                            Map<String, ClusterServiceRoleInstanceEntity> map) {
         Integer clusterId = roleInstanceEntity.getClusterId();
         
-        ClusterInfoEntity cluster = ProcessUtils.getClusterInfo(clusterId);
+        ClusterInfoEntity cluster = ServiceConfigUtils.getClusterInfo(clusterId);
         String frameCode = cluster.getClusterFrame();
         
         String key = frameCode + Constants.UNDERLINE + roleInstanceEntity.getServiceName() + Constants.UNDERLINE

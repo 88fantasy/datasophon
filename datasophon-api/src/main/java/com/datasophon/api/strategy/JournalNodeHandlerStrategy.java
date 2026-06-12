@@ -22,7 +22,7 @@
 
 package com.datasophon.api.strategy;
 
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 
 import java.util.List;
 
@@ -31,11 +31,11 @@ public class JournalNodeHandlerStrategy implements ServiceRoleStrategy {
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         if (hosts.size() >= 3) {
-            ProcessUtils.generateClusterVariable(clusterId, serviceName, "journalNode1",
+            ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "journalNode1",
                     hosts.get(0));
-            ProcessUtils.generateClusterVariable(clusterId, serviceName, "journalNode2",
+            ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "journalNode2",
                     hosts.get(1));
-            ProcessUtils.generateClusterVariable(clusterId, serviceName, "journalNode3",
+            ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "journalNode3",
                     hosts.get(2));
         }
     }
