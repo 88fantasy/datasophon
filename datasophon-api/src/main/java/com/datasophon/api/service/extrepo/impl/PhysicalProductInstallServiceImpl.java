@@ -72,9 +72,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -95,40 +95,30 @@ import cn.hutool.core.util.StrUtil;
  */
 @Component("vosProductInstallService")
 @Slf4j
+@RequiredArgsConstructor
 public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSupport implements PhysicalProductInstallService {
     
-    @Autowired
-    private ServiceInstallService serviceInstallService;
+    private final ServiceInstallService serviceInstallService;
     
-    @Autowired
-    private ClusterServiceInstanceService clusterServiceInstanceService;
+    private final ClusterServiceInstanceService clusterServiceInstanceService;
     
-    @Autowired
-    private FrameServiceRoleService frameServiceRoleService;
+    private final FrameServiceRoleService frameServiceRoleService;
     
-    @Autowired
-    private ClusterServiceCommandHostService commandHostService;
+    private final ClusterServiceCommandHostService commandHostService;
     
-    @Autowired
-    private ClusterServiceCommandHostCommandService hostCommandService;
+    private final ClusterServiceCommandHostCommandService hostCommandService;
     
-    @Autowired
-    private ClusterServiceCommandService commandService;
+    private final ClusterServiceCommandService commandService;
     
-    @Autowired
-    private ClusterServiceInstanceService serviceInstanceService;
+    private final ClusterServiceInstanceService serviceInstanceService;
     
-    @Autowired
-    private ClusterServiceRoleInstanceService roleInstanceService;
+    private final ClusterServiceRoleInstanceService roleInstanceService;
     
-    @Autowired
-    private ClusterHostService clusterHostService;
+    private final ClusterHostService clusterHostService;
     
-    @Autowired
-    private FrameServiceService frameService;
+    private final FrameServiceService frameService;
     
-    @Autowired
-    private DAGExecutor dagExecutor;
+    private final DAGExecutor dagExecutor;
     
     @Override
     public ValidateResultVO validateDeploymentModel(DeploymentModel model, DeploymentDTO dto) {
@@ -237,15 +227,23 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
             node.setVersion(srvModel.getVersion());
             return node;
         });
-        String dagId = saveDAG(clusterInfo.getId(), "部署VOS格式的制品", commandIds, dag);
-        // 必须等待事务提交，否则，有概率查询不到保存的命令
+        String dagId = saveDAG(clusterInfo.getId(), "部署VOS格式的制品", commandIds, dag, serviceList);
+        invokeCommandsAfterCommit(dagId, commandIds);
+        return new InstallResult(dagId);
+    }
+    
+    /**
+     * 事务提交后再执行 DAG 命令（提交前 DAG 线程可能查不到本事务保存的命令）。
+     * 统一模板，消除三处复制粘贴的匿名 TransactionSynchronization。
+     */
+    private void invokeCommandsAfterCommit(String dagId, List<String> commandIds) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            
             @Override
             public void afterCommit() {
                 invokeCommands(dagId, false, commandIds);
             }
         });
-        return new InstallResult(dagId);
     }
     
     private String doGenerateInstallCmd(ClusterInfoEntity cluster, FrameServiceEntity frameService) {
@@ -276,6 +274,13 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
         Map<String, ClusterServiceCommandHostEntity> cache = CollectionUtil.toMap(hostEntityList, new HashMap<>(), ClusterServiceCommandHostEntity::getHostname);
         List<ClusterServiceCommandHostCommandEntity> hostCommandList = new ArrayList<>();
         
+        // 一次查回本服务实例的全部角色实例，替代角色×主机次 getOneServiceRole 查询
+        Set<String> existingRoleHosts = roleInstanceService
+                .getServiceRoleInstanceListByServiceId(serviceInstance.getId())
+                .stream()
+                .map(ri -> ri.getServiceRoleName() + "@" + ri.getHostname())
+                .collect(Collectors.toSet());
+        
         for (FrameServiceRoleEntity serviceRole : serviceRoleList) {
             List<String> hosts = serviceRoleHostMap.get(serviceRole.getServiceRoleName());
             if (CollectionUtil.isEmpty(hosts)) {
@@ -284,9 +289,9 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
             
             for (int i = 0; i < hosts.size(); i++) {
                 String hostname = hosts.get(i);
-                ClusterServiceRoleInstanceEntity db = roleInstanceService.getOneServiceRole(serviceRole.getServiceRoleName(), hostname, cluster.getId());
+                boolean exists = existingRoleHosts.contains(serviceRole.getServiceRoleName() + "@" + hostname);
                 
-                CommandType roleCmdType = db == null ? CommandType.INSTALL_SERVICE : CommandType.UPGRADE_SERVICE;
+                CommandType roleCmdType = exists ? CommandType.UPGRADE_SERVICE : CommandType.INSTALL_SERVICE;
                 ClusterServiceCommandHostCommandEntity hostCommand = ProcessUtils.generateCommandHostCommandEntity(
                         roleCmdType, cmd.getCommandId(),
                         serviceRole.getServiceRoleName(), serviceRole.getServiceRoleType(),
@@ -302,12 +307,16 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
         return cmd.getCommandId();
     }
     
-    private String saveDAG(Integer clusterId, String serviceActionName, List<String> commandIds, DAG<String, DAGNode, Integer> dag) {
+    private String saveDAG(Integer clusterId, String serviceActionName, List<String> commandIds, DAG<String, DAGNode, Integer> dag,
+                           List<FrameServiceEntity> serviceList) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         
         VosProductCmdSrvMappingContext context = new VosProductCmdSrvMappingContext();
         context.setSrvCmd(commandService.lambdaQuery().in(ClusterServiceCommandEntity::getCommandId, commandIds).list());
         context.setCmdHost(hostCommandService.lambdaQuery().in(ClusterServiceCommandHostCommandEntity::getCommandId, commandIds).list());
+        // 服务实体直接复用方法入口已查出的 serviceList，避免逐节点再查 DB
+        Map<String, FrameServiceEntity> srvDefMap = CollectionUtil.toMap(serviceList, new HashMap<>(),
+                srv -> srv.getServiceName() + ":" + srv.getServiceVersion());
         // 将服务依赖的dag重构成节点安装服务的dag
         Map<String, NodeDefinitionEntity> nodeMap = new HashMap<>();
         dag.getNodes().forEach((serviceName, info) -> {
@@ -317,11 +326,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
             serviceNode.setCommandType(CommandType.ofCode(cmd.getCommandType()));
             serviceNode.setServiceName(info.getName());
             
-            FrameServiceEntity serviceEntity = frameService.lambdaQuery()
-                    .eq(FrameServiceEntity::getFrameCode, clusterInfo.getClusterFrame())
-                    .eq(FrameServiceEntity::getServiceName, info.getName())
-                    .eq(FrameServiceEntity::getServiceVersion, info.getVersion())
-                    .one();
+            FrameServiceEntity serviceEntity = srvDefMap.get(info.getName() + ":" + info.getVersion());
             List<FrameServiceRoleEntity> srvRoles = frameServiceRoleService.getAllServiceRoleList(serviceEntity.getId());
             Map<String, FrameServiceRoleEntity> srvRoleMap = CollectionUtil.toMap(srvRoles, new HashMap<>(), FrameServiceRoleEntity::getServiceRoleName);
             
@@ -329,9 +334,12 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
             List<ServiceRoleInfo> workerRoles = new ArrayList<>();
             List<ServiceRoleInfo> clientRoles = new ArrayList<>();
             
+            // serviceInfo 每个服务节点只解析一次（原先在内层循环里每个 hostCommand 重复解析）
+            ServiceInfo serviceInfo = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
+            
             List<ClusterServiceCommandHostCommandEntity> hostCommands = context.getCmdHostList(cmd.getCommandId());
             hostCommands.sort(Comparator.comparing(ClusterServiceCommandHostCommandEntity::getSort, Comparator.nullsLast(Comparator.naturalOrder())));
-            for (ClusterServiceCommandHostCommandEntity hostCommand : context.getCmdHostList(cmd.getCommandId())) {
+            for (ClusterServiceCommandHostCommandEntity hostCommand : hostCommands) {
                 FrameServiceRoleEntity frameServiceRoleEntity = srvRoleMap.get(hostCommand.getServiceRoleName());
                 
                 ServiceRoleInfo serviceRoleInfo = JSONObject.parseObject(frameServiceRoleEntity.getServiceRoleJson(), ServiceRoleInfo.class);
@@ -347,7 +355,6 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
                 serviceRoleInfo.setArchInfoMap(ServicePkgNameUtils.getArchInfo(serviceEntity));
                 serviceRoleInfo.setFrameCode(serviceEntity.getFrameCode());
                 
-                ServiceInfo serviceInfo = JSONObject.parseObject(serviceEntity.getServiceJson(), ServiceInfo.class);
                 serviceRoleInfo.setCreateDecompressDir(serviceInfo.getCreateDecompressDir());
                 
                 Optional.ofNullable(ServiceRoleStrategyContext.getServiceRoleHandler(serviceRoleInfo.getName()))
@@ -580,7 +587,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
             SimpleServiceResource resource = rs.unwrap();
             return BeanUtil.toBean(resource, DAGNode.class);
         });
-        String dagId = saveDAG(clusterId, "部署VOS格式的制品", commandIds, dag);
+        String dagId = saveDAG(clusterId, "部署VOS格式的制品", commandIds, dag, serviceList);
         return dagId;
     }
     
@@ -622,14 +629,8 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
         if (CommandType.STOP_SERVICE.equals(commandType)) {
             dag = dag.getReverseDag();
         }
-        String dagId = saveDAG(clusterInfo.getId(), commandType.getCommandName(Constants.CN), commandIds, dag);
-        // 必须等待事务提交，否则，有概率查询不到保存的命令
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                invokeCommands(dagId, false, commandIds);
-            }
-        });
+        String dagId = saveDAG(clusterInfo.getId(), commandType.getCommandName(Constants.CN), commandIds, dag, serviceList);
+        invokeCommandsAfterCommit(dagId, commandIds);
         return dagId;
     }
     
@@ -694,14 +695,8 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
         }
         
         List<String> commandIds = Collections.singletonList(cmdId);
-        String dagId = saveDAG(clusterInfo.getId(), commandType.getCommandName(Constants.CN), commandIds, dag);
-        // 必须等待事务提交，否则，有概率查询不到保存的命令
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                invokeCommands(dagId, false, commandIds);
-            }
-        });
+        String dagId = saveDAG(clusterInfo.getId(), commandType.getCommandName(Constants.CN), commandIds, dag, serviceList);
+        invokeCommandsAfterCommit(dagId, commandIds);
         return dagId;
     }
     
@@ -742,8 +737,21 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
             });
         });
         
+        // 去重后一次查回服务实体，避免逐角色 getById 的 N+1 查询
+        List<Integer> serviceIds = list.stream()
+                .map(FrameServiceRoleEntity::getServiceId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Integer, FrameServiceEntity> srvEntityMap = serviceIds.isEmpty()
+                ? new HashMap<>()
+                : frameService.listByIds(serviceIds).stream()
+                        .collect(Collectors.toMap(FrameServiceEntity::getId, e -> e));
         for (FrameServiceRoleEntity role : list) {
-            FrameServiceEntity frameServiceEntity = frameService.getById(role.getServiceId());
+            FrameServiceEntity frameServiceEntity = srvEntityMap.get(role.getServiceId());
+            if (frameServiceEntity == null) {
+                continue;
+            }
             DeploySrvRoleModel roleModel = map.get(frameServiceEntity.getServiceName() + "_" + role.getServiceRoleName());
             if (roleModel != null) {
                 role.setHosts(roleModel.getDeployHosts());

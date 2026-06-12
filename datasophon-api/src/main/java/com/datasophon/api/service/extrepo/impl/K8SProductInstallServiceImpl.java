@@ -404,13 +404,18 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
         K8sClusterNamespace ns = k8sClusterNamespaceService.getNamespace(new K8sNamespaceIdentityDTO(clusterId, namespace));
         K8sServiceInstance instance = k8sServiceInstanceService.createIfAbsent(clusterId, ns.getId(), frameService.getId());
         CommandType type = StrUtil.isEmpty(instance.getLastMetaFileType()) ? CommandType.INSTALL_SERVICE : CommandType.UPGRADE_SERVICE;
-        return doGenerateExecCmd(clusterId, namespace, type, frameService);
+        // ns/instance 已查出，直接透传，避免 doGenerateExecCmd 再查一遍
+        return doGenerateExecCmd(clusterId, type, frameService, ns, instance);
     }
     
     private ClusterK8sServiceCommandEntity doGenerateExecCmd(Integer clusterId, String namespace, CommandType commandType, FrameK8sServiceEntity frameService) {
         K8sClusterNamespace ns = k8sClusterNamespaceService.getNamespace(new K8sNamespaceIdentityDTO(clusterId, namespace));
         K8sServiceInstance instance = k8sServiceInstanceService.createIfAbsent(clusterId, ns.getId(), frameService.getId());
-        
+        return doGenerateExecCmd(clusterId, commandType, frameService, ns, instance);
+    }
+    
+    private ClusterK8sServiceCommandEntity doGenerateExecCmd(Integer clusterId, CommandType commandType, FrameK8sServiceEntity frameService,
+                                                             K8sClusterNamespace ns, K8sServiceInstance instance) {
         ClusterK8sServiceCommandEntity cmd = new ClusterK8sServiceCommandEntity();
         cmd.setCommandId(IdUtil.simpleUUID());
         cmd.setClusterId(clusterId);

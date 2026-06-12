@@ -64,9 +64,11 @@ import java.util.Objects;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson2.JSONObject;
@@ -77,6 +79,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import cn.hutool.core.util.StrUtil;
 
 @Service("clusterServiceRoleInstanceService")
+@RequiredArgsConstructor
 public class ClusterServiceRoleInstanceServiceImpl
         extends
             ServiceImpl<ClusterServiceRoleInstanceMapper, ClusterServiceRoleInstanceEntity>
@@ -85,35 +88,35 @@ public class ClusterServiceRoleInstanceServiceImpl
     
     private static final Logger logger = LoggerFactory.getLogger(ClusterServiceRoleInstanceServiceImpl.class);
     
-    @Autowired
-    ClusterInfoService clusterInfoService;
+    // 注：本类处于多条既有循环依赖链上（rackService→本类→frameService→ddlMetaService→本类 等），
+    // 构造器注入下环上的依赖须用 @Lazy 延迟解析打破环。
+    @Lazy
+    private final ClusterInfoService clusterInfoService;
     
-    @Autowired
-    FrameServiceRoleService frameServiceRoleService;
+    @Lazy
+    private final FrameServiceRoleService frameServiceRoleService;
     
-    @Autowired
-    FrameServiceService frameService;
+    @Lazy
+    private final FrameServiceService frameService;
     
-    @Autowired
-    private ExtRepoInstallDelegateService extRepoInstallDelegateService;
+    @Lazy
+    private final ExtRepoInstallDelegateService extRepoInstallDelegateService;
     
-    @Autowired
-    private PhysicalProductInstallService vosProductActionService;
+    @Lazy
+    private final PhysicalProductInstallService vosProductActionService;
     
-    @Autowired
-    private ClusterServiceInstanceRoleGroupService roleGroupService;
+    @Lazy
+    private final ClusterServiceInstanceRoleGroupService roleGroupService;
     
-    @Autowired
-    private ClusterServiceRoleInstanceMapper roleInstanceMapper;
+    private final ClusterServiceRoleInstanceMapper roleInstanceMapper;
     
-    @Autowired
-    private WorkerCommandClient workerCommandClient;
+    private final WorkerCommandClient workerCommandClient;
     
-    @Autowired
-    private ClusterAlertHistoryService alertHistoryService;
+    @Lazy
+    private final ClusterAlertHistoryService alertHistoryService;
     
-    @Autowired
-    private ClusterServiceRoleInstanceWebuisService webuisService;
+    @Lazy
+    private final ClusterServiceRoleInstanceWebuisService webuisService;
     
     @Override
     public List<ClusterServiceRoleInstanceEntity> listStoppedServiceRoleListByHostnameAndClusterId(String hostname, Integer clusterId) {

@@ -84,9 +84,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -99,6 +100,7 @@ import cn.hutool.crypto.SecureUtil;
 
 @Service("serviceInstallService")
 @Transactional
+@RequiredArgsConstructor
 public class ServiceInstallServiceImpl implements ServiceInstallService {
     
     private static final Logger logger = LoggerFactory.getLogger(ServiceInstallServiceImpl.class);
@@ -106,38 +108,27 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     private static final List<String> MUST_AT_SAME_NODE_BASIC_SERVICE =
             Arrays.asList("Grafana", "AlertManager", "Prometheus");
     
-    @Autowired
-    private ClusterInfoService clusterInfoService;
+    private final ClusterInfoService clusterInfoService;
     
-    @Autowired
-    FrameInfoService frameInfoService;
+    private final FrameInfoService frameInfoService;
     
-    @Autowired
-    FrameServiceService frameService;
+    private final FrameServiceService frameService;
     
-    @Autowired
-    FrameServiceRoleService frameServiceRoleService;
+    private final FrameServiceRoleService frameServiceRoleService;
     
-    @Autowired
-    ClusterServiceCommandService commandService;
+    private final ClusterServiceCommandService commandService;
     
-    @Autowired
-    private ClusterServiceInstanceService serviceInstanceService;
+    private final ClusterServiceInstanceService serviceInstanceService;
     
-    @Autowired
-    private ClusterVariableService variableService;
+    private final ClusterVariableService variableService;
     
-    @Autowired
-    private ClusterHostService hostService;
+    private final ClusterHostService hostService;
     
-    @Autowired
-    private ClusterServiceInstanceRoleGroupService roleGroupService;
+    private final ClusterServiceInstanceRoleGroupService roleGroupService;
     
-    @Autowired
-    private ClusterServiceRoleGroupConfigService groupConfigService;
+    private final ClusterServiceRoleGroupConfigService groupConfigService;
     
-    @Autowired
-    private ClusterServiceRoleInstanceService roleInstanceService;
+    private final ClusterServiceRoleInstanceService roleInstanceService;
     
     public static final String PROMETHEUS = "prometheus";
     

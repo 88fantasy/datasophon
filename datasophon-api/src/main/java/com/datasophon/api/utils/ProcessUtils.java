@@ -97,10 +97,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
@@ -359,7 +364,26 @@ public class ProcessUtils {
             variableService.save(newClusterVariable);
         }
         
-        GlobalVariables.putValue(clusterId, serviceName + "." + variableName, value);
+        // 内存立即写（同事务内的后续读取依赖新值）；若处于事务中，注册回滚补偿，
+        // 事务回滚时把内存恢复到写前状态，保证 DB 与 GlobalVariables 一致。
+        String key = serviceName + "." + variableName;
+        String previousValue = GlobalVariables.getValue(clusterId, key);
+        GlobalVariables.putValue(clusterId, key, value);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                
+                @Override
+                public void afterCompletion(int status) {
+                    if (status == STATUS_ROLLED_BACK) {
+                        if (previousValue != null) {
+                            GlobalVariables.putValue(clusterId, key, previousValue);
+                        } else {
+                            GlobalVariables.removeValue(clusterId, key);
+                        }
+                    }
+                }
+            });
+        }
     }
     
     public static void hdfsEcMethond(Integer serviceInstanceId, ClusterServiceRoleInstanceService roleInstanceService,
@@ -370,28 +394,49 @@ public class ProcessUtils {
                 .eq(ClusterServiceRoleInstanceEntity::getServiceRoleName, roleName)
                 .list();
         
-        // 更新namenode节点的whitelist白名单
+        // 更新namenode节点的whitelist白名单（按主机 fan-out 并行下发）
         WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        WorkerCommandClient workerCommandClient =
+                SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
+        List<Runnable> tasks = new ArrayList<>(namenodes.size());
         for (ClusterServiceRoleInstanceEntity namenode : namenodes) {
-            FileOperateCommand fileOperateCommand = new FileOperateCommand();
-            fileOperateCommand.setLines(list);
-            fileOperateCommand.setPath(Constants.INSTALL_PATH + "/hadoop/etc/hadoop/" + type);
-            ExecResult fileOperateResult = adapter.operateFile(namenode.getHostname(), fileOperateCommand);
-            if (Objects.nonNull(fileOperateResult) && fileOperateResult.getExecResult()) {
-                logger.info("write {} success in namenode {}", type, namenode.getHostname());
-                // 刷新白名单
-                ArrayList<String> refreshCmds = new ArrayList<>();
-                refreshCmds.add(Constants.INSTALL_PATH + "/hadoop/bin/hdfs");
-                refreshCmds.add("dfsadmin");
-                refreshCmds.add("-refreshNodes");
-                WorkerCommandClient workerCommandClient =
-                        SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
-                ExecResult execResult = workerCommandClient.executeCmd(namenode.getHostname(), refreshCmds);
-                if (execResult.getExecResult()) {
-                    logger.info("hdfs dfsadmin -refreshNodes success at {}", namenode.getHostname());
+            tasks.add(() -> {
+                FileOperateCommand fileOperateCommand = new FileOperateCommand();
+                fileOperateCommand.setLines(list);
+                fileOperateCommand.setPath(Constants.INSTALL_PATH + "/hadoop/etc/hadoop/" + type);
+                ExecResult fileOperateResult = adapter.operateFile(namenode.getHostname(), fileOperateCommand);
+                if (Objects.nonNull(fileOperateResult) && fileOperateResult.getExecResult()) {
+                    logger.info("write {} success in namenode {}", type, namenode.getHostname());
+                    // 刷新白名单
+                    ArrayList<String> refreshCmds = new ArrayList<>();
+                    refreshCmds.add(Constants.INSTALL_PATH + "/hadoop/bin/hdfs");
+                    refreshCmds.add("dfsadmin");
+                    refreshCmds.add("-refreshNodes");
+                    ExecResult execResult = workerCommandClient.executeCmd(namenode.getHostname(), refreshCmds);
+                    if (execResult.getExecResult()) {
+                        logger.info("hdfs dfsadmin -refreshNodes success at {}", namenode.getHostname());
+                    }
                 }
+            });
+        }
+        runConcurrently(tasks);
+    }
+    
+    /**
+     * 把一组阻塞任务（通常是逐主机 gRPC 调用）fan-out 到 masterExecutor 并发执行并等待全部完成。
+     * 线程池满时退化为调用线程串行执行；任一任务异常经 join 以 CompletionException 抛出。
+     */
+    private static void runConcurrently(List<Runnable> tasks) {
+        Executor executor = (Executor) SpringTool.getApplicationContext().getBean("masterExecutor");
+        List<CompletableFuture<Void>> futures = new ArrayList<>(tasks.size());
+        for (Runnable task : tasks) {
+            try {
+                futures.add(CompletableFuture.runAsync(task, executor));
+            } catch (RejectedExecutionException e) {
+                task.run();
             }
         }
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
     
     public static String getExceptionMessage(Exception ex) {
@@ -611,21 +656,25 @@ public class ProcessUtils {
     public static void syncUserGroupToHosts(List<ClusterHostDO> hostList, String groupName, String operate) {
         WorkerCallAdapter workerCallAdapter =
                 SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
+        List<Runnable> tasks = new ArrayList<>(hostList.size());
         for (ClusterHostDO hostEntity : hostList) {
-            try {
-                if ("groupadd".equalsIgnoreCase(operate)) {
-                    CreateUnixGroupCommand cmd = new CreateUnixGroupCommand();
-                    cmd.setGroupName(groupName);
-                    workerCallAdapter.createUnixGroup(hostEntity.getHostname(), cmd);
-                } else {
-                    DelUnixGroupCommand cmd = new DelUnixGroupCommand();
-                    cmd.setGroupName(groupName);
-                    workerCallAdapter.deleteUnixGroup(hostEntity.getHostname(), cmd);
+            tasks.add(() -> {
+                try {
+                    if ("groupadd".equalsIgnoreCase(operate)) {
+                        CreateUnixGroupCommand cmd = new CreateUnixGroupCommand();
+                        cmd.setGroupName(groupName);
+                        workerCallAdapter.createUnixGroup(hostEntity.getHostname(), cmd);
+                    } else {
+                        DelUnixGroupCommand cmd = new DelUnixGroupCommand();
+                        cmd.setGroupName(groupName);
+                        workerCallAdapter.deleteUnixGroup(hostEntity.getHostname(), cmd);
+                    }
+                } catch (Exception e) {
+                    logger.warn("syncUserGroupToHosts failed for host {}: {}", hostEntity.getHostname(), e.getMessage());
                 }
-            } catch (Exception e) {
-                logger.warn("syncUserGroupToHosts failed for host {}: {}", hostEntity.getHostname(), e.getMessage());
-            }
+            });
         }
+        runConcurrently(tasks);
     }
     
     public static Map<String, ServiceConfig> translateToMap(List<ServiceConfig> list) {

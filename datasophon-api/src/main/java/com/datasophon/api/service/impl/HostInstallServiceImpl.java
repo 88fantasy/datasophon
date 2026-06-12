@@ -62,9 +62,10 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -76,30 +77,24 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.crypto.SecureUtil;
 
 @Service("hostInstallService")
+@RequiredArgsConstructor
 public class HostInstallServiceImpl implements HostInstallService {
     
     private static final Logger logger = LoggerFactory.getLogger(HostInstallServiceImpl.class);
     
-    @Autowired
-    InstallStepMapper stepMapper;
+    private final InstallStepMapper stepMapper;
     
-    @Autowired
-    ClusterInfoService clusterInfoService;
+    private final ClusterInfoService clusterInfoService;
     
-    @Autowired
-    ClusterHostService hostService;
+    private final ClusterHostService hostService;
     
-    @Autowired
-    HostConnectService hostConnectService;
+    private final HostConnectService hostConnectService;
     
-    @Autowired
-    DispatcherWorkerService dispatcherWorkerService;
+    private final DispatcherWorkerService dispatcherWorkerService;
     
-    @Autowired
-    WorkerStartService workerStartService;
+    private final WorkerStartService workerStartService;
     
-    @Autowired
-    MasterScheduledService masterScheduledService;
+    private final MasterScheduledService masterScheduledService;
     
     private static final String SSHUSER = "SSHUSER";
     

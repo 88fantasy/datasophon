@@ -88,6 +88,16 @@ public class GlobalVariables {
         putValue(clusterId, serviceName + "." + variableName, value);
     }
     
+    /** 移除单个变量（用于事务回滚时撤销内存写）。 */
+    public static void removeValue(Integer clusterId, String key) {
+        Map<String, String> valueMap = clusterVariablesMap.get(clusterId);
+        if (valueMap != null) {
+            synchronized (valueMap) {
+                valueMap.remove(surroundKey(key));
+            }
+        }
+    }
+    
     public static String getValue(Integer clusterId, String key) {
         if (!clusterVariablesMap.containsKey(clusterId)) {
             return null;

@@ -280,6 +280,14 @@ public class WorkerCommandClient {
         ManagedChannel channel = channelCache.remove(event.getHostname());
         if (channel != null) {
             channel.shutdown();
+            try {
+                if (!channel.awaitTermination(3, TimeUnit.SECONDS)) {
+                    channel.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                channel.shutdownNow();
+            }
             log.info("gRPC channel closed for offline worker: {}", event.getHostname());
         }
     }
@@ -363,7 +371,12 @@ public class WorkerCommandClient {
     private WorkerCommandServiceGrpc.WorkerCommandServiceBlockingStub getStub(String hostname) {
         // address 求值在 lambda 内部，确保每次建立 Channel 时读取注册表中最新的端点信息，
         // 避免 Worker IP 变更时用旧地址建立新连接的竞态窗口。
-        ManagedChannel channel = channelCache.computeIfAbsent(hostname, h -> {
+        // compute 而非 computeIfAbsent：缓存命中时校验 Channel 状态，已 shutdown
+        // 的失效 Channel（离线事件丢失等场景）原子地重建，避免复用死连接。
+        ManagedChannel channel = channelCache.compute(hostname, (h, cached) -> {
+            if (cached != null && !cached.isShutdown() && !cached.isTerminated()) {
+                return cached;
+            }
             WorkerEndpoint ep = workerRegistry.getEndpoint(h)
                     .orElseThrow(() -> new IllegalStateException(
                             "Worker not registered in gRPC registry: " + h));
