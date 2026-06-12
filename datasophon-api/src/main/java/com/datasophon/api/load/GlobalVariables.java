@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.datasophon.common.utils.PropertyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,18 +91,18 @@ public class GlobalVariables {
             globalVariables.put("${ROOT.VosManager." + GlobalVariables.HOST_IP + "}", InetAddress.getLocalHost().getHostAddress());
         } catch (UnknownHostException ignored) {
         }
-        globalVariables.put("${ROOT.VosManager.__port__}", getProperty("server.port", "8081"));
+        globalVariables.put("${ROOT.VosManager.__port__}", getProperty("server.port", "8080"));
         globalVariables.put("${ROOT.VosManager.INSTALL_PATH}", Constants.INSTALL_PATH);
         String mysqlHostPort = extractMysqlHostPort(getProperty("spring.datasource.url"));
         globalVariables.put("${ROOT.Mysql.mysqlHostPort}", mysqlHostPort);
         String[] split = mysqlHostPort.split(":");
         globalVariables.put("${ROOT.Mysql." + GlobalVariables.HOST_IP + "}", split[0]);
         globalVariables.put("${ROOT.Mysql." + GlobalVariables.PORT + "}", split[1]);
-        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.HOST_IP + "}", getProperty("rustfs.ip"));
-        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.WEB_PORT + "}", getProperty("rustfs.webPort", "9041"));
-        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.PORT + "}", getProperty("rustfs.port", "9040"));
-        globalVariables.put("${ROOT.Rustfs.access_key}", getProperty("rustfs.access_key"));
-        globalVariables.put("${ROOT.Rustfs.secret_key}", getProperty("rustfs.secret_key"));
+        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.HOST_IP + "}", PropertyUtils.getString("rustfs.ip"));
+        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.WEB_PORT + "}", PropertyUtils.getString("rustfs.webPort", "9001"));
+        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.PORT + "}", PropertyUtils.getString("rustfs.port", "9000"));
+        globalVariables.put("${ROOT.Rustfs.access_key}", PropertyUtils.getString("rustfs.access_key"));
+        globalVariables.put("${ROOT.Rustfs.secret_key}", PropertyUtils.getString("rustfs.secret_key"));
         // 读取系统变量并且进行注册
         if (System.getenv("JAVA_HOME") != null) {
             globalVariables.put("${ROOT.Jdk.INSTALL_PATH}", System.getenv("JAVA_HOME"));

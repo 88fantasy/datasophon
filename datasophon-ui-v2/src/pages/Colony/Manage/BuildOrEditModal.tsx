@@ -22,7 +22,7 @@ const BuildOrEditModal: React.FC<Props> = ({ trigger, cluster, onSuccess }) => {
   const { data: frames } = useRequest(listFrames);
 
   const frameOptions = (frames ?? []).map((f: DATASOPHON.FrameInfo) => ({
-    label: `${f.frameName} ${f.frameVersion}`,
+    label: `${f.frameCode}`,
     value: f.id,
   }));
 

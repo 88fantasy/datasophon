@@ -2,7 +2,6 @@ package com.datasophon.api.service.ddl.impl;
 
 import static com.datasophon.common.Constants.FRAMEWORK_TPL;
 
-import com.alibaba.fastjson2.JSONWriter;
 import com.datasophon.api.exceptions.BusinessException;
 import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.load.GlobalVariables;
@@ -77,6 +76,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONWriter;
 import com.alibaba.fastjson2.TypeReference;
 
 import cn.hutool.core.io.FileUtil;
