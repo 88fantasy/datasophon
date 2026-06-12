@@ -75,6 +75,9 @@ public class JschUtils {
         }
     }
     
+    /** 远端命令执行超时上限（10 分钟）：覆盖安装/解压等长任务，同时防止失控命令永久占用线程。 */
+    private static final long EXEC_TIMEOUT_MILLIS = 10 * 60 * 1000L;
+    
     public static ExecResult execForStr(Session session, String command) {
         InputStream in = null;
         Channel channel = null;
@@ -93,8 +96,13 @@ public class JschUtils {
             if (!execOut.isEmpty() && execOut.charAt(execOut.length() - 1) == '\n') {
                 execOut = execOut.substring(0, execOut.length() - 1);
             }
-            // 这里阻塞等待执行完成
+            // 这里阻塞等待执行完成（带超时上限：远端命令不结束时避免线程永久阻塞）
+            long deadline = System.currentTimeMillis() + EXEC_TIMEOUT_MILLIS;
             while (!channel.isClosed()) {
+                if (System.currentTimeMillis() > deadline) {
+                    throw new RuntimeException(
+                            String.format("command [%s] timed out after %d ms", command, EXEC_TIMEOUT_MILLIS));
+                }
                 Thread.sleep(500);
             }
             int exitValue = channel.getExitStatus();

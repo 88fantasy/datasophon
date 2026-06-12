@@ -58,7 +58,8 @@ public class K8sServiceImpl implements K8sService {
     @Autowired
     private K8sServiceInstanceService k8sServiceInstanceService;
     
-    private final String secretName = "nexus-registry-secret";
+    /** 拉取私有镜像仓库镜像所用的 docker-registry Secret 名称（与 K8s 集群内约定一致）。 */
+    private static final String NEXUS_REGISTRY_SECRET_NAME = "nexus-registry-secret";
     
     @Override
     public K8sClusterStatus getState(K8sClusterConfig config) {
@@ -522,16 +523,16 @@ public class K8sServiceImpl implements K8sService {
             }
             
             // 3. 创建 nexus-registry-secret
-            K8sSecret sSecret = client.getSecret(namespaceName, secretName);
+            K8sSecret sSecret = client.getSecret(namespaceName, NEXUS_REGISTRY_SECRET_NAME);
             if (sSecret == null) {
                 DockerRegistryOptions options = NexusImageStorage.newOptions();
                 String dockerServer = String.format("%s:%s", options.getHost(), options.getPort());
-                client.createDockerRegistrySecret(namespaceName, secretName, dockerServer, options.getUsername(), options.getPassword());
+                client.createDockerRegistrySecret(namespaceName, NEXUS_REGISTRY_SECRET_NAME, dockerServer, options.getUsername(), options.getPassword());
                 log.info("nexus-registry-secret created in namespace {}", namespaceName);
                 
                 // 4. 将凭据附加到 service_account 中
                 String serviceAccountName = "default";
-                client.attachSecretToServiceAccount(namespaceName, secretName, serviceAccountName);
+                client.attachSecretToServiceAccount(namespaceName, NEXUS_REGISTRY_SECRET_NAME, serviceAccountName);
                 log.info("nexus-registry-secret attached to serviceaccount {} in namespace {}", serviceAccountName, namespaceName);
             }
             

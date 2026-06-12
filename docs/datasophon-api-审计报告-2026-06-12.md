@@ -155,22 +155,22 @@
 
 ## 整改优先级总表(供决策与进度追踪)
 
-| #  | 状态  | 严重度 |                         问题                         |                                        证据锚点                                        |    性质     |
-|----|-----|-----|----------------------------------------------------|------------------------------------------------------------------------------------|-----------|
-| 1  | [x] | 🔴  | GlobalVariables 返回快照(堵 CME/脏读/gRPC 下发)             | `GlobalVariables.java:52`                                                          | 1 处改,全局收益 |
-| 2  | [x] | 🔴  | 巡检 gRPC/Prometheus 并行化 + 收紧 deadline               | `MasterScheduledService:90`、`HostCheckService:91`                                  | 中等重构      |
-| 3  | [x] | 🔴  | 分页列表 N+1 改 listByIds                               | `ClusterServiceRoleInstanceServiceImpl:154`                                        | 局部        |
-| 4  | [x] | 🔴  | 2 处吞异常补日志                                          | `ServletUtils:140`、`ClusterNodeLabelServiceImpl:112`                               | 快赢        |
-| 5  | [x] | 🟠  | GlobalVariables 内存写移到 afterCommit                  | `ProcessUtils:362`、`ServiceInstallServiceImpl:101`                                 | 局部        |
-| 6  | [x] | 🟠  | 循环内 gRPC fan-out 并行                                | `ProcessUtils:375/614`                                                             | 局部        |
-| 7  | [x] | 🟠  | Physical/K8s Install N+1 + 重复查/解析                  | `PhysicalProductInstallServiceImpl:313/279/745`、`K8SProductInstallServiceImpl:403` | 中等        |
-| 8  | [x] | 🟠  | WorkerCommandClient.getStub 校验 Channel 状态          | `WorkerCommandClient:358/274`                                                      | 局部        |
-| 9  | [x] | 🟠  | 抽 afterCommit 模板方法消除复制粘贴                           | `PhysicalProductInstallServiceImpl:244/629/701`                                    | 快赢·纯抽取    |
-| 10 | [x] | 🟠  | 字段注入 → 构造器注入(分批)                                   | 303 处,4 大 Impl 起步                                                                  | 机械·量大     |
-| 11 | [-] | 🟠  | 拆分 ProcessUtils god class(暂缓:40+ 调用文件,建议有人值守单独 PR) | `ProcessUtils.java`(706/27 static)                                                 | 结构重构      |
-| 12 | [ ] | 🟡  | 返回 null → Optional/空集合                             | ServletUtils/UniEngine/GlobalVariables 等                                           | 分批        |
-| 13 | [ ] | 🟡  | Vos 命名统一 + 清死代码 + 元数据缓存 + JschUtils 超时             | 见各节                                                                                | 杂项        |
-| 14 | [ ] | 🟡  | ProblemDetail 化(需权衡既有信封设计)                         | 异常处理两套 Advice                                                                      | 中期·有取舍    |
+| #  | 状态  | 严重度 |                                                                问题                                                                 |                                        证据锚点                                        |    性质     |
+|----|-----|-----|-----------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|-----------|
+| 1  | [x] | 🔴  | GlobalVariables 返回快照(堵 CME/脏读/gRPC 下发)                                                                                            | `GlobalVariables.java:52`                                                          | 1 处改,全局收益 |
+| 2  | [x] | 🔴  | 巡检 gRPC/Prometheus 并行化 + 收紧 deadline                                                                                              | `MasterScheduledService:90`、`HostCheckService:91`                                  | 中等重构      |
+| 3  | [x] | 🔴  | 分页列表 N+1 改 listByIds                                                                                                              | `ClusterServiceRoleInstanceServiceImpl:154`                                        | 局部        |
+| 4  | [x] | 🔴  | 2 处吞异常补日志                                                                                                                         | `ServletUtils:140`、`ClusterNodeLabelServiceImpl:112`                               | 快赢        |
+| 5  | [x] | 🟠  | GlobalVariables 内存写移到 afterCommit                                                                                                 | `ProcessUtils:362`、`ServiceInstallServiceImpl:101`                                 | 局部        |
+| 6  | [x] | 🟠  | 循环内 gRPC fan-out 并行                                                                                                               | `ProcessUtils:375/614`                                                             | 局部        |
+| 7  | [x] | 🟠  | Physical/K8s Install N+1 + 重复查/解析                                                                                                 | `PhysicalProductInstallServiceImpl:313/279/745`、`K8SProductInstallServiceImpl:403` | 中等        |
+| 8  | [x] | 🟠  | WorkerCommandClient.getStub 校验 Channel 状态                                                                                         | `WorkerCommandClient:358/274`                                                      | 局部        |
+| 9  | [x] | 🟠  | 抽 afterCommit 模板方法消除复制粘贴                                                                                                          | `PhysicalProductInstallServiceImpl:244/629/701`                                    | 快赢·纯抽取    |
+| 10 | [x] | 🟠  | 字段注入 → 构造器注入(分批)                                                                                                                  | 303 处,4 大 Impl 起步                                                                  | 机械·量大     |
+| 11 | [-] | 🟠  | 拆分 ProcessUtils god class(暂缓:40+ 调用文件,建议有人值守单独 PR)                                                                                | `ProcessUtils.java`(706/27 static)                                                 | 结构重构      |
+| 12 | [-] | 🟡  | 返回 null → Optional/空集合(部分:GlobalVariables 已在 #1 消除;其余属公共 API 契约,改动会破坏调用方 null 判断,暂缓)                                              | ServletUtils/UniEngine/GlobalVariables 等                                           | 分批        |
+| 13 | [x] | 🟡  | 杂项(已做:JschUtils 超时上限、nexus-registry-secret 抽常量;暂缓:Vos 改名 93 处含 bean 名字符串引用、元数据缓存;勘误:decideEnableKerberos 仍被 8 个 strategy 引用,非死代码) | 见各节                                                                                | 杂项        |
+| 14 | [-] | 🟡  | ProblemDetail 化(跳过:报告已注明属架构选择、优先级最低)                                                                                              | 异常处理两套 Advice                                                                      | 中期·有取舍    |
 
 ---
 
