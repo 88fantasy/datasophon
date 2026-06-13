@@ -18,7 +18,7 @@ import com.datasophon.api.service.extrepo.vo.K8sCommandNode;
 import com.datasophon.api.service.frame.FrameK8sServiceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.api.utils.TransactionalUtils;
 import com.datasophon.api.vo.extrepo.InstallResult;
 import com.datasophon.api.vo.extrepo.ValidateResultVO;
@@ -368,7 +368,7 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
         String cacheKey = String.format("%s_%s", cluster.getClusterCode(), K8S_SERVICE_NAMESPACE_MAPPING);
         Map<String, K8sProductDeployMapping> map = CacheUtils.computeIfAbsent(cacheKey, k -> new ConcurrentHashMap<>());
         for (K8sProductDeployMapping mapping : mappings) {
-            ProcessUtils.generateClusterVariable(clusterId, mapping.getServiceName(),
+            ServiceConfigUtils.generateClusterVariable(clusterId, mapping.getServiceName(),
                     String.format("%s.%s", mapping.getServiceName(), GlobalVariables.NAMESPACE), mapping.getNamespace());
             map.put(mapping.getServiceName(), mapping);
         }
@@ -404,13 +404,18 @@ public class K8SProductInstallServiceImpl extends ProductDeployHandlerSupport im
         K8sClusterNamespace ns = k8sClusterNamespaceService.getNamespace(new K8sNamespaceIdentityDTO(clusterId, namespace));
         K8sServiceInstance instance = k8sServiceInstanceService.createIfAbsent(clusterId, ns.getId(), frameService.getId());
         CommandType type = StrUtil.isEmpty(instance.getLastMetaFileType()) ? CommandType.INSTALL_SERVICE : CommandType.UPGRADE_SERVICE;
-        return doGenerateExecCmd(clusterId, namespace, type, frameService);
+        // ns/instance 已查出，直接透传，避免 doGenerateExecCmd 再查一遍
+        return doGenerateExecCmd(clusterId, type, frameService, ns, instance);
     }
     
     private ClusterK8sServiceCommandEntity doGenerateExecCmd(Integer clusterId, String namespace, CommandType commandType, FrameK8sServiceEntity frameService) {
         K8sClusterNamespace ns = k8sClusterNamespaceService.getNamespace(new K8sNamespaceIdentityDTO(clusterId, namespace));
         K8sServiceInstance instance = k8sServiceInstanceService.createIfAbsent(clusterId, ns.getId(), frameService.getId());
-        
+        return doGenerateExecCmd(clusterId, commandType, frameService, ns, instance);
+    }
+    
+    private ClusterK8sServiceCommandEntity doGenerateExecCmd(Integer clusterId, CommandType commandType, FrameK8sServiceEntity frameService,
+                                                             K8sClusterNamespace ns, K8sServiceInstance instance) {
         ClusterK8sServiceCommandEntity cmd = new ClusterK8sServiceCommandEntity();
         cmd.setCommandId(IdUtil.simpleUUID());
         cmd.setClusterId(clusterId);

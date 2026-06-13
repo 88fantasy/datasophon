@@ -296,7 +296,6 @@ public class PrometheusService {
         ServiceRoleInfo result = new ServiceRoleInfo();
         result.setName("Prometheus");
         result.setParentName(frameService.getServiceName());
-        result.setDecompressPackageName(frameService.getDecompressPackageName());
         result.setArchInfoMap(ServicePkgNameUtils.getArchInfo(frameService));
         return result;
     }

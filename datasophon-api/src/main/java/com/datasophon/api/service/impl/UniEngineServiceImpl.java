@@ -26,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -102,10 +103,10 @@ public class UniEngineServiceImpl implements UniEngineService {
         
         // 数据源
         engineInfo.setMysqlDatasource(getMysqlDatasource());
-        engineInfo.setHiveDatasource(getHiveDatasource(clusterId));
-        engineInfo.setPaimonDatasource(getPaimonDatasource(clusterId));
-        engineInfo.setDorisDatasource(getDorisDatasource(clusterId, hostMaps));
-        engineInfo.setKafkaDatasource(getKafkaDatasource(clusterId));
+        engineInfo.setHiveDatasource(getHiveDatasource(clusterId).orElse(null));
+        engineInfo.setPaimonDatasource(getPaimonDatasource(clusterId).orElse(null));
+        engineInfo.setDorisDatasource(getDorisDatasource(clusterId, hostMaps).orElse(null));
+        engineInfo.setKafkaDatasource(getKafkaDatasource(clusterId).orElse(null));
         
         String data = JSON.toJSONString(engineInfo);
         return Result.success().put(Constants.DATA, PasswordSupport.encryptDbPassword(data));
@@ -126,7 +127,7 @@ public class UniEngineServiceImpl implements UniEngineService {
         return mysqlDatasource;
     }
     
-    public HiveDatasource getHiveDatasource(Integer clusterId) {
+    public Optional<HiveDatasource> getHiveDatasource(Integer clusterId) {
         List<ClusterServiceRoleInstanceEntity> hiveServer2s = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(
                 clusterId, "HiveServer2");
         if (CollectionUtils.isNotEmpty(hiveServer2s)) {
@@ -146,14 +147,14 @@ public class UniEngineServiceImpl implements UniEngineService {
             String haNodes = hdfsVars.getOrDefault("${HDFS.dfs.ha.namenodes.${HDFS.dfs.nameservices}}", "");
             hiveDatasource.setHadoopConfig(getHadoopConfig(hdfsVars, haNodes, dfsNameservices));
             logger.info("hive get info success");
-            return hiveDatasource;
+            return Optional.of(hiveDatasource);
         } else {
             logger.warn("HiveServer2 instances cannot be found");
         }
-        return null;
+        return Optional.empty();
     }
     
-    public PaimonDatasource getPaimonDatasource(Integer clusterId) {
+    public Optional<PaimonDatasource> getPaimonDatasource(Integer clusterId) {
         List<ClusterServiceRoleInstanceEntity> sparkThriftServers = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(
                 clusterId, "Kyuubi");
         
@@ -175,11 +176,11 @@ public class UniEngineServiceImpl implements UniEngineService {
             String haNodes = hdfsVars.getOrDefault("${HDFS.dfs.ha.namenodes.${HDFS.dfs.nameservices}}", "");
             paimonDatasource.setHadoopConfig(getHadoopConfig(hdfsVars, haNodes, dfsNameservices));
             logger.info("paimon get info success");
-            return paimonDatasource;
+            return Optional.of(paimonDatasource);
         } else {
             logger.warn("paimon SparkThriftServers instances cannot be found");
         }
-        return null;
+        return Optional.empty();
     }
     
     private String getHadoopConfig(Map<String, String> hdfsVars, String haNodes, String dfsNameservices) {
@@ -200,7 +201,7 @@ public class UniEngineServiceImpl implements UniEngineService {
         
     }
     
-    public DorisDatasource getDorisDatasource(Integer clusterId, Map<String, String> hostMaps) {
+    public Optional<DorisDatasource> getDorisDatasource(Integer clusterId, Map<String, String> hostMaps) {
         List<ClusterServiceRoleInstanceEntity> dorisFEs = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(
                 clusterId, "DorisFE");
         List<ClusterServiceRoleInstanceEntity> dorisBEs = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(
@@ -221,14 +222,14 @@ public class UniEngineServiceImpl implements UniEngineService {
             dorisDatasource.setBeHostPorts(beHostPorts);
             logger.info("doris get info success");
             
-            return dorisDatasource;
+            return Optional.of(dorisDatasource);
         } else {
             logger.warn("DorisFE or DorisBE instances cannot be found");
         }
-        return null;
+        return Optional.empty();
     }
     
-    public KafkaDatasource getKafkaDatasource(Integer clusterId) {
+    public Optional<KafkaDatasource> getKafkaDatasource(Integer clusterId) {
         List<ClusterServiceRoleInstanceEntity> kafkas = clusterServiceRoleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(
                 clusterId, "KafkaBroker");
         if (CollectionUtils.isNotEmpty(kafkas)) {
@@ -240,11 +241,11 @@ public class UniEngineServiceImpl implements UniEngineService {
             kafkaDatasource.setSecurityProtocol("");
             logger.info("kafka get info success");
             
-            return kafkaDatasource;
+            return Optional.of(kafkaDatasource);
         } else {
             logger.warn("KafkaBroker instances cannot be found");
         }
-        return null;
+        return Optional.empty();
     }
     
     public Map<String, String> getClusterVarsMap(Integer clusterId, String serviceName) {

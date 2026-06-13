@@ -3,9 +3,11 @@ package com.datasophon.api.load;
 import static com.datasophon.api.load.Application.getProperty;
 
 import com.datasophon.common.Constants;
+import com.datasophon.common.utils.PropertyUtils;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -15,7 +17,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * fixme 由于历史代码的原因(需要修改的地方太多)，该类无法做到线程安全
+ * 集群全局变量缓存。
+ *
+ * <p>线程安全策略：内部以 clusterId 为粒度持有 live map；所有写操作
+ * （{@link #put} / {@link #putValue}）对同一 live map 加锁互斥，
+ * {@link #getVariables} 在锁内返回不可变快照，避免 live 引用逃逸到
+ * gRPC 序列化等读取路径导致 CME / 半填充脏读。</p>
  */
 public class GlobalVariables {
     
@@ -37,7 +44,7 @@ public class GlobalVariables {
     public static final String INSTALL_PATH = "INSTALL_PATH";
     // cluster variable
     // notes: 必须保证clusterId对应的map，始终都同一个对象
-    // @see ProcessUtils#generateClusterVariable的说明
+    // @see ServiceConfigUtils#generateClusterVariable的说明
     private static final Map<Integer, Map<String, String>> clusterVariablesMap = new ConcurrentHashMap<>();
     
     public static void put(Integer clusterId, Map<String, String> value) {
@@ -48,8 +55,18 @@ public class GlobalVariables {
         }
     }
     
+    /**
+     * 返回指定集群变量的快照副本；集群不存在时返回空 map。
+     * 调用方可安全遍历/序列化/修改返回值，不会影响全局状态。
+     */
     public static Map<String, String> getVariables(Integer clusterId) {
-        return clusterVariablesMap.get(clusterId);
+        Map<String, String> vars = clusterVariablesMap.get(clusterId);
+        if (vars == null) {
+            return new HashMap<>();
+        }
+        synchronized (vars) {
+            return new HashMap<>(vars);
+        }
     }
     
     public static boolean containsValue(Integer clusterId, String key) {
@@ -62,11 +79,23 @@ public class GlobalVariables {
     
     public static void putValue(Integer clusterId, String key, String value) {
         Map<String, String> valueMap = clusterVariablesMap.computeIfAbsent(clusterId, k -> new ConcurrentHashMap<>());
-        valueMap.put(surroundKey(key), value);
+        synchronized (valueMap) {
+            valueMap.put(surroundKey(key), value);
+        }
     }
     
     public static void putValue(Integer clusterId, String serviceName, String variableName, String value) {
         putValue(clusterId, serviceName + "." + variableName, value);
+    }
+    
+    /** 移除单个变量（用于事务回滚时撤销内存写）。 */
+    public static void removeValue(Integer clusterId, String key) {
+        Map<String, String> valueMap = clusterVariablesMap.get(clusterId);
+        if (valueMap != null) {
+            synchronized (valueMap) {
+                valueMap.remove(surroundKey(key));
+            }
+        }
     }
     
     public static String getValue(Integer clusterId, String key) {
@@ -90,18 +119,18 @@ public class GlobalVariables {
             globalVariables.put("${ROOT.VosManager." + GlobalVariables.HOST_IP + "}", InetAddress.getLocalHost().getHostAddress());
         } catch (UnknownHostException ignored) {
         }
-        globalVariables.put("${ROOT.VosManager.__port__}", getProperty("server.port", "8081"));
+        globalVariables.put("${ROOT.VosManager.__port__}", getProperty("server.port", "8080"));
         globalVariables.put("${ROOT.VosManager.INSTALL_PATH}", Constants.INSTALL_PATH);
         String mysqlHostPort = extractMysqlHostPort(getProperty("spring.datasource.url"));
         globalVariables.put("${ROOT.Mysql.mysqlHostPort}", mysqlHostPort);
         String[] split = mysqlHostPort.split(":");
         globalVariables.put("${ROOT.Mysql." + GlobalVariables.HOST_IP + "}", split[0]);
         globalVariables.put("${ROOT.Mysql." + GlobalVariables.PORT + "}", split[1]);
-        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.HOST_IP + "}", getProperty("rustfs.ip"));
-        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.WEB_PORT + "}", getProperty("rustfs.webPort", "9041"));
-        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.PORT + "}", getProperty("rustfs.port", "9040"));
-        globalVariables.put("${ROOT.Rustfs.access_key}", getProperty("rustfs.access_key"));
-        globalVariables.put("${ROOT.Rustfs.secret_key}", getProperty("rustfs.secret_key"));
+        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.HOST_IP + "}", PropertyUtils.getString("rustfs.ip"));
+        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.WEB_PORT + "}", PropertyUtils.getString("rustfs.webPort", "9001"));
+        globalVariables.put("${ROOT.Rustfs." + GlobalVariables.PORT + "}", PropertyUtils.getString("rustfs.port", "9000"));
+        globalVariables.put("${ROOT.Rustfs.access_key}", PropertyUtils.getString("rustfs.access_key"));
+        globalVariables.put("${ROOT.Rustfs.secret_key}", PropertyUtils.getString("rustfs.secret_key"));
         // 读取系统变量并且进行注册
         if (System.getenv("JAVA_HOME") != null) {
             globalVariables.put("${ROOT.Jdk.INSTALL_PATH}", System.getenv("JAVA_HOME"));

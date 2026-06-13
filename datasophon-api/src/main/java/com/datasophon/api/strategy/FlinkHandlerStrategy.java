@@ -24,7 +24,7 @@ package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -39,10 +39,10 @@ public class FlinkHandlerStrategy extends ServiceHandlerAbstract implements Serv
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
-        ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
+        ClusterInfoEntity clusterInfo = ServiceConfigUtils.getClusterInfo(clusterId);
         boolean enableJM2HA = false;
         boolean enableKerberos = false;
-        Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
+        Map<String, ServiceConfig> map = ServiceConfigUtils.translateToMap(list);
         for (ServiceConfig serviceConfig : list) {
             if ("enableKerberos".equals(serviceConfig.getName())) {
                 enableKerberos = decideEnableKerberos(clusterId, enableKerberos, serviceConfig, "FLINK");

@@ -6,7 +6,7 @@ import com.datasophon.api.dto.log.K8sRuntimeLogQueryDTO;
 import com.datasophon.api.dto.log.ServiceRoleLogQueryDTO;
 import com.datasophon.api.service.log.K8sProductService;
 import com.datasophon.api.service.log.MasterLogService;
-import com.datasophon.api.service.log.VosProductService;
+import com.datasophon.api.service.log.PhysicalProductService;
 import com.datasophon.api.vo.k8s.K8sEventInfo;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.Result;
@@ -39,7 +39,7 @@ public class ScheduleLogController extends ApiController {
     private MasterLogService masterLogService;
     
     @Autowired
-    private VosProductService vosProductService;
+    private PhysicalProductService physicalProductService;
     
     @Autowired
     private K8sProductService k8sProductService;
@@ -53,9 +53,9 @@ public class ScheduleLogController extends ApiController {
     
     @PostMapping("getVosServiceRoleRuntimeLog")
     @Operation(summary = "获取Vos运行日志")
-    public Result getVosServiceRoleRuntimeLog(@RequestBody ServiceRoleLogQueryDTO dto) throws Exception {
+    public Result getPhysicalServiceRoleRuntimeLog(@RequestBody ServiceRoleLogQueryDTO dto) throws Exception {
         dto.setLines(getRows(dto.getLines()));
-        String content = vosProductService.getVosServiceRoleRuntimeLog(dto);
+        String content = physicalProductService.getPhysicalServiceRoleRuntimeLog(dto);
         return Result.success(content);
     }
     

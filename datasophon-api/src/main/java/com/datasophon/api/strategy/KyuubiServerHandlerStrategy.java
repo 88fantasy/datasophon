@@ -24,7 +24,7 @@ package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigMap;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -47,8 +47,8 @@ public class KyuubiServerHandlerStrategy extends ServiceHandlerAbstract implemen
         
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
         boolean enableKerberos = false;
-        Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
-        ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
+        Map<String, ServiceConfig> map = ServiceConfigUtils.translateToMap(list);
+        ClusterInfoEntity clusterInfo = ServiceConfigUtils.getClusterInfo(clusterId);
         // todo: 判断kerberos的逻辑应该抽取到公共方法中
         for (ServiceConfig config : list) {
             if (ENABLE_KERBEROS.equals(config.getName())) {

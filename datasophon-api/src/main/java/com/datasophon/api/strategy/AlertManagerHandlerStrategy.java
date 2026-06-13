@@ -22,7 +22,7 @@
 
 package com.datasophon.api.strategy;
 
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceAlertUtils;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.AlertLevel;
 
@@ -38,11 +38,11 @@ public class AlertManagerHandlerStrategy implements ServiceRoleStrategy {
         String url = "http://" + roleInstanceEntity.getHostname() + ":9093";
         try {
             HttpUtil.get(url);
-            ProcessUtils.recoverAlert(roleInstanceEntity);
+            ServiceAlertUtils.recoverAlert(roleInstanceEntity);
         } catch (Exception e) {
             // save alert
             String alertTargetName = roleInstanceEntity.getServiceRoleName() + " Survive";
-            ProcessUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
+            ServiceAlertUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
             
         }
     }

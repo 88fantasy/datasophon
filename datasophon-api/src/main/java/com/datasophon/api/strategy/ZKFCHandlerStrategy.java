@@ -23,7 +23,7 @@
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.model.ServiceRoleInfo;
 
 import java.util.List;
@@ -38,8 +38,8 @@ public class ZKFCHandlerStrategy implements ServiceRoleStrategy {
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         if (hosts.size() == 2) {
-            ProcessUtils.generateClusterVariable(clusterId, serviceName, "ZKFC1", hosts.get(0));
-            ProcessUtils.generateClusterVariable(clusterId, serviceName, "ZKFC2", hosts.get(1));
+            ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "ZKFC1", hosts.get(0));
+            ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "ZKFC2", hosts.get(1));
         }
     }
     

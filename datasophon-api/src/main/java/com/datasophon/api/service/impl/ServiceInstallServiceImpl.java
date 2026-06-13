@@ -40,7 +40,7 @@ import com.datasophon.api.service.cmd.ClusterServiceCommandService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.strategy.ServiceRoleStrategy;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.model.Generators;
@@ -84,9 +84,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -99,6 +100,7 @@ import cn.hutool.crypto.SecureUtil;
 
 @Service("serviceInstallService")
 @Transactional
+@RequiredArgsConstructor
 public class ServiceInstallServiceImpl implements ServiceInstallService {
     
     private static final Logger logger = LoggerFactory.getLogger(ServiceInstallServiceImpl.class);
@@ -106,38 +108,27 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     private static final List<String> MUST_AT_SAME_NODE_BASIC_SERVICE =
             Arrays.asList("Grafana", "AlertManager", "Prometheus");
     
-    @Autowired
-    private ClusterInfoService clusterInfoService;
+    private final ClusterInfoService clusterInfoService;
     
-    @Autowired
-    FrameInfoService frameInfoService;
+    private final FrameInfoService frameInfoService;
     
-    @Autowired
-    FrameServiceService frameService;
+    private final FrameServiceService frameService;
     
-    @Autowired
-    FrameServiceRoleService frameServiceRoleService;
+    private final FrameServiceRoleService frameServiceRoleService;
     
-    @Autowired
-    ClusterServiceCommandService commandService;
+    private final ClusterServiceCommandService commandService;
     
-    @Autowired
-    private ClusterServiceInstanceService serviceInstanceService;
+    private final ClusterServiceInstanceService serviceInstanceService;
     
-    @Autowired
-    private ClusterVariableService variableService;
+    private final ClusterVariableService variableService;
     
-    @Autowired
-    private ClusterHostService hostService;
+    private final ClusterHostService hostService;
     
-    @Autowired
-    private ClusterServiceInstanceRoleGroupService roleGroupService;
+    private final ClusterServiceInstanceRoleGroupService roleGroupService;
     
-    @Autowired
-    private ClusterServiceRoleGroupConfigService groupConfigService;
+    private final ClusterServiceRoleGroupConfigService groupConfigService;
     
-    @Autowired
-    private ClusterServiceRoleInstanceService roleInstanceService;
+    private final ClusterServiceRoleInstanceService roleInstanceService;
     
     public static final String PROMETHEUS = "prometheus";
     
@@ -206,7 +197,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             String variableValue = String.valueOf(serviceConfig.getValue());
             // add to global variable
             if (Boolean.TRUE.equals(serviceConfig.getRegister())) {
-                ProcessUtils.generateClusterVariable(clusterId, serviceName, variableName, variableValue);
+                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, variableName, variableValue);
             }
         }
         
@@ -289,9 +280,9 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             
             if (!hosts.isEmpty()) {
                 String serviceRole = serviceRoleHostMapping.getServiceRole();
-                ProcessUtils.generateClusterVariable(clusterId, serviceName,
+                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName,
                         String.format("%s.%s", serviceRole, GlobalVariables.HOST), String.join(",", hosts));
-                ProcessUtils.generateClusterVariable(clusterId, serviceName,
+                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName,
                         String.format("%s.%s", serviceRole, GlobalVariables.HOST_IP),
                         hosts.stream().map(HostUtils::getIp).collect(Collectors.joining(",")));
             }
@@ -328,7 +319,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         
         ServiceMetaItem item = new ServiceMetaItem();
         item.setServiceName(roleInfo.getServiceName());
-        item.setType(MetaStorage.VOS_DDL);
+        item.setType(MetaStorage.PHYSICAL);
         item.setFramework(frameCode);
         MetaStorage metaStorage = StorageUtils.getMetaStorage();
         

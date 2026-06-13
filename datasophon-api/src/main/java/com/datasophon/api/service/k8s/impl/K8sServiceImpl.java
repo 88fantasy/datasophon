@@ -58,7 +58,8 @@ public class K8sServiceImpl implements K8sService {
     @Autowired
     private K8sServiceInstanceService k8sServiceInstanceService;
     
-    private final String secretName = "nexus-registry-secret";
+    /** 拉取私有镜像仓库镜像所用的 docker-registry Secret 名称（与 K8s 集群内约定一致）。 */
+    private static final String NEXUS_REGISTRY_SECRET_NAME = "nexus-registry-secret";
     
     @Override
     public K8sClusterStatus getState(K8sClusterConfig config) {
@@ -204,7 +205,8 @@ public class K8sServiceImpl implements K8sService {
     }
     
     private String buildLabelSelector(Integer instanceId) {
-        String serviceName = k8sServiceInstanceService.getServiceName(instanceId);
+        String serviceName = k8sServiceInstanceService.getServiceName(instanceId)
+                .orElseThrow(() -> new BusinessException(String.format("K8s 服务实例 %s 不存在", instanceId)));
         return buildLabelSelector(serviceName);
     }
     
@@ -219,7 +221,8 @@ public class K8sServiceImpl implements K8sService {
      * @return Kubernetes 命名空间名称
      */
     private String getNamespaceByInstanceId(Integer instanceId) {
-        K8sServiceInstanceVO instance = k8sServiceInstanceService.getVoById(instanceId);
+        K8sServiceInstanceVO instance = k8sServiceInstanceService.getVoById(instanceId)
+                .orElseThrow(() -> new BusinessException(String.format("K8s 服务实例 %s 不存在", instanceId)));
         return instance.getNamespace();
     }
     
@@ -522,16 +525,16 @@ public class K8sServiceImpl implements K8sService {
             }
             
             // 3. 创建 nexus-registry-secret
-            K8sSecret sSecret = client.getSecret(namespaceName, secretName);
+            K8sSecret sSecret = client.getSecret(namespaceName, NEXUS_REGISTRY_SECRET_NAME);
             if (sSecret == null) {
                 DockerRegistryOptions options = NexusImageStorage.newOptions();
                 String dockerServer = String.format("%s:%s", options.getHost(), options.getPort());
-                client.createDockerRegistrySecret(namespaceName, secretName, dockerServer, options.getUsername(), options.getPassword());
+                client.createDockerRegistrySecret(namespaceName, NEXUS_REGISTRY_SECRET_NAME, dockerServer, options.getUsername(), options.getPassword());
                 log.info("nexus-registry-secret created in namespace {}", namespaceName);
                 
                 // 4. 将凭据附加到 service_account 中
                 String serviceAccountName = "default";
-                client.attachSecretToServiceAccount(namespaceName, secretName, serviceAccountName);
+                client.attachSecretToServiceAccount(namespaceName, NEXUS_REGISTRY_SECRET_NAME, serviceAccountName);
                 log.info("nexus-registry-secret attached to serviceaccount {} in namespace {}", serviceAccountName, namespaceName);
             }
             
@@ -600,7 +603,8 @@ public class K8sServiceImpl implements K8sService {
     @Override
     public List<K8sEventInfo> listK8sServiceInstanceEvents(K8sClusterConfig config, K8sRuntimeEventQueryDTO query) {
         return exec(newOptions(config), client -> {
-            K8sServiceInstanceVO instance = k8sServiceInstanceService.getVoById(query.getInstanceId());
+            K8sServiceInstanceVO instance = k8sServiceInstanceService.getVoById(query.getInstanceId())
+                    .orElseThrow(() -> new BusinessException(String.format("K8s 服务实例 %s 不存在", query.getInstanceId())));
             String namespace = instance.getNamespace();
             String labelSelector = buildLabelSelector(query.getInstanceId());
             K8sResourceList<K8sPod> podsResult = client.getPods(namespace, labelSelector);
@@ -664,7 +668,8 @@ public class K8sServiceImpl implements K8sService {
     @Override
     public void uninstallRelease(K8sClusterConfig config, Integer instanceId) {
         try (HelmClient client = new HelmClient(newOptions(config))) {
-            K8sServiceInstanceVO instance = k8sServiceInstanceService.getVoById(instanceId);
+            K8sServiceInstanceVO instance = k8sServiceInstanceService.getVoById(instanceId)
+                    .orElseThrow(() -> new BusinessException(String.format("K8s 服务实例 %s 不存在", instanceId)));
             String namespace = instance.getNamespace();
             String releaseName = HelmUtils.createReleaseName(instance.getServiceName());
             log.info("卸载helm release {}", releaseName);

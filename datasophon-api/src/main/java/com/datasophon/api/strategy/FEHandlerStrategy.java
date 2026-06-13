@@ -24,7 +24,8 @@ package com.datasophon.api.strategy;
 
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.host.ClusterHostService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceAlertUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.model.ProcInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
@@ -51,7 +52,7 @@ public class FEHandlerStrategy implements ServiceRoleStrategy {
         // Prevent FE Observer nodes from starting and FE Master nodes from changing
         if (!GlobalVariables.containsValue(clusterId, serviceName + "." + "feMaster")) {
             if (!hosts.isEmpty()) {
-                ProcessUtils.generateClusterVariable(clusterId, serviceName, "feMaster", hosts.get(0));
+                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "feMaster", hosts.get(0));
             }
         }
     }
@@ -99,9 +100,9 @@ public class FEHandlerStrategy implements ServiceRoleStrategy {
                 String alertTargetName = serviceRoleName + " Not Add To Cluster";
                 logger.info("{} at host {} is not add to cluster", serviceRoleName, frontend.getHostName());
                 String alertAdvice = "The errmsg is " + frontend.getErrMsg();
-                ProcessUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.WARN, alertAdvice);
+                ServiceAlertUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.WARN, alertAdvice);
             } else {
-                ProcessUtils.recoverAlert(roleInstanceEntity);
+                ServiceAlertUtils.recoverAlert(roleInstanceEntity);
             }
         }
     }

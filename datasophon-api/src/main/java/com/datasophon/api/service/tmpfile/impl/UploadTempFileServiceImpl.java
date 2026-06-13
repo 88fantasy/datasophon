@@ -32,6 +32,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -148,7 +149,7 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
                     .orderByDesc(UploadTempFile::getCreateTime)
                     .list();
             for (UploadTempFile tmp : files) {
-                file = doGetTempFile(tmp);
+                file = doGetTempFile(tmp).orElse(null);
                 if (file != null) {
                     break;
                 }
@@ -400,23 +401,17 @@ public class UploadTempFileServiceImpl extends ServiceImpl<UploadTempFileMapper,
     }
     
     @Override
-    public File getTempFile(Integer attachId) {
+    public Optional<File> getTempFile(Integer attachId) {
         UploadTempFile db = getById(attachId);
         return doGetTempFile(db);
     }
     
-    private File doGetTempFile(UploadTempFile db) {
-        if (db == null) {
-            return null;
-        }
-        if (db.getPath() == null) {
-            return null;
+    private Optional<File> doGetTempFile(UploadTempFile db) {
+        if (db == null || db.getPath() == null) {
+            return Optional.empty();
         }
         File file = Paths.get(getSaveDir().getAbsolutePath(), db.getPath()).toFile();
-        if (file.exists()) {
-            return file;
-        }
-        return null;
+        return file.exists() ? Optional.of(file) : Optional.empty();
     }
     
     @Override

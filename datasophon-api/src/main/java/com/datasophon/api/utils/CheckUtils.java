@@ -47,6 +47,9 @@ import cn.hutool.core.util.StrUtil;
 
 public class CheckUtils {
     
+    /** 巡检 statusRunner 的 gRPC deadline（秒）：周期性检测无需默认 90s，收紧避免慢 Worker 长时间占用线程。 */
+    private static final long STATUS_CHECK_DEADLINE_SECONDS = 30;
+    
     private CheckUtils() {
         throw new IllegalStateException("CheckUtils class");
     }
@@ -152,7 +155,7 @@ public class CheckUtils {
                                                            Map<String, ClusterServiceRoleInstanceEntity> map) {
         Integer clusterId = roleInstanceEntity.getClusterId();
         
-        ClusterInfoEntity cluster = ProcessUtils.getClusterInfo(clusterId);
+        ClusterInfoEntity cluster = ServiceConfigUtils.getClusterInfo(clusterId);
         String frameCode = cluster.getClusterFrame();
         
         String key = frameCode + Constants.UNDERLINE + roleInstanceEntity.getServiceName() + Constants.UNDERLINE
@@ -174,17 +177,18 @@ public class CheckUtils {
         try {
             WorkerCommandClient workerCommandClient =
                     SpringTool.getApplicationContext().getBean(WorkerCommandClient.class);
-            ExecResult execResult = workerCommandClient.executeCmd(roleInstanceEntity.getHostname(), commandList);
+            ExecResult execResult = workerCommandClient.executeCmd(
+                    roleInstanceEntity.getHostname(), commandList, STATUS_CHECK_DEADLINE_SECONDS);
             if (execResult.getExecResult()) {
-                ProcessUtils.recoverAlert(roleInstanceEntity);
+                ServiceAlertUtils.recoverAlert(roleInstanceEntity);
             } else {
                 String alertTargetName = roleInstanceEntity.getServiceRoleName() + " Survive";
-                ProcessUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
+                ServiceAlertUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
             }
         } catch (Exception e) {
             // save alert
             String alertTargetName = roleInstanceEntity.getServiceRoleName() + " Survive";
-            ProcessUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
+            ServiceAlertUtils.saveAlert(roleInstanceEntity, alertTargetName, AlertLevel.EXCEPTION, "restart");
         }
     }
 }

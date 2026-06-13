@@ -33,8 +33,8 @@ import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
-import com.datasophon.api.service.extrepo.VosProductInstallService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
+import com.datasophon.api.utils.WorkerFanOutUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.GetLogCommand;
 import com.datasophon.common.enums.CommandType;
@@ -64,9 +64,11 @@ import java.util.Objects;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson2.JSONObject;
@@ -77,6 +79,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import cn.hutool.core.util.StrUtil;
 
 @Service("clusterServiceRoleInstanceService")
+@RequiredArgsConstructor
 public class ClusterServiceRoleInstanceServiceImpl
         extends
             ServiceImpl<ClusterServiceRoleInstanceMapper, ClusterServiceRoleInstanceEntity>
@@ -85,35 +88,35 @@ public class ClusterServiceRoleInstanceServiceImpl
     
     private static final Logger logger = LoggerFactory.getLogger(ClusterServiceRoleInstanceServiceImpl.class);
     
-    @Autowired
-    ClusterInfoService clusterInfoService;
+    // 注：本类处于多条既有循环依赖链上（rackService→本类→frameService→ddlMetaService→本类 等），
+    // 构造器注入下环上的依赖须用 @Lazy 延迟解析打破环。
+    @Lazy
+    private final ClusterInfoService clusterInfoService;
     
-    @Autowired
-    FrameServiceRoleService frameServiceRoleService;
+    @Lazy
+    private final FrameServiceRoleService frameServiceRoleService;
     
-    @Autowired
-    FrameServiceService frameService;
+    @Lazy
+    private final FrameServiceService frameService;
     
-    @Autowired
-    private ExtRepoInstallDelegateService extRepoInstallDelegateService;
+    @Lazy
+    private final ExtRepoInstallDelegateService extRepoInstallDelegateService;
     
-    @Autowired
-    private VosProductInstallService vosProductActionService;
+    @Lazy
+    private final PhysicalProductInstallService physicalProductActionService;
     
-    @Autowired
-    private ClusterServiceInstanceRoleGroupService roleGroupService;
+    @Lazy
+    private final ClusterServiceInstanceRoleGroupService roleGroupService;
     
-    @Autowired
-    private ClusterServiceRoleInstanceMapper roleInstanceMapper;
+    private final ClusterServiceRoleInstanceMapper roleInstanceMapper;
     
-    @Autowired
-    private WorkerCommandClient workerCommandClient;
+    private final WorkerCommandClient workerCommandClient;
     
-    @Autowired
-    private ClusterAlertHistoryService alertHistoryService;
+    @Lazy
+    private final ClusterAlertHistoryService alertHistoryService;
     
-    @Autowired
-    private ClusterServiceRoleInstanceWebuisService webuisService;
+    @Lazy
+    private final ClusterServiceRoleInstanceWebuisService webuisService;
     
     @Override
     public List<ClusterServiceRoleInstanceEntity> listStoppedServiceRoleListByHostnameAndClusterId(String hostname, Integer clusterId) {
@@ -151,8 +154,18 @@ public class ClusterServiceRoleInstanceServiceImpl
             return Result.successEmptyCount();
         }
         
+        // 去重后一次查回角色组，避免分页内逐行 getById 的 N+1 查询
+        List<Integer> roleGroupIds = cluServiceRoleInstList.stream()
+                .map(ClusterServiceRoleInstanceEntity::getRoleGroupId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Integer, ClusterServiceInstanceRoleGroup> roleGroupMap = roleGroupIds.isEmpty()
+                ? Collections.emptyMap()
+                : roleGroupService.listByIds(roleGroupIds).stream()
+                        .collect(Collectors.toMap(ClusterServiceInstanceRoleGroup::getId, rg -> rg));
         for (ClusterServiceRoleInstanceEntity roleInstanceEntity : cluServiceRoleInstList) {
-            ClusterServiceInstanceRoleGroup roleGroup = roleGroupService.getById(roleInstanceEntity.getRoleGroupId());
+            ClusterServiceInstanceRoleGroup roleGroup = roleGroupMap.get(roleInstanceEntity.getRoleGroupId());
             if (Objects.nonNull(roleGroup)) {
                 roleInstanceEntity.setRoleGroupName(roleGroup.getRoleGroupName());
             }
@@ -247,7 +260,7 @@ public class ClusterServiceRoleInstanceServiceImpl
                 .eq(Constants.NEET_RESTART, NeedRestart.YES));
         if (Objects.nonNull(list) && !list.isEmpty()) {
             List<Integer> ids = list.stream().map(ClusterServiceRoleInstanceEntity::getId).collect(Collectors.toList());
-            vosProductActionService.generateAndExecSrvRoleCmd(roleGroup.getClusterId(), CommandType.RESTART_SERVICE, roleGroup.getServiceInstanceId(), ids);
+            physicalProductActionService.generateAndExecSrvRoleCmd(roleGroup.getClusterId(), CommandType.RESTART_SERVICE, roleGroup.getServiceInstanceId(), ids);
         } else {
             return Result.error(Status.ROLE_GROUP_HAS_NO_OUTDATED_SERVICE.getMsg());
         }
@@ -287,7 +300,7 @@ public class ClusterServiceRoleInstanceServiceImpl
             roleName = "ResourceManager";
         }
         if (!hosts.isEmpty()) {
-            ProcessUtils.hdfsEcMethond(serviceInstanceId, this, hosts, "blacklist", roleName);
+            WorkerFanOutUtils.hdfsEcMethond(serviceInstanceId, this, hosts, "blacklist", roleName);
         }
         return Result.success();
     }

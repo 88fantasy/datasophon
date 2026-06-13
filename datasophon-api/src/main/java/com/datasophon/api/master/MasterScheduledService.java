@@ -31,14 +31,18 @@ import com.datasophon.api.utils.CheckUtils;
 import com.datasophon.common.model.HostInfo;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.stream.Collectors;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -60,11 +64,19 @@ import cn.hutool.extra.spring.SpringUtil;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class MasterScheduledService {
     
     private final HostCheckService hostCheckService;
     private final ClusterStatusService clusterStatusService;
+    private final Executor masterExecutor;
+    
+    public MasterScheduledService(HostCheckService hostCheckService,
+                                  ClusterStatusService clusterStatusService,
+                                  @Qualifier("masterExecutor") Executor masterExecutor) {
+        this.hostCheckService = hostCheckService;
+        this.clusterStatusService = clusterStatusService;
+        this.masterExecutor = masterExecutor;
+    }
     
     /**
      * 节点检测任务，每 5 分钟巡检一次所有物理集群主机的在线状态。
@@ -100,15 +112,33 @@ public class MasterScheduledService {
                             e -> e.getHostname() + e.getServiceRoleName(),
                             e -> e,
                             (v1, v2) -> v1));
+            // 单角色检测内部含阻塞 gRPC 调用，fan-out 到 masterExecutor 并发执行，
+            // 避免慢 Worker 在 5 线程调度池里串行拖垮整轮巡检。
+            List<CompletableFuture<Void>> futures = new ArrayList<>(list.size());
             for (ClusterServiceRoleInstanceEntity roleInstanceEntity : list) {
-                ServiceRoleStrategy handler = ServiceRoleStrategyContext.getServiceRoleHandler(
-                        roleInstanceEntity.getServiceRoleName());
-                if (Objects.nonNull(handler)) {
-                    handler.handlerServiceRoleCheck(roleInstanceEntity, map);
-                } else {
-                    CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
+                Runnable task = () -> {
+                    try {
+                        ServiceRoleStrategy handler = ServiceRoleStrategyContext.getServiceRoleHandler(
+                                roleInstanceEntity.getServiceRoleName());
+                        if (Objects.nonNull(handler)) {
+                            handler.handlerServiceRoleCheck(roleInstanceEntity, map);
+                        } else {
+                            CheckUtils.handlerServiceRoleStatusRunnerCheck(roleInstanceEntity, map);
+                        }
+                    } catch (Throwable t) {
+                        log.error("Service role check failed for {} on {}: {}",
+                                roleInstanceEntity.getServiceRoleName(),
+                                roleInstanceEntity.getHostname(), t.getMessage(), t);
+                    }
+                };
+                try {
+                    futures.add(CompletableFuture.runAsync(task, masterExecutor));
+                } catch (RejectedExecutionException e) {
+                    // 池满时退化为调用线程串行执行，等价旧行为
+                    task.run();
                 }
             }
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         } catch (Throwable e) {
             log.error("Scheduled service role check failed: {}", e.getMessage(), e);
         }

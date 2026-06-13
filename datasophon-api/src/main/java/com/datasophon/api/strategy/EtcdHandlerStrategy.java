@@ -23,7 +23,7 @@
 package com.datasophon.api.strategy;
 
 import com.datasophon.api.service.host.ClusterHostService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.dao.entity.ClusterHostDO;
 
@@ -45,11 +45,11 @@ public class EtcdHandlerStrategy implements ServiceRoleStrategy {
             List<ClusterHostDO> hs = clusterHostService.lambdaQuery().in(ClusterHostDO::getHostname, hosts).list();
             // initial-cluster
             String etcdNodeList = hs.stream().map(s -> s.getHostname() + "=http://" + s.getIp() + ":2380").collect(Collectors.joining(","));
-            ProcessUtils.generateClusterVariable(clusterId, serviceName, "etcd-node-list", etcdNodeList);
+            ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "etcd-node-list", etcdNodeList);
             
             // advertise-client-urls
             String advertiseClientUrls = hs.stream().map(s -> "http://" + s.getIp() + ":2379").collect(Collectors.joining(","));
-            ProcessUtils.generateClusterVariable(clusterId, serviceName, "etcd-advertise-client-urls", advertiseClientUrls);
+            ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "etcd-advertise-client-urls", advertiseClientUrls);
         }
     }
     

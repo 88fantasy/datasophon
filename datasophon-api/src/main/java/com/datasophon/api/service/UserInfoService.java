@@ -39,4 +39,8 @@ public interface UserInfoService extends IService<UserInfoEntity> {
     Result createUser(UserInfoEntity userInfo);
     
     Result getUserListByPage(String username, Integer page, Integer pageSize);
+    
+    Result updateUser(UserInfoEntity userInfo);
+    
+    Result resetPassword(Integer id, String rawPassword);
 }

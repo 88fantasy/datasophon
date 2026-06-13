@@ -28,9 +28,9 @@ import static java.util.stream.Collectors.toList;
 
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
-import com.datasophon.api.service.extrepo.VosProductInstallService;
+import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
 import com.datasophon.api.service.host.ClusterHostService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceCommandUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.GenerateHostPrometheusConfig;
@@ -70,18 +70,18 @@ public class WorkerStartService {
     private final ClusterHostService clusterHostService;
     private final ClusterInfoService clusterInfoService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
-    private final VosProductInstallService vosProductActionService;
+    private final PhysicalProductInstallService physicalProductActionService;
     private final PrometheusService prometheusService;
     
     public WorkerStartService(ClusterHostService clusterHostService,
                               ClusterInfoService clusterInfoService,
                               ClusterServiceRoleInstanceService roleInstanceService,
-                              VosProductInstallService vosProductActionService,
+                              PhysicalProductInstallService physicalProductActionService,
                               PrometheusService prometheusService) {
         this.clusterHostService = clusterHostService;
         this.clusterInfoService = clusterInfoService;
         this.roleInstanceService = roleInstanceService;
-        this.vosProductActionService = vosProductActionService;
+        this.physicalProductActionService = physicalProductActionService;
         this.prometheusService = prometheusService;
     }
     
@@ -117,7 +117,7 @@ public class WorkerStartService {
         
         ClusterHostDO hostEntity = clusterHostService.getClusterHostByHostname(hostname);
         if (ObjectUtil.isNull(hostEntity)) {
-            ProcessUtils.saveHostInstallInfo(msg, cluster.getClusterCode(), clusterHostService);
+            ServiceCommandUtils.saveHostInstallInfo(msg, cluster.getClusterCode(), clusterHostService);
             logger.info("Host install save to database");
         } else {
             hostEntity.setCpuArchitecture(msg.getCpuArchitecture());
@@ -172,7 +172,7 @@ public class WorkerStartService {
                 .collect(groupingBy(ClusterServiceRoleInstanceEntity::getServiceId,
                         mapping(ClusterServiceRoleInstanceEntity::getId, toList())));
         try {
-            vosProductActionService.generateAndExecSrvRoleCommands(clusterId, commandType, serviceRoleMap);
+            physicalProductActionService.generateAndExecSrvRoleCommands(clusterId, commandType, serviceRoleMap);
             logger.info("Auto-start services successful for host {}", hostname);
         } catch (Exception e) {
             logger.warn("Some service auto-start failed for host {}, check service logs.", hostname, e);

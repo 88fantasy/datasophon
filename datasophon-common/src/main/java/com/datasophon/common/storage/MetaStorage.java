@@ -32,9 +32,9 @@ import java.util.function.Function;
 public interface MetaStorage {
     
     /**
-     * VOS DDL 类型标识
+     * 物理机/虚拟机 类型标识
      */
-    String VOS_DDL = "vos_ddl";
+    String PHYSICAL = "physical";
     
     /**
      * K8s 类型标识
@@ -49,7 +49,7 @@ public interface MetaStorage {
     
     /**
      * 列出指定类型的所有服务元数据项
-     * @param type 服务类型（如 VOS_DDL 或 K8S）
+     * @param type 服务类型（如 BARE_METAL 或 K8S）
      * @return 服务元数据项列表
      */
     List<ServiceMetaItem> listService(String type);
@@ -63,7 +63,7 @@ public interface MetaStorage {
      */
     default String getServiceDdL(ServiceMetaItem item) throws FileNotFoundException {
         try {
-            return getResourceAsString(item, VOS_DDL.equals(item.getType()) ? Constants.SERVICE_DDL : Constants.MANIFEST_DDL, true);
+            return getResourceAsString(item, PHYSICAL.equals(item.getType()) ? Constants.SERVICE_DDL : Constants.MANIFEST_DDL, true);
         } catch (FileNotFoundException e) {
             throw e;
         } catch (Exception e) {
@@ -150,12 +150,12 @@ public interface MetaStorage {
     void moveToStorage(File dir, Function<String, String> relativePathHandler) throws IOException;
     
     /**
-     * 删除 VOS 服务的元数据
+     * 删除物理服务的元数据
      * @param frameCode 框架代码
      * @param serviceName 服务名称
      */
-    default void removeVosMeta(String frameCode, String serviceName) {
-        removeMeta(frameCode, serviceName, VOS_DDL);
+    default void removePhysicalMeta(String frameCode, String serviceName) {
+        removeMeta(frameCode, serviceName, PHYSICAL);
     }
     
     /**

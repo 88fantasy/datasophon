@@ -22,7 +22,7 @@
 
 package com.datasophon.api.strategy;
 
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 
 import java.util.List;
 
@@ -31,7 +31,7 @@ public class KAdminHandlerStrategy implements ServiceRoleStrategy {
     @Override
     public void handler(Integer clusterId, List<String> hosts, String serviceName) {
         if (!hosts.isEmpty()) {
-            ProcessUtils.generateClusterVariable(clusterId, serviceName, "kadminHost", hosts.get(0));
+            ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "kadminHost", hosts.get(0));
         }
     }
 }

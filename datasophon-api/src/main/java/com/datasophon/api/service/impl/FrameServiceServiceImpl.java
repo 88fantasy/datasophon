@@ -241,7 +241,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
                             .forEach(packageStorage::deletePackage);
                     
                     MetaStorage metaStorage = StorageUtils.getMetaStorage();
-                    metaStorage.removeVosMeta(serviceEntity.getFrameCode(), serviceEntity.getServiceName());
+                    metaStorage.removePhysicalMeta(serviceEntity.getFrameCode(), serviceEntity.getServiceName());
                 }).start();
             }
         });

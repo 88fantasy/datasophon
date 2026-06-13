@@ -22,7 +22,7 @@ import com.datasophon.api.service.ddl.DdlMetaService;
 import com.datasophon.api.service.frame.FrameK8sServiceService;
 import com.datasophon.api.utils.CommonUtils;
 import com.datasophon.api.utils.PackageUtils;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.api.utils.ServicePkgNameUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
@@ -76,6 +76,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSONWriter;
 import com.alibaba.fastjson2.TypeReference;
 
 import cn.hutool.core.io.FileUtil;
@@ -141,7 +142,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         File tplDir = FileUtil.file(FRAMEWORK_TPL);
         MetaStorage metaStorage = StorageUtils.getMetaStorage();
         try {
-            metaStorage.moveToStorage(tplDir, relative -> "meta/" + entity.getFrameCode() + "/" + MetaStorage.VOS_DDL + "/" + relative);
+            metaStorage.moveToStorage(tplDir, relative -> "meta/" + entity.getFrameCode() + "/" + MetaStorage.PHYSICAL + "/" + relative);
         } catch (IOException e) {
             throw new BusinessException(String.format("初始化框架失败，%s", e.getMessage()), e);
         }
@@ -152,10 +153,10 @@ public class DdlMetaServiceImpl implements DdlMetaService {
         for (String cmp : installingCmp) {
             ServiceMetaItem item = new ServiceMetaItem();
             item.setServiceName(cmp);
-            item.setType(MetaStorage.VOS_DDL);
+            item.setType(MetaStorage.PHYSICAL);
             item.setFramework(entity.getFrameCode());
             try {
-                loadServiceVosDdl(clusters, entity, cmp, metaStorage.getServiceDdL(item));
+                loadServicePhysicalDdl(clusters, entity, cmp, metaStorage.getServiceDdL(item));
             } catch (Exception e) {
                 log.error("invalid service ddl file: {}/{}", entity.getFrameCode(), cmp, e);
             }
@@ -164,7 +165,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     }
     
     @Override
-    public FrameServiceEntity loadServiceVosDdl(List<ClusterInfoEntity> clusters, FrameInfoEntity frameInfo, String serviceName, String serviceDdl) {
+    public FrameServiceEntity loadServicePhysicalDdl(List<ClusterInfoEntity> clusters, FrameInfoEntity frameInfo, String serviceName, String serviceDdl) {
         ServiceInfo serviceInfo = JSONObject.parseObject(serviceDdl, new TypeReference<ServiceInfo>() {
         });
         
@@ -263,7 +264,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             }
             ServiceRoleMap.put(key, serviceRole);
             serviceRole.setFrameCode(frameCode);
-            String serviceRoleJson = JSONObject.toJSONString(serviceRole);
+            String serviceRoleJson = JSONObject.toJSONString(serviceRole, JSONWriter.Feature.IgnoreErrorGetter);
             String serviceRoleJsonMd5 = SecureUtil.md5(serviceRoleJson);
             // 持久化服务角色元信息至数据库
             FrameServiceRoleEntity role = roleService.getServiceRoleByServiceIdAndServiceRoleName(serviceEntity.getId(), serviceRole.getName());
@@ -379,7 +380,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     private void updateServiceRoleGroupConfig(ClusterServiceRoleGroupConfig config, List<ServiceConfig> parameters) {
         String configJson = config.getConfigJson();
         List<ServiceConfig> serviceConfigs = JSONArray.parseArray(configJson, ServiceConfig.class);
-        ProcessUtils.addAll(serviceConfigs, parameters);
+        ServiceConfigUtils.addAll(serviceConfigs, parameters);
         // 更新服务实例的配置
         config.setConfigJson(JSONObject.toJSONString(serviceConfigs));
         roleGroupConfigService.updateById(config);
@@ -460,16 +461,16 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     }
     
     @Override
-    public void updateServiceVosDdl(Integer serviceId, String serviceDdl) {
+    public void updateServicePhysicalDdl(Integer serviceId, String serviceDdl) {
         FrameServiceEntity service = frameServiceService.getById(serviceId);
         Objects.requireNonNull(service);
         FrameInfoEntity frameInfo = frameInfoService.getById(service.getFrameId());
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
-        loadServiceVosDdl(clusters, frameInfo, service.getServiceName(), serviceDdl);
+        loadServicePhysicalDdl(clusters, frameInfo, service.getServiceName(), serviceDdl);
         
         ServiceMetaItem item = new ServiceMetaItem();
         item.setServiceName(service.getServiceName());
-        item.setType(MetaStorage.VOS_DDL);
+        item.setType(MetaStorage.PHYSICAL);
         item.setFramework(frameInfo.getFrameCode());
         MetaStorage metaStorage = StorageUtils.getMetaStorage();
         try {
@@ -480,14 +481,14 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     }
     
     @Override
-    public String getServiceVosDdl(Integer serviceId) {
+    public String getServicePhysicalDdl(Integer serviceId) {
         FrameServiceEntity service = frameServiceService.getById(serviceId);
         Objects.requireNonNull(service);
         FrameInfoEntity frameInfo = frameInfoService.getById(service.getFrameId());
         
         ServiceMetaItem item = new ServiceMetaItem();
         item.setServiceName(service.getServiceName());
-        item.setType(MetaStorage.VOS_DDL);
+        item.setType(MetaStorage.PHYSICAL);
         item.setFramework(frameInfo.getFrameCode());
         MetaStorage metaStorage = StorageUtils.getMetaStorage();
         try {

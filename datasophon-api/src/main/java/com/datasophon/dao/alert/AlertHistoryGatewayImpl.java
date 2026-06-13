@@ -8,6 +8,7 @@ import com.datasophon.domain.alert.model.AlertHistory;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +38,7 @@ public class AlertHistoryGatewayImpl implements AlertHistoryGateway {
     }
     
     @Override
-    public AlertHistory getEnabledAlertHistory(String alertname, int clusterId, String hostname) {
+    public Optional<AlertHistory> getEnabledAlertHistory(String alertname, int clusterId, String hostname) {
         LambdaQueryWrapper<ClusterAlertHistory> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ClusterAlertHistory::getAlertTargetName, alertname)
                 .eq(ClusterAlertHistory::getClusterId, clusterId)
@@ -48,9 +49,9 @@ public class AlertHistoryGatewayImpl implements AlertHistoryGateway {
             AlertHistory alertHistory = new AlertHistory();
             BeanUtils.copyProperties(clusterAlertHistory, alertHistory);
             alertHistory.setAlertLevel(clusterAlertHistory.getAlertLevel().getValue());
-            return alertHistory;
+            return Optional.of(alertHistory);
         }
-        return null;
+        return Optional.empty();
     }
     
     @Override

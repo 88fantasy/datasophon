@@ -31,6 +31,7 @@ import com.datasophon.dao.mapper.ClusterGroupMapper;
 import com.datasophon.dao.mapper.ClusterUserGroupMapper;
 import com.datasophon.dao.mapper.ClusterUserMapper;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -77,7 +78,7 @@ public class ClusterUserGroupServiceImpl extends ServiceImpl<ClusterUserGroupMap
         if (!groupIds.isEmpty()) {
             return clusterGroupMapper.selectByIds(groupIds);
         }
-        return null;
+        return Collections.emptyList();
     }
     
     @Override
@@ -88,6 +89,6 @@ public class ClusterUserGroupServiceImpl extends ServiceImpl<ClusterUserGroupMap
             List<Integer> userIds = clusterUserGroups.stream().map(ClusterUserGroup::getUserId).collect(Collectors.toList());
             return clusterUserMapper.selectByIds(userIds);
         }
-        return null;
+        return Collections.emptyList();
     }
 }

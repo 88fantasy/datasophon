@@ -8,11 +8,14 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.HexFormat;
 import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,18 +29,31 @@ public class CsrfTokenInterceptor implements HandlerInterceptor {
     
     private static final Logger logger = LoggerFactory.getLogger(CsrfTokenInterceptor.class);
     
-    private static final ConcurrentHashMap<String, String> CSRF_TOKEN_STORE = new ConcurrentHashMap<>();
+    // Stateless CSRF: token = HMAC-SHA256(sessionId, secret). No server-side store needed —
+    // survives process restarts as long as the secret is stable.
+    private static final String SECRET =
+            System.getenv().getOrDefault("DDH_CSRF_SECRET", "datasophon-csrf-default-secret");
     
     private static final Set<String> SAFE_METHODS = new HashSet<>(Arrays.asList("GET", "HEAD", "OPTIONS"));
     
     public static String generateToken(String sessionId) {
-        String token = UUID.randomUUID().toString().replace("-", "");
-        CSRF_TOKEN_STORE.put(sessionId, token);
-        return token;
+        return hmac(sessionId);
     }
     
+    // No-op: stateless tokens do not need explicit removal.
     public static void removeToken(String sessionId) {
-        CSRF_TOKEN_STORE.remove(sessionId);
+    }
+    
+    private static String hmac(String sessionId) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] bytes = mac.doFinal(sessionId.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(bytes);
+        } catch (Exception e) {
+            logger.error("CSRF HMAC computation failed", e);
+            throw new IllegalStateException("CSRF token generation failed", e);
+        }
     }
     
     @Override
@@ -72,8 +88,8 @@ public class CsrfTokenInterceptor implements HandlerInterceptor {
             return false;
         }
         
-        String serverToken = CSRF_TOKEN_STORE.get(sessionId);
-        if (serverToken == null || !serverToken.equals(clientToken)) {
+        String expectedToken = hmac(sessionId);
+        if (!expectedToken.equals(clientToken)) {
             logger.warn("CSRF check failed: token mismatch for session {}", sessionId);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return false;

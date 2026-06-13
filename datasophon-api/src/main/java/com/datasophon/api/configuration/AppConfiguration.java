@@ -127,6 +127,7 @@ public class AppConfiguration implements WebMvcConfigurer {
                         "/static/**")
                 .excludePathPatterns(getRealExcludeUrl(
                         "/login",
+                        "/v2/login/account",
                         "/cluster/alert/history/save",
                         "/cluster/kerberos/downloadKeytab",
                         "/service/install/download*"));
@@ -148,6 +149,10 @@ public class AppConfiguration implements WebMvcConfigurer {
                         "/static/**")
                 .excludePathPatterns(getRealExcludeUrl(
                         "/login",
+                        "/v2/login/account",
+                        // Logout does not need CSRF protection: the login interceptor already
+                        // validates the session, and a forced logout causes no data loss.
+                        "/v2/logout",
                         "/cluster/alert/history/save",
                         "/cluster/kerberos/downloadKeytab",
                         "/service/install/download*"));
@@ -159,7 +164,10 @@ public class AppConfiguration implements WebMvcConfigurer {
         
         InterceptorRegistration basicValidRegistration = registry
                 .addInterceptor(basicValidRequestInterceptor)
-                .addPathPatterns("/**");
+                .addPathPatterns("/**")
+                // Internal sidecar endpoints are not browser-navigable routes; exclude them
+                // so the SPA-forward logic doesn't serve index.html for /internal/** paths.
+                .excludePathPatterns("/internal/**");
         if (enableOpenApi) {
             basicValidRegistration.excludePathPatterns(
                     "/swagger-resources/**", "/webjars/**", "/swagger-ui.html/**", "/doc.html",

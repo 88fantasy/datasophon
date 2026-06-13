@@ -5,7 +5,6 @@ import com.datasophon.api.vo.k8s.K8sDeploymentInfo;
 import com.datasophon.common.model.k8s.K8sServiceNode;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
-import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import java.util.List;
 
@@ -28,7 +27,9 @@ public class RestartServiceHandler extends ServiceHandler {
         K8sClusterConfig config = getK8sConfig(serviceNode.getClusterId());
         
         // 获取服务实例信息
-        K8sServiceInstanceVO vo = instanceService.getVoById(serviceNode.getServiceInstanceId());
+        instanceService.getVoById(serviceNode.getServiceInstanceId())
+                .orElseThrow(() -> new IllegalStateException(
+                        String.format("K8s 服务实例 %s 不存在", serviceNode.getServiceInstanceId())));
         
         // 构建查询条件
         K8sServiceInstanceQueryDTO query = new K8sServiceInstanceQueryDTO();

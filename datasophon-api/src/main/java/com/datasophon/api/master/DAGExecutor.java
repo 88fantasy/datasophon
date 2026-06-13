@@ -42,7 +42,10 @@ import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandHostService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandService;
 import com.datasophon.api.service.dag.DAGService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.CommonUtils;
+import com.datasophon.api.utils.ServiceCommandUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
+import com.datasophon.api.utils.ServiceLifecycleUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.dag.DAGExecCommand;
@@ -249,7 +252,7 @@ public class DAGExecutor {
                         } else {
                             getCommandPostAction(role).run();
                         }
-                        ProcessUtils.handleCommandResult(role.getHostCommandId(), lastResult.getExecResult(), lastResult.getExecOut());
+                        ServiceCommandUtils.handleCommandResult(role.getHostCommandId(), lastResult.getExecResult(), lastResult.getExecOut());
                     }
                 }
                 if (firstError != null) {
@@ -341,19 +344,19 @@ public class DAGExecutor {
         ExecResult execResult;
         switch (type) {
             case INSTALL_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ProcessUtils.startInstallService(serviceRoleInfo));
+                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.startInstallService(serviceRoleInfo));
                 break;
             case START_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ProcessUtils.startService(serviceRoleInfo, needReConfig));
+                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.startService(serviceRoleInfo, needReConfig));
                 break;
             case STOP_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ProcessUtils.stopService(serviceRoleInfo));
+                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.stopService(serviceRoleInfo));
                 break;
             case RESTART_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ProcessUtils.restartService(serviceRoleInfo, needReConfig));
+                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.restartService(serviceRoleInfo, needReConfig));
                 break;
             case UPGRADE_SERVICE:
-                execResult = doServiceAction(serviceRoleInfo, () -> ProcessUtils.upgradeService(serviceRoleInfo));
+                execResult = doServiceAction(serviceRoleInfo, () -> ServiceLifecycleUtils.upgradeService(serviceRoleInfo));
                 break;
             default:
                 throw new BusinessException(String.format("unknown cmd type: %s of srv %s in host %s{}",
@@ -367,7 +370,7 @@ public class DAGExecutor {
         
         boolean needTellResult = !execResult.isSuccess() || !DELAY_ACTION_COMMAND_TYPES.contains(type);
         if (needTellResult) {
-            ProcessUtils.handleCommandResult(serviceRoleInfo.getHostCommandId(), execResult.getExecResult(), execResult.getExecOut());
+            ServiceCommandUtils.handleCommandResult(serviceRoleInfo.getHostCommandId(), execResult.getExecResult(), execResult.getExecOut());
         } else {
             ClusterServiceCommandHostCommandEntity hostCommand = hostCommandService.getByHostCommandId(serviceRoleInfo.getHostCommandId());
             hostCommand.setCommandProgress(90);
@@ -395,7 +398,7 @@ public class DAGExecutor {
         
         Map<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
         if (config != null) {
-            ProcessUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
+            ServiceConfigUtils.generateConfigFileMap(configFileMap, config, serviceRoleInfo.getClusterId());
             Map<String, String> globalVariables = GlobalVariables.getVariables(serviceRoleInfo.getClusterId());
             for (Generators generators : configFileMap.keySet()) {
                 String outputDirectory = generators.getOutputDirectory();
@@ -431,7 +434,7 @@ public class DAGExecutor {
             log.error(e.getMessage(), e);
             String error = String.format("%s %s失败, 堆栈信息：%s",
                     srvInfo.getParentName(), srvInfo.getCommandType().getCommandName(Constants.CN),
-                    ProcessUtils.getExceptionMessage(e));
+                    CommonUtils.getExceptionMessage(e));
             return ExecResult.error(error);
         }
     }
@@ -441,7 +444,7 @@ public class DAGExecutor {
         switch (type) {
             case INSTALL_SERVICE:
             case UPGRADE_SERVICE:
-                return () -> ProcessUtils.saveServiceInstallInfo(serviceRoleInfo);
+                return () -> ServiceCommandUtils.saveServiceInstallInfo(serviceRoleInfo);
             case START_SERVICE:
             case RESTART_SERVICE:
                 return () -> updateServiceRoleState(serviceRoleInfo, ServiceRoleState.RUNNING);
@@ -455,7 +458,7 @@ public class DAGExecutor {
     }
     
     private void updateServiceRoleState(ServiceRoleInfo role, ServiceRoleState state) {
-        ProcessUtils.updateServiceRoleState(role.getCommandType(), role.getName(), role.getHostname(), role.getClusterId(), state);
+        ServiceCommandUtils.updateServiceRoleState(role.getCommandType(), role.getName(), role.getHostname(), role.getClusterId(), state);
     }
     
     // ─── inner types ─────────────────────────────────────────────────────────

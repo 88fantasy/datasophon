@@ -81,6 +81,10 @@ datasophon:
     path-prefix: /api
   proxy-grafana:
     enable: false
+  ai:
+    sidecar-url: ${DDH_AI_SIDECAR_URL:http://localhost:18090}
+    internal-token: ${DDH_AI_INTERNAL_TOKEN:change-me}
+    model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}
 
 # gRPC server（Netty，与 Jetty 8081 端口独立）
 grpc:

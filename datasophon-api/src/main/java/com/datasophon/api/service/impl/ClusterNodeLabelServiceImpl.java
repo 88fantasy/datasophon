@@ -109,7 +109,7 @@ public class ClusterNodeLabelServiceImpl extends ServiceImpl<ClusterNodeLabelMap
                     return true;
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("refresh node label {} to yarn at {} failed", nodeLabel, hostname, e);
             }
             logger.info("add yarn node label failed");
             return false;

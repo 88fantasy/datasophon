@@ -26,6 +26,9 @@ import com.datasophon.common.enums.InstallState;
 import com.datasophon.common.model.HostInfo;
 import com.datasophon.dao.enums.RoleType;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,5 +55,18 @@ public class CommonUtils {
             logger.error("Unsupported role type:{}", roleType);
             return null;
         }
+    }
+    
+    public static String getExceptionMessage(Exception ex) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintStream pout = new PrintStream(out);
+        ex.printStackTrace(pout);
+        String ret = out.toString();
+        pout.close();
+        try {
+            out.close();
+        } catch (Exception ignored) {
+        }
+        return ret;
     }
 }

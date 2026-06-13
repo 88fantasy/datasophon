@@ -29,7 +29,7 @@ import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ServiceInstallService;
-import com.datasophon.api.utils.ProcessUtils;
+import com.datasophon.api.utils.ServiceConfigUtils;
 import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.model.ServiceConfig;
@@ -58,7 +58,7 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
         if (!hosts.isEmpty()) {
             String rangerAdminUrl = "http://" + hosts.get(0) + ":6080";
             logger.info("rangerAdminUrl is {}", rangerAdminUrl);
-            ProcessUtils.generateClusterVariable(clusterId, serviceName, "rangerAdminUrl",
+            ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "rangerAdminUrl",
                     rangerAdminUrl);
         }
     }
@@ -66,32 +66,32 @@ public class RangerAdminHandlerStrategy extends ServiceHandlerAbstract implement
     @Override
     public void handlerConfig(Integer clusterId, List<ServiceConfig> list, String serviceName) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
-        ClusterInfoEntity clusterInfo = ProcessUtils.getClusterInfo(clusterId);
+        ClusterInfoEntity clusterInfo = ServiceConfigUtils.getClusterInfo(clusterId);
         boolean enableKerberos = false;
-        Map<String, ServiceConfig> map = ProcessUtils.translateToMap(list);
+        Map<String, ServiceConfig> map = ServiceConfigUtils.translateToMap(list);
         // enable ranger plugin
         for (ServiceConfig config : list) {
             if ("enableHDFSPlugin".equals(config.getName()) && (Boolean) config.getValue()) {
                 logger.info("enableHdfsPlugin");
-                ProcessUtils.generateClusterVariable(clusterId, serviceName, "enableHDFSPlugin",
+                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "enableHDFSPlugin",
                         "true");
                 enableRangerPlugin(clusterId, "HDFS", "NameNode");
             }
             if ("enableHIVEPlugin".equals(config.getName()) && (Boolean) config.getValue()) {
                 logger.info("enableHivePlugin");
-                ProcessUtils.generateClusterVariable(clusterId, serviceName, "enableHIVEPlugin",
+                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "enableHIVEPlugin",
                         "true");
                 enableRangerPlugin(clusterId, "HIVE", "HiveServer2");
             }
             if ("enableHBASEPlugin".equals(config.getName()) && (Boolean) config.getValue()) {
                 logger.info("enableHbasePlugin");
-                ProcessUtils.generateClusterVariable(clusterId, serviceName, "enableHBASEPlugin",
+                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, "enableHBASEPlugin",
                         "true");
                 enableRangerPlugin(clusterId, "HBASE", "HbaseMaster");
             }
             if (config.getName().contains("Plugin") && !(Boolean) config.getValue()) {
                 String configName = config.getName();
-                ProcessUtils.generateClusterVariable(clusterId, serviceName, configName, "false");
+                ServiceConfigUtils.generateClusterVariable(clusterId, serviceName, configName, "false");
             }
             if ("enableKerberos".equals(config.getName())) {
                 enableKerberos = decideEnableKerberos(clusterId, enableKerberos, config, "RANGER");

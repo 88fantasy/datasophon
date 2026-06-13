@@ -39,5 +39,5 @@ YARN_NODEMANAGER_OPTS="$YARN_NODEMANAGER_OPTS -javaagent:${hadoopHome}/jmx/jmx_p
 fi
 
 if ! grep -q <<<"$YARN_HISTORYSERVER_OPTS" jmx_prometheus_javaagent; then
-YARN_HISTORYSERVER_OPTS="$YARN_HISTORYSERVER_OPTS -javaagent:${hadoopHome}/jmx/jmx_prometheus_javaagent-0.16.1.jar=9325:${hadoopHome}/jmx/prometheus_config.yml"
+YAiRN_HISTORYSERVER_OPTS="$YARN_HISTORYSERVER_OPTS -javaagent:${hadoopHome}/jmx/jmx_prometheus_javaagent-0.16.1.jar=9325:${hadoopHome}/jmx/prometheus_config.yml"
 fi

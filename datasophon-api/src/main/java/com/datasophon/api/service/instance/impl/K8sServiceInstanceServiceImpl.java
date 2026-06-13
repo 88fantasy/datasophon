@@ -129,10 +129,8 @@ public class K8sServiceInstanceServiceImpl extends ServiceImpl<K8sServiceInstanc
     @Override
     public boolean removeInstanceId(Integer instanceId) {
         // 1. 获取服务实例信息
-        K8sServiceInstanceVO instance = getVoById(instanceId);
-        if (instance == null) {
-            throw new BusinessHintException("实例不存在");
-        }
+        K8sServiceInstanceVO instance =
+                getVoById(instanceId).orElseThrow(() -> new BusinessHintException("实例不存在"));
         
         // 2. 获取 K8s 配置
         K8sClusterNamespace ns = k8sClusterNamespaceService.getById(instance.getNamespaceId());

@@ -108,12 +108,12 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             List<FrameServiceEntity> installedSrv = frameServiceService.listSimpleService(frames);
             ctx.addService(installedSrv);
             model.getFrameworks().stream()
-                    .flatMap(f -> f.getVosDdlServices().stream())
-                    .forEach(srv -> ctx.addVosService(srv.getFrameCode(), srv.getName()));
+                    .flatMap(f -> f.getPhysicalDdlServices().stream())
+                    .forEach(srv -> ctx.addPhysicalService(srv.getFrameCode(), srv.getName()));
             
             List<String> errors = new ArrayList<>();
-            model.getFrameworks().stream().flatMap(f -> f.getVosDdlServices().stream()).forEach(srv -> {
-                errors.addAll(ctx.validVosDdlDependency(srv));
+            model.getFrameworks().stream().flatMap(f -> f.getPhysicalDdlServices().stream()).forEach(srv -> {
+                errors.addAll(ctx.validPhysicalDdlDependency(srv));
             });
             
             Map<Integer, FrameInfoEntity> map = CollectionUtil.toMap(frameDbs, new HashMap<>(), FrameInfoEntity::getId);
@@ -129,10 +129,8 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     }
     
     private <T> T unzipMetaFile(InstallComponentDTO dto, Function<String, T> mapper) {
-        File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId());
-        if (metaFile == null) {
-            throw new BusinessException("元信息文件不存在");
-        }
+        File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId())
+                .orElseThrow(() -> new BusinessException("元信息文件不存在"));
         String unzipDir = null;
         try {
             unzipDir = TarUtils.decompressToTemp(metaFile.getAbsolutePath());
@@ -191,15 +189,11 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ImportCompProgressVO importCmp(InstallComponentDTO dto) {
-        File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId());
-        if (metaFile == null) {
-            throw new BusinessException("元信息文件不存在");
-        }
+        File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId())
+                .orElseThrow(() -> new BusinessException("元信息文件不存在"));
         if (dto.getPkgFileId() != null) {
-            File pkg = uploadTempFileService.getTempFile(dto.getPkgFileId());
-            if (pkg == null) {
-                throw new BusinessException("安装包文件不存在");
-            }
+            uploadTempFileService.getTempFile(dto.getPkgFileId())
+                    .orElseThrow(() -> new BusinessException("安装包文件不存在"));
         }
         
         int progressId = RandomUtil.randomInt(1, Integer.MAX_VALUE);
@@ -219,7 +213,8 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             transactionalUtils.doInNewTx(() -> {
                 log.info("【导入第三方软件源】 进度ID:{}，开始解析meta数据", progress.getProgressId());
                 // 解析元数据
-                File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId());
+                File metaFile = uploadTempFileService.getTempFile(dto.getMeteFileId())
+                        .orElseThrow(() -> new BusinessException("元信息文件不存在"));
                 String metaUnzipPath = unpackMetaFile(metaFile, dto, progress);
                 pathPair.setMetaUnzipPath(metaUnzipPath);
                 
@@ -228,13 +223,14 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
                 ExtRepoMetaFsModel vo = MetaUtils.parseRepoMeta(option);
                 progress.setStep(9);
                 log.info("【导入第三方软件源】 进度ID:{}，解析meta数据成功，metaUnzipPath: {}, 解析到{}个服务", progress.getProgressId(),
-                        metaUnzipPath, vo.getFrameworks().stream().mapToLong(fw -> fw.getVosDdlServices().size()).sum());
+                        metaUnzipPath, vo.getFrameworks().stream().mapToLong(fw -> fw.getPhysicalDdlServices().size()).sum());
                 
                 // 解压安装包
                 String pkgUnzipPath = null;
                 if (dto.getPkgFileId() != null) {
                     log.info("【导入第三方软件源】 进度ID:{}，开始解压软件安装包", progress.getProgressId());
-                    File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId());
+                    File pkgFile = uploadTempFileService.getTempFile(dto.getPkgFileId())
+                            .orElseThrow(() -> new BusinessException("安装包文件不存在"));
                     pkgUnzipPath = decompressPkgFile(pkgFile, vo, progress);
                     pathPair.setPkgUnzipPath(pkgUnzipPath);
                     log.info("【导入第三方软件源】 进度ID:{}，解压软件安装包成功, 解压路径{}", progress.getProgressId(), pkgUnzipPath);
@@ -330,7 +326,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     private void saveFrameInfo(String unzipDir, ExtRepoMetaFsModel vo, ImportCompProgressVO progress) {
         progress.setState(4);
         
-        long total = vo.getFrameworks().stream().mapToLong(f -> f.getVosDdlServices().size()).sum()
+        long total = vo.getFrameworks().stream().mapToLong(f -> f.getPhysicalDdlServices().size()).sum()
                 + vo.getFrameworks().stream().mapToLong(f -> f.getK8sDdLServices().size()).sum();
         progress.setTotal(total);
         progress.setStep(0);
@@ -338,10 +334,10 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
         vo.getFrameworks().forEach(framework -> {
             FrameInfoEntity db = ddlMetaService.initFramework(framework.getFrameCode());
-            framework.getVosDdlServices().forEach(srv -> {
+            framework.getPhysicalDdlServices().forEach(srv -> {
                 String ddl = FileUtil.readString(Paths.get(unzipDir, srv.getDdl()).toFile(), StandardCharsets.UTF_8);
                 try {
-                    ddlMetaService.loadServiceVosDdl(clusters, db, srv.getName(), ddl);
+                    ddlMetaService.loadServicePhysicalDdl(clusters, db, srv.getName(), ddl);
                 } catch (Exception e) {
                     throw new BusinessException(String.format("解析服务%s的定义失败，%s。请检测service_ddl.json是否符合定义", srv.getName(), e.getMessage()), e);
                 }
