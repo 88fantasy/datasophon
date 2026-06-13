@@ -24,14 +24,17 @@ package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
+import com.datasophon.api.dto.v2.HostPageResponse;
+import com.datasophon.api.dto.v2.HostResponse;
+import com.datasophon.api.dto.v2.HostRoleResponse;
 import com.datasophon.api.service.host.ClusterHostService;
+import com.datasophon.api.service.host.dto.QueryHostListPageDTO;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterHostDO;
+import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import lombok.Data;
@@ -51,6 +54,7 @@ import org.springframework.web.bind.annotation.RestController;
  * v2 主机管理接口。
  *
  * <p>复用现有 ClusterHostService，返回 ApiResponse 标准信封。
+ * 安全说明：所有响应均使用 DTO，不直接暴露实体，避免 sshPassword 等敏感字段泄漏。
  */
 @Slf4j
 @RestController
@@ -63,30 +67,31 @@ public class ClusterHostV2Controller extends ApiController {
     // ─── 分页主机列表 ─────────────────────────────────────────────
     
     @GetMapping("/list")
-    public ApiResponse<Map<String, Object>> list(
-                                                 @PathVariable Integer clusterId,
-                                                 @RequestParam(defaultValue = "1") Integer page,
-                                                 @RequestParam(defaultValue = "20") Integer pageSize,
-                                                 @RequestParam(required = false) String hostname,
-                                                 @RequestParam(required = false) String ip,
-                                                 @RequestParam(required = false) String cpuArchitecture,
-                                                 @RequestParam(required = false) Integer hostState,
-                                                 @RequestParam(required = false) String sortField,
-                                                 @RequestParam(required = false) String sortOrder) {
+    public ApiResponse<HostPageResponse> list(
+                                              @PathVariable Integer clusterId,
+                                              @RequestParam(defaultValue = "1") Integer page,
+                                              @RequestParam(defaultValue = "20") Integer pageSize,
+                                              @RequestParam(required = false) String hostname,
+                                              @RequestParam(required = false) String ip,
+                                              @RequestParam(required = false) String cpuArchitecture,
+                                              @RequestParam(required = false) Integer hostState,
+                                              @RequestParam(required = false) String sortField,
+                                              @RequestParam(required = false) String sortOrder) {
         Result result = clusterHostService.listByPage(clusterId, hostname, ip, cpuArchitecture,
                 hostState, sortField, sortOrder, page, pageSize);
-        Map<String, Object> pageData = new HashMap<>();
-        pageData.put("records", result.getData());
-        pageData.put("total", result.get(Constants.TOTAL));
-        return ApiResponse.ok(pageData);
+        @SuppressWarnings("unchecked")
+        List<QueryHostListPageDTO> pageList = (List<QueryHostListPageDTO>) result.getData();
+        long total = ((Number) result.get(Constants.TOTAL)).longValue();
+        List<HostResponse> records = HostResponse.fromPageDtoList(pageList);
+        return ApiResponse.ok(HostPageResponse.of(records, total));
     }
     
     // ─── 主机详情 ────────────────────────────────────────────────
     
     @GetMapping("/{hostId}")
-    public ApiResponse<ClusterHostDO> info(@PathVariable Integer hostId) {
+    public ApiResponse<HostResponse> info(@PathVariable Integer hostId) {
         ClusterHostDO host = clusterHostService.getById(hostId);
-        return ApiResponse.ok(host);
+        return ApiResponse.ok(HostResponse.from(host));
     }
     
     // ─── 批量删除主机 ────────────────────────────────────────────
@@ -109,13 +114,17 @@ public class ClusterHostV2Controller extends ApiController {
     // ─── 按主机名查角色列表 ───────────────────────────────────────
     
     @GetMapping("/roles")
-    public ApiResponse<Object> getRoleListByHostname(
-                                                     @PathVariable Integer clusterId,
-                                                     @RequestParam String hostname) {
+    public ApiResponse<List<HostRoleResponse>> getRoleListByHostname(
+                                                                     @PathVariable Integer clusterId,
+                                                                     @RequestParam String hostname) {
         Result result = clusterHostService.getRoleListByHostname(clusterId, hostname);
-        return result.isSuccess()
-                ? ApiResponse.ok(result.getData())
-                : ApiResponse.fail(500, String.valueOf(result.getMsg()));
+        if (!result.isSuccess()) {
+            return ApiResponse.fail(500, String.valueOf(result.getMsg()));
+        }
+        @SuppressWarnings("unchecked")
+        List<ClusterServiceRoleInstanceEntity> roleList =
+                (List<ClusterServiceRoleInstanceEntity>) result.getData();
+        return ApiResponse.ok(HostRoleResponse.fromList(roleList));
     }
     
     // ─── 分配机架 ────────────────────────────────────────────────
@@ -145,10 +154,13 @@ public class ClusterHostV2Controller extends ApiController {
     // ─── 机架列表 ────────────────────────────────────────────────
     
     @GetMapping("/rack")
-    public ApiResponse<Object> getRack(@PathVariable Integer clusterId) {
+    public ApiResponse<List<String>> getRack(@PathVariable Integer clusterId) {
         Result result = clusterHostService.getRack(clusterId);
-        return result.isSuccess()
-                ? ApiResponse.ok(result.getData())
-                : ApiResponse.fail(500, String.valueOf(result.getMsg()));
+        if (!result.isSuccess()) {
+            return ApiResponse.fail(500, String.valueOf(result.getMsg()));
+        }
+        @SuppressWarnings("unchecked")
+        List<String> racks = (List<String>) result.getData();
+        return ApiResponse.ok(racks);
     }
 }

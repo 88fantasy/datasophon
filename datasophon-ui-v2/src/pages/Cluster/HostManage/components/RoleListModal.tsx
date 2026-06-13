@@ -33,7 +33,7 @@ const RoleListModal: React.FC<Props> = ({ clusterId, hostname, trigger }) => {
     >
       {roles.length > 0 ? (
         <div>
-          {roles.map((role: any) => (
+          {roles.map((role: DATASOPHON.HostRoleResponse) => (
             <Tag
               style={{ marginBottom: 8, padding: '4px 8px' }}
               color={

@@ -39,13 +39,13 @@ const INITIAL_DDL_MODAL: DdlModalState = {
 
 const FrameManage: React.FC = () => {
   const { data: frames = [], refresh, loading } = useRequest(listFrameServices, {
-    formatResult: (res: any) => (res?.data ?? []) as DATASOPHON.FrameWithServices[],
+    formatResult: (res: any) => (res?.data ?? []) as DATASOPHON.FrameWithServicesResponse[],
   });
   const [ddlModal, setDdlModal] = useState<DdlModalState>(INITIAL_DDL_MODAL);
 
   // ── DDL 编辑 ──────────────────────────────────────────────────────────
 
-  const handleOpenDdl = async (record: DATASOPHON.FrameServiceItem) => {
+  const handleOpenDdl = async (record: DATASOPHON.FrameServiceItemResponse) => {
     setDdlModal({
       open: true,
       serviceId: record.id,
@@ -86,7 +86,7 @@ const FrameManage: React.FC = () => {
 
   // ── 列定义 ────────────────────────────────────────────────────────────
 
-  const physicalColumns: ProColumns<DATASOPHON.FrameServiceItem>[] = [
+  const physicalColumns: ProColumns<DATASOPHON.FrameServiceItemResponse>[] = [
     { dataIndex: 'index', title: '序号', valueType: 'indexBorder', width: 48 },
     { title: '服务', dataIndex: 'serviceName', ellipsis: true },
     { title: '版本', dataIndex: 'serviceVersion', ellipsis: true, width: 120 },
@@ -113,7 +113,7 @@ const FrameManage: React.FC = () => {
     },
   ];
 
-  const k8sColumns: ProColumns<DATASOPHON.FrameK8sServiceItem>[] = [
+  const k8sColumns: ProColumns<DATASOPHON.FrameK8sServiceItemResponse>[] = [
     { dataIndex: 'index', title: '序号', valueType: 'indexBorder', width: 48 },
     { title: '服务', dataIndex: 'serviceName', ellipsis: true },
     { title: '版本', dataIndex: 'serviceVersion', ellipsis: true, width: 120 },
@@ -154,7 +154,7 @@ const FrameManage: React.FC = () => {
     children: (
       <div>
         {frame.frameCode.endsWith('-physical') ? (
-          <ProTable<DATASOPHON.FrameServiceItem>
+          <ProTable<DATASOPHON.FrameServiceItemResponse>
             rowKey="id"
             search={false}
             toolBarRender={false}
@@ -163,7 +163,7 @@ const FrameManage: React.FC = () => {
             pagination={{ pageSize: 10, showSizeChanger: false }}
           />
         ) : (
-          <ProTable<DATASOPHON.FrameK8sServiceItem>
+          <ProTable<DATASOPHON.FrameK8sServiceItemResponse>
             rowKey="id"
             search={false}
             toolBarRender={false}

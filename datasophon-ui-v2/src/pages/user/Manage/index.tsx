@@ -9,7 +9,7 @@ import UserModal from './UserModal';
 const UserManage: React.FC = () => {
   const actionRef = useRef<ActionType>(null);
 
-  const columns: ProColumns<DATASOPHON.UserInfo>[] = [
+  const columns: ProColumns<DATASOPHON.UserInfoResponse>[] = [
     {
       dataIndex: 'index',
       title: '序号',
@@ -88,7 +88,7 @@ const UserManage: React.FC = () => {
 
   return (
     <PageContainer>
-      <ProTable<DATASOPHON.UserInfo>
+      <ProTable<DATASOPHON.UserInfoResponse>
         actionRef={actionRef}
         rowKey="id"
         headerTitle="用户列表"

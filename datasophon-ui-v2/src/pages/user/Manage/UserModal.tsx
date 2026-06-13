@@ -4,7 +4,7 @@ import { createUser, updateUser } from '@/services/user';
 
 interface Props {
   trigger: React.ReactElement;
-  user?: DATASOPHON.UserInfo;
+  user?: DATASOPHON.UserInfoResponse;
   onSuccess: () => void;
 }
 
@@ -26,7 +26,12 @@ const UserModal: React.FC<Props> = ({ trigger, user, onSuccess }) => {
         });
         message.success('用户更新成功');
       } else {
-        await createUser(values);
+        await createUser({
+          username: values.username,
+          password: values.password!,
+          email: values.email,
+          phone: values.phone,
+        });
         message.success('用户创建成功');
       }
       onSuccess();

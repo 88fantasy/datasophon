@@ -25,12 +25,12 @@ package com.datasophon.api.controller.v2;
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.ddl.UpdateDdlDTO;
+import com.datasophon.api.dto.v2.FrameWithServicesResponse;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.ddl.DdlMetaService;
 import com.datasophon.api.service.frame.FrameK8sServiceService;
-import com.datasophon.api.vo.frameinfo.FrameInfoVO;
 
 import java.util.List;
 
@@ -73,8 +73,8 @@ public class FrameV2Controller extends ApiController {
     
     /** 返回所有框架及其下物理机 / K8s 服务列表（嵌套结构）。 */
     @GetMapping("/services")
-    public ApiResponse<List<FrameInfoVO>> listFrameServices() {
-        return ApiResponse.ok(frameInfoService.getAllClusterFrame());
+    public ApiResponse<List<FrameWithServicesResponse>> listFrameServices() {
+        return ApiResponse.ok(FrameWithServicesResponse.fromList(frameInfoService.getAllClusterFrame()));
     }
     
     /** 删除一条物理机框架服务。 */

@@ -37,4 +37,33 @@ declare namespace DATASOPHON {
     frameServiceList?: FrameServiceItem[];
     frameK8sServiceList?: FrameK8sServiceItem[];
   }
+
+  interface FrameServiceItemResponse {
+    id: number;
+    frameId: number;
+    frameCode: string;
+    serviceName: string;
+    label?: string;
+    serviceVersion?: string;
+    serviceDesc?: string;
+    installed?: boolean;
+  }
+
+  interface FrameK8sServiceItemResponse {
+    id: number;
+    frameId: number;
+    serviceName: string;
+    serviceVersion?: string;
+    serviceDesc?: string;
+    supportArtifacts?: string[];
+  }
+
+  interface FrameWithServicesResponse {
+    id: number;
+    frameName: string;
+    frameCode: string;
+    frameVersion: string;
+    frameServiceList?: FrameServiceItemResponse[];
+    frameK8sServiceList?: FrameK8sServiceItemResponse[];
+  }
 }

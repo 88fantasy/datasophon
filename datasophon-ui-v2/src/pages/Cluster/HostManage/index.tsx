@@ -64,9 +64,9 @@ const HostManage: React.FC = () => {
   const { clusterId } = clusterCtx;
   const actionRef = useRef<ActionType>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
-  const [selectedRows, setSelectedRows] = useState<DATASOPHON.HostInfo[]>([]);
+  const [selectedRows, setSelectedRows] = useState<DATASOPHON.HostResponse[]>([]);
 
-  const columns: ProColumns<DATASOPHON.HostInfo>[] = [
+  const columns: ProColumns<DATASOPHON.HostResponse>[] = [
     {
       dataIndex: 'index',
       title: '序号',
@@ -91,7 +91,7 @@ const HostManage: React.FC = () => {
       ellipsis: true,
       search: false,
       render: (_, record) => {
-        const state = HOST_STATE_MAP[record.hostState] ?? {
+        const state = HOST_STATE_MAP[record.hostState ?? -1] ?? {
           text: '未知',
           color: 'default',
         };
@@ -242,7 +242,7 @@ const HostManage: React.FC = () => {
   ];
 
   return (
-    <ProTable<DATASOPHON.HostInfo>
+    <ProTable<DATASOPHON.HostResponse>
       actionRef={actionRef}
       rowKey="id"
       headerTitle="主机列表"
