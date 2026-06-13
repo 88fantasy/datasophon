@@ -1,22 +1,9 @@
 import { GithubOutlined } from '@ant-design/icons';
-import packageJson from '@root/package.json';
 import { Divider } from 'antd';
 import { createStyles } from 'antd-style';
 import React from 'react';
 
-const getRepoUrl = () => {
-  if (!packageJson.repository)
-    return 'https://github.com/ant-design/ant-design-pro';
-  const repo =
-    typeof packageJson.repository === 'string'
-      ? packageJson.repository
-      : (packageJson.repository as { url: string }).url;
-  const match = repo.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
-  if (!match) return 'https://github.com/ant-design/ant-design-pro';
-  return `https://github.com/${match[1]}/${match[2]}`;
-};
-
-const REPO_URL = getRepoUrl();
+const REPO_URL = 'https://github.com/datasophon/datasophon';
 const COMMIT_HASH = process.env.COMMIT_HASH || '';
 
 const useStyles = createStyles(({ token, css }) => ({
@@ -69,7 +56,7 @@ const Footer: React.FC = () => {
 
   return (
     <div className={styles.footer}>
-      <div className={styles.copyright}>Ant Design Pro &copy; {year}</div>
+      <div className={styles.copyright}>DataSophon &copy; {year}</div>
       <div className={styles.meta}>
         <span className={styles.group}>
           <span className={styles.label}>ver</span>

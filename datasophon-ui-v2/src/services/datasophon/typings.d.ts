@@ -74,6 +74,15 @@ declare namespace DATASOPHON {
     userType?: number;
   }
 
+  interface CurrentUser extends UserInfo {
+    /** 'admin' | 'user' — used by access.ts for permission gating */
+    access?: string;
+    /** display name shown in ProLayout avatar */
+    name?: string;
+    /** avatar URL shown in ProLayout header */
+    avatar?: string;
+  }
+
   interface ServiceInstanceInfo {
     id: number;
     clusterId: number;
