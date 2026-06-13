@@ -11,11 +11,7 @@
 import Editor from '@monaco-editor/react';
 import { Button, message, Select, Spin } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  getK8sConfig,
-  listK8sConfigVersions,
-  saveK8sConfig,
-} from '@/services/service';
+import { getK8sConfig, listK8sConfigVersions, saveK8sConfig } from '@/services/k8s';
 import { mergeYamlFiles } from './yamlMerge';
 
 interface HelmEditorProps {

@@ -8,7 +8,7 @@ import {
   T_POD,
   T_SERVICE,
 } from '@/constants/resourceType';
-import { listK8sResources } from '@/services/service';
+import { listK8sResources } from '@/services/k8s';
 
 interface K8sResourceProps {
   clusterId: number;

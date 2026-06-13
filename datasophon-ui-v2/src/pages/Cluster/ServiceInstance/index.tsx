@@ -9,11 +9,8 @@ import React, {
 } from 'react';
 import { RESOURCE_TYPE_LABELS } from '@/constants/resourceType';
 import ClusterContext from '@/context/ClusterContext';
-import {
-  getServiceInstance,
-  getServiceWebUis,
-  listK8sResourceTypes,
-} from '@/services/service';
+import { listK8sResourceTypes } from '@/services/k8s';
+import { getServiceInstance, getServiceWebUis } from '@/services/service';
 import InstanceTab from './Instance';
 import K8sResource from './K8sResource';
 import QueueTab from './Queue';

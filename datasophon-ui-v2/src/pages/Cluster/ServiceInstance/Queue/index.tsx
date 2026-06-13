@@ -11,7 +11,7 @@ import {
   getYarnSchedulerInfo,
   listYarnQueues,
   refreshYarnQueues,
-} from '@/services/service';
+} from '@/services/yarn';
 import BuildOrEditModal from './BuildOrEditModal';
 
 interface Props {
