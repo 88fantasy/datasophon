@@ -64,31 +64,31 @@ npm install                                                # Update dependencies
 
 **Common commands:**
 
-| Command | Description |
-|---------|-------------|
-| `npm start` | Start dev server (UMI_ENV=dev, with Mock) |
-| `npm run dev` | Start dev server (UMI_ENV=dev, no Mock) |
-| `npm run start:no-mock` | Start without Mock |
-| `npm run start:pre` | Pre-production environment |
-| `npm run start:test` | Test environment |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview built output (run `npm run build` first, port 8000) |
-| `npm run preview:build` | Build and preview (port 8000) |
-| `npm run deploy` | Build and deploy to GitHub Pages |
-| `npm run analyze` | Analyze bundle size |
-| `npm run lint` | Lint (Biome + TypeScript) |
-| `npm run biome` | Auto-fix with Biome |
-| `npm test` | Run tests |
-| `npm run test:coverage` | Test with coverage |
-| `npm run test:update` | Update test snapshots |
-| `npm run tsc` | Type check without emitting |
-| `npm run i18n-remove` | Remove i18n wrappers (locale=zh-CN) |
-| `npm run record` | Record request data for login scene |
-| `npm run openapi` | Generate API code from OpenAPI schema |
-| `npm run simple` | Strip demo pages and unused deps |
+|         Command         |                         Description                         |
+|-------------------------|-------------------------------------------------------------|
+| `npm start`             | Start dev server (UMI_ENV=dev, with Mock)                   |
+| `npm run dev`           | Start dev server (UMI_ENV=dev, no Mock)                     |
+| `npm run start:no-mock` | Start without Mock                                          |
+| `npm run start:pre`     | Pre-production environment                                  |
+| `npm run start:test`    | Test environment                                            |
+| `npm run build`         | Build for production                                        |
+| `npm run preview`       | Preview built output (run `npm run build` first, port 8000) |
+| `npm run preview:build` | Build and preview (port 8000)                               |
+| `npm run deploy`        | Build and deploy to GitHub Pages                            |
+| `npm run analyze`       | Analyze bundle size                                         |
+| `npm run lint`          | Lint (Biome + TypeScript)                                   |
+| `npm run biome`         | Auto-fix with Biome                                         |
+| `npm test`              | Run tests                                                   |
+| `npm run test:coverage` | Test with coverage                                          |
+| `npm run test:update`   | Update test snapshots                                       |
+| `npm run tsc`           | Type check without emitting                                 |
+| `npm run i18n-remove`   | Remove i18n wrappers (locale=zh-CN)                         |
+| `npm run record`        | Record request data for login scene                         |
+| `npm run openapi`       | Generate API code from OpenAPI schema                       |
+| `npm run simple`        | Strip demo pages and unused deps                            |
 
 > 💡 `UMI_ENV` switches environment configs, mapping to different proxy rules in `config/proxy.ts`.
-
+>
 > 💡 `npm run simple` removes demo pages (dashboard, form, list etc.) and unused dependencies (plots, etc.), replacing with minimal routes. Ideal for starting from scratch. **Commit your code first so you can revert if needed.**
 
 **Build tool:** This project uses [utoopack](https://github.com/utooland/utoo) (a next-gen bundler powered by Turbopack) as the default build tool, configured via the `utoopack` field in `config/config.ts`. utoopack is Webpack-compatible and supports `module.rules` for custom loaders.
@@ -494,9 +494,11 @@ Create a file in `src/models/` exporting a custom Hook, then use `useModel('file
 
 **Q: How to upgrade the project?**
 First, install the pro-upgrade skill into your project:
+
 ```bash
 npx skills add ant-design/ant-design-pro
 ```
+
 Then run `/pro-upgrade` in Claude Code at the project root — AI will auto-diff the latest template and assist your upgrade (deps, config, code patterns, etc.), with conservative handling for ambiguous merges. For other AI assistants, paste the content of `.claude/skills/pro-upgrade/SKILL.md` to them.
 
 **Q: How to deploy?**
@@ -622,3 +624,4 @@ For other AI assistants (Cursor, etc.), paste the content of `.claude/skills/pro
 - **Mock priority**: `mock/` directory for global mocks, `src/pages/**/_mock.ts` for page-level mocks. Both are auto-registered by Umi.
 - **Styling priority**: Tailwind (layout) > antd-style (theme tokens) > CSS Modules (component styles) > Less (legacy global styles only).
 - **Path aliases**: `@/*` → `./src/*`, `@@/*` → `./src/.umi/*`
+

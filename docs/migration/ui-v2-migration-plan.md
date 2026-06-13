@@ -670,5 +670,5 @@ interface ClusterContextValue {
 7. 切片 7a 浏览器验证: 上传部署清单 → 跳 DAG 图
 8. 切片 7b 浏览器验证: 上传部署包（3 步向导 + 分片进度）
 9. 切片 7c 浏览器验证: 添加服务 6 步向导 → 跳 DAG 图
-10. Maven/assembly 打包集成
+10. ✅ Maven/assembly 打包集成（切片 8 已完成 2026-06-13：datasophon-ui-v2 接入 frontend-maven-plugin，路线② publicPath=/ddh/static/，index.html→static/，其余→static/static/，BUILD SUCCESS）
 

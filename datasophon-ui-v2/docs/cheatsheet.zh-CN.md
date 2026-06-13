@@ -64,31 +64,31 @@ npm install                                                # 更新依赖
 
 **常用命令：**
 
-| 命令 | 说明 |
-|------|------|
-| `npm start` | 启动开发服务器（UMI_ENV=dev，带 Mock） |
-| `npm run dev` | 启动开发服务器（UMI_ENV=dev，无 Mock） |
-| `npm run start:no-mock` | 无 Mock 启动 |
-| `npm run start:pre` | 预发布环境启动 |
-| `npm run start:test` | 测试环境启动 |
-| `npm run build` | 构建生产产物 |
-| `npm run preview` | 预览已构建产物（需先 `npm run build`，端口 8000） |
-| `npm run preview:build` | 构建并本地预览（端口 8000） |
-| `npm run deploy` | 构建并部署到 GitHub Pages |
-| `npm run analyze` | 构建产物体积分析 |
-| `npm run lint` | 代码检查（Biome + TypeScript） |
-| `npm run biome` | Biome 自动修复 |
-| `npm test` | 运行测试 |
-| `npm run test:coverage` | 测试覆盖率 |
-| `npm run test:update` | 更新测试快照 |
-| `npm run tsc` | 类型检查（不生成文件） |
-| `npm run i18n-remove` | 移除国际化（locale=zh-CN） |
-| `npm run record` | 录制登录场景请求数据 |
-| `npm run openapi` | 根据 OpenAPI 生成 API 代码 |
-| `npm run simple` | 精简模式（删除示例页面和多余依赖） |
+|           命令            |                 说明                  |
+|-------------------------|-------------------------------------|
+| `npm start`             | 启动开发服务器（UMI_ENV=dev，带 Mock）         |
+| `npm run dev`           | 启动开发服务器（UMI_ENV=dev，无 Mock）         |
+| `npm run start:no-mock` | 无 Mock 启动                           |
+| `npm run start:pre`     | 预发布环境启动                             |
+| `npm run start:test`    | 测试环境启动                              |
+| `npm run build`         | 构建生产产物                              |
+| `npm run preview`       | 预览已构建产物（需先 `npm run build`，端口 8000） |
+| `npm run preview:build` | 构建并本地预览（端口 8000）                    |
+| `npm run deploy`        | 构建并部署到 GitHub Pages                 |
+| `npm run analyze`       | 构建产物体积分析                            |
+| `npm run lint`          | 代码检查（Biome + TypeScript）            |
+| `npm run biome`         | Biome 自动修复                          |
+| `npm test`              | 运行测试                                |
+| `npm run test:coverage` | 测试覆盖率                               |
+| `npm run test:update`   | 更新测试快照                              |
+| `npm run tsc`           | 类型检查（不生成文件）                         |
+| `npm run i18n-remove`   | 移除国际化（locale=zh-CN）                 |
+| `npm run record`        | 录制登录场景请求数据                          |
+| `npm run openapi`       | 根据 OpenAPI 生成 API 代码                |
+| `npm run simple`        | 精简模式（删除示例页面和多余依赖）                   |
 
 > 💡 `UMI_ENV` 用于切换环境配置，对应 `config/proxy.ts` 中的不同代理规则。
-
+>
 > 💡 `npm run simple` 会删除示例页面（dashboard、form、list 等）和多余依赖（plots 等），替换为精简路由，适合从零开始开发。**建议先提交代码，以便需要时回退。**
 
 **构建工具：** 本项目使用 [utoopack](https://github.com/utooland/utoo)（基于 Turbopack 的新一代打包器）作为默认构建工具，通过 `config/config.ts` 中的 `utoopack` 字段配置。utoopack 兼容 Webpack 配置格式，支持 `module.rules` 配置自定义加载器。
@@ -494,9 +494,11 @@ export default {
 
 **Q: 如何升级项目？**
 先将 pro-upgrade skill 安装到项目中：
+
 ```bash
 npx skills add ant-design/ant-design-pro
 ```
+
 然后在项目根目录用 Claude Code 运行 `/pro-upgrade`，AI 会自动对比最新模板并辅助完成升级（依赖、配置、代码模式等），遇到冲突时会保守处理并询问确认。如使用其他 AI 助手，可将 `.claude/skills/pro-upgrade/SKILL.md` 中的内容提供给它。
 
 **Q: 如何部署？**
@@ -622,3 +624,4 @@ npx skills add ant-design/ant-design-pro
 - **Mock 优先级**：`mock/` 目录为全局 Mock，`src/pages/**/_mock.ts` 为页面级 Mock，两者都会被 Umi 自动注册
 - **样式优先级**：Tailwind（布局）> antd-style（主题 token）> CSS Modules（组件样式）> Less（仅遗留全局样式）
 - **路径别名**：`@/*` → `./src/*`，`@@/*` → `./src/.umi/*`
+
