@@ -105,7 +105,7 @@ export async function execRoleCommand(
   instanceId: number,
   params: { commandType: string; serviceRoleInstancesIds: string },
 ) {
-  return request<DATASOPHON.ApiResponse<{ data: string }>>(
+  return request<DATASOPHON.ApiResponse<string>>(
     `/cluster/${clusterId}/service/instance/${instanceId}/role/command`,
     { method: 'POST', params },
   );
@@ -129,7 +129,7 @@ export async function getRoleInstanceLog(
   instanceId: number,
   roleInstanceId: number,
 ) {
-  return request<DATASOPHON.ApiResponse<{ data: string }>>(
+  return request<DATASOPHON.ApiResponse<string>>(
     `/cluster/${clusterId}/service/instance/${instanceId}/role/${roleInstanceId}/log`,
     { method: 'GET' },
   );

@@ -24,18 +24,27 @@ package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
+import com.datasophon.api.dto.v2.RoleGroupResponse;
+import com.datasophon.api.dto.v2.ServiceRoleInstancePageResponse;
+import com.datasophon.api.dto.v2.ServiceRoleInstanceResponse;
 import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
 import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
+import com.datasophon.common.Constants;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.utils.ConverterUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterServiceInstanceRoleGroup;
+import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.entity.FrameServiceRoleEntity;
+import com.datasophon.dao.model.WebuisVO;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -74,101 +83,137 @@ public class ClusterServiceRoleInstanceV2Controller extends ApiController {
     
     /**
      * 服务角色实例列表（分页）。
+     *
+     * <p>返回 {@code { data: [...], total: N }}，供前端 ProTable request 回调按
+     * {@code res.data.data} 与 {@code res.data.total} 读取。
      */
     @GetMapping("/list")
-    public ApiResponse<Result> list(@PathVariable Integer clusterId,
-                                    @PathVariable Integer instanceId,
-                                    @RequestParam(defaultValue = "1") Integer page,
-                                    @RequestParam(defaultValue = "20") Integer pageSize,
-                                    @RequestParam(required = false) String hostname,
-                                    @RequestParam(required = false) Integer serviceRoleState,
-                                    @RequestParam(required = false) String serviceRoleName,
-                                    @RequestParam(required = false) Integer roleGroupId) {
+    public ApiResponse<ServiceRoleInstancePageResponse> list(
+                                                             @PathVariable Integer clusterId,
+                                                             @PathVariable Integer instanceId,
+                                                             @RequestParam(defaultValue = "1") Integer page,
+                                                             @RequestParam(defaultValue = "20") Integer pageSize,
+                                                             @RequestParam(required = false) String hostname,
+                                                             @RequestParam(required = false) Integer serviceRoleState,
+                                                             @RequestParam(required = false) String serviceRoleName,
+                                                             @RequestParam(required = false) Integer roleGroupId) {
         Result result = clusterServiceRoleInstanceService.listAll(
                 instanceId, hostname, serviceRoleState, serviceRoleName, roleGroupId, page, pageSize);
-        return ApiResponse.ok(result);
+        @SuppressWarnings("unchecked")
+        List<ClusterServiceRoleInstanceEntity> entities =
+                (List<ClusterServiceRoleInstanceEntity>) result.getData();
+        Long total = result.get(Constants.TOTAL) != null
+                ? ((Number) result.get(Constants.TOTAL)).longValue()
+                : 0L;
+        List<ServiceRoleInstanceResponse> records = ServiceRoleInstanceResponse.fromList(
+                entities != null ? entities : List.of());
+        return ApiResponse.ok(ServiceRoleInstancePageResponse.of(records, total));
     }
     
     /**
-     * 服务角色类型列表（供筛选）。
+     * 服务角色类型列表（供筛选）。只投影 id / serviceRoleName 两个字段，不泄漏实体全量信息。
      */
     @GetMapping("/type-list")
-    public ApiResponse<Result> getServiceRoleType(@PathVariable Integer instanceId) {
+    public ApiResponse<List<Map<String, Object>>> getServiceRoleType(
+                                                                     @PathVariable Integer clusterId,
+                                                                     @PathVariable Integer instanceId) {
         Result result = clusterServiceInstanceService.getServiceRoleType(instanceId);
-        return ApiResponse.ok(result);
+        @SuppressWarnings("unchecked")
+        List<FrameServiceRoleEntity> entities = (List<FrameServiceRoleEntity>) result.getData();
+        List<Map<String, Object>> projected = entities == null
+                ? List.of()
+                : entities.stream().map(e -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("id", e.getId());
+                    m.put("serviceRoleName", e.getServiceRoleName());
+                    return m;
+                }).toList();
+        return ApiResponse.ok(projected);
     }
     
     /**
      * 服务角色组列表（供筛选）。
      */
     @GetMapping("/group-list")
-    public ApiResponse<List<ClusterServiceInstanceRoleGroup>> getRoleGroupList(
-                                                                               @PathVariable Integer instanceId) {
+    public ApiResponse<List<RoleGroupResponse>> getRoleGroupList(
+                                                                 @PathVariable Integer clusterId,
+                                                                 @PathVariable Integer instanceId) {
         List<ClusterServiceInstanceRoleGroup> list =
                 roleGroupService.listRoleGroupByServiceInstanceId(instanceId);
-        return ApiResponse.ok(list);
+        return ApiResponse.ok(RoleGroupResponse.fromList(list));
     }
     
     /**
      * 服务 WebUI 列表。
      */
     @GetMapping("/webuis")
-    public ApiResponse<Result> getWebUis(@PathVariable Integer instanceId) {
+    public ApiResponse<List<WebuisVO>> getWebUis(@PathVariable Integer clusterId,
+                                                 @PathVariable Integer instanceId) {
         Result result = webuisService.getWebUis(instanceId);
-        return ApiResponse.ok(result);
+        @SuppressWarnings("unchecked")
+        List<WebuisVO> list = (List<WebuisVO>) result.getData();
+        return ApiResponse.ok(list != null ? list : List.of());
     }
     
     /**
      * 批量操作角色实例（启动/停止/重启）。
      */
     @PostMapping("/command")
-    public ApiResponse<Result> command(@PathVariable Integer clusterId,
+    public ApiResponse<String> command(@PathVariable Integer clusterId,
                                        @PathVariable Integer instanceId,
                                        @RequestParam String commandType,
                                        @RequestParam String serviceRoleInstancesIds) {
         List<Integer> ids = ConverterUtils.convertIds(serviceRoleInstancesIds, Integer::parseInt);
         CommandType command = EnumUtil.fromString(CommandType.class, commandType);
         String result = physicalProductInstallService.generateAndExecSrvRoleCmd(clusterId, command, instanceId, ids);
-        return ApiResponse.ok(Result.success().put("data", result));
+        return ApiResponse.ok(result);
     }
     
     /**
      * 删除角色实例。
      */
     @PostMapping("/delete")
-    public ApiResponse<Result> delete(@RequestParam String serviceRoleInstancesIds) {
+    public ApiResponse<Void> delete(@PathVariable Integer clusterId,
+                                    @PathVariable Integer instanceId,
+                                    @RequestParam String serviceRoleInstancesIds) {
         List<String> idList = Arrays.asList(serviceRoleInstancesIds.split(","));
-        Result result = clusterServiceRoleInstanceService.deleteServiceRole(idList);
-        return ApiResponse.ok(result);
+        clusterServiceRoleInstanceService.deleteServiceRole(idList);
+        return ApiResponse.ok();
     }
     
     /**
      * 查看角色实例日志。
      */
     @GetMapping("/{roleInstanceId}/log")
-    public ApiResponse<Result> getLog(@PathVariable Integer roleInstanceId) throws Exception {
+    public ApiResponse<String> getLog(@PathVariable Integer clusterId,
+                                      @PathVariable Integer instanceId,
+                                      @PathVariable Integer roleInstanceId) throws Exception {
         Result result = clusterServiceRoleInstanceService.getLog(roleInstanceId);
-        return ApiResponse.ok(result);
+        Object data = result.getData();
+        return ApiResponse.ok(data != null ? data.toString() : "");
     }
     
     /**
      * 添加角色组。
      */
     @PostMapping("/group/save")
-    public ApiResponse<Result> saveRoleGroup(@PathVariable Integer instanceId,
-                                             @RequestParam(required = false) Integer roleGroupId,
-                                             @RequestParam String roleGroupName) {
+    public ApiResponse<Void> saveRoleGroup(@PathVariable Integer clusterId,
+                                           @PathVariable Integer instanceId,
+                                           @RequestParam(required = false) Integer roleGroupId,
+                                           @RequestParam String roleGroupName) {
         roleGroupService.saveRoleGroup(instanceId, roleGroupId, roleGroupName);
-        return ApiResponse.ok(Result.success());
+        return ApiResponse.ok();
     }
     
     /**
      * 批量分配角色组。
      */
     @PostMapping("/group/bind")
-    public ApiResponse<Result> bindRoleGroup(@RequestParam String roleInstanceIds,
-                                             @RequestParam Integer roleGroupId) {
-        Result result = roleGroupService.bind(roleInstanceIds, roleGroupId);
-        return ApiResponse.ok(result);
+    public ApiResponse<Void> bindRoleGroup(@PathVariable Integer clusterId,
+                                           @PathVariable Integer instanceId,
+                                           @RequestParam String roleInstanceIds,
+                                           @RequestParam Integer roleGroupId) {
+        roleGroupService.bind(roleInstanceIds, roleGroupId);
+        return ApiResponse.ok();
     }
 }

@@ -22,7 +22,7 @@ const GroupTab: React.FC<Props> = ({ clusterId, onViewMetrics }) => {
   const actionRef = useRef<ActionType | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const handleDelete = (record: DATASOPHON.AlertGroup) => {
+  const handleDelete = (record: DATASOPHON.AlertGroupResponse) => {
     modal.confirm({
       title: `确认删除告警组「${record.alertGroupName}」？`,
       content: '若已绑定告警指标则无法删除。',
@@ -34,7 +34,7 @@ const GroupTab: React.FC<Props> = ({ clusterId, onViewMetrics }) => {
     });
   };
 
-  const columns: ProColumns<DATASOPHON.AlertGroup>[] = [
+  const columns: ProColumns<DATASOPHON.AlertGroupResponse>[] = [
     { dataIndex: 'index', title: '序号', valueType: 'indexBorder', width: 48 },
     { title: '名称', dataIndex: 'alertGroupName', ellipsis: true },
     {
@@ -70,7 +70,7 @@ const GroupTab: React.FC<Props> = ({ clusterId, onViewMetrics }) => {
 
   return (
     <>
-      <ProTable<DATASOPHON.AlertGroup>
+      <ProTable<DATASOPHON.AlertGroupResponse>
         actionRef={actionRef}
         rowKey="id"
         columns={columns}
@@ -80,7 +80,7 @@ const GroupTab: React.FC<Props> = ({ clusterId, onViewMetrics }) => {
             page: params.current ?? 1,
             pageSize: params.pageSize ?? 20,
           });
-          const data = (res as any)?.data ?? {};
+          const data = res?.data ?? { totalList: [], totalCount: 0 };
           return {
             data: data.totalList ?? [],
             success: true,

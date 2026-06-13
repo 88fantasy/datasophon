@@ -44,7 +44,7 @@ const BuildOrEditModal: React.FC<Props> = ({
 
   const onFinish = async (values: Record<string, any>) => {
     try {
-      const payload: Omit<DATASOPHON.YarnQueue, 'id' | 'createTime'> = {
+      const base: DATASOPHON.SaveYarnQueueRequest = {
         queueName: values.queueName,
         minCore: values.minCore,
         minMem: values.minMem,
@@ -58,9 +58,13 @@ const BuildOrEditModal: React.FC<Props> = ({
       };
 
       if (isEdit) {
-        await updateYarnQueue(clusterId, { ...payload, id: record?.id });
+        const updatePayload: DATASOPHON.UpdateYarnQueueRequest = {
+          ...base,
+          id: record!.id as number,
+        };
+        await updateYarnQueue(clusterId, updatePayload);
       } else {
-        await saveYarnQueue(clusterId, payload);
+        await saveYarnQueue(clusterId, base);
       }
 
       message.success(isEdit ? '修改成功' : '新建成功');

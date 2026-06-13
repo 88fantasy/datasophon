@@ -24,6 +24,7 @@ package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
+import com.datasophon.api.dto.v2.ServiceInstanceResponse;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 
@@ -54,20 +55,20 @@ public class ClusterServiceInstanceV2Controller extends ApiController {
      * 获取集群服务实例列表（含 catalog / 告警数 / dashboardUrl 等运行时信息）。
      */
     @GetMapping("/list")
-    public ApiResponse<List<ClusterServiceInstanceEntity>> list(
-                                                                @PathVariable Integer clusterId) {
+    public ApiResponse<List<ServiceInstanceResponse>> list(
+                                                           @PathVariable Integer clusterId) {
         List<ClusterServiceInstanceEntity> list = clusterServiceInstanceService.listAll(clusterId);
-        return ApiResponse.ok(list);
+        return ApiResponse.ok(ServiceInstanceResponse.fromList(list));
     }
     
     /**
      * 获取单个服务实例详情。
      */
     @GetMapping("/{instanceId}")
-    public ApiResponse<ClusterServiceInstanceEntity> info(
-                                                          @PathVariable Integer clusterId,
-                                                          @PathVariable Integer instanceId) {
+    public ApiResponse<ServiceInstanceResponse> info(
+                                                     @PathVariable Integer clusterId,
+                                                     @PathVariable Integer instanceId) {
         ClusterServiceInstanceEntity entity = clusterServiceInstanceService.getById(instanceId);
-        return ApiResponse.ok(entity);
+        return ApiResponse.ok(ServiceInstanceResponse.from(entity));
     }
 }

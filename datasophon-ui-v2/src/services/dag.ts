@@ -5,7 +5,7 @@ export function listDagCommands(
   clusterId: number,
   params: { page?: number; pageSize?: number },
 ) {
-  return request<DATASOPHON.ApiResponse<any>>(
+  return request<DATASOPHON.ApiResponse<DATASOPHON.DagCommandPageResponse>>(
     `/ddh/api/v2/cluster/${clusterId}/command/list`,
     {
       method: 'GET',

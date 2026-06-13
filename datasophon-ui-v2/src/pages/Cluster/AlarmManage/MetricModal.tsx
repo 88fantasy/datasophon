@@ -36,7 +36,7 @@ const NOTICE_OPTIONS = [{ label: '数据开发组', value: 1 }];
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  record?: DATASOPHON.AlertQuota | null;
+  record?: DATASOPHON.AlertQuotaResponse | null;
   clusterId: number;
   defaultGroupId?: number;
   onSuccess: () => void;
@@ -58,9 +58,9 @@ const MetricModal: React.FC<Props> = ({
     {
       refreshDeps: [clusterId],
       formatResult: (res) => {
-        const list = (res as any)?.data?.totalList ?? [];
+        const list = res?.data?.totalList ?? [];
         return Array.isArray(list)
-          ? list.map((g: DATASOPHON.AlertGroup) => ({
+          ? list.map((g: DATASOPHON.AlertGroupResponse) => ({
               label: g.alertGroupName,
               value: g.id,
             }))
@@ -94,7 +94,7 @@ const MetricModal: React.FC<Props> = ({
       onFinish={async (values) => {
         try {
           if (isEdit) {
-            await updateAlertQuota(clusterId, { ...values, id: record?.id });
+            await updateAlertQuota(clusterId, { ...values, id: record!.id! });
           } else {
             await saveAlertQuota(clusterId, values);
           }
@@ -149,7 +149,7 @@ const MetricModal: React.FC<Props> = ({
         request={async (params: { alertGroupId?: number }) => {
           if (!params.alertGroupId) return [];
           const res = await listQuotaRoles(clusterId, params.alertGroupId);
-          const list = (res as any)?.data ?? [];
+          const list = res?.data ?? [];
           return Array.isArray(list)
             ? list.map((r: { serviceRoleName: string }) => ({
                 label: r.serviceRoleName,

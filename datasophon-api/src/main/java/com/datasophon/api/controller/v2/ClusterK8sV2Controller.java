@@ -28,9 +28,14 @@ import com.datasophon.api.dto.instance.K8sNamespaceIdentityDTO;
 import com.datasophon.api.dto.instance.K8sServiceInstanceQueryDTO;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
+import com.datasophon.dao.entity.cluster.K8sClusterNamespace;
+import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import java.util.List;
+
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,7 +69,7 @@ public class ClusterK8sV2Controller extends ApiController {
      */
     @GetMapping("/namespace/list")
     @Operation(summary = "获取 K8s 集群 namespace 列表")
-    public ApiResponse<Object> listNamespaces(@PathVariable Integer clusterId) {
+    public ApiResponse<List<K8sClusterNamespace>> listNamespaces(@PathVariable Integer clusterId) {
         return ApiResponse.ok(k8sClusterNamespaceService.listAndUpdateNamespaceByClusterId(clusterId));
     }
     
@@ -76,8 +81,8 @@ public class ClusterK8sV2Controller extends ApiController {
      */
     @GetMapping("/namespace/{namespace}/instance/list")
     @Operation(summary = "获取 namespace 下的服务实例列表")
-    public ApiResponse<Object> listInstances(@PathVariable Integer clusterId,
-                                             @PathVariable String namespace) {
+    public ApiResponse<List<K8sServiceInstanceVO>> listInstances(@PathVariable Integer clusterId,
+                                                                 @PathVariable String namespace) {
         return ApiResponse.ok(
                 k8sServiceInstanceService.queryInstanceList(
                         new K8sNamespaceIdentityDTO(clusterId, namespace)));
@@ -90,7 +95,7 @@ public class ClusterK8sV2Controller extends ApiController {
      */
     @GetMapping("/instance/{instanceId}/resource-types")
     @Operation(summary = "获取实例的资源类型列表")
-    public ApiResponse<Object> listResourceTypes(@PathVariable Integer instanceId) {
+    public ApiResponse<List<String>> listResourceTypes(@PathVariable Integer instanceId) {
         K8sServiceInstanceQueryDTO query = new K8sServiceInstanceQueryDTO();
         query.setInstanceId(instanceId);
         return ApiResponse.ok(k8sServiceInstanceService.listResourceType(query));
@@ -104,11 +109,12 @@ public class ClusterK8sV2Controller extends ApiController {
      */
     @GetMapping("/instance/{instanceId}/resource")
     @Operation(summary = "获取实例指定类型的资源列表")
-    public ApiResponse<Object> listResources(@PathVariable Integer instanceId,
-                                             @RequestParam String resourceType) {
+    public ApiResponse<List<?>> listResources(@PathVariable Integer instanceId,
+                                              @RequestParam String resourceType) {
         K8sServiceInstanceQueryDTO query = new K8sServiceInstanceQueryDTO();
         query.setInstanceId(instanceId);
         query.setResourceType(resourceType);
-        return ApiResponse.ok(k8sServiceInstanceService.listResource(query));
+        List<?> result = (List<?>) k8sServiceInstanceService.listResource(query);
+        return ApiResponse.ok(result);
     }
 }

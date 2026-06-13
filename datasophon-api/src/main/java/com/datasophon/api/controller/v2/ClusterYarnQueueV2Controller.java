@@ -24,6 +24,10 @@ package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
+import com.datasophon.api.dto.v2.SaveYarnQueueRequest;
+import com.datasophon.api.dto.v2.UpdateYarnQueueRequest;
+import com.datasophon.api.dto.v2.YarnQueuePageResponse;
+import com.datasophon.api.dto.v2.YarnQueueResponse;
 import com.datasophon.api.enums.Status;
 import com.datasophon.api.service.ClusterYarnQueueService;
 import com.datasophon.api.service.ClusterYarnSchedulerService;
@@ -32,7 +36,8 @@ import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterYarnQueue;
 import com.datasophon.dao.entity.ClusterYarnScheduler;
 
-import java.util.Date;
+import jakarta.validation.Valid;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -76,55 +81,60 @@ public class ClusterYarnQueueV2Controller extends ApiController {
      * 队列列表（分页）。
      */
     @GetMapping("/list")
-    public ApiResponse<Result> list(@PathVariable Integer clusterId,
-                                    @RequestParam(defaultValue = "1") Integer page,
-                                    @RequestParam(defaultValue = "20") Integer pageSize) {
+    public ApiResponse<YarnQueuePageResponse> list(@PathVariable Integer clusterId,
+                                                   @RequestParam(defaultValue = "1") Integer page,
+                                                   @RequestParam(defaultValue = "20") Integer pageSize) {
         Result result = clusterYarnQueueService.listByPage(clusterId, page, pageSize);
-        return ApiResponse.ok(result);
+        @SuppressWarnings("unchecked")
+        List<ClusterYarnQueue> entities = (List<ClusterYarnQueue>) result.getData();
+        long total = (long) result.get(Constants.TOTAL);
+        List<YarnQueueResponse> items = YarnQueueResponse.fromList(entities);
+        return ApiResponse.ok(YarnQueuePageResponse.of(items, total));
     }
     
     /**
      * 新建队列。
      */
     @PostMapping("/save")
-    public ApiResponse<Result> save(@PathVariable Integer clusterId,
-                                    @RequestBody ClusterYarnQueue clusterYarnQueue) {
+    public ApiResponse<Void> save(@PathVariable Integer clusterId,
+                                  @Valid @RequestBody SaveYarnQueueRequest request) {
         List<ClusterYarnQueue> existing = clusterYarnQueueService
-                .list(new QueryWrapper<ClusterYarnQueue>().eq(Constants.QUEUE_NAME,
-                        clusterYarnQueue.getQueueName()));
+                .list(new QueryWrapper<ClusterYarnQueue>().eq(Constants.QUEUE_NAME, request.getQueueName()));
         if (Objects.nonNull(existing) && existing.size() == 1) {
-            return ApiResponse.ok(Result.error(Status.QUEUE_NAME_ALREADY_EXISTS.getMsg()));
+            return ApiResponse.fail(400, Status.QUEUE_NAME_ALREADY_EXISTS.getMsg());
         }
-        clusterYarnQueue.setClusterId(clusterId);
-        clusterYarnQueue.setCreateTime(new Date());
-        clusterYarnQueueService.save(clusterYarnQueue);
-        return ApiResponse.ok(Result.success());
+        clusterYarnQueueService.save(request.toEntity(clusterId));
+        return ApiResponse.ok();
     }
     
     /**
      * 修改队列。
      */
     @PostMapping("/update")
-    public ApiResponse<Result> update(@RequestBody ClusterYarnQueue clusterYarnQueue) {
-        clusterYarnQueueService.updateById(clusterYarnQueue);
-        return ApiResponse.ok(Result.success());
+    public ApiResponse<Void> update(@Valid @RequestBody UpdateYarnQueueRequest request) {
+        clusterYarnQueueService.updateById(request.toEntity());
+        return ApiResponse.ok();
     }
     
     /**
      * 删除队列（批量）。
      */
     @PostMapping("/delete")
-    public ApiResponse<Result> delete(@RequestBody List<Integer> ids) {
+    public ApiResponse<Void> delete(@RequestBody List<Integer> ids) {
         clusterYarnQueueService.removeByIds(ids);
-        return ApiResponse.ok(Result.success());
+        return ApiResponse.ok();
     }
     
     /**
      * 刷新队列到 YARN。
      */
     @PostMapping("/refresh")
-    public ApiResponse<Result> refresh(@PathVariable Integer clusterId) throws Exception {
+    public ApiResponse<Void> refresh(@PathVariable Integer clusterId) throws Exception {
         Result result = clusterYarnQueueService.refreshQueues(clusterId);
-        return ApiResponse.ok(result);
+        if (!result.isSuccess()) {
+            String msg = (String) result.get(Constants.MSG);
+            return ApiResponse.fail(500, msg != null ? msg : Status.FAILED_REFRESH_THE_QUEUE_TO_YARN.getMsg());
+        }
+        return ApiResponse.ok();
     }
 }

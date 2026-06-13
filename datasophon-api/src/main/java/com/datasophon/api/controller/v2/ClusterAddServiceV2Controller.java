@@ -23,9 +23,11 @@
 package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
+import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
+import com.datasophon.api.dto.v2.HostResponse;
 import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
 import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
@@ -35,6 +37,8 @@ import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterHostDO;
+import com.datasophon.dao.entity.FrameServiceEntity;
+import com.datasophon.dao.entity.FrameServiceRoleEntity;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
@@ -42,6 +46,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import lombok.Data;
 
@@ -88,104 +93,108 @@ public class ClusterAddServiceV2Controller extends ApiController {
     
     /** 按部署清单获取最新服务列表（清单中出现的服务带 selected=true）。 */
     @PostMapping("/list-newest")
-    public Result listNewest(
-                             @PathVariable Integer clusterId,
-                             @RequestBody @Valid ManifestRequest req) {
+    public ApiResponse<List<FrameServiceEntity>> listNewest(
+                                                            @PathVariable Integer clusterId,
+                                                            @RequestBody @Valid ManifestRequest req) {
         DeploymentDTO dto = new DeploymentDTO();
         dto.setClusterId(clusterId);
         dto.setDeployFileId(req.getDeployFileId());
         dto.setContentDecodePasswd(passwd(req.getContentDecodePasswd()));
-        return Result.success(physicalProductInstallService.listNewestByDeployment(dto));
+        return ApiResponse.ok(physicalProductInstallService.listNewestByDeployment(dto));
     }
     
     /** 校验所选服务的依赖完整性（缺依赖时返回错误信息）。 */
     @PostMapping("/check-dependency")
-    public Result checkDependency(
-                                  @PathVariable Integer clusterId,
-                                  @RequestBody @Valid ServiceIdsRequest req) {
-        return serviceInstallService.checkServiceDependency(clusterId, req.getServiceIds());
+    public ApiResponse<Object> checkDependency(
+                                               @PathVariable Integer clusterId,
+                                               @RequestBody @Valid ServiceIdsRequest req) {
+        Result result = serviceInstallService.checkServiceDependency(clusterId, req.getServiceIds());
+        if (!result.isSuccess()) {
+            return ApiResponse.fail(result.getCode(), String.valueOf(result.get(Constants.MSG)));
+        }
+        return ApiResponse.ok(result.getData());
     }
     
     // ─── 步骤 3/4：分配角色 ────────────────────────────────────────────────
     
     /** 获取 Master 角色列表（按部署清单回填 hosts）。 */
     @PostMapping("/service-roles")
-    public Result serviceRoles(
-                               @PathVariable Integer clusterId,
-                               @RequestBody @Valid RoleQueryRequest req) {
+    public ApiResponse<List<FrameServiceRoleEntity>> serviceRoles(
+                                                                  @PathVariable Integer clusterId,
+                                                                  @RequestBody @Valid RoleQueryRequest req) {
         ServiceRoleQueryDTO dto = new ServiceRoleQueryDTO();
         dto.setClusterId(clusterId);
         dto.setDeployFileId(req.getDeployFileId());
         dto.setContentDecodePasswd(passwd(req.getContentDecodePasswd()));
         dto.setServiceIds(joinIds(req.getServiceIds()));
         dto.setServiceRoleType(1);
-        return Result.success(physicalProductInstallService.getServiceRoleListByDeployment(dto));
+        return ApiResponse.ok(physicalProductInstallService.getServiceRoleListByDeployment(dto));
     }
     
     /** 获取非 Master（Worker/Client）角色列表（按部署清单回填 hosts）。 */
     @PostMapping("/non-master-roles")
-    public Result nonMasterRoles(
-                                 @PathVariable Integer clusterId,
-                                 @RequestBody @Valid RoleQueryRequest req) {
+    public ApiResponse<List<FrameServiceRoleEntity>> nonMasterRoles(
+                                                                    @PathVariable Integer clusterId,
+                                                                    @RequestBody @Valid RoleQueryRequest req) {
         DeploymentDTO dto = new DeploymentDTO();
         dto.setClusterId(clusterId);
         dto.setDeployFileId(req.getDeployFileId());
         dto.setContentDecodePasswd(passwd(req.getContentDecodePasswd()));
         dto.setServiceIds(joinIds(req.getServiceIds()));
-        return Result.success(physicalProductInstallService.getNonMasterRoleListByDeployment(dto));
+        return ApiResponse.ok(physicalProductInstallService.getNonMasterRoleListByDeployment(dto));
     }
     
     /** 查询集群全部已纳管主机（角色分配候选）。 */
     @GetMapping("/hosts")
-    public Result hosts(@PathVariable Integer clusterId) {
+    public ApiResponse<List<HostResponse>> hosts(@PathVariable Integer clusterId) {
         List<ClusterHostDO> list =
                 clusterHostService.list(new QueryWrapper<ClusterHostDO>().eq(Constants.CLUSTER_ID, clusterId)
                         .eq(Constants.MANAGED, 1)
                         .orderByAsc(Constants.HOSTNAME));
-        return Result.success(list);
+        return ApiResponse.ok(HostResponse.fromList(list));
     }
     
     /** 保存服务角色与主机映射关系（Master/Worker 步共用）。 */
     @PostMapping("/role-host-mapping")
-    public Result saveRoleHostMapping(
-                                      @PathVariable Integer clusterId,
-                                      @RequestBody @NotEmpty List<ServiceRoleHostMapping> list) {
+    public ApiResponse<Void> saveRoleHostMapping(
+                                                 @PathVariable Integer clusterId,
+                                                 @RequestBody @NotEmpty List<ServiceRoleHostMapping> list) {
         serviceInstallService.saveServiceRoleHostMapping(clusterId, list);
-        return Result.success();
+        return ApiResponse.ok();
     }
     
     // ─── 步骤 5：服务配置 ───────────────────────────────────────────────────
     
     /** 从服务 DDL 定义读取配置项（未安装服务的初始配置）。 */
     @GetMapping("/config-from-ddl")
-    public Result configFromDdl(
-                                @PathVariable Integer clusterId,
-                                @RequestParam String serviceName) {
-        return Result.success(serviceInstallService.getServiceConfigFromDdl(clusterId, serviceName));
+    public ApiResponse<List<ServiceConfig>> configFromDdl(
+                                                          @PathVariable Integer clusterId,
+                                                          @RequestParam String serviceName) {
+        return ApiResponse.ok(serviceInstallService.getServiceConfigFromDdl(clusterId, serviceName));
     }
     
     /** 保存单个服务的配置（请求体形态与 ClusterServiceConfigV2Controller 一致）。 */
     @PostMapping("/save-config")
-    public Result saveConfig(
-                             @PathVariable Integer clusterId,
-                             @RequestBody @Valid SaveConfigRequest req) {
+    public ApiResponse<Void> saveConfig(
+                                        @PathVariable Integer clusterId,
+                                        @RequestBody @Valid SaveConfigRequest req) {
         Integer roleGroupId = req.getRoleGroupId() != null ? req.getRoleGroupId() : -1;
         serviceInstallService.saveServiceConfig(clusterId, req.getServiceName(), req.getServiceConfig(), roleGroupId);
-        return Result.success();
+        return ApiResponse.ok();
     }
     
     // ─── 步骤 6：安装并启动 ────────────────────────────────────────────────
     
     /** 生成通用安装命令并立即执行 DAG，返回 dagId 供前端跳转 DAG 全屏图。 */
     @PostMapping("/install")
-    public Result install(
-                          @PathVariable Integer clusterId,
-                          @RequestBody @Valid InstallRequest req) {
+    public ApiResponse<Map<String, String>> install(
+                                                    @PathVariable Integer clusterId,
+                                                    @RequestBody @Valid InstallRequest req) {
         String dagId = extRepoInstallDelegateService.generateGenericInstallCommand(clusterId, req.getServiceNames());
         RunDagDto runDag = new RunDagDto();
         runDag.setDagId(dagId);
         extRepoInstallDelegateService.redeploy(runDag);
-        return Result.success(Collections.singletonMap("dagId", dagId));
+        return ApiResponse.ok(Collections.singletonMap("dagId", dagId));
     }
     
     // ─── 内部 DTO / 工具 ────────────────────────────────────────────────────

@@ -23,6 +23,8 @@
 package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
+import com.datasophon.api.dto.ApiResponse;
+import com.datasophon.api.dto.v2.NodeLabelResponse;
 import com.datasophon.api.service.ClusterNodeLabelService;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterNodeLabelEntity;
@@ -56,31 +58,43 @@ public class ClusterNodeLabelV2Controller extends ApiController {
     
     /** 标签列表 */
     @GetMapping("/list")
-    public Result list(@PathVariable Integer clusterId) {
+    public ApiResponse<List<NodeLabelResponse>> list(@PathVariable Integer clusterId) {
         List<ClusterNodeLabelEntity> list = nodeLabelService.queryClusterNodeLabel(clusterId);
-        return Result.success(list);
+        return ApiResponse.ok(NodeLabelResponse.fromList(list));
     }
     
     /** 新建标签 */
     @PostMapping
-    public Result save(@PathVariable Integer clusterId, @RequestParam String nodeLabel) {
-        return nodeLabelService.saveNodeLabel(clusterId, nodeLabel);
+    public ApiResponse<Void> save(@PathVariable Integer clusterId, @RequestParam String nodeLabel) {
+        Result result = nodeLabelService.saveNodeLabel(clusterId, nodeLabel);
+        if (result.isSuccess()) {
+            return ApiResponse.ok();
+        }
+        return ApiResponse.fail(500, result.getMsg());
     }
     
     /** 删除标签 */
     @DeleteMapping("/{nodeLabelId}")
-    public Result delete(@PathVariable Integer clusterId, @PathVariable Integer nodeLabelId) {
-        return nodeLabelService.deleteNodeLabel(nodeLabelId);
+    public ApiResponse<Void> delete(@PathVariable Integer clusterId, @PathVariable Integer nodeLabelId) {
+        Result result = nodeLabelService.deleteNodeLabel(nodeLabelId);
+        if (result.isSuccess()) {
+            return ApiResponse.ok();
+        }
+        return ApiResponse.fail(500, result.getMsg());
     }
     
     /** 分配标签给主机 */
     @PostMapping("/assign")
-    public Result assign(@PathVariable Integer clusterId, @RequestBody AssignLabelRequest body) {
+    public ApiResponse<Void> assign(@PathVariable Integer clusterId, @RequestBody AssignLabelRequest body) {
         // v1 service 接受逗号拼接字符串，在 v2 入口做适配
         String hostIdsStr = body.getHostIds().stream()
                 .map(String::valueOf)
                 .collect(Collectors.joining(","));
-        return nodeLabelService.assignNodeLabel(body.getNodeLabelId(), hostIdsStr);
+        Result result = nodeLabelService.assignNodeLabel(body.getNodeLabelId(), hostIdsStr);
+        if (result.isSuccess()) {
+            return ApiResponse.ok();
+        }
+        return ApiResponse.fail(500, result.getMsg());
     }
     
     @Data

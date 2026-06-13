@@ -29,9 +29,9 @@ const GroupModal: React.FC<Props> = ({
     {
       refreshDeps: [clusterId],
       formatResult: (res) => {
-        const list = (res as any)?.data ?? [];
+        const list = res?.data ?? [];
         return Array.isArray(list)
-          ? list.map((item: { serviceName: string }) => ({
+          ? list.map((item: DATASOPHON.AlertCategoryResponse) => ({
               label: item.serviceName,
               value: item.serviceName,
             }))

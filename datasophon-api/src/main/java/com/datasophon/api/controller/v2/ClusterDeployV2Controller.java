@@ -23,15 +23,21 @@
 package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
+import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.InstallComponentDTO;
 import com.datasophon.api.dto.upload.BigFileDTO;
 import com.datasophon.api.dto.upload.CheckChunkDTO;
 import com.datasophon.api.dto.upload.MergeChunkDTO;
+import com.datasophon.api.dto.v2.UploadedFileResponse;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
 import com.datasophon.api.service.extrepo.ExtRepoMetaService;
 import com.datasophon.api.service.tmpfile.UploadTempFileService;
-import com.datasophon.common.utils.Result;
+import com.datasophon.api.vo.extrepo.ImportCompProgressVO;
+import com.datasophon.api.vo.extrepo.InstallResult;
+import com.datasophon.api.vo.extrepo.ValidateResultVO;
+import com.datasophon.api.vo.tmpfile.MergeProgressVO;
+import com.datasophon.dao.entity.UploadTempFile;
 import com.datasophon.dao.entity.UploadTempFileChunk;
 
 import jakarta.validation.Valid;
@@ -69,113 +75,124 @@ public class ClusterDeployV2Controller extends ApiController {
     
     // ─── 切片 7a：部署清单 ──────────────────────────────────────────────────
     
-    /** 上传单个文件（清单 yaml），返回 UploadTempFile（含 id 字段）。 */
+    /** 上传单个文件（清单 yaml），返回 UploadedFileResponse（含 id 字段）。 */
     @PostMapping("/upload")
-    public Result upload(
-                         @PathVariable Integer clusterId,
-                         @RequestPart("file") MultipartFile file) {
-        return Result.success(uploadTempFileService.upload(file));
+    public ApiResponse<UploadedFileResponse> upload(
+                                                    @PathVariable Integer clusterId,
+                                                    @RequestPart("file") MultipartFile file) {
+        UploadTempFile entity = uploadTempFileService.upload(file);
+        return ApiResponse.ok(UploadedFileResponse.from(entity));
     }
     
     /** 校验部署清单，返回制品/版本预览。 */
     @PostMapping("/validate-deployment-file")
-    public Result validateDeploymentFile(
-                                         @PathVariable Integer clusterId,
-                                         @RequestBody @Valid DeployRequest req) {
-        return Result.success(extRepoInstallDelegateService.validDeploymentFile(buildDeployDto(clusterId, req)));
+    public ApiResponse<ValidateResultVO> validateDeploymentFile(
+                                                                @PathVariable Integer clusterId,
+                                                                @RequestBody @Valid DeployRequest req) {
+        ValidateResultVO result = extRepoInstallDelegateService.validDeploymentFile(buildDeployDto(clusterId, req));
+        return ApiResponse.ok(result);
     }
     
     /** 执行部署，返回 InstallResult（含 dagId），前端跳 DAG 图。 */
     @PostMapping("/deploy")
-    public Result deploy(
-                         @PathVariable Integer clusterId,
-                         @RequestBody @Valid DeployRequest req) {
-        return Result.success(extRepoInstallDelegateService.deploy(buildDeployDto(clusterId, req)));
+    public ApiResponse<InstallResult> deploy(
+                                             @PathVariable Integer clusterId,
+                                             @RequestBody @Valid DeployRequest req) {
+        InstallResult result = extRepoInstallDelegateService.deploy(buildDeployDto(clusterId, req));
+        return ApiResponse.ok(result);
     }
     
     // ─── 切片 7b：部署包（元数据/包校验 + 导入） ───────────────────────────
     
     /** 校验配置元数据文件（meta yaml）。 */
     @PostMapping("/valid-meta-file")
-    public Result validMetaFile(
-                                @PathVariable Integer clusterId,
-                                @RequestBody @Valid InstallComponentRequest req) {
-        return Result.success(extRepoMetaService.validMetaFile(buildInstallDto(req)));
+    public ApiResponse<ValidateResultVO> validMetaFile(
+                                                       @PathVariable Integer clusterId,
+                                                       @RequestBody @Valid InstallComponentRequest req) {
+        ValidateResultVO result = extRepoMetaService.validMetaFile(buildInstallDto(req));
+        return ApiResponse.ok(result);
     }
     
     /** 校验部署包文件（安装包完整性）。 */
     @PostMapping("/validate-pkg-file")
-    public Result validatePkgFile(
-                                  @PathVariable Integer clusterId,
-                                  @RequestBody @Valid InstallComponentRequest req) {
-        return Result.success(extRepoMetaService.validatePkgFile(buildInstallDto(req)));
+    public ApiResponse<ValidateResultVO> validatePkgFile(
+                                                         @PathVariable Integer clusterId,
+                                                         @RequestBody @Valid InstallComponentRequest req) {
+        ValidateResultVO result = extRepoMetaService.validatePkgFile(buildInstallDto(req));
+        return ApiResponse.ok(result);
     }
     
     /** 触发导入安装组件（异步），返回 ImportCompProgressVO（含 progressId）。 */
     @PostMapping("/import-cmp")
-    public Result importCmp(
-                            @PathVariable Integer clusterId,
-                            @RequestBody @Valid InstallComponentRequest req) {
-        return Result.success(extRepoMetaService.importCmp(buildInstallDto(req)));
+    public ApiResponse<ImportCompProgressVO> importCmp(
+                                                       @PathVariable Integer clusterId,
+                                                       @RequestBody @Valid InstallComponentRequest req) {
+        ImportCompProgressVO result = extRepoMetaService.importCmp(buildInstallDto(req));
+        return ApiResponse.ok(result);
     }
     
     /** 查询导入进度。 */
     @PostMapping("/query-progress")
-    public Result queryProgress(
-                                @PathVariable Integer clusterId,
-                                @RequestBody @Valid ProgressIdRequest req) {
-        return Result.success(extRepoMetaService.queryProgress(req.getProgressId()));
+    public ApiResponse<ImportCompProgressVO> queryProgress(
+                                                           @PathVariable Integer clusterId,
+                                                           @RequestBody @Valid ProgressIdRequest req) {
+        ImportCompProgressVO result = extRepoMetaService.queryProgress(req.getProgressId());
+        return ApiResponse.ok(result);
     }
     
     // ─── 切片 7b：部署包分片上传 ────────────────────────────────────────────
     
-    /** 创建分片上传任务（支持 MD5 秒传），返回 UploadTempFile（含 id/chunkSize/uploadType）。 */
+    /** 创建分片上传任务（支持 MD5 秒传），返回 UploadedFileResponse（含 id/chunkSize/uploadType）。 */
     @PostMapping("/create-shard-task")
-    public Result createShardTask(
-                                  @PathVariable Integer clusterId,
-                                  @RequestBody @Valid BigFileDTO info) {
-        return Result.success(uploadTempFileService.createShardUploadTask(info));
+    public ApiResponse<UploadedFileResponse> createShardTask(
+                                                             @PathVariable Integer clusterId,
+                                                             @RequestBody @Valid BigFileDTO info) {
+        UploadTempFile entity = uploadTempFileService.createShardUploadTask(info);
+        return ApiResponse.ok(UploadedFileResponse.from(entity));
     }
     
     /** 上传单个分片（multipart）。 */
     @PostMapping("/upload-chunk")
-    public Result uploadChunk(
-                              @PathVariable Integer clusterId,
-                              @NotNull(message = "分片不能为空") @RequestPart("chunk") MultipartFile chunk,
-                              @NotNull(message = "chunkNo 不能为空") Integer chunkNo,
-                              @NotNull(message = "attachId 不能为空") Integer attachId,
-                              String md5) {
+    public ApiResponse<Object> uploadChunk(
+                                           @PathVariable Integer clusterId,
+                                           @NotNull(message = "分片不能为空") @RequestPart("chunk") MultipartFile chunk,
+                                           @NotNull(message = "chunkNo 不能为空") Integer chunkNo,
+                                           @NotNull(message = "attachId 不能为空") Integer attachId,
+                                           String md5) {
         com.datasophon.api.dto.upload.ChunkDTO info = new com.datasophon.api.dto.upload.ChunkDTO();
         info.setChunk(chunk);
         info.setChunkNo(chunkNo);
         info.setAttachId(attachId);
         info.setMd5(md5);
-        return Result.success(uploadTempFileService.uploadChunk(info));
+        UploadTempFileChunk result = uploadTempFileService.uploadChunk(info);
+        return ApiResponse.ok(result);
     }
     
     /** 检查分片是否已上传（断点续传去重）。 */
     @PostMapping("/is-chunk-uploaded")
-    public Result isChunkUploaded(
-                                  @PathVariable Integer clusterId,
-                                  @RequestBody CheckChunkDTO dto) {
+    public ApiResponse<Boolean> isChunkUploaded(
+                                                @PathVariable Integer clusterId,
+                                                @RequestBody CheckChunkDTO dto) {
         UploadTempFileChunk result = uploadTempFileService.isChunkUploaded(dto);
-        return Result.success(result != null);
+        return ApiResponse.ok(result != null);
     }
     
     /** 触发合并分片（推荐 async=true，避免请求超时）。 */
     @PostMapping("/merge-chunk")
-    public Result mergeChunk(
-                             @PathVariable Integer clusterId,
-                             @RequestBody @Valid MergeChunkDTO vo) {
-        return Result.success(uploadTempFileService.mergeChunk(vo));
+    public ApiResponse<Object> mergeChunk(
+                                          @PathVariable Integer clusterId,
+                                          @RequestBody @Valid MergeChunkDTO vo) {
+        MergeProgressVO result = uploadTempFileService.mergeChunk(vo);
+        return ApiResponse.ok(result);
     }
     
     /** 查询分片合并进度。 */
     @PostMapping("/query-merge-progress")
-    public Result queryMergeProgress(
-                                     @PathVariable Integer clusterId,
-                                     @RequestBody @Valid ProgressIdRequest req) {
-        return Result.success(uploadTempFileService.queryMergeProgress(req.getProgressId()));
+    public ApiResponse<MergeProgressVO> queryMergeProgress(
+                                                           @PathVariable Integer clusterId,
+                                                           @RequestBody @Valid ProgressIdRequest req) {
+        MergeProgressVO result = uploadTempFileService.queryMergeProgress(req.getProgressId());
+        return ApiResponse.ok(result);
     }
     
     // ─── 内部 DTO / 工具 ────────────────────────────────────────────────────

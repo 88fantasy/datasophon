@@ -13,7 +13,7 @@ export async function listYarnQueues(
   clusterId: number,
   params: { page?: number; pageSize?: number },
 ) {
-  return request<DATASOPHON.ApiResponse<DATASOPHON.YarnQueue[]>>(
+  return request<DATASOPHON.ApiResponse<DATASOPHON.YarnQueuePageResponse>>(
     `/cluster/${clusterId}/yarn/queue/list`,
     { method: 'GET', params },
   );
@@ -22,7 +22,7 @@ export async function listYarnQueues(
 /** 新建 YARN 队列 */
 export async function saveYarnQueue(
   clusterId: number,
-  body: Omit<DATASOPHON.YarnQueue, 'id' | 'createTime'>,
+  body: DATASOPHON.SaveYarnQueueRequest,
 ) {
   return request<DATASOPHON.ApiResponse<void>>(
     `/cluster/${clusterId}/yarn/queue/save`,
@@ -33,7 +33,7 @@ export async function saveYarnQueue(
 /** 修改 YARN 队列 */
 export async function updateYarnQueue(
   clusterId: number,
-  body: DATASOPHON.YarnQueue,
+  body: DATASOPHON.UpdateYarnQueueRequest,
 ) {
   return request<DATASOPHON.ApiResponse<void>>(
     `/cluster/${clusterId}/yarn/queue/update`,

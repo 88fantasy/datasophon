@@ -28,12 +28,7 @@ const LogModal: React.FC<Props> = ({
     getRoleInstanceLog(clusterId, instanceId, record.id)
       .then((res) => {
         if (cancelled) return;
-        const raw = (res as any)?.data ?? (res as any) ?? '';
-        // data 字段可能是 Result 对象或直接字符串
-        const text =
-          typeof raw === 'string'
-            ? raw
-            : ((raw?.data as string) ?? JSON.stringify(raw, null, 2));
+        const text = (res as any)?.data ?? '';
         setLogText(text);
       })
       .catch(() => {

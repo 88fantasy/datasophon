@@ -46,4 +46,22 @@ declare namespace DATASOPHON {
     nodes: DagNode[];
     edges: DagEdge[];
   }
+
+  /** 命令历史条目响应体，对应后端 DagCommandResponse */
+  interface DagCommandResponse {
+    id: string;
+    clusterId: number;
+    dagName: string;
+    description?: string;
+    status: DagStatus;
+    createdTime?: string;
+    startedTime?: string;
+    completedTime?: string;
+  }
+
+  /** 命令历史分页响应体，对应后端 DagCommandPageResponse */
+  interface DagCommandPageResponse {
+    records: DagCommandResponse[];
+    total: number;
+  }
 }
