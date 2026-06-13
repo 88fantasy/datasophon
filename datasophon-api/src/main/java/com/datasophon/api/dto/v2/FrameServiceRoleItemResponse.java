@@ -22,7 +22,7 @@
 
 package com.datasophon.api.dto.v2;
 
-import com.datasophon.dao.entity.FrameServiceEntity;
+import com.datasophon.dao.entity.FrameServiceRoleEntity;
 
 import java.util.Collections;
 import java.util.List;
@@ -31,43 +31,41 @@ import java.util.stream.Collectors;
 import lombok.Data;
 
 /**
- * 物理机框架服务响应 DTO，只暴露前端所需字段，屏蔽内部字段（serviceJson、configFileJson 等）。
+ * 框架服务角色响应 DTO，只暴露前端 addService 向导所需字段，
+ * 屏蔽内部字段（serviceRoleJson、serviceRoleJsonMd5、jmxPort、logFile、sortNum 等）。
  */
 @Data
-public class FrameServiceItemResponse {
+public class FrameServiceRoleItemResponse {
     
     private Integer id;
-    private Integer frameId;
-    private String frameCode;
-    private String serviceName;
-    private String label;
-    private String serviceVersion;
-    private String serviceDesc;
-    private Boolean installed;
-    /** 部署清单中是否被勾选（addService 向导上下文，非清单场景为 null）。 */
-    private Boolean selected;
+    private Integer serviceId;
+    private String serviceRoleName;
+    /** 角色类型："master" / "worker" / "client" / "slave"，对应前端 FrameServiceRole.serviceRoleType。 */
+    private String serviceRoleType;
+    private String cardinality;
+    /** 部署清单回填的主机列表（非清单场景为 null）。 */
+    private List<String> hosts;
     
-    public static FrameServiceItemResponse from(FrameServiceEntity entity) {
+    public static FrameServiceRoleItemResponse from(FrameServiceRoleEntity entity) {
         if (entity == null) {
             return null;
         }
-        FrameServiceItemResponse r = new FrameServiceItemResponse();
+        FrameServiceRoleItemResponse r = new FrameServiceRoleItemResponse();
         r.setId(entity.getId());
-        r.setFrameId(entity.getFrameId());
-        r.setFrameCode(entity.getFrameCode());
-        r.setServiceName(entity.getServiceName());
-        r.setLabel(entity.getLabel());
-        r.setServiceVersion(entity.getServiceVersion());
-        r.setServiceDesc(entity.getServiceDesc());
-        r.setInstalled(entity.getInstalled());
-        r.setSelected(entity.getSelected());
+        r.setServiceId(entity.getServiceId());
+        r.setServiceRoleName(entity.getServiceRoleName());
+        r.setServiceRoleType(entity.getServiceRoleType() != null
+                ? entity.getServiceRoleType().getDesc()
+                : null);
+        r.setCardinality(entity.getCardinality());
+        r.setHosts(entity.getHosts());
         return r;
     }
     
-    public static List<FrameServiceItemResponse> fromList(List<FrameServiceEntity> entities) {
+    public static List<FrameServiceRoleItemResponse> fromList(List<FrameServiceRoleEntity> entities) {
         if (entities == null) {
             return Collections.emptyList();
         }
-        return entities.stream().map(FrameServiceItemResponse::from).collect(Collectors.toList());
+        return entities.stream().map(FrameServiceRoleItemResponse::from).collect(Collectors.toList());
     }
 }

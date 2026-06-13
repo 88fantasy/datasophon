@@ -26,7 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.datasophon.api.vo.frameinfo.FrameInfoVO;
 import com.datasophon.dao.entity.FrameServiceEntity;
+import com.datasophon.dao.entity.FrameServiceRoleEntity;
 import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
+import com.datasophon.dao.enums.RoleType;
 
 import java.util.List;
 
@@ -177,5 +179,81 @@ class FrameDtoTest {
     @Test
     void frameWithServices_fromList_null_returnsEmptyList() {
         assertThat(FrameWithServicesResponse.fromList(null)).isEmpty();
+    }
+    
+    // ─── FrameServiceItemResponse.selected 字段映射（addService 上下文）──────
+    
+    @Test
+    void serviceItem_from_selected_isMapped() {
+        FrameServiceEntity entity = new FrameServiceEntity();
+        entity.setId(5);
+        entity.setServiceName("KAFKA");
+        entity.setSelected(true);
+        entity.setInstalled(false);
+        
+        FrameServiceItemResponse resp = FrameServiceItemResponse.from(entity);
+        
+        assertThat(resp.getSelected()).isTrue();
+    }
+    
+    @Test
+    void serviceItem_from_selected_nullWhenNotSet() {
+        FrameServiceEntity entity = new FrameServiceEntity();
+        entity.setId(6);
+        entity.setServiceName("SPARK3");
+        
+        FrameServiceItemResponse resp = FrameServiceItemResponse.from(entity);
+        
+        assertThat(resp.getSelected()).isNull();
+    }
+    
+    // ─── FrameServiceRoleItemResponse.from() ────────────────────────────────
+    
+    @Test
+    void serviceRoleItem_from_mapsExposedFields() {
+        FrameServiceRoleEntity entity = new FrameServiceRoleEntity();
+        entity.setId(100);
+        entity.setServiceId(10);
+        entity.setServiceRoleName("NameNode");
+        entity.setServiceRoleType(RoleType.MASTER);
+        entity.setCardinality("1");
+        // 内部字段 — 不应出现在 DTO 中
+        entity.setServiceRoleJson("{\"role\":\"NameNode\"}");
+        entity.setServiceRoleJsonMd5("deadbeef");
+        
+        FrameServiceRoleItemResponse resp = FrameServiceRoleItemResponse.from(entity);
+        
+        assertThat(resp.getId()).isEqualTo(100);
+        assertThat(resp.getServiceId()).isEqualTo(10);
+        assertThat(resp.getServiceRoleName()).isEqualTo("NameNode");
+        assertThat(resp.getServiceRoleType()).isEqualTo("master");
+        assertThat(resp.getCardinality()).isEqualTo("1");
+        // 确认内部字段未暴露
+        assertThat(resp.getClass().getDeclaredFields())
+                .extracting("name")
+                .doesNotContain("serviceRoleJson", "serviceRoleJsonMd5", "jmxPort", "logFile", "sortNum", "frameCode");
+    }
+    
+    @Test
+    void serviceRoleItem_from_null_returnsNull() {
+        assertThat(FrameServiceRoleItemResponse.from(null)).isNull();
+    }
+    
+    @Test
+    void serviceRoleItem_fromList_null_returnsEmpty() {
+        assertThat(FrameServiceRoleItemResponse.fromList(null)).isEmpty();
+    }
+    
+    @Test
+    void serviceRoleItem_from_serviceRoleType_usesDescNotEnumName() {
+        FrameServiceRoleEntity entity = new FrameServiceRoleEntity();
+        entity.setId(200);
+        entity.setServiceRoleType(RoleType.WORKER);
+        
+        FrameServiceRoleItemResponse resp = FrameServiceRoleItemResponse.from(entity);
+        
+        // 前端期望小写字符串("worker")，不是枚举名("WORKER")
+        assertThat(resp.getServiceRoleType()).isEqualTo("worker");
+        assertThat(resp.getServiceRoleType()).isNotEqualTo("WORKER");
     }
 }

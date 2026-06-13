@@ -27,6 +27,8 @@ import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.extrepo.DeploymentDTO;
 import com.datasophon.api.dto.extrepo.RunDagDto;
 import com.datasophon.api.dto.extrepo.ServiceRoleQueryDTO;
+import com.datasophon.api.dto.v2.FrameServiceItemResponse;
+import com.datasophon.api.dto.v2.FrameServiceRoleItemResponse;
 import com.datasophon.api.dto.v2.HostResponse;
 import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
@@ -37,8 +39,6 @@ import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleHostMapping;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterHostDO;
-import com.datasophon.dao.entity.FrameServiceEntity;
-import com.datasophon.dao.entity.FrameServiceRoleEntity;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
@@ -93,14 +93,14 @@ public class ClusterAddServiceV2Controller extends ApiController {
     
     /** 按部署清单获取最新服务列表（清单中出现的服务带 selected=true）。 */
     @PostMapping("/list-newest")
-    public ApiResponse<List<FrameServiceEntity>> listNewest(
-                                                            @PathVariable Integer clusterId,
-                                                            @RequestBody @Valid ManifestRequest req) {
+    public ApiResponse<List<FrameServiceItemResponse>> listNewest(
+                                                                  @PathVariable Integer clusterId,
+                                                                  @RequestBody @Valid ManifestRequest req) {
         DeploymentDTO dto = new DeploymentDTO();
         dto.setClusterId(clusterId);
         dto.setDeployFileId(req.getDeployFileId());
         dto.setContentDecodePasswd(passwd(req.getContentDecodePasswd()));
-        return ApiResponse.ok(physicalProductInstallService.listNewestByDeployment(dto));
+        return ApiResponse.ok(FrameServiceItemResponse.fromList(physicalProductInstallService.listNewestByDeployment(dto)));
     }
     
     /** 校验所选服务的依赖完整性（缺依赖时返回错误信息）。 */
@@ -119,29 +119,29 @@ public class ClusterAddServiceV2Controller extends ApiController {
     
     /** 获取 Master 角色列表（按部署清单回填 hosts）。 */
     @PostMapping("/service-roles")
-    public ApiResponse<List<FrameServiceRoleEntity>> serviceRoles(
-                                                                  @PathVariable Integer clusterId,
-                                                                  @RequestBody @Valid RoleQueryRequest req) {
+    public ApiResponse<List<FrameServiceRoleItemResponse>> serviceRoles(
+                                                                        @PathVariable Integer clusterId,
+                                                                        @RequestBody @Valid RoleQueryRequest req) {
         ServiceRoleQueryDTO dto = new ServiceRoleQueryDTO();
         dto.setClusterId(clusterId);
         dto.setDeployFileId(req.getDeployFileId());
         dto.setContentDecodePasswd(passwd(req.getContentDecodePasswd()));
         dto.setServiceIds(joinIds(req.getServiceIds()));
         dto.setServiceRoleType(1);
-        return ApiResponse.ok(physicalProductInstallService.getServiceRoleListByDeployment(dto));
+        return ApiResponse.ok(FrameServiceRoleItemResponse.fromList(physicalProductInstallService.getServiceRoleListByDeployment(dto)));
     }
     
     /** 获取非 Master（Worker/Client）角色列表（按部署清单回填 hosts）。 */
     @PostMapping("/non-master-roles")
-    public ApiResponse<List<FrameServiceRoleEntity>> nonMasterRoles(
-                                                                    @PathVariable Integer clusterId,
-                                                                    @RequestBody @Valid RoleQueryRequest req) {
+    public ApiResponse<List<FrameServiceRoleItemResponse>> nonMasterRoles(
+                                                                          @PathVariable Integer clusterId,
+                                                                          @RequestBody @Valid RoleQueryRequest req) {
         DeploymentDTO dto = new DeploymentDTO();
         dto.setClusterId(clusterId);
         dto.setDeployFileId(req.getDeployFileId());
         dto.setContentDecodePasswd(passwd(req.getContentDecodePasswd()));
         dto.setServiceIds(joinIds(req.getServiceIds()));
-        return ApiResponse.ok(physicalProductInstallService.getNonMasterRoleListByDeployment(dto));
+        return ApiResponse.ok(FrameServiceRoleItemResponse.fromList(physicalProductInstallService.getNonMasterRoleListByDeployment(dto)));
     }
     
     /** 查询集群全部已纳管主机（角色分配候选）。 */

@@ -30,14 +30,11 @@ import com.datasophon.api.dto.v2.FrameResponse;
 import com.datasophon.api.dto.v2.ManagersRequest;
 import com.datasophon.api.dto.v2.UpdateClusterRequest;
 import com.datasophon.api.dto.v2.UserResponse;
-import com.datasophon.api.exceptions.BusinessHintException;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterRoleUserService;
 import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.UserInfoService;
-import com.datasophon.dao.entity.ClusterInfoEntity;
-import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.UserInfoEntity;
 
 import jakarta.validation.Valid;
@@ -95,16 +92,9 @@ public class ClusterV2Controller extends ApiController {
     @PostMapping("/cluster")
     @UserPermission
     public ApiResponse<ClusterResponse> createCluster(@Valid @RequestBody CreateClusterRequest req) {
-        FrameInfoEntity frame = frameInfoService.getById(req.getFrameId());
-        if (frame == null) {
-            throw new BusinessHintException("框架不存在");
-        }
-        ClusterInfoEntity entity = req.toEntity();
-        // 修复：从 frameId 解析 clusterFrame（frameCode）与 frameVersion，
-        // 否则 saveCluster→putClusterVariable 读取 clusterFrame 会得到 null。
-        entity.setClusterFrame(frame.getFrameCode());
-        entity.setFrameVersion(frame.getFrameVersion());
-        return ApiResponse.ok(ClusterResponse.from(clusterInfoService.saveCluster(entity)));
+        // frameId → clusterFrame/frameVersion 解析已下沉到 ClusterInfoService.saveCluster，
+        // v1/v2 两个入口均受益，controller 保持薄。
+        return ApiResponse.ok(ClusterResponse.from(clusterInfoService.saveCluster(req.toEntity())));
     }
     
     @PutMapping("/cluster/{id}")

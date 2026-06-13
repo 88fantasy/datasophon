@@ -46,7 +46,7 @@ public class CreateClusterRequest {
     @NotNull
     private ClusterArchType archType;
     
-    /** 转为 {@link ClusterInfoEntity}；clusterFrame / frameVersion 由 controller 解析 frameId 后回填。 */
+    /** 转为 {@link ClusterInfoEntity}；clusterFrame / frameVersion 由 {@code ClusterInfoService.saveCluster} 解析 frameId 后回填。 */
     public ClusterInfoEntity toEntity() {
         ClusterInfoEntity e = new ClusterInfoEntity();
         e.setClusterName(clusterName);
