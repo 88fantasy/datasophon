@@ -3,16 +3,16 @@
  * 路由：/cluster/:clusterId/dag/:dagId（layout: false，新窗口全屏）
  * 移植自 datasophon-ui/src/components/DagModal/index.tsx
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from '@umijs/max';
-import { Graph, IS_SAFARI } from '@antv/x6';
-import { blue, gold, green, grey, red } from '@ant-design/colors';
-import { Button, message, Modal, Spin } from 'antd';
-import { request } from '@umijs/max';
 
+import { blue, gold, green, grey, red } from '@ant-design/colors';
+import { Graph, IS_SAFARI } from '@antv/x6';
+import { request, useParams } from '@umijs/max';
+import { Button, Modal, message, Spin } from 'antd';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { getDagGraph, redeployDag } from '@/services/dag';
+import { invokeGenPort, invokeGenSourceAndTarget } from './antvUtils';
 import DataProcessingDagNode from './DataProcessingDagNode';
 import dagEvent, { dagUiEvent } from './dagEvent';
-import { invokeGenPort, invokeGenSourceAndTarget } from './antvUtils';
 import {
   T_CANCEL,
   T_FAILED,
@@ -20,7 +20,6 @@ import {
   T_RUNNING,
   T_SUCCESS,
 } from './dagStatus';
-import { getDagGraph, redeployDag } from '@/services/dag';
 
 // 注册 x6 节点 / 边 / 连接器（全局只需一次）
 DataProcessingDagNode.invokeInit();
@@ -28,10 +27,26 @@ DataProcessingDagNode.invokeInit();
 // ── 边动画配置（按源节点状态） ────────────────────────────────────────────────
 
 const LINE_STATUS: Record<string, Record<string, string | number>> = {
-  [T_SUCCESS]: { 'line/stroke': green.primary!, 'line/strokeDasharray': 0, 'line/style/animation': '' },
-  [T_FAILED]: { 'line/stroke': red.primary!, 'line/strokeDasharray': 0, 'line/style/animation': '' },
-  [T_CANCEL]: { 'line/stroke': gold.primary!, 'line/strokeDasharray': 0, 'line/style/animation': '' },
-  [T_PENDING]: { 'line/stroke': grey.primary!, 'line/strokeDasharray': 0, 'line/style/animation': '' },
+  [T_SUCCESS]: {
+    'line/stroke': green.primary!,
+    'line/strokeDasharray': 0,
+    'line/style/animation': '',
+  },
+  [T_FAILED]: {
+    'line/stroke': red.primary!,
+    'line/strokeDasharray': 0,
+    'line/style/animation': '',
+  },
+  [T_CANCEL]: {
+    'line/stroke': gold.primary!,
+    'line/strokeDasharray': 0,
+    'line/style/animation': '',
+  },
+  [T_PENDING]: {
+    'line/stroke': grey.primary!,
+    'line/strokeDasharray': 0,
+    'line/style/animation': '',
+  },
   [T_RUNNING]: {
     'line/stroke': blue.primary!,
     'line/strokeDasharray': 5,
@@ -105,7 +120,9 @@ function applyLrLayout(nodes: any[], edges: any[]): any[] {
   // BFS 层级分配
   const levels: string[][] = [];
   const visited = new Set<string>();
-  let queue = nodes.filter((n) => inDegree[n.id] === 0).map((n) => n.id as string);
+  let queue = nodes
+    .filter((n) => inDegree[n.id] === 0)
+    .map((n) => n.id as string);
 
   while (queue.length > 0) {
     levels.push(queue);
@@ -150,9 +167,11 @@ const DagGraphPage: React.FC = () => {
   const nodeMapRef = useRef<Record<string, any>>({});
 
   // 调度日志 Modal 状态
-  const [scheduleLog, setScheduleLog] = useState<{ open: boolean; loading: boolean; text: string }>(
-    { open: false, loading: false, text: '' },
-  );
+  const [scheduleLog, setScheduleLog] = useState<{
+    open: boolean;
+    loading: boolean;
+    text: string;
+  }>({ open: false, loading: false, text: '' });
 
   // ── 边动画更新 ──────────────────────────────────────────────────────────────
   const updateAnimate = useCallback(() => {
@@ -223,9 +242,15 @@ const DagGraphPage: React.FC = () => {
 
         if (!update) {
           // 首次：LR 拓扑布局后整体渲染
-          const positionedNodes = applyLrLayout(transferred.nodes, transferred.edges);
+          const positionedNodes = applyLrLayout(
+            transferred.nodes,
+            transferred.edges,
+          );
           dagEvent.emit(dagUiEvent.updateNodeSize);
-          graphRef.current?.fromJSON({ nodes: positionedNodes, edges: transferred.edges });
+          graphRef.current?.fromJSON({
+            nodes: positionedNodes,
+            edges: transferred.edges,
+          });
         } else {
           // 后续：只更新数据 + 边动画
           dagEvent.emit(dagUiEvent.updateNodeData, transferred.nodeMap);
@@ -278,7 +303,11 @@ const DagGraphPage: React.FC = () => {
             : JSON.stringify(res?.data ?? res, null, 2);
       setScheduleLog((p) => ({ ...p, loading: false, text }));
     } catch {
-      setScheduleLog((p) => ({ ...p, loading: false, text: '获取调度日志失败' }));
+      setScheduleLog((p) => ({
+        ...p,
+        loading: false,
+        text: '获取调度日志失败',
+      }));
     }
   }, [clusterId, dagId]);
 
@@ -293,7 +322,15 @@ const DagGraphPage: React.FC = () => {
   }, [invokeInitGraph, invokeLoad, cancelPolling]);
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#f5f5f5' }}>
+    <div
+      style={{
+        position: 'relative',
+        width: '100vw',
+        height: '100vh',
+        overflow: 'hidden',
+        background: '#f5f5f5',
+      }}
+    >
       {/* x6 画布容器 */}
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 
@@ -324,7 +361,9 @@ const DagGraphPage: React.FC = () => {
         destroyOnClose
       >
         {scheduleLog.loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+          <div
+            style={{ display: 'flex', justifyContent: 'center', padding: 40 }}
+          >
             <Spin />
           </div>
         ) : (

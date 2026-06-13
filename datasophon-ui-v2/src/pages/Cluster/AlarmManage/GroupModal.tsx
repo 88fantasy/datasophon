@@ -6,10 +6,7 @@ import {
 import { useRequest } from '@umijs/max';
 import { message } from 'antd';
 import React from 'react';
-import {
-  listAlertCategories,
-  saveAlertGroup,
-} from '@/services/alarm';
+import { listAlertCategories, saveAlertGroup } from '@/services/alarm';
 
 interface Props {
   open: boolean;

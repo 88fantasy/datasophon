@@ -1,4 +1,8 @@
-import { DeleteOutlined, PartitionOutlined, TagsOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  PartitionOutlined,
+  TagsOutlined,
+} from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import {
@@ -12,10 +16,7 @@ import {
 } from 'antd';
 import React, { useContext, useRef, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
-import {
-  deleteClusterHosts,
-  listClusterHosts,
-} from '@/services/host';
+import { deleteClusterHosts, listClusterHosts } from '@/services/host';
 import AssignLabelModal from './components/AssignLabelModal';
 import AssignRackModal from './components/AssignRackModal';
 import LabelManageModal from './components/LabelManageModal';
@@ -64,7 +65,9 @@ const HostManage: React.FC = () => {
   const { clusterId } = clusterCtx;
   const actionRef = useRef<ActionType>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([]);
-  const [selectedRows, setSelectedRows] = useState<DATASOPHON.HostResponse[]>([]);
+  const [_selectedRows, setSelectedRows] = useState<DATASOPHON.HostResponse[]>(
+    [],
+  );
 
   const columns: ProColumns<DATASOPHON.HostResponse>[] = [
     {
@@ -250,9 +253,7 @@ const HostManage: React.FC = () => {
         <LabelManageModal
           key="label-manage"
           clusterId={clusterId}
-          trigger={
-            <Button icon={<TagsOutlined />}>标签管理</Button>
-          }
+          trigger={<Button icon={<TagsOutlined />}>标签管理</Button>}
         />,
       ]}
       search={{ filterType: 'light' }}

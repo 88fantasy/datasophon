@@ -1,12 +1,7 @@
-import {
-  BookOutlined,
-  CheckOutlined,
-  ForkOutlined,
-  GlobalOutlined,
-} from '@ant-design/icons';
-import { getAllLocales, getLocale, history, setLocale } from '@umijs/max';
+import { CheckOutlined, GlobalOutlined } from '@ant-design/icons';
+import { getAllLocales, getLocale, setLocale } from '@umijs/max';
 import type { MenuProps } from 'antd';
-import { Button, Tooltip } from 'antd';
+import { Button } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { useMemo } from 'react';
 import HeaderDropdown from '../HeaderDropdown';

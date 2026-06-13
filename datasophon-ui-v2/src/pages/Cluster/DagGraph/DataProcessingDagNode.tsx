@@ -8,13 +8,14 @@
  * 3. axios 封装 → @umijs/max request
  * 4. gobalEvent/uiEvent → dagEvent/dagUiEvent
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import { Edge, Graph, Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
-import insertCss from 'insert-css';
-import { Card, Modal, Progress, Spin, Tooltip } from 'antd';
-import { isEqual } from 'lodash-es';
 import { request } from '@umijs/max';
+import { Card, Modal, Progress, Spin, Tooltip } from 'antd';
+import insertCss from 'insert-css';
+import { isEqual } from 'lodash-es';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import dagEvent, { dagUiEvent } from './dagEvent';
 import { invokeGenStatusDom } from './dagStatus';
@@ -33,7 +34,9 @@ const Index = (props: any) => {
   const { node } = props;
   const elId = useRef(`dag-node-${Math.random().toString(36).slice(2)}`);
 
-  const [nodeData, setNodeData] = useState<any>(() => node?.getData()?.data ?? {});
+  const [nodeData, setNodeData] = useState<any>(
+    () => node?.getData()?.data ?? {},
+  );
   const archType = useMemo(() => node?.getData()?.archType, [node]);
 
   const [logState, setLogState] = useState<LogState>({
@@ -76,7 +79,10 @@ const Index = (props: any) => {
   const onMainMouseEnter = () => {
     const ports = node.getPorts() || [];
     ports.forEach((port: { id: string }) => {
-      node.setPortProp(port.id, 'attrs/circle', { fill: '#fff', stroke: '#85A5FF' });
+      node.setPortProp(port.id, 'attrs/circle', {
+        fill: '#fff',
+        stroke: '#85A5FF',
+      });
     });
   };
 
@@ -84,7 +90,10 @@ const Index = (props: any) => {
   const onMainMouseLeave = () => {
     const ports = node.getPorts() || [];
     ports.forEach((port: { id: string }) => {
-      node.setPortProp(port.id, 'attrs/circle', { fill: 'transparent', stroke: 'transparent' });
+      node.setPortProp(port.id, 'attrs/circle', {
+        fill: 'transparent',
+        stroke: 'transparent',
+      });
     });
   };
 
@@ -153,16 +162,31 @@ const Index = (props: any) => {
       return arr.map((role: any) => {
         const { roleName, cmdList = [] } = role;
         return (
-          <Card title={`服务${roleName}`} size="small" key={roleName} className="my-[2px]">
+          <Card
+            title={`服务${roleName}`}
+            size="small"
+            key={roleName}
+            className="my-[2px]"
+          >
             {cmdList.map((cmd: any, idx: number) => {
-              const { hostname, serviceRoleType, commandState: cs, commandProgress, hostCommandId } =
-                cmd;
+              const {
+                hostname,
+                serviceRoleType,
+                commandState: cs,
+                commandProgress,
+                hostCommandId,
+              } = cmd;
               const { status } = invokeGenStatusDom({ val: cs });
               return (
                 <div
                   key={hostCommandId ?? idx}
                   onClick={(e) =>
-                    openCmdLog(e, hostCommandId, clusterId, `${hostname} — 执行日志`)
+                    openCmdLog(
+                      e,
+                      hostCommandId,
+                      clusterId,
+                      `${hostname} — 执行日志`,
+                    )
                   }
                   className="cursor-pointer"
                 >
@@ -172,7 +196,9 @@ const Index = (props: any) => {
                   <Progress
                     percent={commandProgress}
                     size="small"
-                    status={status as 'success' | 'exception' | 'normal' | 'active'}
+                    status={
+                      status as 'success' | 'exception' | 'normal' | 'active'
+                    }
                   />
                 </div>
               );
@@ -183,7 +209,13 @@ const Index = (props: any) => {
     }
 
     // K8s 单对象分支（k8s 字段为非数组对象时）
-    const { commandName, namespace, serviceName, commandProgress, commandState: cs } = arr as any;
+    const {
+      commandName,
+      namespace,
+      serviceName,
+      commandProgress,
+      commandState: cs,
+    } = arr as any;
     const { status } = invokeGenStatusDom({ val: cs });
     return (
       <Card title={`${commandName ?? ''}`} size="small" className="my-[2px]">
@@ -212,7 +244,10 @@ const Index = (props: any) => {
           <Tooltip title={nodeName} mouseEnterDelay={0.8}>
             <div className="ellipsis-row node-name font-bold">{nodeName}</div>
           </Tooltip>
-          <div className="status-action cursor-pointer" onClick={onMainIconClick}>
+          <div
+            className="status-action cursor-pointer"
+            onClick={onMainIconClick}
+          >
             {invokeGenStatusDom({ val: nodeData.status }).com}
           </div>
         </div>
@@ -229,7 +264,9 @@ const Index = (props: any) => {
         destroyOnClose
       >
         {logState.loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
+          <div
+            style={{ display: 'flex', justifyContent: 'center', padding: 40 }}
+          >
             <Spin />
           </div>
         ) : (
@@ -310,8 +347,12 @@ Index.invokeRegisterConnector = () => {
     (sourcePoint, targetPoint) => {
       const hgap = Math.abs(targetPoint.x - sourcePoint.x);
       const path = new Path();
-      path.appendSegment(Path.createSegment('M', sourcePoint.x - 4, sourcePoint.y));
-      path.appendSegment(Path.createSegment('L', sourcePoint.x + 12, sourcePoint.y));
+      path.appendSegment(
+        Path.createSegment('M', sourcePoint.x - 4, sourcePoint.y),
+      );
+      path.appendSegment(
+        Path.createSegment('L', sourcePoint.x + 12, sourcePoint.y),
+      );
       path.appendSegment(
         Path.createSegment(
           'C',
@@ -327,7 +368,9 @@ Index.invokeRegisterConnector = () => {
           targetPoint.y,
         ),
       );
-      path.appendSegment(Path.createSegment('L', targetPoint.x + 2, targetPoint.y));
+      path.appendSegment(
+        Path.createSegment('L', targetPoint.x + 2, targetPoint.y),
+      );
       return path.serialize();
     },
     true,
@@ -340,7 +383,12 @@ Index.invokeRegisterEdge = () => {
       {
         tagName: 'path',
         selector: 'wrap',
-        attrs: { fill: 'none', cursor: 'pointer', stroke: 'transparent', strokeLinecap: 'round' },
+        attrs: {
+          fill: 'none',
+          cursor: 'pointer',
+          stroke: 'transparent',
+          strokeLinecap: 'round',
+        },
       },
       {
         tagName: 'path',

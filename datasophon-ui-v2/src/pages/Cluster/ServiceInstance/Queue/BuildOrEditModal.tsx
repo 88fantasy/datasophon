@@ -60,7 +60,7 @@ const BuildOrEditModal: React.FC<Props> = ({
       if (isEdit) {
         const updatePayload: DATASOPHON.UpdateYarnQueueRequest = {
           ...base,
-          id: record!.id as number,
+          id: record?.id as number,
         };
         await updateYarnQueue(clusterId, updatePayload);
       } else {

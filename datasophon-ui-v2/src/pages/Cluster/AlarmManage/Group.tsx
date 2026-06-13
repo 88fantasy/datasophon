@@ -6,10 +6,7 @@ import {
 } from '@ant-design/pro-components';
 import { App, Button } from 'antd';
 import React, { useRef, useState } from 'react';
-import {
-  deleteAlertGroups,
-  listAlertGroups,
-} from '@/services/alarm';
+import { deleteAlertGroups, listAlertGroups } from '@/services/alarm';
 import GroupModal from './GroupModal';
 
 interface Props {

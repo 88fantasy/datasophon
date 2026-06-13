@@ -4,8 +4,8 @@ import {
   ProFormUploadButton,
 } from '@ant-design/pro-components';
 import { history } from '@umijs/max';
-import type { UploadRequestOption } from 'rc-upload/lib/interface';
 import { message } from 'antd';
+import type { UploadRequestOption } from 'rc-upload/lib/interface';
 import React, { useContext } from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import {
@@ -45,7 +45,7 @@ const UploadManifestModal: React.FC<Props> = ({ open, onClose }) => {
       | undefined;
     const uploadFile = uploadList?.[0];
 
-    if (!uploadFile || uploadFile.status !== 'done') {
+    if (uploadFile?.status !== 'done') {
       message.warning('请等待文件上传完成后再提交');
       return false;
     }

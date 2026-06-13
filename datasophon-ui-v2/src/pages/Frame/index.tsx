@@ -1,7 +1,7 @@
 import type { ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
-import { Empty, Modal, message, Popconfirm, Segmented, Space, Spin, Tabs } from 'antd';
+import { Empty, Modal, message, Popconfirm, Space, Spin, Tabs } from 'antd';
 import hljs from 'highlight.js/lib/core';
 import json from 'highlight.js/lib/languages/json';
 import 'highlight.js/styles/github.min.css';
@@ -38,8 +38,13 @@ const INITIAL_DDL_MODAL: DdlModalState = {
 };
 
 const FrameManage: React.FC = () => {
-  const { data: frames = [], refresh, loading } = useRequest(listFrameServices, {
-    formatResult: (res: any) => (res?.data ?? []) as DATASOPHON.FrameWithServicesResponse[],
+  const {
+    data: frames = [],
+    refresh,
+    loading,
+  } = useRequest(listFrameServices, {
+    formatResult: (res: any) =>
+      (res?.data ?? []) as DATASOPHON.FrameWithServicesResponse[],
   });
   const [ddlModal, setDdlModal] = useState<DdlModalState>(INITIAL_DDL_MODAL);
 

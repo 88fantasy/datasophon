@@ -94,7 +94,10 @@ const MetricModal: React.FC<Props> = ({
       onFinish={async (values) => {
         try {
           if (isEdit) {
-            await updateAlertQuota(clusterId, { ...values, id: record!.id! });
+            await updateAlertQuota(clusterId, {
+              ...values,
+              id: record?.id as number,
+            });
           } else {
             await saveAlertQuota(clusterId, values);
           }

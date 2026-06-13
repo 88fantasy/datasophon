@@ -423,7 +423,7 @@ const UploadPackageModal: React.FC<Props> = ({ open, onClose }) => {
       | Array<{ status: string; response?: { data?: { id?: number } } }>
       | undefined;
     const f = list?.[0];
-    if (!f || f.status !== 'done' || !f.response?.data?.id) {
+    if (f?.status !== 'done' || !f.response?.data?.id) {
       message.warning('请等待配置文件上传完成');
       return false;
     }

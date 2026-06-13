@@ -134,8 +134,8 @@ const ColonyManage: React.FC = () => {
                 <div style={{ marginTop: 8 }}>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     管理员：
-                    {cluster
-                      .clusterManagerList!.map((m) => m.username)
+                    {cluster.clusterManagerList
+                      ?.map((m) => m.username)
                       .join('、')}
                   </Typography.Text>
                 </div>

@@ -24,10 +24,11 @@ const MetricTab: React.FC<Props> = ({ clusterId, defaultGroupId }) => {
   const { modal, message } = App.useApp();
   const actionRef = useRef<ActionType | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editRecord, setEditRecord] = useState<DATASOPHON.AlertQuotaResponse | null>(
-    null,
-  );
-  const [selectedRows, setSelectedRows] = useState<DATASOPHON.AlertQuotaResponse[]>([]);
+  const [editRecord, setEditRecord] =
+    useState<DATASOPHON.AlertQuotaResponse | null>(null);
+  const [selectedRows, setSelectedRows] = useState<
+    DATASOPHON.AlertQuotaResponse[]
+  >([]);
 
   const handleDelete = (record: DATASOPHON.AlertQuotaResponse) => {
     modal.confirm({

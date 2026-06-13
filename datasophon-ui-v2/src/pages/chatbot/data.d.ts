@@ -17,4 +17,9 @@ export interface ToolCallInfo {
 
 export type ParsedMessage =
   | { role: 'user'; content: string }
-  | { role: 'assistant'; content: string; thinkContent?: string; toolCalls?: ToolCallInfo[] };
+  | {
+      role: 'assistant';
+      content: string;
+      thinkContent?: string;
+      toolCalls?: ToolCallInfo[];
+    };

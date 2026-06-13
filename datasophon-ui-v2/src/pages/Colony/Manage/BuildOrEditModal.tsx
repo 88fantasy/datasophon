@@ -5,11 +5,7 @@ import {
 } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
 import { message } from 'antd';
-import {
-  createCluster,
-  listFrames,
-  updateCluster,
-} from '@/services/cluster';
+import { createCluster, listFrames, updateCluster } from '@/services/cluster';
 
 interface Props {
   trigger: React.ReactElement;

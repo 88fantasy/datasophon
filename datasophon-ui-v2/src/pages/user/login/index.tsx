@@ -1,18 +1,10 @@
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { LoginForm, ProFormText } from '@ant-design/pro-components';
-import {
-  FormattedMessage,
-  Helmet,
-  SelectLang,
-  useIntl,
-  useModel,
-} from '@umijs/max';
+import { FormattedMessage, SelectLang, useIntl, useModel } from '@umijs/max';
 import { Alert } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { startTransition, useState } from 'react';
-import { Footer } from '@/components';
 import { login } from '@/services/auth';
-import Settings from '../../../../config/defaultSettings';
 import Logo from './Logo';
 
 const useStyles = createStyles(({ token }) => ({

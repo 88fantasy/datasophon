@@ -122,7 +122,9 @@ function toHistoryBubbleItems(
     ) {
       item.header = (
         <>
-          {parsed.toolCalls?.length ? <ToolCalls items={parsed.toolCalls} /> : null}
+          {parsed.toolCalls?.length ? (
+            <ToolCalls items={parsed.toolCalls} />
+          ) : null}
           {parsed.thinkContent ? <Think>{parsed.thinkContent}</Think> : null}
         </>
       );
@@ -180,7 +182,9 @@ const ChatbotPage: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [activeConvId, setActiveConvId] = useState<number | undefined>();
   const [chatModel, setChatModel] = useState<string>('claude-sonnet-4-6');
-  const [historyBubbles, setHistoryBubbles] = useState<Record<string, BubbleItemType[]>>({});
+  const [historyBubbles, setHistoryBubbles] = useState<
+    Record<string, BubbleItemType[]>
+  >({});
 
   useEffect(() => {
     fetchChatConfig()

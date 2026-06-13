@@ -30,7 +30,10 @@ export const createChatProvider = (
             url,
             {
               ...init,
-              headers: { ...init.headers, ...(token ? { 'X-XSRF-TOKEN': token } : {}) },
+              headers: {
+                ...init.headers,
+                ...(token ? { 'X-XSRF-TOKEN': token } : {}),
+              },
             },
           ];
         },

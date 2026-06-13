@@ -6,10 +6,7 @@ import {
 import { useRequest } from '@umijs/max';
 import { message } from 'antd';
 import React from 'react';
-import {
-  getServiceRoleGroupList,
-  saveRoleGroup,
-} from '@/services/service';
+import { getServiceRoleGroupList, saveRoleGroup } from '@/services/service';
 
 interface Props {
   open: boolean;
