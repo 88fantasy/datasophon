@@ -32,7 +32,7 @@ import com.alibaba.fastjson2.JSONObject;
 import cn.hutool.core.util.StrUtil;
 
 /**
- * 物理(VOS)制品日志服务
+ * 物理制品日志服务
  * @author zhanghuangbin
  */
 @Slf4j
