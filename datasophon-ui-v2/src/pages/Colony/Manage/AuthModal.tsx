@@ -5,15 +5,15 @@ import { listAllUsers, saveManagers } from '@/services/cluster';
 
 interface Props {
   trigger: React.ReactElement;
-  cluster: DATASOPHON.ClusterInfo;
+  cluster: DATASOPHON.ClusterResponse;
   onSuccess: () => void;
 }
 
 const AuthModal: React.FC<Props> = ({ trigger, cluster, onSuccess }) => {
-  // useRequest auto-unwraps { data: UserInfo[] } → UserInfo[]
+  // useRequest auto-unwraps { data: UserResponse[] } → UserResponse[]
   const { data: users } = useRequest(listAllUsers);
 
-  const userOptions = (users ?? []).map((u: DATASOPHON.UserInfo) => ({
+  const userOptions = (users ?? []).map((u: DATASOPHON.UserResponse) => ({
     label: u.username,
     value: u.id,
   }));

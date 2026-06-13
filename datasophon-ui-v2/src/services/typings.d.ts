@@ -22,6 +22,50 @@ declare namespace DATASOPHON {
     username: string;
   }
 
+  // ── v2 DTO Request / Response（cluster 试点）────────────────────────────────
+
+  /** POST /v2/cluster 请求体 */
+  interface CreateClusterRequest {
+    clusterName: string;
+    clusterCode: string;
+    frameId: number;
+    archType: ClusterArchType;
+  }
+
+  /** PUT /v2/cluster/{id} 请求体（只修改名称和代号） */
+  interface UpdateClusterRequest {
+    clusterName: string;
+    clusterCode: string;
+  }
+
+  /** GET /v2/cluster/list、POST /v2/cluster 响应体 */
+  interface ClusterResponse {
+    id: number;
+    clusterName: string;
+    clusterCode: string;
+    clusterFrame?: string;
+    frameVersion?: string;
+    frameId?: number;
+    clusterState?: ClusterState;
+    clusterStateCode?: number;
+    archType?: ClusterArchType;
+    clusterManagerList?: ClusterManager[];
+  }
+
+  /** GET /v2/frame/list 响应体 */
+  interface FrameResponse {
+    id: number;
+    frameName: string;
+    frameCode: string;
+    frameVersion: string;
+  }
+
+  /** GET /v2/user/list 响应体（只含 id + username，不含 password） */
+  interface UserResponse {
+    id: number;
+    username: string;
+  }
+
   interface ClusterInfo {
     id: number;
     clusterName: string;

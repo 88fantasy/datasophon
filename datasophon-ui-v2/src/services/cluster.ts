@@ -1,22 +1,22 @@
 import { request } from '@umijs/max';
 
 export function listClusters() {
-  return request<{ data: DATASOPHON.ClusterInfo[] }>('/cluster/list', {
+  return request<{ data: DATASOPHON.ClusterResponse[] }>('/cluster/list', {
     method: 'GET',
   });
 }
 
-export function createCluster(body: Partial<DATASOPHON.ClusterInfo>) {
-  return request<{ data: DATASOPHON.ClusterInfo }>('/cluster', {
+export function createCluster(body: DATASOPHON.CreateClusterRequest) {
+  return request<{ data: DATASOPHON.ClusterResponse }>('/cluster', {
     method: 'POST',
     data: body,
   });
 }
 
-export function updateCluster(id: number, body: Partial<DATASOPHON.ClusterInfo>) {
+export function updateCluster(id: number, body: DATASOPHON.UpdateClusterRequest) {
   return request<{ data: void }>(`/cluster/${id}`, {
     method: 'PUT',
-    data: { ...body, id },
+    data: body,
   });
 }
 
@@ -34,13 +34,13 @@ export function saveManagers(id: number, userIds: number[]) {
 }
 
 export function listFrames() {
-  return request<{ data: DATASOPHON.FrameInfo[] }>('/frame/list', {
+  return request<{ data: DATASOPHON.FrameResponse[] }>('/frame/list', {
     method: 'GET',
   });
 }
 
 export function listAllUsers() {
-  return request<{ data: DATASOPHON.UserInfo[] }>('/user/list', {
+  return request<{ data: DATASOPHON.UserResponse[] }>('/user/list', {
     method: 'GET',
   });
 }

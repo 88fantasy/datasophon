@@ -13,15 +13,15 @@ import {
 
 interface Props {
   trigger: React.ReactElement;
-  cluster?: DATASOPHON.ClusterInfo;
+  cluster?: DATASOPHON.ClusterResponse;
   onSuccess: () => void;
 }
 
 const BuildOrEditModal: React.FC<Props> = ({ trigger, cluster, onSuccess }) => {
-  // useRequest auto-unwraps { data: FrameInfo[] } → FrameInfo[]
+  // useRequest auto-unwraps { data: FrameResponse[] } → FrameResponse[]
   const { data: frames } = useRequest(listFrames);
 
-  const frameOptions = (frames ?? []).map((f: DATASOPHON.FrameInfo) => ({
+  const frameOptions = (frames ?? []).map((f: DATASOPHON.FrameResponse) => ({
     label: `${f.frameCode}`,
     value: f.id,
   }));
@@ -31,15 +31,14 @@ const BuildOrEditModal: React.FC<Props> = ({ trigger, cluster, onSuccess }) => {
     { label: 'K8s 集群', value: 'k8s' },
   ];
 
-  const handleFinish = async (values: {
-    clusterName: string;
-    clusterCode: string;
-    frameId: number;
-    archType: DATASOPHON.ClusterArchType;
-  }) => {
+  const handleFinish = async (values: DATASOPHON.CreateClusterRequest) => {
     try {
       if (cluster?.id) {
-        await updateCluster(cluster.id, values);
+        // UpdateClusterRequest 只包含 clusterName 和 clusterCode
+        await updateCluster(cluster.id, {
+          clusterName: values.clusterName,
+          clusterCode: values.clusterCode,
+        });
         message.success('集群更新成功');
       } else {
         await createCluster(values);

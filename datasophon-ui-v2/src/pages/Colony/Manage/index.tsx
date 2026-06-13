@@ -32,7 +32,7 @@ const STATE_COLOR: Record<string, string> = {
 };
 
 const ColonyManage: React.FC = () => {
-  // useRequest auto-unwraps { data: ClusterInfo[] } → ClusterInfo[]
+  // useRequest auto-unwraps { data: ClusterResponse[] } → ClusterResponse[]
   const { data: clusters, refresh, loading } = useRequest(listClusters);
   const clusterList = clusters ?? [];
 
