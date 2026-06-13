@@ -461,7 +461,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     }
     
     @Override
-    public void updateServiceVosDdl(Integer serviceId, String serviceDdl) {
+    public void updateServicePhysicalDdl(Integer serviceId, String serviceDdl) {
         FrameServiceEntity service = frameServiceService.getById(serviceId);
         Objects.requireNonNull(service);
         FrameInfoEntity frameInfo = frameInfoService.getById(service.getFrameId());
@@ -481,7 +481,7 @@ public class DdlMetaServiceImpl implements DdlMetaService {
     }
     
     @Override
-    public String getServiceVosDdl(Integer serviceId) {
+    public String getServicePhysicalDdl(Integer serviceId) {
         FrameServiceEntity service = frameServiceService.getById(serviceId);
         Objects.requireNonNull(service);
         FrameInfoEntity frameInfo = frameInfoService.getById(service.getFrameId());

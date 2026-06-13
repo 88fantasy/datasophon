@@ -150,11 +150,11 @@ public interface MetaStorage {
     void moveToStorage(File dir, Function<String, String> relativePathHandler) throws IOException;
     
     /**
-     * 删除 VOS 服务的元数据
+     * 删除物理(VOS)服务的元数据
      * @param frameCode 框架代码
      * @param serviceName 服务名称
      */
-    default void removeVosMeta(String frameCode, String serviceName) {
+    default void removePhysicalMeta(String frameCode, String serviceName) {
         removeMeta(frameCode, serviceName, PHYSICAL);
     }
     

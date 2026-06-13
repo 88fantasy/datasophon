@@ -80,7 +80,7 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
     
     @Autowired
     @Qualifier("physicalProductInstallService")
-    private ExtRepoInstallService vosExtRepoInstallService;
+    private ExtRepoInstallService physicalExtRepoInstallService;
     
     @Autowired
     @Qualifier("k8SProductInstallService")
@@ -106,7 +106,7 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
         ClusterInfoEntity cluster = clusterInfoService.getById(clusterId);
         try {
             if (cluster.getArchType().equals(ClusterArchType.physical)) {
-                return consumer.accept(vosExtRepoInstallService);
+                return consumer.accept(physicalExtRepoInstallService);
             } else {
                 return consumer.accept(k8SExtRepoInstallService);
             }

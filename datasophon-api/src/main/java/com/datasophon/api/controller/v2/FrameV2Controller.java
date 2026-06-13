@@ -96,7 +96,7 @@ public class FrameV2Controller extends ApiController {
     /** 读取指定物理机服务的 service_ddl.json 内容。 */
     @GetMapping("/service/{id}/ddl")
     public ApiResponse<String> getFrameServiceDdl(@PathVariable Integer id) {
-        return ApiResponse.ok(ddlMetaService.getServiceVosDdl(id));
+        return ApiResponse.ok(ddlMetaService.getServicePhysicalDdl(id));
     }
     
     /** 更新指定物理机服务的 service_ddl.json 内容。 */
@@ -104,7 +104,7 @@ public class FrameV2Controller extends ApiController {
     @PutMapping("/service/{id}/ddl")
     public ApiResponse<Void> updateFrameServiceDdl(
                                                    @PathVariable Integer id, @RequestBody UpdateDdlDTO dto) {
-        ddlMetaService.updateServiceVosDdl(id, dto.getContent());
+        ddlMetaService.updateServicePhysicalDdl(id, dto.getContent());
         return ApiResponse.ok();
     }
 }

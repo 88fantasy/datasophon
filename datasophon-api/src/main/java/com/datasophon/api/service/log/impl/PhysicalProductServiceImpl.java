@@ -32,7 +32,7 @@ import com.alibaba.fastjson2.JSONObject;
 import cn.hutool.core.util.StrUtil;
 
 /**
- * vos 制品日志服务
+ * 物理(VOS)制品日志服务
  * @author zhanghuangbin
  */
 @Slf4j
@@ -49,7 +49,7 @@ public class PhysicalProductServiceImpl implements PhysicalProductService {
     private WorkerCommandClient workerCommandClient;
     
     @Override
-    public String getVosServiceRoleRuntimeLog(ServiceRoleLogQueryDTO dto) throws Exception {
+    public String getPhysicalServiceRoleRuntimeLog(ServiceRoleLogQueryDTO dto) throws Exception {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
         FrameServiceRoleEntity serviceRole = frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(clusterInfo.getClusterFrame(), dto.getServiceRoleName());
         

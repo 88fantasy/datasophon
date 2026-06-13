@@ -185,16 +185,16 @@ public class MetaUtils {
         FrameworkMeta meta = new FrameworkMeta();
         meta.setFrameCode(frameDir.getName());
         
-        File vosDdlDir = new File(frameDir, MetaStorage.PHYSICAL);
-        if (vosDdlDir.exists()) {
-            File[] services = vosDdlDir.listFiles();
+        File physicalDdlDir = new File(frameDir, MetaStorage.PHYSICAL);
+        if (physicalDdlDir.exists()) {
+            File[] services = physicalDdlDir.listFiles();
             if (services != null) {
                 for (File serviceDir : services) {
                     if (!serviceDir.isDirectory()) {
                         continue;
                     }
-                    List<PhysicalDdlServiceMeta> vosDdLServiceMeta = parseVosDdlServiceMeta(new SrvParseCtx(option, meta.getFrameCode(), errors), serviceDir);
-                    meta.getVosDdlServices().addAll(vosDdLServiceMeta);
+                    List<PhysicalDdlServiceMeta> physicalDdlServiceMetas = parsePhysicalDdlServiceMeta(new SrvParseCtx(option, meta.getFrameCode(), errors), serviceDir);
+                    meta.getPhysicalDdlServices().addAll(physicalDdlServiceMetas);
                 }
             }
         }
@@ -206,8 +206,8 @@ public class MetaUtils {
                     if (!serviceDir.isDirectory()) {
                         continue;
                     }
-                    List<K8sDdLServiceMeta> vosDdLServiceMeta = parseK8sDdlServiceMeta(new SrvParseCtx(option, meta.getFrameCode(), errors), serviceDir);
-                    meta.getK8sDdLServices().addAll(vosDdLServiceMeta);
+                    List<K8sDdLServiceMeta> k8sDdlServiceMetas = parseK8sDdlServiceMeta(new SrvParseCtx(option, meta.getFrameCode(), errors), serviceDir);
+                    meta.getK8sDdLServices().addAll(k8sDdlServiceMetas);
                 }
             }
         }
@@ -215,7 +215,7 @@ public class MetaUtils {
         return meta;
     }
     
-    private static List<PhysicalDdlServiceMeta> parseVosDdlServiceMeta(SrvParseCtx ctx, File serviceDir) {
+    private static List<PhysicalDdlServiceMeta> parsePhysicalDdlServiceMeta(SrvParseCtx ctx, File serviceDir) {
         String root = ctx.getOption().getRoot();
         Path currentPath = PathUtils.join(getConfPath(ctx.getOption().getRoot()), "meta", ctx.getFramework(), MetaStorage.PHYSICAL, serviceDir.getName());
         

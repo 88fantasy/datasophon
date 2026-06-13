@@ -108,12 +108,12 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
             List<FrameServiceEntity> installedSrv = frameServiceService.listSimpleService(frames);
             ctx.addService(installedSrv);
             model.getFrameworks().stream()
-                    .flatMap(f -> f.getVosDdlServices().stream())
-                    .forEach(srv -> ctx.addVosService(srv.getFrameCode(), srv.getName()));
+                    .flatMap(f -> f.getPhysicalDdlServices().stream())
+                    .forEach(srv -> ctx.addPhysicalService(srv.getFrameCode(), srv.getName()));
             
             List<String> errors = new ArrayList<>();
-            model.getFrameworks().stream().flatMap(f -> f.getVosDdlServices().stream()).forEach(srv -> {
-                errors.addAll(ctx.validVosDdlDependency(srv));
+            model.getFrameworks().stream().flatMap(f -> f.getPhysicalDdlServices().stream()).forEach(srv -> {
+                errors.addAll(ctx.validPhysicalDdlDependency(srv));
             });
             
             Map<Integer, FrameInfoEntity> map = CollectionUtil.toMap(frameDbs, new HashMap<>(), FrameInfoEntity::getId);
@@ -223,7 +223,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
                 ExtRepoMetaFsModel vo = MetaUtils.parseRepoMeta(option);
                 progress.setStep(9);
                 log.info("【导入第三方软件源】 进度ID:{}，解析meta数据成功，metaUnzipPath: {}, 解析到{}个服务", progress.getProgressId(),
-                        metaUnzipPath, vo.getFrameworks().stream().mapToLong(fw -> fw.getVosDdlServices().size()).sum());
+                        metaUnzipPath, vo.getFrameworks().stream().mapToLong(fw -> fw.getPhysicalDdlServices().size()).sum());
                 
                 // 解压安装包
                 String pkgUnzipPath = null;
@@ -326,7 +326,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
     private void saveFrameInfo(String unzipDir, ExtRepoMetaFsModel vo, ImportCompProgressVO progress) {
         progress.setState(4);
         
-        long total = vo.getFrameworks().stream().mapToLong(f -> f.getVosDdlServices().size()).sum()
+        long total = vo.getFrameworks().stream().mapToLong(f -> f.getPhysicalDdlServices().size()).sum()
                 + vo.getFrameworks().stream().mapToLong(f -> f.getK8sDdLServices().size()).sum();
         progress.setTotal(total);
         progress.setStep(0);
@@ -334,7 +334,7 @@ public class ExtRepoMetaServiceImpl implements ExtRepoMetaService {
         List<ClusterInfoEntity> clusters = clusterInfoService.list();
         vo.getFrameworks().forEach(framework -> {
             FrameInfoEntity db = ddlMetaService.initFramework(framework.getFrameCode());
-            framework.getVosDdlServices().forEach(srv -> {
+            framework.getPhysicalDdlServices().forEach(srv -> {
                 String ddl = FileUtil.readString(Paths.get(unzipDir, srv.getDdl()).toFile(), StandardCharsets.UTF_8);
                 try {
                     ddlMetaService.loadServicePhysicalDdl(clusters, db, srv.getName(), ddl);

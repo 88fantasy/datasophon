@@ -70,18 +70,18 @@ public class WorkerStartService {
     private final ClusterHostService clusterHostService;
     private final ClusterInfoService clusterInfoService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
-    private final PhysicalProductInstallService vosProductActionService;
+    private final PhysicalProductInstallService physicalProductActionService;
     private final PrometheusService prometheusService;
     
     public WorkerStartService(ClusterHostService clusterHostService,
                               ClusterInfoService clusterInfoService,
                               ClusterServiceRoleInstanceService roleInstanceService,
-                              PhysicalProductInstallService vosProductActionService,
+                              PhysicalProductInstallService physicalProductActionService,
                               PrometheusService prometheusService) {
         this.clusterHostService = clusterHostService;
         this.clusterInfoService = clusterInfoService;
         this.roleInstanceService = roleInstanceService;
-        this.vosProductActionService = vosProductActionService;
+        this.physicalProductActionService = physicalProductActionService;
         this.prometheusService = prometheusService;
     }
     
@@ -172,7 +172,7 @@ public class WorkerStartService {
                 .collect(groupingBy(ClusterServiceRoleInstanceEntity::getServiceId,
                         mapping(ClusterServiceRoleInstanceEntity::getId, toList())));
         try {
-            vosProductActionService.generateAndExecSrvRoleCommands(clusterId, commandType, serviceRoleMap);
+            physicalProductActionService.generateAndExecSrvRoleCommands(clusterId, commandType, serviceRoleMap);
             logger.info("Auto-start services successful for host {}", hostname);
         } catch (Exception e) {
             logger.warn("Some service auto-start failed for host {}, check service logs.", hostname, e);

@@ -22,10 +22,10 @@ public class SrvDependenciesContext {
     private final Set<String> k8sSrvSet = new HashSet<>();
     
     public void addService(List<FrameServiceEntity> services) {
-        services.forEach(srv -> addVosService(srv.getFrameCode(), srv.getServiceName()));
+        services.forEach(srv -> addPhysicalService(srv.getFrameCode(), srv.getServiceName()));
     }
     
-    public void addVosService(String frameCode, String serviceName) {
+    public void addPhysicalService(String frameCode, String serviceName) {
         srvSet.add(generateKey(frameCode, serviceName));
     }
     
@@ -37,7 +37,7 @@ public class SrvDependenciesContext {
         return String.format("%s_%s", frameCode, serviceName);
     }
     
-    public List<String> validVosDdlDependency(PhysicalDdlServiceMeta srv) {
+    public List<String> validPhysicalDdlDependency(PhysicalDdlServiceMeta srv) {
         return validDependency(srvSet, srv.getFrameCode(), srv.getName(), srv.getDependencies());
     }
     

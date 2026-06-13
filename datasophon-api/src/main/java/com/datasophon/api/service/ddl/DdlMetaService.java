@@ -18,7 +18,7 @@ public interface DdlMetaService {
     
     FrameK8sServiceEntity loadServiceK8sDdl(FrameInfoEntity frameInfo, String serviceName, String serviceDdl);
     
-    void updateServiceVosDdl(Integer serviceId, String serviceDdl);
+    void updateServicePhysicalDdl(Integer serviceId, String serviceDdl);
     
-    String getServiceVosDdl(Integer serviceId);
+    String getServicePhysicalDdl(Integer serviceId);
 }

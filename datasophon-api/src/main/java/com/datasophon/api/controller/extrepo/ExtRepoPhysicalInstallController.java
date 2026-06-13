@@ -27,27 +27,27 @@ import org.springframework.web.bind.annotation.RestController;
 public class ExtRepoPhysicalInstallController extends ApiController {
     
     @Autowired
-    private PhysicalProductInstallService vosProductActionService;
+    private PhysicalProductInstallService physicalProductActionService;
     
     @PostMapping("/listNewestByDeployment")
     @Operation(summary = "获取最新的服务列表(并更加部署清单对服务列表进行勾选)")
     @ApiResponse(content = {@Content(mediaType = "application/json")})
     public Result listNewestByDeployment(@RequestBody @Validated DeploymentDTO dto) {
-        return Result.success(vosProductActionService.listNewestByDeployment(dto));
+        return Result.success(physicalProductActionService.listNewestByDeployment(dto));
     }
     
     @PostMapping("/getServiceRoleListByDeployment")
     @Operation(summary = "获取服务角色列表(并根据部署清单对host进行填充)")
     @ApiResponse(content = {@Content(mediaType = "application/json")})
     public Result getServiceRoleListByDeployment(@RequestBody @Validated ServiceRoleQueryDTO dto) {
-        return Result.success(vosProductActionService.getServiceRoleListByDeployment(dto));
+        return Result.success(physicalProductActionService.getServiceRoleListByDeployment(dto));
     }
     
     @PostMapping("/getNonMasterRoleListByDeployment")
     @Operation(summary = "获取非master服务角色列表(并根据部署清单对host进行填充)")
     @ApiResponse(content = {@Content(mediaType = "application/json")})
     public Result getNonMasterRoleListByDeployment(@RequestBody @Validated DeploymentDTO dto) {
-        return Result.success(vosProductActionService.getNonMasterRoleListByDeployment(dto));
+        return Result.success(physicalProductActionService.getNonMasterRoleListByDeployment(dto));
     }
     
 }

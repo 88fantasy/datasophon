@@ -103,7 +103,7 @@ public class ClusterServiceRoleInstanceServiceImpl
     private final ExtRepoInstallDelegateService extRepoInstallDelegateService;
     
     @Lazy
-    private final PhysicalProductInstallService vosProductActionService;
+    private final PhysicalProductInstallService physicalProductActionService;
     
     @Lazy
     private final ClusterServiceInstanceRoleGroupService roleGroupService;
@@ -260,7 +260,7 @@ public class ClusterServiceRoleInstanceServiceImpl
                 .eq(Constants.NEET_RESTART, NeedRestart.YES));
         if (Objects.nonNull(list) && !list.isEmpty()) {
             List<Integer> ids = list.stream().map(ClusterServiceRoleInstanceEntity::getId).collect(Collectors.toList());
-            vosProductActionService.generateAndExecSrvRoleCmd(roleGroup.getClusterId(), CommandType.RESTART_SERVICE, roleGroup.getServiceInstanceId(), ids);
+            physicalProductActionService.generateAndExecSrvRoleCmd(roleGroup.getClusterId(), CommandType.RESTART_SERVICE, roleGroup.getServiceInstanceId(), ids);
         } else {
             return Result.error(Status.ROLE_GROUP_HAS_NO_OUTDATED_SERVICE.getMsg());
         }

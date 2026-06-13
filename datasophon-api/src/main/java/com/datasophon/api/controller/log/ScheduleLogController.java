@@ -39,7 +39,7 @@ public class ScheduleLogController extends ApiController {
     private MasterLogService masterLogService;
     
     @Autowired
-    private PhysicalProductService vosProductService;
+    private PhysicalProductService physicalProductService;
     
     @Autowired
     private K8sProductService k8sProductService;
@@ -53,9 +53,9 @@ public class ScheduleLogController extends ApiController {
     
     @PostMapping("getVosServiceRoleRuntimeLog")
     @Operation(summary = "获取Vos运行日志")
-    public Result getVosServiceRoleRuntimeLog(@RequestBody ServiceRoleLogQueryDTO dto) throws Exception {
+    public Result getPhysicalServiceRoleRuntimeLog(@RequestBody ServiceRoleLogQueryDTO dto) throws Exception {
         dto.setLines(getRows(dto.getLines()));
-        String content = vosProductService.getVosServiceRoleRuntimeLog(dto);
+        String content = physicalProductService.getPhysicalServiceRoleRuntimeLog(dto);
         return Result.success(content);
     }
     
