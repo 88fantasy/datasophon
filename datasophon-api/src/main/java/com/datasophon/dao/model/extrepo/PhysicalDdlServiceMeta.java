@@ -8,7 +8,7 @@ import lombok.Data;
  * @author zhanghuangbin
  */
 @Data
-public class VosDdLServiceMeta {
+public class PhysicalDdlServiceMeta {
     
     private String ddl;
     

@@ -2,7 +2,7 @@ package com.datasophon.api.service.extrepo.ctx;
 
 import com.datasophon.dao.entity.FrameServiceEntity;
 import com.datasophon.dao.model.extrepo.K8sDdLServiceMeta;
-import com.datasophon.dao.model.extrepo.VosDdLServiceMeta;
+import com.datasophon.dao.model.extrepo.PhysicalDdlServiceMeta;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,7 +37,7 @@ public class SrvDependenciesContext {
         return String.format("%s_%s", frameCode, serviceName);
     }
     
-    public List<String> validVosDdlDependency(VosDdLServiceMeta srv) {
+    public List<String> validVosDdlDependency(PhysicalDdlServiceMeta srv) {
         return validDependency(srvSet, srv.getFrameCode(), srv.getName(), srv.getDependencies());
     }
     

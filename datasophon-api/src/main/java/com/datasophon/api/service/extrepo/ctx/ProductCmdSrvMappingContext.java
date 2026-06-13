@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 /**
  * @author zhanghuangbin
  */
-public class VosProductCmdSrvMappingContext {
+public class ProductCmdSrvMappingContext {
     
     private Map<String, ClusterServiceCommandEntity> srvCmdMap;
     

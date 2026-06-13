@@ -12,7 +12,7 @@ import com.datasophon.common.utils.YamlUtils;
 import com.datasophon.dao.model.extrepo.ExtRepoMetaFsModel;
 import com.datasophon.dao.model.extrepo.FrameworkMeta;
 import com.datasophon.dao.model.extrepo.K8sDdLServiceMeta;
-import com.datasophon.dao.model.extrepo.VosDdLServiceMeta;
+import com.datasophon.dao.model.extrepo.PhysicalDdlServiceMeta;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -193,7 +193,7 @@ public class MetaUtils {
                     if (!serviceDir.isDirectory()) {
                         continue;
                     }
-                    List<VosDdLServiceMeta> vosDdLServiceMeta = parseVosDdlServiceMeta(new SrvParseCtx(option, meta.getFrameCode(), errors), serviceDir);
+                    List<PhysicalDdlServiceMeta> vosDdLServiceMeta = parseVosDdlServiceMeta(new SrvParseCtx(option, meta.getFrameCode(), errors), serviceDir);
                     meta.getVosDdlServices().addAll(vosDdLServiceMeta);
                 }
             }
@@ -215,7 +215,7 @@ public class MetaUtils {
         return meta;
     }
     
-    private static List<VosDdLServiceMeta> parseVosDdlServiceMeta(SrvParseCtx ctx, File serviceDir) {
+    private static List<PhysicalDdlServiceMeta> parseVosDdlServiceMeta(SrvParseCtx ctx, File serviceDir) {
         String root = ctx.getOption().getRoot();
         Path currentPath = PathUtils.join(getConfPath(ctx.getOption().getRoot()), "meta", ctx.getFramework(), MetaStorage.PHYSICAL, serviceDir.getName());
         
@@ -224,7 +224,7 @@ public class MetaUtils {
             return Collections.emptyList();
         }
         
-        VosDdLServiceMeta meta = new VosDdLServiceMeta();
+        PhysicalDdlServiceMeta meta = new PhysicalDdlServiceMeta();
         meta.setFrameCode(ctx.getFramework());
         meta.setName(serviceDir.getName());
         meta.setDdl(PathUtils.relative(ddl, root));

@@ -16,9 +16,9 @@ import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandHostService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandService;
 import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
+import com.datasophon.api.service.extrepo.ctx.ProductCmdSrvMappingContext;
+import com.datasophon.api.service.extrepo.ctx.ProductDeployDAGBuildContext;
 import com.datasophon.api.service.extrepo.ctx.SimpleServiceResource;
-import com.datasophon.api.service.extrepo.ctx.VosProductCmdSrvMappingContext;
-import com.datasophon.api.service.extrepo.ctx.VosProductDeployDAGBuildContext;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.ServiceCommandUtils;
@@ -93,7 +93,7 @@ import cn.hutool.core.util.StrUtil;
 /**
  * @author zhanghuangbin
  */
-@Component("vosProductInstallService")
+@Component("physicalProductInstallService")
 @Slf4j
 @RequiredArgsConstructor
 public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSupport implements PhysicalProductInstallService {
@@ -138,7 +138,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
         
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(dto.getClusterId());
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
-        VosProductDeployDAGBuildContext ctx = new VosProductDeployDAGBuildContext(serviceList);
+        ProductDeployDAGBuildContext ctx = new ProductDeployDAGBuildContext(serviceList);
         apps.forEach(app -> {
             FrameServiceEntity entity = ctx.getSrvEntity(app);
             if (entity == null) {
@@ -219,7 +219,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
         });
         log.info("保存安装命令成功, 共需要安装{}个应用", commandIds.size());
         
-        VosProductDeployDAGBuildContext ctx = new VosProductDeployDAGBuildContext(serviceList);
+        ProductDeployDAGBuildContext ctx = new ProductDeployDAGBuildContext(serviceList);
         DAG<String, DAGNode, Integer> dag = ctx.buildDeployDAG(apps, t -> {
             DeploySrvModel srvModel = t.unwrap();
             DAGNode node = new DAGNode();
@@ -311,7 +311,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
                            List<FrameServiceEntity> serviceList) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         
-        VosProductCmdSrvMappingContext context = new VosProductCmdSrvMappingContext();
+        ProductCmdSrvMappingContext context = new ProductCmdSrvMappingContext();
         context.setSrvCmd(commandService.lambdaQuery().in(ClusterServiceCommandEntity::getCommandId, commandIds).list());
         context.setCmdHost(hostCommandService.lambdaQuery().in(ClusterServiceCommandHostCommandEntity::getCommandId, commandIds).list());
         // 服务实体直接复用方法入口已查出的 serviceList，避免逐节点再查 DB
@@ -571,7 +571,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
     public String generateGenericInstallCommand(Integer clusterId, List<String> serviceNames) {
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
-        VosProductDeployDAGBuildContext ctx = new VosProductDeployDAGBuildContext(serviceList);
+        ProductDeployDAGBuildContext ctx = new ProductDeployDAGBuildContext(serviceList);
         List<String> commandIds = new ArrayList<>(serviceNames.size());
         
         List<SimpleServiceResource> resources = new ArrayList<>();
@@ -614,7 +614,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
         
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
-        VosProductDeployDAGBuildContext ctx = new VosProductDeployDAGBuildContext(serviceList);
+        ProductDeployDAGBuildContext ctx = new ProductDeployDAGBuildContext(serviceList);
         List<SimpleServiceResource> resources = frameService.listServices(serviceFrameworkIds)
                 .stream()
                 .map(s -> new SimpleServiceResource(s.getServiceName(), s.getServiceVersion()))
@@ -678,7 +678,7 @@ public class PhysicalProductInstallServiceImpl extends ProductDeployHandlerSuppo
         
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         List<FrameServiceEntity> serviceList = frameService.getFrameServiceList(clusterInfo.getId());
-        VosProductDeployDAGBuildContext ctx = new VosProductDeployDAGBuildContext(serviceList);
+        ProductDeployDAGBuildContext ctx = new ProductDeployDAGBuildContext(serviceList);
         List<SimpleServiceResource> resources = frameService.listServices(serviceFrameworkIds)
                 .stream()
                 .map(s -> new SimpleServiceResource(s.getServiceName(), s.getServiceVersion()))

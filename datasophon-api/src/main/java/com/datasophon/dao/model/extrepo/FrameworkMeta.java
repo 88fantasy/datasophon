@@ -13,7 +13,7 @@ public class FrameworkMeta {
     
     private String frameCode;
     
-    private List<VosDdLServiceMeta> vosDdlServices = new ArrayList<>();
+    private List<PhysicalDdlServiceMeta> vosDdlServices = new ArrayList<>();
     
     private List<K8sDdLServiceMeta> k8sDdLServices = new ArrayList<>();
 }

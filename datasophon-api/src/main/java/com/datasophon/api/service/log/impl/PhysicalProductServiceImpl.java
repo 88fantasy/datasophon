@@ -6,7 +6,7 @@ import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.FrameServiceRoleService;
-import com.datasophon.api.service.log.VosProductService;
+import com.datasophon.api.service.log.PhysicalProductService;
 import com.datasophon.common.Constants;
 import com.datasophon.common.command.GetLogCommand;
 import com.datasophon.common.model.ServiceRoleInfo;
@@ -36,8 +36,8 @@ import cn.hutool.core.util.StrUtil;
  * @author zhanghuangbin
  */
 @Slf4j
-@Service("vosProductService")
-public class VosProductServiceImpl implements VosProductService {
+@Service("physicalProductService")
+public class PhysicalProductServiceImpl implements PhysicalProductService {
     
     @Autowired
     private ClusterInfoService clusterInfoService;

@@ -6,7 +6,7 @@ import com.datasophon.api.dto.log.K8sRuntimeLogQueryDTO;
 import com.datasophon.api.dto.log.ServiceRoleLogQueryDTO;
 import com.datasophon.api.service.log.K8sProductService;
 import com.datasophon.api.service.log.MasterLogService;
-import com.datasophon.api.service.log.VosProductService;
+import com.datasophon.api.service.log.PhysicalProductService;
 import com.datasophon.api.vo.k8s.K8sEventInfo;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.Result;
@@ -39,7 +39,7 @@ public class ScheduleLogController extends ApiController {
     private MasterLogService masterLogService;
     
     @Autowired
-    private VosProductService vosProductService;
+    private PhysicalProductService vosProductService;
     
     @Autowired
     private K8sProductService k8sProductService;

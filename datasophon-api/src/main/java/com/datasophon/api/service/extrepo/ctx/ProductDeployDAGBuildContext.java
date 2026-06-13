@@ -27,11 +27,11 @@ import cn.hutool.core.util.StrUtil;
  * @author zhanghuangbin
  */
 @Data
-public class VosProductDeployDAGBuildContext {
+public class ProductDeployDAGBuildContext {
     
     private final Map<String, List<FrameServiceEntity>> map;
     
-    public VosProductDeployDAGBuildContext(List<FrameServiceEntity> list) {
+    public ProductDeployDAGBuildContext(List<FrameServiceEntity> list) {
         this.map = list.stream().collect(
                 Collectors.toMap(
                         FrameServiceEntity::getServiceName,

@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("extrepo")
 @Tag(name = "外部软件源(VOS制品接口)")
-public class ExtRepoVosInstallController extends ApiController {
+public class ExtRepoPhysicalInstallController extends ApiController {
     
     @Autowired
     private PhysicalProductInstallService vosProductActionService;

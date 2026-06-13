@@ -79,7 +79,7 @@ public class ExtRepoInstallDelegateServiceImpl implements ExtRepoInstallDelegate
     private DagDefinitionEntityMapper dagDefinitionEntityMapper;
     
     @Autowired
-    @Qualifier("vosProductInstallService")
+    @Qualifier("physicalProductInstallService")
     private ExtRepoInstallService vosExtRepoInstallService;
     
     @Autowired
