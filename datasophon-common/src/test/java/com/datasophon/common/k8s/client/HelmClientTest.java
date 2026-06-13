@@ -44,6 +44,7 @@ class HelmClientTest {
     public void init() {
         PropertiesPathUtils.resetPropertyFile();
     }
+    
     /**
      * 构造方法和 helmPath 检测相关测试
      */

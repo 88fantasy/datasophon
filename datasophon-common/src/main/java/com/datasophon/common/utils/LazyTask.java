@@ -19,6 +19,7 @@ public class LazyTask {
     public boolean hasExec() {
         return task == null;
     }
+    
     public void exec() {
         if (!hasRun) {
             synchronized (lock) {

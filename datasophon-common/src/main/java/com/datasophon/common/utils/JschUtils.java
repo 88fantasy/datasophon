@@ -124,6 +124,7 @@ public class JschUtils {
         }
         return result;
     }
+    
     public static String getFileString(Session session, String path, int connectTimeout) {
         ChannelSftp channel = null;
         try {

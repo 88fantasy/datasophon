@@ -46,6 +46,7 @@ public enum OsType {
         String desc = osType.getDesc();
         return desc.startsWith("Ubuntu");
     }
+    
     public static boolean isCentos(OsType osType) {
         String desc = osType.getDesc();
         return desc.startsWith("centos")
