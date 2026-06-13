@@ -18,7 +18,7 @@ import {
   Typography,
 } from 'antd';
 import React from 'react';
-import { deleteCluster, listClusters } from '@/services/datasophon/cluster';
+import { deleteCluster, listClusters } from '@/services/cluster';
 import AuthModal from './AuthModal';
 import BuildOrEditModal from './BuildOrEditModal';
 

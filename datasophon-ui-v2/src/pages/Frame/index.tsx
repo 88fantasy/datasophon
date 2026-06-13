@@ -13,7 +13,7 @@ import {
   getFrameServiceDdl,
   listFrameServices,
   updateFrameServiceDdl,
-} from '@/services/datasophon/frame';
+} from '@/services/frame';
 
 hljs.registerLanguage('json', json);
 

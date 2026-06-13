@@ -1,7 +1,7 @@
 import { ModalForm, ProFormSelect } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
 import { message } from 'antd';
-import { listAllUsers, saveManagers } from '@/services/datasophon/cluster';
+import { listAllUsers, saveManagers } from '@/services/cluster';
 
 interface Props {
   trigger: React.ReactElement;

@@ -18,7 +18,7 @@ vi.mock('@umijs/max', () => ({
   Link: ({ children }: any) => children,
 }));
 
-vi.mock('@/services/datasophon/auth', () => ({
+vi.mock('@/services/auth', () => ({
   currentUser: mockQueryCurrentUser,
 }));
 

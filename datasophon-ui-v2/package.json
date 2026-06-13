@@ -1,25 +1,19 @@
 {
-  "name": "ant-design-pro",
-  "version": "6.0.2",
+  "name": "datasophon-ui",
+  "version": "3.0-SNAPSHOT",
   "private": true,
-  "description": "An out-of-box UI solution for enterprise applications",
-  "repository": "git@github.com:ant-design/ant-design-pro.git",
+  "description": "DataSophon - Big Data Cluster Automation & Operations Platform",
   "scripts": {
     "analyze": "cross-env ANALYZE=1 max build",
     "build": "max build",
-    "deploy": "cross-env CI=true max build && gh-pages -d dist",
     "dev": "cross-env UMI_ENV=dev MOCK=none max dev",
-    "i18n-remove": "node scripts/i18n-remove.js",
     "lint": "npm run biome:lint && npm run tsc",
     "lint-staged": "lint-staged",
     "biome:lint": "biome lint",
     "biome": "biome check --write",
-    "openapi": "max openapi",
     "prepare": "npx husky && max setup",
     "preview": "max preview --port 8000",
     "preview:build": "max build && max preview --port 8000",
-    "record": "cross-env NODE_ENV=development UMI_ENV=test max record --scene=login",
-    "simple": "node scripts/simple.js",
     "start": "cross-env UMI_ENV=dev max dev",
     "start:no-mock": "cross-env MOCK=none max dev",
     "start:pre": "cross-env UMI_ENV=pre MOCK=none max dev",
@@ -82,14 +76,11 @@
     "@types/topojson-specification": "^1.0.5",
     "@umijs/lint": "^4.6.51",
     "@umijs/max": "^4.6.57",
-    "@umijs/max-plugin-openapi": "^2.0.3",
-    "@umijs/request-record": "^1.1.4",
     "@vitest/coverage-v8": "4.1.8",
     "@vitest/ui": "4.1.8",
     "cross-env": "^10.1.0",
     "express": "^5.2.1",
     "geojson": "^0.5.0",
-    "gh-pages": "^6.3.0",
     "happy-dom": "^20.10.1",
     "husky": "^9.1.7",
     "jsdom": "^29.1.1",
@@ -105,34 +96,5 @@
   },
   "engines": {
     "node": ">=22.0.0"
-  },
-  "create-umi": {
-    "ignoreScript": [
-      "docker*",
-      "functions*",
-      "site",
-      "generateMock"
-    ],
-    "ignoreDependencies": [
-      "netlify*",
-      "serverless"
-    ],
-    "ignore": [
-      ".dockerignore",
-      ".git",
-      ".github",
-      ".gitpod.yml",
-      "CODE_OF_CONDUCT.md",
-      "Dockerfile",
-      "Dockerfile.*",
-      "lambda",
-      "LICENSE",
-      "netlify.toml",
-      "README.*.md",
-      "azure-pipelines.yml",
-      "docker",
-      "CNAME",
-      "create-umi"
-    ]
   }
 }

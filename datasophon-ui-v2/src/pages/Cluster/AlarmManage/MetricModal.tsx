@@ -13,7 +13,7 @@ import {
   listQuotaRoles,
   saveAlertQuota,
   updateAlertQuota,
-} from '@/services/datasophon/alarm';
+} from '@/services/alarm';
 
 const COMPARE_OPTIONS = [
   { label: '!=', value: '!=' },

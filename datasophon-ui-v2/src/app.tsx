@@ -20,11 +20,10 @@ dayjs.extend(relativeTime);
 import {
   AvatarDropdown,
   ErrorBoundary,
-  Footer,
   LangDropdown,
   OfflineBanner,
 } from '@/components';
-import { currentUser as queryCurrentUser } from '@/services/datasophon/auth';
+import { currentUser as queryCurrentUser } from '@/services/auth';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
 
@@ -36,9 +35,9 @@ const loginPath = '/user/login';
  * */
 export async function getInitialState(): Promise<{
   settings?: Partial<LayoutSettings>;
-  currentUser?: API.CurrentUser;
+  currentUser?: DATASOPHON.CurrentUser;
   loading?: boolean;
-  fetchUserInfo?: () => Promise<API.CurrentUser | undefined>;
+  fetchUserInfo?: () => Promise<DATASOPHON.CurrentUser | undefined>;
   settingDrawerOpen?: boolean;
 }> {
   const fetchUserInfo = async () => {
@@ -102,13 +101,17 @@ export const layout: RunTimeLayoutConfig = ({
     },
     avatarProps: {
       src: initialState?.currentUser?.avatar,
-      title: initialState?.currentUser?.name ?? '',
+      title:
+        initialState?.currentUser?.name ??
+        initialState?.currentUser?.username ??
+        '',
       render: (_, avatarChildren) => (
         <AvatarDropdown>{avatarChildren}</AvatarDropdown>
       ),
     },
     waterMarkProps: {
-      content: initialState?.currentUser?.name,
+      content:
+        initialState?.currentUser?.name ?? initialState?.currentUser?.username,
     },
     // footerRender: () => <Footer />,
     onPageChange: () => {

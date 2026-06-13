@@ -10,8 +10,8 @@ import {
   installServices,
   saveRoleHostMapping,
   saveServiceConfig,
-} from '@/services/datasophon/addService';
-import { validateDeploymentFile } from '@/services/datasophon/deploy';
+} from '@/services/addService';
+import { validateDeploymentFile } from '@/services/deploy';
 import StepConfig from './StepConfig';
 import StepInstall from './StepInstall';
 import StepManifest from './StepManifest';

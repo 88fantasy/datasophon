@@ -20,7 +20,7 @@ import {
   T_RUNNING,
   T_SUCCESS,
 } from './dagStatus';
-import { getDagGraph, redeployDag } from '@/services/datasophon/dag';
+import { getDagGraph, redeployDag } from '@/services/dag';
 
 // 注册 x6 节点 / 边 / 连接器（全局只需一次）
 DataProcessingDagNode.invokeInit();
@@ -109,7 +109,7 @@ function applyLrLayout(nodes: any[], edges: any[]): any[] {
 
   while (queue.length > 0) {
     levels.push(queue);
-    queue.forEach((id) => visited.add(id));
+    for (const id of queue) visited.add(id);
     const next: string[] = [];
     queue.forEach((id) => {
       (children[id] ?? []).forEach((childId) => {
@@ -123,7 +123,7 @@ function applyLrLayout(nodes: any[], edges: any[]): any[] {
   }
 
   // 将未被访问的节点（存在环时）单独成层
-  nodes.filter((n) => !visited.has(n.id)).forEach((n) => levels.push([n.id]));
+  for (const n of nodes.filter((n) => !visited.has(n.id))) levels.push([n.id]);
 
   const positions = new Map<string, { x: number; y: number }>();
   levels.forEach((levelNodes, li) => {

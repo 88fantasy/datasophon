@@ -20,7 +20,7 @@ import {
   queryImportProgress,
   queryMergeProgress,
   uploadDeployFile,
-} from '@/services/datasophon/deploy';
+} from '@/services/deploy';
 import { chunkedUpload } from '@/utils/ChunkedUploader';
 
 interface Props {

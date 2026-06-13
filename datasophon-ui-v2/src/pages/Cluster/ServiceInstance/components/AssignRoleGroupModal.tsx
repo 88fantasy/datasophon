@@ -5,7 +5,7 @@ import React from 'react';
 import {
   bindRoleGroup,
   getServiceRoleGroupList,
-} from '@/services/datasophon/service';
+} from '@/services/service';
 
 interface Props {
   open: boolean;

@@ -1,5 +1,5 @@
 import ClusterContext from '@/context/ClusterContext';
-import { listDagCommands } from '@/services/datasophon/dag';
+import { listDagCommands } from '@/services/dag';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import { Badge } from 'antd';

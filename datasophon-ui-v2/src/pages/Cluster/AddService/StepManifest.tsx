@@ -1,7 +1,7 @@
 import { ProFormText, ProFormUploadButton } from '@ant-design/pro-components';
 import type { UploadRequestOption } from 'rc-upload/lib/interface';
 import type React from 'react';
-import { uploadDeployFile } from '@/services/datasophon/deploy';
+import { uploadDeployFile } from '@/services/deploy';
 
 interface Props {
   clusterId: number;

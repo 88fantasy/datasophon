@@ -2,7 +2,7 @@ import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { Button, message, Popconfirm } from 'antd';
 import React, { useRef } from 'react';
-import { deleteUsers, listUsers } from '@/services/datasophon/user';
+import { deleteUsers, listUsers } from '@/services/user';
 import ResetPasswordModal from './ResetPasswordModal';
 import UserModal from './UserModal';
 

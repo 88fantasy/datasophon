@@ -1,7 +1,7 @@
 import { history, useParams } from '@umijs/max';
 import { Spin } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { listClusterServices } from '@/services/datasophon/service';
+import { listClusterServices } from '@/services/service';
 
 const ServiceManage: React.FC = () => {
   const { clusterId } = useParams<{ clusterId: string }>();

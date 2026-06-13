@@ -7,7 +7,7 @@ import { history, useModel } from '@umijs/max';
 import type { MenuProps } from 'antd';
 import { Spin } from 'antd';
 import React, { startTransition } from 'react';
-import { logout as outLogin } from '@/services/datasophon/auth';
+import { logout as outLogin } from '@/services/auth';
 import HeaderDropdown from '../HeaderDropdown';
 
 type GlobalHeaderRightProps = {

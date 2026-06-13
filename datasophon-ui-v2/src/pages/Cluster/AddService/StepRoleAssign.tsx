@@ -5,7 +5,7 @@ import {
   listManagedHosts,
   listMasterRoles,
   listNonMasterRoles,
-} from '@/services/datasophon/addService';
+} from '@/services/addService';
 
 interface Props {
   clusterId: number;

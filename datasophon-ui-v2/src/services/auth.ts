@@ -2,7 +2,7 @@ import { request } from '@umijs/max';
 
 /** 获取当前登录用户 GET /currentUser */
 export async function currentUser(options?: Record<string, unknown>) {
-  return request<{ data: API.CurrentUser }>('/currentUser', {
+  return request<{ data: DATASOPHON.CurrentUser }>('/currentUser', {
     method: 'GET',
     ...(options || {}),
   });
@@ -13,7 +13,7 @@ export async function login(
   body: { username: string; password: string },
   options?: Record<string, unknown>,
 ) {
-  return request<{ data: API.CurrentUser }>('/login/account', {
+  return request<{ data: DATASOPHON.CurrentUser }>('/login/account', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     data: body,

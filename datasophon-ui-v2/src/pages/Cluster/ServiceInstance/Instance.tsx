@@ -14,7 +14,7 @@ import {
   getServiceRoleGroupList,
   getServiceRoleTypeList,
   listServiceRoleInstances,
-} from '@/services/datasophon/service';
+} from '@/services/service';
 import AddRoleGroupModal from './components/AddRoleGroupModal';
 import AssignRoleGroupModal from './components/AssignRoleGroupModal';
 import LogModal from './components/LogModal';

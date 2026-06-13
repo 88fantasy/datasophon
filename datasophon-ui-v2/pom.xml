@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ MIT License
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy
+  ~ of this software and associated documentation files (the "Software"), to deal
+  ~ in the Software without restriction, including without limitation the rights
+  ~ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  ~ copies of the Software, and to permit persons to whom the Software is
+  ~ furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all
+  ~ copies or substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  ~ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  ~ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  ~ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  ~ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  ~ SOFTWARE.
+  -->
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.datasophon</groupId>
+        <artifactId>datasophon</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>datasophon-ui-v2</artifactId>
+
+    <properties>
+        <!-- Node ≥ 22 required by datasophon-ui-v2 (package-lock.json, not pnpm) -->
+        <build.node.version>v22.14.0</build.node.version>
+        <build.npm.version>10.9.2</build.npm.version>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <failOnError>false</failOnError>
+                    <excludeDefaultDirectories>false</excludeDefaultDirectories>
+                    <filesets>
+                        <!-- 清理前端构建产物 -->
+                        <fileset>
+                            <directory>${basedir}/dist</directory>
+                            <followSymlinks>false</followSymlinks>
+                            <useDefaultExcludes>true</useDefaultExcludes>
+                        </fileset>
+                        <!-- 清理父项目 static/，避免 v1 旧资源与 v2 混包 -->
+                        <fileset>
+                            <directory>${project.parent.basedir}/static</directory>
+                            <followSymlinks>false</followSymlinks>
+                            <useDefaultExcludes>true</useDefaultExcludes>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.15.4</version>
+                <configuration>
+                    <nodeVersion>${build.node.version}</nodeVersion>
+                    <npmVersion>${build.npm.version}</npmVersion>
+                    <nodeDownloadRoot>https://npmmirror.com/mirrors/node/</nodeDownloadRoot>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install node and npm</id>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                    </execution>
+                    <execution>
+                        <id>npm install</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm run build</id>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <!--
+                      路线②：后端 BasicValidRequestInterceptor 白名单只放行 /static 前缀。
+                      v2 publicPath=/ddh/static/，资源 URL 均为 /ddh/static/<chunk>。
+                      磁盘结构与 v1 同构：
+                        static/index.html          ← SPA 入口
+                        static/static/<chunk>.js   ← JS/CSS/资源（命中 /static 白名单）
+                    -->
+                    <!-- A: index.html → static/ (SPA 入口) -->
+                    <execution>
+                        <id>copy-index-html</id>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <phase>compile</phase>
+                        <configuration>
+                            <outputDirectory>${project.parent.basedir}/static</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/dist</directory>
+                                    <includes>
+                                        <include>index.html</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <!-- B: 其余产物(JS/CSS/map/icons/scripts) → static/static/ -->
+                    <execution>
+                        <id>copy-assets</id>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <phase>compile</phase>
+                        <configuration>
+                            <outputDirectory>${project.parent.basedir}/static/static</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/dist</directory>
+                                    <excludes>
+                                        <exclude>index.html</exclude>
+                                    </excludes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

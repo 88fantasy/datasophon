@@ -9,7 +9,7 @@ import React from 'react';
 import {
   getServiceRoleGroupList,
   saveRoleGroup,
-} from '@/services/datasophon/service';
+} from '@/services/service';
 
 interface Props {
   open: boolean;

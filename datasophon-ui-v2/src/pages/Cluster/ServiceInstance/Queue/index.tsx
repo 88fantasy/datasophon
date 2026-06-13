@@ -11,7 +11,7 @@ import {
   getYarnSchedulerInfo,
   listYarnQueues,
   refreshYarnQueues,
-} from '@/services/datasophon/service';
+} from '@/services/service';
 import BuildOrEditModal from './BuildOrEditModal';
 
 interface Props {

@@ -2,7 +2,7 @@ import { ModalForm, ProFormSelect } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
 import { message } from 'antd';
 import React from 'react';
-import { assignNodeLabel, listNodeLabels } from '@/services/datasophon/label';
+import { assignNodeLabel, listNodeLabels } from '@/services/label';
 
 interface Props {
   clusterId: number;

@@ -2,7 +2,7 @@ import { ModalForm, ProFormSelect } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
 import { message } from 'antd';
 import React from 'react';
-import { assignRack, getRackList } from '@/services/datasophon/host';
+import { assignRack, getRackList } from '@/services/host';
 
 interface Props {
   clusterId: number;

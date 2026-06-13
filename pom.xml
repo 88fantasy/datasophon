@@ -36,7 +36,7 @@
         <module>datasophon-grpc-api</module>
         <module>datasophon-worker</module>
         <module>datasophon-cli-go</module>
-        <module>datasophon-ui</module>
+        <module>datasophon-ui-v2</module>
         <module>datasophon-api</module>
         <module>datasophon-k8s-agent</module>
         <module>datasophon-assembly</module>
