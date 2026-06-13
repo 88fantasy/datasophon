@@ -1,6 +1,6 @@
 import { ModalForm, ProFormText } from '@ant-design/pro-components';
 import { message } from 'antd';
-import { resetPassword } from '@/services/datasophon/user';
+import { resetPassword } from '@/services/user';
 
 interface Props {
   trigger: React.ReactElement;

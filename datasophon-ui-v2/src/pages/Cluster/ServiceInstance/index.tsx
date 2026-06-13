@@ -13,7 +13,7 @@ import {
   getServiceInstance,
   getServiceWebUis,
   listK8sResourceTypes,
-} from '@/services/datasophon/service';
+} from '@/services/service';
 import InstanceTab from './Instance';
 import K8sResource from './K8sResource';
 import QueueTab from './Queue';

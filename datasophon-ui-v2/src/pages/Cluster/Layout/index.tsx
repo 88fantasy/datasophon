@@ -13,12 +13,12 @@ import { history, Outlet, useParams } from '@umijs/max';
 import { Badge, Button, Dropdown, Layout, Menu, Spin, Tag } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
-import { listClusters } from '@/services/datasophon/cluster';
+import { listClusters } from '@/services/cluster';
 import {
   listClusterServices,
   listK8sInstances,
   listK8sNamespaces,
-} from '@/services/datasophon/service';
+} from '@/services/service';
 import AddServiceModal from '../AddService/AddServiceModal';
 import UploadManifestModal from '../Deploy/UploadManifestModal';
 import UploadPackageModal from '../Deploy/UploadPackageModal';

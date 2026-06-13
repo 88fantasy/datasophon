@@ -23,7 +23,7 @@ import {
   LangDropdown,
   OfflineBanner,
 } from '@/components';
-import { currentUser as queryCurrentUser } from '@/services/datasophon/auth';
+import { currentUser as queryCurrentUser } from '@/services/auth';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
 

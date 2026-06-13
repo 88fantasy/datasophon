@@ -9,7 +9,7 @@ import {
   createCluster,
   listFrames,
   updateCluster,
-} from '@/services/datasophon/cluster';
+} from '@/services/cluster';
 
 interface Props {
   trigger: React.ReactElement;

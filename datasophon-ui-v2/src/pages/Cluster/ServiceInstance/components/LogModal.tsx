@@ -1,6 +1,6 @@
 import { Modal, Spin } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { getRoleInstanceLog } from '@/services/datasophon/service';
+import { getRoleInstanceLog } from '@/services/service';
 
 interface Props {
   open: boolean;

@@ -8,7 +8,7 @@ import {
   T_POD,
   T_SERVICE,
 } from '@/constants/resourceType';
-import { listK8sResources } from '@/services/datasophon/service';
+import { listK8sResources } from '@/services/service';
 
 interface K8sResourceProps {
   clusterId: number;

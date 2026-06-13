@@ -15,7 +15,7 @@ import ClusterContext from '@/context/ClusterContext';
 import {
   deleteClusterHosts,
   listClusterHosts,
-} from '@/services/datasophon/host';
+} from '@/services/host';
 import AssignLabelModal from './components/AssignLabelModal';
 import AssignRackModal from './components/AssignRackModal';
 import LabelManageModal from './components/LabelManageModal';

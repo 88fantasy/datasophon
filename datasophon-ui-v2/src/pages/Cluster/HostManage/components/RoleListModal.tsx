@@ -2,7 +2,7 @@ import { ModalForm } from '@ant-design/pro-components';
 import { useRequest } from '@umijs/max';
 import { Empty, Tag } from 'antd';
 import React from 'react';
-import { getHostRoles } from '@/services/datasophon/host';
+import { getHostRoles } from '@/services/host';
 
 interface Props {
   clusterId: number;

@@ -9,7 +9,7 @@ import React from 'react';
 import {
   listAlertCategories,
   saveAlertGroup,
-} from '@/services/datasophon/alarm';
+} from '@/services/alarm';
 
 interface Props {
   open: boolean;

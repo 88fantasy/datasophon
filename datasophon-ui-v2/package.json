@@ -1,6 +1,6 @@
 {
   "name": "datasophon-ui",
-  "version": "6.0.2",
+  "version": "3.0-SNAPSHOT",
   "private": true,
   "description": "DataSophon - Big Data Cluster Automation & Operations Platform",
   "scripts": {

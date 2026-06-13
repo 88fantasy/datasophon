@@ -1,6 +1,6 @@
 import { ModalForm, ProFormText } from '@ant-design/pro-components';
 import { message } from 'antd';
-import { createUser, updateUser } from '@/services/datasophon/user';
+import { createUser, updateUser } from '@/services/user';
 
 interface Props {
   trigger: React.ReactElement;

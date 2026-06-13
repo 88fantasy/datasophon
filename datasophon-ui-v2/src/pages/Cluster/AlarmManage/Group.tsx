@@ -9,7 +9,7 @@ import React, { useRef, useState } from 'react';
 import {
   deleteAlertGroups,
   listAlertGroups,
-} from '@/services/datasophon/alarm';
+} from '@/services/alarm';
 import GroupModal from './GroupModal';
 
 interface Props {

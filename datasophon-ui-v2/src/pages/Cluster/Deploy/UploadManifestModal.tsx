@@ -12,7 +12,7 @@ import {
   deployManifest,
   uploadDeployFile,
   validateDeploymentFile,
-} from '@/services/datasophon/deploy';
+} from '@/services/deploy';
 
 interface Props {
   open: boolean;

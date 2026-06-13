@@ -2,7 +2,7 @@ import { Empty, Spin, Tabs } from 'antd';
 import React, { useEffect, useState } from 'react';
 import ConfigForm from '@/pages/Cluster/ServiceInstance/Setting/ConfigForm';
 import { invokeHandleTemplateData } from '@/pages/Cluster/ServiceInstance/Setting/configTransform';
-import { getConfigFromDdl } from '@/services/datasophon/addService';
+import { getConfigFromDdl } from '@/services/addService';
 
 interface Props {
   clusterId: number;

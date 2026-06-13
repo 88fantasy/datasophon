@@ -7,7 +7,7 @@ import {
   deleteNodeLabel,
   listNodeLabels,
   saveNodeLabel,
-} from '@/services/datasophon/label';
+} from '@/services/label';
 
 interface Props {
   clusterId: number;

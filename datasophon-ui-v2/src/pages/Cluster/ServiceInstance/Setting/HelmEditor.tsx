@@ -15,7 +15,7 @@ import {
   getK8sConfig,
   listK8sConfigVersions,
   saveK8sConfig,
-} from '@/services/datasophon/service';
+} from '@/services/service';
 import { mergeYamlFiles } from './yamlMerge';
 
 interface HelmEditorProps {

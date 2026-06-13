@@ -7,7 +7,7 @@ import {
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import React from 'react';
-import { saveYarnQueue, updateYarnQueue } from '@/services/datasophon/service';
+import { saveYarnQueue, updateYarnQueue } from '@/services/service';
 
 const SCHEDULE_POLICY_OPTIONS = [
   { label: 'fair', value: 'fair' },

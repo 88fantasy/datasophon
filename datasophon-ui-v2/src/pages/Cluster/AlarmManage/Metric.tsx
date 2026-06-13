@@ -12,7 +12,7 @@ import {
   listAlertQuotas,
   startQuotas,
   stopQuotas,
-} from '@/services/datasophon/alarm';
+} from '@/services/alarm';
 import MetricModal from './MetricModal';
 
 interface Props {

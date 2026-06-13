@@ -20,7 +20,7 @@ import {
   T_RUNNING,
   T_SUCCESS,
 } from './dagStatus';
-import { getDagGraph, redeployDag } from '@/services/datasophon/dag';
+import { getDagGraph, redeployDag } from '@/services/dag';
 
 // 注册 x6 节点 / 边 / 连接器（全局只需一次）
 DataProcessingDagNode.invokeInit();

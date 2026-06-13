@@ -11,7 +11,7 @@ import { Alert } from 'antd';
 import { createStyles } from 'antd-style';
 import React, { startTransition, useState } from 'react';
 import { Footer } from '@/components';
-import { login } from '@/services/datasophon/auth';
+import { login } from '@/services/auth';
 import Settings from '../../../../config/defaultSettings';
 import Logo from './Logo';
 

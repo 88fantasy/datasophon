@@ -16,7 +16,7 @@ import {
   getServiceRoleGroupList,
   listConfigVersions,
   saveServiceConfig,
-} from '@/services/datasophon/service';
+} from '@/services/service';
 
 import ConfigForm from './ConfigForm';
 import {
