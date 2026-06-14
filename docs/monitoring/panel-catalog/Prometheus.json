@@ -1,0 +1,512 @@
+[
+  {
+    "title": "Uptime [$interval]",
+    "promql": [
+      "avg(avg_over_time(up{instance=~\"$instance\",job=~\"$job\"}[$interval]) * 100)"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "90, 99",
+    "legend": null
+  },
+  {
+    "title": "Currently Down",
+    "promql": [
+      "up{instance=~\"$instance\",job=~\"$job\"} < 1"
+    ],
+    "unit": null,
+    "chartType": "table",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "Total Series",
+    "promql": [
+      "sum(prometheus_tsdb_head_series{job=~\"$job\",instance=~\"$instance\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "1000000,2000000",
+    "legend": null
+  },
+  {
+    "title": "Memory Chunks",
+    "promql": [
+      "sum(prometheus_tsdb_head_chunks{job=~\"$job\",instance=~\"$instance\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Missed Iterations [$interval]",
+    "promql": [
+      "sum(sum_over_time(prometheus_evaluator_iterations_missed_total{job=~\"$job\",instance=~\"$instance\"}[$interval]))"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "1,10",
+    "legend": null
+  },
+  {
+    "title": "Skipped Iterations [$interval]",
+    "promql": [
+      "sum(sum_over_time(prometheus_evaluator_iterations_skipped_total{job=~\"$job\",instance=~\"$instance\"}[$interval]))"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "1,10",
+    "legend": null
+  },
+  {
+    "title": "Tardy Scrapes [$interval]",
+    "promql": [
+      "sum(sum_over_time(prometheus_target_scrapes_exceeded_sample_limit_total{job=~\"$job\",instance=~\"$instance\"}[$interval]))"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "1,10",
+    "legend": null
+  },
+  {
+    "title": "Reload Failures [$interval]",
+    "promql": [
+      "sum(sum_over_time(prometheus_tsdb_reloads_failures_total{job=~\"$job\",instance=~\"$instance\"}[$interval]))"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "1,10",
+    "legend": null
+  },
+  {
+    "title": "Skipped Scrapes [$interval]",
+    "promql": [
+      "sum(sum_over_time(prometheus_target_scrapes_exceeded_sample_limit_total{job=~\"$job\",instance=~\"$instance\"}[$interval])) + \nsum(sum_over_time(prometheus_target_scrapes_sample_duplicate_timestamp_total{job=~\"$job\",instance=~\"$instance\"}[$interval])) + \nsum(sum_over_time(prometheus_target_scrapes_sample_out_of_bounds_total{job=~\"$job\",instance=~\"$instance\"}[$interval])) + \nsum(sum_over_time(prometheus_target_scrapes_sample_out_of_order_total{job=~\"$job\",instance=~\"$instance\"}[$interval])) "
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "1,10",
+    "legend": null
+  },
+  {
+    "title": "Failures and Errors",
+    "promql": [
+      "sum(increase(net_conntrack_dialer_conn_failed_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_evaluator_iterations_missed_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_evaluator_iterations_skipped_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_rule_evaluation_failures_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_sd_azure_refresh_failures_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_sd_consul_rpc_failures_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_sd_dns_lookup_failures_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_sd_ec2_refresh_failures_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_sd_gce_refresh_failures_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_sd_marathon_refresh_failures_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_sd_openstack_refresh_failures_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_sd_triton_refresh_failures_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_target_scrapes_exceeded_sample_limit_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_target_scrapes_sample_duplicate_timestamp_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_target_scrapes_sample_out_of_bounds_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_target_scrapes_sample_out_of_order_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_treecache_zookeeper_failures_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_tsdb_compactions_failed_total{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_tsdb_head_series_not_found{instance=~\"$instance\"}[5m])) > 0",
+      "sum(increase(prometheus_tsdb_reloads_failures_total{instance=~\"$instance\"}[5m])) > 0"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Upness (stacked)",
+    "promql": [
+      "up{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Storage Memory Chunks",
+    "promql": [
+      "prometheus_tsdb_head_chunks{job=~\"$job\",instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Series Count",
+    "promql": [
+      "prometheus_tsdb_head_series{job=~\"$job\",instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Series Created / Removed",
+    "promql": [
+      "sum( increase(prometheus_tsdb_head_series_created_total{instance=~\"$instance\"}[5m]) )",
+      "sum( increase(prometheus_tsdb_head_series_removed_total{instance=~\"$instance\"}[5m]) )"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Appended Samples per Second",
+    "promql": [
+      "rate(prometheus_tsdb_head_samples_appended_total{job=~\"$job\",instance=~\"$instance\"}[1m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Scrape Sync Total",
+    "promql": [
+      "sum(prometheus_target_scrape_pool_sync_total{job=~\"$job\",instance=~\"$instance\"}) by (scrape_job)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Target Sync",
+    "promql": [
+      "sum(rate(prometheus_target_sync_length_seconds_sum{job=~\"$job\",instance=~\"$instance\"}[2m])) by (scrape_job) * 1000"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Scrape Duration",
+    "promql": [
+      "scrape_duration_seconds{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Rejected Scrapes",
+    "promql": [
+      "sum(prometheus_target_scrapes_exceeded_sample_limit_total{job=~\"$job\",instance=~\"$instance\"})",
+      "sum(prometheus_target_scrapes_sample_duplicate_timestamp_total{job=~\"$job\",instance=~\"$instance\"})",
+      "sum(prometheus_target_scrapes_sample_out_of_bounds_total{job=~\"$job\",instance=~\"$instance\"})",
+      "sum(prometheus_target_scrapes_sample_out_of_order_total{job=~\"$job\",instance=~\"$instance\"}) "
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Average Rule Evaluation Duration",
+    "promql": [
+      "1000 * rate(prometheus_evaluator_duration_seconds_sum{job=~\"$job\", instance=~\"$instance\"}[5m]) / rate(prometheus_evaluator_duration_seconds_count{job=~\"$job\", instance=~\"$instance\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "HTTP Request Duration",
+    "promql": [
+      "sum(rate(http_request_duration_microseconds_count{job=~\"$job\",instance=~\"$instance\"}[1m])) by (handler) > 0"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Prometheus Engine Query Duration Seconds",
+    "promql": [
+      "sum(prometheus_engine_query_duration_seconds_sum{job=~\"$job\",instance=~\"$instance\"}) by (slice)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Rule Evaluator Iterations",
+    "promql": [
+      "sum(rate(prometheus_evaluator_iterations_total{job=~\"$job\", instance=~\"$instance\"}[5m]))",
+      "sum(rate(prometheus_evaluator_iterations_missed_total{job=~\"$job\", instance=~\"$instance\"}[5m]))",
+      "sum(rate(prometheus_evaluator_iterations_skipped_total{job=~\"$job\", instance=~\"$instance\"}[5m]))"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Notifications Sent",
+    "promql": [
+      "rate(prometheus_notifications_sent_total[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Minutes Since Successful Config Reload",
+    "promql": [
+      "(time() - prometheus_config_last_reload_success_timestamp_seconds{job=~\"$job\",instance=~\"$instance\"}) / 60"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Successful Config Reload",
+    "promql": [
+      "prometheus_config_last_reload_successful{job=~\"$job\",instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "GC Rate / 2m",
+    "promql": [
+      "sum(rate(go_gc_duration_seconds_sum{instance=~\"$instance\",job=~\"$job\"}[2m])) by (instance)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Go Memory Usage (FIXME)",
+    "promql": [
+      "sum(go_memstats_alloc_bytes_total{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_alloc_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_buck_hash_sys_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_gc_sys_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_heap_alloc_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_heap_idle_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_heap_inuse_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_heap_released_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_heap_sys_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_mcache_inuse_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_mcache_sys_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_mspan_inuse_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_mspan_sys_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_next_gc_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_other_sys_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_stack_inuse_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_stack_sys_bytes{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(go_memstats_sys_bytes{job=~\"$job\", instance=~\"$instance\"})"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Scrape Duration",
+    "promql": [
+      "prometheus_target_interval_length_seconds{instance=~\"$instance\", job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Target Scrapes / 5m",
+    "promql": [
+      "sum(rate(prometheus_target_interval_length_seconds_count{job=~\"$job\",instance=~\"$instance\"}[5m])) by (interval)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  }
+]

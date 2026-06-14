@@ -1,0 +1,112 @@
+[
+  {
+    "title": "Message in per second",
+    "promql": [
+      "sum(rate(kafka_topic_partition_current_offset{instance=\"$instance\", topic=~\"$topic\"}[1m])) by (topic)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": false,
+      "current": true,
+      "max": true,
+      "min": false,
+      "rightSide": false,
+      "show": true,
+      "sideWidth": 480,
+      "sort": "max",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Lag by  Consumer Group",
+    "promql": [
+      "sum(kafka_consumergroup_lag{instance=\"$instance\",topic=~\"$topic\"}) by (consumergroup, topic) "
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": false,
+      "current": true,
+      "max": true,
+      "min": false,
+      "rightSide": false,
+      "show": true,
+      "sideWidth": 480,
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Message in per minute",
+    "promql": [
+      "sum(delta(kafka_topic_partition_current_offset{instance=~'$instance', topic=~\"$topic\"}[5m])/5) by (topic)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": false,
+      "current": true,
+      "max": true,
+      "min": false,
+      "rightSide": false,
+      "show": true,
+      "sideWidth": 480,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Message consume per minute",
+    "promql": [
+      "sum(delta(kafka_consumergroup_current_offset{instance=~'$instance',topic=~\"$topic\"}[5m])/5) by (consumergroup, topic)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": false,
+      "current": true,
+      "max": true,
+      "min": false,
+      "rightSide": false,
+      "show": true,
+      "sideWidth": 480,
+      "sort": "current",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Partitions per Topic",
+    "promql": [
+      "sum by(topic) (kafka_topic_partitions{instance=\"$instance\",topic=~\"$topic\"})"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": false,
+      "current": true,
+      "max": false,
+      "min": false,
+      "rightSide": true,
+      "show": true,
+      "sideWidth": 420,
+      "total": false,
+      "values": true
+    }
+  }
+]

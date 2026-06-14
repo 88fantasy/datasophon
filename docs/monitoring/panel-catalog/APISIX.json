@@ -1,0 +1,348 @@
+[
+  {
+    "title": "Total Requests",
+    "promql": [
+      "sum(apisix_http_requests_total{instance=~\"$instance\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Accepted Connections",
+    "promql": [
+      "sum(apisix_nginx_http_current_connections{state=\"accepted\", instance=~\"$instance\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Handled Connections",
+    "promql": [
+      "sum(apisix_nginx_http_current_connections{state=\"handled\", instance=~\"$instance\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Nginx connection state",
+    "promql": [
+      "sum(apisix_nginx_http_current_connections{state=~\"active|reading|writing|waiting\", instance=~\"$instance\"}) by (state)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": false,
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "rightSide": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Total Bandwidth",
+    "promql": [
+      "sum(rate(apisix_bandwidth{instance=~\"$instance\"}[$__rate_interval])) by (type)"
+    ],
+    "unit": "decbytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "rightSide": true,
+      "show": true,
+      "sort": "total",
+      "sortDesc": true,
+      "total": true,
+      "values": true
+    }
+  },
+  {
+    "title": "Ingress per service/route",
+    "promql": [
+      "sum(irate(apisix_bandwidth{type=\"ingress\", service =~\"$service\",route=~\"$route\",instance=~\"$instance\"}[$__rate_interval])) by (service)",
+      "sum(irate(apisix_bandwidth{type=\"ingress\", service =~\"$service\",route=~\"$route\",instance=~\"$instance\"}[$__rate_interval])) by (route)"
+    ],
+    "unit": "decbytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "rightSide": true,
+      "show": true,
+      "sort": "total",
+      "sortDesc": true,
+      "total": true,
+      "values": true
+    }
+  },
+  {
+    "title": "Egress per service/route",
+    "promql": [
+      "sum(rate(apisix_bandwidth{type=\"egress\", service =~\"$service\",route=~\"$route\",instance=~\"$instance\"}[$__rate_interval])) by (service)",
+      "sum(rate(apisix_bandwidth{type=\"egress\", service =~\"$service\",route=~\"$route\",instance=~\"$instance\"}[$__rate_interval])) by (route)"
+    ],
+    "unit": "decbytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "rightSide": true,
+      "show": true,
+      "sort": "total",
+      "sortDesc": true,
+      "total": true,
+      "values": true
+    }
+  },
+  {
+    "title": "Requests per second (RPS) by status code",
+    "promql": [
+      "sum(rate(apisix_http_status{service=~\"$service\",route=~\"$route\",instance=~\"$instance\"}[$__rate_interval])) by (code)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Total requests per second (RPS)",
+    "promql": [
+      "sum(rate(apisix_http_status{instance=~\"$instance\"}[$__rate_interval]))"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Requests per second (RPS) per service/route",
+    "promql": [
+      "sum(rate(apisix_http_status{service=~\"$service\",route=~\"$route\",instance=~\"$instance\"}[$__rate_interval])) by (service)",
+      "sum(rate(apisix_http_status{service=~\"$service\",route=~\"$route\",instance=~\"$instance\"}[$__rate_interval])) by (route)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "rightSide": true,
+      "show": true,
+      "sort": "total",
+      "sortDesc": true,
+      "total": true,
+      "values": true
+    }
+  },
+  {
+    "title": "Request Latency",
+    "promql": [
+      "histogram_quantile(0.90, sum(rate(apisix_http_latency_bucket{type=~\"request\",service=~\"$service\",consumer=~\"$consumer\",node=~\"$node\",route=~\"$route\"}[$__rate_interval])) by (le))",
+      "histogram_quantile(0.95, sum(rate(apisix_http_latency_bucket{type=~\"request\",service=~\"$service\",consumer=~\"$consumer\",node=~\"$node\",route=~\"$route\"}[$__rate_interval])) by (le))",
+      "histogram_quantile(0.99, sum(rate(apisix_http_latency_bucket{type=~\"request\",service=~\"$service\",consumer=~\"$consumer\",node=~\"$node\",route=~\"$route\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "APISIX Latency",
+    "promql": [
+      "histogram_quantile(0.90, sum(rate(apisix_http_latency_bucket{type=~\"apisix\",service=~\"$service\",consumer=~\"$consumer\",node=~\"$node\",route=~\"$route\"}[$__rate_interval])) by (le))",
+      "histogram_quantile(0.95, sum(rate(apisix_http_latency_bucket{type=~\"apisix\",service=~\"$service\",consumer=~\"$consumer\",node=~\"$node\",route=~\"$route\"}[$__rate_interval])) by (le))",
+      "histogram_quantile(0.99, sum(rate(apisix_http_latency_bucket{type=~\"apisix\",service=~\"$service\",consumer=~\"$consumer\",node=~\"$node\",route=~\"$route\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Upstream Latency",
+    "promql": [
+      "histogram_quantile(0.90, sum(rate(apisix_http_latency_bucket{type=~\"upstream\",service=~\"$service\",consumer=~\"$consumer\",node=~\"$node\",route=~\"$route\"}[$__rate_interval])) by (le))",
+      "histogram_quantile(0.95, sum(rate(apisix_http_latency_bucket{type=~\"upstream\",service=~\"$service\",consumer=~\"$consumer\",node=~\"$node\",route=~\"$route\"}[$__rate_interval])) by (le))",
+      "histogram_quantile(0.99, sum(rate(apisix_http_latency_bucket{type=~\"upstream\",service=~\"$service\",consumer=~\"$consumer\",node=~\"$node\",route=~\"$route\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Etcd modify indexes",
+    "promql": [
+      "sum(apisix_etcd_modify_indexes{key=~\"consumers|global_rules|max_modify_index|prev_index|protos|routes|services|ssls|stream_routes|upstreams|x_etcd_index\"}) by (key)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": false,
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "rightSide": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Etcd reachable",
+    "promql": [
+      "sum(apisix_etcd_reachable{instance=~\"$instance\"})"
+    ],
+    "unit": null,
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 0
+      },
+      {
+        "color": "green",
+        "value": 1
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Nginx metric errors",
+    "promql": [
+      "sum(apisix_nginx_metric_errors_total{instance=~\"$instance\"})"
+    ],
+    "unit": null,
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "yellow",
+        "value": 1
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Nginx shared dict free space percent",
+    "promql": [
+      "(apisix_shared_dict_free_space_bytes * 100) / on (name) apisix_shared_dict_capacity_bytes"
+    ],
+    "unit": "percent",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": false,
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "rightSide": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  }
+]

@@ -11,6 +11,15 @@ if (!inputPath || !component) {
 
 const dash = JSON.parse(readFileSync(inputPath, 'utf8'))
 
+// 兼容旧版(v4/v5) rows[].panels 格式与新版顶层 panels 格式
+// 旧版: dash.rows[].panels；新版: dash.panels(含 type=row 嵌套子面板)
+function getRootPanels(dash) {
+  if (Array.isArray(dash.rows) && dash.rows.length > 0) {
+    return dash.rows.flatMap((r) => r.panels || [])
+  }
+  return dash.panels || []
+}
+
 // Grafana 看板的 panels 可能嵌套在 row 内,递归展开
 function flattenPanels(panels) {
   const out = []
@@ -24,7 +33,7 @@ function flattenPanels(panels) {
   return out
 }
 
-const catalog = flattenPanels(dash.panels)
+const catalog = flattenPanels(getRootPanels(dash))
   .filter((p) => p.type !== 'row' && p.type !== 'text')
   .map((p) => {
     const promql = (p.targets || []).map((t) => t.expr).filter(Boolean)

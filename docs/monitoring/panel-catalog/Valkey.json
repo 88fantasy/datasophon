@@ -1,0 +1,307 @@
+[
+  {
+    "title": "Max Uptime",
+    "promql": [
+      "max(max_over_time(redis_uptime_in_seconds{instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "s",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Clients",
+    "promql": [
+      "sum(redis_connected_clients{instance=~\"$instance\"})"
+    ],
+    "unit": "none",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Memory Usage",
+    "promql": [
+      "sum(100 * (redis_memory_used_bytes{instance=~\"$instance\"}  / redis_memory_max_bytes{instance=~\"$instance\"}))"
+    ],
+    "unit": "percent",
+    "chartType": "gauge",
+    "thresholds": [
+      {
+        "color": "rgba(50, 172, 45, 0.97)",
+        "value": null
+      },
+      {
+        "color": "rgba(237, 129, 40, 0.89)",
+        "value": 80
+      },
+      {
+        "color": "rgba(245, 54, 54, 0.9)",
+        "value": 95
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Total Commands / sec",
+    "promql": [
+      "sum(rate(redis_commands_total{instance=~\"$instance\"} [1m])) by (cmd)"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": false
+    }
+  },
+  {
+    "title": "Hits / Misses per Sec",
+    "promql": [
+      "irate(redis_keyspace_hits_total{instance=~\"$instance\"}[5m])",
+      "irate(redis_keyspace_misses_total{instance=~\"$instance\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": false
+    }
+  },
+  {
+    "title": "Total Memory Usage",
+    "promql": [
+      "redis_memory_used_bytes{instance=~\"$instance\"}",
+      "redis_memory_max_bytes{instance=~\"$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Network I/O",
+    "promql": [
+      "sum(rate(redis_net_input_bytes_total{instance=~\"$instance\"}[5m]))",
+      "sum(rate(redis_net_output_bytes_total{instance=~\"$instance\"}[5m]))"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Total Items per DB",
+    "promql": [
+      "sum (redis_db_keys{instance=~\"$instance\"}) by (db, instance)"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Expiring vs Not-Expiring Keys",
+    "promql": [
+      "sum (redis_db_keys{instance=~\"$instance\"}) by (instance) - sum (redis_db_keys_expiring{instance=~\"$instance\"}) by (instance)",
+      "sum (redis_db_keys_expiring{instance=~\"$instance\"}) by (instance)"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Expired/Evicted Keys",
+    "promql": [
+      "sum(rate(redis_expired_keys_total{instance=~\"$instance\"}[5m])) by (instance)",
+      "sum(rate(redis_evicted_keys_total{instance=~\"$instance\"}[5m])) by (instance)"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Connected/Blocked Clients",
+    "promql": [
+      "sum(redis_connected_clients{instance=~\"$instance\"})",
+      "sum(redis_blocked_clients{instance=~\"$instance\"})"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Average Time Spent by Command / sec",
+    "promql": [
+      "sum(irate(redis_commands_duration_seconds_total{instance =~ \"$instance\"}[1m])) by (cmd)\n  /\nsum(irate(redis_commands_total{instance =~ \"$instance\"}[1m])) by (cmd)\n"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Total Time Spent by Command / sec",
+    "promql": [
+      "sum(irate(redis_commands_duration_seconds_total{instance=~\"$instance\"}[1m])) by (cmd) != 0"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  }
+]

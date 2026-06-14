@@ -1,0 +1,645 @@
+[
+  {
+    "title": "Uptime",
+    "promql": [
+      "mysql_global_status_uptime{job=~\"$job\", instance=~\"$instance\"}"
+    ],
+    "unit": "s",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "rgba(245, 54, 54, 0.9)",
+        "value": null
+      },
+      {
+        "color": "rgba(237, 129, 40, 0.89)",
+        "value": 300
+      },
+      {
+        "color": "rgba(50, 172, 45, 0.97)",
+        "value": 3600
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Current QPS",
+    "promql": [
+      "rate(mysql_global_status_queries{job=~\"$job\", instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "rgba(245, 54, 54, 0.9)",
+        "value": null
+      },
+      {
+        "color": "rgba(237, 129, 40, 0.89)",
+        "value": 35
+      },
+      {
+        "color": "rgba(50, 172, 45, 0.97)",
+        "value": 75
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "InnoDB Buffer Pool",
+    "promql": [
+      "mysql_global_variables_innodb_buffer_pool_size{job=~\"$job\", instance=~\"$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "rgba(50, 172, 45, 0.97)",
+        "value": null
+      },
+      {
+        "color": "rgba(237, 129, 40, 0.89)",
+        "value": 90
+      },
+      {
+        "color": "rgba(245, 54, 54, 0.9)",
+        "value": 95
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "MySQL Connections",
+    "promql": [
+      "sum(max_over_time(mysql_global_status_threads_connected{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(mysql_global_status_max_used_connections{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(mysql_global_variables_max_connections{job=~\"$job\", instance=~\"$instance\"})"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Client Thread Activity",
+    "promql": [
+      "sum(max_over_time(mysql_global_status_threads_connected{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(max_over_time(mysql_global_status_threads_running{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(avg_over_time(mysql_global_status_threads_running{job=~\"$job\", instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Questions",
+    "promql": [
+      "rate(mysql_global_status_questions{job=~\"$job\", instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Thread Cache",
+    "promql": [
+      "sum(mysql_global_variables_thread_cache_size{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(mysql_global_status_threads_cached{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(rate(mysql_global_status_threads_created{job=~\"$job\", instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Temporary Objects",
+    "promql": [
+      "sum(rate(mysql_global_status_created_tmp_tables{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(rate(mysql_global_status_created_tmp_disk_tables{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(rate(mysql_global_status_created_tmp_files{job=~\"$job\", instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Select Types",
+    "promql": [
+      "sum(rate(mysql_global_status_select_full_join{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(rate(mysql_global_status_select_full_range_join{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(rate(mysql_global_status_select_range{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(rate(mysql_global_status_select_range_check{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(rate(mysql_global_status_select_scan{job=~\"$job\", instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "hideZero": true,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Sorts",
+    "promql": [
+      "sum(rate(mysql_global_status_sort_rows{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(rate(mysql_global_status_sort_range{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(rate(mysql_global_status_sort_merge_passes{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(rate(mysql_global_status_sort_scan{job=~\"$job\", instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "hideZero": true,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Slow Queries",
+    "promql": [
+      "sum(rate(mysql_global_status_slow_queries{job=~\"$job\", instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Aborted Connections",
+    "promql": [
+      "sum(rate(mysql_global_status_aborted_connects{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(rate(mysql_global_status_aborted_clients{job=~\"$job\", instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Table Locks",
+    "promql": [
+      "sum(rate(mysql_global_status_table_locks_immediate{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(rate(mysql_global_status_table_locks_waited{job=~\"$job\", instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Network Traffic",
+    "promql": [
+      "sum(rate(mysql_global_status_bytes_received{job=~\"$job\", instance=~\"$instance\"}[$__interval]))",
+      "sum(rate(mysql_global_status_bytes_sent{job=~\"$job\", instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "Bps",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Internal Memory Overview",
+    "promql": [
+      "sum(mysql_global_status_innodb_page_size{job=~\"$job\", instance=~\"$instance\"} * on (instance) mysql_global_status_buffer_pool_pages{job=~\"$job\", instance=~\"$instance\", state=\"data\"})",
+      "sum(mysql_global_variables_innodb_log_buffer_size{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(mysql_global_variables_innodb_additional_mem_pool_size{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(mysql_global_status_innodb_mem_dictionary{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(mysql_global_variables_key_buffer_size{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(mysql_global_variables_query_cache_size{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(mysql_global_status_innodb_mem_adaptive_hash{job=~\"$job\", instance=~\"$instance\"})",
+      "sum(mysql_global_variables_tokudb_cache_size{job=~\"$job\", instance=~\"$instance\"})"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "hideEmpty": true,
+      "hideZero": true,
+      "max": true,
+      "min": true,
+      "rightSide": true,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Top Command Counters",
+    "promql": [
+      "topk(5, rate(mysql_global_status_commands_total{job=~\"$job\", instance=~\"$instance\"}[$__interval])>0)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "hideEmpty": false,
+      "hideZero": false,
+      "max": true,
+      "min": true,
+      "rightSide": true,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Handlers",
+    "promql": [
+      "rate(mysql_global_status_handlers_total{instance=~\"$host\", handler!~\"commit|rollback|savepoint.*|prepare\"}[$__interval]) or irate(mysql_global_status_handlers_total{instance=~\"$host\", handler!~\"commit|rollback|savepoint.*|prepare\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "hideZero": true,
+      "max": true,
+      "min": true,
+      "rightSide": true,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Transaction Handlers",
+    "promql": [
+      "rate(mysql_global_status_handlers_total{instance=~\"$host\", handler=~\"commit|rollback|savepoint.*|prepare\"}[$__interval]) or irate(mysql_global_status_handlers_total{instance=~\"$host\", handler=~\"commit|rollback|savepoint.*|prepare\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "hideZero": true,
+      "max": true,
+      "min": true,
+      "rightSide": true,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Process States",
+    "promql": [
+      "mysql_info_schema_threads{job=~\"$job\", instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "hideZero": true,
+      "max": true,
+      "min": false,
+      "rightSide": true,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Top Process States Hourly",
+    "promql": [
+      "topk(5, avg_over_time(mysql_info_schema_threads{job=~\"$job\", instance=~\"$instance\"}[1h]))"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "hideZero": true,
+      "max": true,
+      "min": false,
+      "rightSide": true,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Query Cache Memory",
+    "promql": [
+      "mysql_global_status_qcache_free_memory{job=~\"$job\", instance=~\"$instance\"}",
+      "mysql_global_variables_query_cache_size{job=~\"$job\", instance=~\"$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Query Cache Activity",
+    "promql": [
+      "rate(mysql_global_status_qcache_hits{job=~\"$job\", instance=~\"$instance\"}[$__interval]) or irate(mysql_global_status_qcache_hits{job=~\"$job\", instance=~\"$instance\"}[5m])",
+      "rate(mysql_global_status_qcache_inserts{job=~\"$job\", instance=~\"$instance\"}[$__interval]) or irate(mysql_global_status_qcache_inserts{job=~\"$job\", instance=~\"$instance\"}[5m])",
+      "rate(mysql_global_status_qcache_not_cached{job=~\"$job\", instance=~\"$instance\"}[$__interval]) or irate(mysql_global_status_qcache_not_cached{job=~\"$job\", instance=~\"$instance\"}[5m])",
+      "rate(mysql_global_status_qcache_lowmem_prunes{job=~\"$job\", instance=~\"$instance\"}[$__interval]) or irate(mysql_global_status_qcache_lowmem_prunes{job=~\"$job\", instance=~\"$instance\"}[5m])",
+      "mysql_global_status_qcache_queries_in_cache{job=~\"$job\", instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL File Openings",
+    "promql": [
+      "rate(mysql_global_status_opened_files{job=~\"$job\", instance=~\"$instance\"}[$__interval]) or irate(mysql_global_status_opened_files{job=~\"$job\", instance=~\"$instance\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Open Files",
+    "promql": [
+      "mysql_global_status_open_files{job=~\"$job\", instance=~\"$instance\"}",
+      "mysql_global_variables_open_files_limit{job=~\"$job\", instance=~\"$instance\"}",
+      "mysql_global_status_innodb_num_open_files{job=~\"$job\", instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Table Open Cache Status",
+    "promql": [
+      "rate(mysql_global_status_opened_tables{job=~\"$job\", instance=~\"$instance\"}[$__interval]) or irate(mysql_global_status_opened_tables{job=~\"$job\", instance=~\"$instance\"}[5m])",
+      "rate(mysql_global_status_table_open_cache_hits{job=~\"$job\", instance=~\"$instance\"}[$__interval]) or irate(mysql_global_status_table_open_cache_hits{job=~\"$job\", instance=~\"$instance\"}[5m])",
+      "rate(mysql_global_status_table_open_cache_misses{job=~\"$job\", instance=~\"$instance\"}[$__interval]) or irate(mysql_global_status_table_open_cache_misses{job=~\"$job\", instance=~\"$instance\"}[5m])",
+      "rate(mysql_global_status_table_open_cache_overflows{job=~\"$job\", instance=~\"$instance\"}[$__interval]) or irate(mysql_global_status_table_open_cache_overflows{job=~\"$job\", instance=~\"$instance\"}[5m])",
+      "(rate(mysql_global_status_table_open_cache_hits{job=~\"$job\", instance=~\"$instance\"}[$__interval]) or irate(mysql_global_status_table_open_cache_hits{job=~\"$job\", instance=~\"$instance\"}[5m]))/((rate(mysql_global_status_table_open_cache_hits{job=~\"$job\", instance=~\"$instance\"}[$__interval]) or irate(mysql_global_status_table_open_cache_hits{job=~\"$job\", instance=~\"$instance\"}[5m]))+(rate(mysql_global_status_table_open_cache_misses{job=~\"$job\", instance=~\"$instance\"}[$__interval]) or irate(mysql_global_status_table_open_cache_misses{job=~\"$job\", instance=~\"$instance\"}[5m])))"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Open Tables",
+    "promql": [
+      "mysql_global_status_open_tables{job=~\"$job\", instance=~\"$instance\"}",
+      "mysql_global_variables_table_open_cache{job=~\"$job\", instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "MySQL Table Definition Cache",
+    "promql": [
+      "mysql_global_status_open_table_definitions{job=~\"$job\", instance=~\"$instance\"}",
+      "mysql_global_variables_table_definition_cache{job=~\"$job\", instance=~\"$instance\"}",
+      "rate(mysql_global_status_opened_table_definitions{job=~\"$job\", instance=~\"$instance\"}[$__interval]) or irate(mysql_global_status_opened_table_definitions{job=~\"$job\", instance=~\"$instance\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  }
+]
