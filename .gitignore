@@ -48,6 +48,7 @@ logs
 AGENTS.md
 openspec
 .opencode
+.codex/
 .github/skills/
 .github/prompts
 .claude/

@@ -45,7 +45,7 @@
     "group": "存储/数据库",
     "status": "done",
     "docHint": "https://hive.apache.org/docs/",
-    "tier": "🔴缺数据源"
+    "tier": "🟡需自建"
   },
   {
     "component": "Elasticsearch",
@@ -56,11 +56,11 @@
     "tier": "🟡需自建"
   },
   {
-    "component": "Redis",
+    "component": "Valkey",
     "version": "8.6",
     "group": "存储/数据库",
     "status": "done",
-    "docHint": "https://redis.io/docs/latest/",
+    "docHint": "https://valkey.io/docs/",
     "tier": "🟢可直接做"
   },
   {
@@ -78,22 +78,6 @@
     "status": "done",
     "docHint": "https://doris.apache.org/docs/admin-manual/maint-monitor/monitor-metrics/metrics",
     "tier": "🟡需自建"
-  },
-  {
-    "component": "Spark3",
-    "version": "3.5.8",
-    "group": "计算/查询引擎",
-    "status": "done",
-    "docHint": "https://spark.apache.org/docs/3.5.8/monitoring.html",
-    "tier": "🟡需自建"
-  },
-  {
-    "component": "Flink",
-    "version": "2.2.1",
-    "group": "计算/查询引擎",
-    "status": "done",
-    "docHint": "https://nightlies.apache.org/flink/flink-docs-stable/docs/deployment/metric_reporters/",
-    "tier": "🟢可直接做"
   },
   {
     "component": "Kyuubi",
@@ -144,14 +128,6 @@
     "tier": "🟢可直接做"
   },
   {
-    "component": "Grafana",
-    "version": "13.0.1",
-    "group": "可观测性",
-    "status": "done",
-    "docHint": "https://grafana.com/docs/grafana/latest/setup-grafana/monitoring/",
-    "tier": "🟢可直接做"
-  },
-  {
     "component": "Loki",
     "version": "3.7.2",
     "group": "可观测性",
@@ -196,7 +172,8 @@
     "version": "3.6.1",
     "group": "内部组件",
     "status": "done",
-    "docHint": "https://running-elephant.gitee.io/datart-docs/",
-    "tier": "🔴缺数据源"
+    "docHint": "https://docs.spring.io/spring-boot/reference/actuator/metrics.html",
+    "tier": "🟢可直接做",
+    "dashboardHint": "采用 Spring Boot Actuator/Micrometer 看板,优先覆盖 JVM、HTTP、Tomcat、HikariCP、进程资源指标"
   }
 ]

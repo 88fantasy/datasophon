@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 为 25 个平台组件并行调研「Prometheus 数据源(原生 `/metrics` 优先)+ Grafana 候选看板 + 加权选型」,产出调研报告、选型清单与可供 Phase 2(claude design)使用的看板源 JSON 与 panel-catalog。
+**Goal:** 为 22 个平台组件并行调研「Prometheus 数据源(原生 `/metrics` 优先)+ 社区候选看板 + 加权选型」,产出调研报告、选型清单与可供 Phase 2(claude design)使用的看板源 JSON 与 panel-catalog。
 
-**Architecture:** 先生成 25 行执行清单(manifest)→ 用 Workflow 工具并行调起「每组件 1 个可重试子代理(结构化 schema)」→ Workflow 内合并为报告 → 落盘报告供人工选型 → 按选型清单下载看板源 JSON 并用 node 脚本抽取 panel-catalog。**本期只产出文档与数据物料,不写任何业务代码。**
+**Architecture:** 先生成 22 行执行清单(manifest)→ 用 Workflow 工具并行调起「每组件 1 个可重试子代理(结构化 schema)」→ Workflow 内合并为报告 → 落盘报告供人工选型 → 按选型清单下载看板源 JSON 并用 node 脚本抽取 panel-catalog。**本期只产出文档与数据物料,不写任何业务代码。**
 
 **Tech Stack:** Workflow 工具(parallel + schema 自动重试)、WebSearch/WebFetch、grafana.com dashboards API、node v22(ESM 抽取脚本)、jq(验证)。
 
@@ -16,68 +16,85 @@
 
 | 文件 | 职责 | 由谁产出 |
 |---|---|---|
-| `docs/monitoring/dashboard-survey-manifest.json` | 25 组件执行清单(component/version/group/docHint),Workflow 的 `args` 输入 | Task 1 |
+| `docs/monitoring/dashboard-survey-manifest.json` | 22 组件执行清单(component/version/group/docHint),Workflow 的 `args` 输入 | Task 1 |
 | `docs/monitoring/workflow/survey.workflow.js` | 调研 Workflow 脚本(并行子代理 + 重试 + 合并) | Task 2 |
-| `docs/monitoring/dashboard-survey-results.json` | Workflow 返回的 25 份结构化结果(报告数据源) | Task 3 |
+| `docs/monitoring/dashboard-survey-results.json` | Workflow 返回的 22 份结构化结果(报告数据源) | Task 3 |
 | `docs/monitoring/dashboard-survey.md` | 调研报告(总览表 + 每组件详情打分) | Task 3 |
 | `docs/monitoring/dashboard-selection.md` | 选型清单(**人工卡点**锁定) | Task 4 |
-| `docs/monitoring/scripts/extract-panel-catalog.mjs` | 从 Grafana 看板 JSON 抽取 panel-catalog 的脚本 | Task 5 |
+| `docs/monitoring/scripts/extract-panel-catalog.mjs` | 从上游看板 JSON 抽取 panel-catalog 的脚本 | Task 5 |
 | `docs/monitoring/dashboards-reference/<COMPONENT>/<id>.json` | 选定看板的源 JSON | Task 6 |
 | `docs/monitoring/panel-catalog/<COMPONENT>.json` | 规范化面板目录(交给 Phase 2) | Task 6 |
 
+## 当前产出物核验状态(2026-06-14)
+
+| 产出物 | 状态 | 核验结论 |
+|---|---|---|
+| `docs/monitoring/dashboard-survey-manifest.json` | ✅已同步 | `jq 'length'` = 22,不含已移除组件,包含 Valkey 与 DATART Spring Boot Actuator/Micrometer 提示 |
+| `docs/monitoring/workflow/survey.workflow.js` | 🔁需更新 | 需要同步新范围 22 组件,并加入 DATART/Valkey 特殊调研提示 |
+| `docs/monitoring/dashboard-survey-results.json` | ✅已同步 | `jq 'length'` = 22,不含已移除组件,Valkey 替代 Redis,DATART 改走 Spring Boot Actuator/Micrometer 看板 |
+| `docs/monitoring/dashboard-survey.md` | ✅已同步 | 报告已重写为 22 组件范围,总览和详情包含 Valkey/DATART 新口径 |
+| `docs/monitoring/scripts/extract-panel-catalog.mjs` | ✅已完成 | 已用最小上游看板 JSON 样例验证:输出 2 个面板,能展开 row 嵌套并过滤 text 面板 |
+| `docs/monitoring/dashboard-selection.md` | ⏳未完成 | 文件尚未存在,仍处于人工选型卡点前 |
+| `docs/monitoring/dashboards-reference/<COMPONENT>/<id>.json` | ⏳未完成 | 目录尚未存在,需等待选型清单锁定后下载 |
+| `docs/monitoring/panel-catalog/<COMPONENT>.json` | ⏳未完成 | 目录尚未存在,需等待源 JSON 下载后批量抽取 |
+
+补充说明:
+- 新范围不再调研已移除的 3 个组件。
+- Redis 替换为 Valkey,调研时优先确认 Valkey 原生/兼容 Redis exporter 指标与可复用看板。
+- DATART 不再按"缺数据源"处理,改采用 Spring Boot Actuator/Micrometer 体系看板,优先检索 Spring Boot / JVM / Micrometer / Tomcat / HikariCP 相关 Prometheus 看板。
+- 旧 `docs/monitoring/dashboard-survey-results.json` 分级统计仅作为历史记录,不再代表当前计划验收状态。
+- 多个 grafana.com 候选的 `rating` 为 `null`,但候选均有 `scores.heat` 与 `total`。后续若严格要求 `rating` 非空,需要重新从 grafana.com API 复核或调整验收口径为"downloads/rating 以 API 实际返回为准"。
+
 ---
 
-## Task 1: 生成执行清单 manifest(25 行)
+## Task 1: 生成执行清单 manifest(22 行)
 
 **Files:**
 - Create: `docs/monitoring/dashboard-survey-manifest.json`
 
-- [ ] **Step 1: 写入 manifest(25 组件)**
+- [ ] **Step 1: 写入 manifest(22 组件)**
 
 ```json
 [
   { "component": "MySQL",            "version": "8.0.28",  "group": "中间件",       "status": "pending", "docHint": "https://dev.mysql.com/doc/" },
   { "component": "Nexus",            "version": "3.85.0",  "group": "中间件",       "status": "pending", "docHint": "https://help.sonatype.com/en/sonatype-nexus-repository.html" },
-  { "component": "Rustfs",           "version": "1.0.0",   "group": "中间件",       "status": "pending", "docHint": "https://docs.rustfs.com/" },
+  { "component": "Rustfs",           "version": "1.0.0",   "group": "中间件",       "status": "pending", "docHint": "https://docs.rustfs.com/features/logging/" },
   { "component": "HDFS",             "version": "3.5.0",   "group": "存储/数据库",  "status": "pending", "docHint": "https://hadoop.apache.org/docs/r3.5.0/" },
   { "component": "YARN",             "version": "3.5.0",   "group": "存储/数据库",  "status": "pending", "docHint": "https://hadoop.apache.org/docs/r3.5.0/" },
   { "component": "Hive",             "version": "4.2.0",   "group": "存储/数据库",  "status": "pending", "docHint": "https://hive.apache.org/docs/" },
   { "component": "Elasticsearch",    "version": "9.4.2",   "group": "存储/数据库",  "status": "pending", "docHint": "https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html" },
-  { "component": "Redis",            "version": "8.6",     "group": "存储/数据库",  "status": "pending", "docHint": "https://redis.io/docs/latest/" },
+  { "component": "Valkey",           "version": "8.6",     "group": "存储/数据库",  "status": "pending", "docHint": "https://valkey.io/docs/" },
   { "component": "JuiceFS",          "version": "1.3.1",   "group": "存储/数据库",  "status": "pending", "docHint": "https://juicefs.com/docs/community/administration/monitoring/" },
   { "component": "Doris",            "version": "4.0.5",   "group": "存储/数据库",  "status": "pending", "docHint": "https://doris.apache.org/docs/admin-manual/maint-monitor/monitor-metrics/metrics" },
-  { "component": "Spark3",           "version": "3.5.8",   "group": "计算/查询引擎","status": "pending", "docHint": "https://spark.apache.org/docs/3.5.8/monitoring.html" },
-  { "component": "Flink",            "version": "2.2.1",   "group": "计算/查询引擎","status": "pending", "docHint": "https://nightlies.apache.org/flink/flink-docs-stable/docs/deployment/metric_reporters/" },
   { "component": "Kyuubi",           "version": "1.11.1",  "group": "计算/查询引擎","status": "pending", "docHint": "https://kyuubi.readthedocs.io/en/master/monitor/metrics.html" },
   { "component": "Kafka",            "version": "4.3.0",   "group": "消息/协调",    "status": "pending", "docHint": "https://kafka.apache.org/documentation/#monitoring" },
   { "component": "ZooKeeper",        "version": "3.8.6",   "group": "消息/协调",    "status": "pending", "docHint": "https://zookeeper.apache.org/doc/r3.8.6/zookeeperMonitor.html" },
   { "component": "DolphinScheduler", "version": "3.4.1",   "group": "调度",         "status": "pending", "docHint": "https://dolphinscheduler.apache.org/en-us/docs/3.4.1" },
   { "component": "Prometheus",       "version": "3.12.0",  "group": "可观测性",     "status": "pending", "docHint": "https://prometheus.io/docs/prometheus/latest/getting_started/" },
   { "component": "Alertmanager",     "version": "0.32.1",  "group": "可观测性",     "status": "pending", "docHint": "https://prometheus.io/docs/alerting/latest/alertmanager/" },
-  { "component": "Grafana",          "version": "13.0.1",  "group": "可观测性",     "status": "pending", "docHint": "https://grafana.com/docs/grafana/latest/setup-grafana/set-up-grafana-monitoring/" },
   { "component": "Loki",             "version": "3.7.2",   "group": "可观测性",     "status": "pending", "docHint": "https://grafana.com/docs/loki/latest/operations/observability/" },
   { "component": "Promtail",         "version": "2.8.11",  "group": "可观测性",     "status": "pending", "docHint": "https://grafana.com/docs/loki/latest/send-data/promtail/" },
   { "component": "APISIX",           "version": "3.16.0",  "group": "网关/注册中心","status": "pending", "docHint": "https://apisix.apache.org/docs/apisix/plugins/prometheus/" },
   { "component": "Nacos",            "version": "3.2.2",   "group": "网关/注册中心","status": "pending", "docHint": "https://nacos.io/en-us/docs/v2/guide/admin/monitor-guide.html" },
   { "component": "Nginx",            "version": "1.30.2",  "group": "网关/注册中心","status": "pending", "docHint": "https://github.com/nginxinc/nginx-prometheus-exporter" },
-  { "component": "DATART",           "version": "3.6.1",   "group": "内部组件",     "status": "pending", "docHint": "https://running-elephant.gitee.io/datart-docs/" }
+  { "component": "DATART",           "version": "3.6.1",   "group": "内部组件",     "status": "pending", "docHint": "https://docs.spring.io/spring-boot/reference/actuator/metrics.html", "dashboardHint": "采用 Spring Boot Actuator/Micrometer 看板,优先覆盖 JVM、HTTP、Tomcat、HikariCP、进程资源指标" }
 ]
 ```
 
-- [ ] **Step 2: 验证为 25 行且字段齐全**
+- [ ] **Step 2: 验证为 22 行且字段齐全**
 
 Run:
 ```bash
 jq 'length' docs/monitoring/dashboard-survey-manifest.json
 jq '[.[] | select(.component and .version and .group and .docHint)] | length' docs/monitoring/dashboard-survey-manifest.json
 ```
-Expected: 两条都输出 `25`。
+Expected: 两条都输出 `22`。
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add docs/monitoring/dashboard-survey-manifest.json
-git commit -m "docs(monitoring): 添加 25 组件调研执行清单"
+git commit -m "docs(monitoring): 添加 22 组件调研执行清单"
 ```
 
 ---
@@ -94,10 +111,10 @@ git commit -m "docs(monitoring): 添加 25 组件调研执行清单"
 ```javascript
 export const meta = {
   name: 'component-dashboard-survey',
-  description: '并行调研 25 个组件的 Prometheus 数据源与 Grafana 看板并合并为选型报告',
+  description: '并行调研 22 个组件的 Prometheus 数据源与社区看板并合并为选型报告',
   phases: [
     { title: 'Survey', detail: '每组件一个 agent:查官网确认原生 /metrics + grafana.com 候选看板 + 加权打分' },
-    { title: 'Synthesize', detail: '合并 25 份结果为总览表 + 详情报告' },
+    { title: 'Synthesize', detail: '合并 22 份结果为总览表 + 详情报告' },
   ],
 }
 
@@ -185,6 +202,8 @@ function buildPrompt(c) {
     '',
     '第一步 数据源探测(原生优先):',
     `用 WebSearch/WebFetch 查 ${c.component} ${c.version} 官方文档,确认该版本是否原生暴露 Prometheus /metrics 端点。`,
+    c.component === 'DATART' ? 'DATART 特殊要求:按 Spring Boot Actuator/Micrometer 应用看板处理,重点调研 JVM、HTTP server、Tomcat、HikariCP、process/filesystem 等 Micrometer 指标,不要按"缺数据源"直接降级。' : '',
+    c.component === 'Valkey' ? 'Valkey 特殊要求:优先确认 Valkey 版本对 Redis exporter/Valkey exporter 指标的兼容性,候选看板可复用 Redis/Valkey 兼容指标,但必须在 datasourceMatch 中说明匹配依据。' : '',
     '记录 nativePrometheus.supported(布尔)、sinceVersion、endpoint(路径)、port、docUrl(证据链接)、notes。',
     '仅当原生不支持时,才找成熟 exporter(exporterFallback.needed=true + name + repoUrl);否则 needed=false、name/repoUrl 置 null。',
     'dataSource 取 native(用原生端点)/ exporter(需 exporter)/ none(都没有)。',
@@ -237,7 +256,7 @@ const report = await agent([
   '   总分:取 recommendation 对应候选看板的 total;🟡/🔴 留空。',
   '3) 每组件详情(按分组归类):',
   '   - 数据源结论(supported / endpoint / port / sinceVersion / docUrl 证据链接);',
-  '   - 候选看板列表(名称 / 链接 / Grafana ID / 下载量 / 数据源 / 更新时间);',
+  '   - 候选看板列表(名称 / 链接 / 看板 ID / 下载量 / 数据源 / 更新时间);',
   '   - 分项打分表(heat / datasourceMatch / promqlPortability / goldenSignals / total);',
   '   - 推荐结论与理由。',
   '',
@@ -291,15 +310,15 @@ Workflow({
 
 把 Workflow 结果中的 `results` 字段写入 `docs/monitoring/dashboard-survey-results.json`(格式化 JSON)。把 `failed` 字段(若非空)记录到本步骤说明里,供下一步处理。
 
-- [ ] **Step 3: 校验 25 组件全覆盖、无失败遗漏**
+- [ ] **Step 3: 校验 22 组件全覆盖、无失败遗漏**
 
 Run:
 ```bash
 jq 'length' docs/monitoring/dashboard-survey-results.json
 jq '[.[].component] | sort' docs/monitoring/dashboard-survey-results.json
 ```
-Expected: `length` 为 `25`;组件名列表与 manifest 一致。
-若 `length < 25`(有组件二次重试仍失败):用 Workflow 单独重跑缺失组件(`args` 只传缺失项),把结果并入 results.json,直到达到 25。
+Expected: `length` 为 `22`;组件名列表与 manifest 一致,且不包含已移除组件,包含 Valkey。
+若 `length < 22`(有组件二次重试仍失败):用 Workflow 单独重跑缺失组件(`args` 只传缺失项),把结果并入 results.json,直到达到 22。
 
 - [ ] **Step 4: 校验 🟢/🟡 类每个有 ≥2 候选**
 
@@ -321,13 +340,13 @@ Run:
 test -s docs/monitoring/dashboard-survey.md && echo "报告非空 OK"
 grep -c "|" docs/monitoring/dashboard-survey.md
 ```
-Expected: 输出"报告非空 OK";总览表存在(`|` 计数明显 > 25,说明有表格)。
+Expected: 输出"报告非空 OK";总览表存在(`|` 计数明显 > 22,说明有表格)。
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add docs/monitoring/dashboard-survey-results.json docs/monitoring/dashboard-survey.md
-git commit -m "docs(monitoring): 25 组件调研结果与调研报告"
+git commit -m "docs(monitoring): 22 组件调研结果与调研报告"
 ```
 
 ---
@@ -343,16 +362,16 @@ git commit -m "docs(monitoring): 25 组件调研结果与调研报告"
 
 Run(生成预填清单):
 ```bash
-jq -r '"# 监控看板选型清单\n\n> 预填来自调研报告的推荐项,**待人工审核锁定**。每行确认后把 状态 改为 ✅锁定。\n\n| 组件 | 分级 | 推荐看板 | Grafana ID | 状态 | 备注 |\n|---|---|---|---|---|---|",
+jq -r '"# 监控看板选型清单\n\n> 预填来自调研报告的推荐项,**待人工审核锁定**。每行确认后把 状态 改为 ✅锁定。\n\n| 组件 | 分级 | 推荐看板 | 看板 ID | 状态 | 备注 |\n|---|---|---|---|---|---|",
 ( .[] | "| \(.component) | \(.tier) | \(.recommendation.pick) | \((.candidates[0].grafanaId // "-")) | ⏳待审核 | \(.recommendation.reason) |")' \
 docs/monitoring/dashboard-survey-results.json > docs/monitoring/dashboard-selection.md
 cat docs/monitoring/dashboard-selection.md | head -5
 ```
-Expected: 生成含 25 行的清单,首行为标题。
+Expected: 生成含 22 行的清单,首行为标题。
 
 - [ ] **Step 2: 人工审核锁定(交付给用户)**
 
-提示用户逐行 review `docs/monitoring/dashboard-selection.md`,把确认的行「状态」列改为 `✅锁定`,需要换看板的改「推荐看板/Grafana ID」。**等待用户完成。**
+提示用户逐行 review `docs/monitoring/dashboard-selection.md`,把确认的行「状态」列改为 `✅锁定`,需要换看板的改「推荐看板/看板 ID」。**等待用户完成。**
 
 - [ ] **Step 3: 校验全部已决策**
 
@@ -376,7 +395,7 @@ git commit -m "docs(monitoring): 锁定监控看板选型清单"
 **Files:**
 - Create: `docs/monitoring/scripts/extract-panel-catalog.mjs`
 
-- [ ] **Step 1: 写入抽取脚本(完整)**
+- [x] **Step 1: 写入抽取脚本(完整)**
 
 ```javascript
 // 用法: node docs/monitoring/scripts/extract-panel-catalog.mjs <input-dashboard.json> <COMPONENT>
@@ -392,7 +411,7 @@ if (!inputPath || !component) {
 
 const dash = JSON.parse(readFileSync(inputPath, 'utf8'))
 
-// Grafana 看板的 panels 可能嵌套在 row 内,递归展开
+// 上游看板的 panels 可能嵌套在 row 内,递归展开
 function flattenPanels(panels) {
   const out = []
   for (const p of panels || []) {
@@ -430,7 +449,7 @@ writeFileSync(outPath, JSON.stringify(catalog, null, 2), 'utf8')
 console.log(`✓ ${component}: ${catalog.length} 个面板 → ${outPath}`)
 ```
 
-- [ ] **Step 2: 用一份临时看板 JSON 验证脚本可运行**
+- [x] **Step 2: 用一份临时看板 JSON 验证脚本可运行**
 
 Run(造一个最小看板 JSON 验证解析,含 row 嵌套):
 ```bash
@@ -450,14 +469,14 @@ jq '.[0].promql' docs/monitoring/panel-catalog/__TEST__.json
 ```
 Expected: 打印 `✓ __TEST__: 2 个面板`;`length` 为 `2`;首面板 promql 为 `["rate(http_requests_total[5m])"]`(证明 row 嵌套被展开、text 面板被滤除)。
 
-- [ ] **Step 3: 清理测试产物**
+- [x] **Step 3: 清理测试产物**
 
 Run:
 ```bash
 rm -f docs/monitoring/panel-catalog/__TEST__.json && rm -rf /tmp/pc-test
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docs/monitoring/scripts/extract-panel-catalog.mjs
@@ -472,11 +491,11 @@ git commit -m "docs(monitoring): 添加 panel-catalog 抽取脚本"
 - Create: `docs/monitoring/dashboards-reference/<COMPONENT>/<id>.json`(每个锁定且来自 grafana.com 的看板)
 - Create: `docs/monitoring/panel-catalog/<COMPONENT>.json`(每个有源 JSON 的组件)
 
-> 仅处理选型清单中「状态=✅锁定」且有 Grafana ID 的组件。🟡需自建 / 🔴缺数据源 的组件跳过下载(它们无现成看板),在最终说明里列出。
+> 仅处理选型清单中「状态=✅锁定」且有看板 ID 的组件。🟡需自建 / 🔴缺数据源 的组件跳过下载(它们无现成看板),在最终说明里列出。
 
 - [ ] **Step 1: 逐组件下载源 JSON(以单个组件为例,对每个锁定组件重复)**
 
-对清单里某个锁定组件(示例 `ZooKeeper`,Grafana ID 假设 `10465`):
+对清单里某个锁定组件(示例 `ZooKeeper`,看板 ID 假设 `10465`):
 
 Run:
 ```bash
@@ -503,7 +522,7 @@ Expected: 打印 `✓ ${COMPONENT}: N 个面板`,`N` > 0。
 
 Run(校验:每个锁定且有 ID 的组件都有源 JSON 与 panel-catalog):
 ```bash
-# 锁定且有 Grafana ID 的组件清单
+# 锁定且有看板 ID 的组件清单
 jq -r 'length as $n | .' docs/monitoring/dashboard-survey-results.json >/dev/null   # sanity
 ls docs/monitoring/dashboards-reference/
 ls docs/monitoring/panel-catalog/
@@ -521,13 +540,13 @@ git commit -m "docs(monitoring): 归档选定看板源 JSON 与 panel-catalog(Ph
 
 ## 验收标准(对照 spec 第 7 节)
 
-- [ ] 25 个组件全部有分级结论(`dashboard-survey-results.json` length=25)。
+- [ ] 22 个组件全部有分级结论(`dashboard-survey-results.json` length=22),且不包含已移除组件,包含 Valkey。
 - [ ] 🟢类组件每个有 ≥2 候选 + 打分 + 推荐理由(Task 3 Step 4 校验通过)。
-- [ ] 数据源探测每个组件有官网文档证据链接(`nativePrometheus.docUrl` 非空)。
-- [ ] "热度"分基于 grafana.com API 实测数据(候选 `downloads`/`rating` 非空,除确无看板者)。
+- [ ] 数据源探测每个组件有官网文档证据链接(`nativePrometheus.docUrl` 非空);DATART 按 Spring Boot Actuator/Micrometer 证据链验收。
+- [ ] "热度"分基于 grafana.com API 实测数据(候选 `downloads`/`rating` 非空,除确无看板者)。当前 `scores.heat` 已存在,但多个候选 `rating` 为 `null`,需复核 API 返回或调整验收口径。
 - [ ] 选型清单锁定后无 `⏳待审核`(Task 4 Step 3 校验通过)。
 - [ ] 每个选定看板都有源 JSON + panel-catalog(Task 6 Step 3 校验通过)。
 
 ## 不做(留待后续 spec)
 
-后端 PromQL 代理端点、前端 ECharts 图表、exporter 部署自动化、`ClusterServiceDashboard` 表改造、Grafana 进程移除 —— 全部属于 Phase 3。
+后端 PromQL 代理端点、前端 ECharts 图表、exporter 部署自动化、`ClusterServiceDashboard` 表改造、现有外部看板显示层移除 —— 全部属于 Phase 3。
