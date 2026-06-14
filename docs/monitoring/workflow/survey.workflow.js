@@ -1,9 +1,9 @@
 export const meta = {
   name: 'component-dashboard-survey',
-  description: '并行调研 25 个组件的 Prometheus 数据源与 Grafana 看板并合并为选型报告',
+  description: '串行调研组件的 Prometheus 数据源与 Grafana 看板并合并为选型报告',
   phases: [
-    { title: 'Survey', detail: '每组件一个 agent:查官网确认原生 /metrics + grafana.com 候选看板 + 加权打分' },
-    { title: 'Synthesize', detail: '合并 25 份结果为总览表 + 详情报告' },
+    { title: 'Survey', detail: '逐组件串行:查官网确认原生 /metrics + grafana.com 候选看板 + 加权打分' },
+    { title: 'Synthesize', detail: '合并全部结果为总览表 + 详情报告' },
   ],
 }
 
@@ -121,19 +121,19 @@ function buildPrompt(c) {
 }
 
 phase('Survey')
-const first = await parallel(COMPONENTS.map((c) => () =>
-  agent(buildPrompt(c), { label: `survey:${c.component}`, phase: 'Survey', schema: COMPONENT_SCHEMA, model: 'sonnet' })
-))
-
-// 单组件重试:对失败(null)的再跑一次,不连累已成功的
-const finalResults = await Promise.all(first.map(async (r, i) => {
-  if (r) return r
-  log(`重试组件:${COMPONENTS[i].component}`)
-  return await agent(buildPrompt(COMPONENTS[i]), { label: `retry:${COMPONENTS[i].component}`, phase: 'Survey', schema: COMPONENT_SCHEMA, model: 'sonnet' })
-}))
+const finalResults = []
+for (const c of COMPONENTS) {
+  log(`调研组件 [${finalResults.length + 1}/${COMPONENTS.length}]: ${c.component}`)
+  let result = await agent(buildPrompt(c), { label: `survey:${c.component}`, phase: 'Survey', schema: COMPONENT_SCHEMA, model: 'sonnet' })
+  if (!result) {
+    log(`重试组件: ${c.component}`)
+    result = await agent(buildPrompt(c), { label: `retry:${c.component}`, phase: 'Survey', schema: COMPONENT_SCHEMA, model: 'sonnet' })
+  }
+  finalResults.push(result)
+}
 
 const good = finalResults.filter(Boolean)
-const failed = COMPONENTS.filter((c, i) => !finalResults[i]).map((c) => c.component)
+const failed = COMPONENTS.filter((_, i) => !finalResults[i]).map((c) => c.component)
 
 phase('Synthesize')
 const report = await agent([

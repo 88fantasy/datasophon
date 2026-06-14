@@ -1,27 +1,202 @@
 [
-  { "component": "MySQL",            "version": "8.0.28",  "group": "中间件",       "status": "pending", "docHint": "https://dev.mysql.com/doc/" },
-  { "component": "Nexus",            "version": "3.85.0",  "group": "中间件",       "status": "pending", "docHint": "https://help.sonatype.com/en/sonatype-nexus-repository.html" },
-  { "component": "Rustfs",           "version": "1.0.0",   "group": "中间件",       "status": "pending", "docHint": "https://docs.rustfs.com/" },
-  { "component": "HDFS",             "version": "3.5.0",   "group": "存储/数据库",  "status": "pending", "docHint": "https://hadoop.apache.org/docs/r3.5.0/" },
-  { "component": "YARN",             "version": "3.5.0",   "group": "存储/数据库",  "status": "pending", "docHint": "https://hadoop.apache.org/docs/r3.5.0/" },
-  { "component": "Hive",             "version": "4.2.0",   "group": "存储/数据库",  "status": "pending", "docHint": "https://hive.apache.org/docs/" },
-  { "component": "Elasticsearch",    "version": "9.4.2",   "group": "存储/数据库",  "status": "pending", "docHint": "https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html" },
-  { "component": "Redis",            "version": "8.6",     "group": "存储/数据库",  "status": "pending", "docHint": "https://redis.io/docs/latest/" },
-  { "component": "JuiceFS",          "version": "1.3.1",   "group": "存储/数据库",  "status": "pending", "docHint": "https://juicefs.com/docs/community/administration/monitoring/" },
-  { "component": "Doris",            "version": "4.0.5",   "group": "存储/数据库",  "status": "pending", "docHint": "https://doris.apache.org/docs/admin-manual/maint-monitor/monitor-metrics/metrics" },
-  { "component": "Spark3",           "version": "3.5.8",   "group": "计算/查询引擎","status": "pending", "docHint": "https://spark.apache.org/docs/3.5.8/monitoring.html" },
-  { "component": "Flink",            "version": "2.2.1",   "group": "计算/查询引擎","status": "pending", "docHint": "https://nightlies.apache.org/flink/flink-docs-stable/docs/deployment/metric_reporters/" },
-  { "component": "Kyuubi",           "version": "1.11.1",  "group": "计算/查询引擎","status": "pending", "docHint": "https://kyuubi.readthedocs.io/en/master/monitor/metrics.html" },
-  { "component": "Kafka",            "version": "4.3.0",   "group": "消息/协调",    "status": "pending", "docHint": "https://kafka.apache.org/documentation/#monitoring" },
-  { "component": "ZooKeeper",        "version": "3.8.6",   "group": "消息/协调",    "status": "pending", "docHint": "https://zookeeper.apache.org/doc/r3.8.6/zookeeperMonitor.html" },
-  { "component": "DolphinScheduler", "version": "3.4.1",   "group": "调度",         "status": "pending", "docHint": "https://dolphinscheduler.apache.org/en-us/docs/3.4.1" },
-  { "component": "Prometheus",       "version": "3.12.0",  "group": "可观测性",     "status": "pending", "docHint": "https://prometheus.io/docs/prometheus/latest/getting_started/" },
-  { "component": "Alertmanager",     "version": "0.32.1",  "group": "可观测性",     "status": "pending", "docHint": "https://prometheus.io/docs/alerting/latest/alertmanager/" },
-  { "component": "Grafana",          "version": "13.0.1",  "group": "可观测性",     "status": "pending", "docHint": "https://grafana.com/docs/grafana/latest/setup-grafana/monitoring/" },
-  { "component": "Loki",             "version": "3.7.2",   "group": "可观测性",     "status": "pending", "docHint": "https://grafana.com/docs/loki/latest/operations/observability/" },
-  { "component": "Promtail",         "version": "2.8.11",  "group": "可观测性",     "status": "pending", "docHint": "https://grafana.com/docs/loki/latest/send-data/promtail/" },
-  { "component": "APISIX",           "version": "3.16.0",  "group": "网关/注册中心","status": "pending", "docHint": "https://apisix.apache.org/docs/apisix/plugins/prometheus/" },
-  { "component": "Nacos",            "version": "3.2.2",   "group": "网关/注册中心","status": "pending", "docHint": "https://nacos.io/en-us/docs/v2/guide/admin/monitor-guide.html" },
-  { "component": "Nginx",            "version": "1.30.2",  "group": "网关/注册中心","status": "pending", "docHint": "https://github.com/nginxinc/nginx-prometheus-exporter" },
-  { "component": "DATART",           "version": "3.6.1",   "group": "内部组件",     "status": "pending", "docHint": "https://running-elephant.gitee.io/datart-docs/" }
+  {
+    "component": "MySQL",
+    "version": "8.0.28",
+    "group": "中间件",
+    "status": "done",
+    "docHint": "https://dev.mysql.com/doc/",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Nexus",
+    "version": "3.85.0",
+    "group": "中间件",
+    "status": "done",
+    "docHint": "https://help.sonatype.com/en/sonatype-nexus-repository.html",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Rustfs",
+    "version": "1.0.0",
+    "group": "中间件",
+    "status": "done",
+    "docHint": "https://docs.rustfs.com/",
+    "tier": "🟡需自建"
+  },
+  {
+    "component": "HDFS",
+    "version": "3.5.0",
+    "group": "存储/数据库",
+    "status": "done",
+    "docHint": "https://hadoop.apache.org/docs/r3.5.0/",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "YARN",
+    "version": "3.5.0",
+    "group": "存储/数据库",
+    "status": "done",
+    "docHint": "https://hadoop.apache.org/docs/r3.5.0/",
+    "tier": "🟡需自建"
+  },
+  {
+    "component": "Hive",
+    "version": "4.2.0",
+    "group": "存储/数据库",
+    "status": "done",
+    "docHint": "https://hive.apache.org/docs/",
+    "tier": "🔴缺数据源"
+  },
+  {
+    "component": "Elasticsearch",
+    "version": "9.4.2",
+    "group": "存储/数据库",
+    "status": "done",
+    "docHint": "https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html",
+    "tier": "🟡需自建"
+  },
+  {
+    "component": "Redis",
+    "version": "8.6",
+    "group": "存储/数据库",
+    "status": "done",
+    "docHint": "https://redis.io/docs/latest/",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "JuiceFS",
+    "version": "1.3.1",
+    "group": "存储/数据库",
+    "status": "done",
+    "docHint": "https://juicefs.com/docs/community/administration/monitoring/",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Doris",
+    "version": "4.0.5",
+    "group": "存储/数据库",
+    "status": "done",
+    "docHint": "https://doris.apache.org/docs/admin-manual/maint-monitor/monitor-metrics/metrics",
+    "tier": "🟡需自建"
+  },
+  {
+    "component": "Spark3",
+    "version": "3.5.8",
+    "group": "计算/查询引擎",
+    "status": "done",
+    "docHint": "https://spark.apache.org/docs/3.5.8/monitoring.html",
+    "tier": "🟡需自建"
+  },
+  {
+    "component": "Flink",
+    "version": "2.2.1",
+    "group": "计算/查询引擎",
+    "status": "done",
+    "docHint": "https://nightlies.apache.org/flink/flink-docs-stable/docs/deployment/metric_reporters/",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Kyuubi",
+    "version": "1.11.1",
+    "group": "计算/查询引擎",
+    "status": "done",
+    "docHint": "https://kyuubi.readthedocs.io/en/master/monitor/metrics.html",
+    "tier": "🟡需自建"
+  },
+  {
+    "component": "Kafka",
+    "version": "4.3.0",
+    "group": "消息/协调",
+    "status": "done",
+    "docHint": "https://kafka.apache.org/documentation/#monitoring",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "ZooKeeper",
+    "version": "3.8.6",
+    "group": "消息/协调",
+    "status": "done",
+    "docHint": "https://zookeeper.apache.org/doc/r3.8.6/zookeeperMonitor.html",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "DolphinScheduler",
+    "version": "3.4.1",
+    "group": "调度",
+    "status": "done",
+    "docHint": "https://dolphinscheduler.apache.org/en-us/docs/3.4.1",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Prometheus",
+    "version": "3.12.0",
+    "group": "可观测性",
+    "status": "done",
+    "docHint": "https://prometheus.io/docs/prometheus/latest/getting_started/",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Alertmanager",
+    "version": "0.32.1",
+    "group": "可观测性",
+    "status": "done",
+    "docHint": "https://prometheus.io/docs/alerting/latest/alertmanager/",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Grafana",
+    "version": "13.0.1",
+    "group": "可观测性",
+    "status": "done",
+    "docHint": "https://grafana.com/docs/grafana/latest/setup-grafana/monitoring/",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Loki",
+    "version": "3.7.2",
+    "group": "可观测性",
+    "status": "done",
+    "docHint": "https://grafana.com/docs/loki/latest/operations/observability/",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Promtail",
+    "version": "2.8.11",
+    "group": "可观测性",
+    "status": "done",
+    "docHint": "https://grafana.com/docs/loki/latest/send-data/promtail/",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "APISIX",
+    "version": "3.16.0",
+    "group": "网关/注册中心",
+    "status": "done",
+    "docHint": "https://apisix.apache.org/docs/apisix/plugins/prometheus/",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Nacos",
+    "version": "3.2.2",
+    "group": "网关/注册中心",
+    "status": "done",
+    "docHint": "https://nacos.io/en-us/docs/v2/guide/admin/monitor-guide.html",
+    "tier": "🟡需自建"
+  },
+  {
+    "component": "Nginx",
+    "version": "1.30.2",
+    "group": "网关/注册中心",
+    "status": "done",
+    "docHint": "https://github.com/nginxinc/nginx-prometheus-exporter",
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "DATART",
+    "version": "3.6.1",
+    "group": "内部组件",
+    "status": "done",
+    "docHint": "https://running-elephant.gitee.io/datart-docs/",
+    "tier": "🔴缺数据源"
+  }
 ]
