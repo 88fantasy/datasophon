@@ -1,0 +1,9 @@
+# Worker 本地开发覆盖配置模板
+# 将此文件复制为 conf/worker.local.properties（已加入 .gitignore，不会提交），
+# 并填入真实值。该文件中的值会覆盖 conf/worker.properties 中的对应键。
+
+# MySQL 密码（InitDbHookAction 初始化节点数据库时读取）
+mysql.password=<your-mysql-password>
+
+# Nexus 制品库密码
+nexus.password=<your-nexus-password>

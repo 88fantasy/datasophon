@@ -68,6 +68,17 @@ public class ConfigPropertiesExtend implements EnvironmentPostProcessor {
             System.err.println("Failed to load the datasophon configuration (config/datasophon.conf), use application-config.yml");
             return new Properties();
         }
+        // 尝试加载本地覆盖文件（conf/api.local.properties，已 .gitignore），
+        // 将其值合并到 properties（后加载的键覆盖先加载的），适配开发者本地敏感配置。
+        String localConfigHome = PropertyUtils.CONFIG_HOME.replace(".properties", ".local.properties");
+        File localFile = new File(FileUtils.concatPath(System.getProperty("user.dir"), localConfigHome));
+        if (localFile.exists()) {
+            try (InputStream inputStream = Files.newInputStream(localFile.toPath())) {
+                properties.load(inputStream);
+            } catch (Exception e) {
+                System.err.println("Failed to load local config override: " + localFile);
+            }
+        }
         List<Object> removeKeys = new ArrayList<>();
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             String val = String.valueOf(entry.getValue()).trim();

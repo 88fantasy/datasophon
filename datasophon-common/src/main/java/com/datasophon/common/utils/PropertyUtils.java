@@ -66,6 +66,10 @@ public class PropertyUtils {
         // 未指定时回落 CONFIG_HOME（"conf/common.properties"），保持向后兼容。
         String configFileName = System.getProperty("configFileName", CONFIG_HOME);
         propertyFiles.add(FileUtils.concatPath(System.getenv("DDH_HOME"), configFileName));
+        // 自动发现本地覆盖文件（conf/api.local.properties / conf/worker.local.properties），
+        // 文件不存在时静默跳过（FileNotFoundException 已在循环内处理），供开发者在非提交文件中覆盖敏感配置。
+        String localConfigFileName = configFileName.replace(".properties", ".local.properties");
+        propertyFiles.add(FileUtils.concatPath(System.getenv("DDH_HOME"), localConfigFileName));
         
         String path = System.getProperty("commonPropertiesLocation");
         if (StrUtil.isNotBlank(path)) {
