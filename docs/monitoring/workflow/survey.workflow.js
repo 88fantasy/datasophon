@@ -7,9 +7,12 @@ export const meta = {
   ],
 }
 
-const COMPONENTS = args
+let COMPONENTS = args
+if (typeof COMPONENTS === 'string') {
+  COMPONENTS = JSON.parse(COMPONENTS)
+}
 if (!Array.isArray(COMPONENTS) || COMPONENTS.length === 0) {
-  throw new Error('args 必须是 manifest 组件数组(非空)')
+  throw new Error('args 必须是 manifest 组件数组(非空),实际 typeof=' + typeof args)
 }
 
 const COMPONENT_SCHEMA = {
@@ -119,14 +122,14 @@ function buildPrompt(c) {
 
 phase('Survey')
 const first = await parallel(COMPONENTS.map((c) => () =>
-  agent(buildPrompt(c), { label: `survey:${c.component}`, phase: 'Survey', schema: COMPONENT_SCHEMA })
+  agent(buildPrompt(c), { label: `survey:${c.component}`, phase: 'Survey', schema: COMPONENT_SCHEMA, model: 'sonnet' })
 ))
 
 // 单组件重试:对失败(null)的再跑一次,不连累已成功的
 const finalResults = await Promise.all(first.map(async (r, i) => {
   if (r) return r
   log(`重试组件:${COMPONENTS[i].component}`)
-  return await agent(buildPrompt(COMPONENTS[i]), { label: `retry:${COMPONENTS[i].component}`, phase: 'Survey', schema: COMPONENT_SCHEMA })
+  return await agent(buildPrompt(COMPONENTS[i]), { label: `retry:${COMPONENTS[i].component}`, phase: 'Survey', schema: COMPONENT_SCHEMA, model: 'sonnet' })
 }))
 
 const good = finalResults.filter(Boolean)
@@ -150,6 +153,6 @@ const report = await agent([
   '只输出 Markdown 正文,不要任何额外解释或代码块包裹。',
   '数据如下(JSON):',
   JSON.stringify(good),
-].join('\n'), { label: 'synthesize', phase: 'Synthesize' })
+].join('\n'), { label: 'synthesize', phase: 'Synthesize', model: 'sonnet' })
 
 return { results: good, report, failed }
