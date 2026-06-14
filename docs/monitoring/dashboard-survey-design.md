@@ -39,16 +39,16 @@ Grafana:可作为显示层移除
 
 ---
 
-## 2. 范围:版本参考表全部 26 个组件
+## 2. 范围:版本参考表全部 25 个组件
 
 来源:`deploy/deployment-standalone.md` 第十节「组件版本参考」。版本号取自该表"当前配置版本"列,作为调研时锁定的目标版本(原生端点支持情况依版本而异)。
 
-> 说明:brainstorming 过程中口头称"27 个",实际清点为 **26 个**;以本表为准。
+> 说明:brainstorming 过程中口头称"27 个",版本表原列 26 个;**本次移除 MinIO(对象存储职责由 Rustfs 替代,不再需要 MinIO)**,最终范围 **25 个**;以本表为准。
 
 | 分组 | 组件(版本) |
 |---|---|
 | 中间件 | MySQL(8.0.28)、Nexus Repository 3(3.85.0)、Rustfs(1.0.0) |
-| 存储/数据库 | HDFS(3.5.0)、YARN(3.5.0)、Hive(4.2.0)、Elasticsearch(9.4.2)、Redis(8.6)、MinIO(9.0.1)、JuiceFS(1.3.1)、Doris(4.0.5) |
+| 存储/数据库 | HDFS(3.5.0)、YARN(3.5.0)、Hive(4.2.0)、Elasticsearch(9.4.2)、Redis(8.6)、JuiceFS(1.3.1)、Doris(4.0.5) |
 | 计算/查询引擎 | Spark3(3.5.8)、Flink(2.2.1)、Kyuubi(1.11.1) |
 | 消息/协调 | Kafka(4.3.0)、ZooKeeper(3.8.6) |
 | 调度 | DolphinScheduler(3.4.1) |
@@ -56,7 +56,6 @@ Grafana:可作为显示层移除
 | 网关/注册中心 | APISIX(3.16.0)、Nacos(3.2.2)、Nginx(1.30.2) |
 | 内部组件 | DATART(3.6.1) |
 
-> MinIO 版本表标注的是 Java SDK 9.0.1,非 server 版本;调研时需额外确认对应 server 版本的原生端点(MinIO server 原生暴露 `/minio/v2/metrics/cluster`)。
 > Promtail 2.8.11 已 EOL,官方建议迁移 Grafana Alloy;调研时如实标注,优先级低。
 
 ---
@@ -106,7 +105,7 @@ Grafana:可作为显示层移除
 
 ### 4.1 调研报告 `docs/monitoring/dashboard-survey.md`
 
-- **总览表**(26 行):`组件 │ 版本 │ 数据源方式 │ 候选数 │ 分级 │ 推荐看板 │ 总分`
+- **总览表**(25 行):`组件 │ 版本 │ 数据源方式 │ 候选数 │ 分级 │ 推荐看板 │ 总分`
 - **每组件详情**:候选看板(名称 / 链接 / Grafana ID / 下载量 / 数据源 / 更新时间)+ 分项打分表 + 推荐结论与理由 + 官方文档证据链接。
 
 ### 4.2 选型清单 `docs/monitoring/dashboard-selection.md`
@@ -139,7 +138,7 @@ Grafana:可作为显示层移除
 
 ```
 1. 生成执行清单 docs/monitoring/dashboard-survey-manifest.json
-   ── 26 行:component / version / group / 官网文档线索 / status(pending|done|failed)
+   ── 25 行:component / version / group / 官网文档线索 / status(pending|done|failed)
 
 2. 每个组件 = 1 个独立可重试单元
    ── 用结构化 schema 输出(schema 不达标自动重试)
@@ -191,7 +190,7 @@ Grafana:可作为显示层移除
 
 ### 5.2 执行边界
 
-真正运行该 Workflow 属于 **Phase 1 的执行动作**;本次 brainstorming 仅产出本 spec。落盘后由 writing-plans 转化为实施计划,执行计划中才实际调起 Workflow 跑 26 个组件。
+真正运行该 Workflow 属于 **Phase 1 的执行动作**;本次 brainstorming 仅产出本 spec。落盘后由 writing-plans 转化为实施计划,执行计划中才实际调起 Workflow 跑 25 个组件。
 
 ---
 
@@ -209,7 +208,7 @@ Grafana:可作为显示层移除
 
 ## 7. 验收标准
 
-- 26 个组件全部有分级结论,无遗漏。
+- 25 个组件全部有分级结论,无遗漏。
 - 🟢/🟡 类组件每个有 ≥2 候选 + 打分 + 推荐理由。
 - 数据源探测有官网文档证据链接(可复现),非拍脑袋。
 - 报告"热度"分基于 grafana.com API 实测数据(可复现)。
