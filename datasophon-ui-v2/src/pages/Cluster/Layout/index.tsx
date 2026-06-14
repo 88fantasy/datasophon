@@ -14,11 +14,8 @@ import { Badge, Button, Dropdown, Layout, Menu, Spin, Tag } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
 import { listClusters } from '@/services/cluster';
-import {
-  listClusterServices,
-  listK8sInstances,
-  listK8sNamespaces,
-} from '@/services/service';
+import { listK8sInstances, listK8sNamespaces } from '@/services/k8s';
+import { listClusterServices } from '@/services/service';
 import AddServiceModal from '../AddService/AddServiceModal';
 import UploadManifestModal from '../Deploy/UploadManifestModal';
 import UploadPackageModal from '../Deploy/UploadPackageModal';

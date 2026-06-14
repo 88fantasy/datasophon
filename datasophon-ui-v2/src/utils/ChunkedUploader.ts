@@ -21,7 +21,7 @@ async function computeFileMd5(
     };
 
     reader.onload = (e) => {
-      spark.append(e.target!.result as ArrayBuffer);
+      spark.append(e.target?.result as ArrayBuffer);
       currentChunk++;
       if (currentChunk < totalChunks) loadNext();
       else resolve(spark.end());
@@ -38,7 +38,7 @@ async function computeChunkMd5(chunk: Blob): Promise<string> {
     const spark = new SparkMD5.ArrayBuffer();
     const reader = new FileReader();
     reader.onload = (e) => {
-      spark.append(e.target!.result as ArrayBuffer);
+      spark.append(e.target?.result as ArrayBuffer);
       resolve(spark.end());
     };
     reader.onerror = () => reject(reader.error);

@@ -17,8 +17,11 @@ public interface DAGRepository {
     int markNodesPending(String dagId, boolean ignoreSuccess);
     
     NodeDefinition getNodeById(String nodeId);
+    
     List<NodeDefinition> getNodesByDagId(String dagId, boolean allFields);
+    
     void updateNode(NodeDefinition node);
+    
     int updateNodeStatus(String nodeId, NodeStatus nodeStatus);
     
     List<EdgeDefinition> getEdgesByDagId(String dagId);

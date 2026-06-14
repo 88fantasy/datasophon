@@ -1,7 +1,7 @@
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ModalForm, ProFormText, ProTable } from '@ant-design/pro-components';
-import { Button, message, Modal, Popconfirm } from 'antd';
+import { Button, Modal, message, Popconfirm } from 'antd';
 import React, { useRef, useState } from 'react';
 import {
   deleteNodeLabel,
@@ -18,7 +18,7 @@ const LabelManageModal: React.FC<Props> = ({ clusterId, trigger }) => {
   const [open, setOpen] = useState(false);
   const actionRef = useRef<ActionType>(null);
 
-  const columns: ProColumns<DATASOPHON.NodeLabel>[] = [
+  const columns: ProColumns<DATASOPHON.NodeLabelResponse>[] = [
     {
       dataIndex: 'index',
       title: '序号',
@@ -71,7 +71,7 @@ const LabelManageModal: React.FC<Props> = ({ clusterId, trigger }) => {
         width={600}
         destroyOnHidden
       >
-        <ProTable<DATASOPHON.NodeLabel>
+        <ProTable<DATASOPHON.NodeLabelResponse>
           actionRef={actionRef}
           rowKey="id"
           search={false}

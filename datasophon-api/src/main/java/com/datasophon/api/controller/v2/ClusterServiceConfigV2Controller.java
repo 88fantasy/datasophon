@@ -77,10 +77,12 @@ public class ClusterServiceConfigV2Controller extends ApiController {
      * @param roleGroupId 角色组 ID
      */
     @GetMapping("/versions")
-    public ApiResponse<Object> versions(@PathVariable Integer instanceId,
-                                        @RequestParam Integer roleGroupId) {
+    public ApiResponse<List<Integer>> versions(@PathVariable Integer instanceId,
+                                               @RequestParam Integer roleGroupId) {
         Result result = configService.getConfigVersion(instanceId, roleGroupId);
-        return ApiResponse.ok(result.getData());
+        @SuppressWarnings("unchecked")
+        List<Integer> versions = (List<Integer>) result.getData();
+        return ApiResponse.ok(versions != null ? versions : List.of());
     }
     
     /**
@@ -93,11 +95,13 @@ public class ClusterServiceConfigV2Controller extends ApiController {
      * @param version     版本号（可选，不传则返回最新版）
      */
     @GetMapping
-    public ApiResponse<Object> info(@PathVariable Integer instanceId,
-                                    @RequestParam Integer roleGroupId,
-                                    @RequestParam(required = false) Integer version) {
+    public ApiResponse<List<ServiceConfig>> info(@PathVariable Integer instanceId,
+                                                 @RequestParam Integer roleGroupId,
+                                                 @RequestParam(required = false) Integer version) {
         Result result = configService.getServiceInstanceConfig(instanceId, version, roleGroupId, 1, 10000);
-        return ApiResponse.ok(result.getData());
+        @SuppressWarnings("unchecked")
+        List<ServiceConfig> configs = (List<ServiceConfig>) result.getData();
+        return ApiResponse.ok(configs != null ? configs : List.of());
     }
     
     /**

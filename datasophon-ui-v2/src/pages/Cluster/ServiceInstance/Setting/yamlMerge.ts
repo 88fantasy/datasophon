@@ -1,7 +1,10 @@
 import yaml from 'js-yaml';
 
 /** 递归深合并两个普通对象（override 中的标量/数组直接覆盖 base 的同名字段） */
-function deepMerge(base: Record<string, unknown>, override: Record<string, unknown>) {
+function deepMerge(
+  base: Record<string, unknown>,
+  override: Record<string, unknown>,
+) {
   const result = structuredClone(base) as Record<string, unknown>;
   for (const key of Object.keys(override)) {
     const bv = result[key];
@@ -14,7 +17,10 @@ function deepMerge(base: Record<string, unknown>, override: Record<string, unkno
       !Array.isArray(bv) &&
       !Array.isArray(ov)
     ) {
-      result[key] = deepMerge(bv as Record<string, unknown>, ov as Record<string, unknown>);
+      result[key] = deepMerge(
+        bv as Record<string, unknown>,
+        ov as Record<string, unknown>,
+      );
     } else {
       result[key] = ov;
     }

@@ -8,7 +8,7 @@ import {
   T_POD,
   T_SERVICE,
 } from '@/constants/resourceType';
-import { listK8sResources } from '@/services/service';
+import { listK8sResources } from '@/services/k8s';
 
 interface K8sResourceProps {
   clusterId: number;
@@ -19,7 +19,12 @@ interface K8sResourceProps {
 // ── 列定义（移植自旧版 datasophon-ui） ────────────────────────────────
 
 const podColumns = [
-  { dataIndex: 'index', title: '序号', valueType: 'indexBorder' as const, width: 48 },
+  {
+    dataIndex: 'index',
+    title: '序号',
+    valueType: 'indexBorder' as const,
+    width: 48,
+  },
   { title: '名称', dataIndex: 'name', ellipsis: true },
   {
     title: '状态',
@@ -44,7 +49,12 @@ const podColumns = [
 ];
 
 const serviceColumns = [
-  { dataIndex: 'index', title: '序号', valueType: 'indexBorder' as const, width: 48 },
+  {
+    dataIndex: 'index',
+    title: '序号',
+    valueType: 'indexBorder' as const,
+    width: 48,
+  },
   { title: '名称', dataIndex: 'name', ellipsis: true },
   { title: '命名空间', dataIndex: 'namespace', ellipsis: true },
   { title: '创建时间', dataIndex: 'age', ellipsis: true },
@@ -66,7 +76,12 @@ const serviceColumns = [
 ];
 
 const deploymentColumns = [
-  { dataIndex: 'index', title: '序号', valueType: 'indexBorder' as const, width: 48 },
+  {
+    dataIndex: 'index',
+    title: '序号',
+    valueType: 'indexBorder' as const,
+    width: 48,
+  },
   { title: '名称', dataIndex: 'name', ellipsis: true },
   { title: '命名空间', dataIndex: 'namespace', ellipsis: true },
   { title: '创建时间', dataIndex: 'age', ellipsis: true },
@@ -96,7 +111,12 @@ const deploymentColumns = [
 ];
 
 const ingressColumns = [
-  { dataIndex: 'index', title: '序号', valueType: 'indexBorder' as const, width: 48 },
+  {
+    dataIndex: 'index',
+    title: '序号',
+    valueType: 'indexBorder' as const,
+    width: 48,
+  },
   { title: '名称', dataIndex: 'name', ellipsis: true },
   { title: '命名空间', dataIndex: 'namespace', ellipsis: true },
   { title: '创建时间', dataIndex: 'age', ellipsis: true },
@@ -118,7 +138,12 @@ const ingressColumns = [
 ];
 
 const configMapColumns = [
-  { dataIndex: 'index', title: '序号', valueType: 'indexBorder' as const, width: 48 },
+  {
+    dataIndex: 'index',
+    title: '序号',
+    valueType: 'indexBorder' as const,
+    width: 48,
+  },
   { title: '名称', dataIndex: 'name', ellipsis: true },
   { title: '命名空间', dataIndex: 'namespace', ellipsis: true },
   { title: '创建时间', dataIndex: 'age', ellipsis: true },
@@ -145,7 +170,11 @@ function getColumnsByType(type: string) {
  * K8s 资源列表（Pod / Service / Deployment / Ingress / ConfigMap）。
  * 每次 resourceType 变化时重新加载。
  */
-const K8sResource: React.FC<K8sResourceProps> = ({ clusterId, instanceId, resourceType }) => {
+const K8sResource: React.FC<K8sResourceProps> = ({
+  clusterId,
+  instanceId,
+  resourceType,
+}) => {
   const [dataSource, setDataSource] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(false);
   const cancelRef = useRef(false);

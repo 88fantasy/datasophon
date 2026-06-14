@@ -53,6 +53,7 @@ public class ExecResult implements Serializable {
     public boolean isSuccess() {
         return execResult;
     }
+    
     public static ExecResult success() {
         return success(null);
     }

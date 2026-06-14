@@ -18,13 +18,13 @@ public interface ImageStorage {
     interface PushCallback {
         
         default void onEntryLoad(File file, double progress) {
-        };
+        }
         
         default void onEntryPush(LoadImageResult image, double progress) {
-        };
+        }
         
         default void onManifest(String imageId, double progress) {
-        };
+        }
         
     }
     

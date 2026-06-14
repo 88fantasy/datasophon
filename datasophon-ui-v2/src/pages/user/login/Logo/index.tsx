@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 
 const App = () => {
-  const [activeNode, setActiveNode] = useState('Full Stack');
-  const [aiAnalysis, setAiAnalysis] = useState(
+  const [_activeNode, _setActiveNode] = useState('Full Stack');
+  const [_aiAnalysis, _setAiAnalysis] = useState(
     '点击节点以分析该模块在 DataSophon 系统中的运作状态...',
   );
-  const [loading, setLoading] = useState(false);
-  const [isPanelVisible, setIsPanelVisible] = useState(false);
+  const [_loading, _setLoading] = useState(false);
+  const [_isPanelVisible, setIsPanelVisible] = useState(false);
 
   // 模拟 API Key 环境
-  const apiKey = '';
+  const _apiKey = '';
 
   useEffect(() => {
     const timer = setTimeout(() => setIsPanelVisible(true), 1000);
@@ -28,7 +28,7 @@ const App = () => {
   //     throw new Error("Failed after retries");
   //   };
 
-  const analyze = async (target: string) => {
+  const analyze = async (_target: string) => {
     // setActiveNode(target);
     // setLoading(true);
     // setAiAnalysis(`正在深度分析 ${target} 的链路状态...`);
@@ -59,7 +59,11 @@ const App = () => {
   return (
     <div className="flex-1 flex flex-col items-center justify-center min-h-screen  bg-slate-50 p-4 font-sans overflow-hidden">
       <div className="relative w-full max-w-2xl aspect-square flex items-center justify-center">
-        <svg viewBox="0 0 400 400" className="w-full h-full" aria-label="Datasophon Logo">
+        <svg
+          viewBox="0 0 400 400"
+          className="w-full h-full"
+          aria-label="Datasophon Logo"
+        >
           <title>Datasophon Logo</title>
           <defs>
             <linearGradient id="mainGrad" x1="0%" y1="0%" x2="100%" y2="100%">

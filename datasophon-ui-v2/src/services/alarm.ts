@@ -7,14 +7,14 @@ export function listAlertGroups(
   clusterId: number,
   params: { alertGroupName?: string; page: number; pageSize: number },
 ) {
-  return request<{ data: { totalCount: number; totalList: DATASOPHON.AlertGroup[] } }>(
+  return request<{ data: DATASOPHON.AlertGroupPageResponse }>(
     `/cluster/${clusterId}/alert/group/list`,
     { method: 'GET', params },
   );
 }
 
 /** 新建告警组 */
-export function saveAlertGroup(clusterId: number, body: Partial<DATASOPHON.AlertGroup>) {
+export function saveAlertGroup(clusterId: number, body: DATASOPHON.SaveAlertGroupRequest) {
   return request<{ data: void }>(`/cluster/${clusterId}/alert/group`, {
     method: 'POST',
     data: body,
@@ -31,7 +31,7 @@ export function deleteAlertGroups(clusterId: number, ids: number[]) {
 
 /** 告警组类别下拉（即关联服务名列表） */
 export function listAlertCategories(clusterId: number) {
-  return request<{ data: { serviceName: string }[] }>(
+  return request<{ data: DATASOPHON.AlertCategoryResponse[] }>(
     `/cluster/${clusterId}/alert/group/categories`,
     { method: 'GET' },
   );
@@ -49,14 +49,14 @@ export function listAlertQuotas(
     pageSize: number;
   },
 ) {
-  return request<{ data: { totalCount: number; totalList: DATASOPHON.AlertQuota[] } }>(
+  return request<{ data: DATASOPHON.AlertQuotaPageResponse }>(
     `/cluster/${clusterId}/alert/quota/list`,
     { method: 'GET', params },
   );
 }
 
 /** 新建告警指标 */
-export function saveAlertQuota(clusterId: number, body: Partial<DATASOPHON.AlertQuota>) {
+export function saveAlertQuota(clusterId: number, body: DATASOPHON.SaveAlertQuotaRequest) {
   return request<{ data: void }>(`/cluster/${clusterId}/alert/quota`, {
     method: 'POST',
     data: body,
@@ -64,7 +64,7 @@ export function saveAlertQuota(clusterId: number, body: Partial<DATASOPHON.Alert
 }
 
 /** 修改告警指标 */
-export function updateAlertQuota(clusterId: number, body: Partial<DATASOPHON.AlertQuota>) {
+export function updateAlertQuota(clusterId: number, body: DATASOPHON.UpdateAlertQuotaRequest) {
   return request<{ data: void }>(`/cluster/${clusterId}/alert/quota`, {
     method: 'PUT',
     data: body,

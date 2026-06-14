@@ -2,7 +2,7 @@ import { request } from '@umijs/max';
 
 /** 获取所有框架及其下物理机 / K8s 服务列表（嵌套结构） */
 export function listFrameServices() {
-  return request<{ data: DATASOPHON.FrameWithServices[] }>('/frame/services', {
+  return request<{ data: DATASOPHON.FrameWithServicesResponse[] }>('/frame/services', {
     method: 'GET',
   });
 }

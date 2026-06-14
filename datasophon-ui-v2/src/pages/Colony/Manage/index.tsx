@@ -32,7 +32,7 @@ const STATE_COLOR: Record<string, string> = {
 };
 
 const ColonyManage: React.FC = () => {
-  // useRequest auto-unwraps { data: ClusterInfo[] } → ClusterInfo[]
+  // useRequest auto-unwraps { data: ClusterResponse[] } → ClusterResponse[]
   const { data: clusters, refresh, loading } = useRequest(listClusters);
   const clusterList = clusters ?? [];
 
@@ -134,8 +134,8 @@ const ColonyManage: React.FC = () => {
                 <div style={{ marginTop: 8 }}>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     管理员：
-                    {cluster
-                      .clusterManagerList!.map((m) => m.username)
+                    {cluster.clusterManagerList
+                      ?.map((m) => m.username)
                       .join('、')}
                   </Typography.Text>
                 </div>

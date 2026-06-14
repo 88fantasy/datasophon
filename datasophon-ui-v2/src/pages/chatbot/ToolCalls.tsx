@@ -1,4 +1,8 @@
-import { CheckCircleOutlined, CloseCircleOutlined, ToolOutlined } from '@ant-design/icons';
+import {
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  ToolOutlined,
+} from '@ant-design/icons';
 import { Collapse, Typography } from 'antd';
 import React from 'react';
 

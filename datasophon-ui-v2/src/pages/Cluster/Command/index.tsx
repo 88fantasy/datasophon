@@ -1,12 +1,13 @@
-import ClusterContext from '@/context/ClusterContext';
-import { listDagCommands } from '@/services/dag';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import { Badge } from 'antd';
 import React, { useCallback, useContext, useEffect, useRef } from 'react';
+import ClusterContext from '@/context/ClusterContext';
+import { listDagCommands } from '@/services/dag';
 
 type DagStatus = DATASOPHON.DagStatus;
 type DagCommand = DATASOPHON.DagCommand;
+type DagCommandResponse = DATASOPHON.DagCommandResponse;
 
 const STATUS_CONFIG: Record<
   DagStatus,
@@ -129,8 +130,8 @@ const CommandList: React.FC = () => {
           page: params.current,
           pageSize: params.pageSize,
         });
-        const list: DagCommand[] = (res as any)?.data?.records ?? [];
-        const total: number = (res as any)?.data?.total ?? 0;
+        const list: DagCommandResponse[] = res?.data?.records ?? [];
+        const total: number = res?.data?.total ?? 0;
         const hasActive = list.some(
           (r) => r.status === 'PENDING' || r.status === 'RUNNING',
         );

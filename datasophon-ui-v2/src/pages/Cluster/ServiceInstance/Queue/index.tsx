@@ -11,7 +11,7 @@ import {
   getYarnSchedulerInfo,
   listYarnQueues,
   refreshYarnQueues,
-} from '@/services/service';
+} from '@/services/yarn';
 import BuildOrEditModal from './BuildOrEditModal';
 
 interface Props {
@@ -162,11 +162,11 @@ const QueueTab: React.FC<Props> = ({ clusterId }) => {
             page: current,
             pageSize,
           });
-          const data = Array.isArray(res) ? (res as any) : (res as any).data;
+          const page = (res as any).data as DATASOPHON.YarnQueuePageResponse;
           return {
-            data: data?.data ?? [],
+            data: page?.data ?? [],
             success: true,
-            total: data?.total ?? 0,
+            total: page?.total ?? 0,
           };
         }}
         search={false}

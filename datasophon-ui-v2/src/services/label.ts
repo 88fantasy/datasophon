@@ -2,7 +2,7 @@ import { request } from '@umijs/max';
 
 /** 节点标签列表 */
 export function listNodeLabels(clusterId: number) {
-  return request<{ data: DATASOPHON.NodeLabel[] }>(
+  return request<{ data: DATASOPHON.NodeLabelResponse[] }>(
     `/cluster/${clusterId}/host/label/list`,
     { method: 'GET' },
   );

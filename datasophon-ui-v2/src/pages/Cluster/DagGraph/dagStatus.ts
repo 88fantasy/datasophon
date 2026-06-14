@@ -21,9 +21,16 @@ export const T_CANCEL = 'CANCEL';
 type DagStatus = DATASOPHON.DagStatus;
 
 export const invokeGenStatusDom = ({ val }: { val: DagStatus | string }) => {
-  const statusIcon: Record<string, { com: React.ElementType; style?: React.CSSProperties; status?: string }> = {
+  const statusIcon: Record<
+    string,
+    { com: React.ElementType; style?: React.CSSProperties; status?: string }
+  > = {
     [T_SUCCESS]: { com: CheckCircleOutlined, style: { color: green.primary } },
-    [T_FAILED]: { com: ExclamationCircleOutlined, style: { color: red.primary }, status: 'exception' },
+    [T_FAILED]: {
+      com: ExclamationCircleOutlined,
+      style: { color: red.primary },
+      status: 'exception',
+    },
     [T_CANCEL]: { com: CloseCircleOutlined, style: { color: gold.primary } },
     [T_PENDING]: { com: ClockCircleOutlined },
   };
@@ -36,7 +43,10 @@ export const invokeGenStatusDom = ({ val }: { val: DagStatus | string }) => {
 
   const Com = config.com;
   return {
-    com: React.createElement(Com, { className: 'text-[16px] cursor-pointer', ...config }),
+    com: React.createElement(Com, {
+      className: 'text-[16px] cursor-pointer',
+      ...config,
+    }),
     status: config.status,
   };
 };

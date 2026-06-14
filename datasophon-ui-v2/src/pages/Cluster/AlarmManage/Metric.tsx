@@ -24,12 +24,13 @@ const MetricTab: React.FC<Props> = ({ clusterId, defaultGroupId }) => {
   const { modal, message } = App.useApp();
   const actionRef = useRef<ActionType | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editRecord, setEditRecord] = useState<DATASOPHON.AlertQuota | null>(
-    null,
-  );
-  const [selectedRows, setSelectedRows] = useState<DATASOPHON.AlertQuota[]>([]);
+  const [editRecord, setEditRecord] =
+    useState<DATASOPHON.AlertQuotaResponse | null>(null);
+  const [selectedRows, setSelectedRows] = useState<
+    DATASOPHON.AlertQuotaResponse[]
+  >([]);
 
-  const handleDelete = (record: DATASOPHON.AlertQuota) => {
+  const handleDelete = (record: DATASOPHON.AlertQuotaResponse) => {
     modal.confirm({
       title: `确认删除指标「${record.alertQuotaName}」？`,
       onOk: async () => {
@@ -58,7 +59,7 @@ const MetricTab: React.FC<Props> = ({ clusterId, defaultGroupId }) => {
 
   const STATUS_COLOR: Record<number, string> = { 1: 'success', 2: 'error' };
 
-  const columns: ProColumns<DATASOPHON.AlertQuota>[] = [
+  const columns: ProColumns<DATASOPHON.AlertQuotaResponse>[] = [
     { dataIndex: 'index', title: '序号', valueType: 'indexBorder', width: 48 },
     { title: '指标名称', dataIndex: 'alertQuotaName', ellipsis: true },
     {
@@ -83,9 +84,9 @@ const MetricTab: React.FC<Props> = ({ clusterId, defaultGroupId }) => {
           page: 1,
           pageSize: 1000,
         });
-        const list = (res as any)?.data?.totalList ?? [];
+        const list = res?.data?.totalList ?? [];
         return Array.isArray(list)
-          ? list.map((g: DATASOPHON.AlertGroup) => ({
+          ? list.map((g: DATASOPHON.AlertGroupResponse) => ({
               label: g.alertGroupName,
               value: g.id,
             }))
@@ -136,7 +137,7 @@ const MetricTab: React.FC<Props> = ({ clusterId, defaultGroupId }) => {
 
   return (
     <>
-      <ProTable<DATASOPHON.AlertQuota>
+      <ProTable<DATASOPHON.AlertQuotaResponse>
         actionRef={actionRef}
         rowKey="id"
         columns={columns}
@@ -148,7 +149,7 @@ const MetricTab: React.FC<Props> = ({ clusterId, defaultGroupId }) => {
             page: params.current ?? 1,
             pageSize: params.pageSize ?? 20,
           });
-          const data = (res as any)?.data ?? {};
+          const data = res?.data ?? { totalList: [], totalCount: 0 };
           return {
             data: data.totalList ?? [],
             success: true,

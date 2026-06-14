@@ -43,6 +43,7 @@ public interface UploadTempFileService extends IService<UploadTempFile> {
      * 判断chunk是否已经上传
      */
     UploadTempFileChunk isChunkUploaded(CheckChunkDTO dto);
+    
     /**
      * 合并分片
      * @return 进度信息

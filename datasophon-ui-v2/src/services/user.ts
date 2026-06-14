@@ -1,12 +1,5 @@
 import { request } from '@umijs/max';
 
-// ─── 类型定义 ───────────────────────────────────────────────
-
-export interface UserPageData {
-  records: DATASOPHON.UserInfo[];
-  total: number;
-}
-
 // ─── API ─────────────────────────────────────────────────────
 
 /** 分页用户列表 */
@@ -15,14 +8,14 @@ export function listUsers(params: {
   pageSize: number;
   username?: string;
 }) {
-  return request<{ data: UserPageData }>('/user/page', {
+  return request<{ data: DATASOPHON.UserPageResponse }>('/user/page', {
     method: 'GET',
     params,
   });
 }
 
 /** 新建用户 */
-export function createUser(body: Partial<DATASOPHON.UserInfo>) {
+export function createUser(body: DATASOPHON.CreateUserRequest) {
   return request<{ data: void }>('/user', {
     method: 'POST',
     data: body,
@@ -30,7 +23,7 @@ export function createUser(body: Partial<DATASOPHON.UserInfo>) {
 }
 
 /** 编辑用户（不含密码） */
-export function updateUser(id: number, body: Partial<DATASOPHON.UserInfo>) {
+export function updateUser(id: number, body: DATASOPHON.UpdateUserRequest) {
   return request<{ data: void }>(`/user/${id}`, {
     method: 'PUT',
     data: body,

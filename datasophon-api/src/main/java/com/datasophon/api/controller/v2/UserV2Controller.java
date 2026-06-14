@@ -24,15 +24,19 @@ package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
+import com.datasophon.api.dto.v2.CreateUserRequest;
+import com.datasophon.api.dto.v2.UpdateUserRequest;
+import com.datasophon.api.dto.v2.UserInfoResponse;
+import com.datasophon.api.dto.v2.UserPageResponse;
 import com.datasophon.api.service.UserInfoService;
 import com.datasophon.api.utils.SecurityUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.UserInfoEntity;
 
-import java.util.HashMap;
+import jakarta.validation.Valid;
+
 import java.util.List;
-import java.util.Map;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -65,22 +69,22 @@ public class UserV2Controller extends ApiController {
     // ─── 分页用户列表 ─────────────────────────────────────────────
     
     @GetMapping("/page")
-    public ApiResponse<Map<String, Object>> list(
-                                                 @RequestParam(required = false) String username,
-                                                 @RequestParam(defaultValue = "1") Integer page,
-                                                 @RequestParam(defaultValue = "20") Integer pageSize) {
+    public ApiResponse<UserPageResponse> list(
+                                              @RequestParam(required = false) String username,
+                                              @RequestParam(defaultValue = "1") Integer page,
+                                              @RequestParam(defaultValue = "20") Integer pageSize) {
         Result result = userInfoService.getUserListByPage(username, page, pageSize);
-        Map<String, Object> pageData = new HashMap<>();
-        pageData.put("records", result.getData());
-        pageData.put("total", result.get(Constants.TOTAL));
-        return ApiResponse.ok(pageData);
+        @SuppressWarnings("unchecked")
+        List<UserInfoEntity> entities = (List<UserInfoEntity>) result.getData();
+        long total = ((Number) result.get(Constants.TOTAL)).longValue();
+        return ApiResponse.ok(UserPageResponse.of(UserInfoResponse.fromList(entities), total));
     }
     
     // ─── 新建用户 ────────────────────────────────────────────────
     
     @PostMapping
-    public ApiResponse<Void> create(@RequestBody UserInfoEntity userInfo) {
-        Result result = userInfoService.createUser(userInfo);
+    public ApiResponse<Void> create(@Valid @RequestBody CreateUserRequest request) {
+        Result result = userInfoService.createUser(request.toEntity());
         return result.isSuccess()
                 ? ApiResponse.ok()
                 : ApiResponse.fail(500, String.valueOf(result.getMsg()));
@@ -91,9 +95,8 @@ public class UserV2Controller extends ApiController {
     @PutMapping("/{id}")
     public ApiResponse<Void> update(
                                     @PathVariable Integer id,
-                                    @RequestBody UserInfoEntity userInfo) {
-        userInfo.setId(id);
-        Result result = userInfoService.updateUser(userInfo);
+                                    @Valid @RequestBody UpdateUserRequest request) {
+        Result result = userInfoService.updateUser(request.toEntity(id));
         return result.isSuccess()
                 ? ApiResponse.ok()
                 : ApiResponse.fail(500, String.valueOf(result.getMsg()));

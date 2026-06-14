@@ -8,7 +8,13 @@
 import { ProForm } from '@ant-design/pro-components';
 import type { MenuProps } from 'antd';
 import { Menu, message, Select, Spin } from 'antd';
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import ClusterContext from '@/context/ClusterContext';
 import {
@@ -38,7 +44,10 @@ type RoleGroup = {
 
 // ── 物理集群配置 ProForm（原 SettingTab 主体，无改动）────────────────────
 
-const PhysicalSettingContent: React.FC<SettingTabProps> = ({ clusterId, instanceId }) => {
+const PhysicalSettingContent: React.FC<SettingTabProps> = ({
+  clusterId,
+  instanceId,
+}) => {
   const [roleGroups, setRoleGroups] = useState<RoleGroup[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [versions, setVersions] = useState<number[]>([]);
@@ -238,7 +247,9 @@ const SettingTab: React.FC<SettingTabProps> = ({ clusterId, instanceId }) => {
   if (isK8s) {
     return <HelmEditor clusterId={clusterId} instanceId={instanceId} />;
   }
-  return <PhysicalSettingContent clusterId={clusterId} instanceId={instanceId} />;
+  return (
+    <PhysicalSettingContent clusterId={clusterId} instanceId={instanceId} />
+  );
 };
 
 export default SettingTab;

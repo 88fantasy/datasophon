@@ -2,11 +2,6 @@ import { request } from '@umijs/max';
 
 // ─── 类型定义 ───────────────────────────────────────────────
 
-export interface HostPageData {
-  records: DATASOPHON.HostInfo[];
-  total: number;
-}
-
 export interface AssignRackParams {
   rack?: string;
   hostIds: number[];
@@ -27,7 +22,7 @@ export function listClusterHosts(
     sortOrder?: string;
   },
 ) {
-  return request<{ data: HostPageData }>(
+  return request<{ data: DATASOPHON.HostPageResponse }>(
     `/cluster/${clusterId}/host/list`,
     { method: 'GET', params },
   );
@@ -35,7 +30,7 @@ export function listClusterHosts(
 
 /** 主机详情 */
 export function getClusterHost(clusterId: number, hostId: number) {
-  return request<{ data: DATASOPHON.HostInfo }>(
+  return request<{ data: DATASOPHON.HostResponse }>(
     `/cluster/${clusterId}/host/${hostId}`,
     { method: 'GET' },
   );
@@ -51,7 +46,7 @@ export function deleteClusterHosts(clusterId: number, ids: number[]) {
 
 /** 按主机名查角色列表 */
 export function getHostRoles(clusterId: number, hostname: string) {
-  return request<{ data: any[] }>(
+  return request<{ data: DATASOPHON.HostRoleResponse[] }>(
     `/cluster/${clusterId}/host/roles`,
     { method: 'GET', params: { hostname } },
   );

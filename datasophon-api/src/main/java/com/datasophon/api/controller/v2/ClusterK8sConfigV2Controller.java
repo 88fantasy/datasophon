@@ -26,9 +26,13 @@ import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.instance.K8sServiceInstanceValuesUpdateDTO;
 import com.datasophon.api.service.instance.K8sServiceInstanceValuesService;
+import com.datasophon.dao.entity.instance.K8sServiceInstanceValues;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import java.util.List;
+
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +65,7 @@ public class ClusterK8sConfigV2Controller extends ApiController {
      */
     @GetMapping("/versions")
     @Operation(summary = "获取 Helm values 版本列表")
-    public ApiResponse<Object> versions(@PathVariable Integer instanceId) {
+    public ApiResponse<List<K8sServiceInstanceValues>> versions(@PathVariable Integer instanceId) {
         return ApiResponse.ok(k8sServiceInstanceValuesService.listSimpleByInstanceId(instanceId));
     }
     
@@ -72,7 +76,7 @@ public class ClusterK8sConfigV2Controller extends ApiController {
      */
     @GetMapping("/{valueId}")
     @Operation(summary = "读取指定版本的 Helm values")
-    public ApiResponse<Object> info(@PathVariable Integer valueId) {
+    public ApiResponse<K8sServiceInstanceValues> info(@PathVariable Integer valueId) {
         return ApiResponse.ok(k8sServiceInstanceValuesService.getById(valueId));
     }
     

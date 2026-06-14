@@ -35,6 +35,7 @@ import com.datasophon.api.service.ClusterRackService;
 import com.datasophon.api.service.ClusterRoleUserService;
 import com.datasophon.api.service.ClusterServiceInstanceService;
 import com.datasophon.api.service.ClusterYarnSchedulerService;
+import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
 import com.datasophon.api.utils.PackageUtils;
 import com.datasophon.api.utils.SecurityUtils;
@@ -44,6 +45,7 @@ import com.datasophon.dao.entity.AlertGroupEntity;
 import com.datasophon.dao.entity.ClusterAlertGroupMap;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
+import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.UserInfoEntity;
 import com.datasophon.dao.enums.ClusterArchType;
 import com.datasophon.dao.enums.ClusterState;
@@ -105,6 +107,9 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
     @Autowired
     private ClusterDeleteService clusterDeleteService;
     
+    @Autowired
+    private FrameInfoService frameInfoService;
+    
     @Override
     public ClusterInfoEntity getClusterByClusterCode(String clusterCode) {
         return clusterInfoMapper.getClusterByClusterCode(clusterCode);
@@ -112,6 +117,17 @@ public class ClusterInfoServiceImpl extends ServiceImpl<ClusterInfoMapper, Clust
     
     @Override
     public ClusterInfoEntity saveCluster(ClusterInfoEntity clusterInfo) {
+        // 幂等回填：若 clusterFrame 为空但 frameId 存在，从框架表解析 clusterFrame/frameVersion。
+        // 同时覆盖 v1（ClusterInfoController）和 v2（ClusterV2Controller）两个入口，根治同源 null bug。
+        if ((clusterInfo.getClusterFrame() == null || clusterInfo.getClusterFrame().isEmpty())
+                && clusterInfo.getFrameId() != null) {
+            FrameInfoEntity frame = frameInfoService.getById(clusterInfo.getFrameId());
+            if (frame == null) {
+                throw new BusinessHintException("框架不存在: id=" + clusterInfo.getFrameId());
+            }
+            clusterInfo.setClusterFrame(frame.getFrameCode());
+            clusterInfo.setFrameVersion(frame.getFrameVersion());
+        }
         if (getBaseMapper().isDuplicate(clusterInfo, ClusterInfoEntity::getClusterCode)) {
             throw new BusinessHintException(Status.CLUSTER_CODE_EXISTS.getMsg());
         }

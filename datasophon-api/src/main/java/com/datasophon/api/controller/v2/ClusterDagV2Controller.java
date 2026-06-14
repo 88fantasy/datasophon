@@ -25,9 +25,10 @@ package com.datasophon.api.controller.v2;
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
 import com.datasophon.api.dto.extrepo.RunDagDto;
+import com.datasophon.api.dto.v2.DagCommandPageResponse;
 import com.datasophon.api.service.dag.DAGService;
 import com.datasophon.api.service.extrepo.ExtRepoInstallDelegateService;
-import com.datasophon.dao.entity.dag.DagDefinitionEntity;
+import com.datasophon.api.vo.extrepo.InstallProgressDAG;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,8 +36,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.baomidou.mybatisplus.core.metadata.IPage;
 
 /**
  * v2 DAG 命令相关接口（命令历史列表 + DAG 图数据 + 重新运行）。
@@ -61,11 +60,11 @@ public class ClusterDagV2Controller extends ApiController {
      * 分页查询集群命令历史列表。
      */
     @GetMapping("/command/list")
-    public ApiResponse<IPage<DagDefinitionEntity>> listCommands(
-                                                                @PathVariable Integer clusterId,
-                                                                @RequestParam(defaultValue = "1") Integer page,
-                                                                @RequestParam(defaultValue = "20") Integer pageSize) {
-        return ApiResponse.ok(dagService.findDagByPage(clusterId, page, pageSize));
+    public ApiResponse<DagCommandPageResponse> listCommands(
+                                                            @PathVariable Integer clusterId,
+                                                            @RequestParam(defaultValue = "1") Integer page,
+                                                            @RequestParam(defaultValue = "20") Integer pageSize) {
+        return ApiResponse.ok(DagCommandPageResponse.of(dagService.findDagByPage(clusterId, page, pageSize)));
     }
     
     // ── DAG 图可视化（切片 6b）────────────────────────────────────
@@ -74,9 +73,9 @@ public class ClusterDagV2Controller extends ApiController {
      * 获取指定 DAG 的节点/边/状态数据（用于前端 x6 图渲染）。
      */
     @GetMapping("/dag/{dagId}/graph")
-    public ApiResponse<Object> getDagGraph(
-                                           @PathVariable Integer clusterId,
-                                           @PathVariable String dagId) {
+    public ApiResponse<InstallProgressDAG> getDagGraph(
+                                                       @PathVariable Integer clusterId,
+                                                       @PathVariable String dagId) {
         return ApiResponse.ok(extRepoInstallDelegateService.getDeployProgressDAG2(dagId));
     }
     

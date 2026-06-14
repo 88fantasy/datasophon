@@ -10,12 +10,18 @@
 
 import Editor from '@monaco-editor/react';
 import { Button, message, Select, Spin } from 'antd';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   getK8sConfig,
   listK8sConfigVersions,
   saveK8sConfig,
-} from '@/services/service';
+} from '@/services/k8s';
 import { mergeYamlFiles } from './yamlMerge';
 
 interface HelmEditorProps {
@@ -24,9 +30,14 @@ interface HelmEditorProps {
 }
 
 const HelmEditor: React.FC<HelmEditorProps> = ({ clusterId, instanceId }) => {
-  const [versions, setVersions] = useState<DATASOPHON.K8sInstanceValuesSimple[]>([]);
-  const [selectedVersionId, setSelectedVersionId] = useState<number | undefined>(undefined);
-  const [helmValues, setHelmValues] = useState<DATASOPHON.K8sInstanceValues | null>(null);
+  const [versions, setVersions] = useState<
+    DATASOPHON.K8sInstanceValuesSimple[]
+  >([]);
+  const [selectedVersionId, setSelectedVersionId] = useState<
+    number | undefined
+  >(undefined);
+  const [helmValues, setHelmValues] =
+    useState<DATASOPHON.K8sInstanceValues | null>(null);
 
   /** 用户在左栏编辑的 deltaValues（未保存） */
   const [draftDelta, setDraftDelta] = useState('');
@@ -163,7 +174,14 @@ const HelmEditor: React.FC<HelmEditorProps> = ({ clusterId, instanceId }) => {
       <Spin spinning={configLoading}>
         <div style={{ display: 'flex', gap: 8 }}>
           {/* 左栏：可编辑 deltaValues */}
-          <div style={{ flex: 1, border: '1px solid #e8e8e8', borderRadius: 4, overflow: 'hidden' }}>
+          <div
+            style={{
+              flex: 1,
+              border: '1px solid #e8e8e8',
+              borderRadius: 4,
+              overflow: 'hidden',
+            }}
+          >
             <div
               style={{
                 padding: '4px 8px',
@@ -189,7 +207,14 @@ const HelmEditor: React.FC<HelmEditorProps> = ({ clusterId, instanceId }) => {
           </div>
 
           {/* 右栏：合并预览（只读） */}
-          <div style={{ flex: 1, border: '1px solid #e8e8e8', borderRadius: 4, overflow: 'hidden' }}>
+          <div
+            style={{
+              flex: 1,
+              border: '1px solid #e8e8e8',
+              borderRadius: 4,
+              overflow: 'hidden',
+            }}
+          >
             <div
               style={{
                 padding: '4px 8px',

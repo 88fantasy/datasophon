@@ -4,7 +4,7 @@ import { resetPassword } from '@/services/user';
 
 interface Props {
   trigger: React.ReactElement;
-  user: DATASOPHON.UserInfo;
+  user: DATASOPHON.UserInfoResponse;
 }
 
 const ResetPasswordModal: React.FC<Props> = ({ trigger, user }) => {

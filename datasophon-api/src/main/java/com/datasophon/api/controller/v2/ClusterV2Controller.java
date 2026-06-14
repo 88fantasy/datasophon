@@ -24,14 +24,17 @@ package com.datasophon.api.controller.v2;
 
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
+import com.datasophon.api.dto.v2.ClusterResponse;
+import com.datasophon.api.dto.v2.CreateClusterRequest;
+import com.datasophon.api.dto.v2.FrameResponse;
 import com.datasophon.api.dto.v2.ManagersRequest;
+import com.datasophon.api.dto.v2.UpdateClusterRequest;
+import com.datasophon.api.dto.v2.UserResponse;
 import com.datasophon.api.security.UserPermission;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterRoleUserService;
 import com.datasophon.api.service.FrameInfoService;
 import com.datasophon.api.service.UserInfoService;
-import com.datasophon.dao.entity.ClusterInfoEntity;
-import com.datasophon.dao.entity.FrameInfoEntity;
 import com.datasophon.dao.entity.UserInfoEntity;
 
 import jakarta.validation.Valid;
@@ -82,22 +85,23 @@ public class ClusterV2Controller extends ApiController {
     // ─── 集群 CRUD ────────────────────────────────────────────────────
     
     @GetMapping("/cluster/list")
-    public ApiResponse<List<ClusterInfoEntity>> clusterList() {
-        return ApiResponse.ok(clusterInfoService.getClusterList());
+    public ApiResponse<List<ClusterResponse>> clusterList() {
+        return ApiResponse.ok(ClusterResponse.fromList(clusterInfoService.getClusterList()));
     }
     
     @PostMapping("/cluster")
     @UserPermission
-    public ApiResponse<ClusterInfoEntity> createCluster(@Valid @RequestBody ClusterInfoEntity entity) {
-        return ApiResponse.ok(clusterInfoService.saveCluster(entity));
+    public ApiResponse<ClusterResponse> createCluster(@Valid @RequestBody CreateClusterRequest req) {
+        // frameId → clusterFrame/frameVersion 解析已下沉到 ClusterInfoService.saveCluster，
+        // v1/v2 两个入口均受益，controller 保持薄。
+        return ApiResponse.ok(ClusterResponse.from(clusterInfoService.saveCluster(req.toEntity())));
     }
     
     @PutMapping("/cluster/{id}")
     @UserPermission
     public ApiResponse<Void> updateCluster(@PathVariable Integer id,
-                                           @RequestBody ClusterInfoEntity entity) {
-        entity.setId(id);
-        clusterInfoService.updateCluster(entity);
+                                           @Valid @RequestBody UpdateClusterRequest req) {
+        clusterInfoService.updateCluster(req.toEntity(id));
         return ApiResponse.ok();
     }
     
@@ -126,14 +130,15 @@ public class ClusterV2Controller extends ApiController {
     // ─── 框架版本 + 用户列表（下拉数据源）────────────────────────────────
     
     @GetMapping("/frame/list")
-    public ApiResponse<List<FrameInfoEntity>> frameList() {
-        return ApiResponse.ok(frameInfoService.list());
+    public ApiResponse<List<FrameResponse>> frameList() {
+        return ApiResponse.ok(FrameResponse.fromList(frameInfoService.list()));
     }
     
-    /** 查询所有普通用户（排除超级管理员 id=1），用于集群授权下拉。 */
+    /** 查询所有普通用户（排除超级管理员 id=1），用于集群授权下拉。只返回 id + username，不含敏感字段。 */
     @GetMapping("/user/list")
-    public ApiResponse<List<UserInfoEntity>> userList() {
+    public ApiResponse<List<UserResponse>> userList() {
         return ApiResponse.ok(
-                userInfoService.lambdaQuery().ne(UserInfoEntity::getId, 1).list());
+                UserResponse.fromList(
+                        userInfoService.lambdaQuery().ne(UserInfoEntity::getId, 1).list()));
     }
 }

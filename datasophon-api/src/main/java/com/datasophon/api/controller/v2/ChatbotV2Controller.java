@@ -25,11 +25,11 @@ package com.datasophon.api.controller.v2;
 import com.datasophon.api.configuration.AiProperties;
 import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.dto.ApiResponse;
+import com.datasophon.api.dto.v2.ChatConversationResponse;
+import com.datasophon.api.dto.v2.ChatMessageResponse;
 import com.datasophon.api.dto.v2.ChatRequest;
 import com.datasophon.api.service.ChatService;
 import com.datasophon.common.Constants;
-import com.datasophon.dao.entity.ChatConversationEntity;
-import com.datasophon.dao.entity.ChatMessageEntity;
 import com.datasophon.dao.entity.UserInfoEntity;
 
 import jakarta.validation.Valid;
@@ -72,16 +72,16 @@ public class ChatbotV2Controller extends ApiController {
     }
     
     @GetMapping("/conversations")
-    public ApiResponse<List<ChatConversationEntity>> conversations(
-                                                                   @RequestAttribute(Constants.SESSION_USER) UserInfoEntity loginUser) {
-        return ApiResponse.ok(chatService.listConversations(loginUser.getId()));
+    public ApiResponse<List<ChatConversationResponse>> conversations(
+                                                                     @RequestAttribute(Constants.SESSION_USER) UserInfoEntity loginUser) {
+        return ApiResponse.ok(ChatConversationResponse.fromList(chatService.listConversations(loginUser.getId())));
     }
     
     @GetMapping("/conversations/{id}/messages")
-    public ApiResponse<List<ChatMessageEntity>> messages(
-                                                         @PathVariable Long id,
-                                                         @RequestAttribute(Constants.SESSION_USER) UserInfoEntity loginUser) {
-        return ApiResponse.ok(chatService.listMessages(id, loginUser.getId()));
+    public ApiResponse<List<ChatMessageResponse>> messages(
+                                                           @PathVariable Long id,
+                                                           @RequestAttribute(Constants.SESSION_USER) UserInfoEntity loginUser) {
+        return ApiResponse.ok(ChatMessageResponse.fromList(chatService.listMessages(id, loginUser.getId())));
     }
     
     @DeleteMapping("/conversations/{id}")

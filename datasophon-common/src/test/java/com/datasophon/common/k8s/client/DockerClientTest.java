@@ -44,6 +44,7 @@ class DockerClientTest {
     public void init() {
         PropertiesPathUtils.resetPropertyFile();
     }
+    
     /**
      * 构造方法和 dockerPath 检测相关测试
      */
