@@ -25,16 +25,16 @@
 | `docs/monitoring/dashboards-reference/<COMPONENT>/<id>.json` | 选定看板的源 JSON | Task 6 |
 | `docs/monitoring/panel-catalog/<COMPONENT>.json` | 规范化面板目录(交给 Phase 2) | Task 6 |
 
-## 当前产出物核验状态(2026-06-14)
+## 当前产出物核验状态(2026-06-14 更新)
 
 | 产出物 | 状态 | 核验结论 |
 |---|---|---|
-| `docs/monitoring/dashboard-survey-manifest.json` | ✅已同步 | `jq 'length'` = 22,不含已移除组件,包含 Valkey 与 DATART Spring Boot Actuator/Micrometer 提示 |
-| `docs/monitoring/workflow/survey.workflow.js` | 🔁需更新 | 需要同步新范围 22 组件,并加入 DATART/Valkey 特殊调研提示 |
-| `docs/monitoring/dashboard-survey-results.json` | ✅已同步 | `jq 'length'` = 22,不含已移除组件,Valkey 替代 Redis,DATART 改走 Spring Boot Actuator/Micrometer 看板 |
-| `docs/monitoring/dashboard-survey.md` | ✅已同步 | 报告已重写为 22 组件范围,总览和详情包含 Valkey/DATART 新口径 |
+| `docs/monitoring/dashboard-survey-manifest.json` | ✅已完成 | `jq 'length'` = 22,不含已移除组件,包含 Valkey 与 DATART Spring Boot Actuator/Micrometer 提示 |
+| `docs/monitoring/workflow/survey.workflow.js` | ✅已完成 | 已包含 22 组件范围,含 DATART/Valkey 特殊提示 |
+| `docs/monitoring/dashboard-survey-results.json` | ✅已完成 | `jq 'length'` = 22;Valkey 替代 Redis;DATART 走 Spring Boot Actuator/Micrometer;⚠️ Doris/Kyuubi 候选数 < 2(需补足或豁免) |
+| `docs/monitoring/dashboard-survey.md` | ✅已完成 | 报告 136 行表格;总览和详情包含 Valkey/DATART 新口径 |
 | `docs/monitoring/scripts/extract-panel-catalog.mjs` | ✅已完成 | 已用最小上游看板 JSON 样例验证:输出 2 个面板,能展开 row 嵌套并过滤 text 面板 |
-| `docs/monitoring/dashboard-selection.md` | ⏳未完成 | 文件尚未存在,仍处于人工选型卡点前 |
+| `docs/monitoring/dashboard-selection.md` | ⏳未完成 | 文件尚未存在,处于人工选型卡点前 |
 | `docs/monitoring/dashboards-reference/<COMPONENT>/<id>.json` | ⏳未完成 | 目录尚未存在,需等待选型清单锁定后下载 |
 | `docs/monitoring/panel-catalog/<COMPONENT>.json` | ⏳未完成 | 目录尚未存在,需等待源 JSON 下载后批量抽取 |
 
@@ -42,8 +42,9 @@
 - 新范围不再调研已移除的 3 个组件。
 - Redis 替换为 Valkey,调研时优先确认 Valkey 原生/兼容 Redis exporter 指标与可复用看板。
 - DATART 不再按"缺数据源"处理,改采用 Spring Boot Actuator/Micrometer 体系看板,优先检索 Spring Boot / JVM / Micrometer / Tomcat / HikariCP 相关 Prometheus 看板。
-- 旧 `docs/monitoring/dashboard-survey-results.json` 分级统计仅作为历史记录,不再代表当前计划验收状态。
-- 多个 grafana.com 候选的 `rating` 为 `null`,但候选均有 `scores.heat` 与 `total`。后续若严格要求 `rating` 非空,需要重新从 grafana.com API 复核或调整验收口径为"downloads/rating 以 API 实际返回为准"。
+- **⚠️ Doris、Kyuubi 候选数 < 2**:已触发 Task 3 Step 4 校验失败。处理方案:人工审核时若判定这两个组件确实无第二个合适候选,在 results.json 中为其加 `"candidatesNote": "确认无现成社区看板,需自建"` 后豁免;否则用 Workflow 补跑。
+- 多个 grafana.com 候选的 `rating` 为 `null`,但候选均有 `scores.heat` 与 `total`。验收口径已调整为"downloads/rating 以 API 实际返回为准"。
+- **前端图表库已改用 AntV G2**(原 ECharts),design.md 与本文件均已同步更新。Phase 3 实现时使用 `@antv/g2` 或其 React 封装;panel-catalog 的 chartType / unit / thresholds 字段语义不变。
 
 ---
 
@@ -549,4 +550,4 @@ git commit -m "docs(monitoring): 归档选定看板源 JSON 与 panel-catalog(Ph
 
 ## 不做(留待后续 spec)
 
-后端 PromQL 代理端点、前端 ECharts 图表、exporter 部署自动化、`ClusterServiceDashboard` 表改造、现有外部看板显示层移除 —— 全部属于 Phase 3。
+后端 PromQL 代理端点、前端 AntV G2 图表、exporter 部署自动化、`ClusterServiceDashboard` 表改造、现有外部看板显示层移除 —— 全部属于 Phase 3。

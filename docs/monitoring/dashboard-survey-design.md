@@ -17,7 +17,7 @@
 ### 1.2 最终目标(已锁定的终态架构)
 
 ```
-React(ECharts)  ──HTTP──>  datasophon-api(新增 PromQL 代理/聚合端点)  ──PromQL──>  Prometheus
+React(AntV G2)  ──HTTP──>  datasophon-api(新增 PromQL 代理/聚合端点)  ──PromQL──>  Prometheus
                                   ^ 复用现有 PlaceholderUtils / 鉴权 / 集群上下文
 Grafana:可作为显示层移除
 下载的 Grafana 看板 = 参考资料,产物为 PromQL + 面板元信息,不是整份 JSON 拿去导入
@@ -199,7 +199,7 @@ Grafana:可作为显示层移除
 以下全部留给 Phase 3 spec,本期一行业务代码都不写:
 
 - 后端 PromQL 代理 / 聚合端点实现
-- 前端 ECharts 图表组件
+- 前端 AntV G2 图表组件
 - exporter 部署自动化
 - `ClusterServiceDashboard` 表结构改造
 - Grafana 进程的移除
