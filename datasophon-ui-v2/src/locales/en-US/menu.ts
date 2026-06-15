@@ -50,6 +50,7 @@ export default {
   'menu.editor.mind': 'Mind Editor',
   'menu.editor.koni': 'Koni Editor',
   'menu.chatbot': 'AI Assistant',
+  'menu.apisix-monitor': 'APISIX Monitor',
   'menu.colony': 'Cluster Management',
   'menu.colony.manage': 'Cluster List',
   'menu.frame': 'Cluster Frameworks',

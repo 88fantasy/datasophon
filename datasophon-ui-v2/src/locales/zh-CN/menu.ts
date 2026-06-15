@@ -50,6 +50,7 @@ export default {
   'menu.editor.mind': '脑图编辑器',
   'menu.editor.koni': '拓扑编辑器',
   'menu.chatbot': 'AI 助手',
+  'menu.apisix-monitor': 'APISIX 监控',
   'menu.colony': '集群管理',
   'menu.colony.manage': '集群列表',
   'menu.frame': '集群框架',

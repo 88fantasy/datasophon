@@ -36,6 +36,14 @@ export default [
     component: './chatbot',
   },
 
+  // ─── APISIX 监控看板（Phase 2 原型，mock 数据）────────────────────
+  {
+    path: '/apisix-monitor',
+    name: 'apisix-monitor',
+    icon: 'monitor',
+    component: './ApisixMonitor',
+  },
+
   // ─── 集群管理（Colony）────────────────────────────────────────────
   // Phase 4 实现登录页后解注释；Phase 5 实现 Colony 页面
   {
