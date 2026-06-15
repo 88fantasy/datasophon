@@ -6,30 +6,30 @@
 
 ## 总览表
 
-| 组件 | 版本 | 分组 | 数据源方式 | 候选数 | 分级 | 推荐看板 | 总分 |
-|---|---|---|---|---|---|---|---|
-| MySQL | 8.0.28 | 中间件 | exporter prometheus/mysqld_exporter | 3 | 🟢可直接做 | MySQL Exporter Quickstart and Dashboard (ID: 14057) | 0.96 |
-| Nexus | 3.85.0 | 中间件 | 原生 /service/rest/metrics/prometheus (3.81+；3.81 之前为 /service/metrics/prometheus，旧路径有重定向但部分脚本不跟随):8081 | 3 | 🟢可直接做 | Infra / Nexus (grafana.com #16459) | 0.79 |
-| Rustfs | 1.0.0 | 中间件 | 原生 /minio/v2/metrics/cluster (legacy MinIO dashboards reference older /minio/prometheus/metrics path):9000 | 3 | 🟡需自建 | 需自建 |  |
-| DATART | 3.6.1 | 内部组件 | 原生 /actuator/prometheus:DATART server port | 3 | 🟢可直接做 | Spring Boot 2.1 Statistics (ID 10280) | 0.82 |
-| Alertmanager | 0.32.1 | 可观测性 | 原生 /metrics:9093 | 3 | 🟢可直接做 | Alertmanager (ID 9578) | 0.85 |
-| Loki | 3.7.2 | 可观测性 | 原生 /metrics:3100 | 3 | 🟢可直接做 | Loki Metrics Dashboard (ID 17781) | 0.87 |
-| Prometheus | 3.12.0 | 可观测性 | 原生 /metrics:9090 | 3 | 🟢可直接做 | Prometheus 2.0 Overview (ID: 3662) | 0.94 |
-| Promtail | 2.8.11 | 可观测性 | 原生 /metrics:9080 | 3 | 🟢可直接做 | Promtail Monitoring - Metrics and Logs | 0.8 |
-| Doris | 4.0.5 | 存储/数据库 | 原生 FE: /metrics on fe_http_port (default 8030); BE: /metrics on be_web_server_port (default 8040). Also supports ?type=json for JSON output. Broker does NOT expose /metrics.:FE 8030 / BE 8040 | 1 | 🟡需自建 | 需自建 |  |
-| Elasticsearch | 9.4.2 | 存储/数据库 | exporter prometheus-community/elasticsearch_exporter | 3 | 🟡需自建 | Elasticsearch Exporter Quickstart and Dashboard (Grafana ID 14191) | 0.93 |
-| HDFS | 3.5.0 | 存储/数据库 | 原生 /prom（NameNode 默认端口 9870，DataNode 默认端口 9864，与各 Daemon Web UI 同端口）:9870 (NameNode) / 9864 (DataNode) | 3 | 🟢可直接做 | HDFS - DataNode | 0.695 |
-| Hive | 4.2.0 | 存储/数据库 | exporter Prometheus JMX Exporter (javaagent attached to HiveServer2/Metastore JVM) or hadoop_exporter (vqcuong) | 3 | 🟡需自建 | 需自建 |  |
-| JuiceFS | 1.3.1 | 存储/数据库 | 原生 /metrics:9567 | 2 | 🟢可直接做 | JuiceFS Dashboard (grafana.com ID 20794) | 0.75 |
-| Valkey | 8.6 | 存储/数据库 | exporter redis_exporter or Valkey-compatible Redis exporter | 3 | 🟢可直接做 | Valkey/Redis-compatible Redis Exporter Dashboard (ID 763) | 0.86 |
-| YARN | 3.5.0 | 存储/数据库 | exporter jmx_prometheus_javaagent (Prometheus JMX Exporter) 挂载到 YARN_RESOURCEMANAGER_OPTS / YARN_NODEMANAGER_OPTS,或 PBWebMedia/yarn-prometheus-exporter 专用 RM 导出器 | 3 | 🟡需自建 | 需自建(参考 Grafana Cloud Apache Hadoop Integration 面板设计) |  |
-| Kafka | 4.3.0 | 消息/协调 | exporter Prometheus JMX Exporter(Broker 全量指标)+ danielqsj/kafka_exporter(消费组 lag/topic offset) | 3 | 🟢可直接做 | Kafka Exporter Overview | 0.77 |
-| ZooKeeper | 3.8.6 | 消息/协调 | 原生 /metrics:7000 | 3 | 🟢可直接做 | ZooKeeper by Prometheus | 0.94 |
-| APISIX | 3.16.0 | 网关/注册中心 | 原生 /apisix/prometheus/metrics:9091 | 2 | 🟢可直接做 | Apache APISIX (ID: 11719) | 0.84 |
-| Nacos | 3.2.2 | 网关/注册中心 | 原生 /nacos/actuator/prometheus:8848 | 2 | 🟡需自建 | Nacos (Grafana ID 13221) | 0.62 |
-| Nginx | 1.30.2 | 网关/注册中心 | exporter nginx-prometheus-exporter | 3 | 🟢可直接做 | NGINX exporter (ID 12708) | 0.9 |
-| Kyuubi | 1.11.1 | 计算/查询引擎 | 原生 /metrics:10019 | 1 | 🟡需自建 | Kyuubi Official Dashboard Template | 0.58 |
-| DolphinScheduler | 3.4.1 | 调度 | 原生 /actuator/prometheus (Master: 5679, Worker: 1235, Alert: 50053); /dolphinscheduler/actuator/prometheus (API: 12345):5679 / 1235 / 50053 / 12345 | 3 | 🟢可直接做 | DolphinScheduler Worker Dashboard (Official) | 0.78 |
+|        组件        |   版本   |   分组    |                                                                                              数据源方式                                                                                              | 候选数 |   分级   |                                推荐看板                                |  总分   |
+|------------------|--------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----|--------|--------------------------------------------------------------------|-------|
+| MySQL            | 8.0.28 | 中间件     | exporter prometheus/mysqld_exporter                                                                                                                                                             | 3   | 🟢可直接做 | MySQL Exporter Quickstart and Dashboard (ID: 14057)                | 0.96  |
+| Nexus            | 3.85.0 | 中间件     | 原生 /service/rest/metrics/prometheus (3.81+；3.81 之前为 /service/metrics/prometheus，旧路径有重定向但部分脚本不跟随):8081                                                                                           | 3   | 🟢可直接做 | Infra / Nexus (grafana.com #16459)                                 | 0.79  |
+| Rustfs           | 1.0.0  | 中间件     | 原生 /minio/v2/metrics/cluster (legacy MinIO dashboards reference older /minio/prometheus/metrics path):9000                                                                                      | 3   | 🟡需自建  | 需自建                                                                |       |
+| DATART           | 3.6.1  | 内部组件    | 原生 /actuator/prometheus:DATART server port                                                                                                                                                      | 3   | 🟢可直接做 | Spring Boot 2.1 Statistics (ID 10280)                              | 0.82  |
+| Alertmanager     | 0.32.1 | 可观测性    | 原生 /metrics:9093                                                                                                                                                                                | 3   | 🟢可直接做 | Alertmanager (ID 9578)                                             | 0.85  |
+| Loki             | 3.7.2  | 可观测性    | 原生 /metrics:3100                                                                                                                                                                                | 3   | 🟢可直接做 | Loki Metrics Dashboard (ID 17781)                                  | 0.87  |
+| Prometheus       | 3.12.0 | 可观测性    | 原生 /metrics:9090                                                                                                                                                                                | 3   | 🟢可直接做 | Prometheus 2.0 Overview (ID: 3662)                                 | 0.94  |
+| Promtail         | 2.8.11 | 可观测性    | 原生 /metrics:9080                                                                                                                                                                                | 3   | 🟢可直接做 | Promtail Monitoring - Metrics and Logs                             | 0.8   |
+| Doris            | 4.0.5  | 存储/数据库  | 原生 FE: /metrics on fe_http_port (default 8030); BE: /metrics on be_web_server_port (default 8040). Also supports ?type=json for JSON output. Broker does NOT expose /metrics.:FE 8030 / BE 8040 | 1   | 🟡需自建  | 需自建                                                                |       |
+| Elasticsearch    | 9.4.2  | 存储/数据库  | exporter prometheus-community/elasticsearch_exporter                                                                                                                                            | 3   | 🟡需自建  | Elasticsearch Exporter Quickstart and Dashboard (Grafana ID 14191) | 0.93  |
+| HDFS             | 3.5.0  | 存储/数据库  | 原生 /prom（NameNode 默认端口 9870，DataNode 默认端口 9864，与各 Daemon Web UI 同端口）:9870 (NameNode) / 9864 (DataNode)                                                                                          | 3   | 🟢可直接做 | HDFS - DataNode                                                    | 0.695 |
+| Hive             | 4.2.0  | 存储/数据库  | exporter Prometheus JMX Exporter (javaagent attached to HiveServer2/Metastore JVM) or hadoop_exporter (vqcuong)                                                                                 | 3   | 🟡需自建  | 需自建                                                                |       |
+| JuiceFS          | 1.3.1  | 存储/数据库  | 原生 /metrics:9567                                                                                                                                                                                | 2   | 🟢可直接做 | JuiceFS Dashboard (grafana.com ID 20794)                           | 0.75  |
+| Valkey           | 8.6    | 存储/数据库  | exporter redis_exporter or Valkey-compatible Redis exporter                                                                                                                                     | 3   | 🟢可直接做 | Valkey/Redis-compatible Redis Exporter Dashboard (ID 763)          | 0.86  |
+| YARN             | 3.5.0  | 存储/数据库  | exporter jmx_prometheus_javaagent (Prometheus JMX Exporter) 挂载到 YARN_RESOURCEMANAGER_OPTS / YARN_NODEMANAGER_OPTS,或 PBWebMedia/yarn-prometheus-exporter 专用 RM 导出器                               | 3   | 🟡需自建  | 需自建(参考 Grafana Cloud Apache Hadoop Integration 面板设计)               |       |
+| Kafka            | 4.3.0  | 消息/协调   | exporter Prometheus JMX Exporter(Broker 全量指标)+ danielqsj/kafka_exporter(消费组 lag/topic offset)                                                                                                   | 3   | 🟢可直接做 | Kafka Exporter Overview                                            | 0.77  |
+| ZooKeeper        | 3.8.6  | 消息/协调   | 原生 /metrics:7000                                                                                                                                                                                | 3   | 🟢可直接做 | ZooKeeper by Prometheus                                            | 0.94  |
+| APISIX           | 3.16.0 | 网关/注册中心 | 原生 /apisix/prometheus/metrics:9091                                                                                                                                                              | 2   | 🟢可直接做 | Apache APISIX (ID: 11719)                                          | 0.84  |
+| Nacos            | 3.2.2  | 网关/注册中心 | 原生 /nacos/actuator/prometheus:8848                                                                                                                                                              | 2   | 🟡需自建  | Nacos (Grafana ID 13221)                                           | 0.62  |
+| Nginx            | 1.30.2 | 网关/注册中心 | exporter nginx-prometheus-exporter                                                                                                                                                              | 3   | 🟢可直接做 | NGINX exporter (ID 12708)                                          | 0.9   |
+| Kyuubi           | 1.11.1 | 计算/查询引擎 | 原生 /metrics:10019                                                                                                                                                                               | 1   | 🟡需自建  | Kyuubi Official Dashboard Template                                 | 0.58  |
+| DolphinScheduler | 3.4.1  | 调度      | 原生 /actuator/prometheus (Master: 5679, Worker: 1235, Alert: 50053); /dolphinscheduler/actuator/prometheus (API: 12345):5679 / 1235 / 50053 / 12345                                              | 3   | 🟢可直接做 | DolphinScheduler Worker Dashboard (Official)                       | 0.78  |
 
 ---
 
@@ -38,7 +38,6 @@
 - 🟢 可直接做: 15 个
 - 🟡 需自建: 7 个
 - 🔴 缺数据源: 0 个
-
 - 原生 Prometheus 端点: 15 个
 - 需要 exporter: 7 个
 - 无数据源: 0 个
@@ -47,15 +46,15 @@
 
 > 口径: **需自建** = 已有 Prometheus 数据源(原生端点或 exporter),但缺少可直接复用的高匹配看板;**缺数据源** = 未确认原生端点,也没有可落地 exporter。按该口径复核后,当前清单无真正"缺数据源"组件。
 
-| 组件 | 复核结论 | 数据源事实 | 看板处置 |
-|---|---|---|---|
-| Rustfs | 保持 🟡需自建 | 官方文档确认存在 Prometheus-compatible metrics endpoints,但未给出稳定 path/port;第三方监控指南给出 MinIO-compatible `/minio/v2/metrics/cluster:9000`,需在目标 1.0.0 实例验证认证方式与指标前缀。 | 无 RustFS 专属高质量看板;MinIO 看板只能作结构参考,需自建/改写 PromQL。 |
-| Doris | 保持 🟡需自建 | Doris 4.x 官方文档确认 FE/BE 内置 Prometheus-compatible metrics,FE/BE HTTP 端口 `/metrics` 可直接采集,无需 exporter。 | 现有 Grafana 9734/Doris Overview 主要适配较早版本,对 4.0.5 新指标和新架构匹配不足,建议基于官方模板重做。 |
-| Elasticsearch | 保持 🟡需自建 | 9.4 的 `_prometheus` API 是 PromQL 查询/remote write 方向,不是 ES 节点自身 `/metrics` scrape endpoint;仍需 `elasticsearch_exporter`。 | 有可用 exporter 看板,但因数据源需额外部署 exporter,落地侧仍需补充采集链路。 |
-| Hive | 从 🔴缺数据源 调整为 🟡需自建 | Hive 官方 metrics 文档说明默认 JMX + JSON file reporter,无原生 Prometheus `/metrics`;但可通过 Prometheus JMX Exporter 或 hadoop_exporter 采集,因此不是"缺数据源"。 | 未找到高质量 HiveServer2/Metastore Prometheus 看板,需基于 JMX Exporter 实际指标自建。 |
-| YARN | 保持 🟡需自建 | Hadoop/YARN 官方 Metrics2/JMX 暴露指标,无内置 Prometheus `/metrics`;可用 Prometheus JMX Exporter 或专用 YARN exporter。 | Grafana Cloud Hadoop Integration 可作设计参考,但不是可直接导入的通用 JSON。 |
-| Nacos | 保持 🟡需自建 | Nacos 官方监控文档确认 0.8.0 起支持 Prometheus 监控,通过 `/nacos/actuator/prometheus:8848` 暴露。 | 现成看板偏老,需补齐 3.x gRPC/错误率等面板。 |
-| Kyuubi | 保持 🟡需自建 | Kyuubi 官方文档确认可配置 `kyuubi.metrics.reporters=PROMETHEUS`,默认 `/metrics:10019`。 | 官方模板可导入,但黄金信号不完整,需补充错误率等面板。 |
+|      组件       |        复核结论        |                                                                          数据源事实                                                                          |                                  看板处置                                   |
+|---------------|--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| Rustfs        | 保持 🟡需自建           | 官方文档确认存在 Prometheus-compatible metrics endpoints,但未给出稳定 path/port;第三方监控指南给出 MinIO-compatible `/minio/v2/metrics/cluster:9000`,需在目标 1.0.0 实例验证认证方式与指标前缀。 | 无 RustFS 专属高质量看板;MinIO 看板只能作结构参考,需自建/改写 PromQL。                         |
+| Doris         | 保持 🟡需自建           | Doris 4.x 官方文档确认 FE/BE 内置 Prometheus-compatible metrics,FE/BE HTTP 端口 `/metrics` 可直接采集,无需 exporter。                                                     | 现有 Grafana 9734/Doris Overview 主要适配较早版本,对 4.0.5 新指标和新架构匹配不足,建议基于官方模板重做。 |
+| Elasticsearch | 保持 🟡需自建           | 9.4 的 `_prometheus` API 是 PromQL 查询/remote write 方向,不是 ES 节点自身 `/metrics` scrape endpoint;仍需 `elasticsearch_exporter`。                                  | 有可用 exporter 看板,但因数据源需额外部署 exporter,落地侧仍需补充采集链路。                        |
+| Hive          | 从 🔴缺数据源 调整为 🟡需自建 | Hive 官方 metrics 文档说明默认 JMX + JSON file reporter,无原生 Prometheus `/metrics`;但可通过 Prometheus JMX Exporter 或 hadoop_exporter 采集,因此不是"缺数据源"。                 | 未找到高质量 HiveServer2/Metastore Prometheus 看板,需基于 JMX Exporter 实际指标自建。     |
+| YARN          | 保持 🟡需自建           | Hadoop/YARN 官方 Metrics2/JMX 暴露指标,无内置 Prometheus `/metrics`;可用 Prometheus JMX Exporter 或专用 YARN exporter。                                                | Grafana Cloud Hadoop Integration 可作设计参考,但不是可直接导入的通用 JSON。               |
+| Nacos         | 保持 🟡需自建           | Nacos 官方监控文档确认 0.8.0 起支持 Prometheus 监控,通过 `/nacos/actuator/prometheus:8848` 暴露。                                                                         | 现成看板偏老,需补齐 3.x gRPC/错误率等面板。                                             |
+| Kyuubi        | 保持 🟡需自建           | Kyuubi 官方文档确认可配置 `kyuubi.metrics.reporters=PROMETHEUS`,默认 `/metrics:10019`。                                                                             | 官方模板可导入,但黄金信号不完整,需补充错误率等面板。                                             |
 
 ---
 
@@ -69,7 +68,7 @@
 
 **数据源信息**
 
-- 原生 Prometheus: ❌ 
+- 原生 Prometheus: ❌
 - Exporter: prometheus/mysqld_exporter
 - 仓库: https://github.com/prometheus/mysqld_exporter
 - 文档: https://dev.mysql.com/doc/refman/en/telemetry-metrics.html
@@ -77,11 +76,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [MySQL Exporter Quickstart and Dashboard](https://grafana.com/grafana/dashboards/14057-mysql/) | grafana.com | 14057 | 72001 | 0.3 | 0.3 | 0.18 | 0.18 | **0.96** |
-| [MySQL 8.0 Overview](https://grafana.com/grafana/dashboards/20016-mysql-8-0/) | grafana.com | 20016 | 1539 | 0.06 | 0.3 | 0.17 | 0.17 | **0.7** |
-| [mysql overview](https://grafana.com/grafana/dashboards/14969-mysqld-overview/) | grafana.com | 14969 | 975 | 0.03 | 0.27 | 0.15 | 0.14 | **0.59** |
+|                                               名称                                               |     来源      | 看板 ID |  下载量  | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|------------------------------------------------------------------------------------------------|-------------|-------|-------|------|-----------------|-------------------|---------------|----------|
+| [MySQL Exporter Quickstart and Dashboard](https://grafana.com/grafana/dashboards/14057-mysql/) | grafana.com | 14057 | 72001 | 0.3  | 0.3             | 0.18              | 0.18          | **0.96** |
+| [MySQL 8.0 Overview](https://grafana.com/grafana/dashboards/20016-mysql-8-0/)                  | grafana.com | 20016 | 1539  | 0.06 | 0.3             | 0.17              | 0.17          | **0.7**  |
+| [mysql overview](https://grafana.com/grafana/dashboards/14969-mysqld-overview/)                | grafana.com | 14969 | 975   | 0.03 | 0.27            | 0.15              | 0.14          | **0.59** |
 
 **推荐**: MySQL Exporter Quickstart and Dashboard (ID: 14057)
 
@@ -100,11 +99,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Infra / Nexus](https://grafana.com/grafana/dashboards/16459-infra-nexus/) | grafana.com | 16459 | 160955 | 0.3 | 0.21 | 0.12 | 0.16 | **0.79** |
-| [Nexus](https://grafana.com/grafana/dashboards/11702-nexus/) | grafana.com | 11702 | 2346 | 0.015 | 0.06 | 0.1 | 0.08 | **0.255** |
-| [Nexus blobs and repos](https://grafana.com/grafana/dashboards/19842-nexus-blobs-and-repos/) | grafana.com | 19842 | 1075 | 0.006 | 0.06 | 0.1 | 0.06 | **0.226** |
+|                                              名称                                              |     来源      | 看板 ID |  下载量   | heat  | datasourceMatch | promqlPortability | goldenSignals |   total   |
+|----------------------------------------------------------------------------------------------|-------------|-------|--------|-------|-----------------|-------------------|---------------|-----------|
+| [Infra / Nexus](https://grafana.com/grafana/dashboards/16459-infra-nexus/)                   | grafana.com | 16459 | 160955 | 0.3   | 0.21            | 0.12              | 0.16          | **0.79**  |
+| [Nexus](https://grafana.com/grafana/dashboards/11702-nexus/)                                 | grafana.com | 11702 | 2346   | 0.015 | 0.06            | 0.1               | 0.08          | **0.255** |
+| [Nexus blobs and repos](https://grafana.com/grafana/dashboards/19842-nexus-blobs-and-repos/) | grafana.com | 19842 | 1075   | 0.006 | 0.06            | 0.1               | 0.06          | **0.226** |
 
 **推荐**: Infra / Nexus (grafana.com #16459)
 
@@ -123,11 +122,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Minio Overview](https://grafana.com/grafana/dashboards/10946-minio-overview/) | grafana.com | 10946 | 5210 | 0.18 | 0.06 | 0.1 | 0.1 | **0.44** |
-| [MinIO Object Storage](https://grafana.com/grafana/dashboards/12563-minio-object-storage/) | grafana.com | 12563 | 2949 | 0.12 | 0.06 | 0.12 | 0.08 | **0.38** |
-| [Minio distributed cluster metrics (Hot Cluster Metrics)](https://grafana.com/grafana/dashboards/11568-minio-hot-cluster-metrics/) | grafana.com | 11568 | 2134 | 0.1 | 0.06 | 0.1 | 0.1 | **0.36** |
+|                                                                 名称                                                                 |     来源      | 看板 ID | 下载量  | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|------------------------------------------------------------------------------------------------------------------------------------|-------------|-------|------|------|-----------------|-------------------|---------------|----------|
+| [Minio Overview](https://grafana.com/grafana/dashboards/10946-minio-overview/)                                                     | grafana.com | 10946 | 5210 | 0.18 | 0.06            | 0.1               | 0.1           | **0.44** |
+| [MinIO Object Storage](https://grafana.com/grafana/dashboards/12563-minio-object-storage/)                                         | grafana.com | 12563 | 2949 | 0.12 | 0.06            | 0.12              | 0.08          | **0.38** |
+| [Minio distributed cluster metrics (Hot Cluster Metrics)](https://grafana.com/grafana/dashboards/11568-minio-hot-cluster-metrics/) | grafana.com | 11568 | 2134 | 0.1  | 0.06            | 0.1               | 0.1           | **0.36** |
 
 **推荐**: 需自建
 
@@ -148,11 +147,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Spring Boot 2.1 Statistics](https://grafana.com/grafana/dashboards/10280-spring-boot-2-1-statistics/) | grafana.com | 10280 |  | 0.18 | 0.3 | 0.18 | 0.16 | **0.82** |
-| [JVM Micrometer](https://grafana.com/grafana/dashboards/4701-jvm-micrometer/) | grafana.com | 4701 |  | 0.16 | 0.27 | 0.18 | 0.14 | **0.75** |
-| [Spring Boot Observability](https://grafana.com/grafana/dashboards/?search=spring%20boot%20micrometer) | grafana.com |  |  | 0.1 | 0.24 | 0.16 | 0.14 | **0.64** |
+|                                                   名称                                                   |     来源      | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|--------------------------------------------------------------------------------------------------------|-------------|-------|-----|------|-----------------|-------------------|---------------|----------|
+| [Spring Boot 2.1 Statistics](https://grafana.com/grafana/dashboards/10280-spring-boot-2-1-statistics/) | grafana.com | 10280 |     | 0.18 | 0.3             | 0.18              | 0.16          | **0.82** |
+| [JVM Micrometer](https://grafana.com/grafana/dashboards/4701-jvm-micrometer/)                          | grafana.com | 4701  |     | 0.16 | 0.27            | 0.18              | 0.14          | **0.75** |
+| [Spring Boot Observability](https://grafana.com/grafana/dashboards/?search=spring%20boot%20micrometer) | grafana.com |       |     | 0.1  | 0.24            | 0.16              | 0.14          | **0.64** |
 
 **推荐**: Spring Boot 2.1 Statistics (ID 10280)
 
@@ -173,11 +172,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Alertmanager](https://grafana.com/grafana/dashboards/9578-alertmanager/) | grafana.com | 9578 |  | 0.24 | 0.3 | 0.17 | 0.14 | **0.85** |
-| [Alertmanager告警总览](https://grafana.com/grafana/dashboards/9681-alertmanager/) | grafana.com | 9681 |  | 0.12 | 0.3 | 0.14 | 0.12 | **0.68** |
-| [OPEN ALERTS OF ALERTMANAGER](https://grafana.com/grafana/dashboards/12947-open-alerts-of-alertmanager/) | grafana.com | 12947 |  | 0.1 | 0.06 | 0.06 | 0.08 | **0.3** |
+|                                                    名称                                                    |     来源      | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|----------------------------------------------------------------------------------------------------------|-------------|-------|-----|------|-----------------|-------------------|---------------|----------|
+| [Alertmanager](https://grafana.com/grafana/dashboards/9578-alertmanager/)                                | grafana.com | 9578  |     | 0.24 | 0.3             | 0.17              | 0.14          | **0.85** |
+| [Alertmanager告警总览](https://grafana.com/grafana/dashboards/9681-alertmanager/)                            | grafana.com | 9681  |     | 0.12 | 0.3             | 0.14              | 0.12          | **0.68** |
+| [OPEN ALERTS OF ALERTMANAGER](https://grafana.com/grafana/dashboards/12947-open-alerts-of-alertmanager/) | grafana.com | 12947 |     | 0.1  | 0.06            | 0.06              | 0.08          | **0.3**  |
 
 **推荐**: Alertmanager (ID 9578)
 
@@ -196,11 +195,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Loki Metrics Dashboard](https://grafana.com/grafana/dashboards/17781-loki-metrics-dashboard/) | grafana.com | 17781 |  | 0.21 | 0.3 | 0.18 | 0.18 | **0.87** |
-| [Loki Mixin Dashboards (Official)](https://github.com/grafana/loki/tree/main/production/loki-mixin) | github |  |  | 0.15 | 0.3 | 0.2 | 0.2 | **0.85** |
-| [Loki Dashboard](https://grafana.com/grafana/dashboards/13186-loki-dashboard/) | grafana.com | 13186 |  | 0.24 | 0.09 | 0.06 | 0.06 | **0.45** |
+|                                                 名称                                                  |     来源      | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|-----------------------------------------------------------------------------------------------------|-------------|-------|-----|------|-----------------|-------------------|---------------|----------|
+| [Loki Metrics Dashboard](https://grafana.com/grafana/dashboards/17781-loki-metrics-dashboard/)      | grafana.com | 17781 |     | 0.21 | 0.3             | 0.18              | 0.18          | **0.87** |
+| [Loki Mixin Dashboards (Official)](https://github.com/grafana/loki/tree/main/production/loki-mixin) | github      |       |     | 0.15 | 0.3             | 0.2               | 0.2           | **0.85** |
+| [Loki Dashboard](https://grafana.com/grafana/dashboards/13186-loki-dashboard/)                      | grafana.com | 13186 |     | 0.24 | 0.09            | 0.06              | 0.06          | **0.45** |
 
 **推荐**: Loki Metrics Dashboard (ID 17781)
 
@@ -219,11 +218,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Prometheus 2.0 Overview](https://grafana.com/grafana/dashboards/3662-prometheus-2-0-overview/) | grafana.com | 3662 | 1800000 | 0.3 | 0.3 | 0.18 | 0.16 | **0.94** |
-| [Prometheus](https://grafana.com/grafana/dashboards/19105-prometheus/) | grafana.com | 19105 | 120000 | 0.12 | 0.28 | 0.16 | 0.15 | **0.71** |
-| [Prometheus 2.22](https://grafana.com/grafana/dashboards/13468-prometheus/) | grafana.com | 13468 | 200000 | 0.15 | 0.27 | 0.15 | 0.14 | **0.71** |
+|                                               名称                                                |     来源      | 看板 ID |   下载量   | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|-------------------------------------------------------------------------------------------------|-------------|-------|---------|------|-----------------|-------------------|---------------|----------|
+| [Prometheus 2.0 Overview](https://grafana.com/grafana/dashboards/3662-prometheus-2-0-overview/) | grafana.com | 3662  | 1800000 | 0.3  | 0.3             | 0.18              | 0.16          | **0.94** |
+| [Prometheus](https://grafana.com/grafana/dashboards/19105-prometheus/)                          | grafana.com | 19105 | 120000  | 0.12 | 0.28            | 0.16              | 0.15          | **0.71** |
+| [Prometheus 2.22](https://grafana.com/grafana/dashboards/13468-prometheus/)                     | grafana.com | 13468 | 200000  | 0.15 | 0.27            | 0.15              | 0.14          | **0.71** |
 
 **推荐**: Prometheus 2.0 Overview (ID: 3662)
 
@@ -242,11 +241,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Promtail Monitoring - Metrics and Logs](https://grafana.com/grafana/dashboards/20881-promtail-monitoring-metrics-and-logs/) | grafana.com | 20881 | 22266 | 0.18 | 0.28 | 0.16 | 0.18 | **0.8** |
-| [Loki stack monitoring (Promtail, Loki)](https://grafana.com/grafana/dashboards/14055-loki-stack-monitoring-promtail-loki/) | grafana.com | 14055 | 46929 | 0.2 | 0.21 | 0.13 | 0.14 | **0.68** |
-| [Promtail 2.6.x](https://grafana.com/grafana/dashboards/16708-promtail-2-6-x/) | grafana.com | 16708 | 27329 | 0.19 | 0.27 | 0.17 | 0.12 | **0.75** |
+|                                                              名称                                                              |     来源      | 看板 ID |  下载量  | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|------------------------------------------------------------------------------------------------------------------------------|-------------|-------|-------|------|-----------------|-------------------|---------------|----------|
+| [Promtail Monitoring - Metrics and Logs](https://grafana.com/grafana/dashboards/20881-promtail-monitoring-metrics-and-logs/) | grafana.com | 20881 | 22266 | 0.18 | 0.28            | 0.16              | 0.18          | **0.8**  |
+| [Loki stack monitoring (Promtail, Loki)](https://grafana.com/grafana/dashboards/14055-loki-stack-monitoring-promtail-loki/)  | grafana.com | 14055 | 46929 | 0.2  | 0.21            | 0.13              | 0.14          | **0.68** |
+| [Promtail 2.6.x](https://grafana.com/grafana/dashboards/16708-promtail-2-6-x/)                                               | grafana.com | 16708 | 27329 | 0.19 | 0.27            | 0.17              | 0.12          | **0.75** |
 
 **推荐**: Promtail Monitoring - Metrics and Logs
 
@@ -267,9 +266,9 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Doris Overview](https://grafana.com/grafana/dashboards/9734-doris-overview/) | grafana.com | 9734 | 13096 | 0.21 | 0.18 | 0.16 | 0.14 | **0.69** |
+|                                      名称                                       |     来源      | 看板 ID |  下载量  | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|-------------------------------------------------------------------------------|-------------|-------|-------|------|-----------------|-------------------|---------------|----------|
+| [Doris Overview](https://grafana.com/grafana/dashboards/9734-doris-overview/) | grafana.com | 9734  | 13096 | 0.21 | 0.18            | 0.16              | 0.14          | **0.69** |
 
 **推荐**: 需自建
 
@@ -289,11 +288,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Elasticsearch Exporter Quickstart and Dashboard](https://grafana.com/grafana/dashboards/14191-elasticsearch-overview/) | grafana.com | 14191 | 9352931 | 0.3 | 0.27 | 0.18 | 0.18 | **0.93** |
-| [ElasticSearch](https://grafana.com/grafana/dashboards/2322-elasticsearch/) | grafana.com | 2322 | 98228 | 0.08 | 0.15 | 0.1 | 0.1 | **0.43** |
-| [Elasticsearch - Exporter](https://grafana.com/grafana/dashboards/3236-elasticsearch-exporter/) | grafana.com | 3236 | 1209 | 0.01 | 0.12 | 0.08 | 0.06 | **0.27** |
+|                                                           名称                                                            |     来源      | 看板 ID |   下载量   | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|-------------------------------------------------------------------------------------------------------------------------|-------------|-------|---------|------|-----------------|-------------------|---------------|----------|
+| [Elasticsearch Exporter Quickstart and Dashboard](https://grafana.com/grafana/dashboards/14191-elasticsearch-overview/) | grafana.com | 14191 | 9352931 | 0.3  | 0.27            | 0.18              | 0.18          | **0.93** |
+| [ElasticSearch](https://grafana.com/grafana/dashboards/2322-elasticsearch/)                                             | grafana.com | 2322  | 98228   | 0.08 | 0.15            | 0.1               | 0.1           | **0.43** |
+| [Elasticsearch - Exporter](https://grafana.com/grafana/dashboards/3236-elasticsearch-exporter/)                         | grafana.com | 3236  | 1209    | 0.01 | 0.12            | 0.08              | 0.06          | **0.27** |
 
 **推荐**: Elasticsearch Exporter Quickstart and Dashboard (Grafana ID 14191)
 
@@ -312,11 +311,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [HDFS - DataNode](https://grafana.com/grafana/dashboards/23175-hdfs-datanode/) | grafana.com | 23175 | 702 | 0.075 | 0.3 | 0.14 | 0.18 | **0.695** |
-| [Hadoop-hdfs巡检](https://grafana.com/grafana/dashboards/9281-hadoop-hdfs/) | grafana.com | 9281 | 2790 | 0.3 | 0.03 | 0.12 | 0.06 | **0.51** |
-| [Hadoop HDFS FSImage](https://grafana.com/grafana/dashboards/12236-hadoop-hdfs-fsimage/) | grafana.com | 12236 | 1788 | 0.192 | 0.03 | 0.12 | 0.04 | **0.382** |
+|                                            名称                                            |     来源      | 看板 ID | 下载量  | heat  | datasourceMatch | promqlPortability | goldenSignals |   total   |
+|------------------------------------------------------------------------------------------|-------------|-------|------|-------|-----------------|-------------------|---------------|-----------|
+| [HDFS - DataNode](https://grafana.com/grafana/dashboards/23175-hdfs-datanode/)           | grafana.com | 23175 | 702  | 0.075 | 0.3             | 0.14              | 0.18          | **0.695** |
+| [Hadoop-hdfs巡检](https://grafana.com/grafana/dashboards/9281-hadoop-hdfs/)                | grafana.com | 9281  | 2790 | 0.3   | 0.03            | 0.12              | 0.06          | **0.51**  |
+| [Hadoop HDFS FSImage](https://grafana.com/grafana/dashboards/12236-hadoop-hdfs-fsimage/) | grafana.com | 12236 | 1788 | 0.192 | 0.03            | 0.12              | 0.04          | **0.382** |
 
 **推荐**: HDFS - DataNode
 
@@ -336,11 +335,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Hive Data](https://grafana.com/grafana/dashboards/10188-hive-data/) | grafana.com | 10188 |  | 0.02 | 0 | 0 | 0 | **0.02** |
-| [Hive - HiveServer2 (Ambari/AMS)](https://github.com/arenadata/mpack-adh/blob/master/stacks/ADH/2.0/services/AMBARI_METRICS/package/files/grafana-dashboards/HDP/grafana-hive-hiverserver2.json) | github |  |  | 0.05 | 0.05 | 0.02 | 0.08 | **0.2** |
-| [hadoop_exporter (no dedicated Hive dashboard)](https://github.com/vqcuong/hadoop_exporter) | github |  |  | 0.03 | 0.1 | 0.1 | 0.02 | **0.25** |
+|                                                                                                名称                                                                                                |     来源      | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|-------|-----|------|-----------------|-------------------|---------------|----------|
+| [Hive Data](https://grafana.com/grafana/dashboards/10188-hive-data/)                                                                                                                             | grafana.com | 10188 |     | 0.02 | 0               | 0                 | 0             | **0.02** |
+| [Hive - HiveServer2 (Ambari/AMS)](https://github.com/arenadata/mpack-adh/blob/master/stacks/ADH/2.0/services/AMBARI_METRICS/package/files/grafana-dashboards/HDP/grafana-hive-hiverserver2.json) | github      |       |     | 0.05 | 0.05            | 0.02              | 0.08          | **0.2**  |
+| [hadoop_exporter (no dedicated Hive dashboard)](https://github.com/vqcuong/hadoop_exporter)                                                                                                      | github      |       |     | 0.03 | 0.1             | 0.1               | 0.02          | **0.25** |
 
 **推荐**: 需自建
 
@@ -359,10 +358,10 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [JuiceFS Dashboard](https://grafana.com/grafana/dashboards/20794-juicefs-dashboard/) | grafana.com | 20794 | 1066 | 0.12 | 0.3 | 0.18 | 0.15 | **0.75** |
-| [JuiceFS Grafana Template (general mount-point, K8s, S3 Gateway, Hadoop SDK)](https://github.com/juicedata/juicefs/blob/main/docs/en/grafana_template.json) | github |  |  | 0.05 | 0.3 | 0.18 | 0.15 | **0.68** |
+|                                                                             名称                                                                              |     来源      | 看板 ID | 下载量  | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|-------|------|------|-----------------|-------------------|---------------|----------|
+| [JuiceFS Dashboard](https://grafana.com/grafana/dashboards/20794-juicefs-dashboard/)                                                                        | grafana.com | 20794 | 1066 | 0.12 | 0.3             | 0.18              | 0.15          | **0.75** |
+| [JuiceFS Grafana Template (general mount-point, K8s, S3 Gateway, Hadoop SDK)](https://github.com/juicedata/juicefs/blob/main/docs/en/grafana_template.json) | github      |       |      | 0.05 | 0.3             | 0.18              | 0.15          | **0.68** |
 
 **推荐**: JuiceFS Dashboard (grafana.com ID 20794)
 
@@ -382,11 +381,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Valkey/Redis-compatible Dashboard for Prometheus Redis Exporter 1.x](https://grafana.com/grafana/dashboards/763-redis-dashboard-for-prometheus-redis-exporter-1-x/) | grafana.com | 763 | 384193 | 0.21 | 0.3 | 0.18 | 0.17 | **0.86** |
-| [Valkey/Redis-compatible Dashboard for Prometheus Redis Exporter (helm stable/redis-ha)](https://grafana.com/grafana/dashboards/11835-redis-dashboard-for-prometheus-redis-exporter-helm-stable-redis-ha/) | grafana.com | 11835 | 28126450 | 0.18 | 0.21 | 0.12 | 0.14 | **0.65** |
-| [Valkey/Redis-compatible Exporter Quickstart and Dashboard](https://grafana.com/grafana/dashboards/14091-redis-exporter-quickstart-and-dashboard/) | grafana.com | 14091 | 278129 | 0.09 | 0.27 | 0.16 | 0.16 | **0.68** |
+|                                                                                                     名称                                                                                                     |     来源      | 看板 ID |   下载量    | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|-------|----------|------|-----------------|-------------------|---------------|----------|
+| [Valkey/Redis-compatible Dashboard for Prometheus Redis Exporter 1.x](https://grafana.com/grafana/dashboards/763-redis-dashboard-for-prometheus-redis-exporter-1-x/)                                       | grafana.com | 763   | 384193   | 0.21 | 0.3             | 0.18              | 0.17          | **0.86** |
+| [Valkey/Redis-compatible Dashboard for Prometheus Redis Exporter (helm stable/redis-ha)](https://grafana.com/grafana/dashboards/11835-redis-dashboard-for-prometheus-redis-exporter-helm-stable-redis-ha/) | grafana.com | 11835 | 28126450 | 0.18 | 0.21            | 0.12              | 0.14          | **0.65** |
+| [Valkey/Redis-compatible Exporter Quickstart and Dashboard](https://grafana.com/grafana/dashboards/14091-redis-exporter-quickstart-and-dashboard/)                                                         | grafana.com | 14091 | 278129   | 0.09 | 0.27            | 0.16              | 0.16          | **0.68** |
 
 **推荐**: Valkey/Redis-compatible Redis Exporter Dashboard (ID 763)
 
@@ -406,11 +405,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [AWS EMR Hadoop 2](https://grafana.com/grafana/dashboards/607-aws-emr-hadoop-2/) | grafana.com | 607 | 93542 | 0.3 | 0 | 0 | 0.02 | **0.32** |
-| [hadoop_jmx_exporter dashboards (YARN ResourceManager/NodeManager)](https://github.com/opsnull/hadoop_jmx_exporter) | github |  |  | 0.03 | 0.1 | 0.08 | 0.1 | **0.31** |
-| [Grafana Cloud 官方 Apache Hadoop Integration(含 ResourceManager Dashboard)](https://grafana.com/docs/grafana-cloud/monitor-infrastructure/integrations/integration-reference/integration-apache-hadoop/) | official |  |  | 0.1 | 0.24 | 0.14 | 0.18 | **0.66** |
+|                                                                                                   名称                                                                                                   |     来源      | 看板 ID |  下载量  | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|-------|-------|------|-----------------|-------------------|---------------|----------|
+| [AWS EMR Hadoop 2](https://grafana.com/grafana/dashboards/607-aws-emr-hadoop-2/)                                                                                                                       | grafana.com | 607   | 93542 | 0.3  | 0               | 0                 | 0.02          | **0.32** |
+| [hadoop_jmx_exporter dashboards (YARN ResourceManager/NodeManager)](https://github.com/opsnull/hadoop_jmx_exporter)                                                                                    | github      |       |       | 0.03 | 0.1             | 0.08              | 0.1           | **0.31** |
+| [Grafana Cloud 官方 Apache Hadoop Integration(含 ResourceManager Dashboard)](https://grafana.com/docs/grafana-cloud/monitor-infrastructure/integrations/integration-reference/integration-apache-hadoop/) | official    |       |       | 0.1  | 0.24            | 0.14              | 0.18          | **0.66** |
 
 **推荐**: 需自建(参考 Grafana Cloud Apache Hadoop Integration 面板设计)
 
@@ -432,11 +431,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Kafka Exporter Overview](https://grafana.com/grafana/dashboards/7589-kafka-exporter-overview/) | grafana.com | 7589 | 233926 | 0.21 | 0.27 | 0.16 | 0.13 | **0.77** |
-| [Kafka Overview](https://grafana.com/grafana/dashboards/721-kafka/) | grafana.com | 721 | 36085 | 0.15 | 0.27 | 0.14 | 0.16 | **0.72** |
-| [KMinion Cluster Dashboard - Prometheus Exporter for Apache Kafka](https://grafana.com/grafana/dashboards/14012-kminion-cluster-dashboard-prometheus-exporter-for-apache-kafka/) | grafana.com | 14012 | 382382 | 0.3 | 0.12 | 0.16 | 0.16 | **0.74** |
+|                                                                                        名称                                                                                        |     来源      | 看板 ID |  下载量   | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|-------|--------|------|-----------------|-------------------|---------------|----------|
+| [Kafka Exporter Overview](https://grafana.com/grafana/dashboards/7589-kafka-exporter-overview/)                                                                                  | grafana.com | 7589  | 233926 | 0.21 | 0.27            | 0.16              | 0.13          | **0.77** |
+| [Kafka Overview](https://grafana.com/grafana/dashboards/721-kafka/)                                                                                                              | grafana.com | 721   | 36085  | 0.15 | 0.27            | 0.14              | 0.16          | **0.72** |
+| [KMinion Cluster Dashboard - Prometheus Exporter for Apache Kafka](https://grafana.com/grafana/dashboards/14012-kminion-cluster-dashboard-prometheus-exporter-for-apache-kafka/) | grafana.com | 14012 | 382382 | 0.3  | 0.12            | 0.16              | 0.16          | **0.74** |
 
 **推荐**: Kafka Exporter Overview
 
@@ -455,11 +454,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [ZooKeeper by Prometheus](https://grafana.com/grafana/dashboards/10465) | grafana.com | 10465 | 157503 | 0.3 | 0.3 | 0.18 | 0.16 | **0.94** |
-| [ZooKeeper by Prometheus](https://grafana.com/grafana/dashboards/16317) | grafana.com | 16317 | 575 | 0.06 | 0.27 | 0.16 | 0.14 | **0.63** |
-| [Zookeeper Exporter (dabealu)](https://grafana.com/grafana/dashboards/11442) | grafana.com | 11442 | 26185 | 0.18 | 0.09 | 0.14 | 0.12 | **0.53** |
+|                                      名称                                      |     来源      | 看板 ID |  下载量   | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|------------------------------------------------------------------------------|-------------|-------|--------|------|-----------------|-------------------|---------------|----------|
+| [ZooKeeper by Prometheus](https://grafana.com/grafana/dashboards/10465)      | grafana.com | 10465 | 157503 | 0.3  | 0.3             | 0.18              | 0.16          | **0.94** |
+| [ZooKeeper by Prometheus](https://grafana.com/grafana/dashboards/16317)      | grafana.com | 16317 | 575    | 0.06 | 0.27            | 0.16              | 0.14          | **0.63** |
+| [Zookeeper Exporter (dabealu)](https://grafana.com/grafana/dashboards/11442) | grafana.com | 11442 | 26185  | 0.18 | 0.09            | 0.14              | 0.12          | **0.53** |
 
 **推荐**: ZooKeeper by Prometheus
 
@@ -480,10 +479,10 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Apache APISIX](https://grafana.com/grafana/dashboards/11719-apache-apisix/) | grafana.com | 11719 | 63344 | 0.28 | 0.28 | 0.16 | 0.12 | **0.84** |
-| [apisix-route-logs](https://grafana.com/grafana/dashboards/18905-apisix-route-logs/) | grafana.com | 18905 | 2033 | 0.05 | 0.05 | 0.02 | 0.04 | **0.16** |
+|                                          名称                                          |     来源      | 看板 ID |  下载量  | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|--------------------------------------------------------------------------------------|-------------|-------|-------|------|-----------------|-------------------|---------------|----------|
+| [Apache APISIX](https://grafana.com/grafana/dashboards/11719-apache-apisix/)         | grafana.com | 11719 | 63344 | 0.28 | 0.28            | 0.16              | 0.12          | **0.84** |
+| [apisix-route-logs](https://grafana.com/grafana/dashboards/18905-apisix-route-logs/) | grafana.com | 18905 | 2033  | 0.05 | 0.05            | 0.02              | 0.04          | **0.16** |
 
 **推荐**: Apache APISIX (ID: 11719)
 
@@ -502,10 +501,10 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Nacos](https://grafana.com/grafana/dashboards/13221-nacos/) | grafana.com | 13221 | 3523 | 0.12 | 0.24 | 0.14 | 0.12 | **0.62** |
-| [nacos-grafana (official template)](https://github.com/nacos-group/nacos-template/blob/master/nacos-grafana.json) | github |  |  | 0.06 | 0.24 | 0.14 | 0.12 | **0.56** |
+|                                                        名称                                                         |     来源      | 看板 ID | 下载量  | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|-------------------------------------------------------------------------------------------------------------------|-------------|-------|------|------|-----------------|-------------------|---------------|----------|
+| [Nacos](https://grafana.com/grafana/dashboards/13221-nacos/)                                                      | grafana.com | 13221 | 3523 | 0.12 | 0.24            | 0.14              | 0.12          | **0.62** |
+| [nacos-grafana (official template)](https://github.com/nacos-group/nacos-template/blob/master/nacos-grafana.json) | github      |       |      | 0.06 | 0.24            | 0.14              | 0.12          | **0.56** |
 
 **推荐**: Nacos (Grafana ID 13221)
 
@@ -525,11 +524,11 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [NGINX exporter](https://grafana.com/grafana/dashboards/12708-nginx/) | grafana.com | 12708 | 220504 | 0.3 | 0.3 | 0.16 | 0.14 | **0.9** |
-| [NGINX Prometheus exporter](https://grafana.com/grafana/dashboards/17452-nginx/) | grafana.com | 17452 | 3196 | 0.04 | 0.3 | 0.18 | 0.14 | **0.66** |
-| [NGINX by nginxinc](https://grafana.com/grafana/dashboards/11199-nginx/) | grafana.com | 11199 | 8544 | 0.06 | 0.3 | 0.16 | 0.12 | **0.64** |
+|                                        名称                                        |     来源      | 看板 ID |  下载量   | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|----------------------------------------------------------------------------------|-------------|-------|--------|------|-----------------|-------------------|---------------|----------|
+| [NGINX exporter](https://grafana.com/grafana/dashboards/12708-nginx/)            | grafana.com | 12708 | 220504 | 0.3  | 0.3             | 0.16              | 0.14          | **0.9**  |
+| [NGINX Prometheus exporter](https://grafana.com/grafana/dashboards/17452-nginx/) | grafana.com | 17452 | 3196   | 0.04 | 0.3             | 0.18              | 0.14          | **0.66** |
+| [NGINX by nginxinc](https://grafana.com/grafana/dashboards/11199-nginx/)         | grafana.com | 11199 | 8544   | 0.06 | 0.3             | 0.16              | 0.12          | **0.64** |
 
 **推荐**: NGINX exporter (ID 12708)
 
@@ -550,9 +549,9 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [Kyuubi Official Dashboard Template](https://github.com/apache/kyuubi/blob/branch-1.11/grafana/dashboard-template.json) | github |  |  | 0.05 | 0.27 | 0.14 | 0.12 | **0.58** |
+|                                                           名称                                                            |   来源   | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|-------------------------------------------------------------------------------------------------------------------------|--------|-------|-----|------|-----------------|-------------------|---------------|----------|
+| [Kyuubi Official Dashboard Template](https://github.com/apache/kyuubi/blob/branch-1.11/grafana/dashboard-template.json) | github |       |     | 0.05 | 0.27            | 0.14              | 0.12          | **0.58** |
 
 **推荐**: Kyuubi Official Dashboard Template
 
@@ -573,12 +572,13 @@
 
 **候选看板**
 
-| 名称 | 来源 | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals | total |
-|---|---|---|---|---|---|---|---|---|
-| [DolphinScheduler Master Dashboard (Official)](https://github.com/apache/dolphinscheduler/blob/3.4.1/dolphinscheduler-meter/src/main/resources/grafana/DolphinSchedulerMaster.json) | github |  |  | 0.1 | 0.3 | 0.18 | 0.16 | **0.74** |
-| [DolphinScheduler Worker Dashboard (Official)](https://github.com/apache/dolphinscheduler/blob/3.4.1/dolphinscheduler-meter/src/main/resources/grafana/DolphinSchedulerWorker.json) | github |  |  | 0.1 | 0.3 | 0.18 | 0.2 | **0.78** |
-| [DolphinScheduler JVM Dashboard (Official)](https://github.com/apache/dolphinscheduler/blob/3.4.1/dolphinscheduler-meter/src/main/resources/grafana/JVM.json) | github |  |  | 0.06 | 0.24 | 0.16 | 0.1 | **0.56** |
+|                                                                                         名称                                                                                          |   来源   | 看板 ID | 下载量 | heat | datasourceMatch | promqlPortability | goldenSignals |  total   |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|-------|-----|------|-----------------|-------------------|---------------|----------|
+| [DolphinScheduler Master Dashboard (Official)](https://github.com/apache/dolphinscheduler/blob/3.4.1/dolphinscheduler-meter/src/main/resources/grafana/DolphinSchedulerMaster.json) | github |       |     | 0.1  | 0.3             | 0.18              | 0.16          | **0.74** |
+| [DolphinScheduler Worker Dashboard (Official)](https://github.com/apache/dolphinscheduler/blob/3.4.1/dolphinscheduler-meter/src/main/resources/grafana/DolphinSchedulerWorker.json) | github |       |     | 0.1  | 0.3             | 0.18              | 0.2           | **0.78** |
+| [DolphinScheduler JVM Dashboard (Official)](https://github.com/apache/dolphinscheduler/blob/3.4.1/dolphinscheduler-meter/src/main/resources/grafana/JVM.json)                       | github |       |     | 0.06 | 0.24            | 0.16              | 0.1           | **0.56** |
 
 **推荐**: DolphinScheduler Worker Dashboard (Official)
 
 > Worker 看板覆盖全部四个黄金信号(延迟: task execution time; 流量: task execution total; 错误: task success rate; 饱和度: queue full + overload + CPU)，得分最高(0.78)。所有 PromQL 均基于原生 ds_* 指标，与原生端点完全匹配(datasourceMatch=0.30)，查询使用标准 rate/increase 函数，可移植性好(0.18)。建议同时导入 Master 看板(0.74)作为补充，二者均可从 3.4.1 官方 GitHub 直接 import JSON 到 Grafana。
+

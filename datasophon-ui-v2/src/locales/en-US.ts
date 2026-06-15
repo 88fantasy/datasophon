@@ -3,6 +3,7 @@ import globalHeader from './en-US/globalHeader';
 import menu from './en-US/menu';
 import network from './en-US/network';
 import pages from './en-US/pages';
+import prometheusMonitor from './en-US/prometheusMonitor';
 import settingDrawer from './en-US/settingDrawer';
 import settings from './en-US/settings';
 
@@ -19,4 +20,5 @@ export default {
   ...network,
   ...component,
   ...pages,
+  ...prometheusMonitor,
 };

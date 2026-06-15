@@ -13,7 +13,7 @@
 
 ```
 React(AntV G2)
-  └──HTTP──> datasophon-api /api/v1/prometheus/query_range
+  └──HTTP──> datasophon-api /api/v2/prometheus/query_range
                └──PromQL──> Prometheus :9090
                               └──scrape──> Prometheus 自身 /metrics:9090
 ```
@@ -21,20 +21,28 @@ React(AntV G2)
 **前端不直连 Prometheus**。所有 PromQL 通过后端代理端点转发。前端只需调用：
 
 ```
-GET /ddh/api/v1/prometheus/query_range
+GET /ddh/api/v2/prometheus/query_range
   ?clusterId={clusterId}
   &query={PromQL}
   &start={unix_ts}
   &end={unix_ts}
   &step={step_seconds}
 
-GET /ddh/api/v1/prometheus/query   # 用于 instant query（stat/table 面板）
+GET /ddh/api/v2/prometheus/query   # 用于 instant query（stat/table 面板）
   ?clusterId={clusterId}
   &query={PromQL}
   &time={unix_ts}
 ```
 
-后端代理返回原生 Prometheus JSON 格式（`matrix` / `vector` result type）。
+> ⚠️ **注意**：后端代理返回的是 **`ApiResponse` 包装格式**（非原生 Prometheus JSON），`data` 字段携带 Prometheus 的 `{resultType, result}` 结构。
+> 原因：v2 前端的 `errorConfig.errorThrower` 读取 `res.success` 字段判断业务错误；透传裸 JSON 会被误判为错误并抛出。
+>
+> 实际响应示例：
+> ```json
+> { "success": true, "code": 200, "data": { "resultType": "vector", "result": [...] } }
+> ```
+>
+> 前端 service.ts 取 `res.data` 即得到 `PrometheusVector | PrometheusMatrix`。
 
 ---
 
@@ -44,31 +52,31 @@ GET /ddh/api/v1/prometheus/query   # 用于 instant query（stat/table 面板）
 
 > ⚠️ **注意**：`@ant-design/plots` v2 对应 G2 v5，API 与 v1（`@ant-design/charts`）有重大差异，详见下表。
 
-| Grafana chartType | 面板特征 | AntV G2 组件 | 关键 props（G2 v5 / plots v2） |
-|---|---|---|---|
-| `singlestat` | 单一数值，无时序 | `<Statistic>` (antd) | `value`, `suffix`, `valueStyle` |
-| `singlestat` 带 reverse 阈值 | 值越高越好（如 Uptime） | `<Statistic>` + `colorByThreshold({reverse:true})` | `valueStyle.color` 反向计算 |
-| `stat` with thresholds | 状态值，颜色随阈值变化 | `<Statistic>` + `colorByThreshold()` | `valueStyle.color` 根据值计算 |
-| `table` | 向量查询结果列表 | `<Table>` (antd) | `dataSource`, `columns`，列含 `instance`/`job`/`value` |
-| `graph` 单系列折线 | 时序数据，1 条线 | `<Line>` (@ant-design/plots) | `xField='time'`, `yField='value'` |
-| `graph` 多系列折线 | `by (label)` 多条线 | `<Line>` with `seriesField` | `seriesField='series'` |
-| `graph` 堆叠面积 | 多实例 0/1 叠加 | `<Area>` stack | `stack={true}` |
-| `graph` 单位 bytes | 内存/存储数据量 | `<Area>` + `axis.y.labelFormatter` | 自动换算 B/KB/MB/GB |
-| `graph` 单位 ms | 延迟/持续时间 | `<Line>` + `axis.y.labelFormatter` | `(v) => \`${v.toFixed(1)}ms\`` |
-| `graph` 单位 s | 抓取时长（秒） | `<Line>` + `axis.y.labelFormatter` | `(v) => \`${v.toFixed(3)}s\`` |
-| `graph` 单位 min | 配置距今时长（分钟） | `<Line>` + `axis.y.labelFormatter` | `(v) => \`${v.toFixed(1)}min\`` |
+|     Grafana chartType     |       面板特征       |                     AntV G2 组件                     |             关键 props（G2 v5 / plots v2）              |
+|---------------------------|------------------|----------------------------------------------------|-----------------------------------------------------|
+| `singlestat`              | 单一数值，无时序         | `<Statistic>` (antd)                               | `value`, `suffix`, `valueStyle`                     |
+| `singlestat` 带 reverse 阈值 | 值越高越好（如 Uptime）  | `<Statistic>` + `colorByThreshold({reverse:true})` | `valueStyle.color` 反向计算                             |
+| `stat` with thresholds    | 状态值，颜色随阈值变化      | `<Statistic>` + `colorByThreshold()`               | `valueStyle.color` 根据值计算                            |
+| `table`                   | 向量查询结果列表         | `<Table>` (antd)                                   | `dataSource`, `columns`，列含 `instance`/`job`/`value` |
+| `graph` 单系列折线             | 时序数据，1 条线        | `<Line>` (@ant-design/plots)                       | `xField='time'`, `yField='value'`                   |
+| `graph` 多系列折线             | `by (label)` 多条线 | `<Line>` with `seriesField`                        | `seriesField='series'`                              |
+| `graph` 堆叠面积              | 多实例 0/1 叠加       | `<Area>` stack                                     | `stack={true}`                                      |
+| `graph` 单位 bytes          | 内存/存储数据量         | `<Area>` + `axis.y.labelFormatter`                 | 自动换算 B/KB/MB/GB                                     |
+| `graph` 单位 ms             | 延迟/持续时间          | `<Line>` + `axis.y.labelFormatter`                 | `(v) => \`${v.toFixed(1)}ms\``                      |
+| `graph` 单位 s              | 抓取时长（秒）          | `<Line>` + `axis.y.labelFormatter`                 | `(v) => \`${v.toFixed(3)}s\``                       |
+| `graph` 单位 min            | 配置距今时长（分钟）       | `<Line>` + `axis.y.labelFormatter`                 | `(v) => \`${v.toFixed(1)}min\``                     |
 
 ### G2 v5 关键 API 变更（v1 → v2）
 
-| 属性 | v1（`@ant-design/charts`） | v2（`@ant-design/plots`，G2 v5） |
-|---|---|---|
-| 堆叠 | `isStack={true}` | `stack={true}` |
-| 坐标轴 | `xAxis={{ ... }}` / `yAxis={{ ... }}` | `axis={{ x: { ... }, y: { ... } }}` |
-| 坐标轴 label | `xAxis.label.formatter` | `axis.x.labelFormatter` |
-| 多系列颜色 | `color={['#f00', '#00f']}` | `scale={{ color: { type: 'ordinal', range: ['#f00', '#00f'] } }}` |
-| style 回调 | `style={{ stroke: ({ series }) => colorMap[series] }}` | **不支持**解构对象形式；改用 `scale.color.range` 指定颜色顺序 |
-| tooltip formatter | `tooltip.formatter: (datum) => ...` | `tooltip.items: [(datum) => ({ name, value })]` |
-| tooltip 标题 | `tooltip.title` (string) | `tooltip.title: (datum) => string` |
+|        属性         |                v1（`@ant-design/charts`）                |                   v2（`@ant-design/plots`，G2 v5）                   |
+|-------------------|--------------------------------------------------------|-------------------------------------------------------------------|
+| 堆叠                | `isStack={true}`                                       | `stack={true}`                                                    |
+| 坐标轴               | `xAxis={{ ... }}` / `yAxis={{ ... }}`                  | `axis={{ x: { ... }, y: { ... } }}`                               |
+| 坐标轴 label         | `xAxis.label.formatter`                                | `axis.x.labelFormatter`                                           |
+| 多系列颜色             | `color={['#f00', '#00f']}`                             | `scale={{ color: { type: 'ordinal', range: ['#f00', '#00f'] } }}` |
+| style 回调          | `style={{ stroke: ({ series }) => colorMap[series] }}` | **不支持**解构对象形式；改用 `scale.color.range` 指定颜色顺序                       |
+| tooltip formatter | `tooltip.formatter: (datum) => ...`                    | `tooltip.items: [(datum) => ({ name, value })]`                   |
+| tooltip 标题        | `tooltip.title` (string)                               | `tooltip.title: (datum) => string`                                |
 
 ---
 
@@ -76,13 +84,13 @@ GET /ddh/api/v1/prometheus/query   # 用于 instant query（stat/table 面板）
 
 看板顶部工具栏包含以下变量选择器，所有 PromQL 中的占位符对应替换：
 
-| 变量 | PromQL 占位符 | 取值来源 | 默认值 | 说明 |
-|---|---|---|---|---|
-| 实例 | `$instance` | `label_values(up{job=~"$job"}, instance)` | `.+`（全选） | 多选下拉 |
-| Job | `$job` | `label_values(up, job)` | `.+`（全选） | 多选下拉 |
-| 统计窗口 | `$interval` | 固定选项列表 | `5m` | 单选下拉；替换 `sum_over_time/avg_over_time` 的时间窗口 |
-| 时间范围 | — | 时间选择器 | `Last 1h` | 快速选择: 5m/15m/1h/6h/24h/7d |
-| 刷新间隔 | — | — | `30s` | 自动轮询 |
+|  变量  | PromQL 占位符  |                   取值来源                    |    默认值    |                     说明                      |
+|------|-------------|-------------------------------------------|-----------|---------------------------------------------|
+| 实例   | `$instance` | `label_values(up{job=~"$job"}, instance)` | `.+`（全选）  | 多选下拉                                        |
+| Job  | `$job`      | `label_values(up, job)`                   | `.+`（全选）  | 多选下拉                                        |
+| 统计窗口 | `$interval` | 固定选项列表                                    | `5m`      | 单选下拉；替换 `sum_over_time/avg_over_time` 的时间窗口 |
+| 时间范围 | —           | 时间选择器                                     | `Last 1h` | 快速选择: 5m/15m/1h/6h/24h/7d                   |
+| 刷新间隔 | —           | —                                         | `30s`     | 自动轮询                                        |
 
 > **`$interval` 替换规则**：PromQL 中出现 `[$interval]` 时，将 `$interval` 直接替换为选中值（如 `5m`），结果为 `[5m]`。  
 > 与 APISIX 的 `$__rate_interval`（由时间范围自动计算）不同，`$interval` 是用户手动选择的固定窗口，语义为"过去多长时间内的累计/平均值"。  
@@ -166,78 +174,78 @@ GET /ddh/api/v1/prometheus/query   # 用于 instant query（stat/table 面板）
 
 #### P01 Uptime
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Uptime [$interval] |
-| 图表类型 | `<Statistic>` (antd) |
-| Query 类型 | instant query |
-| PromQL | `avg(avg_over_time(up{instance=~"$instance",job=~"$job"}[$interval]) * 100)` |
-| 单位 | `%`，保留 1 位小数 |
-| 阈值规则 | **reverse（越高越好）**：`value >= 99` → 绿色 `#52c41a`；`90 ≤ value < 99` → 黄色 `#faad14`；`value < 90` → 红色 `#ff4d4f` |
-| 样式 | 大字体 32px，颜色由阈值决定，标题灰色 |
-| 变量替换 | `$instance`、`$job`、`$interval` |
+|    属性    |                                                      值                                                      |
+|----------|-------------------------------------------------------------------------------------------------------------|
+| 标题       | Uptime [$interval]                                                                                          |
+| 图表类型     | `<Statistic>` (antd)                                                                                        |
+| Query 类型 | instant query                                                                                               |
+| PromQL   | `avg(avg_over_time(up{instance=~"$instance",job=~"$job"}[$interval]) * 100)`                                |
+| 单位       | `%`，保留 1 位小数                                                                                                |
+| 阈值规则     | **reverse（越高越好）**：`value >= 99` → 绿色 `#52c41a`；`90 ≤ value < 99` → 黄色 `#faad14`；`value < 90` → 红色 `#ff4d4f` |
+| 样式       | 大字体 32px，颜色由阈值决定，标题灰色                                                                                       |
+| 变量替换     | `$instance`、`$job`、`$interval`                                                                              |
 
 > ⚠️ 阈值方向与其他 stat 面板相反（`colorByThreshold` 需传 `{ reverse: true }`）
 
 #### P02 Total Series
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Total Series |
-| 图表类型 | `<Statistic>` (antd) |
-| Query 类型 | instant query |
-| PromQL | `sum(prometheus_tsdb_head_series{job=~"$job",instance=~"$instance"})` |
-| 单位 | 无（整数，千位分隔符） |
-| 阈值规则 | `value < 1,000,000` → 绿色；`1,000,000 ≤ value < 2,000,000` → 黄色；`value ≥ 2,000,000` → 红色 |
-| 样式 | 大字体 32px |
+|    属性    |                                           值                                            |
+|----------|----------------------------------------------------------------------------------------|
+| 标题       | Total Series                                                                           |
+| 图表类型     | `<Statistic>` (antd)                                                                   |
+| Query 类型 | instant query                                                                          |
+| PromQL   | `sum(prometheus_tsdb_head_series{job=~"$job",instance=~"$instance"})`                  |
+| 单位       | 无（整数，千位分隔符）                                                                            |
+| 阈值规则     | `value < 1,000,000` → 绿色；`1,000,000 ≤ value < 2,000,000` → 黄色；`value ≥ 2,000,000` → 红色 |
+| 样式       | 大字体 32px                                                                               |
 
 #### P03 Memory Chunks
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Memory Chunks |
-| 图表类型 | `<Statistic>` (antd) |
-| Query 类型 | instant query |
-| PromQL | `sum(prometheus_tsdb_head_chunks{job=~"$job",instance=~"$instance"})` |
-| 单位 | 无（整数，千位分隔符） |
-| 阈值规则 | 无（纯展示，使用默认蓝色 `#1677ff`） |
-| 样式 | 大字体 32px，蓝色 `#1677ff` |
+|    属性    |                                   值                                   |
+|----------|-----------------------------------------------------------------------|
+| 标题       | Memory Chunks                                                         |
+| 图表类型     | `<Statistic>` (antd)                                                  |
+| Query 类型 | instant query                                                         |
+| PromQL   | `sum(prometheus_tsdb_head_chunks{job=~"$job",instance=~"$instance"})` |
+| 单位       | 无（整数，千位分隔符）                                                           |
+| 阈值规则     | 无（纯展示，使用默认蓝色 `#1677ff`）                                               |
+| 样式       | 大字体 32px，蓝色 `#1677ff`                                                 |
 
 #### P04 Reload Failures
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Reload Failures [$interval] |
-| 图表类型 | `<Statistic>` (antd) |
-| Query 类型 | instant query |
-| PromQL | `sum(sum_over_time(prometheus_tsdb_reloads_failures_total{job=~"$job",instance=~"$instance"}[$interval]))` |
-| 单位 | 无（整数） |
-| 阈值规则 | `value = 0` → 绿色 `#52c41a`；`1 ≤ value < 10` → 黄色 `#faad14`；`value ≥ 10` → 红色 `#ff4d4f` |
-| 变量替换 | `$instance`、`$job`、`$interval` |
+|    属性    |                                                     值                                                      |
+|----------|------------------------------------------------------------------------------------------------------------|
+| 标题       | Reload Failures [$interval]                                                                                |
+| 图表类型     | `<Statistic>` (antd)                                                                                       |
+| Query 类型 | instant query                                                                                              |
+| PromQL   | `sum(sum_over_time(prometheus_tsdb_reloads_failures_total{job=~"$job",instance=~"$instance"}[$interval]))` |
+| 单位       | 无（整数）                                                                                                      |
+| 阈值规则     | `value = 0` → 绿色 `#52c41a`；`1 ≤ value < 10` → 黄色 `#faad14`；`value ≥ 10` → 红色 `#ff4d4f`                     |
+| 变量替换     | `$instance`、`$job`、`$interval`                                                                             |
 
 #### P05 Missed Iterations
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Missed Iterations [$interval] |
-| 图表类型 | `<Statistic>` (antd) |
-| Query 类型 | instant query |
-| PromQL | `sum(sum_over_time(prometheus_evaluator_iterations_missed_total{job=~"$job",instance=~"$instance"}[$interval]))` |
-| 单位 | 无（整数） |
-| 阈值规则 | `value = 0` → 绿色；`1 ≤ value < 10` → 黄色；`value ≥ 10` → 红色 |
-| 变量替换 | `$instance`、`$job`、`$interval` |
+|    属性    |                                                        值                                                         |
+|----------|------------------------------------------------------------------------------------------------------------------|
+| 标题       | Missed Iterations [$interval]                                                                                    |
+| 图表类型     | `<Statistic>` (antd)                                                                                             |
+| Query 类型 | instant query                                                                                                    |
+| PromQL   | `sum(sum_over_time(prometheus_evaluator_iterations_missed_total{job=~"$job",instance=~"$instance"}[$interval]))` |
+| 单位       | 无（整数）                                                                                                            |
+| 阈值规则     | `value = 0` → 绿色；`1 ≤ value < 10` → 黄色；`value ≥ 10` → 红色                                                         |
+| 变量替换     | `$instance`、`$job`、`$interval`                                                                                   |
 
 #### P06 Skipped Scrapes
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Skipped Scrapes [$interval] |
-| 图表类型 | `<Statistic>` (antd) |
-| Query 类型 | instant query |
-| PromQL | 4 项累加（单行表达式）：`sum(sum_over_time(prometheus_target_scrapes_exceeded_sample_limit_total{job=~"$job",instance=~"$instance"}[$interval])) + sum(sum_over_time(prometheus_target_scrapes_sample_duplicate_timestamp_total{job=~"$job",instance=~"$instance"}[$interval])) + sum(sum_over_time(prometheus_target_scrapes_sample_out_of_bounds_total{job=~"$job",instance=~"$instance"}[$interval])) + sum(sum_over_time(prometheus_target_scrapes_sample_out_of_order_total{job=~"$job",instance=~"$instance"}[$interval]))` |
-| 单位 | 无（整数） |
-| 阈值规则 | `value = 0` → 绿色；`1 ≤ value < 10` → 黄色；`value ≥ 10` → 红色 |
-| 变量替换 | `$instance`、`$job`、`$interval` |
+|    属性    |                                                                                                                                                                                                                                                           值                                                                                                                                                                                                                                                            |
+|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题       | Skipped Scrapes [$interval]                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| 图表类型     | `<Statistic>` (antd)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Query 类型 | instant query                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| PromQL   | 4 项累加（单行表达式）：`sum(sum_over_time(prometheus_target_scrapes_exceeded_sample_limit_total{job=~"$job",instance=~"$instance"}[$interval])) + sum(sum_over_time(prometheus_target_scrapes_sample_duplicate_timestamp_total{job=~"$job",instance=~"$instance"}[$interval])) + sum(sum_over_time(prometheus_target_scrapes_sample_out_of_bounds_total{job=~"$job",instance=~"$instance"}[$interval])) + sum(sum_over_time(prometheus_target_scrapes_sample_out_of_order_total{job=~"$job",instance=~"$instance"}[$interval]))` |
+| 单位       | 无（整数）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 阈值规则     | `value = 0` → 绿色；`1 ≤ value < 10` → 黄色；`value ≥ 10` → 红色                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| 变量替换     | `$instance`、`$job`、`$interval`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ---
 
@@ -245,31 +253,31 @@ GET /ddh/api/v1/prometheus/query   # 用于 instant query（stat/table 面板）
 
 #### P07 Currently Down
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Currently Down |
-| 图表类型 | `<Table>` (antd)，**新增图表类型** |
-| Query 类型 | instant query |
-| PromQL | `up{instance=~"$instance",job=~"$job"} < 1` |
-| 列定义 | `instance`（字符串）、`job`（字符串）、`value`（数值，0=Down） |
-| 空状态 | 无数据时展示 "All targets are up ✅"（绿色文字） |
-| 行高亮 | 所有行背景淡红色 `#fff1f0`（因为只有 down 的才显示） |
-| col-span | 8 |
+|    属性    |                       值                       |
+|----------|-----------------------------------------------|
+| 标题       | Currently Down                                |
+| 图表类型     | `<Table>` (antd)，**新增图表类型**                   |
+| Query 类型 | instant query                                 |
+| PromQL   | `up{instance=~"$instance",job=~"$job"} < 1`   |
+| 列定义      | `instance`（字符串）、`job`（字符串）、`value`（数值，0=Down） |
+| 空状态      | 无数据时展示 "All targets are up ✅"（绿色文字）           |
+| 行高亮      | 所有行背景淡红色 `#fff1f0`（因为只有 down 的才显示）            |
+| col-span | 8                                             |
 
 #### P08 Upness
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Upness (stacked) |
-| 图表类型 | `<Area>` 堆叠面积 |
-| Query 类型 | range query |
-| PromQL | `up{instance=~"$instance",job=~"$job"}` |
-| x 轴 | 时间 |
-| y 轴 | 无单位（0 或 1），刻度 0/1 |
-| 系列字段 | `instance`（每实例一层堆叠） |
-| isStack | `true`（`stack={true}`） |
-| 颜色 | 使用 `series` 调色板（循环使用 CHART_COLORS.series） |
-| col-span | 16 |
+|    属性    |                     值                     |
+|----------|-------------------------------------------|
+| 标题       | Upness (stacked)                          |
+| 图表类型     | `<Area>` 堆叠面积                             |
+| Query 类型 | range query                               |
+| PromQL   | `up{instance=~"$instance",job=~"$job"}`   |
+| x 轴      | 时间                                        |
+| y 轴      | 无单位（0 或 1），刻度 0/1                         |
+| 系列字段     | `instance`（每实例一层堆叠）                       |
+| isStack  | `true`（`stack={true}`）                    |
+| 颜色       | 使用 `series` 调色板（循环使用 CHART_COLORS.series） |
+| col-span | 16                                        |
 
 ---
 
@@ -277,31 +285,31 @@ GET /ddh/api/v1/prometheus/query   # 用于 instant query（stat/table 面板）
 
 #### P09 Scrape Duration
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Scrape Duration |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL | `scrape_duration_seconds{instance=~"$instance"}` |
-| x 轴 | 时间 |
-| y 轴 | 秒（`s`），保留 3 位小数 |
-| 系列字段 | `instance` |
-| Tooltip | 时间 + 各实例值（秒） |
-| col-span | 12 |
+|    属性    |                        值                         |
+|----------|--------------------------------------------------|
+| 标题       | Scrape Duration                                  |
+| 图表类型     | `<Line>` 多系列                                     |
+| Query 类型 | range query                                      |
+| PromQL   | `scrape_duration_seconds{instance=~"$instance"}` |
+| x 轴      | 时间                                               |
+| y 轴      | 秒（`s`），保留 3 位小数                                  |
+| 系列字段     | `instance`                                       |
+| Tooltip  | 时间 + 各实例值（秒）                                     |
+| col-span | 12                                               |
 
 #### P10 Target Sync
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Target Sync (ms) |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL | `sum(rate(prometheus_target_sync_length_seconds_sum{job=~"$job",instance=~"$instance"}[2m])) by (scrape_job) * 1000` |
-| x 轴 | 时间 |
-| y 轴 | 毫秒（`ms`），保留 1 位小数 |
-| 系列字段 | `scrape_job` |
-| Tooltip | 时间 + 各 scrape_job 值（ms） |
-| col-span | 12 |
+|    属性    |                                                          值                                                           |
+|----------|----------------------------------------------------------------------------------------------------------------------|
+| 标题       | Target Sync (ms)                                                                                                     |
+| 图表类型     | `<Line>` 多系列                                                                                                         |
+| Query 类型 | range query                                                                                                          |
+| PromQL   | `sum(rate(prometheus_target_sync_length_seconds_sum{job=~"$job",instance=~"$instance"}[2m])) by (scrape_job) * 1000` |
+| x 轴      | 时间                                                                                                                   |
+| y 轴      | 毫秒（`ms`），保留 1 位小数                                                                                                    |
+| 系列字段     | `scrape_job`                                                                                                         |
+| Tooltip  | 时间 + 各 scrape_job 值（ms）                                                                                              |
+| col-span | 12                                                                                                                   |
 
 ---
 
@@ -309,40 +317,40 @@ GET /ddh/api/v1/prometheus/query   # 用于 instant query（stat/table 面板）
 
 #### P11 Scrape Sync Total
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Scrape Sync Total |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL | `sum(prometheus_target_scrape_pool_sync_total{job=~"$job",instance=~"$instance"}) by (scrape_job)` |
-| x 轴 | 时间 |
-| y 轴 | 整数（累计同步次数，无单位） |
-| 系列字段 | `scrape_job` |
-| Legend | 右侧，显示各 scrape_job 名称 |
-| col-span | 12 |
+|    属性    |                                                 值                                                  |
+|----------|----------------------------------------------------------------------------------------------------|
+| 标题       | Scrape Sync Total                                                                                  |
+| 图表类型     | `<Line>` 多系列                                                                                       |
+| Query 类型 | range query                                                                                        |
+| PromQL   | `sum(prometheus_target_scrape_pool_sync_total{job=~"$job",instance=~"$instance"}) by (scrape_job)` |
+| x 轴      | 时间                                                                                                 |
+| y 轴      | 整数（累计同步次数，无单位）                                                                                     |
+| 系列字段     | `scrape_job`                                                                                       |
+| Legend   | 右侧，显示各 scrape_job 名称                                                                               |
+| col-span | 12                                                                                                 |
 
 #### P12 Rejected Scrapes
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Rejected Scrapes |
-| 图表类型 | `<Line>` 多系列（4 系列） |
-| Query 类型 | range query |
-| PromQL（4 条） | 见下表，`seriesLabel` 为前端赋名 |
-| x 轴 | 时间 |
-| y 轴 | 整数（累计拒绝次数） |
-| 系列字段 | 手动赋名（前端 `seriesLabel` 注入）：`sample_limit` / `duplicate_ts` / `out_of_bounds` / `out_of_order` |
-| 颜色 | 按 CHART_COLORS.series 循环 |
-| col-span | 12 |
+|     属性      |                                              值                                               |
+|-------------|----------------------------------------------------------------------------------------------|
+| 标题          | Rejected Scrapes                                                                             |
+| 图表类型        | `<Line>` 多系列（4 系列）                                                                           |
+| Query 类型    | range query                                                                                  |
+| PromQL（4 条） | 见下表，`seriesLabel` 为前端赋名                                                                      |
+| x 轴         | 时间                                                                                           |
+| y 轴         | 整数（累计拒绝次数）                                                                                   |
+| 系列字段        | 手动赋名（前端 `seriesLabel` 注入）：`sample_limit` / `duplicate_ts` / `out_of_bounds` / `out_of_order` |
+| 颜色          | 按 CHART_COLORS.series 循环                                                                     |
+| col-span    | 12                                                                                           |
 
 **P12 PromQL 明细（4 条分别执行，合并为多系列）：**
 
-| seriesLabel | PromQL |
-|---|---|
-| `sample_limit` | `sum(prometheus_target_scrapes_exceeded_sample_limit_total{job=~"$job",instance=~"$instance"})` |
-| `duplicate_ts` | `sum(prometheus_target_scrapes_sample_duplicate_timestamp_total{job=~"$job",instance=~"$instance"})` |
-| `out_of_bounds` | `sum(prometheus_target_scrapes_sample_out_of_bounds_total{job=~"$job",instance=~"$instance"})` |
-| `out_of_order` | `sum(prometheus_target_scrapes_sample_out_of_order_total{job=~"$job",instance=~"$instance"})` |
+|   seriesLabel   |                                                PromQL                                                |
+|-----------------|------------------------------------------------------------------------------------------------------|
+| `sample_limit`  | `sum(prometheus_target_scrapes_exceeded_sample_limit_total{job=~"$job",instance=~"$instance"})`      |
+| `duplicate_ts`  | `sum(prometheus_target_scrapes_sample_duplicate_timestamp_total{job=~"$job",instance=~"$instance"})` |
+| `out_of_bounds` | `sum(prometheus_target_scrapes_sample_out_of_bounds_total{job=~"$job",instance=~"$instance"})`       |
+| `out_of_order`  | `sum(prometheus_target_scrapes_sample_out_of_order_total{job=~"$job",instance=~"$instance"})`        |
 
 ---
 
@@ -350,50 +358,50 @@ GET /ddh/api/v1/prometheus/query   # 用于 instant query（stat/table 面板）
 
 #### P13 Series Count
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Series Count |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL | `prometheus_tsdb_head_series{job=~"$job",instance=~"$instance"}` |
-| x 轴 | 时间 |
-| y 轴 | 整数（时序数量） |
-| 系列字段 | `instance` |
-| col-span | 8 |
+|    属性    |                                值                                 |
+|----------|------------------------------------------------------------------|
+| 标题       | Series Count                                                     |
+| 图表类型     | `<Line>` 多系列                                                     |
+| Query 类型 | range query                                                      |
+| PromQL   | `prometheus_tsdb_head_series{job=~"$job",instance=~"$instance"}` |
+| x 轴      | 时间                                                               |
+| y 轴      | 整数（时序数量）                                                         |
+| 系列字段     | `instance`                                                       |
+| col-span | 8                                                                |
 
 #### P14 Series Created / Removed
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Series Created / Removed |
-| 图表类型 | `<Line>` 多系列（2 系列） |
-| Query 类型 | range query |
-| PromQL（2 条） | 见下表 |
-| x 轴 | 时间 |
-| y 轴 | 整数 |
-| 系列 | `created`（绿色 `#52c41a`）、`removed`（红色 `#ff4d4f`） |
-| col-span | 8 |
+|     属性      |                        值                        |
+|-------------|-------------------------------------------------|
+| 标题          | Series Created / Removed                        |
+| 图表类型        | `<Line>` 多系列（2 系列）                              |
+| Query 类型    | range query                                     |
+| PromQL（2 条） | 见下表                                             |
+| x 轴         | 时间                                              |
+| y 轴         | 整数                                              |
+| 系列          | `created`（绿色 `#52c41a`）、`removed`（红色 `#ff4d4f`） |
+| col-span    | 8                                               |
 
 **P14 PromQL 明细：**
 
-| seriesLabel | PromQL |
-|---|---|
-| `created` | `sum(increase(prometheus_tsdb_head_series_created_total{instance=~"$instance"}[5m]))` |
-| `removed` | `sum(increase(prometheus_tsdb_head_series_removed_total{instance=~"$instance"}[5m]))` |
+| seriesLabel |                                        PromQL                                         |
+|-------------|---------------------------------------------------------------------------------------|
+| `created`   | `sum(increase(prometheus_tsdb_head_series_created_total{instance=~"$instance"}[5m]))` |
+| `removed`   | `sum(increase(prometheus_tsdb_head_series_removed_total{instance=~"$instance"}[5m]))` |
 
 #### P15 Appended Samples/s
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Appended Samples per Second |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL | `rate(prometheus_tsdb_head_samples_appended_total{job=~"$job",instance=~"$instance"}[1m])` |
-| x 轴 | 时间 |
-| y 轴 | `samples/s`，保留 0 位小数 |
-| 系列字段 | `instance` |
-| 颜色 | `#1677ff`（单实例）或 series 调色板（多实例） |
-| col-span | 8 |
+|    属性    |                                             值                                              |
+|----------|--------------------------------------------------------------------------------------------|
+| 标题       | Appended Samples per Second                                                                |
+| 图表类型     | `<Line>` 多系列                                                                               |
+| Query 类型 | range query                                                                                |
+| PromQL   | `rate(prometheus_tsdb_head_samples_appended_total{job=~"$job",instance=~"$instance"}[1m])` |
+| x 轴      | 时间                                                                                         |
+| y 轴      | `samples/s`，保留 0 位小数                                                                       |
+| 系列字段     | `instance`                                                                                 |
+| 颜色       | `#1677ff`（单实例）或 series 调色板（多实例）                                                            |
+| col-span | 8                                                                                          |
 
 ---
 
@@ -401,55 +409,55 @@ GET /ddh/api/v1/prometheus/query   # 用于 instant query（stat/table 面板）
 
 #### P16 Storage Memory Chunks
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Storage Memory Chunks |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL | `prometheus_tsdb_head_chunks{job=~"$job",instance=~"$instance"}` |
-| x 轴 | 时间 |
-| y 轴 | 整数（chunk 数量） |
-| 系列字段 | `instance` |
-| col-span | 8 |
+|    属性    |                                值                                 |
+|----------|------------------------------------------------------------------|
+| 标题       | Storage Memory Chunks                                            |
+| 图表类型     | `<Line>` 多系列                                                     |
+| Query 类型 | range query                                                      |
+| PromQL   | `prometheus_tsdb_head_chunks{job=~"$job",instance=~"$instance"}` |
+| x 轴      | 时间                                                               |
+| y 轴      | 整数（chunk 数量）                                                     |
+| 系列字段     | `instance`                                                       |
+| col-span | 8                                                                |
 
 #### P17 Go Memory Usage
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Go Memory Usage |
-| 图表类型 | `<Area>` 多系列（6 关键 series） |
-| Query 类型 | range query |
-| PromQL（6 条） | 见下表 |
-| x 轴 | 时间 |
-| y 轴 | bytes，自动换算（B/KB/MB/GB） |
-| 系列字段 | 手动赋名（`heap_alloc` / `heap_sys` / `heap_inuse` / `heap_idle` / `stack_inuse` / `sys`） |
-| isStack | `false`（折叠展示，便于对比各内存区段） |
-| Legend | 右侧，显示所有 6 个系列 |
-| col-span | 8 |
+|     属性      |                                          值                                           |
+|-------------|--------------------------------------------------------------------------------------|
+| 标题          | Go Memory Usage                                                                      |
+| 图表类型        | `<Area>` 多系列（6 关键 series）                                                            |
+| Query 类型    | range query                                                                          |
+| PromQL（6 条） | 见下表                                                                                  |
+| x 轴         | 时间                                                                                   |
+| y 轴         | bytes，自动换算（B/KB/MB/GB）                                                               |
+| 系列字段        | 手动赋名（`heap_alloc` / `heap_sys` / `heap_inuse` / `heap_idle` / `stack_inuse` / `sys`） |
+| isStack     | `false`（折叠展示，便于对比各内存区段）                                                              |
+| Legend      | 右侧，显示所有 6 个系列                                                                        |
+| col-span    | 8                                                                                    |
 
 **P17 PromQL 明细（6 条，从原始 18 条精选）：**
 
-| seriesLabel | PromQL | 说明 |
-|---|---|---|
-| `heap_alloc` | `sum(go_memstats_heap_alloc_bytes{job=~"$job",instance=~"$instance"})` | 当前堆已分配 |
-| `heap_sys` | `sum(go_memstats_heap_sys_bytes{job=~"$job",instance=~"$instance"})` | 堆从 OS 获取总量 |
-| `heap_inuse` | `sum(go_memstats_heap_inuse_bytes{job=~"$job",instance=~"$instance"})` | 堆活跃使用 |
-| `heap_idle` | `sum(go_memstats_heap_idle_bytes{job=~"$job",instance=~"$instance"})` | 堆空闲可释放 |
-| `stack_inuse` | `sum(go_memstats_stack_inuse_bytes{job=~"$job",instance=~"$instance"})` | 栈活跃使用 |
-| `sys` | `sum(go_memstats_sys_bytes{job=~"$job",instance=~"$instance"})` | 进程总内存 |
+|  seriesLabel  |                                 PromQL                                  |     说明     |
+|---------------|-------------------------------------------------------------------------|------------|
+| `heap_alloc`  | `sum(go_memstats_heap_alloc_bytes{job=~"$job",instance=~"$instance"})`  | 当前堆已分配     |
+| `heap_sys`    | `sum(go_memstats_heap_sys_bytes{job=~"$job",instance=~"$instance"})`    | 堆从 OS 获取总量 |
+| `heap_inuse`  | `sum(go_memstats_heap_inuse_bytes{job=~"$job",instance=~"$instance"})`  | 堆活跃使用      |
+| `heap_idle`   | `sum(go_memstats_heap_idle_bytes{job=~"$job",instance=~"$instance"})`   | 堆空闲可释放     |
+| `stack_inuse` | `sum(go_memstats_stack_inuse_bytes{job=~"$job",instance=~"$instance"})` | 栈活跃使用      |
+| `sys`         | `sum(go_memstats_sys_bytes{job=~"$job",instance=~"$instance"})`         | 进程总内存      |
 
 #### P18 GC Rate / 2m
 
-| 属性 | 值 |
-|---|---|
-| 标题 | GC Rate / 2m |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL | `sum(rate(go_gc_duration_seconds_sum{instance=~"$instance",job=~"$job"}[2m])) by (instance)` |
-| x 轴 | 时间 |
-| y 轴 | `s/s`（GC 耗时速率），保留 4 位小数 |
-| 系列字段 | `instance` |
-| col-span | 8 |
+|    属性    |                                              值                                               |
+|----------|----------------------------------------------------------------------------------------------|
+| 标题       | GC Rate / 2m                                                                                 |
+| 图表类型     | `<Line>` 多系列                                                                                 |
+| Query 类型 | range query                                                                                  |
+| PromQL   | `sum(rate(go_gc_duration_seconds_sum{instance=~"$instance",job=~"$job"}[2m])) by (instance)` |
+| x 轴      | 时间                                                                                           |
+| y 轴      | `s/s`（GC 耗时速率），保留 4 位小数                                                                      |
+| 系列字段     | `instance`                                                                                   |
+| col-span | 8                                                                                            |
 
 ---
 
@@ -457,53 +465,53 @@ GET /ddh/api/v1/prometheus/query   # 用于 instant query（stat/table 面板）
 
 #### P19 Rule Evaluator Iterations
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Rule Evaluator Iterations |
-| 图表类型 | `<Line>` 多系列（3 系列） |
-| Query 类型 | range query |
-| PromQL（3 条） | 见下表 |
-| x 轴 | 时间 |
-| y 轴 | `iter/s`，保留 2 位小数 |
-| 系列 | `total`（蓝 `#1677ff`）、`missed`（红 `#ff4d4f`）、`skipped`（黄 `#faad14`） |
-| Tooltip | 同时显示 3 条线的值 |
-| col-span | 8 |
+|     属性      |                                 值                                 |
+|-------------|-------------------------------------------------------------------|
+| 标题          | Rule Evaluator Iterations                                         |
+| 图表类型        | `<Line>` 多系列（3 系列）                                                |
+| Query 类型    | range query                                                       |
+| PromQL（3 条） | 见下表                                                               |
+| x 轴         | 时间                                                                |
+| y 轴         | `iter/s`，保留 2 位小数                                                 |
+| 系列          | `total`（蓝 `#1677ff`）、`missed`（红 `#ff4d4f`）、`skipped`（黄 `#faad14`） |
+| Tooltip     | 同时显示 3 条线的值                                                       |
+| col-span    | 8                                                                 |
 
 **P19 PromQL 明细：**
 
-| seriesLabel | PromQL |
-|---|---|
-| `total` | `sum(rate(prometheus_evaluator_iterations_total{job=~"$job",instance=~"$instance"}[5m]))` |
-| `missed` | `sum(rate(prometheus_evaluator_iterations_missed_total{job=~"$job",instance=~"$instance"}[5m]))` |
-| `skipped` | `sum(rate(prometheus_evaluator_iterations_skipped_total{job=~"$job",instance=~"$instance"}[5m]))` |
+| seriesLabel |                                              PromQL                                               |
+|-------------|---------------------------------------------------------------------------------------------------|
+| `total`     | `sum(rate(prometheus_evaluator_iterations_total{job=~"$job",instance=~"$instance"}[5m]))`         |
+| `missed`    | `sum(rate(prometheus_evaluator_iterations_missed_total{job=~"$job",instance=~"$instance"}[5m]))`  |
+| `skipped`   | `sum(rate(prometheus_evaluator_iterations_skipped_total{job=~"$job",instance=~"$instance"}[5m]))` |
 
 #### P20 Avg Rule Eval Duration
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Average Rule Evaluation Duration |
-| 图表类型 | `<Line>` 单系列 |
-| Query 类型 | range query |
-| PromQL | `1000 * rate(prometheus_evaluator_duration_seconds_sum{job=~"$job",instance=~"$instance"}[5m]) / rate(prometheus_evaluator_duration_seconds_count{job=~"$job",instance=~"$instance"}[5m])` |
-| x 轴 | 时间 |
-| y 轴 | 毫秒（`ms`），保留 2 位小数 |
-| 系列颜色 | `#1677ff` |
-| 警戒线 | y=100ms，红色虚线（规则评估超过 100ms 可能影响告警实时性） |
-| col-span | 8 |
+|    属性    |                                                                                             值                                                                                              |
+|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题       | Average Rule Evaluation Duration                                                                                                                                                           |
+| 图表类型     | `<Line>` 单系列                                                                                                                                                                               |
+| Query 类型 | range query                                                                                                                                                                                |
+| PromQL   | `1000 * rate(prometheus_evaluator_duration_seconds_sum{job=~"$job",instance=~"$instance"}[5m]) / rate(prometheus_evaluator_duration_seconds_count{job=~"$job",instance=~"$instance"}[5m])` |
+| x 轴      | 时间                                                                                                                                                                                         |
+| y 轴      | 毫秒（`ms`），保留 2 位小数                                                                                                                                                                          |
+| 系列颜色     | `#1677ff`                                                                                                                                                                                  |
+| 警戒线      | y=100ms，红色虚线（规则评估超过 100ms 可能影响告警实时性）                                                                                                                                                       |
+| col-span | 8                                                                                                                                                                                          |
 
 #### P21 Engine Query Duration
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Prometheus Engine Query Duration |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL | `sum(prometheus_engine_query_duration_seconds_sum{job=~"$job",instance=~"$instance"}) by (slice)` |
-| x 轴 | 时间 |
-| y 轴 | 秒（`s`），保留 4 位小数 |
-| 系列字段 | `slice`（如 `inner_eval`、`prepare_time`、`queue_time`、`result_sort` 等） |
-| Legend | 右侧，勾选切换 slice |
-| col-span | 8 |
+|    属性    |                                                 值                                                 |
+|----------|---------------------------------------------------------------------------------------------------|
+| 标题       | Prometheus Engine Query Duration                                                                  |
+| 图表类型     | `<Line>` 多系列                                                                                      |
+| Query 类型 | range query                                                                                       |
+| PromQL   | `sum(prometheus_engine_query_duration_seconds_sum{job=~"$job",instance=~"$instance"}) by (slice)` |
+| x 轴      | 时间                                                                                                |
+| y 轴      | 秒（`s`），保留 4 位小数                                                                                   |
+| 系列字段     | `slice`（如 `inner_eval`、`prepare_time`、`queue_time`、`result_sort` 等）                               |
+| Legend   | 右侧，勾选切换 slice                                                                                     |
+| col-span | 8                                                                                                 |
 
 ---
 
@@ -511,55 +519,55 @@ GET /ddh/api/v1/prometheus/query   # 用于 instant query（stat/table 面板）
 
 #### P22 Failures and Errors
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Failures and Errors |
-| 图表类型 | `<Line>` 多系列（6 代表性系列） |
-| Query 类型 | range query |
-| PromQL（6 条） | 见下表；仅在 `> 0` 时有数据点（避免常态 0 值占满图表） |
-| x 轴 | 时间 |
-| y 轴 | 整数（5 分钟内增量） |
-| 系列字段 | 手动赋名（前端注入） |
-| 颜色 | 全部用错误红系（`#ff4d4f` / `#ff7a45` / `#fa541c` 等变体）或 series 调色板 |
-| col-span | 12 |
+|     属性      |                             值                              |
+|-------------|------------------------------------------------------------|
+| 标题          | Failures and Errors                                        |
+| 图表类型        | `<Line>` 多系列（6 代表性系列）                                      |
+| Query 类型    | range query                                                |
+| PromQL（6 条） | 见下表；仅在 `> 0` 时有数据点（避免常态 0 值占满图表）                           |
+| x 轴         | 时间                                                         |
+| y 轴         | 整数（5 分钟内增量）                                                |
+| 系列字段        | 手动赋名（前端注入）                                                 |
+| 颜色          | 全部用错误红系（`#ff4d4f` / `#ff7a45` / `#fa541c` 等变体）或 series 调色板 |
+| col-span    | 12                                                         |
 
 **P22 PromQL 明细（从原始 20 条精选最具操作价值的 6 条）：**
 
-| seriesLabel | PromQL |
-|---|---|
-| `conn_failed` | `sum(increase(net_conntrack_dialer_conn_failed_total{instance=~"$instance"}[5m])) > 0` |
-| `rule_eval_failed` | `sum(increase(prometheus_rule_evaluation_failures_total{instance=~"$instance"}[5m])) > 0` |
-| `scrape_sample_limit` | `sum(increase(prometheus_target_scrapes_exceeded_sample_limit_total{instance=~"$instance"}[5m])) > 0` |
-| `tsdb_reload_failed` | `sum(increase(prometheus_tsdb_reloads_failures_total{instance=~"$instance"}[5m])) > 0` |
-| `tsdb_compaction_failed` | `sum(increase(prometheus_tsdb_compactions_failed_total{instance=~"$instance"}[5m])) > 0` |
-| `sample_out_of_order` | `sum(increase(prometheus_target_scrapes_sample_out_of_order_total{instance=~"$instance"}[5m])) > 0` |
+|       seriesLabel        |                                                PromQL                                                 |
+|--------------------------|-------------------------------------------------------------------------------------------------------|
+| `conn_failed`            | `sum(increase(net_conntrack_dialer_conn_failed_total{instance=~"$instance"}[5m])) > 0`                |
+| `rule_eval_failed`       | `sum(increase(prometheus_rule_evaluation_failures_total{instance=~"$instance"}[5m])) > 0`             |
+| `scrape_sample_limit`    | `sum(increase(prometheus_target_scrapes_exceeded_sample_limit_total{instance=~"$instance"}[5m])) > 0` |
+| `tsdb_reload_failed`     | `sum(increase(prometheus_tsdb_reloads_failures_total{instance=~"$instance"}[5m])) > 0`                |
+| `tsdb_compaction_failed` | `sum(increase(prometheus_tsdb_compactions_failed_total{instance=~"$instance"}[5m])) > 0`              |
+| `sample_out_of_order`    | `sum(increase(prometheus_target_scrapes_sample_out_of_order_total{instance=~"$instance"}[5m])) > 0`   |
 
 #### P23 Notifications Sent
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Notifications Sent |
-| 图表类型 | `<Line>` 单系列 |
-| Query 类型 | range query |
-| PromQL | `rate(prometheus_notifications_sent_total{instance=~"$instance"}[5m])` |
-| x 轴 | 时间 |
-| y 轴 | `notif/s`，保留 2 位小数 |
-| 系列颜色 | `#722ed1`（紫色，区分通知类型） |
-| col-span | 6 |
+|    属性    |                                   值                                    |
+|----------|------------------------------------------------------------------------|
+| 标题       | Notifications Sent                                                     |
+| 图表类型     | `<Line>` 单系列                                                           |
+| Query 类型 | range query                                                            |
+| PromQL   | `rate(prometheus_notifications_sent_total{instance=~"$instance"}[5m])` |
+| x 轴      | 时间                                                                     |
+| y 轴      | `notif/s`，保留 2 位小数                                                     |
+| 系列颜色     | `#722ed1`（紫色，区分通知类型）                                                   |
+| col-span | 6                                                                      |
 
 #### P24 Minutes Since Config Reload
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Minutes Since Successful Config Reload |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL | `(time() - prometheus_config_last_reload_success_timestamp_seconds{job=~"$job",instance=~"$instance"}) / 60` |
-| x 轴 | 时间 |
-| y 轴 | 分钟（`min`），保留 1 位小数 |
-| 系列字段 | `instance` |
-| 说明 | 值越小表示最近一次 reload 越新鲜；若 reload 失败则值持续增大 |
-| col-span | 6 |
+|    属性    |                                                      值                                                       |
+|----------|--------------------------------------------------------------------------------------------------------------|
+| 标题       | Minutes Since Successful Config Reload                                                                       |
+| 图表类型     | `<Line>` 多系列                                                                                                 |
+| Query 类型 | range query                                                                                                  |
+| PromQL   | `(time() - prometheus_config_last_reload_success_timestamp_seconds{job=~"$job",instance=~"$instance"}) / 60` |
+| x 轴      | 时间                                                                                                           |
+| y 轴      | 分钟（`min`），保留 1 位小数                                                                                           |
+| 系列字段     | `instance`                                                                                                   |
+| 说明       | 值越小表示最近一次 reload 越新鲜；若 reload 失败则值持续增大                                                                       |
+| col-span | 6                                                                                                            |
 
 ---
 
@@ -569,20 +577,20 @@ GET /ddh/api/v1/prometheus/query   # 用于 instant query（stat/table 面板）
 
 #### 直接剔除的 6 个面板
 
-| 原面板标题 | 裁剪原因 |
-|---|---|
-| **Skipped Iterations [$interval]**（singlestat） | 被时序面板 P19 Rule Evaluator Iterations 完全覆盖（`missed`/`skipped` 均有时序曲线），单值 stat 信息密度更低 |
-| **Tardy Scrapes [$interval]**（singlestat） | PromQL 与 P06 Skipped Scrapes 完全重叠（均基于 `prometheus_target_scrapes_exceeded_sample_limit_total`），逻辑冗余 |
-| **HTTP Request Duration**（graph） | 基于 `http_request_duration_microseconds_count`，该指标在 Prometheus 3.x 已移除，重命名为 `prometheus_http_request_duration_seconds`；使用旧指标在 3.12.0 中返回空结果 |
-| **Successful Config Reload**（graph，0/1 二值） | 信息密度极低；P24 "Minutes Since Config Reload" 已完全覆盖其语义：reload 成功时间戳越近则值越小，reload 失败则值持续增大，语义更丰富 |
-| **Target Scrapes / 5m**（graph） | `sum(rate(prometheus_target_interval_length_seconds_count[5m])) by (interval)` 统计的是抓取触发频次，与 P11 Scrape Sync Total 表达的信号高度重叠；后者 `by (scrape_job)` 维度更具操作性 |
-| **Scrape Duration（第二个）**（graph，基于 `prometheus_target_interval_length_seconds`） | 标题与 P09 重名，但 metric 含义不同（此处反映的是配置的抓取间隔长度，是准静态值，非实际耗时）；与 P09（真实抓取耗时）混用容易误读 |
+|                                     原面板标题                                      |                                                                           裁剪原因                                                                           |
+|--------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Skipped Iterations [$interval]**（singlestat）                                 | 被时序面板 P19 Rule Evaluator Iterations 完全覆盖（`missed`/`skipped` 均有时序曲线），单值 stat 信息密度更低                                                                       |
+| **Tardy Scrapes [$interval]**（singlestat）                                      | PromQL 与 P06 Skipped Scrapes 完全重叠（均基于 `prometheus_target_scrapes_exceeded_sample_limit_total`），逻辑冗余                                                      |
+| **HTTP Request Duration**（graph）                                               | 基于 `http_request_duration_microseconds_count`，该指标在 Prometheus 3.x 已移除，重命名为 `prometheus_http_request_duration_seconds`；使用旧指标在 3.12.0 中返回空结果               |
+| **Successful Config Reload**（graph，0/1 二值）                                     | 信息密度极低；P24 "Minutes Since Config Reload" 已完全覆盖其语义：reload 成功时间戳越近则值越小，reload 失败则值持续增大，语义更丰富                                                               |
+| **Target Scrapes / 5m**（graph）                                                 | `sum(rate(prometheus_target_interval_length_seconds_count[5m])) by (interval)` 统计的是抓取触发频次，与 P11 Scrape Sync Total 表达的信号高度重叠；后者 `by (scrape_job)` 维度更具操作性 |
+| **Scrape Duration（第二个）**（graph，基于 `prometheus_target_interval_length_seconds`） | 标题与 P09 重名，但 metric 含义不同（此处反映的是配置的抓取间隔长度，是准静态值，非实际耗时）；与 P09（真实抓取耗时）混用容易误读                                                                                |
 
 #### 清理但保留的 2 个面板
 
-| 面板 | 清理内容 |
-|---|---|
-| **P17 Go Memory Usage** | 原始 18 个 `go_memstats_*` 系列 → 精选 6 个关键系列（heap_alloc / heap_sys / heap_inuse / heap_idle / stack_inuse / sys）；去掉原标题中的 `(FIXME)` |
+|             面板              |                                                                                      清理内容                                                                                       |
+|-----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **P17 Go Memory Usage**     | 原始 18 个 `go_memstats_*` 系列 → 精选 6 个关键系列（heap_alloc / heap_sys / heap_inuse / heap_idle / stack_inuse / sys）；去掉原标题中的 `(FIXME)`                                                   |
 | **P22 Failures and Errors** | 原始 20 条 PromQL → 精选 6 条代表性错误类型（conntrack / rule_eval / scrape_limit / tsdb_reload / tsdb_compaction / sample_order）；其余 14 条覆盖 azure/consul/ec2/gce 等云服务发现，与 datasophon 本地部署场景无关 |
 
 ---
@@ -630,6 +638,7 @@ function colorByThreshold(
 ```
 
 **使用示例：**
+
 ```ts
 // P01 Uptime（reverse）
 colorByThreshold(99.8, [90, 99], { reverse: true })   // → '#52c41a'（绿）
@@ -806,7 +815,7 @@ interface TableRow {
 
 ```
 datasophon-ui-v2/src/pages/PrometheusMonitor/
-  ├── index.tsx                   # 主页面（路由 /prometheus-monitor，临时一级路由）
+  ├── index.tsx                   # 主页面（路由 /monitor/prometheus）
   ├── panels/
   │   ├── StatPanel.tsx           # 复用 ApisixMonitor 同名组件（新增 reverse prop）
   │   ├── TablePanel.tsx          # 新增（Currently Down 专用）
@@ -961,7 +970,7 @@ const PUBLIC_PATH =
 },
 ```
 
-**原因**：UMI `base: '/ddh'` 让所有 React 路由都带 `/ddh` 前缀，proxy 规则会把页面导航请求（`GET /ddh/prometheus-monitor`）也转发到后端，返回 504。`bypass` 让 `text/html` 请求由 dev server 自己处理。
+**原因**：UMI `base: '/ddh'` 让所有 React 路由都带 `/ddh` 前缀，proxy 规则会把页面导航请求（`GET /ddh/monitor/prometheus`）也转发到后端，返回 504。`bypass` 让 `text/html` 请求由 dev server 自己处理。
 
 ### 10.3 mock 路径必须与 baseURL 对齐
 
@@ -997,3 +1006,95 @@ Phase 2 原型（mock 阶段）完成后，需满足：
 - [ ] 颜色方案遵循第 6.1 节 Token（primary 蓝、success 绿、warning 黄、error 红）
 - [ ] TypeScript 接口与第 7 节定义一致，新增 `TableRow` 类型
 - [ ] 响应式：在 1280px 宽度下不出现横向滚动条
+
+---
+
+## 12. 联调踩坑记录（Phase 3 实现时必读）
+
+以下三个问题在 mock → 真实后端联调过程中暴露，根因均非业务逻辑错误，而是框架/库的隐式行为。**下次迁移到正式前端（`datasophon-ui`）时，必须提前规避。**
+
+---
+
+### 12.1 前端 service.ts 请求路径双前缀
+
+**现象**：后端报 `No static resource api/v2/ddh/api/v2/prometheus/query`
+
+**根因**：`src/app.tsx` 中 `baseURL = '/ddh/api/v2'`，axios 的 `combineURLs` 会把 baseURL 与 relativeURL 拼接：
+- 若 relativeURL 以 `/` 开头，axios 仅去除 relativeURL 的前导斜杠后追加，**不是替换 host**
+- 因此 `/ddh/api/v2/prometheus/query` 会被拼成 `/ddh/api/v2/ddh/api/v2/prometheus/query`（双前缀）
+
+**正确写法**：service.ts 中路径只写 `baseURL` 之后的**相对部分**，不含 `/ddh/api/v2` 前缀：
+
+```ts
+// ✅ 正确
+export function queryInstant(params) {
+  return request<ApiResponse<PrometheusVector>>('/prometheus/query', { ... });
+}
+
+// ❌ 错误（会造成双前缀）
+export function queryInstant(params) {
+  return request<ApiResponse<PrometheusVector>>('/ddh/api/v2/prometheus/query', { ... });
+}
+```
+
+> **与 mock 文件的区别**：UMI mock 文件（`mock/prometheus.ts`）按请求的**完整路径**精确匹配，必须写 `'GET /ddh/api/v2/prometheus/query'`（含完整前缀）。service.ts 与 mock 文件的路径规则相反，不要混淆。
+
+---
+
+### 12.2 后端 PromQL `+` 运算符被解码为空格
+
+**现象**：P06 Skipped Scrapes 的 PromQL（含 4 个 `+` 运算符）发到 Prometheus 后报解析错误：
+```
+parse error: unexpected <aggr:sum> at position 107
+```
+
+**根因**：两种 URL 编码标准的冲突：
+- **RFC 3986**（Hutool `.form()` 默认行为）：`+` 是合法字符，不编码，直接传输字面量 `+`
+- **`application/x-www-form-urlencoded`**（Go `net/url.ParseQuery()`）：`+` 解码为空格
+
+Hutool 的 `HttpRequest.get(url).form(params)` 使用 RFC 3986，传出的 `+` 到 Prometheus（Go 实现）后被 `ParseQuery` 解码为空格，PromQL 因此断裂。
+
+**正确写法**：后端代理 controller 改用 Java 标准 `URLEncoder.encode()` 手动构建 URL，确保 `+` 被编码为 `%2B`：
+
+```java
+// ✅ 正确
+StringBuilder sb = new StringBuilder(url)
+    .append("?query=").append(URLEncoder.encode(query, StandardCharsets.UTF_8));
+if (start != null) sb.append("&start=").append(URLEncoder.encode(start, StandardCharsets.UTF_8));
+// ...
+try (HttpResponse resp = HttpRequest.get(sb.toString()).timeout(props.getTimeoutMs()).execute()) {
+    return resp.body();
+}
+
+// ❌ 错误（Hutool form() 不编码 +，Go 会把 + 解码为空格）
+HttpUtil.get(url, Map.of("query", query, "start", start, ...), timeoutMs);
+```
+
+> 此问题仅影响含 `+`（加法）、`-`（减法）等二元运算符的 PromQL。单指标查询（如 `up{...}`）不受影响，因此只在联调复杂面板（P06/P22）时才暴露。
+
+---
+
+### 12.3 `@ant-design/plots` 切换时间范围后图表时间轴不更新
+
+**现象**：toolbar 从"最近 5 分钟"切换到"最近 30 分钟"后，新数据渲染但 x 轴时间刻度仍显示原来 5 分钟的范围。
+
+**根因**：`@ant-design/plots` v2 对应 G2 v5，G2 在首次渲染时计算并缓存时间 scale 的 domain（`[minTime, maxTime]`）。后续通过 `data` prop 更新数据不会重新推断 domain，导致新数据中更早的时间戳被裁截在 x 轴范围之外。
+
+**正确写法**：对图表组件添加 `key` prop，当数据时间跨度变化时强制 React 卸载并重建 G2 实例：
+
+```tsx
+// TimeSeriesPanel.tsx / AreaPanel.tsx
+const chartKey =
+  data.length > 0
+    ? `${data[0].time}-${data[data.length - 1].time}`
+    : 'empty';
+
+return (
+  <Card title={title}>
+    <Line key={chartKey} data={data} xField="time" yField="value" ... />
+  </Card>
+);
+```
+
+> **加载态保护**：hook 在新数据到达之前保留上一次数据（`prevData`），避免 key 在 loading 期间频繁变化造成闪烁。只有新数据完整到达且时间戳区间改变时，chartKey 才会变化触发重挂载。
+

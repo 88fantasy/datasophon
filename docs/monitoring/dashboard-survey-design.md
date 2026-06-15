@@ -31,11 +31,11 @@ Grafana:可作为显示层移除
 
 ### 1.3 分期
 
-| 阶段 | 内容 | spec |
-|---|---|---|
-| **Phase 1(本 spec)** | 调研全量组件 → 人工选型 → 物料归档(源 JSON + panel-catalog) | 本文件 |
-| Phase 2(后续) | 用 claude design 基于 panel-catalog 做看板原型 | 独立 spec |
-| Phase 3(后续) | 后端 PromQL 代理端点 + 前端 ECharts 图表组件 + `ClusterServiceDashboard` 表改造 | 独立 spec |
+|         阶段          |                                内容                                |  spec   |
+|---------------------|------------------------------------------------------------------|---------|
+| **Phase 1(本 spec)** | 调研全量组件 → 人工选型 → 物料归档(源 JSON + panel-catalog)                     | 本文件     |
+| Phase 2(后续)         | 用 claude design 基于 panel-catalog 做看板原型                           | 独立 spec |
+| Phase 3(后续)         | 后端 PromQL 代理端点 + 前端 ECharts 图表组件 + `ClusterServiceDashboard` 表改造 | 独立 spec |
 
 ---
 
@@ -45,16 +45,16 @@ Grafana:可作为显示层移除
 
 > 说明:brainstorming 过程中口头称"27 个",版本表原列 26 个;**本次移除 MinIO(对象存储职责由 Rustfs 替代,不再需要 MinIO)**,最终范围 **25 个**;以本表为准。
 
-| 分组 | 组件(版本) |
-|---|---|
-| 中间件 | MySQL(8.0.28)、Nexus Repository 3(3.85.0)、Rustfs(1.0.0) |
-| 存储/数据库 | HDFS(3.5.0)、YARN(3.5.0)、Hive(4.2.0)、Elasticsearch(9.4.2)、Redis(8.6)、JuiceFS(1.3.1)、Doris(4.0.5) |
-| 计算/查询引擎 | Spark3(3.5.8)、Flink(2.2.1)、Kyuubi(1.11.1) |
-| 消息/协调 | Kafka(4.3.0)、ZooKeeper(3.8.6) |
-| 调度 | DolphinScheduler(3.4.1) |
-| 可观测性 | Prometheus(3.12.0)、Alertmanager(0.32.1)、Grafana(13.0.1)、Loki(3.7.2)、Promtail(2.8.11) |
-| 网关/注册中心 | APISIX(3.16.0)、Nacos(3.2.2)、Nginx(1.30.2) |
-| 内部组件 | DATART(3.6.1) |
+|   分组    |                                             组件(版本)                                              |
+|---------|-------------------------------------------------------------------------------------------------|
+| 中间件     | MySQL(8.0.28)、Nexus Repository 3(3.85.0)、Rustfs(1.0.0)                                          |
+| 存储/数据库  | HDFS(3.5.0)、YARN(3.5.0)、Hive(4.2.0)、Elasticsearch(9.4.2)、Redis(8.6)、JuiceFS(1.3.1)、Doris(4.0.5) |
+| 计算/查询引擎 | Spark3(3.5.8)、Flink(2.2.1)、Kyuubi(1.11.1)                                                       |
+| 消息/协调   | Kafka(4.3.0)、ZooKeeper(3.8.6)                                                                   |
+| 调度      | DolphinScheduler(3.4.1)                                                                         |
+| 可观测性    | Prometheus(3.12.0)、Alertmanager(0.32.1)、Grafana(13.0.1)、Loki(3.7.2)、Promtail(2.8.11)            |
+| 网关/注册中心 | APISIX(3.16.0)、Nacos(3.2.2)、Nginx(1.30.2)                                                       |
+| 内部组件    | DATART(3.6.1)                                                                                   |
 
 > Promtail 2.8.11 已 EOL,官方建议迁移 Grafana Alloy;调研时如实标注,优先级低。
 
@@ -90,12 +90,12 @@ Grafana:可作为显示层移除
 
 ### 3.4 加权打分(每个候选看板)
 
-| 维度 | 权重 | 含义 |
-|---|---|---|
-| 热度 | 0.3 | grafana.com 下载量 / 评分 |
-| 数据源匹配度 | 0.3 | 看板指标名是否对应我们实际使用的数据源(走原生端点的组件,看板必须基于**原生指标名**;若候选看板基于旧 exporter 指标名则匹配度低) |
-| PromQL 可移植 | 0.2 | 查询语句是否干净、易于移植到后端代理 + 前端图表 |
-| 黄金信号覆盖 | 0.2 | 是否覆盖延迟 / 流量 / 错误 / 饱和度 |
+|     维度     | 权重  |                                    含义                                    |
+|------------|-----|--------------------------------------------------------------------------|
+| 热度         | 0.3 | grafana.com 下载量 / 评分                                                     |
+| 数据源匹配度     | 0.3 | 看板指标名是否对应我们实际使用的数据源(走原生端点的组件,看板必须基于**原生指标名**;若候选看板基于旧 exporter 指标名则匹配度低) |
+| PromQL 可移植 | 0.2 | 查询语句是否干净、易于移植到后端代理 + 前端图表                                                |
+| 黄金信号覆盖     | 0.2 | 是否覆盖延迟 / 流量 / 错误 / 饱和度                                                   |
 
 加权总分排序,推荐结论附分项得分。
 
@@ -218,10 +218,11 @@ Grafana:可作为显示层移除
 
 ## 8. 关键文件参考
 
-| 用途 | 文件 |
-|---|---|
-| 现状监控入口(iframe Grafana) | `datasophon-ui/src/pages/ServiceManage/Instance/Overview/index.tsx` |
-| dashboardUrl 实体 | `datasophon-api/.../dao/entity/ClusterServiceDashboard.java` |
-| dashboardUrl 取值逻辑 | `datasophon-api/.../service/impl/ClusterServiceDashboardServiceImpl.java` |
-| 占位符替换 | `PlaceholderUtils.replacePlaceholders` |
-| 组件版本参考表(范围来源) | `deploy/deployment-standalone.md` 第十节 |
+|           用途           |                                    文件                                     |
+|------------------------|---------------------------------------------------------------------------|
+| 现状监控入口(iframe Grafana) | `datasophon-ui/src/pages/ServiceManage/Instance/Overview/index.tsx`       |
+| dashboardUrl 实体        | `datasophon-api/.../dao/entity/ClusterServiceDashboard.java`              |
+| dashboardUrl 取值逻辑      | `datasophon-api/.../service/impl/ClusterServiceDashboardServiceImpl.java` |
+| 占位符替换                  | `PlaceholderUtils.replacePlaceholders`                                    |
+| 组件版本参考表(范围来源)          | `deploy/deployment-standalone.md` 第十节                                     |
+

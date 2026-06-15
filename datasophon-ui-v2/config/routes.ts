@@ -36,12 +36,29 @@ export default [
     component: './chatbot',
   },
 
-  // ─── APISIX 监控看板（Phase 2 原型，mock 数据）────────────────────
+  // ─── 监控看板（Monitor Dashboards）────────────────────────────────
   {
-    path: '/apisix-monitor',
-    name: 'apisix-monitor',
-    icon: 'monitor',
-    component: './ApisixMonitor',
+    path: '/monitor',
+    name: 'monitor-dashboards',
+    icon: 'fundProjectionScreen',
+    routes: [
+      {
+        path: '/monitor',
+        redirect: '/monitor/apisix',
+      },
+      {
+        path: '/monitor/apisix',
+        name: 'apisix-monitor',
+        icon: 'monitor',
+        component: './ApisixMonitor',
+      },
+      {
+        path: '/monitor/prometheus',
+        name: 'prometheus-monitor',
+        icon: 'lineChart',
+        component: './PrometheusMonitor',
+      },
+    ],
   },
 
   // ─── 集群管理（Colony）────────────────────────────────────────────
