@@ -53,6 +53,7 @@ export default {
   'menu.monitor-dashboards': '监控看板',
   'menu.apisix-monitor': 'APISIX 监控',
   'menu.prometheus-monitor': 'Prometheus 监控',
+  'menu.zookeeper-monitor': 'ZooKeeper 监控',
   'menu.colony': '集群管理',
   'menu.colony.manage': '集群列表',
   'menu.frame': '集群框架',

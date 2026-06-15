@@ -25,7 +25,7 @@ const StatPanel: FC<StatPanelProps> = ({
       suffix={suffix}
       precision={formatter ? undefined : precision}
       formatter={formatter ? () => formatter(value) : undefined}
-      valueStyle={{ color, fontSize: 32, fontWeight: 600 }}
+      styles={{ content: { color, fontSize: 32, fontWeight: 600 } }}
     />
   </Card>
 );

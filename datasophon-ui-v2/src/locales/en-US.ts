@@ -6,6 +6,7 @@ import pages from './en-US/pages';
 import prometheusMonitor from './en-US/prometheusMonitor';
 import settingDrawer from './en-US/settingDrawer';
 import settings from './en-US/settings';
+import zookeeperMonitor from './en-US/zookeeperMonitor';
 
 export default {
   'navBar.lang': 'Languages',
@@ -21,4 +22,5 @@ export default {
   ...component,
   ...pages,
   ...prometheusMonitor,
+  ...zookeeperMonitor,
 };

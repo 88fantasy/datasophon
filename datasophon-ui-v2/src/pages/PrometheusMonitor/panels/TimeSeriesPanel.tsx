@@ -12,6 +12,7 @@ interface TimeSeriesPanelProps {
   yFormatter?: (value: number) => string;
   tooltipFormatter?: (value: number) => string;
   colorMap?: Record<string, string>;
+  thresholdLines?: Array<{ value: number; label?: string; color?: string }>;
 }
 
 const defaultFormatter = (value: number) => value.toFixed(2);
@@ -23,6 +24,7 @@ const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
   yFormatter = defaultFormatter,
   tooltipFormatter = yFormatter,
   colorMap,
+  thresholdLines,
 }) => {
   if (!data.length) {
     return (
@@ -65,6 +67,16 @@ const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
           color: { type: 'ordinal', range: colorRange },
         }}
         legend={{ position: 'top-right' }}
+        annotations={thresholdLines?.map((line) => ({
+          type: 'lineY',
+          y: line.value,
+          style: {
+            stroke: line.color ?? CHART_COLORS.warning,
+            lineDash: [4, 4],
+          },
+          labelText: line.label,
+          labelFill: line.color ?? CHART_COLORS.warning,
+        }))}
         tooltip={{
           title: (point: TimeSeriesPoint) => dayjs(point.time).format('HH:mm:ss'),
           items: [

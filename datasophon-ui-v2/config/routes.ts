@@ -58,6 +58,12 @@ export default [
         icon: 'lineChart',
         component: './PrometheusMonitor',
       },
+      {
+        path: '/monitor/zookeeper',
+        name: 'zookeeper-monitor',
+        icon: 'cluster',
+        component: './ZooKeeperMonitor',
+      },
     ],
   },
 

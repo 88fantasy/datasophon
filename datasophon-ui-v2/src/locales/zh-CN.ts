@@ -6,6 +6,7 @@ import pages from './zh-CN/pages';
 import prometheusMonitor from './zh-CN/prometheusMonitor';
 import settingDrawer from './zh-CN/settingDrawer';
 import settings from './zh-CN/settings';
+import zookeeperMonitor from './zh-CN/zookeeperMonitor';
 
 export default {
   'navBar.lang': '语言',
@@ -21,4 +22,5 @@ export default {
   ...network,
   ...component,
   ...prometheusMonitor,
+  ...zookeeperMonitor,
 };

@@ -53,6 +53,7 @@ export default {
   'menu.monitor-dashboards': 'Monitor Dashboards',
   'menu.apisix-monitor': 'APISIX Monitor',
   'menu.prometheus-monitor': 'Prometheus Monitor',
+  'menu.zookeeper-monitor': 'ZooKeeper Monitor',
   'menu.colony': 'Cluster Management',
   'menu.colony.manage': 'Cluster List',
   'menu.frame': 'Cluster Frameworks',
