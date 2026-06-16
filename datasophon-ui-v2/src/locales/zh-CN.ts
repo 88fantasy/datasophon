@@ -1,4 +1,6 @@
 import component from './zh-CN/component';
+import dorisMonitor from './zh-CN/dorisMonitor';
+import dolphinSchedulerMonitor from './zh-CN/dolphinSchedulerMonitor';
 import globalHeader from './zh-CN/globalHeader';
 import menu from './zh-CN/menu';
 import network from './zh-CN/network';
@@ -23,4 +25,6 @@ export default {
   ...component,
   ...prometheusMonitor,
   ...zookeeperMonitor,
+  ...dolphinSchedulerMonitor,
+  ...dorisMonitor,
 };

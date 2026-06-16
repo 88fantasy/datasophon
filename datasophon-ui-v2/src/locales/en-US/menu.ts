@@ -54,6 +54,8 @@ export default {
   'menu.apisix-monitor': 'APISIX Monitor',
   'menu.prometheus-monitor': 'Prometheus Monitor',
   'menu.zookeeper-monitor': 'ZooKeeper Monitor',
+  'menu.dolphinscheduler-monitor': 'DolphinScheduler Monitor',
+  'menu.doris-monitor': 'Doris Monitor',
   'menu.colony': 'Cluster Management',
   'menu.colony.manage': 'Cluster List',
   'menu.frame': 'Cluster Frameworks',

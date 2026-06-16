@@ -64,6 +64,18 @@ export default [
         icon: 'cluster',
         component: './ZooKeeperMonitor',
       },
+      {
+        path: '/monitor/dolphinscheduler',
+        name: 'dolphinscheduler-monitor',
+        icon: 'fundProjectionScreen',
+        component: './DolphinSchedulerMonitor',
+      },
+      {
+        path: '/monitor/doris',
+        name: 'doris-monitor',
+        icon: 'database',
+        component: './DorisMonitor',
+      },
     ],
   },
 

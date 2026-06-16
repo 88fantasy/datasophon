@@ -38,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
@@ -123,8 +124,9 @@ public class PrometheusProxyV2Controller extends ApiController {
                                           String start,
                                           String end,
                                           String step) {
+        String responseBody = null;
         try {
-            String responseBody = doHttpGet(url, query, time, start, end, step);
+            responseBody = doHttpGet(url, query, time, start, end, step);
             JsonNode root = objectMapper.readTree(responseBody);
             String status = root.path("status").asText();
             
@@ -135,6 +137,10 @@ public class PrometheusProxyV2Controller extends ApiController {
             String errorMsg = root.path("error").asText("Prometheus 返回未知错误");
             logger.warn("Prometheus 查询失败: url={} query={} error={}", url, query, errorMsg);
             return ApiResponse.fail(400, errorMsg);
+        } catch (JsonProcessingException e) {
+            String summary = summarizeNonJsonResponse(responseBody);
+            logger.warn("Prometheus 返回非 JSON 响应: url={} query={} reason={}", url, query, summary);
+            return ApiResponse.fail(502, "Prometheus 返回非 JSON 响应: " + summary);
         } catch (HttpException e) {
             logger.error("Prometheus 不可达: url={} reason={}", url, e.getMessage());
             return ApiResponse.fail(502, "Prometheus 不可达: " + e.getMessage());
@@ -175,5 +181,12 @@ public class PrometheusProxyV2Controller extends ApiController {
         try (HttpResponse resp = HttpRequest.get(sb.toString()).timeout(props.getTimeoutMs()).execute()) {
             return resp.body();
         }
+    }
+    
+    private String summarizeNonJsonResponse(String message) {
+        if (message == null || message.isBlank()) {
+            return "empty response";
+        }
+        return message.length() > 300 ? message.substring(0, 300) + "..." : message;
     }
 }

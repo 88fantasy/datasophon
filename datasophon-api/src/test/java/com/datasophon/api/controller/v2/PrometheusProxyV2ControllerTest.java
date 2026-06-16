@@ -181,4 +181,32 @@ class PrometheusProxyV2ControllerTest {
         assertThat(resp.isSuccess()).isFalse();
         assertThat(resp.getErrorMessage()).isEqualTo("Prometheus 返回未知错误");
     }
+    
+    @Test
+    @DisplayName("Prometheus 返回非 JSON 文本时，返回 502 并保留上游错误摘要")
+    void query_plainTextError_returnsBadGateway() {
+        String prometheusResp = "Error parsing query: invalid parameter \"query\"";
+        
+        PrometheusProxyV2Controller ctrl = stubController(prometheusResp);
+        ApiResponse<JsonNode> resp = ctrl.query("broken", null, null);
+        
+        assertThat(resp.isSuccess()).isFalse();
+        assertThat(resp.getErrorCode()).isEqualTo(502);
+        assertThat(resp.getErrorMessage()).contains("Prometheus 返回非 JSON 响应");
+        assertThat(resp.getErrorMessage()).contains("Error parsing query");
+    }
+    
+    @Test
+    @DisplayName("range query 返回非 JSON 文本时，返回 502 并保留上游错误摘要")
+    void queryRange_plainTextError_returnsBadGateway() {
+        String prometheusResp = "Error executing query: upstream timeout";
+        
+        PrometheusProxyV2Controller ctrl = stubController(prometheusResp);
+        ApiResponse<JsonNode> resp = ctrl.queryRange("broken", "1718000000", "1718003600", "30", null);
+        
+        assertThat(resp.isSuccess()).isFalse();
+        assertThat(resp.getErrorCode()).isEqualTo(502);
+        assertThat(resp.getErrorMessage()).contains("Prometheus 返回非 JSON 响应");
+        assertThat(resp.getErrorMessage()).contains("Error executing query");
+    }
 }
