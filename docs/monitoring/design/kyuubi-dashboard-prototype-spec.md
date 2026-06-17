@@ -364,8 +364,8 @@ interface KyuubiDashboardQueryParams {
       ├── <TimeSeriesPanel KY15>      # JVM Memory Usage（双 y 轴）
       └── <AreaPanel KY16>            # JVM Memory Pools（堆叠）
 
-# 复用的基础组件（来自 PrometheusMonitor/panels/）
-StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / usePrometheusDashboard
+# 复用的基础组件（来自 `monitor/_shared/panels/`）
+StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / useDashboardData ← 均来自 `monitor/_shared/`
 ```
 
 ---
@@ -379,11 +379,11 @@ datasophon-ui-v2/src/pages/KyuubiMonitor/
   ├── index.tsx                     # 页面容器（6 行布局）
   ├── panelQueries.ts               # PanelDef（16 个面板）
   ├── hooks/useKyuubiDashboard.ts
-  ├── panels/                       # 复用 PrometheusMonitor/panels/
+  ├── panels/                       # 引用 `monitor/_shared/panels/`
   ├── toolbar/
   │   └── KyuubiDashboardToolbar.tsx # Instance + connType + opType 下拉
   ├── mock/kyuubiMockData.ts
-  └── utils/                        # 复用 PrometheusMonitor/utils/
+  └── utils/                        # 无此目录 — 直接从 `../../_shared/charts/` import
 ```
 
 ### 9.2 PromQL 变量替换规则（Kyuubi 版，★ 含指标名插值）
@@ -402,6 +402,26 @@ function replaceKyuubiVars(promql: string, vars: KyuubiDashboardQueryParams['var
 ```
 
 > ⚠️ `${connType}` / `${opType}` 用 `${...}` 包裹（Grafana 显式插值语法），替换后直接成为指标名一部分（如 `kyuubi_operation_state_ExecuteStatement_error_total`）。`$baseFilter` 为空时需清理可能残留的多余逗号（`{,instance=...}` → `{instance=...}`）。
+
+### 9.2.1 Hook 集成（`useKyuubiDashboard` 实现说明）
+
+`replaceKyuubiVars` 与通用 `replaceVars` 不兼容（`${connType}` 是花括号语法）。解决方案：将 `replaceKyuubiVars` 作为 adapter 传给 `useDashboardData`：
+
+```ts
+const data = useDashboardData({
+  replaceVars: (promql, vars) =>
+    replaceKyuubiVars(promql, vars as Partial<KyuubiDashboardVariables>),
+  ...
+});
+```
+
+**extras 中 query 须预展开**：`extras.instanceList.query` 需要在定义时就调用 `replaceKyuubiVars` 展开（`useDashboardData` 对 extras 不做变量替换，直接按原始 query 请求）：
+
+```ts
+const extras = useMemo(() => ({
+  instanceList: { query: replaceKyuubiVars('kyuubi_jvm_uptime{$baseFilter}', effectiveVariables), kind: 'instant' },
+}), [effectiveVariables]);
+```
 
 ### 9.3 $baseFilter 空值处理
 

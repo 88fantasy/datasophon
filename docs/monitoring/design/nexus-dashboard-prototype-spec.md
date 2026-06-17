@@ -422,7 +422,7 @@ interface NexusDashboardQueryParams {
 
 ```
 <NexusDashboard>                      # 页面容器，管理 variables + time range + refresh
-  ├── <DashboardToolbar>              # 复用 PrometheusMonitor 同名组件（Instance + Job，去掉 Interval）
+  ├── <DashboardToolbar>              # 引用 `_shared/DashboardToolbar.tsx`（children 注入 Instance + Job 选择器）
   │
   ├── <Row R1>                        # 概览 Stat（6 个 Stat 面板）
   │   ├── <StatPanel N01>             # Uptime（formatDuration，reverse 阈值）
@@ -454,8 +454,8 @@ interface NexusDashboardQueryParams {
       ├── <TimeSeriesPanel N17>       # Jetty ThreadPool（__name__ 正则）
       └── <TimeSeriesPanel N18>       # Non-Heap & Buffers
 
-# 复用的基础组件（来自 PrometheusMonitor/panels/）
-StatPanel / StatusStatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / usePrometheusDashboard
+# 复用的基础组件（来自 `monitor/_shared/panels/`）
+StatPanel / StatusStatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / useDashboardData ← 均来自 `monitor/_shared/`
 ```
 
 ---
@@ -469,13 +469,13 @@ datasophon-ui-v2/src/pages/NexusMonitor/
   ├── index.tsx                     # 页面容器（6 行布局）
   ├── panelQueries.ts               # PanelDef（18 个面板的 instant/range/multi-range 定义）
   ├── hooks/
-  │   └── useNexusDashboard.ts      # 复用 usePrometheusDashboard 模式（去掉 interval）
-  ├── panels/                       # 复用 PrometheusMonitor/panels/，无需复制
+  │   └── useNexusDashboard.ts      # 调用 `useDashboardData`（`_shared/useDashboardData.ts`）
+  ├── panels/                       # 无此目录 — 直接从 `../../_shared/panels/` import
   ├── toolbar/
   │   └── NexusDashboardToolbar.tsx # 复用 ZK 版（Instance + Job，无 Interval）
   ├── mock/
   │   └── nexusMockData.ts          # 确定性伪随机静态数据
-  └── utils/                        # 复用 PrometheusMonitor/utils/（追加 jvmPoolColors）
+  └── utils/                        
 ```
 
 ### 9.2 PromQL 变量替换规则（Nexus 版）

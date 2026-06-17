@@ -432,8 +432,8 @@ interface HDFSDashboardQueryParams {
   └── <Row R6>                        # DataNode 错误
       └── <TimeSeriesPanel H18>       # DataNode Errors（4 系列）
 
-# 复用的基础组件（来自 PrometheusMonitor/panels/）
-StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / usePrometheusDashboard
+# 复用的基础组件（来自 `monitor/_shared/panels/`）
+StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / useDashboardData ← 均来自 `monitor/_shared/`
 ```
 
 ---
@@ -447,13 +447,13 @@ datasophon-ui-v2/src/pages/HDFSMonitor/
   ├── index.tsx                     # 页面容器（6 行布局）
   ├── panelQueries.ts               # PanelDef（18 个面板，NN 区 H01-H08 标注 ★ 待核对）
   ├── hooks/
-  │   └── useHDFSDashboard.ts       # 复用 usePrometheusDashboard，变量 Namespace + Instance
-  ├── panels/                       # 复用 PrometheusMonitor/panels/
+  │   └── useHDFSDashboard.ts       # 调用 `useDashboardData`（`_shared/useDashboardData.ts`）
+  ├── panels/                       # 引用 `monitor/_shared/panels/`
   ├── toolbar/
   │   └── HDFSDashboardToolbar.tsx  # Namespace 单选 + Instance 多选
   ├── mock/
   │   └── hdfsMockData.ts
-  └── utils/                        # 复用 PrometheusMonitor/utils/（追加 MB 常量 / healthCountColor）
+  └── utils/                        
 ```
 
 ### 9.2 PromQL 变量替换规则（HDFS 版）

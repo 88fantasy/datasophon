@@ -18,7 +18,7 @@ export default {
       changeOrigin: true,
       bypass(req: import('http').IncomingMessage) {
         // 页面路由请求（Accept: text/html）不代理，由 dev server 返回 SPA index.html
-        const accept = req.headers['accept'];
+        const accept = req.headers.accept;
         if (accept?.includes('text/html')) return req.url ?? '/';
         return null;
       },

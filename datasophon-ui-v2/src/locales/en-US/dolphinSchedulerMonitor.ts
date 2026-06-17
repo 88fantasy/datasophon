@@ -15,8 +15,7 @@ export default {
     'uses $application and $instance from the toolbar',
 
   'pages.dolphinSchedulerMonitor.panel.D-A01': 'Worker CPU Usage',
-  'pages.dolphinSchedulerMonitor.panel.D-A02':
-    'Worker Submit Queue Full / 1m',
+  'pages.dolphinSchedulerMonitor.panel.D-A02': 'Worker Submit Queue Full / 1m',
   'pages.dolphinSchedulerMonitor.panel.D-A03': 'Worker Overload / 1m',
   'pages.dolphinSchedulerMonitor.panel.D-A04': 'Worker Tasks Total',
   'pages.dolphinSchedulerMonitor.panel.D-A05':
@@ -26,19 +25,16 @@ export default {
   'pages.dolphinSchedulerMonitor.panel.D-B01': 'Task Total Count',
   'pages.dolphinSchedulerMonitor.panel.D-B02': 'Task Successful Rate',
   'pages.dolphinSchedulerMonitor.panel.D-B03': 'Quartz Job Total Count',
-  'pages.dolphinSchedulerMonitor.panel.D-B04':
-    'Quartz Job Successful Rate',
+  'pages.dolphinSchedulerMonitor.panel.D-B04': 'Quartz Job Successful Rate',
   'pages.dolphinSchedulerMonitor.panel.D-B05': 'Master Overload / 1m',
-  'pages.dolphinSchedulerMonitor.panel.D-B06':
-    'Master Consume Command / 1m',
+  'pages.dolphinSchedulerMonitor.panel.D-B06': 'Master Consume Command / 1m',
   'pages.dolphinSchedulerMonitor.panel.D-B07':
     'Quartz Job Executed Count / min',
   'pages.dolphinSchedulerMonitor.panel.D-B08': 'Quartz Job Execution Time',
   'pages.dolphinSchedulerMonitor.panel.D-B09':
     'Task Execution Total & Success / 1m',
   'pages.dolphinSchedulerMonitor.panel.D-B10': 'Task Execution Time',
-  'pages.dolphinSchedulerMonitor.panel.D-B11':
-    'Process Instance States / 1m',
+  'pages.dolphinSchedulerMonitor.panel.D-B11': 'Process Instance States / 1m',
   'pages.dolphinSchedulerMonitor.panel.D-B12': 'Task Dispatch Count / 1m',
   'pages.dolphinSchedulerMonitor.panel.D-B13': 'Task Instance States / 1m',
   'pages.dolphinSchedulerMonitor.panel.D-C01': 'Uptime',

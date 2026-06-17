@@ -28,7 +28,7 @@ const UserModal: React.FC<Props> = ({ trigger, user, onSuccess }) => {
       } else {
         await createUser({
           username: values.username,
-          password: values.password!,
+          password: values.password ?? '',
           email: values.email,
           phone: values.phone,
         });

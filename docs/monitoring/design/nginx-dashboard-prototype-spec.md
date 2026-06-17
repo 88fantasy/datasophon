@@ -239,8 +239,8 @@ interface NginxDashboardQueryParams {
   └── <Row R3>                        # 连接饱和度
       └── <AreaPanel N06>             # Active Connections（堆叠 4 系列）
 
-# 复用的基础组件（来自 PrometheusMonitor/panels/）
-StatPanel / StatusStatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / usePrometheusDashboard
+# 复用的基础组件（来自 `monitor/_shared/panels/`）
+StatPanel / StatusStatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / useDashboardData ← 均来自 `monitor/_shared/`
 ```
 
 ---
@@ -254,10 +254,10 @@ datasophon-ui-v2/src/pages/NginxMonitor/
   ├── index.tsx                     # 页面容器（3 行布局）
   ├── panelQueries.ts               # PanelDef（6 个面板）
   ├── hooks/useNginxDashboard.ts
-  ├── panels/                       # 复用 PrometheusMonitor/panels/
-  ├── toolbar/                      # 复用 PrometheusMonitor 的 DashboardToolbar（仅 Instance）
+  ├── panels/                       # 引用 `monitor/_shared/panels/`
+  ├── toolbar/                      # 引用 `_shared/DashboardToolbar.tsx`（children 注入 Instance 选择器）
   ├── mock/nginxMockData.ts
-  └── utils/                        # 复用 PrometheusMonitor/utils/
+  └── utils/                        # 无此目录 — 直接从 `../../_shared/charts/` import
 ```
 
 ### 9.2 PromQL 变量替换

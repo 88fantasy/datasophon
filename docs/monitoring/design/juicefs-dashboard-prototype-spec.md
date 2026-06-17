@@ -404,8 +404,8 @@ interface JuiceFSDashboardQueryParams {
   └── <Row R6>                        # 客户端资源
       └── <TimeSeriesPanel J17>       # Client CPU & Memory（双 y 轴）
 
-# 复用的基础组件（来自 PrometheusMonitor/panels/）
-StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / usePrometheusDashboard
+# 复用的基础组件（来自 `monitor/_shared/panels/`）
+StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / useDashboardData ← 均来自 `monitor/_shared/`
 ```
 
 ---
@@ -419,13 +419,13 @@ datasophon-ui-v2/src/pages/JuiceFSMonitor/
   ├── index.tsx                     # 页面容器（6 行布局）
   ├── panelQueries.ts               # PanelDef（17 个面板）
   ├── hooks/
-  │   └── useJuiceFSDashboard.ts    # 复用 usePrometheusDashboard，变量为 $name
-  ├── panels/                       # 复用 PrometheusMonitor/panels/
+  │   └── useJuiceFSDashboard.ts    # 调用 `useDashboardData`（`_shared/useDashboardData.ts`）
+  ├── panels/                       # 引用 `monitor/_shared/panels/`
   ├── toolbar/
   │   └── JuiceFSDashboardToolbar.tsx # 卷名单选下拉 + 时间范围 + 刷新
   ├── mock/
   │   └── juicefsMockData.ts
-  └── utils/                        # 复用 PrometheusMonitor/utils/（追加 usAxisFormatter）
+  └── utils/                        
 ```
 
 ### 9.2 PromQL 变量替换规则（JuiceFS 版）
@@ -438,9 +438,29 @@ function replaceJuiceFSVars(promql: string, vars: JuiceFSDashboardQueryParams['v
 }
 ```
 
+### 9.2.1 Hook 集成（`useJuiceFSDashboard` 实现说明）
+
+`useJuiceFSDashboard` 有两个 JuiceFS 特有点：
+
+1. **`rateInterval` 合入 variables**：`$__rate_interval` 是 `$key` 风格（无方括号），可直接由通用 `replaceVars` 替换。
+   把 `rateInterval` 合入 `effectiveVars = { ...variables, __rate_interval: rateInterval }`，然后传给 `useDashboardData`。
+
+2. **卷名 extras**：传入 `extras = { volumeList: { query: 'juicefs_uptime{vol_name=~".+"}', kind: 'instant' } }`，
+   结果 `data.extras.volumeList` 中提取 `vol_name` 标签值得到卷名列表。
+
+```ts
+const effectiveVars = { ...variables, __rate_interval: rateInterval };
+const data = useDashboardData({
+  replaceVars: (promql, vars) => replaceVars(promql, vars, { name: '.+' }),
+  variables: effectiveVars, panelIds: ALL_PANEL_IDS,
+  extras: { volumeList: { query: 'juicefs_uptime{vol_name=~".+"}', kind: 'instant' } },
+  ...
+});
+```
+
 ### 9.3 卷名下拉派生
 
-工具栏卷名下拉由 `label_values(juicefs_uptime, vol_name)` 派生（复用 `deriveInstancesAndJobs` 模式，改查 `vol_name` 标签）。默认选中第一个卷。
+工具栏卷名下拉由 `extras.volumeList`（`juicefs_uptime{vol_name=~".+"}`）派生，从结果中提取 `vol_name` 标签值列表。默认选中第一个卷。
 
 ### 9.4 Mock 数据要求
 

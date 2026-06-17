@@ -595,7 +595,7 @@ interface ZKDashboardQueryParams {
 
 ```
 <ZooKeeperDashboard>                  # 页面容器，管理 variables + time range + refresh
-  ├── <DashboardToolbar>              # 复用 PrometheusMonitor 同名组件（去掉 Interval 下拉）
+  ├── <DashboardToolbar>              # 引用 `_shared/DashboardToolbar.tsx`（去掉 Interval 下拉）
   │
   ├── <Row R1>                        # 集群概览 Stat（6 个 Stat 面板）
   │   ├── <StatPanel Z01>             # Quorum Size（阈值 ≥3 绿/<3 红）
@@ -634,8 +634,8 @@ interface ZKDashboardQueryParams {
       ├── <TimeSeriesPanel Z22>       # GC Collection Rate（by gc name，ops/s）
       └── <TimeSeriesPanel Z23>       # JVM GC Pause Time（by instance，ms/s）
 
-# 复用的基础组件（来自 PrometheusMonitor/panels/）
-StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / usePrometheusDashboard
+# 复用的基础组件（来自 `monitor/_shared/panels/`）
+StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / useDashboardData ← 均来自 `monitor/_shared/`
 ```
 
 ---
@@ -649,13 +649,13 @@ datasophon-ui-v2/src/pages/ZooKeeperMonitor/
   ├── index.tsx                     # 页面容器（7 行布局）
   ├── panelQueries.ts               # PanelDef（24 个面板的 instant/range/multi-range 定义）
   ├── hooks/
-  │   └── useZKDashboard.ts         # 复用 usePrometheusDashboard 模式（去掉 interval 变量）
-  ├── panels/                       # 复用 PrometheusMonitor/panels/ 的 4 个组件，无需复制
+  │   └── useZKDashboard.ts         # 调用 `useDashboardData`（`_shared/useDashboardData.ts`）
+  ├── panels/                       # 无此目录 — 直接从 `../../_shared/panels/` import
   ├── toolbar/
   │   └── ZKDashboardToolbar.tsx    # 改 DashboardToolbar（去掉 Interval 下拉，保留 Instance + Job）
   ├── mock/
   │   └── zkMockData.ts             # 确定性伪随机静态数据
-  └── utils/                        # 直接复用 PrometheusMonitor/utils/
+  └── utils/                        # 无此目录 — 直接从 `../../_shared/charts/` import
 ```
 
 ### 9.2 PromQL 变量替换规则（ZK 版）

@@ -411,7 +411,7 @@ interface MySQLDashboardQueryParams {
 
 ```
 <MySQLDashboard>                      # 页面容器，管理 variables + time range + refresh
-  ├── <DashboardToolbar>              # 复用 PrometheusMonitor 同名组件（Instance + Job，Interval 自动）
+  ├── <DashboardToolbar>              # 引用 `_shared/DashboardToolbar.tsx`（Instance + Job + 自动刷新）
   │
   ├── <Row R1>                        # 概览 Stat（6 个 Stat 面板）
   │   ├── <StatPanel M01>             # Uptime（reverse 阈值 + formatDuration）
@@ -442,8 +442,8 @@ interface MySQLDashboardQueryParams {
       ├── <TimeSeriesPanel M16>       # MySQL Handlers
       └── <TimeSeriesPanel M17>       # Top Command Counters
 
-# 复用的基础组件（来自 PrometheusMonitor/panels/）
-StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / usePrometheusDashboard
+# 复用的基础组件（来自 `monitor/_shared/panels/`）
+StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / useDashboardData ← 均来自 `monitor/_shared/`
 ```
 
 ---
@@ -457,12 +457,12 @@ datasophon-ui-v2/src/pages/MySQLMonitor/
   ├── index.tsx                     # 页面容器（6 行布局）
   ├── panelQueries.ts               # PanelDef（17 个面板的 instant/range 定义）
   ├── hooks/
-  │   └── useMySQLDashboard.ts      # 复用 usePrometheusDashboard 模式
-  ├── panels/                       # 复用 PrometheusMonitor/panels/ 的 4 个组件，无需复制
-  ├── toolbar/                      # 复用 PrometheusMonitor 的 DashboardToolbar
+  │   └── useMySQLDashboard.ts      # 调用 `useDashboardData`（`_shared/useDashboardData.ts`）
+  ├── panels/                       # 无此目录 — 直接从 `../../_shared/panels/` import
+  ├── toolbar/                      # 引用 `_shared/DashboardToolbar.tsx`
   ├── mock/
   │   └── mysqlMockData.ts          # 确定性伪随机静态数据
-  └── utils/                        # 直接复用 PrometheusMonitor/utils/（追加 colorByThresholdReverse / formatDuration）
+  └── utils/                        # 无此目录 — 直接从 `../../_shared/charts/` import（追加 colorByThresholdReverse / formatDuration）
 ```
 
 ### 9.2 PromQL 变量替换规则（MySQL 版）
@@ -474,6 +474,26 @@ function replaceMySQLVars(promql: string, vars: MySQLDashboardQueryParams['varia
     .replace(/\$job/g,      vars.job      || '.+')
     .replace(/\[\$__interval\]/g, `[${interval}]`);   // interval = calcRateInterval(start, end)
 }
+```
+
+### 9.2.1 Hook 集成（`useMySQLDashboard` 实现说明）
+
+`useMySQLDashboard` 调用通用 `useDashboardData`，有两个 MySQL 特有点：
+
+1. **`rateInterval` 注入**：`calcRateInterval(TIME_RANGE_SECONDS[timeRange])` 计算速率窗口，传给 `replaceMySQLVars` 作为第三参数（而非合入 `variables`，因为 `[$__interval]` 是括号语法而非 `$key` 语法）。
+
+2. **`extras.up` 派生下拉**：传入 `extras = { up: { query: 'mysql_up', kind: 'instant' } }`，
+   结果 `data.extras.up` 经 `deriveInstancesAndJobs` 得到实例/Job 选择器列表。
+
+```ts
+const data = useDashboardData({
+  panelQueries: PANEL_QUERIES,
+  replaceVars: (promql, vars) => replaceMySQLVars(promql, vars, rateInterval),
+  variables,
+  panelIds: ALL_PANEL_IDS,   // M01–M17 全量（单 segment）
+  extras: { up: { query: 'mysql_up', kind: 'instant' } },
+  timeRange, clusterId, refreshKey,
+});
 ```
 
 ### 9.3 Mock 数据要求

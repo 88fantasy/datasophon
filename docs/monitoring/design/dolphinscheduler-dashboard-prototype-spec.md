@@ -801,7 +801,7 @@ interface DSDashboardQueryParams {
 
 ```
 <DolphinSchedulerDashboard>           # 页面容器，管理 variables + time range + refresh
-  ├── <DashboardToolbar>              # 复用 PrometheusMonitor 同名组件（调整变量：角色▼ + 实例▼）
+  ├── <DashboardToolbar>              # 引用 `_shared/DashboardToolbar.tsx`（调整变量：角色▼ + 实例▼）
   │
   ├── <SectionHeader title="SEGMENT A — WORKER (application=worker-server)"/>
   ├── <Row R A-R1>                    # Worker 饱和度
@@ -855,8 +855,8 @@ interface DSDashboardQueryParams {
       ├── <TimeSeriesPanel D-C12>     # Log Events/1m（by level）
       └── <TimeSeriesPanel D-C13>     # GC Pause Rate
 
-# 复用的基础组件（来自 PrometheusMonitor/panels/）
-StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / usePrometheusDashboard
+# 复用的基础组件（来自 `monitor/_shared/panels/`）
+StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / useDashboardData ← 均来自 `monitor/_shared/`
 ```
 
 ---
@@ -870,13 +870,13 @@ datasophon-ui-v2/src/pages/DolphinSchedulerMonitor/
   ├── index.tsx                 # 页面容器（三段式布局）
   ├── panelQueries.ts           # PanelDef（31 个面板的 instant/range/multi-range 定义）
   ├── hooks/
-  │   └── useDSMonitorDashboard.ts   # 复用 usePrometheusDashboard 模式
-  ├── panels/                   # 复用 PrometheusMonitor/panels/ 的 4 个组件，无需复制
+  │   └── useDSMonitorDashboard.ts   # 调用 `useDashboardData`（`_shared/useDashboardData.ts`）
+  ├── panels/                   # 无此目录 — 直接从 `../../_shared/panels/` import
   ├── toolbar/
   │   └── DSDashboardToolbar.tsx    # 改 DashboardToolbar（去掉 Job/Interval，增加 Application 选项）
   ├── mock/
   │   └── dsMockData.ts         # 确定性伪随机静态数据
-  └── utils/                    # 直接复用 PrometheusMonitor/utils/
+  └── utils/                    # 无此目录 — 直接从 `../../_shared/charts/` import
 ```
 
 ### 9.2 PromQL 变量替换规则（DS 版）

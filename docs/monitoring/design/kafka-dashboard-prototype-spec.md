@@ -304,8 +304,8 @@ interface KafkaDashboardQueryParams {
       ├── <TimeSeriesPanel K11>       # Request Total Time ★
       └── <TimeSeriesPanel K12>       # Request Rate ★
 
-# 复用的基础组件（来自 PrometheusMonitor/panels/）
-StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / usePrometheusDashboard
+# 复用的基础组件（来自 `monitor/_shared/panels/`）
+StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / useDashboardData ← 均来自 `monitor/_shared/`
 ```
 
 ---
@@ -319,10 +319,10 @@ datasophon-ui-v2/src/pages/KafkaMonitor/
   ├── index.tsx                     # 页面容器（4 行布局）
   ├── panelQueries.ts               # PanelDef（12 个面板，★ JMX 面板标注待核对 jmx_exporter 命名）
   ├── hooks/useKafkaDashboard.ts
-  ├── panels/                       # 复用 PrometheusMonitor/panels/
+  ├── panels/                       # 引用 `monitor/_shared/panels/`
   ├── toolbar/                      # Instance + Topic 多选
   ├── mock/kafkaMockData.ts
-  └── utils/                        # 复用 PrometheusMonitor/utils/
+  └── utils/                        # 无此目录 — 直接从 `../../_shared/charts/` import
 ```
 
 ### 9.2 PromQL 变量替换

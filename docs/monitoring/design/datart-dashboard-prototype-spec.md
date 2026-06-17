@@ -407,8 +407,8 @@ interface DatartDashboardQueryParams {
       ├── <AreaPanel D17>             # Tomcat Sent / Received Bytes
       └── <TimeSeriesPanel D18>       # Log Events by Level
 
-# 复用的基础组件（来自 PrometheusMonitor/panels/）
-StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / usePrometheusDashboard
+# 复用的基础组件（来自 `monitor/_shared/panels/`）
+StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / useDashboardData ← 均来自 `monitor/_shared/`
 ```
 
 ---
@@ -422,11 +422,11 @@ datasophon-ui-v2/src/pages/DatartMonitor/
   ├── index.tsx                     # 页面容器（6 行布局）
   ├── panelQueries.ts               # PanelDef（18 个面板）
   ├── hooks/useDatartDashboard.ts
-  ├── panels/                       # 复用 PrometheusMonitor/panels/
+  ├── panels/                       # 引用 `monitor/_shared/panels/`
   ├── toolbar/
   │   └── DatartDashboardToolbar.tsx # application/instance/池 多级下拉
   ├── mock/datartMockData.ts
-  └── utils/                        # 复用 PrometheusMonitor/utils/（追加 logLevelColors）
+  └── utils/                        
 ```
 
 ### 9.2 PromQL 变量替换规则（DATART 版）

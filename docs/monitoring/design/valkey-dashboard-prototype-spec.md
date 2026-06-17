@@ -340,7 +340,7 @@ interface ValkeyDashboardQueryParams {
 
 ```
 <ValkeyDashboard>                     # 页面容器，管理 instance + time range + refresh
-  ├── <DashboardToolbar>              # 复用 PrometheusMonitor（仅 Instance 多选，无 Job/Interval）
+  ├── <DashboardToolbar>              # 引用 `_shared/DashboardToolbar.tsx`（children 注入 Instance 选择器）
   │
   ├── <Row R1>                        # 概览 Stat（4 个）
   │   ├── <StatPanel V01>             # Max Uptime（formatDuration）
@@ -368,8 +368,8 @@ interface ValkeyDashboardQueryParams {
   └── <Row R6>                        # 错误
       └── <TimeSeriesPanel V14>       # Rejected Connections ★
 
-# 复用的基础组件（来自 PrometheusMonitor/panels/）
-StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / usePrometheusDashboard
+# 复用的基础组件（来自 `monitor/_shared/panels/`）
+StatPanel / TimeSeriesPanel / AreaPanel / DashboardToolbar / useDashboardData ← 均来自 `monitor/_shared/`
 ```
 
 ---
@@ -383,12 +383,12 @@ datasophon-ui-v2/src/pages/ValkeyMonitor/
   ├── index.tsx                     # 页面容器（6 行布局）
   ├── panelQueries.ts               # PanelDef（14 个面板，窗口按面板硬编码 [1m]/[5m]）
   ├── hooks/
-  │   └── useValkeyDashboard.ts     # 复用 usePrometheusDashboard，仅 instance 变量
-  ├── panels/                       # 复用 PrometheusMonitor/panels/
-  ├── toolbar/                      # 复用 PrometheusMonitor 的 DashboardToolbar（隐藏 Job/Interval）
+  │   └── useValkeyDashboard.ts     # 调用 `useDashboardData`（`_shared/useDashboardData.ts`）
+  ├── panels/                       # 引用 `monitor/_shared/panels/`
+  ├── toolbar/                      # 引用 `_shared/DashboardToolbar.tsx`（children 注入 Instance 选择器）
   ├── mock/
   │   └── valkeyMockData.ts
-  └── utils/                        # 复用 PrometheusMonitor/utils/
+  └── utils/                        # 无此目录 — 直接从 `../../_shared/charts/` import
 ```
 
 ### 9.2 PromQL 变量替换规则（Valkey 版）

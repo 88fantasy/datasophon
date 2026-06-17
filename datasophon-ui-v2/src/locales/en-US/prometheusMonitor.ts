@@ -5,9 +5,12 @@ export default {
   'pages.prometheusMonitor.panel.uptime': 'Uptime [{interval}]',
   'pages.prometheusMonitor.panel.totalSeries': 'Total Series',
   'pages.prometheusMonitor.panel.memoryChunks': 'Memory Chunks',
-  'pages.prometheusMonitor.panel.reloadFailures': 'Reload Failures [{interval}]',
-  'pages.prometheusMonitor.panel.missedIterations': 'Missed Iterations [{interval}]',
-  'pages.prometheusMonitor.panel.skippedScrapes': 'Skipped Scrapes [{interval}]',
+  'pages.prometheusMonitor.panel.reloadFailures':
+    'Reload Failures [{interval}]',
+  'pages.prometheusMonitor.panel.missedIterations':
+    'Missed Iterations [{interval}]',
+  'pages.prometheusMonitor.panel.skippedScrapes':
+    'Skipped Scrapes [{interval}]',
 
   // ── Target health (R2)
   'pages.prometheusMonitor.panel.currentlyDown': 'Currently Down',
@@ -23,7 +26,8 @@ export default {
 
   // ── TSDB Series (R5)
   'pages.prometheusMonitor.panel.seriesCount': 'Series Count',
-  'pages.prometheusMonitor.panel.seriesCreatedRemoved': 'Series Created / Removed',
+  'pages.prometheusMonitor.panel.seriesCreatedRemoved':
+    'Series Created / Removed',
   'pages.prometheusMonitor.panel.appendedSamples': 'Appended Samples/s',
 
   // ── Storage & Go runtime (R6)
@@ -32,14 +36,17 @@ export default {
   'pages.prometheusMonitor.panel.gcRate': 'GC Rate / 2m',
 
   // ── Rule evaluation & queries (R7)
-  'pages.prometheusMonitor.panel.ruleEvalIterations': 'Rule Evaluator Iterations',
-  'pages.prometheusMonitor.panel.ruleEvalDuration': 'Avg Rule Evaluation Duration',
+  'pages.prometheusMonitor.panel.ruleEvalIterations':
+    'Rule Evaluator Iterations',
+  'pages.prometheusMonitor.panel.ruleEvalDuration':
+    'Avg Rule Evaluation Duration',
   'pages.prometheusMonitor.panel.queryDuration': 'Query Engine Duration',
 
   // ── Errors & config & notifications (R8)
   'pages.prometheusMonitor.panel.failuresAndErrors': 'Failures and Errors',
   'pages.prometheusMonitor.panel.notificationsSent': 'Notifications Sent',
-  'pages.prometheusMonitor.panel.configReloadMinutes': 'Mins Since Config Reload',
+  'pages.prometheusMonitor.panel.configReloadMinutes':
+    'Mins Since Config Reload',
 
   // ── Toolbar
   'pages.prometheusMonitor.toolbar.instance': 'Instance',
