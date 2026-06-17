@@ -76,6 +76,36 @@ export default [
         icon: 'database',
         component: './DorisMonitor',
       },
+      {
+        path: '/monitor/mysql',
+        name: 'mysql-monitor',
+        icon: 'database',
+        component: './MySQLMonitor',
+      },
+      {
+        path: '/monitor/nexus',
+        name: 'nexus-monitor',
+        icon: 'cloudServer',
+        component: './NexusMonitor',
+      },
+      {
+        path: '/monitor/datart',
+        name: 'datart-monitor',
+        icon: 'barChart',
+        component: './DatartMonitor',
+      },
+      {
+        path: '/monitor/juicefs',
+        name: 'juicefs-monitor',
+        icon: 'hdd',
+        component: './JuiceFSMonitor',
+      },
+      {
+        path: '/monitor/kyuubi',
+        name: 'kyuubi-monitor',
+        icon: 'database',
+        component: './KyuubiMonitor',
+      },
     ],
   },
 
