@@ -1,9 +1,12 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row, Spin, Tabs, Typography } from 'antd';
+import { Col, Row, Tabs, Typography } from 'antd';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { CHART_COLORS, formatBytes } from '../_shared/charts/formatters';
 import { selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
+import { MONITOR_ROW_GUTTER } from '../_shared/layout';
+import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
+import useStyles from '../_shared/monitorStyles';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
@@ -13,8 +16,7 @@ import DorisDashboardToolbar, {
   type DorisRateInterval,
 } from './toolbar/DorisDashboardToolbar';
 
-const { Text, Title } = Typography;
-const ROW_GUTTER: [number, number] = [16, 16];
+const { Text } = Typography;
 
 const dorisRoleColors = {
   fe: CHART_COLORS.primary,
@@ -61,20 +63,18 @@ const rowsPerSecondFormatter = (value: number) => `${value.toFixed(0)} rows/s`;
 const SectionHeader: FC<{ title: string; subtitle: string }> = ({
   title,
   subtitle,
-}) => (
-  <div
-    style={{
-      borderLeft: `4px solid ${CHART_COLORS.primary}`,
-      margin: '24px 0 12px',
-      padding: '4px 12px',
-    }}
-  >
-    <Text strong>{title}</Text>
-    <Text type="secondary" style={{ marginLeft: 8 }}>
-      {subtitle}
-    </Text>
-  </div>
-);
+}) => {
+  const { styles } = useStyles();
+
+  return (
+    <div className={styles.sectionHeader}>
+      <Text strong>{title}</Text>
+      <Text type="secondary" style={{ marginLeft: 8 }}>
+        {subtitle}
+      </Text>
+    </div>
+  );
+};
 
 const DorisDashboard: FC = () => {
   const [selectedCluster, setSelectedCluster] = useState('');
@@ -130,42 +130,44 @@ const DorisDashboard: FC = () => {
   const effectiveCluster = selectedCluster || clusters[0] || 'doris';
 
   return (
-    <div className="p-4" key={refreshKey}>
-      <Title level={4} style={{ marginBottom: 16 }}>
-        {t('pages.dorisMonitor.title')}
-      </Title>
-
-      <DorisDashboardToolbar
-        cluster={effectiveCluster}
-        clusters={clusters}
-        onClusterChange={(value) => {
-          setSelectedCluster(value);
-          setSelectedFeInstances([]);
-          setSelectedBeInstances([]);
-        }}
-        feInstances={feInstances}
-        selectedFeInstances={selectedFeInstances}
-        onFeInstancesChange={setSelectedFeInstances}
-        beInstances={beInstances}
-        selectedBeInstances={selectedBeInstances}
-        onBeInstancesChange={setSelectedBeInstances}
-        rateInterval={rateInterval}
-        onRateIntervalChange={setRateInterval}
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
-        refreshInterval={refreshInterval}
-        onRefreshIntervalChange={setRefreshInterval}
-        onRefresh={handleRefresh}
-      />
-
-      <div style={{ color: '#8c8c8c', fontSize: 12, marginBottom: 12 }}>
-        {t('pages.dorisMonitor.toolbar.notice')}
-        {' · '}
-        {`job="${variables.cluster}" fe_instance=~"${variables.feInstance}" be_instance=~"${variables.beInstance}" interval=${variables.interval}`}
-        {' · '}
-        range={timeRange}
-        {loading && <Spin size="small" style={{ marginLeft: 8 }} />}
-      </div>
+    <MonitorDashboardLayout
+      key={refreshKey}
+      title={t('pages.dorisMonitor.title')}
+      toolbar={
+        <DorisDashboardToolbar
+          cluster={effectiveCluster}
+          clusters={clusters}
+          onClusterChange={(value) => {
+            setSelectedCluster(value);
+            setSelectedFeInstances([]);
+            setSelectedBeInstances([]);
+          }}
+          feInstances={feInstances}
+          selectedFeInstances={selectedFeInstances}
+          onFeInstancesChange={setSelectedFeInstances}
+          beInstances={beInstances}
+          selectedBeInstances={selectedBeInstances}
+          onBeInstancesChange={setSelectedBeInstances}
+          rateInterval={rateInterval}
+          onRateIntervalChange={setRateInterval}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          refreshInterval={refreshInterval}
+          onRefreshIntervalChange={setRefreshInterval}
+          onRefresh={handleRefresh}
+        />
+      }
+      meta={
+        <>
+          {t('pages.dorisMonitor.toolbar.notice')}
+          {' · '}
+          {`job="${variables.cluster}" fe_instance=~"${variables.feInstance}" be_instance=~"${variables.beInstance}" interval=${variables.interval}`}
+          {' · '}
+          range={timeRange}
+        </>
+      }
+      loading={loading}
+    >
 
       <Tabs
         activeKey={activeSegment}
@@ -181,7 +183,7 @@ const DorisDashboard: FC = () => {
                   title={t('pages.dorisMonitor.section.cluster')}
                   subtitle={t('pages.dorisMonitor.section.cluster.subtitle')}
                 />
-                <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+                <Row gutter={MONITOR_ROW_GUTTER}>
                   <Col span={4}>
                     <StatPanel
                       title={panelTitle('DO-A01')}
@@ -235,7 +237,7 @@ const DorisDashboard: FC = () => {
                     />
                   </Col>
                 </Row>
-                <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+                <Row gutter={MONITOR_ROW_GUTTER}>
                   <Col span={8}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-A07')}
@@ -281,7 +283,7 @@ const DorisDashboard: FC = () => {
                   title={t('pages.dorisMonitor.section.fe')}
                   subtitle={t('pages.dorisMonitor.section.fe.subtitle')}
                 />
-                <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+                <Row gutter={MONITOR_ROW_GUTTER}>
                   <Col span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B01')}
@@ -297,7 +299,7 @@ const DorisDashboard: FC = () => {
                     />
                   </Col>
                 </Row>
-                <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+                <Row gutter={MONITOR_ROW_GUTTER}>
                   <Col span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B03')}
@@ -314,7 +316,7 @@ const DorisDashboard: FC = () => {
                     />
                   </Col>
                 </Row>
-                <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+                <Row gutter={MONITOR_ROW_GUTTER}>
                   <Col span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B05')}
@@ -335,7 +337,7 @@ const DorisDashboard: FC = () => {
                     />
                   </Col>
                 </Row>
-                <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+                <Row gutter={MONITOR_ROW_GUTTER}>
                   <Col span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B07')}
@@ -358,7 +360,7 @@ const DorisDashboard: FC = () => {
                     />
                   </Col>
                 </Row>
-                <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+                <Row gutter={MONITOR_ROW_GUTTER}>
                   <Col span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B09')}
@@ -374,7 +376,7 @@ const DorisDashboard: FC = () => {
                     />
                   </Col>
                 </Row>
-                <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+                <Row gutter={MONITOR_ROW_GUTTER}>
                   <Col span={12}>
                     <AreaPanel
                       title={panelTitle('DO-B10')}
@@ -410,7 +412,7 @@ const DorisDashboard: FC = () => {
                   title={t('pages.dorisMonitor.section.be')}
                   subtitle={t('pages.dorisMonitor.section.be.subtitle')}
                 />
-                <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+                <Row gutter={MONITOR_ROW_GUTTER}>
                   <Col span={8}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C01')}
@@ -443,7 +445,7 @@ const DorisDashboard: FC = () => {
                     />
                   </Col>
                 </Row>
-                <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+                <Row gutter={MONITOR_ROW_GUTTER}>
                   <Col span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C04')}
@@ -463,7 +465,7 @@ const DorisDashboard: FC = () => {
                     />
                   </Col>
                 </Row>
-                <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+                <Row gutter={MONITOR_ROW_GUTTER}>
                   <Col span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C06')}
@@ -479,7 +481,7 @@ const DorisDashboard: FC = () => {
                     />
                   </Col>
                 </Row>
-                <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+                <Row gutter={MONITOR_ROW_GUTTER}>
                   <Col span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C08')}
@@ -495,7 +497,7 @@ const DorisDashboard: FC = () => {
                     />
                   </Col>
                 </Row>
-                <Row gutter={ROW_GUTTER}>
+                <Row gutter={MONITOR_ROW_GUTTER}>
                   <Col span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C10')}
@@ -517,7 +519,7 @@ const DorisDashboard: FC = () => {
           },
         ]}
       />
-    </div>
+    </MonitorDashboardLayout>
   );
 };
 

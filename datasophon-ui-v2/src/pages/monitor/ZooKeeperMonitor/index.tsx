@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row, Spin, Typography } from 'antd';
+import { Col, Row } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -8,14 +8,13 @@ import {
 } from '../_shared/charts/formatters';
 import { selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
+import { MONITOR_ROW_GUTTER } from '../_shared/layout';
+import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
 import { useZKDashboard } from './hooks/useZKDashboard';
 import ZKDashboardToolbar from './toolbar/ZKDashboardToolbar';
-
-const { Title } = Typography;
-const ROW_GUTTER: [number, number] = [16, 16];
 
 const zkLatencyColors = {
   max: CHART_COLORS.error,
@@ -110,34 +109,34 @@ const ZooKeeperDashboard: FC = () => {
   });
 
   return (
-    <div className="p-4" key={refreshKey}>
-      <Title level={4} style={{ marginBottom: 16 }}>
-        {title}
-      </Title>
-
-      <ZKDashboardToolbar
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
-        refreshInterval={refreshInterval}
-        onRefreshIntervalChange={setRefreshInterval}
-        instances={instances}
-        selectedInstances={selectedInstances}
-        onInstancesChange={setSelectedInstances}
-        jobs={jobs}
-        selectedJobs={selectedJobs}
-        onJobsChange={setSelectedJobs}
-        onRefresh={handleRefresh}
-      />
-
-      <div style={{ color: '#8c8c8c', fontSize: 12, marginBottom: 12 }}>
-        instance=~&quot;{variables.instance}&quot; job=~&quot;{variables.job}
-        &quot;
-        {' · '}
-        range={timeRange}
-        {loading && <Spin size="small" style={{ marginLeft: 8 }} />}
-      </div>
-
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+    <MonitorDashboardLayout
+      key={refreshKey}
+      title={title}
+      toolbar={
+        <ZKDashboardToolbar
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          refreshInterval={refreshInterval}
+          onRefreshIntervalChange={setRefreshInterval}
+          instances={instances}
+          selectedInstances={selectedInstances}
+          onInstancesChange={setSelectedInstances}
+          jobs={jobs}
+          selectedJobs={selectedJobs}
+          onJobsChange={setSelectedJobs}
+          onRefresh={handleRefresh}
+        />
+      }
+      meta={
+        <>
+          instance=~&quot;{variables.instance}&quot; job=~&quot;{variables.job}&quot;
+          {' · '}
+          range={timeRange}
+        </>
+      }
+      loading={loading}
+    >
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={4}>
           <StatPanel
             title={t('pages.zookeeperMonitor.panel.quorumSize')}
@@ -189,7 +188,7 @@ const ZooKeeperDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.outstandingRequests')}
@@ -210,7 +209,7 @@ const ZooKeeperDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={6}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.sessions')}
@@ -243,7 +242,7 @@ const ZooKeeperDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.packets')}
@@ -269,7 +268,7 @@ const ZooKeeperDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.electionTime')}
@@ -295,7 +294,7 @@ const ZooKeeperDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.fsyncTime')}
@@ -312,7 +311,7 @@ const ZooKeeperDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <AreaPanel
             title={t('pages.zookeeperMonitor.panel.jvmMemoryPool')}
@@ -335,7 +334,7 @@ const ZooKeeperDashboard: FC = () => {
           />
         </Col>
       </Row>
-    </div>
+    </MonitorDashboardLayout>
   );
 };
 

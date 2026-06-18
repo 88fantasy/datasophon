@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row, Spin, Typography } from 'antd';
+import { Col, Row } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -8,15 +8,14 @@ import {
 } from '../_shared/charts/formatters';
 import { selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
+import { MONITOR_ROW_GUTTER } from '../_shared/layout';
+import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
 import type { TimeSeriesPoint } from '../_shared/types';
 import ZKDashboardToolbar from '../ZooKeeperMonitor/toolbar/ZKDashboardToolbar';
 import { useMySQLDashboard } from './hooks/useMySQLDashboard';
-
-const { Title } = Typography;
-const ROW_GUTTER: [number, number] = [16, 16];
 
 const networkColors = {
   Inbound: CHART_COLORS.success,
@@ -151,39 +150,40 @@ const MySQLDashboard: FC = () => {
   );
 
   return (
-    <div className="p-4" key={refreshKey}>
-      <Title level={4} style={{ marginBottom: 16 }}>
-        {title}
-      </Title>
-
-      <ZKDashboardToolbar
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
-        refreshInterval={refreshInterval}
-        onRefreshIntervalChange={setRefreshInterval}
-        instances={instances}
-        selectedInstances={selectedInstances}
-        onInstancesChange={setSelectedInstances}
-        jobs={jobs}
-        selectedJobs={selectedJobs}
-        onJobsChange={setSelectedJobs}
-        onRefresh={handleRefresh}
-      />
-
-      <div style={{ color: '#8c8c8c', fontSize: 12, marginBottom: 12 }}>
-        {'instance=~"'}
-        {variables.instance}
-        {'" job=~"'}
-        {variables.job}
-        {'"'}
-        {' · '}
-        range={timeRange}
-        {' · '}
-        rate={rateInterval}
-        {loading && <Spin size="small" style={{ marginLeft: 8 }} />}
-      </div>
-
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+    <MonitorDashboardLayout
+      key={refreshKey}
+      title={title}
+      toolbar={
+        <ZKDashboardToolbar
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          refreshInterval={refreshInterval}
+          onRefreshIntervalChange={setRefreshInterval}
+          instances={instances}
+          selectedInstances={selectedInstances}
+          onInstancesChange={setSelectedInstances}
+          jobs={jobs}
+          selectedJobs={selectedJobs}
+          onJobsChange={setSelectedJobs}
+          onRefresh={handleRefresh}
+        />
+      }
+      meta={
+        <>
+          {'instance=~"'}
+          {variables.instance}
+          {'" job=~"'}
+          {variables.job}
+          {'"'}
+          {' · '}
+          range={timeRange}
+          {' · '}
+          rate={rateInterval}
+        </>
+      }
+      loading={loading}
+    >
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={4}>
           <StatPanel
             title="Uptime"
@@ -240,7 +240,7 @@ const MySQLDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title="MySQL Questions"
@@ -260,7 +260,7 @@ const MySQLDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title="MySQL Connections"
@@ -290,7 +290,7 @@ const MySQLDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <TimeSeriesPanel
             title="MySQL Slow Queries"
@@ -317,7 +317,7 @@ const MySQLDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <AreaPanel
             title="MySQL Internal Memory Overview"
@@ -337,7 +337,7 @@ const MySQLDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title="MySQL Handlers"
@@ -355,7 +355,7 @@ const MySQLDashboard: FC = () => {
           />
         </Col>
       </Row>
-    </div>
+    </MonitorDashboardLayout>
   );
 };
 

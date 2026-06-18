@@ -1,5 +1,7 @@
-import { Card, Statistic } from 'antd';
+import { Statistic } from 'antd';
 import type { FC } from 'react';
+import MonitorPanelCard from '../../_shared/MonitorPanelCard';
+import useStyles from '../../_shared/monitorStyles';
 
 interface StatPanelProps {
   title: string;
@@ -15,16 +17,27 @@ const StatPanel: FC<StatPanelProps> = ({
   color = '#1677ff',
   suffix,
   precision = 0,
-}) => (
-  <Card variant="borderless" style={{ height: '100%' }}>
-    <Statistic
-      title={title}
-      value={value}
-      suffix={suffix}
-      precision={precision}
-      valueStyle={{ color, fontSize: 28, fontWeight: 600 }}
-    />
-  </Card>
-);
+}) => {
+  const { styles } = useStyles();
+
+  return (
+    <MonitorPanelCard compact>
+      <Statistic
+        title={<span className={styles.statTitle}>{title}</span>}
+        value={value}
+        suffix={suffix}
+        precision={precision}
+        styles={{
+          content: {
+            color,
+            fontSize: 30,
+            fontWeight: 600,
+            lineHeight: '38px',
+          },
+        }}
+      />
+    </MonitorPanelCard>
+  );
+};
 
 export default StatPanel;

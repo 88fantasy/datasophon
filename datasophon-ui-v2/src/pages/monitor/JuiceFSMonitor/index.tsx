@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row, Spin, Typography } from 'antd';
+import { Col, Row } from 'antd';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -8,15 +8,14 @@ import {
   formatCompact,
 } from '../_shared/charts/formatters';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
+import { MONITOR_ROW_GUTTER } from '../_shared/layout';
+import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
 import { useJuiceFSDashboard } from './hooks/useJuiceFSDashboard';
 import { MOCK_VOLUMES } from './mock/juicefsMockData';
 import JuiceFSDashboardToolbar from './toolbar/JuiceFSDashboardToolbar';
-
-const { Title } = Typography;
-const ROW_GUTTER: [number, number] = [16, 16];
 
 const trafficColors = {
   Write: CHART_COLORS.primary,
@@ -102,32 +101,33 @@ const JuiceFSMonitor: FC = () => {
   }, [volumes, selectedVolume]);
 
   return (
-    <div className="p-4" key={refreshKey}>
-      <Title level={4} style={{ marginBottom: 16 }}>
-        {title}
-      </Title>
-
-      <JuiceFSDashboardToolbar
-        volume={selectedVolume}
-        volumes={volumes}
-        onVolumeChange={setSelectedVolume}
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
-        refreshInterval={refreshInterval}
-        onRefreshIntervalChange={setRefreshInterval}
-        onRefresh={handleRefresh}
-      />
-
-      <div style={{ color: '#8c8c8c', fontSize: 12, marginBottom: 12 }}>
-        vol_name=&quot;{selectedVolume}&quot;
-        {' · '}
-        range={timeRange}
-        {' · '}
-        rate_interval={rateInterval}
-        {loading && <Spin size="small" style={{ marginLeft: 8 }} />}
-      </div>
-
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+    <MonitorDashboardLayout
+      key={refreshKey}
+      title={title}
+      toolbar={
+        <JuiceFSDashboardToolbar
+          volume={selectedVolume}
+          volumes={volumes}
+          onVolumeChange={setSelectedVolume}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          refreshInterval={refreshInterval}
+          onRefreshIntervalChange={setRefreshInterval}
+          onRefresh={handleRefresh}
+        />
+      }
+      meta={
+        <>
+          vol_name=&quot;{selectedVolume}&quot;
+          {' · '}
+          range={timeRange}
+          {' · '}
+          rate_interval={rateInterval}
+        </>
+      }
+      loading={loading}
+    >
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={4}>
           <StatPanel
             title="Uptime"
@@ -184,7 +184,7 @@ const JuiceFSMonitor: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title="Operations"
@@ -202,7 +202,7 @@ const JuiceFSMonitor: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <TimeSeriesPanel
             title="IO Latency"
@@ -226,7 +226,7 @@ const JuiceFSMonitor: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title="Objects Requests"
@@ -244,7 +244,7 @@ const JuiceFSMonitor: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <TimeSeriesPanel
             title="Block Cache Size"
@@ -273,7 +273,7 @@ const JuiceFSMonitor: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={24}>
           <TimeSeriesPanel
             title="Client CPU & Memory"
@@ -283,7 +283,7 @@ const JuiceFSMonitor: FC = () => {
           />
         </Col>
       </Row>
-    </div>
+    </MonitorDashboardLayout>
   );
 };
 

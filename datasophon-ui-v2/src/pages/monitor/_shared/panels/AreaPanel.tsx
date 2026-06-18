@@ -1,13 +1,15 @@
 import { Area } from '@ant-design/plots';
-import { Card, Empty } from 'antd';
+import { Empty } from 'antd';
 import dayjs from 'dayjs';
 import type { FC } from 'react';
 import { CHART_COLORS } from '../charts/formatters';
+import MonitorPanelCard from '../MonitorPanelCard';
+import useStyles from '../monitorStyles';
 import type { TimeSeriesPoint } from '../types';
 
 interface AreaPanelProps {
   title: string;
-  data: TimeSeriesPoint[];
+  data?: TimeSeriesPoint[];
   height?: number;
   stack?: boolean;
   yFormatter?: (value: number) => string;
@@ -19,18 +21,24 @@ const defaultFormatter = (value: number) => value.toFixed(1);
 
 const AreaPanel: FC<AreaPanelProps> = ({
   title,
-  data,
+  data = [],
   height = 180,
   stack = false,
   yFormatter = defaultFormatter,
   tooltipFormatter = yFormatter,
   colorMap,
 }) => {
+  const { styles } = useStyles();
+
   if (!data.length) {
     return (
-      <Card title={title} variant="borderless" style={{ height: '100%' }}>
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ height }} />
-      </Card>
+      <MonitorPanelCard title={title}>
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          className={styles.empty}
+          style={{ height }}
+        />
+      </MonitorPanelCard>
     );
   }
 
@@ -45,7 +53,7 @@ const AreaPanel: FC<AreaPanelProps> = ({
     data.length > 0 ? `${data[0].time}-${data[data.length - 1].time}` : 'empty';
 
   return (
-    <Card title={title} variant="borderless" style={{ height: '100%' }}>
+    <MonitorPanelCard title={title}>
       <Area
         key={chartKey}
         data={data}
@@ -78,7 +86,7 @@ const AreaPanel: FC<AreaPanelProps> = ({
           ],
         }}
       />
-    </Card>
+    </MonitorPanelCard>
   );
 };
 

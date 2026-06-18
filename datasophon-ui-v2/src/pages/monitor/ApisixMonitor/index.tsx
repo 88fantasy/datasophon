@@ -1,5 +1,7 @@
-import { Col, Row, Typography } from 'antd';
+import { Col, Row } from 'antd';
 import { type FC, useCallback, useState } from 'react';
+import { MONITOR_ROW_GUTTER } from '../_shared/layout';
+import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
 import AreaPanel from './panels/AreaPanel';
 
 const BANDWIDTH_COLORS: Record<string, string> = {
@@ -32,8 +34,6 @@ import StatusStatPanel from './panels/StatusStatPanel';
 import TimeSeriesPanel from './panels/TimeSeriesPanel';
 import type { RefreshInterval, TimeRange } from './toolbar/DashboardToolbar';
 import DashboardToolbar from './toolbar/DashboardToolbar';
-
-const { Title } = Typography;
 
 const MOCK_INSTANCES = ['10.0.0.1:9091', '10.0.0.2:9091'];
 const MOCK_SERVICES = ['order-service', 'user-service', 'payment-service'];
@@ -72,8 +72,6 @@ const DICT_COLORS: Record<string, string> = {
   'balancer-ewma': '#52c41a',
 };
 
-const ROW_GUTTER: [number, number] = [16, 16];
-
 const ApisixDashboard: FC = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
@@ -90,28 +88,37 @@ const ApisixDashboard: FC = () => {
   }, []);
 
   return (
-    <div className="p-4" key={refreshKey}>
-      <Title level={4} style={{ marginBottom: 16 }}>
-        Apache APISIX 监控看板
-      </Title>
-
-      {/* 工具栏 */}
-      <DashboardToolbar
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
-        refreshInterval={refreshInterval}
-        onRefreshIntervalChange={setRefreshInterval}
-        instances={MOCK_INSTANCES}
-        selectedInstances={selectedInstances}
-        onInstancesChange={setSelectedInstances}
-        services={MOCK_SERVICES}
-        selectedServices={selectedServices}
-        onServicesChange={setSelectedServices}
-        onRefresh={handleRefresh}
-      />
+    <MonitorDashboardLayout
+      key={refreshKey}
+      title="Apache APISIX 监控看板"
+      toolbar={
+        <DashboardToolbar
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          refreshInterval={refreshInterval}
+          onRefreshIntervalChange={setRefreshInterval}
+          instances={MOCK_INSTANCES}
+          selectedInstances={selectedInstances}
+          onInstancesChange={setSelectedInstances}
+          services={MOCK_SERVICES}
+          selectedServices={selectedServices}
+          onServicesChange={setSelectedServices}
+          onRefresh={handleRefresh}
+        />
+      }
+      meta={
+        <>
+          instances={selectedInstances.join(', ')}
+          {' · '}
+          services={selectedServices.join(', ')}
+          {' · '}
+          range={timeRange}
+        </>
+      }
+    >
 
       {/* R1 — 摘要统计（col-span 8 each）*/}
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <StatPanel
             title="Total Requests"
@@ -136,7 +143,7 @@ const ApisixDashboard: FC = () => {
       </Row>
 
       {/* R2 — 状态指示 */}
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <StatusStatPanel
             title="Etcd Reachable"
@@ -154,7 +161,7 @@ const ApisixDashboard: FC = () => {
       </Row>
 
       {/* R3 — 流量 */}
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title="Total Requests per Second"
@@ -173,7 +180,7 @@ const ApisixDashboard: FC = () => {
       </Row>
 
       {/* R4 — 延迟（col-span 8 each）*/}
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <TimeSeriesPanel
             title="Request Latency"
@@ -201,7 +208,7 @@ const ApisixDashboard: FC = () => {
       </Row>
 
       {/* R5 — 带宽 */}
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <AreaPanel
             title="Total Bandwidth"
@@ -222,7 +229,7 @@ const ApisixDashboard: FC = () => {
       </Row>
 
       {/* R6 — 连接 & 共享字典 */}
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <AreaPanel
             title="Nginx Connection State"
@@ -243,7 +250,7 @@ const ApisixDashboard: FC = () => {
       </Row>
 
       {/* R7 — Etcd（全行）*/}
-      <Row gutter={ROW_GUTTER}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={24}>
           <TimeSeriesPanel
             title="Etcd Modify Indexes"
@@ -252,7 +259,7 @@ const ApisixDashboard: FC = () => {
           />
         </Col>
       </Row>
-    </div>
+    </MonitorDashboardLayout>
   );
 };
 

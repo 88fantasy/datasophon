@@ -1,7 +1,9 @@
 import { Line } from '@ant-design/plots';
-import { Card, Empty } from 'antd';
+import { Empty } from 'antd';
 import dayjs from 'dayjs';
 import type { FC } from 'react';
+import MonitorPanelCard from '../../_shared/MonitorPanelCard';
+import useStyles from '../../_shared/monitorStyles';
 import type { TimeSeriesPoint } from '../mock/apisixMockData';
 
 interface TimeSeriesPanelProps {
@@ -20,11 +22,17 @@ const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
   unit,
   colorMap,
 }) => {
+  const { styles } = useStyles();
+
   if (!data.length) {
     return (
-      <Card title={title} variant="borderless">
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ height }} />
-      </Card>
+      <MonitorPanelCard title={title}>
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          className={styles.empty}
+          style={{ height }}
+        />
+      </MonitorPanelCard>
     );
   }
 
@@ -34,7 +42,7 @@ const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
     : undefined;
 
   return (
-    <Card title={title} variant="borderless">
+    <MonitorPanelCard title={title}>
       <Line
         data={data}
         xField="time"
@@ -66,7 +74,7 @@ const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
           ],
         }}
       />
-    </Card>
+    </MonitorPanelCard>
   );
 };
 

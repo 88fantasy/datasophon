@@ -1,5 +1,7 @@
-import { Badge, Card, Statistic } from 'antd';
+import { Badge, Statistic } from 'antd';
 import type { FC } from 'react';
+import MonitorPanelCard from '../../_shared/MonitorPanelCard';
+import useStyles from '../../_shared/monitorStyles';
 import type { Threshold } from '../utils/formatters';
 import { colorByThreshold, labelByThreshold } from '../utils/formatters';
 
@@ -14,15 +16,23 @@ const StatusStatPanel: FC<StatusStatPanelProps> = ({
   value,
   thresholds,
 }) => {
+  const { styles } = useStyles();
   const color = colorByThreshold(value, thresholds);
   const label = labelByThreshold(value, thresholds);
 
   return (
-    <Card variant="borderless" style={{ height: '100%' }}>
+    <MonitorPanelCard compact>
       <Statistic
-        title={title}
+        title={<span className={styles.statTitle}>{title}</span>}
         value={value}
-        valueStyle={{ color, fontSize: 28, fontWeight: 600 }}
+        styles={{
+          content: {
+            color,
+            fontSize: 30,
+            fontWeight: 600,
+            lineHeight: '38px',
+          },
+        }}
         suffix={
           label ? (
             <Badge
@@ -33,7 +43,7 @@ const StatusStatPanel: FC<StatusStatPanelProps> = ({
           ) : undefined
         }
       />
-    </Card>
+    </MonitorPanelCard>
   );
 };
 

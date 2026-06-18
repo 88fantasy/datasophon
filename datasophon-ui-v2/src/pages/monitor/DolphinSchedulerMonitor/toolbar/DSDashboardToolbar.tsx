@@ -9,15 +9,7 @@ import DashboardToolbar from '../../_shared/DashboardToolbar';
 
 export type { RefreshInterval, TimeRange };
 
-export type DSApplication =
-  | 'master-server'
-  | 'worker-server'
-  | 'api-server'
-  | 'alert-server';
-
 interface DSDashboardToolbarProps {
-  application: DSApplication;
-  onApplicationChange: (value: DSApplication) => void;
   instances: string[];
   selectedInstances: string[];
   onInstancesChange: (value: string[]) => void;
@@ -28,16 +20,7 @@ interface DSDashboardToolbarProps {
   onRefresh: () => void;
 }
 
-const APPLICATION_OPTIONS: Array<{ label: string; value: DSApplication }> = [
-  { label: 'master-server', value: 'master-server' },
-  { label: 'worker-server', value: 'worker-server' },
-  { label: 'api-server', value: 'api-server' },
-  { label: 'alert-server', value: 'alert-server' },
-];
-
 const DSDashboardToolbar: FC<DSDashboardToolbarProps> = ({
-  application,
-  onApplicationChange,
   instances,
   selectedInstances,
   onInstancesChange,
@@ -58,13 +41,6 @@ const DSDashboardToolbar: FC<DSDashboardToolbarProps> = ({
       onRefreshIntervalChange={onRefreshIntervalChange}
       onRefresh={onRefresh}
     >
-      <Select
-        value={application}
-        onChange={onApplicationChange}
-        options={APPLICATION_OPTIONS}
-        style={{ minWidth: 180 }}
-        aria-label={t('pages.dolphinSchedulerMonitor.toolbar.application')}
-      />
       <Select
         mode="multiple"
         placeholder={t('pages.dolphinSchedulerMonitor.toolbar.instance')}

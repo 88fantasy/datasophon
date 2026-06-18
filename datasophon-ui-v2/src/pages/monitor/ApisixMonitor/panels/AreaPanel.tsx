@@ -1,7 +1,9 @@
 import { Area } from '@ant-design/plots';
-import { Card, Empty } from 'antd';
+import { Empty } from 'antd';
 import dayjs from 'dayjs';
 import type { FC } from 'react';
+import MonitorPanelCard from '../../_shared/MonitorPanelCard';
+import useStyles from '../../_shared/monitorStyles';
 import type { TimeSeriesPoint } from '../mock/apisixMockData';
 import { formatBytes } from '../utils/formatters';
 
@@ -22,11 +24,17 @@ const AreaPanel: FC<AreaPanelProps> = ({
   unit = 'short',
   colorMap,
 }) => {
+  const { styles } = useStyles();
+
   if (!data.length) {
     return (
-      <Card title={title} variant="borderless">
-        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ height }} />
-      </Card>
+      <MonitorPanelCard title={title}>
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          className={styles.empty}
+          style={{ height }}
+        />
+      </MonitorPanelCard>
     );
   }
 
@@ -42,7 +50,7 @@ const AreaPanel: FC<AreaPanelProps> = ({
   };
 
   return (
-    <Card title={title} variant="borderless">
+    <MonitorPanelCard title={title}>
       <Area
         data={data}
         xField="time"
@@ -75,7 +83,7 @@ const AreaPanel: FC<AreaPanelProps> = ({
           ],
         }}
       />
-    </Card>
+    </MonitorPanelCard>
   );
 };
 export default AreaPanel;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PrometheusMatrix, PrometheusVector } from './charts/promql';
 import {
   matrixToSeries,
@@ -135,6 +135,13 @@ export function useDashboardData({
     loading: true,
   });
 
+  // replaceVars/panelQueries 是纯函数/模块常量，语义不变但每次渲染可能是新引用。
+  // 用 ref 持有最新值，从 useEffect 依赖数组移除，避免 setData→re-render→新引用→无限循环。
+  const replaceVarsRef = useRef(replaceVars);
+  replaceVarsRef.current = replaceVars;
+  const panelQueriesRef = useRef(panelQueries);
+  panelQueriesRef.current = panelQueries;
+
   useEffect(() => {
     let cancelled = false;
 
@@ -150,13 +157,16 @@ export function useDashboardData({
 
         // ── 按面板类型执行查询 ───────────────────────────────────────────────
 
+        const _replaceVars = replaceVarsRef.current;
+        const _panelQueries = panelQueriesRef.current;
+
         async function fetchInstant(panelId: string): Promise<number> {
-          const def = panelQueries[panelId];
+          const def = _panelQueries[panelId];
           if (def.type !== 'instant') return 0;
           try {
             const res = await schedule(() =>
               queryInstant({
-                query: replaceVars(def.promql, variables),
+                query: _replaceVars(def.promql, variables),
                 time: end,
                 clusterId,
               }),
@@ -168,13 +178,13 @@ export function useDashboardData({
         }
 
         async function fetchRange(panelId: string): Promise<TimeSeriesPoint[]> {
-          const def = panelQueries[panelId];
+          const def = _panelQueries[panelId];
           if (def.type !== 'range') return [];
           const rangeDef = def as RangePanelDef;
           try {
             const res = await schedule(() =>
               queryRange({
-                query: replaceVars(rangeDef.promql, variables),
+                query: _replaceVars(rangeDef.promql, variables),
                 start,
                 end,
                 step,
@@ -192,14 +202,14 @@ export function useDashboardData({
         async function fetchMultiRange(
           panelId: string,
         ): Promise<TimeSeriesPoint[]> {
-          const def = panelQueries[panelId];
+          const def = _panelQueries[panelId];
           if (def.type !== 'multi-range') return [];
           const parts = await Promise.all(
             def.queries.map(async ({ label, promql }) => {
               try {
                 const res = await schedule(() =>
                   queryRange({
-                    query: replaceVars(promql, variables),
+                    query: _replaceVars(promql, variables),
                     start,
                     end,
                     step,
@@ -317,8 +327,7 @@ export function useDashboardData({
     clusterId,
     refreshKey,
     concurrency,
-    replaceVars,
-    panelQueries,
+    // replaceVars/panelQueries 通过 ref 读取，不放入依赖数组，避免 inline 函数导致无限循环
   ]);
 
   return data;

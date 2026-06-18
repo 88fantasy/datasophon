@@ -6,13 +6,17 @@ export default {
     'Role only affects the generic Spring Boot segment',
   'pages.dolphinSchedulerMonitor.section.worker': 'Worker',
   'pages.dolphinSchedulerMonitor.section.worker.subtitle':
-    'application="worker-server", fixed and not affected by the toolbar role',
+    'application="worker-server" specific metrics',
   'pages.dolphinSchedulerMonitor.section.master': 'Master + Scheduling',
   'pages.dolphinSchedulerMonitor.section.master.subtitle':
-    'application="master-server", fixed and not affected by the toolbar role',
+    'application="master-server" specific metrics',
   'pages.dolphinSchedulerMonitor.section.spring': 'Generic Spring Boot',
   'pages.dolphinSchedulerMonitor.section.spring.subtitle':
-    'uses $application and $instance from the toolbar',
+    'JVM / HTTP / GC common metrics, filtered by $application and $instance',
+  'pages.dolphinSchedulerMonitor.tab.master': 'Master',
+  'pages.dolphinSchedulerMonitor.tab.worker': 'Worker',
+  'pages.dolphinSchedulerMonitor.tab.api': 'API',
+  'pages.dolphinSchedulerMonitor.tab.alert': 'Alert',
 
   'pages.dolphinSchedulerMonitor.panel.D-A01': 'Worker CPU Usage',
   'pages.dolphinSchedulerMonitor.panel.D-A02': 'Worker Submit Queue Full / 1m',

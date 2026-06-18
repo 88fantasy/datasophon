@@ -2,6 +2,7 @@ import { ReloadOutlined } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
 import { Button, Segmented, Select, Space, Tag, Tooltip } from 'antd';
 import { type FC, type ReactNode, useEffect, useRef, useState } from 'react';
+import useStyles from './monitorStyles';
 import type { RefreshInterval, TimeRange } from './types';
 
 export type { RefreshInterval, TimeRange };
@@ -46,6 +47,7 @@ const DashboardToolbar: FC<DashboardToolbarProps> = ({
   interval,
   onIntervalChange,
 }) => {
+  const { styles } = useStyles();
   const intl = useIntl();
   const t = (id: string) => intl.formatMessage({ id });
 
@@ -111,10 +113,7 @@ const DashboardToolbar: FC<DashboardToolbarProps> = ({
   }, [refreshInterval, onRefresh]);
 
   return (
-    <div
-      className="flex flex-wrap items-center gap-2 mb-4 px-1"
-      style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: 12 }}
-    >
+    <div className={styles.toolbar}>
       <Space wrap>
         {children}
         {interval !== undefined && onIntervalChange && (
@@ -127,7 +126,7 @@ const DashboardToolbar: FC<DashboardToolbarProps> = ({
         )}
       </Space>
 
-      <div className="flex-1" />
+      <div className={styles.toolbarSpacer} />
 
       <Segmented
         options={TIME_RANGE_OPTIONS}
@@ -153,7 +152,7 @@ const DashboardToolbar: FC<DashboardToolbarProps> = ({
           ghost={countdown > 0}
         >
           {countdown > 0 ? (
-            <Tag color="processing" style={{ margin: 0, borderRadius: 8 }}>
+            <Tag color="processing" className={styles.toolbarCountdown}>
               {countdown}s
             </Tag>
           ) : null}

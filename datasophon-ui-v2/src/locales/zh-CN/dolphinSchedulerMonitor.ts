@@ -6,13 +6,17 @@ export default {
     '角色选择器仅影响通用 Spring Boot 段',
   'pages.dolphinSchedulerMonitor.section.worker': 'Worker',
   'pages.dolphinSchedulerMonitor.section.worker.subtitle':
-    'application="worker-server"，固定值，不受工具栏角色影响',
+    'application="worker-server" 专属指标',
   'pages.dolphinSchedulerMonitor.section.master': 'Master + 调度',
   'pages.dolphinSchedulerMonitor.section.master.subtitle':
-    'application="master-server"，固定值，不受工具栏角色影响',
+    'application="master-server" 专属指标',
   'pages.dolphinSchedulerMonitor.section.spring': '通用 Spring Boot',
   'pages.dolphinSchedulerMonitor.section.spring.subtitle':
-    '使用工具栏的 $application 与 $instance',
+    'JVM / HTTP / GC 通用指标，应用 $application 与 $instance 过滤',
+  'pages.dolphinSchedulerMonitor.tab.master': 'Master',
+  'pages.dolphinSchedulerMonitor.tab.worker': 'Worker',
+  'pages.dolphinSchedulerMonitor.tab.api': 'API',
+  'pages.dolphinSchedulerMonitor.tab.alert': 'Alert',
 
   'pages.dolphinSchedulerMonitor.panel.D-A01': 'Worker CPU 使用率',
   'pages.dolphinSchedulerMonitor.panel.D-A02': 'Worker 提交队列满 / 1m',

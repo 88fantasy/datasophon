@@ -1,8 +1,42 @@
 import type { PanelDef } from '../_shared/panelTypes';
 
+export type DSApplication =
+  | 'master-server'
+  | 'worker-server'
+  | 'api-server'
+  | 'alert-server';
+
 export interface DSDashboardVariables {
   application: string;
   instance: string;
+}
+
+const MASTER_PANEL_IDS: string[] = [
+  'D-B01', 'D-B02', 'D-B03', 'D-B04',
+  'D-B05', 'D-B06', 'D-B07', 'D-B08', 'D-B09', 'D-B10',
+  'D-B11', 'D-B12', 'D-B13',
+  'D-C01', 'D-C02', 'D-C03', 'D-C04', 'D-C05', 'D-C06',
+  'D-C07', 'D-C08', 'D-C09', 'D-C10', 'D-C11', 'D-C12', 'D-C13',
+];
+
+const WORKER_PANEL_IDS: string[] = [
+  'D-A01', 'D-A02', 'D-A03', 'D-A04', 'D-A05', 'D-A06',
+  'D-C01', 'D-C02', 'D-C03', 'D-C04', 'D-C05', 'D-C06',
+  'D-C07', 'D-C08', 'D-C09', 'D-C10', 'D-C11', 'D-C12', 'D-C13',
+];
+
+const SPRING_PANEL_IDS: string[] = [
+  'D-C01', 'D-C02', 'D-C03', 'D-C04', 'D-C05', 'D-C06',
+  'D-C07', 'D-C08', 'D-C09', 'D-C10', 'D-C11', 'D-C12', 'D-C13',
+];
+
+export function getDSSegmentPanelIds(segment: DSApplication): string[] {
+  switch (segment) {
+    case 'master-server': return MASTER_PANEL_IDS;
+    case 'worker-server': return WORKER_PANEL_IDS;
+    case 'api-server':
+    case 'alert-server': return SPRING_PANEL_IDS;
+  }
 }
 
 export function replaceDSVars(

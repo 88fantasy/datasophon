@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row, Select, Spin, Typography } from 'antd';
+import { Col, Row, Select } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -14,15 +14,13 @@ import type {
   TimeRange,
 } from '../_shared/DashboardToolbar';
 import DashboardToolbar from '../_shared/DashboardToolbar';
+import { MONITOR_ROW_GUTTER } from '../_shared/layout';
+import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TablePanel from '../_shared/panels/TablePanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
 import { usePrometheusDashboard } from './hooks/usePrometheusDashboard';
-
-const { Title } = Typography;
-
-const ROW_GUTTER: [number, number] = [16, 16];
 
 const createdRemovedColors = {
   created: CHART_COLORS.success,
@@ -99,55 +97,49 @@ const PrometheusDashboard: FC = () => {
     });
 
   return (
-    <div className="p-4" key={refreshKey}>
-      <Title level={4} style={{ marginBottom: 16 }}>
-        {t('pages.prometheusMonitor.title')}
-      </Title>
-
-      <DashboardToolbar
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
-        refreshInterval={refreshInterval}
-        onRefreshIntervalChange={setRefreshInterval}
-        interval={interval}
-        onIntervalChange={setInterval}
-        onRefresh={handleRefresh}
-      >
-        <Select
-          mode="multiple"
-          placeholder={t('pages.prometheusMonitor.toolbar.instance')}
-          value={selectedInstances}
-          onChange={setSelectedInstances}
-          options={instances.map((value) => ({ label: value, value }))}
-          style={{ minWidth: 210 }}
-          maxTagCount="responsive"
-        />
-        <Select
-          mode="multiple"
-          placeholder="Job"
-          value={selectedJobs}
-          onChange={setSelectedJobs}
-          options={jobs.map((value) => ({ label: value, value }))}
-          style={{ minWidth: 190 }}
-          maxTagCount="responsive"
-        />
-      </DashboardToolbar>
-
-      <div
-        style={{
-          color: '#8c8c8c',
-          fontSize: 12,
-          marginBottom: 12,
-        }}
-      >
-        instance=~&quot;{variables.instance}&quot; job=~&quot;{variables.job}
-        &quot;
-        {' · '}
-        range={timeRange} interval={variables.interval}
-        {loading && <Spin size="small" style={{ marginLeft: 8 }} />}
-      </div>
-
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+    <MonitorDashboardLayout
+      key={refreshKey}
+      title={t('pages.prometheusMonitor.title')}
+      toolbar={
+        <DashboardToolbar
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          refreshInterval={refreshInterval}
+          onRefreshIntervalChange={setRefreshInterval}
+          interval={interval}
+          onIntervalChange={setInterval}
+          onRefresh={handleRefresh}
+        >
+          <Select
+            mode="multiple"
+            placeholder={t('pages.prometheusMonitor.toolbar.instance')}
+            value={selectedInstances}
+            onChange={setSelectedInstances}
+            options={instances.map((value) => ({ label: value, value }))}
+            style={{ minWidth: 210 }}
+            maxTagCount="responsive"
+          />
+          <Select
+            mode="multiple"
+            placeholder="Job"
+            value={selectedJobs}
+            onChange={setSelectedJobs}
+            options={jobs.map((value) => ({ label: value, value }))}
+            style={{ minWidth: 190 }}
+            maxTagCount="responsive"
+          />
+        </DashboardToolbar>
+      }
+      meta={
+        <>
+          instance=~&quot;{variables.instance}&quot; job=~&quot;{variables.job}&quot;
+          {' · '}
+          range={timeRange} interval={variables.interval}
+        </>
+      }
+      loading={loading}
+    >
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={4}>
           <StatPanel
             title={t('pages.prometheusMonitor.panel.uptime', { interval })}
@@ -207,7 +199,7 @@ const PrometheusDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <TablePanel
             title={t('pages.prometheusMonitor.panel.currentlyDown')}
@@ -224,7 +216,7 @@ const PrometheusDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.scrapeDuration')}
@@ -241,7 +233,7 @@ const PrometheusDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.scrapeSyncTotal')}
@@ -258,7 +250,7 @@ const PrometheusDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.seriesCount')}
@@ -283,7 +275,7 @@ const PrometheusDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.storageChunks')}
@@ -307,7 +299,7 @@ const PrometheusDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.ruleEvalIterations')}
@@ -332,7 +324,7 @@ const PrometheusDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.failuresAndErrors')}
@@ -357,7 +349,7 @@ const PrometheusDashboard: FC = () => {
           />
         </Col>
       </Row>
-    </div>
+    </MonitorDashboardLayout>
   );
 };
 

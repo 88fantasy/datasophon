@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row, Spin, Typography } from 'antd';
+import { Col, Row } from 'antd';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -8,6 +8,8 @@ import {
 } from '../_shared/charts/formatters';
 import { selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
+import { MONITOR_ROW_GUTTER } from '../_shared/layout';
+import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
@@ -18,9 +20,6 @@ import {
   MOCK_HIKARICP_POOLS,
 } from './mock/datartMockData';
 import DatartDashboardToolbar from './toolbar/DatartDashboardToolbar';
-
-const { Title } = Typography;
-const ROW_GUTTER: [number, number] = [16, 16];
 
 const cpuColors = {
   'System CPU': CHART_COLORS.warning,
@@ -168,47 +167,48 @@ const DatartDashboard: FC = () => {
   }, [hikaricpPools, selectedHikaricpPool]);
 
   return (
-    <div className="p-4" key={refreshKey}>
-      <Title level={4} style={{ marginBottom: 16 }}>
-        {title}
-      </Title>
-
-      <DatartDashboardToolbar
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
-        refreshInterval={refreshInterval}
-        onRefreshIntervalChange={setRefreshInterval}
-        applications={applications}
-        selectedApplication={selectedApplication}
-        onApplicationChange={handleApplicationChange}
-        instances={instances}
-        selectedInstances={selectedInstances}
-        onInstancesChange={setSelectedInstances}
-        heapPools={heapPools}
-        selectedHeapPool={selectedHeapPool}
-        onHeapPoolChange={setSelectedHeapPool}
-        hikaricpPools={hikaricpPools}
-        selectedHikaricpPool={selectedHikaricpPool}
-        onHikaricpPoolChange={setSelectedHikaricpPool}
-        onRefresh={handleRefresh}
-      />
-
-      <div style={{ color: '#8c8c8c', fontSize: 12, marginBottom: 12 }}>
-        {'application="'}
-        {variables.application}
-        {'" instance=~"'}
-        {variables.instance}
-        {'" heap="'}
-        {variables.memory_pool_heap}
-        {'" hikaricp="'}
-        {variables.hikaricp}
-        {'"'}
-        {' · '}
-        range={timeRange}
-        {loading && <Spin size="small" style={{ marginLeft: 8 }} />}
-      </div>
-
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+    <MonitorDashboardLayout
+      key={refreshKey}
+      title={title}
+      toolbar={
+        <DatartDashboardToolbar
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          refreshInterval={refreshInterval}
+          onRefreshIntervalChange={setRefreshInterval}
+          applications={applications}
+          selectedApplication={selectedApplication}
+          onApplicationChange={handleApplicationChange}
+          instances={instances}
+          selectedInstances={selectedInstances}
+          onInstancesChange={setSelectedInstances}
+          heapPools={heapPools}
+          selectedHeapPool={selectedHeapPool}
+          onHeapPoolChange={setSelectedHeapPool}
+          hikaricpPools={hikaricpPools}
+          selectedHikaricpPool={selectedHikaricpPool}
+          onHikaricpPoolChange={setSelectedHikaricpPool}
+          onRefresh={handleRefresh}
+        />
+      }
+      meta={
+        <>
+          {'application="'}
+          {variables.application}
+          {'" instance=~"'}
+          {variables.instance}
+          {'" heap="'}
+          {variables.memory_pool_heap}
+          {'" hikaricp="'}
+          {variables.hikaricp}
+          {'"'}
+          {' · '}
+          range={timeRange}
+        </>
+      }
+      loading={loading}
+    >
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={4}>
           <StatPanel
             title="Uptime"
@@ -261,7 +261,7 @@ const DatartDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title="Request Count"
@@ -278,7 +278,7 @@ const DatartDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title="CPU / Load Average"
@@ -297,7 +297,7 @@ const DatartDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <TimeSeriesPanel
             title="GC Count"
@@ -322,7 +322,7 @@ const DatartDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title="HikariCP Connections"
@@ -341,7 +341,7 @@ const DatartDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={8}>
           <TimeSeriesPanel
             title="Tomcat Threads & Sessions"
@@ -367,7 +367,7 @@ const DatartDashboard: FC = () => {
           />
         </Col>
       </Row>
-    </div>
+    </MonitorDashboardLayout>
   );
 };
 

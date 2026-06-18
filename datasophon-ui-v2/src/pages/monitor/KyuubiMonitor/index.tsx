@@ -1,4 +1,4 @@
-import { Col, Row, Spin, Typography } from 'antd';
+import { Col, Row } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -7,15 +7,14 @@ import {
 } from '../_shared/charts/formatters';
 import { selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
+import { MONITOR_ROW_GUTTER } from '../_shared/layout';
+import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
 import type { TimeSeriesPoint } from '../_shared/types';
 import { useKyuubiDashboard } from './hooks/useKyuubiDashboard';
 import KyuubiDashboardToolbar from './toolbar/KyuubiDashboardToolbar';
-
-const { Title } = Typography;
-const ROW_GUTTER: [number, number] = [16, 16];
 
 const opStateColors = {
   Pending: CHART_COLORS.warning,
@@ -119,46 +118,47 @@ const KyuubiDashboard: FC = () => {
   const permitLimit = maxSeriesValue(series.KY10, 'Startup Permit Limit');
 
   return (
-    <div className="p-4" key={refreshKey}>
-      <Title level={4} style={{ marginBottom: 16 }}>
-        Kyuubi Monitor
-      </Title>
-
-      <KyuubiDashboardToolbar
-        timeRange={timeRange}
-        onTimeRangeChange={setTimeRange}
-        refreshInterval={refreshInterval}
-        onRefreshIntervalChange={setRefreshInterval}
-        instances={instances}
-        selectedInstances={selectedInstances}
-        onInstancesChange={setSelectedInstances}
-        connTypes={connTypes}
-        selectedConnType={selectedConnType}
-        onConnTypeChange={setSelectedConnType}
-        opTypes={opTypes}
-        selectedOpType={selectedOpType}
-        onOpTypeChange={setSelectedOpType}
-        onRefresh={handleRefresh}
-      />
-
-      <div style={{ color: '#8c8c8c', fontSize: 12, marginBottom: 12 }}>
-        {'instance=~"'}
-        {variables.instance}
-        {'"'}
-        {' · '}
-        conn={selectedConnType.replace('connection_total_', '')}
-        {' · '}
-        op={selectedOpType}
-        {' · '}
-        range={timeRange}
-        {' · '}
-        trend={trendInterval}
-        {' · '}
-        JVM pools use PS metric names
-        {loading && <Spin size="small" style={{ marginLeft: 8 }} />}
-      </div>
-
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+    <MonitorDashboardLayout
+      key={refreshKey}
+      title="Kyuubi Monitor"
+      toolbar={
+        <KyuubiDashboardToolbar
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          refreshInterval={refreshInterval}
+          onRefreshIntervalChange={setRefreshInterval}
+          instances={instances}
+          selectedInstances={selectedInstances}
+          onInstancesChange={setSelectedInstances}
+          connTypes={connTypes}
+          selectedConnType={selectedConnType}
+          onConnTypeChange={setSelectedConnType}
+          opTypes={opTypes}
+          selectedOpType={selectedOpType}
+          onOpTypeChange={setSelectedOpType}
+          onRefresh={handleRefresh}
+        />
+      }
+      meta={
+        <>
+          {'instance=~"'}
+          {variables.instance}
+          {'"'}
+          {' · '}
+          conn={selectedConnType.replace('connection_total_', '')}
+          {' · '}
+          op={selectedOpType}
+          {' · '}
+          range={timeRange}
+          {' · '}
+          trend={trendInterval}
+          {' · '}
+          JVM pools use PS metric names
+        </>
+      }
+      loading={loading}
+    >
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={4}>
           <StatPanel
             title="Instances"
@@ -210,7 +210,7 @@ const KyuubiDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title={`Session (new) [${trendInterval}]`}
@@ -227,7 +227,7 @@ const KyuubiDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title="Operation Pending / Running"
@@ -257,7 +257,7 @@ const KyuubiDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title="Connection Failed"
@@ -279,7 +279,7 @@ const KyuubiDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER} style={{ marginBottom: 16 }}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title={`Fetch Rows [${trendInterval}]`}
@@ -296,7 +296,7 @@ const KyuubiDashboard: FC = () => {
         </Col>
       </Row>
 
-      <Row gutter={ROW_GUTTER}>
+      <Row gutter={MONITOR_ROW_GUTTER}>
         <Col span={12}>
           <TimeSeriesPanel
             title="JVM Memory Usage"
@@ -315,7 +315,7 @@ const KyuubiDashboard: FC = () => {
           />
         </Col>
       </Row>
-    </div>
+    </MonitorDashboardLayout>
   );
 };
 

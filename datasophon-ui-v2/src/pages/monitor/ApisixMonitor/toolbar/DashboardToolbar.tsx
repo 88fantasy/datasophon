@@ -1,6 +1,7 @@
 import { ReloadOutlined } from '@ant-design/icons';
 import { Button, Segmented, Select, Space, Tag, Tooltip } from 'antd';
 import { type FC, useEffect, useRef, useState } from 'react';
+import useStyles from '../../_shared/monitorStyles';
 
 export type TimeRange = '5m' | '15m' | '1h' | '6h' | '24h';
 export type RefreshInterval = 'off' | '30s' | '1m';
@@ -52,6 +53,7 @@ const DashboardToolbar: FC<DashboardToolbarProps> = ({
   onServicesChange,
   onRefresh,
 }) => {
+  const { styles } = useStyles();
   const [countdown, setCountdown] = useState<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -78,10 +80,7 @@ const DashboardToolbar: FC<DashboardToolbarProps> = ({
   }, [refreshInterval, onRefresh]);
 
   return (
-    <div
-      className="flex flex-wrap items-center gap-2 mb-4 px-1"
-      style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: 12 }}
-    >
+    <div className={styles.toolbar}>
       {/* 实例 & 服务筛选 */}
       <Space wrap>
         <Select
@@ -105,7 +104,7 @@ const DashboardToolbar: FC<DashboardToolbarProps> = ({
       </Space>
 
       {/* 弹性空隙 */}
-      <div className="flex-1" />
+      <div className={styles.toolbarSpacer} />
 
       {/* 时间范围 */}
       <Segmented
@@ -134,7 +133,7 @@ const DashboardToolbar: FC<DashboardToolbarProps> = ({
           ghost={countdown > 0}
         >
           {countdown > 0 ? (
-            <Tag color="processing" style={{ margin: 0, borderRadius: 8 }}>
+            <Tag color="processing" className={styles.toolbarCountdown}>
               ⟳ {countdown}s
             </Tag>
           ) : null}
