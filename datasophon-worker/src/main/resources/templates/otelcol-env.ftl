@@ -1,0 +1,2 @@
+AWS_ACCESS_KEY_ID=${s3AccessKey}
+AWS_SECRET_ACCESS_KEY=${s3SecretKey}

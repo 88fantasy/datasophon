@@ -51,7 +51,7 @@
           "params": {
             "from": "script/control.sh",
             "to": "control.sh",
-            "md5": "e9b4814e9c139edb7665d7cca17409b9"
+            "md5": "2726884da0b6c06e73d3ae35e34e34a0"
           }
         }
       ]
@@ -72,6 +72,16 @@
           "memLimitMiB",
           "batchSize",
           "queueStorageDir"
+        ]
+      },
+      {
+        "filename": "otelcol.env",
+        "configFormat": "custom",
+        "outputDirectory": "config",
+        "templateName": "otelcol-env.ftl",
+        "includeParams": [
+          "s3AccessKey",
+          "s3SecretKey"
         ]
       }
     ]
@@ -153,6 +163,28 @@
       "defaultValue": "/data/otelcol/storage",
       "configurableInWizard": false,
       "hidden": false
+    },
+    {
+      "name": "s3AccessKey",
+      "label": "S3 Access Key",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "${ROOT.Rustfs.access_key}",
+      "defaultValue": "${ROOT.Rustfs.access_key}",
+      "configurableInWizard": false,
+      "hidden": true
+    },
+    {
+      "name": "s3SecretKey",
+      "label": "S3 Secret Key",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "${ROOT.Rustfs.secret_key}",
+      "defaultValue": "${ROOT.Rustfs.secret_key}",
+      "configurableInWizard": false,
+      "hidden": true
     }
   ]
 }

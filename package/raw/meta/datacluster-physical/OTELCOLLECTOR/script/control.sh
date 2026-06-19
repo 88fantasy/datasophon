@@ -21,6 +21,10 @@ start() {
   if [ -f $pid ] && kill -0 `cat $pid` >/dev/null 2>&1; then
     echo "otelcol running as `cat $pid`. Stop it first."; exit 1
   fi
+  env_file=$current_path/config/otelcol.env
+  if [ -f "$env_file" ]; then
+    set -a; . "$env_file"; set +a
+  fi
   echo "starting otelcol, logging to $log"
   nohup $bin --config=$conf > $log 2>&1 &
   echo $! > $pid

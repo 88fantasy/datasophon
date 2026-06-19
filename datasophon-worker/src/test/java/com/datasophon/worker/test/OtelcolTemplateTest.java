@@ -1,23 +1,29 @@
 package com.datasophon.worker.test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
-import org.junit.jupiter.api.Test;
 
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 public class OtelcolTemplateTest {
-
-    private String render() throws Exception {
+    
+    private Configuration buildCfg() throws Exception {
         Configuration cfg = new Configuration(Configuration.VERSION_2_3_30);
         cfg.setClassForTemplateLoading(OtelcolTemplateTest.class, "/templates");
         cfg.setDefaultEncoding("UTF-8");
         cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
+        return cfg;
+    }
+    
+    private String render() throws Exception {
+        Configuration cfg = buildCfg();
         Template tpl = cfg.getTemplate("otelcol.ftl");
         Map<String, Object> data = new HashMap<>();
         data.put("ip", "10.0.0.11");
@@ -32,7 +38,21 @@ public class OtelcolTemplateTest {
         tpl.process(data, out);
         return out.toString();
     }
-
+    
+    @Test
+    public void renders_env_file_with_aws_credentials() throws Exception {
+        Configuration cfg = buildCfg();
+        Template tpl = cfg.getTemplate("otelcol-env.ftl");
+        Map<String, Object> data = new HashMap<>();
+        data.put("s3AccessKey", "minio_access_key");
+        data.put("s3SecretKey", "minio_secret_key");
+        StringWriter out = new StringWriter();
+        tpl.process(data, out);
+        String env = out.toString();
+        assertTrue(env.contains("AWS_ACCESS_KEY_ID=minio_access_key"), "env must contain AWS_ACCESS_KEY_ID");
+        assertTrue(env.contains("AWS_SECRET_ACCESS_KEY=minio_secret_key"), "env must contain AWS_SECRET_ACCESS_KEY");
+    }
+    
     @Test
     public void renders_s3_mode_with_persistent_queue() throws Exception {
         String yaml = render();
