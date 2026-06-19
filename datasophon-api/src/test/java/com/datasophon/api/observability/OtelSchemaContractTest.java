@@ -28,16 +28,16 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import cn.hutool.core.io.IoUtil;
-
 import org.junit.jupiter.api.Test;
 
-class OtelSchemaContractTest {
+import cn.hutool.core.io.IoUtil;
 
+class OtelSchemaContractTest {
+    
     // -----------------------------------------------------------------------
     // Task 2: 已有测试(不得删除)
     // -----------------------------------------------------------------------
-
+    
     @Test
     void ddl_resources_are_loadable_and_nonempty() {
         for (String res : OtelSchema.DDL_RESOURCES) {
@@ -45,7 +45,7 @@ class OtelSchemaContractTest {
             assertTrue(in != null, "DDL 资源缺失: " + res);
         }
     }
-
+    
     @Test
     void applier_splits_statements() {
         String sql = "CREATE DATABASE IF NOT EXISTS otel;\nCREATE TABLE otel.a(x INT);\n";
@@ -53,11 +53,11 @@ class OtelSchemaContractTest {
         assertFalse(stmts.isEmpty());
         assertTrue(stmts.size() >= 2);
     }
-
+    
     // -----------------------------------------------------------------------
     // Task 3: 契约测试(守 F4/§5.8 漂移)
     // -----------------------------------------------------------------------
-
+    
     /**
      * 从 V1__otel_tables.sql 正则提取所有 CREATE TABLE [IF NOT EXISTS] otel.&lt;name&gt;，
      * 断言 OtelSchema.EXPECTED_TABLES 中每一张表都被 DDL 覆盖。漂移即失败。
@@ -68,7 +68,7 @@ class OtelSchemaContractTest {
                 readClasspath("observability/doris/V1__otel_tables.sql").toLowerCase(java.util.Locale.ROOT);
         Matcher m =
                 Pattern.compile(
-                                "create\\s+table\\s+(if\\s+not\\s+exists\\s+)?otel\\.([a-z0-9_]+)")
+                        "create\\s+table\\s+(if\\s+not\\s+exists\\s+)?otel\\.([a-z0-9_]+)")
                         .matcher(sql);
         Set<String> declared = new HashSet<>();
         while (m.find()) {
@@ -79,10 +79,13 @@ class OtelSchemaContractTest {
             assertTrue(declared.contains(t), "DDL 缺少 exporter 目标表: " + t);
         }
     }
-
+    
     /**
      * 采集账号 otel_collector 只应持有 LOAD_PRIV；
      * 断言不存在针对该账号的 CREATE/DROP/DELETE/ALL 权限授予。
+     *
+     * <p>Doris 权限语法：GRANT DROP_PRIV ON otel.* TO 'otel_collector'
+     * （复合词，无空格；原正则 `(DROP)\w*\s+PRIV` 在 \w* 吞掉 _PRIV 后再要求 \s+PRIV 永不匹配 → 空洞）。
      */
     @Test
     void collector_account_has_load_only_no_ddl_privilege() {
@@ -93,26 +96,45 @@ class OtelSchemaContractTest {
         assertTrue(
                 db.contains("GRANT LOAD_PRIV ON OTEL.* TO 'OTEL_COLLECTOR'"),
                 "V1__otel_database.sql 缺少 GRANT LOAD_PRIV ON otel.* TO 'otel_collector'");
-        // 负向：采集账号绝不能被授予 DDL/删除权限
+        
+        // 修正后的负向正则：匹配 Doris 真实复合词语法 DROP_PRIV / CREATE_PRIV / ALL_PRIV
         Pattern ddlGrant =
                 Pattern.compile(
-                        "GRANT\\s+(ALL|CREATE|DROP|DELETE)\\w*\\s+PRIV\\s+ON\\s+OTEL[^;]*OTEL_COLLECTOR",
-                        Pattern.DOTALL);
+                        "GRANT\\s+(ALL|CREATE|DROP|DELETE)_PRIV\\b[^;]*\\bOTEL_COLLECTOR",
+                        Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+        
+        // 自证：正则对已知危险授权必须能命中（否则就是空洞防护）
+        assertTrue(
+                ddlGrant.matcher("GRANT DROP_PRIV ON otel.* TO 'otel_collector'").find(),
+                "正则必须能匹配 DROP_PRIV 授权（自证）");
+        assertTrue(
+                ddlGrant.matcher("GRANT CREATE_PRIV ON otel.* TO 'otel_collector'").find(),
+                "正则必须能匹配 CREATE_PRIV 授权（自证）");
+        assertTrue(
+                ddlGrant.matcher("GRANT ALL_PRIV ON otel.* TO 'otel_collector'").find(),
+                "正则必须能匹配 ALL_PRIV 授权（自证）");
+        
+        // 自证：LOAD_PRIV 不在黑名单，合法授权不应被误杀
+        assertFalse(
+                ddlGrant.matcher("GRANT LOAD_PRIV ON otel.* TO 'otel_collector'").find(),
+                "正则不应误杀合法的 LOAD_PRIV 授权（自证）");
+        
+        // 负向：真实 schema 不得含危险授权
         assertFalse(
                 ddlGrant.matcher(db).find(),
                 "otel_collector 不应被授予 CREATE/DROP/DELETE/ALL 权限");
     }
-
+    
     /** OtelSchema.VERSION 必须固定为 v1，防止版本漂移导致契约失效。 */
     @Test
     void schema_version_is_pinned() {
         assertEquals("v1", OtelSchema.VERSION);
     }
-
+    
     // -----------------------------------------------------------------------
     // 私有助手
     // -----------------------------------------------------------------------
-
+    
     private String readClasspath(String path) {
         InputStream in = getClass().getClassLoader().getResourceAsStream(path);
         if (in == null) {
