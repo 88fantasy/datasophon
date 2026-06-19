@@ -44,7 +44,13 @@ public final class OtelSchema {
                     "otel_traces",
                     "otel_traces_graph");
     
-    /** 按依赖顺序的 DDL 资源(database → tables → views)。 */
+    /**
+     * 按依赖顺序的 DDL 资源(database → tables → views)。
+     *
+     * <p>契约:这些资源由 {@code OtelSchemaApplier.splitStatements} 按分号切分逐条执行,因此分号只能作语句分隔符
+     * —— 字面量(列 DEFAULT、注释、PROPERTIES value)内不得含分号,否则会被截断成残缺 SQL。需要含分号字面量时,
+     * 先把分割逻辑升级为引号感知再加资源。
+     */
     public static final List<String> DDL_RESOURCES =
             List.of(
                     "observability/doris/V1__otel_database.sql",
