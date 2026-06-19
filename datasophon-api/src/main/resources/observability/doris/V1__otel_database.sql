@@ -5,10 +5,10 @@
 -- 1. 建库
 CREATE DATABASE IF NOT EXISTS otel;
 
--- 2. 独立 Workload Group，限制可观测负载占用（防拖垮业务），配额按部署调整
---    cpu_share=10 表示与其他 group 竞争时的权重比（相对值，默认 512）
---    memory_limit=20% 表示该 group 最多使用节点内存的 20%
---    enable_memory_overcommit=true 表示允许在内存空闲时超占
+-- 2. 独立 Workload Group，让可观测负载与业务负载相互隔离，配额按部署调整
+--    cpu_share=10 是 CPU 竞争时的相对权重（非硬上限；默认 512，越小越让路）
+--    memory_limit=20% 是软上限，配合 enable_memory_overcommit=true 空闲时可超占
+--    注：仅 CREATE 资源组不生效——账号必须 GRANT USAGE_PRIV 且设 default_workload_group 才会进入本组（见 5/6）
 CREATE WORKLOAD GROUP IF NOT EXISTS otel_wg
 PROPERTIES (
   "cpu_share" = "10",
@@ -25,3 +25,11 @@ GRANT LOAD_PRIV ON otel.* TO 'otel_collector';
 --    口令由部署阶段 A3 下发时改为实际值，请务必替换 CHANGE_ME_AT_A3
 CREATE USER IF NOT EXISTS 'otel_reader' IDENTIFIED BY 'CHANGE_ME_AT_A3';
 GRANT SELECT_PRIV ON otel.* TO 'otel_reader';
+
+-- 5. 把两个账号绑定到 otel_wg（USAGE_PRIV 是使用资源组的必要条件）
+GRANT USAGE_PRIV ON WORKLOAD GROUP 'otel_wg' TO 'otel_collector';
+GRANT USAGE_PRIV ON WORKLOAD GROUP 'otel_wg' TO 'otel_reader';
+
+-- 6. 设为各账号默认资源组，使其连接默认进入 otel_wg（否则仍走 normal 组）
+SET PROPERTY FOR 'otel_collector' 'default_workload_group' = 'otel_wg';
+SET PROPERTY FOR 'otel_reader' 'default_workload_group' = 'otel_wg';

@@ -81,48 +81,90 @@ class OtelSchemaContractTest {
     }
     
     /**
-     * 采集账号 otel_collector 只应持有 LOAD_PRIV；
-     * 断言不存在针对该账号的 CREATE/DROP/DELETE/ALL 权限授予。
+     * 采集账号 otel_collector 数据权限必须精确等于 {LOAD_PRIV}，看板账号 otel_reader 精确等于 {SELECT_PRIV}。
      *
-     * <p>Doris 权限语法：GRANT DROP_PRIV ON otel.* TO 'otel_collector'
-     * （复合词，无空格；原正则 `(DROP)\w*\s+PRIV` 在 \w* 吞掉 _PRIV 后再要求 \s+PRIV 永不匹配 → 空洞）。
+     * <p>白名单精确相等优于黑名单排除：黑名单只能枚举已知危险词，会漏过 legacy `GRANT ALL ON otel.*`、
+     * 组合授权 `GRANT LOAD_PRIV, DROP_PRIV ...` 以及 ALTER_PRIV/ADMIN_PRIV/GRANT_PRIV 等越权写法；
+     * 精确相等一次性拒绝任何非预期权限。(Codex 对抗审查 CHECK 3 整改)
      */
     @Test
-    void collector_account_has_load_only_no_ddl_privilege() {
+    void accounts_hold_exactly_the_least_privilege() {
         String db =
                 readClasspath("observability/doris/V1__otel_database.sql")
                         .toUpperCase(java.util.Locale.ROOT);
-        // 正向：必须含 LOAD_PRIV 授权
+
+        // 自证：解析器能看见越权写法（否则下面的精确相等是空洞的）
+        assertEquals(
+                Set.of("ALL"),
+                dataPrivilegesFor("GRANT ALL ON OTEL.* TO 'OTEL_COLLECTOR';", "OTEL_COLLECTOR"),
+                "解析器必须能看见 legacy GRANT ALL（自证）");
+        assertEquals(
+                Set.of("LOAD_PRIV", "DROP_PRIV"),
+                dataPrivilegesFor(
+                        "GRANT LOAD_PRIV, DROP_PRIV ON OTEL.* TO 'OTEL_COLLECTOR';", "OTEL_COLLECTOR"),
+                "解析器必须能看见组合授权里的越权项（自证）");
+
+        // 真实 schema：数据权限精确白名单
+        assertEquals(
+                Set.of("LOAD_PRIV"),
+                dataPrivilegesFor(db, "OTEL_COLLECTOR"),
+                "采集账号 otel.* 数据权限必须精确为 {LOAD_PRIV}");
+        assertEquals(
+                Set.of("SELECT_PRIV"),
+                dataPrivilegesFor(db, "OTEL_READER"),
+                "看板账号 otel.* 数据权限必须精确为 {SELECT_PRIV}");
+    }
+
+    /**
+     * 独立资源组 otel_wg 必须真正绑定到两个账号，否则资源隔离形同虚设。
+     *
+     * <p>仅 CREATE WORKLOAD GROUP 不够：用户不获 USAGE_PRIV 且不设 default_workload_group 时仍走 normal 组。
+     * (Codex 对抗审查 CHECK 4 整改；语法据 Doris 官方文档：
+     * GRANT USAGE_PRIV ON WORKLOAD GROUP / SET PROPERTY FOR ... 'default_workload_group')
+     */
+    @Test
+    void accounts_are_bound_to_isolated_workload_group() {
+        String db =
+                readClasspath("observability/doris/V1__otel_database.sql")
+                        .toUpperCase(java.util.Locale.ROOT);
         assertTrue(
-                db.contains("GRANT LOAD_PRIV ON OTEL.* TO 'OTEL_COLLECTOR'"),
-                "V1__otel_database.sql 缺少 GRANT LOAD_PRIV ON otel.* TO 'otel_collector'");
-        
-        // 修正后的负向正则：匹配 Doris 真实复合词语法 DROP_PRIV / CREATE_PRIV / ALL_PRIV
-        Pattern ddlGrant =
+                db.contains("CREATE WORKLOAD GROUP IF NOT EXISTS OTEL_WG"),
+                "缺少独立资源组 otel_wg");
+        for (String user : new String[] {"OTEL_COLLECTOR", "OTEL_READER"}) {
+            assertTrue(
+                    Pattern.compile(
+                                    "GRANT\\s+USAGE_PRIV\\s+ON\\s+WORKLOAD\\s+GROUP\\s+'OTEL_WG'\\s+TO\\s+'"
+                                            + user + "'")
+                            .matcher(db)
+                            .find(),
+                    user + " 未被授予 otel_wg 的 USAGE_PRIV");
+            assertTrue(
+                    Pattern.compile(
+                                    "SET\\s+PROPERTY\\s+FOR\\s+'" + user
+                                            + "'\\s+'DEFAULT_WORKLOAD_GROUP'\\s*=\\s*'OTEL_WG'")
+                            .matcher(db)
+                            .find(),
+                    user + " 未设 default_workload_group=otel_wg");
+        }
+    }
+
+    /** 提取针对 user 在 otel.* 上授予的全部数据权限（合并所有 GRANT 的逗号分隔项，全大写）。 */
+    private static Set<String> dataPrivilegesFor(String dbSql, String user) {
+        Set<String> privs = new HashSet<>();
+        Matcher m =
                 Pattern.compile(
-                        "GRANT\\s+(ALL|CREATE|DROP|DELETE)_PRIV\\b[^;]*\\bOTEL_COLLECTOR",
-                        Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-        
-        // 自证：正则对已知危险授权必须能命中（否则就是空洞防护）
-        assertTrue(
-                ddlGrant.matcher("GRANT DROP_PRIV ON otel.* TO 'otel_collector'").find(),
-                "正则必须能匹配 DROP_PRIV 授权（自证）");
-        assertTrue(
-                ddlGrant.matcher("GRANT CREATE_PRIV ON otel.* TO 'otel_collector'").find(),
-                "正则必须能匹配 CREATE_PRIV 授权（自证）");
-        assertTrue(
-                ddlGrant.matcher("GRANT ALL_PRIV ON otel.* TO 'otel_collector'").find(),
-                "正则必须能匹配 ALL_PRIV 授权（自证）");
-        
-        // 自证：LOAD_PRIV 不在黑名单，合法授权不应被误杀
-        assertFalse(
-                ddlGrant.matcher("GRANT LOAD_PRIV ON otel.* TO 'otel_collector'").find(),
-                "正则不应误杀合法的 LOAD_PRIV 授权（自证）");
-        
-        // 负向：真实 schema 不得含危险授权
-        assertFalse(
-                ddlGrant.matcher(db).find(),
-                "otel_collector 不应被授予 CREATE/DROP/DELETE/ALL 权限");
+                                "GRANT\\s+(.+?)\\s+ON\\s+OTEL\\.\\*\\s+TO\\s+'" + user + "'",
+                                Pattern.CASE_INSENSITIVE)
+                        .matcher(dbSql);
+        while (m.find()) {
+            for (String p : m.group(1).split(",")) {
+                String t = p.trim().toUpperCase(java.util.Locale.ROOT);
+                if (!t.isEmpty()) {
+                    privs.add(t);
+                }
+            }
+        }
+        return privs;
     }
     
     /** OtelSchema.VERSION 必须固定为 v1，防止版本漂移导致契约失效。 */
