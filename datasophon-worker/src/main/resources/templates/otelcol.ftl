@@ -1,6 +1,7 @@
 extensions:
   file_storage/queue:
     directory: ${queueStorageDir}
+    create_directory: true
     timeout: 10s
 
 receivers:
@@ -50,7 +51,12 @@ service:
   extensions: [file_storage/queue]
   telemetry:
     metrics:
-      address: 0.0.0.0:8888
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: '0.0.0.0'
+                port: 8888
   pipelines:
     metrics:
       receivers: [otlp, prometheus/self]

@@ -48,8 +48,11 @@ public class OtelcolTemplateTest {
         assertTrue(yaml.contains("memory_limiter"));
         assertTrue(yaml.contains("limit_mib: 512"));
         assertTrue(yaml.contains("send_batch_size: 8192"));
-        // self-metrics(A3 监控 tab 依赖)
-        assertTrue(yaml.contains("address: 0.0.0.0:8888"));
+        // self-metrics(A3 监控 tab 依赖) — v0.154.0 readers 新结构
+        assertTrue(yaml.contains("prometheus:"));
+        assertTrue(yaml.contains("port: 8888"));
+        // file_storage 目录自动创建
+        assertTrue(yaml.contains("create_directory: true"));
         // 三信号 pipeline
         assertTrue(yaml.contains("metrics:"));
         assertTrue(yaml.contains("logs:"));
