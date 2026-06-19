@@ -34,9 +34,12 @@ OTel Collector 统一采集三信号(Metrics + Logs + Traces)→ 持久化到 Do
 | 告警 | 原生 `@Scheduled` 定时查 Doris 评估阈值,复用 `ClusterAlertHistory`/`Quota` + 通知通道;移除 AlertManager + Prometheus rule | 告警评估从 Prometheus 解耦 |
 | 采集拓扑 | **每节点 agent 直写 Doris**,无中心 gateway;控制面集中在 Collector 控制台页面 | 控制面/数据面分离:控制集中、写库分散,无 mw1 单点 |
 | 限流/重试 | OTel `memory_limiter` / `batch` / `sending_queue` / `retry_on_failure`,配置驱动下发 | 旋钮即 OTel processor/exporter 参数 |
+| **背压/韧性** | **`file_storage` 磁盘持久化队列**:过载或 Doris 宕机时落盘不丢,恢复后重放;队列水位/丢弃由 self-metrics 告警 | 无中心 gateway 后,持久化队列替代全局背压,过载时不静默丢遥测(审查 Finding 3) |
+| **Schema 所有权** | **Datasophon 自管 DDL**:`create_schema=false`,自建并版本化 `otel_metrics`/`otel_logs`/`otel_traces` + 契约测试 | 看板/告警 SQL 不耦合 exporter 自动建表;升级不破契约(审查 Finding 4) |
+| **写入凭据** | **按集群隔离的 INSERT-only Stream Load 账号**,与看板读用的 MySQL 协议账号分离;手动轮换(控制台下发);Doris 启用 TLS 则强制 | collector 永不需要 CREATE/DELETE/DROP,被攻陷 worker 无法投毒/删表(审查 Finding 1) |
 | Traces 来源 | 先修管道,datasophon-api/worker 挂 OTel Java agent 首批埋点 | 大数据服务默认不发 OTLP,初期管道优先 |
-| 引导期存储 | staged exporter:S3(Rustfs)兜底 → Doris 就绪后切 dorisexporter,**v1 不回灌** | Doris 在 DAG 中晚于 Collector;Rustfs 在 infra 阶段已就绪 |
-| 推进方式 | 按服务灰度;一条长分支 | 风险最低,符合"持续推进" |
+| 引导期存储 | staged exporter:S3(Rustfs)兜底 → Doris 就绪后切 dorisexporter;**Doris 就绪后用 `awss3receiver` 时间窗回灌引导期数据** | Doris 在 DAG 中晚于 Collector;消除切换前的可见性缺口(审查 Finding 2) |
+| 推进方式 | 按服务灰度;一条长分支;**灰度期旧栈保留至每服务验收通过再下线** | 风险最低,符合"持续推进";替代系统证伪前不失去可见性 |
 
 ---
 
@@ -118,17 +121,21 @@ Phase E ── 旧栈下线 + 清理
 - 路径:`package/raw/meta/datacluster-physical/OTELCOLLECTOR/{service_ddl.json, script/control.sh}`
 - 角色:每节点 worker 角色,cardinality `N+`(与 Promtail 同构,每节点一个)
 - 二进制:otelcol-contrib **v0.154.0**(含 `dorisexporter` + `awss3exporter` + `prometheusreceiver` + `filelogreceiver` + `otlpreceiver`)
-- `service_ddl.json` 的 `configFields` 暴露旋钮:`batch` 大小、`sending_queue` 深度、`retry_on_failure` 次数、采样率、exporter 模式(s3/doris)
+- `service_ddl.json` 的 `configFields` 暴露旋钮:`batch` 大小、`sending_queue` 深度、`retry_on_failure` 次数、采样率、exporter 模式(s3/doris)、磁盘队列容量上限
+- **每节点挂 `file_storage` 扩展 + `sending_queue.storage` 指向它**:过载/Doris 宕机时遥测落盘不丢,恢复后自动重放(替代失去的中心背压)
 - 配置变更链路 ⟢:控制台改配置 → `ServiceConfigureHandler` 生成节点 otelcol YAML → `control.sh restart`
   - otelcol 无原生热加载,采用**优雅重启**(graceful restart),与现有服务配置链路一致
 - Worker 侧需新增对应 `*HandlerStrategy`(参考 Promtail 策略)
 
-### 4.2 A2 — Doris 存储
+### 4.2 A2 — Doris 存储(schema 自管)
 
 - 平台 DORIS 内建 `otel` database + 独立 **resource group**(限制可观测库 CPU/内存占用,防拖垮业务负载)
-- 表模型:`dorisexporter` 自动建 `otel_metrics_*` / `otel_logs` / `otel_traces`;datasophon 只负责 database + 资源组 + 保留期(TTL/分区)管理
-- **这套表结构 = Phase B 看板取数 / Phase B3 告警评估的硬契约**,旧栈退场前不得随意变更
-- 每节点 `batch` + `sending_queue` 削峰,补偿失去的中心节流
+- **schema 自管(`create_schema=false`)**:dorisexporter 不再自动建表,由 datasophon 拥有并版本化 `otel_metrics` / `otel_logs` / `otel_traces` 的 DDL
+  - 取数方式:在隔离沙箱用 `create_schema=true` 跑一次,**导出 exporter 期望的精确 DDL**,再纳入版本管理(避免手写 schema 与 exporter 写入格式不一致)
+  - schema 带**版本号**;Phase B 的看板/告警 SQL 配**契约测试**(跑在固定 schema 上),collector/exporter 升级先过契约测试再放行
+- **这套表结构 = Phase B 看板取数 / Phase B3 告警评估的硬契约**,旧栈退场前冻结,变更必须走版本化 + 契约测试
+- 写入路径 = **Stream Load(HTTP)**;`create_schema=false` 后 exporter 的 MySQL 端点运行期不再使用
+- 每节点 `batch` + `file_storage` 持久化队列削峰,补偿失去的中心节流
 
 ### 4.3 A3 — Collector 控制台页面(新增 UI + 后端)
 
@@ -139,10 +146,16 @@ Phase E ── 旧栈下线 + 清理
 - **监控 tab** ⟢:master 按需轮询各节点 collector self-metrics(`:8888`,Prometheus 格式)取健康/吞吐/丢弃/队列水位
   - 不依赖 Doris,引导期(S3 模式)也能用
 - **staged exporter 切换** ⟢:
-  - 默认 S3 模式:`awss3exporter` → Rustfs(mw1 `:9040`,S3 API)
-  - master 在 `DORIS` 服务安装完成后,自动重生成 Collector 配置切到 `dorisexporter` + restart
+  - 默认 S3 模式:`awss3exporter` → Rustfs(mw1 `:9040`,S3 API)。记录引导期起点时间(首次 S3 写入)
+  - master 在 `DORIS` 服务安装完成后,自动重生成 Collector 配置切到 `dorisexporter`(`create_schema=false`,写自管表)+ restart;记录切换点时间
   - 控制台可手动覆盖 exporter 模式
-  - v1 不回灌:切换后看板从 Doris 时间线开始;引导期 S3 数据仅作 durable 归档,不入表
+
+- **引导期回灌(Finding 2)**:Doris 切换后,master 触发一次性回灌管道补齐可见性缺口
+  - 机制:独立的一次性 collector 运行 `awss3receiver`(`endpoint`→Rustfs,`starttime`=引导期起点,`endtime`=切换点)→ `dorisexporter`(写同一套自管表)
+  - 收发对偶:awss3receiver 读回 awss3exporter 写出的 OTLP,经同一 exporter 入表,**无需手写 OTLP-json→表映射**
+  - 时间窗严格 `[起点, 切换点)` 闭右开,避免与稳态实时数据重叠双写
+  - 回灌完成前 UI 标注"引导期数据回灌中";完成后看板时间线连续
+  - ⚠️ `awss3receiver` 为 **alpha** 组件,见 §6 风险
 
 > ⟢ 三个推荐机制的共同主线:**不让 Phase A 依赖尚未建成的 Phase B**——监控走 self-metrics 而非查 Doris、配置走重启而非未实现的热加载、切换由现成的服务安装完成流触发,使地基阶段能自我闭环验收。
 
@@ -150,10 +163,21 @@ Phase E ── 旧栈下线 + 清理
 
 ## 5. Phase A 验收标准
 
+**功能(顺利路径)**
 1. 控制台改限流参数 → 下发到节点 → 合成数据按新参数落 S3(Rustfs)
-2. 安装 Doris → 自动切 `dorisexporter` → 合成数据落 `otel_*` 表
+2. 安装 Doris → 自动切 `dorisexporter` → 合成数据落自管 `otel_*` 表
 3. canary 服务(HDFS)指标经 `prometheusreceiver` 进 Doris,SQL 可查
-4. 监控 tab 正确显示各节点 collector 健康/吞吐/队列水位(S3 模式下亦可用)
+4. 监控 tab 正确显示各节点 collector 健康/吞吐/队列水位/落盘量(S3 模式下亦可用)
+5. **回灌**:切换后触发 awss3receiver 回灌,引导期窗口数据补齐入表,看板时间线无断点、无与稳态数据重叠双写
+
+**韧性(故障路径,审查新增)**
+6. **持续过载**:注入超过 Doris 摄取能力的合成流量,验证落盘不丢、不静默丢弃;超过磁盘预算时按策略丢弃并触发队列告警
+7. **Doris 部分宕机**:停 Doris N 分钟,验证遥测落盘缓冲;Doris 恢复后队列重放、数据最终一致
+8. **schema 契约**:Phase B 的看板/告警 SQL 对固定版本 schema 跑契约测试通过;模拟 exporter schema 漂移时契约测试能拦截
+
+**安全(审查新增)**
+9. collector 写入账号仅 INSERT/LOAD 权限,验证其无法 CREATE/DROP/DELETE otel 表;按集群隔离,A 集群凭据无法写 B 集群库
+10. Doris 启用 TLS 时 Stream Load 走 TLS;凭据不出现在日志/明文配置回显中
 
 ---
 
@@ -161,13 +185,16 @@ Phase E ── 旧栈下线 + 清理
 
 | 风险 | 缓解 |
 |---|---|
-| 无中心 gateway,N 节点直写 Doris 瞬时压力叠加 | 每节点 batch+sending_queue 削峰 + Doris 独立资源组 |
+| 无中心 gateway,N 节点直写 Doris 瞬时压力叠加 | 每节点 batch + `file_storage` 持久化队列削峰 + Doris 独立资源组 |
+| 过载/Doris 宕机时静默丢遥测(Finding 3) | 磁盘持久化队列落盘缓冲 + 队列水位/落盘量 self-metrics 告警 + §5.6/5.7 故障验收;超磁盘预算才丢弃且必告警 |
 | Doris 在 DAG 晚于 Collector,首装无库可写 | staged exporter:S3(Rustfs)兜底,Doris 就绪自动切换 |
-| 引导期 S3 数据(OTLP-json)不可 SQL 查 | v1 接受:仅归档防丢,看板从 Doris 切换点开始 |
-| Rustfs 仍在 beta | 仅作引导期兜底 sink,稳态数据在 Doris,影响面可控 |
+| 引导期可见性缺口(Finding 2) | Doris 就绪后 `awss3receiver` 时间窗回灌补齐;回灌前 UI 标注降级 |
+| **`awss3receiver` 为 alpha 组件** | 回灌为一次性、非关键路径(失败不影响稳态);保留 S3 归档可重试;回灌结果做计数核对 |
+| Rustfs 仍在 beta | 仅作引导期兜底 sink + 归档,稳态数据在 Doris,影响面可控 |
 | otelcol 配置嵌套 YAML,标准扁平配置表单不适配 | 基础版 configFields 先行,结构化旋钮+YAML 兜底增量 |
-| dorisexporter 表结构是后续看板/告警硬契约 | 旧栈退场前冻结表结构变更 |
-| 每节点持 Doris 凭据(凭据面扩大) | 凭据经现有 gRPC 配置下发链路分发,不硬编码 |
+| otel 表结构是后续看板/告警硬契约(Finding 4) | schema 自管 + 版本化 + 契约测试(§4.2);`create_schema=false` 防 exporter 升级擅改表 |
+| 每节点持 Doris 写凭据,信任边界扩散(Finding 1) | 按集群隔离 + INSERT/LOAD-only(无 CREATE/DELETE/DROP)+ 与看板读账号分离 + TLS + 手动轮换(经配置下发,不硬编码);被攻陷 worker 无法投毒/删表 |
+| 凭据轮换 v1 为手动 | 控制台改账号 → gRPC 下发 → restart;自动轮换列入后续增强,非 Phase A 阻塞项 |
 
 ---
 
@@ -181,3 +208,25 @@ Phase E ── 旧栈下线 + 清理
 | B3 告警 | `master/service/AlertService.java`、`ClusterAlertHistoryServiceImpl`、`ClusterAlertQuotaServiceImpl` |
 | meta 服务 | `package/raw/meta/datacluster-physical/{PROMETHEUS,LOKI,PROMTAIL,GRAFANA,ALERTMANAGER}` |
 | 端口/JMX 映射 | `ServiceRoleJmxMap`、`load/LoadServiceMeta` |
+| A2 schema 自管 | otel DDL 版本化(参考 `migration/DatabaseMigration` 自研执行器模式) |
+| A2/A3 凭据 | 复用 `ServiceConfigureHandler` 配置下发链路分发 Stream Load 凭据 |
+
+---
+
+## 8. 安全与韧性设计(对抗性审查整改追溯)
+
+2026-06-19 Codex 对抗性审查结论 needs-attention,四条 finding 的处理映射如下(技术可行性已对 dorisexporter / awss3receiver v0.154.0 官方文档核实):
+
+| # | 审查 finding | 决策 | 落点 |
+|---|---|---|---|
+| F1 高 | 每节点 Doris 凭据扩大信任边界,无最小权限/轮换 | 按集群隔离 + INSERT/LOAD-only(`create_schema=false` 后无需 CREATE)+ 与看板读账号分离 + TLS + 手动轮换 | §1.3、§4.2、§5.9-10、§6 |
+| F2 高 | 引导期可见性缺口,无回灌/告警兜底 | `awss3receiver` 时间窗回灌(收发对偶)+ 灰度期旧栈保留至每服务验收 + UI 降级标注 | §1.3、§4.3、§5.5 |
+| F3 中 | 直写拓扑过载/队列溢出无可辩护故障模式 | `file_storage` 磁盘持久化队列(落盘不丢、恢复重放)+ 队列/落盘 self-metrics 告警 + 过载/宕机验收 | §1.3、§4.1-4.2、§5.6-7、§6 |
+| F4 中 | 表结构当硬契约却交 exporter auto-DDL | schema 自管(`create_schema=false`)+ 版本化 + 契约测试 + 升级先过契约 | §1.3、§4.2、§5.8 |
+
+**核实要点(防臆测)**:
+- dorisexporter v0.154.0 支持 `create_schema=false`;关闭后 MySQL 端点仅建表用、运行期忽略,数据走 Stream Load(HTTP)——故运行期写凭据可独立于看板读账号单独授权。
+- `awss3receiver` v0.154.0 支持按 `starttime`/`endtime` 时间窗回放、支持 custom `endpoint`(接 Rustfs);**稳定度 alpha**,故回灌设计为一次性、非关键路径、可重试、结果计数核对。
+- `file_storage` 扩展 + `sending_queue.storage` 实现磁盘持久化队列;需为每节点设磁盘预算,超预算才丢弃且必告警。
+
+**遗留为后续增强(非 Phase A 阻塞)**:凭据自动轮换、回灌的精确去重(当前靠时间窗闭右开避免重叠)。
