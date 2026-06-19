@@ -28,7 +28,7 @@
 
 | 里程碑 | 子系统 | 交付物 | 计划 | 状态 |
 |---|---|---|---|---|
-| A1 | 数据面 | OTELCOLLECTOR 服务,落 S3(Rustfs),self-metrics :8888 | **本计划** | ⬜ 未开始 |
+| A1 | 数据面 | OTELCOLLECTOR 服务,落 S3(Rustfs),self-metrics :8888 | **本计划** | 🟩 代码完成(配置 validate 实测通过/组件实测齐全);端到端落 S3 待真实 Rustfs 环境 |
 | A2 | 存储 | otel database + 独立资源组 + create_schema=false 自管版本化 DDL + 契约测试 | 待出(A2 sub-plan) | ⬜ 未开始 |
 | A3 | 控制面 | 控制台(配置 tab+监控 tab)+ @Scheduled 告警器 + 逐节点 staged 切换 S3→Doris + 逐节点 ack 边界回灌 | 待出(A3 sub-plan) | ⬜ 未开始 |
 
