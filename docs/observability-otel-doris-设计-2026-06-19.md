@@ -143,18 +143,21 @@ Phase E ── 旧栈下线 + 清理
   - 基础形态:`configFields` 由 `LoadServiceMeta` 自动渲染表单,近零前端成本
   - 高级形态(增量):结构化旋钮(batch/队列/重试/采样)+ 原始 YAML 兜底覆盖
   - 改配置 → 每节点 otelcol YAML 重生成 → gRPC 下发 → restart
-- **监控 tab** ⟢:master 按需轮询各节点 collector self-metrics(`:8888`,Prometheus 格式)取健康/吞吐/丢弃/队列水位
-  - 不依赖 Doris,引导期(S3 模式)也能用
-- **staged exporter 切换** ⟢:
-  - 默认 S3 模式:`awss3exporter` → Rustfs(mw1 `:9040`,S3 API)。记录引导期起点时间(首次 S3 写入)
-  - master 在 `DORIS` 服务安装完成后,自动重生成 Collector 配置切到 `dorisexporter`(`create_schema=false`,写自管表)+ restart;记录切换点时间
-  - 控制台可手动覆盖 exporter 模式
+- **监控 tab**:展示各节点 collector self-metrics(`:8888`,Prometheus 格式)健康/吞吐/丢弃/队列水位/落盘量;不依赖 Doris,引导期(S3 模式)也能用
+- **持续告警器(Phase A 内,Finding 3/F6)**:不只靠控制台按需轮询——Phase A 即落一个**轻量 `@Scheduled` 评估器**,周期拉取各节点 self-metrics,持久化末值,队列水位/丢弃超阈即走通知通道
+  - **独立于 Doris 与 Phase B 原生告警**(Phase B 的告警查 Doris;此评估器查 collector self-metrics),避免"A 阶段依赖未建成的 B"
+  - 明确:轮询节奏、self-metrics 末值持久化、通知路径;无人值守下队列满/丢弃即告警
+- **staged exporter 切换(逐节点,非全局原子,F5)** ⟢:
+  - 默认 S3 模式:`awss3exporter` → Rustfs(mw1 `:9040`,S3 API)。**按节点**记录引导期起点(各节点首次 S3 写入)
+  - master 在 `DORIS` 安装完成后逐节点重生成配置切 `dorisexporter`(`create_schema=false`)+ restart
+  - **切换 ack:某节点 restart 后产生首条成功 Doris 写入,才记录该节点的切换边界(S3 末写时刻)**——gRPC 下发/restart 逐节点可能延迟或失败,故不依赖单一全局切换点
+  - 控制台可手动覆盖 exporter 模式;展示各节点切换状态(S3 / 切换中 / Doris-acked)
 
-- **引导期回灌(Finding 2)**:Doris 切换后,master 触发一次性回灌管道补齐可见性缺口
-  - 机制:独立的一次性 collector 运行 `awss3receiver`(`endpoint`→Rustfs,`starttime`=引导期起点,`endtime`=切换点)→ `dorisexporter`(写同一套自管表)
+- **引导期回灌(逐节点边界,Finding 2 + F5)**:Doris 切换后,master 对**每个节点各自**触发一次性回灌
+  - 机制:一次性 collector 运行 `awss3receiver`(`endpoint`→Rustfs,`starttime`=该节点引导期起点,`endtime`=**该节点已 ack 的切换边界**)→ `dorisexporter`(写同一套自管表)
   - 收发对偶:awss3receiver 读回 awss3exporter 写出的 OTLP,经同一 exporter 入表,**无需手写 OTLP-json→表映射**
-  - 时间窗严格 `[起点, 切换点)` 闭右开,避免与稳态实时数据重叠双写
-  - 回灌完成前 UI 标注"引导期数据回灌中";完成后看板时间线连续
+  - 时间窗按节点闭右开,边界取已 ack 的切换点,既不漏(覆盖到该节点真正停写 S3 处)也不与稳态重叠双写
+  - 回灌完成前 UI 标注该节点"引导期数据回灌中";完成后看板时间线连续
   - ⚠️ `awss3receiver` 为 **alpha** 组件,见 §6 风险
 
 > ⟢ 三个推荐机制的共同主线:**不让 Phase A 依赖尚未建成的 Phase B**——监控走 self-metrics 而非查 Doris、配置走重启而非未实现的热加载、切换由现成的服务安装完成流触发,使地基阶段能自我闭环验收。
@@ -168,16 +171,18 @@ Phase E ── 旧栈下线 + 清理
 2. 安装 Doris → 自动切 `dorisexporter` → 合成数据落自管 `otel_*` 表
 3. canary 服务(HDFS)指标经 `prometheusreceiver` 进 Doris,SQL 可查
 4. 监控 tab 正确显示各节点 collector 健康/吞吐/队列水位/落盘量(S3 模式下亦可用)
-5. **回灌**:切换后触发 awss3receiver 回灌,引导期窗口数据补齐入表,看板时间线无断点、无与稳态数据重叠双写
+5. **逐节点回灌**:切换后对每节点按其已 ack 切换边界回灌,引导期窗口数据补齐入表,看板时间线无断点、无与稳态数据重叠双写
+5b. **切换非原子(F5)**:人为让某节点 restart 延迟/失败,验证其仍处 S3 模式期间的数据落在该节点回灌窗口内、不丢、不与稳态重叠
 
 **韧性(故障路径,审查新增)**
-6. **持续过载**:注入超过 Doris 摄取能力的合成流量,验证落盘不丢、不静默丢弃;超过磁盘预算时按策略丢弃并触发队列告警
-7. **Doris 部分宕机**:停 Doris N 分钟,验证遥测落盘缓冲;Doris 恢复后队列重放、数据最终一致
+6. **持续过载(无人值守)**:注入超过 Doris 摄取能力的合成流量,验证落盘不丢、不静默丢弃;超磁盘预算按策略丢弃;**Phase A 内的 `@Scheduled` 告警器自动触发队列/丢弃告警(无需人工盯控制台)**
+7. **Doris 部分宕机**:停 Doris N 分钟,验证遥测落盘缓冲 + 告警器报警;Doris 恢复后队列重放、数据最终一致
 8. **schema 契约**:Phase B 的看板/告警 SQL 对固定版本 schema 跑契约测试通过;模拟 exporter schema 漂移时契约测试能拦截
 
 **安全(审查新增)**
 9. collector 写入账号仅 INSERT/LOAD 权限,验证其无法 CREATE/DROP/DELETE otel 表;按集群隔离,A 集群凭据无法写 B 集群库
 10. Doris 启用 TLS 时 Stream Load 走 TLS;凭据不出现在日志/明文配置回显中
+11. **投毒残余风险(F7,如实记录)**:确认 INSERT-only 不阻止"被攻陷 worker 为本集群注入任意遥测";此残余风险在内部信任模型下接受,服务端节点身份校验列为后续增强
 
 ---
 
@@ -193,7 +198,8 @@ Phase E ── 旧栈下线 + 清理
 | Rustfs 仍在 beta | 仅作引导期兜底 sink + 归档,稳态数据在 Doris,影响面可控 |
 | otelcol 配置嵌套 YAML,标准扁平配置表单不适配 | 基础版 configFields 先行,结构化旋钮+YAML 兜底增量 |
 | otel 表结构是后续看板/告警硬契约(Finding 4) | schema 自管 + 版本化 + 契约测试(§4.2);`create_schema=false` 防 exporter 升级擅改表 |
-| 每节点持 Doris 写凭据,信任边界扩散(Finding 1) | 按集群隔离 + INSERT/LOAD-only(无 CREATE/DELETE/DROP)+ 与看板读账号分离 + TLS + 手动轮换(经配置下发,不硬编码);被攻陷 worker 无法投毒/删表 |
+| 每节点持 Doris 写凭据,信任边界扩散(Finding 1) | 按集群隔离 + INSERT/LOAD-only(无 CREATE/DELETE/DROP)+ 与看板读账号分离 + TLS + 手动轮换(经配置下发,不硬编码);被攻陷 worker **无法删表/改 schema** |
+| **被攻陷 worker 仍可注入假遥测污染看板/告警(F7)** | INSERT-only **不能**阻止投毒;**如实记录为残余风险**,内部信任模型下接受;后续增强:按节点/角色摄取身份 + 服务端校验节点标签 + 隔离不匹配遥测(不在 Phase A 范围) |
 | 凭据轮换 v1 为手动 | 控制台改账号 → gRPC 下发 → restart;自动轮换列入后续增强,非 Phase A 阻塞项 |
 
 ---
@@ -215,7 +221,9 @@ Phase E ── 旧栈下线 + 清理
 
 ## 8. 安全与韧性设计(对抗性审查整改追溯)
 
-2026-06-19 Codex 对抗性审查结论 needs-attention,四条 finding 的处理映射如下(技术可行性已对 dorisexporter / awss3receiver v0.154.0 官方文档核实):
+两轮 Codex 对抗性审查(2026-06-19)的 finding 处理映射如下(技术可行性已对 dorisexporter / awss3receiver v0.154.0 官方文档核实):
+
+**第一轮(结构性缺口)**
 
 | # | 审查 finding | 决策 | 落点 |
 |---|---|---|---|
@@ -224,9 +232,17 @@ Phase E ── 旧栈下线 + 清理
 | F3 中 | 直写拓扑过载/队列溢出无可辩护故障模式 | `file_storage` 磁盘持久化队列(落盘不丢、恢复重放)+ 队列/落盘 self-metrics 告警 + 过载/宕机验收 | §1.3、§4.1-4.2、§5.6-7、§6 |
 | F4 中 | 表结构当硬契约却交 exporter auto-DDL | schema 自管(`create_schema=false`)+ 版本化 + 契约测试 + 升级先过契约 | §1.3、§4.2、§5.8 |
 
+**第二轮(部分失败/被攻陷下的二阶问题)**
+
+| # | 审查 finding | 决策 | 落点 |
+|---|---|---|---|
+| F5 高 | 单一全局切换点假设原子,逐节点 restart 延迟/失败会漏回灌 | 切换/回灌**按节点**:节点产生首条 Doris 写入才记其切换边界,按各自已 ack 边界回灌 | §4.3、§5.5、§5.5b |
+| F6 高 | Phase A 声称队列告警却依赖排在 B 的告警层 | **最小 `@Scheduled` 告警器提前进 Phase A**,查 collector self-metrics,独立于 Doris/Phase B | §4.3、§5.6-7 |
+| F7 中 | INSERT-only 不能阻止投毒,缓解措辞夸大 | **删去"防投毒"表述**,如实记残余风险(内部信任模型接受);服务端身份校验列后续增强 | §5.11、§6 |
+
 **核实要点(防臆测)**:
 - dorisexporter v0.154.0 支持 `create_schema=false`;关闭后 MySQL 端点仅建表用、运行期忽略,数据走 Stream Load(HTTP)——故运行期写凭据可独立于看板读账号单独授权。
 - `awss3receiver` v0.154.0 支持按 `starttime`/`endtime` 时间窗回放、支持 custom `endpoint`(接 Rustfs);**稳定度 alpha**,故回灌设计为一次性、非关键路径、可重试、结果计数核对。
 - `file_storage` 扩展 + `sending_queue.storage` 实现磁盘持久化队列;需为每节点设磁盘预算,超预算才丢弃且必告警。
 
-**遗留为后续增强(非 Phase A 阻塞)**:凭据自动轮换、回灌的精确去重(当前靠时间窗闭右开避免重叠)。
+**遗留为后续增强(非 Phase A 阻塞)**:凭据自动轮换、回灌的精确去重(当前靠逐节点 ack 边界闭右开避免重叠)、服务端节点身份校验/遥测投毒防护。
