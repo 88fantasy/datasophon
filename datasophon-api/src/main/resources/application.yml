@@ -77,6 +77,12 @@ logging:
 datasophon:
   migration:
     enable: true
+  observability:
+    otel-alert:
+      initial-delay-ms: 30000
+      interval-ms: 30000
+      queue-watermark: 0.8
+      send-failed-rate: 0.05
   server:
     path-prefix: /api
   proxy-grafana:
@@ -101,4 +107,3 @@ springdoc:
     - group: 'default'
       paths-to-match: '/**'
       packages-to-scan: com.datasophon.api.controller
-
