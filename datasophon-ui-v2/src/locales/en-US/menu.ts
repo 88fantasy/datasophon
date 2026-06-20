@@ -61,6 +61,8 @@ export default {
   'menu.monitor-dashboards.datart-monitor': 'DATART Monitor',
   'menu.monitor-dashboards.juicefs-monitor': 'JuiceFS Monitor',
   'menu.monitor-dashboards.kyuubi-monitor': 'Kyuubi Monitor',
+  'menu.monitor-dashboards.nginx-monitor': 'Nginx Monitor',
+  'menu.monitor-dashboards.valkey-monitor': 'Valkey Monitor',
   'menu.colony': 'Cluster Management',
   'menu.colony.manage': 'Cluster List',
   'menu.frame': 'Cluster Frameworks',

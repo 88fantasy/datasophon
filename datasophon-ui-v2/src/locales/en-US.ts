@@ -8,6 +8,8 @@ import pages from './en-US/pages';
 import prometheusMonitor from './en-US/prometheusMonitor';
 import settingDrawer from './en-US/settingDrawer';
 import settings from './en-US/settings';
+import nginxMonitor from './en-US/nginxMonitor';
+import valkeyMonitor from './en-US/valkeyMonitor';
 import zookeeperMonitor from './en-US/zookeeperMonitor';
 
 export default {
@@ -27,4 +29,6 @@ export default {
   ...zookeeperMonitor,
   ...dolphinSchedulerMonitor,
   ...dorisMonitor,
+  ...nginxMonitor,
+  ...valkeyMonitor,
 };

@@ -106,6 +106,18 @@ export default [
         icon: 'database',
         component: './monitor/KyuubiMonitor',
       },
+      {
+        path: '/monitor/nginx',
+        name: 'nginx-monitor',
+        icon: 'monitor',
+        component: './monitor/NginxMonitor',
+      },
+      {
+        path: '/monitor/valkey',
+        name: 'valkey-monitor',
+        icon: 'monitor',
+        component: './monitor/ValkeyMonitor',
+      },
     ],
   },
 

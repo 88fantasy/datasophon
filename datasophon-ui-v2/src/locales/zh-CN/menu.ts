@@ -61,6 +61,8 @@ export default {
   'menu.monitor-dashboards.datart-monitor': 'DATART 监控',
   'menu.monitor-dashboards.juicefs-monitor': 'JuiceFS 监控',
   'menu.monitor-dashboards.kyuubi-monitor': 'Kyuubi 监控',
+  'menu.monitor-dashboards.nginx-monitor': 'Nginx 监控',
+  'menu.monitor-dashboards.valkey-monitor': 'Valkey 监控',
   'menu.colony': '集群管理',
   'menu.colony.manage': '集群列表',
   'menu.frame': '集群框架',
