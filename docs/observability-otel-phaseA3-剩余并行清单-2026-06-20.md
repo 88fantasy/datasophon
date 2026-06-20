@@ -3,7 +3,7 @@
 ## Context
 
 A3a(配置下发主干)已于 4 commits 完成(`7797c699`+`7ebcb8f3`+`0e5e3ab1`+`ad285d9e`,双门禁通过)。
-Phase A 控制面只剩 **A3b 监控 / A3c 告警器 / A3d 切换+回灌(含 A3f 凭据/schema) / A3e UI 控制台** 四块,
+Phase A 控制面只剩 **A3b 监控 / A3c 告警器 / A3d 切换+凭据/schema(合并 A3f) / A3e UI 控制台** 四块,
 外加一项独立的 **docs-spotless 清理**。
 
 本文件不是逐行 TDD 计划,而是**并行编排清单**:给出依赖 DAG、两波并行分组、每个 sub-plan 的
@@ -22,7 +22,7 @@ A3a ✅(已完成,提供按节点下发原语 OtelCollectorConfigService.pushNod
  │     ├──> A3c 告警器(@Scheduled 查 A3b self-metrics)
  │     └──> A3e UI 控制台(监控 tab 消费 A3b API + 配置 tab 触发 A3a push)
  │
- └──> A3d 切换+回灌+凭据/schema(改模板/ddl + 新建切换 service,A2 OtelSchemaApplier)
+ └──> A3d 切换+凭据/schema(改模板/ddl + 新建切换 service,A2 OtelSchemaApplier)
 
 docs-spotless: 完全独立,任意时刻可做
 ```
@@ -44,7 +44,7 @@ docs-spotless: 完全独立,任意时刻可做
 | 新建 `api/.../observability/OtelAlertScheduler` | - | ✏️建 | - | - | - |
 | 新建 `api/.../observability/OtelExporterSwitchService` | - | - | ✏️建 | - | - |
 | `OtelCollectorConfigService.java`(A3a 产物) | - | - | 可能扩展 | - | - |
-| 新建 `datasophon-ui/src/pages/<Collector控制台>` | - | - | - | ✏️建 | - |
+| 新建 `datasophon-ui-v2/src/pages/<Collector控制台>` | - | - | - | ✏️建 | - |
 | `docs/*.md`(全角空格表格) | - | - | - | - | ✏️写 |
 
 > A3d 若需给 `OtelCollectorConfigService` 增 exporterMode 构建分支,会写该文件;A3b 不碰它 → 仍无冲突。
@@ -61,7 +61,10 @@ docs-spotless: 完全独立,任意时刻可做
 - 服务名 `OTELCOLLECTOR`、角色名 `OtelCollector`(A1 既定);jmxPort/self-metrics 端口 `8888`。
 - **DORIS 就绪判据** = 其服务角色实例达 `ServiceRoleState.RUNNING`(`MasterScheduledService` 15s/30s 巡检维护);
   禁止假设 Doris 在 collector 之前就绪。
-- **逐节点非原子(F5)**:切换/回灌按各节点 ack 边界(节点产生首条 Doris 写入才记其切换点)。
+- **逐节点非原子(F5)**:本阶段切换原语按节点下发,不引入全局原子切换点。
+- **ack 边界与 S3 回灌延期(F2)**:仓库当前无持久化节点 ack/首写成功信号,也无一次性
+  `awss3receiver` Worker 命令。2026-06-20 已确认选择方案 2:本轮只交付模板/DDL/凭据/schema/逐节点切换,
+  ack/backfill 单独后续实现。
 - **告警器独立于 Doris/Phase B(F6)**:只查 collector self-metrics `:8888`,不查 Doris。
 - **凭据(F1)**:按集群生成 `otel_collector` 口令,经下发链路注入 `otelcol.env`,替换 A2 的 `CHANGE_ME_AT_A3`;
   不硬编码、不进静态脚本、不记日志。
@@ -114,11 +117,12 @@ controller extends ApiController;真实抓取待真实环境。
 
 ---
 
-### A3d — staged 切换(F5)+ ack 边界回灌(F2)+ 凭据/schema 编排(F1,合并 A3f)
+### A3d — staged 逐节点切换(F5)+ 凭据/schema 编排(F1,合并 A3f)
 
 **范围**:① 给 otelcol 模板加 `exporterMode`(s3|doris)分支与 Doris exporter 配置;② service_ddl 增 exporterMode + doris 连接参数;
 ③ DORIS 角色达 RUNNING → `OtelSchemaApplier.apply` + 按集群生成 `otel_collector` 口令注入 `otelcol.env`(替换 CHANGE_ME_AT_A3);
-④ 逐节点经 A3a `pushNodeConfig` 下发 exporterMode=doris;⑤ 按节点首条 Doris 写入记 ack 边界,`awss3receiver` 时间窗 [节点起点, 节点ack) 回灌引导期 S3 数据。
+④ 逐节点经 A3a `pushNodeConfig` 下发 exporterMode=doris。ack 边界、首写确认与 `awss3receiver` S3 回灌不在本轮范围,
+延期到具备持久化节点状态和一次性 Worker 命令后实现。
 
 **接口契约(Produces)**:
 - `OtelExporterSwitchService.switchNode(Integer clusterId, String hostname, ExporterMode mode)→ExecResult`(组装 params → 调 `pushNodeConfig`)。
@@ -139,9 +143,9 @@ controller extends ApiController;真实抓取待真实环境。
 
 **验收**:模板 doris 分支渲染产出合法 otelcol doris exporter;service_ddl 新参数可被 LoadServiceMeta 解析;
 isDorisReady 正确读 RUNNING;applyIfReady 幂等(traces_graph_job 重复 apply 不致命);
-口令不硬编码不入静态脚本;真实切换/回灌/Doris apply 待真实环境。
+口令不硬编码不入静态脚本;真实切换/Doris apply 待真实环境。
 
-**约束**:回灌**逐节点**(各自 ack 边界,非全局原子);awss3receiver 是 alpha 需标注;
+**约束**:切换保持逐节点非原子;本轮不伪造 ack 或回灌完成信号;
 密码经 env 注入不进 yaml 明文不记日志;traces_graph_job 非幂等容错(吞 already-exists 错误码)。
 
 ---
@@ -183,18 +187,26 @@ isDorisReady 正确读 RUNNING;applyIfReady 幂等(traces_graph_job 重复 apply
 **范围**:Collector 控制台页面。**配置 tab**:基础旋钮(由 service_ddl `parameters` 渲染)+ YAML 兜底,触发 A3a `push`;
 **监控 tab**:消费 A3b `monitor` API 展示健康/吞吐/队列/落盘。
 
-**接口契约(Consumes)**:`POST /api/observability/otelcol/push?clusterId=&hostname=`(A3a)、`GET /api/observability/otelcol/monitor?clusterId=`(A3b)。
-**Produces**:`datasophon-ui/src/pages/<Collector控制台>/` 页面 + `src/api/services/` 取数封装 + 路由注册。
+**接口契约(Consumes)**:
+- `GET /api/observability/otelcol/config?clusterId=`:返回 `service_ddl` 解析后的参数元数据与当前值。
+- `POST /api/observability/otelcol/push?clusterId=&hostname=`:body 为完整参数 map;Doris 模式先调 schema 编排,
+  再经 A3d 切换服务注入凭据并调 A3a 的逐节点下发原语。
+- `GET /api/observability/otelcol/monitor?clusterId=`(A3b):返回各 Collector 节点指标。
+**Produces**:`datasophon-ui-v2/src/pages/<Collector控制台>/` 页面 + 页面同目录 `service.ts` 取数封装 + Umi 路由注册。
 
 **文件地图**:
-- Create:`datasophon-ui/src/pages/ObservabilityCollector/`(组件,PascalCase,一组件一文件)
-- Create/Modify:`src/api/services/`(otelcol push/monitor 封装)、`src/routes/index.tsx`(路由)
-- 遵循 `.claude/rules/antd-pro.md`:ProTable(`request` 返回 `{data,success,total}`)、ProForm(`onFinish`→`Promise<boolean>`);
-  监控表用 `actionRef.reload`;按 segment 分开取数(见 [[feedback_monitor_segment_fetch]],避免一次拉全超时)
+- Create:`datasophon-ui-v2/src/pages/Cluster/ObservabilityCollector/`(组件,PascalCase,一组件一文件)
+- Create:`datasophon-ui-v2/src/pages/Cluster/ObservabilityCollector/service.ts`(otelcol push/monitor 封装)
+- Modify:`OtelCollectorController`:push 接收 body 参数;`GET config` 暴露 DDL 解析后的配置元数据
+- Modify:`otelcol.ftl` / `service_ddl.json`:增 `rawYaml` 全量覆盖入口,非空时原样生成 `otelcol.yaml`
+- Modify:`datasophon-ui-v2/config/routes.ts`(Umi 路由)、`datasophon-ui-v2/src/pages/Cluster/Layout/index.tsx`(集群菜单入口)
+- 遵循 `datasophon-ui-v2/CLAUDE.md`:ProTable(`request` 返回 `{data,success,total}`)、ProForm(`onFinish`→`Promise<boolean>`);
+  监控表用 `actionRef.reload`;配置元数与监控指标分端点独立取数
 - Create:测试(Vitest + @testing-library,mock request prop,screen 全局查询)
 
-**验收**:配置 tab 渲染 service_ddl 参数表单、提交调 push;监控 tab 调 monitor 渲染各节点指标;`pnpm test` / `pnpm lint` 绿。
-**约束**:antd-pro 组件优先(不手搓 Table+Form);i18n 三语种(messages*.properties);不破坏 `/ddh` base。
+**验收**:配置 tab 渲染 service_ddl 参数表单、提交完整 params 调 push;raw YAML 非空时全量覆盖;
+监控 tab 调 monitor 渲染各节点指标;`npm run test` / `npm run lint` / `npx antd lint ./src` 绿。
+**约束**:antd-pro 组件优先(不手搓 Table+Form);i18n 补齐现有 `zh-CN` / `en-US`;Umi Max 内置 `request` 取数;不破坏 `/ddh` base。
 
 ---
 
@@ -202,8 +214,9 @@ isDorisReady 正确读 RUNNING;applyIfReady 幂等(traces_graph_job 重复 apply
 
 - 每 sub-plan 单测:`JAVA_HOME=$JH17 ./mvnw -pl datasophon-api -Dtest=<Test> test -s ~/.m2/setting.xml -Dspotless.check.skip=true`(docs-spotless 完成后可去掉 skip)。
 - worker 模板渲染测试(A3d):`./mvnw -pl datasophon-worker -Dtest=<RenderTest> test`。
-- UI(A3e):`cd datasophon-ui && pnpm test run && pnpm lint`。
-- 真实端到端(下发 gRPC + 重启 + Doris apply + S3 回灌 + :8888 抓取)= **待真实 Worker/Doris/Rustfs 环境**,各 sub-plan 如实标注,不伪造。
+- UI(A3e):`cd datasophon-ui-v2 && npm run test && npm run lint && npx antd lint ./src`。
+- 真实端到端(下发 gRPC + 重启 + Doris apply + :8888 抓取)= **待真实 Worker/Doris 环境**,
+  ack/backfill 另行实现后再纳入 Rustfs 回灌验证;不伪造环境输出。
 - Phase A 收尾:A3b-A3e 各自完成定义勾齐后,过一次整支评审(由本会话 Claude **单道评审**;用户已确认不再走 A1/A2/A3a 的 Codex 对抗第二道门禁)。
 
 ## 并行执行给 Codex 的提示
@@ -228,15 +241,16 @@ isDorisReady 正确读 RUNNING;applyIfReady 幂等(traces_graph_job 重复 apply
 - [ ] **纯读**:grep 确认不调 `pushNodeConfig`、不下发配置
 - [ ] 单测绿;真实抓取已标注"待真实环境"
 
-### A3d 切换+回灌+凭据/schema
+### A3d 切换+凭据/schema
 - [ ] `otelcol.ftl` 含 `exporterMode` doris 分支 + Doris exporter 块;三 pipeline exporters 据 mode 切换
 - [ ] `otelcol-env.ftl` 含 `OTEL_DORIS_USER`/`OTEL_DORIS_PASSWORD`;密码经 env 引用,**grep 确认未硬编码、yaml 无明文**
 - [ ] `service_ddl.json` 加 `exporterMode` + doris* 参数;generators `includeParams` 同步;**md5 hook 未改**(diff 确认)
 - [ ] `OtelExporterSwitchService.switchNode/isDorisReady` 存在;`isDorisReady` 读 `ServiceRoleState.RUNNING`(非假设就绪)
 - [ ] `OtelSchemaOrchestrator.applyIfReady` 就绪才 apply;`traces_graph_job` 重复 apply 容错(吞 already-exists 错误码,测试覆盖)
 - [ ] `CHANGE_ME_AT_A3` 占位已被真实注入路径替换:grep 确认无裸占位流向生产配置
-- [ ] 回灌**逐节点**:grep 确认无单一全局原子切换点(F5)
-- [ ] worker 渲染测试补 doris 分支用例;切换 service 单测绿;真实切换/回灌/Doris apply 已标注"待真实环境"
+- [ ] 切换**逐节点**:grep 确认无单一全局原子切换点(F5)
+- [ ] ack 边界/S3 回灌已在本计划明确标记延期,本轮代码不伪造完成信号
+- [ ] worker 渲染测试补 doris 分支用例;切换 service 单测绿;真实切换/Doris apply 已标注"待真实环境"
 
 ### docs-spotless
 - [ ] `./mvnw -pl datasophon-api spotless:check` 对 docs 不再报错
@@ -252,13 +266,14 @@ isDorisReady 正确读 RUNNING;applyIfReady 幂等(traces_graph_job 重复 apply
 - [ ] 单测绿
 
 ### A3e UI 控制台
-- [ ] `datasophon-ui/src/pages/<Collector控制台>/` 页面存在;路由已注册
+- [ ] `datasophon-ui-v2/src/pages/Cluster/<Collector控制台>/` 页面存在;Umi 路由与集群菜单已注册
 - [ ] 配置 tab 渲染 service_ddl 参数表单,提交调 `push` 端点
 - [ ] 监控 tab 调 `monitor` 端点渲染各节点指标
 - [ ] 用 ProTable/ProForm(grep 确认非手搓 vanilla Table+Form);`request` 返回 `{data,success,total}`
-- [ ] 按 segment 分开取数(避免一次拉全超时)
-- [ ] i18n 三语种(`messages*.properties`)补齐
-- [ ] `pnpm test run` + `pnpm lint` 绿
+- [ ] 配置元数与监控指标分端点独立取数
+- [ ] raw YAML 非空时模板原样覆盖,空值时仍使用 DDL 基础参数生成
+- [ ] i18n 现有两语种(`src/locales/zh-CN` / `src/locales/en-US`)补齐
+- [ ] `npm run test` + `npm run lint` + `npx antd lint ./src` 绿
 
 ### Phase A 整体收尾门禁
 - [ ] **接口契约对齐**:A3c/A3e 消费的 `collectAll`/`OtelSelfMetrics`/`push`/`monitor` 与 A3b/A3a 实际签名/端点逐字一致(无 `clearLayers` vs `clearFullLayers` 式错位)
