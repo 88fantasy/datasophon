@@ -209,4 +209,34 @@ class PrometheusProxyV2ControllerTest {
         assertThat(resp.getErrorMessage()).contains("Prometheus 返回非 JSON 响应");
         assertThat(resp.getErrorMessage()).contains("Error executing query");
     }
+    
+    // ─── buildRequestUrl：URL 编码行为 ────────────────────────────────────────
+    
+    @Test
+    @DisplayName("buildRequestUrl: PromQL '+' 编为 '%2B'（防 Go net/url.ParseQuery 解码为空格）")
+    void buildRequestUrl_plusInQuery_encodedAsPercentTwoB() {
+        String url = PrometheusProxyV2Controller.buildRequestUrl(
+                "http://localhost:9090/api/v1/query",
+                "node_load1+node_load5", null, null, null, null);
+        
+        assertThat(url).contains("query=node_load1%2Bnode_load5");
+        assertThat(url).doesNotContain("query=node_load1+node_load5");
+    }
+    
+    @Test
+    @DisplayName("buildRequestUrl: null 可选参数不追加到 URL")
+    void buildRequestUrl_nullOptionalParams_notAppended() {
+        String instant = PrometheusProxyV2Controller.buildRequestUrl(
+                "http://localhost:9090/api/v1/query",
+                "up", "1718000000", null, null, null);
+        assertThat(instant)
+                .isEqualTo("http://localhost:9090/api/v1/query?query=up&time=1718000000");
+        
+        String range = PrometheusProxyV2Controller.buildRequestUrl(
+                "http://localhost:9090/api/v1/query_range",
+                "up", null, "1718000000", "1718003600", "30");
+        assertThat(range)
+                .isEqualTo("http://localhost:9090/api/v1/query_range"
+                        + "?query=up&start=1718000000&end=1718003600&step=30");
+    }
 }

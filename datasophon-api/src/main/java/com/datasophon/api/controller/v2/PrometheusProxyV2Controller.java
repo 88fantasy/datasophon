@@ -161,10 +161,23 @@ public class PrometheusProxyV2Controller extends ApiController {
                                String start,
                                String end,
                                String step) {
-        // 使用 URLEncoder 手动构建 URL：Hutool form() 对 GET 请求以 RFC 3986 编码 '+'（保留原样），
-        // 但 Prometheus/Go net/url.ParseQuery() 将裸 '+' 解码为空格，导致 PromQL 二元运算符丢失。
-        // URLEncoder.encode() 把 '+' 编为 '%2B'，与 Go URL 解码语义一致。
-        StringBuilder sb = new StringBuilder(url)
+        String requestUrl = buildRequestUrl(url, query, time, start, end, step);
+        try (HttpResponse resp = HttpRequest.get(requestUrl).timeout(props.getTimeoutMs()).execute()) {
+            return resp.body();
+        }
+    }
+    
+    /**
+     * 构建 Prometheus HTTP GET 请求 URL（package-private 供测试直接验证 URL 编码行为）。
+     *
+     * <p>使用 {@link URLEncoder} 而非 Hutool form()：Hutool 对 GET 请求保留裸 {@code +}，
+     * 但 Prometheus/Go {@code net/url.ParseQuery()} 把裸 {@code +} 解码为空格，
+     * 导致 PromQL 二元运算符（如 {@code a+b}）静默丢失。{@link URLEncoder#encode} 把
+     * {@code +} 编为 {@code %2B}，与 Go URL 解码语义一致。
+     */
+    static String buildRequestUrl(String baseUrl, String query,
+                                  String time, String start, String end, String step) {
+        StringBuilder sb = new StringBuilder(baseUrl)
                 .append("?query=").append(URLEncoder.encode(query, StandardCharsets.UTF_8));
         if (time != null) {
             sb.append("&time=").append(URLEncoder.encode(time, StandardCharsets.UTF_8));
@@ -178,9 +191,7 @@ public class PrometheusProxyV2Controller extends ApiController {
         if (step != null) {
             sb.append("&step=").append(URLEncoder.encode(step, StandardCharsets.UTF_8));
         }
-        try (HttpResponse resp = HttpRequest.get(sb.toString()).timeout(props.getTimeoutMs()).execute()) {
-            return resp.body();
-        }
+        return sb.toString();
     }
     
     private String summarizeNonJsonResponse(String message) {
