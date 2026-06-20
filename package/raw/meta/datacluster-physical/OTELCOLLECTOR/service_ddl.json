@@ -71,7 +71,12 @@
           "s3Region",
           "memLimitMiB",
           "batchSize",
-          "queueStorageDir"
+          "queueStorageDir",
+          "exporterMode",
+          "dorisEndpoint",
+          "dorisDatabase",
+          "dorisUser",
+          "rawYaml"
         ]
       },
       {
@@ -81,12 +86,82 @@
         "templateName": "otelcol-env.ftl",
         "includeParams": [
           "s3AccessKey",
-          "s3SecretKey"
+          "s3SecretKey",
+          "dorisUser",
+          "dorisPassword"
         ]
       }
     ]
   },
   "parameters": [
+    {
+      "name": "rawYaml",
+      "label": "otelcol.yaml 覆盖内容",
+      "description": "非空时完全替换基础参数生成的 otelcol.yaml",
+      "required": false,
+      "configType": "map",
+      "type": "textarea",
+      "value": "",
+      "defaultValue": "",
+      "configurableInWizard": false,
+      "hidden": true
+    },
+    {
+      "name": "exporterMode",
+      "label": "Exporter 模式",
+      "required": true,
+      "configType": "map",
+      "type": "select",
+      "value": "s3",
+      "defaultValue": "s3",
+      "selectValue": ["s3", "doris"],
+      "configurableInWizard": true,
+      "hidden": false
+    },
+    {
+      "name": "dorisEndpoint",
+      "label": "Doris Stream Load 端点",
+      "required": false,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "defaultValue": "",
+      "configurableInWizard": false,
+      "hidden": true
+    },
+    {
+      "name": "dorisDatabase",
+      "label": "Doris 数据库",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "otel",
+      "defaultValue": "otel",
+      "configurableInWizard": false,
+      "hidden": true
+    },
+    {
+      "name": "dorisUser",
+      "label": "Doris 写入用户",
+      "required": false,
+      "configType": "map",
+      "type": "input",
+      "value": "otel_collector",
+      "defaultValue": "otel_collector",
+      "configurableInWizard": false,
+      "hidden": true
+    },
+    {
+      "name": "dorisPassword",
+      "label": "Doris 写入密码",
+      "required": false,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "defaultValue": "",
+      "configurableInWizard": false,
+      "hidden": true
+    },
     {
       "name": "s3Endpoint",
       "label": "S3 端点(Rustfs)",

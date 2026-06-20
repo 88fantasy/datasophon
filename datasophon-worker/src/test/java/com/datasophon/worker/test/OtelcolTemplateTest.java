@@ -1,5 +1,6 @@
 package com.datasophon.worker.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import freemarker.template.Configuration;
@@ -23,6 +24,10 @@ public class OtelcolTemplateTest {
     }
     
     private String render() throws Exception {
+        return render("s3");
+    }
+
+    private String render(String exporterMode) throws Exception {
         Configuration cfg = buildCfg();
         Template tpl = cfg.getTemplate("otelcol.ftl");
         Map<String, Object> data = new HashMap<>();
@@ -34,6 +39,10 @@ public class OtelcolTemplateTest {
         data.put("memLimitMiB", "512");
         data.put("batchSize", "8192");
         data.put("queueStorageDir", "/data/otelcol/storage");
+        data.put("exporterMode", exporterMode);
+        data.put("dorisEndpoint", "http://doris-fe:8030");
+        data.put("dorisDatabase", "otel");
+        data.put("dorisUser", "otel_collector");
         StringWriter out = new StringWriter();
         tpl.process(data, out);
         return out.toString();
@@ -46,11 +55,15 @@ public class OtelcolTemplateTest {
         Map<String, Object> data = new HashMap<>();
         data.put("s3AccessKey", "minio_access_key");
         data.put("s3SecretKey", "minio_secret_key");
+        data.put("dorisUser", "otel_collector");
+        data.put("dorisPassword", "generated-secret");
         StringWriter out = new StringWriter();
         tpl.process(data, out);
         String env = out.toString();
         assertTrue(env.contains("AWS_ACCESS_KEY_ID=minio_access_key"), "env must contain AWS_ACCESS_KEY_ID");
         assertTrue(env.contains("AWS_SECRET_ACCESS_KEY=minio_secret_key"), "env must contain AWS_SECRET_ACCESS_KEY");
+        assertTrue(env.contains("OTEL_DORIS_USER=otel_collector"));
+        assertTrue(env.contains("OTEL_DORIS_PASSWORD=generated-secret"));
     }
     
     @Test
@@ -77,5 +90,34 @@ public class OtelcolTemplateTest {
         assertTrue(yaml.contains("metrics:"));
         assertTrue(yaml.contains("logs:"));
         assertTrue(yaml.contains("traces:"));
+        assertTrue(yaml.contains("exporters: [awss3]"));
+    }
+
+    @Test
+    public void renders_doris_mode_without_plaintext_password() throws Exception {
+        String yaml = render("doris");
+
+        assertTrue(yaml.contains("doris:"));
+        assertTrue(yaml.contains("endpoint: http://doris-fe:8030"));
+        assertTrue(yaml.contains("database: otel"));
+        assertTrue(yaml.contains("username: otel_collector"));
+        assertTrue(yaml.contains("password: ${env:OTEL_DORIS_PASSWORD}"));
+        assertTrue(yaml.contains("create_schema: false"));
+        assertTrue(yaml.contains("exporters: [doris]"));
+        assertTrue(!yaml.contains("generated-secret"));
+    }
+
+    @Test
+    public void renders_raw_yaml_override_verbatim() throws Exception {
+        Configuration cfg = buildCfg();
+        Template tpl = cfg.getTemplate("otelcol.ftl");
+        Map<String, Object> data = new HashMap<>();
+        String rawYaml = "receivers:\n  otlp:\nexporters:\n  debug:\n";
+        data.put("rawYaml", rawYaml);
+        StringWriter out = new StringWriter();
+
+        tpl.process(data, out);
+
+        assertEquals(rawYaml, out.toString());
     }
 }

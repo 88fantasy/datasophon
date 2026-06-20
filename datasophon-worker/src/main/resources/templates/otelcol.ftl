@@ -1,3 +1,4 @@
+<#if (rawYaml!"")?has_content>${rawYaml}<#else>
 extensions:
   file_storage/queue:
     directory: ${queueStorageDir}
@@ -30,6 +31,22 @@ processors:
     timeout: 5s
 
 exporters:
+<#if (exporterMode!"s3") == "doris">
+  doris:
+    endpoint: ${dorisEndpoint}
+    database: ${dorisDatabase}
+    username: ${dorisUser}
+    password: <#noparse>${env:OTEL_DORIS_PASSWORD}</#noparse>
+    create_schema: false
+    sending_queue:
+      enabled: true
+      storage: file_storage/queue
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+<#else>
   awss3:
     s3uploader:
       region: ${s3Region}
@@ -46,6 +63,7 @@ exporters:
       initial_interval: 5s
       max_interval: 30s
       max_elapsed_time: 300s
+</#if>
 
 service:
   extensions: [file_storage/queue]
@@ -61,12 +79,13 @@ service:
     metrics:
       receivers: [otlp, prometheus/self]
       processors: [memory_limiter, batch]
-      exporters: [awss3]
+      exporters: [<#if (exporterMode!"s3") == "doris">doris<#else>awss3</#if>]
     logs:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [awss3]
+      exporters: [<#if (exporterMode!"s3") == "doris">doris<#else>awss3</#if>]
     traces:
       receivers: [otlp]
       processors: [memory_limiter, batch]
-      exporters: [awss3]
+      exporters: [<#if (exporterMode!"s3") == "doris">doris<#else>awss3</#if>]
+</#if>

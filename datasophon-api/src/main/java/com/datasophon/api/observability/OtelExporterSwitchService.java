@@ -1,0 +1,128 @@
+/*
+ * MIT License
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package com.datasophon.api.observability;
+
+import com.datasophon.api.service.ClusterServiceRoleInstanceService;
+import com.datasophon.api.service.ClusterVariableService;
+import com.datasophon.api.service.ServiceInstallService;
+import com.datasophon.common.model.ServiceConfig;
+import com.datasophon.common.utils.ExecResult;
+import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.entity.ClusterVariable;
+import com.datasophon.dao.enums.ServiceRoleState;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+
+@Service
+public class OtelExporterSwitchService {
+
+    private static final String OTEL_SERVICE = "OTELCOLLECTOR";
+    private static final String DORIS_FE = "DorisFE";
+    private static final String DORIS_BE = "DorisBE";
+
+    private final OtelCollectorConfigService configService;
+    private final ClusterServiceRoleInstanceService roleService;
+    private final ClusterVariableService variableService;
+    private final ServiceInstallService installService;
+    private final OtelCredentialService credentialService;
+
+    public OtelExporterSwitchService(OtelCollectorConfigService configService,
+                                     ClusterServiceRoleInstanceService roleService,
+                                     ClusterVariableService variableService,
+                                     ServiceInstallService installService,
+                                     OtelCredentialService credentialService) {
+        this.configService = configService;
+        this.roleService = roleService;
+        this.variableService = variableService;
+        this.installService = installService;
+        this.credentialService = credentialService;
+    }
+
+    public ExecResult switchNode(Integer clusterId, String hostname, ExporterMode mode) {
+        return switchNode(clusterId, hostname, mode, Map.of());
+    }
+
+    public ExecResult switchNode(Integer clusterId, String hostname, ExporterMode mode,
+                                 Map<String, String> overrides) {
+        if (mode == ExporterMode.DORIS && !isDorisReady(clusterId)) {
+            return ExecResult.error("Doris is not ready");
+        }
+        Map<String, String> params = serviceParams(clusterId);
+        params.putAll(overrides);
+        params.put("exporterMode", mode.configValue());
+        if (mode == ExporterMode.DORIS) {
+            List<ClusterServiceRoleInstanceEntity> frontends = roles(clusterId, DORIS_FE);
+            Map<String, String> dorisVariables = variables(clusterId, "DORIS");
+            OtelCredentials credentials = credentialService.getOrCreate(clusterId);
+            params.put("dorisEndpoint", "http://" + frontends.get(0).getHostname() + ":"
+                    + dorisVariables.getOrDefault("http_port", "8030"));
+            params.put("dorisDatabase", "otel");
+            params.put("dorisUser", "otel_collector");
+            params.put("dorisPassword", credentials.collectorPassword());
+        }
+        return configService.pushNodeConfig(clusterId, hostname, params);
+    }
+
+    public boolean isDorisReady(Integer clusterId) {
+        List<ClusterServiceRoleInstanceEntity> frontends = roles(clusterId, DORIS_FE);
+        List<ClusterServiceRoleInstanceEntity> backends = roles(clusterId, DORIS_BE);
+        return !frontends.isEmpty() && !backends.isEmpty()
+                && frontends.stream().allMatch(this::isRunning)
+                && backends.stream().allMatch(this::isRunning);
+    }
+
+    private List<ClusterServiceRoleInstanceEntity> roles(Integer clusterId, String roleName) {
+        return roleService.getServiceRoleInstanceListByClusterIdAndRoleName(clusterId, roleName);
+    }
+
+    private boolean isRunning(ClusterServiceRoleInstanceEntity role) {
+        return ServiceRoleState.RUNNING.equals(role.getServiceRoleState());
+    }
+
+    private Map<String, String> serviceParams(Integer clusterId) {
+        Map<String, String> params = new HashMap<>();
+        for (ServiceConfig config : installService.getServiceConfigOption(clusterId, OTEL_SERVICE)) {
+            if (config.getName() != null && config.getValue() != null) {
+                params.put(config.getName(), String.valueOf(config.getValue()));
+            }
+        }
+        return params;
+    }
+
+    private Map<String, String> variables(Integer clusterId, String serviceName) {
+        Map<String, String> result = new HashMap<>();
+        for (ClusterVariable variable : variableService.getVariables(clusterId, serviceName)) {
+            String name = variable.getVariableName();
+            String prefix = "${" + serviceName + ".";
+            if (name.startsWith(prefix) && name.endsWith("}")) {
+                name = name.substring(prefix.length(), name.length() - 1);
+            }
+            result.put(name, variable.getVariableValue());
+        }
+        return result;
+    }
+}
