@@ -60,6 +60,8 @@ class OtelCollectorConfigServiceTest {
         assertEquals("OtelCollector", cmd.getServiceRoleName());
         assertEquals(Integer.valueOf(1), cmd.getClusterId());
         
+        // 双 generator 不得塌缩:Generators.equals 以 filename 为键，碰撞会让两条塌成一条
+        assertEquals(2, cmd.getCofigFileMap().size(), "应有 2 个独立 generator(otelcol.yaml + otelcol.env)");
         Set<String> files = cmd.getCofigFileMap().keySet().stream()
                 .map(Generators::getFilename)
                 .collect(Collectors.toSet());
