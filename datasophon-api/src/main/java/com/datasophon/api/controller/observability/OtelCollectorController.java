@@ -22,6 +22,7 @@
 
 package com.datasophon.api.controller.observability;
 
+import com.datasophon.api.controller.ApiController;
 import com.datasophon.api.observability.OtelCollectorConfigService;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.Result;
@@ -35,7 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("api/observability/otelcol")
-public class OtelCollectorController {
+public class OtelCollectorController extends ApiController {
 
     private final OtelCollectorConfigService configService;
 
