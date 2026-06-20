@@ -1,14 +1,12 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row } from 'antd';
+import { Row } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
-import {
-  CHART_COLORS,
-  colorByThreshold,
-} from '../_shared/charts/formatters';
+import { CHART_COLORS, colorByThreshold } from '../_shared/charts/formatters';
 import { selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
+import PanelCol from '../_shared/PanelCol';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
@@ -94,7 +92,7 @@ const NginxDashboard: FC = () => {
     >
       {/* R1 — Status Stat */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <StatPanel
             title={t('pages.nginxMonitor.panel.status', 'NGINX Status')}
             value={instant.status}
@@ -103,8 +101,8 @@ const NginxDashboard: FC = () => {
             }
             formatter={(v) => (v === 1 ? 'Up' : 'Down')}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <StatPanel
             title={t(
               'pages.nginxMonitor.panel.activeConnections',
@@ -113,8 +111,8 @@ const NginxDashboard: FC = () => {
             value={instant.activeConnections}
             color={CHART_COLORS.primary}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <StatPanel
             title={t(
               'pages.nginxMonitor.panel.droppedConnections',
@@ -124,12 +122,12 @@ const NginxDashboard: FC = () => {
             color={colorByThreshold(instant.droppedConnections, [0.001, 1])}
             precision={2}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       {/* R2 — Traffic */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t(
               'pages.nginxMonitor.panel.totalRequests',
@@ -138,8 +136,8 @@ const NginxDashboard: FC = () => {
             data={series.N04}
             yFormatter={reqFormatter}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t(
               'pages.nginxMonitor.panel.processedConnections',
@@ -149,12 +147,12 @@ const NginxDashboard: FC = () => {
             yFormatter={connFormatter}
             colorMap={nginxProcColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       {/* R3 — Saturation */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={24}>
+        <PanelCol span={24}>
           <AreaPanel
             title={t(
               'pages.nginxMonitor.panel.activeConnectionsBreakdown',
@@ -165,7 +163,7 @@ const NginxDashboard: FC = () => {
             yFormatter={connFormatter}
             colorMap={nginxConnColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
     </MonitorDashboardLayout>
   );

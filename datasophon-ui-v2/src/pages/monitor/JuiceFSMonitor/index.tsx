@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row } from 'antd';
+import { Row } from 'antd';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -10,6 +10,7 @@ import {
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
+import PanelCol from '../_shared/PanelCol';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
@@ -128,7 +129,7 @@ const JuiceFSMonitor: FC = () => {
       loading={loading}
     >
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={4}>
+        <PanelCol span={4}>
           <StatPanel
             title="Uptime"
             value={instant.uptime}
@@ -137,31 +138,31 @@ const JuiceFSMonitor: FC = () => {
               instant.uptime < 300 ? CHART_COLORS.warning : CHART_COLORS.success
             }
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Data Size"
             value={instant.dataSize}
             formatter={formatBytes}
             color={CHART_COLORS.primary}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Files"
             value={instant.files}
             formatter={integerFormatter}
             color={CHART_COLORS.primary}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Client Sessions"
             value={instant.clientSessions}
             color={CHART_COLORS.primary}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Block Cache Hit %"
             value={instant.cacheHitPercent}
@@ -170,8 +171,8 @@ const JuiceFSMonitor: FC = () => {
               reverse: true,
             })}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Staging Blocks"
             value={instant.stagingBlocks}
@@ -181,78 +182,78 @@ const JuiceFSMonitor: FC = () => {
                 : CHART_COLORS.warning
             }
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Operations"
             data={series.J07}
             yFormatter={rateFormatter}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <AreaPanel
             title="IO Throughput"
             data={series.J08}
             yFormatter={bytesPerSecondFormatter}
             colorMap={trafficColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="IO Latency"
             data={series.J09}
             yFormatter={usAxisFormatter}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="Transaction Latency"
             data={series.J10}
             yFormatter={usAxisFormatter}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="Objects Latency"
             data={series.J11}
             yFormatter={usAxisFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Objects Requests"
             data={series.J12}
             yFormatter={rateFormatter}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Object Errors & Transaction Restarts"
             data={series.J13}
             yFormatter={rateFormatter}
             colorMap={errorColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="Block Cache Size"
             data={series.J14}
             yFormatter={formatBytes}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="Block Cache Hit Ratio"
             data={series.J15}
@@ -262,26 +263,26 @@ const JuiceFSMonitor: FC = () => {
               { value: 70, label: '70%', color: CHART_COLORS.warning },
             ]}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="Objects Throughput"
             data={series.J16}
             yFormatter={bytesPerSecondFormatter}
             colorMap={objectThroughputColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={24}>
+        <PanelCol span={24}>
           <TimeSeriesPanel
             title="Client CPU & Memory"
             data={series.J17}
             yFormatter={resourceFormatter}
             colorMap={resourceColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
     </MonitorDashboardLayout>
   );

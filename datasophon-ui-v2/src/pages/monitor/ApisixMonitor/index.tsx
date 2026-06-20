@@ -1,7 +1,8 @@
-import { Col, Row } from 'antd';
+import { Row } from 'antd';
 import { type FC, useCallback, useState } from 'react';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
+import PanelCol from '../_shared/PanelCol';
 import AreaPanel from './panels/AreaPanel';
 
 const BANDWIDTH_COLORS: Record<string, string> = {
@@ -116,100 +117,99 @@ const ApisixDashboard: FC = () => {
         </>
       }
     >
-
       {/* R1 — 摘要统计（col-span 8 each）*/}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <StatPanel
             title="Total Requests"
             value={instantValues.totalRequests}
             color="#52c41a"
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <StatPanel
             title="Accepted Connections"
             value={instantValues.acceptedConnections}
             color="#1677ff"
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <StatPanel
             title="Handled Connections"
             value={instantValues.handledConnections}
             color="#1677ff"
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       {/* R2 — 状态指示 */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <StatusStatPanel
             title="Etcd Reachable"
             value={instantValues.etcdReachable}
             thresholds={ETCD_THRESHOLDS}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <StatusStatPanel
             title="Nginx Metric Errors"
             value={instantValues.nginxMetricErrors}
             thresholds={NGINX_ERR_THRESHOLDS}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       {/* R3 — 流量 */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Total Requests per Second"
             data={totalRpsData}
             unit=" req/s"
             colorMap={{ RPS: '#1677ff' }}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="RPS by Status Code"
             data={rpsByCodeData}
             unit=" req/s"
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       {/* R4 — 延迟（col-span 8 each）*/}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="Request Latency"
             data={requestLatencyData}
             unit=" ms"
             colorMap={LATENCY_COLORS}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="APISIX Latency"
             data={apisixLatencyData}
             unit=" ms"
             colorMap={LATENCY_COLORS}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="Upstream Latency"
             data={upstreamLatencyData}
             unit=" ms"
             colorMap={LATENCY_COLORS}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       {/* R5 — 带宽 */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <AreaPanel
             title="Total Bandwidth"
             data={bandwidthData}
@@ -217,20 +217,20 @@ const ApisixDashboard: FC = () => {
             unit="bytes"
             colorMap={BANDWIDTH_COLORS}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="RPS per Service"
             data={rpsPerServiceData}
             unit=" req/s"
             colorMap={SERVICE_COLORS}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       {/* R6 — 连接 & 共享字典 */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <AreaPanel
             title="Nginx Connection State"
             data={connectionStateData}
@@ -238,26 +238,26 @@ const ApisixDashboard: FC = () => {
             unit="short"
             colorMap={CONNECTION_COLORS}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Nginx Shared Dict Free Space (%)"
             data={sharedDictData}
             unit="%"
             colorMap={DICT_COLORS}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       {/* R7 — Etcd（全行）*/}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={24}>
+        <PanelCol span={24}>
           <TimeSeriesPanel
             title="Etcd Modify Indexes"
             data={etcdIndexData}
             height={200}
           />
-        </Col>
+        </PanelCol>
       </Row>
     </MonitorDashboardLayout>
   );

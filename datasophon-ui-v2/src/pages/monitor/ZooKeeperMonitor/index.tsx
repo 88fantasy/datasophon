@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row } from 'antd';
+import { Row } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -10,6 +10,7 @@ import { selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
+import PanelCol from '../_shared/PanelCol';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
@@ -129,7 +130,8 @@ const ZooKeeperDashboard: FC = () => {
       }
       meta={
         <>
-          instance=~&quot;{variables.instance}&quot; job=~&quot;{variables.job}&quot;
+          instance=~&quot;{variables.instance}&quot; job=~&quot;{variables.job}
+          &quot;
           {' · '}
           range={timeRange}
         </>
@@ -137,7 +139,7 @@ const ZooKeeperDashboard: FC = () => {
       loading={loading}
     >
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={4}>
+        <PanelCol span={4}>
           <StatPanel
             title={t('pages.zookeeperMonitor.panel.quorumSize')}
             value={instant.quorumSize}
@@ -145,23 +147,23 @@ const ZooKeeperDashboard: FC = () => {
               reverse: true,
             })}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title={t('pages.zookeeperMonitor.panel.leaderUptime')}
             value={instant.leaderUptime}
             color={CHART_COLORS.primary}
             formatter={formatDuration}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title={t('pages.zookeeperMonitor.panel.jvmThreads')}
             value={instant.jvmThreads}
             color={colorByThreshold(instant.jvmThreads, [200, 500])}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title={t('pages.zookeeperMonitor.panel.deadlockedThreads')}
             value={instant.deadlockedThreads}
@@ -171,25 +173,25 @@ const ZooKeeperDashboard: FC = () => {
                 : CHART_COLORS.error
             }
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title={t('pages.zookeeperMonitor.panel.aliveConnections')}
             value={instant.aliveConnections}
             color={CHART_COLORS.primary}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title={t('pages.zookeeperMonitor.panel.openFileDescriptors')}
             value={instant.openFileDescriptors}
             color={colorByThreshold(instant.openFileDescriptors, [5000, 8000])}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.outstandingRequests')}
             data={series.Z07}
@@ -198,141 +200,141 @@ const ZooKeeperDashboard: FC = () => {
               { value: 10, label: '10', color: CHART_COLORS.warning },
             ]}
           />
-        </Col>
-        <Col span={16}>
+        </PanelCol>
+        <PanelCol span={16}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.requestLatency')}
             data={series.Z08}
             yFormatter={millisecondFormatter}
             colorMap={zkLatencyColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={6}>
+        <PanelCol span={6}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.sessions')}
             data={series.Z09}
             yFormatter={integerFormatter}
             colorMap={zkSessionColors}
           />
-        </Col>
-        <Col span={6}>
+        </PanelCol>
+        <PanelCol span={6}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.znodes')}
             data={series.Z10}
             yFormatter={integerFormatter}
             colorMap={zkZnodeColors}
           />
-        </Col>
-        <Col span={6}>
+        </PanelCol>
+        <PanelCol span={6}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.approximateDataSize')}
             data={series.Z11}
             yFormatter={formatBytes}
           />
-        </Col>
-        <Col span={6}>
+        </PanelCol>
+        <PanelCol span={6}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.watchCount')}
             data={series.Z12}
             yFormatter={integerFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.packets')}
             data={series.Z13}
             yFormatter={integerFormatter}
             colorMap={zkPacketColors}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.aliveConnectionsTrend')}
             data={series.Z14}
             yFormatter={integerFormatter}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.connectionDataErrors')}
             data={series.Z15}
             yFormatter={integerFormatter}
             colorMap={zkErrorColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.electionTime')}
             data={series.Z16}
             yFormatter={wholeMillisecondFormatter}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.learnersObservers')}
             data={series.Z17}
             yFormatter={integerFormatter}
             colorMap={zkLearnerColors}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.quorumCounts')}
             data={series.Z18}
             yFormatter={integerFormatter}
             colorMap={zkQuorumColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.fsyncTime')}
             data={series.Z19}
             yFormatter={millisecondFormatter}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.snapshotTime')}
             data={series.Z20}
             yFormatter={millisecondFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <AreaPanel
             title={t('pages.zookeeperMonitor.panel.jvmMemoryPool')}
             data={series.Z21}
             yFormatter={formatBytes}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.gcCollectionRate')}
             data={series.Z22}
             yFormatter={opsFormatter}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.jvmGcPauseTime')}
             data={series.Z23}
             yFormatter={pauseFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
     </MonitorDashboardLayout>
   );

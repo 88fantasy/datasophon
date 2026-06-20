@@ -1,5 +1,5 @@
-import { Card } from 'antd';
 import type { CardProps } from 'antd';
+import { Card } from 'antd';
 import { clsx } from 'clsx';
 import type { CSSProperties, FC, ReactNode } from 'react';
 import useStyles from './monitorStyles';
@@ -18,6 +18,7 @@ const MonitorPanelCard: FC<MonitorPanelCardProps> = ({
   compact,
   children,
   className,
+  classNames: cardClassNames,
   styles: cardStyles,
   ...rest
 }) => {
@@ -27,6 +28,7 @@ const MonitorPanelCard: FC<MonitorPanelCardProps> = ({
     <Card
       variant="borderless"
       className={clsx(styles.panelCard, className)}
+      classNames={{ title: styles.panelCardTitle, ...cardClassNames }}
       styles={{
         body: {
           padding: compact ? 16 : 20,

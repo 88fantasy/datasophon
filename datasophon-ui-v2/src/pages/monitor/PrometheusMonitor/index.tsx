@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row, Select } from 'antd';
+import { Row, Select } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -16,6 +16,7 @@ import type {
 import DashboardToolbar from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
+import PanelCol from '../_shared/PanelCol';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TablePanel from '../_shared/panels/TablePanel';
@@ -132,7 +133,8 @@ const PrometheusDashboard: FC = () => {
       }
       meta={
         <>
-          instance=~&quot;{variables.instance}&quot; job=~&quot;{variables.job}&quot;
+          instance=~&quot;{variables.instance}&quot; job=~&quot;{variables.job}
+          &quot;
           {' · '}
           range={timeRange} interval={variables.interval}
         </>
@@ -140,7 +142,7 @@ const PrometheusDashboard: FC = () => {
       loading={loading}
     >
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={4}>
+        <PanelCol span={4}>
           <StatPanel
             title={t('pages.prometheusMonitor.panel.uptime', { interval })}
             value={instant.uptime}
@@ -150,8 +152,8 @@ const PrometheusDashboard: FC = () => {
               reverse: true,
             })}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title={t('pages.prometheusMonitor.panel.totalSeries')}
             value={instant.totalSeries}
@@ -161,16 +163,16 @@ const PrometheusDashboard: FC = () => {
             )}
             formatter={formatCompact}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title={t('pages.prometheusMonitor.panel.memoryChunks')}
             value={instant.memoryChunks}
             color={CHART_COLORS.primary}
             formatter={formatCompact}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title={t('pages.prometheusMonitor.panel.reloadFailures', {
               interval,
@@ -178,8 +180,8 @@ const PrometheusDashboard: FC = () => {
             value={instant.reloadFailures}
             color={colorByThreshold(instant.reloadFailures, [1, 10])}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title={t('pages.prometheusMonitor.panel.missedIterations', {
               interval,
@@ -187,8 +189,8 @@ const PrometheusDashboard: FC = () => {
             value={instant.missedIterations}
             color={colorByThreshold(instant.missedIterations, [1, 10])}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title={t('pages.prometheusMonitor.panel.skippedScrapes', {
               interval,
@@ -196,158 +198,158 @@ const PrometheusDashboard: FC = () => {
             value={instant.skippedScrapes}
             color={colorByThreshold(instant.skippedScrapes, [1, 10])}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TablePanel
             title={t('pages.prometheusMonitor.panel.currentlyDown')}
             data={down}
           />
-        </Col>
-        <Col span={16}>
+        </PanelCol>
+        <PanelCol span={16}>
           <AreaPanel
             title={t('pages.prometheusMonitor.panel.upness')}
             data={series.P08}
             stack
             yFormatter={upnessFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.scrapeDuration')}
             data={series.P09}
             yFormatter={secondFormatter}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.targetSync')}
             data={series.P10}
             yFormatter={millisecondFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.scrapeSyncTotal')}
             data={series.P11}
             yFormatter={integerFormatter}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.rejectedScrapes')}
             data={series.P12}
             yFormatter={integerFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.seriesCount')}
             data={series.P13}
             yFormatter={integerFormatter}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.seriesCreatedRemoved')}
             data={series.P14}
             yFormatter={integerFormatter}
             colorMap={createdRemovedColors}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.appendedSamples')}
             data={series.P15}
             yFormatter={sampleFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.storageChunks')}
             data={series.P16}
             yFormatter={integerFormatter}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <AreaPanel
             title={t('pages.prometheusMonitor.panel.goMemory')}
             data={series.P17}
             yFormatter={formatBytes}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.gcRate')}
             data={series.P18}
             yFormatter={rateFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.ruleEvalIterations')}
             data={series.P19}
             yFormatter={iterationFormatter}
             colorMap={ruleEvaluatorColors}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.ruleEvalDuration')}
             data={series.P20}
             yFormatter={twoDecimalMillisecondFormatter}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.queryDuration')}
             data={series.P21}
             yFormatter={fourDecimalSecondFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.failuresAndErrors')}
             data={series.P22}
             yFormatter={integerFormatter}
             colorMap={errorColors}
           />
-        </Col>
-        <Col span={6}>
+        </PanelCol>
+        <PanelCol span={6}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.notificationsSent')}
             data={series.P23}
             yFormatter={notificationFormatter}
             colorMap={notificationColors}
           />
-        </Col>
-        <Col span={6}>
+        </PanelCol>
+        <PanelCol span={6}>
           <TimeSeriesPanel
             title={t('pages.prometheusMonitor.panel.configReloadMinutes')}
             data={series.P24}
             yFormatter={minuteFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
     </MonitorDashboardLayout>
   );

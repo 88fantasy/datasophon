@@ -127,11 +127,16 @@ export function mergeNamedSeries(
 /**
  * 从 instant query vector 提取单个数值（供 stat 面板）。
  *
- * 若 vector 为空，返回 0（防止页面崩溃）。
+ * - 空结果（series 缺失，如未被抓取）返回 `NaN`，语义上区别于真实的 `0`，
+ *   由展示层（StatPanel / formatBytes）统一渲染为 '–'，避免「无数据」被误读为「值为 0」。
+ * - 多 series（未聚合的 multi-instance 查询）按值求和，避免静默只取首个 series 导致少报。
  */
 export function vectorToScalar(vector: PrometheusVector): number {
-  if (vector.result.length === 0) return 0;
-  return Number.parseFloat(vector.result[0].value[1]);
+  if (vector.result.length === 0) return NaN;
+  return vector.result.reduce(
+    (sum, item) => sum + Number.parseFloat(item.value[1]),
+    0,
+  );
 }
 
 /**

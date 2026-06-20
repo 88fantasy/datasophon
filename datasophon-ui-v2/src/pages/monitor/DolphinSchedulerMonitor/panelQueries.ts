@@ -125,12 +125,12 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
       {
         label: 'success',
         promql:
-          'increase(ds_master_quartz_job_executed_total{result="success"}[1m])',
+          'sum(increase(ds_master_quartz_job_executed_total{result="success"}[1m]))',
       },
       {
         label: 'failure',
         promql:
-          'increase(ds_master_quartz_job_executed_total{result="failure"}[1m])',
+          'sum(increase(ds_master_quartz_job_executed_total{result="failure"}[1m]))',
       },
     ],
   },
@@ -157,7 +157,8 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
       },
       {
         label: 'success',
-        promql: 'increase(ds_task_execution_count_total{result="success"}[1m])',
+        promql:
+          'sum(increase(ds_task_execution_count_total{result="success"}[1m]))',
       },
     ],
   },

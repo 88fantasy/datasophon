@@ -25,39 +25,23 @@ const useStyles = createStyles(({ token }) => ({
     marginLeft: 8,
   },
   content: {
+    // 行间距。响应式栅格已下放到 <PanelCol>（按 span 计算 xs/md/lg），
+    // 不再用 .ant-col-* 内部类的媒体查询 hack。
     '.ant-row + .ant-row': {
       marginTop: 24,
-    },
-    [`@media screen and (max-width: ${token.screenLG}px)`]: {
-      '.ant-col-4, .ant-col-6': {
-        display: 'block',
-        flex: '0 0 33.333333%',
-        maxWidth: '33.333333%',
-      },
-      '.ant-col-8, .ant-col-12, .ant-col-16': {
-        display: 'block',
-        flex: '0 0 50%',
-        maxWidth: '50%',
-      },
-    },
-    [`@media screen and (max-width: ${token.screenMD}px)`]: {
-      '.ant-row > .ant-col': {
-        display: 'block',
-        flex: '0 0 100%',
-        maxWidth: '100%',
-      },
     },
   },
   panelCard: {
     height: '100%',
     borderRadius: token.borderRadiusLG,
     boxShadow: token.boxShadowTertiary,
-    '.ant-card-head-title': {
-      color: token.colorTextHeading,
-      overflow: 'hidden',
-      whiteSpace: 'nowrap',
-      textOverflow: 'ellipsis',
-    },
+  },
+  // 经 MonitorPanelCard 的 classNames.title 注入，替代 .ant-card-head-title 选择器。
+  panelCardTitle: {
+    color: token.colorTextHeading,
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    textOverflow: 'ellipsis',
   },
   statTitle: {
     marginBottom: 8,

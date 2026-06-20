@@ -34,6 +34,9 @@ export function colorByThreshold(
 }
 
 export function formatBytes(bytes: number, decimals = 0): string {
+  // 非有限值（NaN/Infinity，常见于 Prometheus 对 0/0 返回字符串 "NaN" 或缺失 series）→ '–'，
+  // 否则会渲染出 'NaN undefined'（Math.log(NaN)→NaN → sizes[NaN]→undefined）。
+  if (!Number.isFinite(bytes)) return '-';
   if (bytes === 0) return '0 B';
 
   const k = 1024;

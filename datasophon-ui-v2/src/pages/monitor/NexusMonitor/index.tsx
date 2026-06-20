@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Badge, Col, Row, Statistic } from 'antd';
+import { Badge, Row, Statistic } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -11,6 +11,7 @@ import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
 import MonitorPanelCard from '../_shared/MonitorPanelCard';
+import PanelCol from '../_shared/PanelCol';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
@@ -181,7 +182,7 @@ const NexusDashboard: FC = () => {
       loading={loading}
     >
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={4}>
+        <PanelCol span={4}>
           <StatPanel
             title="Uptime"
             value={instant.uptime}
@@ -190,8 +191,8 @@ const NexusDashboard: FC = () => {
             })}
             formatter={formatDuration}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Heap Ratio"
             value={instant.heapRatio}
@@ -199,8 +200,8 @@ const NexusDashboard: FC = () => {
             suffix="%"
             precision={1}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="FileDescriptor Ratio"
             value={instant.fdRatio}
@@ -208,21 +209,21 @@ const NexusDashboard: FC = () => {
             suffix="%"
             precision={1}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatusStatPanel
             title="Readonly Enabled"
             value={instant.readonlyEnabled}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="JVM Threads"
             value={instant.jvmThreads}
             color={CHART_COLORS.primary}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Deadlock Threads"
             value={instant.deadlockThreads}
@@ -232,62 +233,62 @@ const NexusDashboard: FC = () => {
                 : CHART_COLORS.error
             }
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Jetty Responses by Code"
             data={series.N07}
             yFormatter={opsFormatter}
             colorMap={STATUS_CODE_COLORS}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Component Exceptions"
             data={series.N08}
             yFormatter={opsFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="Jetty Request Latency"
             data={series.N09}
             yFormatter={millisecondFormatter}
             colorMap={latencyColors}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="Component Read Latency (p99)"
             data={series.N10}
             yFormatter={millisecondFormatter}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="FileBlobStore Op Latency (p99)"
             data={series.N11}
             yFormatter={millisecondFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="JVM Heap"
             data={series.N12}
             yFormatter={formatBytes}
             colorMap={heapColors}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <AreaPanel
             title="JVM Memory Pools (used)"
             data={series.N13}
@@ -295,53 +296,53 @@ const NexusDashboard: FC = () => {
             yFormatter={formatBytes}
             colorMap={jvmPoolColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="GC Collection Rate"
             data={series.N14}
             yFormatter={opsFormatter}
             colorMap={gcColors}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="GC Pause Durations"
             data={series.N15}
             yFormatter={millisecondFormatter}
             colorMap={gcColors}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="Thread States"
             data={series.N16}
             yFormatter={integerFormatter}
             colorMap={threadStateColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Jetty ThreadPool"
             data={series.N17}
             yFormatter={integerFormatter}
             colorMap={jettyThreadPoolColors}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Non-Heap & Buffers"
             data={series.N18}
             yFormatter={formatBytes}
             colorMap={bufferColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
     </MonitorDashboardLayout>
   );

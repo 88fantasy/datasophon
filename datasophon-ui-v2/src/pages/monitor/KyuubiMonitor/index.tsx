@@ -1,4 +1,4 @@
-import { Col, Row } from 'antd';
+import { Row } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -9,6 +9,7 @@ import { selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
+import PanelCol from '../_shared/PanelCol';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
@@ -159,14 +160,14 @@ const KyuubiDashboard: FC = () => {
       loading={loading}
     >
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={4}>
+        <PanelCol span={4}>
           <StatPanel
             title="Instances"
             value={instant.instances}
             color={CHART_COLORS.primary}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Uptime"
             value={instant.uptime}
@@ -175,29 +176,29 @@ const KyuubiDashboard: FC = () => {
             })}
             formatter={formatDuration}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Connection Opened"
             value={instant.connectionOpened}
             color={CHART_COLORS.primary}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Engine Total"
             value={instant.engineTotal}
             color={CHART_COLORS.primary}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Exec Pool Threads"
             value={instant.execPoolThreads}
             color={colorByThreshold(instant.execPoolThreads, [128, 256])}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Operation Error Rate"
             value={instant.operationErrorRate}
@@ -207,36 +208,36 @@ const KyuubiDashboard: FC = () => {
                 : CHART_COLORS.success
             }
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={`Session (new) [${trendInterval}]`}
             data={series.KY07}
             yFormatter={integerFormatter}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={`Operation (new) [${trendInterval}]`}
             data={series.KY08}
             yFormatter={integerFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Operation Pending / Running"
             data={series.KY09}
             yFormatter={integerFormatter}
             colorMap={opStateColors}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Engine Launching & Startup Permit"
             data={series.KY10}
@@ -254,11 +255,11 @@ const KyuubiDashboard: FC = () => {
                 : undefined
             }
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Connection Failed"
             data={series.KY11}
@@ -268,44 +269,44 @@ const KyuubiDashboard: FC = () => {
               'kyuubi-2:10019': '#ff7a45',
             }}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Operation Error"
             data={series.KY12}
             yFormatter={integerFormatter}
             colorMap={errorColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={`Fetch Rows [${trendInterval}]`}
             data={series.KY13}
             yFormatter={integerFormatter}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Max Batch Pending Elapse"
             data={series.KY14}
             yFormatter={millisecondFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="JVM Memory Usage"
             data={series.KY15}
             yFormatter={memoryUsageFormatter}
             colorMap={jvmMemoryColors}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <AreaPanel
             title="JVM Memory Pools"
             data={series.KY16}
@@ -313,7 +314,7 @@ const KyuubiDashboard: FC = () => {
             yFormatter={(value) => formatBytes(value, 1)}
             colorMap={jvmPoolColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
     </MonitorDashboardLayout>
   );

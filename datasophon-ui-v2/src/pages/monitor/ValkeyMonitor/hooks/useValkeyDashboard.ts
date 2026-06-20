@@ -66,7 +66,11 @@ export function useValkeyDashboard({
     return deriveInstancesAndJobs(upVector);
   }, [data.extras]);
 
-  const memoryMaxBytes = data.instant.V03_max ?? 0;
+  // vectorToScalar 对缺失 series 返回 NaN；`?? 0` 不拦截 NaN，故用 isFinite 兜底，
+  // 否则 `memoryMaxBytes <= 0`（NaN <= 0 === false）会漏判「未配置 maxmemory」。
+  const memoryMaxBytes = Number.isFinite(data.instant.V03_max)
+    ? data.instant.V03_max
+    : 0;
 
   // V09 series: hide Max line when maxmemory is not configured (=0)
   const memorySeries: TimeSeriesPoint[] = useMemo(() => {
@@ -89,7 +93,10 @@ export function useValkeyDashboard({
     instant: {
       maxUptime: data.instant.V01 ?? 0,
       clients: data.instant.V02 ?? 0,
-      memoryUsagePct: memoryMaxBytes <= 0 ? -1 : (data.instant.V03 ?? 0),
+      memoryUsagePct:
+        memoryMaxBytes <= 0 || Number.isNaN(data.instant.V03)
+          ? -1
+          : (data.instant.V03 ?? 0),
       memoryMaxBytes,
       cacheHitPct: Number.isNaN(data.instant.V04) ? 0 : (data.instant.V04 ?? 0),
     },

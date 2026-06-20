@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row } from 'antd';
+import { Row } from 'antd';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -10,6 +10,7 @@ import { selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
+import PanelCol from '../_shared/PanelCol';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
@@ -209,15 +210,15 @@ const DatartDashboard: FC = () => {
       loading={loading}
     >
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={4}>
+        <PanelCol span={4}>
           <StatPanel
             title="Uptime"
             value={instant.uptime}
             color={CHART_COLORS.primary}
             formatter={formatDuration}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Heap Used %"
             value={instant.heapUsedPercent}
@@ -225,8 +226,8 @@ const DatartDashboard: FC = () => {
             suffix="%"
             precision={1}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="NonHeap Used %"
             value={instant.nonHeapUsedPercent}
@@ -234,8 +235,8 @@ const DatartDashboard: FC = () => {
             suffix="%"
             precision={1}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="CPU Usage"
             value={instant.cpuUsage}
@@ -243,129 +244,129 @@ const DatartDashboard: FC = () => {
             suffix="%"
             precision={1}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="HikariCP Active"
             value={instant.hikaricpActive}
             color={CHART_COLORS.primary}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Error Logs /s"
             value={instant.errorLogsPerSecond}
             color={colorByThreshold(instant.errorLogsPerSecond, [0.0001, 1])}
             precision={2}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Request Count"
             data={series.D07}
             yFormatter={perSecondFormatter}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Response Time"
             data={series.D08}
             yFormatter={millisecondFormatter}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="CPU / Load Average"
             data={series.D09}
             yFormatter={(value) => value.toFixed(2)}
             colorMap={cpuColors}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={`${selectedHeapPool} (heap)`}
             data={series.D10}
             yFormatter={formatBytes}
             colorMap={heapPoolColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="GC Count"
             data={series.D11}
             yFormatter={perSecondFormatter}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="GC Stop the World Duration"
             data={series.D12}
             yFormatter={secondsFormatter}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="JVM Threads"
             data={series.D13}
             yFormatter={integerFormatter}
             colorMap={threadColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="HikariCP Connections"
             data={series.D14}
             yFormatter={integerFormatter}
             colorMap={hikaricpConnectionColors}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="HikariCP Acquire / Usage Time"
             data={series.D15}
             yFormatter={millisecondFormatter}
             colorMap={hikaricpLatencyColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="Tomcat Threads & Sessions"
             data={series.D16}
             yFormatter={integerFormatter}
             colorMap={tomcatColors}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <AreaPanel
             title="Tomcat Sent & Received Bytes"
             data={series.D17}
             yFormatter={bytesPerSecondFormatter}
             colorMap={tomcatByteColors}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="Log Events by Level"
             data={series.D18}
             yFormatter={perSecondFormatter}
             colorMap={logLevelColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
     </MonitorDashboardLayout>
   );

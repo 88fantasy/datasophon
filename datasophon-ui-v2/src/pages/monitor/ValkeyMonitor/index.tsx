@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row } from 'antd';
+import { Row } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -10,6 +10,7 @@ import { selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
+import PanelCol from '../_shared/PanelCol';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
@@ -99,15 +100,14 @@ const ValkeyDashboard: FC = () => {
   });
 
   // V03 Memory %: memoryUsagePct=-1 means maxmemory not configured
-  const memoryPctValue = instant.memoryUsagePct < 0 ? 0 : instant.memoryUsagePct;
+  const memoryPctValue =
+    instant.memoryUsagePct < 0 ? 0 : instant.memoryUsagePct;
   const memoryPctColor =
     instant.memoryUsagePct < 0
       ? CHART_COLORS.primary
       : colorByThreshold(instant.memoryUsagePct, [80, 95]);
   const memoryPctFormatter =
-    instant.memoryUsagePct < 0
-      ? () => 'unlimited'
-      : pctFormatter;
+    instant.memoryUsagePct < 0 ? () => 'unlimited' : pctFormatter;
 
   return (
     <MonitorDashboardLayout
@@ -136,7 +136,7 @@ const ValkeyDashboard: FC = () => {
     >
       {/* R1 — Overview Stat */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={6}>
+        <PanelCol span={6}>
           <StatPanel
             title={t('pages.valkeyMonitor.panel.maxUptime', 'Max Uptime')}
             value={instant.maxUptime}
@@ -145,25 +145,27 @@ const ValkeyDashboard: FC = () => {
             })}
             formatter={formatDuration}
           />
-        </Col>
-        <Col span={6}>
+        </PanelCol>
+        <PanelCol span={6}>
           <StatPanel
             title={t('pages.valkeyMonitor.panel.clients', 'Clients')}
             value={instant.clients}
             color={CHART_COLORS.primary}
           />
-        </Col>
-        <Col span={6}>
+        </PanelCol>
+        <PanelCol span={6}>
           <StatPanel
             title={t('pages.valkeyMonitor.panel.memoryUsage', 'Memory Usage')}
             value={memoryPctValue}
             color={memoryPctColor}
             suffix={instant.memoryUsagePct < 0 ? undefined : '%'}
             precision={instant.memoryUsagePct < 0 ? undefined : 1}
-            formatter={instant.memoryUsagePct < 0 ? memoryPctFormatter : undefined}
+            formatter={
+              instant.memoryUsagePct < 0 ? memoryPctFormatter : undefined
+            }
           />
-        </Col>
-        <Col span={6}>
+        </PanelCol>
+        <PanelCol span={6}>
           <StatPanel
             title={t('pages.valkeyMonitor.panel.cacheHitPct', 'Cache Hit %')}
             value={instant.cacheHitPct}
@@ -173,12 +175,12 @@ const ValkeyDashboard: FC = () => {
             suffix="%"
             precision={1}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       {/* R2 — Traffic */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t(
               'pages.valkeyMonitor.panel.totalCommands',
@@ -187,8 +189,8 @@ const ValkeyDashboard: FC = () => {
             data={series.V05}
             yFormatter={opsFormatter}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t(
               'pages.valkeyMonitor.panel.hitsAndMisses',
@@ -198,12 +200,12 @@ const ValkeyDashboard: FC = () => {
             yFormatter={opsFormatter}
             colorMap={valkeyHitsColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       {/* R3 — Latency & Network */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t(
               'pages.valkeyMonitor.panel.avgTimeByCommand',
@@ -212,20 +214,20 @@ const ValkeyDashboard: FC = () => {
             data={series.V07}
             yFormatter={msFormatter}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <AreaPanel
             title={t('pages.valkeyMonitor.panel.networkIO', 'Network I/O')}
             data={series.V08}
             yFormatter={bytesPerSecFormatter}
             colorMap={valkeyNetColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       {/* R4 — Memory & Connections */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t(
               'pages.valkeyMonitor.panel.memoryUsageTrend',
@@ -235,8 +237,8 @@ const ValkeyDashboard: FC = () => {
             yFormatter={bytesFormatter}
             colorMap={valkeyMemColors}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t(
               'pages.valkeyMonitor.panel.connectedClients',
@@ -246,12 +248,12 @@ const ValkeyDashboard: FC = () => {
             yFormatter={intFormatter}
             colorMap={valkeyClientColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       {/* R5 — Keyspace */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t(
               'pages.valkeyMonitor.panel.itemsPerDb',
@@ -260,8 +262,8 @@ const ValkeyDashboard: FC = () => {
             data={series.V11}
             yFormatter={intFormatter}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t(
               'pages.valkeyMonitor.panel.expiringKeys',
@@ -271,8 +273,8 @@ const ValkeyDashboard: FC = () => {
             yFormatter={intFormatter}
             colorMap={valkeyKeyColors}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title={t(
               'pages.valkeyMonitor.panel.expiredEvicted',
@@ -282,12 +284,12 @@ const ValkeyDashboard: FC = () => {
             yFormatter={opsFormatter}
             colorMap={valkeyKeyTtlColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       {/* R6 — Errors */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={24}>
+        <PanelCol span={24}>
           <TimeSeriesPanel
             title={t(
               'pages.valkeyMonitor.panel.rejectedConnections',
@@ -295,9 +297,12 @@ const ValkeyDashboard: FC = () => {
             )}
             data={series.V14}
             yFormatter={opsFormatter}
-            colorMap={{ series: CHART_COLORS.error, Evicted: CHART_COLORS.error }}
+            colorMap={{
+              series: CHART_COLORS.error,
+              Evicted: CHART_COLORS.error,
+            }}
           />
-        </Col>
+        </PanelCol>
       </Row>
     </MonitorDashboardLayout>
   );

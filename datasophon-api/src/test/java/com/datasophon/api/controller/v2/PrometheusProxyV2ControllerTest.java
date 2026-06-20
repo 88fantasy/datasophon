@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import cn.hutool.http.HttpException;
+import cn.hutool.core.io.IORuntimeException;
 
 /**
  * PrometheusProxyV2Controller 纯单元测试。
@@ -68,13 +68,29 @@ class PrometheusProxyV2ControllerTest {
         };
     }
     
-    /** 构造 controller 覆盖 doHttpGet 抛出 HttpException（模拟网络不可达）。 */
+    /**
+     * 构造 controller 覆盖 doHttpGet 抛出 {@link IORuntimeException}（模拟网络不可达）。
+     *
+     * <p>Hutool 在连接被拒/超时时抛出的真实类型是 {@code IORuntimeException}(包装 ConnectException/
+     * SocketTimeoutException),而非 {@code HttpException};用真实类型才能守住 502 映射不回归。
+     */
     private PrometheusProxyV2Controller stubUnreachable() {
         return new PrometheusProxyV2Controller(props, objectMapper) {
             @Override
             protected String doHttpGet(String url, String query, String time,
                                        String start, String end, String step) {
-                throw new HttpException("Connection refused: localhost/127.0.0.1:9090");
+                throw new IORuntimeException("Connection refused: localhost/127.0.0.1:9090");
+            }
+        };
+    }
+    
+    /** 构造 controller 覆盖 doHttpGet 返回 null（模拟空响应体 / 204）。 */
+    private PrometheusProxyV2Controller stubNullBody() {
+        return new PrometheusProxyV2Controller(props, objectMapper) {
+            @Override
+            protected String doHttpGet(String url, String query, String time,
+                                       String start, String end, String step) {
+                return null;
             }
         };
     }
@@ -208,6 +224,30 @@ class PrometheusProxyV2ControllerTest {
         assertThat(resp.getErrorCode()).isEqualTo(502);
         assertThat(resp.getErrorMessage()).contains("Prometheus 返回非 JSON 响应");
         assertThat(resp.getErrorMessage()).contains("Error executing query");
+    }
+    
+    // ─── 空响应体 / 缺少 data 字段 ────────────────────────────────────────────
+    
+    @Test
+    @DisplayName("Prometheus 返回空响应体时，返回 502（不进 readTree(null) 的 500 分支）")
+    void query_emptyBody_returns502() {
+        PrometheusProxyV2Controller ctrl = stubNullBody();
+        ApiResponse<JsonNode> resp = ctrl.query("up", null, null);
+        
+        assertThat(resp.isSuccess()).isFalse();
+        assertThat(resp.getErrorCode()).isEqualTo(502);
+        assertThat(resp.getErrorMessage()).contains("空响应");
+    }
+    
+    @Test
+    @DisplayName("status=success 但缺少 data 字段时，返回 502 而非 ok(null)")
+    void query_successWithoutData_returns502() {
+        PrometheusProxyV2Controller ctrl = stubController("{\"status\":\"success\"}");
+        ApiResponse<JsonNode> resp = ctrl.query("up", null, null);
+        
+        assertThat(resp.isSuccess()).isFalse();
+        assertThat(resp.getErrorCode()).isEqualTo(502);
+        assertThat(resp.getErrorMessage()).contains("data");
     }
     
     // ─── buildRequestUrl：URL 编码行为 ────────────────────────────────────────

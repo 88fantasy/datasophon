@@ -40,6 +40,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.http.HttpException;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -127,11 +128,20 @@ public class PrometheusProxyV2Controller extends ApiController {
         String responseBody = null;
         try {
             responseBody = doHttpGet(url, query, time, start, end, step);
+            if (responseBody == null || responseBody.isBlank()) {
+                logger.warn("Prometheus 返回空响应: url={} query={}", url, query);
+                return ApiResponse.fail(502, "Prometheus 返回空响应");
+            }
             JsonNode root = objectMapper.readTree(responseBody);
             String status = root.path("status").asText();
             
             if ("success".equals(status)) {
-                return ApiResponse.ok(root.get("data"));
+                JsonNode data = root.get("data");
+                if (data == null || data.isNull()) {
+                    logger.warn("Prometheus 成功响应缺少 data 字段: url={} query={}", url, query);
+                    return ApiResponse.fail(502, "Prometheus 响应缺少 data 字段");
+                }
+                return ApiResponse.ok(data);
             }
             
             String errorMsg = root.path("error").asText("Prometheus 返回未知错误");
@@ -141,12 +151,14 @@ public class PrometheusProxyV2Controller extends ApiController {
             String summary = summarizeNonJsonResponse(responseBody);
             logger.warn("Prometheus 返回非 JSON 响应: url={} query={} reason={}", url, query, summary);
             return ApiResponse.fail(502, "Prometheus 返回非 JSON 响应: " + summary);
-        } catch (HttpException e) {
+        } catch (HttpException | IORuntimeException e) {
+            // Hutool 在连接被拒/超时等网络故障时抛 IORuntimeException(包装 ConnectException/SocketTimeoutException),
+            // 仅协议级问题才抛 HttpException;两者都应归为 502。e.getMessage() 含内部主机/端口,只记日志不回前端。
             logger.error("Prometheus 不可达: url={} reason={}", url, e.getMessage());
-            return ApiResponse.fail(502, "Prometheus 不可达: " + e.getMessage());
+            return ApiResponse.fail(502, "Prometheus 不可达");
         } catch (Exception e) {
             logger.error("Prometheus 代理异常: url={} reason={}", url, e.getMessage(), e);
-            return ApiResponse.fail(500, "代理内部错误: " + e.getMessage());
+            return ApiResponse.fail(500, "代理内部错误");
         }
     }
     

@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row, Tabs, Typography } from 'antd';
+import { Row, Tabs, Typography } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -12,6 +12,7 @@ import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
 import useStyles from '../_shared/monitorStyles';
+import PanelCol from '../_shared/PanelCol';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
@@ -113,14 +114,14 @@ const SpringSection: FC<SpringSectionProps> = ({
       subtitle={t('pages.dolphinSchedulerMonitor.section.spring.subtitle')}
     />
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={8}>
+      <PanelCol span={8}>
         <StatPanel
           title={panelTitle('D-C01')}
           value={instant['D-C01'] ?? 0}
           formatter={formatDuration}
         />
-      </Col>
-      <Col span={8}>
+      </PanelCol>
+      <PanelCol span={8}>
         <StatPanel
           title={panelTitle('D-C02')}
           value={instant['D-C02'] ?? 0}
@@ -128,8 +129,8 @@ const SpringSection: FC<SpringSectionProps> = ({
           precision={1}
           color={colorByThreshold(instant['D-C02'] ?? 0, [70, 90])}
         />
-      </Col>
-      <Col span={8}>
+      </PanelCol>
+      <PanelCol span={8}>
         <StatPanel
           title={panelTitle('D-C03')}
           value={instant['D-C03'] ?? 0}
@@ -137,92 +138,92 @@ const SpringSection: FC<SpringSectionProps> = ({
           precision={1}
           color={colorByThreshold(instant['D-C03'] ?? 0, [70, 90])}
         />
-      </Col>
+      </PanelCol>
     </Row>
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={8}>
+      <PanelCol span={8}>
         <TimeSeriesPanel
           title={panelTitle('D-C04')}
           data={series['D-C04']}
           yFormatter={opsFormatter}
         />
-      </Col>
-      <Col span={8}>
+      </PanelCol>
+      <PanelCol span={8}>
         <TimeSeriesPanel
           title={panelTitle('D-C05')}
           data={series['D-C05']}
           yFormatter={opsFormatter}
           colorMap={{ series: CHART_COLORS.error }}
         />
-      </Col>
-      <Col span={8}>
+      </PanelCol>
+      <PanelCol span={8}>
         <TimeSeriesPanel
           title={panelTitle('D-C06')}
           data={series['D-C06']}
           yFormatter={secondsFormatter}
           colorMap={{ avg: CHART_COLORS.primary, max: CHART_COLORS.warning }}
         />
-      </Col>
+      </PanelCol>
     </Row>
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={12}>
+      <PanelCol span={12}>
         <AreaPanel
           title={panelTitle('D-C07')}
           data={series['D-C07']}
           yFormatter={formatBytes}
           colorMap={memoryColors}
         />
-      </Col>
-      <Col span={12}>
+      </PanelCol>
+      <PanelCol span={12}>
         <AreaPanel
           title={panelTitle('D-C08')}
           data={series['D-C08']}
           yFormatter={formatBytes}
           colorMap={memoryColors}
         />
-      </Col>
+      </PanelCol>
     </Row>
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={8}>
+      <PanelCol span={8}>
         <TimeSeriesPanel
           title={panelTitle('D-C09')}
           data={series['D-C09']}
           yFormatter={percentUnitFormatter}
           colorMap={cpuColors}
         />
-      </Col>
-      <Col span={8}>
+      </PanelCol>
+      <PanelCol span={8}>
         <TimeSeriesPanel
           title={panelTitle('D-C10')}
           data={series['D-C10']}
           yFormatter={integerFormatter}
           colorMap={{ load_1m: CHART_COLORS.primary, cpu_cores: '#8c8c8c' }}
         />
-      </Col>
-      <Col span={8}>
+      </PanelCol>
+      <PanelCol span={8}>
         <TimeSeriesPanel
           title={panelTitle('D-C11')}
           data={series['D-C11']}
           yFormatter={integerFormatter}
         />
-      </Col>
+      </PanelCol>
     </Row>
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={12}>
+      <PanelCol span={12}>
         <TimeSeriesPanel
           title={panelTitle('D-C12')}
           data={series['D-C12']}
           yFormatter={opsFormatter}
           colorMap={logColors}
         />
-      </Col>
-      <Col span={12}>
+      </PanelCol>
+      <PanelCol span={12}>
         <TimeSeriesPanel
           title={panelTitle('D-C13')}
           data={series['D-C13']}
           yFormatter={opsFormatter}
         />
-      </Col>
+      </PanelCol>
     </Row>
   </>
 );
@@ -248,14 +249,14 @@ const MasterSection: FC<MasterSectionProps> = ({
       subtitle={t('pages.dolphinSchedulerMonitor.section.master.subtitle')}
     />
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={6}>
+      <PanelCol span={6}>
         <StatPanel
           title={panelTitle('D-B01')}
           value={instant['D-B01'] ?? 0}
           formatter={formatCompact}
         />
-      </Col>
-      <Col span={6}>
+      </PanelCol>
+      <PanelCol span={6}>
         <StatPanel
           title={panelTitle('D-B02')}
           value={instant['D-B02'] ?? 0}
@@ -265,15 +266,15 @@ const MasterSection: FC<MasterSectionProps> = ({
             reverse: true,
           })}
         />
-      </Col>
-      <Col span={6}>
+      </PanelCol>
+      <PanelCol span={6}>
         <StatPanel
           title={panelTitle('D-B03')}
           value={instant['D-B03'] ?? 0}
           formatter={formatCompact}
         />
-      </Col>
-      <Col span={6}>
+      </PanelCol>
+      <PanelCol span={6}>
         <StatPanel
           title={panelTitle('D-B04')}
           value={instant['D-B04'] ?? 0}
@@ -283,87 +284,87 @@ const MasterSection: FC<MasterSectionProps> = ({
             reverse: true,
           })}
         />
-      </Col>
+      </PanelCol>
     </Row>
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={12}>
+      <PanelCol span={12}>
         <TimeSeriesPanel
           title={panelTitle('D-B05')}
           data={series['D-B05']}
           yFormatter={integerFormatter}
         />
-      </Col>
-      <Col span={12}>
+      </PanelCol>
+      <PanelCol span={12}>
         <TimeSeriesPanel
           title={panelTitle('D-B06')}
           data={series['D-B06']}
           yFormatter={integerFormatter}
         />
-      </Col>
+      </PanelCol>
     </Row>
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={12}>
+      <PanelCol span={12}>
         <TimeSeriesPanel
           title={panelTitle('D-B07')}
           data={series['D-B07']}
           yFormatter={integerFormatter}
           colorMap={statusColors}
         />
-      </Col>
-      <Col span={12}>
+      </PanelCol>
+      <PanelCol span={12}>
         <TimeSeriesPanel
           title={panelTitle('D-B08')}
           data={series['D-B08']}
           yFormatter={secondsFormatter}
           colorMap={{ avg: CHART_COLORS.primary, max: CHART_COLORS.warning }}
         />
-      </Col>
+      </PanelCol>
     </Row>
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={12}>
+      <PanelCol span={12}>
         <TimeSeriesPanel
           title={panelTitle('D-B09')}
           data={series['D-B09']}
           yFormatter={integerFormatter}
           colorMap={statusColors}
         />
-      </Col>
-      <Col span={12}>
+      </PanelCol>
+      <PanelCol span={12}>
         <TimeSeriesPanel
           title={panelTitle('D-B10')}
           data={series['D-B10']}
           yFormatter={millisecondsFormatter}
           colorMap={{ avg: CHART_COLORS.primary, max: CHART_COLORS.warning }}
         />
-      </Col>
+      </PanelCol>
     </Row>
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={24}>
+      <PanelCol span={24}>
         <TimeSeriesPanel
           title={panelTitle('D-B11')}
           data={series['D-B11']}
           yFormatter={integerFormatter}
           colorMap={dsStateColors}
         />
-      </Col>
+      </PanelCol>
     </Row>
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={12}>
+      <PanelCol span={12}>
         <TimeSeriesPanel
           title={panelTitle('D-B12')}
           data={series['D-B12']}
           yFormatter={integerFormatter}
           colorMap={dsStateColors}
         />
-      </Col>
-      <Col span={12}>
+      </PanelCol>
+      <PanelCol span={12}>
         <TimeSeriesPanel
           title={panelTitle('D-B13')}
           data={series['D-B13']}
           yFormatter={integerFormatter}
           colorMap={dsStateColors}
         />
-      </Col>
+      </PanelCol>
     </Row>
   </>
 );
@@ -383,7 +384,7 @@ const WorkerSection: FC<WorkerSectionProps> = ({ series, panelTitle, t }) => (
       subtitle={t('pages.dolphinSchedulerMonitor.section.worker.subtitle')}
     />
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={8}>
+      <PanelCol span={8}>
         <TimeSeriesPanel
           title={panelTitle('D-A01')}
           data={series['D-A01']}
@@ -392,47 +393,47 @@ const WorkerSection: FC<WorkerSectionProps> = ({ series, panelTitle, t }) => (
             { value: 0.8, label: '80%', color: CHART_COLORS.error },
           ]}
         />
-      </Col>
-      <Col span={8}>
+      </PanelCol>
+      <PanelCol span={8}>
         <TimeSeriesPanel
           title={panelTitle('D-A02')}
           data={series['D-A02']}
           yFormatter={integerFormatter}
         />
-      </Col>
-      <Col span={8}>
+      </PanelCol>
+      <PanelCol span={8}>
         <TimeSeriesPanel
           title={panelTitle('D-A03')}
           data={series['D-A03']}
           yFormatter={integerFormatter}
         />
-      </Col>
+      </PanelCol>
     </Row>
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={12}>
+      <PanelCol span={12}>
         <TimeSeriesPanel
           title={panelTitle('D-A04')}
           data={series['D-A04']}
           yFormatter={integerFormatter}
         />
-      </Col>
-      <Col span={12}>
+      </PanelCol>
+      <PanelCol span={12}>
         <TimeSeriesPanel
           title={panelTitle('D-A05')}
           data={series['D-A05']}
           yFormatter={integerFormatter}
           colorMap={statusColors}
         />
-      </Col>
+      </PanelCol>
     </Row>
     <Row gutter={MONITOR_ROW_GUTTER}>
-      <Col span={24}>
+      <PanelCol span={24}>
         <TimeSeriesPanel
           title={panelTitle('D-A06')}
           data={series['D-A06']}
           yFormatter={secondsFormatter}
         />
-      </Col>
+      </PanelCol>
     </Row>
   </>
 );

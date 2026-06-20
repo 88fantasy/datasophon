@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row, Tabs, Typography } from 'antd';
+import { Row, Tabs, Typography } from 'antd';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { CHART_COLORS, formatBytes } from '../_shared/charts/formatters';
 import { selectionsToRegex } from '../_shared/charts/promql';
@@ -7,6 +7,7 @@ import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
 import useStyles from '../_shared/monitorStyles';
+import PanelCol from '../_shared/PanelCol';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
@@ -168,7 +169,6 @@ const DorisDashboard: FC = () => {
       }
       loading={loading}
     >
-
       <Tabs
         activeKey={activeSegment}
         onChange={(key) => setActiveSegment(key as DorisDashboardSegment)}
@@ -184,14 +184,14 @@ const DorisDashboard: FC = () => {
                   subtitle={t('pages.dorisMonitor.section.cluster.subtitle')}
                 />
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <Col span={4}>
+                  <PanelCol span={4}>
                     <StatPanel
                       title={panelTitle('DO-A01')}
                       value={instant.feNodeCount}
                       color={dorisRoleColors.fe}
                     />
-                  </Col>
-                  <Col span={4}>
+                  </PanelCol>
+                  <PanelCol span={4}>
                     <StatPanel
                       title={panelTitle('DO-A02')}
                       value={instant.feAliveCount}
@@ -201,15 +201,15 @@ const DorisDashboard: FC = () => {
                           : CHART_COLORS.error
                       }
                     />
-                  </Col>
-                  <Col span={4}>
+                  </PanelCol>
+                  <PanelCol span={4}>
                     <StatPanel
                       title={panelTitle('DO-A03')}
                       value={instant.beNodeCount}
                       color={dorisRoleColors.be}
                     />
-                  </Col>
-                  <Col span={4}>
+                  </PanelCol>
+                  <PanelCol span={4}>
                     <StatPanel
                       title={panelTitle('DO-A04')}
                       value={instant.beAliveCount}
@@ -219,33 +219,33 @@ const DorisDashboard: FC = () => {
                           : CHART_COLORS.error
                       }
                     />
-                  </Col>
-                  <Col span={4}>
+                  </PanelCol>
+                  <PanelCol span={4}>
                     <StatPanel
                       title={panelTitle('DO-A05')}
                       value={instant.usedCapacityBytes}
                       color="#5c6b77"
                       formatter={formatBytes}
                     />
-                  </Col>
-                  <Col span={4}>
+                  </PanelCol>
+                  <PanelCol span={4}>
                     <StatPanel
                       title={panelTitle('DO-A06')}
                       value={instant.totalCapacityBytes}
                       color={dorisRoleColors.reference}
                       formatter={formatBytes}
                     />
-                  </Col>
+                  </PanelCol>
                 </Row>
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <Col span={8}>
+                  <PanelCol span={8}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-A07')}
                       data={series['DO-A07']}
                       yFormatter={opsFormatter}
                     />
-                  </Col>
-                  <Col span={8}>
+                  </PanelCol>
+                  <PanelCol span={8}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-A08')}
                       data={series['DO-A08']}
@@ -259,8 +259,8 @@ const DorisDashboard: FC = () => {
                         { value: 90, label: '90%', color: CHART_COLORS.error },
                       ]}
                     />
-                  </Col>
-                  <Col span={8}>
+                  </PanelCol>
+                  <PanelCol span={8}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-A09')}
                       data={series['DO-A09']}
@@ -269,7 +269,7 @@ const DorisDashboard: FC = () => {
                         { value: 20, label: '20%', color: CHART_COLORS.error },
                       ]}
                     />
-                  </Col>
+                  </PanelCol>
                 </Row>
               </>
             ),
@@ -284,48 +284,48 @@ const DorisDashboard: FC = () => {
                   subtitle={t('pages.dorisMonitor.section.fe.subtitle')}
                 />
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <Col span={12}>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B01')}
                       data={series['DO-B01']}
                       yFormatter={reqFormatter}
                     />
-                  </Col>
-                  <Col span={12}>
+                  </PanelCol>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B02')}
                       data={series['DO-B02']}
                       yFormatter={queryFormatter}
                     />
-                  </Col>
+                  </PanelCol>
                 </Row>
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <Col span={12}>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B03')}
                       data={series['DO-B03']}
                       yFormatter={millisecondFormatter}
                     />
-                  </Col>
-                  <Col span={12}>
+                  </PanelCol>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B04')}
                       data={series['DO-B04']}
                       yFormatter={millisecondFormatter}
                       colorMap={latencyColors}
                     />
-                  </Col>
+                  </PanelCol>
                 </Row>
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <Col span={12}>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B05')}
                       data={series['DO-B05']}
                       yFormatter={integerFormatter}
                       colorMap={errorColors}
                     />
-                  </Col>
-                  <Col span={12}>
+                  </PanelCol>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B06')}
                       data={series['DO-B06']}
@@ -335,17 +335,17 @@ const DorisDashboard: FC = () => {
                         { value: 1, label: '1%', color: CHART_COLORS.error },
                       ]}
                     />
-                  </Col>
+                  </PanelCol>
                 </Row>
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <Col span={12}>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B07')}
                       data={series['DO-B07']}
                       yFormatter={integerFormatter}
                     />
-                  </Col>
-                  <Col span={12}>
+                  </PanelCol>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B08')}
                       data={series['DO-B08']}
@@ -358,26 +358,26 @@ const DorisDashboard: FC = () => {
                         },
                       ]}
                     />
-                  </Col>
+                  </PanelCol>
                 </Row>
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <Col span={12}>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B09')}
                       data={series['DO-B09']}
                       yFormatter={integerFormatter}
                     />
-                  </Col>
-                  <Col span={12}>
+                  </PanelCol>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B12')}
                       data={series['DO-B12']}
                       yFormatter={millisecondFormatter}
                     />
-                  </Col>
+                  </PanelCol>
                 </Row>
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <Col span={12}>
+                  <PanelCol span={12}>
                     <AreaPanel
                       title={panelTitle('DO-B10')}
                       data={series['DO-B10']}
@@ -387,8 +387,8 @@ const DorisDashboard: FC = () => {
                         max: dorisRoleColors.reference,
                       }}
                     />
-                  </Col>
-                  <Col span={12}>
+                  </PanelCol>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-B11')}
                       data={series['DO-B11']}
@@ -398,7 +398,7 @@ const DorisDashboard: FC = () => {
                         avg_time_ms: CHART_COLORS.error,
                       }}
                     />
-                  </Col>
+                  </PanelCol>
                 </Row>
               </>
             ),
@@ -413,7 +413,7 @@ const DorisDashboard: FC = () => {
                   subtitle={t('pages.dorisMonitor.section.be.subtitle')}
                 />
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <Col span={8}>
+                  <PanelCol span={8}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C01')}
                       data={series['DO-C01']}
@@ -422,15 +422,15 @@ const DorisDashboard: FC = () => {
                         { value: 20, label: '20%', color: CHART_COLORS.error },
                       ]}
                     />
-                  </Col>
-                  <Col span={8}>
+                  </PanelCol>
+                  <PanelCol span={8}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C02')}
                       data={series['DO-C02']}
                       yFormatter={formatBytes}
                     />
-                  </Col>
-                  <Col span={8}>
+                  </PanelCol>
+                  <PanelCol span={8}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C03')}
                       data={series['DO-C03']}
@@ -443,10 +443,10 @@ const DorisDashboard: FC = () => {
                         local_used_pct: CHART_COLORS.warning,
                       }}
                     />
-                  </Col>
+                  </PanelCol>
                 </Row>
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <Col span={12}>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C04')}
                       data={series['DO-C04']}
@@ -455,64 +455,64 @@ const DorisDashboard: FC = () => {
                         { value: 80, label: '80%', color: CHART_COLORS.error },
                       ]}
                     />
-                  </Col>
-                  <Col span={12}>
+                  </PanelCol>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C05')}
                       data={series['DO-C05']}
                       yFormatter={bytesPerSecondFormatter}
                       colorMap={compactionColors}
                     />
-                  </Col>
+                  </PanelCol>
                 </Row>
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <Col span={12}>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C06')}
                       data={series['DO-C06']}
                       yFormatter={bytesPerSecondFormatter}
                     />
-                  </Col>
-                  <Col span={12}>
+                  </PanelCol>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C07')}
                       data={series['DO-C07']}
                       yFormatter={rowsPerSecondFormatter}
                     />
-                  </Col>
+                  </PanelCol>
                 </Row>
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <Col span={12}>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C08')}
                       data={series['DO-C08']}
                       yFormatter={bytesPerSecondFormatter}
                     />
-                  </Col>
-                  <Col span={12}>
+                  </PanelCol>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C09')}
                       data={series['DO-C09']}
                       yFormatter={rowsPerSecondFormatter}
                     />
-                  </Col>
+                  </PanelCol>
                 </Row>
                 <Row gutter={MONITOR_ROW_GUTTER}>
-                  <Col span={12}>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C10')}
                       data={series['DO-C10']}
                       yFormatter={millisecondPreciseFormatter}
                     />
-                  </Col>
-                  <Col span={12}>
+                  </PanelCol>
+                  <PanelCol span={12}>
                     <TimeSeriesPanel
                       title={panelTitle('DO-C11')}
                       data={series['DO-C11']}
                       yFormatter={bytesPerSecondFormatter}
                       colorMap={networkColors}
                     />
-                  </Col>
+                  </PanelCol>
                 </Row>
               </>
             ),

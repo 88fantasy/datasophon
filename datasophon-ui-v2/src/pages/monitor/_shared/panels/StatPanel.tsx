@@ -22,14 +22,18 @@ const StatPanel: FC<StatPanelProps> = ({
 }) => {
   const { styles } = useStyles();
 
+  // 非有限值（NaN/Infinity，通常来自缺失 series 或 0/0）统一显示为 '–'，
+  // 而非把 NaN 透传给 formatter / Statistic 渲染出 'NaN'。
+  const noData = !Number.isFinite(value);
+
   return (
     <MonitorPanelCard compact>
       <Statistic
         title={<span className={styles.statTitle}>{title}</span>}
-        value={value}
-        suffix={suffix}
-        precision={formatter ? undefined : precision}
-        formatter={formatter ? () => formatter(value) : undefined}
+        value={noData ? '-' : value}
+        suffix={noData ? undefined : suffix}
+        precision={noData || formatter ? undefined : precision}
+        formatter={!noData && formatter ? () => formatter(value) : undefined}
         styles={{
           content: {
             color,

@@ -1,5 +1,5 @@
 import { useIntl } from '@umijs/max';
-import { Col, Row } from 'antd';
+import { Row } from 'antd';
 import { type FC, useCallback, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
@@ -10,6 +10,7 @@ import { selectionsToRegex } from '../_shared/charts/promql';
 import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
+import PanelCol from '../_shared/PanelCol';
 import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
@@ -184,7 +185,7 @@ const MySQLDashboard: FC = () => {
       loading={loading}
     >
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={4}>
+        <PanelCol span={4}>
           <StatPanel
             title="Uptime"
             value={instant.uptime}
@@ -193,40 +194,40 @@ const MySQLDashboard: FC = () => {
             })}
             formatter={formatDuration}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Current QPS"
             value={instant.currentQps}
             color={CHART_COLORS.primary}
             precision={1}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Connections Used %"
             value={instant.connectionsUsedPercent}
             color={colorByThreshold(instant.connectionsUsedPercent, [80, 90])}
             suffix="%"
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="InnoDB Buffer Pool"
             value={instant.innodbBufferPool}
             color={CHART_COLORS.primary}
             formatter={formatBytes}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Slow Queries /s"
             value={instant.slowQueriesPerSecond}
             color={colorByThreshold(instant.slowQueriesPerSecond, [0.01, 1])}
             precision={2}
           />
-        </Col>
-        <Col span={4}>
+        </PanelCol>
+        <PanelCol span={4}>
           <StatPanel
             title="Aborted Connections /s"
             value={instant.abortedConnectionsPerSecond}
@@ -237,19 +238,19 @@ const MySQLDashboard: FC = () => {
             }
             precision={2}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="MySQL Questions"
             data={series.M07}
             yFormatter={qpsFormatter}
             colorMap={{ 'mysql-1:9104': CHART_COLORS.primary }}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <AreaPanel
             title="MySQL Network Traffic"
             data={series.M08}
@@ -257,11 +258,11 @@ const MySQLDashboard: FC = () => {
             yFormatter={bytesPerSecondFormatter}
             colorMap={networkColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="MySQL Connections"
             data={series.M09}
@@ -279,46 +280,46 @@ const MySQLDashboard: FC = () => {
                 : undefined
             }
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="MySQL Client Thread Activity"
             data={series.M10}
             yFormatter={integerFormatter}
             colorMap={threadColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={8}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="MySQL Slow Queries"
             data={series.M11}
             yFormatter={perSecondFormatter}
             colorMap={{ 'Slow Queries': CHART_COLORS.warning }}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="MySQL Aborted Connections"
             data={series.M12}
             yFormatter={perSecondFormatter}
             colorMap={abortedColors}
           />
-        </Col>
-        <Col span={8}>
+        </PanelCol>
+        <PanelCol span={8}>
           <TimeSeriesPanel
             title="MySQL Table Locks"
             data={series.M13}
             yFormatter={perSecondFormatter}
             colorMap={tableLockColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <AreaPanel
             title="MySQL Internal Memory Overview"
             data={m14VisibleSeries}
@@ -326,34 +327,34 @@ const MySQLDashboard: FC = () => {
             yFormatter={formatBytes}
             colorMap={memoryColors}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="MySQL Temporary Objects"
             data={series.M15}
             yFormatter={perSecondFormatter}
             colorMap={tempObjectColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <Col span={12}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="MySQL Handlers"
             data={series.M16}
             yFormatter={perSecondFormatter}
             colorMap={handlerColors}
           />
-        </Col>
-        <Col span={12}>
+        </PanelCol>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title="Top Command Counters"
             data={series.M17}
             yFormatter={perSecondFormatter}
             colorMap={commandColors}
           />
-        </Col>
+        </PanelCol>
       </Row>
     </MonitorDashboardLayout>
   );
