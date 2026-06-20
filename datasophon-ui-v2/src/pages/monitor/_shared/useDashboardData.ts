@@ -87,6 +87,10 @@ export interface UseDashboardDataParams {
   /**
    * 额外裸查询（键名自定义，用于选择器派生、表格数据等）。
    * 结果通过返回值的 extras[key] 取回，页面侧自行转换。
+   *
+   * ⚠️ 必须使用模块级常量（在函数外声明的 `const EXTRAS = ...`），
+   * 不得传入内联对象字面量——extras 在 useEffect 依赖数组中，
+   * 内联对象每次渲染产生新引用，会导致无限重拉。
    */
   extras?: Record<string, ExtraQuery>;
   timeRange: string;
@@ -263,13 +267,13 @@ export function useDashboardData({
         // ── 并行拉取 ───────────────────────────────────────────────────────
 
         const instantIds = panelIds.filter(
-          (id) => panelQueries[id]?.type === 'instant',
+          (id) => _panelQueries[id]?.type === 'instant',
         );
         const rangeIds = panelIds.filter(
-          (id) => panelQueries[id]?.type === 'range',
+          (id) => _panelQueries[id]?.type === 'range',
         );
         const multiRangeIds = panelIds.filter(
-          (id) => panelQueries[id]?.type === 'multi-range',
+          (id) => _panelQueries[id]?.type === 'multi-range',
         );
         const extraEntries = Object.entries(extras ?? {});
 

@@ -91,7 +91,7 @@ export function useValkeyDashboard({
       clients: data.instant.V02 ?? 0,
       memoryUsagePct: memoryMaxBytes <= 0 ? -1 : (data.instant.V03 ?? 0),
       memoryMaxBytes,
-      cacheHitPct: data.instant.V04 ?? 0,
+      cacheHitPct: Number.isNaN(data.instant.V04) ? 0 : (data.instant.V04 ?? 0),
     },
     series: {
       ...data.series,

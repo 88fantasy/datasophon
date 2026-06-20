@@ -32,7 +32,7 @@ import org.springframework.context.annotation.Configuration;
  * <pre>
  * datasophon:
  *   prometheus:
- *     url: http://192.168.2.122:9090
+ *     url: http://localhost:9090
  *     timeout-ms: 10000
  * </pre>
  *
@@ -43,13 +43,13 @@ import org.springframework.context.annotation.Configuration;
 public class PrometheusProxyProperties {
     
     /** Prometheus HTTP 地址（无尾部斜杠），可通过 DDH_PROMETHEUS_URL 覆盖。 */
-    private String url = "http://192.168.2.122:9090";
+    private String url = "http://localhost:9090";
     
     /** 请求超时（毫秒）。 */
     private int timeoutMs = 10000;
     
     public String getUrl() {
-        return url;
+        return url != null ? url.replaceAll("/+$", "") : url;
     }
     
     public void setUrl(String url) {
