@@ -26,32 +26,32 @@
 
 > A1 本计划详述;A2/A3 为后续独立 sub-plan(各自展开时同样 bite-sized)。每个里程碑验收通过后更新本行状态。
 
-| 里程碑 | 子系统 | 交付物 | 计划 | 状态 |
-|---|---|---|---|---|
-| A1 | 数据面 | OTELCOLLECTOR 服务,落 S3(Rustfs),self-metrics :8888 | **本计划** | 🟩 代码完成(配置 validate 实测通过/组件实测齐全);端到端落 S3 待真实 Rustfs 环境 |
-| A2 | 存储 | otel database + 独立资源组 + create_schema=false 自管版本化 DDL + 契约测试 | 待出(A2 sub-plan) | ⬜ 未开始 |
-| A3 | 控制面 | 控制台(配置 tab+监控 tab)+ @Scheduled 告警器 + 逐节点 staged 切换 S3→Doris + 逐节点 ack 边界回灌 | 待出(A3 sub-plan) | ⬜ 未开始 |
+| 里程碑 | 子系统 |                                    交付物                                     |       计划        |                           状态                           |
+|-----|-----|----------------------------------------------------------------------------|-----------------|--------------------------------------------------------|
+| A1  | 数据面 | OTELCOLLECTOR 服务,落 S3(Rustfs),self-metrics :8888                           | **本计划**         | 🟩 代码完成(配置 validate 实测通过/组件实测齐全);端到端落 S3 待真实 Rustfs 环境 |
+| A2  | 存储  | otel database + 独立资源组 + create_schema=false 自管版本化 DDL + 契约测试               | 待出(A2 sub-plan) | ⬜ 未开始                                                  |
+| A3  | 控制面 | 控制台(配置 tab+监控 tab)+ @Scheduled 告警器 + 逐节点 staged 切换 S3→Doris + 逐节点 ack 边界回灌 | 待出(A3 sub-plan) | ⬜ 未开始                                                  |
 
 ### 验收/整改追溯(§5 十一条 + §8 两轮七条 → 子系统归属)
 
-| 来源条目 | 内容摘要 | 归属 | 本计划(A1)覆盖 |
-|---|---|---|---|
-| §5.1 | 改限流参数→落 S3(Rustfs) | A1+A3 | ✅ A1 落 S3 链路(Task 2/5);旋钮下发改动归 A3 |
-| §5.2 | 装 Doris→自动切 dorisexporter→落 otel 表 | A2+A3 | ➖ |
-| §5.3 | canary(HDFS)指标经 prometheusreceiver 进 Doris | A2+A3+C | ➖ |
-| §5.4 | 监控 tab 显示健康/吞吐/队列/落盘量 | A3 | ➖(A1 仅保证 :8888 暴露这些 metric) |
-| §5.5 / §5.5b | 逐节点回灌 / 切换非原子验收 | A3 | ➖ |
-| §5.6 / §5.7 | 持续过载无人值守告警 / Doris 宕机落盘重放 | A1(落盘)+A3(告警) | ✅ A1 验证 file_storage 落盘不丢(Task 5);告警归 A3 |
-| §5.8 | schema 契约测试 | A2 | ➖ |
-| §5.9 / §5.10 | 凭据最小权限/隔离 / TLS | A2+A3 | ➖ |
-| §5.11 | 投毒残余风险如实记录 | 文档(已记) | ➖ |
-| §8 F1 凭据 | 按集群隔离 INSERT-only | A2+A3 | ➖ |
-| §8 F2 回灌 | awss3receiver 时间窗回灌 | A3 | ➖ |
-| §8 F3 背压 | file_storage 持久化队列 | **A1** | ✅ Task 2/5 |
-| §8 F4 schema | create_schema=false 自管 DDL | A2 | ➖ |
-| §8 F5 切换 | 逐节点 ack 边界 | A3 | ➖ |
-| §8 F6 告警器 | 最小 @Scheduled 进 Phase A | A3 | ➖ |
-| §8 F7 投毒 | 措辞修正 | 文档(已记) | ➖ |
+|     来源条目     |                    内容摘要                    |      归属       |                本计划(A1)覆盖                 |
+|--------------|--------------------------------------------|---------------|------------------------------------------|
+| §5.1         | 改限流参数→落 S3(Rustfs)                         | A1+A3         | ✅ A1 落 S3 链路(Task 2/5);旋钮下发改动归 A3        |
+| §5.2         | 装 Doris→自动切 dorisexporter→落 otel 表         | A2+A3         | ➖                                        |
+| §5.3         | canary(HDFS)指标经 prometheusreceiver 进 Doris | A2+A3+C       | ➖                                        |
+| §5.4         | 监控 tab 显示健康/吞吐/队列/落盘量                      | A3            | ➖(A1 仅保证 :8888 暴露这些 metric)              |
+| §5.5 / §5.5b | 逐节点回灌 / 切换非原子验收                            | A3            | ➖                                        |
+| §5.6 / §5.7  | 持续过载无人值守告警 / Doris 宕机落盘重放                  | A1(落盘)+A3(告警) | ✅ A1 验证 file_storage 落盘不丢(Task 5);告警归 A3 |
+| §5.8         | schema 契约测试                                | A2            | ➖                                        |
+| §5.9 / §5.10 | 凭据最小权限/隔离 / TLS                            | A2+A3         | ➖                                        |
+| §5.11        | 投毒残余风险如实记录                                 | 文档(已记)        | ➖                                        |
+| §8 F1 凭据     | 按集群隔离 INSERT-only                          | A2+A3         | ➖                                        |
+| §8 F2 回灌     | awss3receiver 时间窗回灌                        | A3            | ➖                                        |
+| §8 F3 背压     | file_storage 持久化队列                         | **A1**        | ✅ Task 2/5                               |
+| §8 F4 schema | create_schema=false 自管 DDL                 | A2            | ➖                                        |
+| §8 F5 切换     | 逐节点 ack 边界                                 | A3            | ➖                                        |
+| §8 F6 告警器    | 最小 @Scheduled 进 Phase A                    | A3            | ➖                                        |
+| §8 F7 投毒     | 措辞修正                                       | 文档(已记)        | ➖                                        |
 
 > A1 直接闭环的整改项:**F3(持久化队列)**;并为 §5.1/§5.6/§5.4 打地基(S3 落库、落盘不丢、self-metrics 暴露)。其余条目由 A2/A3 sub-plan 承接,追溯列保证不丢项。
 
@@ -645,3 +645,4 @@ git commit -m "test(observability): OTELCOLLECTOR A1 端到端冒烟(落 S3 + fi
 
 - **A2(存储)**:`otel` database + 独立资源组;在沙箱用 `create_schema=true` 导出 exporter 期望 DDL → 版本化(参考 `migration/DatabaseMigration` 自研执行器)→ 契约测试。交付后 A1 的 exporter 才有 Doris 表可写。
 - **A3(控制面)**:控制台配置 tab(改 Task 4 parameters 并经 `ServiceConfigureHandler` 下发 + restart)/ 监控 tab(查 A1 的 :8888)/ 最小 `@Scheduled` 告警器(F6)/ 逐节点 staged 切换 awss3→doris(F5,ack 边界)/ 逐节点 awss3receiver 回灌(F2/F5)。
+

@@ -10,13 +10,13 @@
 
 ### 1.1 当前可观测架构(重构起点)
 
-| 层 | 现状实现 |
-|---|---|
+|      层      |                                                                                            现状实现                                                                                             |
+|-------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 采集(metrics) | 各服务角色暴露 JMX/node exporter(端口记于 `ServiceRoleJmxMap`,如 node_exporter 9100、worker 8585、master 8586);`PrometheusService` 动态生成 Prometheus file_sd scrape 配置(每角色一个 `*.json`),`POST /-/reload` 热加载 |
-| 采集(logs) | 每节点 `PROMTAIL`(worker 角色)→ `LOKI`(依赖 MINIO+VALKEY)→ Grafana Explore |
-| 存储 | Prometheus TSDB(指标)+ Loki/对象存储(日志) |
-| 可视化 | `GRAFANA` 服务;`ClusterServiceDashboardServiceImpl` 从 `cluster_service_dashboard` 取 dashboard URL,直连或经 `GrafanaProxyConfiguration`(Jetty 反代) |
-| 告警 | `ALERTMANAGER` 服务;`PrometheusService.generateAlertConfig` 生成规则推 Prometheus;`AlertService`/`ClusterAlertHistory`/`ClusterAlertQuota` 处理历史与阈值 |
+| 采集(logs)    | 每节点 `PROMTAIL`(worker 角色)→ `LOKI`(依赖 MINIO+VALKEY)→ Grafana Explore                                                                                                                         |
+| 存储          | Prometheus TSDB(指标)+ Loki/对象存储(日志)                                                                                                                                                          |
+| 可视化         | `GRAFANA` 服务;`ClusterServiceDashboardServiceImpl` 从 `cluster_service_dashboard` 取 dashboard URL,直连或经 `GrafanaProxyConfiguration`(Jetty 反代)                                                  |
+| 告警          | `ALERTMANAGER` 服务;`PrometheusService.generateAlertConfig` 生成规则推 Prometheus;`AlertService`/`ClusterAlertHistory`/`ClusterAlertQuota` 处理历史与阈值                                                 |
 
 > 元数据真相之源:`package/raw/meta/datacluster-physical/<SERVICE>/service_ddl.json`。
 
@@ -26,46 +26,46 @@ OTel Collector 统一采集三信号(Metrics + Logs + Traces)→ 持久化到 Do
 
 ### 1.3 已确认的全局决策
 
-| 维度 | 决策 | 理由 |
-|---|---|---|
-| 信号范围 | Metrics + Logs + Traces | 一步到位统一管道 |
-| 存储 | 复用平台 DORIS 服务,专用 `otel` database + 独立资源组 | 省一套基础设施;资源组隔离防拖垮业务 |
-| 可视化 | 原生 UI 看板,后端 `JdbcClient` 走 MySQL 协议 SQL 查 Doris,移除 Grafana | 接续在途"监控看板"工作;去除 Grafana 组件 |
-| 告警 | 原生 `@Scheduled` 定时查 Doris 评估阈值,复用 `ClusterAlertHistory`/`Quota` + 通知通道;移除 AlertManager + Prometheus rule | 告警评估从 Prometheus 解耦 |
-| 采集拓扑 | **每节点 agent 直写 Doris**,无中心 gateway;控制面集中在 Collector 控制台页面 | 控制面/数据面分离:控制集中、写库分散,无 mw1 单点 |
-| 限流/重试 | OTel `memory_limiter` / `batch` / `sending_queue` / `retry_on_failure`,配置驱动下发 | 旋钮即 OTel processor/exporter 参数 |
-| **背压/韧性** | **`file_storage` 磁盘持久化队列**:过载或 Doris 宕机时落盘不丢,恢复后重放;队列水位/丢弃由 self-metrics 告警 | 无中心 gateway 后,持久化队列替代全局背压,过载时不静默丢遥测(审查 Finding 3) |
-| **Schema 所有权** | **Datasophon 自管 DDL**:`create_schema=false`,自建并版本化 `otel_metrics`/`otel_logs`/`otel_traces` + 契约测试 | 看板/告警 SQL 不耦合 exporter 自动建表;升级不破契约(审查 Finding 4) |
-| **写入凭据** | **按集群隔离的 INSERT-only Stream Load 账号**,与看板读用的 MySQL 协议账号分离;手动轮换(控制台下发);Doris 启用 TLS 则强制 | collector 永不需要 CREATE/DELETE/DROP,被攻陷 worker 无法投毒/删表(审查 Finding 1) |
-| Traces 来源 | 先修管道,datasophon-api/worker 挂 OTel Java agent 首批埋点 | 大数据服务默认不发 OTLP,初期管道优先 |
-| 引导期存储 | staged exporter:S3(Rustfs)兜底 → Doris 就绪后切 dorisexporter;**Doris 就绪后用 `awss3receiver` 时间窗回灌引导期数据** | Doris 在 DAG 中晚于 Collector;消除切换前的可见性缺口(审查 Finding 2) |
-| 推进方式 | 按服务灰度;一条长分支;**灰度期旧栈保留至每服务验收通过再下线** | 风险最低,符合"持续推进";替代系统证伪前不失去可见性 |
+|       维度       |                                                    决策                                                    |                                 理由                                 |
+|----------------|----------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| 信号范围           | Metrics + Logs + Traces                                                                                  | 一步到位统一管道                                                           |
+| 存储             | 复用平台 DORIS 服务,专用 `otel` database + 独立资源组                                                                 | 省一套基础设施;资源组隔离防拖垮业务                                                 |
+| 可视化            | 原生 UI 看板,后端 `JdbcClient` 走 MySQL 协议 SQL 查 Doris,移除 Grafana                                               | 接续在途"监控看板"工作;去除 Grafana 组件                                         |
+| 告警             | 原生 `@Scheduled` 定时查 Doris 评估阈值,复用 `ClusterAlertHistory`/`Quota` + 通知通道;移除 AlertManager + Prometheus rule | 告警评估从 Prometheus 解耦                                                |
+| 采集拓扑           | **每节点 agent 直写 Doris**,无中心 gateway;控制面集中在 Collector 控制台页面                                                | 控制面/数据面分离:控制集中、写库分散,无 mw1 单点                                       |
+| 限流/重试          | OTel `memory_limiter` / `batch` / `sending_queue` / `retry_on_failure`,配置驱动下发                            | 旋钮即 OTel processor/exporter 参数                                     |
+| **背压/韧性**      | **`file_storage` 磁盘持久化队列**:过载或 Doris 宕机时落盘不丢,恢复后重放;队列水位/丢弃由 self-metrics 告警                              | 无中心 gateway 后,持久化队列替代全局背压,过载时不静默丢遥测(审查 Finding 3)                  |
+| **Schema 所有权** | **Datasophon 自管 DDL**:`create_schema=false`,自建并版本化 `otel_metrics`/`otel_logs`/`otel_traces` + 契约测试       | 看板/告警 SQL 不耦合 exporter 自动建表;升级不破契约(审查 Finding 4)                   |
+| **写入凭据**       | **按集群隔离的 INSERT-only Stream Load 账号**,与看板读用的 MySQL 协议账号分离;手动轮换(控制台下发);Doris 启用 TLS 则强制                   | collector 永不需要 CREATE/DELETE/DROP,被攻陷 worker 无法投毒/删表(审查 Finding 1) |
+| Traces 来源      | 先修管道,datasophon-api/worker 挂 OTel Java agent 首批埋点                                                        | 大数据服务默认不发 OTLP,初期管道优先                                              |
+| 引导期存储          | staged exporter:S3(Rustfs)兜底 → Doris 就绪后切 dorisexporter;**Doris 就绪后用 `awss3receiver` 时间窗回灌引导期数据**        | Doris 在 DAG 中晚于 Collector;消除切换前的可见性缺口(审查 Finding 2)                |
+| 推进方式           | 按服务灰度;一条长分支;**灰度期旧栈保留至每服务验收通过再下线**                                                                       | 风险最低,符合"持续推进";替代系统证伪前不失去可见性                                        |
 
 ---
 
 ## 2. 目标态拓扑
 
 ```
-            ┌─────────────────────────────────────────┐
-            │ datasophon-api (mw1) ── 控制面            │
-            │  ┌────────────────────────────────────┐  │
-            │  │ Collector 控制台页面(新增)         │  │
-            │  │  · 监控 tab:各节点 collector       │  │
-            │  │    健康 / 吞吐 / 丢弃 / 队列水位     │  │
-            │  │  · 配置 tab:receivers/processors/  │  │
-            │  │    exporter —— 限流/重试/批量/队列  │  │
-            │  └──────────────┬─────────────────────┘  │
-            └─────────────────│ gRPC 下发配置 + restart ┘
-                 ┌────────────┼────────────┐
-                 ▼            ▼            ▼
-            [mw1 agent]  [app1 agent]  [app2 agent]   ← OTELCOLLECTOR(每节点 worker 角色/N+)
-              filelog      filelog       filelog       (otelcol-contrib v0.154.0)
-              promrecv     promrecv      promrecv
-              otlp         otlp          otlp
-                 │            │            │
-                 └────────────┼────────────┘  dorisexporter 各自直写(引导期 awss3→Rustfs)
-                              ▼
-                     平台 DORIS · otel database(独立资源组)
+┌─────────────────────────────────────────┐
+│ datasophon-api (mw1) ── 控制面            │
+│  ┌────────────────────────────────────┐  │
+│  │ Collector 控制台页面(新增)         │  │
+│  │  · 监控 tab:各节点 collector       │  │
+│  │    健康 / 吞吐 / 丢弃 / 队列水位     │  │
+│  │  · 配置 tab:receivers/processors/  │  │
+│  │    exporter —— 限流/重试/批量/队列  │  │
+│  └──────────────┬─────────────────────┘  │
+└─────────────────│ gRPC 下发配置 + restart ┘
+     ┌────────────┼────────────┐
+     ▼            ▼            ▼
+[mw1 agent]  [app1 agent]  [app2 agent]   ← OTELCOLLECTOR(每节点 worker 角色/N+)
+  filelog      filelog       filelog       (otelcol-contrib v0.154.0)
+  promrecv     promrecv      promrecv
+  otlp         otlp          otlp
+     │            │            │
+     └────────────┼────────────┘  dorisexporter 各自直写(引导期 awss3→Rustfs)
+                  ▼
+         平台 DORIS · otel database(独立资源组)
 ```
 
 **控制面/数据面分离**:控制集中到 Collector 控制台(配置即真相,经 gRPC 下发,复用 `ServiceConfigureHandler` + restart),数据写库分散到各 agent。限流/重试/批量落到各节点的 OTel processor/exporter 参数上。
@@ -152,7 +152,6 @@ Phase E ── 旧栈下线 + 清理
   - master 在 `DORIS` 安装完成后逐节点重生成配置切 `dorisexporter`(`create_schema=false`)+ restart
   - **切换 ack:某节点 restart 后产生首条成功 Doris 写入,才记录该节点的切换边界(S3 末写时刻)**——gRPC 下发/restart 逐节点可能延迟或失败,故不依赖单一全局切换点
   - 控制台可手动覆盖 exporter 模式;展示各节点切换状态(S3 / 切换中 / Doris-acked)
-
 - **引导期回灌(逐节点边界,Finding 2 + F5)**:Doris 切换后,master 对**每个节点各自**触发一次性回灌
   - 机制:一次性 collector 运行 `awss3receiver`(`endpoint`→Rustfs,`starttime`=该节点引导期起点,`endtime`=**该节点已 ack 的切换边界**)→ `dorisexporter`(写同一套自管表)
   - 收发对偶:awss3receiver 读回 awss3exporter 写出的 OTLP,经同一 exporter 入表,**无需手写 OTLP-json→表映射**
@@ -188,34 +187,34 @@ Phase E ── 旧栈下线 + 清理
 
 ## 6. 关键风险与约束
 
-| 风险 | 缓解 |
-|---|---|
-| 无中心 gateway,N 节点直写 Doris 瞬时压力叠加 | 每节点 batch + `file_storage` 持久化队列削峰 + Doris 独立资源组 |
-| 过载/Doris 宕机时静默丢遥测(Finding 3) | 磁盘持久化队列落盘缓冲 + 队列水位/落盘量 self-metrics 告警 + §5.6/5.7 故障验收;超磁盘预算才丢弃且必告警 |
-| Doris 在 DAG 晚于 Collector,首装无库可写 | staged exporter:S3(Rustfs)兜底,Doris 就绪自动切换 |
-| 引导期可见性缺口(Finding 2) | Doris 就绪后 `awss3receiver` 时间窗回灌补齐;回灌前 UI 标注降级 |
-| **`awss3receiver` 为 alpha 组件** | 回灌为一次性、非关键路径(失败不影响稳态);保留 S3 归档可重试;回灌结果做计数核对 |
-| Rustfs 仍在 beta | 仅作引导期兜底 sink + 归档,稳态数据在 Doris,影响面可控 |
-| otelcol 配置嵌套 YAML,标准扁平配置表单不适配 | 基础版 configFields 先行,结构化旋钮+YAML 兜底增量 |
-| otel 表结构是后续看板/告警硬契约(Finding 4) | schema 自管 + 版本化 + 契约测试(§4.2);`create_schema=false` 防 exporter 升级擅改表 |
-| 每节点持 Doris 写凭据,信任边界扩散(Finding 1) | 按集群隔离 + INSERT/LOAD-only(无 CREATE/DELETE/DROP)+ 与看板读账号分离 + TLS + 手动轮换(经配置下发,不硬编码);被攻陷 worker **无法删表/改 schema** |
-| **被攻陷 worker 仍可注入假遥测污染看板/告警(F7)** | INSERT-only **不能**阻止投毒;**如实记录为残余风险**,内部信任模型下接受;后续增强:按节点/角色摄取身份 + 服务端校验节点标签 + 隔离不匹配遥测(不在 Phase A 范围) |
-| 凭据轮换 v1 为手动 | 控制台改账号 → gRPC 下发 → restart;自动轮换列入后续增强,非 Phase A 阻塞项 |
+|                风险                 |                                                       缓解                                                       |
+|-----------------------------------|----------------------------------------------------------------------------------------------------------------|
+| 无中心 gateway,N 节点直写 Doris 瞬时压力叠加   | 每节点 batch + `file_storage` 持久化队列削峰 + Doris 独立资源组                                                               |
+| 过载/Doris 宕机时静默丢遥测(Finding 3)      | 磁盘持久化队列落盘缓冲 + 队列水位/落盘量 self-metrics 告警 + §5.6/5.7 故障验收;超磁盘预算才丢弃且必告警                                            |
+| Doris 在 DAG 晚于 Collector,首装无库可写   | staged exporter:S3(Rustfs)兜底,Doris 就绪自动切换                                                                      |
+| 引导期可见性缺口(Finding 2)               | Doris 就绪后 `awss3receiver` 时间窗回灌补齐;回灌前 UI 标注降级                                                                  |
+| **`awss3receiver` 为 alpha 组件**    | 回灌为一次性、非关键路径(失败不影响稳态);保留 S3 归档可重试;回灌结果做计数核对                                                                    |
+| Rustfs 仍在 beta                    | 仅作引导期兜底 sink + 归档,稳态数据在 Doris,影响面可控                                                                            |
+| otelcol 配置嵌套 YAML,标准扁平配置表单不适配     | 基础版 configFields 先行,结构化旋钮+YAML 兜底增量                                                                            |
+| otel 表结构是后续看板/告警硬契约(Finding 4)    | schema 自管 + 版本化 + 契约测试(§4.2);`create_schema=false` 防 exporter 升级擅改表                                            |
+| 每节点持 Doris 写凭据,信任边界扩散(Finding 1)  | 按集群隔离 + INSERT/LOAD-only(无 CREATE/DELETE/DROP)+ 与看板读账号分离 + TLS + 手动轮换(经配置下发,不硬编码);被攻陷 worker **无法删表/改 schema** |
+| **被攻陷 worker 仍可注入假遥测污染看板/告警(F7)** | INSERT-only **不能**阻止投毒;**如实记录为残余风险**,内部信任模型下接受;后续增强:按节点/角色摄取身份 + 服务端校验节点标签 + 隔离不匹配遥测(不在 Phase A 范围)            |
+| 凭据轮换 v1 为手动                       | 控制台改账号 → gRPC 下发 → restart;自动轮换列入后续增强,非 Phase A 阻塞项                                                            |
 
 ---
 
 ## 7. 涉及的关键现有代码(改动锚点)
 
-| 子项目 | 锚点 |
-|---|---|
-| A1/C metrics | `datasophon-api/.../master/service/PrometheusService.java`(scrape 配置生成 → 改 OTel 配置生成) |
-| A1 配置下发 | `master/handler/service/ServiceConfigureHandler`、Worker 侧 `*HandlerStrategy` |
-| A3/B 看板 | `service/impl/ClusterServiceDashboardServiceImpl.java`、`configuration/GrafanaProxyConfiguration.java` |
-| B3 告警 | `master/service/AlertService.java`、`ClusterAlertHistoryServiceImpl`、`ClusterAlertQuotaServiceImpl` |
-| meta 服务 | `package/raw/meta/datacluster-physical/{PROMETHEUS,LOKI,PROMTAIL,GRAFANA,ALERTMANAGER}` |
-| 端口/JMX 映射 | `ServiceRoleJmxMap`、`load/LoadServiceMeta` |
-| A2 schema 自管 | otel DDL 版本化(参考 `migration/DatabaseMigration` 自研执行器模式) |
-| A2/A3 凭据 | 复用 `ServiceConfigureHandler` 配置下发链路分发 Stream Load 凭据 |
+|     子项目      |                                                  锚点                                                   |
+|--------------|-------------------------------------------------------------------------------------------------------|
+| A1/C metrics | `datasophon-api/.../master/service/PrometheusService.java`(scrape 配置生成 → 改 OTel 配置生成)                 |
+| A1 配置下发      | `master/handler/service/ServiceConfigureHandler`、Worker 侧 `*HandlerStrategy`                          |
+| A3/B 看板      | `service/impl/ClusterServiceDashboardServiceImpl.java`、`configuration/GrafanaProxyConfiguration.java` |
+| B3 告警        | `master/service/AlertService.java`、`ClusterAlertHistoryServiceImpl`、`ClusterAlertQuotaServiceImpl`    |
+| meta 服务      | `package/raw/meta/datacluster-physical/{PROMETHEUS,LOKI,PROMTAIL,GRAFANA,ALERTMANAGER}`               |
+| 端口/JMX 映射    | `ServiceRoleJmxMap`、`load/LoadServiceMeta`                                                            |
+| A2 schema 自管 | otel DDL 版本化(参考 `migration/DatabaseMigration` 自研执行器模式)                                                |
+| A2/A3 凭据     | 复用 `ServiceConfigureHandler` 配置下发链路分发 Stream Load 凭据                                                  |
 
 ---
 
@@ -225,20 +224,20 @@ Phase E ── 旧栈下线 + 清理
 
 **第一轮(结构性缺口)**
 
-| # | 审查 finding | 决策 | 落点 |
-|---|---|---|---|
-| F1 高 | 每节点 Doris 凭据扩大信任边界,无最小权限/轮换 | 按集群隔离 + INSERT/LOAD-only(`create_schema=false` 后无需 CREATE)+ 与看板读账号分离 + TLS + 手动轮换 | §1.3、§4.2、§5.9-10、§6 |
-| F2 高 | 引导期可见性缺口,无回灌/告警兜底 | `awss3receiver` 时间窗回灌(收发对偶)+ 灰度期旧栈保留至每服务验收 + UI 降级标注 | §1.3、§4.3、§5.5 |
-| F3 中 | 直写拓扑过载/队列溢出无可辩护故障模式 | `file_storage` 磁盘持久化队列(落盘不丢、恢复重放)+ 队列/落盘 self-metrics 告警 + 过载/宕机验收 | §1.3、§4.1-4.2、§5.6-7、§6 |
-| F4 中 | 表结构当硬契约却交 exporter auto-DDL | schema 自管(`create_schema=false`)+ 版本化 + 契约测试 + 升级先过契约 | §1.3、§4.2、§5.8 |
+|  #   |         审查 finding          |                                        决策                                         |           落点            |
+|------|-----------------------------|-----------------------------------------------------------------------------------|-------------------------|
+| F1 高 | 每节点 Doris 凭据扩大信任边界,无最小权限/轮换 | 按集群隔离 + INSERT/LOAD-only(`create_schema=false` 后无需 CREATE)+ 与看板读账号分离 + TLS + 手动轮换 | §1.3、§4.2、§5.9-10、§6    |
+| F2 高 | 引导期可见性缺口,无回灌/告警兜底           | `awss3receiver` 时间窗回灌(收发对偶)+ 灰度期旧栈保留至每服务验收 + UI 降级标注                              | §1.3、§4.3、§5.5          |
+| F3 中 | 直写拓扑过载/队列溢出无可辩护故障模式         | `file_storage` 磁盘持久化队列(落盘不丢、恢复重放)+ 队列/落盘 self-metrics 告警 + 过载/宕机验收                | §1.3、§4.1-4.2、§5.6-7、§6 |
+| F4 中 | 表结构当硬契约却交 exporter auto-DDL | schema 自管(`create_schema=false`)+ 版本化 + 契约测试 + 升级先过契约                             | §1.3、§4.2、§5.8          |
 
 **第二轮(部分失败/被攻陷下的二阶问题)**
 
-| # | 审查 finding | 决策 | 落点 |
-|---|---|---|---|
-| F5 高 | 单一全局切换点假设原子,逐节点 restart 延迟/失败会漏回灌 | 切换/回灌**按节点**:节点产生首条 Doris 写入才记其切换边界,按各自已 ack 边界回灌 | §4.3、§5.5、§5.5b |
-| F6 高 | Phase A 声称队列告警却依赖排在 B 的告警层 | **最小 `@Scheduled` 告警器提前进 Phase A**,查 collector self-metrics,独立于 Doris/Phase B | §4.3、§5.6-7 |
-| F7 中 | INSERT-only 不能阻止投毒,缓解措辞夸大 | **删去"防投毒"表述**,如实记残余风险(内部信任模型接受);服务端身份校验列后续增强 | §5.11、§6 |
+|  #   |            审查 finding             |                                      决策                                       |       落点        |
+|------|-----------------------------------|-------------------------------------------------------------------------------|-----------------|
+| F5 高 | 单一全局切换点假设原子,逐节点 restart 延迟/失败会漏回灌 | 切换/回灌**按节点**:节点产生首条 Doris 写入才记其切换边界,按各自已 ack 边界回灌                             | §4.3、§5.5、§5.5b |
+| F6 高 | Phase A 声称队列告警却依赖排在 B 的告警层        | **最小 `@Scheduled` 告警器提前进 Phase A**,查 collector self-metrics,独立于 Doris/Phase B | §4.3、§5.6-7     |
+| F7 中 | INSERT-only 不能阻止投毒,缓解措辞夸大         | **删去"防投毒"表述**,如实记残余风险(内部信任模型接受);服务端身份校验列后续增强                                  | §5.11、§6        |
 
 **核实要点(防臆测)**:
 - dorisexporter v0.154.0 支持 `create_schema=false`;关闭后 MySQL 端点仅建表用、运行期忽略,数据走 Stream Load(HTTP)——故运行期写凭据可独立于看板读账号单独授权。

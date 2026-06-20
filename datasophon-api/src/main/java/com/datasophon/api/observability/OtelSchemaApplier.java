@@ -52,12 +52,12 @@ public final class OtelSchemaApplier {
             log.info("otel schema applied: {}", res);
         }
     }
-
+    
     static String renderSql(String sql, OtelCredentials credentials) {
         return sql.replace("CHANGE_ME_AT_A3_COLLECTOR", credentials.collectorPassword())
                 .replace("CHANGE_ME_AT_A3_READER", credentials.readerPassword());
     }
-
+    
     static void executeStatement(JdbcClient doris, String statement) {
         try {
             doris.sql(statement).update();
@@ -69,7 +69,7 @@ public final class OtelSchemaApplier {
             throw e;
         }
     }
-
+    
     private static boolean isAlreadyExists(Throwable error) {
         for (Throwable current = error; current != null; current = current.getCause()) {
             String message = current.getMessage();

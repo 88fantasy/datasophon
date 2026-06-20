@@ -27,9 +27,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 
 class OtelSelfMetricsClientTest {
-
+    
     private final OtelSelfMetricsClient client = new OtelSelfMetricsClient();
-
+    
     @Test
     void parsesAndAggregatesCollectorMetrics() {
         String text = """
@@ -44,9 +44,9 @@ class OtelSelfMetricsClientTest {
                 otelcol_receiver_refused_log_records_total{receiver="otlp"} 7
                 otelcol_processor_dropped_spans_total{processor="memory_limiter"} 9
                 """;
-
+        
         OtelSelfMetrics metrics = client.parse(text);
-
+        
         assertThat(metrics.queueSize()).isEqualTo(5);
         assertThat(metrics.queueCapacity()).isEqualTo(30);
         assertThat(metrics.sentTotal()).isEqualTo(24);
@@ -54,11 +54,11 @@ class OtelSelfMetricsClientTest {
         assertThat(metrics.refusedTotal()).isEqualTo(7);
         assertThat(metrics.processorDroppedTotal()).isEqualTo(9);
     }
-
+    
     @Test
     void ignoresCommentsMalformedLinesAndMissingMetrics() {
         OtelSelfMetrics metrics = client.parse("# comment\ninvalid\notelcol_exporter_queue_size NaN\n");
-
+        
         assertThat(metrics).isEqualTo(new OtelSelfMetrics(0, 0, 0, 0, 0, 0));
     }
 }

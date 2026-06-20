@@ -36,16 +36,16 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DefaultDorisJdbcClientFactory implements DorisJdbcClientFactory {
-
+    
     private final ClusterServiceRoleInstanceService roleService;
     private final ClusterVariableService variableService;
-
+    
     public DefaultDorisJdbcClientFactory(ClusterServiceRoleInstanceService roleService,
                                          ClusterVariableService variableService) {
         this.roleService = roleService;
         this.variableService = variableService;
     }
-
+    
     @Override
     public JdbcClient create(Integer clusterId) {
         List<ClusterServiceRoleInstanceEntity> frontends = roleService
@@ -67,12 +67,12 @@ public class DefaultDorisJdbcClientFactory implements DorisJdbcClientFactory {
         dataSource.setPassword(password);
         return JdbcClient.create(dataSource);
     }
-
+    
     private String variable(Integer clusterId, String name, String defaultValue) {
         ClusterVariable value = variableService.getVariableByVariableName(clusterId, "DORIS", name);
         return value == null ? defaultValue : value.getVariableValue();
     }
-
+    
     static String requireValue(String value, String message) {
         if (value == null || value.isBlank()) {
             throw new IllegalStateException(message);

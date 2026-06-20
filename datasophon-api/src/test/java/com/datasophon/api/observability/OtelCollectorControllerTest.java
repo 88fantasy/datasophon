@@ -22,6 +22,13 @@
 
 package com.datasophon.api.observability;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.datasophon.api.controller.observability.OtelCollectorController;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.Result;
@@ -30,39 +37,32 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 class OtelCollectorControllerTest {
-
+    
     @Test
     void push_delegates_to_service_and_returns_success() {
         OtelCollectorConfigService svc = mock(OtelCollectorConfigService.class);
         ExecResult ok = new ExecResult();
         ok.setExecResult(true);
         when(svc.pushNodeConfig(eq(1), eq("app1"), any())).thenReturn(ok);
-
+        
         OtelCollectorController c = new OtelCollectorController(svc, null, null, null);
         Result result = c.push(1, "app1", Map.of());
-
+        
         assertEquals(200, result.getCode());
         verify(svc).pushNodeConfig(eq(1), eq("app1"), any());
     }
-
+    
     @Test
     void push_delegates_to_service_and_returns_error_on_failure() {
         OtelCollectorConfigService svc = mock(OtelCollectorConfigService.class);
         ExecResult fail = new ExecResult();
         fail.setExecResult(false);
         when(svc.pushNodeConfig(eq(2), eq("node2"), any())).thenReturn(fail);
-
+        
         OtelCollectorController c = new OtelCollectorController(svc, null, null, null);
         Result result = c.push(2, "node2", Map.of());
-
+        
         assertEquals(500, result.getCode());
         verify(svc).pushNodeConfig(eq(2), eq("node2"), any());
     }

@@ -33,24 +33,24 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class OtelCredentialService {
-
+    
     static final String SERVICE_NAME = "OTELCOLLECTOR";
     static final String COLLECTOR_PASSWORD = "dorisCollectorPassword";
     static final String READER_PASSWORD = "dorisReaderPassword";
-
+    
     private final ClusterVariableService variableService;
     private final SecureRandom random = new SecureRandom();
-
+    
     public OtelCredentialService(ClusterVariableService variableService) {
         this.variableService = variableService;
     }
-
+    
     public synchronized OtelCredentials getOrCreate(Integer clusterId) {
         String collector = getOrCreate(clusterId, COLLECTOR_PASSWORD);
         String reader = getOrCreate(clusterId, READER_PASSWORD);
         return new OtelCredentials(collector, reader);
     }
-
+    
     private String getOrCreate(Integer clusterId, String name) {
         ClusterVariable existing = variableService.getVariableByVariableName(clusterId, SERVICE_NAME, name);
         if (existing != null) {

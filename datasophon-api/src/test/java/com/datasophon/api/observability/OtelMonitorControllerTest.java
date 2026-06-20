@@ -36,17 +36,17 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class OtelMonitorControllerTest {
-
+    
     @Test
     void returnsCollectedNodeMetricsInStandardResult() {
         OtelMonitorService service = mock(OtelMonitorService.class);
         List<NodeOtelMetrics> metrics = List.of(
                 new NodeOtelMetrics("worker-1", true, null, new OtelSelfMetrics(1, 10, 20, 0, 0, 0)));
         when(service.collectAll(7)).thenReturn(metrics);
-
+        
         OtelMonitorController controller = new OtelMonitorController(service);
         Result result = controller.monitor(7);
-
+        
         assertThat(controller).isInstanceOf(ApiController.class);
         assertThat(result.getCode()).isEqualTo(200);
         assertThat(result.getData()).isEqualTo(metrics);

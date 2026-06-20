@@ -34,13 +34,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("api/observability/otelcol")
 public class OtelMonitorController extends ApiController {
-
+    
     private final OtelMonitorService monitorService;
-
+    
     public OtelMonitorController(OtelMonitorService monitorService) {
         this.monitorService = monitorService;
     }
-
+    
     @GetMapping("monitor")
     public Result monitor(@RequestParam Integer clusterId) {
         return Result.success(monitorService.collectAll(clusterId));

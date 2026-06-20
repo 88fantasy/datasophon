@@ -39,17 +39,17 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class OtelExporterSwitchService {
-
+    
     private static final String OTEL_SERVICE = "OTELCOLLECTOR";
     private static final String DORIS_FE = "DorisFE";
     private static final String DORIS_BE = "DorisBE";
-
+    
     private final OtelCollectorConfigService configService;
     private final ClusterServiceRoleInstanceService roleService;
     private final ClusterVariableService variableService;
     private final ServiceInstallService installService;
     private final OtelCredentialService credentialService;
-
+    
     public OtelExporterSwitchService(OtelCollectorConfigService configService,
                                      ClusterServiceRoleInstanceService roleService,
                                      ClusterVariableService variableService,
@@ -61,11 +61,11 @@ public class OtelExporterSwitchService {
         this.installService = installService;
         this.credentialService = credentialService;
     }
-
+    
     public ExecResult switchNode(Integer clusterId, String hostname, ExporterMode mode) {
         return switchNode(clusterId, hostname, mode, Map.of());
     }
-
+    
     public ExecResult switchNode(Integer clusterId, String hostname, ExporterMode mode,
                                  Map<String, String> overrides) {
         if (mode == ExporterMode.DORIS && !isDorisReady(clusterId)) {
@@ -86,7 +86,7 @@ public class OtelExporterSwitchService {
         }
         return configService.pushNodeConfig(clusterId, hostname, params);
     }
-
+    
     public boolean isDorisReady(Integer clusterId) {
         List<ClusterServiceRoleInstanceEntity> frontends = roles(clusterId, DORIS_FE);
         List<ClusterServiceRoleInstanceEntity> backends = roles(clusterId, DORIS_BE);
@@ -94,15 +94,15 @@ public class OtelExporterSwitchService {
                 && frontends.stream().allMatch(this::isRunning)
                 && backends.stream().allMatch(this::isRunning);
     }
-
+    
     private List<ClusterServiceRoleInstanceEntity> roles(Integer clusterId, String roleName) {
         return roleService.getServiceRoleInstanceListByClusterIdAndRoleName(clusterId, roleName);
     }
-
+    
     private boolean isRunning(ClusterServiceRoleInstanceEntity role) {
         return ServiceRoleState.RUNNING.equals(role.getServiceRoleState());
     }
-
+    
     private Map<String, String> serviceParams(Integer clusterId) {
         Map<String, String> params = new HashMap<>();
         for (ServiceConfig config : installService.getServiceConfigOption(clusterId, OTEL_SERVICE)) {
@@ -112,7 +112,7 @@ public class OtelExporterSwitchService {
         }
         return params;
     }
-
+    
     private Map<String, String> variables(Integer clusterId, String serviceName) {
         Map<String, String> result = new HashMap<>();
         for (ClusterVariable variable : variableService.getVariables(clusterId, serviceName)) {

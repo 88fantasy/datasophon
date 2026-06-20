@@ -25,6 +25,6 @@ package com.datasophon.api.observability;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 public interface DorisJdbcClientFactory {
-
+    
     JdbcClient create(Integer clusterId);
 }

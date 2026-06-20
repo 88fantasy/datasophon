@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class OtelSchemaRunner {
-
+    
     public void apply(JdbcClient doris, OtelCredentials credentials) {
         OtelSchemaApplier.apply(doris, credentials);
     }

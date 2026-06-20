@@ -22,19 +22,19 @@
 
 package com.datasophon.api.observability;
 
-import cn.hutool.http.HttpUtil;
-
 import org.springframework.stereotype.Component;
+
+import cn.hutool.http.HttpUtil;
 
 @Component
 public class OtelSelfMetricsClient {
-
+    
     private static final int FETCH_TIMEOUT_MILLIS = 2000;
-
+    
     public OtelSelfMetrics fetch(String nodeHost) {
         return parse(HttpUtil.get("http://" + nodeHost + ":8888/metrics", FETCH_TIMEOUT_MILLIS));
     }
-
+    
     OtelSelfMetrics parse(String text) {
         double queueSize = 0;
         double queueCapacity = 0;

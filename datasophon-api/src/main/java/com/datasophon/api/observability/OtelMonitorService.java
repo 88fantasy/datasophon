@@ -33,18 +33,18 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class OtelMonitorService {
-
+    
     private static final String ROLE_NAME = "OtelCollector";
-
+    
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final OtelSelfMetricsClient metricsClient;
-
+    
     public OtelMonitorService(ClusterServiceRoleInstanceService roleInstanceService,
                               OtelSelfMetricsClient metricsClient) {
         this.roleInstanceService = roleInstanceService;
         this.metricsClient = metricsClient;
     }
-
+    
     public List<NodeOtelMetrics> collectAll(Integer clusterId) {
         List<NodeOtelMetrics> result = new ArrayList<>();
         for (ClusterServiceRoleInstanceEntity role : roleInstanceService
@@ -61,7 +61,7 @@ public class OtelMonitorService {
         }
         return result;
     }
-
+    
     private static String errorMessage(RuntimeException e) {
         return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
     }

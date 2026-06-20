@@ -44,12 +44,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("api/observability/otelcol")
 public class OtelCollectorController extends ApiController {
-
+    
     private final OtelCollectorConfigService configService;
     private final ServiceInstallService installService;
     private final OtelExporterSwitchService switchService;
     private final OtelSchemaOrchestrator schemaOrchestrator;
-
+    
     public OtelCollectorController(OtelCollectorConfigService configService,
                                    ServiceInstallService installService,
                                    OtelExporterSwitchService switchService,
@@ -59,7 +59,7 @@ public class OtelCollectorController extends ApiController {
         this.switchService = switchService;
         this.schemaOrchestrator = schemaOrchestrator;
     }
-
+    
     @PostMapping("push")
     public Result push(@RequestParam Integer clusterId, @RequestParam String hostname,
                        @RequestBody(required = false) Map<String, String> params) {
@@ -80,7 +80,7 @@ public class OtelCollectorController extends ApiController {
                 ? Result.success()
                 : Result.error("otelcol 配置下发失败");
     }
-
+    
     @GetMapping("config")
     public Result config(@RequestParam Integer clusterId) {
         return Result.success(installService.getServiceConfigOption(clusterId, "OTELCOLLECTOR"));

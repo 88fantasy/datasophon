@@ -44,35 +44,31 @@ import com.alibaba.fastjson2.JSONObject;
 
 @Component
 public class OtelAlertScheduler {
-
+    
     private static final Logger log = LoggerFactory.getLogger(OtelAlertScheduler.class);
     private static final String QUEUE_ALERT = "OtelCollectorQueueHigh";
     private static final String SEND_FAILURE_ALERT = "OtelCollectorSendFailureRateHigh";
-
+    
     private final OtelMonitorService monitorService;
     private final ClusterInfoService clusterInfoService;
     private final ClusterAlertHistoryService alertHistoryService;
     private final double queueWatermark;
     private final double sendFailedRate;
     private final Set<String> firingAlerts = ConcurrentHashMap.newKeySet();
-
+    
     public OtelAlertScheduler(OtelMonitorService monitorService,
                               ClusterInfoService clusterInfoService,
                               ClusterAlertHistoryService alertHistoryService,
-                              @Value("${datasophon.observability.otel-alert.queue-watermark:0.8}")
-                              double queueWatermark,
-                              @Value("${datasophon.observability.otel-alert.send-failed-rate:0.05}")
-                              double sendFailedRate) {
+                              @Value("${datasophon.observability.otel-alert.queue-watermark:0.8}") double queueWatermark,
+                              @Value("${datasophon.observability.otel-alert.send-failed-rate:0.05}") double sendFailedRate) {
         this.monitorService = monitorService;
         this.clusterInfoService = clusterInfoService;
         this.alertHistoryService = alertHistoryService;
         this.queueWatermark = queueWatermark;
         this.sendFailedRate = sendFailedRate;
     }
-
-    @Scheduled(
-            initialDelayString = "${datasophon.observability.otel-alert.initial-delay-ms:30000}",
-            fixedDelayString = "${datasophon.observability.otel-alert.interval-ms:30000}")
+    
+    @Scheduled(initialDelayString = "${datasophon.observability.otel-alert.initial-delay-ms:30000}", fixedDelayString = "${datasophon.observability.otel-alert.interval-ms:30000}")
     public void checkCollectors() {
         for (ClusterInfoEntity cluster : clusterInfoService.runningClusterList()) {
             try {
@@ -83,7 +79,7 @@ public class OtelAlertScheduler {
             }
         }
     }
-
+    
     private void evaluate(Integer clusterId, List<NodeOtelMetrics> nodes) {
         for (NodeOtelMetrics node : nodes) {
             if (!node.healthy() || node.metrics() == null) {
@@ -105,7 +101,7 @@ public class OtelAlertScheduler {
                     "Check exporter endpoint, credentials, and network connectivity");
         }
     }
-
+    
     private void updateAlert(Integer clusterId, String hostname, String alertName,
                              boolean firing, String description, String summary) {
         String key = clusterId + "|" + hostname + "|" + alertName;
@@ -119,7 +115,7 @@ public class OtelAlertScheduler {
             firingAlerts.remove(key);
         }
     }
-
+    
     private static String alertMessage(String status, Integer clusterId, String hostname,
                                        String alertName, String description, String summary) {
         AlertLabels labels = new AlertLabels();
@@ -129,16 +125,16 @@ public class OtelAlertScheduler {
         labels.setInstance(hostname + ":8888");
         labels.setJob("otelcol-self-metrics");
         labels.setSeverity("warning");
-
+        
         Annotations annotations = new Annotations();
         annotations.setDescription(description);
         annotations.setSummary(summary);
-
+        
         Alerts alert = new Alerts();
         alert.setStatus(status);
         alert.setLabels(labels);
         alert.setAnnotations(annotations);
-
+        
         AlertMessage message = new AlertMessage();
         message.setStatus(status);
         message.setAlerts(List.of(alert));

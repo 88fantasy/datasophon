@@ -36,40 +36,40 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 class OtelAlertSchedulerTest {
-
+    
     @Test
     void emitsOneFiringAlertUntilQueueWatermarkResolves() {
         AtomicReference<List<NodeOtelMetrics>> metrics = new AtomicReference<>(List.of(
                 healthy("worker-1", new OtelSelfMetrics(90, 100, 100, 0, 0, 0))));
         List<String> alerts = new ArrayList<>();
         OtelAlertScheduler scheduler = scheduler(metrics, alerts);
-
+        
         scheduler.checkCollectors();
         scheduler.checkCollectors();
         metrics.set(List.of(healthy("worker-1", new OtelSelfMetrics(10, 100, 100, 0, 0, 0))));
         scheduler.checkCollectors();
-
+        
         assertThat(alerts).hasSize(2);
         assertThat(alerts.get(0)).contains("\"status\":\"firing\"")
                 .contains("OtelCollectorQueueHigh");
         assertThat(alerts.get(1)).contains("\"status\":\"resolved\"")
                 .contains("OtelCollectorQueueHigh");
     }
-
+    
     @Test
     void emitsSendFailureAlertOnlyAboveConfiguredRate() {
         AtomicReference<List<NodeOtelMetrics>> metrics = new AtomicReference<>(List.of(
                 healthy("worker-1", new OtelSelfMetrics(0, 100, 90, 10, 0, 0))));
         List<String> alerts = new ArrayList<>();
         OtelAlertScheduler scheduler = scheduler(metrics, alerts);
-
+        
         scheduler.checkCollectors();
-
+        
         assertThat(alerts).singleElement().asString()
                 .contains("OtelCollectorSendFailureRateHigh")
                 .contains("\"status\":\"firing\"");
     }
-
+    
     private static OtelAlertScheduler scheduler(AtomicReference<List<NodeOtelMetrics>> metrics,
                                                 List<String> alerts) {
         OtelMonitorService monitor = new OtelMonitorService(null, null) {
@@ -94,17 +94,17 @@ class OtelAlertSchedulerTest {
         });
         return new OtelAlertScheduler(monitor, clusters, history, 0.8d, 0.05d);
     }
-
+    
     private static NodeOtelMetrics healthy(String hostname, OtelSelfMetrics metrics) {
         return new NodeOtelMetrics(hostname, true, null, metrics);
     }
-
+    
     @SuppressWarnings("unchecked")
     private static <T> T proxy(Class<T> type, Invocation invocation) {
         return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type},
                 (proxy, method, args) -> invocation.invoke(method.getName(), args));
     }
-
+    
     @FunctionalInterface
     private interface Invocation {
         Object invoke(String method, Object[] args);

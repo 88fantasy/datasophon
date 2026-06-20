@@ -27,12 +27,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.Test;
 
 class DefaultDorisJdbcClientFactoryTest {
-
+    
     @Test
     void rejectsMissingRootPassword() {
         assertThatThrownBy(() -> DefaultDorisJdbcClientFactory.requireValue(null,
                 "Doris root_password is not configured for cluster 7"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Doris root_password is not configured for cluster 7");
+                        .isInstanceOf(IllegalStateException.class)
+                        .hasMessage("Doris root_password is not configured for cluster 7");
     }
 }

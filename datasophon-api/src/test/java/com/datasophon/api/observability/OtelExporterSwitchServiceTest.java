@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class OtelExporterSwitchServiceTest {
-
+    
     private final OtelCollectorConfigService configService = mock(OtelCollectorConfigService.class);
     private final ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
     private final ClusterVariableService variableService = mock(ClusterVariableService.class);
@@ -53,7 +53,7 @@ class OtelExporterSwitchServiceTest {
     private final OtelCredentialService credentialService = mock(OtelCredentialService.class);
     private final OtelExporterSwitchService service = new OtelExporterSwitchService(
             configService, roleService, variableService, installService, credentialService);
-
+    
     @Test
     void switchesNodeWithCompleteDorisParameters() {
         runningDoris();
@@ -65,10 +65,10 @@ class OtelExporterSwitchServiceTest {
                 .thenReturn(new OtelCredentials("collector-secret", "reader-secret"));
         when(configService.pushNodeConfig(org.mockito.ArgumentMatchers.eq(7),
                 org.mockito.ArgumentMatchers.eq("worker-1"), anyMap())).thenReturn(ExecResult.success());
-
+        
         ExecResult result = service.switchNode(
                 7, "worker-1", ExporterMode.DORIS, Map.of("batchSize", "4096"));
-
+        
         assertThat(result.getExecResult()).isTrue();
         ArgumentCaptor<Map<String, String>> params = ArgumentCaptor.forClass(Map.class);
         verify(configService).pushNodeConfig(org.mockito.ArgumentMatchers.eq(7),
@@ -81,42 +81,42 @@ class OtelExporterSwitchServiceTest {
                 .containsEntry("dorisUser", "otel_collector")
                 .containsEntry("dorisPassword", "collector-secret");
     }
-
+    
     @Test
     void rejectsDorisSwitchUntilFeAndBeAreRunning() {
         when(roleService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "DorisFE"))
                 .thenReturn(List.of(role("doris-fe", ServiceRoleState.RUNNING)));
         when(roleService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "DorisBE"))
                 .thenReturn(List.of(role("doris-be", ServiceRoleState.STOP)));
-
+        
         ExecResult result = service.switchNode(7, "worker-1", ExporterMode.DORIS);
-
+        
         assertThat(result.getExecResult()).isFalse();
         verify(configService, never()).pushNodeConfig(org.mockito.ArgumentMatchers.anyInt(),
                 org.mockito.ArgumentMatchers.anyString(), anyMap());
     }
-
+    
     private void runningDoris() {
         when(roleService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "DorisFE"))
                 .thenReturn(List.of(role("doris-fe", ServiceRoleState.RUNNING)));
         when(roleService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "DorisBE"))
                 .thenReturn(List.of(role("doris-be", ServiceRoleState.RUNNING)));
     }
-
+    
     private static ClusterServiceRoleInstanceEntity role(String hostname, ServiceRoleState state) {
         ClusterServiceRoleInstanceEntity role = new ClusterServiceRoleInstanceEntity();
         role.setHostname(hostname);
         role.setServiceRoleState(state);
         return role;
     }
-
+    
     private static ServiceConfig config(String name, String value) {
         ServiceConfig config = new ServiceConfig();
         config.setName(name);
         config.setValue(value);
         return config;
     }
-
+    
     private static ClusterVariable variable(String name, String value) {
         ClusterVariable variable = new ClusterVariable();
         variable.setVariableName("${DORIS." + name + "}");

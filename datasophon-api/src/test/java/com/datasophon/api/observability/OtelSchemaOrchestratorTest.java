@@ -31,25 +31,25 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 class OtelSchemaOrchestratorTest {
-
+    
     private final OtelExporterSwitchService switchService = mock(OtelExporterSwitchService.class);
     private final DorisJdbcClientFactory jdbcFactory = mock(DorisJdbcClientFactory.class);
     private final OtelCredentialService credentialService = mock(OtelCredentialService.class);
     private final OtelSchemaRunner schemaRunner = mock(OtelSchemaRunner.class);
     private final OtelSchemaOrchestrator orchestrator =
             new OtelSchemaOrchestrator(switchService, jdbcFactory, credentialService, schemaRunner);
-
+    
     @Test
     void skipsSchemaUntilDorisIsReady() {
         when(switchService.isDorisReady(7)).thenReturn(false);
-
+        
         orchestrator.applyIfReady(7);
-
+        
         verify(jdbcFactory, never()).create(7);
         verify(schemaRunner, never()).apply(org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any());
     }
-
+    
     @Test
     void appliesSchemaWithClusterCredentialsWhenDorisIsReady() {
         JdbcClient jdbc = mock(JdbcClient.class);
@@ -57,9 +57,9 @@ class OtelSchemaOrchestratorTest {
         when(switchService.isDorisReady(7)).thenReturn(true);
         when(jdbcFactory.create(7)).thenReturn(jdbc);
         when(credentialService.getOrCreate(7)).thenReturn(credentials);
-
+        
         orchestrator.applyIfReady(7);
-
+        
         verify(schemaRunner).apply(jdbc, credentials);
     }
 }

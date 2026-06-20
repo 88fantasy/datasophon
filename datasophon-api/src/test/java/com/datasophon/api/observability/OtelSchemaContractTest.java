@@ -92,7 +92,7 @@ class OtelSchemaContractTest {
         String db =
                 readClasspath("observability/doris/V1__otel_database.sql")
                         .toUpperCase(java.util.Locale.ROOT);
-
+        
         // 自证：解析器能看见越权写法（否则下面的精确相等是空洞的）
         assertEquals(
                 Set.of("ALL"),
@@ -103,7 +103,7 @@ class OtelSchemaContractTest {
                 dataPrivilegesFor(
                         "GRANT LOAD_PRIV, DROP_PRIV ON OTEL.* TO 'OTEL_COLLECTOR';", "OTEL_COLLECTOR"),
                 "解析器必须能看见组合授权里的越权项（自证）");
-
+        
         // 真实 schema：数据权限精确白名单
         assertEquals(
                 Set.of("LOAD_PRIV"),
@@ -114,7 +114,7 @@ class OtelSchemaContractTest {
                 dataPrivilegesFor(db, "OTEL_READER"),
                 "看板账号 otel.* 数据权限必须精确为 {SELECT_PRIV}");
     }
-
+    
     /**
      * 独立资源组 otel_wg 必须真正绑定到两个账号，否则资源隔离形同虚设。
      *
@@ -130,31 +130,31 @@ class OtelSchemaContractTest {
         assertTrue(
                 db.contains("CREATE WORKLOAD GROUP IF NOT EXISTS OTEL_WG"),
                 "缺少独立资源组 otel_wg");
-        for (String user : new String[] {"OTEL_COLLECTOR", "OTEL_READER"}) {
+        for (String user : new String[]{"OTEL_COLLECTOR", "OTEL_READER"}) {
             assertTrue(
                     Pattern.compile(
-                                    "GRANT\\s+USAGE_PRIV\\s+ON\\s+WORKLOAD\\s+GROUP\\s+'OTEL_WG'\\s+TO\\s+'"
-                                            + user + "'")
+                            "GRANT\\s+USAGE_PRIV\\s+ON\\s+WORKLOAD\\s+GROUP\\s+'OTEL_WG'\\s+TO\\s+'"
+                                    + user + "'")
                             .matcher(db)
                             .find(),
                     user + " 未被授予 otel_wg 的 USAGE_PRIV");
             assertTrue(
                     Pattern.compile(
-                                    "SET\\s+PROPERTY\\s+FOR\\s+'" + user
-                                            + "'\\s+'DEFAULT_WORKLOAD_GROUP'\\s*=\\s*'OTEL_WG'")
+                            "SET\\s+PROPERTY\\s+FOR\\s+'" + user
+                                    + "'\\s+'DEFAULT_WORKLOAD_GROUP'\\s*=\\s*'OTEL_WG'")
                             .matcher(db)
                             .find(),
                     user + " 未设 default_workload_group=otel_wg");
         }
     }
-
+    
     /** 提取针对 user 在 otel.* 上授予的全部数据权限（合并所有 GRANT 的逗号分隔项，全大写）。 */
     private static Set<String> dataPrivilegesFor(String dbSql, String user) {
         Set<String> privs = new HashSet<>();
         Matcher m =
                 Pattern.compile(
-                                "GRANT\\s+(.+?)\\s+ON\\s+OTEL\\.\\*\\s+TO\\s+'" + user + "'",
-                                Pattern.CASE_INSENSITIVE)
+                        "GRANT\\s+(.+?)\\s+ON\\s+OTEL\\.\\*\\s+TO\\s+'" + user + "'",
+                        Pattern.CASE_INSENSITIVE)
                         .matcher(dbSql);
         while (m.find()) {
             for (String p : m.group(1).split(",")) {
@@ -172,7 +172,7 @@ class OtelSchemaContractTest {
     void schema_version_is_pinned() {
         assertEquals("v1", OtelSchema.VERSION);
     }
-
+    
     /**
      * 锁定已知边界（Codex 对抗审查 CHECK 2-1）：views.sql 恰含 1 个 CREATE JOB（traces_graph_job）
      * 且当前无幂等语法——Doris 的 CREATE JOB 不支持 IF NOT EXISTS，重复 apply 会在该语句失败。

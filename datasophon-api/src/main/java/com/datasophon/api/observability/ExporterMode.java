@@ -25,11 +25,11 @@ package com.datasophon.api.observability;
 public enum ExporterMode {
     S3,
     DORIS;
-
+    
     public String configValue() {
         return name().toLowerCase(java.util.Locale.ROOT);
     }
-
+    
     public static ExporterMode fromConfigValue(String value) {
         return valueOf(value.toUpperCase(java.util.Locale.ROOT));
     }

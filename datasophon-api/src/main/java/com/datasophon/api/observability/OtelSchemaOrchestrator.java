@@ -26,12 +26,12 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class OtelSchemaOrchestrator {
-
+    
     private final OtelExporterSwitchService switchService;
     private final DorisJdbcClientFactory jdbcFactory;
     private final OtelCredentialService credentialService;
     private final OtelSchemaRunner schemaRunner;
-
+    
     public OtelSchemaOrchestrator(OtelExporterSwitchService switchService,
                                   DorisJdbcClientFactory jdbcFactory,
                                   OtelCredentialService credentialService,
@@ -41,7 +41,7 @@ public class OtelSchemaOrchestrator {
         this.credentialService = credentialService;
         this.schemaRunner = schemaRunner;
     }
-
+    
     public void applyIfReady(Integer clusterId) {
         if (!switchService.isDorisReady(clusterId)) {
             return;

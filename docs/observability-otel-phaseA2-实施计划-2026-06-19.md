@@ -28,22 +28,22 @@
 
 ## A2 在 Phase A 进度表中的位置
 
-| 里程碑 | 子系统 | 交付物 | 计划 | 状态 |
-|---|---|---|---|---|
-| A1 | 数据面 | OTELCOLLECTOR 服务 | done | 🟩 代码完成,端到端待真实环境 |
-| **A2** | **存储** | **otel db + 资源组 + 版本化自管 DDL + INSERT-only 账号 + 契约测试 + 应用器** | **本计划** | ⬜ 未开始 |
-| A3 | 控制面 | 控制台 + 告警器 + 逐节点切换 + 回灌 | 待出 | ⬜ 未开始 |
+|  里程碑   |  子系统   |                             交付物                             |   计划    |        状态        |
+|--------|--------|-------------------------------------------------------------|---------|------------------|
+| A1     | 数据面    | OTELCOLLECTOR 服务                                            | done    | 🟩 代码完成,端到端待真实环境 |
+| **A2** | **存储** | **otel db + 资源组 + 版本化自管 DDL + INSERT-only 账号 + 契约测试 + 应用器** | **本计划** | ⬜ 未开始            |
+| A3     | 控制面    | 控制台 + 告警器 + 逐节点切换 + 回灌                                      | 待出      | ⬜ 未开始            |
 
 ### A2 承接的验收/整改条目
 
-| 来源 | 内容 | 本计划覆盖 |
-|---|---|---|
-| §8 F4 | schema 自管 + 版本化 + 契约测试 | ✅ Task 1/3 |
-| §5.8 | 看板/告警 SQL 对固定 schema 契约测试通过;模拟漂移能拦截 | ✅ Task 3 |
-| §8 F1(部分) | INSERT-only 采集账号(无 CREATE/DELETE/DROP),与读账号分离 | ✅ Task 1(账号/授权 DDL);按集群下发属 A3 |
-| §5.2(部分) | 装 Doris→落 otel 表 | ✅ A2 提供表;自动切 exporter 属 A3 |
-| §5.9(部分) | 凭据最小权限校验 | ✅ Task 1 授权 DDL + Task 3 权限断言(静态);运行期校验待真实环境 |
-| §6 | otel 库独立资源组防拖垮业务 | ✅ Task 1 Workload Group |
+|    来源     |                      内容                       |                    本计划覆盖                     |
+|-----------|-----------------------------------------------|----------------------------------------------|
+| §8 F4     | schema 自管 + 版本化 + 契约测试                        | ✅ Task 1/3                                   |
+| §5.8      | 看板/告警 SQL 对固定 schema 契约测试通过;模拟漂移能拦截           | ✅ Task 3                                     |
+| §8 F1(部分) | INSERT-only 采集账号(无 CREATE/DELETE/DROP),与读账号分离 | ✅ Task 1(账号/授权 DDL);按集群下发属 A3                |
+| §5.2(部分)  | 装 Doris→落 otel 表                              | ✅ A2 提供表;自动切 exporter 属 A3                   |
+| §5.9(部分)  | 凭据最小权限校验                                      | ✅ Task 1 授权 DDL + Task 3 权限断言(静态);运行期校验待真实环境 |
+| §6        | otel 库独立资源组防拖垮业务                              | ✅ Task 1 Workload Group                      |
 
 ---
 
@@ -122,6 +122,7 @@ GRANT SELECT_PRIV ON otel.* TO 'otel_reader';
 - [ ] **Step 4: 写 `V1__otel_views.sql` + `SCHEMA.md`**
 
 - `V1__otel_views.sql`:收敛 Step 1 的 `*_view.sql` 与 `traces_graph_job.sql`(均加 `IF NOT EXISTS` / `otel.` 前缀)。views/graph job 非 Stream Load 目标,但属 exporter create_schema 会建的对象,一并自管以保持一致。
+
 - `SCHEMA.md`:记 vendoring 来源(pin v0.154.0 + 12 文件 URL)、最终表/视图清单、schema 版本 `v1`、各对象与源文件对应。
 
 - [ ] **Step 5: 提交**

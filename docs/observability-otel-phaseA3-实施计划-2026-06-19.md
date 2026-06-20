@@ -26,26 +26,26 @@
 
 ## A3 分解与进度跟踪
 
-| sub-plan | 内容 | 依赖 | 计划 | 状态 |
-|---|---|---|---|---|
-| **A3a** | **配置下发主干**:按节点重生成 otelcol 配置 + configureServiceRole + restart;REST 触发 | A1 | **本文件详述** | ⬜ |
-| A3b | 监控:self-metrics(:8888)轮询 + 监控数据 API | A3a | 后续 sub-plan | ⬜ |
-| A3c | 最小 @Scheduled 告警器(F6):查 self-metrics,队列/丢弃超阈通知 | A3b | 后续 sub-plan | ⬜ |
-| A3d | staged 切换(F5)+ ack 边界回灌(F2):exporterMode s3→doris、awss3receiver 时间窗 | A3a,A2 | 后续 sub-plan | ⬜ |
-| A3e | UI 控制台页面:配置 tab(旋钮+YAML 兜底)+ 监控 tab | A3a,A3b | 后续 sub-plan | ⬜ |
-| A3f | 凭据/schema 编排:Doris 就绪→OtelSchemaApplier.apply + 按集群生成 otel_collector 口令注入 | A3a,A2 | 并入 A3d | ⬜ |
+| sub-plan |                                    内容                                     |   依赖    |     计划      | 状态 |
+|----------|---------------------------------------------------------------------------|---------|-------------|----|
+| **A3a**  | **配置下发主干**:按节点重生成 otelcol 配置 + configureServiceRole + restart;REST 触发     | A1      | **本文件详述**   | ⬜  |
+| A3b      | 监控:self-metrics(:8888)轮询 + 监控数据 API                                       | A3a     | 后续 sub-plan | ⬜  |
+| A3c      | 最小 @Scheduled 告警器(F6):查 self-metrics,队列/丢弃超阈通知                            | A3b     | 后续 sub-plan | ⬜  |
+| A3d      | staged 切换(F5)+ ack 边界回灌(F2):exporterMode s3→doris、awss3receiver 时间窗       | A3a,A2  | 后续 sub-plan | ⬜  |
+| A3e      | UI 控制台页面:配置 tab(旋钮+YAML 兜底)+ 监控 tab                                       | A3a,A3b | 后续 sub-plan | ⬜  |
+| A3f      | 凭据/schema 编排:Doris 就绪→OtelSchemaApplier.apply + 按集群生成 otel_collector 口令注入 | A3a,A2  | 并入 A3d      | ⬜  |
 
 ### A3 承接的验收/整改条目(→ sub-plan 归属)
 
-| 来源 | 内容 | 归属 | A3a 覆盖 |
-|---|---|---|---|
-| §4.3 配置下发 | 改配置→重生成→gRPC→restart | **A3a** | ✅ 全部 |
-| §5.4 | 监控 tab 显示健康/吞吐/队列/落盘 | A3b/A3e | ➖ |
-| §8 F6 / §5.6/5.7 | 持续告警器(无人值守) | A3c | ➖ |
-| §8 F5 / §5.5b | 逐节点 ack 切换(非原子) | A3d | A3a 提供按节点下发原语 |
-| §8 F2 / §5.5 | 逐节点 ack 边界回灌 | A3d | ➖ |
-| §5.2 | 装 Doris→自动切 dorisexporter→落 otel 表 | A3d+A3f | ➖ |
-| §8 F1(下发) | 按集群 otel_collector 口令注入 | A3f | ➖ |
+|        来源        |                 内容                 |   归属    |    A3a 覆盖     |
+|------------------|------------------------------------|---------|---------------|
+| §4.3 配置下发        | 改配置→重生成→gRPC→restart               | **A3a** | ✅ 全部          |
+| §5.4             | 监控 tab 显示健康/吞吐/队列/落盘               | A3b/A3e | ➖             |
+| §8 F6 / §5.6/5.7 | 持续告警器(无人值守)                        | A3c     | ➖             |
+| §8 F5 / §5.5b    | 逐节点 ack 切换(非原子)                    | A3d     | A3a 提供按节点下发原语 |
+| §8 F2 / §5.5     | 逐节点 ack 边界回灌                       | A3d     | ➖             |
+| §5.2             | 装 Doris→自动切 dorisexporter→落 otel 表 | A3d+A3f | ➖             |
+| §8 F1(下发)        | 按集群 otel_collector 口令注入            | A3f     | ➖             |
 
 > A3a 是其余全部的执行原语:任何"改某节点 otelcol 配置并生效"都经 A3a。先把它做扎实、可单测,A3d 的切换才有按节点下发的地基。
 
@@ -406,3 +406,4 @@ git commit -m "feat(observability): OTELCOLLECTOR 配置下发 REST 触发端点
 - **A3c 告警器(F6)**:`@Scheduled` 拉 self-metrics,队列水位/丢弃超阈走 `ClusterAlertHistory`+通知通道;独立于 Doris/Phase B。
 - **A3d 切换+回灌(F5/F2/F1/§5.2)**:exporterMode 参数(s3|doris)经 A3a 主干逐节点下发;DORIS 角色达 RUNNING 触发 `OtelSchemaApplier.apply`(A2)+ 按集群生成 otel_collector 口令注入 otelcol.env;按节点产生首条 Doris 写入记 ack 边界;`awss3receiver` 时间窗 [节点起点, 节点ack) 回灌。
 - **A3e UI**:控制台配置 tab(基础旋钮由 service_ddl configFields 自动渲染 + YAML 兜底)+ 监控 tab(消费 A3b API);ProTable/ProForm,遵循 antd-pro 规则。
+

@@ -32,27 +32,27 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 class OtelSchemaApplierTest {
-
+    
     @Test
     void injectsDistinctRuntimePasswordsWithoutLeavingPlaceholders() {
         String sql = "collector='CHANGE_ME_AT_A3_COLLECTOR'; reader='CHANGE_ME_AT_A3_READER'";
-
+        
         String rendered = OtelSchemaApplier.renderSql(
                 sql, new OtelCredentials("collector-secret", "reader-secret"));
-
+        
         assertThat(rendered)
                 .contains("collector='collector-secret'")
                 .contains("reader='reader-secret'")
                 .doesNotContain("CHANGE_ME_AT_A3");
     }
-
+    
     @Test
     void ignoresAlreadyExistingCreateJobOnly() {
         JdbcClient jdbc = mock(JdbcClient.class);
         JdbcClient.StatementSpec statement = mock(JdbcClient.StatementSpec.class);
         when(jdbc.sql("CREATE JOB test")).thenReturn(statement);
         when(statement.update()).thenThrow(new DataAccessResourceFailureException("job already exists"));
-
+        
         assertThatCode(() -> OtelSchemaApplier.executeStatement(jdbc, "CREATE JOB test"))
                 .doesNotThrowAnyException();
     }
