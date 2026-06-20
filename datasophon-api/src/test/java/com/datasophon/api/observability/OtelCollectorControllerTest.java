@@ -26,6 +26,8 @@ import com.datasophon.api.controller.observability.OtelCollectorController;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.Result;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,8 +46,8 @@ class OtelCollectorControllerTest {
         ok.setExecResult(true);
         when(svc.pushNodeConfig(eq(1), eq("app1"), any())).thenReturn(ok);
 
-        OtelCollectorController c = new OtelCollectorController(svc);
-        Result result = c.push(1, "app1");
+        OtelCollectorController c = new OtelCollectorController(svc, null, null, null);
+        Result result = c.push(1, "app1", Map.of());
 
         assertEquals(200, result.getCode());
         verify(svc).pushNodeConfig(eq(1), eq("app1"), any());
@@ -58,8 +60,8 @@ class OtelCollectorControllerTest {
         fail.setExecResult(false);
         when(svc.pushNodeConfig(eq(2), eq("node2"), any())).thenReturn(fail);
 
-        OtelCollectorController c = new OtelCollectorController(svc);
-        Result result = c.push(2, "node2");
+        OtelCollectorController c = new OtelCollectorController(svc, null, null, null);
+        Result result = c.push(2, "node2", Map.of());
 
         assertEquals(500, result.getCode());
         verify(svc).pushNodeConfig(eq(2), eq("node2"), any());

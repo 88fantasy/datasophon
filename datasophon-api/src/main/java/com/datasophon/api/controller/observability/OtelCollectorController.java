@@ -23,13 +23,20 @@
 package com.datasophon.api.controller.observability;
 
 import com.datasophon.api.controller.ApiController;
+import com.datasophon.api.observability.ExporterMode;
 import com.datasophon.api.observability.OtelCollectorConfigService;
+import com.datasophon.api.observability.OtelExporterSwitchService;
+import com.datasophon.api.observability.OtelSchemaOrchestrator;
+import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.Result;
 
 import java.util.HashMap;
+import java.util.Map;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,16 +46,43 @@ import org.springframework.web.bind.annotation.RestController;
 public class OtelCollectorController extends ApiController {
 
     private final OtelCollectorConfigService configService;
+    private final ServiceInstallService installService;
+    private final OtelExporterSwitchService switchService;
+    private final OtelSchemaOrchestrator schemaOrchestrator;
 
-    public OtelCollectorController(OtelCollectorConfigService configService) {
+    public OtelCollectorController(OtelCollectorConfigService configService,
+                                   ServiceInstallService installService,
+                                   OtelExporterSwitchService switchService,
+                                   OtelSchemaOrchestrator schemaOrchestrator) {
         this.configService = configService;
+        this.installService = installService;
+        this.switchService = switchService;
+        this.schemaOrchestrator = schemaOrchestrator;
     }
 
     @PostMapping("push")
-    public Result push(@RequestParam Integer clusterId, @RequestParam String hostname) {
-        ExecResult r = configService.pushNodeConfig(clusterId, hostname, new HashMap<>());
+    public Result push(@RequestParam Integer clusterId, @RequestParam String hostname,
+                       @RequestBody(required = false) Map<String, String> params) {
+        Map<String, String> effectiveParams =
+                params == null ? new HashMap<>() : new HashMap<>(params);
+        ExecResult r;
+        String exporterMode = effectiveParams.get("exporterMode");
+        if (exporterMode == null) {
+            r = configService.pushNodeConfig(clusterId, hostname, effectiveParams);
+        } else {
+            ExporterMode mode = ExporterMode.fromConfigValue(exporterMode);
+            if (mode == ExporterMode.DORIS) {
+                schemaOrchestrator.applyIfReady(clusterId);
+            }
+            r = switchService.switchNode(clusterId, hostname, mode, effectiveParams);
+        }
         return Boolean.TRUE.equals(r.getExecResult())
                 ? Result.success()
                 : Result.error("otelcol 配置下发失败");
+    }
+
+    @GetMapping("config")
+    public Result config(@RequestParam Integer clusterId) {
+        return Result.success(installService.getServiceConfigOption(clusterId, "OTELCOLLECTOR"));
     }
 }

@@ -2,6 +2,7 @@ import {
   AlertOutlined,
   ClusterOutlined,
   DesktopOutlined,
+  FundProjectionScreenOutlined,
   HistoryOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -9,7 +10,7 @@ import {
   UploadOutlined,
 } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
-import { history, Outlet, useParams } from '@umijs/max';
+import { history, Outlet, useIntl, useParams } from '@umijs/max';
 import { Badge, Button, Dropdown, Layout, Menu, Spin, Tag } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import ClusterContext from '@/context/ClusterContext';
@@ -130,6 +131,7 @@ const ServiceMenuItem: React.FC<ServiceMenuItemProps> = ({ service }) => {
 };
 
 const ClusterLayout: React.FC = () => {
+  const intl = useIntl();
   const { clusterId } = useParams<{ clusterId: string }>();
   const numericClusterId = Number(clusterId);
 
@@ -269,6 +271,18 @@ const ClusterLayout: React.FC = () => {
         icon: <HistoryOutlined />,
         label: '命令历史',
       },
+      ...(clusterInfo?.archType !== 'k8s'
+        ? [
+            {
+              key: `/cluster/${numericClusterId}/observability-collector`,
+              icon: <FundProjectionScreenOutlined />,
+              label: intl.formatMessage({
+                id: 'menu.observability-collector',
+                defaultMessage: 'Collector 控制台',
+              }),
+            },
+          ]
+        : []),
       {
         key: 'system-center',
         icon: <SettingOutlined />,
@@ -315,6 +329,7 @@ const ClusterLayout: React.FC = () => {
     k8sNamespaces,
     k8sInstancesMap,
     numericClusterId,
+    intl,
   ]);
 
   // ── 渲染 ──────────────────────────────────────────────

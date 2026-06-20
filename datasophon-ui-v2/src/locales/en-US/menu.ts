@@ -54,5 +54,6 @@ export default {
   'menu.colony.manage': 'Cluster List',
   'menu.frame': 'Cluster Frameworks',
   'menu.host': 'Host Management',
+  'menu.observability-collector': 'Collector Console',
   'menu.user': 'User Management',
 };

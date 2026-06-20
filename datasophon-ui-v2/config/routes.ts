@@ -86,6 +86,11 @@ export default [
             path: '/cluster/:clusterId/command',
             component: './Cluster/Command',
           },
+          {
+            path: '/cluster/:clusterId/observability-collector',
+            name: 'observability-collector',
+            component: './Cluster/ObservabilityCollector',
+          },
         ],
       },
     ],
