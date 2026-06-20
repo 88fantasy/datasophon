@@ -17,7 +17,7 @@ const getAccess = () => {
 // 代码中会兼容本地 service mock 以及部署站点的静态数据
 export default {
   // 支持值为 Object 和 Array
-  'GET /api/currentUser': (_req: Request, res: Response) => {
+  'GET /ddh/api/v2/currentUser': (_req: Request, res: Response) => {
     if (!getAccess()) {
       res.status(401).send({
         data: {
@@ -58,7 +58,7 @@ export default {
       address: 'Sidney No. 1 Lake Park',
     },
   ],
-  'POST /api/login/account': async (req: Request, res: Response) => {
+  'POST /ddh/api/v2/login/account': async (req: Request, res: Response) => {
     const { password, username, type } = req.body;
     await waitTime(2000);
     if (password === 'ant.design' && username === 'admin') {
@@ -96,7 +96,7 @@ export default {
     });
     access = 'guest';
   },
-  'POST /api/login/outLogin': (_req: Request, res: Response) => {
+  'POST /ddh/api/v2/logout': (_req: Request, res: Response) => {
     access = '';
     res.send({ data: {}, success: true });
   },

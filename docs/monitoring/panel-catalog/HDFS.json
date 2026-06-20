@@ -1,0 +1,3637 @@
+[
+  {
+    "title": "DataNode Heap Useage",
+    "promql": [
+      "Hadoop_DataNode_MemHeapUsedM / Hadoop_DataNode_MemHeapMaxM"
+    ],
+    "unit": "percentunit",
+    "chartType": "bargauge",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": false
+    }
+  },
+  {
+    "title": "Read Block Op Avg Time",
+    "promql": [
+      "Hadoop_DataNode_ReadBlockOpAvgTime"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "table",
+      "placement": "right",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Write Block Op Avg Time",
+    "promql": [
+      "Hadoop_DataNode_WriteBlockOpAvgTime"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "table",
+      "placement": "right",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "MemNonHeapUsedM",
+    "promql": [
+      "Hadoop_DataNode_MemNonHeapUsedM{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "MemNonHeapCommittedM",
+    "promql": [
+      "Hadoop_DataNode_MemNonHeapCommittedM{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "MemNonHeapMaxM",
+    "promql": [
+      "Hadoop_DataNode_MemNonHeapMaxM{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "MemHeapUsedM",
+    "promql": [
+      "Hadoop_DataNode_MemHeapUsedM{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "MemHeapCommittedM",
+    "promql": [
+      "Hadoop_DataNode_MemHeapCommittedM{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "MemHeapMaxM",
+    "promql": [
+      "Hadoop_DataNode_MemHeapMaxM{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "MemMaxM",
+    "promql": [
+      "Hadoop_DataNode_MemMaxM{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ThreadsNew",
+    "promql": [
+      "Hadoop_DataNode_ThreadsNew{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ThreadsRunnable",
+    "promql": [
+      "Hadoop_DataNode_ThreadsRunnable{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ThreadsBlocked",
+    "promql": [
+      "Hadoop_DataNode_ThreadsBlocked{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ThreadsWaiting",
+    "promql": [
+      "Hadoop_DataNode_ThreadsWaiting{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ThreadsTimedWaiting",
+    "promql": [
+      "Hadoop_DataNode_ThreadsTimedWaiting{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ThreadsTerminated",
+    "promql": [
+      "Hadoop_DataNode_ThreadsTerminated{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "GcInfo",
+    "promql": [
+      "Hadoop_DataNode_GcInfo{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "GcCount",
+    "promql": [
+      "Hadoop_DataNode_GcCount{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "GcTimeMillis",
+    "promql": [
+      "Hadoop_DataNode_GcTimeMillis{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "LogFatal",
+    "promql": [
+      "Hadoop_DataNode_LogFatal{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "LogError",
+    "promql": [
+      "Hadoop_DataNode_LogError{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "LogWarn",
+    "promql": [
+      "Hadoop_DataNode_LogWarn{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "LogInfo",
+    "promql": [
+      "Hadoop_DataNode_LogInfo{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "GcNumWarnThresholdExceeded",
+    "promql": [
+      "Hadoop_DataNode_GcNumWarnThresholdExceeded{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "GcNumInfoThresholdExceeded",
+    "promql": [
+      "Hadoop_DataNode_GcNumInfoThresholdExceeded{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green"
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ReceivedBytes",
+    "promql": [
+      "Hadoop_DataNode_ReceivedBytes{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "SentBytes",
+    "promql": [
+      "Hadoop_DataNode_SentBytes{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RpcQueueTimeNumOps",
+    "promql": [
+      "Hadoop_DataNode_RpcQueueTimeNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RpcQueueTimeAvgTime",
+    "promql": [
+      "Hadoop_DataNode_RpcQueueTimeAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "GcTotalExtraSleepTime",
+    "promql": [
+      "Hadoop_DataNode_GcTotalExtraSleepTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RpcLockWaitTimeAvgTime",
+    "promql": [
+      "Hadoop_DataNode_RpcLockWaitTimeAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RpcProcessingTimeNumOps",
+    "promql": [
+      "Hadoop_DataNode_RpcProcessingTimeNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RpcLockWaitTimeNumOps",
+    "promql": [
+      "Hadoop_DataNode_RpcLockWaitTimeNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RpcAuthenticationSuccesses",
+    "promql": [
+      "Hadoop_DataNode_RpcAuthenticationSuccesses{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RpcAuthorizationFailures",
+    "promql": [
+      "Hadoop_DataNode_RpcAuthorizationFailures{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RpcAuthenticationFailures",
+    "promql": [
+      "Hadoop_DataNode_RpcAuthenticationFailures{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "NumOpenConnections",
+    "promql": [
+      "Hadoop_DataNode_NumOpenConnections{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "CallQueueLength",
+    "promql": [
+      "Hadoop_DataNode_CallQueueLength{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RpcAuthorizationSuccesses",
+    "promql": [
+      "Hadoop_DataNode_RpcAuthorizationSuccesses{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BytesRead",
+    "promql": [
+      "Hadoop_DataNode_BytesRead{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlocksRemoved",
+    "promql": [
+      "Hadoop_DataNode_BlocksRemoved{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "TotalLoad",
+    "promql": [
+      "Hadoop_DataNode_TotalLoad{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlocksCached",
+    "promql": [
+      "Hadoop_DataNode_BlocksCached{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlocksReplicated",
+    "promql": [
+      "Hadoop_DataNode_BlocksReplicated{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BytesWritten",
+    "promql": [
+      "Hadoop_DataNode_BytesWritten{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "EstimatedCapacityLostTotal",
+    "promql": [
+      "Hadoop_DataNode_EstimatedCapacityLostTotal{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ReadsFromRemoteClient",
+    "promql": [
+      "Hadoop_DataNode_ReadsFromRemoteClient{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BytesWritten",
+    "promql": [
+      "Hadoop_DataNode_BytesWritten{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlockVerificationFailures",
+    "promql": [
+      "Hadoop_DataNode_BlockVerificationFailures{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlocksWritten",
+    "promql": [
+      "Hadoop_DataNode_BlocksWritten{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlocksRead",
+    "promql": [
+      "Hadoop_DataNode_BlocksRead{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ReadsFromLocalClient",
+    "promql": [
+      "Hadoop_DataNode_ReadsFromLocalClient{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlocksGetLocalPathInfo",
+    "promql": [
+      "Hadoop_DataNode_BlocksGetLocalPathInfo{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlocksVerified",
+    "promql": [
+      "Hadoop_DataNode_BlocksVerified{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "WritesFromRemoteClient",
+    "promql": [
+      "Hadoop_DataNode_WritesFromRemoteClient{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RamDiskBytesWrite",
+    "promql": [
+      "Hadoop_DataNode_RamDiskBytesWrite{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlocksUncached",
+    "promql": [
+      "Hadoop_DataNode_BlocksUncached{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RamDiskBlocksWriteFallback",
+    "promql": [
+      "Hadoop_DataNode_RamDiskBlocksWriteFallback{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RamDiskBlocksEvictedWithoutRead",
+    "promql": [
+      "Hadoop_DataNode_RamDiskBlocksEvictedWithoutRead{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "WritesFromLocalClient",
+    "promql": [
+      "Hadoop_DataNode_WritesFromLocalClient{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RamDiskBlocksEvicted",
+    "promql": [
+      "Hadoop_DataNode_RamDiskBlocksEvicted{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RamDiskBlocksLazyPersisted",
+    "promql": [
+      "Hadoop_DataNode_RamDiskBlocksLazyPersisted{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RamDiskBlocksWrite",
+    "promql": [
+      "Hadoop_DataNode_RamDiskBlocksWrite{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RamDiskBlocksEvictionWindowMsAvgTime",
+    "promql": [
+      "Hadoop_DataNode_RamDiskBlocksEvictionWindowMsAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RamDiskBlocksLazyPersistWindowMsNumOps",
+    "promql": [
+      "Hadoop_DataNode_RamDiskBlocksLazyPersistWindowMsNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RamDiskBlocksReadHits",
+    "promql": [
+      "Hadoop_DataNode_RamDiskBlocksReadHits{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RamDiskBytesLazyPersisted",
+    "promql": [
+      "Hadoop_DataNode_RamDiskBytesLazyPersisted{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "VolumeFailures",
+    "promql": [
+      "Hadoop_DataNode_VolumeFailures{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RamDiskBlocksEvictionWindowMsNumOps",
+    "promql": [
+      "Hadoop_DataNode_RamDiskBlocksEvictionWindowMsNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "FsyncCount",
+    "promql": [
+      "Hadoop_DataNode_FsyncCount{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "WriteBlockOpNumOps",
+    "promql": [
+      "Hadoop_DataNode_WriteBlockOpNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RamDiskBlocksDeletedBeforeLazyPersisted",
+    "promql": [
+      "Hadoop_DataNode_RamDiskBlocksDeletedBeforeLazyPersisted{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ReadBlockOpAvgTime",
+    "promql": [
+      "Hadoop_DataNode_ReadBlockOpAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlockChecksumOpAvgTime",
+    "promql": [
+      "Hadoop_DataNode_BlockChecksumOpAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RamDiskBlocksLazyPersistWindowMsAvgTime",
+    "promql": [
+      "Hadoop_DataNode_RamDiskBlocksLazyPersistWindowMsAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlockChecksumOpNumOps",
+    "promql": [
+      "Hadoop_DataNode_BlockChecksumOpNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ReplaceBlockOpNumOps",
+    "promql": [
+      "Hadoop_DataNode_ReplaceBlockOpNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ReadBlockOpNumOps",
+    "promql": [
+      "Hadoop_DataNode_ReadBlockOpNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "CopyBlockOpAvgTime",
+    "promql": [
+      "Hadoop_DataNode_CopyBlockOpAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "HeartbeatsAvgTime",
+    "promql": [
+      "Hadoop_DataNode_HeartbeatsAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "WriteBlockOpAvgTime",
+    "promql": [
+      "Hadoop_DataNode_WriteBlockOpAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "HeartbeatsNumOps",
+    "promql": [
+      "Hadoop_DataNode_HeartbeatsNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "LifelinesNumOps",
+    "promql": [
+      "Hadoop_DataNode_LifelinesNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "CopyBlockOpNumOps",
+    "promql": [
+      "Hadoop_DataNode_CopyBlockOpNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "HeartbeatsTotalAvgTime",
+    "promql": [
+      "Hadoop_DataNode_HeartbeatsTotalAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlockReportsAvgTime",
+    "promql": [
+      "Hadoop_DataNode_BlockReportsAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ReplaceBlockOpAvgTime",
+    "promql": [
+      "Hadoop_DataNode_ReplaceBlockOpAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlockReportsNumOps",
+    "promql": [
+      "Hadoop_DataNode_BlockReportsNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "CacheReportsNumOps",
+    "promql": [
+      "Hadoop_DataNode_CacheReportsNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "HeartbeatsTotalNumOps",
+    "promql": [
+      "Hadoop_DataNode_HeartbeatsTotalNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "IncrementalBlockReportsAvgTime",
+    "promql": [
+      "Hadoop_DataNode_IncrementalBlockReportsAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "PacketAckRoundTripTimeNanosAvgTime",
+    "promql": [
+      "Hadoop_DataNode_PacketAckRoundTripTimeNanosAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "LifelinesAvgTime",
+    "promql": [
+      "Hadoop_DataNode_LifelinesAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "PacketAckRoundTripTimeNanosNumOps",
+    "promql": [
+      "Hadoop_DataNode_PacketAckRoundTripTimeNanosNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "FsyncNanosNumOps",
+    "promql": [
+      "Hadoop_DataNode_FsyncNanosNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "IncrementalBlockReportsNumOps",
+    "promql": [
+      "Hadoop_DataNode_IncrementalBlockReportsNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "FlushNanosAvgTime",
+    "promql": [
+      "Hadoop_DataNode_FlushNanosAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "SendDataPacketBlockedOnNetworkNanosAvgTime",
+    "promql": [
+      "Hadoop_DataNode_SendDataPacketBlockedOnNetworkNanosAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "CacheReportsAvgTime",
+    "promql": [
+      "Hadoop_DataNode_CacheReportsAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "SendDataPacketBlockedOnNetworkNanosNumOps",
+    "promql": [
+      "Hadoop_DataNode_SendDataPacketBlockedOnNetworkNanosNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "TotalWriteTime",
+    "promql": [
+      "Hadoop_DataNode_TotalWriteTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "FlushNanosNumOps",
+    "promql": [
+      "Hadoop_DataNode_FlushNanosNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "SendDataPacketTransferNanosAvgTime",
+    "promql": [
+      "Hadoop_DataNode_SendDataPacketTransferNanosAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RemoteBytesWritten",
+    "promql": [
+      "Hadoop_DataNode_RemoteBytesWritten{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "FsyncNanosAvgTime",
+    "promql": [
+      "Hadoop_DataNode_FsyncNanosAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "RemoteBytesRead",
+    "promql": [
+      "Hadoop_DataNode_RemoteBytesRead{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlocksReceivedInPendingIBR",
+    "promql": [
+      "Hadoop_DataNode_BlocksReceivedInPendingIBR{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "SendDataPacketTransferNanosNumOps",
+    "promql": [
+      "Hadoop_DataNode_SendDataPacketTransferNanosNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlocksReceivingInPendingIBR",
+    "promql": [
+      "Hadoop_DataNode_BlocksReceivingInPendingIBR{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "EcFailedReconstructionTasks",
+    "promql": [
+      "Hadoop_DataNode_EcFailedReconstructionTasks{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "TotalReadTime",
+    "promql": [
+      "Hadoop_DataNode_TotalReadTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "EcReconstructionTasks",
+    "promql": [
+      "Hadoop_DataNode_EcReconstructionTasks{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "EcReconstructionBytesRead",
+    "promql": [
+      "Hadoop_DataNode_EcReconstructionBytesRead{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlocksInPendingIBR",
+    "promql": [
+      "Hadoop_DataNode_BlocksInPendingIBR{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "EcDecodingTimeNanos",
+    "promql": [
+      "Hadoop_DataNode_EcDecodingTimeNanos{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "BlocksDeletedInPendingIBR",
+    "promql": [
+      "Hadoop_DataNode_BlocksDeletedInPendingIBR{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "EcInvalidReconstructionTasks",
+    "promql": [
+      "Hadoop_DataNode_EcInvalidReconstructionTasks{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "EcReconstructionBytesWritten",
+    "promql": [
+      "Hadoop_DataNode_EcReconstructionBytesWritten{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "MetadataOperationRateNumOps",
+    "promql": [
+      "Hadoop_DataNode_MetadataOperationRateNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "MetadataOperationRateAvgTime",
+    "promql": [
+      "Hadoop_DataNode_MetadataOperationRateAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "DataFileIoRateNumOps",
+    "promql": [
+      "Hadoop_DataNode_DataFileIoRateNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "DataFileIoRateAvgTime",
+    "promql": [
+      "Hadoop_DataNode_DataFileIoRateAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "FlushIoRateAvgTime",
+    "promql": [
+      "Hadoop_DataNode_FlushIoRateAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "SyncIoRateNumOps",
+    "promql": [
+      "Hadoop_DataNode_SyncIoRateNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ReadIoRateAvgTime",
+    "promql": [
+      "Hadoop_DataNode_ReadIoRateAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "TotalFileIoErrors",
+    "promql": [
+      "Hadoop_DataNode_TotalFileIoErrors{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "TotalMetadataOperations",
+    "promql": [
+      "Hadoop_DataNode_TotalMetadataOperations{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "EcReconstructionRemoteBytesRead",
+    "promql": [
+      "Hadoop_DataNode_EcReconstructionRemoteBytesRead{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "TotalDataFileIos",
+    "promql": [
+      "Hadoop_DataNode_TotalDataFileIos{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "ReadIoRateNumOps",
+    "promql": [
+      "Hadoop_DataNode_ReadIoRateNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "FlushIoRateNumOps",
+    "promql": [
+      "Hadoop_DataNode_FlushIoRateNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "WriteIoRateAvgTime",
+    "promql": [
+      "Hadoop_DataNode_WriteIoRateAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "SyncIoRateAvgTime",
+    "promql": [
+      "Hadoop_DataNode_SyncIoRateAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "WriteIoRateNumOps",
+    "promql": [
+      "Hadoop_DataNode_WriteIoRateNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "FileIoErrorRateNumOps",
+    "promql": [
+      "Hadoop_DataNode_FileIoErrorRateNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "NumBlocks",
+    "promql": [
+      "Hadoop_DataNode_NumBlocks{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "FileIoErrorRateAvgTime",
+    "promql": [
+      "Hadoop_DataNode_FileIoErrorRateAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "StartTime",
+    "promql": [
+      "Hadoop_DataNode_StartTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "TotalCapacity",
+    "promql": [
+      "Hadoop_DataNode_TotalCapacity{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "LoginSuccessNumOps",
+    "promql": [
+      "Hadoop_DataNode_LoginSuccessNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "LoginSuccessAvgTime",
+    "promql": [
+      "Hadoop_DataNode_LoginSuccessAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "LoginFailureNumOps",
+    "promql": [
+      "Hadoop_DataNode_LoginFailureNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "LoginFailureAvgTime",
+    "promql": [
+      "Hadoop_DataNode_LoginFailureAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "NumActiveSources",
+    "promql": [
+      "Hadoop_DataNode_NumActiveSources{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "NumAllSources",
+    "promql": [
+      "Hadoop_DataNode_NumAllSources{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "NumActiveSinks",
+    "promql": [
+      "Hadoop_DataNode_NumActiveSinks{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "NumAllSinks",
+    "promql": [
+      "Hadoop_DataNode_NumAllSinks{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "SnapshotNumOps",
+    "promql": [
+      "Hadoop_DataNode_SnapshotNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "SnapshotAvgTime",
+    "promql": [
+      "Hadoop_DataNode_SnapshotAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "PublishNumOps",
+    "promql": [
+      "Hadoop_DataNode_PublishNumOps{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "PublishAvgTime",
+    "promql": [
+      "Hadoop_DataNode_PublishAvgTime{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "DroppedPubAll",
+    "promql": [
+      "Hadoop_DataNode_DroppedPubAll{namespace=\"$Namespace\", instance=~\"$Instance\"}"
+    ],
+    "unit": null,
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  }
+]

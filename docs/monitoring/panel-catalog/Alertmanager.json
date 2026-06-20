@@ -1,0 +1,1858 @@
+[
+  {
+    "title": "Number of instances",
+    "promql": [
+      "count(alertmanager_build_info{instance=~\"$instance\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Instance versions and up time",
+    "promql": [
+      "time() - (alertmanager_build_info{instance=~\"$instance\"} * on (instance, cluster) group_left process_start_time_seconds{instance=~\"$instance\"})",
+      "time() - alertmanager_config_last_reload_success_timestamp_seconds{instance=~\"$instance\"}",
+      "alertmanager_config_last_reload_successful{instance=~\"$instance\"}"
+    ],
+    "unit": null,
+    "chartType": "table",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "Cluster size",
+    "promql": [
+      "max(alertmanager_cluster_members{instance=~\"$instance\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Number of active alerts",
+    "promql": [
+      "max(alertmanager_alerts{state=\"active\", instance=~\"$instance\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Number of suppressed alerts",
+    "promql": [
+      "max(alertmanager_alerts{state=\"suppressed\", instance=~\"$instance\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Number of active silences",
+    "promql": [
+      "max(alertmanager_silences{state=\"active\", instance=~\"$instance\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Notifications sent from $instance",
+    "promql": [
+      "sum(increase(alertmanager_notifications_total{instance=~\"$instance\"}[$__interval])) by (integration)",
+      "sum(increase(alertmanager_notifications_failed_total{instance=~\"$instance\"}[$__interval])) by (integration)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "hideEmpty": true,
+      "hideZero": true,
+      "max": false,
+      "min": false,
+      "rightSide": true,
+      "show": true,
+      "sort": "total",
+      "sortDesc": true,
+      "total": true,
+      "values": true
+    }
+  },
+  {
+    "title": "Notification durations per integration on $instance",
+    "promql": [
+      "sum(histogram_quantile(0.9,rate(alertmanager_notification_latency_seconds_bucket{instance=~\"$instance\"}[$__interval]))) by (integration)",
+      "sum(histogram_quantile(0.99,rate(alertmanager_notification_latency_seconds_bucket{instance=~\"$instance\"}[$__interval]))) by (integration)"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "hideEmpty": true,
+      "hideZero": true,
+      "max": false,
+      "min": false,
+      "rightSide": true,
+      "show": true,
+      "sort": "avg",
+      "sortDesc": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Active alerts in $instance",
+    "promql": [
+      "sum(alertmanager_alerts{instance=~\"$instance\"}) by (state)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Received alerts by status for $instance",
+    "promql": [
+      "sum(increase(alertmanager_alerts_received_total{instance=~\"$instance\"}[$__interval])) by (status)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Clusterhealth score for $instance",
+    "promql": [
+      "alertmanager_cluster_health_score{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Clusterhealth score for $instance",
+    "promql": [
+      "alertmanager_cluster_health_score{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Clusterhealth score for $instance",
+    "promql": [
+      "alertmanager_cluster_health_score{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Clusterhealth score for $instance",
+    "promql": [
+      "alertmanager_cluster_health_score{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster members count on $instance",
+    "promql": [
+      "alertmanager_cluster_members{instance=~\"$instance\"}",
+      "alertmanager_cluster_failed_peers{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster members count on $instance",
+    "promql": [
+      "alertmanager_cluster_members{instance=~\"$instance\"}",
+      "alertmanager_cluster_failed_peers{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster members count on $instance",
+    "promql": [
+      "alertmanager_cluster_members{instance=~\"$instance\"}",
+      "alertmanager_cluster_failed_peers{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster members count on $instance",
+    "promql": [
+      "alertmanager_cluster_members{instance=~\"$instance\"}",
+      "alertmanager_cluster_failed_peers{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster peers left/joined on $instance",
+    "promql": [
+      "increase(alertmanager_cluster_peers_left_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_cluster_peers_joined_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster peers left/joined on $instance",
+    "promql": [
+      "increase(alertmanager_cluster_peers_left_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_cluster_peers_joined_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster peers left/joined on $instance",
+    "promql": [
+      "increase(alertmanager_cluster_peers_left_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_cluster_peers_joined_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster peers left/joined on $instance",
+    "promql": [
+      "increase(alertmanager_cluster_peers_left_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_cluster_peers_joined_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster reconnections on $instance",
+    "promql": [
+      "increase(alertmanager_cluster_reconnections_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_cluster_reconnections_failed_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster reconnections on $instance",
+    "promql": [
+      "increase(alertmanager_cluster_reconnections_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_cluster_reconnections_failed_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster reconnections on $instance",
+    "promql": [
+      "increase(alertmanager_cluster_reconnections_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_cluster_reconnections_failed_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster reconnections on $instance",
+    "promql": [
+      "increase(alertmanager_cluster_reconnections_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_cluster_reconnections_failed_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster messages count on $instance",
+    "promql": [
+      "sum(increase(alertmanager_cluster_messages_sent_total{instance=~\"$instance\"}[$__interval])) by (msg_type)",
+      "sum(increase(alertmanager_cluster_messages_received_total{instance=~\"$instance\"}[$__interval])) by (msg_type)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster messages count on $instance",
+    "promql": [
+      "sum(increase(alertmanager_cluster_messages_sent_total{instance=~\"$instance\"}[$__interval])) by (msg_type)",
+      "sum(increase(alertmanager_cluster_messages_received_total{instance=~\"$instance\"}[$__interval])) by (msg_type)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster messages count on $instance",
+    "promql": [
+      "sum(increase(alertmanager_cluster_messages_sent_total{instance=~\"$instance\"}[$__interval])) by (msg_type)",
+      "sum(increase(alertmanager_cluster_messages_received_total{instance=~\"$instance\"}[$__interval])) by (msg_type)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster messages count on $instance",
+    "promql": [
+      "sum(increase(alertmanager_cluster_messages_sent_total{instance=~\"$instance\"}[$__interval])) by (msg_type)",
+      "sum(increase(alertmanager_cluster_messages_received_total{instance=~\"$instance\"}[$__interval])) by (msg_type)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster messages size on $instance",
+    "promql": [
+      "sum(increase(alertmanager_cluster_messages_sent_size_total{instance=~\"$instance\"}[$__interval])) by (msg_type)",
+      "sum(increase(alertmanager_cluster_messages_received_size_total{instance=~\"$instance\"}[$__interval])) by (msg_type)"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster messages size on $instance",
+    "promql": [
+      "sum(increase(alertmanager_cluster_messages_sent_size_total{instance=~\"$instance\"}[$__interval])) by (msg_type)",
+      "sum(increase(alertmanager_cluster_messages_received_size_total{instance=~\"$instance\"}[$__interval])) by (msg_type)"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster messages size on $instance",
+    "promql": [
+      "sum(increase(alertmanager_cluster_messages_sent_size_total{instance=~\"$instance\"}[$__interval])) by (msg_type)",
+      "sum(increase(alertmanager_cluster_messages_received_size_total{instance=~\"$instance\"}[$__interval])) by (msg_type)"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster messages size on $instance",
+    "promql": [
+      "sum(increase(alertmanager_cluster_messages_sent_size_total{instance=~\"$instance\"}[$__interval])) by (msg_type)",
+      "sum(increase(alertmanager_cluster_messages_received_size_total{instance=~\"$instance\"}[$__interval])) by (msg_type)"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster messages queue on $instance",
+    "promql": [
+      "alertmanager_cluster_messages_pruned_total{instance=~\"$instance\"}",
+      "alertmanager_cluster_messages_queued{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster messages queue on $instance",
+    "promql": [
+      "alertmanager_cluster_messages_pruned_total{instance=~\"$instance\"}",
+      "alertmanager_cluster_messages_queued{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster messages queue on $instance",
+    "promql": [
+      "alertmanager_cluster_messages_pruned_total{instance=~\"$instance\"}",
+      "alertmanager_cluster_messages_queued{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Cluster messages queue on $instance",
+    "promql": [
+      "alertmanager_cluster_messages_pruned_total{instance=~\"$instance\"}",
+      "alertmanager_cluster_messages_queued{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Count of oversized gossip messages on $instance",
+    "promql": [
+      "increase(alertmanager_oversized_gossip_message_sent_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_oversized_gossip_message_dropped_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_oversized_gossip_message_failure_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Count of oversized gossip messages on $instance",
+    "promql": [
+      "increase(alertmanager_oversized_gossip_message_sent_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_oversized_gossip_message_dropped_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_oversized_gossip_message_failure_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Count of oversized gossip messages on $instance",
+    "promql": [
+      "increase(alertmanager_oversized_gossip_message_sent_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_oversized_gossip_message_dropped_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_oversized_gossip_message_failure_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Count of oversized gossip messages on $instance",
+    "promql": [
+      "increase(alertmanager_oversized_gossip_message_sent_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_oversized_gossip_message_dropped_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_oversized_gossip_message_failure_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Duration of oversized gossip messages on $instance",
+    "promql": [
+      "histogram_quantile(1,rate(alertmanager_oversize_gossip_message_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Duration of oversized gossip messages on $instance",
+    "promql": [
+      "histogram_quantile(1,rate(alertmanager_oversize_gossip_message_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Duration of oversized gossip messages on $instance",
+    "promql": [
+      "histogram_quantile(1,rate(alertmanager_oversize_gossip_message_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Duration of oversized gossip messages on $instance",
+    "promql": [
+      "histogram_quantile(1,rate(alertmanager_oversize_gossip_message_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Number of  propagated gossip messages on $instance",
+    "promql": [
+      "increase(alertmanager_silences_gossip_messages_propagated_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_nflog_gossip_messages_propagated_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Number of  propagated gossip messages on $instance",
+    "promql": [
+      "increase(alertmanager_silences_gossip_messages_propagated_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_nflog_gossip_messages_propagated_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Number of  propagated gossip messages on $instance",
+    "promql": [
+      "increase(alertmanager_silences_gossip_messages_propagated_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_nflog_gossip_messages_propagated_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Number of  propagated gossip messages on $instance",
+    "promql": [
+      "increase(alertmanager_silences_gossip_messages_propagated_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_nflog_gossip_messages_propagated_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log queries count for $instance",
+    "promql": [
+      "increase(alertmanager_nflog_queries_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_nflog_query_errors_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log queries count for $instance",
+    "promql": [
+      "increase(alertmanager_nflog_queries_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_nflog_query_errors_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log queries count for $instance",
+    "promql": [
+      "increase(alertmanager_nflog_queries_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_nflog_query_errors_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log queries count for $instance",
+    "promql": [
+      "increase(alertmanager_nflog_queries_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_nflog_query_errors_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log query duration for $instance",
+    "promql": [
+      "histogram_quantile(1,rate(alertmanager_nflog_query_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log query duration for $instance",
+    "promql": [
+      "histogram_quantile(1,rate(alertmanager_nflog_query_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log query duration for $instance",
+    "promql": [
+      "histogram_quantile(1,rate(alertmanager_nflog_query_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log query duration for $instance",
+    "promql": [
+      "histogram_quantile(1,rate(alertmanager_nflog_query_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log snapshot size for $instance",
+    "promql": [
+      "alertmanager_nflog_snapshot_size_bytes{instance=~\"$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log snapshot size for $instance",
+    "promql": [
+      "alertmanager_nflog_snapshot_size_bytes{instance=~\"$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log snapshot size for $instance",
+    "promql": [
+      "alertmanager_nflog_snapshot_size_bytes{instance=~\"$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log snapshot size for $instance",
+    "promql": [
+      "alertmanager_nflog_snapshot_size_bytes{instance=~\"$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log snapshot duration for $instance",
+    "promql": [
+      "rate(alertmanager_nflog_snapshot_duration_seconds_sum{instance=~\"$instance\"}[$__interval]) / rate(alertmanager_nflog_snapshot_duration_seconds_sum{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log snapshot duration for $instance",
+    "promql": [
+      "rate(alertmanager_nflog_snapshot_duration_seconds_sum{instance=~\"$instance\"}[$__interval]) / rate(alertmanager_nflog_snapshot_duration_seconds_sum{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log snapshot duration for $instance",
+    "promql": [
+      "rate(alertmanager_nflog_snapshot_duration_seconds_sum{instance=~\"$instance\"}[$__interval]) / rate(alertmanager_nflog_snapshot_duration_seconds_sum{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log snapshot duration for $instance",
+    "promql": [
+      "rate(alertmanager_nflog_snapshot_duration_seconds_sum{instance=~\"$instance\"}[$__interval]) / rate(alertmanager_nflog_snapshot_duration_seconds_sum{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log Go GC time for $instance",
+    "promql": [
+      "alertmanager_nflog_gc_duration_seconds{instance=~\"$instance\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log Go GC time for $instance",
+    "promql": [
+      "alertmanager_nflog_gc_duration_seconds{instance=~\"$instance\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log Go GC time for $instance",
+    "promql": [
+      "alertmanager_nflog_gc_duration_seconds{instance=~\"$instance\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Nf log Go GC time for $instance",
+    "promql": [
+      "alertmanager_nflog_gc_duration_seconds{instance=~\"$instance\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences count by state on $instance",
+    "promql": [
+      "alertmanager_silences{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences count by state on $instance",
+    "promql": [
+      "alertmanager_silences{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences count by state on $instance",
+    "promql": [
+      "alertmanager_silences{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences count by state on $instance",
+    "promql": [
+      "alertmanager_silences{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences query count on $instance",
+    "promql": [
+      "increase(alertmanager_silences_queries_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_silences_query_errors_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences query count on $instance",
+    "promql": [
+      "increase(alertmanager_silences_queries_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_silences_query_errors_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences query count on $instance",
+    "promql": [
+      "increase(alertmanager_silences_queries_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_silences_query_errors_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences query count on $instance",
+    "promql": [
+      "increase(alertmanager_silences_queries_total{instance=~\"$instance\"}[$__interval])",
+      "increase(alertmanager_silences_query_errors_total{instance=~\"$instance\"}[$__interval])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences query duration on $instance",
+    "promql": [
+      "histogram_quantile(1,rate(alertmanager_silences_query_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences query duration on $instance",
+    "promql": [
+      "histogram_quantile(1,rate(alertmanager_silences_query_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences query duration on $instance",
+    "promql": [
+      "histogram_quantile(1,rate(alertmanager_silences_query_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences query duration on $instance",
+    "promql": [
+      "histogram_quantile(1,rate(alertmanager_silences_query_duration_seconds_bucket{instance=~\"$instance\"}[$__interval]))"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences snapshot size on $instance",
+    "promql": [
+      "alertmanager_silences_snapshot_size_bytes{instance=~\"$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences snapshot size on $instance",
+    "promql": [
+      "alertmanager_silences_snapshot_size_bytes{instance=~\"$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences snapshot size on $instance",
+    "promql": [
+      "alertmanager_silences_snapshot_size_bytes{instance=~\"$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences snapshot size on $instance",
+    "promql": [
+      "alertmanager_silences_snapshot_size_bytes{instance=~\"$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences snapshot duration on $instance",
+    "promql": [
+      "alertmanager_silences_snapshot_duration_seconds{instance=~\"$instance\", quantile=\"0.99\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences snapshot duration on $instance",
+    "promql": [
+      "alertmanager_silences_snapshot_duration_seconds{instance=~\"$instance\", quantile=\"0.99\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences snapshot duration on $instance",
+    "promql": [
+      "alertmanager_silences_snapshot_duration_seconds{instance=~\"$instance\", quantile=\"0.99\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences snapshot duration on $instance",
+    "promql": [
+      "alertmanager_silences_snapshot_duration_seconds{instance=~\"$instance\", quantile=\"0.99\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences GC duraton on $instance",
+    "promql": [
+      "alertmanager_silences_gc_duration_seconds{instance=~\"$instance\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences GC duraton on $instance",
+    "promql": [
+      "alertmanager_silences_gc_duration_seconds{instance=~\"$instance\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences GC duraton on $instance",
+    "promql": [
+      "alertmanager_silences_gc_duration_seconds{instance=~\"$instance\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Silences GC duraton on $instance",
+    "promql": [
+      "alertmanager_silences_gc_duration_seconds{instance=~\"$instance\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "CPU usage/s for $instance",
+    "promql": [
+      "rate(process_cpu_seconds_total{instance=~\"$instance\"}[$__interval])",
+      "max(kube_pod_container_resource_limits_cpu_cores{pod=~\"$instance\"}) by (pod)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "CPU usage/s for $instance",
+    "promql": [
+      "rate(process_cpu_seconds_total{instance=~\"$instance\"}[$__interval])",
+      "max(kube_pod_container_resource_limits_cpu_cores{pod=~\"$instance\"}) by (pod)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "CPU usage/s for $instance",
+    "promql": [
+      "rate(process_cpu_seconds_total{instance=~\"$instance\"}[$__interval])",
+      "max(kube_pod_container_resource_limits_cpu_cores{pod=~\"$instance\"}) by (pod)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "CPU usage/s for $instance",
+    "promql": [
+      "rate(process_cpu_seconds_total{instance=~\"$instance\"}[$__interval])",
+      "max(kube_pod_container_resource_limits_cpu_cores{pod=~\"$instance\"}) by (pod)"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Memory usage for $instance",
+    "promql": [
+      "process_resident_memory_bytes{instance=~\"$instance\"}",
+      "max(kube_pod_container_resource_limits_memory_bytes{pod=~\"$instance\"}) by (pod)"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Memory usage for $instance",
+    "promql": [
+      "process_resident_memory_bytes{instance=~\"$instance\"}",
+      "max(kube_pod_container_resource_limits_memory_bytes{pod=~\"$instance\"}) by (pod)"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Memory usage for $instance",
+    "promql": [
+      "process_resident_memory_bytes{instance=~\"$instance\"}",
+      "max(kube_pod_container_resource_limits_memory_bytes{pod=~\"$instance\"}) by (pod)"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Memory usage for $instance",
+    "promql": [
+      "process_resident_memory_bytes{instance=~\"$instance\"}",
+      "max(kube_pod_container_resource_limits_memory_bytes{pod=~\"$instance\"}) by (pod)"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  }
+]

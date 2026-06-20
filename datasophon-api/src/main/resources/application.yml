@@ -85,6 +85,9 @@ datasophon:
     sidecar-url: ${DDH_AI_SIDECAR_URL:http://localhost:18090}
     internal-token: ${DDH_AI_INTERNAL_TOKEN:change-me}
     model: ${ANTHROPIC_MODEL:claude-sonnet-4-6}
+  prometheus:
+    url: ${DDH_PROMETHEUS_URL:http://localhost:9090}
+    timeout-ms: 10000
 
 # gRPC server（Netty，与 Jetty 8081 端口独立）
 grpc:

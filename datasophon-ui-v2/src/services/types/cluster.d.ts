@@ -45,6 +45,25 @@ declare namespace DATASOPHON {
     clusterManagerList?: ClusterManager[];
   }
 
+  /** K8s 集群连接配置 */
+  type K8sConnectType = 'config_file' | 'token' | 'password';
+
+  interface K8sConfig {
+    clusterId?: number;
+    type: K8sConnectType;
+    serverHost?: string;
+    serverCert?: string;
+    token?: string;
+    username?: string;
+    password?: string;
+    kubeConfig?: string;
+  }
+
+  interface K8sTestResult {
+    success: boolean;
+    info?: string;
+  }
+
   /** @deprecated 旧 DAO 镜像，迁移完成后删除，暂保留供未迁移文件使用 */
   interface ClusterInfo {
     id: number;

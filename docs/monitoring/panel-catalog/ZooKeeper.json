@@ -1,0 +1,1757 @@
+[
+  {
+    "title": "znode_count",
+    "promql": [
+      "znode_count{instance=~\"$instance\",job=~\"$job\"}",
+      "ephemerals_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": false,
+      "avg": false,
+      "current": true,
+      "hideEmpty": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": false,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "znode_count_rate",
+    "promql": [
+      "rate(znode_count{instance=~\"$instance\",job=~\"$job\"}[5m])",
+      "rate(ephemerals_count{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "ops",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": false,
+      "avg": false,
+      "current": true,
+      "hideEmpty": false,
+      "max": true,
+      "min": true,
+      "rightSide": false,
+      "show": false,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "global_sessions",
+    "promql": [
+      "global_sessions{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": null,
+    "chartType": "bargauge",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "local_sessions ",
+    "promql": [
+      "local_sessions{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": null,
+    "chartType": "bargauge",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "write_per_namespace",
+    "promql": [
+      "write_per_namespace_sum{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "read_per_namespace",
+    "promql": [
+      "read_per_namespace_sum{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "approximate_data_size",
+    "promql": [
+      "approximate_data_size{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "packets_received",
+    "promql": [
+      "packets_received{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "packets_sent",
+    "promql": [
+      "packets_sent{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "response_packet_cache",
+    "promql": [
+      "response_packet_cache_misses{instance=~\"$instance\",job=~\"$job\"}",
+      "response_packet_cache_hits{instance=~\"$instance\",job=~\"$job\"}",
+      "response_packet_get_children_cache_misses{instance=~\"$instance\",job=~\"$job\"}",
+      "response_packet_get_children_cache_hits{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "unrecoverable_error_count",
+    "promql": [
+      "unrecoverable_error_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "digest_mismatches_count",
+    "promql": [
+      "digest_mismatches_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "startup_snap_load_time",
+    "promql": [
+      "startup_snap_load_time",
+      "startup_snap_load_time_count",
+      "startup_snap_load_time_sum{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "startup_txns_loaded",
+    "promql": [
+      "startup_txns_loaded",
+      "startup_txns_loaded_count",
+      "startup_txns_loaded_sum{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "db_init_time",
+    "promql": [
+      "dbinittime",
+      "dbinittime_count",
+      "dbinittime_sum{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "quorum_size",
+    "promql": [
+      "max(quorum_size{instance=~\"$instance\",job=~\"$job\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "50,80",
+    "legend": null
+  },
+  {
+    "title": "leader",
+    "promql": [
+      "leader_uptime{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "leader_uptime",
+    "promql": [
+      "leader_uptime{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "learner/observer",
+    "promql": [
+      "max(learners{instance=~\"$instance\",job=~\"$job\"})",
+      "max(synced_non_voting_followers{instance=~\"$instance\",job=~\"$job\"})",
+      "max(synced_observers{instance=~\"$instance\",job=~\"$job\"})"
+    ],
+    "unit": null,
+    "chartType": "bargauge",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "election_time",
+    "promql": [
+      "election_time",
+      "election_time_count{instance=~\"$instance\",job=~\"$job\"}",
+      "election_time_sum{instance=~\"$instance\",job=~\"$job\"}",
+      "election_time_sum/election_time_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": false,
+      "current": true,
+      "max": true,
+      "min": true,
+      "rightSide": true,
+      "show": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "quorum uptime",
+    "promql": [
+      "uptime{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "learner_commit_received_count",
+    "promql": [
+      "learner_commit_received_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "commit_count",
+    "promql": [
+      "commit_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "snap_count",
+    "promql": [
+      "snap_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "diff_count",
+    "promql": [
+      "diff_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "looking_count",
+    "promql": [
+      "looking_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "proposal_count",
+    "promql": [
+      "proposal_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "proposal_size",
+    "promql": [
+      "last_proposal_size{instance=~\"$instance\",job=~\"$job\"}",
+      "max_proposal_size{instance=~\"$instance\",job=~\"$job\"}",
+      "min_proposal_size{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "follower_sync_time",
+    "promql": [
+      "rate(follower_sync_time_sum{instance=~\"$instance\",job=~\"$job\"}[1m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "learner_handler_qp_size",
+    "promql": [
+      "learner_handler_qp_size_sum{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "quit_leading_due_to_disloyal_voter",
+    "promql": [
+      "quit_leading_due_to_disloyal_voter{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Observer Master",
+    "promql": [
+      "rate(om_commit_process_time_ms_sum{instance=~\"$instance\",job=~\"$job\"}[5m])",
+      "rate(om_proposal_process_time_ms_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "watch_count",
+    "promql": [
+      "watch_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "node_changed_watch_count",
+    "promql": [
+      "node_changed_watch_count_sum{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "node_children_watch_count",
+    "promql": [
+      "node_children_watch_count_sum{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "node_deleted_watch_count",
+    "promql": [
+      "node_deleted_watch_count_sum{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "node_created_watch_count",
+    "promql": [
+      "node_created_watch_count_sum{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "revalidate_count",
+    "promql": [
+      "revalidate_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "stale_sessions_expired",
+    "promql": [
+      "stale_sessions_expired{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "dead_watchers",
+    "promql": [
+      "dead_watchers_cleared{instance=~\"$instance\",job=~\"$job\"}",
+      "dead_watchers_queued{instance=~\"$instance\",job=~\"$job\"}",
+      "rate(dead_watchers_cleaner_latency_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "add_dead_watcher_stall_time",
+    "promql": [
+      "add_dead_watcher_stall_time{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "outstanding_requests",
+    "promql": [
+      "outstanding_requests{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "client_response_size",
+    "promql": [
+      "last_client_response_size{instance=~\"$instance\",job=~\"$job\"}",
+      "min_client_response_size{instance=~\"$instance\",job=~\"$job\"}",
+      "max_client_response_size{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "bytes_received_count",
+    "promql": [
+      "bytes_received_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "connection_request_count",
+    "promql": [
+      "connection_request_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "num_alive_connections",
+    "promql": [
+      "num_alive_connections{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "connection_rejected",
+    "promql": [
+      "connection_rejected{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "connection_drop_count",
+    "promql": [
+      "connection_drop_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "connection_drop_probability",
+    "promql": [
+      "connection_drop_probability{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "sessionless_connections_expired",
+    "promql": [
+      "sessionless_connections_expired{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "connection_token_deficit",
+    "promql": [
+      "rate(connection_token_deficit_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "open_file_descriptor",
+    "promql": [
+      "open_file_descriptor_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": null,
+    "chartType": "gauge",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "fsync_time",
+    "promql": [
+      "fsynctime{instance=~\"$instance\",job=~\"$job\"}",
+      "fsynctime_count{instance=~\"$instance\",job=~\"$job\"}",
+      "fsynctime_sum{instance=~\"$instance\",job=~\"$job\"}",
+      "fsynctime_sum * 1000 /fsynctime_count{instance=~\"$instance\",job=~\"$job\"}",
+      "irate(fsynctime_sum{instance=~\"$instance\",job=~\"$job\"}[1m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": false,
+      "current": true,
+      "max": true,
+      "min": true,
+      "rightSide": true,
+      "show": true,
+      "sideWidth": null,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "snapshot_time",
+    "promql": [
+      "rate(snapshottime_sum{instance=~\"$instance\",job=~\"$job\"}[5m])",
+      "snapshottime_count{instance=~\"$instance\",job=~\"$job\"}",
+      "snapshottime_sum / snapshottime_count{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": false,
+      "current": true,
+      "max": true,
+      "min": true,
+      "rightSide": true,
+      "show": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "prep_process_time",
+    "promql": [
+      "rate(prep_process_time_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "prep_processor_queue_time",
+    "promql": [
+      "rate(prep_processor_queue_time_ms_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "prep_processor_queue_size",
+    "promql": [
+      "rate(prep_processor_queue_size_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "prep_processor_request_queued",
+    "promql": [
+      "prep_processor_request_queued{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "outstanding_changes_queued",
+    "promql": [
+      "outstanding_changes_queued{instance=~\"$instance\",job=~\"$job\"}",
+      "outstanding_changes_removed{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "close_session_prep_time",
+    "promql": [
+      "rate(close_session_prep_time_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "sync_process_time",
+    "promql": [
+      "rate(sync_process_time_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "sync_processor_queue_flush_time",
+    "promql": [
+      "rate(sync_processor_queue_flush_time_ms_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "sync_processor_queue_size",
+    "promql": [
+      "rate(sync_processor_queue_size_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "sync_processor_request_queued",
+    "promql": [
+      "sync_processor_request_queued{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "sync_processor_batch_size",
+    "promql": [
+      "rate(sync_processor_batch_size_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "commit_process_time",
+    "promql": [
+      "rate(commit_process_time_sum{instance=~\"$instance\",job=~\"$job\"}[5m])",
+      "rate(read_commitproc_time_ms_sum{instance=~\"$instance\",job=~\"$job\"}[5m])",
+      "rate(write_commitproc_time_ms_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "commit_proc_req_queued",
+    "promql": [
+      "rate(write_commit_proc_req_queued_sum{instance=~\"$instance\",job=~\"$job\"}[5m])",
+      "rate(read_commit_proc_req_queued_sum{instance=~\"$instance\",job=~\"$job\"}[5m])",
+      "rate(commit_commit_proc_req_queued_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "requests_in_session_queue",
+    "promql": [
+      "rate(requests_in_session_queue_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "commit_proc_issued",
+    "promql": [
+      "rate(read_commit_proc_issued_sum{instance=~\"$instance\",job=~\"$job\"}[5m])",
+      "rate(write_commit_proc_issued_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "concurrent_request_processing_in_commit_processor",
+    "promql": [
+      "rate(concurrent_request_processing_in_commit_processor_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "time_waiting_empty_pool_in_commit_processor_read",
+    "promql": [
+      "rate(time_waiting_empty_pool_in_commit_processor_read_ms_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "pending_session_queue_size",
+    "promql": [
+      "rate(pending_session_queue_size_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "local_write_committed_time",
+    "promql": [
+      "rate(local_write_committed_time_ms_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "server_write_committed_time",
+    "promql": [
+      "rate(server_write_committed_time_ms_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "write_batch_time_in_commit_processor",
+    "promql": [
+      "rate(write_batch_time_in_commit_processor_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "reads_after_write_in_session_queue",
+    "promql": [
+      "rate(reads_after_write_in_session_queue_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "session_queues_drained",
+    "promql": [
+      "rate(session_queues_drained_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "reads_issued_from_session_queue",
+    "promql": [
+      "rate(reads_issued_from_session_queue_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "request_commit_queued",
+    "promql": [
+      "request_commit_queued{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "write_final_proc_time_ms",
+    "promql": [
+      "rate(write_final_proc_time_ms_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "read_final_proc_time_ms",
+    "promql": [
+      "rate(read_final_proc_time_ms_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "read_latency",
+    "promql": [
+      "rate(readlatency_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "update_latency",
+    "promql": [
+      "rate(updatelatency_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "max_min_avg_latency",
+    "promql": [
+      "max_latency{instance=~\"$instance\",job=~\"$job\"}",
+      "min_latency{instance=~\"$instance\",job=~\"$job\"}",
+      "avg_latency{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": false,
+      "total": true,
+      "values": true
+    }
+  },
+  {
+    "title": "proposal_latency",
+    "promql": [
+      "rate(proposal_latency_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "quorum_ack_latency",
+    "promql": [
+      "rate(quorum_ack_latency_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "ack_latency",
+    "promql": [
+      "rate(ack_latency_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "propagation_latency",
+    "promql": [
+      "rate(propagation_latency_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "commit_propagation_latency",
+    "promql": [
+      "rate(commit_propagation_latency_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "proposal_ack_creation_latency",
+    "promql": [
+      "proposal_ack_creation_latency{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "tls_handshake",
+    "promql": [
+      "tls_handshake_exceeded{instance=~\"$instance\",job=~\"$job\"}",
+      "outstanding_tls_handshake{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "ensemble_auth",
+    "promql": [
+      "ensemble_auth_fail{instance=~\"$instance\",job=~\"$job\"}",
+      "ensemble_auth_success{instance=~\"$instance\",job=~\"$job\"}",
+      "ensemble_auth_skip{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "jvm_classes_loaded",
+    "promql": [
+      "max(jvm_classes_loaded{instance=~\"$instance\",job=~\"$job\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "jvm_threads_current",
+    "promql": [
+      "max(jvm_threads_current{instance=~\"$instance\",job=~\"$job\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "jvm_threads_deadlocked",
+    "promql": [
+      "max(jvm_threads_deadlocked{instance=~\"$instance\",job=~\"$job\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "jvm_pause_time_ms",
+    "promql": [
+      "rate(jvm_pause_time_ms_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "jvm_gc_collection_seconds",
+    "promql": [
+      "rate(jvm_gc_collection_seconds_sum{instance=~\"$instance\",job=~\"$job\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "jvm_threads_state",
+    "promql": [
+      "jvm_threads_state{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "jvm_memory_pool_bytes_used",
+    "promql": [
+      "jvm_memory_pool_bytes_used{instance=~\"$instance\",job=~\"$job\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": false,
+      "total": false,
+      "values": false
+    }
+  }
+]

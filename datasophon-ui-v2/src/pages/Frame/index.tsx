@@ -17,8 +17,6 @@ import {
 
 hljs.registerLanguage('json', json);
 
-type ClusterType = 'physical' | 'k8s';
-
 interface DdlModalState {
   open: boolean;
   serviceId: number | null;

@@ -1,0 +1,650 @@
+[
+  {
+    "title": "Uptime",
+    "promql": [
+      "sort(max(juicefs_uptime{vol_name=\"$name\"}) by (instance, juicefs_version))"
+    ],
+    "unit": "s",
+    "chartType": "table",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Data Size",
+    "promql": [
+      "avg(juicefs_used_space{vol_name=\"$name\"})"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Files",
+    "promql": [
+      "avg(juicefs_used_inodes{vol_name=\"$name\"})"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Client Sessions",
+    "promql": [
+      "count by (juicefs_version) (juicefs_uptime{vol_name=\"$name\"})"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Operations",
+    "promql": [
+      "sum(rate(juicefs_fuse_ops_durations_histogram_seconds_count{vol_name=\"$name\"}[$__rate_interval]) < 5000000000) by (instance)"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "IO Throughput",
+    "promql": [
+      "sum(rate(juicefs_fuse_written_size_bytes_sum{vol_name=\"$name\"}[$__rate_interval]) < 5000000000) by (instance)",
+      "sum(rate(juicefs_fuse_read_size_bytes_sum{vol_name=\"$name\"}[$__rate_interval]) < 5000000000) by (instance)"
+    ],
+    "unit": "binBps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "IO Latency",
+    "promql": [
+      "sum(rate(juicefs_fuse_ops_durations_histogram_seconds_sum{vol_name=\"$name\"}[$__rate_interval])) by  (instance,mp) * 1000000 / sum(rate(juicefs_fuse_ops_durations_histogram_seconds_count{vol_name=\"$name\"}[$__rate_interval])) by  (instance,mp)"
+    ],
+    "unit": "µs",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Transactions",
+    "promql": [
+      "sum(rate(juicefs_transaction_durations_histogram_seconds_count{vol_name=\"$name\"}[$__rate_interval])) by  (instance)"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Transaction Latency",
+    "promql": [
+      "sum(rate(juicefs_transaction_durations_histogram_seconds_sum{vol_name=\"$name\"}[$__rate_interval])) by  (instance,mp) * 1000000 / sum(rate(juicefs_transaction_durations_histogram_seconds_count{vol_name=\"$name\"}[$__rate_interval])) by  (instance,mp)"
+    ],
+    "unit": "µs",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Transaction Restarts",
+    "promql": [
+      "sum(rate(juicefs_transaction_restart{vol_name=~\"$name\"}[$__rate_interval])) by (instance)"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Objects Requests",
+    "promql": [
+      "sum(rate(juicefs_object_request_durations_histogram_seconds_count{vol_name=\"$name\"}[$__rate_interval])) by  (method)",
+      "sum(rate(juicefs_object_request_errors{vol_name=\"$name\"}[$__rate_interval])) "
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Objects Throughput",
+    "promql": [
+      "sum(rate(juicefs_object_request_data_bytes{method=\"PUT\",vol_name=\"$name\"}[$__rate_interval])) by  (instance,method)",
+      "sum(rate(juicefs_object_request_data_bytes{method=\"GET\",vol_name=\"$name\"}[$__rate_interval])) by  (instance,method)",
+      "sum(rate(juicefs_object_request_data_bytes{method=\"GET\",vol_name=\"$name\"}[$__rate_interval]))"
+    ],
+    "unit": "Bps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Objects Latency",
+    "promql": [
+      "sum(rate(juicefs_object_request_durations_histogram_seconds_sum{vol_name=\"$name\"}[$__rate_interval])) by  (instance) * 1000000 / sum(rate(juicefs_object_request_durations_histogram_seconds_count{vol_name=\"$name\"}[$__rate_interval])) by  (instance)"
+    ],
+    "unit": "µs",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Client CPU Usage",
+    "promql": [
+      "sum(rate(juicefs_cpu_usage{vol_name=\"$name\"}[$__rate_interval])*100 < 1000) by (instance,mp)"
+    ],
+    "unit": "percent",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Client Memory Usage",
+    "promql": [
+      "sum(juicefs_memory{vol_name=\"$name\"}) by (instance,mp)"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Go threads",
+    "promql": [
+      "sum(juicefs_go_goroutines{vol_name=\"$name\"}) by (instance,mp)"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Block Cache Size",
+    "promql": [
+      "sum(juicefs_blockcache_bytes{vol_name=\"$name\"}) by (instance,mp)"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Block Cache Count",
+    "promql": [
+      "sum(juicefs_blockcache_blocks{vol_name=\"$name\"}) by (instance,mp)"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Block Cache Hit Ratio",
+    "promql": [
+      "sum(rate(juicefs_blockcache_hits{vol_name=\"$name\"}[$__rate_interval])) by (instance,mp) *100 / (sum(rate(juicefs_blockcache_hits{vol_name=\"$name\"}[$__rate_interval])) by (instance,mp) + sum(rate(juicefs_blockcache_miss{vol_name=\"$name\"}[$__rate_interval])) by (instance,mp))",
+      "sum(rate(juicefs_blockcache_hit_bytes{vol_name=\"$name\"}[$__rate_interval])) by (instance,mp) *100 / (sum(rate(juicefs_blockcache_hit_bytes{vol_name=\"$name\"}[$__rate_interval])) by (instance,mp) + sum(rate(juicefs_blockcache_miss_bytes{vol_name=\"$name\"}[$__rate_interval])) by (instance,mp))"
+    ],
+    "unit": "percent",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Compaction",
+    "promql": [
+      "sum(rate(juicefs_compact_size_histogram_bytes_count{vol_name=\"$name\"}[$__rate_interval])) by (instance,mp)"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Compacted Data",
+    "promql": [
+      "sum(rate(juicefs_compact_size_histogram_bytes_sum{vol_name=\"$name\"}[$__rate_interval])) by (instance,mp)"
+    ],
+    "unit": "binBps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Open File Handlers",
+    "promql": [
+      "sum(juicefs_fuse_open_handlers{vol_name=\"$name\"}) by (instance,mp)"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Juicefs Staging Blocks",
+    "promql": [
+      "juicefs_staging_blocks{vol_name=\"$name\"}"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Juicefs Staging Block Usage",
+    "promql": [
+      "juicefs_staging_block_bytes{vol_name=\"$name\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Juicefs Staging Block Delay",
+    "promql": [
+      "sum(rate(juicefs_staging_block_delay_seconds{vol_name=\"$name\"}[$__rate_interval])) by (instance,mp) / sum(rate(juicefs_object_request_durations_histogram_seconds_count{vol_name=\"$name\"}[$__rate_interval])) by (instance,mp) "
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  }
+]

@@ -1,10 +1,16 @@
 import component from './zh-CN/component';
+import dolphinSchedulerMonitor from './zh-CN/dolphinSchedulerMonitor';
+import dorisMonitor from './zh-CN/dorisMonitor';
 import globalHeader from './zh-CN/globalHeader';
 import menu from './zh-CN/menu';
 import network from './zh-CN/network';
 import pages from './zh-CN/pages';
+import prometheusMonitor from './zh-CN/prometheusMonitor';
 import settingDrawer from './zh-CN/settingDrawer';
 import settings from './zh-CN/settings';
+import nginxMonitor from './zh-CN/nginxMonitor';
+import valkeyMonitor from './zh-CN/valkeyMonitor';
+import zookeeperMonitor from './zh-CN/zookeeperMonitor';
 
 export default {
   'navBar.lang': '语言',
@@ -19,4 +25,10 @@ export default {
   ...settings,
   ...network,
   ...component,
+  ...prometheusMonitor,
+  ...zookeeperMonitor,
+  ...dolphinSchedulerMonitor,
+  ...dorisMonitor,
+  ...nginxMonitor,
+  ...valkeyMonitor,
 };

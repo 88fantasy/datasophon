@@ -1,0 +1,1413 @@
+[
+  {
+    "title": "Cluster Number",
+    "promql": [
+      "count(node_info{type=\"is_master\"})"
+    ],
+    "unit": "none",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Frontends Status",
+    "promql": [
+      "(up{group=\"fe\"} == 0) +0",
+      "(up{group=\"fe\"} == 1) +0"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "Backends status",
+    "promql": [
+      "(up{group=\"be\"} == 0) +0",
+      "(up{group=\"be\"} == 1) +0"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "Cluster FE JVM Heap Stat",
+    "promql": [
+      "sum(jvm_heap_size_bytes{group=\"fe\", type=\"used\"} * 100) by (instance, job) / sum(jvm_heap_size_bytes{group=\"fe\", type=\"max\"}) by (instance, job)"
+    ],
+    "unit": "percent",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "Cluster BE CPU Idle",
+    "promql": [
+      "(sum(rate(doris_be_cpu{mode=\"idle\"}[$interval])) by (job)) / (sum(rate(doris_be_cpu[$interval])) by (job))"
+    ],
+    "unit": "percentunit",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "Cluster BE Mem Stat",
+    "promql": [
+      "avg(doris_be_memory_allocated_bytes) by (job)"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "max",
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "Cluster QPS Stat",
+    "promql": [
+      "sum by (job)(rate(doris_fe_query_total{group=\"fe\"}[$interval]))"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "max",
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Disk State",
+    "promql": [
+      "(doris_be_disks_state{job=\"$cluster_name\"} == 0)+0",
+      "(doris_be_disks_state{job=\"$cluster_name\"} == 1)+0"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] FE Node",
+    "promql": [
+      "count(up{group=\"fe\", job=\"$cluster_name\"})"
+    ],
+    "unit": "none",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "[$cluster_name]  FE Alive",
+    "promql": [
+      "count(up{group=\"fe\", job=\"$cluster_name\"}==1)"
+    ],
+    "unit": "none",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "[$cluster_name] BE Node",
+    "promql": [
+      "count(up{group=\"be\", job=\"$cluster_name\"})"
+    ],
+    "unit": "none",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "[$cluster_name] BE Alive",
+    "promql": [
+      "count(up{group=\"be\", job=\"$cluster_name\"}==1)"
+    ],
+    "unit": "none",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "[$cluster_name] Used Capacity",
+    "promql": [
+      "SUM(doris_be_disks_local_used_capacity{job=\"$cluster_name\"})"
+    ],
+    "unit": "decbytes",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "[$cluster_name] Total Capacity",
+    "promql": [
+      "SUM(doris_be_disks_total_capacity{job=\"$cluster_name\"})"
+    ],
+    "unit": "decbytes",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "[$cluster_name] Max Replayed journal id",
+    "promql": [
+      "doris_fe_max_journal_id{job=\"$cluster_name\"}"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Image counter",
+    "promql": [
+      "doris_fe_image_write{job=\"$cluster_name\", instance=\"$fe_master\"}",
+      "doris_fe_image_push{job=\"$cluster_name\", instance=\"$fe_master\"}"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BDBJE Write",
+    "promql": [
+      "doris_fe_editlog_write_latency_ms{job=\"$cluster_name\", instance=\"$fe_master\",quantile=\"0.99\"}",
+      "rate(doris_fe_edit_log{job=\"$cluster_name\", type=\"write\"}[$interval])"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BDBJE Read",
+    "promql": [
+      "rate(doris_fe_edit_log{job=\"$cluster_name\", type=\"read\"}[$interval])"
+    ],
+    "unit": "rps",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Edit Log Size",
+    "promql": [
+      "doris_fe_edit_log{job=\"$cluster_name\", type=\"bytes\"}"
+    ],
+    "unit": "decbytes",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Edit Log Clean",
+    "promql": [
+      "doris_fe_edit_log_clean{job=\"$cluster_name\", type=\"success\"}",
+      "doris_fe_edit_log_clean{job=\"$cluster_name\", type=\"failed\"}"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] FE Collect Compaction Score",
+    "promql": [
+      "doris_fe_max_tablet_compaction_score{job=\"$cluster_name\"}"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BE Compaction Score",
+    "promql": [
+      "doris_fe_tablet_max_compaction_score{job=\"$cluster_name\", instance=\"$fe_master\"}"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Image Write",
+    "promql": [
+      "doris_fe_image_write{job=\"$cluster_name\", type=\"success\"}",
+      "doris_fe_image_write{job=\"$cluster_name\", type=\"failed\"}"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Image Push",
+    "promql": [
+      "doris_fe_image_push{job=\"$cluster_name\", type=\"success\"}",
+      "doris_fe_image_push{job=\"$cluster_name\", type=\"failed\"}"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Image Clean",
+    "promql": [
+      "doris_fe_image_clean{job=\"$cluster_name\", type=\"success\"}",
+      "doris_fe_image_clean{job=\"$cluster_name\", type=\"failed\"}"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Scheduling Tablets",
+    "promql": [
+      "doris_fe_scheduled_tablet_num{job=\"$cluster_name\", instance=\"$fe_master\"}"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BE IO Util",
+    "promql": [
+      "doris_be_max_disk_io_util_percent{job=\"$cluster_name\"}"
+    ],
+    "unit": "percent",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] RPS",
+    "promql": [
+      "rate(doris_fe_request_total{job=\"$cluster_name\", group=\"fe\"}[$interval])"
+    ],
+    "unit": "ops",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] QPS",
+    "promql": [
+      "rate(doris_fe_query_total{job=\"$cluster_name\", group=\"fe\"}[$interval])"
+    ],
+    "unit": "ops",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] 99th Latency",
+    "promql": [
+      "sum(doris_fe_query_latency_ms{job=\"$cluster_name\", quantile=\"0.99\"}) by (instance)"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] [$fe_instance] Query Percentile",
+    "promql": [
+      "doris_fe_query_latency_ms{job=\"$cluster_name\", instance=\"$fe_instance\"}",
+      "doris_fe_query_latency_ms_count{job=\"$cluster_name\", instance=\"$fe_instance\"}",
+      "rate(doris_fe_query_latency_ms_count{job=\"$cluster_name\", instance=\"$fe_instance\"}[1m])"
+    ],
+    "unit": "ms",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Query Error [1m]",
+    "promql": [
+      "doris_fe_query_err{job=\"$cluster_name\"}",
+      "rate(doris_fe_query_err{job=\"$cluster_name\"}[$interval])"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Connections",
+    "promql": [
+      "doris_fe_connection_total{job=\"$cluster_name\"}"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Broker Load Job",
+    "promql": [
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"BROKER\", instance=\"$fe_master\"}"
+    ],
+    "unit": null,
+    "chartType": "table-old",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "[$cluster_name] Insert Load Job",
+    "promql": [
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"INSERT\", instance=\"$fe_master\"}"
+    ],
+    "unit": null,
+    "chartType": "table-old",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "[$cluster_name] Routine Load Job",
+    "promql": [
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"ROUTINE_LOAD\", instance=\"$fe_master\"}"
+    ],
+    "unit": null,
+    "chartType": "table-old",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "[$cluster_name] Spark Load Job",
+    "promql": [
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"SPARK\", instance=\"$fe_master\"}"
+    ],
+    "unit": null,
+    "chartType": "table-old",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "[$cluster_name] Broker load tendency",
+    "promql": [
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"BROKER\", instance=\"$fe_master\", state=\"PENDING\"}",
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"BROKER\", instance=\"$fe_master\", state=\"ETL\"}",
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"BROKER\", instance=\"$fe_master\", state=\"LOADING\"}"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Insert load tendency",
+    "promql": [
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"INSERT\", instance=\"$fe_master\", state=\"PENDING\"}",
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"INSERT\", instance=\"$fe_master\", state=\"ETL\"}",
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"INSERT\", instance=\"$fe_master\", state=\"LOADING\"}"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Routine load tendency",
+    "promql": [
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"ROUTINE_LOAD\", instance=\"$fe_master\", state=\"NEED_SCHEDULE\"}",
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"ROUTINE_LOAD\", instance=\"$fe_master\", state=\"RUNNING\"}",
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"ROUTINE_LOAD\", instance=\"$fe_master\", state=\"PAUSED\"}"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Spark load tendency",
+    "promql": [
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"SPARK\", instance=\"$fe_master\", state=\"PENDING\"}",
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"SPARK\", instance=\"$fe_master\", state=\"ETL\"}",
+      "doris_fe_job{job=\"$cluster_name\", exported_job=\"load\", type=\"SPARK\", instance=\"$fe_master\", state=\"LOADING\"}"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] SC Job",
+    "promql": [
+      "doris_fe_job{job=\"$cluster_name\", instance=\"$fe_master\", type=\"SCHEMA_CHANGE\"}"
+    ],
+    "unit": null,
+    "chartType": "table-old",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "[$cluster_name] Report queue size",
+    "promql": [
+      "doris_fe_report_queue_size{job=\"$cluster_name\", instance=\"$fe_master\"}"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Rollup Job",
+    "promql": [
+      "doris_fe_job{job=\"$cluster_name\", instance=\"$fe_master\", type=\"ROLLUP\"}"
+    ],
+    "unit": null,
+    "chartType": "table-old",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "[$cluster_name] Txn Begin/Success on FE",
+    "promql": [
+      "doris_fe_txn_counter{type=\"begin\"}",
+      "doris_fe_txn_counter{type=\"begin\"}",
+      "irate(doris_fe_txn_counter{type=\"begin\"}[$interval])",
+      "irate(doris_fe_txn_counter{type=\"begin\"}[$interval])"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Txn Failed/Reject on FE",
+    "promql": [
+      "rate(doris_fe_txn_counter{type=\"reject\"}[$interval])",
+      "rate(doris_fe_txn_counter{type=\"failed\"}[$interval])"
+    ],
+    "unit": "ops",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Publish Task on BE",
+    "promql": [
+      "sum(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"publish\", status=\"total\"})",
+      "irate(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"publish\", status=\"failed\"}[$interval])"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current",
+        "total"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] fe_txn_status",
+    "promql": [
+      "doris_fe_txn_status{group=\"fe\", job=\"$cluster_name\", type=\"prepare\"}",
+      "doris_fe_txn_status{group=\"fe\", job=\"$cluster_name\", type=\"precommitted\"}",
+      "doris_fe_txn_status{group=\"fe\", job=\"$cluster_name\", type=\"committed\"}",
+      "doris_fe_txn_status{group=\"fe\", job=\"$cluster_name\", type=\"aborted\"}",
+      "doris_fe_txn_status{group=\"fe\", job=\"$cluster_name\", type=\"visible\"}",
+      "doris_fe_txn_status{group=\"fe\", job=\"$cluster_name\", type=\"unknown\"}"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Txn Load Bytes/Rows rate",
+    "promql": [
+      "sum(rate(doris_be_stream_load{group=\"be\", job=\"$cluster_name\", type=\"receive_bytes\"}[$interval]))",
+      "sum(rate(doris_be_stream_load{group=\"be\", job=\"$cluster_name\", type=\"load_rows\"}[$interval]))"
+    ],
+    "unit": "Bps",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max",
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] [$fe_instance] JVM Heap",
+    "promql": [
+      "jvm_heap_size_bytes{instance=\"$fe_instance\", job=\"$cluster_name\", type=\"used\"}",
+      "jvm_heap_size_bytes{instance=\"$fe_instance\", job=\"$cluster_name\", type=\"max\"}",
+      "sum(jvm_heap_size_bytes{instance=\"$fe_instance\", job=\"$cluster_name\", type=\"used\"}) * 100 / sum(jvm_heap_size_bytes{instance=\"$fe_instance\", job=\"$cluster_name\", type=\"max\"})"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] [$fe_instance] JVM Non Heap",
+    "promql": [
+      "jvm_non_heap_size_bytes{instance=\"$fe_instance\", job=\"$cluster_name\", type=\"used\"}",
+      "jvm_non_heap_size_bytes{instance=\"$fe_instance\", job=\"$cluster_name\", type=\"committed\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] [$fe_instance] JVM Old",
+    "promql": [
+      "jvm_old_size_bytes{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"used\"}",
+      "jvm_old_size_bytes{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"max\"}",
+      "sum(jvm_old_size_bytes{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"used\"}) * 100 / sum(jvm_old_size_bytes{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"max\"})"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] [$fe_instance] JVM Old GC",
+    "promql": [
+      "jvm_old_gc{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"count\"}",
+      "sum(jvm_old_gc{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"time\"}) / sum(jvm_old_gc{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"count\"})"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] [$fe_instance] JVM Young",
+    "promql": [
+      "jvm_young_size_bytes{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"used\"}",
+      "jvm_young_size_bytes{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"max\"}",
+      "sum(jvm_young_size_bytes{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"used\"}) * 100 / sum(jvm_young_size_bytes{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"max\"})"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] [$fe_instance] JVM Young GC",
+    "promql": [
+      "jvm_young_gc{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"count\"}",
+      "sum(jvm_young_gc{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"time\"}) / sum(jvm_young_gc{job=\"$cluster_name\", instance=\"$fe_instance\", type=\"count\"})"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] JVM Threads",
+    "promql": [
+      "jvm_thread{job=\"$cluster_name\", group=\"fe\", type=\"count\"}"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "max",
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BE CPU Idle",
+    "promql": [
+      "(sum(rate(doris_be_cpu{mode=\"idle\", job=\"$cluster_name\"}[$interval])) by (job, instance)) / (sum(rate(doris_be_cpu{job=\"$cluster_name\"}[$interval])) by (job, instance)) * 100"
+    ],
+    "unit": "percent",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "max",
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BE Mem",
+    "promql": [
+      "doris_be_memory_allocated_bytes{job=\"$cluster_name\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "max",
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Net send/receive bytes",
+    "promql": [
+      "irate(doris_be_network_send_bytes{job=\"$cluster_name\", group=\"be\", device!=\"lo\"}[$interval])",
+      "irate(doris_be_network_receive_bytes{job=\"$cluster_name\", group=\"be\", device!=\"lo\"}[$interval])"
+    ],
+    "unit": "Bps",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Disk Usage",
+    "promql": [
+      "(SUM(doris_be_disks_total_capacity{job=\"$cluster_name\"}) by (instance, path) - SUM(doris_be_disks_avail_capacity{job=\"$cluster_name\"}) by (instance, path)) / SUM(doris_be_disks_total_capacity{job=\"$cluster_name\"}) by (instance, path)",
+      "(SUM(doris_be_disks_local_used_capacity{job=\"$cluster_name\"}) by (instance, path)) / SUM(doris_be_disks_total_capacity{job=\"$cluster_name\"}) by (instance, path)"
+    ],
+    "unit": "percentunit",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Tablet Distribution",
+    "promql": [
+      "doris_fe_tablet_num{job=\"$cluster_name\", instance=\"$fe_master\"}"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BE FD count",
+    "promql": [
+      "doris_be_process_fd_num_used{job=\"$cluster_name\", group=\"be\"}",
+      "doris_be_process_fd_num_limit_soft{job=\"$cluster_name\", group=\"be\"}"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BE thread num",
+    "promql": [
+      "doris_be_process_thread_num{job=\"$cluster_name\", group=\"be\"}"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Disk IO util",
+    "promql": [
+      "rate(doris_be_disk_io_time_ms{job=\"$cluster_name\"}[$interval]) / 10",
+      "doris_be_max_disk_io_util_percent"
+    ],
+    "unit": "percent",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max",
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BE Compaction Base",
+    "promql": [
+      "rate(doris_be_compaction_bytes_total{type=\"base\", job=\"$cluster_name\"}[$interval])",
+      "sum(doris_be_compaction_bytes_total{type=\"base\", job=\"$cluster_name\"})"
+    ],
+    "unit": "Bps",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BE Compaction Cumulate",
+    "promql": [
+      "rate(doris_be_compaction_bytes_total{type=\"cumulative\", job=\"$cluster_name\"}[$interval])",
+      "SUM(doris_be_compaction_bytes_total{type=\"cumulative\", job=\"$cluster_name\"})"
+    ],
+    "unit": "Bps",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BE Push Bytes",
+    "promql": [
+      "rate(doris_be_push_request_write_bytes{job=\"$cluster_name\"}[$interval])",
+      "sum(rate(doris_be_push_request_write_bytes{job=\"$cluster_name\"}[$interval]))"
+    ],
+    "unit": "Bps",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BE Push Rows",
+    "promql": [
+      "rate(doris_be_push_request_write_rows{job=\"$cluster_name\"}[$interval])",
+      "sum(rate(doris_be_push_request_write_rows{job=\"$cluster_name\"}[$interval]))"
+    ],
+    "unit": "ops",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BE Scan Bytes",
+    "promql": [
+      "rate(doris_be_query_scan_bytes{job=\"$cluster_name\"}[$interval])"
+    ],
+    "unit": "Bps",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] BE Scan Rows",
+    "promql": [
+      "rate(doris_be_query_scan_rows{job=\"$cluster_name\"}[$interval])"
+    ],
+    "unit": "ops",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Tablet Meta Write",
+    "promql": [
+      "irate(doris_be_meta_request_total{job=\"$cluster_name\", type=\"write\"}[$interval])",
+      "doris_be_meta_request_duration{job=\"$cluster_name\", type=\"write\"} / doris_be_meta_request_total{job=\"$cluster_name\", type=\"write\"}"
+    ],
+    "unit": "wps",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Tablet Meta Read",
+    "promql": [
+      "irate(doris_be_meta_request_total{job=\"$cluster_name\", type=\"read\"}[$interval])",
+      "doris_be_meta_request_duration{job=\"$cluster_name\", type=\"read\"} / doris_be_meta_request_total{job=\"$cluster_name\", type=\"read\"}"
+    ],
+    "unit": "wps",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "max"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Tablets Report",
+    "promql": [
+      "SUM(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"report_all_tablets\", status=\"total\"})",
+      "irate(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"report_all_tablets\", status=\"failed\"}[$interval])"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current",
+        "total"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Single Tablet Report",
+    "promql": [
+      "SUM(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"report_tablet\", status=\"total\"})",
+      "irate(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"report_tablet\", status=\"failed\"}[$interval])"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current",
+        "total"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Finish task report",
+    "promql": [
+      "SUM(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"finish_task\", status=\"total\"})",
+      "irate(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"finish_task\", status=\"failed\"}[$interval])"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current",
+        "total"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Push Task",
+    "promql": [
+      "sum(doris_be_push_requests_total{job=\"$cluster_name\", status=\"SUCCESS\"})",
+      "irate(doris_be_push_requests_total{job=\"$cluster_name\", status=\"FAIL\"}[$interval])"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current",
+        "total"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Push Task Cost Time",
+    "promql": [
+      "irate(doris_be_push_request_duration_us{job=\"$cluster_name\"}[$interval])"
+    ],
+    "unit": "µs",
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "avg",
+        "current"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Delete",
+    "promql": [
+      "SUM(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"delete\", status=\"total\"})",
+      "irate(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"delete\", status=\"failed\"}[$interval])"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current",
+        "total"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Base Compaction",
+    "promql": [
+      "SUM(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"base_compaction\", status=\"total\"})",
+      "irate(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"base_compaction\", status=\"failed\"}[$interval])"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current",
+        "total"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Cumulative Compaction",
+    "promql": [
+      "SUM(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"cumulative_compaction\", status=\"total\"})",
+      "irate(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"cumulative_compaction\", status=\"failed\"}[$interval])"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current",
+        "total"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Clone",
+    "promql": [
+      "SUM(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"clone\", status=\"total\"})",
+      "irate(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"clone\", status=\"failed\"}[$interval])"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current",
+        "total"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Create rollup",
+    "promql": [
+      "SUM(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"create_rollup\", status=\"total\"})",
+      "irate(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"create_rollup\", status=\"failed\"}[$interval])"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current",
+        "total"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Schema change",
+    "promql": [
+      "SUM(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"schema_change\", status=\"total\"})",
+      "irate(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"schema_change\", status=\"failed\"}[$interval])"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current",
+        "total"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  },
+  {
+    "title": "[$cluster_name] Create tablet",
+    "promql": [
+      "SUM(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"create_tablet\", status=\"total\"})",
+      "irate(doris_be_engine_requests_total{job=\"$cluster_name\", type=\"create_tablet\", status=\"failed\"}[$interval])"
+    ],
+    "unit": null,
+    "chartType": "graph",
+    "thresholds": null,
+    "legend": {
+      "calcs": [
+        "current",
+        "total"
+      ],
+      "displayMode": "list",
+      "placement": "bottom"
+    }
+  }
+]

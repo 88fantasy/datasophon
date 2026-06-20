@@ -459,8 +459,7 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 | **YARN**（Hadoop） | **3.5.0** | **3.5.0** | ✅ 已升级，与 HDFS 版本保持一致 |
 | **Hive** | **4.2.0** | **4.2.0** | ✅ 已升级；4.x 要求 JDK 21，部署前需确认运行环境 |
 | **Elasticsearch** | **9.4.2** | **9.4.2** | ✅ 已升级至最新稳定版 |
-| **Redis** | **8.6** | **8.6**（开源版） | ✅ 已升级 |
-| **MinIO**（Java SDK） | **9.0.1** | **9.0.1** | ✅ 已升级；9.x API 有 breaking change，升级后注意客户端兼容性 |
+| **Valkey** | **8.1.7** | **8.1.7**（Redis 的 BSD-3 开源分叉） | ✅ 已替换 Redis |
 | **JuiceFS** | **1.3.1** | **1.3.1**（LTS，24 个月维护） | ✅ 已升级至 LTS 版本 |
 | **Doris** | **4.0.5** | **4.0.5**（稳定）/ 4.1.1（最新） | ✅ 已升级；4.x 引入 AI/向量搜索，升级前充分测试 |
 

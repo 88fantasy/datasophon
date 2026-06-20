@@ -1,0 +1,1577 @@
+[
+  {
+    "component": "MySQL",
+    "version": "8.0.28",
+    "group": "中间件",
+    "nativePrometheus": {
+      "supported": false,
+      "sinceVersion": "9.x+ (Enterprise Telemetry via OTLP, not a native /metrics HTTP endpoint)",
+      "endpoint": "",
+      "port": "",
+      "docUrl": "https://dev.mysql.com/doc/refman/en/telemetry-metrics.html",
+      "notes": "MySQL 8.0.28 本身不暴露原生 /metrics HTTP 端点。MySQL 在 8.4+ 的 Enterprise 版本中通过 OpenTelemetry OTLP 协议推送指标，但这需要 MySQL Enterprise Telemetry 插件，且是 push 模式而非 Prometheus pull /metrics 端点。对于社区版 8.0.28，无任何原生 Prometheus 端点，必须使用 mysqld_exporter。"
+    },
+    "exporterFallback": {
+      "needed": true,
+      "name": "prometheus/mysqld_exporter",
+      "repoUrl": "https://github.com/prometheus/mysqld_exporter"
+    },
+    "dataSource": "exporter",
+    "candidates": [
+      {
+        "name": "MySQL Exporter Quickstart and Dashboard",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/14057-mysql/",
+        "grafanaId": 14057,
+        "downloads": 72001,
+        "rating": 5,
+        "datasource": "Prometheus",
+        "lastUpdate": "2021-03-12",
+        "scores": {
+          "heat": 0.3,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.18,
+          "goldenSignals": 0.18
+        },
+        "total": 0.96
+      },
+      {
+        "name": "MySQL 8.0 Overview",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/20016-mysql-8-0/",
+        "grafanaId": 20016,
+        "downloads": 1539,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2024-03-13",
+        "scores": {
+          "heat": 0.06,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.17,
+          "goldenSignals": 0.17
+        },
+        "total": 0.7
+      },
+      {
+        "name": "mysql overview",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/14969-mysqld-overview/",
+        "grafanaId": 14969,
+        "downloads": 975,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2021-09-06",
+        "scores": {
+          "heat": 0.03,
+          "datasourceMatch": 0.27,
+          "promqlPortability": 0.15,
+          "goldenSignals": 0.14
+        },
+        "total": 0.59
+      }
+    ],
+    "recommendation": {
+      "pick": "MySQL Exporter Quickstart and Dashboard (ID: 14057)",
+      "reason": "下载量 72,001 远超其他候选，heat 得分满分 0.3；基于官方 prometheus/mysqld_exporter 指标体系，datasourceMatch 满分 0.3；PromQL 由 mixin 工具链生成，可移植性强(0.18)；覆盖连接数/QPS/InnoDB Buffer/错误率/延迟等黄金信号(0.18)；total=0.96 为三者最高。唯一不足是更新于 2021 年，可结合 ID 20016（专为 MySQL 8.0 测试，更新至 2024）补充 8.0 特有指标面板。"
+    },
+    "tier": "🟢可直接做"
+  },
+  {
+    "candidates": [
+      {
+        "name": "Infra / Nexus",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/16459-infra-nexus/",
+        "grafanaId": 16459,
+        "downloads": 160955,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2022-06-26",
+        "scores": {
+          "heat": 0.3,
+          "datasourceMatch": 0.21,
+          "promqlPortability": 0.12,
+          "goldenSignals": 0.16
+        },
+        "total": 0.79
+      },
+      {
+        "name": "Nexus",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/11702-nexus/",
+        "grafanaId": 11702,
+        "downloads": 2346,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2020-02-07",
+        "scores": {
+          "heat": 0.015,
+          "datasourceMatch": 0.06,
+          "promqlPortability": 0.1,
+          "goldenSignals": 0.08
+        },
+        "total": 0.255
+      },
+      {
+        "name": "Nexus blobs and repos",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/19842-nexus-blobs-and-repos/",
+        "grafanaId": 19842,
+        "downloads": 1075,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2024-12-22",
+        "scores": {
+          "heat": 0.006,
+          "datasourceMatch": 0.06,
+          "promqlPortability": 0.1,
+          "goldenSignals": 0.06
+        },
+        "total": 0.226
+      }
+    ],
+    "component": "Nexus",
+    "dataSource": "native",
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "group": "中间件",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "long-standing built-in feature; endpoint path changed in 3.81.1 (Switch Metrics Servlets to JAX-RS)",
+      "endpoint": "/service/rest/metrics/prometheus (3.81+；3.81 之前为 /service/metrics/prometheus，旧路径有重定向但部分脚本不跟随)",
+      "port": 8081,
+      "docUrl": "https://help.sonatype.com/en/prometheus.html",
+      "notes": "Nexus Repository (Community Edition 即可)默认内置基于 Dropwizard Metrics 的 Prometheus 端点，需要 nx-metrics-all 权限(Basic Auth)。3.85.0 属于 3.81+ 系列，应使用新路径 /service/rest/metrics/prometheus；旧路径 /service/metrics/prometheus 自 3.81.1 起仅做重定向。指标涵盖 Nexus 组件运行时(执行耗时/异常计数)、Jetty(请求/响应/线程)、JVM 运行时。另有独立的 Service Metrics Data API(/service/rest/metrics/data，3.81+)提供组件/资产统计，但不是 Prometheus 格式。"
+    },
+    "recommendation": {
+      "pick": "Infra / Nexus (grafana.com #16459)",
+      "reason": "数据源已确认为原生支持(dataSource=native)，该看板基于 Nexus 内置 Dropwizard Prometheus 端点(Nexus 组件运行时/Jetty/JVM 指标族)，下载量 160,955 遥遥领先(heat=0.30)，指标名与原生端点核心一致只是采集 URL 路径较旧但底层指标族未变(datasourceMatch=0.21)，覆盖 JVM 饱和度、Jetty 请求量/响应状态(错误率)/线程及组件执行耗时(延迟)等黄金信号(goldenSignals=0.16)，总分 0.79 明显优于其余候选(0.255/0.226)。落地时仅需将 Prometheus 抓取 job 的 metrics_path 改为 3.85.0 对应的 /service/rest/metrics/prometheus 并配置 Basic Auth(nx-metrics-all 权限)，看板面板基本可直接复用。"
+    },
+    "tier": "🟢可直接做",
+    "version": "3.85.0"
+  },
+  {
+    "candidates": [
+      {
+        "name": "Minio Overview",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/10946-minio-overview/",
+        "grafanaId": 10946,
+        "downloads": 5210,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2019 (revision 1, no update since creation)",
+        "scores": {
+          "heat": 0.18,
+          "datasourceMatch": 0.06,
+          "promqlPortability": 0.1,
+          "goldenSignals": 0.1
+        },
+        "total": 0.44
+      },
+      {
+        "name": "MinIO Object Storage",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/12563-minio-object-storage/",
+        "grafanaId": 12563,
+        "downloads": 2949,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2020-07-14",
+        "scores": {
+          "heat": 0.12,
+          "datasourceMatch": 0.06,
+          "promqlPortability": 0.12,
+          "goldenSignals": 0.08
+        },
+        "total": 0.38
+      },
+      {
+        "name": "Minio distributed cluster metrics (Hot Cluster Metrics)",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/11568-minio-hot-cluster-metrics/",
+        "grafanaId": 11568,
+        "downloads": 2134,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2020-01-15",
+        "scores": {
+          "heat": 0.1,
+          "datasourceMatch": 0.06,
+          "promqlPortability": 0.1,
+          "goldenSignals": 0.1
+        },
+        "total": 0.36
+      }
+    ],
+    "component": "Rustfs",
+    "dataSource": "native",
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "group": "中间件",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "MinIO-compatible endpoint documented across current docs (exact RustFS version unspecified; observed in app version 1.0.0 / 1.0.0-alpha.99 builds)",
+      "endpoint": "/minio/v2/metrics/cluster (legacy MinIO dashboards reference older /minio/prometheus/metrics path)",
+      "port": 9000,
+      "docUrl": "https://docs.bleemeo.com/server-monitoring/services/rustfs/",
+      "notes": "RustFS 官方文档(docs.rustfs.com/features/logging)仅概念性声明'通过 Prometheus 兼容端点导出大量硬件/软件指标',未给出具体路径/端口。第三方 Bleemeo 监控指南明确指出:RustFS 在 API 端口 9000 上提供 MinIO 兼容端点 /minio/v2/metrics/cluster,指标可能使用 rustfs_ 或 minio_ 前缀,默认需鉴权(设 RUSTFS_PROMETHEUS_AUTH_TYPE=public 可公开访问,或用 mc admin prometheus generate 生成 bearer token)。但社区反馈与该结论冲突:GitHub Issue #796(2025-11)用户访问 http://127.0.0.1:9000/metrics 失败;Issue #1228(2025-12,RustFS 1.0.0 用户)按文档调用 /rustfs/v3/metrics/cluster 携带 bearer token 返回 'invalid header: authorization' 错误,问题状态'待确认'。Ilum 文档另指出其打包的 RustFS chart(app version 1.0.0-alpha.99)上游端点仍处于 alpha/不稳定状态,建议改用 RustFS 官方 docker-compose 中的 OTel Collector 参考栈(RUSTFS_OBS_ENDPOINT 环境变量,--profile observability,内置 Prometheus+Grafana+Jaeger)。结论:原生 MinIO 兼容 Prometheus 端点在文档层面存在,但 1.0.0 版本实测可用性存疑,建议优先验证 OTel Collector 路径或在目标版本上实测 /minio/v2/metrics/cluster 是否可访问。"
+    },
+    "recommendation": {
+      "pick": "需自建",
+      "reason": "原生数据源在文档上存在(/minio/v2/metrics/cluster,端口9000,MinIO 兼容),但 RustFS 1.0.0 实测报告(GitHub #796/#1228)显示该端点在当前版本不稳定或无法直接访问,需先验证或改走 OTel Collector(RUSTFS_OBS_ENDPOINT)路径。Grafana 官方无 RustFS 专属看板(社区讨论 #601 已确认无官方看板)。候选 MinIO 看板(Minio Overview 总分0.44/MinIO Object Storage 0.38/Minio Hot Cluster Metrics 0.36)均基于已过时的 /minio/prometheus/metrics 旧路径与 minio_ 指标名,datasourceMatch 项因此偏低(均为0.06/0.3),无法直接套用。建议:① 先在目标 RustFS 1.0.0 实例上实测确认 /minio/v2/metrics/cluster 或 OTel Collector 导出的实际指标命名空间(rustfs_* vs minio_*);② 基于确认后的指标名,参考 Minio Overview(下载量最高,5210)的面板结构(容量、IOPS、网络、副本状态)二次开发自建看板,补齐延迟分布(histogram)、错误率、磁盘饱和度等黄金信号面板。"
+    },
+    "tier": "🟡需自建",
+    "version": "1.0.0"
+  },
+  {
+    "component": "DATART",
+    "version": "3.6.1",
+    "group": "内部组件",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "Spring Boot Actuator/Micrometer instrumentation",
+      "endpoint": "/actuator/prometheus",
+      "port": "DATART server port",
+      "docUrl": "https://docs.spring.io/spring-boot/reference/actuator/metrics.html",
+      "notes": "DATART is handled as a Spring Boot application dashboard target. Enable Spring Boot Actuator plus micrometer-registry-prometheus and expose /actuator/prometheus, then reuse generic JVM/Spring Boot/Micrometer panels for JVM, HTTP server, Tomcat, HikariCP, process and filesystem metrics."
+    },
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "dataSource": "native",
+    "candidates": [
+      {
+        "name": "Spring Boot 2.1 Statistics",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/10280-spring-boot-2-1-statistics/",
+        "grafanaId": 10280,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus (Micrometer /actuator/prometheus)",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.18,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.18,
+          "goldenSignals": 0.16
+        },
+        "total": 0.82
+      },
+      {
+        "name": "JVM Micrometer",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/4701-jvm-micrometer/",
+        "grafanaId": 4701,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus (Micrometer JVM metrics)",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.16,
+          "datasourceMatch": 0.27,
+          "promqlPortability": 0.18,
+          "goldenSignals": 0.14
+        },
+        "total": 0.75
+      },
+      {
+        "name": "Spring Boot Observability",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/?search=spring%20boot%20micrometer",
+        "grafanaId": null,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus (Spring Boot Actuator / Micrometer)",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.1,
+          "datasourceMatch": 0.24,
+          "promqlPortability": 0.16,
+          "goldenSignals": 0.14
+        },
+        "total": 0.64
+      }
+    ],
+    "recommendation": {
+      "pick": "Spring Boot 2.1 Statistics (ID 10280)",
+      "reason": "DATART adopts the Spring Boot Actuator/Micrometer monitoring path. This generic Spring Boot dashboard is the best baseline because it uses Micrometer /actuator/prometheus metrics and covers JVM, HTTP, Tomcat, HikariCP and process-level signals; DATART-specific business panels can be added later if custom metrics are introduced."
+    },
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Alertmanager",
+    "version": "0.32.1",
+    "group": "可观测性",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "0.14.0",
+      "endpoint": "/metrics",
+      "port": "9093",
+      "docUrl": "https://prometheus.io/docs/alerting/latest/alertmanager/",
+      "notes": "Alertmanager 自 v0.14.0 起原生暴露 Prometheus /metrics 端点，默认监听 9093 端口。指标涵盖通知投递（alertmanager_notifications_total、alertmanager_notifications_failed_total）、告警状态（alertmanager_alerts、alertmanager_alerts_received_total）、集群健康（alertmanager_cluster_members、alertmanager_cluster_messages_publish_failures_total）。v0.32.1 完全支持，无需任何额外 exporter。"
+    },
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "dataSource": "native",
+    "candidates": [
+      {
+        "name": "Alertmanager",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/9578-alertmanager/",
+        "grafanaId": 9578,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.24,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.17,
+          "goldenSignals": 0.14
+        },
+        "total": 0.85
+      },
+      {
+        "name": "Alertmanager告警总览",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/9681-alertmanager/",
+        "grafanaId": 9681,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.12,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.14,
+          "goldenSignals": 0.12
+        },
+        "total": 0.68
+      },
+      {
+        "name": "OPEN ALERTS OF ALERTMANAGER",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/12947-open-alerts-of-alertmanager/",
+        "grafanaId": 12947,
+        "downloads": null,
+        "rating": null,
+        "datasource": "camptocamp-prometheus-alertmanager-datasource",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.1,
+          "datasourceMatch": 0.06,
+          "promqlPortability": 0.06,
+          "goldenSignals": 0.08
+        },
+        "total": 0.3
+      }
+    ],
+    "recommendation": {
+      "pick": "Alertmanager (ID 9578)",
+      "reason": "得分最高（0.85）。该看板基于 Prometheus 原生 /metrics 端点，datasourceMatch 满分（0.30），完整匹配 Alertmanager 0.32.1 的原生指标体系；PromQL 干净、基于标准 alertmanager_* 指标族、可移植性强（0.17）；覆盖流量（alertmanager_alerts_received_total）、错误（alertmanager_notifications_failed_total）、饱和度（alertmanager_alerts_limited_total）三项 Golden Signals，评分 0.14。由 FUSAKLA 维护并托管在 GitHub（github.com/FUSAKLA/alertmanager-grafana-dashboard），社区广泛引用，2025 年仍有教程参考，热度贡献 0.24。"
+    },
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Loki",
+    "version": "3.7.2",
+    "group": "可观测性",
+    "nativePrometheus": {
+      "supported": true,
+      "endpoint": "/metrics",
+      "port": "3100",
+      "sinceVersion": "0.2",
+      "docUrl": "https://grafana.com/docs/loki/latest/operations/observability/",
+      "notes": "Loki 原生在 HTTP 监听端口(默认 3100)的 /metrics 路径暴露 Prometheus 格式指标,无需任何 exporter。核心指标包括 loki_request_duration_seconds(延迟直方图)、loki_distributor_bytes_received_total(吞吐量)、loki_request_duration_seconds_count{status_code=~'5..'}(错误率)、loki_ingester_memory_streams(饱和度)等,完整覆盖四大黄金信号。该端点自 Loki 早期版本(v0.2)起即存在,属于核心设计而非后期添加。"
+    },
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "dataSource": "native",
+    "candidates": [
+      {
+        "name": "Loki Metrics Dashboard",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/17781-loki-metrics-dashboard/",
+        "grafanaId": 17781,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.21,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.18,
+          "goldenSignals": 0.18
+        },
+        "total": 0.87
+      },
+      {
+        "name": "Loki Mixin Dashboards (Official)",
+        "source": "github",
+        "url": "https://github.com/grafana/loki/tree/main/production/loki-mixin",
+        "grafanaId": null,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.15,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.2,
+          "goldenSignals": 0.2
+        },
+        "total": 0.85
+      },
+      {
+        "name": "Loki Dashboard",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/13186-loki-dashboard/",
+        "grafanaId": 13186,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Loki",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.24,
+          "datasourceMatch": 0.09,
+          "promqlPortability": 0.06,
+          "goldenSignals": 0.06
+        },
+        "total": 0.45
+      }
+    ],
+    "recommendation": {
+      "pick": "Loki Metrics Dashboard (ID 17781)",
+      "reason": "datasourceMatch 满分 0.30:该看板通过 Prometheus 抓取 Loki 原生 /metrics 端点,指标名与数据源完全吻合。goldenSignals 0.18:覆盖延迟(loki_request_duration_seconds p99)、吞吐(distributor bytes/lines)、错误(5xx 率)、饱和度(ingester 内存/队列),四大黄金信号全覆盖。promqlPortability 0.18:使用标准 Prometheus 记录规则与 histogram_quantile,PromQL 可移植性强。若需要更完整的组件级细化(读写路径分离、bloom、retention 等),可补充部署官方 Loki Mixin 13 个子看板(GitHub 源)。"
+    },
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Prometheus",
+    "version": "3.12.0",
+    "group": "可观测性",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "1.0.0",
+      "endpoint": "/metrics",
+      "port": "9090",
+      "docUrl": "https://prometheus.io/docs/prometheus/latest/getting_started/",
+      "notes": "Prometheus 自 1.0.0 起即原生在 :9090/metrics 暴露自身指标，无需任何额外配置。v3.12.0 另新增 /api/v1/status/self_metrics（JSON 格式），作为结构化补充端点，但标准文本格式 /metrics 端点仍为主要数据源。默认 scrape job 名为 prometheus，自抓取 localhost:9090/metrics。"
+    },
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "dataSource": "native",
+    "candidates": [
+      {
+        "name": "Prometheus 2.0 Overview",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/3662-prometheus-2-0-overview/",
+        "grafanaId": 3662,
+        "downloads": 1800000,
+        "rating": 4.7,
+        "datasource": "Prometheus",
+        "lastUpdate": "2020-01-01",
+        "scores": {
+          "heat": 0.3,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.18,
+          "goldenSignals": 0.16
+        },
+        "total": 0.94
+      },
+      {
+        "name": "Prometheus",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/19105-prometheus/",
+        "grafanaId": 19105,
+        "downloads": 120000,
+        "rating": 4.5,
+        "datasource": "Prometheus",
+        "lastUpdate": "2024-06-01",
+        "scores": {
+          "heat": 0.12,
+          "datasourceMatch": 0.28,
+          "promqlPortability": 0.16,
+          "goldenSignals": 0.15
+        },
+        "total": 0.71
+      },
+      {
+        "name": "Prometheus 2.22",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/13468-prometheus/",
+        "grafanaId": 13468,
+        "downloads": 200000,
+        "rating": 4.3,
+        "datasource": "Prometheus",
+        "lastUpdate": "2022-01-01",
+        "scores": {
+          "heat": 0.15,
+          "datasourceMatch": 0.27,
+          "promqlPortability": 0.15,
+          "goldenSignals": 0.14
+        },
+        "total": 0.71
+      }
+    ],
+    "recommendation": {
+      "pick": "Prometheus 2.0 Overview (ID: 3662)",
+      "reason": "综合评分最高(0.94)。heat 得分 0.30 满分：社区下载量极大(估计 180+ 万次)，是最广泛引用的 Prometheus 自监控看板；datasourceMatch 得分 0.30 满分：完全基于 Prometheus 原生 /metrics 指标名（prometheus_target_interval_length_seconds、promhttp_metric_handler_requests_total 等），与 3.12.0 原生端点完美匹配；promqlPortability 0.18：PromQL 干净，支持 job 模板变量，易于多实例扩展；goldenSignals 0.16：覆盖吞吐量(scrape 请求数)、延迟(scrape duration)、错误(failed scrapes)、饱和度(chunk/series/内存)四项黄金信号。唯一需注意：看板名含 2.0 字样为历史遗留，实际指标在 Prometheus 3.x 中完全兼容。"
+    },
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Promtail",
+    "version": "2.8.11",
+    "group": "可观测性",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "1.0.0",
+      "endpoint": "/metrics",
+      "port": 9080,
+      "docUrl": "https://grafana.com/docs/loki/latest/send-data/promtail/configuration/",
+      "notes": "Promtail 内置 HTTP 服务器，默认通过 server.http_listen_port=9080 监听，register_instrumentation 默认为 true，自动注册 /metrics 端点。Prometheus 可直接抓取该端点获取 promtail_stream_lag_seconds、pipeline_duration_seconds、promtail_build_info 等指标。Docker 镜像默认端口可能为 80，裸机/K8s 部署通用默认值为 9080。"
+    },
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "dataSource": "native",
+    "candidates": [
+      {
+        "name": "Promtail Monitoring - Metrics and Logs",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/20881-promtail-monitoring-metrics-and-logs/",
+        "grafanaId": 20881,
+        "downloads": 22266,
+        "rating": null,
+        "datasource": "Prometheus+Loki",
+        "lastUpdate": "2024-04-12",
+        "scores": {
+          "heat": 0.18,
+          "datasourceMatch": 0.28,
+          "promqlPortability": 0.16,
+          "goldenSignals": 0.18
+        },
+        "total": 0.8
+      },
+      {
+        "name": "Loki stack monitoring (Promtail, Loki)",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/14055-loki-stack-monitoring-promtail-loki/",
+        "grafanaId": 14055,
+        "downloads": 46929,
+        "rating": 4.25,
+        "datasource": "Prometheus+Loki",
+        "lastUpdate": "2021-04-09",
+        "scores": {
+          "heat": 0.2,
+          "datasourceMatch": 0.21,
+          "promqlPortability": 0.13,
+          "goldenSignals": 0.14
+        },
+        "total": 0.68
+      },
+      {
+        "name": "Promtail 2.6.x",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/16708-promtail-2-6-x/",
+        "grafanaId": 16708,
+        "downloads": 27329,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2022-08-12",
+        "scores": {
+          "heat": 0.19,
+          "datasourceMatch": 0.27,
+          "promqlPortability": 0.17,
+          "goldenSignals": 0.12
+        },
+        "total": 0.75
+      }
+    ],
+    "recommendation": {
+      "pick": "Promtail Monitoring - Metrics and Logs",
+      "reason": "dashboard 20881 是三个候选中更新最及时(2024-04)、内容最完整的选择，同时使用 Prometheus(原生 /metrics 端点)和 Loki(日志)双数据源，覆盖吞吐量、延迟(99th)、丢弃条目、活跃文件数等核心指标，datasourceMatch 最高(0.28)，goldenSignals 覆盖最全(0.18)，total 得分 0.80 居首。14055 虽有评分(4.25)但停更于 2021，面向 Kubernetes 场景且 Promtail 覆盖有限；16708 仅用 Prometheus 但停更于 2022 且无评分。"
+    },
+    "tier": "🟢可直接做"
+  },
+  {
+    "candidates": [
+      {
+        "name": "Doris Overview",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/9734-doris-overview/",
+        "grafanaId": 9734,
+        "downloads": 13096,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2023-04-16",
+        "scores": {
+          "heat": 0.21,
+          "datasourceMatch": 0.18,
+          "promqlPortability": 0.16,
+          "goldenSignals": 0.14
+        },
+        "total": 0.69
+      }
+    ],
+    "component": "Doris",
+    "dataSource": "native",
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "group": "存储/数据库",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "long-standing (pre-1.0, documented through 3.x/4.0 doc tree)",
+      "endpoint": "FE: /metrics on fe_http_port (default 8030); BE: /metrics on be_web_server_port (default 8040). Also supports ?type=json for JSON output. Broker does NOT expose /metrics.",
+      "port": "FE 8030 / BE 8040",
+      "docUrl": "https://doris.apache.org/docs/dev/admin-manual/maint-monitor/monitor-alert/",
+      "notes": "Doris FE/BE natively export Prometheus text-format metrics (e.g. doris_fe_connection_total, doris_fe_cache_hit, doris_be_* counters/gauges) with # HELP/# TYPE comment lines, no exporter needed. Official docs recommend Prometheus scrape + Grafana import of an official dashboard JSON template. For disaggregated storage-compute (cloud) deployments there is a separate doris-grafana-dashboard-cloud.json covering FE/BE-Compute-Group/Meta-Service, also Prometheus-based. An open GitHub issue (apache/doris#60270, 2026) notes the widely-distributed dashboard 9734 has panel/metric mismatches against newer disaggregated clusters; for standard shared-nothing 4.0.5 deployments core FE/BE metric names remain stable but some newer metrics/panels may be missing from the 2023-era dashboard revision."
+    },
+    "recommendation": {
+      "pick": "需自建",
+      "reason": "原生数据源完备(FE :8030/metrics、BE :8040/metrics,Prometheus 文本格式,无需 exporter)。唯一候选 Grafana 9734 'Doris Overview' 下载量较高(heat≈0.21)但最后更新于 2023-04-16、对应 revision 5(官方文档标注适配 1.2.x),与 4.0.5 的部分新增指标/面板存在偏差(datasourceMatch≈0.18,GitHub issue #60270 也反映该看板在新架构下面板与实际指标不匹配),PromQL 可移植性和黄金指标覆盖度也只能给中等分(各≈0.16/0.14)。total≈0.69 未达到直接复用阈值,建议以该看板为基线模板,结合 4.0.5 实际暴露的 doris_fe_*/doris_be_* 指标自建/修订面板,补齐延迟、流量、错误、饱和度四类黄金信号。"
+    },
+    "tier": "🟡需自建",
+    "version": "4.0.5"
+  },
+  {
+    "candidates": [
+      {
+        "name": "Elasticsearch Exporter Quickstart and Dashboard",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/14191-elasticsearch-overview/",
+        "grafanaId": 14191,
+        "downloads": 9352931,
+        "rating": null,
+        "datasource": "Prometheus (elasticsearch_exporter mixin)",
+        "lastUpdate": "2021-04-06",
+        "scores": {
+          "heat": 0.3,
+          "datasourceMatch": 0.27,
+          "promqlPortability": 0.18,
+          "goldenSignals": 0.18
+        },
+        "total": 0.93
+      },
+      {
+        "name": "ElasticSearch",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/2322-elasticsearch/",
+        "grafanaId": 2322,
+        "downloads": 98228,
+        "rating": null,
+        "datasource": "Prometheus (elasticsearch_exporter, legacy metric names)",
+        "lastUpdate": "2018-04-06",
+        "scores": {
+          "heat": 0.08,
+          "datasourceMatch": 0.15,
+          "promqlPortability": 0.1,
+          "goldenSignals": 0.1
+        },
+        "total": 0.43
+      },
+      {
+        "name": "Elasticsearch - Exporter",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/3236-elasticsearch-exporter/",
+        "grafanaId": 3236,
+        "downloads": 1209,
+        "rating": null,
+        "datasource": "Prometheus (elasticsearch_exporter, job_name='elasticsearch')",
+        "lastUpdate": "2017-09-15",
+        "scores": {
+          "heat": 0.01,
+          "datasourceMatch": 0.12,
+          "promqlPortability": 0.08,
+          "goldenSignals": 0.06
+        },
+        "total": 0.27
+      }
+    ],
+    "component": "Elasticsearch",
+    "dataSource": "exporter",
+    "exporterFallback": {
+      "needed": true,
+      "name": "prometheus-community/elasticsearch_exporter",
+      "repoUrl": "https://github.com/prometheus-community/elasticsearch_exporter"
+    },
+    "group": "存储/数据库",
+    "nativePrometheus": {
+      "supported": false,
+      "sinceVersion": "9.4 (tech preview, PromQL query/write API only, not a metrics scrape endpoint)",
+      "endpoint": "/_prometheus/api/v1/query, /_prometheus/api/v1/query_range, /_prometheus/api/v1/write (no /metrics scrape endpoint for node/cluster stats)",
+      "port": "9200 (standard ES HTTP API port)",
+      "docUrl": "https://www.elastic.co/search-labs/blog/elasticsearch-native-prometheus-api",
+      "notes": "Elasticsearch 9.4 添加的 '_prometheus' API 是 tech preview,提供 PromQL 查询接口(读取已存入 ES TSDS 的时序数据)和 Prometheus Remote Write v1 摄入端点,方向与传统 exporter 相反(是 ES 作为 PromQL 后端/接收端,而非暴露自身节点/集群指标供 Prometheus 抓取)。因此 ES 自身没有可供 Prometheus scrape 的 /metrics 端点,集群健康度/JVM/索引等监控仍需依赖第三方 exporter。"
+    },
+    "recommendation": {
+      "pick": "Elasticsearch Exporter Quickstart and Dashboard (Grafana ID 14191)",
+      "reason": "heat 接近满分(0.3,9.35M 下载量,Grafana Labs 官方 mixin 生成);datasourceMatch 较高(0.27,基于 prometheus-community/elasticsearch_exporter 当前活跃维护版本(v1.10.0, 2025-12)的标准指标命名,与所选 exporter 数据源一致);promqlPortability 良好(0.18,mixin 生成的 PromQL 规范、可移植,含 recording rules);goldenSignals 覆盖较全(0.18,含集群健康、节点资源饱和度、索引写入/查询流量与延迟、JVM GC/堆等)。综合 total=0.93,显著优于另外两个年久失修的候选(2322 仅 0.43,3236 仅 0.27)。"
+    },
+    "tier": "🟡需自建",
+    "version": "9.4.2"
+  },
+  {
+    "component": "HDFS",
+    "version": "3.5.0",
+    "group": "存储/数据库",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "3.3.0 (HADOOP-16398，复用 Ozone HDDS-846 的 PrometheusMetricsSink)，3.5.0 沿用",
+      "endpoint": "/prom（NameNode 默认端口 9870，DataNode 默认端口 9864，与各 Daemon Web UI 同端口）",
+      "port": "9870 (NameNode) / 9864 (DataNode)",
+      "docUrl": "https://issues.apache.org/jira/browse/HADOOP-16398",
+      "notes": "需在 core-site.xml 中显式设置 hadoop.prometheus.endpoint.enabled=true（默认 false）。开启后 Hadoop 各 Daemon(NameNode/DataNode/JournalNode 等)的 Web UI 端口会暴露 /prom 路径，输出格式为 Hadoop_<Context>_<MetricName>(如 Hadoop_DataNode_BytesRead、Hadoop_NameNode_FSNamesystem_*)，源自既有 Metrics2 体系经 PrometheusMetricsSink 转换。官方 Metrics.html(https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-common/Metrics.html) 本身未直接提及该端点，但该特性自 3.3.0 起内置于 hadoop-common，3.5.0 同样适用；Stackable 文档(https://docs.stackable.tech/home/stable/hdfs/usage-guide/monitoring/)给出了 :9870/prom 的实际访问示例。"
+    },
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "dataSource": "native",
+    "candidates": [
+      {
+        "name": "HDFS - DataNode",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/23175-hdfs-datanode/",
+        "grafanaId": 23175,
+        "downloads": 702,
+        "rating": null,
+        "datasource": "prometheus",
+        "lastUpdate": "2025-04-01",
+        "scores": {
+          "heat": 0.075,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.14,
+          "goldenSignals": 0.18
+        },
+        "total": 0.695
+      },
+      {
+        "name": "Hadoop-hdfs巡检",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/9281-hadoop-hdfs/",
+        "grafanaId": 9281,
+        "downloads": 2790,
+        "rating": null,
+        "datasource": "prometheus",
+        "lastUpdate": "2018-11-30",
+        "scores": {
+          "heat": 0.3,
+          "datasourceMatch": 0.03,
+          "promqlPortability": 0.12,
+          "goldenSignals": 0.06
+        },
+        "total": 0.51
+      },
+      {
+        "name": "Hadoop HDFS FSImage",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/12236-hadoop-hdfs-fsimage/",
+        "grafanaId": 12236,
+        "downloads": 1788,
+        "rating": null,
+        "datasource": "prometheus",
+        "lastUpdate": "2020-09-20",
+        "scores": {
+          "heat": 0.192,
+          "datasourceMatch": 0.03,
+          "promqlPortability": 0.12,
+          "goldenSignals": 0.04
+        },
+        "total": 0.382
+      }
+    ],
+    "recommendation": {
+      "pick": "HDFS - DataNode",
+      "reason": "下载量虽不是最高(702 vs 9281 的 2790)，但其 PromQL 全部基于 Hadoop_DataNode_* 命名(如 Hadoop_DataNode_BytesRead、Hadoop_DataNode_ReadBlockOpAvgTime、Hadoop_DataNode_RpcQueueTimeAvgTime)，与 HDFS 3.5.0 原生 /prom 端点(PrometheusMetricsSink, HADOOP-16398)输出的指标命名完全一致，datasourceMatch 得满分 0.3；同时覆盖延迟(ReadBlockOpAvgTime/WriteBlockOpAvgTime/HeartbeatsAvgTime)、流量(BytesRead/BytesWritten/SentBytes/ReceivedBytes)、错误(LogError/LogFatal/VolumeFailures/BlockVerificationFailures)、饱和度(ThreadsBlocked/MemHeapUsedM/GcTimeMillis/CallQueueLength)四大黄金信号，goldenSignals=0.18，综合 total=0.695 明显领先。反观下载量最高的'Hadoop-hdfs巡检'(9281)实际查询全部基于 node_exporter 主机指标(node_cpu_seconds_total/node_disk_*)，与 HDFS 原生指标无关，datasourceMatch 仅 0.03；'Hadoop HDFS FSImage'(12236)依赖第三方 marcelmay/hadoop-hdfs-fsimage-exporter sidecar，同样不匹配原生 /prom 数据源，且作者自述'大部分指标未在图上展示'，goldenSignals 仅 0.04。综合来看，HDFS - DataNode 可作为基线模板，按需补充 NameNode 同类面板(同样基于 Hadoop_NameNode_* 指标)即可直接使用。"
+    },
+    "tier": "🟢可直接做"
+  },
+  {
+    "candidates": [
+      {
+        "name": "Hive Data",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/10188-hive-data/",
+        "grafanaId": 10188,
+        "downloads": null,
+        "rating": null,
+        "datasource": "unknown/unrelated",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.02,
+          "datasourceMatch": 0,
+          "promqlPortability": 0,
+          "goldenSignals": 0
+        },
+        "total": 0.02
+      },
+      {
+        "name": "Hive - HiveServer2 (Ambari/AMS)",
+        "source": "github",
+        "url": "https://github.com/arenadata/mpack-adh/blob/master/stacks/ADH/2.0/services/AMBARI_METRICS/package/files/grafana-dashboards/HDP/grafana-hive-hiverserver2.json",
+        "grafanaId": null,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Ambari Metrics System (OpenTSDB-based AMS, not Prometheus)",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.05,
+          "datasourceMatch": 0.05,
+          "promqlPortability": 0.02,
+          "goldenSignals": 0.08
+        },
+        "total": 0.2
+      },
+      {
+        "name": "hadoop_exporter (no dedicated Hive dashboard)",
+        "source": "github",
+        "url": "https://github.com/vqcuong/hadoop_exporter",
+        "grafanaId": null,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus (via JMX-HTTP scrape)",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.03,
+          "datasourceMatch": 0.1,
+          "promqlPortability": 0.1,
+          "goldenSignals": 0.02
+        },
+        "total": 0.25
+      }
+    ],
+    "component": "Hive",
+    "dataSource": "exporter",
+    "exporterFallback": {
+      "needed": true,
+      "name": "Prometheus JMX Exporter (javaagent attached to HiveServer2/Metastore JVM) or hadoop_exporter (vqcuong)",
+      "repoUrl": "https://github.com/prometheus/jmx_exporter"
+    },
+    "group": "存储/数据库",
+    "nativePrometheus": {
+      "supported": false,
+      "sinceVersion": "n/a",
+      "endpoint": "/jmx (HiveServer2 Web UI \"Metrics Dump\" tab, JMX-encoded JSON; default reporters are JMX + JSON file)",
+      "port": "10002 (HiveServer2 WebUI default)",
+      "docUrl": "https://cwiki.apache.org/confluence/display/Hive/Hive+Metrics",
+      "notes": "Apache Hive 官方文档(Hive Metrics wiki)确认:默认仅启用 JMX 和 JSON file 两种 metrics reporter,未提供原生 Prometheus reporter 或 /metrics 端点。HiveServer2 Web UI 提供 'Metrics Dump' 标签页,以 JSON 形式展示 JMX 指标。社区普遍通过 Prometheus JMX Exporter(javaagent)或 hadoop_exporter 抓取 JMX-HTTP 暴露指标后转为 Prometheus 格式。Hive 4.2.0 官方文档索引页(https://hive.apache.org/docs/)未提供版本专属的 Prometheus 集成说明,确认 4.2.0 与历史版本一致未原生支持 Prometheus。"
+    },
+    "recommendation": {
+      "pick": "需自建",
+      "reason": "未找到任何基于 Prometheus + JMX Exporter 指标命名、且专门面向 Apache Hive(HiveServer2/Metastore)的高质量看板。grafana.com 上 'Hive Data'(ID 10188)实为无关项目(蜂巢/beekeeping 数据采集),datasourceMatch≈0、heat≈0.02,total=0.02。arenadata 的 HiveServer2 看板基于 Ambari Metrics System(AMS/OpenTSDB),与第一步确定的 JMX Exporter→Prometheus 路径指标命名不匹配,datasourceMatch 仅 0.05,total=0.2。hadoop_exporter 项目本身支持 Prometheus 抓取 Hive JMX,但其仓库只提供 HDFS/YARN 看板,无现成 Hive 看板可直接复用,total=0.25。三者 total 均 < 0.3,且均不构成可直接使用的优质看板;但 Hive 可通过 JMX Exporter 或 hadoop_exporter 形成 Prometheus 数据源,因此应标记为需自建(🟡),不是缺数据源(🔴)。落地时需要先搭建 JMX Exporter 抓取链路,再基于 jmx_exporter 暴露的 HiveServer2/Metastore 指标(如 jvm_memory_*、hadoop_metrics_hiveserver2_*)自建看板。"
+    },
+    "tier": "🟡需自建",
+    "version": "4.2.0"
+  },
+  {
+    "candidates": [
+      {
+        "name": "JuiceFS Dashboard",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/20794-juicefs-dashboard/",
+        "grafanaId": 20794,
+        "downloads": 1066,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2025-04-18",
+        "scores": {
+          "heat": 0.12,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.18,
+          "goldenSignals": 0.15
+        },
+        "total": 0.75
+      },
+      {
+        "name": "JuiceFS Grafana Template (general mount-point, K8s, S3 Gateway, Hadoop SDK)",
+        "source": "github",
+        "url": "https://github.com/juicedata/juicefs/blob/main/docs/en/grafana_template.json",
+        "grafanaId": null,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.05,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.18,
+          "goldenSignals": 0.15
+        },
+        "total": 0.68
+      }
+    ],
+    "component": "JuiceFS",
+    "dataSource": "native",
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "group": "存储/数据库",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "pre-1.0 (long-standing feature, confirmed current in 1.3.1)",
+      "endpoint": "/metrics",
+      "port": "9567",
+      "docUrl": "https://juicefs.com/docs/community/administration/monitoring/",
+      "notes": "After `juicefs mount`, Prometheus-formatted metrics are automatically exposed at http://localhost:9567/metrics (configurable via --metrics host:port). Also accessible via `cat /jfs/.stats` and `juicefs stats` CLI. S3 Gateway metrics require client >= 0.17.1; Consul-based service discovery for metrics requires client >= 1.0.0. Hadoop Java SDK additionally supports Pushgateway/Graphite/Prometheus remote-write. Official dashboard import via grafana.com ID 20794, designed for Prometheus scraping localhost:9090."
+    },
+    "recommendation": {
+      "pick": "JuiceFS Dashboard (grafana.com ID 20794)",
+      "reason": "datasourceMatch=0.3(满分):该看板由 juicedata 官方维护,直接对应 GitHub docs/en/grafana_template.json,所用指标(juicefs_fuse_ops_durations_histogram_seconds、juicefs_blockcache_*、juicefs_object_request_* 等)与第一步确认的原生 /metrics:9567 端点指标名完全一致,无需任何 exporter 映射。goldenSignals=0.15(0.2 满分的 75%):IO/Transaction/Objects Latency 覆盖延迟,IO Throughput/Operations/Transactions 覆盖流量,Data Size/Files/CPU/Memory/Block Cache 覆盖饱和度,但跨 FUSE 操作的统一错误率面板较薄弱(仅 Objects Requests 含 juicefs_object_request_errors)。promqlPortability=0.18:PromQL 直接基于原生指标,无复杂 relabel,迁移成本低。heat=0.12:下载量 1066,在专用存储组件看板中处于中等热度,2025-04-18 仍在更新维护。综合 total=0.75,优先直接导入该官方看板,如需补全错误率面板可后续少量自建。"
+    },
+    "tier": "🟢可直接做",
+    "version": "1.3.1"
+  },
+  {
+    "candidates": [
+      {
+        "name": "Valkey/Redis-compatible Dashboard for Prometheus Redis Exporter 1.x",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/763-redis-dashboard-for-prometheus-redis-exporter-1-x/",
+        "grafanaId": 763,
+        "downloads": 384193,
+        "rating": 5,
+        "datasource": "Prometheus (Redis/Valkey-compatible exporter)",
+        "lastUpdate": "2024-02-17",
+        "scores": {
+          "heat": 0.21,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.18,
+          "goldenSignals": 0.17
+        },
+        "total": 0.86
+      },
+      {
+        "name": "Valkey/Redis-compatible Dashboard for Prometheus Redis Exporter (helm stable/redis-ha)",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/11835-redis-dashboard-for-prometheus-redis-exporter-helm-stable-redis-ha/",
+        "grafanaId": 11835,
+        "downloads": 28126450,
+        "rating": 5,
+        "datasource": "Prometheus (Redis/Valkey-compatible exporter)",
+        "lastUpdate": "2020-03-02",
+        "scores": {
+          "heat": 0.18,
+          "datasourceMatch": 0.21,
+          "promqlPortability": 0.12,
+          "goldenSignals": 0.14
+        },
+        "total": 0.65
+      },
+      {
+        "name": "Valkey/Redis-compatible Exporter Quickstart and Dashboard",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/14091-redis-exporter-quickstart-and-dashboard/",
+        "grafanaId": 14091,
+        "downloads": 278129,
+        "rating": 0,
+        "datasource": "Prometheus (Redis/Valkey-compatible exporter)",
+        "lastUpdate": "2021-03-19",
+        "scores": {
+          "heat": 0.09,
+          "datasourceMatch": 0.27,
+          "promqlPortability": 0.16,
+          "goldenSignals": 0.16
+        },
+        "total": 0.68
+      }
+    ],
+    "component": "Valkey",
+    "dataSource": "exporter",
+    "exporterFallback": {
+      "needed": true,
+      "name": "redis_exporter or Valkey-compatible Redis exporter",
+      "repoUrl": "https://github.com/oliver006/redis_exporter"
+    },
+    "group": "存储/数据库",
+    "nativePrometheus": {
+      "supported": false,
+      "sinceVersion": "N/A",
+      "endpoint": "N/A (Valkey/Redis-compatible RESP protocol; no built-in HTTP /metrics endpoint)",
+      "port": "N/A",
+      "docUrl": "https://valkey.io/docs/",
+      "notes": "Valkey 8.6 is Redis-compatible at protocol and INFO-command level. The monitoring path should use a Redis/Valkey-compatible Prometheus exporter and standard redis_* metrics; dashboard reuse is acceptable when datasourceMatch records the Valkey compatibility assumption."
+    },
+    "recommendation": {
+      "pick": "Valkey/Redis-compatible Redis Exporter Dashboard (ID 763)",
+      "reason": "Valkey 8.6 should be monitored through Redis/Valkey-compatible exporter metrics. The original Redis exporter dashboard ID 763 uses standard redis_* metric names and remains the best reusable baseline for Valkey when the exporter exposes compatible INFO-derived metrics; verify metric names during rollout and rename labels/job filters as needed."
+    },
+    "tier": "🟢可直接做",
+    "version": "8.6"
+  },
+  {
+    "candidates": [
+      {
+        "name": "AWS EMR Hadoop 2",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/607-aws-emr-hadoop-2/",
+        "grafanaId": 607,
+        "downloads": 93542,
+        "rating": 0,
+        "datasource": "未定义(无 datasource/查询表达式,疑似失效占位模板,面向 AWS CloudWatch EMR 而非通用 Prometheus)",
+        "lastUpdate": "2024-12-25",
+        "scores": {
+          "heat": 0.3,
+          "datasourceMatch": 0,
+          "promqlPortability": 0,
+          "goldenSignals": 0.02
+        },
+        "total": 0.32
+      },
+      {
+        "name": "hadoop_jmx_exporter dashboards (YARN ResourceManager/NodeManager)",
+        "source": "github",
+        "url": "https://github.com/opsnull/hadoop_jmx_exporter",
+        "grafanaId": null,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus(JMX exporter,指标名约 hadoop_yarn_* / hadoop_*,基于 CDH 5.14.2 时代 JMX 字段)",
+        "lastUpdate": "约 2018(repo 仅 20 commits,长期未维护)",
+        "scores": {
+          "heat": 0.03,
+          "datasourceMatch": 0.1,
+          "promqlPortability": 0.08,
+          "goldenSignals": 0.1
+        },
+        "total": 0.31
+      },
+      {
+        "name": "Grafana Cloud 官方 Apache Hadoop Integration(含 ResourceManager Dashboard)",
+        "source": "official",
+        "url": "https://grafana.com/docs/grafana-cloud/monitor-infrastructure/integrations/integration-reference/integration-apache-hadoop/",
+        "grafanaId": null,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus(jmx_prometheus_javaagent 0.17.0+,支持 Hadoop 3.3.1+,含 ResourceManager/NodeManager/NameNode/DataNode 4 个预制看板 + 8 条告警)",
+        "lastUpdate": "未注明具体日期(Grafana Cloud 集成目录,持续维护)",
+        "scores": {
+          "heat": 0.1,
+          "datasourceMatch": 0.24,
+          "promqlPortability": 0.14,
+          "goldenSignals": 0.18
+        },
+        "total": 0.66
+      }
+    ],
+    "component": "YARN",
+    "dataSource": "exporter",
+    "exporterFallback": {
+      "name": "jmx_prometheus_javaagent (Prometheus JMX Exporter) 挂载到 YARN_RESOURCEMANAGER_OPTS / YARN_NODEMANAGER_OPTS,或 PBWebMedia/yarn-prometheus-exporter 专用 RM 导出器",
+      "needed": true,
+      "repoUrl": "https://github.com/prometheus/jmx_exporter"
+    },
+    "group": "存储/数据库",
+    "nativePrometheus": {
+      "docUrl": "https://hadoop.apache.org/docs/r3.5.0/hadoop-project-dist/hadoop-common/Metrics.html",
+      "endpoint": "无(仅 Metrics2 框架,JMX/Ganglia/Graphite/File sink,无 PrometheusSink 或 /metrics 路径)",
+      "notes": "Hadoop 3.5.0 官方 Metrics 文档(hadoop-project-dist/hadoop-common/Metrics.html)只描述 Metrics2 框架及 ClusterMetrics/QueueMetrics/NodeManagerMetrics/ContainerMetrics 等指标记录,通过 JMX 暴露,未提供内置 Prometheus sink 或 /metrics HTTP 端点。截至 3.5.0 仍需依赖外部 JMX-to-Prometheus 桥接(jmx_prometheus_javaagent)或第三方 exporter。Grafana Cloud 官方 Hadoop 集成文档明确指出需要为每个组件配置 JMX exporter。",
+      "port": "N/A",
+      "sinceVersion": "N/A(从未原生支持,截至 3.5.0)",
+      "supported": false
+    },
+    "recommendation": {
+      "pick": "需自建(参考 Grafana Cloud Apache Hadoop Integration 面板设计)",
+      "reason": "dataSource=exporter,但 grafana.com 上无高质量、维护中、面向 JMX-exporter 指标命名的 YARN 专用看板。Top1 下载量候选 AWS EMR Hadoop 2(heat=0.3 最高)经检查无 datasource/查询表达式定义(datasourceMatch=0,面向 AWS CloudWatch 而非通用 Prometheus),total 仅 0.32,实际不可用;GitHub 社区看板(opsnull/hadoop_jmx_exporter)heat 低(无下载量数据)且基于 2018 年 CDH 5.14.2 时代 JMX 字段,promqlPortability 仅 0.08,total=0.31。Grafana Cloud 官方 Apache Hadoop Integration(支持 Hadoop 3.3.1+ 与 jmx_exporter 0.17.0+)datasourceMatch=0.24 、goldenSignals=0.18 最高,total=0.66 最优,但属 Grafana Cloud 集成而非可直接导入的独立 dashboard JSON。综合考量,三个候选均无法直接使用,判定为需自建:先部署 jmx_prometheus_javaagent 采集 YARN RM/NM JMX 指标,再参照 Grafana Cloud 官方 Hadoop Integration 的 ResourceManager/NodeManager 面板布局(队列资源、容器数、调度延迟、NM 健康)自建 PromQL 看板。"
+    },
+    "tier": "🟡需自建",
+    "version": "3.5.0"
+  },
+  {
+    "component": "Kafka",
+    "version": "4.3.0",
+    "group": "消息/协调",
+    "nativePrometheus": {
+      "supported": false,
+      "endpoint": "无(经 JMX MBeans 暴露,无内置 HTTP /metrics 端点)",
+      "port": "",
+      "docUrl": "https://kafka.apache.org/documentation/#monitoring",
+      "sinceVersion": "",
+      "notes": "Apache Kafka 各版本(含 4.x)均不内置 Prometheus /metrics HTTP 端点。指标通过 JMX MBeans 暴露。KIP-714/KIP-1076(Kafka 3.7/4.0)引入的是客户端→Broker 的 telemetry 推送(OpenTelemetry 风格),仍非 Broker 侧原生 Prometheus 拉取端点。生产标准做法是挂载 Prometheus JMX Exporter Java agent(KAFKA_OPTS,典型端口 7071)将 JMX 转为 Prometheus 抓取端点。"
+    },
+    "exporterFallback": {
+      "needed": true,
+      "name": "Prometheus JMX Exporter(Broker 全量指标)+ danielqsj/kafka_exporter(消费组 lag/topic offset)",
+      "repoUrl": "https://github.com/prometheus/jmx_exporter"
+    },
+    "dataSource": "exporter",
+    "candidates": [
+      {
+        "name": "Kafka Exporter Overview",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/7589-kafka-exporter-overview/",
+        "grafanaId": 7589,
+        "downloads": 233926,
+        "rating": 3,
+        "datasource": "Prometheus",
+        "lastUpdate": "2018-08-21",
+        "scores": {
+          "heat": 0.21,
+          "datasourceMatch": 0.27,
+          "promqlPortability": 0.16,
+          "goldenSignals": 0.13
+        },
+        "total": 0.77
+      },
+      {
+        "name": "Kafka Overview",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/721-kafka/",
+        "grafanaId": 721,
+        "downloads": 36085,
+        "rating": 5,
+        "datasource": "Prometheus",
+        "lastUpdate": "2016-10-23",
+        "scores": {
+          "heat": 0.15,
+          "datasourceMatch": 0.27,
+          "promqlPortability": 0.14,
+          "goldenSignals": 0.16
+        },
+        "total": 0.72
+      },
+      {
+        "name": "KMinion Cluster Dashboard - Prometheus Exporter for Apache Kafka",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/14012-kminion-cluster-dashboard-prometheus-exporter-for-apache-kafka/",
+        "grafanaId": 14012,
+        "downloads": 382382,
+        "rating": 5,
+        "datasource": "Prometheus",
+        "lastUpdate": "2021-03-05",
+        "scores": {
+          "heat": 0.3,
+          "datasourceMatch": 0.12,
+          "promqlPortability": 0.16,
+          "goldenSignals": 0.16
+        },
+        "total": 0.74
+      }
+    ],
+    "recommendation": {
+      "pick": "Kafka Exporter Overview",
+      "reason": "总分最高(0.77)。datasourceMatch 满分(0.27)——其指标名基于 danielqsj/kafka_exporter(kafka_topic_partition_current_offset、kafka_consumergroup_lag 等),与本组件确定的 exporter 数据源完全对应;heat 0.21(23万+下载,Kafka 自建监控生态最经典看板)。配合 Prometheus JMX Exporter 看板(721,goldenSignals 更全的 Broker 端延迟/错误指标)可补齐黄金信号。KMinion 看板(14012)heat 最高但需要 KMinion 这一不同 exporter(datasourceMatch 仅 0.12),不匹配 jmx_exporter/kafka_exporter 选型,故不推荐为首选。"
+    },
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "ZooKeeper",
+    "version": "3.8.6",
+    "group": "消息/协调",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "3.6.0",
+      "endpoint": "/metrics",
+      "port": 7000,
+      "docUrl": "https://zookeeper.apache.org/doc/r3.8.6/zookeeperMonitor.html",
+      "notes": "在 zoo.cfg 中设置 metricsProvider.className=org.apache.zookeeper.metrics.prometheus.PrometheusMetricsProvider 启用;默认 metricsProvider.httpPort=7000,Prometheus 抓取地址为 http://<host>:7000/metrics;metricsProvider.exportJvmInfo 默认 true 导出 JVM 指标;支持 HTTPS。3.8.6 沿用 3.6.0 引入的原生 Prometheus 支持。"
+    },
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "dataSource": "native",
+    "candidates": [
+      {
+        "name": "ZooKeeper by Prometheus",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/10465",
+        "grafanaId": 10465,
+        "downloads": 157503,
+        "rating": 3.5,
+        "datasource": "Prometheus",
+        "lastUpdate": "2021-06-09T14:15:08.000Z",
+        "scores": {
+          "heat": 0.3,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.18,
+          "goldenSignals": 0.16
+        },
+        "total": 0.94
+      },
+      {
+        "name": "ZooKeeper by Prometheus",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/16317",
+        "grafanaId": 16317,
+        "downloads": 575,
+        "rating": 0,
+        "datasource": "Prometheus",
+        "lastUpdate": "2023-10-10T10:33:04.000Z",
+        "scores": {
+          "heat": 0.06,
+          "datasourceMatch": 0.27,
+          "promqlPortability": 0.16,
+          "goldenSignals": 0.14
+        },
+        "total": 0.63
+      },
+      {
+        "name": "Zookeeper Exporter (dabealu)",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/11442",
+        "grafanaId": 11442,
+        "downloads": 26185,
+        "rating": 0,
+        "datasource": "Prometheus",
+        "lastUpdate": "2019-12-19T08:40:45.000Z",
+        "scores": {
+          "heat": 0.18,
+          "datasourceMatch": 0.09,
+          "promqlPortability": 0.14,
+          "goldenSignals": 0.12
+        },
+        "total": 0.53
+      }
+    ],
+    "recommendation": {
+      "pick": "ZooKeeper by Prometheus",
+      "reason": "首选 Grafana ID 10465(total 0.94)。heat 满分(15.7 万下载,远超同类,评分 3.5)。datasourceMatch 满分:经核验其 PromQL 直接引用 ZooKeeper 原生 PrometheusMetricsProvider 指标名(quorum_size / watch_count / znode_count / outstanding_requests / num_alive_connections / avg_latency / followers / election_time / fsynctime),无任何 zk_* 或 jmx_* 旧 exporter 前缀,与 3.8.6 原生 /metrics 端点完全对应。promqlPortability 0.18:多为简洁 gauge/counter 查询,移植成本低。goldenSignals 0.16:覆盖延迟(avg_latency)、流量(outstanding_requests、num_alive_connections)、饱和度(open_file_descriptor、jvm_memory、fsynctime),错误维度覆盖偏弱(无显式 error rate)。备选 16317 同名但下载量低(575);11442 基于 dabealu 第三方 exporter 指标名,与原生端点不匹配,datasourceMatch 仅 0.09,不推荐。"
+    },
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "APISIX",
+    "version": "3.16.0",
+    "group": "网关/注册中心",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "2.4",
+      "endpoint": "/apisix/prometheus/metrics",
+      "port": 9091,
+      "docUrl": "https://apisix.apache.org/docs/apisix/plugins/prometheus/",
+      "notes": "APISIX 内置 prometheus 插件，默认在独立端口 9091 暴露 /apisix/prometheus/metrics，指标前缀为 apisix_。可通过 config.yaml plugin_attr 自定义 export_uri、export_addr、metric_prefix。也可关闭 enable_export_server 后通过 public-api 插件将指标挂载到主端口。覆盖指标包括 apisix_http_status、apisix_http_requests_total、apisix_http_latency、apisix_bandwidth、apisix_upstream_status、apisix_nginx_http_current_connections 等。"
+    },
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "dataSource": "native",
+    "candidates": [
+      {
+        "name": "Apache APISIX",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/11719-apache-apisix/",
+        "grafanaId": 11719,
+        "downloads": 63344,
+        "rating": 3,
+        "datasource": "Prometheus",
+        "lastUpdate": "2024-10-31",
+        "scores": {
+          "heat": 0.28,
+          "datasourceMatch": 0.28,
+          "promqlPortability": 0.16,
+          "goldenSignals": 0.12
+        },
+        "total": 0.84
+      },
+      {
+        "name": "apisix-route-logs",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/18905-apisix-route-logs/",
+        "grafanaId": 18905,
+        "downloads": 2033,
+        "rating": null,
+        "datasource": "Loki",
+        "lastUpdate": "2023-06-07",
+        "scores": {
+          "heat": 0.05,
+          "datasourceMatch": 0.05,
+          "promqlPortability": 0.02,
+          "goldenSignals": 0.04
+        },
+        "total": 0.16
+      }
+    ],
+    "recommendation": {
+      "pick": "Apache APISIX (ID: 11719)",
+      "reason": "综合得分最高(0.84)。heat 0.28：63,344 次下载，是 APISIX 领域下载量最大的看板；datasourceMatch 0.28：直接基于原生 apisix_ 指标前缀，与内置 prometheus 插件完全匹配；promqlPortability 0.16：官方维护、指标命名规范，PromQL 干净易移植；goldenSignals 0.12：覆盖吞吐量(RPS by status code)、错误率(HTTP 5xx)、饱和度(connections/bandwidth)，但缺少专用延迟面板(apisix_http_latency histogram)，建议导入后补充 latency p50/p95/p99 面板以达到完整四黄金信号覆盖。"
+    },
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Nacos",
+    "version": "3.2.2",
+    "group": "网关/注册中心",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "0.8.0",
+      "endpoint": "/nacos/actuator/prometheus",
+      "port": "8848",
+      "docUrl": "https://nacos.io/en/docs/next/guide/admin/monitor-guide/",
+      "notes": "需在 application.properties 中设置 management.endpoints.web.exposure.include=* 以暴露 Spring Boot Actuator 端点。Nacos 3.x 保持相同端口和路径；2.x+ 新增 gRPC 相关指标（grpc_server_requests_seconds_max、grpc_server_executor 等）。Prometheus scrape 配置示例：metrics_path: /nacos/actuator/prometheus，static_configs targets 指向各节点 {ip}:8848。"
+    },
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "dataSource": "native",
+    "candidates": [
+      {
+        "name": "Nacos",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/13221-nacos/",
+        "grafanaId": 13221,
+        "downloads": 3523,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2020-10-22",
+        "scores": {
+          "heat": 0.12,
+          "datasourceMatch": 0.24,
+          "promqlPortability": 0.14,
+          "goldenSignals": 0.12
+        },
+        "total": 0.62
+      },
+      {
+        "name": "nacos-grafana (official template)",
+        "source": "github",
+        "url": "https://github.com/nacos-group/nacos-template/blob/master/nacos-grafana.json",
+        "grafanaId": null,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": null,
+        "scores": {
+          "heat": 0.06,
+          "datasourceMatch": 0.24,
+          "promqlPortability": 0.14,
+          "goldenSignals": 0.12
+        },
+        "total": 0.56
+      }
+    ],
+    "recommendation": {
+      "pick": "Nacos (Grafana ID 13221)",
+      "reason": "grafana.com 唯一 Nacos 专属看板，累计下载 3,523 次（heat=0.12），基于原生 /nacos/actuator/prometheus 指标，datasourceMatch 得分 0.24；覆盖流量、饱和度和部分延迟（notify RT），但错误率无专用 PromQL panel（依赖告警列表），goldenSignals 仅 0.12；PromQL 使用 nacos_monitor label 体系，基本可移植但沿用 1.x 时代 domCount 等旧指标名（3.x 应改用 serviceCount），promqlPortability=0.14。该看板 2020 年停更，建议导入后补充 gRPC 指标（grpc_server_requests_seconds_max）和 HTTP 错误率面板以适配 Nacos 3.2.2。"
+    },
+    "tier": "🟡需自建"
+  },
+  {
+    "component": "Nginx",
+    "version": "1.30.2",
+    "group": "网关/注册中心",
+    "nativePrometheus": {
+      "supported": false,
+      "sinceVersion": "",
+      "endpoint": "/stub_status",
+      "port": "8080",
+      "docUrl": "https://nginx.org/en/docs/http/ngx_http_stub_status_module.html",
+      "notes": "Nginx OSS(含1.30.2)仅通过 ngx_http_stub_status_module 暴露纯文本状态页(/stub_status),不原生输出 Prometheus /metrics 格式。需借助 nginx-prometheus-exporter 将 stub_status 转换为 Prometheus 指标后在 :9113/metrics 对外暴露。Nginx Plus 可通过 ngx_http_api_module 配合 prometheus-njs 模块暴露 /metrics,但属于商业版能力,OSS 不支持。"
+    },
+    "exporterFallback": {
+      "needed": true,
+      "name": "nginx-prometheus-exporter",
+      "repoUrl": "https://github.com/nginx/nginx-prometheus-exporter"
+    },
+    "dataSource": "exporter",
+    "candidates": [
+      {
+        "name": "NGINX exporter",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/12708-nginx/",
+        "grafanaId": 12708,
+        "downloads": 220504,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2020-07-26",
+        "scores": {
+          "heat": 0.3,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.16,
+          "goldenSignals": 0.14
+        },
+        "total": 0.9
+      },
+      {
+        "name": "NGINX Prometheus exporter",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/17452-nginx/",
+        "grafanaId": 17452,
+        "downloads": 3196,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2022-11-21",
+        "scores": {
+          "heat": 0.04,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.18,
+          "goldenSignals": 0.14
+        },
+        "total": 0.66
+      },
+      {
+        "name": "NGINX by nginxinc",
+        "source": "grafana.com",
+        "url": "https://grafana.com/grafana/dashboards/11199-nginx/",
+        "grafanaId": 11199,
+        "downloads": 8544,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2019-11-15",
+        "scores": {
+          "heat": 0.06,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.16,
+          "goldenSignals": 0.12
+        },
+        "total": 0.64
+      }
+    ],
+    "recommendation": {
+      "pick": "NGINX exporter (ID 12708)",
+      "reason": "下载量最高(220,504次),heat得分满权重0.30;指标名完全对应 nginx-prometheus-exporter 输出的 nginx_connections_*/nginx_http_requests_total,datasourceMatch满分0.30;PromQL基于 stub_status 派生指标,语义清晰可移植(0.16);覆盖连接数、请求量、活跃/等待连接等黄金信号中的流量与饱和度维度(0.14);综合得分0.90为三者最高。注意该看板缺少延迟(latency)面板,如需P99延迟监控可叠加 prometheus-nginxlog-exporter 方案。"
+    },
+    "tier": "🟢可直接做"
+  },
+  {
+    "component": "Kyuubi",
+    "version": "1.11.1",
+    "group": "计算/查询引擎",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "1.2.0",
+      "endpoint": "/metrics",
+      "port": 10019,
+      "docUrl": "https://kyuubi.readthedocs.io/en/v1.11.1/monitor/metrics.html",
+      "notes": "通过 kyuubi.metrics.reporters=PROMETHEUS 启用，默认端口 10019，路径 /metrics。默认 reporter 为 JSON，需显式配置切换为 PROMETHEUS。自 1.8.0 起 Prometheus 升为推荐 reporter。配置示例：kyuubi.metrics.enabled=true, kyuubi.metrics.reporters=PROMETHEUS, kyuubi.metrics.prometheus.port=10019, kyuubi.metrics.prometheus.path=/metrics。官方仓库自带 grafana/dashboard-template.json。"
+    },
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "dataSource": "native",
+    "candidates": [
+      {
+        "name": "Kyuubi Official Dashboard Template",
+        "source": "github",
+        "url": "https://github.com/apache/kyuubi/blob/branch-1.11/grafana/dashboard-template.json",
+        "grafanaId": null,
+        "downloads": null,
+        "rating": null,
+        "datasource": "prometheus",
+        "lastUpdate": "2023-11-01",
+        "scores": {
+          "heat": 0.05,
+          "datasourceMatch": 0.27,
+          "promqlPortability": 0.14,
+          "goldenSignals": 0.12
+        },
+        "total": 0.58
+      }
+    ],
+    "recommendation": {
+      "pick": "Kyuubi Official Dashboard Template",
+      "reason": "grafana.com 市场上无任何 Kyuubi 看板，唯一来源为 Apache Kyuubi 官方仓库自带的 grafana/dashboard-template.json。该模板基于原生 Prometheus 端点指标（kyuubi_* 前缀），datasourceMatch 得分较高(0.27)；PromQL 采用变量模板化（$baseFilter/$instance），可移植性尚可(0.14)；但 golden signals 覆盖不完整：Traffic(连接数/引擎数)与 Saturation(线程池/启动许可)较好，Latency(批处理等待延迟)有部分覆盖，Error 信号完全缺失，故 goldenSignals 仅得 0.12；heat 因无 grafana.com 下载数据仅得 0.05。建议直接导入官方模板后，补充 Error 类指标面板（如操作失败率、异常计数）以完善四大黄金信号。"
+    },
+    "tier": "🟡需自建"
+  },
+  {
+    "component": "DolphinScheduler",
+    "version": "3.4.1",
+    "group": "调度",
+    "nativePrometheus": {
+      "supported": true,
+      "sinceVersion": "3.1.0",
+      "endpoint": "/actuator/prometheus (Master: 5679, Worker: 1235, Alert: 50053); /dolphinscheduler/actuator/prometheus (API: 12345)",
+      "port": "5679 / 1235 / 50053 / 12345",
+      "docUrl": "https://grafana.com/docs/grafana-cloud/send-data/metrics/metrics-prometheus/prometheus-config-examples/the-apache-software-foundation-apache-dolphinscheduler/",
+      "notes": "基于 Spring Boot Actuator + Micrometer 原生暴露 Prometheus 端点，自 3.1.0 引入。四个组件各自独立端口：Master(5679)、Worker(1235)、Alert(50053)、API Server(12345)。指标前缀为 ds_master_* / ds_worker_* / ds_task_*，另含 JVM/process 标准 Micrometer 指标。"
+    },
+    "exporterFallback": {
+      "needed": false,
+      "name": null,
+      "repoUrl": null
+    },
+    "dataSource": "native",
+    "candidates": [
+      {
+        "name": "DolphinScheduler Master Dashboard (Official)",
+        "source": "github",
+        "url": "https://github.com/apache/dolphinscheduler/blob/3.4.1/dolphinscheduler-meter/src/main/resources/grafana/DolphinSchedulerMaster.json",
+        "grafanaId": null,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2023",
+        "scores": {
+          "heat": 0.1,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.18,
+          "goldenSignals": 0.16
+        },
+        "total": 0.74
+      },
+      {
+        "name": "DolphinScheduler Worker Dashboard (Official)",
+        "source": "github",
+        "url": "https://github.com/apache/dolphinscheduler/blob/3.4.1/dolphinscheduler-meter/src/main/resources/grafana/DolphinSchedulerWorker.json",
+        "grafanaId": null,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2023",
+        "scores": {
+          "heat": 0.1,
+          "datasourceMatch": 0.3,
+          "promqlPortability": 0.18,
+          "goldenSignals": 0.2
+        },
+        "total": 0.78
+      },
+      {
+        "name": "DolphinScheduler JVM Dashboard (Official)",
+        "source": "github",
+        "url": "https://github.com/apache/dolphinscheduler/blob/3.4.1/dolphinscheduler-meter/src/main/resources/grafana/JVM.json",
+        "grafanaId": null,
+        "downloads": null,
+        "rating": null,
+        "datasource": "Prometheus",
+        "lastUpdate": "2023",
+        "scores": {
+          "heat": 0.06,
+          "datasourceMatch": 0.24,
+          "promqlPortability": 0.16,
+          "goldenSignals": 0.1
+        },
+        "total": 0.56
+      }
+    ],
+    "recommendation": {
+      "pick": "DolphinScheduler Worker Dashboard (Official)",
+      "reason": "Worker 看板覆盖全部四个黄金信号(延迟: task execution time; 流量: task execution total; 错误: task success rate; 饱和度: queue full + overload + CPU)，得分最高(0.78)。所有 PromQL 均基于原生 ds_* 指标，与原生端点完全匹配(datasourceMatch=0.30)，查询使用标准 rate/increase 函数，可移植性好(0.18)。建议同时导入 Master 看板(0.74)作为补充，二者均可从 3.4.1 官方 GitHub 直接 import JSON 到 Grafana。"
+    },
+    "tier": "🟢可直接做"
+  }
+]

@@ -1,0 +1,2912 @@
+[
+  {
+    "title": "Loki Version",
+    "promql": [
+      "loki_build_info{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Internal Log Messages",
+    "promql": [
+      "sum(loki_internal_log_messages_total{job=\"$jobs\",instance=\"$host:$instance\"})"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Features Currently Set",
+    "promql": [
+      "deprecated_flags_inuse_total{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "loki_experimental_features_in_use_total{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Panics",
+    "promql": [
+      "loki_panic_total{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "semi-dark-red",
+        "value": 1
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Replication Faktor",
+    "promql": [
+      "loki_distributor_replication_factor{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "semi-dark-red",
+        "value": 0
+      },
+      {
+        "color": "green",
+        "value": 1
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Go Version",
+    "promql": [
+      "go_info{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Total Goroutines",
+    "promql": [
+      "sum(go_goroutines{job=\"$jobs\",instance=\"$host:$instance\"})"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "semi-dark-red",
+        "value": 500
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Total Threads",
+    "promql": [
+      "sum(go_threads{job=\"$jobs\",instance=\"$host:$instance\"})"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "semi-dark-red",
+        "value": 25
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Distributor Lines",
+    "promql": [
+      "sum(rate(loki_distributor_lines_received_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by(tenant)"
+    ],
+    "unit": "cps",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Distributor Volume",
+    "promql": [
+      "sum(rate(loki_distributor_bytes_received_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by(tenant)"
+    ],
+    "unit": "binBps",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Ingester Chunk Operations",
+    "promql": [
+      "rate(loki_ingester_chunks_created_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "sum(rate(loki_ingester_chunks_stored_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (tenant) "
+    ],
+    "unit": "ops",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Ingester Chunks Volume",
+    "promql": [
+      "sum(rate(loki_ingester_chunk_stored_bytes_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (tenant)"
+    ],
+    "unit": "binBps",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Store Series",
+    "promql": [
+      "sum(loki_store_series_total{job=\"$jobs\",instance=\"$host:$instance\"}) by(status)"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Store Chunks Downloaded",
+    "promql": [
+      "sum(loki_store_chunks_downloaded_total{job=\"$jobs\",instance=\"$host:$instance\"}) by(status)"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Index Chunks Downloaded",
+    "promql": [
+      "sum(loki_index_chunk_refs_total{job=\"$jobs\",instance=\"$host:$instance\"}) by(status)"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Ingester Chunks In Memory",
+    "promql": [
+      "loki_ingester_memory_chunks{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Ingester Streams in Memory",
+    "promql": [
+      "sum(loki_ingester_memory_streams{job=\"$jobs\",instance=\"$host:$instance\"}) by(tenant)"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Ingester Stream Operations",
+    "promql": [
+      "sum(rate(loki_ingester_streams_created_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (tenant)",
+      "sum(rate(loki_ingester_streams_removed_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (tenant)"
+    ],
+    "unit": "ops",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Store Operations Fetched",
+    "promql": [
+      "sum(rate(loki_chunk_store_fetched_chunks_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (user)"
+    ],
+    "unit": "ops",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Store Operations Stored",
+    "promql": [
+      "sum(rate(loki_chunk_store_stored_chunks_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (user)"
+    ],
+    "unit": "ops",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Ingester Chunk Size",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_ingester_chunk_size_bytes_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "bytes",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Ingester Chunk Compression",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_ingester_chunk_compression_ratio_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "percent",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Store Volume Fetched",
+    "promql": [
+      "rate(loki_chunk_store_fetched_chunk_bytes_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "binBps",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Store Volume Stored",
+    "promql": [
+      "rate(loki_chunk_store_stored_chunk_bytes_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "binBps",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Loki API - Request Duration",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_request_duration_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,method,route,status_code))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki API - Request Current",
+    "promql": [
+      "sum(rate(loki_inflight_requests{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (method, route)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki API - Response Size",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_response_message_bytes_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,method,route))"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki API - Request Size",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_request_message_bytes_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,method,route))"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki - TCP Connections",
+    "promql": [
+      "loki_tcp_connections{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Cache - Hits",
+    "promql": [
+      "sum(rate(loki_cache_hits{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by(name)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Cache - Fetched Keys",
+    "promql": [
+      "sum(rate(loki_cache_fetched_keys{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by(name)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Cache - Request Duration",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_cache_request_duration_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,name,method))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Cache - Value Size",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_cache_value_size_bytes_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,name,method))"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Distributor - Received Bytes",
+    "promql": [
+      "sum(rate(loki_distributor_bytes_received_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by(tenant)"
+    ],
+    "unit": "binBps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Distributor - Received Lines",
+    "promql": [
+      "sum(rate(loki_distributor_lines_received_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by(tenant)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Distributor - Batch Appents Sent To Ingester",
+    "promql": [
+      "sum(rate(loki_distributor_ingester_appends_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by(ingester)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Index - Request Duration",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_index_request_duration_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,component,operation,status_code))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Index - Chunks Downloaded",
+    "promql": [
+      "sum(rate(loki_index_chunk_refs_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (status)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki KV - Request Duration",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_kv_request_duration_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,kv_name,operation,role,status_code,type))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Cortex KV - Request Duration",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(cortex_kv_request_duration_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,kv_name,operation,role,status_code,type))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Cortex KV - Request Duration",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(cortex_consul_request_duration_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,kv_name,operation,status_code))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Client Request Duration",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_ingester_client_request_duration_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,operation,status_code))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Chunk Operations",
+    "promql": [
+      "rate(loki_ingester_chunks_created_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "sum(rate(loki_ingester_chunks_flushed_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (reason)",
+      "sum(rate(loki_ingester_chunks_stored_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (tenant) "
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Checkpoints",
+    "promql": [
+      "rate(loki_ingester_checkpoint_creations_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_ingester_checkpoint_creations_failed_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_ingester_checkpoint_deletions_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_ingester_checkpoint_deletions_failed_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Checkpoints Volume",
+    "promql": [
+      "rate(loki_ingester_checkpoint_logged_bytes_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "binBps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Checkpoint Duration",
+    "promql": [
+      "loki_ingester_checkpoint_duration_seconds{job=\"$jobs\",instance=\"$host:$instance\",quantile=\"0.99\"}",
+      "loki_ingester_checkpoint_duration_seconds{job=\"$jobs\",instance=\"$host:$instance\",quantile=\"0.9\"}",
+      "loki_ingester_checkpoint_duration_seconds{job=\"$jobs\",instance=\"$host:$instance\",quantile=\"0.5\"}"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Blocks Per Chunk",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_ingester_blocks_per_chunk_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Chunk Compression Ratio",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_ingester_chunk_compression_ratio_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "percent",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Chunks In Memory",
+    "promql": [
+      "loki_ingester_memory_chunks{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Chunk Size",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_ingester_chunk_size_bytes_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Chunk Age",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_ingester_chunk_age_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Chunk Usage",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_ingester_chunk_utilization_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "percentunit",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Chunk Stored Volume",
+    "promql": [
+      "sum(rate(loki_ingester_chunk_stored_bytes_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (tenant)"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Samples Per Chunk",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_ingester_samples_per_chunk_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Chunk Bounds (Hours)",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_ingester_chunk_bounds_hours_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "h",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Chunk Encoding Time",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_ingester_chunk_encode_time_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Lines Per Chunk",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_ingester_chunk_entries_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Stream Operations",
+    "promql": [
+      "sum(rate(loki_ingester_streams_created_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (tenant)",
+      "sum(rate(loki_ingester_streams_removed_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (tenant)"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - Streams In Memory",
+    "promql": [
+      "sum(loki_ingester_memory_streams{job=\"$jobs\",instance=\"$host:$instance\"}) by (tenant)"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - WAL Records",
+    "promql": [
+      "rate(loki_ingester_wal_records_logged_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_ingester_wal_duplicate_entries_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_ingester_wal_disk_full_failures_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "sum(rate(loki_ingester_wal_discarded_samples_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (reason)"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - WAL Volume",
+    "promql": [
+      "loki_ingester_wal_bytes_in_use{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "rate(loki_ingester_wal_logged_bytes_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "sum(rate(loki_ingester_wal_discarded_bytes_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (reason)",
+      "sum(rate(loki_ingester_wal_discarded_bytes_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (reason)"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - WAL Recovery Operations",
+    "promql": [
+      "rate(loki_ingester_wal_recovered_entries_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_ingester_wal_recovered_chunks_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_ingester_wal_recovered_streams_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ingester - WAL Replay Status",
+    "promql": [
+      "loki_ingester_wal_replay_active{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "loki_ingester_wal_replay_flushing{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Cortex Ingester - Flush Queue",
+    "promql": [
+      "cortex_ingester_flush_queue_length{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Cortex Ingester - Clients",
+    "promql": [
+      "cortex_distributor_ingester_clients{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki - Internal Log Messages",
+    "promql": [
+      "sum(rate(loki_internal_log_messages_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (level)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Line - Log Flushes",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_log_flushes_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Line - Line Size Distribution",
+    "promql": [
+      "rate(loki_bytes_per_line_bucket{job=\"$jobs\", instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": null,
+    "chartType": "heatmap",
+    "thresholds": null,
+    "legend": {
+      "show": true
+    }
+  },
+  {
+    "title": "Loki Line - Line Size",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_bytes_per_line_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki LogQL - Lines Received From Ingester",
+    "promql": [
+      "rate(loki_logql_querystats_ingester_sent_lines_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki LogQL - Duplicates Found",
+    "promql": [
+      "rate(loki_logql_querystats_duplicates_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki LogQL - Query Duration",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(logql_query_duration_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,query_type))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki LogQL - Query Latency",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_logql_querystats_latency_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,type,status_code))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki LogQL - Query Volume Processed",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_logql_querystats_bytes_processed_per_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,type,status_code))"
+    ],
+    "unit": "binBps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki LogQL - Downloaded Chunks",
+    "promql": [
+      "sum(rate(loki_logql_querystats_downloaded_chunk_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by(type,status_code)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki LogQL - Chunk Download Latency",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_logql_querystats_chunk_download_latency_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,type,status_code))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Querier - Frontend Request Duration",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_querier_query_frontend_request_duration_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,operation,status_code))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Querier - Frontend Cache",
+    "promql": [
+      "rate(loki_query_frontend_log_result_cache_hit_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_query_frontend_log_result_cache_miss_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Querier - Frontend Partitions",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_query_frontend_partitions_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Querier - Frontend Shard Factor",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_query_frontend_shard_factor_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,mapper))"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Querier - Frontend Shards",
+    "promql": [
+      "sum(rate(loki_query_frontend_sharding_parsed_queries_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,mapper,type)",
+      "histogram_quantile(0.95, sum(rate(loki_query_frontend_shards_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,mapper,type))"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Querier - Index Cache Clients / Workers",
+    "promql": [
+      "loki_querier_query_frontend_clients{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "loki_querier_tail_active{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "loki_querier_tail_active_streams{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "loki_querier_worker_concurrency{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "loki_querier_worker_inflight_queries{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Querier - Index Cache Operations",
+    "promql": [
+      "rate(loki_querier_index_cache_gets_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_querier_index_cache_puts_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_querier_index_cache_hits_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_querier_index_cache_corruptions_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_querier_index_cache_encode_errors_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Cortex Query - Frontend Connections",
+    "promql": [
+      "cortex_query_frontend_connected_schedulers{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "cortex_query_scheduler_connected_frontend_clients{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "cortex_query_scheduler_connected_querier_clients{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Query Cache - Throughput",
+    "promql": [
+      "sum(rate(querier_cache_added_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (cache)",
+      "sum(rate(querier_cache_added_new_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (cache)",
+      "sum(rate(querier_cache_evicted_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (cache,reason)",
+      "sum(rate(querier_cache_gets_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (cache)",
+      "sum(rate(querier_cache_misses_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (cache)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Query Cache - Entries",
+    "promql": [
+      "sum(querier_cache_entries{job=\"$jobs\",instance=\"$host:$instance\"}) by (cache)"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Query Cache - Size",
+    "promql": [
+      "sum(querier_cache_memory_bytes{job=\"$jobs\",instance=\"$host:$instance\"}) by (cache)"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Cortex Query - Frontend Retries",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(cortex_query_frontend_retries_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Cortex Query - Frontend Range Request Duration",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(cortex_frontend_query_range_duration_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,method,status_code))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Cortex Query - Frontend Operations",
+    "promql": [
+      "cortex_query_frontend_queries_in_progress{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Cortex Query - Scheduler Inflight Requests",
+    "promql": [
+      "cortex_query_scheduler_inflight_requests{job=\"$jobs\",instance=\"$host:$instance\",quantile=\"0.99\"}",
+      "cortex_query_scheduler_inflight_requests{job=\"$jobs\",instance=\"$host:$instance\",quantile=\"0.95\"}",
+      "cortex_query_scheduler_inflight_requests{job=\"$jobs\",instance=\"$host:$instance\",quantile=\"0.9\"}",
+      "cortex_query_scheduler_inflight_requests{job=\"$jobs\",instance=\"$host:$instance\",quantile=\"0.8\"}",
+      "cortex_query_scheduler_inflight_requests{job=\"$jobs\",instance=\"$host:$instance\",quantile=\"0.75\"}",
+      "cortex_query_scheduler_inflight_requests{job=\"$jobs\",instance=\"$host:$instance\",quantile=\"0.5\"}"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Cortex Query - Scheduler Queue Duration",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(cortex_query_scheduler_queue_duration_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ring - Heathbeats",
+    "promql": [
+      "sum(rate(ring_member_heartbeats_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (name)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Ring - Tokens",
+    "promql": [
+      "sum(ring_member_tokens_owned{job=\"$jobs\",instance=\"$host:$instance\"}) by (name)",
+      "sum(ring_member_tokens_to_own{job=\"$jobs\",instance=\"$host:$instance\"}) by (name)"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Cortex Ring Member - Heathbeats",
+    "promql": [
+      "sum(rate(cortex_member_consul_heartbeats_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (name)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Store - Series Referenced",
+    "promql": [
+      "sum(rate(loki_store_series_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (status)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Store - Chunks Downloaded",
+    "promql": [
+      "sum(rate(loki_store_chunks_downloaded_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (status)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Store - Chunk Batch Size",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_store_chunks_per_batch_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,status))"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Store - Chunk Fetcher Cache",
+    "promql": [
+      "rate(loki_chunk_fetcher_cache_dequeued_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_chunk_fetcher_cache_enqueued_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_chunk_fetcher_cache_skipped_buffer_full_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Store - Fetched / Stored Chunks",
+    "promql": [
+      "sum(rate(loki_chunk_store_fetched_chunks_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (user)",
+      "sum(rate(loki_chunk_store_stored_chunks_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (user)"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Store - Fetched / Stored Chunk Volume",
+    "promql": [
+      "rate(loki_chunk_store_fetched_chunk_bytes_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(loki_chunk_store_stored_chunk_bytes_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "binBps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Store - Chunks Per Query Distribution",
+    "promql": [
+      "rate(loki_chunk_store_chunks_per_query_bucket{job=\"$jobs\", instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": null,
+    "chartType": "heatmap",
+    "thresholds": null,
+    "legend": {
+      "show": true
+    }
+  },
+  {
+    "title": "Loki Store - Chunks Per Query",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_chunk_store_chunks_per_query_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Store - Index Entries Per Chunk Distribution",
+    "promql": [
+      "rate(loki_chunk_store_index_entries_per_chunk_bucket{job=\"$jobs\", instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": null,
+    "chartType": "heatmap",
+    "thresholds": null,
+    "legend": {
+      "show": true
+    }
+  },
+  {
+    "title": "Loki Store - Index Entries Per Chunk",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_chunk_store_index_entries_per_chunk_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Store - Index Lookups Per Query Distribution",
+    "promql": [
+      "rate(loki_chunk_store_index_lookups_per_query_bucket{job=\"$jobs\", instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": null,
+    "chartType": "heatmap",
+    "thresholds": null,
+    "legend": {
+      "show": true
+    }
+  },
+  {
+    "title": "Loki Store - Index Lookups Per Query",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_chunk_store_index_lookups_per_query_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Store - Series (Pre Intersection) Per Chunk Distribution",
+    "promql": [
+      "rate(loki_chunk_store_series_pre_intersection_per_query_bucket{job=\"$jobs\", instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": null,
+    "chartType": "heatmap",
+    "thresholds": null,
+    "legend": {
+      "show": true
+    }
+  },
+  {
+    "title": "Loki Store - Series (Pre Intersection) Per Chunk",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_chunk_store_series_pre_intersection_per_query_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Store - Series (Post Intersection) Per Chunk Distribution",
+    "promql": [
+      "rate(loki_chunk_store_series_post_intersection_per_query_bucket{job=\"$jobs\", instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": null,
+    "chartType": "heatmap",
+    "thresholds": null,
+    "legend": {
+      "show": true
+    }
+  },
+  {
+    "title": "Loki Store - Series (Post Intersection) Per Chunk",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_chunk_store_series_post_intersection_per_query_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le))"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Table Manager - Errors",
+    "promql": [
+      "loki_table_manager_create_failures{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "loki_table_manager_delete_failures{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Loki Table Manager - Sync Duration",
+    "promql": [
+      "histogram_quantile(0.95, sum(rate(loki_table_manager_sync_duration_seconds_bucket{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])) by (le,operation,status_code))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Go - Goroutines / Threads",
+    "promql": [
+      "go_goroutines{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "go_threads{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Go - Goroutines Latency",
+    "promql": [
+      "rate(go_sched_latencies_seconds_sum{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])/rate(go_sched_latencies_seconds_count{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Go - Goroutines Latency Distribution",
+    "promql": [
+      "rate(go_sched_latencies_seconds_bucket{job=\"$jobs\", instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": null,
+    "chartType": "heatmap",
+    "thresholds": null,
+    "legend": {
+      "show": true
+    }
+  },
+  {
+    "title": "Go - Memory Heap",
+    "promql": [
+      "go_memory_classes_heap_free_bytes{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "go_memory_classes_heap_objects_bytes{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "go_memory_classes_heap_released_bytes{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "go_memory_classes_heap_stacks_bytes{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "go_memory_classes_heap_unused_bytes{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Go - Memory Metadata",
+    "promql": [
+      "go_memory_classes_metadata_mcache_free_bytes{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "go_memory_classes_metadata_mcache_inuse_bytes{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "go_memory_classes_metadata_mspan_free_bytes{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "go_memory_classes_metadata_mspan_inuse_bytes{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "go_memory_classes_metadata_other_bytes{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "go_memory_classes_other_bytes{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "go_memory_classes_profiling_buckets_bytes{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "go_memory_classes_total_bytes{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Go - Heap Object Allocation / Free Sizes",
+    "promql": [
+      "rate(go_gc_heap_allocs_bytes_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])/rate(go_gc_heap_allocs_objects_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(go_gc_heap_frees_bytes_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])/rate(go_gc_heap_frees_objects_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Go - Heap Free Distribution",
+    "promql": [
+      "rate(go_gc_heap_frees_by_size_bytes_bucket{job=\"$jobs\", instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": null,
+    "chartType": "heatmap",
+    "thresholds": null,
+    "legend": {
+      "show": true
+    }
+  },
+  {
+    "title": "Go - Heap Allocation Distribution",
+    "promql": [
+      "rate(go_gc_heap_allocs_by_size_bytes_bucket{job=\"$jobs\", instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": null,
+    "chartType": "heatmap",
+    "thresholds": null,
+    "legend": {
+      "show": true
+    }
+  },
+  {
+    "title": "Go - Garbage Collection Cycles",
+    "promql": [
+      "rate(go_gc_cycles_total_gc_cycles_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(go_gc_cycles_automatic_gc_cycles_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(go_gc_cycles_forced_gc_cycles_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "cps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Go - Garbage Collection Pause Duration",
+    "promql": [
+      "rate(go_gc_duration_seconds_sum{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])/rate(go_gc_duration_seconds_count{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])",
+      "rate(go_gc_pauses_seconds_sum{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])/rate(go_gc_pauses_seconds_count{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Go - Garbage Collection Pauses Distribution",
+    "promql": [
+      "rate(go_gc_pauses_seconds_bucket{job=\"$jobs\", instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": null,
+    "chartType": "heatmap",
+    "thresholds": null,
+    "legend": {
+      "show": true
+    }
+  },
+  {
+    "title": "Process - CPU seconds",
+    "promql": [
+      "rate(process_cpu_seconds_total{job=\"$jobs\",instance=\"$host:$instance\"}[$__rate_interval])"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Process - Memory",
+    "promql": [
+      "process_virtual_memory_bytes{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "process_resident_memory_bytes{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Process - File descriptors",
+    "promql": [
+      "process_max_fds{job=\"$jobs\",instance=\"$host:$instance\"}",
+      "process_open_fds{job=\"$jobs\",instance=\"$host:$instance\"}"
+    ],
+    "unit": "none",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      },
+      {
+        "color": "red",
+        "value": 80
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "min",
+        "max",
+        "mean",
+        "last"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  }
+]
