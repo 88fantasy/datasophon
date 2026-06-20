@@ -40,26 +40,26 @@ React(AntV G2)
 
 Kyuubi 特有补充：
 
-| 模板 panel type | 映射组件 | 备注 |
-|---|---|---|
-| `stat`（Instances/Uptime） | `<Statistic>` | Uptime 用 `formatDuration` |
-| `timeseries`（`increase(...[$trendInterval])`） | `<Line>` | 趋势类用 increase 窗口（new sessions/operations） |
-| `timeseries`（state error/failed） | `<Line>` 错误红系 | Error 象限 |
-| `timeseries`（memory pools） | `<Area>` 堆叠 | JVM Statistics |
+|                 模板 panel type                 |     映射组件      |                    备注                     |
+|-----------------------------------------------|---------------|-------------------------------------------|
+| `stat`（Instances/Uptime）                      | `<Statistic>` | Uptime 用 `formatDuration`                 |
+| `timeseries`（`increase(...[$trendInterval])`） | `<Line>`      | 趋势类用 increase 窗口（new sessions/operations） |
+| `timeseries`（state error/failed）              | `<Line>` 错误红系 | Error 象限                                  |
+| `timeseries`（memory pools）                    | `<Area>` 堆叠   | JVM Statistics                            |
 
 ---
 
 ## 3. 变量 / 过滤器规范
 
-| 变量 | PromQL 占位符 | 取值来源 | 默认值 | 说明 |
-|---|---|---|---|---|
-| 实例 | `$instance` | `label_values(kyuubi_jvm_uptime, instance)` | `.+` | 多选下拉，Kyuubi Server 节点 |
-| baseFilter | `$baseFilter` | 自定义（集群/cluster label） | 空或 `instance=~".+"` | 通用过滤前缀，可选 |
-| 连接类型 | `$connType` | 固定枚举：`connection_total_INTERACTIVE` / `connection_total_BATCH` | INTERACTIVE | **插值进指标名** |
-| 操作类型 | `$opType` | 固定枚举：`ExecuteStatement` / `LaunchEngine` 等 | ExecuteStatement | **插值进指标名** |
-| 趋势窗口 | `$trendInterval` | 由时间范围派生 | `5m` | 用于 `increase()` |
-| 时间范围 | — | 时间选择器 | `Last 1h` | 5m/15m/1h/6h/24h/7d |
-| 刷新间隔 | — | — | `30s` | 自动轮询 |
+|     变量     |    PromQL 占位符    |                              取值来源                              |         默认值         |          说明           |
+|------------|------------------|----------------------------------------------------------------|---------------------|-----------------------|
+| 实例         | `$instance`      | `label_values(kyuubi_jvm_uptime, instance)`                    | `.+`                | 多选下拉，Kyuubi Server 节点 |
+| baseFilter | `$baseFilter`    | 自定义（集群/cluster label）                                          | 空或 `instance=~".+"` | 通用过滤前缀，可选             |
+| 连接类型       | `$connType`      | 固定枚举：`connection_total_INTERACTIVE` / `connection_total_BATCH` | INTERACTIVE         | **插值进指标名**            |
+| 操作类型       | `$opType`        | 固定枚举：`ExecuteStatement` / `LaunchEngine` 等                     | ExecuteStatement    | **插值进指标名**            |
+| 趋势窗口       | `$trendInterval` | 由时间范围派生                                                        | `5m`                | 用于 `increase()`       |
+| 时间范围       | —                | 时间选择器                                                          | `Last 1h`           | 5m/15m/1h/6h/24h/7d   |
+| 刷新间隔       | —                | —                                                              | `30s`               | 自动轮询                  |
 
 > 原型可先固定 `$connType=INTERACTIVE`、`$opType=ExecuteStatement`（最常用），将这两个下拉作为高级选项；`$baseFilter` 默认空。
 
@@ -118,12 +118,12 @@ Kyuubi 特有补充：
 
 ### 5.0 Golden Signals 映射
 
-| 维度 | 面板 | 说明 |
-|---|---|---|
-| **Latency（延迟）** | KY09 Operation pending/running、KY14 Max Batch Pending Elapse | 操作排队/运行 + 批处理等待延迟 |
-| **Traffic（流量）** | KY03 Connection Opened、KY07 Session new、KY08 Operation new、KY13 Fetch Rows | 连接/会话/操作/取数吞吐 |
-| **Errors（错误）** | KY06 Op Error Rate ★、KY11 Connection Failed ★、KY12 Operation Error ★ | 连接失败 + 操作错误（补齐 Error 象限） |
-| **Saturation（饱和度）** | KY04 Engine Total、KY05 Exec Threads、KY10 Engine Launching/Permit、KY15/KY16 JVM | 引擎数、线程池、启动许可、内存 |
+|         维度          |                                       面板                                       |            说明            |
+|---------------------|--------------------------------------------------------------------------------|--------------------------|
+| **Latency（延迟）**     | KY09 Operation pending/running、KY14 Max Batch Pending Elapse                   | 操作排队/运行 + 批处理等待延迟        |
+| **Traffic（流量）**     | KY03 Connection Opened、KY07 Session new、KY08 Operation new、KY13 Fetch Rows     | 连接/会话/操作/取数吞吐            |
+| **Errors（错误）**      | KY06 Op Error Rate ★、KY11 Connection Failed ★、KY12 Operation Error ★           | 连接失败 + 操作错误（补齐 Error 象限） |
+| **Saturation（饱和度）** | KY04 Engine Total、KY05 Exec Threads、KY10 Engine Launching/Permit、KY15/KY16 JVM | 引擎数、线程池、启动许可、内存          |
 
 > ★ selection.md 指出官方模板「Error 信号完全缺失」；实际模板含 `$connType(failed)` 与 `$opType(error)`，本 spec 将其提升为 KY06/KY11/KY12 三个显式 Error 面板，补齐象限。
 
@@ -133,55 +133,55 @@ Kyuubi 特有补充：
 
 #### KY01 Instances
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Instances |
-| 图表类型 | `<Statistic>` |
-| Query 类型 | instant query |
-| PromQL | `count(kyuubi_jvm_uptime{$baseFilter})` |
+|    属性    |                    值                    |
+|----------|-----------------------------------------|
+| 标题       | Instances                               |
+| 图表类型     | `<Statistic>`                           |
+| Query 类型 | instant query                           |
+| PromQL   | `count(kyuubi_jvm_uptime{$baseFilter})` |
 
 #### KY02 Uptime
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Uptime |
-| 图表类型 | `<Statistic>` + `formatDuration` |
+|   属性   |                           值                            |
+|--------|--------------------------------------------------------|
+| 标题     | Uptime                                                 |
+| 图表类型   | `<Statistic>` + `formatDuration`                       |
 | PromQL | `kyuubi_jvm_uptime{$baseFilter,instance=~"$instance"}` |
-| 单位 | 秒（或 ms，按模板实际，需核对）→ d/h/m |
+| 单位     | 秒（或 ms，按模板实际，需核对）→ d/h/m                               |
 
 #### KY03 Connection Opened
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Connection Opened |
-| 图表类型 | `<Statistic>` |
+|   属性   |                                       值                                        |
+|--------|--------------------------------------------------------------------------------|
+| 标题     | Connection Opened                                                              |
+| 图表类型   | `<Statistic>`                                                                  |
 | PromQL | `sum(kyuubi_connection_opened_INTERACTIVE{$baseFilter,instance=~"$instance"})` |
 
 #### KY04 Engine Total
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Engine Total |
-| 图表类型 | `<Statistic>` |
+|   属性   |                               值                               |
+|--------|---------------------------------------------------------------|
+| 标题     | Engine Total                                                  |
+| 图表类型   | `<Statistic>`                                                 |
 | PromQL | `sum(kyuubi_engine_total{$baseFilter,instance=~"$instance"})` |
 
 #### KY05 Exec Pool Threads
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Exec Pool Threads |
-| 图表类型 | `<Statistic>` |
+|   属性   |                                    值                                     |
+|--------|--------------------------------------------------------------------------|
+| 标题     | Exec Pool Threads                                                        |
+| 图表类型   | `<Statistic>`                                                            |
 | PromQL | `sum(kyuubi_exec_pool_threads_alive{$baseFilter,instance=~"$instance"})` |
 
 #### KY06 Operation Error Rate ★
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Operation Error Rate |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
+|   属性   |                                                        值                                                         |
+|--------|------------------------------------------------------------------------------------------------------------------|
+| 标题     | Operation Error Rate                                                                                             |
+| 图表类型   | `<Statistic>` + `colorByThreshold`                                                                               |
 | PromQL | `sum(increase(kyuubi_operation_state_${opType}_error_total{$baseFilter,instance=~"$instance"}[$trendInterval]))` |
-| 阈值 | `= 0` → 绿；`> 0` → 红 |
-| 说明 | ★ 补强 Error 象限即时值 |
+| 阈值     | `= 0` → 绿；`> 0` → 红                                                                                              |
+| 说明     | ★ 补强 Error 象限即时值                                                                                                 |
 
 ---
 
@@ -189,20 +189,20 @@ Kyuubi 特有补充：
 
 #### KY07 Session (new)
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Session (new) [$trendInterval] |
-| 图表类型 | `<Line>` |
-| Query 类型 | range query |
-| PromQL | `increase(kyuubi_connection_total_INTERACTIVE{$baseFilter,instance=~"$instance"}[$trendInterval])` |
-| y 轴 | 新增会话数/窗口 |
+|    属性    |                                                 值                                                  |
+|----------|----------------------------------------------------------------------------------------------------|
+| 标题       | Session (new) [$trendInterval]                                                                     |
+| 图表类型     | `<Line>`                                                                                           |
+| Query 类型 | range query                                                                                        |
+| PromQL   | `increase(kyuubi_connection_total_INTERACTIVE{$baseFilter,instance=~"$instance"}[$trendInterval])` |
+| y 轴      | 新增会话数/窗口                                                                                           |
 
 #### KY08 Operation (new)
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Operation (new) [$trendInterval] |
-| 图表类型 | `<Line>` |
+|   属性   |                                                   值                                                    |
+|--------|--------------------------------------------------------------------------------------------------------|
+| 标题     | Operation (new) [$trendInterval]                                                                       |
+| 图表类型   | `<Line>`                                                                                               |
 | PromQL | `increase(kyuubi_operation_total_ExecuteStatement{$baseFilter,instance=~"$instance"}[$trendInterval])` |
 
 ---
@@ -211,23 +211,23 @@ Kyuubi 特有补充：
 
 #### KY09 Operation Pending / Running
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Operation Pending / Running |
-| 图表类型 | `<Line>` 2 系列 |
+|        属性        |                                          值                                          |
+|------------------|-------------------------------------------------------------------------------------|
+| 标题               | Operation Pending / Running                                                         |
+| 图表类型             | `<Line>` 2 系列                                                                       |
 | PromQL (pending) | `kyuubi_operation_state_${opType}_pending_total{$baseFilter,instance=~"$instance"}` |
 | PromQL (running) | `kyuubi_operation_state_${opType}_running_total{$baseFilter,instance=~"$instance"}` |
-| 系列 | `Pending`（橙，排队）、`Running`（蓝） |
+| 系列               | `Pending`（橙，排队）、`Running`（蓝）                                                        |
 
 #### KY10 Engine Launching & Startup Permit
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Engine Launching & Startup Permit |
-| 图表类型 | `<Line>` 2 系列 |
+|         属性         |                                           值                                            |
+|--------------------|----------------------------------------------------------------------------------------|
+| 标题                 | Engine Launching & Startup Permit                                                      |
+| 图表类型               | `<Line>` 2 系列                                                                          |
 | PromQL (launching) | `kyuubi_operation_state_LaunchEngine_running_total{$baseFilter,instance=~"$instance"}` |
-| PromQL (permit) | `kyuubi_engine_startup_permit_limit_total{$baseFilter,instance=~"$instance"}` |
-| 系列 | `Launching`（蓝）、`Startup Permit Limit`（灰虚线，上限） |
+| PromQL (permit)    | `kyuubi_engine_startup_permit_limit_total{$baseFilter,instance=~"$instance"}`          |
+| 系列                 | `Launching`（蓝）、`Startup Permit Limit`（灰虚线，上限）                                          |
 
 ---
 
@@ -235,24 +235,24 @@ Kyuubi 特有补充：
 
 #### KY11 Connection Failed ★
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Connection Failed |
-| 图表类型 | `<Line>` 错误红系 |
-| Query 类型 | range query |
-| PromQL | `kyuubi_${connType}_failed{$baseFilter,instance=~"$instance"}` |
-| 系列颜色 | `#ff4d4f` |
-| 说明 | ★ `$connType` 插值进指标名 |
+|    属性    |                               值                                |
+|----------|----------------------------------------------------------------|
+| 标题       | Connection Failed                                              |
+| 图表类型     | `<Line>` 错误红系                                                  |
+| Query 类型 | range query                                                    |
+| PromQL   | `kyuubi_${connType}_failed{$baseFilter,instance=~"$instance"}` |
+| 系列颜色     | `#ff4d4f`                                                      |
+| 说明       | ★ `$connType` 插值进指标名                                           |
 
 #### KY12 Operation Error ★
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Operation Error |
-| 图表类型 | `<Line>` 错误红系 |
-| PromQL | `kyuubi_operation_state_${opType}_error_total{$baseFilter,instance=~"$instance"}` |
-| 系列颜色 | `#ff4d4f` |
-| 说明 | ★ 补强；建议同时叠加 `kyuubi_operation_failed_total` / `kyuubi_engine_open_failed_count`（selection.md 备注）作为额外系列 |
+|   属性   |                                                   值                                                    |
+|--------|--------------------------------------------------------------------------------------------------------|
+| 标题     | Operation Error                                                                                        |
+| 图表类型   | `<Line>` 错误红系                                                                                          |
+| PromQL | `kyuubi_operation_state_${opType}_error_total{$baseFilter,instance=~"$instance"}`                      |
+| 系列颜色   | `#ff4d4f`                                                                                              |
+| 说明     | ★ 补强；建议同时叠加 `kyuubi_operation_failed_total` / `kyuubi_engine_open_failed_count`（selection.md 备注）作为额外系列 |
 
 ---
 
@@ -260,21 +260,21 @@ Kyuubi 特有补充：
 
 #### KY13 Fetch Rows (new)
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Fetch Rows [$trendInterval] |
-| 图表类型 | `<Line>` |
+|   属性   |                                                         值                                                          |
+|--------|--------------------------------------------------------------------------------------------------------------------|
+| 标题     | Fetch Rows [$trendInterval]                                                                                        |
+| 图表类型   | `<Line>`                                                                                                           |
 | PromQL | `increase(kyuubi_backend_service_fetch_result_rows_rate_total{$baseFilter,instance=~"$instance"}[$trendInterval])` |
-| y 轴 | 取数行数/窗口 |
+| y 轴    | 取数行数/窗口                                                                                                            |
 
 #### KY14 Max Batch Pending Elapse
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Max Batch Pending Elapse |
-| 图表类型 | `<Line>` |
+|   属性   |                                       值                                        |
+|--------|--------------------------------------------------------------------------------|
+| 标题     | Max Batch Pending Elapse                                                       |
+| 图表类型   | `<Line>`                                                                       |
 | PromQL | `kyuubi_operation_batch_pending_max_elapse{$baseFilter,instance=~"$instance"}` |
-| 单位 | ms（批处理最大等待时长，延迟信号） |
+| 单位     | ms（批处理最大等待时长，延迟信号）                                                             |
 
 ---
 
@@ -282,23 +282,23 @@ Kyuubi 特有补充：
 
 #### KY15 JVM Memory Usage
 
-| 属性 | 值 |
-|---|---|
-| 标题 | JVM Memory Usage |
-| 图表类型 | `<Line>` 2 系列（used + ratio 双 y 轴） |
-| PromQL (used) | `kyuubi_memory_usage_total_used{$baseFilter,instance=~"$instance"}` |
+|       属性       |                                                                   值                                                                   |
+|----------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| 标题             | JVM Memory Usage                                                                                                                      |
+| 图表类型           | `<Line>` 2 系列（used + ratio 双 y 轴）                                                                                                     |
+| PromQL (used)  | `kyuubi_memory_usage_total_used{$baseFilter,instance=~"$instance"}`                                                                   |
 | PromQL (ratio) | `kyuubi_memory_usage_total_used{$baseFilter,instance=~"$instance"} / kyuubi_memory_usage_heap_max{$baseFilter,instance=~"$instance"}` |
-| y 轴 | 左：bytes（`formatBytes`）；右：比率（0–1，可 ×100 显示 %） |
+| y 轴            | 左：bytes（`formatBytes`）；右：比率（0–1，可 ×100 显示 %）                                                                                          |
 
 #### KY16 JVM Memory Pools
 
-| 属性 | 值 |
-|---|---|
-| 标题 | JVM Memory Pools |
-| 图表类型 | `<Area>` 堆叠 |
+|   属性   |                                                                                               值                                                                                                |
+|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题     | JVM Memory Pools                                                                                                                                                                               |
+| 图表类型   | `<Area>` 堆叠                                                                                                                                                                                    |
 | PromQL | `kyuubi_memory_usage_pools_PS_Eden_Space_used` / `..._PS_Old_Gen_used` / `..._PS_Survivor_Space_used` / `..._Metaspace_used` / `..._Code_Cache_used`（各加 `{$baseFilter,instance=~"$instance"}`） |
-| 系列 | `Eden` / `Old Gen` / `Survivor` / `Metaspace` / `Code Cache`（复用 Nexus `jvmPoolColors`） |
-| 说明 | 池名取决于 JVM 回收器（PS = ParallelGC）；ZGC/G1 命名不同，落地按实际调整 |
+| 系列     | `Eden` / `Old Gen` / `Survivor` / `Metaspace` / `Code Cache`（复用 Nexus `jvmPoolColors`）                                                                                                         |
+| 说明     | 池名取决于 JVM 回收器（PS = ParallelGC）；ZGC/G1 命名不同，落地按实际调整                                                                                                                                             |
 
 ---
 
@@ -458,3 +458,4 @@ const extras = useMemo(() => ({
 - [ ] 标注 GC/内存池指标名随 JVM 回收器变化（PS/G1/ZGC），落地需核对
 - [ ] 在 1280px 宽度下 6 行布局无横向滚动条
 - [ ] golden signals 四象限覆盖验证（见 §5.0）；Error 象限由 KY06/KY11/KY12 补强（修正官方模板缺口）
+

@@ -38,23 +38,23 @@ React(AntV G2)
 
 Valkey 特有补充：
 
-| Grafana chartType（catalog） | 映射组件 | 备注 |
-|---|---|---|
-| `gauge`（Memory Usage） | `<Statistic>` + `colorByThreshold`（环形可选） | 80→橙、95→红 真阈值 |
-| `stat`（Max Uptime/Clients） | `<Statistic>` | uptime 用 `formatDuration` |
-| `timeseries`（比值延迟） | `<Line>` + ms 轴 | Average Time Spent by Command |
-| `timeseries`（命令分布 by cmd） | `<Line>` 多系列 | Total Commands / sec |
+| Grafana chartType（catalog） |                   映射组件                   |              备注               |
+|----------------------------|------------------------------------------|-------------------------------|
+| `gauge`（Memory Usage）      | `<Statistic>` + `colorByThreshold`（环形可选） | 80→橙、95→红 真阈值                 |
+| `stat`（Max Uptime/Clients） | `<Statistic>`                            | uptime 用 `formatDuration`     |
+| `timeseries`（比值延迟）         | `<Line>` + ms 轴                          | Average Time Spent by Command |
+| `timeseries`（命令分布 by cmd）  | `<Line>` 多系列                             | Total Commands / sec          |
 
 ---
 
 ## 3. 变量 / 过滤器规范
 
-| 变量 | PromQL 占位符 | 取值来源 | 默认值 | 说明 |
-|---|---|---|---|---|
-| 实例 | `$instance` | `label_values(redis_up, instance)` | `.+`（全选） | 多选下拉，对应 redis_exporter 地址 |
-| 速率窗口 | `$__interval` | 由时间范围自动计算 | — | 仅 Total Commands 用 `[1m]`，其余固定 `[5m]`/`[1m]` |
-| 时间范围 | — | 时间选择器 | `Last 1h` | 5m/15m/1h/6h/24h/7d |
-| 刷新间隔 | — | — | `30s` | 自动轮询 |
+|  变量  |  PromQL 占位符   |                取值来源                |    默认值    |                      说明                      |
+|------|---------------|------------------------------------|-----------|----------------------------------------------|
+| 实例   | `$instance`   | `label_values(redis_up, instance)` | `.+`（全选）  | 多选下拉，对应 redis_exporter 地址                    |
+| 速率窗口 | `$__interval` | 由时间范围自动计算                          | —         | 仅 Total Commands 用 `[1m]`，其余固定 `[5m]`/`[1m]` |
+| 时间范围 | —             | 时间选择器                              | `Last 1h` | 5m/15m/1h/6h/24h/7d                          |
+| 刷新间隔 | —             | —                                  | `30s`     | 自动轮询                                         |
 
 > catalog 多数面板用固定窗口（`[1m]`/`[5m]`），仅 `Total Commands / sec` 用 `[1m]`。本 spec 不暴露 Interval 下拉，窗口在 PanelDef 中按面板硬编码。
 
@@ -113,12 +113,12 @@ Valkey 特有补充：
 
 ### 5.0 Golden Signals 映射
 
-| 维度 | 面板 | 说明 |
-|---|---|---|
-| **Latency（延迟）** | V07 Avg Time by Command（比值法 ms） | 各命令平均执行耗时 |
-| **Traffic（流量）** | V05 Commands/sec、V06 Hits/Misses、V08 Network I/O | 命令速率、缓存命中、网络吞吐 |
-| **Errors（错误）** | V13 Evicted Keys、V14 Rejected Connections ★ | 内存驱逐 + 连接拒绝（补强） |
-| **Saturation（饱和度）** | V03 Memory %、V09 Memory、V10 Clients、V11/V12 键空间 | 内存、连接、键数压力 |
+|         维度          |                        面板                        |       说明        |
+|---------------------|--------------------------------------------------|-----------------|
+| **Latency（延迟）**     | V07 Avg Time by Command（比值法 ms）                  | 各命令平均执行耗时       |
+| **Traffic（流量）**     | V05 Commands/sec、V06 Hits/Misses、V08 Network I/O | 命令速率、缓存命中、网络吞吐  |
+| **Errors（错误）**      | V13 Evicted Keys、V14 Rejected Connections ★      | 内存驱逐 + 连接拒绝（补强） |
+| **Saturation（饱和度）** | V03 Memory %、V09 Memory、V10 Clients、V11/V12 键空间  | 内存、连接、键数压力      |
 
 ---
 
@@ -126,47 +126,47 @@ Valkey 特有补充：
 
 #### V01 Max Uptime
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Max Uptime |
-| 图表类型 | `<Statistic>` + `formatDuration` |
-| Query 类型 | instant query |
-| PromQL | `max(redis_uptime_in_seconds{instance=~"$instance"})` |
-| 单位 | 秒 → d/h/m |
-| 阈值（reverse） | `< 300` → 橙；否则绿（catalog `value:80` 弃用） |
+|     属性      |                           值                           |
+|-------------|-------------------------------------------------------|
+| 标题          | Max Uptime                                            |
+| 图表类型        | `<Statistic>` + `formatDuration`                      |
+| Query 类型    | instant query                                         |
+| PromQL      | `max(redis_uptime_in_seconds{instance=~"$instance"})` |
+| 单位          | 秒 → d/h/m                                             |
+| 阈值（reverse） | `< 300` → 橙；否则绿（catalog `value:80` 弃用）                |
 
 #### V02 Clients
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Clients |
-| 图表类型 | `<Statistic>` |
-| Query 类型 | instant query |
-| PromQL | `sum(redis_connected_clients{instance=~"$instance"})` |
+|    属性    |                           值                           |
+|----------|-------------------------------------------------------|
+| 标题       | Clients                                               |
+| 图表类型     | `<Statistic>`                                         |
+| Query 类型 | instant query                                         |
+| PromQL   | `sum(redis_connected_clients{instance=~"$instance"})` |
 
 #### V03 Memory Usage %
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Memory Usage |
-| 图表类型 | `<Statistic>` + `colorByThreshold`（可选环形 gauge 样式） |
-| Query 类型 | instant query |
-| PromQL | `sum(100 * (redis_memory_used_bytes{instance=~"$instance"} / redis_memory_max_bytes{instance=~"$instance"}))` |
-| 单位 | `%` |
-| 阈值 | `< 80` → 绿；`80–95` → 橙；`≥ 95` → 红（catalog 真阈值，保留） |
+|    属性    |                                                       值                                                       |
+|----------|---------------------------------------------------------------------------------------------------------------|
+| 标题       | Memory Usage                                                                                                  |
+| 图表类型     | `<Statistic>` + `colorByThreshold`（可选环形 gauge 样式）                                                             |
+| Query 类型 | instant query                                                                                                 |
+| PromQL   | `sum(100 * (redis_memory_used_bytes{instance=~"$instance"} / redis_memory_max_bytes{instance=~"$instance"}))` |
+| 单位       | `%`                                                                                                           |
+| 阈值       | `< 80` → 绿；`80–95` → 橙；`≥ 95` → 红（catalog 真阈值，保留）                                                             |
 
 > ⚠️ 若 `redis_memory_max_bytes`（maxmemory）未配置（=0），该比值为 `+Inf`/`NaN`；前端需对 max=0 兜底显示 "unlimited"。
 
 #### V04 Cache Hit % ★（补强 stat）
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Cache Hit % |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
-| Query 类型 | instant query |
-| PromQL | `sum(rate(redis_keyspace_hits_total{instance=~"$instance"}[5m])) * 100 / (sum(rate(redis_keyspace_hits_total{instance=~"$instance"}[5m])) + sum(rate(redis_keyspace_misses_total{instance=~"$instance"}[5m])))` |
-| 单位 | `%` |
-| 阈值（reverse） | `< 80` → 红；`80–95` → 橙；`≥ 95` → 绿 |
+|     属性      |                                                                                                        值                                                                                                        |
+|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题          | Cache Hit %                                                                                                                                                                                                     |
+| 图表类型        | `<Statistic>` + `colorByThreshold`                                                                                                                                                                              |
+| Query 类型    | instant query                                                                                                                                                                                                   |
+| PromQL      | `sum(rate(redis_keyspace_hits_total{instance=~"$instance"}[5m])) * 100 / (sum(rate(redis_keyspace_hits_total{instance=~"$instance"}[5m])) + sum(rate(redis_keyspace_misses_total{instance=~"$instance"}[5m])))` |
+| 单位          | `%`                                                                                                                                                                                                             |
+| 阈值（reverse） | `< 80` → 红；`80–95` → 橙；`≥ 95` → 绿                                                                                                                                                                               |
 
 ---
 
@@ -174,25 +174,25 @@ Valkey 特有补充：
 
 #### V05 Total Commands / sec
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Total Commands / sec |
-| 图表类型 | `<Line>` 多系列 by cmd |
-| Query 类型 | range query |
-| PromQL | `sum(rate(redis_commands_total{instance=~"$instance"}[1m])) by (cmd)` |
-| 系列字段 | `cmd`（get/set/hget/...） |
-| y 轴 | `ops/s` |
+|    属性    |                                   值                                   |
+|----------|-----------------------------------------------------------------------|
+| 标题       | Total Commands / sec                                                  |
+| 图表类型     | `<Line>` 多系列 by cmd                                                   |
+| Query 类型 | range query                                                           |
+| PromQL   | `sum(rate(redis_commands_total{instance=~"$instance"}[1m])) by (cmd)` |
+| 系列字段     | `cmd`（get/set/hget/...）                                               |
+| y 轴      | `ops/s`                                                               |
 
 #### V06 Hits / Misses per Sec
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Hits / Misses per Sec |
-| 图表类型 | `<Line>` 2 系列 |
-| Query 类型 | range query |
-| PromQL (hits) | `irate(redis_keyspace_hits_total{instance=~"$instance"}[5m])` |
+|       属性        |                                值                                |
+|-----------------|-----------------------------------------------------------------|
+| 标题              | Hits / Misses per Sec                                           |
+| 图表类型            | `<Line>` 2 系列                                                   |
+| Query 类型        | range query                                                     |
+| PromQL (hits)   | `irate(redis_keyspace_hits_total{instance=~"$instance"}[5m])`   |
 | PromQL (misses) | `irate(redis_keyspace_misses_total{instance=~"$instance"}[5m])` |
-| 系列 | `Hits`（绿）、`Misses`（橙） |
+| 系列              | `Hits`（绿）、`Misses`（橙）                                           |
 
 ---
 
@@ -200,26 +200,26 @@ Valkey 特有补充：
 
 #### V07 Average Time Spent by Command
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Average Time Spent by Command / sec |
-| 图表类型 | `<Line>` 多系列 by cmd |
-| Query 类型 | range query（比值法） |
-| PromQL | `sum(irate(redis_commands_duration_seconds_total{instance=~"$instance"}[1m])) by (cmd) / sum(irate(redis_commands_total{instance=~"$instance"}[1m])) by (cmd)` |
-| 单位 | 秒 → 前端 `×1000` 显示 ms（或 µs，按量级自适应） |
-| 系列字段 | `cmd` |
+|    属性    |                                                                               值                                                                                |
+|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题       | Average Time Spent by Command / sec                                                                                                                            |
+| 图表类型     | `<Line>` 多系列 by cmd                                                                                                                                            |
+| Query 类型 | range query（比值法）                                                                                                                                               |
+| PromQL   | `sum(irate(redis_commands_duration_seconds_total{instance=~"$instance"}[1m])) by (cmd) / sum(irate(redis_commands_total{instance=~"$instance"}[1m])) by (cmd)` |
+| 单位       | 秒 → 前端 `×1000` 显示 ms（或 µs，按量级自适应）                                                                                                                              |
+| 系列字段     | `cmd`                                                                                                                                                          |
 
 #### V08 Network I/O
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Network I/O |
-| 图表类型 | `<Area>` 2 系列 |
-| Query 类型 | range query |
-| PromQL (in) | `sum(rate(redis_net_input_bytes_total{instance=~"$instance"}[5m]))` |
+|      属性      |                                  值                                   |
+|--------------|----------------------------------------------------------------------|
+| 标题           | Network I/O                                                          |
+| 图表类型         | `<Area>` 2 系列                                                        |
+| Query 类型     | range query                                                          |
+| PromQL (in)  | `sum(rate(redis_net_input_bytes_total{instance=~"$instance"}[5m]))`  |
 | PromQL (out) | `sum(rate(redis_net_output_bytes_total{instance=~"$instance"}[5m]))` |
-| y 轴 | bytes/s，`formatBytes` |
-| 系列 | `Input`（绿）、`Output`（蓝） |
+| y 轴          | bytes/s，`formatBytes`                                                |
+| 系列           | `Input`（绿）、`Output`（蓝）                                               |
 
 ---
 
@@ -227,26 +227,26 @@ Valkey 特有补充：
 
 #### V09 Total Memory Usage
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Total Memory Usage |
-| 图表类型 | `<Line>` 2 系列（含上限线） |
-| Query 类型 | range query |
+|      属性       |                        值                         |
+|---------------|--------------------------------------------------|
+| 标题            | Total Memory Usage                               |
+| 图表类型          | `<Line>` 2 系列（含上限线）                              |
+| Query 类型      | range query                                      |
 | PromQL (used) | `redis_memory_used_bytes{instance=~"$instance"}` |
-| PromQL (max) | `redis_memory_max_bytes{instance=~"$instance"}` |
-| y 轴 | bytes，`formatBytes` |
-| 系列 | `Used`（蓝）、`Max`（红虚线，上限参考；为 0 时隐藏） |
+| PromQL (max)  | `redis_memory_max_bytes{instance=~"$instance"}`  |
+| y 轴           | bytes，`formatBytes`                              |
+| 系列            | `Used`（蓝）、`Max`（红虚线，上限参考；为 0 时隐藏）                |
 
 #### V10 Connected / Blocked Clients
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Connected / Blocked Clients |
-| 图表类型 | `<Line>` 2 系列 |
-| Query 类型 | range query |
+|         属性         |                           值                           |
+|--------------------|-------------------------------------------------------|
+| 标题                 | Connected / Blocked Clients                           |
+| 图表类型               | `<Line>` 2 系列                                         |
+| Query 类型           | range query                                           |
 | PromQL (connected) | `sum(redis_connected_clients{instance=~"$instance"})` |
-| PromQL (blocked) | `sum(redis_blocked_clients{instance=~"$instance"})` |
-| 系列 | `Connected`（蓝）、`Blocked`（橙，阻塞客户端为压力信号） |
+| PromQL (blocked)   | `sum(redis_blocked_clients{instance=~"$instance"})`   |
+| 系列                 | `Connected`（蓝）、`Blocked`（橙，阻塞客户端为压力信号）                |
 
 ---
 
@@ -254,35 +254,35 @@ Valkey 特有补充：
 
 #### V11 Total Items per DB
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Total Items per DB |
-| 图表类型 | `<Line>` 多系列 by db |
-| Query 类型 | range query |
-| PromQL | `sum(redis_db_keys{instance=~"$instance"}) by (db, instance)` |
-| 系列字段 | `db`（db0/db1/...） |
+|    属性    |                               值                               |
+|----------|---------------------------------------------------------------|
+| 标题       | Total Items per DB                                            |
+| 图表类型     | `<Line>` 多系列 by db                                            |
+| Query 类型 | range query                                                   |
+| PromQL   | `sum(redis_db_keys{instance=~"$instance"}) by (db, instance)` |
+| 系列字段     | `db`（db0/db1/...）                                             |
 
 #### V12 Expiring vs Not-Expiring Keys
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Expiring vs Not-Expiring Keys |
-| 图表类型 | `<Line>` 2 系列 |
-| Query 类型 | range query |
+|          属性           |                                                              值                                                               |
+|-----------------------|------------------------------------------------------------------------------------------------------------------------------|
+| 标题                    | Expiring vs Not-Expiring Keys                                                                                                |
+| 图表类型                  | `<Line>` 2 系列                                                                                                                |
+| Query 类型              | range query                                                                                                                  |
 | PromQL (not-expiring) | `sum(redis_db_keys{instance=~"$instance"}) by (instance) - sum(redis_db_keys_expiring{instance=~"$instance"}) by (instance)` |
-| PromQL (expiring) | `sum(redis_db_keys_expiring{instance=~"$instance"}) by (instance)` |
-| 系列 | `Not-Expiring`（蓝）、`Expiring`（绿） |
+| PromQL (expiring)     | `sum(redis_db_keys_expiring{instance=~"$instance"}) by (instance)`                                                           |
+| 系列                    | `Not-Expiring`（蓝）、`Expiring`（绿）                                                                                              |
 
 #### V13 Expired / Evicted Keys
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Expired / Evicted Keys |
-| 图表类型 | `<Line>` 2 系列 |
-| Query 类型 | range query |
+|        属性        |                                       值                                        |
+|------------------|--------------------------------------------------------------------------------|
+| 标题               | Expired / Evicted Keys                                                         |
+| 图表类型             | `<Line>` 2 系列                                                                  |
+| Query 类型         | range query                                                                    |
 | PromQL (expired) | `sum(rate(redis_expired_keys_total{instance=~"$instance"}[5m])) by (instance)` |
 | PromQL (evicted) | `sum(rate(redis_evicted_keys_total{instance=~"$instance"}[5m])) by (instance)` |
-| 系列 | `Expired`（蓝，正常 TTL 过期）、`Evicted`（红，内存不足驱逐——错误信号） |
+| 系列               | `Expired`（蓝，正常 TTL 过期）、`Evicted`（红，内存不足驱逐——错误信号）                               |
 
 > Evicted Keys 持续 > 0 表示 maxmemory 已触顶并强制驱逐，是内存饱和的关键错误信号，故配红色。
 
@@ -292,14 +292,14 @@ Valkey 特有补充：
 
 #### V14 Rejected Connections ★
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Rejected Connections |
-| 图表类型 | `<Line>` 1 系列 |
-| Query 类型 | range query |
-| PromQL | `sum(rate(redis_rejected_connections_total{instance=~"$instance"}[5m])) by (instance)` |
-| 系列颜色 | `#ff4d4f`（红） |
-| 说明 | ★ catalog 无显式连接错误面板；`redis_rejected_connections_total`（超过 maxclients 被拒）是 Redis/Valkey 最直接的连接级错误信号，补强为独立 Error 面板。若目标 exporter 未导出该指标，回退用 V13 Evicted 作为主 Error 信号 |
+|    属性    |                                                                                 值                                                                                  |
+|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题       | Rejected Connections                                                                                                                                               |
+| 图表类型     | `<Line>` 1 系列                                                                                                                                                      |
+| Query 类型 | range query                                                                                                                                                        |
+| PromQL   | `sum(rate(redis_rejected_connections_total{instance=~"$instance"}[5m])) by (instance)`                                                                             |
+| 系列颜色     | `#ff4d4f`（红）                                                                                                                                                       |
+| 说明       | ★ catalog 无显式连接错误面板；`redis_rejected_connections_total`（超过 maxclients 被拒）是 Redis/Valkey 最直接的连接级错误信号，补强为独立 Error 面板。若目标 exporter 未导出该指标，回退用 V13 Evicted 作为主 Error 信号 |
 
 ---
 
@@ -446,3 +446,4 @@ Phase 2 原型（mock 阶段）完成后，需满足：
 - [ ] 在 1280px 宽度下 6 行布局无横向滚动条
 - [ ] golden signals 四象限覆盖验证（见 §5.0）；Error 维度由 V13/V14 补强
 - [ ] （落地提醒）已在目标 Valkey 8.6 实例核对 `redis_*` 指标齐全性（见 §1.1 兼容性验证点）
+

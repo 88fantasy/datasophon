@@ -37,11 +37,11 @@ React(AntV G2)
 
 ZooKeeper 特有补充：
 
-| Grafana chartType（catalog） | 映射组件 | 备注 |
-|---|---|---|
-| `singlestat` | `<Statistic>` (antd) | quorum_size、leader_uptime、jvm 计数等 |
-| `bargauge` | `<Statistic>` 或 `<Line>` 多系列 | global/local sessions 和 learners；统一用 StatPanel 显示 instant 值 |
-| `graph` 多 PromQL | `<Line>` + multi-range 合并 | max/min/avg latency 多系列，历史值合并展示 |
+| Grafana chartType（catalog） |             映射组件             |                             备注                              |
+|----------------------------|------------------------------|-------------------------------------------------------------|
+| `singlestat`               | `<Statistic>` (antd)         | quorum_size、leader_uptime、jvm 计数等                           |
+| `bargauge`                 | `<Statistic>` 或 `<Line>` 多系列 | global/local sessions 和 learners；统一用 StatPanel 显示 instant 值 |
+| `graph` 多 PromQL           | `<Line>` + multi-range 合并    | max/min/avg latency 多系列，历史值合并展示                             |
 
 ---
 
@@ -49,12 +49,12 @@ ZooKeeper 特有补充：
 
 看板顶部工具栏包含以下变量：
 
-| 变量 | PromQL 占位符 | 取值来源 | 默认值 | 说明 |
-|---|---|---|---|---|
-| 实例 | `$instance` | `label_values(up{job=~"$job"}, instance)` | `.+`（全选） | 多选下拉，对应 ZK 节点 IP:Port |
-| Job | `$job` | `label_values(up, job)` | `.+`（全选） | 多选下拉，对应 Prometheus job 名 |
-| 时间范围 | — | 时间选择器 | `Last 1h` | 快速选择: 5m/15m/1h/6h/24h/7d |
-| 刷新间隔 | — | — | `30s` | 自动轮询 |
+|  变量  | PromQL 占位符  |                   取值来源                    |    默认值    |            说明             |
+|------|-------------|-------------------------------------------|-----------|---------------------------|
+| 实例   | `$instance` | `label_values(up{job=~"$job"}, instance)` | `.+`（全选）  | 多选下拉，对应 ZK 节点 IP:Port     |
+| Job  | `$job`      | `label_values(up, job)`                   | `.+`（全选）  | 多选下拉，对应 Prometheus job 名  |
+| 时间范围 | —           | 时间选择器                                     | `Last 1h` | 快速选择: 5m/15m/1h/6h/24h/7d |
+| 刷新间隔 | —           | —                                         | `30s`     | 自动轮询                      |
 
 > **无 `$interval` 变量**：ZooKeeper 看板中多数指标为 Gauge（直接读值），少量使用 `[5m]` 固定窗口的 `rate/irate`；不提供用户可调的统计窗口。  
 > **`$instance` 与 `$job` 与 Prometheus 自监控相同**，可复用同一套工具栏组件逻辑。
@@ -127,30 +127,30 @@ ZooKeeper 特有补充：
 
 **从 `panel-catalog/ZooKeeper.json`（~85 个面板）裁剪至 24 个。**
 
-| 裁剪类别 | 代表面板（panel 标题或指标名） | 裁剪理由 |
-|---|---|---|
-| Processor 链路细节（约 30 个） | `prep_process_time` / `prep_processor_queue_time` / `sync_process_time` / `sync_processor_queue_flush_time` / `commit_process_time` / `commit_proc_req_queued` / `commit_proc_issued` / `concurrent_request_processing_in_commit_processor` / `outstanding_changes_queued` / `requests_in_session_queue` / `local_write_committed_time` / `server_write_committed_time` / `write_batch_time_in_commit_processor` / `reads_after_write_in_session_queue` 等 | 内部 processor 队列调优指标，集群级运维无需关注；性能调优阶段按需查询 |
-| Per-namespace 读写 | `write_per_namespace_sum` / `read_per_namespace_sum` | 细粒度 namespace 分析，与通用监控无关 |
-| Response packet cache | `response_packet_cache_misses` / `response_packet_cache_hits` / `response_packet_get_children_*` | 缓存命中率次要，不影响集群健康判断 |
-| TLS & auth | `tls_handshake_exceeded` / `ensemble_auth_fail` / `ensemble_auth_success` | 安全层指标，非基础运营监控 |
-| Observer Master | `om_commit_process_time_ms_sum` / `om_proposal_process_time_ms_sum` | 需 ZK Observer 部署才有值，非通用 |
-| Watch 细分 | `node_changed_watch_count_sum` / `node_children_watch_count_sum` / `node_deleted_watch_count_sum` / `node_created_watch_count_sum` | 聚合进 `watch_count`；细分调试级信息 |
-| 会话过期/失效 | `revalidate_count` / `stale_sessions_expired` / `dead_watchers_*` / `sessionless_connections_expired` / `connection_token_deficit` | 次要连接生命周期指标 |
-| 重复 Latency | `read_latency` / `update_latency` / `quorum_ack_latency` / `ack_latency` / `propagation_latency` / `commit_propagation_latency` / `proposal_ack_creation_latency` | `max/min/avg_latency` 已覆盖整体延迟；细分延迟保留 proposal_latency（Quorum 行） |
-| 次要计数 | `diff_count` / `learner_commit_received_count` / `proposal_size` / `follower_sync_time` / `learner_handler_qp_size` / `looking_count` / `quit_leading_due_to_disloyal_voter` | 低频选举指标、同步细节，非日常运营 |
-| 启动指标 | `startup_txns_loaded` / `db_init_time` | 一次性启动统计，运营期无意义 |
-| 重复 Singlestat | `leader`（与 `leader_uptime` 重复） / `quorum uptime`（与 `leader_uptime` 语义重叠） | 合并到 R1 stat 行 |
-| 次要连接 | `bytes_received_count` / `client_response_size` / `connection_request_count` / `connection_drop_probability` | 二级连接指标；`packets_received/sent` 已覆盖网络流量 |
-| Rate 变体 | `znode_count_rate`（rate of znode changes）| 与 `znode_count` Gauge 重叠，运维价值低 |
+|          裁剪类别          |                                                                                                                                                                                                                    代表面板（panel 标题或指标名）                                                                                                                                                                                                                     |                              裁剪理由                               |
+|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
+| Processor 链路细节（约 30 个） | `prep_process_time` / `prep_processor_queue_time` / `sync_process_time` / `sync_processor_queue_flush_time` / `commit_process_time` / `commit_proc_req_queued` / `commit_proc_issued` / `concurrent_request_processing_in_commit_processor` / `outstanding_changes_queued` / `requests_in_session_queue` / `local_write_committed_time` / `server_write_committed_time` / `write_batch_time_in_commit_processor` / `reads_after_write_in_session_queue` 等 | 内部 processor 队列调优指标，集群级运维无需关注；性能调优阶段按需查询                        |
+| Per-namespace 读写       | `write_per_namespace_sum` / `read_per_namespace_sum`                                                                                                                                                                                                                                                                                                                                                                                                      | 细粒度 namespace 分析，与通用监控无关                                        |
+| Response packet cache  | `response_packet_cache_misses` / `response_packet_cache_hits` / `response_packet_get_children_*`                                                                                                                                                                                                                                                                                                                                                          | 缓存命中率次要，不影响集群健康判断                                               |
+| TLS & auth             | `tls_handshake_exceeded` / `ensemble_auth_fail` / `ensemble_auth_success`                                                                                                                                                                                                                                                                                                                                                                                 | 安全层指标，非基础运营监控                                                   |
+| Observer Master        | `om_commit_process_time_ms_sum` / `om_proposal_process_time_ms_sum`                                                                                                                                                                                                                                                                                                                                                                                       | 需 ZK Observer 部署才有值，非通用                                         |
+| Watch 细分               | `node_changed_watch_count_sum` / `node_children_watch_count_sum` / `node_deleted_watch_count_sum` / `node_created_watch_count_sum`                                                                                                                                                                                                                                                                                                                        | 聚合进 `watch_count`；细分调试级信息                                       |
+| 会话过期/失效                | `revalidate_count` / `stale_sessions_expired` / `dead_watchers_*` / `sessionless_connections_expired` / `connection_token_deficit`                                                                                                                                                                                                                                                                                                                        | 次要连接生命周期指标                                                      |
+| 重复 Latency             | `read_latency` / `update_latency` / `quorum_ack_latency` / `ack_latency` / `propagation_latency` / `commit_propagation_latency` / `proposal_ack_creation_latency`                                                                                                                                                                                                                                                                                         | `max/min/avg_latency` 已覆盖整体延迟；细分延迟保留 proposal_latency（Quorum 行） |
+| 次要计数                   | `diff_count` / `learner_commit_received_count` / `proposal_size` / `follower_sync_time` / `learner_handler_qp_size` / `looking_count` / `quit_leading_due_to_disloyal_voter`                                                                                                                                                                                                                                                                              | 低频选举指标、同步细节，非日常运营                                               |
+| 启动指标                   | `startup_txns_loaded` / `db_init_time`                                                                                                                                                                                                                                                                                                                                                                                                                    | 一次性启动统计，运营期无意义                                                  |
+| 重复 Singlestat          | `leader`（与 `leader_uptime` 重复） / `quorum uptime`（与 `leader_uptime` 语义重叠）                                                                                                                                                                                                                                                                                                                                                                                  | 合并到 R1 stat 行                                                   |
+| 次要连接                   | `bytes_received_count` / `client_response_size` / `connection_request_count` / `connection_drop_probability`                                                                                                                                                                                                                                                                                                                                              | 二级连接指标；`packets_received/sent` 已覆盖网络流量                          |
+| Rate 变体                | `znode_count_rate`（rate of znode changes）                                                                                                                                                                                                                                                                                                                                                                                                                 | 与 `znode_count` Gauge 重叠，运维价值低                                  |
 
 **golden signals 四象限覆盖**（对齐 `dashboard-selection.md` 结论：error 维度原本偏弱，已补强）：
 
-| 维度 | 面板 | 补强说明 |
-|---|---|---|
-| **Latency** | Max/Min/Avg Latency、Fsync Time、Snapshot Time | — |
-| **Traffic** | Outstanding Requests、Packets Recv/Sent、Alive Connections | — |
-| **Errors** | Connection Rejected/Drop（Z15）、`unrecoverable_error_count`（★补强）、`digest_mismatches_count`（★补强） | 原 catalog 中 error 仅有 connection 维度；补充数据一致性错误 |
-| **Saturation** | Outstanding Requests、Open File Descriptor（R1 stat）、JVM Memory Pools、GC Pause Time | — |
+|       维度       |                                              面板                                               |                     补强说明                     |
+|----------------|-----------------------------------------------------------------------------------------------|----------------------------------------------|
+| **Latency**    | Max/Min/Avg Latency、Fsync Time、Snapshot Time                                                  | —                                            |
+| **Traffic**    | Outstanding Requests、Packets Recv/Sent、Alive Connections                                      | —                                            |
+| **Errors**     | Connection Rejected/Drop（Z15）、`unrecoverable_error_count`（★补强）、`digest_mismatches_count`（★补强） | 原 catalog 中 error 仅有 connection 维度；补充数据一致性错误 |
+| **Saturation** | Outstanding Requests、Open File Descriptor（R1 stat）、JVM Memory Pools、GC Pause Time             | —                                            |
 
 > ★ 补强面板：`unrecoverable_error_count` 和 `digest_mismatches_count` 在 catalog 中有对应条目，但 `dashboard-selection.md` Phase 1 评分时标注"error 维度偏弱"——这两个指标是 ZK 数据一致性错误的关键信号，纳入 Z15 的多系列设计中。
 
@@ -160,78 +160,78 @@ ZooKeeper 特有补充：
 
 #### Z01 Quorum Size
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Quorum Size |
-| 图表类型 | `<Statistic>` (antd) |
-| Query 类型 | instant query |
-| PromQL | `max(quorum_size{instance=~"$instance",job=~"$job"})` |
-| 单位 | 整数 |
-| 阈值规则 | `≥ 3` → 绿（奇数 quorum 正常）；`< 3` → 红（法定节点不足） |
-| 说明 | 集群最关键的存活性指标；< 3 即集群不可用 |
-| col-span | 4 |
+|    属性    |                           值                           |
+|----------|-------------------------------------------------------|
+| 标题       | Quorum Size                                           |
+| 图表类型     | `<Statistic>` (antd)                                  |
+| Query 类型 | instant query                                         |
+| PromQL   | `max(quorum_size{instance=~"$instance",job=~"$job"})` |
+| 单位       | 整数                                                    |
+| 阈值规则     | `≥ 3` → 绿（奇数 quorum 正常）；`< 3` → 红（法定节点不足）             |
+| 说明       | 集群最关键的存活性指标；< 3 即集群不可用                                |
+| col-span | 4                                                     |
 
 #### Z02 Leader Uptime
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Leader Uptime |
-| 图表类型 | `<Statistic>` (antd) |
-| Query 类型 | instant query |
-| PromQL | `leader_uptime{instance=~"$instance",job=~"$job"}` |
-| 单位 | 毫秒（ms）；实现时用 `formatDuration(ms)` 转为可读格式（如 `2h 15m`） |
-| 阈值规则 | 无（蓝色 `#1677ff`）；频繁重置（短时间内重归零）表示频繁重新选举 |
-| col-span | 4 |
+|    属性    |                          值                          |
+|----------|-----------------------------------------------------|
+| 标题       | Leader Uptime                                       |
+| 图表类型     | `<Statistic>` (antd)                                |
+| Query 类型 | instant query                                       |
+| PromQL   | `leader_uptime{instance=~"$instance",job=~"$job"}`  |
+| 单位       | 毫秒（ms）；实现时用 `formatDuration(ms)` 转为可读格式（如 `2h 15m`） |
+| 阈值规则     | 无（蓝色 `#1677ff`）；频繁重置（短时间内重归零）表示频繁重新选举               |
+| col-span | 4                                                   |
 
 #### Z03 JVM Threads Current
 
-| 属性 | 值 |
-|---|---|
-| 标题 | JVM Threads |
-| 图表类型 | `<Statistic>` (antd) |
-| Query 类型 | instant query |
-| PromQL | `max(jvm_threads_current{instance=~"$instance",job=~"$job"})` |
-| 单位 | 整数（线程数） |
-| 阈值规则 | `< 200` → 绿；`200 ≤ value < 500` → 黄；`≥ 500` → 红 |
-| col-span | 4 |
+|    属性    |                               值                               |
+|----------|---------------------------------------------------------------|
+| 标题       | JVM Threads                                                   |
+| 图表类型     | `<Statistic>` (antd)                                          |
+| Query 类型 | instant query                                                 |
+| PromQL   | `max(jvm_threads_current{instance=~"$instance",job=~"$job"})` |
+| 单位       | 整数（线程数）                                                       |
+| 阈值规则     | `< 200` → 绿；`200 ≤ value < 500` → 黄；`≥ 500` → 红               |
+| col-span | 4                                                             |
 
 #### Z04 JVM Threads Deadlocked
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Deadlocked Threads |
-| 图表类型 | `<Statistic>` (antd) |
-| Query 类型 | instant query |
-| PromQL | `max(jvm_threads_deadlocked{instance=~"$instance",job=~"$job"})` |
-| 单位 | 整数 |
-| 阈值规则 | `= 0` → 绿（正常）；`≥ 1` → 红（死锁即异常） |
-| 说明 | 死锁线程数应始终为 0；非零即需立即告警 |
-| col-span | 4 |
+|    属性    |                                值                                 |
+|----------|------------------------------------------------------------------|
+| 标题       | Deadlocked Threads                                               |
+| 图表类型     | `<Statistic>` (antd)                                             |
+| Query 类型 | instant query                                                    |
+| PromQL   | `max(jvm_threads_deadlocked{instance=~"$instance",job=~"$job"})` |
+| 单位       | 整数                                                               |
+| 阈值规则     | `= 0` → 绿（正常）；`≥ 1` → 红（死锁即异常）                                   |
+| 说明       | 死锁线程数应始终为 0；非零即需立即告警                                             |
+| col-span | 4                                                                |
 
 #### Z05 Alive Connections
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Alive Connections |
-| 图表类型 | `<Statistic>` (antd) |
-| Query 类型 | instant query |
-| PromQL | `sum(num_alive_connections{instance=~"$instance",job=~"$job"})` |
-| 单位 | 整数（连接数） |
-| 阈值规则 | 无（蓝色 `#1677ff`）；结合历史趋势判断异常 |
-| col-span | 4 |
+|    属性    |                                值                                |
+|----------|-----------------------------------------------------------------|
+| 标题       | Alive Connections                                               |
+| 图表类型     | `<Statistic>` (antd)                                            |
+| Query 类型 | instant query                                                   |
+| PromQL   | `sum(num_alive_connections{instance=~"$instance",job=~"$job"})` |
+| 单位       | 整数（连接数）                                                         |
+| 阈值规则     | 无（蓝色 `#1677ff`）；结合历史趋势判断异常                                      |
+| col-span | 4                                                               |
 
 #### Z06 Open File Descriptors
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Open File Descriptors |
-| 图表类型 | `<Statistic>` (antd) |
-| Query 类型 | instant query |
-| PromQL | `max(open_file_descriptor_count{instance=~"$instance",job=~"$job"})` |
-| 单位 | 整数 |
-| 阈值规则 | `< 5000` → 绿；`5000 ≤ value < 8000` → 黄；`≥ 8000` → 红（接近 ulimit） |
-| 说明 | Saturation 维度：文件描述符耗尽导致 ZK 拒绝连接 |
-| col-span | 4 |
+|    属性    |                                  值                                   |
+|----------|----------------------------------------------------------------------|
+| 标题       | Open File Descriptors                                                |
+| 图表类型     | `<Statistic>` (antd)                                                 |
+| Query 类型 | instant query                                                        |
+| PromQL   | `max(open_file_descriptor_count{instance=~"$instance",job=~"$job"})` |
+| 单位       | 整数                                                                   |
+| 阈值规则     | `< 5000` → 绿；`5000 ≤ value < 8000` → 黄；`≥ 8000` → 红（接近 ulimit）       |
+| 说明       | Saturation 维度：文件描述符耗尽导致 ZK 拒绝连接                                      |
+| col-span | 4                                                                    |
 
 ---
 
@@ -239,39 +239,39 @@ ZooKeeper 特有补充：
 
 #### Z07 Outstanding Requests
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Outstanding Requests |
-| 图表类型 | `<Line>` 多系列（by instance） |
-| Query 类型 | range query |
-| PromQL | `outstanding_requests{instance=~"$instance",job=~"$job"}` |
-| 系列字段 | `instance`（每节点一条线） |
-| y 轴 | 整数（待处理请求数） |
-| 阈值参考线 | y=10（ZK 官方建议：持续 > 10 表示积压，橙色虚线） |
-| 说明 | **Saturation 维度核心指标**：值持续增大表示 ZK 处理能力不足 |
-| col-span | 8 |
+|    属性    |                             值                             |
+|----------|-----------------------------------------------------------|
+| 标题       | Outstanding Requests                                      |
+| 图表类型     | `<Line>` 多系列（by instance）                                 |
+| Query 类型 | range query                                               |
+| PromQL   | `outstanding_requests{instance=~"$instance",job=~"$job"}` |
+| 系列字段     | `instance`（每节点一条线）                                        |
+| y 轴      | 整数（待处理请求数）                                                |
+| 阈值参考线    | y=10（ZK 官方建议：持续 > 10 表示积压，橙色虚线）                           |
+| 说明       | **Saturation 维度核心指标**：值持续增大表示 ZK 处理能力不足                   |
+| col-span | 8                                                         |
 
 #### Z08 Latency (Max / Min / Avg)
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Request Latency (ms) |
-| 图表类型 | `<Line>` 多系列（3 系列） |
-| Query 类型 | range query（multi-range） |
-| PromQL 明细 | — |
+|    属性     |            值             |
+|-----------|--------------------------|
+| 标题        | Request Latency (ms)     |
+| 图表类型      | `<Line>` 多系列（3 系列）       |
+| Query 类型  | range query（multi-range） |
+| PromQL 明细 | —                        |
 
-| seriesLabel | PromQL |
-|---|---|
-| `max` | `max_latency{instance=~"$instance",job=~"$job"}` |
-| `avg` | `avg_latency{instance=~"$instance",job=~"$job"}` |
-| `min` | `min_latency{instance=~"$instance",job=~"$job"}` |
+| seriesLabel |                      PromQL                      |
+|-------------|--------------------------------------------------|
+| `max`       | `max_latency{instance=~"$instance",job=~"$job"}` |
+| `avg`       | `avg_latency{instance=~"$instance",job=~"$job"}` |
+| `min`       | `min_latency{instance=~"$instance",job=~"$job"}` |
 
-| 属性 | 值 |
-|---|---|
-| 颜色 | `max` → `#ff4d4f`（红）、`avg` → `#1677ff`（蓝）、`min` → `#52c41a`（绿） |
-| y 轴 | 毫秒（`ms`），保留 1 位小数 |
-| 说明 | **Latency 维度核心面板**；`max` 大幅超过 `avg` 表示存在长尾请求 |
-| col-span | 16 |
+|    属性    |                               值                                |
+|----------|----------------------------------------------------------------|
+| 颜色       | `max` → `#ff4d4f`（红）、`avg` → `#1677ff`（蓝）、`min` → `#52c41a`（绿） |
+| y 轴      | 毫秒（`ms`），保留 1 位小数                                              |
+| 说明       | **Latency 维度核心面板**；`max` 大幅超过 `avg` 表示存在长尾请求                   |
+| col-span | 16                                                             |
 
 ---
 
@@ -279,70 +279,70 @@ ZooKeeper 特有补充：
 
 #### Z09 Sessions
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Sessions (Global / Local) |
-| 图表类型 | `<Line>` 多系列（2 系列） |
-| Query 类型 | range query（multi-range） |
-| PromQL 明细 | — |
+|    属性     |             值             |
+|-----------|---------------------------|
+| 标题        | Sessions (Global / Local) |
+| 图表类型      | `<Line>` 多系列（2 系列）        |
+| Query 类型  | range query（multi-range）  |
+| PromQL 明细 | —                         |
 
-| seriesLabel | PromQL |
-|---|---|
-| `global` | `global_sessions{instance=~"$instance",job=~"$job"}` |
-| `local` | `local_sessions{instance=~"$instance",job=~"$job"}` |
+| seriesLabel |                        PromQL                        |
+|-------------|------------------------------------------------------|
+| `global`    | `global_sessions{instance=~"$instance",job=~"$job"}` |
+| `local`     | `local_sessions{instance=~"$instance",job=~"$job"}`  |
 
-| 属性 | 值 |
-|---|---|
-| 颜色 | `global` → `#1677ff`、`local` → `#52c41a` |
-| y 轴 | 整数（会话数） |
-| col-span | 6 |
+|    属性    |                    值                     |
+|----------|------------------------------------------|
+| 颜色       | `global` → `#1677ff`、`local` → `#52c41a` |
+| y 轴      | 整数（会话数）                                  |
+| col-span | 6                                        |
 
 #### Z10 Znodes
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Znodes |
-| 图表类型 | `<Line>` 多系列（2 系列） |
-| Query 类型 | range query（multi-range） |
-| PromQL 明细 | — |
+|    属性     |            值             |
+|-----------|--------------------------|
+| 标题        | Znodes                   |
+| 图表类型      | `<Line>` 多系列（2 系列）       |
+| Query 类型  | range query（multi-range） |
+| PromQL 明细 | —                        |
 
-| seriesLabel | PromQL |
-|---|---|
-| `znode_count` | `znode_count{instance=~"$instance",job=~"$job"}` |
-| `ephemerals` | `ephemerals_count{instance=~"$instance",job=~"$job"}` |
+|  seriesLabel  |                        PromQL                         |
+|---------------|-------------------------------------------------------|
+| `znode_count` | `znode_count{instance=~"$instance",job=~"$job"}`      |
+| `ephemerals`  | `ephemerals_count{instance=~"$instance",job=~"$job"}` |
 
-| 属性 | 值 |
-|---|---|
-| 颜色 | `znode_count` → `#1677ff`、`ephemerals` → `#faad14` |
-| y 轴 | 整数（节点数） |
-| 说明 | `ephemerals` 突增后快速下降通常表示客户端重连；持续增大表示会话泄漏 |
-| col-span | 6 |
+|    属性    |                         值                          |
+|----------|----------------------------------------------------|
+| 颜色       | `znode_count` → `#1677ff`、`ephemerals` → `#faad14` |
+| y 轴      | 整数（节点数）                                            |
+| 说明       | `ephemerals` 突增后快速下降通常表示客户端重连；持续增大表示会话泄漏           |
+| col-span | 6                                                  |
 
 #### Z11 Approximate Data Size
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Approximate Data Size |
-| 图表类型 | `<Line>` 单系列 |
-| Query 类型 | range query |
-| PromQL | `approximate_data_size{instance=~"$instance",job=~"$job"}` |
-| y 轴 | bytes（`formatBytes` 函数，B/KB/MB/GB） |
-| 系列颜色 | `#1677ff` |
-| 说明 | ZK 数据目录大小；接近磁盘容量时需关注 snapshot 清理 |
-| col-span | 6 |
+|    属性    |                             值                              |
+|----------|------------------------------------------------------------|
+| 标题       | Approximate Data Size                                      |
+| 图表类型     | `<Line>` 单系列                                               |
+| Query 类型 | range query                                                |
+| PromQL   | `approximate_data_size{instance=~"$instance",job=~"$job"}` |
+| y 轴      | bytes（`formatBytes` 函数，B/KB/MB/GB）                         |
+| 系列颜色     | `#1677ff`                                                  |
+| 说明       | ZK 数据目录大小；接近磁盘容量时需关注 snapshot 清理                           |
+| col-span | 6                                                          |
 
 #### Z12 Watch Count
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Watch Count |
-| 图表类型 | `<Line>` 多系列（by instance） |
-| Query 类型 | range query |
-| PromQL | `watch_count{instance=~"$instance",job=~"$job"}` |
-| 系列字段 | `instance` |
-| y 轴 | 整数（watch 数量） |
-| 说明 | Watch 数量持续异常增大表示客户端 watch 泄漏；Traffic 补充指标 |
-| col-span | 6 |
+|    属性    |                        值                         |
+|----------|--------------------------------------------------|
+| 标题       | Watch Count                                      |
+| 图表类型     | `<Line>` 多系列（by instance）                        |
+| Query 类型 | range query                                      |
+| PromQL   | `watch_count{instance=~"$instance",job=~"$job"}` |
+| 系列字段     | `instance`                                       |
+| y 轴      | 整数（watch 数量）                                     |
+| 说明       | Watch 数量持续异常增大表示客户端 watch 泄漏；Traffic 补充指标        |
+| col-span | 6                                                |
 
 ---
 
@@ -350,60 +350,60 @@ ZooKeeper 特有补充：
 
 #### Z13 Packets Received / Sent
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Packets (Recv / Sent) |
-| 图表类型 | `<Line>` 多系列（2 系列） |
-| Query 类型 | range query（multi-range） |
-| PromQL 明细 | — |
+|    属性     |            值             |
+|-----------|--------------------------|
+| 标题        | Packets (Recv / Sent)    |
+| 图表类型      | `<Line>` 多系列（2 系列）       |
+| Query 类型  | range query（multi-range） |
+| PromQL 明细 | —                        |
 
-| seriesLabel | PromQL |
-|---|---|
-| `received` | `packets_received{instance=~"$instance",job=~"$job"}` |
-| `sent` | `packets_sent{instance=~"$instance",job=~"$job"}` |
+| seriesLabel |                        PromQL                         |
+|-------------|-------------------------------------------------------|
+| `received`  | `packets_received{instance=~"$instance",job=~"$job"}` |
+| `sent`      | `packets_sent{instance=~"$instance",job=~"$job"}`     |
 
-| 属性 | 值 |
-|---|---|
-| 颜色 | `received` → `#1677ff`、`sent` → `#52c41a` |
-| y 轴 | 整数（累计包数）；counter 形态，趋势斜率反映流量速率 |
-| 说明 | Traffic 维度：两线斜率应接近；大幅差异表示网络异常 |
-| col-span | 8 |
+|    属性    |                     值                     |
+|----------|-------------------------------------------|
+| 颜色       | `received` → `#1677ff`、`sent` → `#52c41a` |
+| y 轴      | 整数（累计包数）；counter 形态，趋势斜率反映流量速率            |
+| 说明       | Traffic 维度：两线斜率应接近；大幅差异表示网络异常             |
+| col-span | 8                                         |
 
 #### Z14 Alive Connections (Trend)
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Alive Connections (Trend) |
-| 图表类型 | `<Line>` 多系列（by instance） |
-| Query 类型 | range query |
-| PromQL | `num_alive_connections{instance=~"$instance",job=~"$job"}` |
-| 系列字段 | `instance`（每节点一条线，展示连接分布） |
-| y 轴 | 整数（连接数） |
-| 说明 | 与 Z05 (stat) 互补：stat 显示当前值，trend 显示历史变化和节点间负载均衡 |
-| col-span | 8 |
+|    属性    |                             值                              |
+|----------|------------------------------------------------------------|
+| 标题       | Alive Connections (Trend)                                  |
+| 图表类型     | `<Line>` 多系列（by instance）                                  |
+| Query 类型 | range query                                                |
+| PromQL   | `num_alive_connections{instance=~"$instance",job=~"$job"}` |
+| 系列字段     | `instance`（每节点一条线，展示连接分布）                                  |
+| y 轴      | 整数（连接数）                                                    |
+| 说明       | 与 Z05 (stat) 互补：stat 显示当前值，trend 显示历史变化和节点间负载均衡            |
+| col-span | 8                                                          |
 
 #### Z15 Connection Errors（补强 Errors 维度）
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Connection & Data Errors |
-| 图表类型 | `<Line>` 多系列（4 系列） |
-| Query 类型 | range query（multi-range） |
-| PromQL 明细 | — |
+|    属性     |            值             |
+|-----------|--------------------------|
+| 标题        | Connection & Data Errors |
+| 图表类型      | `<Line>` 多系列（4 系列）       |
+| Query 类型  | range query（multi-range） |
+| PromQL 明细 | —                        |
 
-| seriesLabel | PromQL | 说明 |
-|---|---|---|
-| `conn_rejected` | `connection_rejected{instance=~"$instance",job=~"$job"}` | 连接被拒绝（ZK 连接数超限） |
-| `conn_drop` | `connection_drop_count{instance=~"$instance",job=~"$job"}` | 连接被中断 |
-| `unrecoverable` | `unrecoverable_error_count{instance=~"$instance",job=~"$job"}` | ★ 不可恢复错误（数据一致性问题） |
-| `digest_mismatch` | `digest_mismatches_count{instance=~"$instance",job=~"$job"}` | ★ 摘要校验不匹配（数据一致性问题） |
+|    seriesLabel    |                             PromQL                             |         说明         |
+|-------------------|----------------------------------------------------------------|--------------------|
+| `conn_rejected`   | `connection_rejected{instance=~"$instance",job=~"$job"}`       | 连接被拒绝（ZK 连接数超限）    |
+| `conn_drop`       | `connection_drop_count{instance=~"$instance",job=~"$job"}`     | 连接被中断              |
+| `unrecoverable`   | `unrecoverable_error_count{instance=~"$instance",job=~"$job"}` | ★ 不可恢复错误（数据一致性问题）  |
+| `digest_mismatch` | `digest_mismatches_count{instance=~"$instance",job=~"$job"}`   | ★ 摘要校验不匹配（数据一致性问题） |
 
-| 属性 | 值 |
-|---|---|
-| 颜色 | `conn_rejected` → `#ff7a45`、`conn_drop` → `#fa541c`、`unrecoverable` → `#ff4d4f`、`digest_mismatch` → `#cf1322` |
-| y 轴 | 整数（累计次数）；应始终为 0；任何非零值立即需要关注 |
-| 说明 | ★ `unrecoverable_error_count` 和 `digest_mismatches_count` 为 Errors 维度补强指标（见 §5.0） |
-| col-span | 8 |
+|    属性    |                                                       值                                                       |
+|----------|---------------------------------------------------------------------------------------------------------------|
+| 颜色       | `conn_rejected` → `#ff7a45`、`conn_drop` → `#fa541c`、`unrecoverable` → `#ff4d4f`、`digest_mismatch` → `#cf1322` |
+| y 轴      | 整数（累计次数）；应始终为 0；任何非零值立即需要关注                                                                                   |
+| 说明       | ★ `unrecoverable_error_count` 和 `digest_mismatches_count` 为 Errors 维度补强指标（见 §5.0）                             |
+| col-span | 8                                                                                                             |
 
 ---
 
@@ -411,59 +411,59 @@ ZooKeeper 特有补充：
 
 #### Z16 Election Time
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Election Time (avg ms) |
-| 图表类型 | `<Line>` 单系列 |
-| Query 类型 | range query |
-| PromQL | `irate(election_time_sum{instance=~"$instance",job=~"$job"}[1m])` |
-| y 轴 | 毫秒（`ms`），保留 0 位小数 |
-| 系列颜色 | `#1677ff` |
-| 说明 | 大多数时候此值为 0（无选举）；突然出现非零值表示发生了 Leader 切换。Latency 补充指标 |
-| col-span | 8 |
+|    属性    |                                 值                                 |
+|----------|-------------------------------------------------------------------|
+| 标题       | Election Time (avg ms)                                            |
+| 图表类型     | `<Line>` 单系列                                                      |
+| Query 类型 | range query                                                       |
+| PromQL   | `irate(election_time_sum{instance=~"$instance",job=~"$job"}[1m])` |
+| y 轴      | 毫秒（`ms`），保留 0 位小数                                                 |
+| 系列颜色     | `#1677ff`                                                         |
+| 说明       | 大多数时候此值为 0（无选举）；突然出现非零值表示发生了 Leader 切换。Latency 补充指标               |
+| col-span | 8                                                                 |
 
 #### Z17 Learners / Synced Observers
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Learners / Synced Observers |
-| 图表类型 | `<Line>` 多系列（2 系列） |
-| Query 类型 | range query（multi-range） |
-| PromQL 明细 | — |
+|    属性     |              值              |
+|-----------|-----------------------------|
+| 标题        | Learners / Synced Observers |
+| 图表类型      | `<Line>` 多系列（2 系列）          |
+| Query 类型  | range query（multi-range）    |
+| PromQL 明细 | —                           |
 
-| seriesLabel | PromQL |
-|---|---|
-| `learners` | `max(learners{instance=~"$instance",job=~"$job"})` |
+|    seriesLabel     |                           PromQL                           |
+|--------------------|------------------------------------------------------------|
+| `learners`         | `max(learners{instance=~"$instance",job=~"$job"})`         |
 | `synced_observers` | `max(synced_observers{instance=~"$instance",job=~"$job"})` |
 
-| 属性 | 值 |
-|---|---|
-| 颜色 | `learners` → `#1677ff`、`synced_observers` → `#52c41a` |
-| y 轴 | 整数（节点数） |
-| 说明 | `learners` 掉线时需关注节点状态；`synced_observers` 增减反映 Observer 伸缩 |
-| col-span | 8 |
+|    属性    |                             值                             |
+|----------|-----------------------------------------------------------|
+| 颜色       | `learners` → `#1677ff`、`synced_observers` → `#52c41a`     |
+| y 轴      | 整数（节点数）                                                   |
+| 说明       | `learners` 掉线时需关注节点状态；`synced_observers` 增减反映 Observer 伸缩 |
+| col-span | 8                                                         |
 
 #### Z18 Quorum Counts
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Commit / Snapshot / Proposal Count |
-| 图表类型 | `<Line>` 多系列（3 系列） |
-| Query 类型 | range query（multi-range） |
-| PromQL 明细 | — |
+|    属性     |                 值                  |
+|-----------|------------------------------------|
+| 标题        | Commit / Snapshot / Proposal Count |
+| 图表类型      | `<Line>` 多系列（3 系列）                 |
+| Query 类型  | range query（multi-range）           |
+| PromQL 明细 | —                                  |
 
-| seriesLabel | PromQL |
-|---|---|
-| `commits` | `commit_count{instance=~"$instance",job=~"$job"}` |
-| `snapshots` | `snap_count{instance=~"$instance",job=~"$job"}` |
+| seriesLabel |                       PromQL                        |
+|-------------|-----------------------------------------------------|
+| `commits`   | `commit_count{instance=~"$instance",job=~"$job"}`   |
+| `snapshots` | `snap_count{instance=~"$instance",job=~"$job"}`     |
 | `proposals` | `proposal_count{instance=~"$instance",job=~"$job"}` |
 
-| 属性 | 值 |
-|---|---|
-| 颜色 | `commits` → `#1677ff`、`snapshots` → `#faad14`、`proposals` → `#52c41a` |
-| y 轴 | 整数（累计计数，counter 形态） |
-| 说明 | Traffic 补充：proposal 速率反映写入吞吐；snapshot 频率影响持久化性能 |
-| col-span | 8 |
+|    属性    |                                   值                                   |
+|----------|-----------------------------------------------------------------------|
+| 颜色       | `commits` → `#1677ff`、`snapshots` → `#faad14`、`proposals` → `#52c41a` |
+| y 轴      | 整数（累计计数，counter 形态）                                                   |
+| 说明       | Traffic 补充：proposal 速率反映写入吞吐；snapshot 频率影响持久化性能                       |
+| col-span | 8                                                                     |
 
 ---
 
@@ -471,29 +471,29 @@ ZooKeeper 特有补充：
 
 #### Z19 Fsync Time
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Fsync Time (avg ms) |
-| 图表类型 | `<Line>` 多系列（by instance） |
-| Query 类型 | range query |
-| PromQL | `irate(fsynctime_sum{instance=~"$instance",job=~"$job"}[1m])` |
-| 系列字段 | `instance` |
-| y 轴 | 毫秒（`ms`），保留 1 位小数 |
-| 说明 | **Latency 维度**：fsync 耗时高表示磁盘 I/O 瓶颈，直接影响 ZK 写入延迟 |
-| col-span | 12 |
+|    属性    |                               值                               |
+|----------|---------------------------------------------------------------|
+| 标题       | Fsync Time (avg ms)                                           |
+| 图表类型     | `<Line>` 多系列（by instance）                                     |
+| Query 类型 | range query                                                   |
+| PromQL   | `irate(fsynctime_sum{instance=~"$instance",job=~"$job"}[1m])` |
+| 系列字段     | `instance`                                                    |
+| y 轴      | 毫秒（`ms`），保留 1 位小数                                             |
+| 说明       | **Latency 维度**：fsync 耗时高表示磁盘 I/O 瓶颈，直接影响 ZK 写入延迟              |
+| col-span | 12                                                            |
 
 #### Z20 Snapshot Time
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Snapshot Time (avg ms) |
-| 图表类型 | `<Line>` 多系列（by instance） |
-| Query 类型 | range query |
-| PromQL | `rate(snapshottime_sum{instance=~"$instance",job=~"$job"}[5m])` |
-| 系列字段 | `instance` |
-| y 轴 | 毫秒（`ms`），保留 1 位小数 |
-| 说明 | Snapshot 写入耗时；耗时突增通常与数据目录大小相关 |
-| col-span | 12 |
+|    属性    |                                值                                |
+|----------|-----------------------------------------------------------------|
+| 标题       | Snapshot Time (avg ms)                                          |
+| 图表类型     | `<Line>` 多系列（by instance）                                       |
+| Query 类型 | range query                                                     |
+| PromQL   | `rate(snapshottime_sum{instance=~"$instance",job=~"$job"}[5m])` |
+| 系列字段     | `instance`                                                      |
+| y 轴      | 毫秒（`ms`），保留 1 位小数                                               |
+| 说明       | Snapshot 写入耗时；耗时突增通常与数据目录大小相关                                   |
+| col-span | 12                                                              |
 
 ---
 
@@ -501,42 +501,42 @@ ZooKeeper 特有补充：
 
 #### Z21 JVM Memory Pool Usage
 
-| 属性 | 值 |
-|---|---|
-| 标题 | JVM Memory Pool Usage |
-| 图表类型 | `<Area>` 多系列（by pool，非堆叠） |
-| Query 类型 | range query |
-| PromQL | `jvm_memory_pool_bytes_used{instance=~"$instance",job=~"$job"}` |
-| 系列字段 | `pool`（G1 Eden Space / G1 Old Gen / Metaspace 等，由 label 自动区分） |
-| y 轴 | bytes（`formatBytes`） |
-| 说明 | **Saturation 维度**：Old Gen 持续接近 max 表示内存压力 |
-| col-span | 8 |
+|    属性    |                                值                                |
+|----------|-----------------------------------------------------------------|
+| 标题       | JVM Memory Pool Usage                                           |
+| 图表类型     | `<Area>` 多系列（by pool，非堆叠）                                       |
+| Query 类型 | range query                                                     |
+| PromQL   | `jvm_memory_pool_bytes_used{instance=~"$instance",job=~"$job"}` |
+| 系列字段     | `pool`（G1 Eden Space / G1 Old Gen / Metaspace 等，由 label 自动区分）   |
+| y 轴      | bytes（`formatBytes`）                                            |
+| 说明       | **Saturation 维度**：Old Gen 持续接近 max 表示内存压力                       |
+| col-span | 8                                                               |
 
 #### Z22 GC Collection Rate
 
-| 属性 | 值 |
-|---|---|
-| 标题 | GC Collection Rate |
-| 图表类型 | `<Line>` 多系列（by gc name） |
-| Query 类型 | range query |
-| PromQL | `rate(jvm_gc_collection_seconds_count{instance=~"$instance",job=~"$job"}[5m])` |
-| 系列字段 | `gc`（G1 Young Generation / G1 Old Generation 等） |
-| y 轴 | `ops/s`（GC 频率），保留 3 位小数 |
-| 说明 | Young GC 频率高但 Old GC 频率低是健康状态；Old GC 频率高需关注内存泄漏 |
-| col-span | 8 |
+|    属性    |                                       值                                        |
+|----------|--------------------------------------------------------------------------------|
+| 标题       | GC Collection Rate                                                             |
+| 图表类型     | `<Line>` 多系列（by gc name）                                                       |
+| Query 类型 | range query                                                                    |
+| PromQL   | `rate(jvm_gc_collection_seconds_count{instance=~"$instance",job=~"$job"}[5m])` |
+| 系列字段     | `gc`（G1 Young Generation / G1 Old Generation 等）                                |
+| y 轴      | `ops/s`（GC 频率），保留 3 位小数                                                        |
+| 说明       | Young GC 频率高但 Old GC 频率低是健康状态；Old GC 频率高需关注内存泄漏                                |
+| col-span | 8                                                                              |
 
 #### Z23 JVM Pause Time Rate
 
-| 属性 | 值 |
-|---|---|
-| 标题 | JVM GC Pause Time |
-| 图表类型 | `<Line>` 多系列（by instance） |
-| Query 类型 | range query |
-| PromQL | `rate(jvm_pause_time_ms_sum{instance=~"$instance",job=~"$job"}[5m])` |
-| 系列字段 | `instance` |
-| y 轴 | `ms/s`（GC 暂停时间速率），保留 2 位小数 |
-| 说明 | **Saturation 维度**：STW（Stop-the-World）暂停直接影响 ZK 响应延迟；值高时与 Z08 avg_latency 上升对应 |
-| col-span | 8 |
+|    属性    |                                       值                                       |
+|----------|-------------------------------------------------------------------------------|
+| 标题       | JVM GC Pause Time                                                             |
+| 图表类型     | `<Line>` 多系列（by instance）                                                     |
+| Query 类型 | range query                                                                   |
+| PromQL   | `rate(jvm_pause_time_ms_sum{instance=~"$instance",job=~"$job"}[5m])`          |
+| 系列字段     | `instance`                                                                    |
+| y 轴      | `ms/s`（GC 暂停时间速率），保留 2 位小数                                                    |
+| 说明       | **Saturation 维度**：STW（Stop-the-World）暂停直接影响 ZK 响应延迟；值高时与 Z08 avg_latency 上升对应 |
+| col-span | 8                                                                             |
 
 ---
 
@@ -746,11 +746,11 @@ Phase 2 原型（mock 阶段）完成后，需满足：
 
 本章引用 `prometheus-dashboard-prototype-spec.md` §12 中记录的三个踩坑案例——这些经验完全适用于 ZooKeeper 看板：
 
-| 踩坑编号 | 标题 | 适用于 ZK 的场景 |
-|---|---|---|
-| 12.1 | `service.ts` 请求路径双前缀 | ZooKeeperMonitor 的 service.ts 路径写法相同 |
-| 12.2 | PromQL `+` 运算符被后端解码为空格 | Z08 的 `max_latency + min_latency`（若有加减运算时）；ZK 看板 PromQL 简单，此风险较低 |
-| 12.3 | `@ant-design/plots` 时间轴切换不更新 | 所有 TimeSeriesPanel/AreaPanel 均需 `chartKey` prop |
+| 踩坑编号 |              标题              |                            适用于 ZK 的场景                            |
+|------|------------------------------|------------------------------------------------------------------|
+| 12.1 | `service.ts` 请求路径双前缀         | ZooKeeperMonitor 的 service.ts 路径写法相同                             |
+| 12.2 | PromQL `+` 运算符被后端解码为空格       | Z08 的 `max_latency + min_latency`（若有加减运算时）；ZK 看板 PromQL 简单，此风险较低 |
+| 12.3 | `@ant-design/plots` 时间轴切换不更新 | 所有 TimeSeriesPanel/AreaPanel 均需 `chartKey` prop                  |
 
 > 详见：`docs/monitoring/design/prometheus-dashboard-prototype-spec.md` §12
 

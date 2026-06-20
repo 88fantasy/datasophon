@@ -38,6 +38,7 @@ GET /ddh/api/v2/prometheus/query   # 用于 instant query（stat/table 面板）
 > 原因：v2 前端的 `errorConfig.errorThrower` 读取 `res.success` 字段判断业务错误；透传裸 JSON 会被误判为错误并抛出。
 >
 > 实际响应示例：
+>
 > ```json
 > { "success": true, "code": 200, "data": { "resultType": "vector", "result": [...] } }
 > ```
@@ -1044,6 +1045,7 @@ export function queryInstant(params) {
 ### 12.2 后端 PromQL `+` 运算符被解码为空格
 
 **现象**：P06 Skipped Scrapes 的 PromQL（含 4 个 `+` 运算符）发到 Prometheus 后报解析错误：
+
 ```
 parse error: unexpected <aggr:sum> at position 107
 ```

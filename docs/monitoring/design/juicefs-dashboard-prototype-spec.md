@@ -37,23 +37,23 @@ React(AntV G2)
 
 JuiceFS 特有补充：
 
-| Grafana chartType（catalog） | 映射组件 | 备注 |
-|---|---|---|
-| `table`（Uptime） | `<Statistic>` + `formatDuration` | 单卷场景退化为 stat；多客户端时取 max |
-| `timeseries`（histogram 比值延迟） | `<Line>` + µs 轴 | `rate(_sum)/rate(_count)*1e6`，y 轴 µs |
-| `timeseries`（hit ratio） | `<Line>` + percent 轴 | Block Cache Hit Ratio，0–100% |
-| `timeseries`（binBps） | `<Area>` + `formatBytes`/s | IO Throughput、Compacted Data |
+|  Grafana chartType（catalog）  |               映射组件               |                  备注                  |
+|------------------------------|----------------------------------|--------------------------------------|
+| `table`（Uptime）              | `<Statistic>` + `formatDuration` | 单卷场景退化为 stat；多客户端时取 max              |
+| `timeseries`（histogram 比值延迟） | `<Line>` + µs 轴                  | `rate(_sum)/rate(_count)*1e6`，y 轴 µs |
+| `timeseries`（hit ratio）      | `<Line>` + percent 轴             | Block Cache Hit Ratio，0–100%         |
+| `timeseries`（binBps）         | `<Area>` + `formatBytes`/s       | IO Throughput、Compacted Data         |
 
 ---
 
 ## 3. 变量 / 过滤器规范
 
-| 变量 | PromQL 占位符 | 取值来源 | 默认值 | 说明 |
-|---|---|---|---|---|
-| 卷名 | `$name` | `label_values(juicefs_uptime, vol_name)` | 第一个卷 | **单选**下拉（看板以卷为主体） |
-| 速率窗口 | `$__rate_interval` | 由时间范围自动计算 | — | 不暴露给用户 |
-| 时间范围 | — | 时间选择器 | `Last 1h` | 5m/15m/1h/6h/24h/7d |
-| 刷新间隔 | — | — | `30s` | 自动轮询 |
+|  变量  |     PromQL 占位符     |                   取值来源                   |    默认值    |         说明          |
+|------|--------------------|------------------------------------------|-----------|---------------------|
+| 卷名   | `$name`            | `label_values(juicefs_uptime, vol_name)` | 第一个卷      | **单选**下拉（看板以卷为主体）   |
+| 速率窗口 | `$__rate_interval` | 由时间范围自动计算                                | —         | 不暴露给用户              |
+| 时间范围 | —                  | 时间选择器                                    | `Last 1h` | 5m/15m/1h/6h/24h/7d |
+| 刷新间隔 | —                  | —                                        | `30s`     | 自动轮询                |
 
 > **主变量是 `$name`（卷）非 `$instance`**：与 MySQL/Nexus 不同，JuiceFS 工具栏第一个下拉是卷名单选。`instance`/`mp` 不作为顶层过滤，而是在面板内 `by (instance, mp)` 分系列展示（同一卷的多个挂载点）。
 > catalog 中 `Transaction Restarts` 用 `vol_name=~"$name"`（正则），其余用 `vol_name="$name"`（精确）；本 spec 统一为精确匹配 `="$name"`（单选场景）。
@@ -113,12 +113,12 @@ JuiceFS 特有补充：
 
 ### 5.0 Golden Signals 映射
 
-| 维度 | 面板 | 说明 |
-|---|---|---|
-| **Latency（延迟）** | J09 IO、J10 Transaction、J11 Objects（µs，histogram 比值） | FUSE 操作 / 元数据事务 / 对象存储三层延迟 |
-| **Traffic（流量）** | J07 Operations、J08 IO Throughput、J12 Objects Requests、J16 Objects Throughput | 操作数与读写吞吐 |
-| **Errors（错误）** | J13 Object Request Errors + Transaction Restarts ★ | 后端请求错误 + 元数据事务重试（补强为独立面板） |
-| **Saturation（饱和度）** | J05/J14/J15 Block Cache、J06 Staging、J17 CPU/Memory、J02/J03 容量 | 缓存命中、暂存积压、客户端资源、容量 |
+|         维度          |                                      面板                                      |             说明             |
+|---------------------|------------------------------------------------------------------------------|----------------------------|
+| **Latency（延迟）**     | J09 IO、J10 Transaction、J11 Objects（µs，histogram 比值）                          | FUSE 操作 / 元数据事务 / 对象存储三层延迟 |
+| **Traffic（流量）**     | J07 Operations、J08 IO Throughput、J12 Objects Requests、J16 Objects Throughput | 操作数与读写吞吐                   |
+| **Errors（错误）**      | J13 Object Request Errors + Transaction Restarts ★                           | 后端请求错误 + 元数据事务重试（补强为独立面板）  |
+| **Saturation（饱和度）** | J05/J14/J15 Block Cache、J06 Staging、J17 CPU/Memory、J02/J03 容量                | 缓存命中、暂存积压、客户端资源、容量         |
 
 ---
 
@@ -126,65 +126,65 @@ JuiceFS 特有补充：
 
 #### J01 Uptime
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Uptime |
-| 图表类型 | `<Statistic>` + `formatDuration` |
-| Query 类型 | instant query |
-| PromQL | `max(juicefs_uptime{vol_name="$name"})` |
-| 单位 | 秒 → d/h/m |
+|     属性      |                           值                            |
+|-------------|--------------------------------------------------------|
+| 标题          | Uptime                                                 |
+| 图表类型        | `<Statistic>` + `formatDuration`                       |
+| Query 类型    | instant query                                          |
+| PromQL      | `max(juicefs_uptime{vol_name="$name"})`                |
+| 单位          | 秒 → d/h/m                                              |
 | 阈值（reverse） | `< 300` → 橙（刚启动）；否则绿。**修正**：catalog 的 `value:80` 红阈值弃用 |
 
 #### J02 Data Size
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Data Size |
-| 图表类型 | `<Statistic>` + `formatBytes` |
-| Query 类型 | instant query |
-| PromQL | `avg(juicefs_used_space{vol_name="$name"})` |
-| 单位 | bytes |
+|    属性    |                      值                      |
+|----------|---------------------------------------------|
+| 标题       | Data Size                                   |
+| 图表类型     | `<Statistic>` + `formatBytes`               |
+| Query 类型 | instant query                               |
+| PromQL   | `avg(juicefs_used_space{vol_name="$name"})` |
+| 单位       | bytes                                       |
 
 #### J03 Files
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Files |
-| 图表类型 | `<Statistic>` |
-| Query 类型 | instant query |
-| PromQL | `avg(juicefs_used_inodes{vol_name="$name"})` |
-| 单位 | 整数（千位分隔） |
+|    属性    |                      值                       |
+|----------|----------------------------------------------|
+| 标题       | Files                                        |
+| 图表类型     | `<Statistic>`                                |
+| Query 类型 | instant query                                |
+| PromQL   | `avg(juicefs_used_inodes{vol_name="$name"})` |
+| 单位       | 整数（千位分隔）                                     |
 
 #### J04 Client Sessions
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Client Sessions |
-| 图表类型 | `<Statistic>` |
-| Query 类型 | instant query |
-| PromQL | `count(juicefs_uptime{vol_name="$name"})` |
-| 说明 | 当前挂载该卷的客户端数 |
+|    属性    |                     值                     |
+|----------|-------------------------------------------|
+| 标题       | Client Sessions                           |
+| 图表类型     | `<Statistic>`                             |
+| Query 类型 | instant query                             |
+| PromQL   | `count(juicefs_uptime{vol_name="$name"})` |
+| 说明       | 当前挂载该卷的客户端数                               |
 
 #### J05 Cache Hit %
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Block Cache Hit % |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
-| Query 类型 | instant query |
-| PromQL | `sum(rate(juicefs_blockcache_hits{vol_name="$name"}[$__rate_interval])) * 100 / (sum(rate(juicefs_blockcache_hits{vol_name="$name"}[$__rate_interval])) + sum(rate(juicefs_blockcache_miss{vol_name="$name"}[$__rate_interval])))` |
-| 单位 | `%` |
-| 阈值（reverse） | `< 70` → 红；`70–90` → 橙；`≥ 90` → 绿 |
+|     属性      |                                                                                                                 值                                                                                                                  |
+|-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题          | Block Cache Hit %                                                                                                                                                                                                                  |
+| 图表类型        | `<Statistic>` + `colorByThreshold`                                                                                                                                                                                                 |
+| Query 类型    | instant query                                                                                                                                                                                                                      |
+| PromQL      | `sum(rate(juicefs_blockcache_hits{vol_name="$name"}[$__rate_interval])) * 100 / (sum(rate(juicefs_blockcache_hits{vol_name="$name"}[$__rate_interval])) + sum(rate(juicefs_blockcache_miss{vol_name="$name"}[$__rate_interval])))` |
+| 单位          | `%`                                                                                                                                                                                                                                |
+| 阈值（reverse） | `< 70` → 红；`70–90` → 橙；`≥ 90` → 绿                                                                                                                                                                                                  |
 
 #### J06 Staging Blocks
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Staging Blocks |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
-| Query 类型 | instant query |
-| PromQL | `sum(juicefs_staging_blocks{vol_name="$name"})` |
-| 阈值 | `= 0` → 绿；持续 `> 0` 且增长 → 橙（写缓冲积压，回写未跟上） |
+|    属性    |                        值                        |
+|----------|-------------------------------------------------|
+| 标题       | Staging Blocks                                  |
+| 图表类型     | `<Statistic>` + `colorByThreshold`              |
+| Query 类型 | instant query                                   |
+| PromQL   | `sum(juicefs_staging_blocks{vol_name="$name"})` |
+| 阈值       | `= 0` → 绿；持续 `> 0` 且增长 → 橙（写缓冲积压，回写未跟上）         |
 
 ---
 
@@ -192,25 +192,25 @@ JuiceFS 特有补充：
 
 #### J07 Operations
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Operations |
-| 图表类型 | `<Line>` 多系列 by instance |
-| Query 类型 | range query |
-| PromQL | `sum(rate(juicefs_fuse_ops_durations_histogram_seconds_count{vol_name="$name"}[$__rate_interval]) < 5000000000) by (instance)` |
-| y 轴 | `ops/s` |
+|    属性    |                                                               值                                                                |
+|----------|--------------------------------------------------------------------------------------------------------------------------------|
+| 标题       | Operations                                                                                                                     |
+| 图表类型     | `<Line>` 多系列 by instance                                                                                                       |
+| Query 类型 | range query                                                                                                                    |
+| PromQL   | `sum(rate(juicefs_fuse_ops_durations_histogram_seconds_count{vol_name="$name"}[$__rate_interval]) < 5000000000) by (instance)` |
+| y 轴      | `ops/s`                                                                                                                        |
 
 #### J08 IO Throughput
 
-| 属性 | 值 |
-|---|---|
-| 标题 | IO Throughput |
-| 图表类型 | `<Area>` 2 系列 |
-| Query 类型 | range query |
+|       属性       |                                                        值                                                        |
+|----------------|-----------------------------------------------------------------------------------------------------------------|
+| 标题             | IO Throughput                                                                                                   |
+| 图表类型           | `<Area>` 2 系列                                                                                                   |
+| Query 类型       | range query                                                                                                     |
 | PromQL (write) | `sum(rate(juicefs_fuse_written_size_bytes_sum{vol_name="$name"}[$__rate_interval]) < 5000000000) by (instance)` |
-| PromQL (read) | `sum(rate(juicefs_fuse_read_size_bytes_sum{vol_name="$name"}[$__rate_interval]) < 5000000000) by (instance)` |
-| y 轴 | binBps，`formatBytes`/s |
-| 系列 | `Write`（蓝）、`Read`（绿） |
+| PromQL (read)  | `sum(rate(juicefs_fuse_read_size_bytes_sum{vol_name="$name"}[$__rate_interval]) < 5000000000) by (instance)`    |
+| y 轴            | binBps，`formatBytes`/s                                                                                          |
+| 系列             | `Write`（蓝）、`Read`（绿）                                                                                            |
 
 ---
 
@@ -220,31 +220,31 @@ JuiceFS 特有补充：
 
 #### J09 IO Latency
 
-| 属性 | 值 |
-|---|---|
-| 标题 | IO Latency |
-| 图表类型 | `<Line>` by instance,mp |
-| Query 类型 | range query |
-| PromQL | `sum(rate(juicefs_fuse_ops_durations_histogram_seconds_sum{vol_name="$name"}[$__rate_interval])) by (instance,mp) * 1000000 / sum(rate(juicefs_fuse_ops_durations_histogram_seconds_count{vol_name="$name"}[$__rate_interval])) by (instance,mp)` |
-| y 轴 | `µs` |
+|    属性    |                                                                                                                         值                                                                                                                         |
+|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题       | IO Latency                                                                                                                                                                                                                                        |
+| 图表类型     | `<Line>` by instance,mp                                                                                                                                                                                                                           |
+| Query 类型 | range query                                                                                                                                                                                                                                       |
+| PromQL   | `sum(rate(juicefs_fuse_ops_durations_histogram_seconds_sum{vol_name="$name"}[$__rate_interval])) by (instance,mp) * 1000000 / sum(rate(juicefs_fuse_ops_durations_histogram_seconds_count{vol_name="$name"}[$__rate_interval])) by (instance,mp)` |
+| y 轴      | `µs`                                                                                                                                                                                                                                              |
 
 #### J10 Transaction Latency
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Transaction Latency |
-| 图表类型 | `<Line>` |
+|   属性   |                                     值                                     |
+|--------|---------------------------------------------------------------------------|
+| 标题     | Transaction Latency                                                       |
+| 图表类型   | `<Line>`                                                                  |
 | PromQL | 同 J09，指标族换为 `juicefs_transaction_durations_histogram_seconds_{sum,count}` |
-| y 轴 | `µs` |
+| y 轴    | `µs`                                                                      |
 
 #### J11 Objects Latency
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Objects Latency |
-| 图表类型 | `<Line>` by instance |
+|   属性   |                                                                                                                            值                                                                                                                            |
+|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题     | Objects Latency                                                                                                                                                                                                                                         |
+| 图表类型   | `<Line>` by instance                                                                                                                                                                                                                                    |
 | PromQL | `sum(rate(juicefs_object_request_durations_histogram_seconds_sum{vol_name="$name"}[$__rate_interval])) by (instance) * 1000000 / sum(rate(juicefs_object_request_durations_histogram_seconds_count{vol_name="$name"}[$__rate_interval])) by (instance)` |
-| y 轴 | `µs` |
+| y 轴    | `µs`                                                                                                                                                                                                                                                    |
 
 ---
 
@@ -252,26 +252,26 @@ JuiceFS 特有补充：
 
 #### J12 Objects Requests
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Objects Requests |
-| 图表类型 | `<Line>` 多系列 by method |
-| Query 类型 | range query |
-| PromQL | `sum(rate(juicefs_object_request_durations_histogram_seconds_count{vol_name="$name"}[$__rate_interval])) by (method)` |
-| 系列字段 | `method`（GET / PUT / DELETE / HEAD / LIST） |
-| y 轴 | `req/s` |
+|    属性    |                                                           值                                                           |
+|----------|-----------------------------------------------------------------------------------------------------------------------|
+| 标题       | Objects Requests                                                                                                      |
+| 图表类型     | `<Line>` 多系列 by method                                                                                                |
+| Query 类型 | range query                                                                                                           |
+| PromQL   | `sum(rate(juicefs_object_request_durations_histogram_seconds_count{vol_name="$name"}[$__rate_interval])) by (method)` |
+| 系列字段     | `method`（GET / PUT / DELETE / HEAD / LIST）                                                                            |
+| y 轴      | `req/s`                                                                                                               |
 
 #### J13 Errors & Restarts ★（补强）
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Object Errors & Transaction Restarts |
-| 图表类型 | `<Line>` 2 系列 |
-| Query 类型 | range query |
-| PromQL (obj errors) | `sum(rate(juicefs_object_request_errors{vol_name="$name"}[$__rate_interval]))` |
+|          属性          |                                             值                                              |
+|----------------------|--------------------------------------------------------------------------------------------|
+| 标题                   | Object Errors & Transaction Restarts                                                       |
+| 图表类型                 | `<Line>` 2 系列                                                                              |
+| Query 类型             | range query                                                                                |
+| PromQL (obj errors)  | `sum(rate(juicefs_object_request_errors{vol_name="$name"}[$__rate_interval]))`             |
 | PromQL (tx restarts) | `sum(rate(juicefs_transaction_restart{vol_name="$name"}[$__rate_interval])) by (instance)` |
-| 系列 | `Object Request Errors`（红）、`Transaction Restarts`（橙） |
-| 说明 | ★ catalog 把 errors 混在 Objects Requests 面板里；本 spec 拆为独立 Errors 面板，补齐黄金信号 Error 维度 |
+| 系列                   | `Object Request Errors`（红）、`Transaction Restarts`（橙）                                       |
+| 说明                   | ★ catalog 把 errors 混在 Objects Requests 面板里；本 spec 拆为独立 Errors 面板，补齐黄金信号 Error 维度           |
 
 ---
 
@@ -279,34 +279,34 @@ JuiceFS 特有补充：
 
 #### J14 Block Cache Size
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Block Cache Size |
-| 图表类型 | `<Line>` by instance,mp |
+|   属性   |                                 值                                  |
+|--------|--------------------------------------------------------------------|
+| 标题     | Block Cache Size                                                   |
+| 图表类型   | `<Line>` by instance,mp                                            |
 | PromQL | `sum(juicefs_blockcache_bytes{vol_name="$name"}) by (instance,mp)` |
-| y 轴 | bytes，`formatBytes` |
+| y 轴    | bytes，`formatBytes`                                                |
 
 #### J15 Block Cache Hit Ratio
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Block Cache Hit Ratio |
-| 图表类型 | `<Line>` 2 系列（按次数 / 按字节） |
+|        属性         |                                                                                                                                          值                                                                                                                                           |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题                | Block Cache Hit Ratio                                                                                                                                                                                                                                                                |
+| 图表类型              | `<Line>` 2 系列（按次数 / 按字节）                                                                                                                                                                                                                                                             |
 | PromQL (by count) | `sum(rate(juicefs_blockcache_hits{vol_name="$name"}[$__rate_interval])) by (instance,mp) *100 / (sum(rate(juicefs_blockcache_hits{vol_name="$name"}[$__rate_interval])) by (instance,mp) + sum(rate(juicefs_blockcache_miss{vol_name="$name"}[$__rate_interval])) by (instance,mp))` |
-| PromQL (by bytes) | 同上，`hits`→`hit_bytes`、`miss`→`miss_bytes` |
-| y 轴 | `%`（0–100） |
-| 警戒线 | y=70%，橙虚线 |
+| PromQL (by bytes) | 同上，`hits`→`hit_bytes`、`miss`→`miss_bytes`                                                                                                                                                                                                                                            |
+| y 轴               | `%`（0–100）                                                                                                                                                                                                                                                                           |
+| 警戒线               | y=70%，橙虚线                                                                                                                                                                                                                                                                            |
 
 #### J16 Objects Throughput
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Objects Throughput |
-| 图表类型 | `<Line>` 多系列 |
+|      属性      |                                                          值                                                           |
+|--------------|----------------------------------------------------------------------------------------------------------------------|
+| 标题           | Objects Throughput                                                                                                   |
+| 图表类型         | `<Line>` 多系列                                                                                                         |
 | PromQL (PUT) | `sum(rate(juicefs_object_request_data_bytes{method="PUT",vol_name="$name"}[$__rate_interval])) by (instance,method)` |
-| PromQL (GET) | 同上，`method="GET"` |
-| y 轴 | Bps，`formatBytes`/s |
-| 系列 | `PUT`（蓝，上行）、`GET`（绿，下行） |
+| PromQL (GET) | 同上，`method="GET"`                                                                                                    |
+| y 轴          | Bps，`formatBytes`/s                                                                                                  |
+| 系列           | `PUT`（蓝，上行）、`GET`（绿，下行）                                                                                              |
 
 ---
 
@@ -314,15 +314,15 @@ JuiceFS 特有补充：
 
 #### J17 Client CPU & Memory
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Client CPU & Memory |
-| 图表类型 | `<Line>` 双 y 轴（cpu% 左 / mem 右） |
-| Query 类型 | range query |
-| PromQL (CPU) | `sum(rate(juicefs_cpu_usage{vol_name="$name"}[$__rate_interval])*100 < 1000) by (instance,mp)` |
-| PromQL (Memory) | `sum(juicefs_memory{vol_name="$name"}) by (instance,mp)` |
-| y 轴 | 左：`%`；右：bytes（`formatBytes`） |
-| 系列 | `CPU %`（橙）、`Memory`（蓝） |
+|       属性        |                                               值                                                |
+|-----------------|------------------------------------------------------------------------------------------------|
+| 标题              | Client CPU & Memory                                                                            |
+| 图表类型            | `<Line>` 双 y 轴（cpu% 左 / mem 右）                                                                 |
+| Query 类型        | range query                                                                                    |
+| PromQL (CPU)    | `sum(rate(juicefs_cpu_usage{vol_name="$name"}[$__rate_interval])*100 < 1000) by (instance,mp)` |
+| PromQL (Memory) | `sum(juicefs_memory{vol_name="$name"}) by (instance,mp)`                                       |
+| y 轴             | 左：`%`；右：bytes（`formatBytes`）                                                                   |
+| 系列              | `CPU %`（橙）、`Memory`（蓝）                                                                         |
 
 > **Staging 与 Compaction 说明**：J06 stat 已展示 Staging Blocks 即时值；如需趋势，可在 catalog 中追加 `juicefs_staging_block_bytes`（暂存用量）、`juicefs_staging_block_delay_seconds`（回写延迟）、`juicefs_compact_size_histogram_bytes_{count,sum}`（压实速率/数据量）面板。本原型为聚焦黄金信号，将其降级为可选深挖项（保留在 panel-catalog）。
 
@@ -504,3 +504,4 @@ Phase 2 原型（mock 阶段）完成后，需满足：
 - [ ] 颜色方案遵循 §6 Token
 - [ ] 在 1280px 宽度下 6 行布局无横向滚动条
 - [ ] golden signals 四象限覆盖验证（见 §5.0 映射表）；Error 维度由 J13 补强独立呈现
+

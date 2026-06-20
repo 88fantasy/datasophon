@@ -39,12 +39,12 @@ React(AntV G2)
 
 MySQL 特有补充：
 
-| Grafana chartType（catalog） | 映射组件 | 备注 |
-|---|---|---|
-| `stat`（reverse threshold） | `<Statistic>` + `colorByThreshold(reverse=true)` | Uptime/QPS：值越**小**越危险（红），方向与默认相反 |
-| `stat`（bytes） | `<Statistic>` + `formatBytes` | InnoDB Buffer Pool Size |
-| `graph`（用量+上限双线） | `<Line>` 2 系列 + 警戒区 | Connections、Open Files：上限线为参考阈值 |
-| `graph`（topk） | `<Line>` 多系列 | Top Command Counters（`topk(5, ...)`） |
+| Grafana chartType（catalog） |                       映射组件                       |                  备注                  |
+|----------------------------|--------------------------------------------------|--------------------------------------|
+| `stat`（reverse threshold）  | `<Statistic>` + `colorByThreshold(reverse=true)` | Uptime/QPS：值越**小**越危险（红），方向与默认相反     |
+| `stat`（bytes）              | `<Statistic>` + `formatBytes`                    | InnoDB Buffer Pool Size              |
+| `graph`（用量+上限双线）           | `<Line>` 2 系列 + 警戒区                              | Connections、Open Files：上限线为参考阈值      |
+| `graph`（topk）              | `<Line>` 多系列                                     | Top Command Counters（`topk(5, ...)`） |
 
 ---
 
@@ -52,13 +52,13 @@ MySQL 特有补充：
 
 看板顶部工具栏包含以下变量：
 
-| 变量 | PromQL 占位符 | 取值来源 | 默认值 | 说明 |
-|---|---|---|---|---|
-| 实例 | `$instance` | `label_values(mysql_up, instance)` | `.+`（全选） | 多选下拉，对应 mysqld_exporter 地址 |
-| Job | `$job` | `label_values(mysql_up, job)` | `.+`（全选） | 多选下拉，对应 Prometheus job 名 |
-| 速率窗口 | `$__interval` | 由时间范围自动计算 | — | 不暴露给用户，`max(4×scrape_interval, range/200)` |
-| 时间范围 | — | 时间选择器 | `Last 1h` | 快速选择: 5m/15m/1h/6h/24h/7d |
-| 刷新间隔 | — | — | `30s` | 自动轮询 |
+|  变量  |  PromQL 占位符   |                取值来源                |    默认值    |                     说明                     |
+|------|---------------|------------------------------------|-----------|--------------------------------------------|
+| 实例   | `$instance`   | `label_values(mysql_up, instance)` | `.+`（全选）  | 多选下拉，对应 mysqld_exporter 地址                 |
+| Job  | `$job`        | `label_values(mysql_up, job)`      | `.+`（全选）  | 多选下拉，对应 Prometheus job 名                   |
+| 速率窗口 | `$__interval` | 由时间范围自动计算                          | —         | 不暴露给用户，`max(4×scrape_interval, range/200)` |
+| 时间范围 | —             | 时间选择器                              | `Last 1h` | 快速选择: 5m/15m/1h/6h/24h/7d                  |
+| 刷新间隔 | —             | —                                  | `30s`     | 自动轮询                                       |
 
 > **归一化修正**：catalog 中 `MySQL Handlers` / `MySQL Transaction Handlers` 两面板误用了 `instance=~"$host"`，本 spec 统一改为 `instance=~"$instance"`，工具栏不引入 `$host` 变量。
 > **`$instance` + `$job` 与 ZooKeeper/Prometheus 看板同构**，可复用同一套 `DashboardToolbar` 组件逻辑（保留 Interval 自动计算，不显示下拉）。
@@ -123,12 +123,12 @@ MySQL 特有补充：
 
 ### 5.0 Golden Signals 映射
 
-| 维度 | 面板 | 说明 |
-|---|---|---|
-| **Latency（延迟）** | M05 Slow Queries（stat）、M11 Slow Queries（趋势） | mysqld_exporter 无原生延迟直方图，以慢查询速率作代理；可选增补 `query_response_time`（§9.5） |
-| **Traffic（流量）** | M02 QPS、M07 Questions、M08 Network Traffic、M16 Handlers、M17 Top Commands | 请求量与网络吞吐 |
-| **Errors（错误）** | M06 Aborted Conn（stat）、M11/M12/M13 慢查询/中断连接/锁等待 | 连接异常与锁竞争 |
-| **Saturation（饱和度）** | M03 Conn Used %、M04 Buffer Pool、M09 Connections、M10 Thread Activity、M14 Internal Memory、M15 Temp Objects | 连接、缓冲池、线程、内存、临时对象压力 |
+|         维度          |                                                    面板                                                    |                                 说明                                  |
+|---------------------|----------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| **Latency（延迟）**     | M05 Slow Queries（stat）、M11 Slow Queries（趋势）                                                              | mysqld_exporter 无原生延迟直方图，以慢查询速率作代理；可选增补 `query_response_time`（§9.5） |
+| **Traffic（流量）**     | M02 QPS、M07 Questions、M08 Network Traffic、M16 Handlers、M17 Top Commands                                  | 请求量与网络吞吐                                                            |
+| **Errors（错误）**      | M06 Aborted Conn（stat）、M11/M12/M13 慢查询/中断连接/锁等待                                                          | 连接异常与锁竞争                                                            |
+| **Saturation（饱和度）** | M03 Conn Used %、M04 Buffer Pool、M09 Connections、M10 Thread Activity、M14 Internal Memory、M15 Temp Objects | 连接、缓冲池、线程、内存、临时对象压力                                                 |
 
 ---
 
@@ -136,71 +136,71 @@ MySQL 特有补充：
 
 #### M01 Uptime
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Uptime |
-| 图表类型 | `<Statistic>` + `formatDuration` |
-| Query 类型 | instant query |
-| PromQL | `mysql_global_status_uptime{job=~"$job", instance=~"$instance"}` |
-| 单位 | 秒 → 自动换算 d/h/m |
+|       属性        |                                     值                                      |
+|-----------------|----------------------------------------------------------------------------|
+| 标题              | Uptime                                                                     |
+| 图表类型            | `<Statistic>` + `formatDuration`                                           |
+| Query 类型        | instant query                                                              |
+| PromQL          | `mysql_global_status_uptime{job=~"$job", instance=~"$instance"}`           |
+| 单位              | 秒 → 自动换算 d/h/m                                                             |
 | 阈值（**reverse**） | `< 300` → 红 `#ff4d4f`（刚重启）；`300–3600` → 橙 `#faad14`；`≥ 3600` → 绿 `#52c41a` |
 
 #### M02 Current QPS
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Current QPS |
-| 图表类型 | `<Statistic>` |
-| Query 类型 | instant query |
-| PromQL | `rate(mysql_global_status_queries{job=~"$job", instance=~"$instance"}[$__interval])` |
-| 单位 | 无（保留 1 位小数） |
-| 样式 | 大字体 32px，蓝色 `#1677ff` |
+|    属性    |                                          值                                           |
+|----------|--------------------------------------------------------------------------------------|
+| 标题       | Current QPS                                                                          |
+| 图表类型     | `<Statistic>`                                                                        |
+| Query 类型 | instant query                                                                        |
+| PromQL   | `rate(mysql_global_status_queries{job=~"$job", instance=~"$instance"}[$__interval])` |
+| 单位       | 无（保留 1 位小数）                                                                          |
+| 样式       | 大字体 32px，蓝色 `#1677ff`                                                                |
 
 #### M03 Connections Used %
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Connections Used % |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
-| Query 类型 | instant query |
-| PromQL | `sum(max_over_time(mysql_global_status_threads_connected{job=~"$job", instance=~"$instance"}[$__interval])) / sum(mysql_global_variables_max_connections{job=~"$job", instance=~"$instance"}) * 100` |
-| 单位 | `%` |
-| 阈值 | `< 80` → 绿；`80–90` → 橙；`≥ 90` → 红 |
+|    属性    |                                                                                                  值                                                                                                   |
+|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题       | Connections Used %                                                                                                                                                                                   |
+| 图表类型     | `<Statistic>` + `colorByThreshold`                                                                                                                                                                   |
+| Query 类型 | instant query                                                                                                                                                                                        |
+| PromQL   | `sum(max_over_time(mysql_global_status_threads_connected{job=~"$job", instance=~"$instance"}[$__interval])) / sum(mysql_global_variables_max_connections{job=~"$job", instance=~"$instance"}) * 100` |
+| 单位       | `%`                                                                                                                                                                                                  |
+| 阈值       | `< 80` → 绿；`80–90` → 橙；`≥ 90` → 红                                                                                                                                                                    |
 
 > 派生面板：用「已连接 / max_connections」直观反映连接饱和度（catalog 原本只给绝对值，本 spec 升级为百分比）。
 
 #### M04 InnoDB Buffer Pool
 
-| 属性 | 值 |
-|---|---|
-| 标题 | InnoDB Buffer Pool |
-| 图表类型 | `<Statistic>` + `formatBytes` |
-| Query 类型 | instant query |
-| PromQL | `mysql_global_variables_innodb_buffer_pool_size{job=~"$job", instance=~"$instance"}` |
-| 单位 | bytes → 自动换算 |
-| 样式 | 大字体，蓝色 |
+|    属性    |                                          值                                           |
+|----------|--------------------------------------------------------------------------------------|
+| 标题       | InnoDB Buffer Pool                                                                   |
+| 图表类型     | `<Statistic>` + `formatBytes`                                                        |
+| Query 类型 | instant query                                                                        |
+| PromQL   | `mysql_global_variables_innodb_buffer_pool_size{job=~"$job", instance=~"$instance"}` |
+| 单位       | bytes → 自动换算                                                                         |
+| 样式       | 大字体，蓝色                                                                               |
 
 #### M05 Slow Queries /s
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Slow Queries /s |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
-| Query 类型 | instant query |
-| PromQL | `sum(rate(mysql_global_status_slow_queries{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| 单位 | `/s`（2 位小数） |
-| 阈值 | `= 0` → 绿；`> 0` → 橙；`> 1` → 红 |
+|    属性    |                                               值                                                |
+|----------|------------------------------------------------------------------------------------------------|
+| 标题       | Slow Queries /s                                                                                |
+| 图表类型     | `<Statistic>` + `colorByThreshold`                                                             |
+| Query 类型 | instant query                                                                                  |
+| PromQL   | `sum(rate(mysql_global_status_slow_queries{job=~"$job", instance=~"$instance"}[$__interval]))` |
+| 单位       | `/s`（2 位小数）                                                                                    |
+| 阈值       | `= 0` → 绿；`> 0` → 橙；`> 1` → 红                                                                  |
 
 #### M06 Aborted Connections /s
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Aborted Connections /s |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
-| Query 类型 | instant query |
-| PromQL | `sum(rate(mysql_global_status_aborted_connects{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| 单位 | `/s`（2 位小数） |
-| 阈值 | `= 0` → 绿；`> 0` → 橙 |
+|    属性    |                                                 值                                                  |
+|----------|----------------------------------------------------------------------------------------------------|
+| 标题       | Aborted Connections /s                                                                             |
+| 图表类型     | `<Statistic>` + `colorByThreshold`                                                                 |
+| Query 类型 | instant query                                                                                      |
+| PromQL   | `sum(rate(mysql_global_status_aborted_connects{job=~"$job", instance=~"$instance"}[$__interval]))` |
+| 单位       | `/s`（2 位小数）                                                                                        |
+| 阈值       | `= 0` → 绿；`> 0` → 橙                                                                                |
 
 ---
 
@@ -208,26 +208,26 @@ MySQL 特有补充：
 
 #### M07 MySQL Questions (QPS)
 
-| 属性 | 值 |
-|---|---|
-| 标题 | MySQL Questions |
-| 图表类型 | `<Line>` 1 系列 |
-| Query 类型 | range query |
-| PromQL | `rate(mysql_global_status_questions{job=~"$job", instance=~"$instance"}[$__interval])` |
-| y 轴 | `qps`，2 位小数 |
-| 系列颜色 | `#1677ff` |
+|    属性    |                                           值                                            |
+|----------|----------------------------------------------------------------------------------------|
+| 标题       | MySQL Questions                                                                        |
+| 图表类型     | `<Line>` 1 系列                                                                          |
+| Query 类型 | range query                                                                            |
+| PromQL   | `rate(mysql_global_status_questions{job=~"$job", instance=~"$instance"}[$__interval])` |
+| y 轴      | `qps`，2 位小数                                                                            |
+| 系列颜色     | `#1677ff`                                                                              |
 
 #### M08 Network Traffic
 
-| 属性 | 值 |
-|---|---|
-| 标题 | MySQL Network Traffic |
-| 图表类型 | `<Area>` 堆叠 |
-| Query 类型 | range query（2 条 PromQL） |
-| PromQL (inbound) | `sum(rate(mysql_global_status_bytes_received{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| PromQL (outbound) | `sum(rate(mysql_global_status_bytes_sent{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| y 轴 | bytes/s，自动换算（B/KB/MB） |
-| 系列 | `Inbound`（绿）、`Outbound`（蓝） |
+|        属性         |                                                值                                                 |
+|-------------------|--------------------------------------------------------------------------------------------------|
+| 标题                | MySQL Network Traffic                                                                            |
+| 图表类型              | `<Area>` 堆叠                                                                                      |
+| Query 类型          | range query（2 条 PromQL）                                                                          |
+| PromQL (inbound)  | `sum(rate(mysql_global_status_bytes_received{job=~"$job", instance=~"$instance"}[$__interval]))` |
+| PromQL (outbound) | `sum(rate(mysql_global_status_bytes_sent{job=~"$job", instance=~"$instance"}[$__interval]))`     |
+| y 轴               | bytes/s，自动换算（B/KB/MB）                                                                            |
+| 系列                | `Inbound`（绿）、`Outbound`（蓝）                                                                       |
 
 ---
 
@@ -235,27 +235,27 @@ MySQL 特有补充：
 
 #### M09 MySQL Connections
 
-| 属性 | 值 |
-|---|---|
-| 标题 | MySQL Connections |
-| 图表类型 | `<Line>` 3 系列（含上限参考线） |
-| Query 类型 | range query（3 条 PromQL） |
+|         属性         |                                                      值                                                       |
+|--------------------|--------------------------------------------------------------------------------------------------------------|
+| 标题                 | MySQL Connections                                                                                            |
+| 图表类型               | `<Line>` 3 系列（含上限参考线）                                                                                        |
+| Query 类型           | range query（3 条 PromQL）                                                                                      |
 | PromQL (connected) | `sum(max_over_time(mysql_global_status_threads_connected{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| PromQL (max used) | `sum(mysql_global_status_max_used_connections{job=~"$job", instance=~"$instance"})` |
-| PromQL (limit) | `sum(mysql_global_variables_max_connections{job=~"$job", instance=~"$instance"})` |
-| 系列 | `Connections`（蓝）、`Max Used`（橙）、`Max Connections`（红虚线，上限参考） |
-| y 轴 | 整数 |
+| PromQL (max used)  | `sum(mysql_global_status_max_used_connections{job=~"$job", instance=~"$instance"})`                          |
+| PromQL (limit)     | `sum(mysql_global_variables_max_connections{job=~"$job", instance=~"$instance"})`                            |
+| 系列                 | `Connections`（蓝）、`Max Used`（橙）、`Max Connections`（红虚线，上限参考）                                                   |
+| y 轴                | 整数                                                                                                           |
 
 #### M10 Client Thread Activity
 
-| 属性 | 值 |
-|---|---|
-| 标题 | MySQL Client Thread Activity |
-| 图表类型 | `<Line>` 2 系列 |
-| Query 类型 | range query |
+|         属性         |                                                      值                                                       |
+|--------------------|--------------------------------------------------------------------------------------------------------------|
+| 标题                 | MySQL Client Thread Activity                                                                                 |
+| 图表类型               | `<Line>` 2 系列                                                                                                |
+| Query 类型           | range query                                                                                                  |
 | PromQL (connected) | `sum(max_over_time(mysql_global_status_threads_connected{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| PromQL (running) | `sum(max_over_time(mysql_global_status_threads_running{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| 系列 | `Threads Connected`（蓝）、`Threads Running`（橙） |
+| PromQL (running)   | `sum(max_over_time(mysql_global_status_threads_running{job=~"$job", instance=~"$instance"}[$__interval]))`   |
+| 系列                 | `Threads Connected`（蓝）、`Threads Running`（橙）                                                                  |
 
 ---
 
@@ -263,36 +263,36 @@ MySQL 特有补充：
 
 #### M11 Slow Queries
 
-| 属性 | 值 |
-|---|---|
-| 标题 | MySQL Slow Queries |
-| 图表类型 | `<Line>` 1 系列 |
-| Query 类型 | range query |
-| PromQL | `sum(rate(mysql_global_status_slow_queries{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| y 轴 | `/s` |
-| 系列颜色 | `#faad14`（橙，告警色） |
+|    属性    |                                               值                                                |
+|----------|------------------------------------------------------------------------------------------------|
+| 标题       | MySQL Slow Queries                                                                             |
+| 图表类型     | `<Line>` 1 系列                                                                                  |
+| Query 类型 | range query                                                                                    |
+| PromQL   | `sum(rate(mysql_global_status_slow_queries{job=~"$job", instance=~"$instance"}[$__interval]))` |
+| y 轴      | `/s`                                                                                           |
+| 系列颜色     | `#faad14`（橙，告警色）                                                                               |
 
 #### M12 Aborted Connections
 
-| 属性 | 值 |
-|---|---|
-| 标题 | MySQL Aborted Connections |
-| 图表类型 | `<Line>` 2 系列 |
-| Query 类型 | range query |
+|        属性         |                                                 值                                                  |
+|-------------------|----------------------------------------------------------------------------------------------------|
+| 标题                | MySQL Aborted Connections                                                                          |
+| 图表类型              | `<Line>` 2 系列                                                                                      |
+| Query 类型          | range query                                                                                        |
 | PromQL (connects) | `sum(rate(mysql_global_status_aborted_connects{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| PromQL (clients) | `sum(rate(mysql_global_status_aborted_clients{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| 系列 | `Aborted Connects`（橙红）、`Aborted Clients`（红） |
+| PromQL (clients)  | `sum(rate(mysql_global_status_aborted_clients{job=~"$job", instance=~"$instance"}[$__interval]))`  |
+| 系列                | `Aborted Connects`（橙红）、`Aborted Clients`（红）                                                        |
 
 #### M13 Table Locks
 
-| 属性 | 值 |
-|---|---|
-| 标题 | MySQL Table Locks |
-| 图表类型 | `<Line>` 2 系列 |
-| Query 类型 | range query |
+|         属性         |                                                    值                                                    |
+|--------------------|---------------------------------------------------------------------------------------------------------|
+| 标题                 | MySQL Table Locks                                                                                       |
+| 图表类型               | `<Line>` 2 系列                                                                                           |
+| Query 类型           | range query                                                                                             |
 | PromQL (immediate) | `sum(rate(mysql_global_status_table_locks_immediate{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| PromQL (waited) | `sum(rate(mysql_global_status_table_locks_waited{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| 系列 | `Immediate`（绿）、`Waited`（红，锁等待为竞争信号） |
+| PromQL (waited)    | `sum(rate(mysql_global_status_table_locks_waited{job=~"$job", instance=~"$instance"}[$__interval]))`    |
+| 系列                 | `Immediate`（绿）、`Waited`（红，锁等待为竞争信号）                                                                     |
 
 ---
 
@@ -300,31 +300,31 @@ MySQL 特有补充：
 
 #### M14 Internal Memory Overview
 
-| 属性 | 值 |
-|---|---|
-| 标题 | MySQL Internal Memory Overview |
-| 图表类型 | `<Area>` 堆叠多系列 |
-| Query 类型 | range query（多条 PromQL，详见 catalog `MySQL Internal Memory Overview`） |
+|            属性             |                                                                                            值                                                                                            |
+|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题                        | MySQL Internal Memory Overview                                                                                                                                                          |
+| 图表类型                      | `<Area>` 堆叠多系列                                                                                                                                                                          |
+| Query 类型                  | range query（多条 PromQL，详见 catalog `MySQL Internal Memory Overview`）                                                                                                                      |
 | PromQL (Buffer Pool Data) | `sum(mysql_global_status_innodb_page_size{job=~"$job", instance=~"$instance"} * on (instance) mysql_global_status_buffer_pool_pages{job=~"$job", instance=~"$instance", state="data"})` |
-| PromQL (Log Buffer) | `sum(mysql_global_variables_innodb_log_buffer_size{job=~"$job", instance=~"$instance"})` |
-| PromQL (Key Buffer) | `sum(mysql_global_variables_key_buffer_size{job=~"$job", instance=~"$instance"})` |
-| PromQL (Adaptive Hash) | `sum(mysql_global_status_innodb_mem_adaptive_hash{job=~"$job", instance=~"$instance"})` |
-| y 轴 | bytes，自动换算 |
-| 系列 | `legend` 右侧表格，按 avg 降序；隐藏空/零系列（`hideEmpty`/`hideZero`） |
+| PromQL (Log Buffer)       | `sum(mysql_global_variables_innodb_log_buffer_size{job=~"$job", instance=~"$instance"})`                                                                                                |
+| PromQL (Key Buffer)       | `sum(mysql_global_variables_key_buffer_size{job=~"$job", instance=~"$instance"})`                                                                                                       |
+| PromQL (Adaptive Hash)    | `sum(mysql_global_status_innodb_mem_adaptive_hash{job=~"$job", instance=~"$instance"})`                                                                                                 |
+| y 轴                       | bytes，自动换算                                                                                                                                                                              |
+| 系列                        | `legend` 右侧表格，按 avg 降序；隐藏空/零系列（`hideEmpty`/`hideZero`）                                                                                                                                  |
 
 > MySQL 8.0 已移除 Query Cache 与 `innodb_additional_mem_pool_size`，对应系列在 8.0.28 上恒为 0，由 `hideZero` 自动隐藏。
 
 #### M15 Temporary Objects
 
-| 属性 | 值 |
-|---|---|
-| 标题 | MySQL Temporary Objects |
-| 图表类型 | `<Line>` 3 系列 |
-| Query 类型 | range query |
-| PromQL (tmp tables) | `sum(rate(mysql_global_status_created_tmp_tables{job=~"$job", instance=~"$instance"}[$__interval]))` |
+|            属性            |                                                     值                                                     |
+|--------------------------|-----------------------------------------------------------------------------------------------------------|
+| 标题                       | MySQL Temporary Objects                                                                                   |
+| 图表类型                     | `<Line>` 3 系列                                                                                             |
+| Query 类型                 | range query                                                                                               |
+| PromQL (tmp tables)      | `sum(rate(mysql_global_status_created_tmp_tables{job=~"$job", instance=~"$instance"}[$__interval]))`      |
 | PromQL (tmp disk tables) | `sum(rate(mysql_global_status_created_tmp_disk_tables{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| PromQL (tmp files) | `sum(rate(mysql_global_status_created_tmp_files{job=~"$job", instance=~"$instance"}[$__interval]))` |
-| 系列 | `Tmp Tables`（蓝）、`Tmp Disk Tables`（红，落盘临时表为饱和信号）、`Tmp Files`（橙） |
+| PromQL (tmp files)       | `sum(rate(mysql_global_status_created_tmp_files{job=~"$job", instance=~"$instance"}[$__interval]))`       |
+| 系列                       | `Tmp Tables`（蓝）、`Tmp Disk Tables`（红，落盘临时表为饱和信号）、`Tmp Files`（橙）                                            |
 
 ---
 
@@ -332,27 +332,27 @@ MySQL 特有补充：
 
 #### M16 MySQL Handlers
 
-| 属性 | 值 |
-|---|---|
-| 标题 | MySQL Handlers |
-| 图表类型 | `<Line>` 多系列 by `handler` |
-| Query 类型 | range query |
-| PromQL | `rate(mysql_global_status_handlers_total{job=~"$job", instance=~"$instance", handler!~"commit\|rollback\|savepoint.*\|prepare"}[$__interval])` |
-| 系列字段 | `handler`（read_rnd_next / write / update / delete 等） |
-| Legend | 右侧表格，按 avg 降序 |
+|    属性    |                                                                       值                                                                        |
+|----------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题       | MySQL Handlers                                                                                                                                 |
+| 图表类型     | `<Line>` 多系列 by `handler`                                                                                                                      |
+| Query 类型 | range query                                                                                                                                    |
+| PromQL   | `rate(mysql_global_status_handlers_total{job=~"$job", instance=~"$instance", handler!~"commit\|rollback\|savepoint.*\|prepare"}[$__interval])` |
+| 系列字段     | `handler`（read_rnd_next / write / update / delete 等）                                                                                           |
+| Legend   | 右侧表格，按 avg 降序                                                                                                                                  |
 
 > **归一化**：catalog 原 PromQL 用 `instance=~"$host"`，本 spec 改为 `$instance`；事务类 handler（commit/rollback/...）拆到下方说明，不在本面板。
 
 #### M17 Top Command Counters
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Top Command Counters |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL | `topk(5, rate(mysql_global_status_commands_total{job=~"$job", instance=~"$instance"}[$__interval]) > 0)` |
-| 系列字段 | `command`（select / insert / update / set_option 等） |
-| 说明 | 仅展示速率前 5 的命令；`> 0` 过滤掉空闲命令 |
+|    属性    |                                                    值                                                     |
+|----------|----------------------------------------------------------------------------------------------------------|
+| 标题       | Top Command Counters                                                                                     |
+| 图表类型     | `<Line>` 多系列                                                                                             |
+| Query 类型 | range query                                                                                              |
+| PromQL   | `topk(5, rate(mysql_global_status_commands_total{job=~"$job", instance=~"$instance"}[$__interval]) > 0)` |
+| 系列字段     | `command`（select / insert / update / set_option 等）                                                       |
+| 说明       | 仅展示速率前 5 的命令；`> 0` 过滤掉空闲命令                                                                               |
 
 ---
 
@@ -559,3 +559,4 @@ Phase 2 原型（mock 阶段）完成后，需满足：
 - [ ] 颜色方案遵循 §6 Token，错误系（Slow Queries/Waited/Aborted）用告警橙红
 - [ ] 在 1280px 宽度下 6 行布局无横向滚动条
 - [ ] golden signals 四象限覆盖验证（见 §5.0 映射表）；Latency 维度以 Slow Queries 代理并在 §9.5 标注增补路径
+

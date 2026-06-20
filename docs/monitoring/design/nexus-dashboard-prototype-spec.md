@@ -42,24 +42,24 @@ Nexus 内置 Dropwizard Metrics + Prometheus 导出，与 mysqld_exporter / Micr
 
 Nexus 特有补充：
 
-| Grafana chartType（catalog） | 映射组件 | 备注 |
-|---|---|---|
-| `stat`（percentunit） | `<Statistic>` + `colorByThreshold` | Heap Ratio / FD Ratio：值为 0–1，显示为 `%` |
-| `stat`（布尔状态） | `<StatusStatPanel>` | Readonly Enabled：0→绿"R/W"，1→红"Read-Only" |
-| `graph`（quantile 分位线） | `<Line>` 多系列 by quantile | Jetty Requests / 组件 timer：p50 / p99 双线，**直接读 `{quantile=...}` 值** |
-| `graph`（响应码 rate） | `<Line>` 多系列 + status 配色 | Jetty Responses Code（1xx–5xx） |
-| `graph`（内存池 bytes） | `<Area>` 堆叠 | JVM Memory Pools |
+| Grafana chartType（catalog） |                映射组件                |                                备注                                 |
+|----------------------------|------------------------------------|-------------------------------------------------------------------|
+| `stat`（percentunit）        | `<Statistic>` + `colorByThreshold` | Heap Ratio / FD Ratio：值为 0–1，显示为 `%`                              |
+| `stat`（布尔状态）               | `<StatusStatPanel>`                | Readonly Enabled：0→绿"R/W"，1→红"Read-Only"                          |
+| `graph`（quantile 分位线）      | `<Line>` 多系列 by quantile           | Jetty Requests / 组件 timer：p50 / p99 双线，**直接读 `{quantile=...}` 值** |
+| `graph`（响应码 rate）          | `<Line>` 多系列 + status 配色           | Jetty Responses Code（1xx–5xx）                                     |
+| `graph`（内存池 bytes）         | `<Area>` 堆叠                        | JVM Memory Pools                                                  |
 
 ---
 
 ## 3. 变量 / 过滤器规范
 
-| 变量 | PromQL 占位符 | 取值来源 | 默认值 | 说明 |
-|---|---|---|---|---|
-| 实例 | `$instance` | `label_values(jvm_vm_uptime, instance)` | `.+`（全选） | 多选下拉，对应 Nexus 节点地址 |
-| Job | `$job` | `label_values(jvm_vm_uptime, job)` | `.+`（全选） | 多选下拉，对应 Prometheus job 名 |
-| 时间范围 | — | 时间选择器 | `Last 1h` | 快速选择: 5m/15m/1h/6h/24h/7d |
-| 刷新间隔 | — | — | `30s` | 自动轮询 |
+|  变量  | PromQL 占位符  |                  取值来源                   |    默认值    |            说明             |
+|------|-------------|-----------------------------------------|-----------|---------------------------|
+| 实例   | `$instance` | `label_values(jvm_vm_uptime, instance)` | `.+`（全选）  | 多选下拉，对应 Nexus 节点地址        |
+| Job  | `$job`      | `label_values(jvm_vm_uptime, job)`      | `.+`（全选）  | 多选下拉，对应 Prometheus job 名  |
+| 时间范围 | —           | 时间选择器                                   | `Last 1h` | 快速选择: 5m/15m/1h/6h/24h/7d |
+| 刷新间隔 | —           | —                                       | `30s`     | 自动轮询                      |
 
 > **无 `$interval` 变量**：Nexus 看板多为 Gauge（heap/thread/quantile 直接读值），少量 Counter（响应码/GC/异常）用固定 `[1m]`/`[5m]` 窗口 `rate`，不暴露给用户。
 > **`$instance` + `$job` 与 ZooKeeper/Prometheus 看板同构**，复用同一套 `DashboardToolbar`（去掉 Interval 下拉）。
@@ -123,12 +123,12 @@ Nexus 特有补充：
 
 ### 5.0 Golden Signals 映射
 
-| 维度 | 面板 | 说明 |
-|---|---|---|
-| **Latency（延迟）** | N09 Jetty Request、N10 Component Read p99、N11 BlobStore Op p99 | HTTP 请求耗时 + 组件/存储操作耗时（quantile 直读） |
-| **Traffic（流量）** | N07 Jetty Responses by Code | 各响应码请求速率即吞吐量 |
-| **Errors（错误）** | N07 中的 4xx/5xx 系列、N08 Component Exceptions、N04 Readonly Enabled | HTTP 错误响应 + 组件异常 + 只读降级（关键故障态） |
-| **Saturation（饱和度）** | N02 Heap Ratio、N03 FD Ratio、N05/N06/N16 线程、N12/N13/N18 内存、N14/N15 GC、N17 线程池 | JVM 与 Jetty 容量压力 |
+|         维度          |                                      面板                                      |                 说明                 |
+|---------------------|------------------------------------------------------------------------------|------------------------------------|
+| **Latency（延迟）**     | N09 Jetty Request、N10 Component Read p99、N11 BlobStore Op p99                | HTTP 请求耗时 + 组件/存储操作耗时（quantile 直读） |
+| **Traffic（流量）**     | N07 Jetty Responses by Code                                                  | 各响应码请求速率即吞吐量                       |
+| **Errors（错误）**      | N07 中的 4xx/5xx 系列、N08 Component Exceptions、N04 Readonly Enabled              | HTTP 错误响应 + 组件异常 + 只读降级（关键故障态）     |
+| **Saturation（饱和度）** | N02 Heap Ratio、N03 FD Ratio、N05/N06/N16 线程、N12/N13/N18 内存、N14/N15 GC、N17 线程池 | JVM 与 Jetty 容量压力                   |
 
 ---
 
@@ -136,66 +136,66 @@ Nexus 特有补充：
 
 #### N01 Uptime
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Uptime |
-| 图表类型 | `<Statistic>` + `formatDuration` |
-| Query 类型 | instant query |
-| PromQL | `jvm_vm_uptime{instance=~"$instance", job=~"$job"}` |
-| 单位 | **ms** → 自动换算 d/h/m（catalog 单位为 ms） |
+|       属性        |                                  值                                  |
+|-----------------|---------------------------------------------------------------------|
+| 标题              | Uptime                                                              |
+| 图表类型            | `<Statistic>` + `formatDuration`                                    |
+| Query 类型        | instant query                                                       |
+| PromQL          | `jvm_vm_uptime{instance=~"$instance", job=~"$job"}`                 |
+| 单位              | **ms** → 自动换算 d/h/m（catalog 单位为 ms）                                 |
 | 阈值（**reverse**） | `< 300000`（<5min）→ 橙（刚重启）；否则绿。**修正**：catalog 的 `value:80` 红阈值无意义，弃用 |
 
 #### N02 Heap Ratio
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Heap Ratio |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
-| Query 类型 | instant query |
-| PromQL | `jvm_memory_heap_usage{instance=~"$instance", job=~"$job"} * 100` |
-| 单位 | `%`（catalog 为 percentunit 0–1，前端 ×100） |
-| 阈值 | `< 80` → 绿；`80–90` → 橙；`≥ 90` → 红 |
+|    属性    |                                 值                                 |
+|----------|-------------------------------------------------------------------|
+| 标题       | Heap Ratio                                                        |
+| 图表类型     | `<Statistic>` + `colorByThreshold`                                |
+| Query 类型 | instant query                                                     |
+| PromQL   | `jvm_memory_heap_usage{instance=~"$instance", job=~"$job"} * 100` |
+| 单位       | `%`（catalog 为 percentunit 0–1，前端 ×100）                            |
+| 阈值       | `< 80` → 绿；`80–90` → 橙；`≥ 90` → 红                                 |
 
 #### N03 FileDescriptor Ratio
 
-| 属性 | 值 |
-|---|---|
-| 标题 | FileDescriptor Ratio |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
-| Query 类型 | instant query |
-| PromQL | `jvm_fd_usage{instance=~"$instance", job=~"$job"} * 100` |
-| 单位 | `%` |
-| 阈值 | `< 80` → 绿；`80–90` → 橙；`≥ 90` → 红 |
+|    属性    |                            值                             |
+|----------|----------------------------------------------------------|
+| 标题       | FileDescriptor Ratio                                     |
+| 图表类型     | `<Statistic>` + `colorByThreshold`                       |
+| Query 类型 | instant query                                            |
+| PromQL   | `jvm_fd_usage{instance=~"$instance", job=~"$job"} * 100` |
+| 单位       | `%`                                                      |
+| 阈值       | `< 80` → 绿；`80–90` → 橙；`≥ 90` → 红                        |
 
 #### N04 Readonly Enabled
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Readonly Enabled |
-| 图表类型 | `<StatusStatPanel>`（`<Statistic>` + `<Badge>`） |
-| Query 类型 | instant query |
-| PromQL | `readonly_enabled{instance=~"$instance", job=~"$job"}` |
-| 阈值规则 | `= 0` → 绿 + "Read / Write"；`≥ 1` → 红 + "Read-Only"（BlobStore 进入只读，写入将失败，关键告警） |
+|    属性    |                                       值                                       |
+|----------|-------------------------------------------------------------------------------|
+| 标题       | Readonly Enabled                                                              |
+| 图表类型     | `<StatusStatPanel>`（`<Statistic>` + `<Badge>`）                                |
+| Query 类型 | instant query                                                                 |
+| PromQL   | `readonly_enabled{instance=~"$instance", job=~"$job"}`                        |
+| 阈值规则     | `= 0` → 绿 + "Read / Write"；`≥ 1` → 红 + "Read-Only"（BlobStore 进入只读，写入将失败，关键告警） |
 
 #### N05 JVM Threads
 
-| 属性 | 值 |
-|---|---|
-| 标题 | JVM Threads |
-| 图表类型 | `<Statistic>` |
-| Query 类型 | instant query |
-| PromQL | `jvm_thread_states_count{instance=~"$instance", job=~"$job"}` |
-| 样式 | 大字体，蓝色 |
+|    属性    |                               值                               |
+|----------|---------------------------------------------------------------|
+| 标题       | JVM Threads                                                   |
+| 图表类型     | `<Statistic>`                                                 |
+| Query 类型 | instant query                                                 |
+| PromQL   | `jvm_thread_states_count{instance=~"$instance", job=~"$job"}` |
+| 样式       | 大字体，蓝色                                                        |
 
 #### N06 Deadlock Threads
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Deadlock Threads |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
-| Query 类型 | instant query |
-| PromQL | `jvm_thread_states_deadlock_count{instance=~"$instance", job=~"$job"}` |
-| 阈值 | `= 0` → 绿；`≥ 1` → 红（线程死锁） |
+|    属性    |                                   值                                    |
+|----------|------------------------------------------------------------------------|
+| 标题       | Deadlock Threads                                                       |
+| 图表类型     | `<Statistic>` + `colorByThreshold`                                     |
+| Query 类型 | instant query                                                          |
+| PromQL   | `jvm_thread_states_deadlock_count{instance=~"$instance", job=~"$job"}` |
+| 阈值       | `= 0` → 绿；`≥ 1` → 红（线程死锁）                                              |
 
 ---
 
@@ -203,30 +203,30 @@ Nexus 特有补充：
 
 #### N07 Jetty Responses by Code
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Jetty Responses by Code |
-| 图表类型 | `<Line>` 多系列（5 条 PromQL） |
-| Query 类型 | range query |
-| PromQL (1xx) | `rate(org_eclipse_jetty_webapp_WebAppContext_1xx_responses_total{instance=~"$instance", job=~"$job"}[1m])` |
-| PromQL (2xx) | 同上，`1xx` → `2xx` |
-| PromQL (3xx/4xx/5xx) | 同上，依次替换 |
-| 系列 | `1xx`（灰）、`2xx`（绿）、`3xx`（蓝）、`4xx`（橙）、`5xx`（红） |
-| y 轴 | `/s` |
+|          属性          |                                                     值                                                      |
+|----------------------|------------------------------------------------------------------------------------------------------------|
+| 标题                   | Jetty Responses by Code                                                                                    |
+| 图表类型                 | `<Line>` 多系列（5 条 PromQL）                                                                                   |
+| Query 类型             | range query                                                                                                |
+| PromQL (1xx)         | `rate(org_eclipse_jetty_webapp_WebAppContext_1xx_responses_total{instance=~"$instance", job=~"$job"}[1m])` |
+| PromQL (2xx)         | 同上，`1xx` → `2xx`                                                                                           |
+| PromQL (3xx/4xx/5xx) | 同上，依次替换                                                                                                    |
+| 系列                   | `1xx`（灰）、`2xx`（绿）、`3xx`（蓝）、`4xx`（橙）、`5xx`（红）                                                               |
+| y 轴                  | `/s`                                                                                                       |
 
 > 配色复用 APISIX spec 的 `STATUS_CODE_COLORS`（2xx 绿 / 3xx 蓝 / 4xx 橙 / 5xx 红）。
 
 #### N08 Component Exceptions
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Component Exceptions |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL | `topk(10, sum by (__name__) (rate({__name__=~".*_exceptions_total", instance=~"$instance", job=~"$job"}[5m])) > 0)` |
-| 系列字段 | `__name__`（异常计数器名，前端截取 `*Component_<op>` 段做 legend） |
-| y 轴 | `/s` |
-| 说明 | catalog 列举了 20 个组件的 `*_exceptions_total`（见 catalog `Component Exceptions`）；原型用 `__name__` 正则聚合 + topk(10) 取活跃异常，避免硬编码 20 条 PromQL |
+|    属性    |                                                                 值                                                                 |
+|----------|-----------------------------------------------------------------------------------------------------------------------------------|
+| 标题       | Component Exceptions                                                                                                              |
+| 图表类型     | `<Line>` 多系列                                                                                                                      |
+| Query 类型 | range query                                                                                                                       |
+| PromQL   | `topk(10, sum by (__name__) (rate({__name__=~".*_exceptions_total", instance=~"$instance", job=~"$job"}[5m])) > 0)`               |
+| 系列字段     | `__name__`（异常计数器名，前端截取 `*Component_<op>` 段做 legend）                                                                               |
+| y 轴      | `/s`                                                                                                                              |
+| 说明       | catalog 列举了 20 个组件的 `*_exceptions_total`（见 catalog `Component Exceptions`）；原型用 `__name__` 正则聚合 + topk(10) 取活跃异常，避免硬编码 20 条 PromQL |
 
 ---
 
@@ -234,43 +234,43 @@ Nexus 特有补充：
 
 #### N09 Jetty Request Latency
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Jetty Request Latency |
-| 图表类型 | `<Line>` 2 系列 by quantile |
-| Query 类型 | range query（quantile 直读，**非** histogram_quantile） |
+|      属性      |                                                      值                                                       |
+|--------------|--------------------------------------------------------------------------------------------------------------|
+| 标题           | Jetty Request Latency                                                                                        |
+| 图表类型         | `<Line>` 2 系列 by quantile                                                                                    |
+| Query 类型     | range query（quantile 直读，**非** histogram_quantile）                                                            |
 | PromQL (p50) | `org_eclipse_jetty_webapp_WebAppContext_requests{quantile="0.5", instance=~"$instance", job=~"$job"} * 1000` |
-| PromQL (p99) | 同上，`quantile="0.99"` |
-| 单位 | catalog 为 s，前端 `×1000` 转 `ms` |
-| 系列 | `p50`（蓝）、`p99`（红） |
+| PromQL (p99) | 同上，`quantile="0.99"`                                                                                         |
+| 单位           | catalog 为 s，前端 `×1000` 转 `ms`                                                                                |
+| 系列           | `p50`（蓝）、`p99`（红）                                                                                            |
 
 #### N10 Component Read Latency p99
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Component Read Latency (p99) |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
+|         属性          |                                                           值                                                            |
+|---------------------|------------------------------------------------------------------------------------------------------------------------|
+| 标题                  | Component Read Latency (p99)                                                                                           |
+| 图表类型                | `<Line>` 多系列                                                                                                           |
+| Query 类型            | range query                                                                                                            |
 | PromQL (Repository) | `org_sonatype_nexus_coreui_RepositoryComponent_read_timer{quantile="0.99", instance=~"$instance", job=~"$job"} * 1000` |
-| PromQL (Search) | `org_sonatype_nexus_coreui_SearchComponent_read_timer{quantile="0.99", ...} * 1000` |
-| PromQL (Browse) | `org_sonatype_nexus_coreui_BrowseComponent_read_timer{quantile="0.99", ...} * 1000` |
-| PromQL (Security) | `org_sonatype_nexus_rapture_internal_security_SecurityComponent_getPermissions_timer{quantile="0.99", ...} * 1000` |
-| 单位 | `ms` |
-| 系列 | `Repository` / `Search` / `Browse` / `Security`（多色循环） |
+| PromQL (Search)     | `org_sonatype_nexus_coreui_SearchComponent_read_timer{quantile="0.99", ...} * 1000`                                    |
+| PromQL (Browse)     | `org_sonatype_nexus_coreui_BrowseComponent_read_timer{quantile="0.99", ...} * 1000`                                    |
+| PromQL (Security)   | `org_sonatype_nexus_rapture_internal_security_SecurityComponent_getPermissions_timer{quantile="0.99", ...} * 1000`     |
+| 单位                  | `ms`                                                                                                                   |
+| 系列                  | `Repository` / `Search` / `Browse` / `Security`（多色循环）                                                                  |
 
 #### N11 BlobStore Op Latency p99
 
-| 属性 | 值 |
-|---|---|
-| 标题 | FileBlobStore Op Latency (p99) |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL (get) | `org_sonatype_nexus_blobstore_file_FileBlobStore_get_timer{quantile="0.99", instance=~"$instance", job=~"$job"} * 1000` |
-| PromQL (create) | 同上，`create_timer` |
-| PromQL (delete) | 同上，`delete_timer` |
-| PromQL (copy) | 同上，`copy_timer` |
-| 单位 | `ms` |
-| 系列 | `get` / `create` / `delete` / `copy`（多色循环） |
+|       属性        |                                                            值                                                            |
+|-----------------|-------------------------------------------------------------------------------------------------------------------------|
+| 标题              | FileBlobStore Op Latency (p99)                                                                                          |
+| 图表类型            | `<Line>` 多系列                                                                                                            |
+| Query 类型        | range query                                                                                                             |
+| PromQL (get)    | `org_sonatype_nexus_blobstore_file_FileBlobStore_get_timer{quantile="0.99", instance=~"$instance", job=~"$job"} * 1000` |
+| PromQL (create) | 同上，`create_timer`                                                                                                       |
+| PromQL (delete) | 同上，`delete_timer`                                                                                                       |
+| PromQL (copy)   | 同上，`copy_timer`                                                                                                         |
+| 单位              | `ms`                                                                                                                    |
+| 系列              | `get` / `create` / `delete` / `copy`（多色循环）                                                                              |
 
 ---
 
@@ -278,28 +278,28 @@ Nexus 特有补充：
 
 #### N12 JVM Heap
 
-| 属性 | 值 |
-|---|---|
-| 标题 | JVM Heap |
-| 图表类型 | `<Line>` 3 系列 |
-| Query 类型 | range query |
-| PromQL (max) | `jvm_memory_heap_max{instance=~"$instance", job=~"$job"}` |
-| PromQL (used) | `jvm_memory_heap_used{instance=~"$instance", job=~"$job"}` |
+|         属性         |                                值                                |
+|--------------------|-----------------------------------------------------------------|
+| 标题                 | JVM Heap                                                        |
+| 图表类型               | `<Line>` 3 系列                                                   |
+| Query 类型           | range query                                                     |
+| PromQL (max)       | `jvm_memory_heap_max{instance=~"$instance", job=~"$job"}`       |
+| PromQL (used)      | `jvm_memory_heap_used{instance=~"$instance", job=~"$job"}`      |
 | PromQL (committed) | `jvm_memory_heap_committed{instance=~"$instance", job=~"$job"}` |
-| y 轴 | bytes，自动换算 |
-| 系列 | `Max`（灰虚线，上限）、`Used`（蓝）、`Committed`（橙） |
+| y 轴                | bytes，自动换算                                                      |
+| 系列                 | `Max`（灰虚线，上限）、`Used`（蓝）、`Committed`（橙）                          |
 
 #### N13 JVM Memory Pools
 
-| 属性 | 值 |
-|---|---|
-| 标题 | JVM Memory Pools (used) |
-| 图表类型 | `<Area>` 堆叠 |
-| Query 类型 | range query（5 条 PromQL，used 值） |
-| PromQL | `jvm_memory_pools_PS_Eden_Space_used` / `jvm_memory_pools_PS_Old_Gen_used` / `jvm_memory_pools_PS_Survivor_Space_used` / `jvm_memory_pools_Metaspace_used` / `jvm_memory_pools_Code_Cache_used`（各加 `{instance=~"$instance", job=~"$job"}`） |
-| y 轴 | bytes，自动换算 |
-| 系列 | `Eden` / `Old Gen` / `Survivor` / `Metaspace` / `Code Cache` |
-| 说明 | 合并 catalog 中 5 个独立 Pool 面板为 1 个堆叠面积，直观看各代占比 |
+|    属性    |                                                                                                                     值                                                                                                                      |
+|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题       | JVM Memory Pools (used)                                                                                                                                                                                                                    |
+| 图表类型     | `<Area>` 堆叠                                                                                                                                                                                                                                |
+| Query 类型 | range query（5 条 PromQL，used 值）                                                                                                                                                                                                             |
+| PromQL   | `jvm_memory_pools_PS_Eden_Space_used` / `jvm_memory_pools_PS_Old_Gen_used` / `jvm_memory_pools_PS_Survivor_Space_used` / `jvm_memory_pools_Metaspace_used` / `jvm_memory_pools_Code_Cache_used`（各加 `{instance=~"$instance", job=~"$job"}`） |
+| y 轴      | bytes，自动换算                                                                                                                                                                                                                                 |
+| 系列       | `Eden` / `Old Gen` / `Survivor` / `Metaspace` / `Code Cache`                                                                                                                                                                               |
+| 说明       | 合并 catalog 中 5 个独立 Pool 面板为 1 个堆叠面积，直观看各代占比                                                                                                                                                                                                |
 
 ---
 
@@ -307,37 +307,37 @@ Nexus 特有补充：
 
 #### N14 GC Collection Rate
 
-| 属性 | 值 |
-|---|---|
-| 标题 | GC Collection Rate |
-| 图表类型 | `<Line>` 2 系列 |
-| Query 类型 | range query |
+|         属性         |                                             值                                             |
+|--------------------|-------------------------------------------------------------------------------------------|
+| 标题                 | GC Collection Rate                                                                        |
+| 图表类型               | `<Line>` 2 系列                                                                             |
+| Query 类型           | range query                                                                               |
 | PromQL (MarkSweep) | `rate(jvm_garbage_collectors_PS_MarkSweep_count{instance=~"$instance", job=~"$job"}[1m])` |
-| PromQL (Scavenge) | `rate(jvm_garbage_collectors_PS_Scavenge_count{instance=~"$instance", job=~"$job"}[1m])` |
-| y 轴 | `ops/s` |
-| 系列 | `MarkSweep`（Full GC，红）、`Scavenge`（Young GC，蓝） |
+| PromQL (Scavenge)  | `rate(jvm_garbage_collectors_PS_Scavenge_count{instance=~"$instance", job=~"$job"}[1m])`  |
+| y 轴                | `ops/s`                                                                                   |
+| 系列                 | `MarkSweep`（Full GC，红）、`Scavenge`（Young GC，蓝）                                             |
 
 #### N15 GC Pause Durations
 
-| 属性 | 值 |
-|---|---|
-| 标题 | GC Pause Durations |
-| 图表类型 | `<Line>` 2 系列 |
-| Query 类型 | range query |
+|         属性         |                                                                                         值                                                                                          |
+|--------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题                 | GC Pause Durations                                                                                                                                                                 |
+| 图表类型               | `<Line>` 2 系列                                                                                                                                                                      |
+| Query 类型           | range query                                                                                                                                                                        |
 | PromQL (MarkSweep) | `rate(jvm_garbage_collectors_PS_MarkSweep_time{instance=~"$instance", job=~"$job"}[5m]) / rate(jvm_garbage_collectors_PS_MarkSweep_count{instance=~"$instance", job=~"$job"}[5m])` |
-| PromQL (Scavenge) | 同上，`Scavenge` |
-| 单位 | `ms`（每次 GC 平均暂停时长） |
-| 系列 | `MarkSweep`（红）、`Scavenge`（蓝） |
+| PromQL (Scavenge)  | 同上，`Scavenge`                                                                                                                                                                      |
+| 单位                 | `ms`（每次 GC 平均暂停时长）                                                                                                                                                                 |
+| 系列                 | `MarkSweep`（红）、`Scavenge`（蓝）                                                                                                                                                       |
 
 #### N16 Thread States
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Thread States |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL | `jvm_thread_states_runnable_count` / `jvm_thread_states_blocked_count` / `jvm_thread_states_waiting_count` / `jvm_thread_states_timed_waiting_count`（各加 `{instance=~"$instance", job=~"$job"}`） |
-| 系列 | `Runnable`（绿）、`Blocked`（红）、`Waiting`（灰）、`Timed Waiting`（蓝） |
+|    属性    |                                                                                                值                                                                                                |
+|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题       | Thread States                                                                                                                                                                                   |
+| 图表类型     | `<Line>` 多系列                                                                                                                                                                                    |
+| Query 类型 | range query                                                                                                                                                                                     |
+| PromQL   | `jvm_thread_states_runnable_count` / `jvm_thread_states_blocked_count` / `jvm_thread_states_waiting_count` / `jvm_thread_states_timed_waiting_count`（各加 `{instance=~"$instance", job=~"$job"}`） |
+| 系列       | `Runnable`（绿）、`Blocked`（红）、`Waiting`（灰）、`Timed Waiting`（蓝）                                                                                                                                      |
 
 ---
 
@@ -345,28 +345,28 @@ Nexus 特有补充：
 
 #### N17 Jetty ThreadPool
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Jetty ThreadPool |
-| 图表类型 | `<Line>` 2 系列 |
-| Query 类型 | range query |
+|      属性       |                                                       值                                                       |
+|---------------|---------------------------------------------------------------------------------------------------------------|
+| 标题            | Jetty ThreadPool                                                                                              |
+| 图表类型          | `<Line>` 2 系列                                                                                                 |
+| Query 类型      | range query                                                                                                   |
 | PromQL (jobs) | `{__name__=~"org_eclipse_jetty_util_thread_QueuedThreadPool_qtp.*_jobs", instance=~"$instance", job=~"$job"}` |
 | PromQL (size) | `{__name__=~"org_eclipse_jetty_util_thread_QueuedThreadPool_qtp.*_size", instance=~"$instance", job=~"$job"}` |
-| 系列 | `Queued Jobs`（橙，积压队列）、`Pool Size`（蓝） |
-| 说明 | **必须用 `__name__` 正则**匹配，规避指标名内嵌的运行时 `qtp<随机id>`（见 §1.1 脆弱点 1） |
+| 系列            | `Queued Jobs`（橙，积压队列）、`Pool Size`（蓝）                                                                          |
+| 说明            | **必须用 `__name__` 正则**匹配，规避指标名内嵌的运行时 `qtp<随机id>`（见 §1.1 脆弱点 1）                                                 |
 
 #### N18 Non-Heap & Buffers
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Non-Heap & Buffers |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
+|           属性           |                               值                                |
+|------------------------|----------------------------------------------------------------|
+| 标题                     | Non-Heap & Buffers                                             |
+| 图表类型                   | `<Line>` 多系列                                                   |
+| Query 类型               | range query                                                    |
 | PromQL (non-heap used) | `jvm_memory_non_heap_used{instance=~"$instance", job=~"$job"}` |
-| PromQL (direct) | `jvm_buffers_direct_used{instance=~"$instance", job=~"$job"}` |
-| PromQL (mapped) | `jvm_buffers_mapped_used{instance=~"$instance", job=~"$job"}` |
-| y 轴 | bytes，自动换算 |
-| 系列 | `Non-Heap`（蓝）、`Direct Buffers`（橙）、`Mapped Buffers`（绿） |
+| PromQL (direct)        | `jvm_buffers_direct_used{instance=~"$instance", job=~"$job"}`  |
+| PromQL (mapped)        | `jvm_buffers_mapped_used{instance=~"$instance", job=~"$job"}`  |
+| y 轴                    | bytes，自动换算                                                     |
+| 系列                     | `Non-Heap`（蓝）、`Direct Buffers`（橙）、`Mapped Buffers`（绿）          |
 
 ---
 
@@ -552,3 +552,4 @@ Phase 2 原型（mock 阶段）完成后，需满足：
 - [ ] 工具栏：实例多选 + Job 多选 + 时间范围 + 刷新（**无 Interval 下拉**）
 - [ ] 在 1280px 宽度下 6 行布局无横向滚动条
 - [ ] golden signals 四象限覆盖验证（见 §5.0 映射表）；Errors 维度含 Readonly 降级态
+

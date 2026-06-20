@@ -36,22 +36,22 @@ React(AntV G2)
 
 Kafka 特有补充：
 
-| 特征 | 映射组件 | 备注 |
-|---|---|---|
-| 健康计数（Under-Repl/Offline） | `<Statistic>` + `colorByThreshold` | 0 绿、≥1 红 |
-| offset delta（消息速率） | `<Line>` + `delta()/rate()` | catalog 用 `delta([5m])/5` 近似每分钟 |
-| Broker 请求延迟（JMX）★ | `<Line>` by request type | `kafka_network_requestmetrics_*` |
+|            特征            |                映射组件                |                备注                |
+|--------------------------|------------------------------------|----------------------------------|
+| 健康计数（Under-Repl/Offline） | `<Statistic>` + `colorByThreshold` | 0 绿、≥1 红                         |
+| offset delta（消息速率）       | `<Line>` + `delta()/rate()`        | catalog 用 `delta([5m])/5` 近似每分钟  |
+| Broker 请求延迟（JMX）★        | `<Line>` by request type           | `kafka_network_requestmetrics_*` |
 
 ---
 
 ## 3. 变量 / 过滤器规范
 
-| 变量 | PromQL 占位符 | 取值来源 | 默认值 | 说明 |
-|---|---|---|---|---|
-| 实例 | `$instance` | `label_values(kafka_brokers, instance)` | `.+` | 多选，集群/Broker |
-| 主题 | `$topic` | `label_values(kafka_topic_partitions{instance=~"$instance"}, topic)` | `.+`（全选） | 多选下拉 |
-| 时间范围 | — | 时间选择器 | `Last 1h` | 5m/15m/1h/6h/24h/7d |
-| 刷新间隔 | — | — | `30s` | 自动轮询 |
+|  变量  | PromQL 占位符  |                                 取值来源                                 |    默认值    |         说明          |
+|------|-------------|----------------------------------------------------------------------|-----------|---------------------|
+| 实例   | `$instance` | `label_values(kafka_brokers, instance)`                              | `.+`      | 多选，集群/Broker        |
+| 主题   | `$topic`    | `label_values(kafka_topic_partitions{instance=~"$instance"}, topic)` | `.+`（全选）  | 多选下拉                |
+| 时间范围 | —           | 时间选择器                                                                | `Last 1h` | 5m/15m/1h/6h/24h/7d |
+| 刷新间隔 | —           | —                                                                    | `30s`     | 自动轮询                |
 
 > catalog 中 `$instance` 多处混用 `="$instance"`（精确）与 `=~'$instance'`（正则单引号）；本 spec 统一为 `=~"$instance"`（正则双引号），支持多选。
 > 速率窗口固定（`[1m]` / `delta([5m])/5`），不暴露 Interval 下拉。
@@ -99,12 +99,12 @@ Kafka 特有补充：
 
 ### 5.0 Golden Signals 映射
 
-| 维度 | 面板 | 说明 |
-|---|---|---|
-| **Latency（延迟）** | K11 Request Total Time ★ | Produce/Fetch 请求端到端耗时（JMX 补强） |
-| **Traffic（流量）** | K07 Messages In/sec、K08 Bytes In/Out ★、K10 Consume/min、K12 Request Rate ★ | 消息与字节吞吐 |
-| **Errors（错误）** | K03 Under-Replicated ★、K04 Offline Partitions ★ | 副本不足 / 分区下线（JMX 补强） |
-| **Saturation（饱和度）** | K06 Max Lag、K09 Lag by Group、K01/K02 集群状态 | 消费积压与集群健康 |
+|         维度          |                                    面板                                     |              说明               |
+|---------------------|---------------------------------------------------------------------------|-------------------------------|
+| **Latency（延迟）**     | K11 Request Total Time ★                                                  | Produce/Fetch 请求端到端耗时（JMX 补强） |
+| **Traffic（流量）**     | K07 Messages In/sec、K08 Bytes In/Out ★、K10 Consume/min、K12 Request Rate ★ | 消息与字节吞吐                       |
+| **Errors（错误）**      | K03 Under-Replicated ★、K04 Offline Partitions ★                           | 副本不足 / 分区下线（JMX 补强）           |
+| **Saturation（饱和度）** | K06 Max Lag、K09 Lag by Group、K01/K02 集群状态                                 | 消费积压与集群健康                     |
 
 ---
 
@@ -114,57 +114,57 @@ Kafka 特有补充：
 
 #### K01 Brokers Online ★
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Brokers Online |
-| 图表类型 | `<Statistic>` |
-| Query 类型 | instant query |
-| PromQL | `count(kafka_server_kafkaserver_brokerstate{instance=~"$instance"})` 或 kafka_exporter 的 `kafka_brokers` |
-| 说明 | 在线 Broker 数；落地按 JMX 实际指标名调整 |
+|    属性    |                                                    值                                                    |
+|----------|---------------------------------------------------------------------------------------------------------|
+| 标题       | Brokers Online                                                                                          |
+| 图表类型     | `<Statistic>`                                                                                           |
+| Query 类型 | instant query                                                                                           |
+| PromQL   | `count(kafka_server_kafkaserver_brokerstate{instance=~"$instance"})` 或 kafka_exporter 的 `kafka_brokers` |
+| 说明       | 在线 Broker 数；落地按 JMX 实际指标名调整                                                                             |
 
 #### K02 Active Controller ★
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Active Controllers |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
+|   属性   |                                          值                                           |
+|--------|--------------------------------------------------------------------------------------|
+| 标题     | Active Controllers                                                                   |
+| 图表类型   | `<Statistic>` + `colorByThreshold`                                                   |
 | PromQL | `sum(kafka_controller_kafkacontroller_activecontrollercount{instance=~"$instance"})` |
-| 阈值 | `= 1` → 绿（正常应恰好 1 个 controller）；`≠ 1` → 红 |
+| 阈值     | `= 1` → 绿（正常应恰好 1 个 controller）；`≠ 1` → 红                                            |
 
 #### K03 Under-Replicated Partitions ★
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Under-Replicated Partitions |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
+|   属性   |                                          值                                          |
+|--------|-------------------------------------------------------------------------------------|
+| 标题     | Under-Replicated Partitions                                                         |
+| 图表类型   | `<Statistic>` + `colorByThreshold`                                                  |
 | PromQL | `sum(kafka_server_replicamanager_underreplicatedpartitions{instance=~"$instance"})` |
-| 阈值 | `= 0` → 绿；`≥ 1` → 红（副本同步落后，可用性风险） |
+| 阈值     | `= 0` → 绿；`≥ 1` → 红（副本同步落后，可用性风险）                                                   |
 
 #### K04 Offline Partitions ★
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Offline Partitions |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
+|   属性   |                                           值                                           |
+|--------|---------------------------------------------------------------------------------------|
+| 标题     | Offline Partitions                                                                    |
+| 图表类型   | `<Statistic>` + `colorByThreshold`                                                    |
 | PromQL | `sum(kafka_controller_kafkacontroller_offlinepartitionscount{instance=~"$instance"})` |
-| 阈值 | `= 0` → 绿；`≥ 1` → 红（分区无 leader，数据不可读写） |
+| 阈值     | `= 0` → 绿；`≥ 1` → 红（分区无 leader，数据不可读写）                                                |
 
 #### K05 Topics
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Topics |
-| 图表类型 | `<Statistic>` |
+|   属性   |                                             值                                             |
+|--------|-------------------------------------------------------------------------------------------|
+| 标题     | Topics                                                                                    |
+| 图表类型   | `<Statistic>`                                                                             |
 | PromQL | `count(count by (topic) (kafka_topic_partitions{instance=~"$instance",topic=~"$topic"}))` |
 
 #### K06 Max Consumer Lag
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Max Consumer Lag |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
+|   属性   |                                   值                                   |
+|--------|-----------------------------------------------------------------------|
+| 标题     | Max Consumer Lag                                                      |
+| 图表类型   | `<Statistic>` + `colorByThreshold`                                    |
 | PromQL | `max(kafka_consumergroup_lag{instance=~"$instance",topic=~"$topic"})` |
-| 阈值 | 按业务设定（如 `< 10000` 绿、`< 100000` 橙、`≥ 100000` 红） |
+| 阈值     | 按业务设定（如 `< 10000` 绿、`< 100000` 橙、`≥ 100000` 红）                        |
 
 ---
 
@@ -172,26 +172,26 @@ Kafka 特有补充：
 
 #### K07 Messages In per sec
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Message in per second |
-| 图表类型 | `<Line>` 多系列 by topic |
-| Query 类型 | range query |
-| PromQL | `sum(rate(kafka_topic_partition_current_offset{instance=~"$instance", topic=~"$topic"}[1m])) by (topic)` |
-| y 轴 | `msg/s` |
-| Legend | 右侧表格，按 max 降序（catalog `sideWidth=480`） |
+|    属性    |                                                    值                                                     |
+|----------|----------------------------------------------------------------------------------------------------------|
+| 标题       | Message in per second                                                                                    |
+| 图表类型     | `<Line>` 多系列 by topic                                                                                    |
+| Query 类型 | range query                                                                                              |
+| PromQL   | `sum(rate(kafka_topic_partition_current_offset{instance=~"$instance", topic=~"$topic"}[1m])) by (topic)` |
+| y 轴      | `msg/s`                                                                                                  |
+| Legend   | 右侧表格，按 max 降序（catalog `sideWidth=480`）                                                                   |
 
 #### K08 Broker Bytes In/Out ★
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Broker Bytes In/Out |
-| 图表类型 | `<Area>` 2 系列 |
-| PromQL (in) | `sum(rate(kafka_server_brokertopicmetrics_bytesinpersec{instance=~"$instance"}[1m]))` |
+|      属性      |                                           值                                            |
+|--------------|----------------------------------------------------------------------------------------|
+| 标题           | Broker Bytes In/Out                                                                    |
+| 图表类型         | `<Area>` 2 系列                                                                          |
+| PromQL (in)  | `sum(rate(kafka_server_brokertopicmetrics_bytesinpersec{instance=~"$instance"}[1m]))`  |
 | PromQL (out) | `sum(rate(kafka_server_brokertopicmetrics_bytesoutpersec{instance=~"$instance"}[1m]))` |
-| y 轴 | bytes/s，`formatBytes` |
-| 系列 | `Bytes In`（绿）、`Bytes Out`（蓝） |
-| 说明 | ★ JMX；`*persec` 系 Meter，JMX exporter 导出为 `_count`，需 rate |
+| y 轴          | bytes/s，`formatBytes`                                                                  |
+| 系列           | `Bytes In`（绿）、`Bytes Out`（蓝）                                                           |
+| 说明           | ★ JMX；`*persec` 系 Meter，JMX exporter 导出为 `_count`，需 rate                               |
 
 ---
 
@@ -199,24 +199,24 @@ Kafka 特有补充：
 
 #### K09 Lag by Consumer Group
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Lag by Consumer Group |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL | `sum(kafka_consumergroup_lag{instance=~"$instance",topic=~"$topic"}) by (consumergroup, topic)` |
-| 系列字段 | `consumergroup` + `topic` |
-| y 轴 | 整数（消息条数） |
+|    属性    |                                                值                                                |
+|----------|-------------------------------------------------------------------------------------------------|
+| 标题       | Lag by Consumer Group                                                                           |
+| 图表类型     | `<Line>` 多系列                                                                                    |
+| Query 类型 | range query                                                                                     |
+| PromQL   | `sum(kafka_consumergroup_lag{instance=~"$instance",topic=~"$topic"}) by (consumergroup, topic)` |
+| 系列字段     | `consumergroup` + `topic`                                                                       |
+| y 轴      | 整数（消息条数）                                                                                        |
 
 #### K10 Message Consume per minute
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Message consume per minute |
-| 图表类型 | `<Line>` 多系列 |
+|   属性   |                                                            值                                                            |
+|--------|-------------------------------------------------------------------------------------------------------------------------|
+| 标题     | Message consume per minute                                                                                              |
+| 图表类型   | `<Line>` 多系列                                                                                                            |
 | PromQL | `sum(delta(kafka_consumergroup_current_offset{instance=~"$instance",topic=~"$topic"}[5m])/5) by (consumergroup, topic)` |
-| 系列字段 | `consumergroup` + `topic` |
-| 说明 | catalog 用 `delta([5m])/5` 近似每分钟消费速率 |
+| 系列字段   | `consumergroup` + `topic`                                                                                               |
+| 说明     | catalog 用 `delta([5m])/5` 近似每分钟消费速率                                                                                     |
 
 ---
 
@@ -226,27 +226,27 @@ Kafka 特有补充：
 
 #### K11 Request Total Time ★
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Request Total Time (ms) |
-| 图表类型 | `<Line>` 多系列 by request |
-| Query 类型 | range query |
-| PromQL (p99) | `kafka_network_requestmetrics_totaltimems{instance=~"$instance", quantile="0.99"}` |
-| 备选（mean） | `rate(kafka_network_requestmetrics_totaltimems_sum[1m]) / rate(kafka_network_requestmetrics_totaltimems_count[1m])` |
-| 系列字段 | `request`（Produce / FetchConsumer / FetchFollower） |
-| y 轴 | `ms` |
-| 说明 | ★ JMX；指标是否带 `quantile` 取决于 jmx_exporter 配置（histogram vs summary），落地二选一 |
+|      属性      |                                                          值                                                          |
+|--------------|---------------------------------------------------------------------------------------------------------------------|
+| 标题           | Request Total Time (ms)                                                                                             |
+| 图表类型         | `<Line>` 多系列 by request                                                                                             |
+| Query 类型     | range query                                                                                                         |
+| PromQL (p99) | `kafka_network_requestmetrics_totaltimems{instance=~"$instance", quantile="0.99"}`                                  |
+| 备选（mean）     | `rate(kafka_network_requestmetrics_totaltimems_sum[1m]) / rate(kafka_network_requestmetrics_totaltimems_count[1m])` |
+| 系列字段         | `request`（Produce / FetchConsumer / FetchFollower）                                                                  |
+| y 轴          | `ms`                                                                                                                |
+| 说明           | ★ JMX；指标是否带 `quantile` 取决于 jmx_exporter 配置（histogram vs summary），落地二选一                                              |
 
 #### K12 Request Rate ★
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Request Rate |
-| 图表类型 | `<Line>` 多系列 by request |
+|   属性   |                                                值                                                 |
+|--------|--------------------------------------------------------------------------------------------------|
+| 标题     | Request Rate                                                                                     |
+| 图表类型   | `<Line>` 多系列 by request                                                                          |
 | PromQL | `sum(rate(kafka_network_requestmetrics_requestspersec{instance=~"$instance"}[1m])) by (request)` |
-| 系列字段 | `request` |
-| y 轴 | `req/s` |
-| 说明 | ★ JMX |
+| 系列字段   | `request`                                                                                        |
+| y 轴    | `req/s`                                                                                          |
+| 说明     | ★ JMX                                                                                            |
 
 > **Partitions per Topic / Messages in per minute**（catalog 第 3、5 面板）为偏静态/重复信息，降级为可选深挖项（保留在 panel-catalog）；如需可追加为 R5 行。
 
@@ -375,3 +375,4 @@ K01-K04、K08、K11、K12 依赖 JMX Exporter。jmx_exporter 的指标名由其 
 - [ ] 工具栏：Instance 多选 + Topic 多选 + 时间范围 + 刷新
 - [ ] 在 1280px 宽度下 4 行布局无横向滚动条
 - [ ] golden signals 四象限覆盖验证（见 §5.0）；Latency/Errors 由 ★ JMX 补强，并标注无 JMX 时的降级行为
+

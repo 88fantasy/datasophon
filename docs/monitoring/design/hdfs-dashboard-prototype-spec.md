@@ -38,24 +38,24 @@ React(AntV G2)
 
 HDFS 特有补充：
 
-| 特征 | 映射组件 | 备注 |
-|---|---|---|
-| `*AvgTime`（Gauge，ms） | `<Line>` + ms 轴 | 直读，**不** rate |
-| `*NumOps`（Counter） | `<Line>` + `rate` | 块操作/RPC 次数 → ops/s |
-| 容量（Total/Used/Remaining） | `<Area>` 堆叠 + `formatBytes` | NameNode 集群容量 |
-| 健康计数（Missing/Corrupt/Dead） | `<Statistic>` + `colorByThreshold` | 0 绿、≥1 红 |
-| Heap（Used/Max，单位 MB） | `<Line>` + `formatBytes`（**值 ×1024×1024**） | catalog 的 `MemHeapUsedM` 单位是 MB |
+|             特征             |                    映射组件                    |               备注                |
+|----------------------------|--------------------------------------------|---------------------------------|
+| `*AvgTime`（Gauge，ms）       | `<Line>` + ms 轴                            | 直读，**不** rate                   |
+| `*NumOps`（Counter）         | `<Line>` + `rate`                          | 块操作/RPC 次数 → ops/s              |
+| 容量（Total/Used/Remaining）   | `<Area>` 堆叠 + `formatBytes`                | NameNode 集群容量                   |
+| 健康计数（Missing/Corrupt/Dead） | `<Statistic>` + `colorByThreshold`         | 0 绿、≥1 红                        |
+| Heap（Used/Max，单位 MB）       | `<Line>` + `formatBytes`（**值 ×1024×1024**） | catalog 的 `MemHeapUsedM` 单位是 MB |
 
 ---
 
 ## 3. 变量 / 过滤器规范
 
-| 变量 | PromQL 占位符 | 取值来源 | 默认值 | 说明 |
-|---|---|---|---|---|
-| 命名空间 | `$Namespace` | `label_values(Hadoop_NameNode_CapacityTotal, namespace)` | 第一个 | 单选，HDFS federation namespace |
-| 实例 | `$Instance` | `label_values(Hadoop_DataNode_BytesRead, instance)` | `.+`（全选） | 多选下拉，HDFS 节点（NN/DN 主机） |
-| 时间范围 | — | 时间选择器 | `Last 1h` | 5m/15m/1h/6h/24h/7d |
-| 刷新间隔 | — | — | `30s` | 自动轮询 |
+|  变量  |  PromQL 占位符  |                           取值来源                           |    默认值    |              说明              |
+|------|--------------|----------------------------------------------------------|-----------|------------------------------|
+| 命名空间 | `$Namespace` | `label_values(Hadoop_NameNode_CapacityTotal, namespace)` | 第一个       | 单选，HDFS federation namespace |
+| 实例   | `$Instance`  | `label_values(Hadoop_DataNode_BytesRead, instance)`      | `.+`（全选）  | 多选下拉，HDFS 节点（NN/DN 主机）       |
+| 时间范围 | —            | 时间选择器                                                    | `Last 1h` | 5m/15m/1h/6h/24h/7d          |
+| 刷新间隔 | —            | —                                                        | `30s`     | 自动轮询                         |
 
 > **NN/DN 共用 `$Instance`**：指标名前缀（`Hadoop_NameNode_*` vs `Hadoop_DataNode_*`）天然区分角色，NameNode 指标只在 NN 主机存在、DataNode 指标只在 DN 主机存在，因此单一 `$Instance` 正则即可（NameNode 区面板自然只命中 NN 主机）。
 > 速率窗口固定 `[5m]`（DataNode AvgTime 已是近窗平均，NumOps rate 用 5m 平滑），不暴露 Interval 下拉。
@@ -119,12 +119,12 @@ HDFS 特有补充：
 
 ### 5.0 Golden Signals 映射
 
-| 维度 | 面板 | 说明 |
-|---|---|---|
-| **Latency（延迟）** | H08 NN RPC、H09 Block Op、H10 DN RPC、H11 Heartbeat | NameNode/DataNode RPC + 块操作 + 心跳耗时 |
-| **Traffic（流量）** | H12 Read/Write Bytes、H13 Network、H14 Block Ops Rate | 数据读写吞吐与块操作速率 |
-| **Errors（错误）** | H03 Dead DN、H04 Missing、H05 Corrupt、H06 Under-Repl（NN 级）、H18 DataNode Errors | 集群块健康 + DataNode 卷/校验/IO 错误 |
-| **Saturation（饱和度）** | H01 Capacity %、H07 Capacity、H15 Heap、H16 GC、H17 Threads | 容量水位、堆、GC、线程/连接 |
+|         维度          |                                      面板                                      |                 说明                 |
+|---------------------|------------------------------------------------------------------------------|------------------------------------|
+| **Latency（延迟）**     | H08 NN RPC、H09 Block Op、H10 DN RPC、H11 Heartbeat                             | NameNode/DataNode RPC + 块操作 + 心跳耗时 |
+| **Traffic（流量）**     | H12 Read/Write Bytes、H13 Network、H14 Block Ops Rate                          | 数据读写吞吐与块操作速率                       |
+| **Errors（错误）**      | H03 Dead DN、H04 Missing、H05 Corrupt、H06 Under-Repl（NN 级）、H18 DataNode Errors | 集群块健康 + DataNode 卷/校验/IO 错误        |
+| **Saturation（饱和度）** | H01 Capacity %、H07 Capacity、H15 Heap、H16 GC、H17 Threads                      | 容量水位、堆、GC、线程/连接                    |
 
 > HDFS 的 Error 维度尤其重要：H04/H05 是数据**已丢失/损坏**的硬告警，H03 是节点失联，H06 是副本不足风险——这些都在补强的 NameNode 区。
 
@@ -136,59 +136,59 @@ HDFS 特有补充：
 
 #### H01 Capacity Used %
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Capacity Used % |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
-| Query 类型 | instant query |
-| PromQL | `Hadoop_NameNode_CapacityUsed{namespace="$Namespace"} / Hadoop_NameNode_CapacityTotal{namespace="$Namespace"} * 100` |
-| 单位 | `%` |
-| 阈值 | `< 75` → 绿；`75–90` → 橙；`≥ 90` → 红 |
+|    属性    |                                                          值                                                           |
+|----------|----------------------------------------------------------------------------------------------------------------------|
+| 标题       | Capacity Used %                                                                                                      |
+| 图表类型     | `<Statistic>` + `colorByThreshold`                                                                                   |
+| Query 类型 | instant query                                                                                                        |
+| PromQL   | `Hadoop_NameNode_CapacityUsed{namespace="$Namespace"} / Hadoop_NameNode_CapacityTotal{namespace="$Namespace"} * 100` |
+| 单位       | `%`                                                                                                                  |
+| 阈值       | `< 75` → 绿；`75–90` → 橙；`≥ 90` → 红                                                                                    |
 
 #### H02 Live DataNodes
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Live DataNodes |
-| 图表类型 | `<Statistic>` |
+|   属性   |                             值                              |
+|--------|------------------------------------------------------------|
+| 标题     | Live DataNodes                                             |
+| 图表类型   | `<Statistic>`                                              |
 | PromQL | `Hadoop_NameNode_NumLiveDataNodes{namespace="$Namespace"}` |
-| 样式 | 大字体，绿色 |
+| 样式     | 大字体，绿色                                                     |
 
 #### H03 Dead DataNodes
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Dead DataNodes |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
+|   属性   |                             值                              |
+|--------|------------------------------------------------------------|
+| 标题     | Dead DataNodes                                             |
+| 图表类型   | `<Statistic>` + `colorByThreshold`                         |
 | PromQL | `Hadoop_NameNode_NumDeadDataNodes{namespace="$Namespace"}` |
-| 阈值 | `= 0` → 绿；`≥ 1` → 红 |
+| 阈值     | `= 0` → 绿；`≥ 1` → 红                                        |
 
 #### H04 Missing Blocks
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Missing Blocks |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
+|   属性   |                            值                            |
+|--------|---------------------------------------------------------|
+| 标题     | Missing Blocks                                          |
+| 图表类型   | `<Statistic>` + `colorByThreshold`                      |
 | PromQL | `Hadoop_NameNode_MissingBlocks{namespace="$Namespace"}` |
-| 阈值 | `= 0` → 绿；`≥ 1` → 红（数据已丢失，最高级告警） |
+| 阈值     | `= 0` → 绿；`≥ 1` → 红（数据已丢失，最高级告警）                        |
 
 #### H05 Corrupt Blocks
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Corrupt Blocks |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
+|   属性   |                            值                            |
+|--------|---------------------------------------------------------|
+| 标题     | Corrupt Blocks                                          |
+| 图表类型   | `<Statistic>` + `colorByThreshold`                      |
 | PromQL | `Hadoop_NameNode_CorruptBlocks{namespace="$Namespace"}` |
-| 阈值 | `= 0` → 绿；`≥ 1` → 红 |
+| 阈值     | `= 0` → 绿；`≥ 1` → 红                                     |
 
 #### H06 Under-Replicated Blocks
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Under-Replicated Blocks |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
+|   属性   |                                值                                |
+|--------|-----------------------------------------------------------------|
+| 标题     | Under-Replicated Blocks                                         |
+| 图表类型   | `<Statistic>` + `colorByThreshold`                              |
 | PromQL | `Hadoop_NameNode_UnderReplicatedBlocks{namespace="$Namespace"}` |
-| 阈值 | `= 0` → 绿；`> 0` → 橙（副本不足，正在恢复或有风险） |
+| 阈值     | `= 0` → 绿；`> 0` → 橙（副本不足，正在恢复或有风险）                              |
 
 ---
 
@@ -196,28 +196,28 @@ HDFS 特有补充：
 
 #### H07 Cluster Capacity
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Cluster Capacity |
-| 图表类型 | `<Area>` 堆叠 2 系列 |
-| Query 类型 | range query |
-| PromQL (used) | `Hadoop_NameNode_CapacityUsed{namespace="$Namespace"}` |
+|         属性         |                              值                              |
+|--------------------|-------------------------------------------------------------|
+| 标题                 | Cluster Capacity                                            |
+| 图表类型               | `<Area>` 堆叠 2 系列                                            |
+| Query 类型           | range query                                                 |
+| PromQL (used)      | `Hadoop_NameNode_CapacityUsed{namespace="$Namespace"}`      |
 | PromQL (remaining) | `Hadoop_NameNode_CapacityRemaining{namespace="$Namespace"}` |
-| y 轴 | bytes，`formatBytes` |
-| 系列 | `Used`（蓝）、`Remaining`（绿）；堆叠后总高 = CapacityTotal |
+| y 轴                | bytes，`formatBytes`                                         |
+| 系列                 | `Used`（蓝）、`Remaining`（绿）；堆叠后总高 = CapacityTotal              |
 
 #### H08 NameNode RPC
 
-| 属性 | 值 |
-|---|---|
-| 标题 | NameNode RPC |
-| 图表类型 | `<Line>` 3 系列（双 y 轴：ms 左 / 队列长度右） |
-| Query 类型 | range query |
-| PromQL (queue time) | `Hadoop_NameNode_RpcQueueTimeAvgTime{namespace="$Namespace", instance=~"$Instance"}` |
-| PromQL (proc time) | `Hadoop_NameNode_RpcProcessingTimeAvgTime{namespace="$Namespace", instance=~"$Instance"}` |
-| PromQL (call queue len) | `Hadoop_NameNode_CallQueueLength{namespace="$Namespace", instance=~"$Instance"}` |
-| y 轴 | 左：`ms`（queue/proc time）；右：整数（CallQueueLength） |
-| 系列 | `Queue Time`（橙）、`Processing Time`（蓝）、`Call Queue Length`（灰，右轴） |
+|           属性            |                                             值                                             |
+|-------------------------|-------------------------------------------------------------------------------------------|
+| 标题                      | NameNode RPC                                                                              |
+| 图表类型                    | `<Line>` 3 系列（双 y 轴：ms 左 / 队列长度右）                                                         |
+| Query 类型                | range query                                                                               |
+| PromQL (queue time)     | `Hadoop_NameNode_RpcQueueTimeAvgTime{namespace="$Namespace", instance=~"$Instance"}`      |
+| PromQL (proc time)      | `Hadoop_NameNode_RpcProcessingTimeAvgTime{namespace="$Namespace", instance=~"$Instance"}` |
+| PromQL (call queue len) | `Hadoop_NameNode_CallQueueLength{namespace="$Namespace", instance=~"$Instance"}`          |
+| y 轴                     | 左：`ms`（queue/proc time）；右：整数（CallQueueLength）                                             |
+| 系列                      | `Queue Time`（橙）、`Processing Time`（蓝）、`Call Queue Length`（灰，右轴）                            |
 
 ---
 
@@ -225,36 +225,36 @@ HDFS 特有补充：
 
 #### H09 Block Op Latency
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Block Op Latency |
-| 图表类型 | `<Line>` 2 系列 |
-| Query 类型 | range query（AvgTime Gauge 直读） |
-| PromQL (read) | `Hadoop_DataNode_ReadBlockOpAvgTime{namespace="$Namespace", instance=~"$Instance"}` |
+|       属性       |                                          值                                           |
+|----------------|--------------------------------------------------------------------------------------|
+| 标题             | Block Op Latency                                                                     |
+| 图表类型           | `<Line>` 2 系列                                                                        |
+| Query 类型       | range query（AvgTime Gauge 直读）                                                        |
+| PromQL (read)  | `Hadoop_DataNode_ReadBlockOpAvgTime{namespace="$Namespace", instance=~"$Instance"}`  |
 | PromQL (write) | `Hadoop_DataNode_WriteBlockOpAvgTime{namespace="$Namespace", instance=~"$Instance"}` |
-| y 轴 | `ms` |
-| 系列 | `Read`（绿）、`Write`（蓝） |
+| y 轴            | `ms`                                                                                 |
+| 系列             | `Read`（绿）、`Write`（蓝）                                                                 |
 
 #### H10 DataNode RPC Latency
 
-| 属性 | 值 |
-|---|---|
-| 标题 | DataNode RPC Latency |
-| 图表类型 | `<Line>` 2 系列 |
-| PromQL (queue) | `Hadoop_DataNode_RpcQueueTimeAvgTime{namespace="$Namespace", instance=~"$Instance"}` |
+|         属性         |                                            值                                            |
+|--------------------|-----------------------------------------------------------------------------------------|
+| 标题                 | DataNode RPC Latency                                                                    |
+| 图表类型               | `<Line>` 2 系列                                                                           |
+| PromQL (queue)     | `Hadoop_DataNode_RpcQueueTimeAvgTime{namespace="$Namespace", instance=~"$Instance"}`    |
 | PromQL (lock wait) | `Hadoop_DataNode_RpcLockWaitTimeAvgTime{namespace="$Namespace", instance=~"$Instance"}` |
-| y 轴 | `ms` |
-| 系列 | `Queue Time`（橙）、`Lock Wait Time`（红） |
+| y 轴                | `ms`                                                                                    |
+| 系列                 | `Queue Time`（橙）、`Lock Wait Time`（红）                                                     |
 
 #### H11 Heartbeat AvgTime
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Heartbeat AvgTime |
-| 图表类型 | `<Line>` by instance |
+|   属性   |                                         值                                          |
+|--------|------------------------------------------------------------------------------------|
+| 标题     | Heartbeat AvgTime                                                                  |
+| 图表类型   | `<Line>` by instance                                                               |
 | PromQL | `Hadoop_DataNode_HeartbeatsAvgTime{namespace="$Namespace", instance=~"$Instance"}` |
-| y 轴 | `ms` |
-| 警戒线 | y=多数心跳应 < 30ms；持续偏高表示 DN→NN 通信受阻 |
+| y 轴    | `ms`                                                                               |
+| 警戒线    | y=多数心跳应 < 30ms；持续偏高表示 DN→NN 通信受阻                                                   |
 
 ---
 
@@ -262,37 +262,37 @@ HDFS 特有补充：
 
 #### H12 DataNode Read/Write Bytes
 
-| 属性 | 值 |
-|---|---|
-| 标题 | DataNode Read/Write Bytes |
-| 图表类型 | `<Area>` 2 系列 |
-| Query 类型 | range query |
-| PromQL (read) | `sum(rate(Hadoop_DataNode_BytesRead{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)` |
+|       属性       |                                                     值                                                      |
+|----------------|------------------------------------------------------------------------------------------------------------|
+| 标题             | DataNode Read/Write Bytes                                                                                  |
+| 图表类型           | `<Area>` 2 系列                                                                                              |
+| Query 类型       | range query                                                                                                |
+| PromQL (read)  | `sum(rate(Hadoop_DataNode_BytesRead{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)`    |
 | PromQL (write) | `sum(rate(Hadoop_DataNode_BytesWritten{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)` |
-| y 轴 | bytes/s，`formatBytes` |
-| 系列 | `Read`（绿）、`Write`（蓝） |
+| y 轴            | bytes/s，`formatBytes`                                                                                      |
+| 系列             | `Read`（绿）、`Write`（蓝）                                                                                       |
 
 #### H13 Network (Recv/Sent)
 
-| 属性 | 值 |
-|---|---|
-| 标题 | DataNode Network |
-| 图表类型 | `<Area>` 2 系列 |
+|      属性       |                                                      值                                                      |
+|---------------|-------------------------------------------------------------------------------------------------------------|
+| 标题            | DataNode Network                                                                                            |
+| 图表类型          | `<Area>` 2 系列                                                                                               |
 | PromQL (recv) | `sum(rate(Hadoop_DataNode_ReceivedBytes{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)` |
-| PromQL (sent) | `sum(rate(Hadoop_DataNode_SentBytes{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)` |
-| y 轴 | bytes/s，`formatBytes` |
-| 系列 | `Received`（绿）、`Sent`（蓝） |
+| PromQL (sent) | `sum(rate(Hadoop_DataNode_SentBytes{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)`     |
+| y 轴           | bytes/s，`formatBytes`                                                                                       |
+| 系列            | `Received`（绿）、`Sent`（蓝）                                                                                     |
 
 #### H14 Block Ops Rate
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Block Ops Rate |
-| 图表类型 | `<Line>` 2 系列 |
-| PromQL (read ops) | `sum(rate(Hadoop_DataNode_ReadBlockOpNumOps{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)` |
+|         属性         |                                                        值                                                         |
+|--------------------|------------------------------------------------------------------------------------------------------------------|
+| 标题                 | Block Ops Rate                                                                                                   |
+| 图表类型               | `<Line>` 2 系列                                                                                                    |
+| PromQL (read ops)  | `sum(rate(Hadoop_DataNode_ReadBlockOpNumOps{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)`  |
 | PromQL (write ops) | `sum(rate(Hadoop_DataNode_WriteBlockOpNumOps{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)` |
-| y 轴 | `ops/s` |
-| 系列 | `Read Ops`（绿）、`Write Ops`（蓝） |
+| y 轴                | `ops/s`                                                                                                          |
+| 系列                 | `Read Ops`（绿）、`Write Ops`（蓝）                                                                                     |
 
 ---
 
@@ -300,37 +300,37 @@ HDFS 特有补充：
 
 #### H15 Heap Usage
 
-| 属性 | 值 |
-|---|---|
-| 标题 | DataNode Heap Usage |
-| 图表类型 | `<Line>` 2 系列 |
-| Query 类型 | range query |
+|      属性       |                                              值                                              |
+|---------------|---------------------------------------------------------------------------------------------|
+| 标题            | DataNode Heap Usage                                                                         |
+| 图表类型          | `<Line>` 2 系列                                                                               |
+| Query 类型      | range query                                                                                 |
 | PromQL (used) | `Hadoop_DataNode_MemHeapUsedM{namespace="$Namespace", instance=~"$Instance"} * 1024 * 1024` |
-| PromQL (max) | `Hadoop_DataNode_MemHeapMaxM{namespace="$Namespace", instance=~"$Instance"} * 1024 * 1024` |
-| y 轴 | bytes，`formatBytes`（**catalog 单位是 MB，需 ×1024×1024 转 bytes**） |
-| 系列 | `Used`（蓝）、`Max`（红虚线，上限） |
+| PromQL (max)  | `Hadoop_DataNode_MemHeapMaxM{namespace="$Namespace", instance=~"$Instance"} * 1024 * 1024`  |
+| y 轴           | bytes，`formatBytes`（**catalog 单位是 MB，需 ×1024×1024 转 bytes**）                                |
+| 系列            | `Used`（蓝）、`Max`（红虚线，上限）                                                                     |
 
 #### H16 GC
 
-| 属性 | 值 |
-|---|---|
-| 标题 | DataNode GC |
-| 图表类型 | `<Line>` 双 y 轴 |
-| PromQL (count) | `sum(rate(Hadoop_DataNode_GcCount{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)` |
-| PromQL (time) | `sum(rate(Hadoop_DataNode_GcTimeMillis{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)` |
-| y 轴 | 左：`ops/s`（GcCount rate）；右：`ms/s`（GcTimeMillis rate，GC 占用时间比例） |
-| 系列 | `GC Rate`（蓝）、`GC Time`（橙，右轴） |
+|       属性       |                                                     值                                                      |
+|----------------|------------------------------------------------------------------------------------------------------------|
+| 标题             | DataNode GC                                                                                                |
+| 图表类型           | `<Line>` 双 y 轴                                                                                             |
+| PromQL (count) | `sum(rate(Hadoop_DataNode_GcCount{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)`      |
+| PromQL (time)  | `sum(rate(Hadoop_DataNode_GcTimeMillis{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)` |
+| y 轴            | 左：`ops/s`（GcCount rate）；右：`ms/s`（GcTimeMillis rate，GC 占用时间比例）                                              |
+| 系列             | `GC Rate`（蓝）、`GC Time`（橙，右轴）                                                                               |
 
 #### H17 Threads & Connections
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Threads & Connections |
-| 图表类型 | `<Line>` 3 系列 |
-| PromQL (blocked) | `Hadoop_DataNode_ThreadsBlocked{namespace="$Namespace", instance=~"$Instance"}` |
-| PromQL (open conn) | `Hadoop_DataNode_NumOpenConnections{namespace="$Namespace", instance=~"$Instance"}` |
-| PromQL (call queue) | `Hadoop_DataNode_CallQueueLength{namespace="$Namespace", instance=~"$Instance"}` |
-| 系列 | `Threads Blocked`（红）、`Open Connections`（蓝）、`Call Queue Length`（橙） |
+|         属性          |                                          值                                          |
+|---------------------|-------------------------------------------------------------------------------------|
+| 标题                  | Threads & Connections                                                               |
+| 图表类型                | `<Line>` 3 系列                                                                       |
+| PromQL (blocked)    | `Hadoop_DataNode_ThreadsBlocked{namespace="$Namespace", instance=~"$Instance"}`     |
+| PromQL (open conn)  | `Hadoop_DataNode_NumOpenConnections{namespace="$Namespace", instance=~"$Instance"}` |
+| PromQL (call queue) | `Hadoop_DataNode_CallQueueLength{namespace="$Namespace", instance=~"$Instance"}`    |
+| 系列                  | `Threads Blocked`（红）、`Open Connections`（蓝）、`Call Queue Length`（橙）                   |
 
 ---
 
@@ -338,17 +338,17 @@ HDFS 特有补充：
 
 #### H18 DataNode Errors
 
-| 属性 | 值 |
-|---|---|
-| 标题 | DataNode Errors |
-| 图表类型 | `<Line>` 多系列 |
-| Query 类型 | range query |
-| PromQL (volume failures) | `sum(Hadoop_DataNode_VolumeFailures{namespace="$Namespace", instance=~"$Instance"}) by (instance)` |
+|                属性                |                                                            值                                                            |
+|----------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| 标题                               | DataNode Errors                                                                                                         |
+| 图表类型                             | `<Line>` 多系列                                                                                                            |
+| Query 类型                         | range query                                                                                                             |
+| PromQL (volume failures)         | `sum(Hadoop_DataNode_VolumeFailures{namespace="$Namespace", instance=~"$Instance"}) by (instance)`                      |
 | PromQL (block verification fail) | `sum(rate(Hadoop_DataNode_BlockVerificationFailures{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)` |
-| PromQL (file io errors) | `sum(rate(Hadoop_DataNode_TotalFileIoErrors{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)` |
-| PromQL (log error) | `sum(rate(Hadoop_DataNode_LogError{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)` |
-| 系列 | `Volume Failures`（红）、`Block Verification Failures`（橙红）、`File IO Errors`（橙）、`Log Errors`（黄） |
-| 说明 | 4 类 DataNode 故障合一；任一 > 0 即需关注，VolumeFailures 表示磁盘卷损坏 |
+| PromQL (file io errors)          | `sum(rate(Hadoop_DataNode_TotalFileIoErrors{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)`         |
+| PromQL (log error)               | `sum(rate(Hadoop_DataNode_LogError{namespace="$Namespace", instance=~"$Instance"}[5m])) by (instance)`                  |
+| 系列                               | `Volume Failures`（红）、`Block Verification Failures`（橙红）、`File IO Errors`（橙）、`Log Errors`（黄）                              |
+| 说明                               | 4 类 DataNode 故障合一；任一 > 0 即需关注，VolumeFailures 表示磁盘卷损坏                                                                    |
 
 ---
 
@@ -525,3 +525,4 @@ Phase 2 原型（mock 阶段）完成后，需满足：
 - [ ] 工具栏：Namespace 单选 + Instance 多选 + 时间范围 + 刷新（无 Interval 下拉）
 - [ ] 在 1280px 宽度下 6 行布局无横向滚动条
 - [ ] golden signals 四象限覆盖验证（见 §5.0）；Error 维度以 NameNode 块健康（H03-H06）+ DataNode 故障（H18）双重覆盖
+

@@ -36,26 +36,26 @@ React(AntV G2)
 
 DATART 特有补充：
 
-| Grafana chartType（catalog） | 映射组件 | 备注 |
-|---|---|---|
-| `singlestat`（Heap/NonHeap %） | `<Statistic>` + `colorByThreshold` | thresholds `70,90` |
-| `singlestat`（Start time，×1000） | `<Statistic>` + 时间格式 | 显示为日期时间 |
-| `graph`（_sum/_count 比值） | `<Line>` + s/ms 轴 | Response Time、HikariCP 时延 |
-| `graph`（logback by level） | `<Line>` 多系列 | 日志事件按 level |
+|   Grafana chartType（catalog）   |                映射组件                |            备注             |
+|--------------------------------|------------------------------------|---------------------------|
+| `singlestat`（Heap/NonHeap %）   | `<Statistic>` + `colorByThreshold` | thresholds `70,90`        |
+| `singlestat`（Start time，×1000） | `<Statistic>` + 时间格式               | 显示为日期时间                   |
+| `graph`（_sum/_count 比值）        | `<Line>` + s/ms 轴                  | Response Time、HikariCP 时延 |
+| `graph`（logback by level）      | `<Line>` 多系列                       | 日志事件按 level               |
 
 ---
 
 ## 3. 变量 / 过滤器规范
 
-| 变量 | PromQL 占位符 | 取值来源 | 默认值 | 说明 |
-|---|---|---|---|---|
-| 应用 | `$application` | `label_values(process_uptime_seconds, application)` | `datart` | 单选 |
-| 实例 | `$instance` | `label_values(process_uptime_seconds{application="$application"}, instance)` | 第一个 | 多选下拉 |
-| 内存池(heap) | `$memory_pool_heap` | `label_values(jvm_memory_used_bytes{area="heap"}, id)` | 第一个 | 单选，JVM heap 池 |
-| 内存池(nonheap) | `$memory_pool_nonheap` | `label_values(jvm_memory_used_bytes{area="nonheap"}, id)` | 第一个 | 单选 |
-| 连接池 | `$hikaricp` | `label_values(hikaricp_connections, pool)` | 第一个 | 单选，HikariCP pool |
-| 时间范围 | — | 时间选择器 | `Last 1h` | 5m/15m/1h/6h/24h/7d |
-| 刷新间隔 | — | — | `30s` | 自动轮询 |
+|      变量      |       PromQL 占位符       |                                     取值来源                                     |    默认值    |         说明          |
+|--------------|------------------------|------------------------------------------------------------------------------|-----------|---------------------|
+| 应用           | `$application`         | `label_values(process_uptime_seconds, application)`                          | `datart`  | 单选                  |
+| 实例           | `$instance`            | `label_values(process_uptime_seconds{application="$application"}, instance)` | 第一个       | 多选下拉                |
+| 内存池(heap)    | `$memory_pool_heap`    | `label_values(jvm_memory_used_bytes{area="heap"}, id)`                       | 第一个       | 单选，JVM heap 池       |
+| 内存池(nonheap) | `$memory_pool_nonheap` | `label_values(jvm_memory_used_bytes{area="nonheap"}, id)`                    | 第一个       | 单选                  |
+| 连接池          | `$hikaricp`            | `label_values(hikaricp_connections, pool)`                                   | 第一个       | 单选，HikariCP pool    |
+| 时间范围         | —                      | 时间选择器                                                                        | `Last 1h` | 5m/15m/1h/6h/24h/7d |
+| 刷新间隔         | —                      | —                                                                            | `30s`     | 自动轮询                |
 
 > 速率窗口固定 `[5m]`（catalog 用 `irate(...[5m])`），不暴露 Interval 下拉。
 
@@ -114,12 +114,12 @@ DATART 特有补充：
 
 ### 5.0 Golden Signals 映射
 
-| 维度 | 面板 | 说明 |
-|---|---|---|
-| **Latency（延迟）** | D08 Response Time、D12 GC Pause、D15 HikariCP Acquire/Usage | HTTP 响应 + GC 停顿 + 连接获取耗时 |
-| **Traffic（流量）** | D07 Request Count、D17 Tomcat Bytes | 请求量与字节吞吐 |
-| **Errors（错误）** | D06 Error Logs（stat）、D18 Log Events（error 系列）、Tomcat error（见说明） | 应用错误日志 + 容器错误 |
-| **Saturation（饱和度）** | D02/D03 Heap/NonHeap%、D04 CPU、D05/D14 HikariCP、D09-D13 CPU/内存/GC/线程、D16 Tomcat 线程 | JVM/CPU/连接池/容器压力 |
+|         维度          |                                        面板                                         |            说明            |
+|---------------------|-----------------------------------------------------------------------------------|--------------------------|
+| **Latency（延迟）**     | D08 Response Time、D12 GC Pause、D15 HikariCP Acquire/Usage                         | HTTP 响应 + GC 停顿 + 连接获取耗时 |
+| **Traffic（流量）**     | D07 Request Count、D17 Tomcat Bytes                                                | 请求量与字节吞吐                 |
+| **Errors（错误）**      | D06 Error Logs（stat）、D18 Log Events（error 系列）、Tomcat error（见说明）                   | 应用错误日志 + 容器错误            |
+| **Saturation（饱和度）** | D02/D03 Heap/NonHeap%、D04 CPU、D05/D14 HikariCP、D09-D13 CPU/内存/GC/线程、D16 Tomcat 线程 | JVM/CPU/连接池/容器压力         |
 
 ---
 
@@ -127,58 +127,58 @@ DATART 特有补充：
 
 #### D01 Uptime
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Uptime |
-| 图表类型 | `<Statistic>` + `formatDuration` |
-| Query 类型 | instant query |
-| PromQL | `process_uptime_seconds{application="$application", instance="$instance"}` |
-| 单位 | 秒 → d/h/m |
+|    属性    |                                     值                                      |
+|----------|----------------------------------------------------------------------------|
+| 标题       | Uptime                                                                     |
+| 图表类型     | `<Statistic>` + `formatDuration`                                           |
+| Query 类型 | instant query                                                              |
+| PromQL   | `process_uptime_seconds{application="$application", instance="$instance"}` |
+| 单位       | 秒 → d/h/m                                                                  |
 
 #### D02 Heap Used %
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Heap Used % |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
+|   属性   |                                                                                             值                                                                                             |
+|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题     | Heap Used %                                                                                                                                                                               |
+| 图表类型   | `<Statistic>` + `colorByThreshold`                                                                                                                                                        |
 | PromQL | `sum(jvm_memory_used_bytes{application="$application", instance="$instance", area="heap"})*100 / sum(jvm_memory_max_bytes{application="$application",instance="$instance", area="heap"})` |
-| 单位 | `%` |
-| 阈值 | `< 70` → 绿；`70–90` → 橙；`≥ 90` → 红（catalog `70,90`） |
+| 单位     | `%`                                                                                                                                                                                       |
+| 阈值     | `< 70` → 绿；`70–90` → 橙；`≥ 90` → 红（catalog `70,90`）                                                                                                                                        |
 
 #### D03 Non-Heap Used %
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Non-Heap Used % |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
-| PromQL | 同 D02，`area="nonheap"` |
-| 阈值 | `70,90` |
+|   属性   |                 值                  |
+|--------|------------------------------------|
+| 标题     | Non-Heap Used %                    |
+| 图表类型   | `<Statistic>` + `colorByThreshold` |
+| PromQL | 同 D02，`area="nonheap"`             |
+| 阈值     | `70,90`                            |
 
 #### D04 CPU Usage
 
-| 属性 | 值 |
-|---|---|
-| 标题 | CPU Usage |
-| 图表类型 | `<Statistic>` |
+|   属性   |                                      值                                      |
+|--------|-----------------------------------------------------------------------------|
+| 标题     | CPU Usage                                                                   |
+| 图表类型   | `<Statistic>`                                                               |
 | PromQL | `process_cpu_usage{instance="$instance", application="$application"} * 100` |
-| 单位 | `%` |
+| 单位     | `%`                                                                         |
 
 #### D05 HikariCP Active
 
-| 属性 | 值 |
-|---|---|
-| 标题 | HikariCP Active |
-| 图表类型 | `<Statistic>` |
+|   属性   |                                                 值                                                 |
+|--------|---------------------------------------------------------------------------------------------------|
+| 标题     | HikariCP Active                                                                                   |
+| 图表类型   | `<Statistic>`                                                                                     |
 | PromQL | `hikaricp_connections_active{instance="$instance", application="$application", pool="$hikaricp"}` |
 
 #### D06 Error Logs /s
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Error Logs /s |
-| 图表类型 | `<Statistic>` + `colorByThreshold` |
+|   属性   |                                                    值                                                    |
+|--------|---------------------------------------------------------------------------------------------------------|
+| 标题     | Error Logs /s                                                                                           |
+| 图表类型   | `<Statistic>` + `colorByThreshold`                                                                      |
 | PromQL | `sum(irate(logback_events_total{instance="$instance", application="$application", level="error"}[5m]))` |
-| 阈值 | `= 0` → 绿；`> 0` → 橙；`> 1` → 红 |
+| 阈值     | `= 0` → 绿；`> 0` → 橙；`> 1` → 红                                                                           |
 
 ---
 
@@ -186,24 +186,24 @@ DATART 特有补充：
 
 #### D07 Request Count
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Request Count |
-| 图表类型 | `<Line>` 多系列 by uri |
-| Query 类型 | range query |
-| PromQL | `irate(http_server_requests_seconds_count{instance="$instance", application="$application", uri!~".*actuator.*"}[5m])` |
-| 系列字段 | `uri`（排除 actuator 自身） |
-| y 轴 | `req/s` |
+|    属性    |                                                           值                                                            |
+|----------|------------------------------------------------------------------------------------------------------------------------|
+| 标题       | Request Count                                                                                                          |
+| 图表类型     | `<Line>` 多系列 by uri                                                                                                    |
+| Query 类型 | range query                                                                                                            |
+| PromQL   | `irate(http_server_requests_seconds_count{instance="$instance", application="$application", uri!~".*actuator.*"}[5m])` |
+| 系列字段     | `uri`（排除 actuator 自身）                                                                                                  |
+| y 轴      | `req/s`                                                                                                                |
 
 #### D08 Response Time
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Response Time |
-| 图表类型 | `<Line>` 多系列 by uri（比值法） |
+|   属性   |                                                                                                                                        值                                                                                                                                        |
+|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 标题     | Response Time                                                                                                                                                                                                                                                                   |
+| 图表类型   | `<Line>` 多系列 by uri（比值法）                                                                                                                                                                                                                                                        |
 | PromQL | `irate(http_server_requests_seconds_sum{instance="$instance", application="$application", exception="None", uri!~".*actuator.*"}[5m]) / irate(http_server_requests_seconds_count{instance="$instance", application="$application", exception="None", uri!~".*actuator.*"}[5m])` |
-| 单位 | 秒 → 前端按量级显示 ms |
-| 说明 | `exception="None"` 仅统计成功请求的耗时；错误请求耗时另计 |
+| 单位     | 秒 → 前端按量级显示 ms                                                                                                                                                                                                                                                                  |
+| 说明     | `exception="None"` 仅统计成功请求的耗时；错误请求耗时另计                                                                                                                                                                                                                                          |
 
 ---
 
@@ -211,24 +211,24 @@ DATART 特有补充：
 
 #### D09 CPU / Load
 
-| 属性 | 值 |
-|---|---|
-| 标题 | CPU / Load Average |
-| 图表类型 | `<Line>` 3 系列 |
-| PromQL (system cpu) | `system_cpu_usage{instance="$instance", application="$application"}` |
-| PromQL (process cpu) | `process_cpu_usage{instance="$instance", application="$application"}` |
-| PromQL (load1m) | `system_load_average_1m{instance="$instance", application="$application"}` |
-| 系列 | `System CPU`（橙）、`Process CPU`（蓝）、`Load 1m`（灰） |
+|          属性          |                                     值                                      |
+|----------------------|----------------------------------------------------------------------------|
+| 标题                   | CPU / Load Average                                                         |
+| 图表类型                 | `<Line>` 3 系列                                                              |
+| PromQL (system cpu)  | `system_cpu_usage{instance="$instance", application="$application"}`       |
+| PromQL (process cpu) | `process_cpu_usage{instance="$instance", application="$application"}`      |
+| PromQL (load1m)      | `system_load_average_1m{instance="$instance", application="$application"}` |
+| 系列                   | `System CPU`（橙）、`Process CPU`（蓝）、`Load 1m`（灰）                              |
 
 #### D10 Heap Pool ($memory_pool_heap)
 
-| 属性 | 值 |
-|---|---|
-| 标题 | `$memory_pool_heap` (heap) |
-| 图表类型 | `<Line>` 3 系列 |
+|   属性   |                                                                  值                                                                  |
+|--------|-------------------------------------------------------------------------------------------------------------------------------------|
+| 标题     | `$memory_pool_heap` (heap)                                                                                                          |
+| 图表类型   | `<Line>` 3 系列                                                                                                                       |
 | PromQL | `jvm_memory_used_bytes` / `jvm_memory_committed_bytes` / `jvm_memory_max_bytes`（均带 `{instance,application,id="$memory_pool_heap"}`） |
-| y 轴 | bytes，`formatBytes` |
-| 系列 | `Used`（蓝）、`Committed`（橙）、`Max`（灰虚线） |
+| y 轴    | bytes，`formatBytes`                                                                                                                 |
+| 系列     | `Used`（蓝）、`Committed`（橙）、`Max`（灰虚线）                                                                                                 |
 
 ---
 
@@ -236,31 +236,31 @@ DATART 特有补充：
 
 #### D11 GC Count
 
-| 属性 | 值 |
-|---|---|
-| 标题 | GC Count |
-| 图表类型 | `<Line>` 多系列 |
+|   属性   |                                             值                                             |
+|--------|-------------------------------------------------------------------------------------------|
+| 标题     | GC Count                                                                                  |
+| 图表类型   | `<Line>` 多系列                                                                              |
 | PromQL | `irate(jvm_gc_pause_seconds_count{instance="$instance", application="$application"}[5m])` |
-| 系列字段 | `action` / `cause`（GC 类型） |
-| y 轴 | `ops/s` |
+| 系列字段   | `action` / `cause`（GC 类型）                                                                 |
+| y 轴    | `ops/s`                                                                                   |
 
 #### D12 GC Pause Duration
 
-| 属性 | 值 |
-|---|---|
-| 标题 | GC Stop the World Duration |
-| 图表类型 | `<Line>` |
+|   属性   |                                            值                                            |
+|--------|-----------------------------------------------------------------------------------------|
+| 标题     | GC Stop the World Duration                                                              |
+| 图表类型   | `<Line>`                                                                                |
 | PromQL | `irate(jvm_gc_pause_seconds_sum{instance="$instance", application="$application"}[5m])` |
-| 单位 | s（每秒 GC 停顿累计，反映 STW 占比） |
+| 单位     | s（每秒 GC 停顿累计，反映 STW 占比）                                                                 |
 
 #### D13 JVM Threads
 
-| 属性 | 值 |
-|---|---|
-| 标题 | JVM Threads |
-| 图表类型 | `<Line>` 3 系列 |
+|   属性   |                                                          值                                                          |
+|--------|---------------------------------------------------------------------------------------------------------------------|
+| 标题     | JVM Threads                                                                                                         |
+| 图表类型   | `<Line>` 3 系列                                                                                                       |
 | PromQL | `jvm_threads_daemon_threads` / `jvm_threads_live_threads` / `jvm_threads_peak_threads`（均带 `{instance,application}`） |
-| 系列 | `Daemon`（灰）、`Live`（蓝）、`Peak`（橙） |
+| 系列     | `Daemon`（灰）、`Live`（蓝）、`Peak`（橙）                                                                                     |
 
 ---
 
@@ -268,25 +268,25 @@ DATART 特有补充：
 
 #### D14 HikariCP Connections
 
-| 属性 | 值 |
-|---|---|
-| 标题 | HikariCP Connections |
-| 图表类型 | `<Line>` 3 系列 |
-| PromQL (active) | `hikaricp_connections_active{instance="$instance", application="$application", pool="$hikaricp"}` |
-| PromQL (idle) | 同上，`hikaricp_connections_idle` |
-| PromQL (pending) | 同上，`hikaricp_connections_pending` |
-| 系列 | `Active`（蓝）、`Idle`（绿）、`Pending`（红，等待连接为饱和信号） |
+|        属性        |                                                 值                                                 |
+|------------------|---------------------------------------------------------------------------------------------------|
+| 标题               | HikariCP Connections                                                                              |
+| 图表类型             | `<Line>` 3 系列                                                                                     |
+| PromQL (active)  | `hikaricp_connections_active{instance="$instance", application="$application", pool="$hikaricp"}` |
+| PromQL (idle)    | 同上，`hikaricp_connections_idle`                                                                    |
+| PromQL (pending) | 同上，`hikaricp_connections_pending`                                                                 |
+| 系列               | `Active`（蓝）、`Idle`（绿）、`Pending`（红，等待连接为饱和信号）                                                      |
 
 #### D15 HikariCP Acquire / Usage Time
 
-| 属性 | 值 |
-|---|---|
-| 标题 | HikariCP Acquire / Usage Time |
-| 图表类型 | `<Line>` 2 系列（比值法） |
+|        属性        |                                                                  值                                                                  |
+|------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| 标题               | HikariCP Acquire / Usage Time                                                                                                       |
+| 图表类型             | `<Line>` 2 系列（比值法）                                                                                                                  |
 | PromQL (acquire) | `hikaricp_connections_acquire_seconds_sum{...,pool="$hikaricp"} / hikaricp_connections_acquire_seconds_count{...,pool="$hikaricp"}` |
-| PromQL (usage) | 同上，`usage_seconds_*` |
-| 单位 | 秒 → ms |
-| 系列 | `Acquire Time`（橙）、`Usage Time`（蓝） |
+| PromQL (usage)   | 同上，`usage_seconds_*`                                                                                                                |
+| 单位               | 秒 → ms                                                                                                                              |
+| 系列               | `Acquire Time`（橙）、`Usage Time`（蓝）                                                                                                   |
 
 ---
 
@@ -294,37 +294,37 @@ DATART 特有补充：
 
 #### D16 Tomcat Threads / Sessions
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Tomcat Threads & Sessions |
-| 图表类型 | `<Line>` 3 系列 |
-| PromQL (current) | `tomcat_threads_current_threads{instance="$instance", application="$application"}` |
-| PromQL (busy) | `tomcat_threads_busy_threads{instance="$instance", application="$application"}` |
+|        属性         |                                              值                                              |
+|-------------------|---------------------------------------------------------------------------------------------|
+| 标题                | Tomcat Threads & Sessions                                                                   |
+| 图表类型              | `<Line>` 3 系列                                                                               |
+| PromQL (current)  | `tomcat_threads_current_threads{instance="$instance", application="$application"}`          |
+| PromQL (busy)     | `tomcat_threads_busy_threads{instance="$instance", application="$application"}`             |
 | PromQL (sessions) | `tomcat_sessions_active_current_sessions{instance="$instance", application="$application"}` |
-| 系列 | `Current Threads`（蓝）、`Busy Threads`（橙）、`Active Sessions`（绿） |
+| 系列                | `Current Threads`（蓝）、`Busy Threads`（橙）、`Active Sessions`（绿）                                 |
 
 #### D17 Tomcat Sent / Received Bytes
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Tomcat Sent & Received Bytes |
-| 图表类型 | `<Area>` 2 系列 |
-| PromQL (sent) | `irate(tomcat_global_sent_bytes_total{instance="$instance", application="$application"}[5m])` |
+|      属性       |                                                 值                                                 |
+|---------------|---------------------------------------------------------------------------------------------------|
+| 标题            | Tomcat Sent & Received Bytes                                                                      |
+| 图表类型          | `<Area>` 2 系列                                                                                     |
+| PromQL (sent) | `irate(tomcat_global_sent_bytes_total{instance="$instance", application="$application"}[5m])`     |
 | PromQL (recv) | `irate(tomcat_global_received_bytes_total{instance="$instance", application="$application"}[5m])` |
-| y 轴 | bytes/s，`formatBytes` |
-| 系列 | `Sent`（蓝）、`Received`（绿） |
+| y 轴           | bytes/s，`formatBytes`                                                                             |
+| 系列            | `Sent`（蓝）、`Received`（绿）                                                                           |
 
 #### D18 Log Events by Level
 
-| 属性 | 值 |
-|---|---|
-| 标题 | Log Events by Level |
-| 图表类型 | `<Line>` 多系列 by level |
-| Query 类型 | range query（合并 catalog 的 5 个日志级别面板） |
-| PromQL | `sum(irate(logback_events_total{instance="$instance", application="$application"}[5m])) by (level)` |
-| 系列字段 | `level`（error/warn/info/debug/trace） |
-| 颜色 | `error`→红、`warn`→橙、`info`→蓝、`debug`→灰、`trace`→浅灰 |
-| 说明 | 合并 catalog 的 INFO/ERROR/WARN/DEBUG/TRACE 5 个独立面板为 1 个 by-level 多系列；error/warn 是 Errors 象限主信号 |
+|    属性    |                                                  值                                                  |
+|----------|-----------------------------------------------------------------------------------------------------|
+| 标题       | Log Events by Level                                                                                 |
+| 图表类型     | `<Line>` 多系列 by level                                                                               |
+| Query 类型 | range query（合并 catalog 的 5 个日志级别面板）                                                                 |
+| PromQL   | `sum(irate(logback_events_total{instance="$instance", application="$application"}[5m])) by (level)` |
+| 系列字段     | `level`（error/warn/info/debug/trace）                                                                |
+| 颜色       | `error`→红、`warn`→橙、`info`→蓝、`debug`→灰、`trace`→浅灰                                                    |
+| 说明       | 合并 catalog 的 INFO/ERROR/WARN/DEBUG/TRACE 5 个独立面板为 1 个 by-level 多系列；error/warn 是 Errors 象限主信号        |
 
 > **Tomcat 错误计数补充**：`tomcat_global_error_total` 为 Web 容器级累计错误，可作为 D18 的补充 stat 或叠加系列（catalog 单独成 singlestat）。
 
@@ -481,3 +481,4 @@ function replaceDatartVars(promql: string, vars: DatartDashboardQueryParams['var
 - [ ] 工具栏级联：application → instance；heap池 / hikaricp池 下拉（§9.3）
 - [ ] 在 1280px 宽度下 6 行布局无横向滚动条
 - [ ] golden signals 四象限覆盖验证（见 §5.0）；Spring Boot Actuator 自带完整四象限，无需补强
+
