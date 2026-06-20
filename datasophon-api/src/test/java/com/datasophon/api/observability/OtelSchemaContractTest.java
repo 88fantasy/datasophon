@@ -172,6 +172,29 @@ class OtelSchemaContractTest {
     void schema_version_is_pinned() {
         assertEquals("v1", OtelSchema.VERSION);
     }
+
+    /**
+     * 锁定已知边界（Codex 对抗审查 CHECK 2-1）：views.sql 恰含 1 个 CREATE JOB（traces_graph_job）
+     * 且当前无幂等语法——Doris 的 CREATE JOB 不支持 IF NOT EXISTS，重复 apply 会在该语句失败。
+     *
+     * <p>幂等容错需真实 Doris 错误行为验证，留待 A3（见 apply-verify.md）。A3 实现幂等后，
+     * 本测试的 assertFalse 会主动失败，提示同步更新——把口头 TODO 变成 CI 守卫的待办。
+     */
+    @Test
+    void traces_graph_job_is_the_single_known_non_idempotent_statement() {
+        String views =
+                readClasspath("observability/doris/V1__otel_views.sql")
+                        .toUpperCase(java.util.Locale.ROOT);
+        Matcher m = Pattern.compile("CREATE\\s+JOB").matcher(views);
+        int count = 0;
+        while (m.find()) {
+            count++;
+        }
+        assertEquals(1, count, "views.sql 应恰含 1 个 CREATE JOB(traces_graph_job)");
+        assertFalse(
+                Pattern.compile("CREATE\\s+JOB\\s+IF\\s+NOT\\s+EXISTS").matcher(views).find(),
+                "A2 已知边界:CREATE JOB 无 IF NOT EXISTS(Doris 不支持);A3 实现幂等后同步更新本测试");
+    }
     
     // -----------------------------------------------------------------------
     // 私有助手

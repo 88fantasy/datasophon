@@ -35,7 +35,13 @@ public final class OtelSchemaApplier {
     private OtelSchemaApplier() {
     }
     
-    /** 按 DDL_RESOURCES 顺序逐语句执行；DDL 均为 IF NOT EXISTS，可重复应用。 */
+    /**
+     * 按 DDL_RESOURCES 顺序逐语句执行。
+     *
+     * <p>库/表/视图幂等（IF NOT EXISTS / DROP+CREATE）；唯 traces_graph_job 的 CREATE JOB 无幂等语法
+     * （Doris 不支持 IF NOT EXISTS、DROP JOB 不支持 IF EXISTS），重复 apply 会在该语句失败
+     * —— 幂等容错 + 真实 Doris 验证见 A3（apply-verify.md）。
+     */
     public static void apply(JdbcClient doris) {
         for (String res : OtelSchema.DDL_RESOURCES) {
             String sql = readResource(res);
