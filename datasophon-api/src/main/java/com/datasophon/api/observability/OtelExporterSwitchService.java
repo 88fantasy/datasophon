@@ -35,10 +35,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class OtelExporterSwitchService {
+    
+    private static final Logger log = LoggerFactory.getLogger(OtelExporterSwitchService.class);
     
     private static final String OTEL_SERVICE = "OTELCOLLECTOR";
     private static final String DORIS_FE = "DorisFE";
@@ -105,10 +109,15 @@ public class OtelExporterSwitchService {
     
     private Map<String, String> serviceParams(Integer clusterId) {
         Map<String, String> params = new HashMap<>();
-        for (ServiceConfig config : installService.getServiceConfigOption(clusterId, OTEL_SERVICE)) {
-            if (config.getName() != null && config.getValue() != null) {
-                params.put(config.getName(), String.valueOf(config.getValue()));
+        try {
+            List<ServiceConfig> configs = installService.getServiceConfigOption(clusterId, OTEL_SERVICE);
+            for (ServiceConfig config : configs) {
+                if (config.getName() != null && config.getValue() != null) {
+                    params.put(config.getName(), String.valueOf(config.getValue()));
+                }
             }
+        } catch (RuntimeException e) {
+            log.warn("Failed to load {} service config for cluster {}: {}", OTEL_SERVICE, clusterId, e.getMessage());
         }
         return params;
     }
@@ -116,12 +125,7 @@ public class OtelExporterSwitchService {
     private Map<String, String> variables(Integer clusterId, String serviceName) {
         Map<String, String> result = new HashMap<>();
         for (ClusterVariable variable : variableService.getVariables(clusterId, serviceName)) {
-            String name = variable.getVariableName();
-            String prefix = "${" + serviceName + ".";
-            if (name.startsWith(prefix) && name.endsWith("}")) {
-                name = name.substring(prefix.length(), name.length() - 1);
-            }
-            result.put(name, variable.getVariableValue());
+            result.put(variable.getVariableName(), variable.getVariableValue());
         }
         return result;
     }

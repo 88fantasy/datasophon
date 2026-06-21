@@ -75,7 +75,7 @@ public final class OtelSchemaApplier {
             String message = current.getMessage();
             if (message != null) {
                 String normalized = message.toLowerCase(java.util.Locale.ROOT);
-                if (normalized.contains("already exist")) {
+                if (normalized.contains("already exist") || normalized.contains("has been created")) {
                     return true;
                 }
             }

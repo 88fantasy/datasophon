@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +80,14 @@ public class FreemakerUtils {
     
     private static final Logger logger = LoggerFactory.getLogger(FreemakerUtils.class);
     
+    // 匹配含 PASSWORD / SECRET 的 key=value 行，日志脱敏用
+    private static final Pattern CREDENTIAL_LINE =
+            Pattern.compile("(?im)^([^=\n]*(?:PASSWORD|SECRET)[^=\n]*=)(.+)$");
+    
+    static String redactSecrets(String content) {
+        return CREDENTIAL_LINE.matcher(content).replaceAll("$1<redacted>");
+    }
+    
     private static final NacosRestTemplate nacosRestTemplate = NamingHttpClientManager.getInstance().getNacosRestTemplate();
     
     public static void generateConfigFile(Generators generators, List<ServiceConfig> configs,
@@ -102,7 +111,7 @@ public class FreemakerUtils {
         
         String content = renderTemplate(generators, template, configs);
         if (logger.isDebugEnabled()) {
-            logger.debug("generate config file from tpl {}, content is: {}", tplName, content);
+            logger.debug("generate config file from tpl {}, content is: {}", tplName, redactSecrets(content));
         }
         
         writeContent(generators, configs, serviceInstallHome, content);

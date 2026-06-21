@@ -86,15 +86,16 @@ public class OtelAlertScheduler {
                 continue;
             }
             OtelSelfMetrics metrics = node.metrics();
-            double queueRatio = metrics.queueCapacity() == 0
-                    ? 0d
-                    : (double) metrics.queueSize() / metrics.queueCapacity();
+            // queueCapacity==0 表示指标暂不可用（采集器启动中或版本差异），跳过本轮队列评估
+            if (metrics.queueCapacity() > 0) {
+                double queueRatio = (double) metrics.queueSize() / metrics.queueCapacity();
+                updateAlert(clusterId, node.hostname(), QUEUE_ALERT,
+                        queueRatio >= queueWatermark,
+                        "Collector queue usage is " + queueRatio,
+                        "Check Doris/S3 availability and exporter throughput");
+            }
             long attempts = metrics.sentTotal() + metrics.sendFailedTotal();
             double failureRate = attempts == 0 ? 0d : (double) metrics.sendFailedTotal() / attempts;
-            updateAlert(clusterId, node.hostname(), QUEUE_ALERT,
-                    queueRatio >= queueWatermark,
-                    "Collector queue usage is " + queueRatio,
-                    "Check Doris/S3 availability and exporter throughput");
             updateAlert(clusterId, node.hostname(), SEND_FAILURE_ALERT,
                     failureRate >= sendFailedRate,
                     "Collector send failure rate is " + failureRate,

@@ -34,6 +34,8 @@ import com.datasophon.common.utils.Result;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,6 +46,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("api/observability/otelcol")
 public class OtelCollectorController extends ApiController {
+    
+    private static final Logger log = LoggerFactory.getLogger(OtelCollectorController.class);
     
     private final OtelCollectorConfigService configService;
     private final ServiceInstallService installService;
@@ -70,7 +74,12 @@ public class OtelCollectorController extends ApiController {
         if (exporterMode == null) {
             r = configService.pushNodeConfig(clusterId, hostname, effectiveParams);
         } else {
-            ExporterMode mode = ExporterMode.fromConfigValue(exporterMode);
+            ExporterMode mode;
+            try {
+                mode = ExporterMode.fromConfigValue(exporterMode);
+            } catch (IllegalArgumentException e) {
+                return Result.error("无效的 exporterMode: " + exporterMode);
+            }
             if (mode == ExporterMode.DORIS) {
                 schemaOrchestrator.applyIfReady(clusterId);
             }
@@ -83,6 +92,11 @@ public class OtelCollectorController extends ApiController {
     
     @GetMapping("config")
     public Result config(@RequestParam Integer clusterId) {
-        return Result.success(installService.getServiceConfigOption(clusterId, "OTELCOLLECTOR"));
+        try {
+            return Result.success(installService.getServiceConfigOption(clusterId, "OTELCOLLECTOR"));
+        } catch (RuntimeException e) {
+            log.warn("Failed to load OTELCOLLECTOR config for cluster {}: {}", clusterId, e.getMessage());
+            return Result.error("OTELCOLLECTOR 配置读取失败，服务可能未安装");
+        }
     }
 }
