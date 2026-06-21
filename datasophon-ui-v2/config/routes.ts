@@ -36,6 +36,91 @@ export default [
     component: './chatbot',
   },
 
+  // ─── 监控看板（Monitor Dashboards）────────────────────────────────
+  {
+    path: '/monitor',
+    name: 'monitor-dashboards',
+    icon: 'fundProjectionScreen',
+    routes: [
+      {
+        path: '/monitor',
+        redirect: '/monitor/apisix',
+      },
+      {
+        path: '/monitor/apisix',
+        name: 'apisix-monitor',
+        icon: 'monitor',
+        component: './monitor/ApisixMonitor',
+      },
+      {
+        path: '/monitor/prometheus',
+        name: 'prometheus-monitor',
+        icon: 'lineChart',
+        component: './monitor/PrometheusMonitor',
+      },
+      {
+        path: '/monitor/zookeeper',
+        name: 'zookeeper-monitor',
+        icon: 'cluster',
+        component: './monitor/ZooKeeperMonitor',
+      },
+      {
+        path: '/monitor/dolphinscheduler',
+        name: 'dolphinscheduler-monitor',
+        icon: 'fundProjectionScreen',
+        component: './monitor/DolphinSchedulerMonitor',
+      },
+      {
+        path: '/monitor/doris',
+        name: 'doris-monitor',
+        icon: 'database',
+        component: './monitor/DorisMonitor',
+      },
+      {
+        path: '/monitor/mysql',
+        name: 'mysql-monitor',
+        icon: 'database',
+        component: './monitor/MySQLMonitor',
+      },
+      {
+        path: '/monitor/nexus',
+        name: 'nexus-monitor',
+        icon: 'cloudServer',
+        component: './monitor/NexusMonitor',
+      },
+      {
+        path: '/monitor/datart',
+        name: 'datart-monitor',
+        icon: 'barChart',
+        component: './monitor/DatartMonitor',
+      },
+      {
+        path: '/monitor/juicefs',
+        name: 'juicefs-monitor',
+        icon: 'hdd',
+        component: './monitor/JuiceFSMonitor',
+      },
+      {
+        path: '/monitor/kyuubi',
+        name: 'kyuubi-monitor',
+        icon: 'database',
+        component: './monitor/KyuubiMonitor',
+      },
+      {
+        path: '/monitor/nginx',
+        name: 'nginx-monitor',
+        icon: 'monitor',
+        component: './monitor/NginxMonitor',
+      },
+      {
+        path: '/monitor/valkey',
+        name: 'valkey-monitor',
+        icon: 'monitor',
+        component: './monitor/ValkeyMonitor',
+      },
+    ],
+  },
+
   // ─── 集群管理（Colony）────────────────────────────────────────────
   // Phase 4 实现登录页后解注释；Phase 5 实现 Colony 页面
   {

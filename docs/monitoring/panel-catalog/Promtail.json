@@ -1,0 +1,302 @@
+[
+  {
+    "title": "DEBUG Log Lines",
+    "promql": [
+      "sum by(instance) (count_over_time({$label_name=~\"$label_value\", job=~\"$job\", instance=~\"$instance\"} | logfmt | level=\"debug\" | __error__=\"\" [$__range]))"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "blue",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "INFO Log Lines",
+    "promql": [
+      "sum by(instance) (count_over_time({$label_name=~\"$label_value\", job=~\"$job\", instance=~\"$instance\"} | logfmt | level=\"info\" | __error__=\"\" [$__range]))"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "light-green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "WARN Log Lines",
+    "promql": [
+      "sum by(instance) (count_over_time({$label_name=~\"$label_value\", job=~\"$job\", instance=~\"$instance\"} | logfmt | level=\"warn\" | __error__=\"\" [$__range]))"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "yellow",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "ERROR Log Lines",
+    "promql": [
+      "sum by(instance) (count_over_time({$label_name=~\"$label_value\", job=~\"$job\", instance=~\"$instance\"} | logfmt | level=\"error\" | __error__=\"\" [$__range]))"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "red",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Promtail Log Lines",
+    "promql": [
+      "sum(count_over_time({$label_name=~\"$label_value\", job=~\"$job\", instance=~\"$instance\"} | __error__=\"\" [$__range]))"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "orange",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Promtail Log in bytes",
+    "promql": [
+      "sum(bytes_over_time({$label_name=~\"$label_value\", job=~\"$job\", instance=~\"$instance\"} | __error__=\"\" [$__range]))"
+    ],
+    "unit": "decbytes",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "orange",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Promtail Version",
+    "promql": [
+      "promtail_build_info{job=~\"$job\", instance=~\"$instance.*\"} "
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "text",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Active Files",
+    "promql": [
+      "promtail_files_active_total{job=~\"$job\", instance=~\"$instance.*\"} "
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "#77a0ed",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Current Sent Bytes",
+    "promql": [
+      "rate(promtail_sent_bytes_total{job=~\"$job\", instance=~\"$instance.*\"}[$interval])"
+    ],
+    "unit": "decbytes",
+    "chartType": "stat",
+    "thresholds": [
+      {
+        "color": "#77a0ed",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Promtail Recent Logs",
+    "promql": [
+      "{$label_name=~\"$label_value\", job=~\"$job\", instance=~\"$instance\"} | logfmt | level=\"debug\" |= \"$filter\" | line_format `➡️ 🔵 {{regexReplaceAll \"level=debug|ts=[^\\\\s]+\\\\s\" __line__ \"$1\" | trim  }}`",
+      "{$label_name=~\"$label_value\", job=~\"$job\", instance=~\"$instance\"} | logfmt | level=\"info\" |= \"$filter\" | line_format `➡️ 🟢 {{regexReplaceAll \"level=info|ts=[^\\\\s]+\\\\s\" __line__ \"$1\" | trim }}`",
+      "{$label_name=~\"$label_value\", job=~\"$job\", instance=~\"$instance\"} | logfmt | level=\"warn\" |= \"$filter\" | line_format `➡️ 🟡 {{regexReplaceAll \"level=warn|ts=[^\\\\s]+\\\\s\" __line__ \"$1\" | trim  }}`",
+      "{$label_name=~\"$label_value\", job=~\"$job\", instance=~\"$instance\"} | logfmt | level=\"error\" |= \"$filter\" | line_format `➡️ 🔴 {{regexReplaceAll \"level=error|ts=[^\\\\s]+\\\\s\" __line__ \"$1\" | trim  }}`"
+    ],
+    "unit": null,
+    "chartType": "logs",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "Error Requests and Logs Count - Overtime",
+    "promql": [
+      "100 * sum(rate(promtail_request_duration_seconds_count{job=~\"$job\", instance=~\"$instance.*\",status_code=~\"5.*\"}[$interval])) by (job, instance) / sum(rate(promtail_request_duration_seconds_count{job=~\"$job\", instance=~\"$instance.*\"}[$interval])) by (job, instance)",
+      "sum by (level) (count_over_time({$label_name=~\"$label_value\", job=~\"$job\", instance=~\"$instance\"} | logfmt | level=\"warn\" | __error__=\"\"[$__auto]))",
+      "sum by (level) (count_over_time({$label_name=~\"$label_value\", job=~\"$job\", instance=~\"$instance\"} | logfmt | level=\"error\" | __error__=\"\"[$__auto]))"
+    ],
+    "unit": "percent",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "purple",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull",
+        "max"
+      ],
+      "displayMode": "table",
+      "placement": "right",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Read Bytes - Overtime",
+    "promql": [
+      "rate(promtail_read_bytes_total{job=~\"$job\", instance=~\"$instance.*\"}[$interval])"
+    ],
+    "unit": "Bps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "purple",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull",
+        "max"
+      ],
+      "displayMode": "table",
+      "placement": "right",
+      "showLegend": true,
+      "width": 350
+    }
+  },
+  {
+    "title": "Read Bytes - Details",
+    "promql": [
+      "promtail_read_bytes_total{job=~\"$job\", instance=~\"$instance.*\"} ",
+      "rate(promtail_read_bytes_total{job=~\"$job\", instance=~\"$instance.*\"}[$interval])",
+      "rate(promtail_read_lines_total{job=~\"$job\", instance=~\"$instance.*\"}[$interval])",
+      "increase(promtail_read_bytes_total{job=~\"$job\", instance=~\"$instance.*\"}[24h])"
+    ],
+    "unit": "decbytes",
+    "chartType": "table",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Encoded and Send Bytes - Overtime",
+    "promql": [
+      "rate(promtail_encoded_bytes_total{job=~\"$job\", instance=~\"$instance.*\"}[$interval])",
+      "rate(promtail_sent_bytes_total{job=~\"$job\", instance=~\"$instance.*\"}[$interval])"
+    ],
+    "unit": "Bps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "purple",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull",
+        "max"
+      ],
+      "displayMode": "table",
+      "placement": "right",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Encoded and Send - Details",
+    "promql": [
+      "rate(promtail_sent_bytes_total{job=~\"$job\", instance=~\"$instance.*\"}[$interval])",
+      "increase(promtail_sent_bytes_total{job=~\"$job\", instance=~\"$instance.*\"}[24h])",
+      "rate(promtail_encoded_bytes_total{job=~\"$job\", instance=~\"$instance.*\"}[$interval])",
+      "increase(promtail_encoded_bytes_total{job=~\"$job\", instance=~\"$instance.*\"}[24h])"
+    ],
+    "unit": "decbytes",
+    "chartType": "table",
+    "thresholds": [
+      {
+        "color": "green",
+        "value": null
+      }
+    ],
+    "legend": null
+  },
+  {
+    "title": "Dropped Bytes - Overtime",
+    "promql": [
+      "rate(promtail_dropped_bytes_total{job=~\"$job\", instance=~\"$instance.*\"}[$interval])",
+      "rate(promtail_dropped_entries_total{job=~\"$job\", instance=~\"$instance.*\"}[$interval])"
+    ],
+    "unit": "Bps",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "purple",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "displayMode": "table",
+      "placement": "right",
+      "showLegend": true
+    }
+  },
+  {
+    "title": "Request Latency - 99th Percentile Latency",
+    "promql": [
+      "histogram_quantile(0.99, sum(rate(promtail_request_duration_seconds_bucket{job=~\"$job\", instance=~\"$instance.*\"}[5m])) by (le))"
+    ],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": [
+      {
+        "color": "purple",
+        "value": null
+      }
+    ],
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    }
+  }
+]

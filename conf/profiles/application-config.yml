@@ -7,8 +7,8 @@ spring:
     password: ${mysql.password:datasophon}
 
 server:
-  port: ${server.port:8080}
-  address: ${server.address:0.0.0.0}
+  port: 8080
+  address: 0.0.0.0
 
 
 datasophon:

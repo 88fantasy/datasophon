@@ -1,0 +1,75 @@
+[
+  {
+    "title": "NGINX Status for $instance",
+    "promql": [
+      "nginx_up{instance=~\"$instance\"}"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "1,1",
+    "legend": null
+  },
+  {
+    "title": "Processed connections",
+    "promql": [
+      "irate(nginx_connections_accepted{instance=~\"$instance\"}[5m])",
+      "irate(nginx_connections_handled{instance=~\"$instance\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": false,
+      "avg": false,
+      "current": false,
+      "hideEmpty": false,
+      "max": false,
+      "min": false,
+      "rightSide": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Active Connections",
+    "promql": [
+      "nginx_connections_active{instance=~\"$instance\"}",
+      "nginx_connections_reading{instance=~\"$instance\"}",
+      "nginx_connections_waiting{instance=~\"$instance\"}",
+      "nginx_connections_writing{instance=~\"$instance\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": false,
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "rightSide": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Total requests",
+    "promql": [
+      "irate(nginx_http_requests_total{instance=~\"$instance\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  }
+]

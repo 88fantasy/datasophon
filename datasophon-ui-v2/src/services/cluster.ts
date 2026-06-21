@@ -33,6 +33,27 @@ export function saveManagers(id: number, userIds: number[]) {
   });
 }
 
+export function getK8sConfig(clusterId: number) {
+  return request<{ data: DATASOPHON.K8sConfig }>(
+    `/cluster/k8sConfig/getConfigByClusterId/${clusterId}`,
+    { method: 'GET' },
+  );
+}
+
+export function testK8sConnection(body: DATASOPHON.K8sConfig) {
+  return request<{ data: DATASOPHON.K8sTestResult }>('/cluster/k8sConfig/testConnection', {
+    method: 'POST',
+    data: body,
+  });
+}
+
+export function saveK8sConfig(body: DATASOPHON.K8sConfig) {
+  return request<{ data: void }>('/cluster/k8sConfig/saveOrUpdateConfig', {
+    method: 'POST',
+    data: body,
+  });
+}
+
 export function listFrames() {
   return request<{ data: DATASOPHON.FrameResponse[] }>('/frame/list', {
     method: 'GET',

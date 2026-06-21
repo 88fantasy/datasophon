@@ -1,0 +1,611 @@
+[
+  {
+    "title": "Uptime",
+    "promql": [
+      "process_uptime_seconds{application=\"$application\", instance=\"$instance\"}"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Heap Used",
+    "promql": [
+      "sum(jvm_memory_used_bytes{application=\"$application\", instance=\"$instance\", area=\"heap\"})*100/sum(jvm_memory_max_bytes{application=\"$application\",instance=\"$instance\", area=\"heap\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "70,90",
+    "legend": null
+  },
+  {
+    "title": "Non-Heap Used",
+    "promql": [
+      "sum(jvm_memory_used_bytes{application=\"$application\", instance=\"$instance\", area=\"nonheap\"})*100/sum(jvm_memory_max_bytes{application=\"$application\",instance=\"$instance\", area=\"nonheap\"})"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "70,90",
+    "legend": null
+  },
+  {
+    "title": "Process Open Files",
+    "promql": [
+      "process_files_open_files{application=\"$application\", instance=\"$instance\"}",
+      "process_files_max_files{application=\"$application\", instance=\"$instance\"}"
+    ],
+    "unit": "locale",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Start time",
+    "promql": [
+      "process_start_time_seconds{application=\"$application\", instance=\"$instance\"}*1000"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "CPU Usage",
+    "promql": [
+      "system_cpu_usage{instance=\"$instance\", application=\"$application\"}",
+      "process_cpu_usage{instance=\"$instance\", application=\"$application\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Load Average",
+    "promql": [
+      "system_load_average_1m{instance=\"$instance\", application=\"$application\"}",
+      "system_cpu_count{instance=\"$instance\", application=\"$application\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "$memory_pool_heap (heap)",
+    "promql": [
+      "jvm_memory_used_bytes{instance=\"$instance\", application=\"$application\", id=\"$memory_pool_heap\"}",
+      "jvm_memory_committed_bytes{instance=\"$instance\", application=\"$application\", id=\"$memory_pool_heap\"}",
+      "jvm_memory_max_bytes{instance=\"$instance\", application=\"$application\", id=\"$memory_pool_heap\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Classes Unloaded",
+    "promql": [
+      "irate(jvm_classes_unloaded_classes_total{instance=\"$instance\", application=\"$application\"}[5m])"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "$memory_pool_nonheap (non-heap)",
+    "promql": [
+      "jvm_memory_used_bytes{instance=\"$instance\", application=\"$application\", id=\"$memory_pool_nonheap\"}",
+      "jvm_memory_committed_bytes{instance=\"$instance\", application=\"$application\", id=\"$memory_pool_nonheap\"}",
+      "jvm_memory_max_bytes{instance=\"$instance\", application=\"$application\", id=\"$memory_pool_nonheap\"}"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Mapped Buffers",
+    "promql": [
+      "jvm_buffer_memory_used_bytes{instance=\"$instance\", application=\"$application\", id=\"mapped\"}",
+      "jvm_buffer_total_capacity_bytes{instance=\"$instance\", application=\"$application\", id=\"mapped\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Memory Allocate/Promote",
+    "promql": [
+      "irate(jvm_gc_memory_allocated_bytes_total{instance=\"$instance\", application=\"$application\"}[5m])",
+      "irate(jvm_gc_memory_promoted_bytes_total{instance=\"$instance\", application=\"$application\"}[5m])"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Classes Loaded",
+    "promql": [
+      "jvm_classes_loaded_classes{instance=\"$instance\", application=\"$application\"}"
+    ],
+    "unit": "locale",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Direct Buffers",
+    "promql": [
+      "jvm_buffer_memory_used_bytes{instance=\"$instance\", application=\"$application\", id=\"direct\"}",
+      "jvm_buffer_total_capacity_bytes{instance=\"$instance\", application=\"$application\", id=\"direct\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Threads",
+    "promql": [
+      "jvm_threads_daemon_threads{instance=\"$instance\", application=\"$application\"}",
+      "jvm_threads_live_threads{instance=\"$instance\", application=\"$application\"}",
+      "jvm_threads_peak_threads{instance=\"$instance\", application=\"$application\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "GC Count",
+    "promql": [
+      "irate(jvm_gc_pause_seconds_count{instance=\"$instance\", application=\"$application\"}[5m])"
+    ],
+    "unit": "locale",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "hideEmpty": true,
+      "hideZero": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": true,
+      "values": true
+    }
+  },
+  {
+    "title": "GC Stop the World Duration",
+    "promql": [
+      "irate(jvm_gc_pause_seconds_sum{instance=\"$instance\", application=\"$application\"}[5m])"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "hideEmpty": true,
+      "hideZero": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": true,
+      "values": true
+    }
+  },
+  {
+    "title": "Connections Size",
+    "promql": [
+      "hikaricp_connections{instance=\"$instance\", application=\"$application\", pool=\"$hikaricp\"}"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Connections",
+    "promql": [
+      "hikaricp_connections_active{instance=\"$instance\", application=\"$application\", pool=\"$hikaricp\"}",
+      "hikaricp_connections_idle{instance=\"$instance\", application=\"$application\", pool=\"$hikaricp\"}",
+      "hikaricp_connections_pending{instance=\"$instance\", application=\"$application\", pool=\"$hikaricp\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "hideEmpty": true,
+      "hideZero": false,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Connection Timeout Count",
+    "promql": [
+      "hikaricp_connections_timeout_total{instance=\"$instance\", application=\"$application\", pool=\"$hikaricp\"}"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Connection Creation Time",
+    "promql": [
+      "hikaricp_connections_creation_seconds_sum{instance=\"$instance\", application=\"$application\", pool=\"$hikaricp\"} / hikaricp_connections_creation_seconds_count{instance=\"$instance\", application=\"$application\", pool=\"$hikaricp\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Connection Usage Time",
+    "promql": [
+      "hikaricp_connections_usage_seconds_sum{instance=\"$instance\", application=\"$application\", pool=\"$hikaricp\"} / hikaricp_connections_usage_seconds_count{instance=\"$instance\", application=\"$application\", pool=\"$hikaricp\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Connection Acquire Time",
+    "promql": [
+      "hikaricp_connections_acquire_seconds_sum{instance=\"$instance\", application=\"$application\", pool=\"$hikaricp\"} / hikaricp_connections_acquire_seconds_count{instance=\"$instance\", application=\"$application\", pool=\"$hikaricp\"}"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Request Count",
+    "promql": [
+      "irate(http_server_requests_seconds_count{instance=\"$instance\", application=\"$application\", uri!~\".*actuator.*\"}[5m])"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": false,
+      "current": false,
+      "max": false,
+      "min": false,
+      "rightSide": true,
+      "show": true,
+      "total": false,
+      "values": false
+    }
+  },
+  {
+    "title": "Response Time",
+    "promql": [
+      "irate(http_server_requests_seconds_sum{instance=\"$instance\", application=\"$application\", exception=\"None\", uri!~\".*actuator.*\"}[5m]) / irate(http_server_requests_seconds_count{instance=\"$instance\", application=\"$application\", exception=\"None\", uri!~\".*actuator.*\"}[5m])"
+    ],
+    "unit": "s",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": false,
+      "max": true,
+      "min": true,
+      "rightSide": true,
+      "show": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Total Error Count",
+    "promql": [
+      "tomcat_global_error_total{instance=\"$instance\", application=\"$application\"}"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Active Sessions",
+    "promql": [
+      "tomcat_sessions_active_current_sessions{instance=\"$instance\", application=\"$application\"}"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Sent & Recieved Bytes",
+    "promql": [
+      "irate(tomcat_global_sent_bytes_total{instance=\"$instance\", application=\"$application\"}[5m])",
+      "irate(tomcat_global_received_bytes_total{instance=\"$instance\", application=\"$application\"}[5m])"
+    ],
+    "unit": "bytes",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "Thread Config Max",
+    "promql": [
+      "tomcat_threads_config_max{instance=\"$instance\", application=\"$application\"}"
+    ],
+    "unit": null,
+    "chartType": "singlestat",
+    "thresholds": "",
+    "legend": null
+  },
+  {
+    "title": "Threads",
+    "promql": [
+      "tomcat_threads_current_threads{instance=\"$instance\", application=\"$application\"}",
+      "tomcat_threads_busy_threads{instance=\"$instance\", application=\"$application\"}"
+    ],
+    "unit": "short",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": false,
+      "values": true
+    }
+  },
+  {
+    "title": "INFO logs",
+    "promql": [
+      "irate(logback_events_total{instance=\"$instance\", application=\"$application\", level=\"info\"}[5m])"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": true,
+      "values": true
+    }
+  },
+  {
+    "title": "ERROR logs",
+    "promql": [
+      "irate(logback_events_total{instance=\"$instance\", application=\"$application\", level=\"error\"}[5m])"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": true,
+      "values": true
+    }
+  },
+  {
+    "title": "WARN logs",
+    "promql": [
+      "irate(logback_events_total{instance=\"$instance\", application=\"$application\", level=\"warn\"}[5m])"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": true,
+      "values": true
+    }
+  },
+  {
+    "title": "DEBUG logs",
+    "promql": [
+      "irate(logback_events_total{instance=\"$instance\", application=\"$application\", level=\"debug\"}[5m])"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": true,
+      "values": true
+    }
+  },
+  {
+    "title": "TRACE logs",
+    "promql": [
+      "irate(logback_events_total{instance=\"$instance\", application=\"$application\", level=\"trace\"}[5m])"
+    ],
+    "unit": "none",
+    "chartType": "graph",
+    "thresholds": [],
+    "legend": {
+      "alignAsTable": true,
+      "avg": true,
+      "current": true,
+      "max": true,
+      "min": true,
+      "show": true,
+      "total": true,
+      "values": true
+    }
+  }
+]

@@ -30,8 +30,10 @@ const commitHash =
  * @name 使用公共路径
  * @description 部署时的路径，如果部署在非根目录下，需要配置这个变量
  * @doc https://umijs.org/docs/api/config#publicpath
+ * dev 环境用 '/'，避免静态资源被 /ddh proxy 规则拦截转发到后端导致 504
  */
-const PUBLIC_PATH: string = '/ddh/static/';
+const PUBLIC_PATH: string =
+  process.env.NODE_ENV === 'development' ? '/' : '/ddh/static/';
 
 export default defineConfig({
   alias: {

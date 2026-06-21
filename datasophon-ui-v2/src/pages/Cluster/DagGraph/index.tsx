@@ -28,27 +28,27 @@ DataProcessingDagNode.invokeInit();
 
 const LINE_STATUS: Record<string, Record<string, string | number>> = {
   [T_SUCCESS]: {
-    'line/stroke': green.primary!,
+    'line/stroke': green.primary ?? '#52c41a',
     'line/strokeDasharray': 0,
     'line/style/animation': '',
   },
   [T_FAILED]: {
-    'line/stroke': red.primary!,
+    'line/stroke': red.primary ?? '#ff4d4f',
     'line/strokeDasharray': 0,
     'line/style/animation': '',
   },
   [T_CANCEL]: {
-    'line/stroke': gold.primary!,
+    'line/stroke': gold.primary ?? '#faad14',
     'line/strokeDasharray': 0,
     'line/style/animation': '',
   },
   [T_PENDING]: {
-    'line/stroke': grey.primary!,
+    'line/stroke': grey.primary ?? '#8c8c8c',
     'line/strokeDasharray': 0,
     'line/style/animation': '',
   },
   [T_RUNNING]: {
-    'line/stroke': blue.primary!,
+    'line/stroke': blue.primary ?? '#1677ff',
     'line/strokeDasharray': 5,
     'line/style/animation': 'running-line 30s infinite linear',
   },

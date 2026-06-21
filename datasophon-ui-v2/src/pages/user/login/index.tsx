@@ -59,7 +59,6 @@ const getSafeRedirectUrl = (redirect: string | null): string => {
 const Login: React.FC = () => {
   const [loginError, setLoginError] = useState(false);
   const { setInitialState } = useModel('@@initialState');
-  const { styles } = useStyles();
   const intl = useIntl();
 
   const handleSubmit = async (values: {
