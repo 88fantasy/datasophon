@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class OtelMetricsQueryControllerTest {
@@ -62,12 +63,13 @@ class OtelMetricsQueryControllerTest {
         VectorSample sample = new VectorSample(
                 Map.of("instance", "h:8081", "job", "nexus"),
                 new Object[]{1234567890L, "42.0"});
+        // queryInstant signature: (clusterId, metric, agg, scale, instance, job, filters, filtersNe, evalTime)
         when(service.queryInstant(eq(1), eq("jvm_vm_uptime"), isNull(), eq(1.0),
-                anyString(), anyString(), anyLong()))
+                anyString(), anyString(), any(), any(), anyLong()))
                         .thenReturn(PrometheusVectorResult.of(List.of(sample)));
         
         ApiResponse<PrometheusVectorResult> response =
-                controller.query("jvm_vm_uptime", null, 1.0, ".+", ".+", null, 1);
+                controller.query("jvm_vm_uptime", null, 1.0, ".+", ".+", null, 1, null, null);
         
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData().resultType()).isEqualTo("vector");
@@ -81,13 +83,16 @@ class OtelMetricsQueryControllerTest {
                 new PrometheusMatrixResult.MatrixSeries(
                         Map.of("instance", "h:8081", "job", "nexus"),
                         List.<Object[]>of(new Object[]{1000L, "10.5"}))));
+        // queryRange signature: (clusterId, metric, rateWindow, scale, instance, job,
+        // filters, filtersNe, groupByKeys, start, end, step, table, quantile)
         when(service.queryRange(eq(1), eq("jvm_memory_heap_used"), isNull(), eq(1.0),
-                anyString(), anyString(), anyLong(), anyLong(), anyLong(), any(), anyDouble()))
+                anyString(), anyString(), any(), any(), any(), anyLong(), anyLong(), anyLong(),
+                any(), anyDouble()))
                         .thenReturn(matrix);
         
         ApiResponse<PrometheusMatrixResult> response =
                 controller.queryRange("jvm_memory_heap_used", null, 1.0, ".+", ".+",
-                        1000L, 2000L, 15L, 1, null, 0.5);
+                        1000L, 2000L, 15L, 1, null, 0.5, null, null, null);
         
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData().resultType()).isEqualTo("matrix");
@@ -108,12 +113,33 @@ class OtelMetricsQueryControllerTest {
     }
     
     @Test
+    void countNodes_returnsRunningCount() {
+        when(service.countNodes(eq(1), eq("DorisFE"))).thenReturn(3);
+        
+        ApiResponse<Integer> response = controller.countNodes("DorisFE", 1);
+        
+        assertThat(response.isSuccess()).isTrue();
+        assertThat(response.getData()).isEqualTo(3);
+    }
+    
+    @Test
+    void countNodes_serviceThrows_returnsFailResponse() {
+        when(service.countNodes(any(), any()))
+                .thenThrow(new RuntimeException("DB error"));
+        
+        ApiResponse<Integer> response = controller.countNodes("DorisFE", 1);
+        
+        assertThat(response.isSuccess()).isFalse();
+        assertThat(response.getErrorCode()).isEqualTo(500);
+    }
+    
+    @Test
     void query_serviceThrows_returnsFailResponse() {
-        when(service.queryInstant(any(), any(), any(), anyDouble(), any(), any(), anyLong()))
+        when(service.queryInstant(any(), any(), any(), anyDouble(), any(), any(), any(), any(), anyLong()))
                 .thenThrow(new IllegalStateException("No running DorisFE for cluster 1"));
         
         ApiResponse<PrometheusVectorResult> response =
-                controller.query("jvm_vm_uptime", null, 1.0, ".+", ".+", null, 1);
+                controller.query("jvm_vm_uptime", null, 1.0, ".+", ".+", null, 1, null, null);
         
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getErrorCode()).isEqualTo(500);
@@ -124,12 +150,12 @@ class OtelMetricsQueryControllerTest {
     @Test
     void queryRange_serviceThrows_returnsFailResponse() {
         when(service.queryRange(any(), any(), any(), anyDouble(), any(), any(),
-                anyLong(), anyLong(), anyLong(), any(), anyDouble()))
+                any(), any(), any(), anyLong(), anyLong(), anyLong(), any(), anyDouble()))
                         .thenThrow(new RuntimeException("connection refused"));
         
         ApiResponse<PrometheusMatrixResult> response =
                 controller.queryRange("some_metric", null, 1.0, ".+", ".+",
-                        1000L, 2000L, 15L, 1, null, 0.5);
+                        1000L, 2000L, 15L, 1, null, 0.5, null, null, null);
         
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getErrorCode()).isEqualTo(500);
@@ -137,14 +163,70 @@ class OtelMetricsQueryControllerTest {
     
     @Test
     void query_responseEnvelopeMatchesPrometheusFormat() {
-        // 断言信封中 data 字段含 resultType，符合前端 promql.ts PrometheusVector 类型要求
-        when(service.queryInstant(any(), any(), any(), anyDouble(), any(), any(), anyLong()))
+        when(service.queryInstant(any(), any(), any(), anyDouble(), any(), any(), any(), any(), anyLong()))
                 .thenReturn(PrometheusVectorResult.of(Collections.emptyList()));
         
         ApiResponse<PrometheusVectorResult> response =
-                controller.query("m", null, 1.0, ".+", ".+", null, 1);
+                controller.query("m", null, 1.0, ".+", ".+", null, 1, null, null);
         
         assertThat(response.getData().resultType()).isEqualTo("vector");
         assertThat(response.getData().result()).isNotNull();
+    }
+    
+    // ─── parseFilters / parseGroupBy 测试 ────────────────────────────────────────
+    
+    @Nested
+    class ParamParsing {
+        
+        @Test
+        void parseFilters_nullInput_returnsEmptyMap() {
+            assertThat(OtelMetricsQueryController.parseFilters(null)).isEmpty();
+        }
+        
+        @Test
+        void parseFilters_blankInput_returnsEmptyMap() {
+            assertThat(OtelMetricsQueryController.parseFilters("   ")).isEmpty();
+        }
+        
+        @Test
+        void parseFilters_singlePair_parsedCorrectly() {
+            Map<String, String> result = OtelMetricsQueryController.parseFilters("group:fe");
+            assertThat(result).containsEntry("group", "fe");
+        }
+        
+        @Test
+        void parseFilters_multiplePairs_allParsed() {
+            Map<String, String> result = OtelMetricsQueryController.parseFilters("group:fe,type:used");
+            assertThat(result).containsEntry("group", "fe").containsEntry("type", "used");
+        }
+        
+        @Test
+        void parseFilters_valueWithColon_takesFirstColon() {
+            // value 含冒号时只在第一个冒号分割
+            Map<String, String> result = OtelMetricsQueryController.parseFilters("path:/var/lib/doris");
+            assertThat(result).containsEntry("path", "/var/lib/doris");
+        }
+        
+        @Test
+        void parseGroupBy_nullInput_returnsEmptyList() {
+            assertThat(OtelMetricsQueryController.parseGroupBy(null)).isEmpty();
+        }
+        
+        @Test
+        void parseGroupBy_singleKey_returnsOneElement() {
+            assertThat(OtelMetricsQueryController.parseGroupBy("mode")).containsExactly("mode");
+        }
+        
+        @Test
+        void parseGroupBy_multipleKeys_allParsed() {
+            assertThat(OtelMetricsQueryController.parseGroupBy("mode,path"))
+                    .containsExactly("mode", "path");
+        }
+        
+        @Test
+        void parseGroupBy_whitespaceAround_trimmed() {
+            assertThat(OtelMetricsQueryController.parseGroupBy(" mode , path "))
+                    .containsExactly("mode", "path");
+        }
     }
 }

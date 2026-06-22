@@ -1,4 +1,4 @@
-# OTel Collector 配置：采集 Nexus Prometheus 指标 → Doris
+# OTel Collector 配置：采集 Nexus + Doris Prometheus 指标 → Doris
 #
 # 用于 deploy/compose/docker-compose.observability.yml 的本地链路验证。
 # 与生产 otelcol.ftl 的区别：
@@ -8,6 +8,7 @@
 #   - 含 debug exporter（便于排障）
 #
 # Nexus 指标端点（≥ 3.81 版本）：/service/rest/metrics/prometheus
+# Doris FE 指标端点：:8030/metrics；Doris BE 指标端点：:8040/metrics
 # 端点验证：curl -u admin:admin123 http://localhost:8081/service/rest/metrics/prometheus | head
 
 extensions:
@@ -29,6 +30,28 @@ receivers:
             - targets: ["obs-nexus:8081"]
               labels:
                 instance: obs-nexus
+
+  # Doris FE + BE Prometheus 指标采集。
+  # obs-doris-fe/be 既充当存储 Doris 又充当被监控 Doris（沙箱一机两用）。
+  # static labels 镜像旧 prometheus.ftl configs/doris.json 的 group/job/instance 维度，
+  # 保证 D3 SQL 过滤维度（group="fe"/"be", job="doris"）与历史 PromQL 一致。
+  prometheus/doris:
+    config:
+      scrape_configs:
+        - job_name: doris
+          scrape_interval: 15s
+          metrics_path: /metrics
+          static_configs:
+            - targets: ["obs-doris-fe:8030"]
+              labels:
+                group: fe
+                job: doris
+                instance: obs-doris-fe
+            - targets: ["obs-doris-be:8040"]
+              labels:
+                group: be
+                job: doris
+                instance: obs-doris-be
 
 processors:
   memory_limiter:
@@ -81,6 +104,6 @@ service:
                 port: 8888
   pipelines:
     metrics:
-      receivers: [prometheus/nexus]
+      receivers: [prometheus/nexus, prometheus/doris]
       processors: [memory_limiter, batch]
       exporters: [doris, debug]

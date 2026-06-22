@@ -264,10 +264,7 @@ const DorisDashboard: FC = () => {
                     <TimeSeriesPanel
                       title={panelTitle('DO-A09')}
                       data={series['DO-A09']}
-                      yFormatter={percentFormatter}
-                      thresholdLines={[
-                        { value: 20, label: '20%', color: CHART_COLORS.error },
-                      ]}
+                      yFormatter={(v) => v.toFixed(0)}
                     />
                   </PanelCol>
                 </Row>
@@ -417,10 +414,7 @@ const DorisDashboard: FC = () => {
                     <TimeSeriesPanel
                       title={panelTitle('DO-C01')}
                       data={series['DO-C01']}
-                      yFormatter={percentFormatter}
-                      thresholdLines={[
-                        { value: 20, label: '20%', color: CHART_COLORS.error },
-                      ]}
+                      yFormatter={(v) => v.toFixed(0)}
                     />
                   </PanelCol>
                   <PanelCol span={8}>
@@ -439,8 +433,8 @@ const DorisDashboard: FC = () => {
                         { value: 0.8, label: '80%', color: CHART_COLORS.error },
                       ]}
                       colorMap={{
-                        used_pct: CHART_COLORS.error,
-                        local_used_pct: CHART_COLORS.warning,
+                        local_used_pct: CHART_COLORS.error,
+                        avail_pct: CHART_COLORS.success,
                       }}
                     />
                   </PanelCol>

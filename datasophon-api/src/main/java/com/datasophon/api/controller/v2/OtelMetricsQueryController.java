@@ -29,6 +29,11 @@ import com.datasophon.api.observability.OtelMetricsQueryService.LabelsResult;
 import com.datasophon.api.observability.PrometheusMatrixResult;
 import com.datasophon.api.observability.PrometheusVectorResult;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,7 +53,15 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>GET {@code /ddh/api/v2/observability/otel/metrics/query}       — instant 查询</li>
  *   <li>GET {@code /ddh/api/v2/observability/otel/metrics/query_range}  — range 查询</li>
  *   <li>GET {@code /ddh/api/v2/observability/otel/metrics/labels}       — 标签值枚举</li>
+ *   <li>GET {@code /ddh/api/v2/observability/otel/metrics/nodes}        — 节点计数</li>
  * </ul>
+ *
+ * <h3>filters / filtersNe 格式</h3>
+ * 逗号分隔的 {@code key:value} 对，key 必须在白名单内（group/type/mode/path/device）：
+ * {@code filters=group:fe,type:used}；{@code filtersNe=device:lo}（不等过滤）。
+ *
+ * <h3>groupBy 格式</h3>
+ * 逗号分隔的 attributes 键名：{@code groupBy=mode} 或 {@code groupBy=path,device}。
  */
 @RestController
 @RequestMapping("/v2/observability/otel/metrics")
@@ -72,6 +85,8 @@ public class OtelMetricsQueryController extends ApiController {
      * @param job       可选 job 正则过滤
      * @param time      评估时间（Unix 秒；缺省取当前时间）
      * @param clusterId 集群 ID
+     * @param filters   可选等值过滤，格式 {@code "group:fe,type:used"}
+     * @param filtersNe 可选不等过滤，格式 {@code "device:lo"}
      */
     @GetMapping("/query")
     public ApiResponse<PrometheusVectorResult> query(
@@ -81,11 +96,13 @@ public class OtelMetricsQueryController extends ApiController {
                                                      @RequestParam(required = false, defaultValue = ".+") String instance,
                                                      @RequestParam(required = false, defaultValue = ".+") String job,
                                                      @RequestParam(required = false) Long time,
-                                                     @RequestParam(required = false, defaultValue = "1") Integer clusterId) {
+                                                     @RequestParam(required = false, defaultValue = "1") Integer clusterId,
+                                                     @RequestParam(required = false) String filters,
+                                                     @RequestParam(required = false) String filtersNe) {
         try {
             long evalTime = time != null ? time : System.currentTimeMillis() / 1000;
             return ApiResponse.ok(queryService.queryInstant(clusterId, metric, agg, scale,
-                    instance, job, evalTime));
+                    instance, job, parseFilters(filters), parseFilters(filtersNe), evalTime));
         } catch (Exception e) {
             log.error("Doris instant query failed: metric={} cluster={} reason={}",
                     metric, clusterId, e.getMessage(), e);
@@ -97,6 +114,9 @@ public class OtelMetricsQueryController extends ApiController {
      * Range 查询，对应 Prometheus {@code /api/v1/query_range}。
      *
      * @param rateWindow 可选速率窗口（"1m"/"5m"；缺省 gauge 直接取平均）
+     * @param filters    可选等值过滤，格式 {@code "group:fe,type:used"}
+     * @param filtersNe  可选不等过滤，格式 {@code "device:lo"}
+     * @param groupBy    可选额外 GROUP BY 维度，格式 {@code "mode"} 或 {@code "mode,path"}
      */
     @GetMapping("/query_range")
     public ApiResponse<PrometheusMatrixResult> queryRange(
@@ -110,10 +130,14 @@ public class OtelMetricsQueryController extends ApiController {
                                                           @RequestParam long step,
                                                           @RequestParam(required = false, defaultValue = "1") Integer clusterId,
                                                           @RequestParam(required = false, defaultValue = "gauge") String table,
-                                                          @RequestParam(required = false, defaultValue = "0.5") double quantile) {
+                                                          @RequestParam(required = false, defaultValue = "0.5") double quantile,
+                                                          @RequestParam(required = false) String filters,
+                                                          @RequestParam(required = false) String filtersNe,
+                                                          @RequestParam(required = false) String groupBy) {
         try {
             return ApiResponse.ok(queryService.queryRange(clusterId, metric, rateWindow, scale,
-                    instance, job, start, end, step, table, quantile));
+                    instance, job, parseFilters(filters), parseFilters(filtersNe), parseGroupBy(groupBy),
+                    start, end, step, table, quantile));
         } catch (Exception e) {
             log.error("Doris range query failed: metric={} cluster={} reason={}",
                     metric, clusterId, e.getMessage(), e);
@@ -135,5 +159,61 @@ public class OtelMetricsQueryController extends ApiController {
                     metric, clusterId, e.getMessage(), e);
             return ApiResponse.fail(500, "标签查询失败");
         }
+    }
+    
+    /**
+     * 查询集群内指定角色的 RUNNING 节点数（替代 PromQL {@code count(up==1)}）。
+     *
+     * @param roleName  角色名，与 meta DDL 的 roles[].name 一致（如 "DorisFE" / "DorisBE"）
+     * @param clusterId 集群 ID
+     */
+    @GetMapping("/nodes")
+    public ApiResponse<Integer> countNodes(
+                                           @RequestParam String roleName,
+                                           @RequestParam(required = false, defaultValue = "1") Integer clusterId) {
+        try {
+            return ApiResponse.ok(queryService.countNodes(clusterId, roleName));
+        } catch (Exception e) {
+            log.error("Node count failed: roleName={} cluster={} reason={}",
+                    roleName, clusterId, e.getMessage(), e);
+            return ApiResponse.fail(500, "节点计数失败");
+        }
+    }
+    
+    // ─── 参数解析 ──────────────────────────────────────────────────────────────────
+    
+    /**
+     * 解析 {@code "key:value,key:value"} 格式的过滤参数为 Map。
+     * 白名单校验由 {@link OtelMetricsQueryService} 负责，此处仅做格式解析。
+     */
+    static Map<String, String> parseFilters(String filtersParam) {
+        if (filtersParam == null || filtersParam.isBlank()) {
+            return Map.of();
+        }
+        Map<String, String> result = new LinkedHashMap<>();
+        for (String pair : filtersParam.split(",")) {
+            int idx = pair.indexOf(':');
+            if (idx > 0) {
+                result.put(pair.substring(0, idx).trim(), pair.substring(idx + 1).trim());
+            }
+        }
+        return result;
+    }
+    
+    /**
+     * 解析 {@code "mode"} 或 {@code "mode,path"} 格式的 groupBy 参数为 List。
+     */
+    static List<String> parseGroupBy(String groupByParam) {
+        if (groupByParam == null || groupByParam.isBlank()) {
+            return List.of();
+        }
+        List<String> result = new ArrayList<>();
+        for (String part : groupByParam.split(",")) {
+            String trimmed = part.trim();
+            if (!trimmed.isBlank()) {
+                result.add(trimmed);
+            }
+        }
+        return result;
     }
 }

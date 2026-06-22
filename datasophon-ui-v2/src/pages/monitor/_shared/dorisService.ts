@@ -33,12 +33,16 @@ export interface DorisInstantParams {
   job?: string;
   time?: number;
   clusterId?: number;
+  /** 等值属性过滤（key 须在白名单：group/type/mode/path/device） */
+  filters?: Record<string, string>;
+  /** 不等属性过滤 */
+  filtersNe?: Record<string, string>;
 }
 
 /** 传给后端 query_range 接口的 range 参数 */
 export interface DorisRangeParams {
   metric: string;
-  rateWindow?: '1m' | '5m';
+  rateWindow?: '1m' | '2m' | '5m' | '15m';
   scale?: number;
   instance?: string;
   job?: string;
@@ -50,7 +54,15 @@ export interface DorisRangeParams {
   table?: 'gauge' | 'sum' | 'summary';
   /** summary 表查询时的分位数（0~1），如 0.5 / 0.99，默认 0.5 */
   quantile?: number;
+  /** 等值属性过滤（key 须在白名单：group/type/mode/path/device） */
+  filters?: Record<string, string>;
+  /** 不等属性过滤 */
+  filtersNe?: Record<string, string>;
+  /** 额外 GROUP BY 维度（如 ['path']、['mode']） */
+  groupBy?: string[];
 }
+
+// ── 描述符类型 ──────────────────────────────────────────────────────────────────
 
 /** instant 面板描述符 */
 export interface DorisInstantDescriptor {
@@ -58,38 +70,108 @@ export interface DorisInstantDescriptor {
   metric: string;
   agg?: 'sum' | 'max';
   scale?: number;
+  /** 等值属性过滤 */
+  filters?: Record<string, string>;
+  /** 不等属性过滤 */
+  filtersNe?: Record<string, string>;
 }
 
-/** multi-range 面板描述符（每条 series 一个 metric） */
+/** 节点计数面板描述符（查角色注册表，替代 PromQL count(up==1)） */
+export interface DorisNodeCountDescriptor {
+  type: 'node-count';
+  /** 角色名，与 meta DDL roles[].name 一致（如 "DorisFE" / "DorisBE"） */
+  roleName: string;
+}
+
+/**
+ * multi-range 面板中单条查询。
+ *
+ * 若指定 denominatorMetric，hook 将在客户端计算 metric / denominatorMetric * scale 比值，
+ * 实现堆占比、错误率、磁盘占比等派生指标。
+ */
+export interface DorisRangeQuery {
+  label: string;
+  metric: string;
+  rate?: '1m' | '2m' | '5m' | '15m';
+  scale?: number;
+  /** OTel 表选择 */
+  table?: 'gauge' | 'sum' | 'summary';
+  quantile?: number;
+  /** 等值属性过滤 */
+  filters?: Record<string, string>;
+  /** 不等属性过滤 */
+  filtersNe?: Record<string, string>;
+  /** 额外 GROUP BY 维度 */
+  groupBy?: string[];
+  /** 可选：分母指标（留空时直接返回原始序列） */
+  denominatorMetric?: string;
+  denominatorFilters?: Record<string, string>;
+  denominatorFiltersNe?: Record<string, string>;
+}
+
+/** multi-range 面板描述符（每条 series 一个 query） */
 export interface DorisMultiRangeDescriptor {
   type: 'multi-range';
-  queries: Array<{
-    label: string;
-    metric: string;
-    rate?: '1m' | '5m';
-    scale?: number;
-    /** OTel 表选择：gauge（默认）、sum（counter/_total 类）、summary（Dropwizard timer quantile） */
-    table?: 'gauge' | 'sum' | 'summary';
-    /** summary 表查询时的分位数（0~1），默认 0.5 */
-    quantile?: number;
-  }>;
+  queries: DorisRangeQuery[];
 }
 
-export type DorisPanelDescriptor = DorisInstantDescriptor | DorisMultiRangeDescriptor;
+export type DorisPanelDescriptor =
+  | DorisInstantDescriptor
+  | DorisMultiRangeDescriptor
+  | DorisNodeCountDescriptor;
+
+// ── 参数序列化辅助 ────────────────────────────────────────────────────────────
+
+/**
+ * 将过滤 Map 序列化为 "key:value,key:value" 格式。
+ * 后端 Controller 的 parseFilters() 期望此格式。
+ */
+function filtersToString(filters?: Record<string, string>): string | undefined {
+  if (!filters || Object.keys(filters).length === 0) return undefined;
+  return Object.entries(filters)
+    .map(([k, v]) => `${k}:${v}`)
+    .join(',');
+}
+
+/** 将 string[] 序列化为逗号分隔字符串。 */
+function groupByToString(groupBy?: string[]): string | undefined {
+  if (!groupBy || groupBy.length === 0) return undefined;
+  return groupBy.join(',');
+}
+
+// ── API 函数 ──────────────────────────────────────────────────────────────────
 
 /** 查询指定指标的 instant 快照（对应 Prometheus /api/v1/query） */
 export function queryDorisInstant(params: DorisInstantParams) {
+  const { filters, filtersNe, ...rest } = params;
   return request<ApiResponse<PrometheusVector>>(
     '/observability/otel/metrics/query',
-    { method: 'GET', params },
+    {
+      method: 'GET',
+      params: {
+        ...rest,
+        filters: filtersToString(filters),
+        filtersNe: filtersToString(filtersNe),
+      },
+    },
   );
 }
 
 /** 查询指定指标的时间序列（对应 Prometheus /api/v1/query_range） */
 export function queryDorisRange(params: DorisRangeParams) {
+  const { filters, filtersNe, groupBy, rateWindow, ...rest } = params;
   return request<ApiResponse<PrometheusMatrix>>(
     '/observability/otel/metrics/query_range',
-    { method: 'GET', params },
+    {
+      method: 'GET',
+      params: {
+        ...rest,
+        rateWindow,
+        filters: filtersToString(filters),
+        filtersNe: filtersToString(filtersNe),
+        groupBy: groupByToString(groupBy),
+      },
+    },
   );
 }
 
@@ -99,4 +181,12 @@ export function fetchDorisLabels(metric: string, clusterId = 1) {
     '/observability/otel/metrics/labels',
     { method: 'GET', params: { metric, clusterId } },
   );
+}
+
+/** 查询集群内指定角色的 RUNNING 节点数（替代 PromQL count(up==1)） */
+export function fetchDorisNodeCount(roleName: string, clusterId = 1) {
+  return request<ApiResponse<number>>('/observability/otel/metrics/nodes', {
+    method: 'GET',
+    params: { roleName, clusterId },
+  });
 }

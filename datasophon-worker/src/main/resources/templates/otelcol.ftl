@@ -21,6 +21,29 @@ receivers:
             - targets: ['127.0.0.1:8888']
               labels:
                 host: ${ip}
+<#if (scrapeDoris!"false") == "true">
+  # Doris FE + BE 指标采集（本节点为 exporter 模式 doris 时自动注入）。
+  # group/job/instance 标签对齐旧 prometheus.ftl configs/doris.json 维度。
+  prometheus/doris:
+    config:
+      scrape_configs:
+        - job_name: ${dorisClusterJobName!"doris"}
+          scrape_interval: 15s
+          metrics_path: /metrics
+          static_configs:
+  <#list (dorisFeScrapeTargets!"")?split(";") as feTarget>
+    <#if feTarget?has_content>
+            - targets: ["${feTarget?trim}"]
+              labels: {group: fe, job: "${dorisClusterJobName!"doris"}", instance: "${feTarget?trim}"}
+    </#if>
+  </#list>
+  <#list (dorisBeScrapeTargets!"")?split(";") as beTarget>
+    <#if beTarget?has_content>
+            - targets: ["${beTarget?trim}"]
+              labels: {group: be, job: "${dorisClusterJobName!"doris"}", instance: "${beTarget?trim}"}
+    </#if>
+  </#list>
+</#if>
 
 processors:
   memory_limiter:
@@ -77,7 +100,7 @@ service:
                 port: 8888
   pipelines:
     metrics:
-      receivers: [otlp, prometheus/self]
+      receivers: [otlp, prometheus/self<#if (scrapeDoris!"false") == "true">, prometheus/doris</#if>]
       processors: [memory_limiter, batch]
       exporters: [<#if (exporterMode!"s3") == "doris">doris<#else>awss3</#if>]
     logs:
