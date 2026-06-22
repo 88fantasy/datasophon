@@ -55,7 +55,10 @@ export function useDSMonitorDashboard({
   const data = useDashboardData({
     panelQueries: PANEL_QUERIES,
     replaceVars: (promql, vars) =>
-      replaceVars(promql, vars, { application: 'master-server', instance: '.+' }),
+      replaceVars(promql, vars, {
+        application: 'master-server',
+        instance: '.+',
+      }),
     variables: variables as unknown as Record<string, string>,
     panelIds,
     extras,

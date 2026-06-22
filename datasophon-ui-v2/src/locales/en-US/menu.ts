@@ -54,7 +54,8 @@ export default {
   'menu.monitor-dashboards.apisix-monitor': 'APISIX Monitor',
   'menu.monitor-dashboards.prometheus-monitor': 'Prometheus Monitor',
   'menu.monitor-dashboards.zookeeper-monitor': 'ZooKeeper Monitor',
-  'menu.monitor-dashboards.dolphinscheduler-monitor': 'DolphinScheduler Monitor',
+  'menu.monitor-dashboards.dolphinscheduler-monitor':
+    'DolphinScheduler Monitor',
   'menu.monitor-dashboards.doris-monitor': 'Doris Monitor',
   'menu.monitor-dashboards.mysql-monitor': 'MySQL Monitor',
   'menu.monitor-dashboards.nexus-monitor': 'Nexus Monitor',

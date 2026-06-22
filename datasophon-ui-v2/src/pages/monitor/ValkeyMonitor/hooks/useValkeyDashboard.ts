@@ -26,10 +26,21 @@ export interface ValkeyDashboardData {
 }
 
 const ALL_PANEL_IDS = [
-  'V01', 'V02', 'V03', 'V03_max', 'V04',
-  'V05', 'V06', 'V07', 'V08',
-  'V09', 'V10',
-  'V11', 'V12', 'V13', 'V14',
+  'V01',
+  'V02',
+  'V03',
+  'V03_max',
+  'V04',
+  'V05',
+  'V06',
+  'V07',
+  'V08',
+  'V09',
+  'V10',
+  'V11',
+  'V12',
+  'V13',
+  'V14',
 ];
 
 const EXTRAS = {

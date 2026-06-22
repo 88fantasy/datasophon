@@ -4,11 +4,11 @@ import dorisMonitor from './en-US/dorisMonitor';
 import globalHeader from './en-US/globalHeader';
 import menu from './en-US/menu';
 import network from './en-US/network';
+import nginxMonitor from './en-US/nginxMonitor';
 import pages from './en-US/pages';
 import prometheusMonitor from './en-US/prometheusMonitor';
 import settingDrawer from './en-US/settingDrawer';
 import settings from './en-US/settings';
-import nginxMonitor from './en-US/nginxMonitor';
 import valkeyMonitor from './en-US/valkeyMonitor';
 import zookeeperMonitor from './en-US/zookeeperMonitor';
 

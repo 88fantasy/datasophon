@@ -58,7 +58,8 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
     queries: [
       {
         label: 'Exceptions',
-        metric: 'com_sonatype_nexus_api_extdirect_selfhosted_clm_ClmComponent_read_exceptions_total',
+        metric:
+          'com_sonatype_nexus_api_extdirect_selfhosted_clm_ClmComponent_read_exceptions_total',
         rate: '1m' as const,
         table: 'sum' as const,
       },
@@ -71,14 +72,16 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
     queries: [
       {
         label: 'p50',
-        metric: 'org_eclipse_jetty_ee8_nested_ContextHandler_CoreContextHandler_dispatches',
+        metric:
+          'org_eclipse_jetty_ee8_nested_ContextHandler_CoreContextHandler_dispatches',
         table: 'summary' as const,
         quantile: 0.5,
         scale: 1000,
       },
       {
         label: 'p99',
-        metric: 'org_eclipse_jetty_ee8_nested_ContextHandler_CoreContextHandler_dispatches',
+        metric:
+          'org_eclipse_jetty_ee8_nested_ContextHandler_CoreContextHandler_dispatches',
         table: 'summary' as const,
         quantile: 0.99,
         scale: 1000,
@@ -139,7 +142,10 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
     queries: [
       { label: 'G1 Eden', metric: 'jvm_memory_pools_G1_Eden_Space_used' },
       { label: 'G1 Old', metric: 'jvm_memory_pools_G1_Old_Gen_used' },
-      { label: 'G1 Survivor', metric: 'jvm_memory_pools_G1_Survivor_Space_used' },
+      {
+        label: 'G1 Survivor',
+        metric: 'jvm_memory_pools_G1_Survivor_Space_used',
+      },
       { label: 'Metaspace', metric: 'jvm_memory_pools_Metaspace_used' },
     ],
   },
@@ -185,7 +191,10 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
       { label: 'Runnable', metric: 'jvm_thread_states_runnable_count' },
       { label: 'Blocked', metric: 'jvm_thread_states_blocked_count' },
       { label: 'Waiting', metric: 'jvm_thread_states_waiting_count' },
-      { label: 'Timed Waiting', metric: 'jvm_thread_states_timed_waiting_count' },
+      {
+        label: 'Timed Waiting',
+        metric: 'jvm_thread_states_timed_waiting_count',
+      },
     ],
   },
   N18: {
@@ -201,8 +210,16 @@ export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
   N17: {
     type: 'multi-range',
     queries: [
-      { label: 'Queued Jobs', metric: 'org_eclipse_jetty_util_thread_QueuedThreadPool_qtp965453174_jobs' },
-      { label: 'Pool Size', metric: 'org_eclipse_jetty_util_thread_QueuedThreadPool_qtp965453174_size' },
+      {
+        label: 'Queued Jobs',
+        metric:
+          'org_eclipse_jetty_util_thread_QueuedThreadPool_qtp965453174_jobs',
+      },
+      {
+        label: 'Pool Size',
+        metric:
+          'org_eclipse_jetty_util_thread_QueuedThreadPool_qtp965453174_size',
+      },
     ],
   },
 };

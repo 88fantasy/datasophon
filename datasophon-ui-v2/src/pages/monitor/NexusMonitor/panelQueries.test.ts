@@ -25,10 +25,18 @@ import { PANEL_QUERIES } from './panelQueries';
 
 /** T1+T2 面板（已实现），T3 延后 */
 const IMPLEMENTED_PANEL_IDS = [
-  'N01', 'N02', 'N03', 'N04', 'N05', 'N06', // T1 instant
+  'N01',
+  'N02',
+  'N03',
+  'N04',
+  'N05',
+  'N06', // T1 instant
   'N07', // T2 counter rate
-  'N12', 'N13', 'N14', // T1/T2 multi-range
-  'N16', 'N18',        // T1 multi-range
+  'N12',
+  'N13',
+  'N14', // T1/T2 multi-range
+  'N16',
+  'N18', // T1 multi-range
 ];
 
 /** T3 面板（延后，不应出现在 PANEL_QUERIES 中） */

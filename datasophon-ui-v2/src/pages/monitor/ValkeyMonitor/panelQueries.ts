@@ -51,13 +51,11 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
     queries: [
       {
         label: 'Hits',
-        promql:
-          'irate(redis_keyspace_hits_total{instance=~"$instance"}[5m])',
+        promql: 'irate(redis_keyspace_hits_total{instance=~"$instance"}[5m])',
       },
       {
         label: 'Misses',
-        promql:
-          'irate(redis_keyspace_misses_total{instance=~"$instance"}[5m])',
+        promql: 'irate(redis_keyspace_misses_total{instance=~"$instance"}[5m])',
       },
     ],
   },
@@ -115,8 +113,7 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
   // V11: items by db — dynamic series
   V11: {
     type: 'range',
-    promql:
-      'sum(redis_db_keys{instance=~"$instance"}) by (db)',
+    promql: 'sum(redis_db_keys{instance=~"$instance"}) by (db)',
     seriesKey: 'db',
   },
   V12: {

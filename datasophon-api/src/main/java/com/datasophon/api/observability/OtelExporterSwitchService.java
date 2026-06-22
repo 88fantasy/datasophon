@@ -34,6 +34,7 @@ import com.datasophon.dao.enums.ServiceRoleState;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,13 +81,29 @@ public class OtelExporterSwitchService {
         params.put("exporterMode", mode.configValue());
         if (mode == ExporterMode.DORIS) {
             List<ClusterServiceRoleInstanceEntity> frontends = roles(clusterId, DORIS_FE);
+            List<ClusterServiceRoleInstanceEntity> backends = roles(clusterId, DORIS_BE);
             Map<String, String> dorisVariables = variables(clusterId, "DORIS");
             OtelCredentials credentials = credentialService.getOrCreate(clusterId);
+            String feHttpPort = dorisVariables.getOrDefault("http_port", "8030");
+            String beHttpPort = dorisVariables.getOrDefault("webserver_port", "8040");
             params.put("dorisEndpoint", "http://" + frontends.get(0).getHostname() + ":"
-                    + dorisVariables.getOrDefault("http_port", "8030"));
+                    + feHttpPort);
             params.put("dorisDatabase", "otel");
             params.put("dorisUser", "otel_collector");
             params.put("dorisPassword", credentials.collectorPassword());
+            // Doris metrics scrape variables — FE :http_port/metrics, BE :webserver_port/metrics
+            // Labels mirror the existing prometheus.ftl configs/doris.json dimensions
+            // so OtelMetricsQueryService SQL filters on group/job/instance work correctly.
+            params.put("scrapeDoris", "true");
+            params.put("dorisClusterJobName", "doris");
+            String feScrapeTargets = frontends.stream()
+                    .map(fe -> fe.getHostname() + ":" + feHttpPort)
+                    .collect(Collectors.joining(";"));
+            params.put("dorisFeScrapeTargets", feScrapeTargets);
+            String beScrapeTargets = backends.stream()
+                    .map(be -> be.getHostname() + ":" + beHttpPort)
+                    .collect(Collectors.joining(";"));
+            params.put("dorisBeScrapeTargets", beScrapeTargets);
         }
         return configService.pushNodeConfig(clusterId, hostname, params);
     }

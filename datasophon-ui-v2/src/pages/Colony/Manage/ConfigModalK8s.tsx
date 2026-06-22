@@ -1,4 +1,4 @@
-import Editor from '@monaco-editor/react';
+import type { ProFormInstance } from '@ant-design/pro-components';
 import {
   ModalForm,
   ProFormDependency,
@@ -7,10 +7,14 @@ import {
   ProFormText,
   ProFormTextArea,
 } from '@ant-design/pro-components';
-import type { ProFormInstance } from '@ant-design/pro-components';
+import Editor from '@monaco-editor/react';
 import { Button, message } from 'antd';
 import React, { useCallback, useRef } from 'react';
-import { getK8sConfig, saveK8sConfig, testK8sConnection } from '@/services/cluster';
+import {
+  getK8sConfig,
+  saveK8sConfig,
+  testK8sConnection,
+} from '@/services/cluster';
 
 const T_CONFIG_FILE = 'config_file';
 const T_TOKEN = 'token';
@@ -31,7 +35,12 @@ interface Props {
   onSuccess: () => void;
 }
 
-const ConfigModalK8s: React.FC<Props> = ({ cluster, open, onClose, onSuccess }) => {
+const ConfigModalK8s: React.FC<Props> = ({
+  cluster,
+  open,
+  onClose,
+  onSuccess,
+}) => {
   const formRef = useRef<ProFormInstance>(undefined);
 
   const handleTest = useCallback(async () => {
@@ -70,7 +79,10 @@ const ConfigModalK8s: React.FC<Props> = ({ cluster, open, onClose, onSuccess }) 
       onFinish={handleFinish}
       request={async () => {
         const res = await getK8sConfig(cluster.id);
-        return { ...res.data, type: (res.data?.type ?? T_CONFIG_FILE) as DATASOPHON.K8sConnectType };
+        return {
+          ...res.data,
+          type: (res.data?.type ?? T_CONFIG_FILE) as DATASOPHON.K8sConnectType,
+        };
       }}
       modalProps={{ destroyOnClose: true, width: 640 }}
       submitter={{
@@ -104,22 +116,42 @@ const ConfigModalK8s: React.FC<Props> = ({ cluster, open, onClose, onSuccess }) 
                 <Editor
                   height="300px"
                   language="yaml"
-                  options={{ minimap: { enabled: false }, wordWrap: 'on', automaticLayout: true }}
+                  options={{
+                    minimap: { enabled: false },
+                    wordWrap: 'on',
+                    automaticLayout: true,
+                  }}
                 />
               </ProFormItem>
             );
           }
           return (
             <>
-              <ProFormText name="serverHost" label="K8s 主机名称" rules={REQUIRED} />
-              <ProFormTextArea name="serverCert" label="K8s 证书" rules={REQUIRED} />
+              <ProFormText
+                name="serverHost"
+                label="K8s 主机名称"
+                rules={REQUIRED}
+              />
+              <ProFormTextArea
+                name="serverCert"
+                label="K8s 证书"
+                rules={REQUIRED}
+              />
               {type === T_TOKEN && (
                 <ProFormTextArea name="token" label="Token" rules={REQUIRED} />
               )}
               {type === T_PASSWORD && (
                 <>
-                  <ProFormText name="username" label="用户名" rules={REQUIRED} />
-                  <ProFormText.Password name="password" label="密码" rules={REQUIRED} />
+                  <ProFormText
+                    name="username"
+                    label="用户名"
+                    rules={REQUIRED}
+                  />
+                  <ProFormText.Password
+                    name="password"
+                    label="密码"
+                    rules={REQUIRED}
+                  />
                 </>
               )}
             </>
