@@ -183,6 +183,24 @@
     "status": "public"
   },
   {
+    "service": "OTELCOLLECTOR",
+    "arch": "x86_64",
+    "packageName": "otelcol-contrib_0.154.0_linux_amd64.tar.gz",
+    "decompressPackageName": "otelcol-contrib_0.154.0",
+    "downloadUrl": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.154.0/otelcol-contrib_0.154.0_linux_amd64.tar.gz",
+    "status": "public",
+    "note": "contrib 发行版含 dorisexporter，tarball 内无顶层目录（单二进制），DDL 设 createDecompressDir=true 由 Datasophon 自动创建 otelcol-contrib_0.154.0/ 目录"
+  },
+  {
+    "service": "OTELCOLLECTOR",
+    "arch": "aarch64",
+    "packageName": "otelcol-contrib_0.154.0_linux_arm64.tar.gz",
+    "decompressPackageName": "otelcol-contrib_0.154.0",
+    "downloadUrl": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.154.0/otelcol-contrib_0.154.0_linux_arm64.tar.gz",
+    "status": "public",
+    "note": "contrib 发行版含 dorisexporter，tarball 内无顶层目录（单二进制），DDL 设 createDecompressDir=true 由 Datasophon 自动创建 otelcol-contrib_0.154.0/ 目录"
+  },
+  {
     "service": "PROMETHEUS",
     "arch": "x86_64",
     "packageName": "prometheus-3.12.0.linux-amd64.tar.gz",

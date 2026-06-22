@@ -46,8 +46,8 @@ const heapColors = {
 };
 
 const gcColors = {
-  MarkSweep: CHART_COLORS.error,
-  Scavenge: CHART_COLORS.primary,
+  'Young GC': CHART_COLORS.primary,
+  'Old GC': CHART_COLORS.error,
 };
 
 const threadStateColors = {

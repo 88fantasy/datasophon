@@ -1,0 +1,151 @@
+# 可观测链路模拟测试 compose
+# 拓扑：Nexus(采集源) → otel-collector(prometheus scrape + dorisexporter) → Doris(存储)
+#
+# 版本对应 package/manifest.json：Doris 4.0.5、otelcol-contrib 0.154.0
+# Nexus 版本：sonatype/nexus3:3.92.3-alpine（≥ 3.81，指标端点路径见下）
+#
+# 启动前提（本地 Mac）：
+#   - 停掉本机其他占用 8081 端口的 Nexus 实例
+#   - Docker Desktop 已运行（BE 依赖 vm.max_map_count，Docker Desktop on Mac 的 VM 已满足）
+#
+# 用法：
+#   docker compose -f deploy/compose/docker-compose.observability.yml up -d
+#   docker compose -f deploy/compose/docker-compose.observability.yml logs -f obs-otelcol
+#   # 验证、DDL 导出详见 deploy/compose/observability-stack.md
+
+services:
+
+  # ─── Doris FE（Frontend，SQL 查询入口 + 元数据管理） ──────────────────────────
+  obs-doris-fe:
+    image: apache/doris:fe-4.0.5
+    container_name: obs-doris-fe
+    hostname: obs-doris-fe
+    environment:
+      # FE_SERVERS 必须写固定 IP（priority_networks），不能用 service 名
+      - FE_SERVERS=fe1:10.10.30.2:9010
+      - FE_ID=1
+    ports:
+      - "8030:8030"   # HTTP / Stream Load（dorisexporter 写入）
+      - "9030:9030"   # MySQL 协议查询端口
+    volumes:
+      - obs-fe-meta:/opt/apache-doris/fe/doris-meta
+      - obs-fe-log:/opt/apache-doris/fe/log
+    networks:
+      obs_net:
+        ipv4_address: 10.10.30.2
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8030/api/bootstrap || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  # ─── Doris BE（Backend，数据存储与计算） ──────────────────────────────────────
+  obs-doris-be:
+    image: apache/doris:be-4.0.5
+    container_name: obs-doris-be
+    hostname: obs-doris-be
+    environment:
+      - FE_SERVERS=fe1:10.10.30.2:9010
+      # BE_ADDR 同样写固定 IP + 心跳端口
+      - BE_ADDR=10.10.30.3:9050
+    ports:
+      - "8040:8040"   # BE HTTP 端口（调试用）
+    volumes:
+      - obs-be-storage:/opt/apache-doris/be/storage
+      - obs-be-log:/opt/apache-doris/be/log
+    networks:
+      obs_net:
+        ipv4_address: 10.10.30.3
+    depends_on:
+      obs-doris-fe:
+        condition: service_healthy
+
+  # ─── Doris 初始化：等待 BE 向 FE 注册完成 ────────────────────────────────────
+  # BE 进程启动 ≠ FE 已确认 BE Alive，需轮询 SHOW BACKENDS 直到 Alive=true
+  obs-doris-init:
+    image: mysql:8
+    container_name: obs-doris-init
+    networks:
+      - obs_net
+    depends_on:
+      obs-doris-fe:
+        condition: service_healthy
+      obs-doris-be:
+        condition: service_started
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        echo "Waiting for Doris BE to register and become Alive..."
+        for i in $$(seq 1 60); do
+          alive=$$(mysql -h obs-doris-fe -P 9030 -uroot --connect-timeout=5 \
+            -e "SHOW BACKENDS" 2>/dev/null \
+            | awk -F'\t' 'NR==1{for(i=1;i<=NF;i++)if($$i=="Alive")col=i} NR>1&&col{if($$col=="true")n++} END{print n+0}' \
+            || echo 0)
+          if [ "$$alive" -ge 1 ]; then
+            echo "BE is Alive. Doris ready."
+            exit 0
+          fi
+          echo "  attempt $$i/60: BE not alive yet, retrying in 5s..."
+          sleep 5
+        done
+        echo "ERROR: Doris BE did not become Alive within 300s"
+        exit 1
+    restart: "no"
+
+  # ─── Nexus（被采集的 Prometheus 指标来源） ────────────────────────────────────
+  obs-nexus:
+    image: sonatype/nexus3:3.92.3-alpine
+    container_name: obs-nexus
+    environment:
+      TZ: Asia/Shanghai
+      # 禁用随机密码，固定 admin 密码为 admin123（测试环境专用）
+      INSTALL4J_ADD_VM_PARAMS: >-
+        -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m
+        -Dnexus.security.randompassword=false
+    ports:
+      - "8081:8081"
+    volumes:
+      - obs-nexus-data:/nexus-data
+    networks:
+      - obs_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8081/service/rest/v1/status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s   # Nexus 冷启动较慢（alpine 镜像约 60-120s）
+
+  # ─── OTel Collector（Nexus metrics → dorisexporter → Doris） ─────────────────
+  obs-otelcol:
+    image: otel/opentelemetry-collector-contrib:0.154.0
+    container_name: obs-otelcol
+    command: ["--config=/etc/otelcol/otelcol-nexus.yaml"]
+    volumes:
+      - ./conf/otelcol-nexus.yaml:/etc/otelcol/otelcol-nexus.yaml:ro
+    ports:
+      - "8888:8888"   # collector self-metrics（Prometheus 格式）
+    networks:
+      - obs_net
+    depends_on:
+      obs-doris-init:
+        condition: service_completed_successfully
+      obs-nexus:
+        condition: service_healthy
+    restart: on-failure   # dorisexporter 首次 create_schema 可能因 BE 初始化竞争而失败，允许重试
+
+volumes:
+  obs-fe-meta:
+  obs-fe-log:
+  obs-be-storage:
+  obs-be-log:
+  obs-nexus-data:
+
+networks:
+  obs_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.30.0/24
+          gateway: 10.10.30.1
+          ip_range: 10.10.30.128/25   # 自动分配范围 .128-.254，.2/.3 保留给 FE/BE 静态分配
