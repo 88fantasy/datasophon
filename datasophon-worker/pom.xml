@@ -148,6 +148,7 @@
                     <skipTests>${skipTests}</skipTests>
                     <includes>
                         <include>**/grpc/**Test.java</include>
+                        <include>**/hook/resource/**Test.java</include>
                     </includes>
                 </configuration>
             </plugin>

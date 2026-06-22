@@ -116,17 +116,6 @@ public class ServiceInstallController extends ApiController {
     }
     
     /**
-     * 下载额外资源
-     */
-    @GetMapping("/downloadResource")
-    public void downloadResource(String frameCode, String serviceRoleName,
-                                 String resource,
-                                 HttpServletResponse response) throws Exception {
-        
-        serviceInstallService.downloadResource(frameCode, serviceRoleName, resource, response);
-    }
-    
-    /**
      * 服务部署总览
      */
     @RequestMapping("/checkServiceDependency")

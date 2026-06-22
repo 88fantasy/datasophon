@@ -46,10 +46,6 @@ import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleHostMapping;
-import com.datasophon.common.model.ServiceRoleInfo;
-import com.datasophon.common.storage.MetaStorage;
-import com.datasophon.common.storage.StorageUtils;
-import com.datasophon.common.storage.vo.ServiceMetaItem;
 import com.datasophon.common.utils.CollectionUtils;
 import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.IOUtils;
@@ -63,7 +59,6 @@ import com.datasophon.dao.entity.ClusterServiceInstanceRoleGroup;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
-import com.datasophon.dao.entity.FrameServiceRoleEntity;
 import com.datasophon.dao.enums.NeedRestart;
 import com.datasophon.dao.enums.ServiceState;
 
@@ -71,7 +66,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -309,32 +303,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
                                 + Constants.UNDERLINE
                                 + Constants.SERVICE_ROLE_HOST_MAPPING);
         return Result.success(map);
-    }
-    
-    @Override
-    public void downloadResource(String frameCode, String serviceRoleName, String resource,
-                                 HttpServletResponse response) throws Exception {
-        FrameServiceRoleEntity entity = frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(frameCode, serviceRoleName);
-        ServiceRoleInfo roleInfo = JSONObject.parseObject(entity.getServiceRoleJson(), ServiceRoleInfo.class);
-        
-        ServiceMetaItem item = new ServiceMetaItem();
-        item.setServiceName(roleInfo.getServiceName());
-        item.setType(MetaStorage.PHYSICAL);
-        item.setFramework(frameCode);
-        MetaStorage metaStorage = StorageUtils.getMetaStorage();
-        
-        int idx = resource.lastIndexOf("/");
-        String fileName = idx == -1 ? resource : resource.substring(idx + 1);
-        try {
-            metaStorage.downResource(item, resource, () -> {
-                response.reset();
-                response.setContentType("application/octet-stream");
-                response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
-                return response.getOutputStream();
-            });
-        } catch (FileNotFoundException ex) {
-            response.setStatus(404);
-        }
     }
     
     @Override
