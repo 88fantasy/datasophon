@@ -101,8 +101,8 @@
             <outputDirectory>conf/frameworktpl</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>${basedir}/../jmx</directory>
-            <outputDirectory>/jmx</outputDirectory>
+            <directory>${project.build.directory}/otel</directory>
+            <outputDirectory>/otel</outputDirectory>
             <directoryMode>0755</directoryMode>
             <fileMode>0755</fileMode>
         </fileSet>

@@ -83,10 +83,19 @@ cd $DDH_HOME
 
 if [ "$command" = "api" ]; then
   CLASS=com.datasophon.api.DataSophonApplicationServer
-  JMX="-javaagent:$DDH_HOME/jmx/jmx_prometheus_javaagent-0.16.1.jar=8586:$DDH_HOME/jmx/jmx_exporter_config.yaml"
+  OTEL=""
+  if [ "$OTEL_JAVAAGENT_ENABLED" = "true" ]; then
+    OTEL="-javaagent:$DDH_HOME/otel/opentelemetry-javaagent.jar"
+    export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-datasophon-api}"
+    export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}"
+    export OTEL_EXPORTER_OTLP_PROTOCOL="${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}"
+    export OTEL_TRACES_EXPORTER=otlp
+    export OTEL_METRICS_EXPORTER=none
+    export OTEL_LOGS_EXPORTER=none
+  fi
   HEAP_OPTS="-Xms1g -Xmx1g -Xmn512m"
   OPENS_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
-  export DDH_OPTS="$HEAP_OPTS $OPENS_OPTS $DDH_OPTS $JMX"
+  export DDH_OPTS="$HEAP_OPTS $OPENS_OPTS $DDH_OPTS $OTEL"
 else
   echo "Error: No command named \`$command' was found."
   exit 1

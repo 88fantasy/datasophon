@@ -48,6 +48,8 @@ SHOW PROPERTY FOR 'otel_reader';     -- 期望:default_workload_group = otel_wg
 
 ## 5. traces_graph_job 幂等(A3 待办,CHECK 2-1)
 
+Phase D 仅完成 api/worker OTel Java Agent 接入;`otel_traces_graph_job` 的真机幂等验证继续 defer,不纳入本批验收范围。
+
 `V1__otel_views.sql` 的 `CREATE JOB \`otel:otel_traces_graph_job\`` 无幂等语法
 (Doris `CREATE JOB` 不支持 `IF NOT EXISTS`、`DROP JOB` 不支持 `IF EXISTS`)。
 - 单次 apply:JOB 创建成功。

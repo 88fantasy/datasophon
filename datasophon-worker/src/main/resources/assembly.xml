@@ -122,8 +122,8 @@
 
 
         <fileSet>
-            <directory>${basedir}/src/main/resources/jmx</directory>
-            <outputDirectory>jmx</outputDirectory>
+            <directory>${project.build.directory}/otel</directory>
+            <outputDirectory>otel</outputDirectory>
         </fileSet>
 
         <fileSet>
