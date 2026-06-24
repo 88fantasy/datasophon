@@ -14,6 +14,7 @@ import {
   saveAlertQuota,
   updateAlertQuota,
 } from '@/services/alarm';
+import { isReadonlyOtelBuiltinRule } from './otelBuiltinRules';
 
 const COMPARE_OPTIONS = [
   { label: '!=', value: '!=' },
@@ -51,6 +52,7 @@ const MetricModal: React.FC<Props> = ({
   onSuccess,
 }) => {
   const isEdit = !!record?.id;
+  const readonlyOtelBuiltinRule = isEdit && isReadonlyOtelBuiltinRule(record);
   const [form] = Form.useForm();
 
   const { data: groupOptions = [] } = useRequest(
@@ -112,11 +114,13 @@ const MetricModal: React.FC<Props> = ({
       <ProFormText
         name="alertQuotaName"
         label="告警指标名称"
+        disabled={readonlyOtelBuiltinRule}
         rules={[{ required: true, message: '请输入指标名称' }]}
       />
       <ProFormText
         name="alertExpr"
         label="指标表达式"
+        disabled={readonlyOtelBuiltinRule}
         rules={[{ required: true, message: '请输入指标表达式' }]}
       />
       <ProFormSelect
@@ -140,6 +144,7 @@ const MetricModal: React.FC<Props> = ({
         name="alertGroupId"
         label="告警组"
         options={groupOptions}
+        disabled={readonlyOtelBuiltinRule}
         rules={[{ required: true, message: '请选择告警组' }]}
         placeholder="请选择告警组"
       />
@@ -147,6 +152,7 @@ const MetricModal: React.FC<Props> = ({
         name="serviceRoleName"
         label="绑定角色"
         dependencies={['alertGroupId']}
+        disabled={readonlyOtelBuiltinRule}
         rules={[{ required: true, message: '请选择绑定角色' }]}
         placeholder="请先选择告警组"
         request={async (params: { alertGroupId?: number }) => {

@@ -36,42 +36,42 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import cn.hutool.core.io.IoUtil;
 
 class OtelSchemaApplierTest {
-
+    
     @Test
     void injectsDistinctRuntimePasswordsWithoutLeavingPlaceholders() {
         String sql = "collector='CHANGE_ME_AT_A3_COLLECTOR'; reader='CHANGE_ME_AT_A3_READER'";
-
+        
         String rendered = OtelSchemaApplier.renderSql(
                 sql, new OtelCredentials("collector-secret", "reader-secret"));
-
+        
         assertThat(rendered)
                 .contains("collector='collector-secret'")
                 .contains("reader='reader-secret'")
                 .doesNotContain("CHANGE_ME_AT_A3");
     }
-
+    
     @Test
     void ignoresAlreadyExistingCreateJobOnly() {
         JdbcClient jdbc = mock(JdbcClient.class);
         JdbcClient.StatementSpec statement = mock(JdbcClient.StatementSpec.class);
         when(jdbc.sql("CREATE JOB test")).thenReturn(statement);
         when(statement.update()).thenThrow(new DataAccessResourceFailureException("job already exists"));
-
+        
         assertThatCode(() -> OtelSchemaApplier.executeStatement(jdbc, "CREATE JOB test"))
                 .doesNotThrowAnyException();
     }
-
+    
     @Test
     void databaseSchemaAlignsExistingOtelUserPasswords() {
         String sql = readResource("observability/doris/V1__otel_database.sql");
         String rendered = OtelSchemaApplier.renderSql(
                 sql, new OtelCredentials("collector-secret", "reader-secret"));
-
+        
         assertThat(rendered)
                 .contains("ALTER USER 'otel_collector' IDENTIFIED BY 'collector-secret'")
                 .contains("ALTER USER 'otel_reader' IDENTIFIED BY 'reader-secret'");
     }
-
+    
     private static String readResource(String res) {
         var in = OtelSchemaApplierTest.class.getClassLoader().getResourceAsStream(res);
         assertThat(in).as("resource %s", res).isNotNull();

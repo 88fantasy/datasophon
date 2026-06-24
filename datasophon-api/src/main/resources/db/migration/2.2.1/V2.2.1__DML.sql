@@ -1,0 +1,7 @@
+INSERT INTO `t_ddh_cluster_alert_quota` VALUES (700, 'Nexus实例只读', 'NEXUS', 'readonly_enabled', 2, 11, 1, 'Nexus Repository 已进入只读状态，请检查 BlobStore 空间、水位和系统配置', '>', 0, 1, 1, 60, 'NexusRepository', 1, '2026-06-24 00:00:00');
+INSERT INTO `t_ddh_cluster_alert_quota` VALUES (701, 'Nexus线程死锁', 'NEXUS', 'jvm_thread_states_deadlock_count', 2, 11, 1, 'Nexus JVM 检测到线程死锁，请采集 thread dump 并评估是否重启服务', '>', 0, 1, 1, 60, 'NexusRepository', 1, '2026-06-24 00:00:00');
+INSERT INTO `t_ddh_cluster_alert_quota` VALUES (702, 'Nexus堆内存使用率', 'NEXUS', 'jvm_memory_heap_usage', 1, 11, 1, 'Nexus JVM 堆内存使用率过高，请检查 GC、缓存和 JVM 堆配置', '>', 85, 1, 1, 60, 'NexusRepository', 1, '2026-06-24 00:00:00');
+INSERT INTO `t_ddh_cluster_alert_quota` VALUES (703, 'Nexus文件描述符使用率', 'NEXUS', 'jvm_fd_usage', 1, 11, 1, 'Nexus 文件描述符使用率过高，请检查连接数并调整系统 ulimit', '>', 90, 1, 1, 60, 'NexusRepository', 1, '2026-06-24 00:00:00');
+INSERT INTO `t_ddh_cluster_alert_quota` VALUES (704, 'DorisBE磁盘使用率', 'DORIS', 'doris_be_disks_local_used_capacity', 2, 11, 1, 'Doris BE 磁盘使用率过高，请清理数据、扩容或迁移 Tablet', '>', 85, 1, 1, 60, 'DorisBE', 1, '2026-06-24 00:00:00');
+INSERT INTO `t_ddh_cluster_alert_quota` VALUES (705, 'DorisFE堆内存使用率', 'DORIS', 'jvm_heap_size_bytes', 1, 11, 1, 'Doris FE JVM 堆内存使用率过高，请检查查询负载和 FE JVM 配置', '>', 85, 1, 1, 60, 'DorisFE', 1, '2026-06-24 00:00:00');
+INSERT INTO `t_ddh_cluster_alert_quota` VALUES (706, 'Doris查询错误率', 'DORIS', 'doris_fe_query_err', 1, 11, 1, 'Doris 查询错误率过高，请检查 FE 日志、慢查询和下游业务请求', '>', 5, 1, 1, 60, 'DorisFE', 1, '2026-06-24 00:00:00');
