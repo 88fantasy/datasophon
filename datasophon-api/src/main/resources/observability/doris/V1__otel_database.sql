@@ -19,11 +19,13 @@ PROPERTIES (
 -- 3. 采集账号：仅 Stream Load 所需 LOAD 权限（无 CREATE/DROP/DELETE）
 --    口令由部署阶段 A3 下发时改为实际值，请务必替换 CHANGE_ME_AT_A3
 CREATE USER IF NOT EXISTS 'otel_collector' IDENTIFIED BY 'CHANGE_ME_AT_A3_COLLECTOR';
+ALTER USER 'otel_collector' IDENTIFIED BY 'CHANGE_ME_AT_A3_COLLECTOR';
 GRANT LOAD_PRIV ON otel.* TO 'otel_collector';
 
 -- 4. 看板读账号：仅 SELECT（与采集写账号分离，最小权限）
 --    口令由部署阶段 A3 下发时改为实际值，请务必替换 CHANGE_ME_AT_A3
 CREATE USER IF NOT EXISTS 'otel_reader' IDENTIFIED BY 'CHANGE_ME_AT_A3_READER';
+ALTER USER 'otel_reader' IDENTIFIED BY 'CHANGE_ME_AT_A3_READER';
 GRANT SELECT_PRIV ON otel.* TO 'otel_reader';
 
 -- 5. 把两个账号绑定到 otel_wg（USAGE_PRIV 是使用资源组的必要条件）

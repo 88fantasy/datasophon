@@ -149,6 +149,7 @@
                     <includes>
                         <include>**/grpc/**Test.java</include>
                         <include>**/hook/resource/**Test.java</include>
+                        <include>**/test/OtelcolTemplateTest.java</include>
                     </includes>
                 </configuration>
             </plugin>

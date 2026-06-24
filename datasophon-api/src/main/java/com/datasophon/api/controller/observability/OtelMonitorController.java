@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("api/observability/otelcol")
+@RequestMapping("observability/otelcol")
 public class OtelMonitorController extends ApiController {
     
     private final OtelMonitorService monitorService;

@@ -44,7 +44,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("api/observability/otelcol")
+@RequestMapping("observability/otelcol")
 public class OtelCollectorController extends ApiController {
     
     private static final Logger log = LoggerFactory.getLogger(OtelCollectorController.class);
