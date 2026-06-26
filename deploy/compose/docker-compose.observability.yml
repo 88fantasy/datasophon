@@ -125,6 +125,8 @@ services:
       - ./conf/otelcol-nexus.yaml:/etc/otelcol/otelcol-nexus.yaml:ro
     ports:
       - "8888:8888"   # collector self-metrics（Prometheus 格式）
+      - "4317:4317"   # OTLP gRPC（宿主机 api/worker 直发）
+      - "4318:4318"   # OTLP HTTP（备用）
     networks:
       - obs_net
     depends_on:

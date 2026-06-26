@@ -1,8 +1,8 @@
-# OTel Collector 配置：采集 Nexus + Doris Prometheus 指标 → Doris
+# OTel Collector 配置：采集 Nexus + Doris Prometheus 指标 → Doris，并接收 api/worker OTLP traces + logs
 #
 # 用于 deploy/compose/docker-compose.observability.yml 的本地链路验证。
 # 与生产 otelcol.ftl 的区别：
-#   - 仅 metrics pipeline（无 traces / logs）
+#   - metrics + logs + traces 三条 pipeline（OTLP receiver 接 api/worker agent 上报）
 #   - create_schema: true（沙箱自动建表，生产用 false + 自管 schema）
 #   - replication_num: 1（单 BE 必须；生产多 BE 时默认 3）
 #   - 含 debug exporter（便于排障）
@@ -16,6 +16,14 @@ extensions:
     endpoint: "0.0.0.0:13133"
 
 receivers:
+  # OTLP receiver：接收 datasophon-api / worker 通过 OTel Java Agent 上报的 traces + logs
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
   prometheus/nexus:
     config:
       scrape_configs:
@@ -105,5 +113,13 @@ service:
   pipelines:
     metrics:
       receivers: [prometheus/nexus, prometheus/doris]
+      processors: [memory_limiter, batch]
+      exporters: [doris, debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [doris, debug]
+    traces:
+      receivers: [otlp]
       processors: [memory_limiter, batch]
       exporters: [doris, debug]
