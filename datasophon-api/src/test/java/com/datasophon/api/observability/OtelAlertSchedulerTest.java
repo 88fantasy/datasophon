@@ -294,7 +294,7 @@ class OtelAlertSchedulerTest {
         private final List<String> throwMetrics = new ArrayList<>();
         
         MutableMetricQueryService() {
-            super(null, null, null);
+            super(null, null);
         }
         
         @Override

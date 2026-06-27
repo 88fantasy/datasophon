@@ -44,7 +44,8 @@ class OtelMonitorControllerTest {
                 new NodeOtelMetrics("worker-1", true, null, new OtelSelfMetrics(1, 10, 20, 0, 0, 0)));
         when(service.collectAll(7)).thenReturn(metrics);
         
-        OtelMonitorController controller = new OtelMonitorController(service);
+        OtelMonitorController controller = new OtelMonitorController(
+                service, mock(OtelTracesQueryService.class), mock(OtelLogsQueryService.class));
         Result result = controller.monitor(7);
         
         assertThat(controller).isInstanceOf(ApiController.class);

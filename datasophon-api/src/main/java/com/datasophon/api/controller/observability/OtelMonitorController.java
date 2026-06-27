@@ -23,7 +23,10 @@
 package com.datasophon.api.controller.observability;
 
 import com.datasophon.api.controller.ApiController;
+import com.datasophon.api.observability.OtelLogsQueryService;
 import com.datasophon.api.observability.OtelMonitorService;
+import com.datasophon.api.observability.OtelTracesQueryService;
+import com.datasophon.api.observability.OtelTracesQueryService.PageResult;
 import com.datasophon.common.utils.Result;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,13 +39,62 @@ import org.springframework.web.bind.annotation.RestController;
 public class OtelMonitorController extends ApiController {
     
     private final OtelMonitorService monitorService;
+    private final OtelTracesQueryService tracesQueryService;
+    private final OtelLogsQueryService logsQueryService;
     
-    public OtelMonitorController(OtelMonitorService monitorService) {
+    public OtelMonitorController(OtelMonitorService monitorService,
+                                 OtelTracesQueryService tracesQueryService,
+                                 OtelLogsQueryService logsQueryService) {
         this.monitorService = monitorService;
+        this.tracesQueryService = tracesQueryService;
+        this.logsQueryService = logsQueryService;
     }
     
     @GetMapping("monitor")
     public Result monitor(@RequestParam Integer clusterId) {
         return Result.success(monitorService.collectAll(clusterId));
+    }
+    
+    @GetMapping("traces")
+    public Result traces(@RequestParam Integer clusterId,
+                         @RequestParam long start,
+                         @RequestParam long end,
+                         @RequestParam(required = false) String serviceName,
+                         @RequestParam(required = false) String status,
+                         @RequestParam(required = false) String spanName,
+                         @RequestParam(required = false) String traceId,
+                         @RequestParam(defaultValue = "1") int page,
+                         @RequestParam(defaultValue = "20") int pageSize) {
+        PageResult<?> result = tracesQueryService.listTraces(
+                clusterId, start, end, serviceName, status, spanName, traceId, page, pageSize);
+        return Result.success(result.total(), result.data());
+    }
+    
+    @GetMapping("traces/detail")
+    public Result traceDetail(@RequestParam Integer clusterId,
+                              @RequestParam String traceId) {
+        return Result.success(tracesQueryService.getTrace(clusterId, traceId));
+    }
+    
+    @GetMapping("traces/services")
+    public Result traceServices(@RequestParam Integer clusterId,
+                                @RequestParam long start,
+                                @RequestParam long end) {
+        return Result.success(tracesQueryService.listServices(clusterId, start, end));
+    }
+    
+    @GetMapping("logs")
+    public Result logs(@RequestParam Integer clusterId,
+                       @RequestParam long start,
+                       @RequestParam long end,
+                       @RequestParam(required = false) String serviceName,
+                       @RequestParam(required = false) String severities,
+                       @RequestParam(required = false) String bodyKeyword,
+                       @RequestParam(required = false) String traceId,
+                       @RequestParam(defaultValue = "1") int page,
+                       @RequestParam(defaultValue = "50") int pageSize) {
+        PageResult<?> result = logsQueryService.listLogs(
+                clusterId, start, end, serviceName, severities, bodyKeyword, traceId, page, pageSize);
+        return Result.success(result.total(), result.data());
     }
 }

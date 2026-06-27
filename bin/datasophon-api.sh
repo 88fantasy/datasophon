@@ -88,8 +88,8 @@ if [ "$OTEL_JAVAAGENT_ENABLED" = "true" ]; then
   export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}"
   export OTEL_EXPORTER_OTLP_PROTOCOL="${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}"
   export OTEL_TRACES_EXPORTER=otlp
-  export OTEL_METRICS_EXPORTER=none
-  export OTEL_LOGS_EXPORTER=none
+  export OTEL_METRICS_EXPORTER=otlp
+  export OTEL_LOGS_EXPORTER=otlp
 fi
 HEAP_OPTS="-Xms1g -Xmx1g -Xmn512m"
 OPENS_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
