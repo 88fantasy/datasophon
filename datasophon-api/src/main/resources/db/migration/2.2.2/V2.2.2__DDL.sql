@@ -1,0 +1,2 @@
+-- 2.2.2 DDL placeholder: Phase E removes GRAFANA/ALERTMANAGER/LOKI/PROMTAIL service metadata.
+-- No schema changes required; alert seed data cleanup is in DML.

@@ -100,7 +100,7 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     private static final Logger logger = LoggerFactory.getLogger(ServiceInstallServiceImpl.class);
     
     private static final List<String> MUST_AT_SAME_NODE_BASIC_SERVICE =
-            Arrays.asList("Grafana", "AlertManager", "Prometheus");
+            Arrays.asList("Prometheus");
     
     private final ClusterInfoService clusterInfoService;
     
@@ -342,14 +342,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
                                         FrameServiceEntity::getServiceName,
                                         e -> e,
                                         (v1, v2) -> v1));
-        if (!instanceMap.containsKey("ALERTMANAGER") && !serviceMap.containsKey("ALERTMANAGER")) {
-            return Result.error(
-                    "service install depends on alertmanager ,please make sure you have selected it or that alertmanager is normal and running");
-        }
-        if (!instanceMap.containsKey("GRAFANA") && !serviceMap.containsKey("GRAFANA")) {
-            return Result.error(
-                    "service install depends on grafana ,please make sure you have selected it or that grafana is normal and running");
-        }
         if (!instanceMap.containsKey("PROMETHEUS") && !serviceMap.containsKey("PROMETHEUS")) {
             return Result.error(
                     "service install depends on prometheus ,please make sure you have selected it or that prometheus is normal and running");

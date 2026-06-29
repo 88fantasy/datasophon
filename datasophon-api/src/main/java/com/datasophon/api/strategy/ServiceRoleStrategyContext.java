@@ -47,7 +47,6 @@ public class ServiceRoleStrategyContext {
         strategyMap.put("KAdmin", new KAdminHandlerStrategy());
         strategyMap.put("RangerAdmin", new RangerAdminHandlerStrategy());
         strategyMap.put("ElasticSearch", new ElasticSearchHandlerStrategy());
-        strategyMap.put("AlertManager", new AlertManagerHandlerStrategy());
         strategyMap.put("KyuubiServer", new KyuubiServerHandlerStrategy());
         strategyMap.put("RANGER", new RangerAdminHandlerStrategy());
         strategyMap.put("ZOOKEEPER", new ZkServerHandlerStrategy());
