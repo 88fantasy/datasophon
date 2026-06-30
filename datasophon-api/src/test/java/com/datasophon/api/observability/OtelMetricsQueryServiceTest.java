@@ -34,6 +34,27 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class OtelMetricsQueryServiceTest {
+
+    @Test
+    void instantAgg_deduplicatesLatestSamplePerFilesystemSeriesBeforeSumming() {
+        String sql = OtelMetricsQueryService.buildInstantAggSql("sum", true, true, null, null);
+        assertThat(sql).contains("attributes['path']");
+        assertThat(sql).contains("attributes['device']");
+        assertThat(sql).contains("attributes['fstype']");
+        assertThat(sql).contains("attributes['mountpoint']");
+        assertThat(sql).contains("PARTITION BY " + OtelMetricsQueryService.INST_EXPR);
+        assertThat(sql).contains("CAST(attributes['path'] AS STRING)");
+        assertThat(sql).contains("CAST(attributes['mountpoint'] AS STRING)");
+    }
+
+    @Test
+    void attrFilters_useRegexpWhenFilterValueContainsRegexpMetaCharacters() {
+        String sql = OtelMetricsQueryService.buildRangeGaugeSql(
+                false, false, Map.of("fstype", "ext.*|xfs"), Map.of("mountpoint", ".*pod.*"),
+                List.of(), "otel_metrics_gauge");
+        assertThat(sql).contains("REGEXP :af_fstype");
+        assertThat(sql).contains("NOT REGEXP :afne_mountpoint");
+    }
     
     // ─── SQL 生成测试 ────────────────────────────────────────────────────────────
     
@@ -98,7 +119,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).containsIgnoringCase("SUM(value)");
             assertThat(sql).containsIgnoringCase("QUALIFY");
         }
-        
+
         @Test
         void instantAgg_max_containsMaxFunction() {
             String sql = OtelMetricsQueryService.buildInstantAggSql("max", false, false, null, null);
@@ -152,6 +173,17 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("attributes['device']");
             assertThat(sql).contains(":afne_device");
             assertThat(sql).contains("!= :afne_device");
+        }
+
+        @Test
+        void rangeGauge_withRegexpAttrFilters_appendsRegexpClauses() {
+            String sql = OtelMetricsQueryService.buildRangeGaugeSql(
+                    false, false, Map.of("fstype", "ext.*|xfs"), Map.of("mountpoint", ".*pod.*"),
+                    List.of(), "otel_metrics_gauge");
+            assertThat(sql).contains("attributes['fstype']");
+            assertThat(sql).contains("REGEXP :af_fstype");
+            assertThat(sql).contains("attributes['mountpoint']");
+            assertThat(sql).contains("NOT REGEXP :afne_mountpoint");
         }
         
         @Test

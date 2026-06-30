@@ -22,8 +22,6 @@
 
 package com.datasophon.api.service.impl;
 
-import static com.datasophon.common.Constants.GRAFANA_PATH;
-
 import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.service.ClusterServiceDashboardService;
 import com.datasophon.common.Constants;
@@ -35,7 +33,6 @@ import com.datasophon.dao.mapper.ClusterServiceDashboardMapper;
 import java.util.Map;
 import java.util.Objects;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -48,13 +45,7 @@ public class ClusterServiceDashboardServiceImpl
             ServiceImpl<ClusterServiceDashboardMapper, ClusterServiceDashboard>
         implements
             ClusterServiceDashboardService {
-    
-    @Value("${datasophon.proxy-grafana.enable:false}")
-    private boolean proxy;
-    
-    @Value("${server.servlet.context-path}")
-    private String contextPath;
-    
+
     @Override
     public Result getDashboardUrl(Integer clusterId) {
         ClusterServiceDashboard dashboard = getOne(new QueryWrapper<ClusterServiceDashboard>().eq(Constants.SERVICE_NAME, "TOTAL"));
@@ -64,26 +55,11 @@ public class ClusterServiceDashboardServiceImpl
             return Result.error("缺少集群总览");
         }
     }
-    
-    @Override
-    public String getGrafanaHost(Integer clusterId) {
-        String host = GlobalVariables.getValue(clusterId, "GRAFANA.Grafana.__hostIp__");
-        return host + ":3000";
-    }
-    
+
     @Override
     public String getDashboardUrl(Integer clusterId, ClusterServiceDashboard dashboard) {
-        String url = dashboard.getDashboardUrl();
-        if (proxy) {
-            // 兼容旧记录
-            if (url.startsWith("http://${grafanaHost}:3000")) {
-                url = url.substring(26);
-            }
-            return contextPath + GRAFANA_PATH + "/" + clusterId + url;
-        } else {
-            Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
-            return PlaceholderUtils.replacePlaceholders(dashboard.getDashboardUrl(), globalVariables,
-                    Constants.REGEX_VARIABLE);
-        }
+        Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);
+        return PlaceholderUtils.replacePlaceholders(dashboard.getDashboardUrl(), globalVariables,
+                Constants.REGEX_VARIABLE);
     }
 }

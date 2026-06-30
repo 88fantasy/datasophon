@@ -52,7 +52,7 @@ Datasophon 的 Master 主服务进程，Spring Boot 3.4.5。本模块既是 HTTP
 
 **安全**（`security/`）：`SecurityConfig` 装配过滤器链，`AuthenticationType` 切换 PASSWORD / LDAP，`UserPermission` 处理 RBAC，`UserPermissionHandler` 拦截菜单级权限。
 
-**配置**（`configuration/`）：`AppConfiguration` 注册拦截器 + 静态资源；`DatabaseMigrationAware`（实现 `Ordered`）作为最早期的 Bean 触发 `migration/DatabaseMigration` 跑 SQL 脚本；`GrafanaProxyConfiguration` 用 Jetty 代理转发 Grafana Web UI；`MasterAsyncConfig` 配置 `@Async` 线程池；`OpenApiConfiguration` 暴露 knife4j 文档。
+**配置**（`configuration/`）：`AppConfiguration` 注册拦截器 + 静态资源；`DatabaseMigrationAware`（实现 `Ordered`）作为最早期的 Bean 触发 `migration/DatabaseMigration` 跑 SQL 脚本；`MasterAsyncConfig` 配置 `@Async` 线程池；`OpenApiConfiguration` 暴露 knife4j 文档。
 
 **策略**（`strategy/`）：`ServiceRoleStrategy` 接口 + `ServiceRoleStrategyContext` 按角色名分派；具体策略如 `NameNodeHandlerStrategy` / `RMHandlerStrategy` / `KafkaHandlerStrategy` / `KAdminHandlerStrategy` 等约 30 个，对应 `Worker` 侧的同名策略类。
 

@@ -82,7 +82,10 @@ public class OtelMetricsQueryService {
      * 对应值通过命名参数绑定（af_key / afne_key），不存在注入风险。
      */
     static final Set<String> ALLOWED_ATTR_FILTER_KEYS =
-            Set.of("group", "type", "mode", "path", "device");
+            Set.of("group", "type", "mode", "path", "device", "fstype", "mountpoint");
+
+    private static final List<String> INSTANT_SERIES_ATTR_KEYS =
+            List.of("group", "type", "mode", "path", "device", "fstype", "mountpoint");
     
     private final ClusterServiceRoleInstanceService roleService;
     private final OtelDorisReaderFactory readerFactory;
@@ -276,7 +279,9 @@ public class OtelMetricsQueryService {
         appendAttrFilters(inner, filters, filtersNe);
         inner.append("\nQUALIFY ROW_NUMBER() OVER(\n"
                 + "  PARTITION BY " + INST_EXPR + ",\n"
-                + "               " + JOB_EXPR + "\n"
+                + "               " + JOB_EXPR
+                + buildExtraGroupBy(INSTANT_SERIES_ATTR_KEYS)
+                + "\n"
                 + "  ORDER BY timestamp DESC\n"
                 + ") = 1");
         return "SELECT " + fn + "(value) AS value, UNIX_TIMESTAMP(NOW()) AS ts FROM (" + inner + ") t";
@@ -451,18 +456,24 @@ public class OtelMetricsQueryService {
     static void appendAttrFilters(StringBuilder sql,
                                   Map<String, String> filters, Map<String, String> filtersNe) {
         if (filters != null) {
-            for (String key : filters.keySet()) {
+            for (Map.Entry<String, String> entry : filters.entrySet()) {
+                String key = entry.getKey();
                 if (ALLOWED_ATTR_FILTER_KEYS.contains(key)) {
                     sql.append("\n  AND CAST(attributes['").append(key)
-                            .append("'] AS STRING) = :af_").append(key);
+                            .append("'] AS STRING)")
+                            .append(needsRegexp(entry.getValue()) ? " REGEXP " : " = ")
+                            .append(":af_").append(key);
                 }
             }
         }
         if (filtersNe != null) {
-            for (String key : filtersNe.keySet()) {
+            for (Map.Entry<String, String> entry : filtersNe.entrySet()) {
+                String key = entry.getKey();
                 if (ALLOWED_ATTR_FILTER_KEYS.contains(key)) {
                     sql.append("\n  AND CAST(attributes['").append(key)
-                            .append("'] AS STRING) != :afne_").append(key);
+                            .append("'] AS STRING)")
+                            .append(needsRegexp(entry.getValue()) ? " NOT REGEXP " : " != ")
+                            .append(":afne_").append(key);
                 }
             }
         }
@@ -536,7 +547,11 @@ public class OtelMetricsQueryService {
         }
         return ", " + String.join(", ", validKeys);
     }
-    
+
+    private static boolean needsRegexp(String value) {
+        return value != null && value.matches(".*[.*+?^${}()|\\[\\]\\\\].*");
+    }
+
     /**
      * 将 SQL 结果行提取为 metric label map。
      * 所有列（排除 skipCols）都作为 label，null 值跳过。
