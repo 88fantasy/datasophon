@@ -26,6 +26,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 
+import com.datasophon.api.observability.OtelCollectorConfigService;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.extrepo.PhysicalProductInstallService;
@@ -33,7 +34,6 @@ import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.utils.ServiceCommandUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
-import com.datasophon.common.command.GenerateHostPrometheusConfig;
 import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.enums.InstallState;
 import com.datasophon.common.model.HostInfo;
@@ -71,18 +71,18 @@ public class WorkerStartService {
     private final ClusterInfoService clusterInfoService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final PhysicalProductInstallService physicalProductActionService;
-    private final PrometheusService prometheusService;
+    private final OtelCollectorConfigService otelCollectorConfigService;
     
     public WorkerStartService(ClusterHostService clusterHostService,
                               ClusterInfoService clusterInfoService,
                               ClusterServiceRoleInstanceService roleInstanceService,
                               PhysicalProductInstallService physicalProductActionService,
-                              PrometheusService prometheusService) {
+                              OtelCollectorConfigService otelCollectorConfigService) {
         this.clusterHostService = clusterHostService;
         this.clusterInfoService = clusterInfoService;
         this.roleInstanceService = roleInstanceService;
         this.physicalProductActionService = physicalProductActionService;
-        this.prometheusService = prometheusService;
+        this.otelCollectorConfigService = otelCollectorConfigService;
     }
     
     /**
@@ -125,10 +125,7 @@ public class WorkerStartService {
             clusterHostService.updateById(hostEntity);
         }
         
-        // Trigger Prometheus config regeneration
-        GenerateHostPrometheusConfig prometheusCmd = new GenerateHostPrometheusConfig();
-        prometheusCmd.setClusterId(cluster.getId());
-        prometheusService.generateHostPrometheusConfig(prometheusCmd);
+        otelCollectorConfigService.pushNodeConfig(cluster.getId(), hostname, Map.of());
         
         // Auto-start services on the new worker
         autoAddServiceOperatorNeeded(hostname, cluster.getId(), CommandType.START_SERVICE, false);

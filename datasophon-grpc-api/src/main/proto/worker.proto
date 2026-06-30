@@ -110,10 +110,8 @@ message FileOperateRequest {
 }
 
 /**
- * 告警配置生成请求。
- *
- * config_map_json = GenerateAlertConfigCommand.configFileMap 序列化为
- *                   List&lt;AlertConfigEntry&gt; 的 JSON（解决 Generators 作为 Map key 的问题）。
+ * 已退役的 Prometheus 告警配置生成请求。
+ * 保留消息用于兼容旧 worker.proto 方法号；服务端返回 unsupported。
  */
 message AlertConfigRequest {
     int32  cluster_id      = 1;

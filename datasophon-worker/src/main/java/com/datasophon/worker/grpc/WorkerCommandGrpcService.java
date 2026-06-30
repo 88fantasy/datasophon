@@ -29,17 +29,13 @@ import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.command.ServiceRoleResource;
 import com.datasophon.common.enums.HookType;
 import com.datasophon.common.function.ThrowableSupplier;
-import com.datasophon.common.model.AlertConfigEntry;
-import com.datasophon.common.model.AlertItem;
 import com.datasophon.common.model.ConfigFileEntry;
-import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.HookConfig;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.common.utils.PkgInstallPathUtils;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
-import com.datasophon.grpc.api.AlertConfigRequest;
 import com.datasophon.grpc.api.ExecResultPb;
 import com.datasophon.grpc.api.ExecuteCmdRequest;
 import com.datasophon.grpc.api.FileOperateRequest;
@@ -57,7 +53,6 @@ import com.datasophon.worker.hook.HookUtils;
 import com.datasophon.worker.strategy.ServiceRoleStrategy;
 import com.datasophon.worker.strategy.ServiceRoleStrategyContext;
 import com.datasophon.worker.utils.FileUtils;
-import com.datasophon.worker.utils.FreemakerUtils;
 import com.datasophon.worker.utils.TaskConstants;
 import com.datasophon.worker.utils.UnixUtils;
 
@@ -452,32 +447,6 @@ public class WorkerCommandGrpcService extends WorkerCommandServiceGrpc.WorkerCom
         } catch (Exception e) {
             log.error("gRPC operateFile failed: {}", e.getMessage(), e);
             execResult = ExecResult.error("operateFile failed: " + e.getMessage());
-        }
-        obs.onNext(toProto(execResult));
-        obs.onCompleted();
-    }
-    
-    // ─── Phase 3: AlertConfig ─────────────────────────────────────────────────
-    
-    @Override
-    public void generateAlertConfig(AlertConfigRequest req, StreamObserver<ExecResultPb> obs) {
-        ExecResult execResult = new ExecResult();
-        try {
-            log.info("gRPC generateAlertConfig clusterId={}", req.getClusterId());
-            List<AlertConfigEntry> entries = MAPPER.readValue(req.getConfigMapJson(),
-                    new TypeReference<List<AlertConfigEntry>>() {
-                    });
-            HashMap<Generators, List<AlertItem>> configFileMap = AlertConfigEntry.toMap(entries);
-            for (Generators generators : configFileMap.keySet()) {
-                List<AlertItem> alertItems = configFileMap.get(generators);
-                FreemakerUtils.generatePromAlertFile(generators, alertItems,
-                        generators.getFilename().replace(".yml", "").toUpperCase());
-            }
-            execResult.setExecResult(true);
-            log.info("gRPC generateAlertConfig success, rules={}", configFileMap.size());
-        } catch (Exception e) {
-            log.error("gRPC generateAlertConfig failed: {}", e.getMessage(), e);
-            execResult = ExecResult.error("generateAlertConfig failed: " + e.getMessage());
         }
         obs.onNext(toProto(execResult));
         obs.onCompleted();

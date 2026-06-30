@@ -27,7 +27,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.datasophon.common.command.FileOperateCommand;
-import com.datasophon.common.command.GenerateAlertConfigCommand;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
@@ -35,12 +34,8 @@ import com.datasophon.common.command.remote.CreateUnixGroupCommand;
 import com.datasophon.common.command.remote.CreateUnixUserCommand;
 import com.datasophon.common.command.remote.DelUnixGroupCommand;
 import com.datasophon.common.command.remote.DelUnixUserCommand;
-import com.datasophon.common.model.AlertConfigEntry;
-import com.datasophon.common.model.AlertItem;
 import com.datasophon.common.model.ConfigFileEntry;
-import com.datasophon.common.model.Generators;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.grpc.api.AlertConfigRequest;
 import com.datasophon.grpc.api.ExecResultPb;
 import com.datasophon.grpc.api.ExecuteCmdRequest;
 import com.datasophon.grpc.api.FileOperateRequest;
@@ -425,43 +420,6 @@ class WorkerCommandClientTest {
         assertThat(fakeService.lastFileOperateRequest.getLinesList()).isEmpty();
     }
     
-    // ─── Phase 3: generateAlertConfig ────────────────────────────────────────
-    
-    @Test
-    @DisplayName("generateAlertConfig: configFileMap 序列化为 config_map_json，cluster_id 正确填充")
-    void generateAlertConfig_serializesConfigMapAndMapsResponse() throws Exception {
-        fakeService.alertConfigResponse = ExecResultPb.newBuilder()
-                .setExecResult(true).setExecOut("generated").build();
-        
-        Generators gen = new Generators();
-        gen.setFilename("alert.yml");
-        gen.setConfigFormat("yaml");
-        AlertItem item = new AlertItem();
-        item.setAlertName("NameNodeDown");
-        item.setAlertLevel("critical");
-        java.util.HashMap<Generators, java.util.List<AlertItem>> configFileMap = new java.util.HashMap<>();
-        configFileMap.put(gen, java.util.List.of(item));
-        
-        GenerateAlertConfigCommand cmd = new GenerateAlertConfigCommand();
-        cmd.setClusterId(1);
-        cmd.setConfigFileMap(configFileMap);
-        
-        ExecResult result = client.generateAlertConfig(HOSTNAME, cmd);
-        
-        assertThat(result.getExecResult()).isTrue();
-        assertThat(result.getExecOut()).isEqualTo("generated");
-        // cluster_id 正确传递
-        assertThat(fakeService.lastAlertConfigRequest.getClusterId()).isEqualTo(1);
-        // config_map_json 反序列化后包含预期条目
-        java.util.List<AlertConfigEntry> entries = MAPPER.readValue(
-                fakeService.lastAlertConfigRequest.getConfigMapJson(),
-                new TypeReference<java.util.List<AlertConfigEntry>>() {
-                });
-        assertThat(entries).hasSize(1);
-        assertThat(entries.get(0).getGenerators().getFilename()).isEqualTo("alert.yml");
-        assertThat(entries.get(0).getAlertItems().get(0).getAlertName()).isEqualTo("NameNodeDown");
-    }
-    
     // ─── 拨号地址策略（ip 优先，空则回落 hostname）─────────────────────────────
     
     @Test
@@ -546,7 +504,6 @@ class WorkerCommandClientTest {
         ExecResultPb unixGroupResponse;
         ExecResultPb unixUserResponse;
         ExecResultPb fileOperateResponse;
-        ExecResultPb alertConfigResponse;
         
         ExecuteCmdRequest lastExecuteCmdRequest;
         GetLogRequest lastGetLogRequest;
@@ -554,7 +511,6 @@ class WorkerCommandClientTest {
         UnixGroupRequest lastUnixGroupRequest;
         UnixUserRequest lastUnixUserRequest;
         FileOperateRequest lastFileOperateRequest;
-        AlertConfigRequest lastAlertConfigRequest;
         
         @Override
         public void ping(PingRequest request, StreamObserver<ExecResultPb> obs) {
@@ -653,11 +609,5 @@ class WorkerCommandClientTest {
             obs.onCompleted();
         }
         
-        @Override
-        public void generateAlertConfig(AlertConfigRequest request, StreamObserver<ExecResultPb> obs) {
-            lastAlertConfigRequest = request;
-            obs.onNext(alertConfigResponse != null ? alertConfigResponse : ExecResultPb.getDefaultInstance());
-            obs.onCompleted();
-        }
     }
 }

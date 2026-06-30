@@ -23,7 +23,6 @@
 package com.datasophon.api.grpc;
 
 import com.datasophon.common.command.FileOperateCommand;
-import com.datasophon.common.command.GenerateAlertConfigCommand;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
@@ -31,10 +30,8 @@ import com.datasophon.common.command.remote.CreateUnixGroupCommand;
 import com.datasophon.common.command.remote.CreateUnixUserCommand;
 import com.datasophon.common.command.remote.DelUnixGroupCommand;
 import com.datasophon.common.command.remote.DelUnixUserCommand;
-import com.datasophon.common.model.AlertConfigEntry;
 import com.datasophon.common.model.ConfigFileEntry;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.grpc.api.AlertConfigRequest;
 import com.datasophon.grpc.api.ExecResultPb;
 import com.datasophon.grpc.api.ExecuteCmdRequest;
 import com.datasophon.grpc.api.FileOperateRequest;
@@ -246,26 +243,6 @@ public class WorkerCommandClient {
             return getStub(hostname)
                     .withDeadlineAfter(180, TimeUnit.SECONDS)
                     .operateFile(reqBuilder.build());
-        });
-    }
-    
-    /**
-     * 生成告警配置（对应 AlertConfigActor）。
-     *
-     * <p>{@code configFileMap} 的 key 是 {@link com.datasophon.common.model.Generators}
-     * 对象，不可直接作为 JSON key，故通过 {@link AlertConfigEntry} 桥接列表序列化。</p>
-     */
-    public ExecResult generateAlertConfig(String hostname, GenerateAlertConfigCommand cmd) {
-        return callWorker(hostname, "generateAlertConfig", () -> {
-            String configMapJson = objectMapper.writeValueAsString(
-                    AlertConfigEntry.fromMap(cmd.getConfigFileMap()));
-            AlertConfigRequest req = AlertConfigRequest.newBuilder()
-                    .setClusterId(cmd.getClusterId() != null ? cmd.getClusterId() : 0)
-                    .setConfigMapJson(configMapJson)
-                    .build();
-            return getStub(hostname)
-                    .withDeadlineAfter(180, TimeUnit.SECONDS)
-                    .generateAlertConfig(req);
         });
     }
     

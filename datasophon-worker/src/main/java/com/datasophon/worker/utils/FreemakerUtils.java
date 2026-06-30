@@ -25,7 +25,6 @@ package com.datasophon.worker.utils;
 import static com.datasophon.worker.handler.ConfigureServiceHandler.SH;
 
 import com.datasophon.common.Constants;
-import com.datasophon.common.model.AlertItem;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.utils.PropertyUtils;
@@ -159,9 +158,6 @@ public class FreemakerUtils {
         }
         if (Constants.PROPERTIES3.equals(configFormat)) {
             return "properties3.ftl";
-        }
-        if (Constants.PROMETHEUS.equals(configFormat)) {
-            return "alert.yml";
         }
         if (Constants.YAML.equals(configFormat)) {
             // 直接根据字段生成，无需模板
@@ -386,28 +382,6 @@ public class FreemakerUtils {
             logger.error("写入nacos配置失败:", e);
             throw new RuntimeException(e);
         }
-    }
-    
-    public static void generatePromAlertFile(Generators generators, List<AlertItem> configs,
-                                             String serviceName) throws IOException, TemplateException {
-        // 创建核心配置对象
-        Configuration config = new Configuration(Configuration.getVersion());
-        // 设置加载的目录
-        // ""代表当前包
-        config.setClassForTemplateLoading(FreemakerUtils.class, "/templates");
-        // 得到模板对象
-        String configFormat = generators.getConfigFormat();
-        Template template = null;
-        
-        if (Constants.PROMETHEUS.equals(configFormat)) {
-            template = config.getTemplate("alert.yml");
-        }
-        
-        Map<String, Object> data = new HashMap<>();
-        data.put("itemList", configs);
-        data.put("serviceName", serviceName);
-        // 3.产生输出
-        processOut(generators, template, data, "prometheus");
     }
     
     private static void processOut(Generators generators, Template template, Map<String, Object> data,

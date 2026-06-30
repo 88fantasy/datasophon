@@ -201,22 +201,6 @@
     "note": "contrib 发行版含 dorisexporter，tarball 内无顶层目录（单二进制），DDL 设 createDecompressDir=true 由 Datasophon 自动创建 otelcol-contrib_0.154.0/ 目录"
   },
   {
-    "service": "PROMETHEUS",
-    "arch": "x86_64",
-    "packageName": "prometheus-3.12.0.linux-amd64.tar.gz",
-    "decompressPackageName": "prometheus-3.12.0",
-    "downloadUrl": "https://github.com/prometheus/prometheus/releases/download/v3.12.0/prometheus-3.12.0.linux-amd64.tar.gz",
-    "status": "public"
-  },
-  {
-    "service": "PROMETHEUS",
-    "arch": "aarch64",
-    "packageName": "prometheus-3.12.0.linux-arm64.tar.gz",
-    "decompressPackageName": "prometheus-3.12.0",
-    "downloadUrl": "https://github.com/prometheus/prometheus/releases/download/v3.12.0/prometheus-3.12.0.linux-arm64.tar.gz",
-    "status": "public"
-  },
-  {
     "service": "PROMTAIL",
     "arch": "x86_64",
     "packageName": "promtail-linux-amd64.zip",

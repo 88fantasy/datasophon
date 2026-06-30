@@ -23,6 +23,7 @@
 package com.datasophon.api.master.service;
 
 import com.datasophon.api.load.GlobalVariables;
+import com.datasophon.api.observability.OtelCollectorConfigService;
 import com.datasophon.api.service.ClusterAlertQuotaService;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceWebuisService;
@@ -30,9 +31,8 @@ import com.datasophon.api.service.cmd.ClusterServiceCommandHostCommandService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandHostService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandService;
 import com.datasophon.common.Constants;
-import com.datasophon.common.command.GeneratePrometheusConfigCommand;
-import com.datasophon.common.command.GenerateSRPromConfigCommand;
 import com.datasophon.common.command.HdfsEcCommand;
+import com.datasophon.common.enums.CommandType;
 import com.datasophon.common.model.UpdateCommandHostMessage;
 import com.datasophon.dao.entity.ClusterAlertQuota;
 import com.datasophon.dao.entity.ClusterInfoEntity;
@@ -59,7 +59,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 /**
  * 服务命令完成处理 Spring Service，业务逻辑来自 {@link ServiceCommandActor}。
- * 内部调用 {@link HdfsECService} 和 {@link PrometheusService}（均为 @Async，通过 Spring 代理触发）。
+ * 内部调用 {@link HdfsECService} 和 {@link OtelCollectorConfigService}（均为 Spring Bean）。
  */
 @Service
 public class ServiceCommandService {
@@ -83,7 +83,7 @@ public class ServiceCommandService {
     private final ClusterAlertQuotaService alertQuotaService;
     private final ClusterServiceRoleInstanceWebuisService webuisService;
     private final HdfsECService hdfsECService;
-    private final PrometheusService prometheusService;
+    private final OtelCollectorConfigService otelCollectorConfigService;
     
     public ServiceCommandService(ClusterServiceCommandHostCommandService hostCommandService,
                                  ClusterServiceCommandHostService commandHostService,
@@ -92,7 +92,7 @@ public class ServiceCommandService {
                                  ClusterAlertQuotaService alertQuotaService,
                                  ClusterServiceRoleInstanceWebuisService webuisService,
                                  HdfsECService hdfsECService,
-                                 PrometheusService prometheusService) {
+                                 OtelCollectorConfigService otelCollectorConfigService) {
         this.hostCommandService = hostCommandService;
         this.commandHostService = commandHostService;
         this.commandService = commandService;
@@ -100,7 +100,7 @@ public class ServiceCommandService {
         this.alertQuotaService = alertQuotaService;
         this.webuisService = webuisService;
         this.hdfsECService = hdfsECService;
-        this.prometheusService = prometheusService;
+        this.otelCollectorConfigService = otelCollectorConfigService;
     }
     
     /**
@@ -187,23 +187,14 @@ public class ServiceCommandService {
                     hdfsECService.manageHdfsEC(hdfsEcCommand);
                 }
                 
-                logger.info("start to generate prometheus config");
-                if (STARROCKS.equalsIgnoreCase(serviceName) || DORIS.equalsIgnoreCase(serviceName)) {
-                    GenerateSRPromConfigCommand srCmd = new GenerateSRPromConfigCommand();
-                    srCmd.setServiceInstanceId(command.getServiceInstanceId());
-                    srCmd.setClusterFrame(clusterInfo.getClusterFrame());
-                    srCmd.setClusterId(clusterInfo.getId());
-                    srCmd.setFilename(serviceName.toLowerCase() + ".json");
-                    prometheusService.generateSRPromConfig(srCmd);
-                } else {
-                    GeneratePrometheusConfigCommand promCmd = new GeneratePrometheusConfigCommand();
-                    promCmd.setServiceInstanceId(command.getServiceInstanceId());
-                    promCmd.setClusterFrame(clusterInfo.getClusterFrame());
-                    promCmd.setClusterId(clusterInfo.getId());
-                    prometheusService.generatePrometheus(promCmd);
+                if (!STARROCKS.equalsIgnoreCase(serviceName) && !DORIS.equalsIgnoreCase(serviceName)) {
                     enableAlertConfig(NODE, clusterInfo.getId());
                 }
                 enableAlertConfig(serviceName, clusterInfo.getId());
+            }
+            
+            if (shouldRefreshOtelCollectors(command.getCommandType())) {
+                refreshAffectedOtelCollectors(command);
             }
         }
         
@@ -235,5 +226,23 @@ public class ServiceCommandService {
                 }
             }
         }
+    }
+    
+    private boolean shouldRefreshOtelCollectors(Integer commandType) {
+        CommandType type = CommandType.ofCode(commandType);
+        return CommandType.START_SERVICE.equals(type)
+                || CommandType.STOP_SERVICE.equals(type)
+                || CommandType.RESTART_SERVICE.equals(type)
+                || CommandType.START_WITH_CONFIG.equals(type)
+                || CommandType.RESTART_WITH_CONFIG.equals(type);
+    }
+    
+    private void refreshAffectedOtelCollectors(ClusterServiceCommandEntity command) {
+        hostCommandService.getHostCommandListByCommandId(command.getCommandId()).stream()
+                .map(ClusterServiceCommandHostCommandEntity::getHostname)
+                .filter(StringUtils::isNotBlank)
+                .distinct()
+                .forEach(hostname -> otelCollectorConfigService.pushNodeConfig(
+                        command.getClusterId(), hostname, Map.of()));
     }
 }

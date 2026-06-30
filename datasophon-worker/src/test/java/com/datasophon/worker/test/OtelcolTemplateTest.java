@@ -28,6 +28,10 @@ public class OtelcolTemplateTest {
     }
     
     private String render(String exporterMode) throws Exception {
+        return render(exporterMode, "");
+    }
+    
+    private String render(String exporterMode, String localScrapeJobsYaml) throws Exception {
         Configuration cfg = buildCfg();
         Template tpl = cfg.getTemplate("otelcol.ftl");
         Map<String, Object> data = new HashMap<>();
@@ -43,6 +47,7 @@ public class OtelcolTemplateTest {
         data.put("dorisEndpoint", "http://doris-fe:8030");
         data.put("dorisDatabase", "otel");
         data.put("dorisUser", "otel_collector");
+        data.put("localScrapeJobsYaml", localScrapeJobsYaml);
         StringWriter out = new StringWriter();
         tpl.process(data, out);
         return out.toString();
@@ -105,6 +110,36 @@ public class OtelcolTemplateTest {
         assertTrue(yaml.contains("create_schema: false"));
         assertTrue(yaml.contains("exporters: [doris]"));
         assertTrue(!yaml.contains("generated-secret"));
+    }
+    
+    @Test
+    public void renders_local_prometheus_receiver_when_local_scrape_jobs_exist() throws Exception {
+        String yaml = render("doris", "        - job_name: 'DataNode'\n"
+                + "          static_configs:\n"
+                + "            - targets: ['127.0.0.1:9101']\n");
+        
+        assertTrue(yaml.contains("prometheus/local:"));
+        assertTrue(yaml.contains("job_name: 'DataNode'"));
+        assertTrue(yaml.contains("receivers: [otlp, prometheus/self, prometheus/local]"));
+    }
+    
+    @Test
+    public void skips_local_prometheus_receiver_when_local_scrape_jobs_are_empty() throws Exception {
+        String yaml = render("doris", "");
+        
+        assertTrue(!yaml.contains("prometheus/local:"));
+        assertTrue(yaml.contains("receivers: [otlp, prometheus/self]"));
+    }
+    
+    @Test
+    public void local_scrape_jobs_are_independent_from_exporter_mode() throws Exception {
+        String yaml = render("s3", "        - job_name: 'DataNode'\n"
+                + "          static_configs:\n"
+                + "            - targets: ['127.0.0.1:9101']\n");
+        
+        assertTrue(yaml.contains("prometheus/local:"));
+        assertTrue(yaml.contains("exporters: [awss3]"));
+        assertTrue(yaml.contains("receivers: [otlp, prometheus/self, prometheus/local]"));
     }
     
     @Test

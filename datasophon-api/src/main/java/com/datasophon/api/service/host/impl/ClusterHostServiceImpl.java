@@ -23,7 +23,6 @@
 package com.datasophon.api.service.host.impl;
 
 import com.datasophon.api.enums.Status;
-import com.datasophon.api.master.service.PrometheusService;
 import com.datasophon.api.master.service.RackService;
 import com.datasophon.api.master.transport.WorkerCallAdapter;
 import com.datasophon.api.service.ClusterRackService;
@@ -32,7 +31,6 @@ import com.datasophon.api.service.host.dto.QueryHostListPageDTO;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.command.ExecuteCmdCommand;
-import com.datasophon.common.command.GenerateHostPrometheusConfig;
 import com.datasophon.common.command.GenerateRackPropCommand;
 import com.datasophon.common.model.HostInfo;
 import com.datasophon.common.utils.Result;
@@ -60,7 +58,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -89,10 +86,6 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
     
     @Autowired
     ClusterRackService clusterRackService;
-    
-    @Lazy
-    @Autowired
-    PrometheusService prometheusService;
     
     @Autowired
     RackService rackService;
@@ -216,11 +209,6 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
                     logger.warn("Failed to stop worker on host {}: {}", host.getHostname(), e.getMessage());
                 }
             }
-            // Prometheus 移除 hosts 信息
-            GenerateHostPrometheusConfig prometheusConfigCommand = new GenerateHostPrometheusConfig();
-            prometheusConfigCommand.setClusterId(clusterInfo.getId());
-            prometheusService.generateHostPrometheusConfig(prometheusConfigCommand);
-            
             // remove the host from the cache
             @SuppressWarnings("unchecked")
             Map<String, HostInfo> map =

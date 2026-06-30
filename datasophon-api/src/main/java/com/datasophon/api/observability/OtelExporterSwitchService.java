@@ -34,7 +34,6 @@ import com.datasophon.dao.enums.ServiceRoleState;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,19 +90,6 @@ public class OtelExporterSwitchService {
             params.put("dorisDatabase", "otel");
             params.put("dorisUser", "otel_collector");
             params.put("dorisPassword", credentials.collectorPassword());
-            // Doris metrics scrape variables — FE :http_port/metrics, BE :webserver_port/metrics
-            // Labels mirror the existing prometheus.ftl configs/doris.json dimensions
-            // so OtelMetricsQueryService SQL filters on group/job/instance work correctly.
-            params.put("scrapeDoris", "true");
-            params.put("dorisClusterJobName", "doris");
-            String feScrapeTargets = frontends.stream()
-                    .map(fe -> fe.getHostname() + ":" + feHttpPort)
-                    .collect(Collectors.joining(";"));
-            params.put("dorisFeScrapeTargets", feScrapeTargets);
-            String beScrapeTargets = backends.stream()
-                    .map(be -> be.getHostname() + ":" + beHttpPort)
-                    .collect(Collectors.joining(";"));
-            params.put("dorisBeScrapeTargets", beScrapeTargets);
         }
         return configService.pushNodeConfig(clusterId, hostname, params);
     }

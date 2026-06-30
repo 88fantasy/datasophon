@@ -23,6 +23,7 @@
 package com.datasophon.api.observability;
 
 import com.datasophon.api.master.transport.WorkerCallAdapter;
+import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
 import com.datasophon.common.enums.CommandType;
@@ -47,11 +48,18 @@ public class OtelCollectorConfigService {
     
     static final String SERVICE_NAME = "OTELCOLLECTOR";
     static final String ROLE_NAME = "OtelCollector";
+    static final String LOCAL_SCRAPE_JOBS_YAML = "localScrapeJobsYaml";
     
     private final WorkerCallAdapter workerCallAdapter;
+    private final ServiceInstallService installService;
+    private final OtelScrapeConfigBuilder scrapeConfigBuilder;
     
-    public OtelCollectorConfigService(WorkerCallAdapter workerCallAdapter) {
+    public OtelCollectorConfigService(WorkerCallAdapter workerCallAdapter,
+                                      ServiceInstallService installService,
+                                      OtelScrapeConfigBuilder scrapeConfigBuilder) {
         this.workerCallAdapter = workerCallAdapter;
+        this.installService = installService;
+        this.scrapeConfigBuilder = scrapeConfigBuilder;
     }
     
     /**
@@ -76,7 +84,8 @@ public class OtelCollectorConfigService {
      */
     public ExecResult pushNodeConfig(
                                      Integer clusterId, String hostname, Map<String, String> params) {
-        GenerateServiceConfigCommand cfg = buildConfigCommand(clusterId, hostname, params);
+        Map<String, String> effectiveParams = effectiveParams(clusterId, hostname, params);
+        GenerateServiceConfigCommand cfg = buildConfigCommand(clusterId, hostname, effectiveParams);
         ExecResult configured = workerCallAdapter.configureServiceRole(hostname, cfg);
         if (configured == null || !configured.getExecResult()) {
             log.warn("otelcol configure failed on {}, skip restart", hostname);
@@ -87,6 +96,32 @@ public class OtelCollectorConfigService {
         op.setServiceRoleName(ROLE_NAME);
         op.setCommandType(CommandType.RESTART_SERVICE);
         return workerCallAdapter.restartServiceRole(hostname, op);
+    }
+    
+    private Map<String, String> effectiveParams(Integer clusterId, String hostname, Map<String, String> params) {
+        Map<String, String> effective = serviceParams(clusterId);
+        if (params != null) {
+            effective.putAll(params);
+        }
+        if (!effective.containsKey(LOCAL_SCRAPE_JOBS_YAML)) {
+            effective.put(LOCAL_SCRAPE_JOBS_YAML, scrapeConfigBuilder.build(clusterId, hostname));
+        }
+        return effective;
+    }
+    
+    private Map<String, String> serviceParams(Integer clusterId) {
+        Map<String, String> params = new HashMap<>();
+        try {
+            List<ServiceConfig> configs = installService.getServiceConfigOption(clusterId, SERVICE_NAME);
+            for (ServiceConfig config : configs) {
+                if (config.getName() != null && config.getValue() != null) {
+                    params.put(config.getName(), String.valueOf(config.getValue()));
+                }
+            }
+        } catch (RuntimeException e) {
+            log.warn("Failed to load {} service config for cluster {}: {}", SERVICE_NAME, clusterId, e.getMessage());
+        }
+        return params;
     }
     
     private static Generators generator(String filename, String template) {
