@@ -40,7 +40,7 @@ Datasophon 的 Master 主服务进程，Spring Boot 3.4.5。本模块既是 HTTP
 - `master/handler/{host,service,k8s}/`：步骤化 Handler 链。Host 侧含 `DispatcherWorkerHandlerChain`（MD5 → Decompress → InstallJDK → Upload → Start）；Service 侧含 `ServiceInstallHandler` / `ServiceConfigureHandler` / `ServiceStartHandler` / `ServiceStopHandler` / `ServiceStatusHandler` / `ServiceUpgradeHandler`；K8s 侧含 Helm apply / agent install-uninstall / restart / stop。
 - `master/service/DispatcherWorkerService`：从 gRPC 拿到 WorkerEndpoint 后构造命令并经 `master/transport/GrpcWorkerCallAdapter` 下发。
 - `master/MasterScheduledService`：原 Pekko `actorSystem.scheduler().scheduleWithFixedDelay()` 替换为 Spring `@Scheduled`，三个巡检周期——节点 30s/300s、服务角色 15s/30s、集群状态 30s/60s。
-- `master/service/{HostCheckService,ClusterStatusService,ServiceCommandService,WorkerStartService,MasterNodeProcessingService,PrometheusService,HdfsECService,ClusterDeleteService,RackService,AlertService,HostConnectService,DispatcherK8sAgentService}`：领域服务。
+- `master/service/{HostCheckService,ClusterStatusService,ServiceCommandService,WorkerStartService,MasterNodeProcessingService,HdfsECService,ClusterDeleteService,RackService,AlertService,HostConnectService,DispatcherK8sAgentService}`：领域服务。
 
 **gRPC 客户端**（`grpc/`）：
 - `WorkerRegistry`：内存 `hostname → WorkerEndpoint` 映射；心跳 > 90s（= 3×30s 间隔）发布 `WorkerOfflineEvent`。
