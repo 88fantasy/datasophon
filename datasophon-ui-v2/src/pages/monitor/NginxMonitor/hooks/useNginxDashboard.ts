@@ -3,7 +3,11 @@ import type { PrometheusVector } from '../../_shared/charts/promql';
 import { deriveInstancesAndJobs } from '../../_shared/charts/promql';
 import type { TimeSeriesPoint } from '../../_shared/types';
 import { useDashboardData } from '../../_shared/useDashboardData';
-import { PANEL_QUERIES, replaceNginxVars, type NginxDashboardVariables } from '../panelQueries';
+import {
+  type NginxDashboardVariables,
+  PANEL_QUERIES,
+  replaceNginxVars,
+} from '../panelQueries';
 
 export interface NginxInstantValues {
   status: number;

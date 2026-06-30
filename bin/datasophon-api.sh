@@ -16,18 +16,17 @@
 #  limitations under the License.
 #
 
-usage="Usage: start.sh (start|stop|restart) <command> "
+usage="Usage: datasophon-api.sh (start|stop|restart)"
 
 # if no args specified, show usage
-if [ $# -le 1 ]; then
+if [ $# -lt 1 ]; then
   echo $usage
   exit 1
 fi
 
 startStop=$1
 shift
-command=$1
-shift
+command=api
 
 echo "Begin $startStop $command......"
 
@@ -81,16 +80,20 @@ pid=$DDH_PID_DIR/$command.pid
 
 cd $DDH_HOME
 
-if [ "$command" = "api" ]; then
-  CLASS=com.datasophon.api.DataSophonApplicationServer
-  JMX="-javaagent:$DDH_HOME/jmx/jmx_prometheus_javaagent-0.16.1.jar=8586:$DDH_HOME/jmx/jmx_exporter_config.yaml"
-  HEAP_OPTS="-Xms1g -Xmx1g -Xmn512m"
-  OPENS_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
-  export DDH_OPTS="$HEAP_OPTS $OPENS_OPTS $DDH_OPTS $JMX"
-else
-  echo "Error: No command named \`$command' was found."
-  exit 1
+CLASS=com.datasophon.api.DataSophonApplicationServer
+OTEL=""
+if [ "$OTEL_JAVAAGENT_ENABLED" = "true" ]; then
+  OTEL="-javaagent:$DDH_HOME/otel/opentelemetry-javaagent.jar"
+  export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-datasophon-api}"
+  export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}"
+  export OTEL_EXPORTER_OTLP_PROTOCOL="${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}"
+  export OTEL_TRACES_EXPORTER=otlp
+  export OTEL_METRICS_EXPORTER=otlp
+  export OTEL_LOGS_EXPORTER=otlp
 fi
+HEAP_OPTS="-Xms1g -Xmx1g -Xmn512m"
+OPENS_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+export DDH_OPTS="$HEAP_OPTS $OPENS_OPTS $DDH_OPTS $OTEL"
 
 case $startStop in
   (start)
@@ -106,10 +109,13 @@ case $startStop in
     echo starting $command, logging to $log
 
     exec_command="$DDH_OPTS -Dspring.profiles.active=config -DconfigFileName=conf/api.properties -classpath $DDH_CONF_DIR:$DDH_LIB_JARS $CLASS"
+    if [[ "$DOCKER" == "true" ]]; then
+      $JAVA $exec_command
+    else
+      nohup $JAVA $exec_command > $log 2>&1 &
+      echo $! > $pid
+    fi
 
-    echo "nohup $JAVA $exec_command > $log 2>&1 &"
-    nohup $JAVA $exec_command > $log 2>&1 &
-    echo $! > $pid
     ;;
 
   (stop)
@@ -132,38 +138,9 @@ case $startStop in
       fi
       ;;
   (restart)
-      if [ -f $pid ]; then
-        TARGET_PID=`cat $pid`
-        if kill -0 $TARGET_PID > /dev/null 2>&1; then
-          echo stopping $command
-          kill $TARGET_PID
-          sleep $STOP_TIMEOUT
-          if kill -0 $TARGET_PID > /dev/null 2>&1; then
-            echo "$command did not stop gracefully after $STOP_TIMEOUT seconds: killing with kill -9"
-            kill -9 $TARGET_PID
-          fi
-        else
-          echo no $command to stop
-        fi
-        rm -f $pid
-      else
-        echo no $command to stop
-      fi
-      sleep 2s
-      [ -w "$DDH_PID_DIR" ] ||  mkdir -p "$DDH_PID_DIR"
-      if [ -f $pid ]; then
-          if kill -0 `cat $pid` > /dev/null 2>&1; then
-            echo $command running as process `cat $pid`.  Stop it first.
-            exit 1
-          fi
-      fi
-      echo starting $command, logging to $log
-
-      exec_command="$DDH_OPTS -Dspring.profiles.active=config -DconfigFileName=conf/api.properties -classpath $DDH_CONF_DIR:$DDH_LIB_JARS $CLASS"
-
-      echo "nohup $JAVA $exec_command > $log 2>&1 &"
-      nohup $JAVA $exec_command > $log 2>&1 &
-      echo $! > $pid
+      "$0" stop
+      sleep 5s
+      "$0" start
       ;;
   (*)
     echo $usage

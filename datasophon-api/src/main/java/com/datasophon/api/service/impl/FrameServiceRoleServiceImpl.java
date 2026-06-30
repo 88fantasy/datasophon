@@ -71,7 +71,6 @@ public class FrameServiceRoleServiceImpl extends ServiceImpl<FrameServiceRoleMap
                 .orderByAsc(FrameServiceRoleEntity::getSortNum)
                 .list();
         // 校验是否已安装依赖的服务
-        // 校验是否已安装Prometheus,Grafana,AlertManager
         ClusterInfoEntity clusterInfo = clusterInfoMapper.selectById(clusterId);
         String key = clusterInfo.getClusterCode() + Constants.UNDERLINE + Constants.SERVICE_ROLE_HOST_MAPPING;
         

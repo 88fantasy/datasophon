@@ -1,70 +1,90 @@
-import type { PanelDef } from '../_shared/panelTypes';
+/*
+ * MIT License
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
-export interface NexusDashboardVariables {
-  instance: string;
-  job: string;
-}
+import type { DorisPanelDescriptor } from '../_shared/dorisService';
 
-export function replaceNexusVars(
-  promql: string,
-  variables: Partial<NexusDashboardVariables>,
-): string {
-  return promql
-    .replace(/\$instance/g, variables.instance || '.+')
-    .replace(/\$job/g, variables.job || '.+');
-}
+export type { DorisPanelDescriptor as NexusPanelDescriptor };
 
-export const PANEL_QUERIES: Record<string, PanelDef> = {
-  N01: {
-    type: 'instant',
-    promql: 'jvm_vm_uptime{instance=~"$instance",job=~"$job"}',
-  },
-  N02: {
-    type: 'instant',
-    promql: 'jvm_memory_heap_usage{instance=~"$instance",job=~"$job"} * 100',
-  },
-  N03: {
-    type: 'instant',
-    promql: 'jvm_fd_usage{instance=~"$instance",job=~"$job"} * 100',
-  },
-  N04: {
-    type: 'instant',
-    promql: 'readonly_enabled{instance=~"$instance",job=~"$job"}',
-  },
-  N05: {
-    type: 'instant',
-    promql: 'jvm_thread_states_count{instance=~"$instance",job=~"$job"}',
-  },
-  N06: {
-    type: 'instant',
-    promql:
-      'jvm_thread_states_deadlock_count{instance=~"$instance",job=~"$job"}',
-  },
+/**
+ * Nexus 看板面板描述符（T1 + T2 + T3 全部已实现）。
+ *
+ * T1 instant gauge:     N01–N06
+ * T1 multi-range gauge: N12, N13, N15, N16, N17, N18
+ * T2 counter rate:      N07, N08, N14
+ * T3 summary quantile:  N09, N10, N11
+ */
+export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
+  // ── T1 instant ─────────────────────────────────────────────────────────────
+  N01: { type: 'instant', metric: 'jvm_vm_uptime' },
+  N02: { type: 'instant', metric: 'jvm_memory_heap_usage', scale: 100 },
+  N03: { type: 'instant', metric: 'jvm_fd_usage', scale: 100 },
+  N04: { type: 'instant', metric: 'readonly_enabled' },
+  N05: { type: 'instant', metric: 'jvm_thread_states_count' },
+  N06: { type: 'instant', metric: 'jvm_thread_states_deadlock_count' },
+
+  // ── T2 counter rate 1m（table=sum：_total 指标存 otel_metrics_sum） ──────────
   N07: {
     type: 'multi-range',
     queries: ['1xx', '2xx', '3xx', '4xx', '5xx'].map((code) => ({
       label: code,
-      promql: `rate(org_eclipse_jetty_webapp_WebAppContext_${code}_responses_total{instance=~"$instance",job=~"$job"}[1m])`,
+      metric: `org_eclipse_jetty_ee8_nested_ContextHandler_CoreContextHandler_${code}_responses_total`,
+      rate: '1m' as const,
+      table: 'sum' as const,
     })),
   },
+
+  // ── T2 component exceptions rate（sum 表，任意 read 异常为代理指标） ────────
   N08: {
-    type: 'range',
-    promql:
-      'topk(10, sum by (__name__) (rate({__name__=~".*_exceptions_total",instance=~"$instance",job=~"$job"}[5m])) > 0)',
-    seriesKey: '__name__',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'Exceptions',
+        metric:
+          'com_sonatype_nexus_api_extdirect_selfhosted_clm_ClmComponent_read_exceptions_total',
+        rate: '1m' as const,
+        table: 'sum' as const,
+      },
+    ],
   },
+
+  // ── T3 summary quantile（Dropwizard timer，单位 s → ms scale=1000） ────────
   N09: {
     type: 'multi-range',
     queries: [
       {
         label: 'p50',
-        promql:
-          'org_eclipse_jetty_webapp_WebAppContext_requests{quantile="0.5",instance=~"$instance",job=~"$job"} * 1000',
+        metric:
+          'org_eclipse_jetty_ee8_nested_ContextHandler_CoreContextHandler_dispatches',
+        table: 'summary' as const,
+        quantile: 0.5,
+        scale: 1000,
       },
       {
         label: 'p99',
-        promql:
-          'org_eclipse_jetty_webapp_WebAppContext_requests{quantile="0.99",instance=~"$instance",job=~"$job"} * 1000',
+        metric:
+          'org_eclipse_jetty_ee8_nested_ContextHandler_CoreContextHandler_dispatches',
+        table: 'summary' as const,
+        quantile: 0.99,
+        scale: 1000,
       },
     ],
   },
@@ -72,24 +92,18 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
     type: 'multi-range',
     queries: [
       {
-        label: 'Repository',
-        promql:
-          'org_sonatype_nexus_coreui_RepositoryComponent_read_timer{quantile="0.99",instance=~"$instance",job=~"$job"} * 1000',
+        label: 'p50',
+        metric: 'org_sonatype_nexus_blobstore_file_FileBlobStore_get_timer',
+        table: 'summary' as const,
+        quantile: 0.5,
+        scale: 1000,
       },
       {
-        label: 'Search',
-        promql:
-          'org_sonatype_nexus_coreui_SearchComponent_read_timer{quantile="0.99",instance=~"$instance",job=~"$job"} * 1000',
-      },
-      {
-        label: 'Browse',
-        promql:
-          'org_sonatype_nexus_coreui_BrowseComponent_read_timer{quantile="0.99",instance=~"$instance",job=~"$job"} * 1000',
-      },
-      {
-        label: 'Security',
-        promql:
-          'org_sonatype_nexus_rapture_internal_security_SecurityComponent_getPermissions_timer{quantile="0.99",instance=~"$instance",job=~"$job"} * 1000',
+        label: 'p99',
+        metric: 'org_sonatype_nexus_blobstore_file_FileBlobStore_get_timer',
+        table: 'summary' as const,
+        quantile: 0.99,
+        scale: 1000,
       },
     ],
   },
@@ -97,158 +111,114 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
     type: 'multi-range',
     queries: [
       {
-        label: 'get',
-        promql:
-          'org_sonatype_nexus_blobstore_file_FileBlobStore_get_timer{quantile="0.99",instance=~"$instance",job=~"$job"} * 1000',
+        label: 'Create p99',
+        metric: 'org_sonatype_nexus_blobstore_file_FileBlobStore_create_timer',
+        table: 'summary' as const,
+        quantile: 0.99,
+        scale: 1000,
       },
       {
-        label: 'create',
-        promql:
-          'org_sonatype_nexus_blobstore_file_FileBlobStore_create_timer{quantile="0.99",instance=~"$instance",job=~"$job"} * 1000',
-      },
-      {
-        label: 'delete',
-        promql:
-          'org_sonatype_nexus_blobstore_file_FileBlobStore_delete_timer{quantile="0.99",instance=~"$instance",job=~"$job"} * 1000',
-      },
-      {
-        label: 'copy',
-        promql:
-          'org_sonatype_nexus_blobstore_file_FileBlobStore_copy_timer{quantile="0.99",instance=~"$instance",job=~"$job"} * 1000',
+        label: 'Get p99',
+        metric: 'org_sonatype_nexus_blobstore_file_FileBlobStore_get_timer',
+        table: 'summary' as const,
+        quantile: 0.99,
+        scale: 1000,
       },
     ],
   },
+
+  // ── T1 multi-range gauge ───────────────────────────────────────────────────
   N12: {
     type: 'multi-range',
     queries: [
-      {
-        label: 'Max',
-        promql: 'jvm_memory_heap_max{instance=~"$instance",job=~"$job"}',
-      },
-      {
-        label: 'Used',
-        promql: 'jvm_memory_heap_used{instance=~"$instance",job=~"$job"}',
-      },
-      {
-        label: 'Committed',
-        promql: 'jvm_memory_heap_committed{instance=~"$instance",job=~"$job"}',
-      },
+      { label: 'Max', metric: 'jvm_memory_heap_max' },
+      { label: 'Used', metric: 'jvm_memory_heap_used' },
+      { label: 'Committed', metric: 'jvm_memory_heap_committed' },
     ],
   },
+  // G1GC pool names（JDK 17 默认 G1GC，不再有 PS_Eden_Space / PS_Old_Gen）
   N13: {
     type: 'multi-range',
     queries: [
+      { label: 'G1 Eden', metric: 'jvm_memory_pools_G1_Eden_Space_used' },
+      { label: 'G1 Old', metric: 'jvm_memory_pools_G1_Old_Gen_used' },
       {
-        label: 'Eden',
-        promql:
-          'jvm_memory_pools_PS_Eden_Space_used{instance=~"$instance",job=~"$job"}',
+        label: 'G1 Survivor',
+        metric: 'jvm_memory_pools_G1_Survivor_Space_used',
       },
-      {
-        label: 'Old Gen',
-        promql:
-          'jvm_memory_pools_PS_Old_Gen_used{instance=~"$instance",job=~"$job"}',
-      },
-      {
-        label: 'Survivor',
-        promql:
-          'jvm_memory_pools_PS_Survivor_Space_used{instance=~"$instance",job=~"$job"}',
-      },
-      {
-        label: 'Metaspace',
-        promql:
-          'jvm_memory_pools_Metaspace_used{instance=~"$instance",job=~"$job"}',
-      },
-      {
-        label: 'Code Cache',
-        promql:
-          'jvm_memory_pools_Code_Cache_used{instance=~"$instance",job=~"$job"}',
-      },
+      { label: 'Metaspace', metric: 'jvm_memory_pools_Metaspace_used' },
     ],
   },
-  N14: {
-    type: 'multi-range',
-    queries: [
-      {
-        label: 'MarkSweep',
-        promql:
-          'rate(jvm_garbage_collectors_PS_MarkSweep_count{instance=~"$instance",job=~"$job"}[1m])',
-      },
-      {
-        label: 'Scavenge',
-        promql:
-          'rate(jvm_garbage_collectors_PS_Scavenge_count{instance=~"$instance",job=~"$job"}[1m])',
-      },
-    ],
-  },
+
+  // ── T1 GC pause time rate（G1GC，ms/s 衡量 GC 开销） ─────────────────────
   N15: {
     type: 'multi-range',
     queries: [
       {
-        label: 'MarkSweep',
-        promql:
-          'rate(jvm_garbage_collectors_PS_MarkSweep_time{instance=~"$instance",job=~"$job"}[5m]) / rate(jvm_garbage_collectors_PS_MarkSweep_count{instance=~"$instance",job=~"$job"}[5m])',
+        label: 'Young GC',
+        metric: 'jvm_garbage_collectors_G1_Young_Generation_time',
+        rate: '1m' as const,
       },
       {
-        label: 'Scavenge',
-        promql:
-          'rate(jvm_garbage_collectors_PS_Scavenge_time{instance=~"$instance",job=~"$job"}[5m]) / rate(jvm_garbage_collectors_PS_Scavenge_count{instance=~"$instance",job=~"$job"}[5m])',
+        label: 'Old GC',
+        metric: 'jvm_garbage_collectors_G1_Old_Generation_time',
+        rate: '1m' as const,
       },
     ],
   },
+
+  // ── T2 GC counter rate 1m（G1GC） ─────────────────────────────────────────
+  N14: {
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'Old GC',
+        metric: 'jvm_garbage_collectors_G1_Old_Generation_count',
+        rate: '1m' as const,
+      },
+      {
+        label: 'Young GC',
+        metric: 'jvm_garbage_collectors_G1_Young_Generation_count',
+        rate: '1m' as const,
+      },
+    ],
+  },
+
+  // ── T1 multi-range gauge ───────────────────────────────────────────────────
   N16: {
     type: 'multi-range',
     queries: [
-      {
-        label: 'Runnable',
-        promql:
-          'jvm_thread_states_runnable_count{instance=~"$instance",job=~"$job"}',
-      },
-      {
-        label: 'Blocked',
-        promql:
-          'jvm_thread_states_blocked_count{instance=~"$instance",job=~"$job"}',
-      },
-      {
-        label: 'Waiting',
-        promql:
-          'jvm_thread_states_waiting_count{instance=~"$instance",job=~"$job"}',
-      },
+      { label: 'Runnable', metric: 'jvm_thread_states_runnable_count' },
+      { label: 'Blocked', metric: 'jvm_thread_states_blocked_count' },
+      { label: 'Waiting', metric: 'jvm_thread_states_waiting_count' },
       {
         label: 'Timed Waiting',
-        promql:
-          'jvm_thread_states_timed_waiting_count{instance=~"$instance",job=~"$job"}',
-      },
-    ],
-  },
-  N17: {
-    type: 'multi-range',
-    queries: [
-      {
-        label: 'Queued Jobs',
-        promql:
-          '{__name__=~"org_eclipse_jetty_util_thread_QueuedThreadPool_qtp.*_jobs",instance=~"$instance",job=~"$job"}',
-      },
-      {
-        label: 'Pool Size',
-        promql:
-          '{__name__=~"org_eclipse_jetty_util_thread_QueuedThreadPool_qtp.*_size",instance=~"$instance",job=~"$job"}',
+        metric: 'jvm_thread_states_timed_waiting_count',
       },
     ],
   },
   N18: {
     type: 'multi-range',
     queries: [
+      { label: 'Non-Heap', metric: 'jvm_memory_non_heap_used' },
+      { label: 'Direct Buffers', metric: 'jvm_buffers_direct_used' },
+      { label: 'Mapped Buffers', metric: 'jvm_buffers_mapped_used' },
+    ],
+  },
+
+  // ── T1 Jetty ThreadPool（gauge，含 QTP hash，实例间可能不同） ───────────────
+  N17: {
+    type: 'multi-range',
+    queries: [
       {
-        label: 'Non-Heap',
-        promql: 'jvm_memory_non_heap_used{instance=~"$instance",job=~"$job"}',
+        label: 'Queued Jobs',
+        metric:
+          'org_eclipse_jetty_util_thread_QueuedThreadPool_qtp965453174_jobs',
       },
       {
-        label: 'Direct Buffers',
-        promql: 'jvm_buffers_direct_used{instance=~"$instance",job=~"$job"}',
-      },
-      {
-        label: 'Mapped Buffers',
-        promql: 'jvm_buffers_mapped_used{instance=~"$instance",job=~"$job"}',
+        label: 'Pool Size',
+        metric:
+          'org_eclipse_jetty_util_thread_QueuedThreadPool_qtp965453174_size',
       },
     ],
   },

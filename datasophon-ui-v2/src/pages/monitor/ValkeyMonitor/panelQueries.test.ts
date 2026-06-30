@@ -18,9 +18,9 @@ describe('ValkeyMonitor panel queries', () => {
       }),
     ).toBe('redis_up{instance=~"10.0.0.1:9121"}');
 
-    expect(
-      replaceValkeyVars('redis_up{instance=~"$instance"}', {}),
-    ).toBe('redis_up{instance=~".+"}');
+    expect(replaceValkeyVars('redis_up{instance=~"$instance"}', {})).toBe(
+      'redis_up{instance=~".+"}',
+    );
   });
 
   it('V01 is instant query for max uptime', () => {

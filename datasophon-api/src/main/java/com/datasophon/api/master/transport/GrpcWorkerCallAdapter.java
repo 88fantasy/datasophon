@@ -25,7 +25,6 @@ package com.datasophon.api.master.transport;
 import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.command.FileOperateCommand;
-import com.datasophon.common.command.GenerateAlertConfigCommand;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
@@ -117,10 +116,5 @@ public class GrpcWorkerCallAdapter implements WorkerCallAdapter {
     @Override
     public ExecResult operateFile(String hostname, FileOperateCommand cmd) {
         return client.operateFile(hostname, cmd);
-    }
-    
-    @Override
-    public ExecResult generateAlertConfig(String hostname, GenerateAlertConfigCommand cmd) {
-        return client.generateAlertConfig(hostname, cmd);
     }
 }

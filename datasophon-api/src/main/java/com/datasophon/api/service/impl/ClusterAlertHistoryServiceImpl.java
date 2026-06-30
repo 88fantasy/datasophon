@@ -23,14 +23,11 @@
 package com.datasophon.api.service.impl;
 
 import com.datasophon.api.master.service.AlertService;
-import com.datasophon.api.master.service.PrometheusService;
+import com.datasophon.api.observability.OtelCollectorConfigService;
 import com.datasophon.api.service.ClusterAlertHistoryService;
-import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.common.Constants;
-import com.datasophon.common.command.GeneratePrometheusConfigCommand;
 import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ClusterAlertHistory;
-import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.mapper.ClusterAlertHistoryMapper;
 import com.datasophon.dao.mapper.ClusterServiceRoleInstanceMapper;
@@ -41,7 +38,6 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,14 +57,10 @@ public class ClusterAlertHistoryServiceImpl extends ServiceImpl<ClusterAlertHist
     private ClusterServiceRoleInstanceMapper roleInstanceMapper;
     
     @Autowired
-    private ClusterInfoService clusterInfoService;
-    
-    @Autowired
     private AlertService alertService;
     
-    @Lazy
     @Autowired
-    private PrometheusService prometheusService;
+    private OtelCollectorConfigService otelCollectorConfigService;
     
     @Override
     public void saveAlertHistory(String alertMessage) {
@@ -103,15 +95,10 @@ public class ClusterAlertHistoryServiceImpl extends ServiceImpl<ClusterAlertHist
     @Override
     public void removeAlertByRoleInstanceIds(List<Integer> ids) {
         ClusterServiceRoleInstanceEntity roleInstanceEntity = roleInstanceMapper.selectById(ids.get(0));
-        ClusterInfoEntity clusterInfoEntity = clusterInfoService.getById(roleInstanceEntity.getClusterId());
         this.remove(new QueryWrapper<ClusterAlertHistory>()
                 .eq(Constants.IS_ENABLED, 1)
                 .in(Constants.SERVICE_ROLE_INSTANCE_ID, ids));
-        // 重新配置prometheus
-        GeneratePrometheusConfigCommand prometheusConfigCommand = new GeneratePrometheusConfigCommand();
-        prometheusConfigCommand.setServiceInstanceId(roleInstanceEntity.getServiceId());
-        prometheusConfigCommand.setClusterFrame(clusterInfoEntity.getClusterFrame());
-        prometheusConfigCommand.setClusterId(roleInstanceEntity.getClusterId());
-        prometheusService.generatePrometheus(prometheusConfigCommand);
+        otelCollectorConfigService.pushNodeConfig(roleInstanceEntity.getClusterId(),
+                roleInstanceEntity.getHostname(), java.util.Map.of());
     }
 }

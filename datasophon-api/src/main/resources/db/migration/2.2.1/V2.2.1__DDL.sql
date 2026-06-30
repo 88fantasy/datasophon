@@ -1,0 +1,1 @@
+-- 2.2.1 DDL placeholder: OTel metric alert rules only add seed data.

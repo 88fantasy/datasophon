@@ -77,10 +77,17 @@ logging:
 datasophon:
   migration:
     enable: true
+  observability:
+    otel-alert:
+      initial-delay-ms: 30000
+      interval-ms: 30000
+      queue-watermark: 0.8
+      send-failed-rate: 0.05
+    otel-metric-alert:
+      initial-delay-ms: 60000
+      interval-ms: 60000
   server:
     path-prefix: /api
-  proxy-grafana:
-    enable: false
   ai:
     sidecar-url: ${DDH_AI_SIDECAR_URL:http://localhost:18090}
     internal-token: ${DDH_AI_INTERNAL_TOKEN:change-me}
@@ -104,4 +111,3 @@ springdoc:
     - group: 'default'
       paths-to-match: '/**'
       packages-to-scan: com.datasophon.api.controller
-

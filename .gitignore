@@ -46,6 +46,7 @@ node/
 logs
 
 AGENTS.md
+AGENT.override.md
 openspec
 .opencode
 .codex/

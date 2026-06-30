@@ -1,0 +1,125 @@
+# OTel Collector 配置：采集 Nexus + Doris Prometheus 指标 → Doris，并接收 api/worker OTLP traces + logs
+#
+# 用于 deploy/compose/docker-compose.observability.yml 的本地链路验证。
+# 与生产 otelcol.ftl 的区别：
+#   - metrics + logs + traces 三条 pipeline（OTLP receiver 接 api/worker agent 上报）
+#   - create_schema: true（沙箱自动建表，生产用 false + 自管 schema）
+#   - replication_num: 1（单 BE 必须；生产多 BE 时默认 3）
+#   - 含 debug exporter（便于排障）
+#
+# Nexus 指标端点（≥ 3.81 版本）：/service/rest/metrics/prometheus
+# Doris FE 指标端点：:8030/metrics；Doris BE 指标端点：:8040/metrics
+# 端点验证：curl -u admin:admin123 http://localhost:8081/service/rest/metrics/prometheus | head
+
+extensions:
+  health_check:
+    endpoint: "0.0.0.0:13133"
+
+receivers:
+  # OTLP receiver：接收 datasophon-api / worker 通过 OTel Java Agent 上报的 traces + logs
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  prometheus/nexus:
+    config:
+      scrape_configs:
+        - job_name: nexus
+          scrape_interval: 15s
+          metrics_path: /service/rest/metrics/prometheus
+          scheme: http
+          basic_auth:
+            username: admin
+            password: admin123
+          static_configs:
+            - targets: ["obs-nexus:8081"]
+              labels:
+                instance: obs-nexus
+
+  # Doris FE + BE Prometheus 指标采集。
+  # obs-doris-fe/be 既充当存储 Doris 又充当被监控 Doris（沙箱一机两用）。
+  # static labels 镜像旧 prometheus.ftl configs/doris.json 的 group/job/instance 维度，
+  # 保证 D3 SQL 过滤维度（group="fe"/"be", job="doris"）与历史 PromQL 一致。
+  prometheus/doris:
+    config:
+      scrape_configs:
+        - job_name: doris
+          scrape_interval: 15s
+          metrics_path: /metrics
+          static_configs:
+            - targets: ["obs-doris-fe:8030"]
+              labels:
+                group: fe
+                job: doris
+                instance: obs-doris-fe
+            - targets: ["obs-doris-be:8040"]
+              labels:
+                group: be
+                job: doris
+                instance: obs-doris-be
+
+processors:
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 256
+  batch:
+    timeout: 5s
+
+exporters:
+  doris:
+    endpoint: http://obs-doris-fe:8030    # Stream Load HTTP（写数据）
+    mysql_endpoint: obs-doris-fe:9030     # MySQL 协议（create_schema=true 时建表用）
+    database: otel
+    username: root
+    password: ""
+    # 沙箱模式：让 exporter 自动建 otel 库表（生产用 false + 自管 DDL）
+    create_schema: true
+    replication_num: 1                    # 单 BE 必须；否则建表因副本不足报错
+    timezone: UTC
+    timeout: 30s
+    table:
+      metrics: otel_metrics
+      logs: otel_logs
+      traces: otel_traces
+    sending_queue:
+      enabled: true
+      num_consumers: 4
+      queue_size: 500
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+  # debug exporter：输出到 collector 日志，便于排障确认指标流动
+  debug:
+    verbosity: basic
+
+service:
+  extensions: [health_check]
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      # v0.154.0 已废弃 metrics.address；改用 readers/pull/prometheus
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: "0.0.0.0"
+                port: 8888
+  pipelines:
+    metrics:
+      receivers: [prometheus/nexus, prometheus/doris, otlp]
+      processors: [memory_limiter, batch]
+      exporters: [doris, debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [doris, debug]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [doris, debug]

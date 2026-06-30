@@ -1,0 +1,265 @@
+{
+  "name": "OTELCOLLECTOR",
+  "label": "OpenTelemetry Collector",
+  "description": "统一可观测采集器(metrics/logs/traces)",
+  "version": "0.154.0",
+  "sortNum": 18,
+  "dependencies": [],
+  "createDecompressDir": true,
+  "arch": {
+    "x86_64": {
+      "packageName": "otelcol-contrib_0.154.0_linux_amd64.tar.gz",
+      "decompressPackageName": "otelcol-contrib_0.154.0"
+    },
+    "aarch64": {
+      "packageName": "otelcol-contrib_0.154.0_linux_arm64.tar.gz",
+      "decompressPackageName": "otelcol-contrib_0.154.0"
+    }
+  },
+  "roles": [
+    {
+      "name": "OtelCollector",
+      "label": "OtelCollector",
+      "roleType": "worker",
+      "cardinality": "1+",
+      "logFile": "logs/otelcol.out",
+      "jmxPort": 8888,
+      "startRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": ["start"]
+      },
+      "stopRunner": {
+        "timeout": "600",
+        "program": "control.sh",
+        "args": ["stop"]
+      },
+      "statusRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": ["status"]
+      },
+      "restartRunner": {
+        "timeout": "60",
+        "program": "control.sh",
+        "args": ["restart"]
+      },
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "download",
+          "params": {
+            "from": "script/control.sh",
+            "to": "control.sh",
+            "md5": "2726884da0b6c06e73d3ae35e34e34a0"
+          }
+        }
+      ]
+    }
+  ],
+  "configWriter": {
+    "generators": [
+      {
+        "filename": "otelcol.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "config",
+        "templateName": "otelcol.ftl",
+        "includeParams": [
+          "s3Endpoint",
+          "s3Bucket",
+          "s3Prefix",
+          "s3Region",
+          "memLimitMiB",
+          "batchSize",
+          "queueStorageDir",
+          "exporterMode",
+          "dorisEndpoint",
+          "dorisDatabase",
+          "dorisUser",
+          "rawYaml"
+        ]
+      },
+      {
+        "filename": "otelcol.env",
+        "configFormat": "custom",
+        "outputDirectory": "config",
+        "templateName": "otelcol-env.ftl",
+        "includeParams": [
+          "s3AccessKey",
+          "s3SecretKey",
+          "dorisUser",
+          "dorisPassword"
+        ]
+      }
+    ]
+  },
+  "parameters": [
+    {
+      "name": "rawYaml",
+      "label": "otelcol.yaml 覆盖内容",
+      "description": "非空时完全替换基础参数生成的 otelcol.yaml",
+      "required": false,
+      "configType": "map",
+      "type": "textarea",
+      "value": "",
+      "defaultValue": "",
+      "configurableInWizard": false,
+      "hidden": true
+    },
+    {
+      "name": "exporterMode",
+      "label": "Exporter 模式",
+      "required": true,
+      "configType": "map",
+      "type": "select",
+      "value": "s3",
+      "defaultValue": "s3",
+      "selectValue": ["s3", "doris"],
+      "configurableInWizard": true,
+      "hidden": false
+    },
+    {
+      "name": "dorisEndpoint",
+      "label": "Doris Stream Load 端点",
+      "required": false,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "defaultValue": "",
+      "configurableInWizard": false,
+      "hidden": true
+    },
+    {
+      "name": "dorisDatabase",
+      "label": "Doris 数据库",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "otel",
+      "defaultValue": "otel",
+      "configurableInWizard": false,
+      "hidden": true
+    },
+    {
+      "name": "dorisUser",
+      "label": "Doris 写入用户",
+      "required": false,
+      "configType": "map",
+      "type": "input",
+      "value": "otel_collector",
+      "defaultValue": "otel_collector",
+      "configurableInWizard": false,
+      "hidden": true
+    },
+    {
+      "name": "dorisPassword",
+      "label": "Doris 写入密码",
+      "required": false,
+      "configType": "map",
+      "type": "input",
+      "value": "",
+      "defaultValue": "",
+      "configurableInWizard": false,
+      "hidden": true
+    },
+    {
+      "name": "s3Endpoint",
+      "label": "S3 端点(Rustfs)",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "http://mw1:9040",
+      "defaultValue": "http://mw1:9040",
+      "configurableInWizard": true,
+      "hidden": false
+    },
+    {
+      "name": "s3Bucket",
+      "label": "S3 Bucket",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "otel-bootstrap",
+      "defaultValue": "otel-bootstrap",
+      "configurableInWizard": true,
+      "hidden": false
+    },
+    {
+      "name": "s3Prefix",
+      "label": "S3 前缀",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "node",
+      "defaultValue": "node",
+      "configurableInWizard": false,
+      "hidden": false
+    },
+    {
+      "name": "s3Region",
+      "label": "S3 Region",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "us-east-1",
+      "defaultValue": "us-east-1",
+      "configurableInWizard": false,
+      "hidden": true
+    },
+    {
+      "name": "memLimitMiB",
+      "label": "内存限制(MiB)",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "512",
+      "defaultValue": "512",
+      "configurableInWizard": true,
+      "hidden": false
+    },
+    {
+      "name": "batchSize",
+      "label": "批量大小",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "8192",
+      "defaultValue": "8192",
+      "configurableInWizard": true,
+      "hidden": false
+    },
+    {
+      "name": "queueStorageDir",
+      "label": "持久化队列目录",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "/data/otelcol/storage",
+      "defaultValue": "/data/otelcol/storage",
+      "configurableInWizard": false,
+      "hidden": false
+    },
+    {
+      "name": "s3AccessKey",
+      "label": "S3 Access Key",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "${ROOT.Rustfs.access_key}",
+      "defaultValue": "${ROOT.Rustfs.access_key}",
+      "configurableInWizard": false,
+      "hidden": true
+    },
+    {
+      "name": "s3SecretKey",
+      "label": "S3 Secret Key",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "${ROOT.Rustfs.secret_key}",
+      "defaultValue": "${ROOT.Rustfs.secret_key}",
+      "configurableInWizard": false,
+      "hidden": true
+    }
+  ]
+}

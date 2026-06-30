@@ -1,15 +1,34 @@
-import { useMemo } from 'react';
-import type { PrometheusVector } from '../../_shared/charts/promql';
-import { deriveInstancesAndJobs } from '../../_shared/charts/promql';
+/*
+ * MIT License
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+import { useEffect, useMemo, useState } from 'react';
+import { fetchDorisLabels } from '../../_shared/dorisService';
 import type { TimeSeriesPoint } from '../../_shared/types';
-import { useDashboardData } from '../../_shared/useDashboardData';
+import { useDorisDashboardData } from '../../_shared/useDorisDashboardData';
+import type { DorisDashboardSegment } from '../panelQueries';
 import {
-  DORIS_RANGE_PANEL_IDS,
-  type DorisDashboardSegment,
-  type DorisDashboardVariables,
+  DORIS_SEGMENT_PANEL_IDS,
   getDorisSegmentPanelIds,
   PANEL_QUERIES,
-  replaceDorisVars,
 } from '../panelQueries';
 
 export interface DorisInstantValues {
@@ -32,15 +51,26 @@ export interface DorisDashboardData {
 }
 
 interface UseDorisMonitorDashboardParams {
-  variables: DorisDashboardVariables;
+  variables: {
+    cluster: string;
+    feInstance: string;
+    beInstance: string;
+    interval: string;
+  };
   activeSegment: DorisDashboardSegment;
   timeRange: string;
   clusterId?: number;
   refreshKey: number;
 }
 
+const ALL_RANGE_IDS = [
+  ...DORIS_SEGMENT_PANEL_IDS.cluster,
+  ...DORIS_SEGMENT_PANEL_IDS.fe,
+  ...DORIS_SEGMENT_PANEL_IDS.be,
+];
+
 const EMPTY_SERIES: Record<string, TimeSeriesPoint[]> = Object.fromEntries(
-  DORIS_RANGE_PANEL_IDS.map((id) => [id, []]),
+  ALL_RANGE_IDS.map((id) => [id, []]),
 );
 
 export function useDorisMonitorDashboard({
@@ -50,52 +80,60 @@ export function useDorisMonitorDashboard({
   clusterId = 1,
   refreshKey,
 }: UseDorisMonitorDashboardParams): DorisDashboardData {
+  const [feInstances, setFeInstances] = useState<string[]>([]);
+  const [beInstances, setBeInstances] = useState<string[]>([]);
+  const [clusters, setClusters] = useState<string[]>([]);
+
+  // 用 doris_fe_query_total / doris_be_memory_allocated_bytes 作为标签枚举基准
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetchDorisLabels('doris_fe_query_total', clusterId),
+      fetchDorisLabels('doris_be_memory_allocated_bytes', clusterId),
+    ])
+      .then(([feRes, beRes]) => {
+        if (cancelled) return;
+        setFeInstances(feRes?.data?.instances ?? []);
+        setBeInstances(beRes?.data?.instances ?? []);
+        // jobs 对应集群名称（otelcol 配置的 job_name=doris）
+        setClusters(feRes?.data?.jobs ?? []);
+      })
+      .catch(() => {
+        // labels 查询失败不影响面板数据，静默降级
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [clusterId, refreshKey]);
+
   /**
    * ⚠️ 多 segment 硬约束：只传当前 segment 的 panelIds，避免一次性拉全部面板超时。
-   * activeSegment 变化 → panelIds 变化 → useDashboardData 重拉。
+   * activeSegment 变化 → panelIds 变化 → useDorisDashboardData 重拉。
    */
   const panelIds = useMemo(
     () => getDorisSegmentPanelIds(activeSegment),
     [activeSegment],
   );
 
-  const extras = useMemo(
-    () => ({
-      clustersVec: { query: 'up{group="fe"}', kind: 'instant' as const },
-      feUp: {
-        query: `up{group="fe", job="${variables.cluster || 'doris'}"}`,
-        kind: 'instant' as const,
-      },
-      beUp: {
-        query: `up{group="be", job="${variables.cluster || 'doris'}"}`,
-        kind: 'instant' as const,
-      },
-    }),
-    [variables.cluster],
-  );
+  // 不同 segment 传入不同 instance 过滤（FE/BE 分开）
+  const instance =
+    activeSegment === 'fe'
+      ? variables.feInstance || '.+'
+      : activeSegment === 'be'
+        ? variables.beInstance || '.+'
+        : '.+';
 
-  const data = useDashboardData({
-    panelQueries: PANEL_QUERIES,
-    replaceVars: (promql, vars) =>
-      replaceDorisVars(promql, vars as Partial<DorisDashboardVariables>),
-    variables: variables as unknown as Record<string, string>,
+  const job = variables.cluster || 'doris';
+
+  const data = useDorisDashboardData({
+    panelDescriptors: PANEL_QUERIES,
     panelIds,
-    extras,
+    instance,
+    job,
     timeRange,
     clusterId,
     refreshKey,
   });
-
-  const { clusters, feInstances, beInstances } = useMemo(() => {
-    const clustersVec = data.extras.clustersVec as PrometheusVector | undefined;
-    const feUpVec = data.extras.feUp as PrometheusVector | undefined;
-    const beUpVec = data.extras.beUp as PrometheusVector | undefined;
-    return {
-      clusters: clustersVec ? deriveInstancesAndJobs(clustersVec).jobs : [],
-      feInstances: feUpVec ? deriveInstancesAndJobs(feUpVec).instances : [],
-      beInstances: beUpVec ? deriveInstancesAndJobs(beUpVec).instances : [],
-    };
-  }, [data.extras]);
 
   return {
     instant: {
@@ -107,7 +145,7 @@ export function useDorisMonitorDashboard({
       totalCapacityBytes: data.instant['DO-A06'] ?? 0,
     },
     series: { ...EMPTY_SERIES, ...data.series },
-    clusters,
+    clusters: clusters.length > 0 ? clusters : ['doris'],
     feInstances,
     beInstances,
     loading: data.loading,

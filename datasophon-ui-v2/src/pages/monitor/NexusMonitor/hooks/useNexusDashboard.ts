@@ -1,12 +1,30 @@
-import { useMemo } from 'react';
-import type { PrometheusVector } from '../../_shared/charts/promql';
-import {
-  deriveInstancesAndJobs,
-  replaceVars,
-} from '../../_shared/charts/promql';
+/*
+ * MIT License
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+import { useEffect, useState } from 'react';
+import { fetchDorisLabels } from '../../_shared/dorisService';
 import type { TimeSeriesPoint } from '../../_shared/types';
-import { useDashboardData } from '../../_shared/useDashboardData';
-import { type NexusDashboardVariables, PANEL_QUERIES } from '../panelQueries';
+import { useDorisDashboardData } from '../../_shared/useDorisDashboardData';
+import { PANEL_QUERIES } from '../panelQueries';
 
 export interface NexusInstantValues {
   uptime: number;
@@ -31,15 +49,8 @@ const ALL_PANEL_IDS = Array.from(
   (_, i) => `N${String(i + 1).padStart(2, '0')}`,
 );
 
-const EXTRAS = {
-  up: {
-    query: 'jvm_vm_uptime{instance=~".+",job=~".+"}',
-    kind: 'instant' as const,
-  },
-};
-
 export interface UseNexusDashboardParams {
-  variables: NexusDashboardVariables;
+  variables: { instance: string; job: string };
   timeRange: string;
   clusterId?: number;
   refreshKey: number;
@@ -51,23 +62,30 @@ export function useNexusDashboard({
   clusterId = 1,
   refreshKey,
 }: UseNexusDashboardParams): NexusDashboardData {
-  const data = useDashboardData({
-    panelQueries: PANEL_QUERIES,
-    replaceVars: (promql, vars) =>
-      replaceVars(promql, vars, { instance: '.+', job: '.+' }),
-    variables: variables as unknown as Record<string, string>,
+  const [labels, setLabels] = useState<{ instances: string[]; jobs: string[] }>(
+    { instances: [], jobs: [] },
+  );
+
+  // 用 jvm_vm_uptime 作为标签枚举的基准指标（等价于 Prometheus up 查询）
+  useEffect(() => {
+    fetchDorisLabels('jvm_vm_uptime', clusterId)
+      .then((res) => {
+        if (res?.data) setLabels(res.data);
+      })
+      .catch(() => {
+        // labels 查询失败不影响面板数据，静默降级
+      });
+  }, [clusterId, refreshKey]);
+
+  const data = useDorisDashboardData({
+    panelDescriptors: PANEL_QUERIES,
     panelIds: ALL_PANEL_IDS,
-    extras: EXTRAS,
+    instance: variables.instance,
+    job: variables.job,
     timeRange,
     clusterId,
     refreshKey,
   });
-
-  const { instances, jobs } = useMemo(() => {
-    const upVector = data.extras.up as PrometheusVector | undefined;
-    if (!upVector) return { instances: [], jobs: [] };
-    return deriveInstancesAndJobs(upVector);
-  }, [data.extras]);
 
   return {
     instant: {
@@ -79,8 +97,8 @@ export function useNexusDashboard({
       deadlockThreads: data.instant.N06 ?? 0,
     },
     series: data.series,
-    instances,
-    jobs,
+    instances: labels.instances,
+    jobs: labels.jobs,
     loading: data.loading,
     error: data.error,
   };

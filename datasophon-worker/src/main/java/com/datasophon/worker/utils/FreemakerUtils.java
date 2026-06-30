@@ -25,7 +25,6 @@ package com.datasophon.worker.utils;
 import static com.datasophon.worker.handler.ConfigureServiceHandler.SH;
 
 import com.datasophon.common.Constants;
-import com.datasophon.common.model.AlertItem;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.utils.PropertyUtils;
@@ -54,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +79,14 @@ public class FreemakerUtils {
     
     private static final Logger logger = LoggerFactory.getLogger(FreemakerUtils.class);
     
+    // 匹配含 PASSWORD / SECRET 的 key=value 行，日志脱敏用
+    private static final Pattern CREDENTIAL_LINE =
+            Pattern.compile("(?im)^([^=\n]*(?:PASSWORD|SECRET)[^=\n]*=)(.+)$");
+    
+    static String redactSecrets(String content) {
+        return CREDENTIAL_LINE.matcher(content).replaceAll("$1<redacted>");
+    }
+    
     private static final NacosRestTemplate nacosRestTemplate = NamingHttpClientManager.getInstance().getNacosRestTemplate();
     
     public static void generateConfigFile(Generators generators, List<ServiceConfig> configs,
@@ -102,7 +110,7 @@ public class FreemakerUtils {
         
         String content = renderTemplate(generators, template, configs);
         if (logger.isDebugEnabled()) {
-            logger.debug("generate config file from tpl {}, content is: {}", tplName, content);
+            logger.debug("generate config file from tpl {}, content is: {}", tplName, redactSecrets(content));
         }
         
         writeContent(generators, configs, serviceInstallHome, content);
@@ -150,9 +158,6 @@ public class FreemakerUtils {
         }
         if (Constants.PROPERTIES3.equals(configFormat)) {
             return "properties3.ftl";
-        }
-        if (Constants.PROMETHEUS.equals(configFormat)) {
-            return "alert.yml";
         }
         if (Constants.YAML.equals(configFormat)) {
             // 直接根据字段生成，无需模板
@@ -377,28 +382,6 @@ public class FreemakerUtils {
             logger.error("写入nacos配置失败:", e);
             throw new RuntimeException(e);
         }
-    }
-    
-    public static void generatePromAlertFile(Generators generators, List<AlertItem> configs,
-                                             String serviceName) throws IOException, TemplateException {
-        // 创建核心配置对象
-        Configuration config = new Configuration(Configuration.getVersion());
-        // 设置加载的目录
-        // ""代表当前包
-        config.setClassForTemplateLoading(FreemakerUtils.class, "/templates");
-        // 得到模板对象
-        String configFormat = generators.getConfigFormat();
-        Template template = null;
-        
-        if (Constants.PROMETHEUS.equals(configFormat)) {
-            template = config.getTemplate("alert.yml");
-        }
-        
-        Map<String, Object> data = new HashMap<>();
-        data.put("itemList", configs);
-        data.put("serviceName", serviceName);
-        // 3.产生输出
-        processOut(generators, template, data, "prometheus");
     }
     
     private static void processOut(Generators generators, Template template, Map<String, Object> data,

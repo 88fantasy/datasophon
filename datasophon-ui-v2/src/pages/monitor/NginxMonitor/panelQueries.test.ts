@@ -14,9 +14,9 @@ describe('NginxMonitor panel queries', () => {
       }),
     ).toBe('nginx_up{instance=~"10.0.0.1:9113"}');
 
-    expect(
-      replaceNginxVars('nginx_up{instance=~"$instance"}', {}),
-    ).toBe('nginx_up{instance=~".+"}');
+    expect(replaceNginxVars('nginx_up{instance=~"$instance"}', {})).toBe(
+      'nginx_up{instance=~".+"}',
+    );
   });
 
   it('N01 is instant query for nginx_up', () => {

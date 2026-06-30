@@ -1,21 +1,5 @@
 [
   {
-    "service": "ALERTMANAGER",
-    "arch": "x86_64",
-    "packageName": "alertmanager-0.32.1.linux-amd64.tar.gz",
-    "decompressPackageName": "alertmanager-0.32.1",
-    "downloadUrl": "https://github.com/prometheus/alertmanager/releases/download/v0.32.1/alertmanager-0.32.1.linux-amd64.tar.gz",
-    "status": "public"
-  },
-  {
-    "service": "ALERTMANAGER",
-    "arch": "aarch64",
-    "packageName": "alertmanager-0.32.1.linux-arm64.tar.gz",
-    "decompressPackageName": "alertmanager-0.32.1",
-    "downloadUrl": "https://github.com/prometheus/alertmanager/releases/download/v0.32.1/alertmanager-0.32.1.linux-arm64.tar.gz",
-    "status": "public"
-  },
-  {
     "service": "APISIX",
     "arch": "common",
     "packageName": "apache-apisix-3.16.0-src.tgz",
@@ -72,22 +56,6 @@
     "downloadUrl": "https://downloads.apache.org/flink/flink-2.2.1/flink-2.2.1-bin-scala_2.12.tgz",
     "status": "public",
     "note": "备用镜像：https://archive.apache.org/dist/flink/flink-2.2.1/flink-2.2.1-bin-scala_2.12.tgz（代理环境下连接易中断，可直接使用此链接重试）"
-  },
-  {
-    "service": "GRAFANA",
-    "arch": "x86_64",
-    "packageName": "grafana-13.0.1.linux-amd64.tar.gz",
-    "decompressPackageName": "grafana-13.0.1",
-    "downloadUrl": "https://dl.grafana.com/oss/release/grafana-13.0.1.linux-amd64.tar.gz",
-    "status": "public"
-  },
-  {
-    "service": "GRAFANA",
-    "arch": "aarch64",
-    "packageName": "grafana-13.0.1.linux-arm64.tar.gz",
-    "decompressPackageName": "grafana-13.0.1",
-    "downloadUrl": "https://dl.grafana.com/oss/release/grafana-13.0.1.linux-arm64.tar.gz",
-    "status": "public"
   },
   {
     "service": "HDFS",
@@ -148,24 +116,6 @@
     "status": "public"
   },
   {
-    "service": "LOKI",
-    "arch": "x86_64",
-    "packageName": "loki-linux-amd64.zip",
-    "decompressPackageName": "loki-3.7.2",
-    "downloadUrl": "https://github.com/grafana/loki/releases/download/v3.7.2/loki-linux-amd64.zip",
-    "status": "public",
-    "note": "单二进制 zip，无顶层目录，verify 步跳过目录校验"
-  },
-  {
-    "service": "LOKI",
-    "arch": "aarch64",
-    "packageName": "loki-linux-arm64.zip",
-    "decompressPackageName": "loki-3.7.2",
-    "downloadUrl": "https://github.com/grafana/loki/releases/download/v3.7.2/loki-linux-arm64.zip",
-    "status": "public",
-    "note": "单二进制 zip，无顶层目录"
-  },
-  {
     "service": "NACOS",
     "arch": "common",
     "packageName": "nacos-server-3.2.2.tar.gz",
@@ -183,38 +133,22 @@
     "status": "public"
   },
   {
-    "service": "PROMETHEUS",
+    "service": "OTELCOLLECTOR",
     "arch": "x86_64",
-    "packageName": "prometheus-3.12.0.linux-amd64.tar.gz",
-    "decompressPackageName": "prometheus-3.12.0",
-    "downloadUrl": "https://github.com/prometheus/prometheus/releases/download/v3.12.0/prometheus-3.12.0.linux-amd64.tar.gz",
-    "status": "public"
-  },
-  {
-    "service": "PROMETHEUS",
-    "arch": "aarch64",
-    "packageName": "prometheus-3.12.0.linux-arm64.tar.gz",
-    "decompressPackageName": "prometheus-3.12.0",
-    "downloadUrl": "https://github.com/prometheus/prometheus/releases/download/v3.12.0/prometheus-3.12.0.linux-arm64.tar.gz",
-    "status": "public"
-  },
-  {
-    "service": "PROMTAIL",
-    "arch": "x86_64",
-    "packageName": "promtail-linux-amd64.zip",
-    "decompressPackageName": "promtail-2.8.11",
-    "downloadUrl": "https://github.com/grafana/loki/releases/download/v2.8.11/promtail-linux-amd64.zip",
+    "packageName": "otelcol-contrib_0.154.0_linux_amd64.tar.gz",
+    "decompressPackageName": "otelcol-contrib_0.154.0",
+    "downloadUrl": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.154.0/otelcol-contrib_0.154.0_linux_amd64.tar.gz",
     "status": "public",
-    "note": "单二进制 zip，无顶层目录，verify 步跳过目录校验"
+    "note": "contrib 发行版含 dorisexporter，tarball 内无顶层目录（单二进制），DDL 设 createDecompressDir=true 由 Datasophon 自动创建 otelcol-contrib_0.154.0/ 目录"
   },
   {
-    "service": "PROMTAIL",
+    "service": "OTELCOLLECTOR",
     "arch": "aarch64",
-    "packageName": "promtail-linux-arm64.zip",
-    "decompressPackageName": "promtail-2.8.11",
-    "downloadUrl": "https://github.com/grafana/loki/releases/download/v2.8.11/promtail-linux-arm64.zip",
+    "packageName": "otelcol-contrib_0.154.0_linux_arm64.tar.gz",
+    "decompressPackageName": "otelcol-contrib_0.154.0",
+    "downloadUrl": "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.154.0/otelcol-contrib_0.154.0_linux_arm64.tar.gz",
     "status": "public",
-    "note": "单二进制 zip，无顶层目录"
+    "note": "contrib 发行版含 dorisexporter，tarball 内无顶层目录（单二进制），DDL 设 createDecompressDir=true 由 Datasophon 自动创建 otelcol-contrib_0.154.0/ 目录"
   },
   {
     "service": "VALKEY",

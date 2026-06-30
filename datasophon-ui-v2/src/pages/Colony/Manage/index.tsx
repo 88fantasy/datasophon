@@ -7,10 +7,18 @@ import {
   TeamOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
-import { PageContainer, ProList } from '@ant-design/pro-components';
 import type { ProListProps } from '@ant-design/pro-components';
+import { PageContainer, ProList } from '@ant-design/pro-components';
 import { history, useRequest } from '@umijs/max';
-import { Button, Dropdown, message, Popconfirm, Space, Tag, Typography } from 'antd';
+import {
+  Button,
+  Dropdown,
+  message,
+  Popconfirm,
+  Space,
+  Tag,
+  Typography,
+} from 'antd';
 import React, { useState } from 'react';
 import { deleteCluster, listClusters } from '@/services/cluster';
 import AuthModal from './AuthModal';
@@ -39,7 +47,10 @@ const ColonyManage: React.FC = () => {
   const { data: clusters, refresh, loading } = useRequest(listClusters);
   const clusterList = clusters ?? [];
 
-  const [openState, setOpenState] = useState<OpenState>({ modal: null, cluster: null });
+  const [openState, setOpenState] = useState<OpenState>({
+    modal: null,
+    cluster: null,
+  });
 
   const openModal = (modal: ModalKey, cluster: DATASOPHON.ClusterResponse) =>
     setOpenState({ modal, cluster });
@@ -75,7 +86,9 @@ const ColonyManage: React.FC = () => {
       listSlot: 'description',
       render: (_, cluster) => (
         <>
-          <Typography.Text type="secondary">{cluster.clusterCode}</Typography.Text>
+          <Typography.Text type="secondary">
+            {cluster.clusterCode}
+          </Typography.Text>
           {cluster.clusterFrame && (
             <div style={{ marginTop: 4 }}>
               <Tag>{cluster.clusterFrame}</Tag>
@@ -120,14 +133,18 @@ const ColonyManage: React.FC = () => {
             key="edit"
             cluster={cluster}
             onSuccess={refresh}
-            trigger={<Button type="link" size="small" icon={<EditOutlined />} />}
+            trigger={
+              <Button type="link" size="small" icon={<EditOutlined />} />
+            }
           />,
           isPhysical && (
             <AuthModal
               key="auth"
               cluster={cluster}
               onSuccess={refresh}
-              trigger={<Button type="link" size="small" icon={<TeamOutlined />} />}
+              trigger={
+                <Button type="link" size="small" icon={<TeamOutlined />} />
+              }
             />
           ),
           isPhysical && isRunning && (

@@ -29,8 +29,7 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
   // R2 — Traffic
   N04: {
     type: 'range',
-    promql:
-      'sum(irate(nginx_http_requests_total{instance=~"$instance"}[5m]))',
+    promql: 'sum(irate(nginx_http_requests_total{instance=~"$instance"}[5m]))',
   },
   N05: {
     type: 'multi-range',

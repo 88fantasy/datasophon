@@ -91,18 +91,13 @@
             <lineEnding>unix</lineEnding>
         </fileSet>
 
-
-        <fileSet>
-            <directory>${basedir}/../datasophon-api/src/main/resources/meta</directory>
-            <outputDirectory>conf/meta</outputDirectory>
-        </fileSet>
         <fileSet>
             <directory>${basedir}/../datasophon-api/src/main/resources/frameworktpl</directory>
             <outputDirectory>conf/frameworktpl</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>${basedir}/../jmx</directory>
-            <outputDirectory>/jmx</outputDirectory>
+            <directory>${project.build.directory}/otel</directory>
+            <outputDirectory>/otel</outputDirectory>
             <directoryMode>0755</directoryMode>
             <fileMode>0755</fileMode>
         </fileSet>
@@ -136,15 +131,6 @@
                 <include>Dockerfile</include>
             </includes>
             <outputDirectory>/</outputDirectory>
-            <directoryMode>0755</directoryMode>
-            <fileMode>0755</fileMode>
-        </fileSet>
-        <fileSet>
-            <directory>${basedir}/../deploy/compose</directory>
-            <includes>
-                <include>**</include>
-            </includes>
-            <outputDirectory>/bin/compose</outputDirectory>
             <directoryMode>0755</directoryMode>
             <fileMode>0755</fileMode>
         </fileSet>

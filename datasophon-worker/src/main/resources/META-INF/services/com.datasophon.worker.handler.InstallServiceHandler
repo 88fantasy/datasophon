@@ -1,4 +1,3 @@
 com.datasophon.worker.handler.YarnInstallServiceHandler
 com.datasophon.worker.handler.KerberosInstallServiceHandler
 com.datasophon.worker.handler.HadoopInstallServiceHandler
-com.datasophon.worker.handler.PrometheusInstallHandler

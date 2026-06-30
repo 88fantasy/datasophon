@@ -9,8 +9,6 @@ import freemarker.template.TemplateException;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -30,66 +28,6 @@ public class FreemarkerTest {
         config2.setConfigType("map");
         config2.setValue(val);
         return config2;
-        
-    }
-    
-    @Test
-    public void generatePRCustomTemplate() throws IOException, TemplateException {
-        
-        Generators nodeGenerators = new Generators();
-        nodeGenerators.setFilename("linux.json");
-        nodeGenerators.setOutputDirectory("");
-        nodeGenerators.setConfigFormat("custom");
-        nodeGenerators.setTemplateName("scrape.ftl");
-        ArrayList<ServiceConfig> workerServiceConfigs = new ArrayList<>();
-        ArrayList<ServiceConfig> nodeServiceConfigs = new ArrayList<>();
-        
-        ServiceConfig serviceConfig = new ServiceConfig();
-        serviceConfig.setName("worker_1");
-        serviceConfig.setValue("yc1:8585");
-        serviceConfig.setRequired(true);
-        serviceConfig.setEnabled(true);
-        workerServiceConfigs.add(serviceConfig);
-        
-        ServiceConfig nodeServiceConfig = new ServiceConfig();
-        nodeServiceConfig.setName("node_1");
-        nodeServiceConfig.setValue("yc1:9100");
-        nodeServiceConfig.setRequired(true);
-        nodeServiceConfigs.add(nodeServiceConfig);
-        
-    }
-    
-    @Test
-    public void generateSRCustomTemplate() throws IOException, TemplateException {
-        
-        HashMap<Generators, List<ServiceConfig>> configFileMap = new HashMap<>();
-        
-        ArrayList<String> feList = new ArrayList<>();
-        ArrayList<String> beList = new ArrayList<>();
-        
-        feList.add("yc1:9030");
-        feList.add("yc2:9030");
-        beList.add("yc3:9050");
-        beList.add("yc2:9050");
-        ArrayList<ServiceConfig> serviceConfigs = new ArrayList<>();
-        Generators generators = new Generators();
-        generators.setFilename("starrocks.json");
-        generators.setOutputDirectory("");
-        generators.setConfigFormat("custom");
-        generators.setTemplateName("starrocks-prom.ftl");
-        
-        ServiceConfig feServiceConfig = new ServiceConfig();
-        feServiceConfig.setName("feList");
-        feServiceConfig.setValue(feList);
-        feServiceConfig.setConfigType("map");
-        
-        ServiceConfig beServiceConfig = new ServiceConfig();
-        beServiceConfig.setName("beList");
-        beServiceConfig.setValue(beList);
-        beServiceConfig.setConfigType("map");
-        serviceConfigs.add(feServiceConfig);
-        serviceConfigs.add(beServiceConfig);
-        configFileMap.put(generators, serviceConfigs);
         
     }
     
@@ -117,27 +55,6 @@ public class FreemarkerTest {
         
         ArrayList<ServiceConfig> serviceConfigs = new ArrayList<>();
         serviceConfigs.add(serviceConfig);
-        
-        FreemakerUtils.generateConfigFile(generators, serviceConfigs, "");
-    }
-    
-    @Test
-    public void generateCustomTemplate1() throws IOException, TemplateException {
-        Generators generators = new Generators();
-        generators.setFilename("worker.json");
-        generators.setOutputDirectory("configs");
-        generators.setConfigFormat("custom");
-        generators.setTemplateName("scrape.ftl");
-        
-        ServiceConfig serviceConfig = new ServiceConfig();
-        serviceConfig.setValue("ddp1016:9100");
-        
-        ServiceConfig serviceConfig2 = new ServiceConfig();
-        serviceConfig.setValue("ddp1017:9100");
-        
-        ArrayList<ServiceConfig> serviceConfigs = new ArrayList<>();
-        serviceConfigs.add(serviceConfig);
-        serviceConfigs.add(serviceConfig2);
         
         FreemakerUtils.generateConfigFile(generators, serviceConfigs, "");
     }

@@ -40,7 +40,7 @@ Datasophon 的公共依赖库,沉淀 K8s 客户端封装、跨进程命令模型
 - `cache` — `CacheUtils` 进程内 Guava 缓存封装与 `Namespace` 命名空间常量。
 - `command` — 跨节点命令模型与结果模型(`BaseCommand` / `ClusterCommand` / `ExecuteServiceRoleCommand` / `InstallServiceRoleCommand` 等),与 `ClusterServiceCommand` 业务体系对齐;子包 `command.dag` 承载 DAG 调度命令,`command.remote` 承载 Unix 用户/组、Keytab 等远程操作命令。
 - `enums` — 枚举常量(`CommandType` / `ServiceRoleType` / `InstallState` / `OsType` / `ArchType` / `SSHAuthType` 等),供 API、Worker、Agent 序列化时共享同一份取值。
-- `model` — 跨进程数据模型(`Host` / `DAG` / `ServiceConfig` / `ServiceRoleInfo` / `AlertConfigEntry` 等),`model.k8s` 为 K8s 工件模型,`model.uni` 为统一数据源/包/仓库描述模型。
+- `model` — 跨进程数据模型(`Host` / `DAG` / `ServiceConfig` / `ServiceRoleInfo` 等),`model.k8s` 为 K8s 工件模型,`model.uni` 为统一数据源/包/仓库描述模型。
 - `k8s` — 基于 fabric8 / kubectl / helm CLI 的客户端封装:`client/` 下 `DockerClientWrapper`、`HelmClient`、`KubectlClient` 等;配套 `config`、`spec`、`vo`、`dto`、`exception` 子包描述渲染与异常。
 - `utils` — 通用工具集合(`ShellUtils` / `JschUtils` / `FileUtils` / `TarUtils` / `JacksonUtils` / `PlaceholderUtils` 等);子包 `utils.nexus` 提供 `NexusFacade` 与底层 `CommonNexusClient`、`HelmRepoClient`、`RawRepoClient`,封装外部 Nexus / Raw 仓库的 HTTP 操作。
 - `storage` — 离线包/镜像/Helm/元数据的抽象存储接口(`PackageStorage` / `ImageStorage` / `HelmStorage` / `MetaStorage`),`storage.impl` 提供基于 Nexus 的实现。

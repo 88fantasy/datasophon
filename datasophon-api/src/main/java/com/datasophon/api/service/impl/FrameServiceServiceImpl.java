@@ -105,7 +105,7 @@ public class FrameServiceServiceImpl extends ServiceImpl<FrameServiceMapper, Fra
         FrameInfoEntity frameInfo = frameInfoMapper.getFrameInfoByFrameCode(clusterInfo.getClusterFrame());
         List<FrameServiceEntity> list = this.lambdaQuery()
                 .eq(FrameServiceEntity::getFrameId, frameInfo.getId())
-                .in(FrameServiceEntity::getServiceName, Arrays.asList("ALERTMANAGER", "GRAFANA", "PROMETHEUS"))
+                .in(FrameServiceEntity::getServiceName, Arrays.asList("OTELCOLLECTOR"))
                 .orderByAsc(FrameServiceEntity::getServiceName)
                 .list();
         setInstalled(clusterId, list);

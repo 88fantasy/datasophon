@@ -24,7 +24,6 @@ package com.datasophon.api.master.transport;
 
 import com.datasophon.common.command.ExecuteCmdCommand;
 import com.datasophon.common.command.FileOperateCommand;
-import com.datasophon.common.command.GenerateAlertConfigCommand;
 import com.datasophon.common.command.GenerateServiceConfigCommand;
 import com.datasophon.common.command.InstallServiceRoleCommand;
 import com.datasophon.common.command.ServiceRoleOperateCommand;
@@ -68,6 +67,4 @@ public interface WorkerCallAdapter {
     ExecResult deleteUnixUser(String hostname, DelUnixUserCommand cmd);
     
     ExecResult operateFile(String hostname, FileOperateCommand cmd);
-    
-    ExecResult generateAlertConfig(String hostname, GenerateAlertConfigCommand cmd);
 }

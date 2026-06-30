@@ -76,13 +76,23 @@ const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
         legend={{ position: 'top-right' }}
         annotations={thresholdLines?.map((line) => ({
           type: 'lineY',
-          y: line.value,
+          data: [line.value],
           style: {
             stroke: line.color ?? CHART_COLORS.warning,
             lineDash: [4, 4],
           },
-          labelText: line.label,
-          labelFill: line.color ?? CHART_COLORS.warning,
+          ...(line.label
+            ? {
+                labels: [
+                  {
+                    text: line.label,
+                    fill: line.color ?? CHART_COLORS.warning,
+                    fontSize: 10,
+                    position: 'right',
+                  },
+                ],
+              }
+            : {}),
         }))}
         tooltip={{
           title: (point: TimeSeriesPoint) =>

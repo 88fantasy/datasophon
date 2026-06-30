@@ -37,7 +37,6 @@ import com.datasophon.api.service.FrameServiceRoleService;
 import com.datasophon.api.service.FrameServiceService;
 import com.datasophon.api.service.ServiceInstallService;
 import com.datasophon.api.service.cmd.ClusterServiceCommandService;
-import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.api.strategy.ServiceRoleStrategy;
 import com.datasophon.api.strategy.ServiceRoleStrategyContext;
 import com.datasophon.api.utils.ServiceConfigUtils;
@@ -46,24 +45,16 @@ import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceRoleHostMapping;
-import com.datasophon.common.model.ServiceRoleInfo;
-import com.datasophon.common.storage.MetaStorage;
-import com.datasophon.common.storage.StorageUtils;
-import com.datasophon.common.storage.vo.ServiceMetaItem;
-import com.datasophon.common.utils.CollectionUtils;
 import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.IOUtils;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.Result;
 import com.datasophon.common.utils.nexus.NexusFacade;
-import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceRoleGroup;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
-import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.entity.FrameServiceEntity;
-import com.datasophon.dao.entity.FrameServiceRoleEntity;
 import com.datasophon.dao.enums.NeedRestart;
 import com.datasophon.dao.enums.ServiceState;
 
@@ -71,17 +62,12 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -105,9 +91,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     
     private static final Logger logger = LoggerFactory.getLogger(ServiceInstallServiceImpl.class);
     
-    private static final List<String> MUST_AT_SAME_NODE_BASIC_SERVICE =
-            Arrays.asList("Grafana", "AlertManager", "Prometheus");
-    
     private final ClusterInfoService clusterInfoService;
     
     private final FrameInfoService frameInfoService;
@@ -122,15 +105,11 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     
     private final ClusterVariableService variableService;
     
-    private final ClusterHostService hostService;
-    
     private final ClusterServiceInstanceRoleGroupService roleGroupService;
     
     private final ClusterServiceRoleGroupConfigService groupConfigService;
     
     private final ClusterServiceRoleInstanceService roleInstanceService;
-    
-    public static final String PROMETHEUS = "prometheus";
     
     @Override
     public List<ServiceConfig> getServiceConfigOption(Integer clusterId, String serviceName) {
@@ -207,11 +186,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
             map.put(serviceConfig.getName(), serviceConfig);
         }
         Map<Generators, List<ServiceConfig>> configFileMap = buildConfigFileMap(serviceName, clusterInfo, map);
-        if (PROMETHEUS.equalsIgnoreCase(serviceName)) {
-            logger.info("add worker and node to prometheus");
-            // add host node to prometheus
-            addHostNodeToPrometheus(clusterId, configFileMap);
-        }
         
         ClusterServiceInstanceEntity serviceInstanceEntity = serviceInstanceService.getServiceInstanceByClusterIdAndServiceName(clusterId, serviceName);
         ClusterServiceInstanceRoleGroup serviceInstanceRoleGroup = null;
@@ -259,8 +233,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     @SuppressWarnings("unchecked")
     @Override
     public void saveServiceRoleHostMapping(Integer clusterId, List<ServiceRoleHostMapping> list) {
-        checkOnSameNode(clusterId, list);
-        
         ClusterInfoEntity clusterInfo = clusterInfoService.getById(clusterId);
         String hostMapKey = clusterInfo.getClusterCode() + Constants.UNDERLINE + Constants.SERVICE_ROLE_HOST_MAPPING;
         Map<String, List<String>> map = new HashMap<>();
@@ -312,32 +284,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
     }
     
     @Override
-    public void downloadResource(String frameCode, String serviceRoleName, String resource,
-                                 HttpServletResponse response) throws Exception {
-        FrameServiceRoleEntity entity = frameServiceRoleService.getServiceRoleByFrameCodeAndServiceRoleName(frameCode, serviceRoleName);
-        ServiceRoleInfo roleInfo = JSONObject.parseObject(entity.getServiceRoleJson(), ServiceRoleInfo.class);
-        
-        ServiceMetaItem item = new ServiceMetaItem();
-        item.setServiceName(roleInfo.getServiceName());
-        item.setType(MetaStorage.PHYSICAL);
-        item.setFramework(frameCode);
-        MetaStorage metaStorage = StorageUtils.getMetaStorage();
-        
-        int idx = resource.lastIndexOf("/");
-        String fileName = idx == -1 ? resource : resource.substring(idx + 1);
-        try {
-            metaStorage.downResource(item, resource, () -> {
-                response.reset();
-                response.setContentType("application/octet-stream");
-                response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
-                return response.getOutputStream();
-            });
-        } catch (FileNotFoundException ex) {
-            response.setStatus(404);
-        }
-    }
-    
-    @Override
     public void downloadTemplate(String templateName, HttpServletResponse response) throws IOException {
         try {
             String url = NexusFacade.getRawRepoClient().getNexusRawObjectUrl(String.format("/template/%s", templateName));
@@ -374,19 +320,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
                                         FrameServiceEntity::getServiceName,
                                         e -> e,
                                         (v1, v2) -> v1));
-        if (!instanceMap.containsKey("ALERTMANAGER") && !serviceMap.containsKey("ALERTMANAGER")) {
-            return Result.error(
-                    "service install depends on alertmanager ,please make sure you have selected it or that alertmanager is normal and running");
-        }
-        if (!instanceMap.containsKey("GRAFANA") && !serviceMap.containsKey("GRAFANA")) {
-            return Result.error(
-                    "service install depends on grafana ,please make sure you have selected it or that grafana is normal and running");
-        }
-        if (!instanceMap.containsKey("PROMETHEUS") && !serviceMap.containsKey("PROMETHEUS")) {
-            return Result.error(
-                    "service install depends on prometheus ,please make sure you have selected it or that prometheus is normal and running");
-        }
-        
         for (FrameServiceEntity frameServiceEntity : list) {
             for (String dependService : frameServiceEntity.getDependencies().split(",")) {
                 if (StringUtils.isNotBlank(dependService)
@@ -456,41 +389,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         return serviceInstanceEntity;
     }
     
-    private void addHostNodeToPrometheus(
-                                         Integer clusterId, Map<Generators, List<ServiceConfig>> configFileMap) {
-        List<ClusterHostDO> hostList = hostService.list(new QueryWrapper<ClusterHostDO>().eq(Constants.MANAGED, 1).eq(Constants.CLUSTER_ID, clusterId));
-        Generators workerGenerators = new Generators();
-        workerGenerators.setFilename("worker.json");
-        workerGenerators.setOutputDirectory("configs");
-        workerGenerators.setConfigFormat("custom");
-        workerGenerators.setTemplateName("scrape.ftl");
-        
-        Generators nodeGenerators = new Generators();
-        nodeGenerators.setFilename("linux.json");
-        nodeGenerators.setOutputDirectory("configs");
-        nodeGenerators.setConfigFormat("custom");
-        nodeGenerators.setTemplateName("scrape.ftl");
-        ArrayList<ServiceConfig> workerServiceConfigs = new ArrayList<>();
-        ArrayList<ServiceConfig> nodeServiceConfigs = new ArrayList<>();
-        for (ClusterHostDO clusterHostDO : hostList) {
-            ServiceConfig serviceConfig = new ServiceConfig();
-            serviceConfig.setName("worker_" + clusterHostDO.getHostname());
-            serviceConfig.setValue(clusterHostDO.getHostname() + ":8585");
-            serviceConfig.setRequired(true);
-            serviceConfig.setEnabled(true);
-            workerServiceConfigs.add(serviceConfig);
-            
-            ServiceConfig nodeServiceConfig = new ServiceConfig();
-            nodeServiceConfig.setName("node_" + clusterHostDO.getHostname());
-            nodeServiceConfig.setValue(clusterHostDO.getHostname() + ":9100");
-            nodeServiceConfig.setRequired(true);
-            nodeServiceConfig.setEnabled(true);
-            nodeServiceConfigs.add(nodeServiceConfig);
-        }
-        configFileMap.put(workerGenerators, workerServiceConfigs);
-        configFileMap.put(nodeGenerators, nodeServiceConfigs);
-    }
-    
     private Map<Generators, List<ServiceConfig>> buildConfigFileMap(
                                                                     String serviceName,
                                                                     ClusterInfoEntity clusterInfo,
@@ -530,33 +428,6 @@ public class ServiceInstallServiceImpl implements ServiceInstallService {
         roleGroupConfig.setConfigJsonMd5(SecureUtil.md5(configJson));
         roleGroupConfig.setConfigFileJson(configFileJson);
         roleGroupConfig.setConfigFileJsonMd5(SecureUtil.md5(configFileJson));
-    }
-    
-    private void checkOnSameNode(Integer clusterId, List<ServiceRoleHostMapping> list) {
-        Set<String> hostnameSet =
-                list.stream()
-                        .filter(s -> MUST_AT_SAME_NODE_BASIC_SERVICE.contains(s.getServiceRole()))
-                        .map(ServiceRoleHostMapping::getHosts)
-                        .flatMap(Collection::stream)
-                        .collect(Collectors.toSet());
-        if (CollectionUtils.isEmpty(hostnameSet)) {
-            return;
-        }
-        
-        Set<String> installedHostnameSet =
-                roleInstanceService.lambdaQuery()
-                        .eq(ClusterServiceRoleInstanceEntity::getClusterId, clusterId)
-                        .in(
-                                ClusterServiceRoleInstanceEntity::getServiceName,
-                                MUST_AT_SAME_NODE_BASIC_SERVICE)
-                        .list().stream()
-                        .map(ClusterServiceRoleInstanceEntity::getHostname)
-                        .collect(Collectors.toSet());
-        hostnameSet.addAll(installedHostnameSet);
-        
-        if (hostnameSet.size() > 1) {
-            throw new ServiceException(Status.BASIC_SERVICE_SELECT_MOST_ONE_HOST.getMsg());
-        }
     }
     
     private void serviceValidation(ServiceRoleHostMapping serviceRoleHostMapping) {

@@ -40,7 +40,7 @@ Datasophon 的 Master 主服务进程，Spring Boot 3.4.5。本模块既是 HTTP
 - `master/handler/{host,service,k8s}/`：步骤化 Handler 链。Host 侧含 `DispatcherWorkerHandlerChain`（MD5 → Decompress → InstallJDK → Upload → Start）；Service 侧含 `ServiceInstallHandler` / `ServiceConfigureHandler` / `ServiceStartHandler` / `ServiceStopHandler` / `ServiceStatusHandler` / `ServiceUpgradeHandler`；K8s 侧含 Helm apply / agent install-uninstall / restart / stop。
 - `master/service/DispatcherWorkerService`：从 gRPC 拿到 WorkerEndpoint 后构造命令并经 `master/transport/GrpcWorkerCallAdapter` 下发。
 - `master/MasterScheduledService`：原 Pekko `actorSystem.scheduler().scheduleWithFixedDelay()` 替换为 Spring `@Scheduled`，三个巡检周期——节点 30s/300s、服务角色 15s/30s、集群状态 30s/60s。
-- `master/service/{HostCheckService,ClusterStatusService,ServiceCommandService,WorkerStartService,MasterNodeProcessingService,PrometheusService,HdfsECService,ClusterDeleteService,RackService,AlertService,HostConnectService,DispatcherK8sAgentService}`：领域服务。
+- `master/service/{HostCheckService,ClusterStatusService,ServiceCommandService,WorkerStartService,MasterNodeProcessingService,HdfsECService,ClusterDeleteService,RackService,AlertService,HostConnectService,DispatcherK8sAgentService}`：领域服务。
 
 **gRPC 客户端**（`grpc/`）：
 - `WorkerRegistry`：内存 `hostname → WorkerEndpoint` 映射；心跳 > 90s（= 3×30s 间隔）发布 `WorkerOfflineEvent`。
@@ -52,7 +52,7 @@ Datasophon 的 Master 主服务进程，Spring Boot 3.4.5。本模块既是 HTTP
 
 **安全**（`security/`）：`SecurityConfig` 装配过滤器链，`AuthenticationType` 切换 PASSWORD / LDAP，`UserPermission` 处理 RBAC，`UserPermissionHandler` 拦截菜单级权限。
 
-**配置**（`configuration/`）：`AppConfiguration` 注册拦截器 + 静态资源；`DatabaseMigrationAware`（实现 `Ordered`）作为最早期的 Bean 触发 `migration/DatabaseMigration` 跑 SQL 脚本；`GrafanaProxyConfiguration` 用 Jetty 代理转发 Grafana Web UI；`MasterAsyncConfig` 配置 `@Async` 线程池；`OpenApiConfiguration` 暴露 knife4j 文档。
+**配置**（`configuration/`）：`AppConfiguration` 注册拦截器 + 静态资源；`DatabaseMigrationAware`（实现 `Ordered`）作为最早期的 Bean 触发 `migration/DatabaseMigration` 跑 SQL 脚本；`MasterAsyncConfig` 配置 `@Async` 线程池；`OpenApiConfiguration` 暴露 knife4j 文档。
 
 **策略**（`strategy/`）：`ServiceRoleStrategy` 接口 + `ServiceRoleStrategyContext` 按角色名分派；具体策略如 `NameNodeHandlerStrategy` / `RMHandlerStrategy` / `KafkaHandlerStrategy` / `KAdminHandlerStrategy` 等约 30 个，对应 `Worker` 侧的同名策略类。
 

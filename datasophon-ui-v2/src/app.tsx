@@ -6,6 +6,7 @@ import { history, Link } from '@umijs/max';
 import { Spin } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import utc from 'dayjs/plugin/utc';
 import React from 'react';
 
 const PageLoading = () => (
@@ -23,6 +24,7 @@ const PageLoading = () => (
 
 // Initialize dayjs plugins globally
 dayjs.extend(relativeTime);
+dayjs.extend(utc);
 
 import {
   AvatarDropdown,
