@@ -24,6 +24,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -133,6 +134,34 @@ class DownloadStrategyTest {
     }
     
     @Test
+    void skipsMd5VerificationWhenMd5IsAbsent() throws Exception {
+        HookContext context = newContextWithoutMd5("script/control.sh");
+        MetaStorage metaStorage = mock(MetaStorage.class);
+        Path target = tempDir.resolve("script/control.sh");
+        doAnswer(invocation -> {
+            MetaStorage.OutputStreamSupplier supplier = invocation.getArgument(2);
+            try (OutputStream out = supplier.get()) {
+                out.write(RESOURCE_CONTENT);
+            }
+            return null;
+        }).when(metaStorage).downResource(any(ServiceMetaItem.class), eq("script/control.sh"), any());
+        
+        try (
+                MockedStatic<PkgInstallPathUtils> installPath = mockStatic(PkgInstallPathUtils.class);
+                MockedStatic<StorageUtils> storageUtils = mockStatic(StorageUtils.class);
+                MockedStatic<ShellUtils> shellUtils = mockStatic(ShellUtils.class)) {
+            installPath.when(() -> PkgInstallPathUtils.getInstallHome(context)).thenReturn(tempDir.toString());
+            storageUtils.when(StorageUtils::getMetaStorage).thenReturn(metaStorage);
+            shellUtils.when(() -> ShellUtils.execShell("chmod 755 " + target)).thenReturn(ExecResult.success());
+            
+            ExecResult result = new DownloadStrategy().invoke(context);
+            
+            assertThat(result.isSuccess()).isTrue();
+            assertThat(Files.readAllBytes(target)).isEqualTo(RESOURCE_CONTENT);
+        }
+    }
+    
+    @Test
     void returnsFailureAndCleansTemporaryFileWhenNexusDownloadFails() throws Exception {
         Path target = tempDir.resolve("control.sh");
         HookContext context = newContext("control.sh", md5Of(RESOURCE_CONTENT));
@@ -163,6 +192,18 @@ class DownloadStrategyTest {
         context.setServiceName("PROMTAIL");
         context.setServiceRoleName("Promtail");
         context.setParams(Map.of("from", "script/control.sh", "to", to, "md5", md5));
+        context.setGlobalVariables(Map.of("${__frameCode__}", "DATASOPHON-3.0"));
+        return context;
+    }
+    
+    private HookContext newContextWithoutMd5(String to) {
+        HookContext context = new HookContext();
+        context.setServiceName("PROMTAIL");
+        context.setServiceRoleName("Promtail");
+        Map<String, Object> params = new HashMap<>();
+        params.put("from", "script/control.sh");
+        params.put("to", to);
+        context.setParams(params);
         context.setGlobalVariables(Map.of("${__frameCode__}", "DATASOPHON-3.0"));
         return context;
     }

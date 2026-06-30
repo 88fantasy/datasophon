@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class OtelMetricsQueryServiceTest {
-
+    
     @Test
     void instantAgg_deduplicatesLatestSamplePerFilesystemSeriesBeforeSumming() {
         String sql = OtelMetricsQueryService.buildInstantAggSql("sum", true, true, null, null);
@@ -46,7 +46,7 @@ class OtelMetricsQueryServiceTest {
         assertThat(sql).contains("CAST(attributes['path'] AS STRING)");
         assertThat(sql).contains("CAST(attributes['mountpoint'] AS STRING)");
     }
-
+    
     @Test
     void attrFilters_useRegexpWhenFilterValueContainsRegexpMetaCharacters() {
         String sql = OtelMetricsQueryService.buildRangeGaugeSql(
@@ -119,7 +119,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).containsIgnoringCase("SUM(value)");
             assertThat(sql).containsIgnoringCase("QUALIFY");
         }
-
+        
         @Test
         void instantAgg_max_containsMaxFunction() {
             String sql = OtelMetricsQueryService.buildInstantAggSql("max", false, false, null, null);
@@ -174,7 +174,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains(":afne_device");
             assertThat(sql).contains("!= :afne_device");
         }
-
+        
         @Test
         void rangeGauge_withRegexpAttrFilters_appendsRegexpClauses() {
             String sql = OtelMetricsQueryService.buildRangeGaugeSql(

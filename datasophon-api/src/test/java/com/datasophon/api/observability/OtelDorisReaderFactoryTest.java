@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 class OtelDorisReaderFactoryTest {
-
+    
     @Test
     void reusesPoolForSameConnectionSettings() {
         OtelCredentialService credentialService = new OtelCredentialService(null);
@@ -44,13 +44,13 @@ class OtelDorisReaderFactoryTest {
         ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
         ReflectionTestUtils.setField(factory, "fallbackPort", "9030");
         ReflectionTestUtils.setField(factory, "fallbackPassword", "secret");
-
+        
         factory.create(7);
         factory.create(7);
-
+        
         assertThat(factory.poolSizeForTest()).isEqualTo(1);
     }
-
+    
     @SuppressWarnings("unchecked")
     private static <T> T proxy(Class<T> type) {
         return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type},

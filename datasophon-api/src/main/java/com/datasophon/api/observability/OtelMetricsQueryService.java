@@ -83,7 +83,7 @@ public class OtelMetricsQueryService {
      */
     static final Set<String> ALLOWED_ATTR_FILTER_KEYS =
             Set.of("group", "type", "mode", "path", "device", "fstype", "mountpoint");
-
+    
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
             List.of("group", "type", "mode", "path", "device", "fstype", "mountpoint");
     
@@ -547,11 +547,11 @@ public class OtelMetricsQueryService {
         }
         return ", " + String.join(", ", validKeys);
     }
-
+    
     private static boolean needsRegexp(String value) {
         return value != null && value.matches(".*[.*+?^${}()|\\[\\]\\\\].*");
     }
-
+    
     /**
      * 将 SQL 结果行提取为 metric label map。
      * 所有列（排除 skipCols）都作为 label，null 值跳过。

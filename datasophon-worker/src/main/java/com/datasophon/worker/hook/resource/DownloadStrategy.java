@@ -74,7 +74,9 @@ public class DownloadStrategy implements HookAction {
             }
             
             String actualMd5 = FileUtils.md5(tempFile.toFile());
-            if (md5 == null || !md5.equalsIgnoreCase(actualMd5)) {
+            if (md5 == null) {
+                logger.warn("资源 {} 未配置 md5，跳过完整性校验", to);
+            } else if (!md5.equalsIgnoreCase(actualMd5)) {
                 logger.error("下载资源 {} MD5 校验失败，期望值: {}，实际值: {}", to, md5, actualMd5);
                 return ExecResult.error(String.format("下载资源 %s MD5 校验失败", to));
             }
