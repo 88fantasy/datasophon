@@ -27,8 +27,6 @@ import com.datasophon.api.service.ClusterVariableService;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.ServiceRoleState;
 
-import com.zaxxer.hikari.HikariDataSource;
-
 import jakarta.annotation.PreDestroy;
 
 import java.util.List;
@@ -40,6 +38,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
+
+import com.zaxxer.hikari.HikariDataSource;
 
 @Component
 public class OtelDorisReaderFactory {
@@ -94,7 +94,7 @@ public class OtelDorisReaderFactory {
         PoolKey key = new PoolKey(host, port, user, password);
         return JdbcClient.create(pools.computeIfAbsent(key, OtelDorisReaderFactory::newDataSource));
     }
-
+    
     private static HikariDataSource newDataSource(PoolKey key) {
         HikariDataSource ds = new HikariDataSource();
         ds.setDriverClassName("com.mysql.cj.jdbc.Driver");
@@ -111,13 +111,13 @@ public class OtelDorisReaderFactory {
         ds.setInitializationFailTimeout(-1);
         return ds;
     }
-
+    
     @PreDestroy
     public void close() {
         pools.values().forEach(HikariDataSource::close);
         pools.clear();
     }
-
+    
     int poolSizeForTest() {
         return pools.size();
     }
@@ -126,7 +126,7 @@ public class OtelDorisReaderFactory {
         var v = variableService.getVariableByVariableName(clusterId, "DORIS", name);
         return v == null ? defaultValue : v.getVariableValue();
     }
-
+    
     private record PoolKey(String host, String port, String user, String password) {
     }
 }

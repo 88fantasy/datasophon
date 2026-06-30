@@ -67,14 +67,14 @@ public class HostCheckService {
     
     private static final Map<String, String> FILESYSTEM_FILTERS = Map.of("fstype", "ext.*|xfs");
     private static final Map<String, String> FILESYSTEM_FILTERS_NE = Map.of("mountpoint", ".*pod.*");
-
+    
     private final ClusterInfoService clusterInfoService;
     private final ClusterHostService clusterHostService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final WorkerCommandClient workerCommandClient;
     private final OtelMetricsQueryService metricsQueryService;
     private final Executor masterExecutor;
-
+    
     public HostCheckService(ClusterInfoService clusterInfoService,
                             ClusterHostService clusterHostService,
                             ClusterServiceRoleInstanceService roleInstanceService,
@@ -88,7 +88,7 @@ public class HostCheckService {
         this.metricsQueryService = metricsQueryService;
         this.masterExecutor = masterExecutor;
     }
-
+    
     /**
      * 检测所有物理集群主机的在线状态。
      *
@@ -107,7 +107,7 @@ public class HostCheckService {
             }
         }
     }
-
+    
     private void checkCluster(ClusterInfoEntity cluster, HostInfo hostInfo) {
         ClusterServiceRoleInstanceEntity prometheusInstance =
                 roleInstanceService.getOneServiceRole("Prometheus", "", cluster.getId());
@@ -116,7 +116,7 @@ public class HostCheckService {
         String promUrl = promReady
                 ? "http://" + prometheusInstance.getHostname() + ":9090/api/v1/query"
                 : null;
-
+        
         List<ClusterHostDO> list = clusterHostService.getHostListByClusterId(cluster.getId());
         List<ClusterHostDO> updates = new ArrayList<>();
         for (ClusterHostDO host : list) {
@@ -125,7 +125,7 @@ public class HostCheckService {
             }
             updates.add(host);
         }
-
+        
         // 阻塞的 ping/Prometheus 调用按主机 fan-out 到 masterExecutor，
         // 避免在 5 线程的调度池里串行累积（单轮耗时 ≈ 最慢主机而非 Σ 所有主机）。
         List<CompletableFuture<Void>> futures = new ArrayList<>(updates.size());
@@ -146,12 +146,12 @@ public class HostCheckService {
             }
         }
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
+        
         if (!updates.isEmpty()) {
             clusterHostService.updateBatchById(updates);
         }
     }
-
+    
     private void checkHostByPingPong(ClusterHostDO host) {
         host.setCheckTime(new Date());
         try {
@@ -174,7 +174,7 @@ public class HostCheckService {
             host.setHostState(HostState.OFFLINE);
         }
     }
-
+    
     private void checkHostByPrometheus(ClusterHostDO host, String promUrl) {
         try {
             String hostname = host.getHostname();
@@ -212,7 +212,7 @@ public class HostCheckService {
             host.setHostState(HostState.EXISTS_ALARM);
         }
     }
-
+    
     private void checkHostByOtel(Integer clusterId, ClusterHostDO host) {
         try {
             String instance = host.getHostname() + ":9100";
@@ -242,11 +242,11 @@ public class HostCheckService {
             log.warn("check host {} metrics from otel error, cause: {}", host.getHostname(), e.getMessage());
         }
     }
-
+    
     private Double queryOtelMetric(Integer clusterId, String metric, String agg, String instance) {
         return queryOtelMetric(clusterId, metric, agg, instance, Map.of(), Map.of());
     }
-
+    
     private Double queryOtelMetric(Integer clusterId, String metric, String agg, String instance,
                                    Map<String, String> filters, Map<String, String> filtersNe) {
         PrometheusVectorResult result = metricsQueryService.queryInstant(clusterId, metric, agg, 1.0d,
@@ -257,7 +257,7 @@ public class HostCheckService {
         Object value = result.result().get(0).value()[1];
         return value == null ? null : Double.valueOf(String.valueOf(value));
     }
-
+    
     private static int bytesToGiB(Double bytes) {
         return Double.valueOf(bytes / 1024 / 1024 / 1024).intValue();
     }

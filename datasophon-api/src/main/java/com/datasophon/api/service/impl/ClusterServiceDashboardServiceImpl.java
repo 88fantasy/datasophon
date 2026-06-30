@@ -45,7 +45,7 @@ public class ClusterServiceDashboardServiceImpl
             ServiceImpl<ClusterServiceDashboardMapper, ClusterServiceDashboard>
         implements
             ClusterServiceDashboardService {
-
+    
     @Override
     public Result getDashboardUrl(Integer clusterId) {
         ClusterServiceDashboard dashboard = getOne(new QueryWrapper<ClusterServiceDashboard>().eq(Constants.SERVICE_NAME, "TOTAL"));
@@ -55,7 +55,7 @@ public class ClusterServiceDashboardServiceImpl
             return Result.error("缺少集群总览");
         }
     }
-
+    
     @Override
     public String getDashboardUrl(Integer clusterId, ClusterServiceDashboard dashboard) {
         Map<String, String> globalVariables = GlobalVariables.getVariables(clusterId);

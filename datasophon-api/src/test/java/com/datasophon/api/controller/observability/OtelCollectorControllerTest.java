@@ -43,7 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 class OtelCollectorControllerTest {
-
+    
     @Test
     void controllerMappingsDoNotIncludeApiPrefix() {
         assertThat(mappingValues(OtelCollectorController.class))
@@ -51,7 +51,7 @@ class OtelCollectorControllerTest {
         assertThat(mappingValues(OtelMonitorController.class))
                 .containsExactly("observability/otelcol");
     }
-
+    
     @Test
     void forwardsUiParametersToNodePush() {
         AtomicReference<Map<String, String>> captured = new AtomicReference<>();
@@ -64,13 +64,13 @@ class OtelCollectorControllerTest {
         };
         OtelCollectorController controller = new OtelCollectorController(
                 configService, installService(List.of()), null, null);
-
+        
         Result result = controller.push(7, "worker-1", Map.of("batchSize", "4096"));
-
+        
         assertThat(result.isSuccess()).isTrue();
         assertThat(captured.get()).containsEntry("batchSize", "4096");
     }
-
+    
     @Test
     void appliesSchemaAndUsesStagedSwitchForDorisMode() {
         AtomicBoolean schemaApplied = new AtomicBoolean();
@@ -93,14 +93,14 @@ class OtelCollectorControllerTest {
         };
         OtelCollectorController controller = new OtelCollectorController(
                 newConfigService(), installService(List.of()), switchService, schema);
-
+        
         Result result = controller.push(7, "worker-1", Map.of(
                 "exporterMode", "doris", "batchSize", "4096"));
-
+        
         assertThat(result.isSuccess()).isTrue();
         assertThat(captured.get()).containsEntry("batchSize", "4096");
     }
-
+    
     @Test
     void exposesCollectorConfigurationMetadata() {
         ServiceConfig batchSize = new ServiceConfig();
@@ -108,23 +108,23 @@ class OtelCollectorControllerTest {
         batchSize.setValue("8192");
         OtelCollectorController controller = new OtelCollectorController(
                 newConfigService(), installService(List.of(batchSize)), null, null);
-
+        
         Result result = controller.config(7);
-
+        
         assertThat(result.getData()).asList().singleElement().isSameAs(batchSize);
     }
-
+    
     private static ServiceInstallService installService(List<ServiceConfig> configs) {
         return (ServiceInstallService) Proxy.newProxyInstance(
                 ServiceInstallService.class.getClassLoader(),
                 new Class<?>[]{ServiceInstallService.class},
                 (proxy, method, args) -> "getServiceConfigOption".equals(method.getName()) ? configs : null);
     }
-
+    
     private static OtelCollectorConfigService newConfigService() {
         return new OtelCollectorConfigService(null, null, null);
     }
-
+    
     private static List<String> mappingValues(Class<?> controllerClass) {
         RequestMapping mapping = controllerClass.getAnnotation(RequestMapping.class);
         return Arrays.stream(mapping.value()).toList();

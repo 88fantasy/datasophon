@@ -43,7 +43,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class HostCheckServiceTest {
-
+    
     @Test
     void updatesHostResourcesFromOtelWhenPrometheusServiceIsAbsent() {
         ClusterInfoEntity cluster = new ClusterInfoEntity();
@@ -52,9 +52,8 @@ class HostCheckServiceTest {
         cluster.setArchType(ClusterArchType.physical);
         ClusterHostDO host = new ClusterHostDO();
         host.setHostname("node-1");
-
-        ClusterInfoService clusterInfoService = proxy(ClusterInfoService.class, (proxy, method, args) ->
-                "getReadyClusterList".equals(method.getName()) ? List.of(cluster) : null);
+        
+        ClusterInfoService clusterInfoService = proxy(ClusterInfoService.class, (proxy, method, args) -> "getReadyClusterList".equals(method.getName()) ? List.of(cluster) : null);
         CapturingHostService hostServiceHandler = new CapturingHostService(host);
         ClusterHostService clusterHostService = proxy(ClusterHostService.class, hostServiceHandler);
         ClusterServiceRoleInstanceService roleInstanceService = proxy(
@@ -68,43 +67,41 @@ class HostCheckServiceTest {
             }
         };
         CapturingMetricsQueryService metricsQueryService = new CapturingMetricsQueryService();
-
+        
         HostCheckService service = new HostCheckService(clusterInfoService, clusterHostService,
                 roleInstanceService, workerCommandClient, metricsQueryService, Runnable::run);
         service.checkHosts(null);
-
+        
         ClusterHostDO updated = hostServiceHandler.updatedHosts.get(0);
         assertThat(updated.getTotalMem()).isEqualTo(16);
         assertThat(updated.getUsedMem()).isEqualTo(10);
         assertThat(updated.getTotalDisk()).isEqualTo(200);
         assertThat(updated.getUsedDisk()).isEqualTo(120);
         assertThat(updated.getAverageLoad()).isEqualTo("1.25");
-
-        assertThat(metricsQueryService.filesystemFilters).allSatisfy(filters ->
-                assertThat(filters).containsEntry("fstype", "ext.*|xfs"));
-        assertThat(metricsQueryService.filesystemFiltersNe).allSatisfy(filtersNe ->
-                assertThat(filtersNe).containsEntry("mountpoint", ".*pod.*"));
+        
+        assertThat(metricsQueryService.filesystemFilters).allSatisfy(filters -> assertThat(filters).containsEntry("fstype", "ext.*|xfs"));
+        assertThat(metricsQueryService.filesystemFiltersNe).allSatisfy(filtersNe -> assertThat(filtersNe).containsEntry("mountpoint", ".*pod.*"));
     }
-
+    
     private static PrometheusVectorResult vector(double value) {
         return PrometheusVectorResult.of(List.of(new PrometheusVectorResult.VectorSample(
                 java.util.Map.of("instance", "node-1:9100"),
                 new Object[]{1L, String.valueOf(value)})));
     }
-
+    
     @SuppressWarnings("unchecked")
     private static <T> T proxy(Class<T> type, java.lang.reflect.InvocationHandler handler) {
         return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, handler);
     }
-
+    
     private static class CapturingHostService implements java.lang.reflect.InvocationHandler {
         private final ClusterHostDO host;
         private List<ClusterHostDO> updatedHosts = List.of();
-
+        
         CapturingHostService(ClusterHostDO host) {
             this.host = host;
         }
-
+        
         @Override
         public Object invoke(Object proxy, java.lang.reflect.Method method, Object[] args) {
             if ("getHostListByClusterId".equals(method.getName())) {
@@ -117,15 +114,15 @@ class HostCheckServiceTest {
             return null;
         }
     }
-
+    
     private static class CapturingMetricsQueryService extends OtelMetricsQueryService {
         private final List<Map<String, String>> filesystemFilters = new ArrayList<>();
         private final List<Map<String, String>> filesystemFiltersNe = new ArrayList<>();
-
+        
         CapturingMetricsQueryService() {
             super(null, null);
         }
-
+        
         @Override
         public PrometheusVectorResult queryInstant(Integer clusterId, String metric, String agg, double scale,
                                                    String instance, String job, Map<String, String> filters,
