@@ -26,16 +26,12 @@ import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.observability.OtelMetricsQueryService;
 import com.datasophon.api.observability.PrometheusVectorResult;
 import com.datasophon.api.service.ClusterInfoService;
-import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.common.model.HostInfo;
 import com.datasophon.common.utils.ExecResult;
-import com.datasophon.common.utils.PromInfoUtils;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterInfoEntity;
-import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.ClusterArchType;
-import com.datasophon.dao.enums.ServiceRoleState;
 import com.datasophon.domain.host.enums.HostState;
 import com.datasophon.domain.host.enums.MANAGED;
 
@@ -50,10 +46,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeoutException;
 
-import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 节点状态巡检 Spring Service（替代 HostCheckActor）。
@@ -65,25 +61,23 @@ import org.springframework.stereotype.Service;
 @Service
 public class HostCheckService {
     
-    private static final Map<String, String> FILESYSTEM_FILTERS = Map.of("fstype", "ext.*|xfs");
+    private static final Map<String, String> FILESYSTEM_FILTERS = Map.of("type", "ext.*|xfs");
     private static final Map<String, String> FILESYSTEM_FILTERS_NE = Map.of("mountpoint", ".*pod.*");
+    private static final Map<String, String> DISK_USED_FILTERS = Map.of("type", "ext.*|xfs", "state", "used");
     
     private final ClusterInfoService clusterInfoService;
     private final ClusterHostService clusterHostService;
-    private final ClusterServiceRoleInstanceService roleInstanceService;
     private final WorkerCommandClient workerCommandClient;
     private final OtelMetricsQueryService metricsQueryService;
     private final Executor masterExecutor;
     
     public HostCheckService(ClusterInfoService clusterInfoService,
                             ClusterHostService clusterHostService,
-                            ClusterServiceRoleInstanceService roleInstanceService,
                             WorkerCommandClient workerCommandClient,
                             OtelMetricsQueryService metricsQueryService,
                             @Qualifier("masterExecutor") Executor masterExecutor) {
         this.clusterInfoService = clusterInfoService;
         this.clusterHostService = clusterHostService;
-        this.roleInstanceService = roleInstanceService;
         this.workerCommandClient = workerCommandClient;
         this.metricsQueryService = metricsQueryService;
         this.masterExecutor = masterExecutor;
@@ -109,14 +103,6 @@ public class HostCheckService {
     }
     
     private void checkCluster(ClusterInfoEntity cluster, HostInfo hostInfo) {
-        ClusterServiceRoleInstanceEntity prometheusInstance =
-                roleInstanceService.getOneServiceRole("Prometheus", "", cluster.getId());
-        boolean promReady = prometheusInstance != null
-                && ServiceRoleState.RUNNING.equals(prometheusInstance.getServiceRoleState());
-        String promUrl = promReady
-                ? "http://" + prometheusInstance.getHostname() + ":9090/api/v1/query"
-                : null;
-        
         List<ClusterHostDO> list = clusterHostService.getHostListByClusterId(cluster.getId());
         List<ClusterHostDO> updates = new ArrayList<>();
         for (ClusterHostDO host : list) {
@@ -126,15 +112,13 @@ public class HostCheckService {
             updates.add(host);
         }
         
-        // 阻塞的 ping/Prometheus 调用按主机 fan-out 到 masterExecutor，
+        // 阻塞的 ping/OTel 查询调用按主机 fan-out 到 masterExecutor，
         // 避免在 5 线程的调度池里串行累积（单轮耗时 ≈ 最慢主机而非 Σ 所有主机）。
         List<CompletableFuture<Void>> futures = new ArrayList<>(updates.size());
         for (ClusterHostDO host : updates) {
             Runnable task = () -> {
                 checkHostByPingPong(host);
-                if (!HostState.OFFLINE.equals(host.getHostState()) && promUrl != null) {
-                    checkHostByPrometheus(host, promUrl);
-                } else if (!HostState.OFFLINE.equals(host.getHostState())) {
+                if (!HostState.OFFLINE.equals(host.getHostState())) {
                     checkHostByOtel(cluster.getId(), host);
                 }
             };
@@ -175,66 +159,30 @@ public class HostCheckService {
         }
     }
     
-    private void checkHostByPrometheus(ClusterHostDO host, String promUrl) {
-        try {
-            String hostname = host.getHostname();
-            String totalMemPromQl = "node_memory_MemTotal_bytes{job=~\"node\",instance=\"" + hostname + ":9100\"}/1024/1024/1024";
-            String totalMemStr = PromInfoUtils.getSinglePrometheusMetric(promUrl, totalMemPromQl);
-            if (StringUtils.isNotBlank(totalMemStr)) {
-                host.setTotalMem(Double.valueOf(totalMemStr).intValue());
-            }
-            String memAvailablePromQl = "node_memory_MemAvailable_bytes{job=~\"node\",instance=\"" + hostname + ":9100\"}/1024/1024/1024";
-            String memAvailableStr = PromInfoUtils.getSinglePrometheusMetric(promUrl, memAvailablePromQl);
-            if (StringUtils.isNotBlank(memAvailableStr)) {
-                int memAvailable = Double.valueOf(memAvailableStr).intValue();
-                host.setUsedMem(host.getTotalMem() - memAvailable);
-            }
-            String totalDiskPromQl = "sum(node_filesystem_size_bytes{instance=\"" + hostname
-                    + ":9100\",fstype=~\"ext4|xfs\",mountpoint !~\".*pod.*\"})/1024/1024/1024";
-            String totalDiskStr = PromInfoUtils.getSinglePrometheusMetric(promUrl, totalDiskPromQl);
-            if (StringUtils.isNotBlank(totalDiskStr)) {
-                host.setTotalDisk(Double.valueOf(totalDiskStr).intValue());
-            }
-            String diskUsedPromQl = "sum(node_filesystem_size_bytes{instance=\"" + hostname
-                    + ":9100\",fstype=~\"ext.*|xfs\",mountpoint !~\".*pod.*\"}-node_filesystem_free_bytes{instance=\""
-                    + hostname + ":9100\",fstype=~\"ext.*|xfs\",mountpoint !~\".*pod.*\"})/1024/1024/1024";
-            String diskUsed = PromInfoUtils.getSinglePrometheusMetric(promUrl, diskUsedPromQl);
-            if (StringUtils.isNotBlank(diskUsed)) {
-                host.setUsedDisk(Double.valueOf(diskUsed).intValue());
-            }
-            String cpuLoadPromQl = "node_load5{job=~\"node\",instance=\"" + hostname + ":9100\"}";
-            String cpuLoad = PromInfoUtils.getSinglePrometheusMetric(promUrl, cpuLoadPromQl);
-            if (StringUtils.isNotBlank(cpuLoad)) {
-                host.setAverageLoad(cpuLoad);
-            }
-        } catch (Exception e) {
-            log.warn("check cluster state error, cause: {}", e.getMessage());
-            host.setHostState(HostState.EXISTS_ALARM);
-        }
-    }
-    
     private void checkHostByOtel(Integer clusterId, ClusterHostDO host) {
         try {
-            String instance = host.getHostname() + ":9100";
-            Double totalMem = queryOtelMetric(clusterId, "node_memory_MemTotal_bytes", null, instance);
+            String instance = host.getHostname();
+            // hostmetrics 的 memory/filesystem "usage" 指标是 non-monotonic sum（按 state 维度分类），
+            // 落 otel_metrics_sum 表；只有 cpu.load_average 是 gauge，见 OtelMetricsQueryService#queryInstant(...,table)。
+            Double totalMem = queryOtelMetric(clusterId, "system.memory.usage", "sum", instance, "sum");
             if (totalMem != null) {
                 host.setTotalMem(bytesToGiB(totalMem));
             }
-            Double memAvailable = queryOtelMetric(clusterId, "node_memory_MemAvailable_bytes", null, instance);
+            Double memAvailable = queryOtelMetric(clusterId, "system.linux.memory.available", null, instance, "sum");
             if (memAvailable != null && host.getTotalMem() != null) {
                 host.setUsedMem(host.getTotalMem() - bytesToGiB(memAvailable));
             }
-            Double totalDisk = queryOtelMetric(clusterId, "node_filesystem_size_bytes", "sum", instance,
-                    FILESYSTEM_FILTERS, FILESYSTEM_FILTERS_NE);
+            Double totalDisk = queryOtelMetric(clusterId, "system.filesystem.usage", "sum", instance,
+                    FILESYSTEM_FILTERS, FILESYSTEM_FILTERS_NE, "sum");
             if (totalDisk != null) {
                 host.setTotalDisk(bytesToGiB(totalDisk));
             }
-            Double freeDisk = queryOtelMetric(clusterId, "node_filesystem_free_bytes", "sum", instance,
-                    FILESYSTEM_FILTERS, FILESYSTEM_FILTERS_NE);
-            if (freeDisk != null && host.getTotalDisk() != null) {
-                host.setUsedDisk(host.getTotalDisk() - bytesToGiB(freeDisk));
+            Double usedDisk = queryOtelMetric(clusterId, "system.filesystem.usage", "sum", instance,
+                    DISK_USED_FILTERS, FILESYSTEM_FILTERS_NE, "sum");
+            if (usedDisk != null) {
+                host.setUsedDisk(bytesToGiB(usedDisk));
             }
-            Double cpuLoad = queryOtelMetric(clusterId, "node_load5", null, instance);
+            Double cpuLoad = queryOtelMetric(clusterId, "system.cpu.load_average.5m", null, instance, "gauge");
             if (cpuLoad != null) {
                 host.setAverageLoad(String.valueOf(cpuLoad));
             }
@@ -243,14 +191,14 @@ public class HostCheckService {
         }
     }
     
-    private Double queryOtelMetric(Integer clusterId, String metric, String agg, String instance) {
-        return queryOtelMetric(clusterId, metric, agg, instance, Map.of(), Map.of());
+    private Double queryOtelMetric(Integer clusterId, String metric, String agg, String instance, String table) {
+        return queryOtelMetric(clusterId, metric, agg, instance, Map.of(), Map.of(), table);
     }
     
     private Double queryOtelMetric(Integer clusterId, String metric, String agg, String instance,
-                                   Map<String, String> filters, Map<String, String> filtersNe) {
+                                   Map<String, String> filters, Map<String, String> filtersNe, String table) {
         PrometheusVectorResult result = metricsQueryService.queryInstant(clusterId, metric, agg, 1.0d,
-                instance, "node", filters, filtersNe, System.currentTimeMillis() / 1000);
+                instance, "node", filters, filtersNe, System.currentTimeMillis() / 1000, table);
         if (result == null || result.result().isEmpty()) {
             return null;
         }

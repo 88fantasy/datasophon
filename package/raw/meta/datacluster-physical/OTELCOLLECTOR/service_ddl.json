@@ -76,6 +76,7 @@
           "dorisEndpoint",
           "dorisDatabase",
           "dorisUser",
+          "nodeHostname",
           "rawYaml"
         ]
       },
@@ -103,6 +104,18 @@
       "type": "textarea",
       "value": "",
       "defaultValue": "",
+      "configurableInWizard": false,
+      "hidden": true
+    },
+    {
+      "name": "nodeHostname",
+      "label": "节点主机名",
+      "description": "host_metrics 采集的 service.instance.id，安装后由控制面按节点刷新为真实 hostname",
+      "required": false,
+      "configType": "map",
+      "type": "input",
+      "value": "${host}",
+      "defaultValue": "${host}",
       "configurableInWizard": false,
       "hidden": true
     },

@@ -27,6 +27,18 @@ receivers:
       scrape_configs:
 ${localScrapeJobsYaml}
 </#if>
+  host_metrics:
+    collection_interval: 15s
+    scrapers:
+      cpu: {}
+      load: {}
+      memory:
+        metrics:
+          system.linux.memory.available:
+            enabled: true
+      disk: {}
+      filesystem: {}
+      network: {}
 
 processors:
   memory_limiter:
@@ -35,6 +47,14 @@ processors:
   batch:
     send_batch_size: ${batchSize}
     timeout: 5s
+  resource/host_metrics:
+    attributes:
+      - key: service.name
+        value: node
+        action: upsert
+      - key: service.instance.id
+        value: ${nodeHostname}
+        action: upsert
 
 exporters:
 <#if (exporterMode!"s3") == "doris">
@@ -85,6 +105,10 @@ service:
     metrics:
       receivers: [otlp, prometheus/self<#if (localScrapeJobsYaml!"")?has_content>, prometheus/local</#if>]
       processors: [memory_limiter, batch]
+      exporters: [<#if (exporterMode!"s3") == "doris">doris<#else>awss3</#if>]
+    metrics/host:
+      receivers: [host_metrics]
+      processors: [memory_limiter, resource/host_metrics, batch]
       exporters: [<#if (exporterMode!"s3") == "doris">doris<#else>awss3</#if>]
     logs:
       receivers: [otlp]

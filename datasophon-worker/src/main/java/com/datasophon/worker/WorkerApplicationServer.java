@@ -35,7 +35,6 @@ import com.datasophon.worker.utils.UnixUtils;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,9 +52,6 @@ public class WorkerApplicationServer {
     
     private static final Logger logger = LoggerFactory.getLogger(WorkerApplicationServer.class);
     
-    private static final String USER_DIR = "user.dir";
-    private static final String SH = "sh";
-    private static final String NODE = "node";
     private static final String HADOOP = "hadoop";
     
     public static void main(String[] args) throws UnknownHostException {
@@ -66,7 +62,6 @@ public class WorkerApplicationServer {
                 ? configuredHostname
                 : InetAddress.getLocalHost().getHostName();
         logger.info("Worker resolved hostname={} (configured={})", hostname, configuredHostname);
-        String workDir = System.getProperty(USER_DIR);
         String masterHost = PropertyUtils.getString(Constants.MASTER_HOST);
         String cpuArchitecture = ShellUtils.getCpuArchitecture();
         int clusterId = PropertyUtils.getInt("clusterId");
@@ -80,8 +75,6 @@ public class WorkerApplicationServer {
         
         CacheUtils.put(Constants.HOSTNAME, hostname);
         CacheUtils.put(Constants.CPU_ARCH, cpuArchitecture);
-        
-        startNodeExporter(workDir, cpuArchitecture);
         
         Map<String, String> userMap = new HashMap<>(16);
         initUserMap(userMap);
@@ -150,30 +143,6 @@ public class WorkerApplicationServer {
     }
     
     public static void close(String cause) {
-        stopNodeExporter();
         logger.info("Worker server stopped, cause: {}", cause);
-    }
-    
-    private static void stopNodeExporter() {
-        String workDir = System.getProperty(USER_DIR);
-        String cpuArchitecture = ShellUtils.getCpuArchitecture();
-        operateNodeExporter(workDir, cpuArchitecture, "stop");
-    }
-    
-    private static void startNodeExporter(String workDir, String cpuArchitecture) {
-        operateNodeExporter(workDir, cpuArchitecture, "restart");
-    }
-    
-    private static void operateNodeExporter(String workDir, String cpuArchitecture, String operate) {
-        ArrayList<String> commands = new ArrayList<>();
-        commands.add(SH);
-        if (Constants.X86_64.equals(cpuArchitecture)) {
-            commands.add(workDir + "/node/x86/control.sh");
-        } else {
-            commands.add(workDir + "/node/arm/control.sh");
-        }
-        commands.add(operate);
-        commands.add(NODE);
-        ShellUtils.execWithStatus(Constants.INSTALL_PATH, commands, 60L, logger);
     }
 }

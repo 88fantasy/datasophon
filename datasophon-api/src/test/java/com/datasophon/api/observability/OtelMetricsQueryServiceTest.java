@@ -37,7 +37,7 @@ class OtelMetricsQueryServiceTest {
     
     @Test
     void instantAgg_deduplicatesLatestSamplePerFilesystemSeriesBeforeSumming() {
-        String sql = OtelMetricsQueryService.buildInstantAggSql("sum", true, true, null, null);
+        String sql = OtelMetricsQueryService.buildInstantAggSql("sum", true, true, null, null, "otel_metrics_gauge");
         assertThat(sql).contains("attributes['path']");
         assertThat(sql).contains("attributes['device']");
         assertThat(sql).contains("attributes['fstype']");
@@ -66,8 +66,9 @@ class OtelMetricsQueryServiceTest {
         @Test
         void allBuilders_useResourceAttributesForInstanceAndJob() {
             // 每个 builder 的 instance/job 必须来自 resource_attributes，不能用 attributes
-            String noAgg = OtelMetricsQueryService.buildInstantNoAggSql(false, false, null, null);
-            String agg = OtelMetricsQueryService.buildInstantAggSql("sum", false, false, null, null);
+            String noAgg = OtelMetricsQueryService.buildInstantNoAggSql(false, false, null, null, "otel_metrics_gauge");
+            String agg = OtelMetricsQueryService.buildInstantAggSql(
+                    "sum", false, false, null, null, "otel_metrics_gauge");
             String gauge = OtelMetricsQueryService.buildRangeGaugeSql(
                     false, false, null, null, List.of(), "otel_metrics_gauge");
             String rate = OtelMetricsQueryService.buildRangeRateSql(
@@ -91,7 +92,7 @@ class OtelMetricsQueryServiceTest {
         
         @Test
         void instantNoAgg_containsQualifyAndNamedParams() {
-            String sql = OtelMetricsQueryService.buildInstantNoAggSql(false, false, null, null);
+            String sql = OtelMetricsQueryService.buildInstantNoAggSql(false, false, null, null, "otel_metrics_gauge");
             assertThat(sql).containsIgnoringCase("QUALIFY");
             assertThat(sql).containsIgnoringCase("ROW_NUMBER()");
             assertThat(sql).contains(":metric");
@@ -102,7 +103,7 @@ class OtelMetricsQueryServiceTest {
         
         @Test
         void instantNoAgg_withInstanceJobFilters_appendsResourceAttributesRegexp() {
-            String sql = OtelMetricsQueryService.buildInstantNoAggSql(true, true, null, null);
+            String sql = OtelMetricsQueryService.buildInstantNoAggSql(true, true, null, null, "otel_metrics_gauge");
             assertThat(sql).contains(":instance");
             assertThat(sql).contains(":job");
             assertThat(sql).containsIgnoringCase("REGEXP");
@@ -115,14 +116,16 @@ class OtelMetricsQueryServiceTest {
         
         @Test
         void instantAgg_sum_containsSumAndQualify() {
-            String sql = OtelMetricsQueryService.buildInstantAggSql("sum", false, false, null, null);
+            String sql = OtelMetricsQueryService.buildInstantAggSql(
+                    "sum", false, false, null, null, "otel_metrics_gauge");
             assertThat(sql).containsIgnoringCase("SUM(value)");
             assertThat(sql).containsIgnoringCase("QUALIFY");
         }
         
         @Test
         void instantAgg_max_containsMaxFunction() {
-            String sql = OtelMetricsQueryService.buildInstantAggSql("max", false, false, null, null);
+            String sql = OtelMetricsQueryService.buildInstantAggSql(
+                    "max", false, false, null, null, "otel_metrics_gauge");
             assertThat(sql).containsIgnoringCase("MAX(value)");
         }
         
@@ -244,7 +247,8 @@ class OtelMetricsQueryServiceTest {
         @Test
         void noSqlBuilderConcatenatesUserInput() {
             // 过滤值通过命名参数绑定，不应出现在 SQL 模板中
-            String sqlWithFilters = OtelMetricsQueryService.buildInstantNoAggSql(true, true, null, null);
+            String sqlWithFilters =
+                    OtelMetricsQueryService.buildInstantNoAggSql(true, true, null, null, "otel_metrics_gauge");
             assertThat(sqlWithFilters).doesNotContain("'.+'");
             assertThat(sqlWithFilters).doesNotContain("\"localhost\"");
         }
@@ -253,7 +257,8 @@ class OtelMetricsQueryServiceTest {
         void attrFilter_nonWhitelistKeyIsIgnored() {
             // 非白名单键不得出现在 SQL 中（SQL injection 防护）
             Map<String, String> malicious = Map.of("'; DROP TABLE otel_metrics_gauge; --", "x");
-            String sql = OtelMetricsQueryService.buildInstantNoAggSql(false, false, malicious, null);
+            String sql =
+                    OtelMetricsQueryService.buildInstantNoAggSql(false, false, malicious, null, "otel_metrics_gauge");
             assertThat(sql).doesNotContain("DROP TABLE");
             assertThat(sql).doesNotContain(":af_");
         }
@@ -264,6 +269,18 @@ class OtelMetricsQueryServiceTest {
                     false, false, null, null, List.of(), "otel_metrics_sum");
             assertThat(sql).contains("otel_metrics_sum");
             assertThat(sql).doesNotContain("otel_metrics_gauge");
+        }
+        
+        @Test
+        void instant_sumTableUsesOtelMetricsSum() {
+            // hostmetrics 的 system.memory.usage 等 non-monotonic sum 指标落 otel_metrics_sum 表
+            String noAgg = OtelMetricsQueryService.buildInstantNoAggSql(false, false, null, null, "otel_metrics_sum");
+            String agg = OtelMetricsQueryService.buildInstantAggSql(
+                    "sum", false, false, null, null, "otel_metrics_sum");
+            assertThat(noAgg).contains("FROM otel.otel_metrics_sum");
+            assertThat(noAgg).doesNotContain("otel_metrics_gauge");
+            assertThat(agg).contains("FROM otel.otel_metrics_sum");
+            assertThat(agg).doesNotContain("otel_metrics_gauge");
         }
     }
     

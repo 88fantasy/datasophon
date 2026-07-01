@@ -84,9 +84,9 @@
         <jsch.version>0.2.19</jsch.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <eddsa.version>0.3.0</eddsa.version>
-        <spotless.version>2.27.2</spotless.version>
+        <spotless.version>2.43.0</spotless.version>
         <spotless.scalafmt.version>3.4.3</spotless.scalafmt.version>
-        <spotless.ratchetFrom>origin/dev</spotless.ratchetFrom>
+        <spotless.ratchetFrom>main</spotless.ratchetFrom>
         <mockito-junit-jupiter.version>5.12.0</mockito-junit-jupiter.version>
         <bytebuddy.version>1.14.18</bytebuddy.version>
         <snakeyaml.version>1.29</snakeyaml.version>
@@ -583,6 +583,7 @@
                 <artifactId>spotless-maven-plugin</artifactId>
                 <version>${spotless.version}</version>
                 <configuration>
+                    <ratchetFrom>${spotless.ratchetFrom}</ratchetFrom>
                     <java>
                         <eclipse>
                             <file>style/spotless_datasophon_formatter.xml</file>

@@ -126,45 +126,6 @@
             <outputDirectory>otel</outputDirectory>
         </fileSet>
 
-        <fileSet>
-            <directory>${basedir}/src/main/resources/node/x86</directory>
-            <includes>
-                <include>node_exporter</include>
-            </includes>
-            <fileMode>0755</fileMode>
-            <outputDirectory>node/x86</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>${basedir}/src/main/resources/node/arm</directory>
-            <includes>
-                <include>node_exporter</include>
-            </includes>
-            <fileMode>0755</fileMode>
-            <outputDirectory>node/arm</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>${basedir}/src/main/resources/node/x86</directory>
-            <includes>
-                <include>*.sh</include>
-            </includes>
-            <fileMode>0755</fileMode>
-            <filtered>true</filtered>
-            <lineEnding>unix</lineEnding>
-            <outputDirectory>/node/x86</outputDirectory>
-        </fileSet>
-
-        <fileSet>
-            <directory>${basedir}/src/main/resources/node/arm</directory>
-            <includes>
-                <include>*.sh</include>
-            </includes>
-            <fileMode>0755</fileMode>
-            <filtered>true</filtered>
-            <lineEnding>unix</lineEnding>
-            <outputDirectory>/node/arm</outputDirectory>
-        </fileSet>
         <!-- release.txt 打入包根目录 -->
         <fileSet>
             <directory>${basedir}/target</directory>

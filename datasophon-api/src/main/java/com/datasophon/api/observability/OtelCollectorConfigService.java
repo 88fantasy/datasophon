@@ -49,6 +49,7 @@ public class OtelCollectorConfigService {
     static final String SERVICE_NAME = "OTELCOLLECTOR";
     static final String ROLE_NAME = "OtelCollector";
     static final String LOCAL_SCRAPE_JOBS_YAML = "localScrapeJobsYaml";
+    static final String NODE_HOSTNAME = "nodeHostname";
     
     private final WorkerCallAdapter workerCallAdapter;
     private final ServiceInstallService installService;
@@ -106,6 +107,7 @@ public class OtelCollectorConfigService {
         if (!effective.containsKey(LOCAL_SCRAPE_JOBS_YAML)) {
             effective.put(LOCAL_SCRAPE_JOBS_YAML, scrapeConfigBuilder.build(clusterId, hostname));
         }
+        effective.put(NODE_HOSTNAME, hostname);
         return effective;
     }
     
