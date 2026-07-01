@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre-ubi9-minimal
+FROM eclipse-temurin:21-jre-ubi9-minimal
 
 
 ENV AGENT_HOME=/opt/datasophon-k8s-agent

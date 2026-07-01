@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 LABEL "author"="88fantasy"
 RUN mkdir -p /opt/datasophon
 COPY ./bin/ /opt/datasophon/bin/

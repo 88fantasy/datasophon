@@ -5,7 +5,7 @@
 
 <p align="left">
   <img src="https://img.shields.io/badge/Spring%20Boot-3.4.5-brightgreen" alt="Spring Boot 3.4.5">
-  <img src="https://img.shields.io/badge/Java-17+-blue" alt="Java 17">
+  <img src="https://img.shields.io/badge/Java-21+-blue" alt="Java 21">
   <img src="https://img.shields.io/badge/Go-1.21-00ADD8" alt="Go 1.21">
   <img src="https://img.shields.io/badge/React-19-61DAFB" alt="React 19">
   <img src="https://img.shields.io/badge/gRPC-1.68-orange" alt="gRPC 1.68">
@@ -64,7 +64,7 @@ flowchart LR
 
 | 层 | 技术 |
 |---|---|
-| Master / Worker / K8s Agent | **Java 17**、**Spring Boot 3.4.5**、MyBatis-Plus 3.5.9、Druid、Flyway 9 |
+| Master / Worker / K8s Agent | **Java 21**、**Spring Boot 3.4.5**、MyBatis-Plus 3.5.9、Druid、Flyway 9 |
 | 跨进程通信 | **gRPC 1.68.1 / Protobuf 3.25.5**(grpc-spring-boot-starter 3.1.0,yidongnan/grpc-ecosystem) |
 | 数据库 | MySQL 8(`mysql-connector 8.2.0`),迁移 1.1.0 → 2.1.0 |
 | 任务编排 | 自实现 `RepoDAG` + `@Async masterExecutor` + `@Scheduled` 周期巡检 |
@@ -80,7 +80,7 @@ flowchart LR
 
 | 工具 | 推荐版本 |
 |---|---|
-| JDK | JDK 17(JBR 17.0.12-1 / Microsoft OpenJDK 17) |
+| JDK | JDK 21(JBR 21 / Microsoft OpenJDK 21) |
 | Maven | 使用项目自带 `./mvnw` (3.8.4) |
 | Node | 20.x(`frontend-maven-plugin` 自动下载,无需本机安装) |
 | Go | 1.21+(仅在编译 CLI 时需要) |
@@ -89,8 +89,8 @@ flowchart LR
 ### 4.2 全量构建
 
 ```bash
-# 设置 JDK 17（必要 — 项目对 JDK 17 + Lombok 有强依赖）
-export JAVA_HOME=/path/to/jdk-17
+# 设置 JDK 21（必要 — 项目对 JDK 21 + Lombok 有强依赖）
+export JAVA_HOME=/path/to/jdk-21
 
 # 全量构建（编译 + 打包 + 内嵌前端）
 ./mvnw clean package -DskipTests
