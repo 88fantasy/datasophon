@@ -108,7 +108,7 @@ service:
       exporters: [<#if (exporterMode!"s3") == "doris">doris<#else>awss3</#if>]
     metrics/host:
       receivers: [host_metrics]
-      processors: [resource/host_metrics, memory_limiter, batch]
+      processors: [memory_limiter, resource/host_metrics, batch]
       exporters: [<#if (exporterMode!"s3") == "doris">doris<#else>awss3</#if>]
     logs:
       receivers: [otlp]

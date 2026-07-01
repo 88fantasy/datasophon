@@ -94,11 +94,13 @@ class OtelCollectorDdlLoadTest {
         assertEquals(Integer.valueOf(8888), role.getInteger("jmxPort"));
         
         // configWriter 指向 otelcol.ftl
-        String templateName = json.getJSONObject("configWriter")
+        JSONObject yamlGenerator = json.getJSONObject("configWriter")
                 .getJSONArray("generators")
-                .getJSONObject(0)
-                .getString("templateName");
+                .getJSONObject(0);
+        String templateName = yamlGenerator.getString("templateName");
         assertEquals("otelcol.ftl", templateName);
+        assertTrue(yamlGenerator.getJSONArray("includeParams").contains("nodeHostname"),
+                "otelcol.ftl 使用 nodeHostname，首次安装 DDL includeParams 必须传入该变量");
         
         // POST_INSTALL hook 下载 control.sh
         JSONObject hook = role.getJSONArray("hooks").getJSONObject(0);

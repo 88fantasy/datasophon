@@ -25,12 +25,11 @@ mvn -pl datasophon-worker test
 
 启动顺序见 `WorkerApplicationServer.java:59`（main 方法），顺序**不可随意调换**：
 
-1. `startNodeExporter` —— 拉起 Prometheus node_exporter（x86/arm 自动选择）。
-2. `createDefaultUser` —— 用 `UnixUtils` 创建 `hdfs/yarn/hive/...` 系统用户。
-3. `new WorkerGrpcServer().start()` —— 监听 **gRPC 端口 18082**，注册 `WorkerCommandGrpcService`（一元 RPC，分发到策略类）。线程池由 `WorkerGrpcServer.java:53` 显式 bound：`max(8, 2 * availableProcessors())`（gRPC-Java 默认是 CachedThreadPool 无界，批量 install 会创建数百线程）。
-4. `MasterCallbackClient.init(masterHost)` —— **必须在 register 之前** 初始化反向回调单例，否则 OLAP（StarRocks/Doris FE/BE）相关策略会因取不到 `getInstance()` 而降级。
-5. `MasterRegistryClient.register()` —— 走 `WorkerRegistryServiceGrpc` 向 Master `18081` 端口注册节点；注册成功（或失败）后都会启动每 **30s** 一次的心跳（`GrpcConstants.HEARTBEAT_INTERVAL_SECONDS`）。心跳收到 `success=false` 时主动重新 `register()`，所以注册失败也不致命。
-6. `workerGrpcServer.awaitTermination()` —— 主线程在此阻塞，防止 JVM 因无非守护线程而退出。
+1. `createDefaultUser` —— 用 `UnixUtils` 创建 `hdfs/yarn/hive/...` 系统用户。
+2. `new WorkerGrpcServer().start()` —— 监听 **gRPC 端口 18082**，注册 `WorkerCommandGrpcService`（一元 RPC，分发到策略类）。线程池由 `WorkerGrpcServer.java:53` 显式 bound：`max(8, 2 * availableProcessors())`（gRPC-Java 默认是 CachedThreadPool 无界，批量 install 会创建数百线程）。
+3. `MasterCallbackClient.init(masterHost)` —— **必须在 register 之前** 初始化反向回调单例，否则 OLAP（StarRocks/Doris FE/BE）相关策略会因取不到 `getInstance()` 而降级。
+4. `MasterRegistryClient.register()` —— 走 `WorkerRegistryServiceGrpc` 向 Master `18081` 端口注册节点；注册成功（或失败）后都会启动每 **30s** 一次的心跳（`GrpcConstants.HEARTBEAT_INTERVAL_SECONDS`）。心跳收到 `success=false` 时主动重新 `register()`，所以注册失败也不致命。
+5. `workerGrpcServer.awaitTermination()` —— 主线程在此阻塞，防止 JVM 因无非守护线程而退出。
 
 `grpc/` 四个文件分工：
 

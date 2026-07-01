@@ -28,7 +28,6 @@ import com.datasophon.api.grpc.WorkerCommandClient;
 import com.datasophon.api.observability.OtelMetricsQueryService;
 import com.datasophon.api.observability.PrometheusVectorResult;
 import com.datasophon.api.service.ClusterInfoService;
-import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.host.ClusterHostService;
 import com.datasophon.common.utils.ExecResult;
 import com.datasophon.dao.entity.ClusterHostDO;
@@ -45,7 +44,7 @@ import org.junit.jupiter.api.Test;
 class HostCheckServiceTest {
     
     @Test
-    void updatesHostResourcesFromOtelWhenPrometheusServiceIsAbsent() {
+    void updatesHostResourcesFromOtel() {
         ClusterInfoEntity cluster = new ClusterInfoEntity();
         cluster.setId(7);
         cluster.setClusterName("c1");
@@ -56,8 +55,6 @@ class HostCheckServiceTest {
         ClusterInfoService clusterInfoService = proxy(ClusterInfoService.class, (proxy, method, args) -> "getReadyClusterList".equals(method.getName()) ? List.of(cluster) : null);
         CapturingHostService hostServiceHandler = new CapturingHostService(host);
         ClusterHostService clusterHostService = proxy(ClusterHostService.class, hostServiceHandler);
-        ClusterServiceRoleInstanceService roleInstanceService = proxy(
-                ClusterServiceRoleInstanceService.class, (proxy, method, args) -> null);
         WorkerCommandClient workerCommandClient = new WorkerCommandClient(null, null) {
             @Override
             public ExecResult ping(String hostname) {
@@ -69,7 +66,7 @@ class HostCheckServiceTest {
         CapturingMetricsQueryService metricsQueryService = new CapturingMetricsQueryService();
         
         HostCheckService service = new HostCheckService(clusterInfoService, clusterHostService,
-                roleInstanceService, workerCommandClient, metricsQueryService, Runnable::run);
+                workerCommandClient, metricsQueryService, Runnable::run);
         service.checkHosts(null);
         
         ClusterHostDO updated = hostServiceHandler.updatedHosts.get(0);

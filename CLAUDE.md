@@ -151,7 +151,7 @@ Datasophon 是典型的「控制面 + 工作面」结构:
 - **前端构建链路**:`datasophon-ui` 的 `pnpm build` 产出 `dist/` → Maven `frontend-maven-plugin` 自动跑 `npm run build` → `maven-resources-plugin` 把 `dist/` 同步到父项目 `static/` → `datasophon-api` 的 `maven-assembly-plugin` 将整个 `static/` 打入 `datasophon-manager-<version>.tar.gz` 的 `front/` 目录。
 - **`datasophon-ui` 三者对应**:Maven `artifactId = datasophon-ui`、`package.json` 中 `name = "ddh"`(被 `vite.config.ts` 取作 `base = /ddh`)、后端 `server.servlet.context-path=/ddh`。改任一处都要同步另两处,否则静态资源 404 或拦截链失效。
 - **Master 启动预热**:`WorkerRegistryPrewarmer` 在 `@PostConstruct` 从 DB 加载已知主机预填注册表,给 Worker 90s 窗口完成真实注册。**新加任何"Master 重启后立刻向 Worker 派命令"的逻辑前,先确认预热窗口覆盖到对应 hostname**,否则会出现"Master 重启 → 命令全部失败"。
-- **Worker 启动顺序**(`WorkerApplicationServer.main`):`startNodeExporter` → `createDefaultUser` → `WorkerGrpcServer.start()` → `MasterCallbackClient.init()` → `MasterRegistryClient.register()` → `awaitTermination`。顺序不可换;OLAP 策略的 `MasterCallbackClient.getInstance()` 必须在 register 前 init。
+- **Worker 启动顺序**(`WorkerApplicationServer.main`):`createDefaultUser` → `WorkerGrpcServer.start()` → `MasterCallbackClient.init()` → `MasterRegistryClient.register()` → `awaitTermination`。顺序不可换;OLAP 策略的 `MasterCallbackClient.getInstance()` 必须在 register 前 init。
 - **Worker 离线事件**:任何"移除 Worker"的路径都必须最终触发 `WorkerOfflineEvent`(`registry.unregister` / `registry.remove`),由 `WorkerCommandClient` 监听并 `channel.shutdown()`,否则会泄漏 gRPC Channel 句柄。
 - **测试默认行为**:根 `pom.xml` surefire `skipTests=${skipTests}`,**不传参时执行测试**;父 pom 不再硬编码跳过。`-DskipTests=true` 跳过。`datasophon-api` 强排除 `MetaUtilsTaskTest` / `NexusUtilsTaskTest`(本机路径依赖,CI 上等同于不存在)。
 - **Maven Central 国内镜像**:根 pom 配 `google-mirror` profile(`-Pgoogle-mirror`),直连 Maven Central 失败时优先切到 GCS 镜像。

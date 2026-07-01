@@ -3,15 +3,15 @@ package com.datasophon.worker.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import freemarker.template.Configuration;
-import freemarker.template.Template;
-import freemarker.template.TemplateExceptionHandler;
-
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateExceptionHandler;
 
 public class OtelcolTemplateTest {
     
@@ -159,7 +159,7 @@ public class OtelcolTemplateTest {
         // 独立 pipeline，不与现有 metrics pipeline 共用 processor
         assertTrue(yaml.contains("metrics/host:"));
         assertTrue(yaml.contains("receivers: [host_metrics]"));
-        assertTrue(yaml.contains("processors: [resource/host_metrics, memory_limiter, batch]"));
+        assertTrue(yaml.contains("processors: [memory_limiter, resource/host_metrics, batch]"));
         // node_exporter 相关端口已彻底退役
         assertTrue(!yaml.contains(":9100"));
     }
