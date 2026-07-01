@@ -61,12 +61,36 @@ receivers:
                 job: doris
                 instance: obs-doris-be
 
+  # host_metrics：验证「节点主机监控」采集链路（system.* 指标），替代旧 node_exporter 方案。
+  # 沙箱容器视角指标，仅用于验证管道通、数据落 Doris、身份正确；数值真实性需真实节点。
+  host_metrics:
+    collection_interval: 15s
+    scrapers:
+      cpu: {}
+      load: {}
+      memory:
+        metrics:
+          system.linux.memory.available:
+            enabled: true
+      disk: {}
+      filesystem: {}
+      network: {}
+
 processors:
   memory_limiter:
     check_interval: 5s
     limit_mib: 256
   batch:
     timeout: 5s
+  # 沙箱身份写死为 sandbox-node；生产 otelcol.ftl 用真实 hostname（见 resource/host_metrics 注释）
+  resource/host_metrics:
+    attributes:
+      - key: service.name
+        value: node
+        action: upsert
+      - key: service.instance.id
+        value: sandbox-node
+        action: upsert
 
 exporters:
   doris:
@@ -114,6 +138,10 @@ service:
     metrics:
       receivers: [prometheus/nexus, prometheus/doris, otlp]
       processors: [memory_limiter, batch]
+      exporters: [doris, debug]
+    metrics/host:
+      receivers: [host_metrics]
+      processors: [resource/host_metrics, memory_limiter, batch]
       exporters: [doris, debug]
     logs:
       receivers: [otlp]

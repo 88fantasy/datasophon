@@ -45,7 +45,7 @@ class OtelScrapeConfigBuilderTest {
             new OtelScrapeConfigBuilder(roleService, clusterInfoService);
     
     @Test
-    void buildsLocalScrapeJobsForRunningRolesAndNodeExporter() {
+    void buildsLocalScrapeJobsForRunningRoles() {
         givenClusterFrame("FRAME_A");
         ServiceRoleJmxMap.put("FRAME_A_HDFS_NameNode", "9101");
         ServiceRoleJmxMap.put("FRAME_A_HDFS_DataNode", "9102");
@@ -62,8 +62,6 @@ class OtelScrapeConfigBuilderTest {
         assertThat(yaml).contains("          labels: {job: 'NameNode', instance: 'worker-1:9101'}");
         assertThat(yaml).contains("    - job_name: 'DataNode'");
         assertThat(yaml).contains("        - targets: ['127.0.0.1:9102']");
-        assertThat(yaml).contains("    - job_name: 'node'");
-        assertThat(yaml).contains("        - targets: ['127.0.0.1:9100']");
     }
     
     @Test
@@ -79,7 +77,6 @@ class OtelScrapeConfigBuilderTest {
         
         assertThat(yaml).doesNotContain("NameNode");
         assertThat(yaml).doesNotContain("DataNode");
-        assertThat(yaml).contains("job_name: 'node'");
     }
     
     @Test
@@ -115,15 +112,14 @@ class OtelScrapeConfigBuilderTest {
     }
     
     @Test
-    void emptyRoleListStillGeneratesNodeExporterJob() {
+    void emptyRoleListProducesEmptyYaml() {
         givenClusterFrame("FRAME_D");
         when(roleService.getServiceRoleListByHostnameAndClusterId("worker-4", 10))
                 .thenReturn(List.of());
         
         String yaml = builder.build(10, "worker-4");
         
-        assertThat(yaml).contains("job_name: 'node'");
-        assertThat(yaml).contains("targets: ['127.0.0.1:9100']");
+        assertThat(yaml).isEmpty();
     }
     
     private void givenClusterFrame(String frame) {

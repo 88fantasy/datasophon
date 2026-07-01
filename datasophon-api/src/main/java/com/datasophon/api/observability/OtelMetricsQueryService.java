@@ -82,10 +82,10 @@ public class OtelMetricsQueryService {
      * 对应值通过命名参数绑定（af_key / afne_key），不存在注入风险。
      */
     static final Set<String> ALLOWED_ATTR_FILTER_KEYS =
-            Set.of("group", "type", "mode", "path", "device", "fstype", "mountpoint");
+            Set.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state");
     
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
-            List.of("group", "type", "mode", "path", "device", "fstype", "mountpoint");
+            List.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state");
     
     private final ClusterServiceRoleInstanceService roleService;
     private final OtelDorisReaderFactory readerFactory;
@@ -99,7 +99,10 @@ public class OtelMetricsQueryService {
     // ─── 公开查询接口 ──────────────────────────────────────────────────────────────
     
     /**
-     * Instant 查询，返回 Prometheus vector 格式。
+     * Instant 查询，返回 Prometheus vector 格式。查询 {@code otel_metrics_gauge} 表；
+     * 若指标是 non-monotonic sum（如 hostmetrics 的 {@code system.memory.usage}），
+     * 用 {@link #queryInstant(Integer, String, String, double, String, String, Map, Map, long, String)}
+     * 并传 {@code table="sum"}。
      *
      * @param agg       聚合函数（"sum"/"max"；null 表示不聚合，每 series 各一样本）
      * @param scale     值乘数（如 100.0 将 ratio 转为百分比；1.0 表示不变）
@@ -112,11 +115,28 @@ public class OtelMetricsQueryService {
                                                Map<String, String> filters,
                                                Map<String, String> filtersNe,
                                                long evalTime) {
+        return queryInstant(clusterId, metric, agg, scale, instance, job, filters, filtersNe, evalTime, "gauge");
+    }
+    
+    /**
+     * Instant 查询（可指定表），返回 Prometheus vector 格式。
+     *
+     * @param table 查询的指标表："gauge"（默认）或 "sum"（non-monotonic sum，如 hostmetrics 的
+     *              {@code system.memory.usage} / {@code system.linux.memory.available} /
+     *              {@code system.filesystem.usage}）
+     */
+    public PrometheusVectorResult queryInstant(Integer clusterId, String metric,
+                                               String agg, double scale,
+                                               String instance, String job,
+                                               Map<String, String> filters,
+                                               Map<String, String> filtersNe,
+                                               long evalTime, String table) {
         JdbcClient client = createReader(clusterId);
+        String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
         boolean hasAgg = agg != null && !agg.isBlank();
         String sql = hasAgg
-                ? buildInstantAggSql(agg, needsFilter(instance), needsFilter(job), filters, filtersNe)
-                : buildInstantNoAggSql(needsFilter(instance), needsFilter(job), filters, filtersNe);
+                ? buildInstantAggSql(agg, needsFilter(instance), needsFilter(job), filters, filtersNe, otelTable)
+                : buildInstantNoAggSql(needsFilter(instance), needsFilter(job), filters, filtersNe, otelTable);
         
         JdbcClient.StatementSpec spec = client.sql(sql)
                 .param("metric", metric)
@@ -249,12 +269,13 @@ public class OtelMetricsQueryService {
     // ─── SQL 构建（package-private for testing） ──────────────────────────────────
     
     static String buildInstantNoAggSql(boolean filterInstance, boolean filterJob,
-                                       Map<String, String> filters, Map<String, String> filtersNe) {
+                                       Map<String, String> filters, Map<String, String> filtersNe,
+                                       String otelTable) {
         StringBuilder sql = new StringBuilder(
                 "SELECT " + INST_EXPR + " AS instance,\n"
                         + "       " + JOB_EXPR + " AS job,\n"
                         + "       value, UNIX_TIMESTAMP(timestamp) AS ts\n"
-                        + "FROM otel.otel_metrics_gauge\n"
+                        + "FROM otel." + otelTable + "\n"
                         + "WHERE metric_name = :metric\n"
                         + "  AND timestamp >= FROM_UNIXTIME(:evalTime - 300)");
         appendFilters(sql, filterInstance, filterJob);
@@ -268,11 +289,12 @@ public class OtelMetricsQueryService {
     }
     
     static String buildInstantAggSql(String agg, boolean filterInstance, boolean filterJob,
-                                     Map<String, String> filters, Map<String, String> filtersNe) {
+                                     Map<String, String> filters, Map<String, String> filtersNe,
+                                     String otelTable) {
         String fn = "max".equalsIgnoreCase(agg) ? "MAX" : "SUM";
         StringBuilder inner = new StringBuilder(
                 "SELECT value\n"
-                        + "FROM otel.otel_metrics_gauge\n"
+                        + "FROM otel." + otelTable + "\n"
                         + "WHERE metric_name = :metric\n"
                         + "  AND timestamp >= FROM_UNIXTIME(:evalTime - 300)");
         appendFilters(inner, filterInstance, filterJob);

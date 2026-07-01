@@ -42,7 +42,6 @@ import org.springframework.stereotype.Component;
 public class OtelScrapeConfigBuilder {
     
     private static final String DEFAULT_METRICS_PATH = "/metrics";
-    private static final String NODE_EXPORTER_JOB = "node";
     private static final String DORIS_FE = "DorisFE";
     private static final String DORIS_BE = "DorisBE";
     
@@ -86,8 +85,6 @@ public class OtelScrapeConfigBuilder {
                     "127.0.0.1:" + jmxPort, hostname + ":" + jmxPort, group(role.getServiceRoleName()));
         }
         
-        appendJob(yaml, NODE_EXPORTER_JOB, DEFAULT_METRICS_PATH,
-                "127.0.0.1:9100", hostname + ":9100", null);
         return yaml.toString();
     }
     

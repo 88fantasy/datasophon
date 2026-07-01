@@ -79,13 +79,13 @@ class HostCheckServiceTest {
         assertThat(updated.getUsedDisk()).isEqualTo(120);
         assertThat(updated.getAverageLoad()).isEqualTo("1.25");
         
-        assertThat(metricsQueryService.filesystemFilters).allSatisfy(filters -> assertThat(filters).containsEntry("fstype", "ext.*|xfs"));
+        assertThat(metricsQueryService.filesystemFilters).allSatisfy(filters -> assertThat(filters).containsEntry("type", "ext.*|xfs"));
         assertThat(metricsQueryService.filesystemFiltersNe).allSatisfy(filtersNe -> assertThat(filtersNe).containsEntry("mountpoint", ".*pod.*"));
     }
     
     private static PrometheusVectorResult vector(double value) {
         return PrometheusVectorResult.of(List.of(new PrometheusVectorResult.VectorSample(
-                java.util.Map.of("instance", "node-1:9100"),
+                java.util.Map.of("instance", "node-1"),
                 new Object[]{1L, String.valueOf(value)})));
     }
     
@@ -126,17 +126,22 @@ class HostCheckServiceTest {
         @Override
         public PrometheusVectorResult queryInstant(Integer clusterId, String metric, String agg, double scale,
                                                    String instance, String job, Map<String, String> filters,
-                                                   Map<String, String> filtersNe, long evalTime) {
-            if (metric.startsWith("node_filesystem_")) {
+                                                   Map<String, String> filtersNe, long evalTime, String table) {
+            // memory/filesystem usage 落 sum 表，cpu.load_average 落 gauge 表；断言调用方传对了 table。
+            boolean expectSum = !"system.cpu.load_average.5m".equals(metric);
+            assertThat(table).isEqualTo(expectSum ? "sum" : "gauge");
+            if ("system.filesystem.usage".equals(metric)) {
                 filesystemFilters.add(filters);
                 filesystemFiltersNe.add(filtersNe);
+                if (filters != null && filters.containsKey("state")) {
+                    return vector(120d * 1024 * 1024 * 1024);
+                }
+                return vector(200d * 1024 * 1024 * 1024);
             }
             return switch (metric) {
-                case "node_memory_MemTotal_bytes" -> vector(16d * 1024 * 1024 * 1024);
-                case "node_memory_MemAvailable_bytes" -> vector(6d * 1024 * 1024 * 1024);
-                case "node_filesystem_size_bytes" -> vector(200d * 1024 * 1024 * 1024);
-                case "node_filesystem_free_bytes" -> vector(80d * 1024 * 1024 * 1024);
-                case "node_load5" -> vector(1.25d);
+                case "system.memory.usage" -> vector(16d * 1024 * 1024 * 1024);
+                case "system.linux.memory.available" -> vector(6d * 1024 * 1024 * 1024);
+                case "system.cpu.load_average.5m" -> vector(1.25d);
                 default -> PrometheusVectorResult.of(List.of());
             };
         }

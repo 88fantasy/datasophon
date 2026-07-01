@@ -36,6 +36,7 @@ public class OtelcolTemplateTest {
         Template tpl = cfg.getTemplate("otelcol.ftl");
         Map<String, Object> data = new HashMap<>();
         data.put("ip", "10.0.0.11");
+        data.put("nodeHostname", "worker-1");
         data.put("s3Endpoint", "http://mw1:9040");
         data.put("s3Bucket", "otel-bootstrap");
         data.put("s3Prefix", "node");
@@ -140,6 +141,27 @@ public class OtelcolTemplateTest {
         assertTrue(yaml.contains("prometheus/local:"));
         assertTrue(yaml.contains("exporters: [awss3]"));
         assertTrue(yaml.contains("receivers: [otlp, prometheus/self, prometheus/local]"));
+    }
+    
+    @Test
+    public void renders_hostmetrics_receiver_with_dedicated_pipeline() throws Exception {
+        String yaml = render();
+        
+        // host_metrics receiver 替代 node_exporter 采集主机 CPU/内存/磁盘/网络
+        // （receiver 名用 host_metrics，非 hostmetrics：后者是 v0.154.0 已废弃的 legacy alias）
+        assertTrue(yaml.contains("host_metrics:"));
+        assertTrue(!yaml.contains("  hostmetrics:"));
+        assertTrue(yaml.contains("system.linux.memory.available"));
+        // resource processor 把身份改写成 prometheus receiver 同形状，供查询层复用
+        assertTrue(yaml.contains("resource/host_metrics:"));
+        assertTrue(yaml.contains("value: node"));
+        assertTrue(yaml.contains("value: worker-1"));
+        // 独立 pipeline，不与现有 metrics pipeline 共用 processor
+        assertTrue(yaml.contains("metrics/host:"));
+        assertTrue(yaml.contains("receivers: [host_metrics]"));
+        assertTrue(yaml.contains("processors: [resource/host_metrics, memory_limiter, batch]"));
+        // node_exporter 相关端口已彻底退役
+        assertTrue(!yaml.contains(":9100"));
     }
     
     @Test
