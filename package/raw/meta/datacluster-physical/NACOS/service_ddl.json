@@ -56,6 +56,15 @@
             "to": "bin/control_nacos.sh",
             "md5": "66eddd29b1f85d39fcfd98485f5bd9d1"
           }
+        },
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "line": 2,
+            "text": "export JAVA_HOME=$JAVA_HOME17",
+            "source": "bin/startup.sh"
+          }
         }
       ]
     }

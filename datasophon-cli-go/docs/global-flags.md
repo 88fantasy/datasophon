@@ -77,7 +77,7 @@ datasophon-cli init firewall \
   -c /data/datasophon/datasophon-init/config/cluster-sample.yml
 
 # 使用制品库（离线环境，包从 Nexus 拉取）
-datasophon-cli init jdk17 \
+datasophon-cli init jdk21 \
   -c /data/datasophon/datasophon-init/config/cluster-sample.yml \
   --enableRegistry \
   --registryIp 192.168.1.10 \

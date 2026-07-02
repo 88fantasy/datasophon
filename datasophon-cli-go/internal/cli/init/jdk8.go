@@ -11,10 +11,18 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// InitJdk8 对应 Java InitJdk8 — 安装 OpenJDK 8（jdk-8u333）。
+// jdk8ExtractDirName 是 Temurin JDK8 tar 包实际解压出的顶层目录名；
+// 解压到 InstallPath（与 docker/rustfs 等其他组件同处一个安装根目录）后，
+// 软链到版本无关的固定别名 /usr/local/jdk8，与 tar 包内实际版本号解耦，
+// 升级 JDK 补丁版本时不需要连带改 hadoop-env.ftl / dolphinscheduler_env.ftl /
+// InstallJDKHandler.java 等消费方。
+const jdk8ExtractDirName = "jdk8u492-b09"
+
+// InitJdk8 对应 Java InitJdk8 — 安装 Eclipse Temurin OpenJDK 8u492。
 type InitJdk8 struct {
 	TaskBase
 	PackagePath string
+	InstallPath string
 }
 
 func (t *InitJdk8) Name() string { return "初始化jdk8" }
@@ -26,7 +34,7 @@ func (t *InitJdk8) Handle(client *ssh.Client, dryRun bool) error {
 func (t *InitJdk8) Command(dryRun *bool) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "jdk8",
-		Short: "安装 OpenJDK 8（jdk-8u333）",
+		Short: "安装 OpenJDK 8（Eclipse Temurin 8u492）",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runLocal(*dryRun, t.doRun)
 		},
@@ -34,15 +42,17 @@ func (t *InitJdk8) Command(dryRun *bool) *cobra.Command {
 	t.AddBaseFlags(cmd)
 	cmd.Flags().StringVar(&t.PackagePath, "packagePath", "", "安装包目录（必填）")
 	_ = cmd.MarkFlagRequired("packagePath")
+	cmd.Flags().StringVar(&t.InstallPath, "installPath", "", "安装路径（必填）")
+	_ = cmd.MarkFlagRequired("installPath")
 	return cmd
 }
 
 func (t *InitJdk8) doRun(exec executor.Executor) error {
 	jdkFolderPath := "/usr/local"
-	jdkPathName := "jdk1.8.0_333"
-	jdkTarName := "jdk-8u333-linux-x64.tar.gz"
+	jdkPathName := "jdk8"
+	jdkTarName := "OpenJDK8U-jdk_x64_linux_hotspot_8u492b09.tar.gz"
 	if exec.GetArch() == osinfo.ArchAarch64 {
-		jdkTarName = "jdk-8u333-linux-aarch64.tar.gz"
+		jdkTarName = "OpenJDK8U-jdk_aarch64_linux_hotspot_8u492b09.tar.gz"
 	}
 	javaBinPath := fmt.Sprintf("%s/%s/bin/java", jdkFolderPath, jdkPathName)
 	javaHome := fmt.Sprintf("%s/%s", jdkFolderPath, jdkPathName)
@@ -68,9 +78,12 @@ func (t *InitJdk8) doRun(exec executor.Executor) error {
 	exec.ExecShell("sed -i '/source \\/etc\\/profile/d' /root/.bash_profile")
 	exec.ExecShell("sed -i '/source \\/etc\\/profile/d' /root/.bashrc")
 
-	// 解压安装
-	exec.ExecShell(fmt.Sprintf("mkdir -p %s", jdkFolderPath))
-	exec.ExecShell(fmt.Sprintf("tar -zxf %s/%s -C %s", t.PackagePath, jdkTarName, jdkFolderPath))
+	// 解压到 installPath（与 docker/rustfs 等其他组件同处一个安装根目录），
+	// 再软链到版本无关的固定别名 jdkFolderPath/jdkPathName
+	exec.ExecShell(fmt.Sprintf("mkdir -p %s", t.InstallPath))
+	exec.ExecShell(fmt.Sprintf("tar -zxf %s/%s -C %s", t.PackagePath, jdkTarName, t.InstallPath))
+	exec.ExecShell(fmt.Sprintf("rm -rf %s/%s && ln -s %s/%s %s/%s",
+		jdkFolderPath, jdkPathName, t.InstallPath, jdk8ExtractDirName, jdkFolderPath, jdkPathName))
 
 	// 配置环境变量
 	exec.ExecShell(fmt.Sprintf("echo 'export JAVA_HOME=%s' >>/etc/profile", javaHome))

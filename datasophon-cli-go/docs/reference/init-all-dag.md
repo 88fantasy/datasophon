@@ -23,7 +23,7 @@
 | 6  | `init-docker-for-registry` | 安装 Docker（Registry 阶段） | **k8s-only**    | K8s 节点        | `registry.enable && kubernetes.enable`  | [docker](../commands/init/k8s/docker.md)                   |
 | 7  | `init-registry-upload`     | 上传安装包到 Nexus           | both            | 本机（执行节点）      | `registry.enable`                       | [upload registry](../commands/upload/registry.md)          |
 | 8  | `init-jdk8`                | 安装 JDK 8               | both            | 全节点           | 无                                       | [jdk8](../commands/init/packages/jdk8.md)                  |
-| 9  | `init-jdk17`               | 安装 JDK 17              | both            | 全节点           | 无                                       | [jdk17](../commands/init/packages/jdk17.md)                |
+| 9  | `init-jdk21`               | 安装 JDK 21              | both            | 全节点           | 无                                       | [jdk21](../commands/init/packages/jdk21.md)                |
 | 10 | `init-osuser`              | 创建 hadoop 用户和组         | **hadoop-only** | 全节点           | 无                                       | [hadoop_user](../commands/init/system/osuser.md)           |
 | 11 | `init-firewall`            | 关闭防火墙                  | both            | 全节点           | 无                                       | [firewall](../commands/init/system/firewall.md)            |
 | 12 | `init-selinux`             | 关闭 SELinux             | both            | 全节点           | 无                                       | [selinux](../commands/init/system/selinux.md)              |

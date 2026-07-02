@@ -12,7 +12,7 @@ import (
 
 // stubCfg/stubCtx 来自 plan_test.go（相同包，直接复用）
 
-// buildBinPackage/buildTar/buildJdk8/buildJdk17：
+// buildBinPackage/buildTar/buildJdk8/buildJdk21：
 // stubCtx.LocalIP="127.0.0.1"，与 node1/node2 的 IP 均不同，
 // 所以 workerHostSlice 不排除任何节点，2 个 worker。
 
@@ -48,9 +48,10 @@ func TestBuildJdk8_WorkerCountAndRegistry(t *testing.T) {
 	assert.True(t, jdk.EnableRegistry)
 	assert.Equal(t, "node1", jdk.RegistryIP)
 	assert.Equal(t, "8081", jdk.RegistryPort)
+	assert.Equal(t, ctx.InstallPath, jdk.InstallPath)
 }
 
-func TestBuildJdk17_WorkerCountAndRegistry(t *testing.T) {
+func TestBuildJdk21_WorkerCountAndRegistry(t *testing.T) {
 	cfg := stubCfg()
 	cfg.Registry = config.Registry{
 		Enable: true,
@@ -58,13 +59,14 @@ func TestBuildJdk17_WorkerCountAndRegistry(t *testing.T) {
 		Config: config.RegistryConfig{WebPort: "8082"},
 	}
 	ctx := stubCtx(cfg, t.TempDir())
-	actions, err := buildJdk17(allNodes)(ctx)
+	actions, err := buildJdk21(allNodes)(ctx)
 	require.NoError(t, err)
 	require.Len(t, actions, 2)
 
-	jdk := actions[0].Handler.(*initcmd.InitJdk17)
+	jdk := actions[0].Handler.(*initcmd.InitJdk21)
 	assert.True(t, jdk.EnableRegistry)
 	assert.Equal(t, "8082", jdk.RegistryPort)
+	assert.Equal(t, ctx.InstallPath, jdk.InstallPath)
 }
 
 func TestBuildOfflineNodes_AllNodes(t *testing.T) {

@@ -18,7 +18,7 @@ export PID_DIR=/tmp
 export LOG_DIR=$current_path/logs
 export STOP_TIMEOUT=3
 
-export JAVA_HOME=/usr/local/jdk1.8.0_333
+export JAVA_HOME=$JAVA_HOME17
 
 log=$LOG_DIR/spark-hive-org.apache.spark.sql.hive.thriftserver.HiveThriftServer2.log
 spark_thrift_port=10016

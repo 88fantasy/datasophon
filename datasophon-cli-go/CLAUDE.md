@@ -105,11 +105,11 @@ datasophon-cli [--dry-run]
 │   ├── mysql / nmap-server / ntp-server    # 单节点远程安装命令
 │   ├── registry / rustfs / yum-server
 │   └── ...
-├── init                                    # 27 条独立单步初始化（system/network/packages/repo/db/k8s）
+├── init                                    # 28 条独立单步初始化（system/network/packages/repo/db/k8s）
 │   ├── firewall / selinux / swap / hadoop_user / bash
 │   ├── library / osSafeConf / system-conf / hugePage
 │   ├── hostname / allHost / ntpslave / ssh
-│   ├── bin_packages / tar / jdk8 / jdk17
+│   ├── bin_packages / tar / jdk8 / jdk17 / jdk21
 │   ├── offlineSlave / registryDecode
 │   ├── mysql_app_db
 │   └── docker / helm / helmify / kubectl / k8sBaseServices / k8sRegistryConf / kuboard
@@ -117,7 +117,7 @@ datasophon-cli [--dry-run]
     └── registry
 ```
 
-`init` 27 条子命令的完整索引与 flag 公共参数见 `docs/commands/init/README.md`；每条子命令单独文档在 `docs/commands/init/{system,network,packages,repo,db,k8s}/<name>.md`。`init` 子命令语义是「在已登录的当前节点上单步本地初始化」；涉及「指定某个特定节点远程安装」（MySQL/Nexus/Rustfs/NTP Server/nmap/yum 离线源）已统一迁到 `create` 命令组。
+`init` 28 条子命令的完整索引与 flag 公共参数见 `docs/commands/init/README.md`；每条子命令单独文档在 `docs/commands/init/{system,network,packages,repo,db,k8s}/<name>.md`。`init` 子命令语义是「在已登录的当前节点上单步本地初始化」；涉及「指定某个特定节点远程安装」（MySQL/Nexus/Rustfs/NTP Server/nmap/yum 离线源）已统一迁到 `create` 命令组。
 
 `create cluster` 是入口，默认交互式先 plan 后 apply；加 `-y` 跳过确认；加 `--plan-only` 只 plan 不 apply。
 

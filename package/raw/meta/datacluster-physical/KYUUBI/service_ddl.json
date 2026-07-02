@@ -462,10 +462,10 @@
       "configType": "map",
       "required": true,
       "type": "input",
-      "value": "/usr/local/jdk1.8.0_333",
+      "value": "$JAVA_HOME17",
       "configurableInWizard": false,
       "hidden": false,
-      "defaultValue": "/usr/local/jdk1.8.0_333"
+      "defaultValue": "$JAVA_HOME17"
     },
     {
       "name": "kyuubiServerHeapSize",

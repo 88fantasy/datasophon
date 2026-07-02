@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 RUN apt-get update && apt-get install -y --no-install-recommends curl tar procps && rm -rf /var/lib/apt/lists/*
 COPY datasophon-worker/target/datasophon-worker.tar.gz /tmp/worker.tar.gz
 RUN mkdir -p /datasophon-worker && tar -xzf /tmp/worker.tar.gz -C /datasophon-worker --strip-components=1 && rm /tmp/worker.tar.gz

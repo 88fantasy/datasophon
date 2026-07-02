@@ -12,42 +12,41 @@ import (
 )
 
 const (
-	jdk17FolderPath     = "/usr/local"
-	jdk17PathName       = "jdk17"
-	jdk17ExtractDirName = "jdk-17.0.19+10"
-	jdk17TarX86         = "OpenJDK17U-jdk_x64_linux_hotspot_17.0.19_10.tar.gz"
-	jdk17TarArm         = "OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.19_10.tar.gz"
+	jdk21FolderPath     = "/usr/local"
+	jdk21PathName       = "jdk21"
+	jdk21ExtractDirName = "jdk-21.0.11+10"
+	jdk21TarX86         = "OpenJDK21U-jdk_x64_linux_hotspot_21.0.11_10.tar.gz"
+	jdk21TarArm         = "OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.11_10.tar.gz"
 )
 
-// InitJdk17 安装 Eclipse Temurin OpenJDK 17.0.19（K8s 场景遗留；
-// Datasophon Manager 平台自身运行时见 InitJdk21）。
-type InitJdk17 struct {
+// InitJdk21 安装 Eclipse Temurin OpenJDK 21.0.11（Datasophon 平台自身运行时，取代原 InitJdk17）。
+type InitJdk21 struct {
 	TaskBase
 	PackagePath string
 	InstallPath string
 }
 
-func (t *InitJdk17) Name() string { return "初始化jdk17" }
+func (t *InitJdk21) Name() string { return "初始化jdk21" }
 
-func (t *InitJdk17) Handle(client *ssh.Client, dryRun bool) error {
+func (t *InitJdk21) Handle(client *ssh.Client, dryRun bool) error {
 	return t.doRun(executor.NewSSHExecutor(client, dryRun))
 }
 
-func (t *InitJdk17) doRun(exec executor.Executor) error {
+func (t *InitJdk21) doRun(exec executor.Executor) error {
 	exec.ExecShell("source /etc/profile")
 
-	tarName := jdk17TarX86
+	tarName := jdk21TarX86
 	if exec.GetArch() == osinfo.ArchAarch64 {
-		tarName = jdk17TarArm
+		tarName = jdk21TarArm
 	}
 
-	javaBin := fmt.Sprintf("%s/%s/bin/java", jdk17FolderPath, jdk17PathName)
+	javaBin := fmt.Sprintf("%s/%s/bin/java", jdk21FolderPath, jdk21PathName)
 	if exec.Exists(javaBin).Success {
-		slog.Info("JDK17 已安装", "path", javaBin)
+		slog.Info("JDK21 已安装", "path", javaBin)
 		return nil
 	}
 
-	slog.Info("JDK17 未安装，开始安装")
+	slog.Info("JDK21 未安装，开始安装")
 	tarPath := fmt.Sprintf("%s/%s", t.PackagePath, tarName)
 	if err := DownloadFromRegistry(exec, t.EnableRegistry,
 		t.RegistryIP, t.RegistryPort, t.RegistryUsername, t.RegistryPassword,
@@ -56,21 +55,22 @@ func (t *InitJdk17) doRun(exec executor.Executor) error {
 	}
 
 	// 清理旧的环境变量设置
-	exec.ExecShell(`sed -i '/export JAVA17_HOME/d' /etc/profile`)
+	exec.ExecShell(`sed -i '/export JAVA_HOME/d' /etc/profile`)
 	exec.ExecShell(`sed -i '/export CLASSPATH/d' /etc/profile`)
-	exec.ExecShell(`sed -i '/export PATH=\$PATH:\$JAVA17_HOME/d' /etc/profile`)
+	exec.ExecShell(`sed -i '/export PATH=\$PATH:\$JAVA_HOME/d' /etc/profile`)
 	exec.ExecShell(`sed -i '/source \/etc\/profile/d' /root/.bash_profile`)
 	exec.ExecShell(`sed -i '/source \/etc\/profile/d' /root/.bashrc`)
 
 	// 解压到 installPath（与 docker/rustfs 等其他组件同处一个安装根目录），
-	// 再软链到版本无关的固定别名 jdk17FolderPath/jdk17PathName（与 tar 包内版本号解耦）
+	// 再软链到版本无关的固定别名 jdk21FolderPath/jdk21PathName（与 tar 包内版本号解耦）
 	exec.ExecShell(fmt.Sprintf("mkdir -p %s", t.InstallPath))
 	exec.ExecShell(fmt.Sprintf("tar -zxf %s -C %s", tarPath, t.InstallPath))
 	exec.ExecShell(fmt.Sprintf("rm -rf %s/%s && ln -s %s/%s %s/%s",
-		jdk17FolderPath, jdk17PathName, t.InstallPath, jdk17ExtractDirName, jdk17FolderPath, jdk17PathName))
+		jdk21FolderPath, jdk21PathName, t.InstallPath, jdk21ExtractDirName, jdk21FolderPath, jdk21PathName))
 
-	javaHome := fmt.Sprintf("%s/%s", jdk17FolderPath, jdk17PathName)
-	exec.ExecShell(fmt.Sprintf("echo 'export JAVA17_HOME=%s' >>/etc/profile", javaHome))
+	javaHome := fmt.Sprintf("%s/%s", jdk21FolderPath, jdk21PathName)
+	exec.ExecShell(fmt.Sprintf("echo 'export JAVA_HOME=%s' >>/etc/profile", javaHome))
+	exec.ExecShell(`echo 'export PATH=$PATH:$JAVA_HOME/bin' >>/etc/profile`)
 	exec.ExecShell(`echo 'source /etc/profile' >>~/.bash_profile`)
 	exec.ExecShell(`echo 'source /etc/profile' >>~/.bashrc`)
 
@@ -78,14 +78,14 @@ func (t *InitJdk17) doRun(exec executor.Executor) error {
 	exec.ExecShell("source /root/.bashrc")
 	exec.ExecShell("source /etc/profile")
 
-	slog.Info("JDK17 安装完成")
+	slog.Info("JDK21 安装完成")
 	return nil
 }
 
-func (t *InitJdk17) Command(dryRun *bool) *cobra.Command {
+func (t *InitJdk21) Command(dryRun *bool) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "jdk17",
-		Short: "安装 OpenJDK 17",
+		Use:   "jdk21",
+		Short: "安装 OpenJDK 21",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runLocal(*dryRun, t.doRun)
 		},

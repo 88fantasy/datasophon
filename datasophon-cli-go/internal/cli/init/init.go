@@ -35,6 +35,7 @@ func NewInitCommand(dryRun *bool) *cobra.Command {
 
 	// JDK
 	cmd.AddCommand((&InitJdk8{}).Command(dryRun))
+	cmd.AddCommand((&InitJdk21{}).Command(dryRun))
 
 	// NTP 时钟同步（init ntpserver 已提取为 create ntp-server）
 	cmd.AddCommand((&InitNtpSlave{}).Command(dryRun))

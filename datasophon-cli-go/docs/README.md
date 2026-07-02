@@ -31,10 +31,10 @@ datasophon-cli [--dry-run]
 │   ├── ntp-server                  # 安装并配置 chrony NTP 服务端
 │   ├── nmap-server                 # 在指定节点安装 nmap
 │   └── yum-server                  # 配置 httpd/apache2 离线包源
-├── init                            # 单步节点初始化（27 条子命令）
+├── init                            # 单步节点初始化（28 条子命令）
 │   ├── system/   firewall  selinux  swap  library  osSafeConf  system-conf  hadoop_user  bash  hugePage
 │   ├── network/  hostname  allHost  ntpslave  ssh
-│   ├── packages/ bin_packages  tar  jdk8  jdk17
+│   ├── packages/ bin_packages  tar  jdk8  jdk17  jdk21
 │   ├── repo/     offlineSlave  registryDecode
 │   ├── db/       mysql_app_db
 │   └── k8s/      docker  helm  helmify  kubectl  k8sBaseServices  k8sRegistryConf  kuboard

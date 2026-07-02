@@ -1,6 +1,6 @@
 # init — 单步初始化命令组
 
-`init` 命令组包含 **27 条**独立的初始化子命令，每条对应集群初始化流程中的一个步骤。通常由 `create cluster`（initALL DAG）自动调用；也可单独执行用于故障排查或补跑。
+`init` 命令组包含 **28 条**独立的初始化子命令，每条对应集群初始化流程中的一个步骤。通常由 `create cluster`（initALL DAG）自动调用；也可单独执行用于故障排查或补跑。
 
 `init` 子命令的设计语义是"在已登录的当前节点上单步本地初始化"。涉及"指定某个特定节点远程安装"的命令（如 MySQL / Nexus / Rustfs / NTP Server / nmap / yum 离线源）已统一迁移到 [`create` 命令组](../create/README.md)，并支持配置文件 / 手动双模式入口。
 
@@ -33,14 +33,15 @@
 
 > NTP 服务端与 nmap 安装请使用 [`create ntp-server`](../create/ntp-server.md) / [`create nmap-server`](../create/nmap-server.md)。
 
-### packages — 基础软件包（4 条）
+### packages — 基础软件包（5 条）
 
 |                     命令                     |                  说明                  |
 |--------------------------------------------|--------------------------------------|
 | [bin_packages](./packages/bin_packages.md) | 分发 datasophon-init 二进制目录             |
 | [tar](./packages/tar.md)                   | 确认 tar 命令存在                          |
-| [jdk8](./packages/jdk8.md)                 | 安装 JDK 8（`/usr/local/jdk1.8.0_333/`） |
-| [jdk17](./packages/jdk17.md)               | 安装 JDK 17（`/usr/local/jdk-17.0.1/`）  |
+| [jdk8](./packages/jdk8.md)                 | 安装 JDK 8（`/usr/local/jdk8/`） |
+| [jdk17](./packages/jdk17.md)               | 安装 JDK 17（`/usr/local/jdk17/`，K8s 场景遗留） |
+| [jdk21](./packages/jdk21.md)               | 安装 JDK 21（`/usr/local/jdk21/`，Datasophon Manager 平台运行时） |
 
 ### repo — 制品库与离线源（2 条）
 

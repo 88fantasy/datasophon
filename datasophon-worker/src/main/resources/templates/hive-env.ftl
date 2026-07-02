@@ -26,6 +26,8 @@ if [ -z "${r"${HIVE_HOME"}}" ]; then
   export HIVE_HOME="$(cd "`dirname "$0"`"/..; pwd)"
 fi
 
+export JAVA_HOME=$JAVA_HOME17
+
 # add hive depends tez support
 export TEZ_JARS="/data/install_datasophon/tez"
 if [ -d "$TEZ_JARS" ]; then

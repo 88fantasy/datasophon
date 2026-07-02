@@ -73,7 +73,7 @@ src/main/resources/
 
 ```
 docker/
-├── Dockerfile                               # 镜像构建入口(基于 eclipse-temurin:17-jre-ubi9-minimal)
+├── Dockerfile                               # 镜像构建入口(基于 eclipse-temurin:21-jre-ubi9-minimal)
 ├── build.sh                                 # 调 docker buildx,支持 --arch all/amd64/arm64、--proxy
 └── build.bat                                # Windows 镜像构建
 
@@ -113,6 +113,6 @@ assemble/
 
 ### 5. 部署形态
 
-- 镜像:`eclipse-temurin:17-jre-ubi9-minimal`,`AGENT_HOME=/opt/datasophon-k8s-agent`,`ENTRYPOINT=["bin/datasophon-k8sagent.sh","start"]`,暴露 `12552`(HTTP)与 `30105`(JDWP 调试)。
+- 镜像:`eclipse-temurin:21-jre-ubi9-minimal`,`AGENT_HOME=/opt/datasophon-k8s-agent`,`ENTRYPOINT=["bin/datasophon-k8sagent.sh","start"]`,暴露 `12552`(HTTP)与 `30105`(JDWP 调试)。
 - K8s:Helm 默认 `Deployment` + `Service(NodePort)`,挂 `ConfigMap` 提供 `application.yaml` 与 `common.properties`;探针路径 `/api/v1/health`、`/api/v1/ready`。**实际投产时**应:① 关闭 `image.pullPolicy: Always`、固定 `tag`;② 替换为 `ClusterIP` + Ingress,避免在公网暴露签名接口;③ 通过 Secret 注入公钥,而不是 ConfigMap。
 - 部署完成后,Master 侧 `datasophon-api` 通过 `K8SDAGExecutor` 在 K8s 集群编排时,会向 Agent 发起签名请求;Agent 是 "K8s 内部远端执行" 的最小化鉴权边界,不必打通业务网络。

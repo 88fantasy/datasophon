@@ -41,8 +41,8 @@ var InitALLRegistry = []Step{
 	{ID: "init-jdk8", Name: "安装 JDK 8",
 		Build: buildJdk8(allNodes)},
 
-	{ID: "init-jdk17", Name: "安装 JDK 17",
-		Build: buildJdk17(allNodes)},
+	{ID: "init-jdk21", Name: "安装 JDK 21",
+		Build: buildJdk21(allNodes)},
 
 	{ID: "init-hadoopuser", Name: "创建 hadoop 用户和组",
 		Scope: ScopeHadoopOnly,

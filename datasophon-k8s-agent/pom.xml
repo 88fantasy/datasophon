@@ -11,7 +11,7 @@
     <artifactId>datasophon-k8s-agent</artifactId>
 
     <properties>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <skipDocker>true</skipDocker>
     </properties>
 

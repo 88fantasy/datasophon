@@ -21,6 +21,8 @@
 ## see fe/src/org/apache/doris/common/Config.java
 #####################################################################
 
+export JAVA_HOME=$JAVA_HOME17
+
 # the output dir of stderr and stdout
 LOG_DIR = ${r"${DORIS_HOME}/log"}
 
