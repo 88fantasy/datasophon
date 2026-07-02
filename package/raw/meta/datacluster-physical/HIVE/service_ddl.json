@@ -19,6 +19,7 @@
       "logFile": "logs/hivemetastore.out",
       "serverPorts": [],
       "jmxPort": 12000,
+      "jmxPortParam": "hiveMetaStoreJmxPort",
       "runAs": {
         "user": "hive",
         "group": "hadoop"
@@ -118,6 +119,7 @@
       "logFile": "logs/hiveserver2.out",
       "serverPorts": [],
       "jmxPort": 11000,
+      "jmxPortParam": "hiveServer2JmxPort",
       "runAs": {
         "user": "hive",
         "group": "hadoop"
@@ -272,6 +274,8 @@
         "includeParams": [
           "hiveHeapSize",
           "hadoopHome",
+          "hiveServer2JmxPort",
+          "hiveMetaStoreJmxPort",
           "custom.hive.env.sh"
         ]
       },
@@ -705,6 +709,28 @@
       "defaultValue": "10000",
       "configurableInWizard": true,
       "register": false
+    },
+    {
+      "name": "hiveServer2JmxPort",
+      "label": "HiveServer2 JMX监控端口",
+      "description": "HiveServer2 Prometheus JMX exporter 监听端口",
+      "required": true,
+      "type": "input",
+      "value": "11000",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "11000"
+    },
+    {
+      "name": "hiveMetaStoreJmxPort",
+      "label": "HiveMetaStore JMX监控端口",
+      "description": "HiveMetaStore Prometheus JMX exporter 监听端口",
+      "required": true,
+      "type": "input",
+      "value": "12000",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "12000"
     },
     {
       "enabled": true,

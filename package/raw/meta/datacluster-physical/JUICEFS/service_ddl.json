@@ -26,6 +26,7 @@
       "cardinality": "1+",
       "logFile": "logs/appweb",
       "jmxPort": 9567,
+      "jmxPortParam": "juicefsJmxPort",
       "startRunner": {
         "timeout": "60",
         "program": "bin/control_juicefs.sh",
@@ -85,12 +86,24 @@
         "templateName": "juicefs-env.ftl",
         "includeParams": [
           "juicefsMeta",
-          "juicefsMounts"
+          "juicefsMounts",
+          "juicefsJmxPort"
         ]
       }
     ]
   },
   "parameters": [
+    {
+      "name": "juicefsJmxPort",
+      "label": "JuiceFS 监控端口",
+      "description": "JuiceFS mount --metrics Prometheus 监听端口",
+      "required": true,
+      "type": "input",
+      "value": "9567",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "9567"
+    },
     {
       "name": "juicefsMeta",
       "label": "元数据地址",

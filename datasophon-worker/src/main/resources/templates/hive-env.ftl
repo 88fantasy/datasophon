@@ -54,10 +54,10 @@ fi
 # fi
 SH_DIR=`dirname $0`
 if [ "$SERVICE" = "hiveserver2" ]; then
-   export HADOOP_OPTS="-javaagent:$SH_DIR/../jmx/jmx_prometheus_javaagent-0.16.1.jar=11000:$SH_DIR/../jmx/hiveserver2.yaml"
+   export HADOOP_OPTS="-javaagent:$SH_DIR/../jmx/jmx_prometheus_javaagent-0.16.1.jar=${hiveServer2JmxPort}:$SH_DIR/../jmx/hiveserver2.yaml"
 fi
 if [ "$SERVICE" = "metastore" ]; then
-   export HADOOP_OPTS="-javaagent:$SH_DIR/../jmx/jmx_prometheus_javaagent-0.16.1.jar=12000:$SH_DIR/../jmx/metastore.yaml"
+   export HADOOP_OPTS="-javaagent:$SH_DIR/../jmx/jmx_prometheus_javaagent-0.16.1.jar=${hiveMetaStoreJmxPort}:$SH_DIR/../jmx/metastore.yaml"
 fi
 
 # The heap size of the jvm stared by hive shell script can be controlled via:

@@ -15,6 +15,7 @@
       "cardinality": "1+",
       "logFile": "logs/kafkaServer.out",
       "jmxPort": 9991,
+      "jmxPortParam": "kafkaJmxPort",
       "startRunner": {
         "timeout": "60",
         "program": "bin/kafka-server-start.sh",
@@ -84,7 +85,8 @@
         "outputDirectory": "bin",
         "templateName": "kafka-server-start.ftl",
         "includeParams": [
-          "kafkaHeapSize"
+          "kafkaHeapSize",
+          "kafkaJmxPort"
         ]
       },
       {
@@ -123,6 +125,17 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": ""
+    },
+    {
+      "name": "kafkaJmxPort",
+      "label": "Kafka JMX监控端口",
+      "description": "Kafka Broker Prometheus JMX exporter 监听端口",
+      "required": true,
+      "type": "input",
+      "value": "9991",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "9991"
     },
     {
       "name": "kafkaHeapSize",

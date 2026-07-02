@@ -30,6 +30,7 @@
       "sortNum": 1,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-journalnode-${host}.log",
       "jmxPort": 27003,
+      "jmxPortParam": "journalnodeJmxPort",
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -94,6 +95,7 @@
       "sortNum": 2,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-namenode-${host}.log",
       "jmxPort": "27001",
+      "jmxPortParam": "namenodeJmxPort",
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -171,6 +173,7 @@
       "sortNum": 5,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-namenode-${host}.log",
       "jmxPort": "27002",
+      "jmxPortParam": "datanodeJmxPort",
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -235,6 +238,7 @@
       "sortNum": 3,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-zkfc-${host}.log",
       "jmxPort": 27004,
+      "jmxPortParam": "zkfcJmxPort",
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",
@@ -385,6 +389,10 @@
           "hadoopHome",
           "datanodeHeapSize",
           "namenodeHeapSize",
+          "namenodeJmxPort",
+          "datanodeJmxPort",
+          "journalnodeJmxPort",
+          "zkfcJmxPort",
           "custom.hadoop.env.sh"
         ]
       },
@@ -721,6 +729,50 @@
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": ""
+    },
+    {
+      "name": "namenodeJmxPort",
+      "label": "NameNode JMX监控端口",
+      "description": "NameNode Prometheus JMX exporter 监听端口",
+      "required": true,
+      "type": "input",
+      "value": "27001",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "27001"
+    },
+    {
+      "name": "datanodeJmxPort",
+      "label": "DataNode JMX监控端口",
+      "description": "DataNode Prometheus JMX exporter 监听端口",
+      "required": true,
+      "type": "input",
+      "value": "27002",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "27002"
+    },
+    {
+      "name": "journalnodeJmxPort",
+      "label": "JournalNode JMX监控端口",
+      "description": "JournalNode Prometheus JMX exporter 监听端口",
+      "required": true,
+      "type": "input",
+      "value": "27003",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "27003"
+    },
+    {
+      "name": "zkfcJmxPort",
+      "label": "ZKFC JMX监控端口",
+      "description": "ZKFC Prometheus JMX exporter 监听端口",
+      "required": true,
+      "type": "input",
+      "value": "27004",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "27004"
     },
     {
       "name": "namenodeHeapSize",

@@ -18,7 +18,7 @@ receivers:
         - job_name: otelcol-self
           scrape_interval: 30s
           static_configs:
-            - targets: ['127.0.0.1:8888']
+            - targets: ['127.0.0.1:${otelSelfMetricsPort}']
               labels:
                 host: ${ip}
 <#if (localScrapeJobsYaml!"")?has_content>
@@ -100,7 +100,7 @@ service:
             exporter:
               prometheus:
                 host: '0.0.0.0'
-                port: 8888
+                port: ${otelSelfMetricsPort}
   pipelines:
     metrics:
       receivers: [otlp, prometheus/self<#if (localScrapeJobsYaml!"")?has_content>, prometheus/local</#if>]
