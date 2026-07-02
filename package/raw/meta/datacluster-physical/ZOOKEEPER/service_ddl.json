@@ -13,6 +13,7 @@
       "cardinality": "1+",
       "logFile": "logs/zookeeper-root-server-${host}.out",
       "jmxPort": 7000,
+      "jmxPortParam": "metricsProvider.httpPort",
       "startRunner": {
         "timeout": "60",
         "program": "bin/zkServer.sh",
@@ -58,6 +59,7 @@
           "initLimit",
           "syncLimit",
           "metricsProvider.className",
+          "metricsProvider.httpPort",
           "server.1",
           "server.2",
           "server.3",
@@ -274,6 +276,17 @@
       "configurableInWizard": true,
       "hidden": true,
       "defaultValue": "org.apache.zookeeper.metrics.prometheus.PrometheusMetricsProvider"
+    },
+    {
+      "name": "metricsProvider.httpPort",
+      "label": "监控端口",
+      "description": "ZooKeeper 原生 PrometheusMetricsProvider 指标暴露端口",
+      "required": false,
+      "type": "input",
+      "value": "7000",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "7000"
     },
     {
       "name": "server.1",
