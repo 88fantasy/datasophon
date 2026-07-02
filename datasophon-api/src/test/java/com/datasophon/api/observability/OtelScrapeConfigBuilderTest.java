@@ -23,14 +23,22 @@
 package com.datasophon.api.observability;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datasophon.api.load.ServiceRoleJmxMap;
+import com.datasophon.api.load.ServiceRoleMap;
 import com.datasophon.api.service.ClusterInfoService;
+import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
+import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.dao.entity.ClusterInfoEntity;
+import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.enums.NeedRestart;
 import com.datasophon.dao.enums.ServiceRoleState;
 
 import java.util.List;
@@ -41,8 +49,10 @@ class OtelScrapeConfigBuilderTest {
     
     private final ClusterServiceRoleInstanceService roleService = mock(ClusterServiceRoleInstanceService.class);
     private final ClusterInfoService clusterInfoService = mock(ClusterInfoService.class);
+    private final ClusterServiceRoleGroupConfigService roleGroupConfigService =
+            mock(ClusterServiceRoleGroupConfigService.class);
     private final OtelScrapeConfigBuilder builder =
-            new OtelScrapeConfigBuilder(roleService, clusterInfoService);
+            new OtelScrapeConfigBuilder(roleService, clusterInfoService, roleGroupConfigService);
     
     @Test
     void buildsLocalScrapeJobsForRunningRoles() {
@@ -122,6 +132,99 @@ class OtelScrapeConfigBuilderTest {
         assertThat(yaml).isEmpty();
     }
     
+    @Test
+    void livePortOverridesStaticJmxPortWhenConfiguredAndRestarted() {
+        givenClusterFrame("FRAME_E");
+        ServiceRoleJmxMap.put("FRAME_E_DORIS_DorisFE", "18030");
+        ServiceRoleJmxMap.put("FRAME_E_NACOS_NacosServer", "8848");
+        ServiceRoleMap.put("FRAME_E_DORIS_DorisFE", roleMeta("http_port"));
+        ServiceRoleMap.put("FRAME_E_NACOS_NacosServer", roleMeta("nacosServerPort"));
+        when(roleGroupConfigService.getConfigByRoleGroupId(101))
+                .thenReturn(groupConfig("[{\"name\":\"http_port\",\"value\":\"28030\"}]"));
+        when(roleGroupConfigService.getConfigByRoleGroupId(102))
+                .thenReturn(groupConfig("[{\"name\":\"nacosServerPort\",\"value\":\"18848\"}]"));
+        when(roleService.getServiceRoleListByHostnameAndClusterId("worker-5", 11))
+                .thenReturn(List.of(
+                        role("DORIS", "DorisFE", ServiceRoleState.RUNNING, 101, NeedRestart.NO),
+                        role("NACOS", "NacosServer", ServiceRoleState.RUNNING, 102, NeedRestart.NO)));
+        
+        String yaml = builder.build(11, "worker-5");
+        
+        assertThat(yaml).contains("        - targets: ['127.0.0.1:28030']");
+        assertThat(yaml).contains("          labels: {job: 'DorisFE', instance: 'worker-5:28030', group: 'fe'}");
+        assertThat(yaml).contains("        - targets: ['127.0.0.1:18848']");
+        assertThat(yaml).contains("          labels: {job: 'NacosServer', instance: 'worker-5:18848'}");
+    }
+    
+    @Test
+    void livePortIgnoredWhilePendingRestart() {
+        givenClusterFrame("FRAME_F");
+        ServiceRoleJmxMap.put("FRAME_F_DORIS_DorisFE", "18030");
+        ServiceRoleMap.put("FRAME_F_DORIS_DorisFE", roleMeta("http_port"));
+        when(roleGroupConfigService.getConfigByRoleGroupId(103))
+                .thenReturn(groupConfig("[{\"name\":\"http_port\",\"value\":\"28030\"}]"));
+        when(roleService.getServiceRoleListByHostnameAndClusterId("worker-6", 12))
+                .thenReturn(List.of(role("DORIS", "DorisFE", ServiceRoleState.RUNNING, 103, NeedRestart.YES)));
+        
+        String yaml = builder.build(12, "worker-6");
+        
+        assertThat(yaml).contains("        - targets: ['127.0.0.1:18030']");
+    }
+    
+    @Test
+    void livePortFallsBackWhenNeverConfigured() {
+        givenClusterFrame("FRAME_G");
+        ServiceRoleJmxMap.put("FRAME_G_DORIS_DorisFE", "18030");
+        ServiceRoleMap.put("FRAME_G_DORIS_DorisFE", roleMeta("http_port"));
+        when(roleGroupConfigService.getConfigByRoleGroupId(104)).thenReturn(null);
+        when(roleService.getServiceRoleListByHostnameAndClusterId("worker-7", 13))
+                .thenReturn(List.of(role("DORIS", "DorisFE", ServiceRoleState.RUNNING, 104, NeedRestart.NO)));
+        
+        String yaml = builder.build(13, "worker-7");
+        
+        assertThat(yaml).contains("        - targets: ['127.0.0.1:18030']");
+    }
+    
+    @Test
+    void livePortHandlesNumericConfigValue() {
+        givenClusterFrame("FRAME_H");
+        ServiceRoleJmxMap.put("FRAME_H_DORIS_DorisFE", "18030");
+        ServiceRoleMap.put("FRAME_H_DORIS_DorisFE", roleMeta("http_port"));
+        when(roleGroupConfigService.getConfigByRoleGroupId(105))
+                .thenReturn(groupConfig("[{\"name\":\"http_port\",\"value\":28030}]"));
+        when(roleService.getServiceRoleListByHostnameAndClusterId("worker-8", 14))
+                .thenReturn(List.of(role("DORIS", "DorisFE", ServiceRoleState.RUNNING, 105, NeedRestart.NO)));
+        
+        String yaml = builder.build(14, "worker-8");
+        
+        assertThat(yaml).contains("        - targets: ['127.0.0.1:28030']");
+    }
+    
+    @Test
+    void rolesWithoutJmxPortParamNeverQueryLiveConfig() {
+        givenClusterFrame("FRAME_I");
+        ServiceRoleJmxMap.put("FRAME_I_HDFS_NameNode", "9101");
+        when(roleService.getServiceRoleListByHostnameAndClusterId("worker-9", 15))
+                .thenReturn(List.of(role("HDFS", "NameNode", ServiceRoleState.RUNNING, 106, NeedRestart.NO)));
+        
+        String yaml = builder.build(15, "worker-9");
+        
+        assertThat(yaml).contains("        - targets: ['127.0.0.1:9101']");
+        verify(roleGroupConfigService, never()).getConfigByRoleGroupId(any());
+    }
+    
+    private static ServiceRoleInfo roleMeta(String jmxPortParam) {
+        ServiceRoleInfo meta = new ServiceRoleInfo();
+        meta.setJmxPortParam(jmxPortParam);
+        return meta;
+    }
+    
+    private static ClusterServiceRoleGroupConfig groupConfig(String configJson) {
+        ClusterServiceRoleGroupConfig config = new ClusterServiceRoleGroupConfig();
+        config.setConfigJson(configJson);
+        return config;
+    }
+    
     private void givenClusterFrame(String frame) {
         ClusterInfoEntity cluster = new ClusterInfoEntity();
         cluster.setClusterFrame(frame);
@@ -133,6 +236,14 @@ class OtelScrapeConfigBuilderTest {
         role.setServiceName(serviceName);
         role.setServiceRoleName(roleName);
         role.setServiceRoleState(state);
+        return role;
+    }
+    
+    private static ClusterServiceRoleInstanceEntity role(String serviceName, String roleName, ServiceRoleState state,
+                                                         Integer roleGroupId, NeedRestart needRestart) {
+        ClusterServiceRoleInstanceEntity role = role(serviceName, roleName, state);
+        role.setRoleGroupId(roleGroupId);
+        role.setNeedRestart(needRestart);
         return role;
     }
 }

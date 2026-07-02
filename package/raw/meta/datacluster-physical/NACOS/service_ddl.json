@@ -13,6 +13,7 @@
       "cardinality": "1",
       "logFile": "logs/start.out",
       "jmxPort": 8848,
+      "jmxPortParam": "nacosServerPort",
       "startRunner": {
         "timeout": "60",
         "program": "bin/startup.sh",

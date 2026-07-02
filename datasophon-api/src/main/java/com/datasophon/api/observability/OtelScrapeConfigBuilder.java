@@ -23,11 +23,17 @@
 package com.datasophon.api.observability;
 
 import com.datasophon.api.load.ServiceRoleJmxMap;
+import com.datasophon.api.load.ServiceRoleMap;
 import com.datasophon.api.service.ClusterInfoService;
+import com.datasophon.api.service.ClusterServiceRoleGroupConfigService;
 import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.common.Constants;
+import com.datasophon.common.model.ServiceConfig;
+import com.datasophon.common.model.ServiceRoleInfo;
 import com.datasophon.dao.entity.ClusterInfoEntity;
+import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
+import com.datasophon.dao.enums.NeedRestart;
 import com.datasophon.dao.enums.ServiceRoleState;
 
 import org.apache.commons.lang3.StringUtils;
@@ -36,10 +42,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import com.alibaba.fastjson2.JSON;
 
 @Component
 public class OtelScrapeConfigBuilder {
+    
+    private static final Logger logger = LoggerFactory.getLogger(OtelScrapeConfigBuilder.class);
     
     private static final String DEFAULT_METRICS_PATH = "/metrics";
     private static final String DORIS_FE = "DorisFE";
@@ -59,11 +71,14 @@ public class OtelScrapeConfigBuilder {
     
     private final ClusterServiceRoleInstanceService roleService;
     private final ClusterInfoService clusterInfoService;
+    private final ClusterServiceRoleGroupConfigService roleGroupConfigService;
     
     public OtelScrapeConfigBuilder(ClusterServiceRoleInstanceService roleService,
-                                   ClusterInfoService clusterInfoService) {
+                                   ClusterInfoService clusterInfoService,
+                                   ClusterServiceRoleGroupConfigService roleGroupConfigService) {
         this.roleService = roleService;
         this.clusterInfoService = clusterInfoService;
+        this.roleGroupConfigService = roleGroupConfigService;
     }
     
     public String build(Integer clusterId, String hostname) {
@@ -88,13 +103,56 @@ public class OtelScrapeConfigBuilder {
         return yaml.toString();
     }
     
-    private static String port(String clusterFrame, ClusterServiceRoleInstanceEntity role) {
+    private String port(String clusterFrame, ClusterServiceRoleInstanceEntity role) {
         if (StringUtils.isAnyBlank(clusterFrame, role.getServiceName(), role.getServiceRoleName())) {
             return null;
         }
         String key = clusterFrame + Constants.UNDERLINE + role.getServiceName()
                 + Constants.UNDERLINE + role.getServiceRoleName();
+        String livePort = livePortFromConfig(key, role);
+        if (StringUtils.isNotBlank(livePort)) {
+            return livePort;
+        }
         return ServiceRoleJmxMap.get(key);
+    }
+    
+    /**
+     * 部分角色的监控端口(jmxPort)与某个用户可在 Web UI 配置的业务参数复用同一端口(如 Doris FE 的
+     * http_port)。若用户改了该参数并重启角色，实际监听端口会变，但 ddl 里的 jmxPort 是启动时加载的静态值，
+     * 不会跟着变。这里优先读该角色当前实际生效的配置值；任何一步读不到都返回 null，由调用方退回静态默认值，
+     * 保证行为不会比现状更差。
+     */
+    private String livePortFromConfig(String key, ClusterServiceRoleInstanceEntity role) {
+        ServiceRoleInfo meta = ServiceRoleMap.get(key);
+        if (meta == null || StringUtils.isBlank(meta.getJmxPortParam())) {
+            return null;
+        }
+        if (NeedRestart.YES.equals(role.getNeedRestart())) {
+            // 配置已保存但角色尚未重启生效，此时进程仍监听旧端口，不能采纳"待生效"的新值。
+            return null;
+        }
+        Integer roleGroupId = role.getRoleGroupId();
+        if (roleGroupId == null) {
+            return null;
+        }
+        ClusterServiceRoleGroupConfig config = roleGroupConfigService.getConfigByRoleGroupId(roleGroupId);
+        if (config == null || StringUtils.isBlank(config.getConfigJson())) {
+            return null;
+        }
+        try {
+            List<ServiceConfig> configs = JSON.parseArray(config.getConfigJson(), ServiceConfig.class);
+            for (ServiceConfig serviceConfig : configs) {
+                if (meta.getJmxPortParam().equals(serviceConfig.getName()) && serviceConfig.getValue() != null) {
+                    String value = String.valueOf(serviceConfig.getValue()).trim();
+                    if (StringUtils.isNotBlank(value)) {
+                        return value;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("解析角色 {} 的实时配置端口失败，退回静态默认值", key, e);
+        }
+        return null;
     }
     
     private static String path(String roleName) {
