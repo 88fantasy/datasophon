@@ -54,7 +54,7 @@
           "action": "append_line",
           "params": {
             "line": 19,
-            "text": "export JAVA_HOME=/usr/local/jdk8",
+            "text": "export JAVA_HOME=$JAVA_HOME17",
             "source": "bin/config.sh"
           }
         },
@@ -137,7 +137,7 @@
           "action": "append_line",
           "params": {
             "line": 19,
-            "text": "export JAVA_HOME=/usr/local/jdk8",
+            "text": "export JAVA_HOME=$JAVA_HOME17",
             "source": "bin/config.sh"
           }
         },

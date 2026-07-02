@@ -13,7 +13,7 @@ export HDFS_JOURNALNODE_USER=hdfs
 export HDFS_ZKFC_USER=hdfs
 export YARN_RESOURCEMANAGER_USER=yarn
 export YARN_NODEMANAGER_USER=yarn
-export JAVA_HOME=/usr/local/jdk8
+export JAVA_HOME=$JAVA_HOME17
 <#list itemList as item>
 export ${item.name}=${item.value}
 </#list>

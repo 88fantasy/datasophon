@@ -12,6 +12,17 @@
       "roleType": "master",
       "cardinality": "1",
       "logFile": "logs/datart-server.log",
+      "hooks": [
+        {
+          "type": "POST_INSTALL",
+          "action": "append_line",
+          "params": {
+            "line": 2,
+            "text": "export JAVA_HOME=$JAVA_HOME8",
+            "source": "bin/datart-server.sh"
+          }
+        }
+      ],
       "startRunner": {
         "timeout": "60",
         "program": "bin/datart-server.sh",

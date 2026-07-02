@@ -1,4 +1,6 @@
-export JAVA_HOME=/usr/local/jdk21
+export JAVA_HOME8=/usr/local/jdk8
+export JAVA_HOME17=/usr/local/jdk17
+export JAVA_HOME21=/usr/local/jdk21
 
 export KYUUBI_HOME=/data/install_datasophon/kyuubi
 export SPARK_HOME=/data/install_datasophon/spark3

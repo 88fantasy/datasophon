@@ -31,6 +31,8 @@ command=worker
 
 echo "Begin $startStop $command......"
 source /etc/profile
+# Worker 进程本身编译为 JDK21 字节码，显式声明自身依赖，不依赖任何全局默认 JAVA_HOME
+export JAVA_HOME=$JAVA_HOME21
 
 SCRIPT="$0"
 # SCRIPT may be an arbitrarily deep series of symlinks. Loop until we have the concrete path.
