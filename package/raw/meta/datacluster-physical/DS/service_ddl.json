@@ -194,8 +194,8 @@
       ]
     },
     {
-      "name": "UAlertServer",
-      "label": "UAlertServer",
+      "name": "AlertServer",
+      "label": "AlertServer",
       "sortNum": 3,
       "roleType": "master",
       "cardinality": "1",
