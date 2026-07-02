@@ -462,10 +462,10 @@
       "configType": "map",
       "required": true,
       "type": "input",
-      "value": "/usr/local/jdk1.8.0_333",
+      "value": "/usr/local/jdk8",
       "configurableInWizard": false,
       "hidden": false,
-      "defaultValue": "/usr/local/jdk1.8.0_333"
+      "defaultValue": "/usr/local/jdk8"
     },
     {
       "name": "kyuubiServerHeapSize",

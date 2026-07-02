@@ -69,6 +69,10 @@ curl -L --max-time 3600 -C - \
 
 ALERTMANAGER、DORIS、PROMETHEUS 各有 x86_64 和 aarch64 两个包，包内顶层目录名含架构后缀（如 `alertmanager-0.32.1.linux-amd64`）。Worker 安装时使用 `tar --strip-components=1` 剥除顶层目录，因此 `decompressPackageName` 使用归一化名称（如 `alertmanager-0.32.1`），与实际架构无关。
 
+## JDK 包（JDK8 / JDK17 / JDK21）
+
+三个 JDK 均来自 Eclipse Temurin（Adoptium），各有 x86_64 和 aarch64 两个包。与上述服务型组件不同，JDK 不对应 `meta/datacluster/<SERVICE>/service_ddl.json`，不走 Worker 的服务安装流程，而是由 `datasophon-cli-go`（`internal/cli/init/jdk8.go` / `jdk17.go` / `jdk21.go`）通过 `init jdk8` / `init jdk17` / `init jdk21` 子命令直接解压安装；CLI 内置固定的 tar 文件名与本清单的 `packageName` 保持一致。加 `--enableRegistry` 时从 Nexus（`repository/raw/packages/<packageName>`）下载，需先用 `datasophon-cli upload registry` 把 `package/raw/packages/` 下的 JDK 包上传。升级 JDK 版本时，需同步修改本清单条目与 CLI 源码中的版本号常量。
+
 ## 更新清单
 
 如需新增或修改组件版本：

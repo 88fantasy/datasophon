@@ -37,7 +37,7 @@ func buildTar(sel nodeSelector) BuildFunc {
 // buildJdk8 安装 JDK 8（worker 节点）。
 func buildJdk8(sel nodeSelector) BuildFunc {
 	return func(ctx *BuildContext) ([]Action, error) {
-		t := &initcmd.InitJdk8{PackagePath: ctx.PackagesPath}
+		t := &initcmd.InitJdk8{PackagePath: ctx.PackagesPath, InstallPath: ctx.InstallPath}
 		applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 		nodes := sel(ctx)
 		workers := workerHostSlice(nodes, ctx.LocalIP)
@@ -45,10 +45,10 @@ func buildJdk8(sel nodeSelector) BuildFunc {
 	}
 }
 
-// buildJdk17 安装 JDK 17（worker 节点）。
-func buildJdk17(sel nodeSelector) BuildFunc {
+// buildJdk21 安装 JDK 21（worker 节点，平台自身运行时）。
+func buildJdk21(sel nodeSelector) BuildFunc {
 	return func(ctx *BuildContext) ([]Action, error) {
-		t := &initcmd.InitJdk17{PackagePath: ctx.PackagesPath}
+		t := &initcmd.InitJdk21{PackagePath: ctx.PackagesPath, InstallPath: ctx.InstallPath}
 		applyRegistry(&t.TaskBase, &ctx.Cfg.Registry)
 		nodes := sel(ctx)
 		workers := workerHostSlice(nodes, ctx.LocalIP)

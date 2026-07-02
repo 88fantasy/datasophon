@@ -117,8 +117,13 @@ public final class Constants {
     public static final String CLUSTER_FRAME = "cluster_frame";
     public static final String VARIABLE_NAME = "variable_name";
     public static final String SERVICE_ROLE_INSTANCE_ID = "service_role_instance_id";
-    public static final String X86JDK = "jdk-8u333-linux-x64.tar.gz";
-    public static final String ARMJDK = "jdk-8u333-linux-aarch64.tar.gz";
+    public static final String X86JDK = "OpenJDK8U-jdk_x64_linux_hotspot_8u492b09.tar.gz";
+    public static final String ARMJDK = "OpenJDK8U-jdk_aarch64_linux_hotspot_8u492b09.tar.gz";
+    // Temurin JDK8 tar 包实际解压出的顶层目录名，解压到 INSTALL_PATH 后
+    // 软链到 JDK8_HOME_ALIAS，hadoop-env.ftl / dolphinscheduler_env.ftl 等模板
+    // 才能按固定路径找到 JAVA_HOME。
+    public static final String JDK8_EXTRACT_DIR_NAME = "jdk8u492-b09";
+    public static final String JDK8_HOME_ALIAS = "/usr/local/jdk8";
     public static final String COMMAND_STATE = "command_state";
     public static final String ROLE_GROUP_ID = "role_group_id";
     public static final String ROLE_GROUP_TYPE = "role_group_type";

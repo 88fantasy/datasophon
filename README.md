@@ -165,9 +165,9 @@ tar -xzf datasophon-api/target/datasophon-manager-3.0-SNAPSHOT.tar.gz
 # 必需环境变量
 export DDH_HOME=/opt/datasophon
 
-# 单步操作:防火墙关闭、JDK 17 安装、MySQL 启动 …
+# 单步操作:防火墙关闭、JDK 21 安装、MySQL 启动 …
 datasophon-cli init firewall
-datasophon-cli init jdk17
+datasophon-cli init jdk21
 datasophon-cli init mysql
 
 # 一键 33 步全量初始化(plan → 确认 → apply)

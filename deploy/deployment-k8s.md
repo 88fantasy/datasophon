@@ -395,8 +395,8 @@ spec:
 ### 前置准备
 
 ```bash
-export JH17=~/Library/Java/JavaVirtualMachines/jbr-17.0.12-1/Contents/Home
-JAVA_HOME=$JH17 ./mvnw clean package -DskipTests -s ~/.m2/setting.xml
+export JH21=~/Library/Java/JavaVirtualMachines/graalvm-jdk-21.0.7/Contents/Home
+JAVA_HOME=$JH21 ./mvnw clean package -DskipTests -s ~/.m2/setting.xml
 
 # 确认产物
 ls datasophon-api/target/datasophon-manager-3.0-SNAPSHOT.tar.gz

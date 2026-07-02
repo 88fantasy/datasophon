@@ -42,7 +42,7 @@ public class InstallJDKHandler implements DispatcherWorkerHandler {
     public boolean handle(Session session, HostInfo hostInfo) {
         hostInfo.setProgress(60);
         ArchType arch = MinaUtils.getArch(session);
-        String testResult = MinaUtils.execCmdWithResult(session, "test -d /usr/local/jdk1.8.0_333");
+        String testResult = MinaUtils.execCmdWithResult(session, "test -d " + Constants.JDK8_HOME_ALIAS);
         boolean exists = !StringUtils.isNotBlank(testResult) || !"failed".equals(testResult);
         if (!exists) {
             String pkg = null;
@@ -57,8 +57,13 @@ public class InstallJDKHandler implements DispatcherWorkerHandler {
             }
             
             hostInfo.setMessage("开始安装JDK");
-            MinaUtils.uploadFile(session, "/usr/local", Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + pkg);
-            MinaUtils.execCmdWithResult(session, String.format("tar -zxvf /usr/local/%s -C /usr/local/", pkg));
+            MinaUtils.uploadFile(session, Constants.INSTALL_PATH, Constants.MASTER_MANAGE_PACKAGE_PATH + Constants.SLASH + pkg);
+            MinaUtils.execCmdWithResult(session,
+                    String.format("tar -zxvf %s/%s -C %s/", Constants.INSTALL_PATH, pkg, Constants.INSTALL_PATH));
+            // 解压到与其他组件同处的安装根目录后，软链到版本无关的固定别名，与 tar 包内版本号解耦
+            MinaUtils.execCmdWithResult(session, String.format("rm -rf %s && ln -s %s/%s %s",
+                    Constants.JDK8_HOME_ALIAS, Constants.INSTALL_PATH, Constants.JDK8_EXTRACT_DIR_NAME,
+                    Constants.JDK8_HOME_ALIAS));
         }
         
         return true;
