@@ -124,6 +124,18 @@ public final class Constants {
     // 才能按固定路径找到 JAVA_HOME。
     public static final String JDK8_EXTRACT_DIR_NAME = "jdk8u492-b09";
     public static final String JDK8_HOME_ALIAS = "/usr/local/jdk8";
+    // JDK17：datasophon-cli-go 的 init jdk17 使用同一套 tar 包/解压目录名，
+    // 供部分 K8s 相关组件按需使用。
+    public static final String JDK17_X86 = "OpenJDK17U-jdk_x64_linux_hotspot_17.0.19_10.tar.gz";
+    public static final String JDK17_ARM = "OpenJDK17U-jdk_aarch64_linux_hotspot_17.0.19_10.tar.gz";
+    public static final String JDK17_EXTRACT_DIR_NAME = "jdk-17.0.19+10";
+    public static final String JDK17_HOME_ALIAS = "/usr/local/jdk17";
+    // JDK21：Datasophon Manager（Master/Worker）平台自身运行时依赖，
+    // Worker 进程本身即编译为 JDK21 字节码，缺失时 Worker 无法启动。
+    public static final String JDK21_X86 = "OpenJDK21U-jdk_x64_linux_hotspot_21.0.11_10.tar.gz";
+    public static final String JDK21_ARM = "OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.11_10.tar.gz";
+    public static final String JDK21_EXTRACT_DIR_NAME = "jdk-21.0.11+10";
+    public static final String JDK21_HOME_ALIAS = "/usr/local/jdk21";
     public static final String COMMAND_STATE = "command_state";
     public static final String ROLE_GROUP_ID = "role_group_id";
     public static final String ROLE_GROUP_TYPE = "role_group_type";
