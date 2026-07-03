@@ -19,6 +19,7 @@
       "logFile": "logs/hadoop-yarn-resourcemanager-${ROOT.VosManager.__host__}.log",
       "serverPorts": [],
       "jmxPort": 9323,
+      "jmxPortParam": "rmJmxPort",
       "runAs": {
         "user": "yarn",
         "group": "hadoop"
@@ -102,6 +103,7 @@
       "cardinality": "1+",
       "logFile": "logs/hadoop-yarn-nodemanager-${ROOT.VosManager.__host__}.log",
       "jmxPort": 9324,
+      "jmxPortParam": "nmJmxPort",
       "runAs": {
         "user": "yarn",
         "group": "hadoop"
@@ -172,6 +174,7 @@
       "cardinality": "1",
       "logFile": "logs/hadoop-mapred-historyserver-${ROOT.VosManager.__host__}.log",
       "jmxPort": 9325,
+      "jmxPortParam": "historyServerJmxPort",
       "runAs": {
         "user": "mapred",
         "group": "hadoop"
@@ -288,6 +291,18 @@
           "mapreduce.jobhistory.done-dir",
           "mapreduce.jobhistory.intermediate-done-dir",
           "custom.mapred.site.xml"
+        ]
+      },
+      {
+        "filename": "yarn-env.sh",
+        "configFormat": "custom",
+        "outputDirectory": "etc/hadoop/",
+        "templateName": "yarn-env.ftl",
+        "includeParams": [
+          "hadoopHome",
+          "rmJmxPort",
+          "nmJmxPort",
+          "historyServerJmxPort"
         ]
       }
     ]
@@ -1136,6 +1151,55 @@
       "defaultValue": false,
       "configurableInWizard": true,
       "register": false
+    },
+    {
+      "enabled": true,
+      "name": "hadoopHome",
+      "label": "HADOOP_HOME",
+      "description": "Hadoop的安装目录",
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "value": "${HADOOP_HOME}",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "${HADOOP_HOME}"
+    },
+    {
+      "enabled": true,
+      "name": "rmJmxPort",
+      "label": "ResourceManager监控端口",
+      "description": "ResourceManager jmx_prometheus_javaagent 指标暴露端口",
+      "required": true,
+      "type": "input",
+      "value": "9323",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "9323"
+    },
+    {
+      "enabled": true,
+      "name": "nmJmxPort",
+      "label": "NodeManager监控端口",
+      "description": "NodeManager jmx_prometheus_javaagent 指标暴露端口",
+      "required": true,
+      "type": "input",
+      "value": "9324",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "9324"
+    },
+    {
+      "enabled": true,
+      "name": "historyServerJmxPort",
+      "label": "HistoryServer监控端口",
+      "description": "HistoryServer jmx_prometheus_javaagent 指标暴露端口",
+      "required": true,
+      "type": "input",
+      "value": "9325",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "9325"
     },
     {
       "enabled": true,
