@@ -185,8 +185,29 @@ class OtelScrapeConfigBuilderTest {
         
         String yaml = builder.build(12, "worker-6");
         
-        // 尚未重启生效，不能采纳"待生效"的新值，退回 ddl defaultValue。
+        // 没有上一版本可退（configVersion 缺省为 null），只能退回 ddl defaultValue。
         assertThat(yaml).contains("        - targets: ['127.0.0.1:18030']");
+    }
+    
+    @Test
+    void livePortFallsBackToPreviousVersionWhenPendingRestartIsForAnUnrelatedParam() {
+        givenClusterFrame("FRAME_K");
+        givenRoleMeta("FRAME_K_DORIS_DorisFE", "http_port");
+        givenServiceDefaults("FRAME_K_DORIS", param("http_port", "18030"));
+        // 最新一版（configVersion=3）待重启生效，可能改的是别的参数；上一版（2）是角色目前实际仍在跑的配置。
+        ClusterServiceRoleGroupConfig latest = groupConfig(
+                "[{\"name\":\"someOtherParam\",\"value\":\"x\"},{\"name\":\"http_port\",\"value\":\"28030\"}]");
+        latest.setConfigVersion(3);
+        when(roleGroupConfigService.getConfigByRoleGroupId(108)).thenReturn(latest);
+        ClusterServiceRoleGroupConfig previous = groupConfig("[{\"name\":\"http_port\",\"value\":\"38030\"}]");
+        when(roleGroupConfigService.getConfigByRoleGroupIdAndVersion(108, 2)).thenReturn(previous);
+        when(roleService.getServiceRoleListByHostnameAndClusterId("worker-11", 17))
+                .thenReturn(List.of(role("DORIS", "DorisFE", ServiceRoleState.RUNNING, 108, NeedRestart.YES)));
+        
+        String yaml = builder.build(17, "worker-11");
+        
+        // 退回上一版本里的端口（38030），既不是待生效的新值（28030），也不是 ddl 默认值（18030）。
+        assertThat(yaml).contains("        - targets: ['127.0.0.1:38030']");
     }
     
     @Test

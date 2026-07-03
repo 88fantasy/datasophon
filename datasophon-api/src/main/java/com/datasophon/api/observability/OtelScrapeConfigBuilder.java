@@ -131,10 +131,6 @@ public class OtelScrapeConfigBuilder {
      * 任何一步读不到都返回 null，由调用方退回 ddl 参数的 defaultValue。
      */
     private String livePortFromConfig(String key, ServiceRoleInfo meta, ClusterServiceRoleInstanceEntity role) {
-        if (NeedRestart.YES.equals(role.getNeedRestart())) {
-            // 配置已保存但角色尚未重启生效，此时进程仍监听旧端口，不能采纳"待生效"的新值。
-            return null;
-        }
         Integer roleGroupId = role.getRoleGroupId();
         if (roleGroupId == null) {
             return null;
@@ -143,8 +139,27 @@ public class OtelScrapeConfigBuilder {
         if (config == null || StringUtils.isBlank(config.getConfigJson())) {
             return null;
         }
+        if (NeedRestart.YES.equals(role.getNeedRestart())) {
+            // needRestart 是角色组级别的粗粒度标记：只要组内任意参数被改过就会置位，不代表这次
+            // 待生效的改动就是监控端口本身。直接跳到 ddl 静态默认值会把"角色仍在用的自定义端口"
+            // 误报成官方默认端口。改为退回上一个配置版本（假定它已通过前一次重启生效），比直接
+            // 跳到 ddl 默认值更接近进程实际监听的端口；仍无法精确到"具体哪个参数"待生效，属于
+            // 已知局限（需要按参数级别 diff 或记录"已生效版本号"才能做到，当前数据模型不支持）。
+            Integer previousVersion = config.getConfigVersion() == null ? null : config.getConfigVersion() - 1;
+            if (previousVersion == null || previousVersion < 1) {
+                return null;
+            }
+            config = roleGroupConfigService.getConfigByRoleGroupIdAndVersion(roleGroupId, previousVersion);
+            if (config == null || StringUtils.isBlank(config.getConfigJson())) {
+                return null;
+            }
+        }
+        return extractPort(key, meta, config.getConfigJson());
+    }
+    
+    private String extractPort(String key, ServiceRoleInfo meta, String configJson) {
         try {
-            List<ServiceConfig> configs = JSON.parseArray(config.getConfigJson(), ServiceConfig.class);
+            List<ServiceConfig> configs = JSON.parseArray(configJson, ServiceConfig.class);
             for (ServiceConfig serviceConfig : configs) {
                 if (meta.getJmxPortParam().equals(serviceConfig.getName()) && serviceConfig.getValue() != null) {
                     String value = String.valueOf(serviceConfig.getValue()).trim();

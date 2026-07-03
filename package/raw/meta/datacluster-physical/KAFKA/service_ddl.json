@@ -130,6 +130,7 @@
       "label": "Kafka JMX监控端口",
       "description": "Kafka Broker Prometheus JMX exporter 监听端口",
       "required": true,
+      "configType": "map",
       "type": "input",
       "value": "9991",
       "configurableInWizard": true,

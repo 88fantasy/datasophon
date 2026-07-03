@@ -429,6 +429,7 @@
       "label": "监控暴露端口",
       "hidden": false,
       "required": true,
+      "configType": "map",
       "type": "input",
       "defaultValue": "9114",
       "configurableInWizard": true,

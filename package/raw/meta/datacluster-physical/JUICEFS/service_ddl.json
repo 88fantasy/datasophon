@@ -97,6 +97,7 @@
       "label": "JuiceFS 监控端口",
       "description": "JuiceFS mount --metrics Prometheus 监听端口",
       "required": true,
+      "configType": "map",
       "type": "input",
       "value": "9567",
       "configurableInWizard": true,

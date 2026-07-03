@@ -101,6 +101,7 @@
       "label": "Collector 自监控端口",
       "description": "OTel Collector 自身 Prometheus 指标暴露端口(内部自采集亦用此端口)",
       "required": true,
+      "configType": "map",
       "type": "input",
       "value": "8888",
       "configurableInWizard": true,
