@@ -19,7 +19,7 @@
       "cardinality": "1",
       "logFile": "api-server/logs/dolphinscheduler-api.log",
       "serverPorts": [],
-      "jmxPort": 12345,
+      "jmxPortParam": "apiServerPort",
       "runAs": {},
       "startRunner": {
         "timeout": "60",
@@ -56,7 +56,7 @@
       "externalLink": {
         "name": "DolphinScheduler Ui",
         "label": "DolphinScheduler Ui",
-        "url": "http://${host}:12345/dolphinscheduler/ui"
+        "url": "http://${host}:${DS.apiServerPort}/dolphinscheduler/ui"
       },
       "hooks": [
         {
@@ -79,7 +79,7 @@
       "cardinality": "1+",
       "logFile": "master-server/logs/dolphinscheduler-master.log",
       "serverPorts": [],
-      "jmxPort": 5679,
+      "jmxPortParam": "masterServerPort",
       "runAs": {},
       "startRunner": {
         "timeout": "60",
@@ -135,7 +135,7 @@
       "cardinality": "1+",
       "logFile": "worker-server/logs/dolphinscheduler-worker.log",
       "serverPorts": [],
-      "jmxPort": 1235,
+      "jmxPortParam": "workerServerPort",
       "runAs": {},
       "startRunner": {
         "timeout": "60",
@@ -194,14 +194,14 @@
       ]
     },
     {
-      "name": "UAlertServer",
-      "label": "UAlertServer",
+      "name": "AlertServer",
+      "label": "AlertServer",
       "sortNum": 3,
       "roleType": "master",
       "cardinality": "1",
       "logFile": "alert-server/logs/dolphinscheduler-alert.log",
       "serverPorts": [],
-      "jmxPort": 50053,
+      "jmxPortParam": "alertServerPort",
       "runAs": {},
       "startRunner": {
         "timeout": "60",
@@ -273,7 +273,11 @@
           "databaseUrl",
           "username",
           "password",
-          "zkUrls"
+          "zkUrls",
+          "apiServerPort",
+          "masterServerPort",
+          "workerServerPort",
+          "alertServerPort"
         ]
       },
       {
@@ -367,6 +371,62 @@
       "defaultValue": "${ZOOKEEPER.zkUrls}",
       "configurableInWizard": true,
       "register": true
+    },
+    {
+      "enabled": true,
+      "name": "apiServerPort",
+      "value": "12345",
+      "description": "ApiServer server.port（Web UI/OpenAPI 及 /actuator/prometheus 共用端口）",
+      "label": "ApiServer端口",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "12345",
+      "configurableInWizard": true,
+      "register": true
+    },
+    {
+      "enabled": true,
+      "name": "masterServerPort",
+      "value": "5679",
+      "description": "MasterServer server.port（/actuator/prometheus 暴露端口）",
+      "label": "MasterServer端口",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "5679",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "workerServerPort",
+      "value": "1235",
+      "description": "WorkerServer server.port（/actuator/prometheus 暴露端口）",
+      "label": "WorkerServer端口",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "1235",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "enabled": true,
+      "name": "alertServerPort",
+      "value": "50053",
+      "description": "AlertServer server.port（/actuator/prometheus 暴露端口）",
+      "label": "AlertServer端口",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "50053",
+      "configurableInWizard": true,
+      "register": false
     },
     {
       "enabled": true,

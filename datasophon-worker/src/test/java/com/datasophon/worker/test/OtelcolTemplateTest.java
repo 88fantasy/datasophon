@@ -48,6 +48,7 @@ public class OtelcolTemplateTest {
         data.put("dorisEndpoint", "http://doris-fe:8030");
         data.put("dorisDatabase", "otel");
         data.put("dorisUser", "otel_collector");
+        data.put("otelSelfMetricsPort", "8888");
         data.put("localScrapeJobsYaml", localScrapeJobsYaml);
         StringWriter out = new StringWriter();
         tpl.process(data, out);

@@ -33,7 +33,7 @@ fi
 export KAFKA_HEAP_OPTS="-Xmx${kafkaHeapSize}G -Xms${kafkaHeapSize}G"
 EXTRA_ARGS=${r"${EXTRA_ARGS-'-name kafkaServer -loggc'}"}
 
-export KAFKA_OPTS="-javaagent:$base_dir/../jmx/jmx_prometheus_javaagent-0.16.1.jar=9991:$base_dir/../jmx/kafka-2_0_0.yml"
+export KAFKA_OPTS="-javaagent:$base_dir/../jmx/jmx_prometheus_javaagent-0.16.1.jar=${kafkaJmxPort}:$base_dir/../jmx/kafka-2_0_0.yml"
 
 COMMAND=$1
 case $COMMAND in

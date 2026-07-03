@@ -95,7 +95,7 @@
       "cardinality": "1",
       "logFile": "elasticsearch-exporter/logs/es_exporter-${ELASTICSEARCH.ElasticSearch.__hostIp__}.out",
       "serverPorts": [],
-      "jmxPort": 9114,
+      "jmxPortParam": "esExporterPort",
       "runAs": {},
       "startRunner": {
         "timeout": "60",
@@ -130,18 +130,7 @@
         ]
       },
       "externalLink": {},
-      "hooks": [
-        {
-          "type": "POST_INSTALL",
-          "action": "download",
-          "params": {
-            "to": "elasticsearch-exporter/control_es_exporter.sh",
-            "md5": "cab3260eed94bcc8d614def8123a1825",
-            "from": "script/control_es_exporter.sh",
-            "templateId": "2003758507066986497"
-          }
-        }
-      ]
+      "hooks": []
     }
   ],
   "configWriter": {
@@ -182,6 +171,15 @@
         "templateName": "jvm.options.ftl",
         "includeParams": [
           "heapSize"
+        ]
+      },
+      {
+        "filename": "control_es_exporter.sh",
+        "configFormat": "custom",
+        "outputDirectory": "elasticsearch-exporter",
+        "templateName": "control_es_exporter.ftl",
+        "includeParams": [
+          "esExporterPort"
         ]
       }
     ]
@@ -421,6 +419,19 @@
       "configType": "map",
       "type": "input",
       "defaultValue": "2g",
+      "configurableInWizard": true,
+      "register": false
+    },
+    {
+      "name": "esExporterPort",
+      "value": "9114",
+      "description": "elasticsearch_exporter 指标暴露端口",
+      "label": "监控暴露端口",
+      "hidden": false,
+      "required": true,
+      "configType": "map",
+      "type": "input",
+      "defaultValue": "9114",
       "configurableInWizard": true,
       "register": false
     },

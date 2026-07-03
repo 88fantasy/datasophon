@@ -78,7 +78,7 @@
 | datasophon-worker gRPC（裸机） | **18082**/TCP | API 向此节点下发 Install/Start/Stop 命令 |
 | Docker daemon（可选） | unix socket | `/run/docker.sock`，不监听 TCP |
 | SSH | **22**/TCP | CLI 远程执行入口 |
-| **业务服务端口** | 依服务而定 | HDFS NameNode 9000/50070、DataNode 50010/50075、YARN RM 8088、NM 8042、ZooKeeper 2181、Kafka 9092 等，由 datasophon-api 管控 |
+| **业务服务端口** | 依服务而定 | 由 datasophon-api 管控；完整端口清单见「十一、大数据服务组件端口清单」 |
 
 ---
 
@@ -461,7 +461,7 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 | **Elasticsearch** | **9.4.2** | **9.4.2** | ✅ 已升级至最新稳定版 |
 | **Valkey** | **8.1.7** | **8.1.7**（Redis 的 BSD-3 开源分叉） | ✅ 已替换 Redis |
 | **JuiceFS** | **1.3.1** | **1.3.1**（LTS，24 个月维护） | ✅ 已升级至 LTS 版本 |
-| **Doris** | **4.0.5** | **4.0.5**（稳定）/ 4.1.1（最新） | ✅ 已升级；4.x 引入 AI/向量搜索，升级前充分测试 |
+| **Doris** | **4.0.5** | **4.0.5**（稳定）/ 4.1.1（最新） | ✅ 已升级；4.x 引入 AI/向量搜索，升级前充分测试。**同时承载 OTel 可观测数据存储**：专用 `otel` database + 独立资源组 + INSERT-only Stream Load 账号（见下方"可观测性"小节） |
 
 #### 计算 / 查询引擎
 
@@ -486,13 +486,18 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 
 #### 可观测性
 
+> 可观测性技术栈已于 Phase E（2026-06-29/30，commit `5981b778`）完成 OTel 统一替换：**OTel Collector** 接管全部 metrics/logs/traces 采集，数据落 Doris 专用 `otel` database（Metrics/Logs/Traces 三表族），原生 UI 看板 + `OtelAlertScheduler` 定时 SQL 评估告警，Prometheus / Alertmanager / Grafana / Loki / Promtail 五个旧组件全部退役。
+
 | 组件 | 当前配置版本 | 最新稳定版 | 状态 |
 |---|---|---|---|
-| **Prometheus** | **3.12.0** | **3.12.0**（2026-05-28） | ✅ 已升级至最新稳定版 |
-| **Alertmanager** | **0.32.1** | **0.32.1**（2026-04-29） | ⛔ **已下线**（Phase E）：告警由 OtelAlertScheduler 原生接管 |
-| **Grafana** | **13.0.1** | **13.0.1**（2026-05） | ⛔ **已下线**（Phase E）：看板由原生 OTel/Doris 看板替代 |
-| **Loki** | **3.7.2** | **3.7.2**（2026-05-13） | ⛔ **已下线**（Phase E）：日志由 OTel logs → Doris 替代 |
-| **Promtail** | 2.8.11 | **已于 2026-03-02 EOL** | ⛔ **已下线**（Phase E）：采集由 OTel Java Agent 替代 |
+| **OTel Collector**（otelcol-contrib） | **v0.154.0** | v0.154.0 | ✅ 统一采集层：每节点本地 scrape metrics（`prometheus/local` receiver）+ OTel Java Agent 上报 logs/traces，dorisexporter 写入 `otel` database；节点纳管/服务启停时由 `OtelScrapeConfigBuilder` 动态下发抓取配置 |
+| **Prometheus** | 3.12.0 | 3.12.0（2026-05-28） | ⛔ **已下线**（Phase E，2026-06-29/30，commit `5981b778`）：metrics 抓取全部由 OTel Collector 接管，进程 / meta / 编排链彻底退役 |
+| **Alertmanager** | 0.32.1 | 0.32.1（2026-04-29） | ⛔ **已下线**（Phase E）：告警由 `OtelAlertScheduler` 原生接管（`t_ddh_cluster_alert_quota` 规则 + 定时 SQL 评估） |
+| **Grafana** | 13.0.1 | 13.0.1（2026-05） | ⛔ **已下线**（Phase E）：看板由原生 OTel/Doris 看板替代 |
+| **Loki** | 3.7.2 | 3.7.2（2026-05-13） | ⛔ **已下线**（Phase E）：日志由 OTel logs → Doris 替代 |
+| **Promtail** | 2.8.11 | 已于 2026-03-02 EOL | ⛔ **已下线**（Phase E）：采集由 OTel Java Agent / OTel Collector 替代 |
+
+> **过渡期提示**：Phase E 只完成了采集层退役，看板**取数层**尚未全部切换——仍有约 12 个 `*Monitor` 看板走旧的 `PrometheusProxyV2Controller`，Prometheus 进程下线后这些看板会**暂时无数据**，待后续逐个切至 `OtelMetricsQueryController`（Nexus / Doris Monitor 看板已完成切换，其余待迁移）。
 
 #### 网关 / 注册中心
 
@@ -507,3 +512,132 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 | 组件 | 当前配置版本 | 说明 |
 |---|---|---|
 | **DATART** | 3.6.1 | 数据可视化，DataSophon 内部打包 |
+
+---
+
+## 十一、大数据服务组件端口清单
+
+> 梳理依据：`package/raw/meta/datacluster-physical/<SERVICE>/service_ddl.json`（parameters + roles.jmxPortParam，元数据真相之源）+ `datasophon-worker/src/main/resources/templates/*.ftl`（配置模板中读取该参数渲染出的端口）。
+> mw1 中间件组件（datasophon-api / datasophon-worker / Nexus / MySQL / Rustfs / NTP）端口已在**二、端口速查表**列出，此处不重复。
+> **端口来源**列标注：`项目配置` = service_ddl.json 显式参数值；`项目配置(可配置参数)` = 角色声明了 jmxPortParam，指向某个 Web UI 可配置参数，OTel Collector 优先读该参数的实时值，读不到时退回其 ddl defaultValue 动态生成 scrape 配置；`官方默认` = 组件官方文档默认值，本项目未在 service_ddl 中显式暴露/覆盖该参数，实际以打包内静态配置文件为准。
+> **配置项**列标注该端口对应的 `service_ddl.json` `parameters[].name`（Web UI 安装/修改配置向导里可见的参数）；标注"端口固化在地址字符串里"表示该参数值是 `host:port` 或 URI 形式（如 `${nn1}:8020`），改端口需要连同主机部分一起改写整段值，无法单独只改端口数字；标注"无对应参数"表示该端口未被抽象为可配置参数，实际值来自组件官方默认或写死在 `.ftl`/脚本模板里，只能通过改模板或组件自带配置文件调整。
+
+### 存储 / 数据库
+
+| 组件 | 角色 | 端口 | 协议 | 用途 | 端口来源 | 配置项 |
+|---|---|---|---|---|---|---|
+| **HDFS** | NameNode（nn1/nn2，HA） | **8020** | TCP | RPC（`fs.defaultFS`/`dfs.namenode.rpc-address`） | 项目配置 | `dfs.namenode.rpc-address.<nameservices>.nn1`/`.nn2`（端口固化在 `${nn1}:8020` 地址字符串里，改端口需连值一起改） |
+| | NameNode（nn1/nn2，HA） | **9870** | TCP | HTTP Web UI（`dfs.namenode.http-address`） | 项目配置 | `dfs.namenode.http-address.<nameservices>.nn1`/`.nn2`（同上，端口固化在地址字符串里） |
+| | NameNode | **27001** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) | `namenodeJmxPort` |
+| | DataNode | **1026** | TCP | 数据传输（项目覆盖官方默认 50010） | 项目配置 | `dfs.datanode.address`（defaultValue=`0.0.0.0:1026`，端口固化在地址字符串里） |
+| | DataNode | **1025** | TCP | HTTP（项目覆盖官方默认 9864） | 项目配置 | `dfs.datanode.http.address`（defaultValue=`0.0.0.0:1025`，同上） |
+| | DataNode | **27002** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) | `datanodeJmxPort` |
+| | JournalNode | **8485** | TCP | QJournal 共享 EditLog（HA 元数据同步） | 项目配置 | `dfs.namenode.shared.edits.dir`（`qjournal://...:8485;...:8485;...:8485/meta`，端口固化在 URI 里） |
+| | JournalNode | **27003** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) | `journalnodeJmxPort` |
+| | ZKFC | **27004** | TCP | JMX/Prometheus 指标（进程内嵌自动故障切换，无独立业务端口） | 项目配置(可配置参数) | `zkfcJmxPort` |
+| | HttpFs | **14000** | TCP | REST 网关（未在本项目 service_ddl 中覆盖，JMX 端口亦未配置） | 官方默认 | 无对应参数（该角色 ddl 里从未定义过端口相关参数） |
+| **YARN** | ResourceManager（rm1/rm2，HA） | **8088** | TCP | Web UI | 项目配置 | `yarn.resourcemanager.webapp.address.rm1`/`.rm2`（`${rm1}:8088`，端口固化在地址字符串里） |
+| | ResourceManager | **8032** | TCP | 客户端提交作业地址 | 项目配置 | `yarn.resourcemanager.address.rm1`/`.rm2` |
+| | ResourceManager | **8030** | TCP | ApplicationMaster 调度地址 | 项目配置 | `yarn.resourcemanager.scheduler.address.rm1`/`.rm2` |
+| | ResourceManager | **8031** | TCP | NodeManager 资源上报地址 | 项目配置 | `yarn.resourcemanager.resource-tracker.address.rm1`/`.rm2` |
+| | ResourceManager | **9323** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) | `rmJmxPort` |
+| | NodeManager | **45454** | TCP | 容器/本地化服务地址 | 项目配置 | `yarn.nodemanager.address`（`0.0.0.0:45454`） |
+| | NodeManager | **8042** | TCP | Web UI（Hadoop 官方默认，未在 ddl 显式覆盖） | 官方默认 | 无对应参数 |
+| | NodeManager | **9324** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) | `nmJmxPort` |
+| | HistoryServer | **10020** | TCP | MapReduce JobHistory IPC | 项目配置 | `mapreduce.jobhistory.address` |
+| | HistoryServer | **19888** | TCP | JobHistory Web UI | 项目配置 | `mapreduce.jobhistory.webapp.address` |
+| | HistoryServer | **9325** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) | `historyServerJmxPort` |
+| **Hive** | HiveMetaStore | **9083** | TCP | Thrift 元数据服务 | 项目配置 | `hive.metastore.port`（`hive.metastore.uris` 里 `thrift://<host>:9083` 需同步跟着改） |
+| | HiveMetaStore | **12000** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) | `hiveMetaStoreJmxPort` |
+| | HiveServer2 | **10000** | TCP | Thrift JDBC/ODBC 入口 | 项目配置 | `hive.server2.thrift.port` |
+| | HiveServer2 | **11000** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) | `hiveServer2JmxPort` |
+| | — | 2181 | TCP | 依赖 ZooKeeper（HA 服务发现） | 项目配置 | `hive.zookeeper.client.port` |
+| **Elasticsearch** | ElasticSearch | **9200** | TCP | HTTP 对外服务 | 项目配置 | `http.port` |
+| | ElasticSearch | **9300** | TCP | 集群内部 Transport | 项目配置 | `transport.tcp.port` |
+| | EsExporter | **9114** | TCP | elasticsearch_exporter（官方默认端口） | 项目配置(可配置参数) | `esExporterPort` |
+| **Valkey** | ValkeyMaster | **7501** | TCP | 数据端口（项目自定义，非 Redis/Valkey 官方默认 6379） | 项目配置 | `valkeyMasterPort` |
+| | ValkeyExporter | **9121** | TCP | redis_exporter（官方默认端口） | 项目配置(可配置参数) | `valkeyExporterPort` |
+| **JuiceFS** | JuicefsMount | **9567** | TCP | `juicefs mount --metrics`（官方默认端口，无独立业务端口，FUSE 客户端） | 项目配置(可配置参数) | `juicefsJmxPort` |
+| **Doris** | DorisFE | **18030** | TCP | HTTP 前端界面 + `/metrics`（官方默认 8030，项目改为 18030） | 项目配置 | `http_port` |
+| | DorisFE | **9020** | TCP | RPC（Thrift 服务） | 项目配置 | `rpc_port` |
+| | DorisFE | **9030** | TCP | Query Port（MySQL 协议，客户端/BI 工具连接入口） | 项目配置 | `query_port` |
+| | DorisFE | **9010** | TCP | EditLog Port（FE 之间元数据同步，官方默认值，硬编码于 `doris_fe.ftl`） | 官方默认 | 无对应参数 |
+| | DorisBE | **9060** | TCP | BE Admin 端口 | 项目配置 | `be_port` |
+| | DorisBE | **18040** | TCP | WebServer + `/metrics`（官方默认 8040，项目改为 18040） | 项目配置(可配置参数) | `webserver_port` |
+| | DorisBE | **8060** | TCP | BRPC（FE↔BE / BE↔BE 内部通信） | 项目配置 | `brpc_port` |
+| | DorisBE | **9050** | TCP | Heartbeat Service Port（FE↔BE 心跳，官方默认，未在 ddl 显式覆盖） | 官方默认 | 无对应参数 |
+
+### 计算 / 查询引擎
+
+| 组件 | 角色 | 端口 | 协议 | 用途 | 端口来源 | 配置项 |
+|---|---|---|---|---|---|---|
+| **Spark3** | SparkClient3 | — | — | 仅 YARN-cluster 模式提交客户端，无常驻端口；Driver/Executor 端口由 YARN 动态分配 | — | — |
+| **Flink** | FlinkClient | — | — | 仅 YARN-session 模式提交客户端，无常驻端口 | — | — |
+| | FlinkHistory | **8082** | TCP | History Server Web UI（与官方默认一致） | 项目配置 | `historyserver.web.port` |
+| **Kyuubi** | KyuubiServer | **10009** | TCP | Thrift Binary 前端（JDBC/ODBC 入口，官方默认，未在 ddl 显式覆盖） | 官方默认 | 无对应参数 |
+| | KyuubiServer | **10019** | TCP | Prometheus 指标 | 项目配置(可配置参数) | `kyuubi.metrics.prometheus.port` |
+| | KyuubiClient | — | — | Beeline 客户端，无常驻端口 | — | — |
+| | — | 7337 | TCP | Spark 辅助 Shuffle Service 端口（`spark.shuffle.service.enabled` 当前为 False，未生效） | 项目配置 | `spark.shuffle.service.port` |
+
+### 消息 / 协调
+
+| 组件 | 角色 | 端口 | 协议 | 用途 | 端口来源 | 配置项 |
+|---|---|---|---|---|---|---|
+| **Kafka** | KafkaBroker | **9092** | TCP | SASL_PLAINTEXT Broker 监听 | 项目配置 | `listeners`/`advertised.listeners`（`SASL_PLAINTEXT://${host}:9092`，端口固化在地址字符串里） |
+| | KafkaBroker | **9991** | TCP | jmx_prometheus_javaagent 指标（硬编码于 `kafka-server-start.ftl`） | 项目配置(可配置参数) | `kafkaJmxPort` |
+| | KafkaBroker | ~9093 | TCP | 4.x KRaft controller 内部监听（**未在本项目 service_ddl 暴露独立参数**，实际以打包内 `server.properties` 静态配置为准，部署后建议用 `ss -lntp` 核实） | 官方约定，待核实 | 无对应参数 |
+| **ZooKeeper** | ZkServer | **2181** | TCP | 客户端连接（被 HDFS ZKFC / YARN RM HA / Hive HA / Kyuubi HA / DS registry 共用） | 项目配置 | `clientPort`（defaultValue=`2181`） |
+| | ZkServer | 2888 | TCP | Follower↔Leader 数据同步端口（官方默认，未在 ddl 显式覆盖） | 官方默认 | 无对应参数 |
+| | ZkServer | 3888 | TCP | Leader 选举端口（官方默认，未在 ddl 显式覆盖） | 官方默认 | 无对应参数 |
+| | ZkServer | **7000** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) | `metricsProvider.httpPort` |
+
+### 调度
+
+> **DS 指标暴露机制说明**（据 [DolphinScheduler 3.4.2 官方 Metrics 文档](https://dolphinscheduler.apache.org/zh-cn/docs/3.4.2/guide/metrics/metrics) 纠正）：DS 各组件基于 Spring Boot 内置 Actuator 原生暴露 `/actuator/prometheus`，**监听端口就是该组件自身的 `server.port`，不需要额外挂 JMX exporter javaagent**（这一点与 Kafka/HDFS 等靠外挂 `jmx_prometheus_javaagent` 采集的组件不同）。`OtelScrapeConfigBuilder.PATH_OVERRIDES` 已按角色配好对应 path。
+
+| 组件 | 角色 | 端口 | 协议 | 用途 | 端口来源 | 配置项 |
+|---|---|---|---|---|---|---|
+| **DS**（DolphinScheduler） | ApiServer | **12345** | TCP | Web UI / OpenAPI 入口 + `/dolphinscheduler/actuator/prometheus`（DS 自身 `server.port` 原生暴露，官方默认端口） | 项目配置(可配置参数，与官方默认一致) | `apiServerPort`（经 `dolphinscheduler_env.ftl` 按 `$command` 注入 `SERVER_PORT` 环境变量覆盖 DS 官方默认 `application.yaml`） |
+| | MasterServer | 5678 | TCP | Master↔Worker 内部 Netty RPC（官方默认，未在 ddl 显式覆盖） | 官方默认 | 无对应参数 |
+| | MasterServer | **5679** | TCP | DS 自身 `server.port`，原生暴露 `/actuator/prometheus`（官方默认端口，非独立 JMX exporter） | 项目配置(可配置参数，与官方默认一致) | `masterServerPort`（同上机制） |
+| | WorkerServer | 1234 | TCP | Master↔Worker 内部 Netty RPC（官方默认，未在 ddl 显式覆盖） | 官方默认 | 无对应参数 |
+| | WorkerServer | **1235** | TCP | DS 自身 `server.port`，原生暴露 `/actuator/prometheus`（官方默认端口，非独立 JMX exporter） | 项目配置(可配置参数，与官方默认一致) | `workerServerPort`（同上机制） |
+| | AlertServer | **50052** | TCP | 告警 RPC | 项目配置 | `alert.rpc.port` |
+| | AlertServer | **50053** | TCP | DS 自身 `server.port`，原生暴露 `/actuator/prometheus`（官方默认端口，非独立 JMX exporter） | 项目配置(可配置参数，与官方默认一致) | `alertServerPort`（同上机制） |
+
+> **角色命名已核对一致**：`DS/service_ddl.json` 中该角色名为 `AlertServer`，与 `OtelScrapeConfigBuilder.PATH_OVERRIDES` 的映射键、`t_ddh_cluster_alert_quota` 种子数据（`V1.1.0__DML.sql`）的 `serviceRoleName` 均一致，`/actuator/prometheus` 抓取路径正常生效（此前曾误记为 `UAlertServer`，已核实并更正）。
+
+### 可观测性
+
+| 组件 | 角色 | 端口 | 协议 | 用途 | 端口来源 | 配置项 |
+|---|---|---|---|---|---|---|
+| **OTel Collector** | OtelCollector | **4317** | TCP | OTLP gRPC 接收（datasophon-api/worker OTel Java Agent 上报 logs/traces） | 项目配置（硬编码于 `otelcol.ftl`） | 无对应参数（模板里写死，未提取为 ddl 参数） |
+| | OtelCollector | **4318** | TCP | OTLP HTTP 接收 | 项目配置（硬编码于 `otelcol.ftl`） | 无对应参数 |
+| | OtelCollector | **8888** | TCP | 自监控 Prometheus 指标（`127.0.0.1` 本地绑定） | 项目配置(可配置参数)，OTel 官方默认 | `otelSelfMetricsPort`（模板里两处引用——自身暴露端口 + `prometheus/self` receiver 抓取目标——必须同步） |
+| | OtelCollector | 动态 | TCP | `prometheus/local` receiver：每节点本地 scrape 本清单中标注"JMX/Prometheus 指标"的全部端口，由 `OtelScrapeConfigBuilder` 按 RUNNING 角色动态拼接 | 项目配置 | 无单一参数，取决于当前节点上各角色 `jmxPortParam` 的实时值 |
+| | — | — | — | 未启用 health_check（13133）/ zpages（55679）扩展端口——`otelcol.ftl` 当前未配置这两个 extension | — | — |
+| ~~Prometheus~~ | — | — | — | ⛔ 已下线（Phase E），不再监听任何端口 | — | — |
+| ~~Alertmanager / Grafana / Loki / Promtail~~ | — | — | — | ⛔ 已下线（Phase E），不再监听任何端口 | — | — |
+
+### 网关 / 注册中心
+
+| 组件 | 角色 | 端口 | 协议 | 用途 | 端口来源 | 配置项 |
+|---|---|---|---|---|---|---|
+| **APISIX** | Apisix | **9080** | TCP | 网关 HTTP 端口（与官方默认一致） | 项目配置 | `apisixPort`（key=`apisix.node_listen`） |
+| | Apisix | **9091** | TCP | Prometheus 插件指标端口（官方默认，与项目参数一致） | 项目配置(可配置参数) | `apisixPrometheusPort`（key=`plugin_attr.prometheus.export_addr.port`，`configType:number`，snakeyaml 渲染须用数字值否则 APISIX 拒绝加引号的端口） |
+| | Apisix | 9180 | TCP | Admin API（官方默认，未在 ddl 显式暴露单独参数；`apisixAdminKey`/`apisixAllowAdmin` 控制鉴权与访问白名单） | 官方默认 | 无对应参数 |
+| **Nacos** | NacosServer | **8848** | TCP | 主端口：HTTP 客户端/控制台/OpenAPI | 项目配置(可配置参数，同时为官方默认端口) | `nacosServerPort` |
+| | NacosServer | 9848 | TCP | 客户端 gRPC（官方约定 8848+1000，未在 ddl 显式暴露） | 官方默认 | 无对应参数 |
+| | NacosServer | 9849 | TCP | 服务端间 gRPC（官方约定 8848+1001，仅集群内部，未在 ddl 显式暴露） | 官方默认 | 无对应参数 |
+| | NacosServer | 7848 | TCP | Raft 协议端口（官方约定 8848-1000，仅集群内部，未在 ddl 显式暴露） | 官方默认 | 无对应参数 |
+| **Nginx** | — | **19000** | TCP | 业务反代入口 | 项目配置 | `nginxServerPort` |
+| | — | **20011** | TCP | 管理页面（被 19000 反代） | 项目配置 | `nginxWebPort` |
+| | — | **9099** | TCP | `stub_status` 状态页 | 项目配置 | `nginxStatusPort` |
+| | NginxExporter | **9113** | TCP | nginx-prometheus-exporter（官方默认端口，抓取 9099 状态页） | 项目配置(可配置参数) | `nginxExporterPort` |
+
+### 内部组件
+
+| 组件 | 角色 | 端口 | 协议 | 用途 | 端口来源 | 配置项 |
+|---|---|---|---|---|---|---|
+| **DATART** | Datart | **8080** | TCP | Web 应用服务 | 项目配置 | `datartServerPort` |
+| | — | 3306 | TCP | 复用全局 MySQL 端口，非独立监听 | 项目配置 | `datartMysqlPort`（defaultValue=`${mysqlPort}`，引用全局 MySQL 端口变量） |

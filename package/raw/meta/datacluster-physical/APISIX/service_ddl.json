@@ -12,7 +12,7 @@
       "roleType": "master",
       "cardinality": "1+",
       "logFile": "/usr/local/apisix/logs/access.log",
-      "jmxPort": 9091,
+      "jmxPortParam": "apisixPrometheusPort",
       "startRunner": {
         "timeout": "60",
         "program": "apisix",
@@ -69,7 +69,8 @@
           "apisixEtcdNodeList",
           "apisixAdminKey",
           "apisixAllowAdmin",
-          "apisixPrometheusAddr"
+          "apisixPrometheusAddr",
+          "apisixPrometheusPort"
         ]
       }
     ]
@@ -153,6 +154,19 @@
       "configurableInWizard": false,
       "hidden": false,
       "defaultValue": "${ip}"
+    },
+    {
+      "name": "apisixPrometheusPort",
+      "key": "plugin_attr.prometheus.export_addr.port",
+      "label": "监控暴露端口",
+      "description": "APISIX prometheus 插件指标暴露端口",
+      "required": true,
+      "type": "input",
+      "configType": "number",
+      "value": 9091,
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": 9091
     }
   ],
   "arch": {

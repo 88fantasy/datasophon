@@ -98,7 +98,6 @@ public final class Constants {
     
     public static final String NACOS = "nacos";
     public static final String INPUT = "input";
-    public static final String SERVICE_ROLE_JMX_MAP = "service_role_jmx_port";
     public static final String MULTIPLE = "multiple";
     public static final String MULTIPLE_WITH_MAP = "multipleWithMap";
     public static final String STRING_ARRAY = "stringArray";

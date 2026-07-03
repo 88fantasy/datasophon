@@ -47,3 +47,22 @@ export SEATUNNEL_HOME=${r"${SEATUNNEL_HOME"}:-/opt/soft/seatunnel}
 export CHUNJUN_HOME=${r"${CHUNJUN_HOME"}:-/opt/soft/chunjun}
 
 export PATH=$HADOOP_HOME/bin:$SPARK_HOME1/bin:$SPARK_HOME2/bin:$PYTHON_HOME/bin:$JAVA_HOME/bin:$HIVE_HOME/bin:$FLINK_HOME/bin:$DATAX_HOME/bin:$SEATUNNEL_HOME/bin:$CHUNJUN_HOME/bin:$PATH
+
+# 按角色覆盖 server.port（Spring Boot 环境变量优先级高于内置 application.yaml，
+# 与上面 SPRING_DATASOURCE_* 是同一套注入机制）。依赖 dolphinscheduler-daemon.sh
+# 在 source 本文件时 $command 仍为 api-server/master-server/worker-server/alert-server；
+# 若该变量不可用则 case 无匹配分支、不导出，回退到 DS 自带默认端口。
+case "${r"$command"}" in
+  api-server)
+    export SERVER_PORT=${apiServerPort}
+    ;;
+  master-server)
+    export SERVER_PORT=${masterServerPort}
+    ;;
+  worker-server)
+    export SERVER_PORT=${workerServerPort}
+    ;;
+  alert-server)
+    export SERVER_PORT=${alertServerPort}
+    ;;
+esac

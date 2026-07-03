@@ -46,17 +46,7 @@
           "master"
         ]
       },
-      "hooks": [
-        {
-          "type": "POST_INSTALL",
-          "action": "download",
-          "params": {
-            "from": "script/control_valkey.sh",
-            "to": "control_valkey.sh",
-            "md5": "3ed8652efa242b859902927513514136"
-          }
-        }
-      ]
+      "hooks": []
     },
     {
       "name": "ValkeyExporter",
@@ -64,7 +54,7 @@
       "roleType": "worker",
       "cardinality": "1",
       "logFile": "redis-exporter/logs/exporter.log",
-      "jmxPort": 9121,
+      "jmxPortParam": "valkeyExporterPort",
       "sortNum": 2,
       "startRunner": {
         "timeout": "60",
@@ -98,17 +88,7 @@
           "exporter"
         ]
       },
-      "hooks": [
-        {
-          "type": "POST_INSTALL",
-          "action": "download",
-          "params": {
-            "from": "script/control_valkey.sh",
-            "to": "control_valkey.sh",
-            "md5": "3ed8652efa242b859902927513514136"
-          }
-        }
-      ]
+      "hooks": []
     }
   ],
   "configWriter": {
@@ -126,6 +106,15 @@
           "valkeyMaxMemory",
           "valkeyMaxMemoryPolicy",
           "custom.master.conf"
+        ]
+      },
+      {
+        "filename": "control_valkey.sh",
+        "configFormat": "custom",
+        "outputDirectory": "",
+        "templateName": "control_valkey.ftl",
+        "includeParams": [
+          "valkeyExporterPort"
         ]
       }
     ]
@@ -214,6 +203,18 @@
         "volatile-ttl",
         "noeviction"
       ]
+    },
+    {
+      "name": "valkeyExporterPort",
+      "label": "监控暴露端口",
+      "description": "redis_exporter 指标暴露端口",
+      "configType": "map",
+      "required": true,
+      "type": "input",
+      "value": "9121",
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": "9121"
     },
     {
       "name": "custom.master.conf",
