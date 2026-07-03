@@ -69,6 +69,7 @@ const RustfsDashboard: FC = () => {
     id: 'pages.rustfsMonitor.title',
     defaultMessage: 'RustFS Monitor',
   });
+  const t = (id: string) => intl.formatMessage({ id });
 
   const variables = useMemo(
     () => ({
@@ -127,7 +128,7 @@ const RustfsDashboard: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={4}>
           <StatPanel
-            title="Uptime"
+            title={t('pages.rustfsMonitor.panel.uptime')}
             value={instant.uptime}
             color={CHART_COLORS.primary}
             formatter={formatDuration}
@@ -135,28 +136,28 @@ const RustfsDashboard: FC = () => {
         </PanelCol>
         <PanelCol span={4}>
           <StatPanel
-            title="Buckets"
+            title={t('pages.rustfsMonitor.panel.buckets')}
             value={instant.buckets}
             color={CHART_COLORS.primary}
           />
         </PanelCol>
         <PanelCol span={4}>
           <StatPanel
-            title="Objects"
+            title={t('pages.rustfsMonitor.panel.objects')}
             value={instant.objects}
             color={CHART_COLORS.primary}
           />
         </PanelCol>
         <PanelCol span={4}>
           <StatPanel
-            title="Drives Online"
+            title={t('pages.rustfsMonitor.panel.drivesOnline')}
             value={instant.drivesOnline}
             color={CHART_COLORS.success}
           />
         </PanelCol>
         <PanelCol span={4}>
           <StatPanel
-            title="Drives Offline"
+            title={t('pages.rustfsMonitor.panel.drivesOffline')}
             value={instant.drivesOffline}
             color={
               instant.drivesOffline === 0
@@ -170,14 +171,14 @@ const RustfsDashboard: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={12}>
           <TimeSeriesPanel
-            title="S3 Operations by API"
+            title={t('pages.rustfsMonitor.panel.s3OperationsByApi')}
             data={series.R06}
             yFormatter={opsFormatter}
           />
         </PanelCol>
         <PanelCol span={12}>
           <TimeSeriesPanel
-            title="HTTP Requests by Status"
+            title={t('pages.rustfsMonitor.panel.httpRequestsByStatus')}
             data={series.R07}
             yFormatter={opsFormatter}
           />
@@ -187,7 +188,7 @@ const RustfsDashboard: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={12}>
           <TimeSeriesPanel
-            title="HTTP Traffic"
+            title={t('pages.rustfsMonitor.panel.httpTraffic')}
             data={series.R08}
             yFormatter={bpsFormatter}
             colorMap={trafficColors}
@@ -195,7 +196,7 @@ const RustfsDashboard: FC = () => {
         </PanelCol>
         <PanelCol span={12}>
           <TimeSeriesPanel
-            title="HTTP Request Duration"
+            title={t('pages.rustfsMonitor.panel.httpRequestDuration')}
             data={series.R09}
             yFormatter={secondsFormatter}
             colorMap={latencyColors}
@@ -206,14 +207,14 @@ const RustfsDashboard: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={12}>
           <TimeSeriesPanel
-            title="HTTP Failures"
+            title={t('pages.rustfsMonitor.panel.httpFailures')}
             data={series.R10}
             yFormatter={opsFormatter}
           />
         </PanelCol>
         <PanelCol span={12}>
           <TimeSeriesPanel
-            title="Drive I/O Errors"
+            title={t('pages.rustfsMonitor.panel.driveIoErrors')}
             data={series.R11}
             yFormatter={opsFormatter}
             colorMap={errorColors}
@@ -224,21 +225,21 @@ const RustfsDashboard: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={8}>
           <TimeSeriesPanel
-            title="Capacity Used %"
+            title={t('pages.rustfsMonitor.panel.capacityUsedPercent')}
             data={series.R12}
             yFormatter={percentFormatter}
           />
         </PanelCol>
         <PanelCol span={8}>
           <TimeSeriesPanel
-            title="Process CPU %"
+            title={t('pages.rustfsMonitor.panel.processCpuPercent')}
             data={series.R13}
             yFormatter={percentFormatter}
           />
         </PanelCol>
         <PanelCol span={8}>
           <TimeSeriesPanel
-            title="Process Memory"
+            title={t('pages.rustfsMonitor.panel.processMemory')}
             data={series.R14}
             yFormatter={formatBytes}
           />
@@ -248,7 +249,7 @@ const RustfsDashboard: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={8}>
           <TimeSeriesPanel
-            title="Drive Capacity by Drive"
+            title={t('pages.rustfsMonitor.panel.driveCapacityByDrive')}
             data={series.R15}
             yFormatter={formatBytes}
             colorMap={capacityColors}
@@ -256,14 +257,14 @@ const RustfsDashboard: FC = () => {
         </PanelCol>
         <PanelCol span={8}>
           <TimeSeriesPanel
-            title="Drive IOPS by Drive"
+            title={t('pages.rustfsMonitor.panel.driveIopsByDrive')}
             data={series.R16}
             yFormatter={integerFormatter}
           />
         </PanelCol>
         <PanelCol span={8}>
           <TimeSeriesPanel
-            title="File Descriptors"
+            title={t('pages.rustfsMonitor.panel.fileDescriptors')}
             data={series.R17}
             yFormatter={integerFormatter}
             colorMap={fdColors}
@@ -274,7 +275,7 @@ const RustfsDashboard: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={24}>
           <TimeSeriesPanel
-            title="Replication Active Workers"
+            title={t('pages.rustfsMonitor.panel.replicationActiveWorkers')}
             data={series.R18}
             yFormatter={integerFormatter}
           />

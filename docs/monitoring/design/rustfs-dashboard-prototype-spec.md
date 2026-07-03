@@ -260,15 +260,20 @@ useDorisDashboardData / dorisService(queryDorisInstant/queryDorisRange/fetchDori
 
 ```
 datasophon-ui-v2/src/pages/monitor/RustfsMonitor/
-  ├── index.tsx                       # 页面容器（7 行布局）
+  ├── index.tsx                       # 页面容器（7 行布局），面板标题走 t('pages.rustfsMonitor.panel.*')
   ├── panelQueries.ts                 # PANEL_QUERIES: Record<string, DorisPanelDescriptor>（18 个）
   ├── hooks/
   │   └── useRustfsDashboard.ts       # 仿 useNexusDashboard.ts：useDorisDashboardData + fetchDorisLabels
-  ├── toolbar/
-  │   └── RustfsDashboardToolbar.tsx  # instance/job 多选 + 时间范围 + 刷新
   ├── mock/
   │   └── rustfsMockData.ts           # 工具栏 instance/job 下拉默认值
   └── panelQueries.test.ts
+
+# 实际实现比原计划更简：直接复用 ZKDashboardToolbar（instance/job 多选 + 时间范围 + 刷新），
+# 未新建 toolbar/ 目录——与 Apisix/MySQL/Nexus/ZooKeeper 同构，无 RustFS 独有变量需要专属工具栏。
+
+# 面板标题国际化（zh-CN/en-US 各一份，含 locale 一致性测试）：
+datasophon-ui-v2/src/locales/{zh-CN,en-US}/rustfsMonitor.ts        # title + 18 个 panel key
+datasophon-ui-v2/src/locales/{zh-CN,en-US}/rustfsMonitor.test.ts   # 锁定必需 key 齐全
 ```
 
 ### 8.2 Hook 集成要点
