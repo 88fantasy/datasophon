@@ -39,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.ApplicationContext;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -68,6 +69,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("integration")
+// gRPC server 端口固定为 18081（不随 RANDOM_PORT 一起变化），必须在类结束后关闭 Context 释放端口，
+// 否则与 DataSophonApplicationServerTest 各自的 Context 会争抢同一端口导致 BindException
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class DataSophonMySQLStartupTest {
     
     @Autowired
