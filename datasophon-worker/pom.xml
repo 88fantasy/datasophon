@@ -152,6 +152,7 @@
                         <include>**/test/OtelcolTemplateTest.java</include>
                         <include>**/test/ExporterScriptTemplateTest.java</include>
                         <include>**/test/YarnEnvTemplateTest.java</include>
+                        <include>**/test/DolphinschedulerEnvTemplateTest.java</include>
                     </includes>
                 </configuration>
             </plugin>
