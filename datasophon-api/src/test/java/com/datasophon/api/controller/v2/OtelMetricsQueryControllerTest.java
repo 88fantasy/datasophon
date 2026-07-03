@@ -63,13 +63,13 @@ class OtelMetricsQueryControllerTest {
         VectorSample sample = new VectorSample(
                 Map.of("instance", "h:8081", "job", "nexus"),
                 new Object[]{1234567890L, "42.0"});
-        // queryInstant signature: (clusterId, metric, agg, scale, instance, job, filters, filtersNe, evalTime)
+        // queryInstant signature: (clusterId, metric, agg, scale, instance, job, filters, filtersNe, evalTime, table)
         when(service.queryInstant(eq(1), eq("jvm_vm_uptime"), isNull(), eq(1.0),
-                anyString(), anyString(), any(), any(), anyLong()))
-                        .thenReturn(PrometheusVectorResult.of(List.of(sample)));
+                anyString(), anyString(), any(), any(), anyLong(), eq("gauge")))
+                .thenReturn(PrometheusVectorResult.of(List.of(sample)));
         
         ApiResponse<PrometheusVectorResult> response =
-                controller.query("jvm_vm_uptime", null, 1.0, ".+", ".+", null, 1, null, null);
+                controller.query("jvm_vm_uptime", null, 1.0, ".+", ".+", null, 1, null, null, "gauge");
         
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData().resultType()).isEqualTo("vector");
@@ -88,7 +88,7 @@ class OtelMetricsQueryControllerTest {
         when(service.queryRange(eq(1), eq("jvm_memory_heap_used"), isNull(), eq(1.0),
                 anyString(), anyString(), any(), any(), any(), anyLong(), anyLong(), anyLong(),
                 any(), anyDouble()))
-                        .thenReturn(matrix);
+                .thenReturn(matrix);
         
         ApiResponse<PrometheusMatrixResult> response =
                 controller.queryRange("jvm_memory_heap_used", null, 1.0, ".+", ".+",
@@ -135,11 +135,11 @@ class OtelMetricsQueryControllerTest {
     
     @Test
     void query_serviceThrows_returnsFailResponse() {
-        when(service.queryInstant(any(), any(), any(), anyDouble(), any(), any(), any(), any(), anyLong()))
+        when(service.queryInstant(any(), any(), any(), anyDouble(), any(), any(), any(), any(), anyLong(), any()))
                 .thenThrow(new IllegalStateException("No running DorisFE for cluster 1"));
-        
+
         ApiResponse<PrometheusVectorResult> response =
-                controller.query("jvm_vm_uptime", null, 1.0, ".+", ".+", null, 1, null, null);
+                controller.query("jvm_vm_uptime", null, 1.0, ".+", ".+", null, 1, null, null, "gauge");
         
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getErrorCode()).isEqualTo(500);
@@ -163,11 +163,11 @@ class OtelMetricsQueryControllerTest {
     
     @Test
     void query_responseEnvelopeMatchesPrometheusFormat() {
-        when(service.queryInstant(any(), any(), any(), anyDouble(), any(), any(), any(), any(), anyLong()))
+        when(service.queryInstant(any(), any(), any(), anyDouble(), any(), any(), any(), any(), anyLong(), any()))
                 .thenReturn(PrometheusVectorResult.of(Collections.emptyList()));
-        
+
         ApiResponse<PrometheusVectorResult> response =
-                controller.query("m", null, 1.0, ".+", ".+", null, 1, null, null);
+                controller.query("m", null, 1.0, ".+", ".+", null, 1, null, null, "gauge");
         
         assertThat(response.getData().resultType()).isEqualTo("vector");
         assertThat(response.getData().result()).isNotNull();

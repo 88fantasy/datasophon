@@ -1,3 +1,4 @@
+import apisixMonitor from './en-US/apisixMonitor';
 import component from './en-US/component';
 import dolphinSchedulerMonitor from './en-US/dolphinSchedulerMonitor';
 import dorisMonitor from './en-US/dorisMonitor';
@@ -31,4 +32,5 @@ export default {
   ...dorisMonitor,
   ...nginxMonitor,
   ...valkeyMonitor,
+  ...apisixMonitor,
 };

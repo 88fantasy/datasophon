@@ -53,12 +53,6 @@ export default [
         component: './monitor/ApisixMonitor',
       },
       {
-        path: '/monitor/prometheus',
-        name: 'prometheus-monitor',
-        icon: 'lineChart',
-        component: './monitor/PrometheusMonitor',
-      },
-      {
         path: '/monitor/zookeeper',
         name: 'zookeeper-monitor',
         icon: 'cluster',

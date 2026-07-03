@@ -52,7 +52,6 @@ export default {
   'menu.chatbot': 'AI 助手',
   'menu.monitor-dashboards': '监控看板',
   'menu.monitor-dashboards.apisix-monitor': 'APISIX 监控',
-  'menu.monitor-dashboards.prometheus-monitor': 'Prometheus 监控',
   'menu.monitor-dashboards.zookeeper-monitor': 'ZooKeeper 监控',
   'menu.monitor-dashboards.dolphinscheduler-monitor': 'DolphinScheduler 监控',
   'menu.monitor-dashboards.doris-monitor': 'Doris 监控',

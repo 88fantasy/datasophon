@@ -6,6 +6,7 @@
   "version": "4.0.5",
   "sortNum": 11,
   "createDecompressDir": false,
+  "dependencies": [],
   "arch": {
     "x86_64": {
       "packageName": "apache-doris-4.0.5-bin-x64.tar.gz",

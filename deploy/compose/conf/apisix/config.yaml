@@ -1,0 +1,21 @@
+# APISIX standalone 模式配置(无需 etcd)。
+# 参考:https://apisix.apache.org/zh/docs/apisix/deployment-modes/#standalone
+# role_data_plane.config_provider=yaml → 路由/上游/global_rule 从 conf/apisix.yaml 加载,
+# 每秒轮询文件变化,不依赖 etcd。
+deployment:
+  role: data_plane
+  role_data_plane:
+    config_provider: yaml
+
+apisix:
+  node_listen: 9080
+  enable_admin: false
+
+# prometheus 插件导出端口,otelcol 抓取此地址。
+# ip 必须是 0.0.0.0,否则容器网络内其他服务(otelcol)无法访问。
+plugin_attr:
+  prometheus:
+    export_addr:
+      ip: 0.0.0.0
+      port: 9091
+    enable_export_server: true

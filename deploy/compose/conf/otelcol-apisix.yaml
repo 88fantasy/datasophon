@@ -1,4 +1,4 @@
-# OTel Collector 配置：采集 Nexus + Doris Prometheus 指标 → Doris，并接收 api/worker OTLP traces + logs
+# OTel Collector 配置：采集 APISIX + Doris Prometheus 指标 → Doris，并接收 api/worker OTLP traces + logs
 #
 # 用于 deploy/compose/docker-compose.observability.yml 的本地链路验证。
 # 与生产 otelcol.ftl 的区别：
@@ -7,9 +7,9 @@
 #   - replication_num: 1（单 BE 必须；生产多 BE 时默认 3）
 #   - 含 debug exporter（便于排障）
 #
-# Nexus 指标端点（≥ 3.81 版本）：/service/rest/metrics/prometheus
+# APISIX 指标端点（standalone 模式，无鉴权）：/apisix/prometheus/metrics:9091
 # Doris FE 指标端点：:8030/metrics；Doris BE 指标端点：:8040/metrics
-# 端点验证：curl -u admin:admin123 http://localhost:8081/service/rest/metrics/prometheus | head
+# 端点验证：curl http://localhost:9091/apisix/prometheus/metrics | head
 
 extensions:
   health_check:
@@ -24,20 +24,17 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
-  prometheus/nexus:
+  prometheus/apisix:
     config:
       scrape_configs:
-        - job_name: nexus
+        - job_name: apisix
           scrape_interval: 15s
-          metrics_path: /service/rest/metrics/prometheus
+          metrics_path: /apisix/prometheus/metrics
           scheme: http
-          basic_auth:
-            username: admin
-            password: admin123
           static_configs:
-            - targets: ["obs-nexus:8081"]
+            - targets: ["obs-apisix:9091"]
               labels:
-                instance: obs-nexus
+                instance: obs-apisix
 
   # Doris FE + BE Prometheus 指标采集。
   # obs-doris-fe/be 既充当存储 Doris 又充当被监控 Doris（沙箱一机两用）。
@@ -136,7 +133,7 @@ service:
                 port: 8888
   pipelines:
     metrics:
-      receivers: [prometheus/nexus, prometheus/doris, otlp]
+      receivers: [prometheus/apisix, prometheus/doris, otlp]
       processors: [memory_limiter, batch]
       exporters: [doris, debug]
     metrics/host:
