@@ -87,6 +87,8 @@ public class OtelMetricsQueryController extends ApiController {
      * @param clusterId 集群 ID
      * @param filters   可选等值过滤，格式 {@code "group:fe,type:used"}
      * @param filtersNe 可选不等过滤，格式 {@code "device:lo"}
+     * @param table     查询的指标表："gauge"（默认）或 "sum"（counter/_total 类，如
+     *                  {@code apisix_http_requests_total}）
      */
     @GetMapping("/query")
     public ApiResponse<PrometheusVectorResult> query(
@@ -98,11 +100,12 @@ public class OtelMetricsQueryController extends ApiController {
                                                      @RequestParam(required = false) Long time,
                                                      @RequestParam(required = false, defaultValue = "1") Integer clusterId,
                                                      @RequestParam(required = false) String filters,
-                                                     @RequestParam(required = false) String filtersNe) {
+                                                     @RequestParam(required = false) String filtersNe,
+                                                     @RequestParam(required = false, defaultValue = "gauge") String table) {
         try {
             long evalTime = time != null ? time : System.currentTimeMillis() / 1000;
             return ApiResponse.ok(queryService.queryInstant(clusterId, metric, agg, scale,
-                    instance, job, parseFilters(filters), parseFilters(filtersNe), evalTime));
+                    instance, job, parseFilters(filters), parseFilters(filtersNe), evalTime, table));
         } catch (Exception e) {
             log.error("Doris instant query failed: metric={} cluster={} reason={}",
                     metric, clusterId, e.getMessage(), e);

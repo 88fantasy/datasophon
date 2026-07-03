@@ -33,7 +33,9 @@ export interface DorisInstantParams {
   job?: string;
   time?: number;
   clusterId?: number;
-  /** 等值属性过滤（key 须在白名单：group/type/mode/path/device） */
+  /** OTel 表选择:gauge(默认)、sum(counter/_total 类) */
+  table?: 'gauge' | 'sum';
+  /** 等值属性过滤(key 须在白名单：group/type/mode/path/device) */
   filters?: Record<string, string>;
   /** 不等属性过滤 */
   filtersNe?: Record<string, string>;
@@ -50,9 +52,12 @@ export interface DorisRangeParams {
   end: number;
   step: number;
   clusterId?: number;
-  /** OTel 表选择：gauge（默认）、sum（counter/_total 类）、summary（Dropwizard timer quantile） */
-  table?: 'gauge' | 'sum' | 'summary';
-  /** summary 表查询时的分位数（0~1），如 0.5 / 0.99，默认 0.5 */
+  /**
+   * OTel 表选择：gauge（默认）、sum（counter/_total 类）、summary（Dropwizard timer quantile）、
+   * histogram（OTel HistogramDataPoint 分位数，如 apisix_http_latency）
+   */
+  table?: 'gauge' | 'sum' | 'summary' | 'histogram';
+  /** summary/histogram 表查询时的分位数（0~1），如 0.5 / 0.9 / 0.99，默认 0.5 */
   quantile?: number;
   /** 等值属性过滤（key 须在白名单：group/type/mode/path/device） */
   filters?: Record<string, string>;
@@ -70,6 +75,8 @@ export interface DorisInstantDescriptor {
   metric: string;
   agg?: 'sum' | 'max';
   scale?: number;
+  /** OTel 表选择:gauge(默认)、sum(counter/_total 类,如 apisix_http_requests_total) */
+  table?: 'gauge' | 'sum';
   /** 等值属性过滤 */
   filters?: Record<string, string>;
   /** 不等属性过滤 */
@@ -95,7 +102,7 @@ export interface DorisRangeQuery {
   rate?: '1m' | '2m' | '5m' | '15m';
   scale?: number;
   /** OTel 表选择 */
-  table?: 'gauge' | 'sum' | 'summary';
+  table?: 'gauge' | 'sum' | 'summary' | 'histogram';
   quantile?: number;
   /** 等值属性过滤 */
   filters?: Record<string, string>;

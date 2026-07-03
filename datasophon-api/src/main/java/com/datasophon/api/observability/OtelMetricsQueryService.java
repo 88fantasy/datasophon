@@ -82,10 +82,12 @@ public class OtelMetricsQueryService {
      * 对应值通过命名参数绑定（af_key / afne_key），不存在注入风险。
      */
     static final Set<String> ALLOWED_ATTR_FILTER_KEYS =
-            Set.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state");
+            Set.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
+                    "code", "service", "route", "node", "consumer", "name");
     
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
-            List.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state");
+            List.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
+                    "code", "service", "route", "node", "consumer", "name");
     
     private final ClusterServiceRoleInstanceService roleService;
     private final OtelDorisReaderFactory readerFactory;
@@ -156,11 +158,14 @@ public class OtelMetricsQueryService {
     /**
      * Range 查询，返回 Prometheus matrix 格式。
      *
-     * @param rateWindow  速率窗口（"1m"/"5m"；null 表示 gauge，直接取平均）
+     * @param rateWindow  速率窗口（"1m"/"5m"；null 表示 gauge，直接取平均；table="histogram" 时
+     *                    复用作相邻采样对差分的回溯窗口）
      * @param scale       值乘数
      * @param filters     可选属性等值过滤（白名单键）
      * @param filtersNe   可选属性不等过滤（白名单键）
      * @param groupByKeys 额外 GROUP BY 维度（attributes MAP 键，白名单；如 {@code ["mode","path"]}）
+     * @param table       查询的指标表："gauge"（默认）/"sum"/"summary"/"histogram"
+     * @param quantile    分位数（0~1），table="summary"/"histogram" 时生效
      */
     public PrometheusMatrixResult queryRange(Integer clusterId, String metric,
                                              String rateWindow, double scale,
@@ -181,6 +186,28 @@ public class OtelMetricsQueryService {
                     .param("step", step)
                     .param("quantile", quantile)
                     .query().listOfRows();
+            return buildMatrix(rows, scale);
+        }
+        
+        if ("histogram".equalsIgnoreCase(table)) {
+            List<String> validGroupBy = toValidGroupBy(groupByKeys);
+            String sql = buildRangeHistogramSql(needsFilter(instance), needsFilter(job),
+                    filters, filtersNe, validGroupBy);
+            JdbcClient.StatementSpec spec = client.sql(sql)
+                    .param("metric", metric)
+                    .param("start", start)
+                    .param("end", end)
+                    .param("step", step)
+                    .param("rateWindow", parseRateWindow(rateWindow))
+                    .param("quantile", quantile);
+            if (needsFilter(instance)) {
+                spec = spec.param("instance", instance);
+            }
+            if (needsFilter(job)) {
+                spec = spec.param("job", job);
+            }
+            spec = bindAttrFilterParams(spec, filters, filtersNe);
+            List<Map<String, Object>> rows = spec.query().listOfRows();
             return buildMatrix(rows, scale);
         }
         
@@ -323,6 +350,129 @@ public class OtelMetricsQueryService {
                 + "         " + JOB_EXPR + ",\n"
                 + "         bucket\n"
                 + "ORDER BY instance, job, bucket";
+    }
+    
+    /**
+     * histogram range 分位数查询（p50/p90/p99 等），查 {@code otel_metrics_histogram} 表。
+     *
+     * <p>OTel {@code HistogramDataPoint.bucket_counts} 语义：每行代表自被采集进程启动以来
+     * 落在各桶的累计计数（prometheusreceiver 从 Prometheus 原生 cumulative {@code le} buckets
+     * 转换而来，仍随时间单调递增）。要得到某时间窗口内的分位数，须对相邻两次采样的
+     * {@code bucket_counts} 逐桶求差（与 {@link #buildRangeRateSql} 处理 counter 的思路一致），
+     * 得到窗口内新增计数，再按桶累加定位分位数所在区间并线性插值。
+     *
+     * <p>8 段 CTE：{@code ordered}/{@code with_lag}/{@code deltas} 做相邻采样对差分（复用 rate
+     * 查询套路）。{@code curr_exploded}/{@code prev_exploded} 分别对当前行、上一行的
+     * {@code bucket_counts} 做 {@code LATERAL VIEW POSEXPLODE}（{@code pos} 0-indexed），
+     * 按 (instance,job,extraCols,bucket,pos) JOIN 对齐两次采样的同一个桶，{@code exploded}
+     * 求逐桶差值并用 {@code element_at(explicit_bounds, pos+1)} 取桶上界（溢出桶为 NULL）。
+     * 之所以不像 summary 查询那样直接 {@code element_at(prev_bucket_counts, pos+1)}：Doris 对
+     * {@code LAG()} 窗口函数产出的 ARRAY 有两个实测限制——① 非常量下标的 {@code element_at}
+     * 在窗口函数结果上会报 "must be constant"（对真实表列则不受限）；② 即便侧写为常量下标，
+     * {@code LAG(arrayCol)} 的返回类型会退化为 VARCHAR，喂给 {@code POSEXPLODE} 报
+     * "only support array type"，需显式 {@code CAST(... AS ARRAY<BIGINT>)} 转回。用 JOIN 对齐
+     * 桶位置可以绕开①，配合 CAST 修复②。{@code agg} 汇总多个采样对的 delta；{@code cum1}/
+     * {@code cum2} 用窗口函数算累计计数/总数，并 LAG 出上一桶的累计数与上界；最终 SELECT 用
+     * {@code QUALIFY ROW_NUMBER() ... = 1} 定位 {@code cum_count >= quantile * total_count} 的
+     * 第一个桶，在 [lower_bound, upper_bound] 区间线性插值；落入溢出桶（upper_bound IS NULL）
+     * 时退化为返回 lower_bound（近似 Prometheus {@code histogram_quantile} 对 +Inf 桶的处理）。
+     *
+     * <p>算法已用合成数据 + 真实 APISIX standalone 沙箱抓取的 {@code apisix_http_latency}
+     * 数据在真实 Doris 上验证（p90 场景，含溢出桶与普通桶插值两种情形；真实数据验证时发现并
+     * 修正了上述①②两个 Doris ARRAY/窗口函数限制，合成数据阶段未触发,因为合成数据走的是子查询
+     * 字面量数组而非真实表列/LAG 结果）。
+     */
+    static String buildRangeHistogramSql(boolean filterInstance, boolean filterJob,
+                                         Map<String, String> filters, Map<String, String> filtersNe,
+                                         List<String> groupByKeys) {
+        String extraSelect = buildExtraSelect(groupByKeys);
+        String extraCols = buildExtraCols(groupByKeys);
+        StringBuilder filterStr = new StringBuilder();
+        appendFilters(filterStr, filterInstance, filterJob);
+        appendAttrFilters(filterStr, filters, filtersNe);
+        String partitionCols = "instance, job" + extraCols;
+        String joinCols = buildJoinCols(groupByKeys);
+        return "WITH ordered AS (\n"
+                + "  SELECT " + INST_EXPR + " AS instance,\n"
+                + "         " + JOB_EXPR + " AS job"
+                + extraSelect
+                + ",\n         UNIX_TIMESTAMP(timestamp) AS ts, bucket_counts, explicit_bounds\n"
+                + "  FROM otel.otel_metrics_histogram\n"
+                + "  WHERE metric_name = :metric\n"
+                + "    AND timestamp BETWEEN FROM_UNIXTIME(:start - :rateWindow) AND FROM_UNIXTIME(:end)\n"
+                + filterStr
+                + "),\n"
+                + "with_lag AS (\n"
+                + "  SELECT instance, job" + extraCols + ", ts, bucket_counts, explicit_bounds,\n"
+                + "    LAG(ts) OVER(PARTITION BY " + partitionCols + " ORDER BY ts) AS prev_ts,\n"
+                // Doris 对 LAG() 作用在 ARRAY 列上的返回类型会退化为 VARCHAR，必须显式 CAST 回
+                // ARRAY<BIGINT> 才能再喂给 POSEXPLODE（实测确认，合成数据的子查询字面量不触发此问题）。
+                + "    CAST(LAG(bucket_counts) OVER(PARTITION BY " + partitionCols
+                + " ORDER BY ts) AS ARRAY<BIGINT>) AS prev_bucket_counts\n"
+                + "  FROM ordered\n"
+                + "),\n"
+                + "deltas AS (\n"
+                + "  SELECT instance, job" + extraCols + ",\n"
+                + "    FLOOR(ts / :step) * :step AS bucket,\n"
+                + "    bucket_counts, prev_bucket_counts, explicit_bounds\n"
+                + "  FROM with_lag\n"
+                + "  WHERE prev_ts IS NOT NULL AND ts > prev_ts\n"
+                + "),\n"
+                + "curr_exploded AS (\n"
+                + "  SELECT instance, job" + extraCols + ", bucket, pos, bc AS curr_count, explicit_bounds\n"
+                + "  FROM deltas\n"
+                + "  LATERAL VIEW POSEXPLODE(bucket_counts) t AS pos, bc\n"
+                + "),\n"
+                + "prev_exploded AS (\n"
+                + "  SELECT instance, job" + extraCols + ", bucket, pos, bc AS prev_count\n"
+                + "  FROM deltas\n"
+                + "  LATERAL VIEW POSEXPLODE(prev_bucket_counts) t AS pos, bc\n"
+                + "),\n"
+                // Doris 对 element_at() 作用在 LAG() 窗口函数结果上、且下标非常量时会报
+                // "must be constant"（对真实表列/CTE 透传列则不受限）。用两次 POSEXPLODE + JOIN
+                // 按 pos 对齐当前/上一次采样的同一个桶，规避这个限制（实测确认）。
+                + "exploded AS (\n"
+                + "  SELECT c.instance AS instance, c.job AS job" + extraCols
+                + ", c.bucket AS bucket, c.pos AS pos,\n"
+                + "    GREATEST(c.curr_count - COALESCE(p.prev_count, 0), 0) AS bucket_delta,\n"
+                + "    element_at(c.explicit_bounds, c.pos + 1) AS upper_bound\n"
+                + "  FROM curr_exploded c\n"
+                + "  LEFT JOIN prev_exploded p\n"
+                + "    ON c.instance = p.instance AND c.job = p.job"
+                + joinCols
+                + " AND c.bucket = p.bucket AND c.pos = p.pos\n"
+                + "),\n"
+                + "agg AS (\n"
+                + "  SELECT instance, job" + extraCols + ", bucket, pos, upper_bound,\n"
+                + "    SUM(bucket_delta) AS bucket_delta\n"
+                + "  FROM exploded\n"
+                + "  WHERE bucket >= :start\n"
+                + "  GROUP BY instance, job" + extraCols + ", bucket, pos, upper_bound\n"
+                + "),\n"
+                + "cum1 AS (\n"
+                + "  SELECT instance, job" + extraCols + ", bucket, pos, upper_bound, bucket_delta,\n"
+                + "    SUM(bucket_delta) OVER(PARTITION BY " + partitionCols + ", bucket ORDER BY pos) AS cum_count,\n"
+                + "    SUM(bucket_delta) OVER(PARTITION BY " + partitionCols + ", bucket) AS total_count\n"
+                + "  FROM agg\n"
+                + "),\n"
+                + "cum2 AS (\n"
+                + "  SELECT instance, job" + extraCols
+                + ", bucket, pos, upper_bound, bucket_delta, cum_count, total_count,\n"
+                + "    LAG(upper_bound) OVER(PARTITION BY " + partitionCols + ", bucket ORDER BY pos) AS lower_bound,\n"
+                + "    LAG(cum_count) OVER(PARTITION BY " + partitionCols + ", bucket ORDER BY pos) AS lower_cum\n"
+                + "  FROM cum1\n"
+                + ")\n"
+                + "SELECT instance, job" + extraCols + ", bucket,\n"
+                + "  COALESCE(lower_bound, 0) +\n"
+                + "  CASE WHEN upper_bound IS NULL THEN 0\n"
+                + "       WHEN bucket_delta = 0 THEN 0\n"
+                + "       ELSE (:quantile * total_count - COALESCE(lower_cum, 0)) / bucket_delta\n"
+                + "            * (upper_bound - COALESCE(lower_bound, 0))\n"
+                + "  END AS value\n"
+                + "FROM cum2\n"
+                + "WHERE total_count > 0 AND cum_count >= :quantile * total_count\n"
+                + "QUALIFY ROW_NUMBER() OVER(PARTITION BY " + partitionCols + ", bucket ORDER BY pos) = 1\n"
+                + "ORDER BY instance, job" + extraCols + ", bucket";
     }
     
     /**
@@ -568,6 +718,20 @@ public class OtelMetricsQueryService {
             return "";
         }
         return ", " + String.join(", ", validKeys);
+    }
+    
+    /**
+     * JOIN ON 子句里的额外维度等值条件（{@code c.}/{@code p.} 表别名前缀）。
+     * 用于 {@link #buildRangeHistogramSql} 按 pos 对齐当前/上一次采样时，
+     * 同时按 groupBy 维度对齐（否则不同维度值的桶会被误配对）。
+     * 例如 {@code ["mode"]} → {@code " AND c.mode = p.mode"}。
+     */
+    private static String buildJoinCols(List<String> validKeys) {
+        StringBuilder sb = new StringBuilder();
+        for (String key : validKeys) {
+            sb.append(" AND c.").append(key).append(" = p.").append(key);
+        }
+        return sb.toString();
     }
     
     private static boolean needsRegexp(String value) {

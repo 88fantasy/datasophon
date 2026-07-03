@@ -1,11 +1,10 @@
 # 可观测链路模拟测试 compose
-# 拓扑：Nexus(采集源) → otel-collector(prometheus scrape + dorisexporter) → Doris(存储)
+# 拓扑：APISIX(采集源，standalone 模式) → otel-collector(prometheus scrape + dorisexporter) → Doris(存储)
 #
-# 版本对应 package/manifest.json：Doris 4.0.5、otelcol-contrib 0.154.0
-# Nexus 版本：sonatype/nexus3:3.92.3-alpine（≥ 3.81，指标端点路径见下）
+# 版本对应 package/manifest.json：Doris 4.0.5、otelcol-contrib 0.154.0、APISIX 3.16.0
+# APISIX 版本：apache/apisix:3.16.0-debian，standalone 模式（无 etcd，路由声明在 conf/apisix/apisix.yaml）
 #
 # 启动前提（本地 Mac）：
-#   - 停掉本机其他占用 8081 端口的 Nexus 实例
 #   - Docker Desktop 已运行（BE 依赖 vm.max_map_count，Docker Desktop on Mac 的 VM 已满足）
 #
 # 用法：
@@ -93,36 +92,73 @@ services:
         exit 1
     restart: "no"
 
-  # ─── Nexus（被采集的 Prometheus 指标来源） ────────────────────────────────────
-  obs-nexus:
-    image: sonatype/nexus3:3.92.3-alpine
-    container_name: obs-nexus
-    environment:
-      TZ: Asia/Shanghai
-      # 禁用随机密码，固定 admin 密码为 admin123（测试环境专用）
-      INSTALL4J_ADD_VM_PARAMS: >-
-        -Xms512m -Xmx512m -XX:MaxDirectMemorySize=512m
-        -Dnexus.security.randompassword=false
-    ports:
-      - "8081:8081"
-    volumes:
-      - obs-nexus-data:/nexus-data
+  # ─── APISIX 上游（被代理的回显服务，产生可观测的响应） ──────────────────────────
+  obs-echo:
+    image: hashicorp/http-echo:1.0
+    container_name: obs-echo
+    command: ["-text=ok", "-listen=:5678"]
     networks:
       - obs_net
+
+  # ─── APISIX（被采集的 Prometheus 指标来源，standalone 模式无需 etcd） ──────────
+  obs-apisix:
+    image: apache/apisix:3.16.0-debian
+    container_name: obs-apisix
+    volumes:
+      - ./conf/apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+      - ./conf/apisix/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
+    ports:
+      - "9080:9080"   # 数据面网关(APISIX 默认端口)
+      - "9091:9091"   # prometheus 插件指标导出
+    networks:
+      - obs_net
+    depends_on:
+      - obs-echo
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8081/service/rest/v1/status || exit 1"]
+      # 镜像(apache/apisix:3.16.0-debian)不含 curl/wget,用镜像自带的 openresty resty CLI 发一个原始 HTTP 探测请求
+      test:
+        - "CMD-SHELL"
+        - >-
+          resty -e '
+          local sock = ngx.socket.tcp()
+          sock:settimeout(2000)
+          local ok = sock:connect("127.0.0.1", 9091)
+          if not ok then os.exit(1) end
+          sock:send("GET /apisix/prometheus/metrics HTTP/1.0\r\nHost: localhost\r\n\r\n")
+          local line = sock:receive("*l")
+          sock:close()
+          if line and line:find("200") then os.exit(0) else os.exit(1) end
+          '
       interval: 10s
       timeout: 5s
       retries: 30
-      start_period: 120s   # Nexus 冷启动较慢（alpine 镜像约 60-120s）
+      start_period: 30s
 
-  # ─── OTel Collector（Nexus metrics → dorisexporter → Doris） ─────────────────
+  # ─── 持续压流（让 RPS/带宽/延迟等请求类指标产生真实数据） ──────────────────────
+  obs-apisix-load:
+    image: curlimages/curl:8.10.1
+    container_name: obs-apisix-load
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        while true; do
+          curl -s -o /dev/null obs-apisix:9080/get
+          sleep 0.5
+        done
+    networks:
+      - obs_net
+    depends_on:
+      obs-apisix:
+        condition: service_healthy
+    restart: on-failure
+
+  # ─── OTel Collector（APISIX metrics → dorisexporter → Doris） ────────────────
   obs-otelcol:
     image: otel/opentelemetry-collector-contrib:0.154.0
     container_name: obs-otelcol
-    command: ["--config=/etc/otelcol/otelcol-nexus.yaml"]
+    command: ["--config=/etc/otelcol/otelcol-apisix.yaml"]
     volumes:
-      - ./conf/otelcol-nexus.yaml:/etc/otelcol/otelcol-nexus.yaml:ro
+      - ./conf/otelcol-apisix.yaml:/etc/otelcol/otelcol-apisix.yaml:ro
     ports:
       - "8888:8888"   # collector self-metrics（Prometheus 格式）
       - "4317:4317"   # OTLP gRPC（宿主机 api/worker 直发）
@@ -132,7 +168,7 @@ services:
     depends_on:
       obs-doris-init:
         condition: service_completed_successfully
-      obs-nexus:
+      obs-apisix:
         condition: service_healthy
     restart: on-failure   # dorisexporter 首次 create_schema 可能因 BE 初始化竞争而失败，允许重试
 
@@ -141,7 +177,6 @@ volumes:
   obs-fe-log:
   obs-be-storage:
   obs-be-log:
-  obs-nexus-data:
 
 networks:
   obs_net:

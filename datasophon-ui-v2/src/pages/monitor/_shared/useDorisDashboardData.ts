@@ -163,6 +163,7 @@ export function useDorisDashboardData({
                 job,
                 time: end,
                 clusterId,
+                table: def.table,
                 filters: def.filters,
                 filtersNe: def.filtersNe,
               });

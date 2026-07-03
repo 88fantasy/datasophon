@@ -1,161 +1,205 @@
-import { Row } from 'antd';
-import { type FC, useCallback, useState } from 'react';
+/*
+ * MIT License
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+import { useIntl } from '@umijs/max';
+import { Badge, Row, Statistic } from 'antd';
+import { type FC, useCallback, useMemo, useState } from 'react';
+import { CHART_COLORS, colorByThreshold } from '../_shared/charts/formatters';
+import { selectionsToRegex } from '../_shared/charts/promql';
+import type { RefreshInterval, TimeRange } from '../_shared/DashboardToolbar';
 import { MONITOR_ROW_GUTTER } from '../_shared/layout';
 import MonitorDashboardLayout from '../_shared/MonitorDashboardLayout';
+import MonitorPanelCard from '../_shared/MonitorPanelCard';
 import PanelCol from '../_shared/PanelCol';
-import AreaPanel from './panels/AreaPanel';
+import AreaPanel from '../_shared/panels/AreaPanel';
+import StatPanel from '../_shared/panels/StatPanel';
+import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
+import ZKDashboardToolbar from '../ZooKeeperMonitor/toolbar/ZKDashboardToolbar';
+import { useApisixDashboard } from './hooks/useApisixDashboard';
 
 const BANDWIDTH_COLORS: Record<string, string> = {
-  ingress: '#52c41a',
-  egress: '#1677ff',
+  ingress: CHART_COLORS.success,
+  egress: CHART_COLORS.primary,
 };
 
 const CONNECTION_COLORS: Record<string, string> = {
-  active: '#1677ff',
+  active: CHART_COLORS.primary,
   reading: '#13c2c2',
-  writing: '#fa8c16',
+  writing: CHART_COLORS.warning,
   waiting: '#8c8c8c',
 };
 
-import {
-  apisixLatencyData,
-  bandwidthData,
-  connectionStateData,
-  etcdIndexData,
-  instantValues,
-  requestLatencyData,
-  rpsByCodeData,
-  rpsPerServiceData,
-  sharedDictData,
-  totalRpsData,
-  upstreamLatencyData,
-} from './mock/apisixMockData';
-import StatPanel from './panels/StatPanel';
-import StatusStatPanel from './panels/StatusStatPanel';
-import TimeSeriesPanel from './panels/TimeSeriesPanel';
-import type { RefreshInterval, TimeRange } from './toolbar/DashboardToolbar';
-import DashboardToolbar from './toolbar/DashboardToolbar';
-
-const MOCK_INSTANCES = ['10.0.0.1:9091', '10.0.0.2:9091'];
-const MOCK_SERVICES = ['order-service', 'user-service', 'payment-service'];
-
-// Etcd 阈值：value >= 1 时绿色（Healthy），< 1 时红色
-const ETCD_THRESHOLDS = [
-  { value: null, color: '#ff4d4f', label: 'Unreachable' },
-  { value: 1, color: '#52c41a', label: 'Healthy' },
-];
-
-// Nginx 错误阈值：0 绿色，>= 1 黄色
-const NGINX_ERR_THRESHOLDS = [
-  { value: null, color: '#52c41a', label: 'OK' },
-  { value: 1, color: '#faad14', label: 'Warning' },
-];
-
-// 延迟分位线颜色
 const LATENCY_COLORS: Record<string, string> = {
-  p90: '#1677ff',
-  p95: '#faad14',
-  p99: '#ff4d4f',
+  p90: CHART_COLORS.primary,
+  p95: CHART_COLORS.warning,
+  p99: CHART_COLORS.error,
 };
 
-// 服务颜色
-const SERVICE_COLORS: Record<string, string> = {
-  'order-service': '#1677ff',
-  'user-service': '#52c41a',
-  'payment-service': '#722ed1',
-};
-
-// 共享字典颜色
 const DICT_COLORS: Record<string, string> = {
-  'prometheus-metrics': '#ff4d4f',
-  'plugin-limit-req': '#1677ff',
-  'plugin-limit-conn': '#faad14',
-  'balancer-ewma': '#52c41a',
+  'prometheus-metrics': CHART_COLORS.error,
+  'plugin-limit-req': CHART_COLORS.primary,
+  'plugin-limit-conn': CHART_COLORS.warning,
+  'balancer-ewma': CHART_COLORS.success,
+};
+
+const rpsFormatter = (value: number) => `${value.toFixed(2)} req/s`;
+const msFormatter = (value: number) => `${value.toFixed(1)} ms`;
+const percentFormatter = (value: number) => `${value.toFixed(1)}%`;
+
+interface StatusStatPanelProps {
+  title: string;
+  value: number;
+}
+
+// Nginx 错误计数:0 正常,>=1 告警(仿 NexusMonitor 的 StatusStatPanel 就地定义手法)
+const StatusStatPanel: FC<StatusStatPanelProps> = ({ title, value }) => {
+  const hasError = value >= 1;
+  const color = hasError ? CHART_COLORS.warning : CHART_COLORS.success;
+
+  return (
+    <MonitorPanelCard compact>
+      <Statistic
+        title={title}
+        value={value}
+        formatter={() => (
+          <Badge
+            status={hasError ? 'warning' : 'success'}
+            text={hasError ? `${value} errors` : 'OK'}
+          />
+        )}
+        styles={{
+          content: { color, fontSize: 24, fontWeight: 600 },
+          value: { color },
+        }}
+      />
+    </MonitorPanelCard>
+  );
 };
 
 const ApisixDashboard: FC = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>('30s');
-  const [selectedInstances, setSelectedInstances] =
-    useState<string[]>(MOCK_INSTANCES);
-  const [selectedServices, setSelectedServices] =
-    useState<string[]>(MOCK_SERVICES);
-  // refreshKey 用于触发子组件重渲染（模拟数据刷新）
+  const [selectedInstances, setSelectedInstances] = useState<string[]>([]);
+  const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const intl = useIntl();
+  const t = (id: string) => intl.formatMessage({ id });
+  const panelTitle = (id: string) => t(`pages.apisixMonitor.panel.${id}`);
+  const title = t('pages.apisixMonitor.title');
+
+  const variables = useMemo(
+    () => ({
+      instance:
+        selectedInstances.length > 0
+          ? selectionsToRegex(selectedInstances)
+          : '.+',
+      job: selectedJobs.length > 0 ? selectionsToRegex(selectedJobs) : '.+',
+    }),
+    [selectedInstances, selectedJobs],
+  );
+
   const handleRefresh = useCallback(() => {
-    setRefreshKey((k) => k + 1);
+    setRefreshKey((key) => key + 1);
   }, []);
+
+  const { instant, series, instances, jobs, loading } = useApisixDashboard({
+    variables,
+    timeRange,
+    clusterId: 1,
+    refreshKey,
+  });
 
   return (
     <MonitorDashboardLayout
       key={refreshKey}
-      title="Apache APISIX 监控看板"
+      title={title}
       toolbar={
-        <DashboardToolbar
+        <ZKDashboardToolbar
           timeRange={timeRange}
           onTimeRangeChange={setTimeRange}
           refreshInterval={refreshInterval}
           onRefreshIntervalChange={setRefreshInterval}
-          instances={MOCK_INSTANCES}
+          instances={instances}
           selectedInstances={selectedInstances}
           onInstancesChange={setSelectedInstances}
-          services={MOCK_SERVICES}
-          selectedServices={selectedServices}
-          onServicesChange={setSelectedServices}
+          jobs={jobs}
+          selectedJobs={selectedJobs}
+          onJobsChange={setSelectedJobs}
           onRefresh={handleRefresh}
         />
       }
       meta={
         <>
-          instances={selectedInstances.join(', ')}
-          {' · '}
-          services={selectedServices.join(', ')}
+          {'instance=~"'}
+          {variables.instance}
+          {'" job=~"'}
+          {variables.job}
+          {'"'}
           {' · '}
           range={timeRange}
         </>
       }
+      loading={loading}
     >
-      {/* R1 — 摘要统计（col-span 8 each）*/}
+      {/* R1 — 摘要统计 */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <PanelCol span={8}>
+        <PanelCol span={6}>
           <StatPanel
-            title="Total Requests"
-            value={instantValues.totalRequests}
-            color="#52c41a"
+            title={panelTitle('A01')}
+            value={instant.totalRequests}
+            color={CHART_COLORS.primary}
           />
         </PanelCol>
-        <PanelCol span={8}>
+        <PanelCol span={6}>
           <StatPanel
-            title="Accepted Connections"
-            value={instantValues.acceptedConnections}
-            color="#1677ff"
+            title={panelTitle('A02')}
+            value={instant.acceptedConnections}
+            color={CHART_COLORS.primary}
           />
         </PanelCol>
-        <PanelCol span={8}>
+        <PanelCol span={6}>
           <StatPanel
-            title="Handled Connections"
-            value={instantValues.handledConnections}
-            color="#1677ff"
+            title={panelTitle('A03')}
+            value={instant.handledConnections}
+            color={CHART_COLORS.primary}
+          />
+        </PanelCol>
+        <PanelCol span={6}>
+          <StatPanel
+            title={panelTitle('A04')}
+            value={instant.activeConnections}
+            color={colorByThreshold(instant.activeConnections, [100, 500])}
           />
         </PanelCol>
       </Row>
 
       {/* R2 — 状态指示 */}
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <PanelCol span={12}>
+        <PanelCol span={24}>
           <StatusStatPanel
-            title="Etcd Reachable"
-            value={instantValues.etcdReachable}
-            thresholds={ETCD_THRESHOLDS}
-          />
-        </PanelCol>
-        <PanelCol span={12}>
-          <StatusStatPanel
-            title="Nginx Metric Errors"
-            value={instantValues.nginxMetricErrors}
-            thresholds={NGINX_ERR_THRESHOLDS}
+            title={panelTitle('A05')}
+            value={instant.nginxMetricErrors}
           />
         </PanelCol>
       </Row>
@@ -164,98 +208,70 @@ const ApisixDashboard: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={12}>
           <TimeSeriesPanel
-            title="Total Requests per Second"
-            data={totalRpsData}
-            unit=" req/s"
-            colorMap={{ RPS: '#1677ff' }}
+            title={panelTitle('A06')}
+            data={series.A06}
+            yFormatter={rpsFormatter}
+            tooltipFormatter={rpsFormatter}
           />
         </PanelCol>
-        <PanelCol span={12}>
-          <TimeSeriesPanel
-            title="RPS by Status Code"
-            data={rpsByCodeData}
-            unit=" req/s"
-          />
-        </PanelCol>
-      </Row>
-
-      {/* R4 — 延迟（col-span 8 each）*/}
-      <Row gutter={MONITOR_ROW_GUTTER}>
-        <PanelCol span={8}>
-          <TimeSeriesPanel
-            title="Request Latency"
-            data={requestLatencyData}
-            unit=" ms"
-            colorMap={LATENCY_COLORS}
-          />
-        </PanelCol>
-        <PanelCol span={8}>
-          <TimeSeriesPanel
-            title="APISIX Latency"
-            data={apisixLatencyData}
-            unit=" ms"
-            colorMap={LATENCY_COLORS}
-          />
-        </PanelCol>
-        <PanelCol span={8}>
-          <TimeSeriesPanel
-            title="Upstream Latency"
-            data={upstreamLatencyData}
-            unit=" ms"
-            colorMap={LATENCY_COLORS}
-          />
-        </PanelCol>
-      </Row>
-
-      {/* R5 — 带宽 */}
-      <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={12}>
           <AreaPanel
-            title="Total Bandwidth"
-            data={bandwidthData}
+            title={panelTitle('A07')}
+            data={series.A07}
             stack
-            unit="bytes"
             colorMap={BANDWIDTH_COLORS}
           />
         </PanelCol>
-        <PanelCol span={12}>
+      </Row>
+
+      {/* R4 — 延迟(p90/p95/p99) */}
+      <Row gutter={MONITOR_ROW_GUTTER}>
+        <PanelCol span={8}>
           <TimeSeriesPanel
-            title="RPS per Service"
-            data={rpsPerServiceData}
-            unit=" req/s"
-            colorMap={SERVICE_COLORS}
+            title={panelTitle('A08')}
+            data={series.A08}
+            yFormatter={msFormatter}
+            tooltipFormatter={msFormatter}
+            colorMap={LATENCY_COLORS}
+          />
+        </PanelCol>
+        <PanelCol span={8}>
+          <TimeSeriesPanel
+            title={panelTitle('A09')}
+            data={series.A09}
+            yFormatter={msFormatter}
+            tooltipFormatter={msFormatter}
+            colorMap={LATENCY_COLORS}
+          />
+        </PanelCol>
+        <PanelCol span={8}>
+          <TimeSeriesPanel
+            title={panelTitle('A10')}
+            data={series.A10}
+            yFormatter={msFormatter}
+            tooltipFormatter={msFormatter}
+            colorMap={LATENCY_COLORS}
           />
         </PanelCol>
       </Row>
 
-      {/* R6 — 连接 & 共享字典 */}
+      {/* R5 — Nginx 连接状态 & 共享字典剩余空间占比 */}
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={12}>
           <AreaPanel
-            title="Nginx Connection State"
-            data={connectionStateData}
+            title={panelTitle('A11')}
+            data={series.A11}
             stack
-            unit="short"
             colorMap={CONNECTION_COLORS}
           />
         </PanelCol>
         <PanelCol span={12}>
           <TimeSeriesPanel
-            title="Nginx Shared Dict Free Space (%)"
-            data={sharedDictData}
-            unit="%"
+            title={panelTitle('A12')}
+            data={series.A12}
+            yFormatter={percentFormatter}
+            tooltipFormatter={percentFormatter}
             colorMap={DICT_COLORS}
-          />
-        </PanelCol>
-      </Row>
-
-      {/* R7 — Etcd（全行）*/}
-      <Row gutter={MONITOR_ROW_GUTTER}>
-        <PanelCol span={24}>
-          <TimeSeriesPanel
-            title="Etcd Modify Indexes"
-            data={etcdIndexData}
-            height={200}
           />
         </PanelCol>
       </Row>

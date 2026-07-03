@@ -74,8 +74,10 @@ class OtelMetricsQueryServiceTest {
             String rate = OtelMetricsQueryService.buildRangeRateSql(
                     false, false, null, null, List.of(), "otel_metrics_gauge");
             String summary = OtelMetricsQueryService.buildRangeSummarySql();
+            String histogram = OtelMetricsQueryService.buildRangeHistogramSql(
+                    false, false, null, null, List.of());
             
-            for (String sql : List.of(noAgg, agg, gauge, rate, summary)) {
+            for (String sql : List.of(noAgg, agg, gauge, rate, summary, histogram)) {
                 assertThat(sql)
                         .as("SQL must reference resource_attributes for instance/job")
                         .contains("resource_attributes");
@@ -143,6 +145,83 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains(":end");
             assertThat(sql).containsIgnoringCase("BETWEEN FROM_UNIXTIME");
             assertThat(sql).contains("resource_attributes");
+        }
+        
+        // ── histogram range 分位数 ──
+        
+        @Test
+        void rangeHistogram_containsPosexplodeElementAtAndQuantile() {
+            String sql = OtelMetricsQueryService.buildRangeHistogramSql(
+                    false, false, null, null, List.of());
+            assertThat(sql).containsIgnoringCase("LATERAL VIEW POSEXPLODE");
+            assertThat(sql).contains("bucket_counts");
+            assertThat(sql).contains("explicit_bounds");
+            // prev_bucket_counts 对齐用 JOIN(非 element_at):Doris 对 LAG() 结果 + 非常量下标的
+            // element_at 会报 "must be constant"(真实 Doris 实测确认)
+            assertThat(sql).containsIgnoringCase("LEFT JOIN prev_exploded");
+            assertThat(sql).contains("c.pos = p.pos");
+            assertThat(sql).containsIgnoringCase("element_at(c.explicit_bounds, c.pos + 1)");
+            assertThat(sql).contains(":metric");
+            assertThat(sql).contains(":start");
+            assertThat(sql).contains(":end");
+            assertThat(sql).contains(":step");
+            assertThat(sql).contains(":rateWindow");
+            assertThat(sql).contains(":quantile");
+            assertThat(sql).contains("otel_metrics_histogram");
+            assertThat(sql).contains("resource_attributes");
+        }
+        
+        @Test
+        void rangeHistogram_usesAdjacentSampleDeltaLikeRateQuery() {
+            // 与 buildRangeRateSql 相同的相邻采样对差分套路（LAG + prev_ts 守卫）
+            String sql = OtelMetricsQueryService.buildRangeHistogramSql(
+                    false, false, null, null, List.of());
+            assertThat(sql).containsIgnoringCase("LAG(ts)");
+            assertThat(sql).containsIgnoringCase("LAG(bucket_counts)");
+            // LAG() 作用在 ARRAY 列上返回类型会退化为 VARCHAR,必须 CAST 回 ARRAY<BIGINT>
+            // 才能喂给 POSEXPLODE(真实 Doris 实测确认)
+            assertThat(sql).containsIgnoringCase("CAST(LAG(bucket_counts)");
+            assertThat(sql).containsIgnoringCase("AS ARRAY<BIGINT>");
+            assertThat(sql).contains("prev_ts IS NOT NULL AND ts > prev_ts");
+        }
+        
+        @Test
+        void rangeHistogram_interpolatesWithinBucketAndDegradesOnOverflowBucket() {
+            String sql = OtelMetricsQueryService.buildRangeHistogramSql(
+                    false, false, null, null, List.of());
+            // 溢出桶（upper_bound IS NULL）退化为返回 lower_bound
+            assertThat(sql).contains("WHEN upper_bound IS NULL THEN 0");
+            // 普通桶线性插值：(quantile*total - lower_cum) / bucket_delta * (upper_bound - lower_bound)
+            assertThat(sql).contains(":quantile * total_count - COALESCE(lower_cum, 0)) / bucket_delta");
+            assertThat(sql).containsIgnoringCase("QUALIFY ROW_NUMBER()");
+        }
+        
+        @Test
+        void rangeHistogram_withInstanceJobFilter_appendsResourceAttributesRegexp() {
+            String sql = OtelMetricsQueryService.buildRangeHistogramSql(
+                    true, true, null, null, List.of());
+            assertThat(sql).contains(":instance");
+            assertThat(sql).contains(":job");
+            assertThat(sql).containsIgnoringCase("REGEXP");
+        }
+        
+        @Test
+        void rangeHistogram_withGroupBy_addsExtraDimension() {
+            String sql = OtelMetricsQueryService.buildRangeHistogramSql(
+                    false, false, null, null, List.of("type"));
+            assertThat(sql).contains("attributes['type']");
+            assertThat(sql).contains("AS type");
+            assertThat(sql).contains("PARTITION BY instance, job, type");
+            // JOIN 对齐 curr/prev 时也要按 groupBy 维度对齐,否则不同 type 的桶会误配对
+            assertThat(sql).contains("AND c.type = p.type");
+        }
+        
+        @Test
+        void rangeHistogram_withAttrFilter_appendsAttributesCastEquals() {
+            String sql = OtelMetricsQueryService.buildRangeHistogramSql(
+                    false, false, Map.of("service", "order-service"), null, List.of());
+            assertThat(sql).contains("attributes['service']");
+            assertThat(sql).contains(":af_service");
         }
         
         // ── gauge range ──
