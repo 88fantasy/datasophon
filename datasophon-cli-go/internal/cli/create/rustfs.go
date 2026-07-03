@@ -28,6 +28,9 @@ type rustfsTask struct {
 	APIPort     string
 	Username    string
 	Password    string
+	// ObsEndpoint 为空时不导出 RUSTFS_OBS_* 环境变量，rustfs 不上报任何指标（向后兼容默认行为）。
+	// 非空时应为本节点 OTel Collector 的 OTLP HTTP 端点，如 http://127.0.0.1:4318。
+	ObsEndpoint string
 }
 
 func (t *rustfsTask) Name() string { return "安装rustfs" }
@@ -98,8 +101,17 @@ func (t *rustfsTask) start(exec executor.Executor, home, data, logs string) bool
 		home, t.WebHost, t.APIPort, t.WebHost, t.WebPort,
 		t.Username, t.Password, data, logs,
 	)
+	var lines []string
+	if t.ObsEndpoint != "" {
+		// rustfs-obs crate 读取的环境变量，metrics 走 OTLP/HTTP 上报到本节点 OTel Collector。
+		lines = append(lines,
+			fmt.Sprintf("export RUSTFS_OBS_ENDPOINT=%s", t.ObsEndpoint),
+			"export RUSTFS_OBS_SERVICE_NAME=rustfs",
+		)
+	}
+	lines = append(lines, startCmd)
 	startPath := fmt.Sprintf("%s/start.sh", home)
-	exec.WriteLines([]string{startCmd}, startPath)
+	exec.WriteLines(lines, startPath)
 	r := exec.ExecShell(fmt.Sprintf("bash %s", startPath))
 	return r.Success
 }
@@ -112,12 +124,13 @@ type createRustfsCmd struct {
 
 	installPath string
 
-	node     string
-	file     string
-	webPort  string
-	apiPort  string
-	user     string
-	password string
+	node        string
+	file        string
+	webPort     string
+	apiPort     string
+	user        string
+	password    string
+	obsEndpoint string
 
 	dryRun bool
 }
@@ -153,6 +166,7 @@ func NewRustfsCommand(dryRun *bool) *cobra.Command {
 	cmd.Flags().StringVar(&c.apiPort, "apiPort", "", "API 端口（手动模式必填）")
 	cmd.Flags().StringVarP(&c.user, "user", "u", "", "访问密钥（手动模式必填）")
 	cmd.Flags().StringVarP(&c.password, "password", "p", "", "密钥（手动模式必填）")
+	cmd.Flags().StringVar(&c.obsEndpoint, "obsEndpoint", "", "OTel Collector OTLP/HTTP 端点（选填，如 http://127.0.0.1:4318；留空则不上报指标）")
 
 	return cmd
 }
@@ -212,6 +226,7 @@ func (c *createRustfsCmd) runFromConfig() error {
 			APIPort:     rustfsCfg.Config.APIPort,
 			Username:    rustfsCfg.Config.User,
 			Password:    rustfsCfg.Config.Password,
+			ObsEndpoint: rustfsCfg.Config.ObsEndpoint,
 		}
 		if err := handler.NewChain(node, cfg.Global.SSHAuthType, c.dryRun).Add(t).Handle(); err != nil {
 			return fmt.Errorf("节点 %s 安装失败: %w", hostname, err)
@@ -263,6 +278,7 @@ func (c *createRustfsCmd) runFromFlags() error {
 		APIPort:     c.apiPort,
 		Username:    c.user,
 		Password:    c.password,
+		ObsEndpoint: c.obsEndpoint,
 	}
 	return t.doRun(executor.NewLocalExecutor(c.dryRun))
 }

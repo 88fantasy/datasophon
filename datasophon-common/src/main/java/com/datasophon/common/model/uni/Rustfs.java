@@ -29,6 +29,8 @@ public class Rustfs {
         private DiskType installType;
         
         private String volumes;
+        
+        private String obsEndpoint;
     }
     
 }

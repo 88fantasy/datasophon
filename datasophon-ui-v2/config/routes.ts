@@ -112,6 +112,12 @@ export default [
         icon: 'monitor',
         component: './monitor/ValkeyMonitor',
       },
+      {
+        path: '/monitor/rustfs',
+        name: 'rustfs-monitor',
+        icon: 'hdd',
+        component: './monitor/RustfsMonitor',
+      },
     ],
   },
 

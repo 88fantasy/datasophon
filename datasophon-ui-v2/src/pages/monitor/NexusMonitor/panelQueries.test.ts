@@ -23,7 +23,7 @@
 import { describe, expect, it } from 'vitest';
 import { PANEL_QUERIES } from './panelQueries';
 
-/** T1+T2 面板（已实现），T3 延后 */
+/** T1+T2+T3 全部面板（均已实现，见 panelQueries.ts 头部注释） */
 const IMPLEMENTED_PANEL_IDS = [
   'N01',
   'N02',
@@ -31,27 +31,24 @@ const IMPLEMENTED_PANEL_IDS = [
   'N04',
   'N05',
   'N06', // T1 instant
-  'N07', // T2 counter rate
+  'N07',
+  'N08',
+  'N14', // T2 counter rate
+  'N09',
+  'N10',
+  'N11', // T3 summary quantile
   'N12',
   'N13',
-  'N14', // T1/T2 multi-range
+  'N15',
   'N16',
+  'N17',
   'N18', // T1 multi-range
 ];
 
-/** T3 面板（延后，不应出现在 PANEL_QUERIES 中） */
-const DEFERRED_PANEL_IDS = ['N08', 'N09', 'N10', 'N11', 'N15', 'N17'];
-
 describe('NexusMonitor panel queries (Doris 描述符)', () => {
-  it('T1+T2 面板均已定义', () => {
+  it('T1+T2+T3 全部面板均已定义', () => {
     for (const id of IMPLEMENTED_PANEL_IDS) {
       expect(PANEL_QUERIES[id], `${id} should be defined`).toBeDefined();
-    }
-  });
-
-  it('T3 面板未定义（延后），不出现在 PANEL_QUERIES 中', () => {
-    for (const id of DEFERRED_PANEL_IDS) {
-      expect(PANEL_QUERIES[id], `${id} should be deferred`).toBeUndefined();
     }
   });
 
@@ -80,7 +77,7 @@ describe('NexusMonitor panel queries (Doris 描述符)', () => {
     }
   });
 
-  it('N14 GC 面板包含 MarkSweep 和 Scavenge，均设 rate: 1m', () => {
+  it('N14 GC 面板包含 Old GC 和 Young GC（G1GC 命名），均设 rate: 1m', () => {
     const n14 = PANEL_QUERIES['N14'];
     expect(n14.type).toBe('multi-range');
     if (n14.type !== 'multi-range') return;
@@ -89,8 +86,8 @@ describe('NexusMonitor panel queries (Doris 描述符)', () => {
       expect(q.rate).toBe('1m');
     }
     const labels = n14.queries.map((q) => q.label);
-    expect(labels).toContain('MarkSweep');
-    expect(labels).toContain('Scavenge');
+    expect(labels).toContain('Old GC');
+    expect(labels).toContain('Young GC');
   });
 
   it('N12 内存堆面板包含 Max/Used/Committed，均无 rate', () => {

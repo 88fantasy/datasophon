@@ -53,6 +53,8 @@ type RustfsConfig struct {
 	Password    string `yaml:"password"`
 	InstallType string `yaml:"installType"`
 	Volumes     string `yaml:"volumes"`
+	// ObsEndpoint 为空时不启用指标上报；非空时应为本节点 OTel Collector 的 OTLP/HTTP 端点。
+	ObsEndpoint string `yaml:"obsEndpoint"`
 }
 
 type MysqlConfig struct {
