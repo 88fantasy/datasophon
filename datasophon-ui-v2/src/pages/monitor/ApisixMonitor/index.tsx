@@ -71,9 +71,16 @@ interface StatusStatPanelProps {
 }
 
 // Nginx 错误计数:0 正常,>=1 告警(仿 NexusMonitor 的 StatusStatPanel 就地定义手法)
+// value 为非有限值(NaN/Infinity，来自 vectorToScalar 对空结果的约定)时不能当作
+// "无错误"渲染成绿色 OK——那会把 Doris 无数据/查询失败误判为健康，须单独显示为无数据状态。
 const StatusStatPanel: FC<StatusStatPanelProps> = ({ title, value }) => {
-  const hasError = value >= 1;
-  const color = hasError ? CHART_COLORS.warning : CHART_COLORS.success;
+  const noData = !Number.isFinite(value);
+  const hasError = !noData && value >= 1;
+  const color = noData
+    ? '#8c8c8c'
+    : hasError
+      ? CHART_COLORS.warning
+      : CHART_COLORS.success;
 
   return (
     <MonitorPanelCard compact>
@@ -82,8 +89,8 @@ const StatusStatPanel: FC<StatusStatPanelProps> = ({ title, value }) => {
         value={value}
         formatter={() => (
           <Badge
-            status={hasError ? 'warning' : 'success'}
-            text={hasError ? `${value} errors` : 'OK'}
+            status={noData ? 'default' : hasError ? 'warning' : 'success'}
+            text={noData ? 'No Data' : hasError ? `${value} errors` : 'OK'}
           />
         )}
         styles={{

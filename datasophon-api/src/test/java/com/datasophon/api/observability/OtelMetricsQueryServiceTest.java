@@ -186,6 +186,31 @@ class OtelMetricsQueryServiceTest {
         }
         
         @Test
+        void rangeHistogram_partitionsBySeriesKeyToAvoidCrossSeriesPairing() {
+            // Codex 审查发现：同一 instance/job 下可能有多条实际 series(如 APISIX 的
+            // route/service/node 维度未被 groupBy 覆盖时)，若不按完整 series 身份分区，
+            // LAG/JOIN 会把不同 series 的采样点错配，产出跨 series 的伪 delta。
+            String sql = OtelMetricsQueryService.buildRangeHistogramSql(
+                    false, false, null, null, List.of());
+            assertThat(sql).contains("CAST(attributes AS STRING) AS series_key");
+            assertThat(sql).contains("PARTITION BY instance, job, series_key");
+            assertThat(sql).contains("AND c.series_key = p.series_key");
+        }
+        
+        @Test
+        void rangeHistogram_guardsAgainstCounterResetUsingHistCount() {
+            // 与 buildRangeRateSql 的 value >= prev_val 守卫一致：用 count 列的 LAG 判断是否
+            // 发生计数器重置(如进程重启)，reset 时整对采样丢弃，而不是逐桶 clamp 到 0
+            // (clamp 会静默丢失 reset 后的真实新增量，使分位数系统性偏低)。
+            String sql = OtelMetricsQueryService.buildRangeHistogramSql(
+                    false, false, null, null, List.of());
+            assertThat(sql).contains("count AS hist_count");
+            assertThat(sql).containsIgnoringCase("LAG(hist_count)");
+            assertThat(sql).contains("AS prev_hist_count");
+            assertThat(sql).contains("hist_count >= prev_hist_count");
+        }
+        
+        @Test
         void rangeHistogram_interpolatesWithinBucketAndDegradesOnOverflowBucket() {
             String sql = OtelMetricsQueryService.buildRangeHistogramSql(
                     false, false, null, null, List.of());
@@ -214,6 +239,8 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("PARTITION BY instance, job, type");
             // JOIN 对齐 curr/prev 时也要按 groupBy 维度对齐,否则不同 type 的桶会误配对
             assertThat(sql).contains("AND c.type = p.type");
+            // series_key 对齐仍须叠加在 groupBy 维度之上(groupBy 粒度可能比实际 series 更粗)
+            assertThat(sql).contains("AND c.series_key = p.series_key");
         }
         
         @Test

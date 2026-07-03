@@ -361,17 +361,37 @@ public class OtelMetricsQueryService {
      * {@code bucket_counts} 逐桶求差（与 {@link #buildRangeRateSql} 处理 counter 的思路一致），
      * 得到窗口内新增计数，再按桶累加定位分位数所在区间并线性插值。
      *
-     * <p>8 段 CTE：{@code ordered}/{@code with_lag}/{@code deltas} 做相邻采样对差分（复用 rate
-     * 查询套路）。{@code curr_exploded}/{@code prev_exploded} 分别对当前行、上一行的
-     * {@code bucket_counts} 做 {@code LATERAL VIEW POSEXPLODE}（{@code pos} 0-indexed），
-     * 按 (instance,job,extraCols,bucket,pos) JOIN 对齐两次采样的同一个桶，{@code exploded}
-     * 求逐桶差值并用 {@code element_at(explicit_bounds, pos+1)} 取桶上界（溢出桶为 NULL）。
-     * 之所以不像 summary 查询那样直接 {@code element_at(prev_bucket_counts, pos+1)}：Doris 对
-     * {@code LAG()} 窗口函数产出的 ARRAY 有两个实测限制——① 非常量下标的 {@code element_at}
-     * 在窗口函数结果上会报 "must be constant"（对真实表列则不受限）；② 即便侧写为常量下标，
-     * {@code LAG(arrayCol)} 的返回类型会退化为 VARCHAR，喂给 {@code POSEXPLODE} 报
-     * "only support array type"，需显式 {@code CAST(... AS ARRAY<BIGINT>)} 转回。用 JOIN 对齐
-     * 桶位置可以绕开①，配合 CAST 修复②。{@code agg} 汇总多个采样对的 delta；{@code cum1}/
+     * <h3>完整 series 身份对齐（Codex 审查修正）</h3>
+     * 同一 instance/job 下常常存在多条实际 histogram series（如 APISIX 的 route/service/
+     * node/consumer 等维度都不在 {@code groupByKeys} 内时）。若只按 (instance,job,extraCols)
+     * 做 {@code LAG}/{@code JOIN}，会把不同 series 的采样点相互配对，产出跨 series 的伪 delta，
+     * 分位数被错误样本污染。因此额外引入 {@code CAST(attributes AS STRING) AS series_key}
+     * （实测确认对同一 attributes 组合序列化稳定、按 key 字母序），贯穿
+     * {@code ordered → with_lag → deltas → curr_exploded/prev_exploded} 直到 {@code exploded}
+     * 的 JOIN 键，保证只有同一条原始 series 的相邻两次采样才会配对；到 {@code agg} 阶段才按
+     * 调用方要求的 {@code groupByKeys} 粒度对 delta 求和（故意跨 series 聚合），
+     * 语义等价于 Prometheus 先 per-series 求 rate 再 {@code sum() by (...)}。
+     *
+     * <h3>reset 处理（Codex 审查修正）</h3>
+     * 与 {@link #buildRangeRateSql} 的 {@code value >= prev_val} 守卫一致：用 histogram 行自带
+     * 的 {@code count}（等价 {@code sum(bucket_counts)}）列及其 LAG 判断是否发生了计数器重置
+     * （如 APISIX 进程重启），{@code hist_count < prev_hist_count} 时整对采样直接丢弃，
+     * 而不是逐桶 {@code GREATEST(...,0)} 把差值压成 0——后者会静默丢失 reset 后的真实新增量，
+     * 使分位数系统性偏低。{@code GREATEST(...,0)} 仍保留作为兜底（理论上 reset 守卫生效后每桶
+     * 差值不应为负，双重保险防御未预见的边缘情况）。
+     *
+     * <p>10 段 CTE：{@code ordered}/{@code with_lag}/{@code deltas} 做相邻采样对差分（复用 rate
+     * 查询套路，PARTITION BY 含 series_key）。{@code curr_exploded}/{@code prev_exploded} 分别对
+     * 当前行、上一行的 {@code bucket_counts} 做 {@code LATERAL VIEW POSEXPLODE}（{@code pos}
+     * 0-indexed），按 (instance,job,extraCols,series_key,bucket,pos) JOIN 对齐两次采样的同一个
+     * 桶，{@code exploded} 求逐桶差值并用 {@code element_at(explicit_bounds, pos+1)} 取桶上界
+     * （溢出桶为 NULL）。之所以不像 summary 查询那样直接
+     * {@code element_at(prev_bucket_counts, pos+1)}：Doris 对 {@code LAG()} 窗口函数产出的
+     * ARRAY 有两个实测限制——① 非常量下标的 {@code element_at} 在窗口函数结果上会报
+     * "must be constant"（对真实表列则不受限）；② 即便侧写为常量下标，{@code LAG(arrayCol)}
+     * 的返回类型会退化为 VARCHAR，喂给 {@code POSEXPLODE} 报 "only support array type"，需显式
+     * {@code CAST(... AS ARRAY<BIGINT>)} 转回。用 JOIN 对齐桶位置可以绕开①，配合 CAST 修复②。
+     * {@code agg} 汇总多个采样对/series 的 delta（此处丢弃 series_key）；{@code cum1}/
      * {@code cum2} 用窗口函数算累计计数/总数，并 LAG 出上一桶的累计数与上界；最终 SELECT 用
      * {@code QUALIFY ROW_NUMBER() ... = 1} 定位 {@code cum_count >= quantile * total_count} 的
      * 第一个桶，在 [lower_bound, upper_bound] 区间线性插值；落入溢出桶（upper_bound IS NULL）
@@ -380,7 +400,7 @@ public class OtelMetricsQueryService {
      * <p>算法已用合成数据 + 真实 APISIX standalone 沙箱抓取的 {@code apisix_http_latency}
      * 数据在真实 Doris 上验证（p90 场景，含溢出桶与普通桶插值两种情形；真实数据验证时发现并
      * 修正了上述①②两个 Doris ARRAY/窗口函数限制，合成数据阶段未触发,因为合成数据走的是子查询
-     * 字面量数组而非真实表列/LAG 结果）。
+     * 字面量数组而非真实表列/LAG 结果）。series_key 对齐 + reset 守卫已用真实沙箱数据复测。
      */
     static String buildRangeHistogramSql(boolean filterInstance, boolean filterJob,
                                          Map<String, String> filters, Map<String, String> filtersNe,
@@ -391,46 +411,56 @@ public class OtelMetricsQueryService {
         appendFilters(filterStr, filterInstance, filterJob);
         appendAttrFilters(filterStr, filters, filtersNe);
         String partitionCols = "instance, job" + extraCols;
+        String seriesPartitionCols = partitionCols + ", series_key";
         String joinCols = buildJoinCols(groupByKeys);
         return "WITH ordered AS (\n"
                 + "  SELECT " + INST_EXPR + " AS instance,\n"
                 + "         " + JOB_EXPR + " AS job"
                 + extraSelect
-                + ",\n         UNIX_TIMESTAMP(timestamp) AS ts, bucket_counts, explicit_bounds\n"
+                + ",\n         CAST(attributes AS STRING) AS series_key,\n"
+                + "         UNIX_TIMESTAMP(timestamp) AS ts, count AS hist_count, bucket_counts, explicit_bounds\n"
                 + "  FROM otel.otel_metrics_histogram\n"
                 + "  WHERE metric_name = :metric\n"
                 + "    AND timestamp BETWEEN FROM_UNIXTIME(:start - :rateWindow) AND FROM_UNIXTIME(:end)\n"
                 + filterStr
                 + "),\n"
                 + "with_lag AS (\n"
-                + "  SELECT instance, job" + extraCols + ", ts, bucket_counts, explicit_bounds,\n"
-                + "    LAG(ts) OVER(PARTITION BY " + partitionCols + " ORDER BY ts) AS prev_ts,\n"
+                + "  SELECT instance, job" + extraCols
+                + ", series_key, ts, hist_count, bucket_counts, explicit_bounds,\n"
+                + "    LAG(ts) OVER(PARTITION BY " + seriesPartitionCols + " ORDER BY ts) AS prev_ts,\n"
+                + "    LAG(hist_count) OVER(PARTITION BY " + seriesPartitionCols
+                + " ORDER BY ts) AS prev_hist_count,\n"
                 // Doris 对 LAG() 作用在 ARRAY 列上的返回类型会退化为 VARCHAR，必须显式 CAST 回
                 // ARRAY<BIGINT> 才能再喂给 POSEXPLODE（实测确认，合成数据的子查询字面量不触发此问题）。
-                + "    CAST(LAG(bucket_counts) OVER(PARTITION BY " + partitionCols
+                + "    CAST(LAG(bucket_counts) OVER(PARTITION BY " + seriesPartitionCols
                 + " ORDER BY ts) AS ARRAY<BIGINT>) AS prev_bucket_counts\n"
                 + "  FROM ordered\n"
                 + "),\n"
                 + "deltas AS (\n"
-                + "  SELECT instance, job" + extraCols + ",\n"
+                + "  SELECT instance, job" + extraCols + ", series_key,\n"
                 + "    FLOOR(ts / :step) * :step AS bucket,\n"
                 + "    bucket_counts, prev_bucket_counts, explicit_bounds\n"
                 + "  FROM with_lag\n"
-                + "  WHERE prev_ts IS NOT NULL AND ts > prev_ts\n"
+                // reset 守卫：与 buildRangeRateSql 的 value >= prev_val 一致，计数器重置（如进程
+                // 重启）时整对采样丢弃，不逐桶压成 0（避免系统性低估 reset 后的真实新增量）。
+                + "  WHERE prev_ts IS NOT NULL AND ts > prev_ts AND hist_count >= prev_hist_count\n"
                 + "),\n"
                 + "curr_exploded AS (\n"
-                + "  SELECT instance, job" + extraCols + ", bucket, pos, bc AS curr_count, explicit_bounds\n"
+                + "  SELECT instance, job" + extraCols
+                + ", series_key, bucket, pos, bc AS curr_count, explicit_bounds\n"
                 + "  FROM deltas\n"
                 + "  LATERAL VIEW POSEXPLODE(bucket_counts) t AS pos, bc\n"
                 + "),\n"
                 + "prev_exploded AS (\n"
-                + "  SELECT instance, job" + extraCols + ", bucket, pos, bc AS prev_count\n"
+                + "  SELECT instance, job" + extraCols + ", series_key, bucket, pos, bc AS prev_count\n"
                 + "  FROM deltas\n"
                 + "  LATERAL VIEW POSEXPLODE(prev_bucket_counts) t AS pos, bc\n"
                 + "),\n"
                 // Doris 对 element_at() 作用在 LAG() 窗口函数结果上、且下标非常量时会报
                 // "must be constant"（对真实表列/CTE 透传列则不受限）。用两次 POSEXPLODE + JOIN
                 // 按 pos 对齐当前/上一次采样的同一个桶，规避这个限制（实测确认）。
+                // JOIN 键含 series_key：防止不同实际 series（如不同 route/service/node）在同一
+                // (instance,job,extraCols,bucket,pos) 下被误配对（Codex 审查发现的跨 series 污染）。
                 + "exploded AS (\n"
                 + "  SELECT c.instance AS instance, c.job AS job" + extraCols
                 + ", c.bucket AS bucket, c.pos AS pos,\n"
@@ -440,7 +470,7 @@ public class OtelMetricsQueryService {
                 + "  LEFT JOIN prev_exploded p\n"
                 + "    ON c.instance = p.instance AND c.job = p.job"
                 + joinCols
-                + " AND c.bucket = p.bucket AND c.pos = p.pos\n"
+                + " AND c.series_key = p.series_key AND c.bucket = p.bucket AND c.pos = p.pos\n"
                 + "),\n"
                 + "agg AS (\n"
                 + "  SELECT instance, job" + extraCols + ", bucket, pos, upper_bound,\n"
