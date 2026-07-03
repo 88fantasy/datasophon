@@ -91,7 +91,7 @@ class OtelCollectorDdlLoadTest {
         assertEquals("OtelCollector", role.getString("name"));
         assertEquals("worker", role.getString("roleType"));
         assertEquals("1+", role.getString("cardinality"));
-        assertEquals(Integer.valueOf(8888), role.getInteger("jmxPort"));
+        assertEquals("otelSelfMetricsPort", role.getString("jmxPortParam"));
         
         // configWriter 指向 otelcol.ftl
         JSONObject yamlGenerator = json.getJSONObject("configWriter")

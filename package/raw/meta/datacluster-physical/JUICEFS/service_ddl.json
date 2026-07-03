@@ -25,7 +25,6 @@
       "roleType": "worker",
       "cardinality": "1+",
       "logFile": "logs/appweb",
-      "jmxPort": 9567,
       "jmxPortParam": "juicefsJmxPort",
       "startRunner": {
         "timeout": "60",

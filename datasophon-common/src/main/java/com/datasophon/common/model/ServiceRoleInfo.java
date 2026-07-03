@@ -76,12 +76,9 @@ public class ServiceRoleInfo implements Serializable, ServiceRoleResource {
     
     private String logFile;
     
-    private String jmxPort;
-    
     /**
-     * 若该角色的监控端口(jmxPort)与某个可在 Web UI 配置的业务参数复用同一端口，
-     * 在此声明该参数名；OtelScrapeConfigBuilder 会优先读取该参数的当前生效值，
-     * 而不是 ddl 里写死的 jmxPort 静态默认值。留空表示 jmxPort 是独立端口，行为不变。
+     * 该角色的监控端口对应的 ddl 业务参数名；OtelScrapeConfigBuilder 据此读取角色组 configJson
+     * 里的实时值，读不到时退回该参数的 ddl defaultValue。留空表示该角色不暴露监控端口，不生成抓取任务。
      */
     private String jmxPortParam;
     

@@ -8,7 +8,6 @@ import com.datasophon.api.load.GlobalVariables;
 import com.datasophon.api.load.ServiceConfigFileMap;
 import com.datasophon.api.load.ServiceConfigMap;
 import com.datasophon.api.load.ServiceInfoMap;
-import com.datasophon.api.load.ServiceRoleJmxMap;
 import com.datasophon.api.load.ServiceRoleMap;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.ClusterServiceInstanceRoleGroupService;
@@ -47,9 +46,6 @@ import com.datasophon.dao.entity.FrameServiceRoleEntity;
 import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 import com.datasophon.dao.enums.NeedRestart;
 
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validator;
-
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -63,8 +59,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,6 +76,9 @@ import com.alibaba.fastjson2.TypeReference;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.SecureUtil;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author zhanghuangbin
@@ -258,10 +255,6 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             serviceRole.setParentName(serviceName);
             String key = String.format("%s_%s_%s", frameCode, serviceName, serviceRole.getName());
             log.info("put {} {} {} service role info into cache", frameCode, serviceName, serviceRole.getName());
-            if (StringUtils.isNotBlank(serviceRole.getJmxPort())) {
-                log.info("{} jmx port is :{} and the jmx key is: {}", serviceRole.getName(), serviceRole.getJmxPort(), key);
-                ServiceRoleJmxMap.put(key, serviceRole.getJmxPort());
-            }
             ServiceRoleMap.put(key, serviceRole);
             serviceRole.setFrameCode(frameCode);
             String serviceRoleJson = JSONObject.toJSONString(serviceRole, JSONWriter.Feature.IgnoreErrorGetter);
@@ -277,7 +270,6 @@ public class DdlMetaServiceImpl implements DdlMetaService {
             role.setFrameCode(frameCode);
             role.setServiceRoleJson(serviceRoleJson);
             role.setServiceRoleType(CommonUtils.convertRoleType(serviceRole.getRoleType().getName()));
-            role.setJmxPort(serviceRole.getJmxPort());
             role.setServiceRoleJsonMd5(serviceRoleJsonMd5);
             role.setLogFile(serviceRole.getLogFile());
             role.setSortNum(serviceRole.getSortNum());

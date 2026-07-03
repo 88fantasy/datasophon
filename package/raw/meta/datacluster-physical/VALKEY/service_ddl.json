@@ -54,7 +54,6 @@
       "roleType": "worker",
       "cardinality": "1",
       "logFile": "redis-exporter/logs/exporter.log",
-      "jmxPort": 9121,
       "jmxPortParam": "valkeyExporterPort",
       "sortNum": 2,
       "startRunner": {

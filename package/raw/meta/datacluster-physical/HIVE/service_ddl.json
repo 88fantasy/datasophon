@@ -18,7 +18,6 @@
       "cardinality": "1+",
       "logFile": "logs/hivemetastore.out",
       "serverPorts": [],
-      "jmxPort": 12000,
       "jmxPortParam": "hiveMetaStoreJmxPort",
       "runAs": {
         "user": "hive",
@@ -118,7 +117,6 @@
       "cardinality": "1+",
       "logFile": "logs/hiveserver2.out",
       "serverPorts": [],
-      "jmxPort": 11000,
       "jmxPortParam": "hiveServer2JmxPort",
       "runAs": {
         "user": "hive",

@@ -517,9 +517,9 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 
 ## 十一、大数据服务组件端口清单
 
-> 梳理依据：`package/raw/meta/datacluster-physical/<SERVICE>/service_ddl.json`（parameters + roles.jmxPort，元数据真相之源）+ `datasophon-worker/src/main/resources/templates/*.ftl`（配置模板中硬编码的端口）。
+> 梳理依据：`package/raw/meta/datacluster-physical/<SERVICE>/service_ddl.json`（parameters + roles.jmxPortParam，元数据真相之源）+ `datasophon-worker/src/main/resources/templates/*.ftl`（配置模板中读取该参数渲染出的端口）。
 > mw1 中间件组件（datasophon-api / datasophon-worker / Nexus / MySQL / Rustfs / NTP）端口已在**二、端口速查表**列出，此处不重复。
-> **端口来源**列标注：`项目配置` = service_ddl.json 显式参数值；`项目配置(JMX)` = role.jmxPort，OTel Collector 据此动态生成 scrape 配置；`官方默认` = 组件官方文档默认值，本项目未在 service_ddl 中显式暴露/覆盖该参数，实际以打包内静态配置文件为准。
+> **端口来源**列标注：`项目配置` = service_ddl.json 显式参数值；`项目配置(可配置参数)` = 角色声明了 jmxPortParam，指向某个 Web UI 可配置参数，OTel Collector 优先读该参数的实时值，读不到时退回其 ddl defaultValue 动态生成 scrape 配置；`官方默认` = 组件官方文档默认值，本项目未在 service_ddl 中显式暴露/覆盖该参数，实际以打包内静态配置文件为准。
 
 ### 存储 / 数据库
 
@@ -527,36 +527,36 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 |---|---|---|---|---|---|
 | **HDFS** | NameNode（nn1/nn2，HA） | **8020** | TCP | RPC（`fs.defaultFS`/`dfs.namenode.rpc-address`） | 项目配置 |
 | | NameNode（nn1/nn2，HA） | **9870** | TCP | HTTP Web UI（`dfs.namenode.http-address`） | 项目配置 |
-| | NameNode | **27001** | TCP | JMX/Prometheus 指标 | 项目配置(JMX) |
+| | NameNode | **27001** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) |
 | | DataNode | **1026** | TCP | 数据传输（`dfs.datanode.address`；项目覆盖官方默认 50010） | 项目配置 |
 | | DataNode | **1025** | TCP | HTTP（`dfs.datanode.http.address`；项目覆盖官方默认 9864） | 项目配置 |
-| | DataNode | **27002** | TCP | JMX/Prometheus 指标 | 项目配置(JMX) |
+| | DataNode | **27002** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) |
 | | JournalNode | **8485** | TCP | QJournal 共享 EditLog（HA 元数据同步） | 项目配置 |
-| | JournalNode | **27003** | TCP | JMX/Prometheus 指标 | 项目配置(JMX) |
-| | ZKFC | **27004** | TCP | JMX/Prometheus 指标（进程内嵌自动故障切换，无独立业务端口） | 项目配置(JMX) |
+| | JournalNode | **27003** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) |
+| | ZKFC | **27004** | TCP | JMX/Prometheus 指标（进程内嵌自动故障切换，无独立业务端口） | 项目配置(可配置参数) |
 | | HttpFs | **14000** | TCP | REST 网关（未在本项目 service_ddl 中覆盖，JMX 端口亦未配置） | 官方默认 |
 | **YARN** | ResourceManager（rm1/rm2，HA） | **8088** | TCP | Web UI | 项目配置 |
 | | ResourceManager | **8032** | TCP | 客户端提交作业地址 | 项目配置 |
 | | ResourceManager | **8030** | TCP | ApplicationMaster 调度地址 | 项目配置 |
 | | ResourceManager | **8031** | TCP | NodeManager 资源上报地址 | 项目配置 |
-| | ResourceManager | **9323** | TCP | JMX/Prometheus 指标 | 项目配置(JMX) |
+| | ResourceManager | **9323** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) |
 | | NodeManager | **45454** | TCP | 容器/本地化服务地址 | 项目配置 |
 | | NodeManager | **8042** | TCP | Web UI（Hadoop 官方默认，未在 ddl 显式覆盖） | 官方默认 |
-| | NodeManager | **9324** | TCP | JMX/Prometheus 指标 | 项目配置(JMX) |
+| | NodeManager | **9324** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) |
 | | HistoryServer | **10020** | TCP | MapReduce JobHistory IPC | 项目配置 |
 | | HistoryServer | **19888** | TCP | JobHistory Web UI | 项目配置 |
-| | HistoryServer | **9325** | TCP | JMX/Prometheus 指标 | 项目配置(JMX) |
+| | HistoryServer | **9325** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) |
 | **Hive** | HiveMetaStore | **9083** | TCP | Thrift 元数据服务 | 项目配置 |
-| | HiveMetaStore | **12000** | TCP | JMX/Prometheus 指标 | 项目配置(JMX) |
+| | HiveMetaStore | **12000** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) |
 | | HiveServer2 | **10000** | TCP | Thrift JDBC/ODBC 入口 | 项目配置 |
-| | HiveServer2 | **11000** | TCP | JMX/Prometheus 指标 | 项目配置(JMX) |
+| | HiveServer2 | **11000** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) |
 | | — | 2181 | TCP | 依赖 ZooKeeper（`hive.zookeeper.client.port`，HA 服务发现） | 项目配置 |
 | **Elasticsearch** | ElasticSearch | **9200** | TCP | HTTP 对外服务 | 项目配置 |
 | | ElasticSearch | **9300** | TCP | 集群内部 Transport | 项目配置 |
-| | EsExporter | **9114** | TCP | elasticsearch_exporter（官方默认端口） | 项目配置(JMX) |
+| | EsExporter | **9114** | TCP | elasticsearch_exporter（官方默认端口） | 项目配置(可配置参数) |
 | **Valkey** | ValkeyMaster | **7501** | TCP | 数据端口（项目自定义，非 Redis/Valkey 官方默认 6379） | 项目配置 |
-| | ValkeyExporter | **9121** | TCP | redis_exporter（官方默认端口） | 项目配置(JMX) |
-| **JuiceFS** | JuicefsMount | **9567** | TCP | `juicefs mount --metrics`（官方默认端口，无独立业务端口，FUSE 客户端） | 项目配置(JMX) |
+| | ValkeyExporter | **9121** | TCP | redis_exporter（官方默认端口） | 项目配置(可配置参数) |
+| **JuiceFS** | JuicefsMount | **9567** | TCP | `juicefs mount --metrics`（官方默认端口，无独立业务端口，FUSE 客户端） | 项目配置(可配置参数) |
 | **Doris** | DorisFE | **18030** | TCP | HTTP 前端界面 + `/metrics`（官方默认 8030，项目改为 18030） | 项目配置 |
 | | DorisFE | **9020** | TCP | RPC（Thrift 服务） | 项目配置 |
 | | DorisFE | **9030** | TCP | Query Port（MySQL 协议，客户端/BI 工具连接入口） | 项目配置 |
@@ -574,7 +574,7 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 | **Flink** | FlinkClient | — | — | 仅 YARN-session 模式提交客户端，无常驻端口 | — |
 | | FlinkHistory | **8082** | TCP | History Server Web UI（与官方默认一致） | 项目配置 |
 | **Kyuubi** | KyuubiServer | **10009** | TCP | Thrift Binary 前端（JDBC/ODBC 入口，官方默认，未在 ddl 显式覆盖） | 官方默认 |
-| | KyuubiServer | **10019** | TCP | Prometheus 指标（`kyuubi.metrics.prometheus.port`） | 项目配置(JMX) |
+| | KyuubiServer | **10019** | TCP | Prometheus 指标（`kyuubi.metrics.prometheus.port`） | 项目配置(可配置参数) |
 | | KyuubiClient | — | — | Beeline 客户端，无常驻端口 | — |
 | | — | 7337 | TCP | Spark 辅助 Shuffle Service 端口（`spark.shuffle.service.enabled` 当前为 False，未生效） | 项目配置 |
 
@@ -583,12 +583,12 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 | 组件 | 角色 | 端口 | 协议 | 用途 | 端口来源 |
 |---|---|---|---|---|---|
 | **Kafka** | KafkaBroker | **9092** | TCP | SASL_PLAINTEXT Broker 监听（`listeners`/`advertised.listeners`） | 项目配置 |
-| | KafkaBroker | **9991** | TCP | jmx_prometheus_javaagent 指标（硬编码于 `kafka-server-start.ftl`） | 项目配置(JMX) |
+| | KafkaBroker | **9991** | TCP | jmx_prometheus_javaagent 指标（硬编码于 `kafka-server-start.ftl`） | 项目配置(可配置参数) |
 | | KafkaBroker | ~9093 | TCP | 4.x KRaft controller 内部监听（**未在本项目 service_ddl 暴露独立参数**，实际以打包内 `server.properties` 静态配置为准，部署后建议用 `ss -lntp` 核实） | 官方约定，待核实 |
 | **ZooKeeper** | ZkServer | **2181** | TCP | 客户端连接（`clientPort`；被 HDFS ZKFC / YARN RM HA / Hive HA / Kyuubi HA / DS registry 共用） | 项目配置 |
 | | ZkServer | 2888 | TCP | Follower↔Leader 数据同步端口（官方默认，未在 ddl 显式覆盖） | 官方默认 |
 | | ZkServer | 3888 | TCP | Leader 选举端口（官方默认，未在 ddl 显式覆盖） | 官方默认 |
-| | ZkServer | **7000** | TCP | JMX/Prometheus 指标 | 项目配置(JMX) |
+| | ZkServer | **7000** | TCP | JMX/Prometheus 指标 | 项目配置(可配置参数) |
 
 ### 调度
 
@@ -596,13 +596,13 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 
 | 组件 | 角色 | 端口 | 协议 | 用途 | 端口来源 |
 |---|---|---|---|---|---|
-| **DS**（DolphinScheduler） | ApiServer | **12345** | TCP | Web UI / OpenAPI 入口 + `/dolphinscheduler/actuator/prometheus`（DS 自身 `server.port` 原生暴露，官方默认端口） | 项目配置(role.jmxPort，与官方默认一致) |
+| **DS**（DolphinScheduler） | ApiServer | **12345** | TCP | Web UI / OpenAPI 入口 + `/dolphinscheduler/actuator/prometheus`（DS 自身 `server.port` 原生暴露，官方默认端口） | 项目配置(可配置参数，与官方默认一致) |
 | | MasterServer | 5678 | TCP | Master↔Worker 内部 Netty RPC（官方默认，未在 ddl 显式覆盖） | 官方默认 |
-| | MasterServer | **5679** | TCP | DS 自身 `server.port`，原生暴露 `/actuator/prometheus`（官方默认端口，非独立 JMX exporter） | 项目配置(role.jmxPort，与官方默认一致) |
+| | MasterServer | **5679** | TCP | DS 自身 `server.port`，原生暴露 `/actuator/prometheus`（官方默认端口，非独立 JMX exporter） | 项目配置(可配置参数，与官方默认一致) |
 | | WorkerServer | 1234 | TCP | Master↔Worker 内部 Netty RPC（官方默认，未在 ddl 显式覆盖） | 官方默认 |
-| | WorkerServer | **1235** | TCP | DS 自身 `server.port`，原生暴露 `/actuator/prometheus`（官方默认端口，非独立 JMX exporter） | 项目配置(role.jmxPort，与官方默认一致) |
+| | WorkerServer | **1235** | TCP | DS 自身 `server.port`，原生暴露 `/actuator/prometheus`（官方默认端口，非独立 JMX exporter） | 项目配置(可配置参数，与官方默认一致) |
 | | AlertServer | **50052** | TCP | 告警 RPC（`alert.rpc.port`） | 项目配置 |
-| | AlertServer | **50053** | TCP | DS 自身 `server.port`，原生暴露 `/actuator/prometheus`（官方默认端口，非独立 JMX exporter） | 项目配置(role.jmxPort，与官方默认一致) |
+| | AlertServer | **50053** | TCP | DS 自身 `server.port`，原生暴露 `/actuator/prometheus`（官方默认端口，非独立 JMX exporter） | 项目配置(可配置参数，与官方默认一致) |
 
 > **角色命名已核对一致**：`DS/service_ddl.json` 中该角色名为 `AlertServer`，与 `OtelScrapeConfigBuilder.PATH_OVERRIDES` 的映射键、`t_ddh_cluster_alert_quota` 种子数据（`V1.1.0__DML.sql`）的 `serviceRoleName` 均一致，`/actuator/prometheus` 抓取路径正常生效（此前曾误记为 `UAlertServer`，已核实并更正）。
 
@@ -612,7 +612,7 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 |---|---|---|---|---|---|
 | **OTel Collector** | OtelCollector | **4317** | TCP | OTLP gRPC 接收（datasophon-api/worker OTel Java Agent 上报 logs/traces） | 项目配置（硬编码于 `otelcol.ftl`） |
 | | OtelCollector | **4318** | TCP | OTLP HTTP 接收 | 项目配置（硬编码于 `otelcol.ftl`） |
-| | OtelCollector | **8888** | TCP | 自监控 Prometheus 指标（`127.0.0.1` 本地绑定） | 项目配置(JMX)，OTel 官方默认 |
+| | OtelCollector | **8888** | TCP | 自监控 Prometheus 指标（`127.0.0.1` 本地绑定） | 项目配置(可配置参数)，OTel 官方默认 |
 | | OtelCollector | 动态 | TCP | `prometheus/local` receiver：每节点本地 scrape 本清单中标注"JMX/Prometheus 指标"的全部端口，由 `OtelScrapeConfigBuilder` 按 RUNNING 角色动态拼接 | 项目配置 |
 | | — | — | — | 未启用 health_check（13133）/ zpages（55679）扩展端口——`otelcol.ftl` 当前未配置这两个 extension | — |
 | ~~Prometheus~~ | — | — | — | ⛔ 已下线（Phase E），不再监听任何端口 | — |
@@ -623,7 +623,7 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 | 组件 | 角色 | 端口 | 协议 | 用途 | 端口来源 |
 |---|---|---|---|---|---|
 | **APISIX** | Apisix | **9080** | TCP | 网关 HTTP 端口（`apisixPort`，与官方默认一致） | 项目配置 |
-| | Apisix | **9091** | TCP | Prometheus 插件指标端口（官方默认，与项目 `role.jmxPort` 一致） | 项目配置(JMX) |
+| | Apisix | **9091** | TCP | Prometheus 插件指标端口（官方默认，与项目参数 `apisixPrometheusPort` 一致） | 项目配置(可配置参数) |
 | | Apisix | 9180 | TCP | Admin API（官方默认，未在 ddl 显式暴露单独参数；`apisixAdminKey`/`apisixAllowAdmin` 控制鉴权与访问白名单） | 官方默认 |
 | **Nacos** | NacosServer | **8848** | TCP | 主端口：HTTP 客户端/控制台/OpenAPI | 项目配置(JMX，同时为官方默认端口) |
 | | NacosServer | 9848 | TCP | 客户端 gRPC（官方约定 8848+1000，未在 ddl 显式暴露） | 官方默认 |
@@ -632,7 +632,7 @@ docker compose -f docker-compose.standalone.yml logs mw-api | grep -iE "WorkerRe
 | **Nginx** | — | **19000** | TCP | `nginxServerPort`，业务反代入口 | 项目配置 |
 | | — | **20011** | TCP | `nginxWebPort`，管理页面（被 19000 反代） | 项目配置 |
 | | — | **9099** | TCP | `nginxStatusPort`，`stub_status` 状态页 | 项目配置 |
-| | NginxExporter | **9113** | TCP | nginx-prometheus-exporter（官方默认端口，抓取 9099 状态页） | 项目配置(JMX) |
+| | NginxExporter | **9113** | TCP | nginx-prometheus-exporter（官方默认端口，抓取 9099 状态页） | 项目配置(可配置参数) |
 
 ### 内部组件
 

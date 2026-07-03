@@ -29,7 +29,6 @@
       "cardinality": "1+",
       "sortNum": 1,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-journalnode-${host}.log",
-      "jmxPort": 27003,
       "jmxPortParam": "journalnodeJmxPort",
       "startRunner": {
         "timeout": "60",
@@ -94,7 +93,6 @@
       "cardinality": "1+",
       "sortNum": 2,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-namenode-${host}.log",
-      "jmxPort": "27001",
       "jmxPortParam": "namenodeJmxPort",
       "startRunner": {
         "timeout": "60",
@@ -172,7 +170,6 @@
       "cardinality": "1+",
       "sortNum": 5,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-namenode-${host}.log",
-      "jmxPort": "27002",
       "jmxPortParam": "datanodeJmxPort",
       "startRunner": {
         "timeout": "60",
@@ -237,7 +234,6 @@
       "cardinality": "1+",
       "sortNum": 3,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-zkfc-${host}.log",
-      "jmxPort": 27004,
       "jmxPortParam": "zkfcJmxPort",
       "startRunner": {
         "timeout": "60",
@@ -302,7 +298,6 @@
       "cardinality": "1+",
       "sortNum": 4,
       "logFile": "${HDFS.hadoopLogDir}/hadoop-hdfs-httpfs-${host}.log",
-      "jmxPort": "",
       "startRunner": {
         "timeout": "60",
         "program": "control_hadoop.sh",

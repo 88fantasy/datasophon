@@ -12,7 +12,6 @@
       "roleType": "master",
       "cardinality": "1+",
       "logFile": "logs/zookeeper-root-server-${host}.out",
-      "jmxPort": 7000,
       "jmxPortParam": "metricsProvider.httpPort",
       "startRunner": {
         "timeout": "60",

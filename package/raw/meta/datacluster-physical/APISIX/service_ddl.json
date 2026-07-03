@@ -12,7 +12,6 @@
       "roleType": "master",
       "cardinality": "1+",
       "logFile": "/usr/local/apisix/logs/access.log",
-      "jmxPort": 9091,
       "jmxPortParam": "apisixPrometheusPort",
       "startRunner": {
         "timeout": "60",

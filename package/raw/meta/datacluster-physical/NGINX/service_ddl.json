@@ -60,7 +60,6 @@
       "roleType": "worker",
       "cardinality": "1",
       "logFile": "nginx-exporter/logs/exporter.log",
-      "jmxPort": 9113,
       "jmxPortParam": "nginxExporterPort",
       "sortNum": 2,
       "startRunner": {

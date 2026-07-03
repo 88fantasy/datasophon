@@ -23,7 +23,6 @@
       "roleType": "worker",
       "cardinality": "1+",
       "logFile": "logs/otelcol.out",
-      "jmxPort": 8888,
       "jmxPortParam": "otelSelfMetricsPort",
       "startRunner": {
         "timeout": "60",

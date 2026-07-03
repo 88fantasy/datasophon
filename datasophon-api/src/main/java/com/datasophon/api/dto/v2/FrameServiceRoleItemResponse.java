@@ -32,7 +32,7 @@ import lombok.Data;
 
 /**
  * 框架服务角色响应 DTO，只暴露前端 addService 向导所需字段，
- * 屏蔽内部字段（serviceRoleJson、serviceRoleJsonMd5、jmxPort、logFile、sortNum 等）。
+ * 屏蔽内部字段（serviceRoleJson、serviceRoleJsonMd5、logFile、sortNum 等）。
  */
 @Data
 public class FrameServiceRoleItemResponse {

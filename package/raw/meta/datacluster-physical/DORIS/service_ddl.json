@@ -24,7 +24,6 @@
       "cardinality": "1+",
       "logFile": "fe/log/fe.log",
       "serverPorts": [],
-      "jmxPort": 18030,
       "jmxPortParam": "http_port",
       "runAs": {},
       "startRunner": {
@@ -78,7 +77,6 @@
       "cardinality": "1+",
       "logFile": "be/log/be.INFO",
       "serverPorts": [],
-      "jmxPort": 18040,
       "jmxPortParam": "webserver_port",
       "runAs": {},
       "startRunner": {

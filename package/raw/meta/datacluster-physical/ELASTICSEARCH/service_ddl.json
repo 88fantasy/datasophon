@@ -95,7 +95,6 @@
       "cardinality": "1",
       "logFile": "elasticsearch-exporter/logs/es_exporter-${ELASTICSEARCH.ElasticSearch.__hostIp__}.out",
       "serverPorts": [],
-      "jmxPort": 9114,
       "jmxPortParam": "esExporterPort",
       "runAs": {},
       "startRunner": {
