@@ -19,6 +19,14 @@ interface TimeSeriesPanelProps {
 
 const defaultFormatter = (value: number) => value.toFixed(2);
 
+// mergeNamedSeries 对 groupBy 产生的多序列会拼成 "label (值)"（见 charts/promql.ts），
+// colorMap 仍按原始 label 声明（如 DorisMonitor DO-C03 的 local_used_pct/avail_pct）；
+// 精确匹配失败时退回剥离 " (值)" 后缀的 base label，使既有 colorMap 无需跟着改。
+export function baseSeriesLabel(name: string): string {
+  const idx = name.indexOf(' (');
+  return idx === -1 ? name : name.slice(0, idx);
+}
+
 const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
   title,
   data = [],
@@ -46,6 +54,7 @@ const TimeSeriesPanel: FC<TimeSeriesPanelProps> = ({
   const colorRange = seriesNames.map(
     (name, index) =>
       colorMap?.[name] ??
+      colorMap?.[baseSeriesLabel(name)] ??
       CHART_COLORS.series[index % CHART_COLORS.series.length],
   );
 

@@ -105,6 +105,13 @@ export function matrixToSeries(
 
 /**
  * 多 PromQL 面板：把若干已带固定 label 的 matrix 合并为多系列数据。
+ *
+ * query 若声明了 groupBy，同一 query 可能返回多条按 groupBy 值区分的原始 series
+ * （如按 op 分组的 S3 操作），仅用 query 级 label 会把它们压扁成一条同名线
+ * （Codex 复审发现，ApisixMonitor/RustfsMonitor 均受影响）。故额外把每条原始
+ * series 自带的非保留 label（排除 instance/job，复用 {@link RESERVED_LABELS}）
+ * 拼进 series 名消歧；同一 query 下只有一条原始 series（无 groupBy）时不存在
+ * 额外 label，行为与此前完全一致。
  */
 export function mergeNamedSeries(
   parts: Array<{ label: string; matrix: PrometheusMatrix }>,
@@ -112,11 +119,17 @@ export function mergeNamedSeries(
   const points: TimeSeriesPoint[] = [];
   for (const { label, matrix } of parts) {
     for (const item of matrix.result) {
+      const extraLabelValues = Object.entries(item.metric)
+        .filter(([key]) => !RESERVED_LABELS.has(key))
+        .map(([, value]) => value);
+      const series = extraLabelValues.length
+        ? `${label} (${extraLabelValues.join(', ')})`
+        : label;
       for (const [ts, val] of item.values) {
         points.push({
           time: ts * 1000,
           value: Number.parseFloat(val),
-          series: label,
+          series,
         });
       }
     }

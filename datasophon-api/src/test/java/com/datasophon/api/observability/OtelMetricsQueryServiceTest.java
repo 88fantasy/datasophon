@@ -359,6 +359,41 @@ class OtelMetricsQueryServiceTest {
         }
         
         @Test
+        void rangeRate_partitionsBySeriesKeyToAvoidCrossSeriesPairing() {
+            // Codex 复审发现：RustFS 的 rustfs_s3_operations_total 带 bucket+op 标签，但
+            // groupBy=['op'] 时 bucket 是残余维度；若不按完整 series 身份分区，LAG 会把不同
+            // bucket 的采样点错配，产出跨 series 的伪 rate。修法与 buildRangeHistogramSql 一致。
+            String sql = OtelMetricsQueryService.buildRangeRateSql(
+                    false, false, null, null, List.of("op"), "otel_metrics_sum");
+            assertThat(sql).contains("CAST(attributes AS STRING) AS series_key");
+            assertThat(sql).contains("PARTITION BY instance, job, op, series_key");
+        }
+        
+        @Test
+        void rangeRate_partitionsBySeriesKeyEvenWithoutGroupBy() {
+            // 无 groupBy 时（如 RustFS R08/R10）若指标本身仍带隐藏属性维度，同样需要
+            // series_key 防止跨 series 串线，而不仅在有 groupBy 时才生效。
+            String sql = OtelMetricsQueryService.buildRangeRateSql(
+                    false, false, null, null, List.of(), "otel_metrics_sum");
+            assertThat(sql).contains("CAST(attributes AS STRING) AS series_key");
+            assertThat(sql).contains("PARTITION BY instance, job, series_key");
+        }
+        
+        @Test
+        void rangeRate_aggregatesAcrossSeriesWithSumMatchingPrometheusSemantics() {
+            // per_series 先按 series_key 粒度 AVG（同一 series 内多样本平滑，语义与旧行为一致），
+            // 最外层再跨落入同一 groupBy 粒度的多条真实 series SUM，等价于
+            // Prometheus sum(rate(metric[window])) by (groupByKeys)；
+            // 单 series 场景下 SUM 退化为原值，向后兼容。
+            String sql = OtelMetricsQueryService.buildRangeRateSql(
+                    false, false, null, null, List.of("op"), "otel_metrics_sum");
+            assertThat(sql).contains("per_series AS (");
+            assertThat(sql).contains("AVG(rate) AS rate");
+            assertThat(sql).contains("SELECT instance, job, op, bucket, SUM(rate) AS value");
+            assertThat(sql).contains("FROM per_series");
+        }
+        
+        @Test
         void allowedAttrFilterKeys_deliberatelyExcludesBucket() {
             // bucket（S3 桶名）故意不进白名单：toValidGroupBy() 若放行会导致 buildExtraSelect()
             // 生成 "CAST(attributes['bucket'] AS STRING) AS bucket"，与本类范围查询已有的
