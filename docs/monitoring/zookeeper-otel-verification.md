@@ -92,7 +92,7 @@ obs-zookeeper  ZkServer  G1 Young Generation   1783153620   0.0000
 `pool`/`gc` 白名单生效，`gc` 维度正确拆分成独立 series。GC rate 全为 0 属预期（沙箱运行期内只发生过
 1 次 Young GC，验证窗口内无新增收集事件）。
 
-## ⚠️ 采集侧发现的真实缺陷（超出本任务范围，需团队决策，未修复）
+## ⚠️ 采集侧发现的真实缺陷（已修复，见下方两个 ✅ 章节）
 
 **`otel_metrics_summary` 表的 Stream Load 写入会被同批次里任意一个 `NaN` 值的 datapoint 整体拖垮。**
 
@@ -100,28 +100,122 @@ ZooKeeper 内部有约 45 个 processor 队列类 Summary 指标（`prep_process
 `proposal_latency`、`election_time`、`jvm_pause_time_ms` 等）在从未被观测到时会输出
 `{quantile="0.5",} NaN`（Prometheus Summary 无观测值时的标准行为）。otelcol 的 dorisexporter 把这类
 NaN datapoint 序列化进 Stream Load 的 JSON payload 时报
-`"error": "json: unsupported value: NaN"`，导致**整个 `otel_metrics_summary` 表的这次 Stream Load
-请求失败**（`gauge`/`sum` 表因走独立 Stream Load 请求不受影响，已实测确认）。
+`"error": "json: unsupported value: NaN"`，导致**这次批次导出请求整体失败并重试**。
 
-实测现象：未过滤白名单前，`otel_metrics_summary` 表对 `ZkServer` 长期 0 行，即使
-`jvm_gc_collection_seconds`（本身从不产生 NaN，因为它的 Summary 未配置任何 quantile 分位数）也被
-连带拖累无法落库。加 `metric_relabel_configs` 白名单只保留会产生真实数值的指标后，summary 表才恢复写入。
+**⚠️ 2026-07-04 二次实测更正**：最初观察窗口较短，误判为"gauge/sum 表因走独立 Stream Load 请求不受
+影响"。**实际是同一条 `metrics` pipeline（`prometheus/juicefs`+`prometheus/zookeeper`+`prometheus/doris`+
+`otlp` 四个 receiver 共用一个 `batch` 处理器 + 一个 `doris` exporter）**，NaN 导出失败触发
+`retry_on_failure` 重试，重试 backoff 持续增长（实测从数秒涨到 40+ 秒），`sending_queue`
+（`num_consumers:4, queue_size:500`）逐渐被阻塞的重试请求占满后，**gauge/sum 表的新数据最终也会
+停止写入**——本次调试会话中实测 `num_alive_connections`（纯 gauge,与 summary 无关）数据陈旧到
+980 秒（远超代码 300 秒新鲜度窗口），触发下方 NPE 报错。`docker compose restart obs-otelcol`
+可临时恢复,但因 NaN 源头指标（`election_time`/`jvm_pause_time_ms` 等）持续产生,**重启后几分钟内
+会再次堵塞**,不是一次性修复。
 
 **影响面**：
 1. `election_time`（Z16）在单节点/无选举场景下**几乎不可能有非 NaN 值**——任何长期稳定运行、选举窗口
-已滑出 Summary 统计窗口的 ZK 集群，只要该指标一变回 NaN，整个 summary 表当次批次的写入就会失败，
-包括本该正常写入的 `fsynctime`/`snapshottime`/`jvm_gc_collection_seconds`。
+已滑出 Summary 统计窗口的 ZK 集群，只要该指标一变回 NaN，就会触发上述连锁反应，最终拖累整条 pipeline
+（含 gauge/sum 表）的新数据写入，不只是 summary 表。
 2. `jvm_pause_time_ms`（Z23）同理——只要该 ZK 节点近期没有可观测的 JVM 暂停，也会永久 NaN。
-3. 检查 `datasophon-worker/.../templates/otelcol.ftl`（生产 collector 配置模板）**同样没有任何
+3. Doris 自身指标 `doris_be_tablet_version_num_distribution` 的 `'le' label missing` 接收侧报错是另一个
+独立诱因（Doris histogram 格式问题，与 ZK 无关），同样会拖累同一条共享 pipeline。
+4. 检查 `datasophon-worker/.../templates/otelcol.ftl`（生产 collector 配置模板）**同样没有任何
 NaN 处理逻辑**，说明这不是本沙箱独有问题，是该 dorisexporter 版本（v0.154.0）的通用缺陷，
 **生产环境接入任何"低频 Summary 指标"的服务都可能撞上**（不只是 ZooKeeper）。
 
-**建议（未执行，需团队拍板）**：在 `otelcol.ftl` 的 metrics pipeline 里加一个 `transform` 处理器，
-把 Summary datapoint 里的 NaN quantile 值替换成 0 或直接丢弃该 quantile 点（保留 count/sum 列不受影响，
-因为 count/sum 本身永远是有效数值，只有 quantile 估计值在零观测时才会是 NaN）。这是 collector 配置层面
-的通用修复，不属于本次 ZooKeeper 前后端迁移的范围，本任务的 Java/前端代码改动均按"数据一旦落库、查询
-SQL 正确"验证完毕，**不受此采集侧缺陷影响其正确性**——一旦团队在 collector 层修好 NaN 问题，
-Z16/Z19/Z20/Z22/Z23 无需再改代码即可恢复数据。
+## ✅ 2026-07-04 已部分修复：`filter/drop_empty_summary` 处理器
+
+在 `deploy/compose/conf/otelcol-juicefs.yaml`（沙箱）和
+`datasophon-worker/.../templates/otelcol.ftl`（生产模板，两处均已提交）的 metrics pipeline 里加了：
+
+```yaml
+processors:
+  filter/drop_empty_summary:
+    metrics:
+      datapoint:
+        - 'metric.type == METRIC_DATA_TYPE_SUMMARY and count == 0'
+```
+
+**已用 otelcol 自身暴露的 `otelcol_processor_filter_datapoints_filtered` self-metric 验证生效**
+（沙箱实测持续增长，几分钟内过滤掉 150+ 个空 Summary 数据点）。覆盖"Summary 从未被观测到、
+count=0、quantile 恒为 NaN"这一种成因。
+
+**未能覆盖的第二种成因（尝试过两种方案均失败，已放弃，如实记录）**：`election_time`/
+`fsynctime`/`snapshottime`/`jvm_pause_time_ms` 即使 `count>0`（历史上真实被观测过），quantile
+计算用滑动时间窗口衰减，窗口内长时间无新观测时 quantile 仍会衰减回 NaN——`count==0` 过滤不到
+这种情况（沙箱实测 `fsynctime` count=1579、sum=671 仍输出 NaN）。尝试过：
+
+1. `transform` 处理器 `set(quantile_values, [])`——otelcol 正常启动、无报错，但用 `debug` exporter
+   `verbosity: detailed` 抓包验证发现 quantile_values 并未被清空，`set()` 对这个 slice-of-struct
+   字段静默无效。
+2. `filter` 处理器用索引 `quantile_values[0].value != quantile_values[0].value`（NaN 自比较技巧）
+   在条件里探测——otelcol **直接拒绝启动**，报错 `"the keys indexing quantile_values were not
+   used by the context - this likely means you are trying to index a path that does not support
+   indexing"`，确认这个 collector 版本的 OTTL 不支持对 `quantile_values` 做索引访问。
+
+结论：**当前 OTTL（otelcol-contrib v0.154.0）不支持读写 Summary 的 `quantile_values` 字段**，
+这个衰减性 NaN 无法用"清空/改写 quantile"这类值级别手段可靠解决。
+
+## ✅ 2026-07-04 最终修复：整体丢弃这 4 个指标，不导入 Doris
+
+值级别处理走不通后，改为更简单的指标级别丢弃：`election_time`/`fsynctime`/`snapshottime`/
+`jvm_pause_time_ms` 这 4 个指标本身在 ZK 看板里就只服务 Z16/Z19/Z20/Z23 四个面板，用户拍板直接让
+这 4 个指标不进 Doris，从根上避免它们拖累同一 pipeline 里其它指标的导出。在
+`deploy/compose/conf/otelcol-juicefs.yaml`（沙箱）和 `datasophon-worker/.../templates/otelcol.ftl`
+（生产模板，两处均已提交）新增一个 `metric` 级别（而非 `datapoint` 级别）的 filter 处理器：
+
+```yaml
+processors:
+  filter/drop_zk_decaying_summary:
+    metrics:
+      metric:
+        - 'name == "election_time" or name == "fsynctime" or name == "snapshottime" or name == "jvm_pause_time_ms"'
+```
+
+这个条件只判断 `metric.name`，不涉及 `quantile_values` 字段，因此不受上面提到的 OTTL 限制影响，
+写法也比值级别处理简单得多。
+
+**验证结果（2026-07-04，`docker compose restart obs-otelcol` 后）**：
+- self-metric `otelcol_processor_filter_datapoints_filtered{filter="filter/drop_zk_decaying_summary"}`
+从 0 持续增长（观测到 6+），证明规则确实在拦截数据点。
+- Doris `otel_metrics_summary` 表里 `fsynctime`/`snapshottime` 的最后一条记录时间戳停留在重启前
+（`08:28:05`），重启后再无新记录写入；`election_time`/`jvm_pause_time_ms` 表里本就没有任何历史
+记录（此前一直是 NaN，被 `filter/drop_empty_summary` 挡在门外）。
+- 重启后的 otelcol 日志里不再出现新的 `"unsupported value: NaN"` 报错（重启瞬间那条来自旧进程
+shutdown 时刷已入队数据，与新配置无关）。
+
+**产品侧代价（已知且是本次修复的直接后果）**：`election_time`/`fsynctime`/`snapshottime`/
+`jvm_pause_time_ms` 从采集侧就被丢弃，根本不会落库，对应的 Z16/Z19/Z20/Z23 四个面板**已从
+`datasophon-ui-v2` 的 ZooKeeper 看板里整体移除**（`panelQueries.ts`/`index.tsx`/locale 文件/mock
+数据均已同步删除，详见对应 commit）——不留"看起来能查但永远无数据"的面板，比留着更诚实。这四个
+面板背后的 SQL 查询层代码（`buildRangeFieldRateSql`）逻辑本身没有问题，只是没有数据源；如果未来
+升级 OTel Collector 让 OTTL 支持操作 `quantile_values`，或团队决定换用其它方式处理 NaN，去掉采集侧
+这一条 filter 规则、把面板加回前端即可恢复，Java 查询层代码无需改动。
+`Z01/Z02/Z17`（quorum 专属指标）不受影响，仍需要真实多节点 ensemble 才能验证。
+
+## 附:调试会话中发现并修复的 NPE（与采集侧 NaN 缺陷相关联但独立成因）
+
+**现象**（用户在 IDEA 本地调试 `datasophon-api` 连接本沙箱 Doris 时触发）：
+
+```
+NullPointerException: Cannot invoke "java.lang.Number.doubleValue()" because the return value of
+"java.util.Map.get(Object)" is null
+  at OtelMetricsQueryService.buildVector(OtelMetricsQueryService.java:744)
+  at OtelMetricsQueryService.queryInstant(...)
+```
+
+**根因**：`buildInstantAggSql` 生成 `SELECT SUM(value) AS value, ... FROM (子查询) t`（无 `GROUP BY`），
+这类无分组聚合查询即使子查询命中 0 行，仍会返回**恰好一行**、`value` 列为 SQL `NULL`
+（`SUM(空集) = NULL`，不是 `0`）。触发条件是查询窗口（`evalTime - 300` 秒）内没有该指标的新鲜数据——
+本次是上文"采集侧 NaN 缺陷"导致 otelcol 的 Doris 导出队列被拖慢，`num_alive_connections` 980 秒未更新
+（远超 300 秒新鲜度窗口），并非 ZooKeeper 迁移代码本身的缺陷。
+
+**修复**：`buildVector`/`buildMatrix` 遇到 `row.get("value") == null` 时跳过该行（视同"无数据"，
+与项目既有约定"空结果按 NaN 处理，非真实 0"一致），而不是直接拆箱抛异常。**这是
+`OtelMetricsQueryService` 的通用健壮性修复，影响所有走 instant-agg 查询路径的看板（不限于
+ZooKeeper）**——任何指标在评估窗口内暂时无新鲜数据时都会触发同样的 NPE，此前未被发现是因为此前的
+沙箱验证窗口内数据一直新鲜。已加 `buildVector_nullValue_skipsRowInsteadOfThrowing` +
+`buildMatrix_nullValue_skipsRowInsteadOfThrowing` 两个单测覆盖。
 
 ## 已知局限（沙箱层面，非代码缺陷）
 
