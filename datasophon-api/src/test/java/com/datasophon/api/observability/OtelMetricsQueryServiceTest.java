@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.datasophon.api.observability.PrometheusMatrixResult.MatrixSeries;
 import com.datasophon.api.observability.PrometheusVectorResult.VectorSample;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -65,10 +66,12 @@ class OtelMetricsQueryServiceTest {
 
     @Test
     void rangeHistogramFieldRate_countAndSum_useHistogramTableAndSeriesKeyPartition() {
-        String countSql = OtelMetricsQueryService.buildRangeHistogramFieldRateSql(
-                "count", false, false, Map.of("vol_name", "prod-fs"), null, List.of("method"));
-        String sumSql = OtelMetricsQueryService.buildRangeHistogramFieldRateSql(
-                "sum", false, false, Map.of("vol_name", "prod-fs"), null, List.of("method"));
+        String countSql = OtelMetricsQueryService.buildRangeFieldRateSql(
+                "count", false, false, Map.of("vol_name", "prod-fs"), null,
+                List.of("method"), "otel_metrics_histogram");
+        String sumSql = OtelMetricsQueryService.buildRangeFieldRateSql(
+                "sum", false, false, Map.of("vol_name", "prod-fs"), null,
+                List.of("method"), "otel_metrics_histogram");
 
         for (String sql : List.of(countSql, sumSql)) {
             assertThat(sql).contains("FROM otel.otel_metrics_histogram");
@@ -92,6 +95,30 @@ class OtelMetricsQueryServiceTest {
         assertThat(sql).contains("attributes['vol_name']");
         assertThat(sql).contains("attributes['mp']");
         assertThat(sql).contains("attributes['method']");
+    }
+
+    @Test
+    void allowedAttrFilterKeys_includeZooKeeperJvmDimensions() {
+        assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS)
+                .contains("pool", "gc");
+        String sql = OtelMetricsQueryService.buildRangeGaugeSql(
+                false, false, null, null, List.of("pool"), "otel_metrics_gauge");
+        assertThat(sql).contains("attributes['pool']");
+    }
+
+    @Test
+    void rangeSummaryFieldRate_count_useSummaryTableAndSeriesKeyPartition() {
+        String sql = OtelMetricsQueryService.buildRangeFieldRateSql(
+                "count", false, false, Map.of("gc", "G1 Young Generation"), null,
+                List.of("gc"), "otel_metrics_summary");
+
+        assertThat(sql).contains("FROM otel.otel_metrics_summary");
+        assertThat(sql).contains("CAST(attributes AS STRING) AS series_key");
+        assertThat(sql).contains("PARTITION BY instance, job, gc, series_key");
+        assertThat(sql).contains("reset_count >= prev_reset_count");
+        assertThat(sql).contains("SUM(rate) AS value");
+        assertThat(sql).contains("attributes['gc']");
+        assertThat(sql).contains("count AS value");
     }
 
     // ─── SQL 生成测试 ────────────────────────────────────────────────────────────
@@ -302,10 +329,12 @@ class OtelMetricsQueryServiceTest {
 
         @Test
         void rangeHistogramFieldRate_countAndSum_useHistogramTableAndSeriesKeyPartition() {
-            String countSql = OtelMetricsQueryService.buildRangeHistogramFieldRateSql(
-                    "count", false, false, Map.of("vol_name", "prod-fs"), null, List.of("method"));
-            String sumSql = OtelMetricsQueryService.buildRangeHistogramFieldRateSql(
-                    "sum", false, false, Map.of("vol_name", "prod-fs"), null, List.of("method"));
+            String countSql = OtelMetricsQueryService.buildRangeFieldRateSql(
+                    "count", false, false, Map.of("vol_name", "prod-fs"), null,
+                    List.of("method"), "otel_metrics_histogram");
+            String sumSql = OtelMetricsQueryService.buildRangeFieldRateSql(
+                    "sum", false, false, Map.of("vol_name", "prod-fs"), null,
+                    List.of("method"), "otel_metrics_histogram");
 
             for (String sql : List.of(countSql, sumSql)) {
                 assertThat(sql).contains("FROM otel.otel_metrics_histogram");
@@ -481,6 +510,18 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("attributes['method']");
         }
 
+        @Test
+        void allowedAttrFilterKeys_includeZooKeeperJvmDimensions() {
+            assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS)
+                    .contains("pool", "gc");
+            String memorySql = OtelMetricsQueryService.buildRangeGaugeSql(
+                    false, false, null, null, List.of("pool"), "otel_metrics_gauge");
+            String gcSql = OtelMetricsQueryService.buildRangeRateSql(
+                    false, false, null, null, List.of("gc"), "otel_metrics_sum");
+            assertThat(memorySql).contains("attributes['pool']");
+            assertThat(gcSql).contains("attributes['gc']");
+        }
+
         // ── 安全性测试 ──
 
         @Test
@@ -576,6 +617,28 @@ class OtelMetricsQueryServiceTest {
 
             assertThat(result.result()).hasSize(1);
             assertThat(result.result().get(0).metric()).containsEntry("mode", "idle");
+        }
+
+        @Test
+        void buildVector_nullValue_skipsRowInsteadOfThrowing() {
+            // 无 agg 聚合查询在评估窗口内无匹配行时仍返回一行、value 为 SQL NULL（如 SUM(空集)）；
+            // 复现真实报错：NullPointerException at buildVector 对 row.get("value") 直接拆箱。
+            Map<String, Object> row = new HashMap<>();
+            row.put("ts", 1000L);
+            row.put("value", null);
+            PrometheusVectorResult result = OtelMetricsQueryService.buildVector(List.of(row), 1.0);
+
+            assertThat(result.result()).isEmpty();
+        }
+
+        @Test
+        void buildMatrix_nullValue_skipsRowInsteadOfThrowing() {
+            Map<String, Object> row = new HashMap<>();
+            row.put("bucket", 1000L);
+            row.put("value", null);
+            PrometheusMatrixResult result = OtelMetricsQueryService.buildMatrix(List.of(row), 1.0);
+
+            assertThat(result.result()).isEmpty();
         }
 
         @Test
