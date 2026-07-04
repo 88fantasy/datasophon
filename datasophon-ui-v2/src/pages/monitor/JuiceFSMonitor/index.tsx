@@ -15,7 +15,6 @@ import AreaPanel from '../_shared/panels/AreaPanel';
 import StatPanel from '../_shared/panels/StatPanel';
 import TimeSeriesPanel from '../_shared/panels/TimeSeriesPanel';
 import { useJuiceFSDashboard } from './hooks/useJuiceFSDashboard';
-import { MOCK_VOLUMES } from './mock/juicefsMockData';
 import JuiceFSDashboardToolbar from './toolbar/JuiceFSDashboardToolbar';
 
 const trafficColors = {
@@ -67,10 +66,12 @@ const JuiceFSMonitor: FC = () => {
   const [timeRange, setTimeRange] = useState<TimeRange>('1h');
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>('30s');
-  const [selectedVolume, setSelectedVolume] = useState(MOCK_VOLUMES[0]);
+  const [selectedVolume, setSelectedVolume] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
 
   const intl = useIntl();
+  const t = (id: string, defaultMessage: string) =>
+    intl.formatMessage({ id, defaultMessage });
   const title = intl.formatMessage({
     id: 'pages.juicefsMonitor.title',
     defaultMessage: 'JuiceFS Monitor',
@@ -131,7 +132,7 @@ const JuiceFSMonitor: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={4}>
           <StatPanel
-            title="Uptime"
+            title={t('pages.juicefsMonitor.panel.uptime', 'Uptime')}
             value={instant.uptime}
             formatter={formatDuration}
             color={
@@ -141,7 +142,7 @@ const JuiceFSMonitor: FC = () => {
         </PanelCol>
         <PanelCol span={4}>
           <StatPanel
-            title="Data Size"
+            title={t('pages.juicefsMonitor.panel.dataSize', 'Data Size')}
             value={instant.dataSize}
             formatter={formatBytes}
             color={CHART_COLORS.primary}
@@ -149,7 +150,7 @@ const JuiceFSMonitor: FC = () => {
         </PanelCol>
         <PanelCol span={4}>
           <StatPanel
-            title="Files"
+            title={t('pages.juicefsMonitor.panel.files', 'Files')}
             value={instant.files}
             formatter={integerFormatter}
             color={CHART_COLORS.primary}
@@ -157,14 +158,20 @@ const JuiceFSMonitor: FC = () => {
         </PanelCol>
         <PanelCol span={4}>
           <StatPanel
-            title="Client Sessions"
+            title={t(
+              'pages.juicefsMonitor.panel.clientSessions',
+              'Client Sessions',
+            )}
             value={instant.clientSessions}
             color={CHART_COLORS.primary}
           />
         </PanelCol>
         <PanelCol span={4}>
           <StatPanel
-            title="Block Cache Hit %"
+            title={t(
+              'pages.juicefsMonitor.panel.blockCacheHitPercent',
+              'Block Cache Hit %',
+            )}
             value={instant.cacheHitPercent}
             formatter={percentFormatter}
             color={colorByThreshold(instant.cacheHitPercent, [70, 90], {
@@ -174,7 +181,10 @@ const JuiceFSMonitor: FC = () => {
         </PanelCol>
         <PanelCol span={4}>
           <StatPanel
-            title="Staging Blocks"
+            title={t(
+              'pages.juicefsMonitor.panel.stagingBlocks',
+              'Staging Blocks',
+            )}
             value={instant.stagingBlocks}
             color={
               instant.stagingBlocks === 0
@@ -188,14 +198,17 @@ const JuiceFSMonitor: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={12}>
           <TimeSeriesPanel
-            title="Operations"
+            title={t('pages.juicefsMonitor.panel.operations', 'Operations')}
             data={series.J07}
             yFormatter={rateFormatter}
           />
         </PanelCol>
         <PanelCol span={12}>
           <AreaPanel
-            title="IO Throughput"
+            title={t(
+              'pages.juicefsMonitor.panel.ioThroughput',
+              'IO Throughput',
+            )}
             data={series.J08}
             yFormatter={bytesPerSecondFormatter}
             colorMap={trafficColors}
@@ -206,21 +219,27 @@ const JuiceFSMonitor: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={8}>
           <TimeSeriesPanel
-            title="IO Latency"
+            title={t('pages.juicefsMonitor.panel.ioLatency', 'IO Latency')}
             data={series.J09}
             yFormatter={usAxisFormatter}
           />
         </PanelCol>
         <PanelCol span={8}>
           <TimeSeriesPanel
-            title="Transaction Latency"
+            title={t(
+              'pages.juicefsMonitor.panel.transactionLatency',
+              'Transaction Latency',
+            )}
             data={series.J10}
             yFormatter={usAxisFormatter}
           />
         </PanelCol>
         <PanelCol span={8}>
           <TimeSeriesPanel
-            title="Objects Latency"
+            title={t(
+              'pages.juicefsMonitor.panel.objectsLatency',
+              'Objects Latency',
+            )}
             data={series.J11}
             yFormatter={usAxisFormatter}
           />
@@ -230,14 +249,20 @@ const JuiceFSMonitor: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={12}>
           <TimeSeriesPanel
-            title="Objects Requests"
+            title={t(
+              'pages.juicefsMonitor.panel.objectsRequests',
+              'Objects Requests',
+            )}
             data={series.J12}
             yFormatter={rateFormatter}
           />
         </PanelCol>
         <PanelCol span={12}>
           <TimeSeriesPanel
-            title="Object Errors & Transaction Restarts"
+            title={t(
+              'pages.juicefsMonitor.panel.objectErrorsAndTxRestarts',
+              'Object Errors & Transaction Restarts',
+            )}
             data={series.J13}
             yFormatter={rateFormatter}
             colorMap={errorColors}
@@ -248,14 +273,20 @@ const JuiceFSMonitor: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={8}>
           <TimeSeriesPanel
-            title="Block Cache Size"
+            title={t(
+              'pages.juicefsMonitor.panel.blockCacheSize',
+              'Block Cache Size',
+            )}
             data={series.J14}
             yFormatter={formatBytes}
           />
         </PanelCol>
         <PanelCol span={8}>
           <TimeSeriesPanel
-            title="Block Cache Hit Ratio"
+            title={t(
+              'pages.juicefsMonitor.panel.blockCacheHitRatio',
+              'Block Cache Hit Ratio',
+            )}
             data={series.J15}
             yFormatter={percentFormatter}
             colorMap={cacheRatioColors}
@@ -266,7 +297,10 @@ const JuiceFSMonitor: FC = () => {
         </PanelCol>
         <PanelCol span={8}>
           <TimeSeriesPanel
-            title="Objects Throughput"
+            title={t(
+              'pages.juicefsMonitor.panel.objectsThroughput',
+              'Objects Throughput',
+            )}
             data={series.J16}
             yFormatter={bytesPerSecondFormatter}
             colorMap={objectThroughputColors}
@@ -277,7 +311,10 @@ const JuiceFSMonitor: FC = () => {
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={24}>
           <TimeSeriesPanel
-            title="Client CPU & Memory"
+            title={t(
+              'pages.juicefsMonitor.panel.clientCpuAndMemory',
+              'Client CPU & Memory',
+            )}
             data={series.J17}
             yFormatter={resourceFormatter}
             colorMap={resourceColors}

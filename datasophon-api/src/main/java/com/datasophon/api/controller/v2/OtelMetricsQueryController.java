@@ -66,15 +66,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/v2/observability/otel/metrics")
 public class OtelMetricsQueryController extends ApiController {
-    
+
     private static final Logger log = LoggerFactory.getLogger(OtelMetricsQueryController.class);
-    
+
     private final OtelMetricsQueryService queryService;
-    
+
     public OtelMetricsQueryController(OtelMetricsQueryService queryService) {
         this.queryService = queryService;
     }
-    
+
     /**
      * Instant 查询，对应 Prometheus {@code /api/v1/query}。
      *
@@ -112,7 +112,7 @@ public class OtelMetricsQueryController extends ApiController {
             return ApiResponse.fail(500, "指标查询失败");
         }
     }
-    
+
     /**
      * Range 查询，对应 Prometheus {@code /api/v1/query_range}。
      *
@@ -120,6 +120,7 @@ public class OtelMetricsQueryController extends ApiController {
      * @param filters    可选等值过滤，格式 {@code "group:fe,type:used"}
      * @param filtersNe  可选不等过滤，格式 {@code "device:lo"}
      * @param groupBy    可选额外 GROUP BY 维度，格式 {@code "mode"} 或 {@code "mode,path"}
+     * @param field      histogram 表专用："count"/"sum" 表示字段 rate，缺省或 "quantile" 表示分位数
      */
     @GetMapping("/query_range")
     public ApiResponse<PrometheusMatrixResult> queryRange(
@@ -134,20 +135,21 @@ public class OtelMetricsQueryController extends ApiController {
                                                           @RequestParam(required = false, defaultValue = "1") Integer clusterId,
                                                           @RequestParam(required = false, defaultValue = "gauge") String table,
                                                           @RequestParam(required = false, defaultValue = "0.5") double quantile,
+                                                          @RequestParam(required = false) String field,
                                                           @RequestParam(required = false) String filters,
                                                           @RequestParam(required = false) String filtersNe,
                                                           @RequestParam(required = false) String groupBy) {
         try {
             return ApiResponse.ok(queryService.queryRange(clusterId, metric, rateWindow, scale,
                     instance, job, parseFilters(filters), parseFilters(filtersNe), parseGroupBy(groupBy),
-                    start, end, step, table, quantile));
+                    start, end, step, table, quantile, field));
         } catch (Exception e) {
             log.error("Doris range query failed: metric={} cluster={} reason={}",
                     metric, clusterId, e.getMessage(), e);
             return ApiResponse.fail(500, "指标查询失败");
         }
     }
-    
+
     /**
      * 查询指标的 instance/job 标签枚举值，用于工具栏下拉（替代 Prometheus {@code up} 查询）。
      */
@@ -163,7 +165,7 @@ public class OtelMetricsQueryController extends ApiController {
             return ApiResponse.fail(500, "标签查询失败");
         }
     }
-    
+
     /**
      * 查询集群内指定角色的 RUNNING 节点数（替代 PromQL {@code count(up==1)}）。
      *
@@ -182,9 +184,9 @@ public class OtelMetricsQueryController extends ApiController {
             return ApiResponse.fail(500, "节点计数失败");
         }
     }
-    
+
     // ─── 参数解析 ──────────────────────────────────────────────────────────────────
-    
+
     /**
      * 解析 {@code "key:value,key:value"} 格式的过滤参数为 Map。
      * 白名单校验由 {@link OtelMetricsQueryService} 负责，此处仅做格式解析。
@@ -202,7 +204,7 @@ public class OtelMetricsQueryController extends ApiController {
         }
         return result;
     }
-    
+
     /**
      * 解析 {@code "mode"} 或 {@code "mode,path"} 格式的 groupBy 参数为 List。
      */

@@ -1,11 +1,15 @@
 # 可观测链路模拟测试 compose
-# 拓扑：APISIX(采集源，standalone 模式) → otel-collector(prometheus scrape + dorisexporter) → Doris(存储)
+# 拓扑：JuiceFS(采集源，client --metrics 暴露 Prometheus 端点) → otel-collector(prometheus scrape + dorisexporter) → Doris(存储)
+# JuiceFS 挂载依赖：Redis(元数据引擎) + RustFS(S3 兼容对象存储后端)
 #
-# 版本对应 package/manifest.json：Doris 4.0.5、otelcol-contrib 0.154.0、APISIX 3.16.0
-# APISIX 版本：apache/apisix:3.16.0-debian，standalone 模式（无 etcd，路由声明在 conf/apisix/apisix.yaml）
+# 版本对应 package/manifest.json：Doris 4.0.5、otelcol-contrib 0.154.0、JuiceFS 1.3.1（juicedata/mount:ce-v1.3.1）
+# JuiceFS 采集方式与生产一致：client 进程 `--metrics=0.0.0.0:9567` 暴露 `/metrics`，otelcol 用
+# prometheus receiver 抓取（非 OTLP 推送），job_name 对齐生产 OtelScrapeConfigBuilder 的角色名
+# "JuicefsMount"，使 service_name 落库后与 docs/monitoring/juicefs-otel-verification.md 的验证 SQL 一致。
 #
 # 启动前提（本地 Mac）：
 #   - Docker Desktop 已运行（BE 依赖 vm.max_map_count，Docker Desktop on Mac 的 VM 已满足）
+#   - JuiceFS 挂载容器需要 FUSE（cap_add SYS_ADMIN + /dev/fuse），Docker Desktop for Mac 已内置支持
 #
 # 用法：
 #   docker compose -f deploy/compose/docker-compose.observability.yml up -d
@@ -92,73 +96,114 @@ services:
         exit 1
     restart: "no"
 
-  # ─── APISIX 上游（被代理的回显服务，产生可观测的响应） ──────────────────────────
-  obs-echo:
-    image: hashicorp/http-echo:1.0
-    container_name: obs-echo
-    command: ["-text=ok", "-listen=:5678"]
+  # ─── Redis（JuiceFS 元数据引擎） ──────────────────────────────────────────────
+  obs-redis:
+    image: redis:7-alpine
+    container_name: obs-redis
     networks:
       - obs_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
-  # ─── APISIX（被采集的 Prometheus 指标来源，standalone 模式无需 etcd） ──────────
-  obs-apisix:
-    image: apache/apisix:3.16.0-debian
-    container_name: obs-apisix
+  # ─── RustFS 数据卷权限初始化（一次性，非 root 进程需 UID/GID 10001 可写） ──────
+  # 实测：不 chown 时 rustfs 容器因 /data 权限不足直接启动失败。
+  obs-rustfs-init:
+    image: busybox:1.36
+    container_name: obs-rustfs-init
+    command: ["chown", "-R", "10001:10001", "/data"]
     volumes:
-      - ./conf/apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
-      - ./conf/apisix/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
+      - obs-rustfs-data:/data
+    restart: "no"
+
+  # ─── RustFS（S3 兼容对象存储，JuiceFS 数据后端；替代 MinIO，与平台其余组件一致） ──
+  obs-rustfs:
+    image: rustfs/rustfs:1.0.0-beta.8
+    container_name: obs-rustfs
+    volumes:
+      - obs-rustfs-data:/data
     ports:
-      - "9080:9080"   # 数据面网关(APISIX 默认端口)
-      - "9091:9091"   # prometheus 插件指标导出
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # 控制台
     networks:
       - obs_net
     depends_on:
-      - obs-echo
-    healthcheck:
-      # 镜像(apache/apisix:3.16.0-debian)不含 curl/wget,用镜像自带的 openresty resty CLI 发一个原始 HTTP 探测请求
-      test:
-        - "CMD-SHELL"
-        - >-
-          resty -e '
-          local sock = ngx.socket.tcp()
-          sock:settimeout(2000)
-          local ok = sock:connect("127.0.0.1", 9091)
-          if not ok then os.exit(1) end
-          sock:send("GET /apisix/prometheus/metrics HTTP/1.0\r\nHost: localhost\r\n\r\n")
-          local line = sock:receive("*l")
-          sock:close()
-          if line and line:find("200") then os.exit(0) else os.exit(1) end
-          '
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 30s
+      obs-rustfs-init:
+        condition: service_completed_successfully
 
-  # ─── 持续压流（让 RPS/带宽/延迟等请求类指标产生真实数据） ──────────────────────
-  obs-apisix-load:
-    image: curlimages/curl:8.10.1
-    container_name: obs-apisix-load
-    entrypoint: ["sh", "-c"]
+  # ─── JuiceFS 格式化（一次性，创建文件系统元数据；redis + rustfs 未就绪时重试） ──
+  obs-juicefs-format:
+    image: juicedata/mount:ce-v1.3.1
+    container_name: obs-juicefs-format
+    entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        while true; do
-          curl -s -o /dev/null obs-apisix:9080/get
-          sleep 0.5
+        for i in $$(seq 1 30); do
+          if juicefs format \
+              --storage s3 \
+              --bucket http://obs-rustfs:9000/jfstest \
+              --access-key rustfsadmin \
+              --secret-key rustfsadmin \
+              redis://obs-redis:6379/1 myjfs; then
+            echo "JuiceFS formatted successfully"
+            exit 0
+          fi
+          echo "format attempt $$i/30 failed, retrying in 5s..."
+          sleep 5
         done
+        echo "ERROR: juicefs format failed after 30 attempts"
+        exit 1
     networks:
       - obs_net
     depends_on:
-      obs-apisix:
+      obs-redis:
         condition: service_healthy
+      obs-rustfs:
+        condition: service_started
+    restart: "no"
+
+  # ─── JuiceFS 挂载 + 持续读写压流（让指标产生真实数据，--metrics 暴露给 otelcol 抓取） ──
+  obs-juicefs:
+    image: juicedata/mount:ce-v1.3.1
+    container_name: obs-juicefs
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        mkdir -p /mnt/jfs
+        juicefs mount redis://obs-redis:6379/1 /mnt/jfs \
+          -d --writeback --metrics=0.0.0.0:9567 --log=/tmp/juicefs.log
+        sleep 3
+        echo "JuiceFS mounted, starting load generator..."
+        while true; do
+          dd if=/dev/urandom of=/mnt/jfs/load.bin bs=64k count=4 2>/dev/null
+          cat /mnt/jfs/load.bin > /dev/null
+          cp /mnt/jfs/load.bin /mnt/jfs/load-copy.bin
+          rm -f /mnt/jfs/load-copy.bin
+          ls /mnt/jfs > /dev/null
+          sleep 2
+        done
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse
+    security_opt:
+      - apparmor:unconfined
+    networks:
+      - obs_net
+    depends_on:
+      obs-juicefs-format:
+        condition: service_completed_successfully
     restart: on-failure
 
-  # ─── OTel Collector（APISIX metrics → dorisexporter → Doris） ────────────────
+  # ─── OTel Collector（JuiceFS metrics → dorisexporter → Doris） ───────────────
   obs-otelcol:
     image: otel/opentelemetry-collector-contrib:0.154.0
     container_name: obs-otelcol
-    command: ["--config=/etc/otelcol/otelcol-apisix.yaml"]
+    command: ["--config=/etc/otelcol/otelcol-juicefs.yaml"]
     volumes:
-      - ./conf/otelcol-apisix.yaml:/etc/otelcol/otelcol-apisix.yaml:ro
+      - ./conf/otelcol-juicefs.yaml:/etc/otelcol/otelcol-juicefs.yaml:ro
     ports:
       - "8888:8888"   # collector self-metrics（Prometheus 格式）
       - "4317:4317"   # OTLP gRPC（宿主机 api/worker 直发）
@@ -168,8 +213,8 @@ services:
     depends_on:
       obs-doris-init:
         condition: service_completed_successfully
-      obs-apisix:
-        condition: service_healthy
+      obs-juicefs:
+        condition: service_started
     restart: on-failure   # dorisexporter 首次 create_schema 可能因 BE 初始化竞争而失败，允许重试
 
 volumes:
@@ -177,6 +222,7 @@ volumes:
   obs-fe-log:
   obs-be-storage:
   obs-be-log:
+  obs-rustfs-data:
 
 networks:
   obs_net:

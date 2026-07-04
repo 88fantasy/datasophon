@@ -27,7 +27,7 @@ import type { ApiResponse } from './service';
 /** 传给后端 query 接口的 instant 参数 */
 export interface DorisInstantParams {
   metric: string;
-  agg?: 'sum' | 'max';
+  agg?: 'sum' | 'max' | 'count';
   scale?: number;
   instance?: string;
   job?: string;
@@ -59,6 +59,8 @@ export interface DorisRangeParams {
   table?: 'gauge' | 'sum' | 'summary' | 'histogram';
   /** summary/histogram 表查询时的分位数（0~1），如 0.5 / 0.9 / 0.99，默认 0.5 */
   quantile?: number;
+  /** histogram 表查询字段：quantile(默认)、count rate 或 sum rate */
+  field?: 'quantile' | 'count' | 'sum';
   /** 等值属性过滤（key 须在白名单：group/type/mode/path/device） */
   filters?: Record<string, string>;
   /** 不等属性过滤 */
@@ -73,7 +75,7 @@ export interface DorisRangeParams {
 export interface DorisInstantDescriptor {
   type: 'instant';
   metric: string;
-  agg?: 'sum' | 'max';
+  agg?: 'sum' | 'max' | 'count';
   scale?: number;
   /** OTel 表选择:gauge(默认)、sum(counter/_total 类,如 apisix_http_requests_total) */
   table?: 'gauge' | 'sum';
@@ -104,6 +106,7 @@ export interface DorisRangeQuery {
   /** OTel 表选择 */
   table?: 'gauge' | 'sum' | 'summary' | 'histogram';
   quantile?: number;
+  field?: 'quantile' | 'count' | 'sum';
   /** 等值属性过滤 */
   filters?: Record<string, string>;
   /** 不等属性过滤 */
@@ -184,7 +187,13 @@ export function queryDorisRange(params: DorisRangeParams) {
 
 /** 查询指标可用的 instance/job 标签值，用于工具栏下拉 */
 export function fetchDorisLabels(metric: string, clusterId = 1) {
-  return request<ApiResponse<{ instances: string[]; jobs: string[] }>>(
+  return request<
+    ApiResponse<{
+      instances: string[];
+      jobs: string[];
+      attributes?: Record<string, string[]>;
+    }>
+  >(
     '/observability/otel/metrics/labels',
     { method: 'GET', params: { metric, clusterId } },
   );

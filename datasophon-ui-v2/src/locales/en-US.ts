@@ -3,6 +3,7 @@ import component from './en-US/component';
 import dolphinSchedulerMonitor from './en-US/dolphinSchedulerMonitor';
 import dorisMonitor from './en-US/dorisMonitor';
 import globalHeader from './en-US/globalHeader';
+import juicefsMonitor from './en-US/juicefsMonitor';
 import menu from './en-US/menu';
 import network from './en-US/network';
 import nginxMonitor from './en-US/nginxMonitor';
@@ -35,4 +36,5 @@ export default {
   ...valkeyMonitor,
   ...apisixMonitor,
   ...rustfsMonitor,
+  ...juicefsMonitor,
 };

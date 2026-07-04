@@ -1,122 +1,195 @@
-import type { PanelDef } from '../_shared/panelTypes';
+import type { DorisPanelDescriptor } from '../_shared/dorisService';
 
-export interface JuiceFSDashboardVariables {
-  name: string;
-}
+export type { DorisPanelDescriptor as JuiceFSPanelDescriptor };
 
-export function replaceJuiceFSVars(
-  promql: string,
-  variables: Partial<JuiceFSDashboardVariables>,
-  interval: string,
-): string {
-  return promql
-    .replace(/\$name/g, variables.name || '.+')
-    .replace(/\$__rate_interval/g, interval);
-}
+const FUSE_OPS_HISTOGRAM = 'juicefs_fuse_ops_durations_histogram_seconds';
+const TRANSACTION_HISTOGRAM = 'juicefs_transaction_durations_histogram_seconds';
+const OBJECT_REQUEST_HISTOGRAM =
+  'juicefs_object_request_durations_histogram_seconds';
 
-export const PANEL_QUERIES: Record<string, PanelDef> = {
-  J01: {
-    type: 'instant',
-    promql: 'max(juicefs_uptime{vol_name="$name"})',
-  },
-  J02: {
-    type: 'instant',
-    promql: 'avg(juicefs_used_space{vol_name="$name"})',
-  },
-  J03: {
-    type: 'instant',
-    promql: 'avg(juicefs_used_inodes{vol_name="$name"})',
-  },
-  J04: {
-    type: 'instant',
-    promql: 'count(juicefs_uptime{vol_name="$name"})',
-  },
+export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
+  J01: { type: 'instant', metric: 'juicefs_uptime', agg: 'max' },
+  J02: { type: 'instant', metric: 'juicefs_used_space', agg: 'max' },
+  J03: { type: 'instant', metric: 'juicefs_used_inodes', agg: 'max' },
+  J04: { type: 'instant', metric: 'juicefs_uptime', agg: 'count' },
   J05: {
-    type: 'instant',
-    promql:
-      'sum(rate(juicefs_blockcache_hits{vol_name="$name"}[$__rate_interval])) * 100 / (sum(rate(juicefs_blockcache_hits{vol_name="$name"}[$__rate_interval])) + sum(rate(juicefs_blockcache_miss{vol_name="$name"}[$__rate_interval])))',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'Hits',
+        metric: 'juicefs_blockcache_hits',
+        rate: '1m',
+        table: 'gauge',
+      },
+      {
+        label: 'Miss',
+        metric: 'juicefs_blockcache_miss',
+        rate: '1m',
+        table: 'gauge',
+      },
+    ],
   },
-  J06: {
-    type: 'instant',
-    promql: 'sum(juicefs_staging_blocks{vol_name="$name"})',
-  },
+  J06: { type: 'instant', metric: 'juicefs_staging_blocks', agg: 'sum' },
   J07: {
-    type: 'range',
-    promql:
-      'sum(rate(juicefs_fuse_ops_durations_histogram_seconds_count{vol_name="$name"}[$__rate_interval]) < 5000000000) by (instance)',
-    seriesKey: 'instance',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'Operations',
+        metric: FUSE_OPS_HISTOGRAM,
+        rate: '1m',
+        table: 'histogram',
+        field: 'count',
+      },
+    ],
   },
   J08: {
     type: 'multi-range',
     queries: [
       {
         label: 'Write',
-        promql:
-          'sum(rate(juicefs_fuse_written_size_bytes_sum{vol_name="$name"}[$__rate_interval]) < 5000000000) by (instance)',
+        metric: 'juicefs_fuse_written_size_bytes',
+        rate: '1m',
+        table: 'histogram',
+        field: 'sum',
       },
       {
         label: 'Read',
-        promql:
-          'sum(rate(juicefs_fuse_read_size_bytes_sum{vol_name="$name"}[$__rate_interval]) < 5000000000) by (instance)',
+        metric: 'juicefs_fuse_read_size_bytes',
+        rate: '1m',
+        table: 'histogram',
+        field: 'sum',
       },
     ],
   },
   J09: {
-    type: 'range',
-    promql:
-      'sum(rate(juicefs_fuse_ops_durations_histogram_seconds_sum{vol_name="$name"}[$__rate_interval])) by (instance,mp) * 1000000 / sum(rate(juicefs_fuse_ops_durations_histogram_seconds_count{vol_name="$name"}[$__rate_interval])) by (instance,mp)',
-    seriesKey: 'instance',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'p50',
+        metric: FUSE_OPS_HISTOGRAM,
+        table: 'histogram',
+        quantile: 0.5,
+        scale: 1000000,
+        groupBy: ['mp'],
+      },
+      {
+        label: 'p99',
+        metric: FUSE_OPS_HISTOGRAM,
+        table: 'histogram',
+        quantile: 0.99,
+        scale: 1000000,
+        groupBy: ['mp'],
+      },
+    ],
   },
   J10: {
-    type: 'range',
-    promql:
-      'sum(rate(juicefs_transaction_durations_histogram_seconds_sum{vol_name="$name"}[$__rate_interval])) by (instance,mp) * 1000000 / sum(rate(juicefs_transaction_durations_histogram_seconds_count{vol_name="$name"}[$__rate_interval])) by (instance,mp)',
-    seriesKey: 'instance',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'p50',
+        metric: TRANSACTION_HISTOGRAM,
+        table: 'histogram',
+        quantile: 0.5,
+        scale: 1000000,
+      },
+      {
+        label: 'p99',
+        metric: TRANSACTION_HISTOGRAM,
+        table: 'histogram',
+        quantile: 0.99,
+        scale: 1000000,
+      },
+    ],
   },
   J11: {
-    type: 'range',
-    promql:
-      'sum(rate(juicefs_object_request_durations_histogram_seconds_sum{vol_name="$name"}[$__rate_interval])) by (instance) * 1000000 / sum(rate(juicefs_object_request_durations_histogram_seconds_count{vol_name="$name"}[$__rate_interval])) by (instance)',
-    seriesKey: 'instance',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'p50',
+        metric: OBJECT_REQUEST_HISTOGRAM,
+        table: 'histogram',
+        quantile: 0.5,
+        scale: 1000000,
+      },
+      {
+        label: 'p99',
+        metric: OBJECT_REQUEST_HISTOGRAM,
+        table: 'histogram',
+        quantile: 0.99,
+        scale: 1000000,
+      },
+    ],
   },
   J12: {
-    type: 'range',
-    promql:
-      'sum(rate(juicefs_object_request_durations_histogram_seconds_count{vol_name="$name"}[$__rate_interval])) by (method)',
-    seriesKey: 'method',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'Requests',
+        metric: OBJECT_REQUEST_HISTOGRAM,
+        rate: '1m',
+        table: 'histogram',
+        field: 'count',
+        groupBy: ['method'],
+      },
+    ],
   },
   J13: {
     type: 'multi-range',
     queries: [
       {
         label: 'Object Request Errors',
-        promql:
-          'sum(rate(juicefs_object_request_errors{vol_name="$name"}[$__rate_interval]))',
+        metric: 'juicefs_object_request_errors',
+        rate: '1m',
+        table: 'gauge',
       },
       {
         label: 'Transaction Restarts',
-        promql:
-          'sum(rate(juicefs_transaction_restart{vol_name="$name"}[$__rate_interval])) by (instance)',
+        metric: 'juicefs_transaction_restart',
+        rate: '1m',
+        table: 'gauge',
       },
     ],
   },
   J14: {
-    type: 'range',
-    promql: 'sum(juicefs_blockcache_bytes{vol_name="$name"}) by (instance,mp)',
-    seriesKey: 'instance',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'Size',
+        metric: 'juicefs_blockcache_bytes',
+        groupBy: ['mp'],
+      },
+    ],
   },
   J15: {
     type: 'multi-range',
     queries: [
       {
-        label: 'By Count',
-        promql:
-          'sum(rate(juicefs_blockcache_hits{vol_name="$name"}[$__rate_interval])) by (instance,mp) *100 / (sum(rate(juicefs_blockcache_hits{vol_name="$name"}[$__rate_interval])) by (instance,mp) + sum(rate(juicefs_blockcache_miss{vol_name="$name"}[$__rate_interval])) by (instance,mp))',
+        label: 'Count Hits',
+        metric: 'juicefs_blockcache_hits',
+        rate: '1m',
+        table: 'gauge',
+        groupBy: ['mp'],
       },
       {
-        label: 'By Bytes',
-        promql:
-          'sum(rate(juicefs_blockcache_hit_bytes{vol_name="$name"}[$__rate_interval])) by (instance,mp) *100 / (sum(rate(juicefs_blockcache_hit_bytes{vol_name="$name"}[$__rate_interval])) by (instance,mp) + sum(rate(juicefs_blockcache_miss_bytes{vol_name="$name"}[$__rate_interval])) by (instance,mp))',
+        label: 'Count Miss',
+        metric: 'juicefs_blockcache_miss',
+        rate: '1m',
+        table: 'gauge',
+        groupBy: ['mp'],
+      },
+      {
+        label: 'Bytes Hits',
+        metric: 'juicefs_blockcache_hit_bytes',
+        rate: '1m',
+        table: 'gauge',
+        groupBy: ['mp'],
+      },
+      {
+        label: 'Bytes Miss',
+        metric: 'juicefs_blockcache_miss_bytes',
+        rate: '1m',
+        table: 'gauge',
+        groupBy: ['mp'],
       },
     ],
   },
@@ -125,13 +198,19 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
     queries: [
       {
         label: 'PUT',
-        promql:
-          'sum(rate(juicefs_object_request_data_bytes{method="PUT",vol_name="$name"}[$__rate_interval])) by (instance,method)',
+        metric: 'juicefs_object_request_data_bytes',
+        rate: '1m',
+        table: 'gauge',
+        filters: { method: 'PUT' },
+        groupBy: ['method'],
       },
       {
         label: 'GET',
-        promql:
-          'sum(rate(juicefs_object_request_data_bytes{method="GET",vol_name="$name"}[$__rate_interval])) by (instance,method)',
+        metric: 'juicefs_object_request_data_bytes',
+        rate: '1m',
+        table: 'gauge',
+        filters: { method: 'GET' },
+        groupBy: ['method'],
       },
     ],
   },
@@ -140,22 +219,17 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
     queries: [
       {
         label: 'CPU %',
-        promql:
-          'sum(rate(juicefs_cpu_usage{vol_name="$name"}[$__rate_interval])*100 < 1000) by (instance,mp)',
+        metric: 'juicefs_cpu_usage',
+        rate: '1m',
+        table: 'gauge',
+        scale: 100,
+        groupBy: ['mp'],
       },
       {
         label: 'Memory',
-        promql: 'sum(juicefs_memory{vol_name="$name"}) by (instance,mp)',
+        metric: 'juicefs_memory',
+        groupBy: ['mp'],
       },
     ],
   },
-};
-
-export const TIME_RANGE_SECONDS: Record<string, number> = {
-  '5m': 300,
-  '15m': 900,
-  '1h': 3600,
-  '6h': 21600,
-  '24h': 86400,
-  '7d': 604800,
 };
