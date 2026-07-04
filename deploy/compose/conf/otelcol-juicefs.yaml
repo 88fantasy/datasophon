@@ -1,4 +1,4 @@
-# OTel Collector 配置：采集 APISIX + Doris Prometheus 指标 → Doris，并接收 api/worker OTLP traces + logs
+# OTel Collector 配置：采集 JuiceFS + Doris Prometheus 指标 → Doris，并接收 api/worker OTLP traces + logs
 #
 # 用于 deploy/compose/docker-compose.observability.yml 的本地链路验证。
 # 与生产 otelcol.ftl 的区别：
@@ -7,9 +7,12 @@
 #   - replication_num: 1（单 BE 必须；生产多 BE 时默认 3）
 #   - 含 debug exporter（便于排障）
 #
-# APISIX 指标端点（standalone 模式，无鉴权）：/apisix/prometheus/metrics:9091
+# JuiceFS 指标端点：client 进程 `--metrics=0.0.0.0:9567` 暴露 /metrics（生产 OtelScrapeConfigBuilder
+# 的默认路径，无需 PATH_OVERRIDES）。job_name 固定为 "JuicefsMount"，与生产角色名一致，使落库后的
+# service_name 列与 docs/monitoring/juicefs-otel-verification.md 的验证 SQL（WHERE service_name='JuicefsMount'）
+# 保持一致，无需切换 SQL。
 # Doris FE 指标端点：:8030/metrics；Doris BE 指标端点：:8040/metrics
-# 端点验证：curl http://localhost:9091/apisix/prometheus/metrics | head
+# 端点验证：curl http://localhost:9567/metrics | head
 
 extensions:
   health_check:
@@ -24,17 +27,17 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
-  prometheus/apisix:
+  prometheus/juicefs:
     config:
       scrape_configs:
-        - job_name: apisix
+        - job_name: JuicefsMount
           scrape_interval: 15s
-          metrics_path: /apisix/prometheus/metrics
+          metrics_path: /metrics
           scheme: http
           static_configs:
-            - targets: ["obs-apisix:9091"]
+            - targets: ["obs-juicefs:9567"]
               labels:
-                instance: obs-apisix
+                instance: obs-juicefs
 
   # Doris FE + BE Prometheus 指标采集。
   # obs-doris-fe/be 既充当存储 Doris 又充当被监控 Doris（沙箱一机两用）。
@@ -133,7 +136,7 @@ service:
                 port: 8888
   pipelines:
     metrics:
-      receivers: [prometheus/apisix, prometheus/doris, otlp]
+      receivers: [prometheus/juicefs, prometheus/doris, otlp]
       processors: [memory_limiter, batch]
       exporters: [doris, debug]
     metrics/host:

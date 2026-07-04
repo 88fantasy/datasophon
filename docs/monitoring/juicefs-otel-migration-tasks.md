@@ -80,25 +80,25 @@
 - [x] **2.2 `panelQueries.ts`** 重写(删 `replaceJuiceFSVars` 与 promql 字符串,改 `Record<string, DorisPanelDescriptor>`,
   `import type { DorisPanelDescriptor } from '../_shared/dorisService'`)。17 面板(全部 `filters.vol_name` 由 hook 注入):
 
-  | ID | 面板 | 类型 | metric / 关键字段 |
-  |---|---|---|---|
-  | J01 | Uptime | instant max | `juicefs_uptime`(gauge) |
-  | J02 | Data Size | instant max | `juicefs_used_space`(原 avg→max) |
-  | J03 | Files | instant max | `juicefs_used_inodes` |
-  | J04 | Client Sessions | instant count | `juicefs_uptime`(见 1.4) |
-  | J05 | Block Cache Hit % | 客户端合成 stat | hits-rate+miss-rate → `h/(h+m)*100` 取末点 |
-  | J06 | Staging Blocks | instant sum | `juicefs_staging_blocks` |
-  | J07 | Operations | histogram field-rate | fuse ops histogram, field=count |
-  | J08 | IO Throughput | multi-range histogram sum-rate | written/read `_size_bytes`, field=sum(Write/Read) |
-  | J09 | IO Latency | multi-range histogram quantile | fuse ops histogram, p50+p99(可选 groupBy mp) |
-  | J10 | Transaction Latency | multi-range histogram quantile | transaction histogram, p50+p99 |
-  | J11 | Objects Latency | multi-range histogram quantile | object request histogram, p50+p99 |
-  | J12 | Objects Requests | histogram field-rate groupBy method | object request histogram, field=count, groupBy `['method']` |
-  | J13 | Object Errors & Tx Restarts | multi-range plain rate | `juicefs_object_request_errors`+`juicefs_transaction_restart`(sum 表) |
-  | J14 | Block Cache Size | range gauge groupBy mp | `juicefs_blockcache_bytes` |
-  | J15 | Block Cache Hit Ratio | 客户端合成 | by count(hits/miss)+by bytes(hit_bytes/miss_bytes) |
-  | J16 | Objects Throughput | multi-range rate filter method | `juicefs_object_request_data_bytes`(sum 表), method=PUT/GET |
-  | J17 | Client CPU & Memory | multi-range | CPU=`juicefs_cpu_usage` rate*100(sum,scale100)+Memory=`juicefs_memory`(gauge), groupBy mp |
+  | ID  |             面板              |                 类型                  |                                       metric / 关键字段                                       |
+  |-----|-----------------------------|-------------------------------------|-------------------------------------------------------------------------------------------|
+  | J01 | Uptime                      | instant max                         | `juicefs_uptime`(gauge)                                                                   |
+  | J02 | Data Size                   | instant max                         | `juicefs_used_space`(原 avg→max)                                                           |
+  | J03 | Files                       | instant max                         | `juicefs_used_inodes`                                                                     |
+  | J04 | Client Sessions             | instant count                       | `juicefs_uptime`(见 1.4)                                                                   |
+  | J05 | Block Cache Hit %           | 客户端合成 stat                          | hits-rate+miss-rate → `h/(h+m)*100` 取末点                                                   |
+  | J06 | Staging Blocks              | instant sum                         | `juicefs_staging_blocks`                                                                  |
+  | J07 | Operations                  | histogram field-rate                | fuse ops histogram, field=count                                                           |
+  | J08 | IO Throughput               | multi-range histogram sum-rate      | written/read `_size_bytes`, field=sum(Write/Read)                                         |
+  | J09 | IO Latency                  | multi-range histogram quantile      | fuse ops histogram, p50+p99(可选 groupBy mp)                                                |
+  | J10 | Transaction Latency         | multi-range histogram quantile      | transaction histogram, p50+p99                                                            |
+  | J11 | Objects Latency             | multi-range histogram quantile      | object request histogram, p50+p99                                                         |
+  | J12 | Objects Requests            | histogram field-rate groupBy method | object request histogram, field=count, groupBy `['method']`                               |
+  | J13 | Object Errors & Tx Restarts | multi-range plain rate              | `juicefs_object_request_errors`+`juicefs_transaction_restart`(sum 表)                      |
+  | J14 | Block Cache Size            | range gauge groupBy mp              | `juicefs_blockcache_bytes`                                                                |
+  | J15 | Block Cache Hit Ratio       | 客户端合成                               | by count(hits/miss)+by bytes(hit_bytes/miss_bytes)                                        |
+  | J16 | Objects Throughput          | multi-range rate filter method      | `juicefs_object_request_data_bytes`(sum 表), method=PUT/GET                                |
+  | J17 | Client CPU & Memory         | multi-range                         | CPU=`juicefs_cpu_usage` rate*100(sum,scale100)+Memory=`juicefs_memory`(gauge), groupBy mp |
 
   > histogram metric_name 以 Task 0 验证结果为准(去后缀基名)。
 
@@ -148,3 +148,4 @@
 3. J05/J15 hit-ratio 合成的除零/NaN 守卫。
 4. locale 大小写统一为 `juicefsMonitor`,17 panel key 齐全。
 5. 后端 java 测试 + 前端 vitest/lint/tsc 全绿;spotless 通过。
+
