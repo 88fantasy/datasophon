@@ -16,14 +16,10 @@ export default {
   'pages.zookeeperMonitor.panel.packets': '数据包（接收 / 发送）',
   'pages.zookeeperMonitor.panel.aliveConnectionsTrend': '活跃连接趋势',
   'pages.zookeeperMonitor.panel.connectionDataErrors': '连接与数据错误',
-  'pages.zookeeperMonitor.panel.electionTime': '选举耗时（平均 ms）',
   'pages.zookeeperMonitor.panel.learnersObservers': 'Learner / 已同步 Observer',
   'pages.zookeeperMonitor.panel.quorumCounts': '提交 / 快照 / Proposal 计数',
-  'pages.zookeeperMonitor.panel.fsyncTime': 'Fsync 耗时（平均 ms）',
-  'pages.zookeeperMonitor.panel.snapshotTime': '快照耗时（平均 ms）',
   'pages.zookeeperMonitor.panel.jvmMemoryPool': 'JVM 内存池使用量',
   'pages.zookeeperMonitor.panel.gcCollectionRate': 'GC 收集速率',
-  'pages.zookeeperMonitor.panel.jvmGcPauseTime': 'JVM GC 暂停时间',
 
   'pages.zookeeperMonitor.toolbar.job': 'Job',
 };
