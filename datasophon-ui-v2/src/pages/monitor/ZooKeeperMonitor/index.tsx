@@ -58,9 +58,7 @@ const zkQuorumColors = {
 
 const integerFormatter = (value: number) => value.toFixed(0);
 const millisecondFormatter = (value: number) => `${value.toFixed(1)}ms`;
-const wholeMillisecondFormatter = (value: number) => `${value.toFixed(0)}ms`;
 const opsFormatter = (value: number) => `${value.toFixed(3)}/s`;
-const pauseFormatter = (value: number) => `${value.toFixed(2)}ms/s`;
 
 function formatDuration(ms: number): string {
   const seconds = Math.floor(ms / 1000);
@@ -271,14 +269,7 @@ const ZooKeeperDashboard: FC = () => {
       </Row>
 
       <Row gutter={MONITOR_ROW_GUTTER}>
-        <PanelCol span={8}>
-          <TimeSeriesPanel
-            title={t('pages.zookeeperMonitor.panel.electionTime')}
-            data={series.Z16}
-            yFormatter={wholeMillisecondFormatter}
-          />
-        </PanelCol>
-        <PanelCol span={8}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.learnersObservers')}
             data={series.Z17}
@@ -286,7 +277,7 @@ const ZooKeeperDashboard: FC = () => {
             colorMap={zkLearnerColors}
           />
         </PanelCol>
-        <PanelCol span={8}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.quorumCounts')}
             data={series.Z18}
@@ -298,41 +289,17 @@ const ZooKeeperDashboard: FC = () => {
 
       <Row gutter={MONITOR_ROW_GUTTER}>
         <PanelCol span={12}>
-          <TimeSeriesPanel
-            title={t('pages.zookeeperMonitor.panel.fsyncTime')}
-            data={series.Z19}
-            yFormatter={millisecondFormatter}
-          />
-        </PanelCol>
-        <PanelCol span={12}>
-          <TimeSeriesPanel
-            title={t('pages.zookeeperMonitor.panel.snapshotTime')}
-            data={series.Z20}
-            yFormatter={millisecondFormatter}
-          />
-        </PanelCol>
-      </Row>
-
-      <Row gutter={MONITOR_ROW_GUTTER}>
-        <PanelCol span={8}>
           <AreaPanel
             title={t('pages.zookeeperMonitor.panel.jvmMemoryPool')}
             data={series.Z21}
             yFormatter={formatBytes}
           />
         </PanelCol>
-        <PanelCol span={8}>
+        <PanelCol span={12}>
           <TimeSeriesPanel
             title={t('pages.zookeeperMonitor.panel.gcCollectionRate')}
             data={series.Z22}
             yFormatter={opsFormatter}
-          />
-        </PanelCol>
-        <PanelCol span={8}>
-          <TimeSeriesPanel
-            title={t('pages.zookeeperMonitor.panel.jvmGcPauseTime')}
-            data={series.Z23}
-            yFormatter={pauseFormatter}
           />
         </PanelCol>
       </Row>

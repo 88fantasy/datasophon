@@ -116,9 +116,6 @@ export const zkSeriesData: Record<string, TimeSeriesPoint[]> = {
     ...genSeries('unrecoverable', 0, 0, 92),
     ...genSeries('digest_mismatch', 0, 0, 93),
   ],
-  Z16: genSeries('election_time', 0, 0, 100, {
-    spikes: [{ near: 72, value: 180 }],
-  }),
   Z17: [
     ...genSeries('learners', 2, 0.2, 110, { min: 2, max: 2 }),
     ...genSeries('synced_observers', 0, 0, 111),
@@ -128,19 +125,6 @@ export const zkSeriesData: Record<string, TimeSeriesPoint[]> = {
     ...genCounter('snapshots', 0.01, 121),
     ...genCounter('proposals', 36, 122),
   ],
-  Z19: [
-    ...genSeries('zk-1:7000', 3, 4, 130, {
-      max: 20,
-      spikes: [{ near: 82, value: 20 }],
-    }),
-    ...genSeries('zk-2:7000', 2.5, 3, 131, { max: 8 }),
-    ...genSeries('zk-3:7000', 3.2, 3, 132, { max: 8 }),
-  ],
-  Z20: [
-    ...genSeries('zk-1:7000', 360, 180, 140, { min: 200, max: 500 }),
-    ...genSeries('zk-2:7000', 330, 160, 141, { min: 200, max: 500 }),
-    ...genSeries('zk-3:7000', 380, 170, 142, { min: 200, max: 500 }),
-  ],
   Z21: [
     ...genSeries('G1 Old Gen', 120 * 1024 * 1024, 12 * 1024 * 1024, 150),
     ...genSeries('Metaspace', 60 * 1024 * 1024, 5 * 1024 * 1024, 151),
@@ -149,10 +133,5 @@ export const zkSeriesData: Record<string, TimeSeriesPoint[]> = {
   Z22: [
     ...genSeries('G1 Young Generation', 0.01, 0.006, 160, { max: 0.03 }),
     ...genSeries('G1 Old Generation', 0, 0.001, 161, { max: 0.002 }),
-  ],
-  Z23: [
-    ...genSeries('zk-1:7000', 0.5, 0.25, 170, { max: 1 }),
-    ...genSeries('zk-2:7000', 0.45, 0.25, 171, { max: 1 }),
-    ...genSeries('zk-3:7000', 0.55, 0.25, 172, { max: 1 }),
   ],
 };

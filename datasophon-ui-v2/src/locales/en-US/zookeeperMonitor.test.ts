@@ -22,14 +22,10 @@ describe('en-US ZooKeeper monitor locale', () => {
       'pages.zookeeperMonitor.panel.packets',
       'pages.zookeeperMonitor.panel.aliveConnectionsTrend',
       'pages.zookeeperMonitor.panel.connectionDataErrors',
-      'pages.zookeeperMonitor.panel.electionTime',
       'pages.zookeeperMonitor.panel.learnersObservers',
       'pages.zookeeperMonitor.panel.quorumCounts',
-      'pages.zookeeperMonitor.panel.fsyncTime',
-      'pages.zookeeperMonitor.panel.snapshotTime',
       'pages.zookeeperMonitor.panel.jvmMemoryPool',
       'pages.zookeeperMonitor.panel.gcCollectionRate',
-      'pages.zookeeperMonitor.panel.jvmGcPauseTime',
     ];
 
     for (const key of requiredKeys) {

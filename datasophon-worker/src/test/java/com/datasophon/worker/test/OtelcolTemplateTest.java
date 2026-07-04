@@ -14,7 +14,7 @@ import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 
 public class OtelcolTemplateTest {
-    
+
     private Configuration buildCfg() throws Exception {
         Configuration cfg = new Configuration(Configuration.VERSION_2_3_30);
         cfg.setClassForTemplateLoading(OtelcolTemplateTest.class, "/templates");
@@ -22,15 +22,15 @@ public class OtelcolTemplateTest {
         cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
         return cfg;
     }
-    
+
     private String render() throws Exception {
         return render("s3");
     }
-    
+
     private String render(String exporterMode) throws Exception {
         return render(exporterMode, "");
     }
-    
+
     private String render(String exporterMode, String localScrapeJobsYaml) throws Exception {
         Configuration cfg = buildCfg();
         Template tpl = cfg.getTemplate("otelcol.ftl");
@@ -54,7 +54,7 @@ public class OtelcolTemplateTest {
         tpl.process(data, out);
         return out.toString();
     }
-    
+
     @Test
     public void renders_env_file_with_aws_credentials() throws Exception {
         Configuration cfg = buildCfg();
@@ -72,7 +72,7 @@ public class OtelcolTemplateTest {
         assertTrue(env.contains("OTEL_DORIS_USER=otel_collector"));
         assertTrue(env.contains("OTEL_DORIS_PASSWORD=generated-secret"));
     }
-    
+
     @Test
     public void renders_s3_mode_with_persistent_queue() throws Exception {
         String yaml = render();
@@ -99,11 +99,11 @@ public class OtelcolTemplateTest {
         assertTrue(yaml.contains("traces:"));
         assertTrue(yaml.contains("exporters: [awss3]"));
     }
-    
+
     @Test
     public void renders_doris_mode_without_plaintext_password() throws Exception {
         String yaml = render("doris");
-        
+
         assertTrue(yaml.contains("doris:"));
         assertTrue(yaml.contains("endpoint: http://doris-fe:8030"));
         assertTrue(yaml.contains("database: otel"));
@@ -113,41 +113,41 @@ public class OtelcolTemplateTest {
         assertTrue(yaml.contains("exporters: [doris]"));
         assertTrue(!yaml.contains("generated-secret"));
     }
-    
+
     @Test
     public void renders_local_prometheus_receiver_when_local_scrape_jobs_exist() throws Exception {
         String yaml = render("doris", "        - job_name: 'DataNode'\n"
                 + "          static_configs:\n"
                 + "            - targets: ['127.0.0.1:9101']\n");
-        
+
         assertTrue(yaml.contains("prometheus/local:"));
         assertTrue(yaml.contains("job_name: 'DataNode'"));
         assertTrue(yaml.contains("receivers: [otlp, prometheus/self, prometheus/local]"));
     }
-    
+
     @Test
     public void skips_local_prometheus_receiver_when_local_scrape_jobs_are_empty() throws Exception {
         String yaml = render("doris", "");
-        
+
         assertTrue(!yaml.contains("prometheus/local:"));
         assertTrue(yaml.contains("receivers: [otlp, prometheus/self]"));
     }
-    
+
     @Test
     public void local_scrape_jobs_are_independent_from_exporter_mode() throws Exception {
         String yaml = render("s3", "        - job_name: 'DataNode'\n"
                 + "          static_configs:\n"
                 + "            - targets: ['127.0.0.1:9101']\n");
-        
+
         assertTrue(yaml.contains("prometheus/local:"));
         assertTrue(yaml.contains("exporters: [awss3]"));
         assertTrue(yaml.contains("receivers: [otlp, prometheus/self, prometheus/local]"));
     }
-    
+
     @Test
     public void renders_hostmetrics_receiver_with_dedicated_pipeline() throws Exception {
         String yaml = render();
-        
+
         // host_metrics receiver 替代 node_exporter 采集主机 CPU/内存/磁盘/网络
         // （receiver 名用 host_metrics，非 hostmetrics：后者是 v0.154.0 已废弃的 legacy alias）
         assertTrue(yaml.contains("host_metrics:"));
@@ -164,7 +164,32 @@ public class OtelcolTemplateTest {
         // node_exporter 相关端口已彻底退役
         assertTrue(!yaml.contains(":9100"));
     }
-    
+
+    @Test
+    public void renders_filter_processor_dropping_empty_summary_datapoints() throws Exception {
+        String yaml = render("doris");
+
+        // 空 Summary(count=0,quantile 恒为 NaN)会让 dorisexporter 序列化 JSON 时报
+        // "unsupported value: NaN" 导致整批导出失败并拖累同一 pipeline 里其它指标(实测确认，
+        // 见 docs/monitoring/zookeeper-otel-verification.md)
+        assertTrue(yaml.contains("filter/drop_empty_summary:"));
+        assertTrue(yaml.contains("metric.type == METRIC_DATA_TYPE_SUMMARY and count == 0"));
+        assertTrue(yaml.contains(
+                "processors: [memory_limiter, filter/drop_empty_summary, filter/drop_zk_decaying_summary, batch]"));
+    }
+
+    @Test
+    public void renders_filter_processor_dropping_zk_decaying_summary_metrics() throws Exception {
+        String yaml = render("doris");
+
+        // election_time/fsynctime/snapshottime/jvm_pause_time_ms 即使 count>0 也会因滑动时间窗衰减
+        // 回 NaN，filter/drop_empty_summary 覆盖不到；OTTL 当前版本又无法清空 quantile_values，
+        // 因此直接整体丢弃这 4 个指标，不导入 Doris（详见 docs/monitoring/zookeeper-otel-verification.md）
+        assertTrue(yaml.contains("filter/drop_zk_decaying_summary:"));
+        assertTrue(yaml.contains(
+                "name == \"election_time\" or name == \"fsynctime\" or name == \"snapshottime\" or name == \"jvm_pause_time_ms\""));
+    }
+
     @Test
     public void renders_raw_yaml_override_verbatim() throws Exception {
         Configuration cfg = buildCfg();
@@ -173,9 +198,9 @@ public class OtelcolTemplateTest {
         String rawYaml = "receivers:\n  otlp:\nexporters:\n  debug:\n";
         data.put("rawYaml", rawYaml);
         StringWriter out = new StringWriter();
-        
+
         tpl.process(data, out);
-        
+
         assertEquals(rawYaml, out.toString());
     }
 }

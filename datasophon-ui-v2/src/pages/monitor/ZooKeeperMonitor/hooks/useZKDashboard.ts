@@ -1,11 +1,7 @@
-import { useMemo } from 'react';
-import type { PrometheusVector } from '../../_shared/charts/promql';
-import {
-  deriveInstancesAndJobs,
-  replaceVars,
-} from '../../_shared/charts/promql';
+import { useEffect, useState } from 'react';
+import { fetchDorisLabels } from '../../_shared/dorisService';
 import type { TimeSeriesPoint } from '../../_shared/types';
-import { useDashboardData } from '../../_shared/useDashboardData';
+import { useDorisDashboardData } from '../../_shared/useDorisDashboardData';
 import { PANEL_QUERIES, type ZKDashboardVariables } from '../panelQueries';
 
 export interface ZKInstantValues {
@@ -26,14 +22,7 @@ export interface ZKDashboardData {
   error?: string;
 }
 
-const ALL_PANEL_IDS = Array.from(
-  { length: 23 },
-  (_, i) => `Z${String(i + 1).padStart(2, '0')}`,
-);
-
-const EXTRAS = {
-  up: { query: 'up', kind: 'instant' as const },
-};
+const ALL_PANEL_IDS = Object.keys(PANEL_QUERIES);
 
 export interface UseZKDashboardParams {
   variables: ZKDashboardVariables;
@@ -48,23 +37,29 @@ export function useZKDashboard({
   clusterId = 1,
   refreshKey,
 }: UseZKDashboardParams): ZKDashboardData {
-  const data = useDashboardData({
-    panelQueries: PANEL_QUERIES,
-    replaceVars: (promql, vars) =>
-      replaceVars(promql, vars, { instance: '.+', job: '.+' }),
-    variables: variables as unknown as Record<string, string>,
+  const [labels, setLabels] = useState<{ instances: string[]; jobs: string[] }>(
+    { instances: [], jobs: [] },
+  );
+
+  useEffect(() => {
+    fetchDorisLabels('jvm_threads_current', clusterId)
+      .then((res) => {
+        if (res?.data) setLabels(res.data);
+      })
+      .catch(() => {
+        // labels 查询失败不影响面板数据，静默降级
+      });
+  }, [clusterId, refreshKey]);
+
+  const data = useDorisDashboardData({
+    panelDescriptors: PANEL_QUERIES,
     panelIds: ALL_PANEL_IDS,
-    extras: EXTRAS,
+    instance: variables.instance,
+    job: variables.job,
     timeRange,
     clusterId,
     refreshKey,
   });
-
-  const { instances, jobs } = useMemo(() => {
-    const upVector = data.extras.up as PrometheusVector | undefined;
-    if (!upVector) return { instances: [], jobs: [] };
-    return deriveInstancesAndJobs(upVector);
-  }, [data.extras]);
 
   return {
     instant: {
@@ -76,8 +71,8 @@ export function useZKDashboard({
       openFileDescriptors: data.instant.Z06 ?? 0,
     },
     series: data.series,
-    instances,
-    jobs,
+    instances: labels.instances,
+    jobs: labels.jobs,
     loading: data.loading,
     error: data.error,
   };

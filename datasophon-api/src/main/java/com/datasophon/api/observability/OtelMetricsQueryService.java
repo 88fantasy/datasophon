@@ -88,12 +88,12 @@ public class OtelMetricsQueryService {
     static final Set<String> ALLOWED_ATTR_FILTER_KEYS =
             Set.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
                     "code", "service", "route", "node", "consumer", "name",
-                    "op", "drive", "server", "status_class", "vol_name", "mp", "method");
+                    "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc");
 
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
             List.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
                     "code", "service", "route", "node", "consumer", "name",
-                    "op", "drive", "server", "status_class", "vol_name", "mp", "method");
+                    "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc");
 
     private final ClusterServiceRoleInstanceService roleService;
     private final OtelDorisReaderFactory readerFactory;
@@ -188,7 +188,7 @@ public class OtelMetricsQueryService {
     /**
      * Range 查询，返回 Prometheus matrix 格式。
      *
-     * @param field histogram 表专用："count"/"sum" 表示对 histogram count/sum 列做 counter-rate；
+     * @param field histogram/summary 表专用："count"/"sum" 表示对 count/sum 列做 counter-rate；
      *              缺省或 "quantile" 表示按 {@code quantile} 查询分位数。
      */
     public PrometheusMatrixResult queryRange(Integer clusterId, String metric,
@@ -200,6 +200,29 @@ public class OtelMetricsQueryService {
                                              long start, long end, long step,
                                              String table, double quantile, String field) {
         JdbcClient client = createReader(clusterId);
+
+        List<String> validGroupBy = toValidGroupBy(groupByKeys);
+        boolean fieldRate = "count".equalsIgnoreCase(field) || "sum".equalsIgnoreCase(field);
+
+        if ("summary".equalsIgnoreCase(table) && fieldRate) {
+            String sql = buildRangeFieldRateSql(field.toLowerCase(), needsFilter(instance), needsFilter(job),
+                    filters, filtersNe, validGroupBy, "otel_metrics_summary");
+            JdbcClient.StatementSpec spec = client.sql(sql)
+                    .param("metric", metric)
+                    .param("start", start)
+                    .param("end", end)
+                    .param("step", step)
+                    .param("rateWindow", parseRateWindow(rateWindow));
+            if (needsFilter(instance)) {
+                spec = spec.param("instance", instance);
+            }
+            if (needsFilter(job)) {
+                spec = spec.param("job", job);
+            }
+            spec = bindAttrFilterParams(spec, filters, filtersNe);
+            List<Map<String, Object>> rows = spec.query().listOfRows();
+            return buildMatrix(rows, scale);
+        }
 
         if ("summary".equalsIgnoreCase(table)) {
             String sql = buildRangeSummarySql();
@@ -214,11 +237,9 @@ public class OtelMetricsQueryService {
         }
 
         if ("histogram".equalsIgnoreCase(table)) {
-            List<String> validGroupBy = toValidGroupBy(groupByKeys);
-            boolean fieldRate = "count".equalsIgnoreCase(field) || "sum".equalsIgnoreCase(field);
             String sql = fieldRate
-                    ? buildRangeHistogramFieldRateSql(field.toLowerCase(), needsFilter(instance), needsFilter(job),
-                            filters, filtersNe, validGroupBy)
+                    ? buildRangeFieldRateSql(field.toLowerCase(), needsFilter(instance), needsFilter(job),
+                            filters, filtersNe, validGroupBy, "otel_metrics_histogram")
                     : buildRangeHistogramSql(needsFilter(instance), needsFilter(job),
                             filters, filtersNe, validGroupBy);
             JdbcClient.StatementSpec spec = client.sql(sql)
@@ -241,7 +262,6 @@ public class OtelMetricsQueryService {
             return buildMatrix(rows, scale);
         }
 
-        List<String> validGroupBy = toValidGroupBy(groupByKeys);
         boolean hasRate = rateWindow != null && !rateWindow.isBlank();
         String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
         String sql = hasRate
@@ -560,18 +580,18 @@ public class OtelMetricsQueryService {
     }
 
     /**
-     * histogram 表 {@code count}/{@code sum} 列的 counter-rate 查询。
+     * histogram/summary 表 {@code count}/{@code sum} 列的 counter-rate 查询。
      *
-     * <p>用于 Prometheus 经典 histogram 的 {@code rate(metric_count[...])} /
+     * <p>用于 Prometheus 经典 histogram/summary 的 {@code rate(metric_count[...])} /
      * {@code rate(metric_sum[...])} 语义。分区仍包含 {@code series_key}，先 per-series
-     * 求 rate，再按调用方 groupBy 粒度 SUM；reset 守卫统一使用 histogram {@code count} 列，
+     * 求 rate，再按调用方 groupBy 粒度 SUM；reset 守卫统一使用 {@code count} 列，
      * 即使请求的是 {@code sum} 字段也一样。
      */
-    static String buildRangeHistogramFieldRateSql(String field, boolean filterInstance, boolean filterJob,
-                                                  Map<String, String> filters, Map<String, String> filtersNe,
-                                                  List<String> groupByKeys) {
+    static String buildRangeFieldRateSql(String field, boolean filterInstance, boolean filterJob,
+                                         Map<String, String> filters, Map<String, String> filtersNe,
+                                         List<String> groupByKeys, String otelTable) {
         if (!"count".equals(field) && !"sum".equals(field)) {
-            throw new IllegalArgumentException("Unsupported histogram field: " + field);
+            throw new IllegalArgumentException("Unsupported field-rate field: " + field);
         }
         String extraSelect = buildExtraSelect(groupByKeys);
         String extraCols = buildExtraCols(groupByKeys);
@@ -586,7 +606,7 @@ public class OtelMetricsQueryService {
                 + extraSelect
                 + ",\n         CAST(attributes AS STRING) AS series_key,\n"
                 + "         UNIX_TIMESTAMP(timestamp) AS ts, count AS reset_count, " + field + " AS value\n"
-                + "  FROM otel.otel_metrics_histogram\n"
+                + "  FROM otel." + otelTable + "\n"
                 + "  WHERE metric_name = :metric\n"
                 + "    AND timestamp BETWEEN FROM_UNIXTIME(:start - :rateWindow) AND FROM_UNIXTIME(:end)\n"
                 + filterStr
@@ -719,9 +739,15 @@ public class OtelMetricsQueryService {
     static PrometheusVectorResult buildVector(List<Map<String, Object>> rows, double scale) {
         List<VectorSample> samples = new ArrayList<>(rows.size());
         for (Map<String, Object> row : rows) {
+            Object rawValue = row.get("value");
+            // 聚合查询（如 buildInstantAggSql 的 SUM/MAX）在无匹配行时仍返回一行，value 列为 SQL NULL；
+            // 与"无数据"同义，跳过该行而非抛异常，交给前端按空 vector 统一处理为 NaN。
+            if (rawValue == null) {
+                continue;
+            }
             Map<String, String> labels = extractLabels(row, Set.of("ts", "value"));
             long ts = ((Number) row.get("ts")).longValue();
-            double val = ((Number) row.get("value")).doubleValue() * scale;
+            double val = ((Number) rawValue).doubleValue() * scale;
             samples.add(new VectorSample(labels, new Object[]{ts, String.valueOf(val)}));
         }
         return PrometheusVectorResult.of(samples);
@@ -735,9 +761,13 @@ public class OtelMetricsQueryService {
     static PrometheusMatrixResult buildMatrix(List<Map<String, Object>> rows, double scale) {
         Map<String, MatrixSeries> seriesMap = new LinkedHashMap<>();
         for (Map<String, Object> row : rows) {
+            Object rawValue = row.get("value");
+            if (rawValue == null) {
+                continue;
+            }
             Map<String, String> labels = extractLabels(row, Set.of("bucket", "value"));
             long bucket = ((Number) row.get("bucket")).longValue();
-            double val = ((Number) row.get("value")).doubleValue() * scale;
+            double val = ((Number) rawValue).doubleValue() * scale;
             String key = labels.entrySet().stream()
                     .map(e -> e.getKey() + "=" + e.getValue())
                     .collect(Collectors.joining(","));

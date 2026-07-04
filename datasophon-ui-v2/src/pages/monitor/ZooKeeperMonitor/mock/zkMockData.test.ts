@@ -13,10 +13,22 @@ describe('ZooKeeperMonitor mock data', () => {
     });
   });
 
-  it('covers every range panel from Z07 through Z23', () => {
-    const expectedIds = Array.from({ length: 17 }, (_, index) =>
-      `Z${String(index + 7).padStart(2, '0')}`,
-    );
+  it('covers every remaining range panel (Z16/Z19/Z20/Z23 移除,见 panelQueries.test.ts)', () => {
+    const expectedIds = [
+      'Z07',
+      'Z08',
+      'Z09',
+      'Z10',
+      'Z11',
+      'Z12',
+      'Z13',
+      'Z14',
+      'Z15',
+      'Z17',
+      'Z18',
+      'Z21',
+      'Z22',
+    ];
 
     expect(Object.keys(zkSeriesData).sort()).toEqual(expectedIds);
     for (const id of expectedIds) {

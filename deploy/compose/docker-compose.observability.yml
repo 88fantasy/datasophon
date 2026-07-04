@@ -197,6 +197,28 @@ services:
         condition: service_completed_successfully
     restart: on-failure
 
+  # ─── ZooKeeper(单节点,PrometheusMetricsProvider 暴露 :7000/metrics,otelcol 抓取) ──
+  # 用于验证 docs/monitoring/zookeeper-otel-migration-tasks.md 的 Task 0/3。
+  # ZOO_CFG_EXTRA 由官方 docker-entrypoint.sh 原样追加进 zoo.cfg,与生产
+  # ZOOKEEPER/service_ddl.json 的 metricsProvider.className/httpPort 参数对齐。
+  obs-zookeeper:
+    image: zookeeper:3.8
+    container_name: obs-zookeeper
+    environment:
+      - ZOO_STANDALONE_ENABLED=true
+      - ZOO_4LW_COMMANDS_WHITELIST=*
+      - ZOO_CFG_EXTRA=metricsProvider.className=org.apache.zookeeper.metrics.prometheus.PrometheusMetricsProvider metricsProvider.httpPort=7000 metricsProvider.httpHost=0.0.0.0
+    ports:
+      - "2181:2181"
+      - "17000:7000"   # 宿主 7000 被 macOS ControlCenter(AirPlay)占用,改用 17000;容器内网仍是 7000
+    networks:
+      - obs_net
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc -w 2 localhost 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   # ─── OTel Collector（JuiceFS metrics → dorisexporter → Doris） ───────────────
   obs-otelcol:
     image: otel/opentelemetry-collector-contrib:0.154.0

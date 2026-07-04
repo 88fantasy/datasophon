@@ -18,16 +18,12 @@ export default {
     'Alive Connections (Trend)',
   'pages.zookeeperMonitor.panel.connectionDataErrors':
     'Connection & Data Errors',
-  'pages.zookeeperMonitor.panel.electionTime': 'Election Time (avg ms)',
   'pages.zookeeperMonitor.panel.learnersObservers':
     'Learners / Synced Observers',
   'pages.zookeeperMonitor.panel.quorumCounts':
     'Commit / Snapshot / Proposal Count',
-  'pages.zookeeperMonitor.panel.fsyncTime': 'Fsync Time (avg ms)',
-  'pages.zookeeperMonitor.panel.snapshotTime': 'Snapshot Time (avg ms)',
   'pages.zookeeperMonitor.panel.jvmMemoryPool': 'JVM Memory Pool Usage',
   'pages.zookeeperMonitor.panel.gcCollectionRate': 'GC Collection Rate',
-  'pages.zookeeperMonitor.panel.jvmGcPauseTime': 'JVM GC Pause Time',
 
   'pages.zookeeperMonitor.toolbar.job': 'Job',
 };
