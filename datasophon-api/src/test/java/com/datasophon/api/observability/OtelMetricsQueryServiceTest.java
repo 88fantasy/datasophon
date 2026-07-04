@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class OtelMetricsQueryServiceTest {
-    
+
     @Test
     void instantAgg_deduplicatesLatestSamplePerFilesystemSeriesBeforeSumming() {
         String sql = OtelMetricsQueryService.buildInstantAggSql("sum", true, true, null, null, "otel_metrics_gauge");
@@ -46,7 +46,7 @@ class OtelMetricsQueryServiceTest {
         assertThat(sql).contains("CAST(attributes['path'] AS STRING)");
         assertThat(sql).contains("CAST(attributes['mountpoint'] AS STRING)");
     }
-    
+
     @Test
     void attrFilters_useRegexpWhenFilterValueContainsRegexpMetaCharacters() {
         String sql = OtelMetricsQueryService.buildRangeGaugeSql(
@@ -55,21 +55,21 @@ class OtelMetricsQueryServiceTest {
         assertThat(sql).contains("REGEXP :af_fstype");
         assertThat(sql).contains("NOT REGEXP :afne_mountpoint");
     }
-    
+
     @Test
     void instantAgg_count_containsCountFunction() {
         String sql = OtelMetricsQueryService.buildInstantAggSql(
                 "count", false, false, null, null, "otel_metrics_gauge");
         assertThat(sql).containsIgnoringCase("COUNT(value)");
     }
-    
+
     @Test
     void rangeHistogramFieldRate_countAndSum_useHistogramTableAndSeriesKeyPartition() {
         String countSql = OtelMetricsQueryService.buildRangeHistogramFieldRateSql(
                 "count", false, false, Map.of("vol_name", "prod-fs"), null, List.of("method"));
         String sumSql = OtelMetricsQueryService.buildRangeHistogramFieldRateSql(
                 "sum", false, false, Map.of("vol_name", "prod-fs"), null, List.of("method"));
-        
+
         for (String sql : List.of(countSql, sumSql)) {
             assertThat(sql).contains("FROM otel.otel_metrics_histogram");
             assertThat(sql).contains("CAST(attributes AS STRING) AS series_key");
@@ -82,7 +82,7 @@ class OtelMetricsQueryServiceTest {
         assertThat(countSql).contains("count AS value");
         assertThat(sumSql).contains("sum AS value");
     }
-    
+
     @Test
     void allowedAttrFilterKeys_includeJuicefsDimensions() {
         assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS)
@@ -93,14 +93,14 @@ class OtelMetricsQueryServiceTest {
         assertThat(sql).contains("attributes['mp']");
         assertThat(sql).contains("attributes['method']");
     }
-    
+
     // ─── SQL 生成测试 ────────────────────────────────────────────────────────────
-    
+
     @Nested
     class SqlBuilding {
-        
+
         // ── instance/job 列修复（D3 核心）──
-        
+
         @Test
         void allBuilders_useResourceAttributesForInstanceAndJob() {
             // 每个 builder 的 instance/job 必须来自 resource_attributes，不能用 attributes
@@ -114,7 +114,7 @@ class OtelMetricsQueryServiceTest {
             String summary = OtelMetricsQueryService.buildRangeSummarySql();
             String histogram = OtelMetricsQueryService.buildRangeHistogramSql(
                     false, false, null, null, List.of());
-            
+
             for (String sql : List.of(noAgg, agg, gauge, rate, summary, histogram)) {
                 assertThat(sql)
                         .as("SQL must reference resource_attributes for instance/job")
@@ -127,9 +127,9 @@ class OtelMetricsQueryServiceTest {
                         .doesNotContain("attributes['job']");
             }
         }
-        
+
         // ── instant 无聚合 ──
-        
+
         @Test
         void instantNoAgg_containsQualifyAndNamedParams() {
             String sql = OtelMetricsQueryService.buildInstantNoAggSql(false, false, null, null, "otel_metrics_gauge");
@@ -140,7 +140,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).doesNotContain(":instance");
             assertThat(sql).doesNotContain(":job");
         }
-        
+
         @Test
         void instantNoAgg_withInstanceJobFilters_appendsResourceAttributesRegexp() {
             String sql = OtelMetricsQueryService.buildInstantNoAggSql(true, true, null, null, "otel_metrics_gauge");
@@ -151,9 +151,9 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("resource_attributes['service']['instance']['id']");
             assertThat(sql).contains("resource_attributes['service']['name']");
         }
-        
+
         // ── instant 聚合 ──
-        
+
         @Test
         void instantAgg_sum_containsSumAndQualify() {
             String sql = OtelMetricsQueryService.buildInstantAggSql(
@@ -161,23 +161,23 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).containsIgnoringCase("SUM(value)");
             assertThat(sql).containsIgnoringCase("QUALIFY");
         }
-        
+
         @Test
         void instantAgg_max_containsMaxFunction() {
             String sql = OtelMetricsQueryService.buildInstantAggSql(
                     "max", false, false, null, null, "otel_metrics_gauge");
             assertThat(sql).containsIgnoringCase("MAX(value)");
         }
-        
+
         @Test
         void instantAgg_count_containsCountFunction() {
             String sql = OtelMetricsQueryService.buildInstantAggSql(
                     "count", false, false, null, null, "otel_metrics_gauge");
             assertThat(sql).containsIgnoringCase("COUNT(value)");
         }
-        
+
         // ── summary ──
-        
+
         @Test
         void rangeSummary_containsLateralViewAndQuantile() {
             String sql = OtelMetricsQueryService.buildRangeSummarySql();
@@ -191,9 +191,9 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).containsIgnoringCase("BETWEEN FROM_UNIXTIME");
             assertThat(sql).contains("resource_attributes");
         }
-        
+
         // ── histogram range 分位数 ──
-        
+
         @Test
         void rangeHistogram_containsPosexplodeElementAtAndQuantile() {
             String sql = OtelMetricsQueryService.buildRangeHistogramSql(
@@ -215,7 +215,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("otel_metrics_histogram");
             assertThat(sql).contains("resource_attributes");
         }
-        
+
         @Test
         void rangeHistogram_usesAdjacentSampleDeltaLikeRateQuery() {
             // 与 buildRangeRateSql 相同的相邻采样对差分套路（LAG + prev_ts 守卫）
@@ -229,7 +229,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).containsIgnoringCase("AS ARRAY<BIGINT>");
             assertThat(sql).contains("prev_ts IS NOT NULL AND ts > prev_ts");
         }
-        
+
         @Test
         void rangeHistogram_partitionsBySeriesKeyToAvoidCrossSeriesPairing() {
             // Codex 审查发现：同一 instance/job 下可能有多条实际 series(如 APISIX 的
@@ -241,7 +241,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("PARTITION BY instance, job, series_key");
             assertThat(sql).contains("AND c.series_key = p.series_key");
         }
-        
+
         @Test
         void rangeHistogram_guardsAgainstCounterResetUsingHistCount() {
             // 与 buildRangeRateSql 的 value >= prev_val 守卫一致：用 count 列的 LAG 判断是否
@@ -254,7 +254,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("AS prev_hist_count");
             assertThat(sql).contains("hist_count >= prev_hist_count");
         }
-        
+
         @Test
         void rangeHistogram_interpolatesWithinBucketAndDegradesOnOverflowBucket() {
             String sql = OtelMetricsQueryService.buildRangeHistogramSql(
@@ -265,7 +265,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains(":quantile * total_count - COALESCE(lower_cum, 0)) / bucket_delta");
             assertThat(sql).containsIgnoringCase("QUALIFY ROW_NUMBER()");
         }
-        
+
         @Test
         void rangeHistogram_withInstanceJobFilter_appendsResourceAttributesRegexp() {
             String sql = OtelMetricsQueryService.buildRangeHistogramSql(
@@ -274,7 +274,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains(":job");
             assertThat(sql).containsIgnoringCase("REGEXP");
         }
-        
+
         @Test
         void rangeHistogram_withGroupBy_addsExtraDimension() {
             String sql = OtelMetricsQueryService.buildRangeHistogramSql(
@@ -286,8 +286,12 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("AND c.type = p.type");
             // series_key 对齐仍须叠加在 groupBy 维度之上(groupBy 粒度可能比实际 series 更粗)
             assertThat(sql).contains("AND c.series_key = p.series_key");
+            // exploded CTE 的 SELECT 列表必须用 c.type 限定(curr_exploded c LEFT JOIN prev_exploded p
+            // 两边都有同名 groupBy 列,不限定会被 Doris 判 "type is ambiguous";
+            // 真实沙箱数据复现过此 bug,见 JuiceFS J09 groupBy=['mp'] 场景)
+            assertThat(sql).contains("c.type AS type");
         }
-        
+
         @Test
         void rangeHistogram_withAttrFilter_appendsAttributesCastEquals() {
             String sql = OtelMetricsQueryService.buildRangeHistogramSql(
@@ -295,14 +299,14 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("attributes['service']");
             assertThat(sql).contains(":af_service");
         }
-        
+
         @Test
         void rangeHistogramFieldRate_countAndSum_useHistogramTableAndSeriesKeyPartition() {
             String countSql = OtelMetricsQueryService.buildRangeHistogramFieldRateSql(
                     "count", false, false, Map.of("vol_name", "prod-fs"), null, List.of("method"));
             String sumSql = OtelMetricsQueryService.buildRangeHistogramFieldRateSql(
                     "sum", false, false, Map.of("vol_name", "prod-fs"), null, List.of("method"));
-            
+
             for (String sql : List.of(countSql, sumSql)) {
                 assertThat(sql).contains("FROM otel.otel_metrics_histogram");
                 assertThat(sql).contains("CAST(attributes AS STRING) AS series_key");
@@ -315,9 +319,9 @@ class OtelMetricsQueryServiceTest {
             assertThat(countSql).contains("count AS value");
             assertThat(sumSql).contains("sum AS value");
         }
-        
+
         // ── gauge range ──
-        
+
         @Test
         void rangeGauge_containsFloorAndAvgAndBetween() {
             String sql = OtelMetricsQueryService.buildRangeGaugeSql(
@@ -330,7 +334,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains(":end");
             assertThat(sql).contains(":metric");
         }
-        
+
         @Test
         void rangeGauge_withAttrFilter_appendsAttributesCastEquals() {
             String sql = OtelMetricsQueryService.buildRangeGaugeSql(
@@ -339,7 +343,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains(":af_group");
             assertThat(sql).containsIgnoringCase("= :af_group");
         }
-        
+
         @Test
         void rangeGauge_withAttrFilterNe_appendsNotEqualsClause() {
             String sql = OtelMetricsQueryService.buildRangeGaugeSql(
@@ -348,7 +352,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains(":afne_device");
             assertThat(sql).contains("!= :afne_device");
         }
-        
+
         @Test
         void rangeGauge_withRegexpAttrFilters_appendsRegexpClauses() {
             String sql = OtelMetricsQueryService.buildRangeGaugeSql(
@@ -359,7 +363,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("attributes['mountpoint']");
             assertThat(sql).contains("NOT REGEXP :afne_mountpoint");
         }
-        
+
         @Test
         void rangeGauge_withGroupBy_addsExtraSelectAndGroupByColumns() {
             String sql = OtelMetricsQueryService.buildRangeGaugeSql(
@@ -369,7 +373,7 @@ class OtelMetricsQueryServiceTest {
             // GROUP BY must include the attributes expression for 'mode'
             assertThat(sql).containsIgnoringCase("attributes['mode']");
         }
-        
+
         @Test
         void rangeGauge_withMultiGroupBy_addsAllDimensions() {
             String sql = OtelMetricsQueryService.buildRangeGaugeSql(
@@ -379,9 +383,9 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("AS type");
             assertThat(sql).contains("AS path");
         }
-        
+
         // ── rate range ──
-        
+
         @Test
         void rangeRate_containsLagAndRateWindow() {
             String sql = OtelMetricsQueryService.buildRangeRateSql(
@@ -394,7 +398,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("prev_val");
             assertThat(sql).contains("prev_ts");
         }
-        
+
         @Test
         void rangeRate_withInstanceFilter_appendsRegexpToOrdered() {
             String sql = OtelMetricsQueryService.buildRangeRateSql(
@@ -402,7 +406,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains(":instance");
             assertThat(sql).doesNotContain(":job");
         }
-        
+
         @Test
         void rangeRate_withGroupBy_addsExtraColsToPartitionBy() {
             String sql = OtelMetricsQueryService.buildRangeRateSql(
@@ -412,7 +416,7 @@ class OtelMetricsQueryServiceTest {
             // PARTITION BY must include mode for correct per-mode rate
             assertThat(sql).contains("PARTITION BY instance, job, mode");
         }
-        
+
         @Test
         void rangeRate_withRustfsGroupByKeys_addsExtraColsToPartitionBy() {
             // op/drive/server/status_class 是 RustFS 看板需要的属性维度（见 Phase 3 白名单扩容）
@@ -422,7 +426,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("AS op");
             assertThat(sql).contains("PARTITION BY instance, job, op");
         }
-        
+
         @Test
         void rangeRate_partitionsBySeriesKeyToAvoidCrossSeriesPairing() {
             // Codex 复审发现：RustFS 的 rustfs_s3_operations_total 带 bucket+op 标签，但
@@ -433,7 +437,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("CAST(attributes AS STRING) AS series_key");
             assertThat(sql).contains("PARTITION BY instance, job, op, series_key");
         }
-        
+
         @Test
         void rangeRate_partitionsBySeriesKeyEvenWithoutGroupBy() {
             // 无 groupBy 时（如 RustFS R08/R10）若指标本身仍带隐藏属性维度，同样需要
@@ -443,7 +447,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("CAST(attributes AS STRING) AS series_key");
             assertThat(sql).contains("PARTITION BY instance, job, series_key");
         }
-        
+
         @Test
         void rangeRate_aggregatesAcrossSeriesWithSumMatchingPrometheusSemantics() {
             // per_series 先按 series_key 粒度 AVG（同一 series 内多样本平滑，语义与旧行为一致），
@@ -457,7 +461,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("SELECT instance, job, op, bucket, SUM(rate) AS value");
             assertThat(sql).contains("FROM per_series");
         }
-        
+
         @Test
         void allowedAttrFilterKeys_deliberatelyExcludesBucket() {
             // bucket（S3 桶名）故意不进白名单：toValidGroupBy() 若放行会导致 buildExtraSelect()
@@ -465,7 +469,7 @@ class OtelMetricsQueryServiceTest {
             // 时间分桶列 "FLOOR(...) AS bucket" 别名冲突。见 ALLOWED_ATTR_FILTER_KEYS 类头注释。
             assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS).doesNotContain("bucket");
         }
-        
+
         @Test
         void allowedAttrFilterKeys_includeJuicefsDimensions() {
             assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS)
@@ -476,9 +480,9 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("attributes['mp']");
             assertThat(sql).contains("attributes['method']");
         }
-        
+
         // ── 安全性测试 ──
-        
+
         @Test
         void noSqlBuilderConcatenatesUserInput() {
             // 过滤值通过命名参数绑定，不应出现在 SQL 模板中
@@ -487,7 +491,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sqlWithFilters).doesNotContain("'.+'");
             assertThat(sqlWithFilters).doesNotContain("\"localhost\"");
         }
-        
+
         @Test
         void attrFilter_nonWhitelistKeyIsIgnored() {
             // 非白名单键不得出现在 SQL 中（SQL injection 防护）
@@ -497,7 +501,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).doesNotContain("DROP TABLE");
             assertThat(sql).doesNotContain(":af_");
         }
-        
+
         @Test
         void attrFilter_sumTableUsesOtelMetricsSum() {
             String sql = OtelMetricsQueryService.buildRangeGaugeSql(
@@ -505,7 +509,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("otel_metrics_sum");
             assertThat(sql).doesNotContain("otel_metrics_gauge");
         }
-        
+
         @Test
         void instant_sumTableUsesOtelMetricsSum() {
             // hostmetrics 的 system.memory.usage 等 non-monotonic sum 指标落 otel_metrics_sum 表
@@ -518,25 +522,25 @@ class OtelMetricsQueryServiceTest {
             assertThat(agg).doesNotContain("otel_metrics_gauge");
         }
     }
-    
+
     // ─── 行映射测试 ──────────────────────────────────────────────────────────────
-    
+
     @Nested
     class RowMapping {
-        
+
         @Test
         void buildVector_emptyRows_returnsEmptyVector() {
             PrometheusVectorResult result = OtelMetricsQueryService.buildVector(List.of(), 1.0);
             assertThat(result.resultType()).isEqualTo("vector");
             assertThat(result.result()).isEmpty();
         }
-        
+
         @Test
         void buildVector_singleRow_convertsCorrectly() {
             List<Map<String, Object>> rows = List.of(
                     Map.of("instance", "host:8081", "job", "nexus", "ts", 1234567890L, "value", 42.5));
             PrometheusVectorResult result = OtelMetricsQueryService.buildVector(rows, 1.0);
-            
+
             assertThat(result.result()).hasSize(1);
             VectorSample sample = result.result().get(0);
             assertThat(sample.metric()).containsEntry("instance", "host:8081");
@@ -544,16 +548,16 @@ class OtelMetricsQueryServiceTest {
             assertThat(sample.value()[0]).isEqualTo(1234567890L);
             assertThat(sample.value()[1]).isEqualTo("42.5");
         }
-        
+
         @Test
         void buildVector_appliesScale() {
             List<Map<String, Object>> rows = List.of(
                     Map.of("instance", "h:1", "job", "j", "ts", 1000L, "value", 0.5));
             PrometheusVectorResult result = OtelMetricsQueryService.buildVector(rows, 100.0);
-            
+
             assertThat(result.result().get(0).value()[1]).isEqualTo("50.0");
         }
-        
+
         @Test
         void buildVector_multipleRows_onePerSeries() {
             List<Map<String, Object>> rows = List.of(
@@ -562,25 +566,25 @@ class OtelMetricsQueryServiceTest {
             PrometheusVectorResult result = OtelMetricsQueryService.buildVector(rows, 1.0);
             assertThat(result.result()).hasSize(2);
         }
-        
+
         @Test
         void buildVector_extraLabelColumns_includedInMetric() {
             // groupBy 带来的 'mode' 列也应出现在 metric labels 中
             List<Map<String, Object>> rows = List.of(
                     Map.of("instance", "h:1", "job", "doris", "mode", "idle", "ts", 1000L, "value", 0.8));
             PrometheusVectorResult result = OtelMetricsQueryService.buildVector(rows, 1.0);
-            
+
             assertThat(result.result()).hasSize(1);
             assertThat(result.result().get(0).metric()).containsEntry("mode", "idle");
         }
-        
+
         @Test
         void buildMatrix_emptyRows_returnsEmptyMatrix() {
             PrometheusMatrixResult result = OtelMetricsQueryService.buildMatrix(List.of(), 1.0);
             assertThat(result.resultType()).isEqualTo("matrix");
             assertThat(result.result()).isEmpty();
         }
-        
+
         @Test
         void buildMatrix_groupsByInstanceAndJob() {
             List<Map<String, Object>> rows = List.of(
@@ -588,7 +592,7 @@ class OtelMetricsQueryServiceTest {
                     Map.of("instance", "h:1", "job", "j", "bucket", 1015L, "value", 11.0),
                     Map.of("instance", "h:2", "job", "j", "bucket", 1000L, "value", 20.0));
             PrometheusMatrixResult result = OtelMetricsQueryService.buildMatrix(rows, 1.0);
-            
+
             assertThat(result.result()).hasSize(2);
             MatrixSeries series1 = result.result().get(0);
             assertThat(series1.metric()).containsEntry("instance", "h:1");
@@ -596,7 +600,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(series1.values().get(0)[0]).isEqualTo(1000L);
             assertThat(series1.values().get(0)[1]).isEqualTo("10.0");
         }
-        
+
         @Test
         void buildMatrix_appliesScale() {
             List<Map<String, Object>> rows = List.of(
@@ -604,7 +608,7 @@ class OtelMetricsQueryServiceTest {
             PrometheusMatrixResult result = OtelMetricsQueryService.buildMatrix(rows, 100.0);
             assertThat(result.result().get(0).values().get(0)[1]).isEqualTo("150.0");
         }
-        
+
         @Test
         void buildMatrix_extraLabelColumns_splitIntoSeparateSeries() {
             // groupBy=mode: 同 instance/job 但不同 mode → 两个独立 series
@@ -612,7 +616,7 @@ class OtelMetricsQueryServiceTest {
                     Map.of("instance", "h:1", "job", "doris", "mode", "idle", "bucket", 1000L, "value", 0.7),
                     Map.of("instance", "h:1", "job", "doris", "mode", "user", "bucket", 1000L, "value", 0.2));
             PrometheusMatrixResult result = OtelMetricsQueryService.buildMatrix(rows, 1.0);
-            
+
             assertThat(result.result()).hasSize(2);
             assertThat(result.result().stream()
                     .anyMatch(s -> "idle".equals(s.metric().get("mode")))).isTrue();
@@ -620,47 +624,47 @@ class OtelMetricsQueryServiceTest {
                     .anyMatch(s -> "user".equals(s.metric().get("mode")))).isTrue();
         }
     }
-    
+
     // ─── 工具函数测试 ─────────────────────────────────────────────────────────────
-    
+
     @Nested
     class Helpers {
-        
+
         @Test
         void needsFilter_null_false() {
             assertThat(OtelMetricsQueryService.needsFilter(null)).isFalse();
         }
-        
+
         @Test
         void needsFilter_matchAll_false() {
             assertThat(OtelMetricsQueryService.needsFilter(".+")).isFalse();
         }
-        
+
         @Test
         void needsFilter_specificValue_true() {
             assertThat(OtelMetricsQueryService.needsFilter("localhost:8081")).isTrue();
         }
-        
+
         @Test
         void parseRateWindow_1m_returns60() {
             assertThat(OtelMetricsQueryService.parseRateWindow("1m")).isEqualTo(60L);
         }
-        
+
         @Test
         void parseRateWindow_5m_returns300() {
             assertThat(OtelMetricsQueryService.parseRateWindow("5m")).isEqualTo(300L);
         }
-        
+
         @Test
         void parseRateWindow_2m_returns120() {
             assertThat(OtelMetricsQueryService.parseRateWindow("2m")).isEqualTo(120L);
         }
-        
+
         @Test
         void parseRateWindow_null_defaults60() {
             assertThat(OtelMetricsQueryService.parseRateWindow(null)).isEqualTo(60L);
         }
-        
+
         @Test
         void appendAttrFilters_nullMaps_noExceptions() {
             // null maps must be handled gracefully (no NPE)
@@ -668,7 +672,7 @@ class OtelMetricsQueryServiceTest {
             OtelMetricsQueryService.appendAttrFilters(sb, null, null);
             assertThat(sb.toString()).isEqualTo("SELECT 1");
         }
-        
+
         @Test
         void appendAttrFilters_whitelistKey_appendsClause() {
             StringBuilder sb = new StringBuilder();
@@ -676,7 +680,7 @@ class OtelMetricsQueryServiceTest {
             assertThat(sb.toString()).contains("attributes['group']");
             assertThat(sb.toString()).contains(":af_group");
         }
-        
+
         @Test
         void appendAttrFilters_rustfsWhitelistKeys_appendClause() {
             StringBuilder sb = new StringBuilder();
@@ -690,14 +694,14 @@ class OtelMetricsQueryServiceTest {
             assertThat(s).contains("attributes['server']").contains(":af_server");
             assertThat(s).contains("attributes['status_class']").contains(":af_status_class");
         }
-        
+
         @Test
         void appendAttrFilters_neKey_appendsNotEqualsClause() {
             StringBuilder sb = new StringBuilder();
             OtelMetricsQueryService.appendAttrFilters(sb, null, Map.of("device", "lo"));
             assertThat(sb.toString()).contains("!= :afne_device");
         }
-        
+
         @Test
         void appendAttrFilters_nonWhitelistKey_silentlyIgnored() {
             StringBuilder sb = new StringBuilder();

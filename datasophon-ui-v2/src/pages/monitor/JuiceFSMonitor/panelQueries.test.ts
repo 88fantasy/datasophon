@@ -94,19 +94,22 @@ describe('JuiceFSMonitor panel queries (Doris descriptors)', () => {
     });
   });
 
-  it('keeps J13 as object errors plus transaction restarts from sum table', () => {
+  it('keeps J13 as object errors plus transaction restarts from gauge table', () => {
+    // JuiceFS 的非 _total 后缀计数器（即使 Prometheus TYPE 为 counter）落在
+    // otel_metrics_gauge 表，而非 otel_metrics_sum；已用真实沙箱数据核实
+    // （见 docs/monitoring/juicefs-otel-verification.md）。
     expect(PANEL_QUERIES.J13).toMatchObject({
       type: 'multi-range',
       queries: [
         {
           label: 'Object Request Errors',
           metric: 'juicefs_object_request_errors',
-          table: 'sum',
+          table: 'gauge',
         },
         {
           label: 'Transaction Restarts',
           metric: 'juicefs_transaction_restart',
-          table: 'sum',
+          table: 'gauge',
         },
       ],
     });
