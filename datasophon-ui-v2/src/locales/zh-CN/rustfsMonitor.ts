@@ -1,0 +1,22 @@
+export default {
+  'pages.rustfsMonitor.title': 'RustFS 监控看板',
+
+  'pages.rustfsMonitor.panel.uptime': '运行时长',
+  'pages.rustfsMonitor.panel.buckets': '桶数量',
+  'pages.rustfsMonitor.panel.objects': '对象数量',
+  'pages.rustfsMonitor.panel.drivesOnline': '在线磁盘数',
+  'pages.rustfsMonitor.panel.drivesOffline': '离线磁盘数',
+  'pages.rustfsMonitor.panel.s3OperationsByApi': 'S3 操作（按 API）',
+  'pages.rustfsMonitor.panel.httpRequestsByStatus': 'HTTP 请求（按状态码分类）',
+  'pages.rustfsMonitor.panel.httpTraffic': 'HTTP 流量',
+  'pages.rustfsMonitor.panel.httpRequestDuration': 'HTTP 请求耗时',
+  'pages.rustfsMonitor.panel.httpFailures': 'HTTP 失败数',
+  'pages.rustfsMonitor.panel.driveIoErrors': '磁盘 I/O 错误',
+  'pages.rustfsMonitor.panel.capacityUsedPercent': '容量使用率',
+  'pages.rustfsMonitor.panel.processCpuPercent': '进程 CPU 使用率',
+  'pages.rustfsMonitor.panel.processMemory': '进程内存',
+  'pages.rustfsMonitor.panel.driveCapacityByDrive': '磁盘容量（按盘）',
+  'pages.rustfsMonitor.panel.driveIopsByDrive': '磁盘 IOPS（按盘）',
+  'pages.rustfsMonitor.panel.fileDescriptors': '文件描述符',
+  'pages.rustfsMonitor.panel.replicationActiveWorkers': '副本活跃 Worker 数',
+};

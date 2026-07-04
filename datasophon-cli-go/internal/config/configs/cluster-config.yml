@@ -80,6 +80,7 @@ rustfs:
     password: "{{.RustfsPassword}}"
     installType: "SNSD" #可选SNSD(单节点单盘模式)，SNMD(单节点多磁盘模式)，MNMD(多节点多磁盘模式)
     volumes: "/data/rustfs0" #示例：/data/rustfs0[SNSD], /data/rustfs{0...3}[SNMD], http://node{1...4}:9040/data/rustfs{0...3}[MNMD]
+    obsEndpoint: "" #可选，本节点 OTel Collector 的 OTLP/HTTP 端点，如 http://127.0.0.1:4318；留空则不上报指标
   nodes: ["app6"]
 {{if .IsKubernetes}}
 kubernetes:

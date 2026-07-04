@@ -1,0 +1,187 @@
+[
+  {
+    "title": "Uptime",
+    "promql": ["rustfs_process_uptime_seconds"],
+    "unit": "s",
+    "chartType": "stat",
+    "thresholds": [{ "color": "green", "value": null }],
+    "legend": null,
+    "note": "手工编写，非从 Grafana JSON 抓取——RustFS 无官方看板，指标经 2026-07-04 本地沙箱实测确认存在"
+  },
+  {
+    "title": "Buckets",
+    "promql": ["rustfs_cluster_buckets_total"],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [{ "color": "green", "value": null }],
+    "legend": null
+  },
+  {
+    "title": "Objects",
+    "promql": ["rustfs_cluster_objects_total"],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [{ "color": "green", "value": null }],
+    "legend": null
+  },
+  {
+    "title": "Capacity Used %",
+    "promql": [
+      "rustfs_cluster_capacity_used_bytes",
+      "rustfs_cluster_capacity_usable_total_bytes"
+    ],
+    "unit": "percent",
+    "chartType": "stat",
+    "thresholds": [
+      { "color": "green", "value": null },
+      { "color": "orange", "value": 70 },
+      { "color": "red", "value": 90 }
+    ],
+    "legend": null,
+    "note": "比值面板：used/usable_total*100"
+  },
+  {
+    "title": "Drives Online / Offline",
+    "promql": [
+      "rustfs_cluster_health_drives_online_count",
+      "rustfs_cluster_health_drives_offline_count"
+    ],
+    "unit": "short",
+    "chartType": "stat",
+    "thresholds": [
+      { "color": "green", "value": null },
+      { "color": "red", "value": 1 }
+    ],
+    "legend": null,
+    "note": "另存在 rustfs_system_drive_online_count/_offline_count 平行指标族，语义近似未完全消歧，选 cluster_health 前缀作集群总览口径"
+  },
+  {
+    "title": "S3 Operations by API",
+    "promql": ["rustfs_s3_operations_total"],
+    "unit": "ops",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": "op",
+    "note": "counter，rate 后 by(op) 分系列；2026-07-04 实测覆盖 13 种 S3 动词（Put/Get/Head/List/Copy/Delete/Multipart 等）"
+  },
+  {
+    "title": "HTTP Requests by Status Class",
+    "promql": ["rustfs_http_server_requests_total"],
+    "unit": "rps",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": "status_class",
+    "note": "counter，rate 后 by(status_class)，实测含 2xx/4xx 等值"
+  },
+  {
+    "title": "HTTP Traffic",
+    "promql": [
+      "rustfs_http_server_request_body_bytes_total",
+      "rustfs_http_server_response_body_bytes_total"
+    ],
+    "unit": "Bps",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": null,
+    "note": "两个 counter 各自 rate，对应 MinIO 官方看板的 traffic_received/sent_bytes"
+  },
+  {
+    "title": "HTTP Request Duration (p50/p99)",
+    "promql": ["rustfs_http_server_request_duration_seconds"],
+    "unit": "s",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": "quantile",
+    "note": "histogram 表，quantile 0.5/0.99；对应 MinIO 官方看板的 s3_requests_ttfb_seconds_distribution"
+  },
+  {
+    "title": "HTTP Failures",
+    "promql": ["rustfs_http_server_failures_total"],
+    "unit": "ops",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "Drive I/O Errors",
+    "promql": [
+      "rustfs_system_drive_io_errors_total",
+      "rustfs_system_drive_timeout_errors_total",
+      "rustfs_system_drive_availability_errors_total"
+    ],
+    "unit": "ops",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "Process CPU %",
+    "promql": ["rustfs_process_cpu_percent"],
+    "unit": "percent",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "Process Memory",
+    "promql": ["rustfs_process_memory_bytes"],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "Drive Capacity by Drive",
+    "promql": [
+      "rustfs_system_drive_used_bytes",
+      "rustfs_system_drive_total_bytes"
+    ],
+    "unit": "bytes",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": "drive",
+    "note": "attributes.drive 分系列，对应 MinIO minio-node.json 的磁盘容量面板"
+  },
+  {
+    "title": "Drive IOPS",
+    "promql": [
+      "rustfs_system_drive_reads_per_sec",
+      "rustfs_system_drive_writes_per_sec"
+    ],
+    "unit": "ops",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": "drive"
+  },
+  {
+    "title": "File Descriptors",
+    "promql": [
+      "rustfs_system_process_file_descriptor_open_total",
+      "rustfs_system_process_file_descriptor_limit_total"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": null
+  },
+  {
+    "title": "Replication Active Workers",
+    "promql": ["rustfs_replication_current_active_workers"],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": null,
+    "note": "MinIO 官方基础看板没有的维度，RustFS 原生更细"
+  },
+  {
+    "title": "Replication Queue (last minute)",
+    "promql": [
+      "rustfs_replication_last_minute_queued_count",
+      "rustfs_replication_last_minute_queued_bytes"
+    ],
+    "unit": "short",
+    "chartType": "timeseries",
+    "thresholds": null,
+    "legend": null
+  }
+]

@@ -80,14 +80,20 @@ public class OtelMetricsQueryService {
      * attributes MAP 的属性过滤键白名单。
      * 键名会被直接拼入 SQL（如 {@code attributes['group']}），必须严格白名单化；
      * 对应值通过命名参数绑定（af_key / afne_key），不存在注入风险。
+     *
+     * <p>RustFS 指标的 {@code bucket} 属性（S3 桶名）故意不在此白名单：
+     * {@link #buildExtraSelect} 把属性列直接按键名起别名，会与本类范围查询里已存在的
+     * {@code FLOOR(...) AS bucket}（时间分桶）别名冲突。
      */
     static final Set<String> ALLOWED_ATTR_FILTER_KEYS =
             Set.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
-                    "code", "service", "route", "node", "consumer", "name");
+                    "code", "service", "route", "node", "consumer", "name",
+                    "op", "drive", "server", "status_class");
     
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
             List.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
-                    "code", "service", "route", "node", "consumer", "name");
+                    "code", "service", "route", "node", "consumer", "name",
+                    "op", "drive", "server", "status_class");
     
     private final ClusterServiceRoleInstanceService roleService;
     private final OtelDorisReaderFactory readerFactory;

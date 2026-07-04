@@ -8,6 +8,7 @@ import network from './zh-CN/network';
 import nginxMonitor from './zh-CN/nginxMonitor';
 import pages from './zh-CN/pages';
 import prometheusMonitor from './zh-CN/prometheusMonitor';
+import rustfsMonitor from './zh-CN/rustfsMonitor';
 import settingDrawer from './zh-CN/settingDrawer';
 import settings from './zh-CN/settings';
 import valkeyMonitor from './zh-CN/valkeyMonitor';
@@ -33,4 +34,5 @@ export default {
   ...nginxMonitor,
   ...valkeyMonitor,
   ...apisixMonitor,
+  ...rustfsMonitor,
 };

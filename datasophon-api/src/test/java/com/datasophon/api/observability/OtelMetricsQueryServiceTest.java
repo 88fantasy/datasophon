@@ -348,6 +348,24 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("PARTITION BY instance, job, mode");
         }
         
+        @Test
+        void rangeRate_withRustfsGroupByKeys_addsExtraColsToPartitionBy() {
+            // op/drive/server/status_class 是 RustFS 看板需要的属性维度（见 Phase 3 白名单扩容）
+            String sql = OtelMetricsQueryService.buildRangeRateSql(
+                    false, false, null, null, List.of("op"), "otel_metrics_sum");
+            assertThat(sql).contains("attributes['op']");
+            assertThat(sql).contains("AS op");
+            assertThat(sql).contains("PARTITION BY instance, job, op");
+        }
+        
+        @Test
+        void allowedAttrFilterKeys_deliberatelyExcludesBucket() {
+            // bucket（S3 桶名）故意不进白名单：toValidGroupBy() 若放行会导致 buildExtraSelect()
+            // 生成 "CAST(attributes['bucket'] AS STRING) AS bucket"，与本类范围查询已有的
+            // 时间分桶列 "FLOOR(...) AS bucket" 别名冲突。见 ALLOWED_ATTR_FILTER_KEYS 类头注释。
+            assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS).doesNotContain("bucket");
+        }
+        
         // ── 安全性测试 ──
         
         @Test
@@ -546,6 +564,20 @@ class OtelMetricsQueryServiceTest {
             OtelMetricsQueryService.appendAttrFilters(sb, Map.of("group", "fe"), null);
             assertThat(sb.toString()).contains("attributes['group']");
             assertThat(sb.toString()).contains(":af_group");
+        }
+        
+        @Test
+        void appendAttrFilters_rustfsWhitelistKeys_appendClause() {
+            StringBuilder sb = new StringBuilder();
+            OtelMetricsQueryService.appendAttrFilters(
+                    sb, Map.of("op", "s3:PutObject", "drive", "/data", "server", "10.10.30.132",
+                            "status_class", "2xx"),
+                    null);
+            String s = sb.toString();
+            assertThat(s).contains("attributes['op']").contains(":af_op");
+            assertThat(s).contains("attributes['drive']").contains(":af_drive");
+            assertThat(s).contains("attributes['server']").contains(":af_server");
+            assertThat(s).contains("attributes['status_class']").contains(":af_status_class");
         }
         
         @Test
