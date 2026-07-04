@@ -542,6 +542,17 @@ public class OtelMetricsQueryService {
     /**
      * gauge/sum 表的 range rate 查询（counter 单调递增差分）。
      * {@code groupByKeys} 为已经过白名单过滤的 attributes 键列表（可为空）。
+     *
+     * <h3>完整 series 身份对齐（Codex 复审修正，与 {@link #buildRangeHistogramSql} 同一套路）</h3>
+     * 同一 instance/job/groupByKeys 下常常存在多条实际 series（如 RustFS 的 {@code bucket} 标签
+     * 不在 groupByKeys 内时）。若只按 (instance,job,extraCols) 做 {@code LAG}，会把不同 series 的
+     * 采样点相互配对，产出跨 series 的伪 delta。因此额外引入 {@code CAST(attributes AS STRING) AS
+     * series_key} 贯穿 {@code ordered → with_lag → rates} 直到 {@code per_series} 的 PARTITION BY /
+     * GROUP BY，保证只有同一条原始 series 的相邻两次采样才会配对；{@code per_series} 先按 series_key
+     * 粒度 AVG 同一 series 在同一 bucket 内的多个速率样本（语义与此前单 series 场景一致），最外层
+     * SELECT 才按调用方 groupByKeys 粒度对各 series 的速率求 {@code SUM}，等价于 Prometheus
+     * {@code sum(rate(metric[window])) by (groupByKeys)}。当 groupByKeys 已完全区分实际 series 时
+     * （此前所有已上线看板的场景），每组只有一条 series，SUM 退化为原值，与旧行为完全一致。
      */
     static String buildRangeRateSql(boolean filterInstance, boolean filterJob,
                                     Map<String, String> filters, Map<String, String> filtersNe,
@@ -551,35 +562,43 @@ public class OtelMetricsQueryService {
         StringBuilder filterStr = new StringBuilder();
         appendFilters(filterStr, filterInstance, filterJob);
         appendAttrFilters(filterStr, filters, filtersNe);
+        String partitionCols = "instance, job" + extraCols;
+        String seriesPartitionCols = partitionCols + ", series_key";
         return "WITH ordered AS (\n"
                 + "  SELECT " + INST_EXPR + " AS instance,\n"
                 + "         " + JOB_EXPR + " AS job"
                 + extraSelect
-                + ",\n         UNIX_TIMESTAMP(timestamp) AS ts, value\n"
+                + ",\n         CAST(attributes AS STRING) AS series_key,\n"
+                + "         UNIX_TIMESTAMP(timestamp) AS ts, value\n"
                 + "  FROM otel." + otelTable + "\n"
                 + "  WHERE metric_name = :metric\n"
                 + "    AND timestamp BETWEEN FROM_UNIXTIME(:start - :rateWindow) AND FROM_UNIXTIME(:end)\n"
                 + filterStr
                 + "),\n"
                 + "with_lag AS (\n"
-                + "  SELECT instance, job" + extraCols + ", ts, value,\n"
-                + "    LAG(ts) OVER(PARTITION BY instance, job" + extraCols + " ORDER BY ts) AS prev_ts,\n"
-                + "    LAG(value) OVER(PARTITION BY instance, job" + extraCols + " ORDER BY ts) AS prev_val\n"
+                + "  SELECT " + partitionCols + ", series_key, ts, value,\n"
+                + "    LAG(ts) OVER(PARTITION BY " + seriesPartitionCols + " ORDER BY ts) AS prev_ts,\n"
+                + "    LAG(value) OVER(PARTITION BY " + seriesPartitionCols + " ORDER BY ts) AS prev_val\n"
                 + "  FROM ordered\n"
                 + "),\n"
                 + "rates AS (\n"
-                + "  SELECT instance, job" + extraCols + ",\n"
+                + "  SELECT " + partitionCols + ", series_key,\n"
                 + "    FLOOR(ts / :step) * :step AS bucket,\n"
                 + "    CASE WHEN prev_ts IS NOT NULL AND ts > prev_ts AND value >= prev_val\n"
                 + "      THEN (value - prev_val) / (ts - prev_ts)\n"
                 + "      ELSE NULL END AS rate\n"
                 + "  FROM with_lag\n"
+                + "),\n"
+                + "per_series AS (\n"
+                + "  SELECT " + partitionCols + ", bucket, AVG(rate) AS rate\n"
+                + "  FROM rates\n"
+                + "  WHERE rate IS NOT NULL AND bucket >= :start\n"
+                + "  GROUP BY " + seriesPartitionCols + ", bucket\n"
                 + ")\n"
-                + "SELECT instance, job" + extraCols + ", bucket, AVG(rate) AS value\n"
-                + "FROM rates\n"
-                + "WHERE rate IS NOT NULL AND bucket >= :start\n"
-                + "GROUP BY instance, job" + extraCols + ", bucket\n"
-                + "ORDER BY instance, job" + extraCols + ", bucket";
+                + "SELECT " + partitionCols + ", bucket, SUM(rate) AS value\n"
+                + "FROM per_series\n"
+                + "GROUP BY " + partitionCols + ", bucket\n"
+                + "ORDER BY " + partitionCols + ", bucket";
     }
     
     // ─── 行映射（package-private for testing） ────────────────────────────────────

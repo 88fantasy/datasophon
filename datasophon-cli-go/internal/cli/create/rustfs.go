@@ -71,8 +71,17 @@ func (t *rustfsTask) doRun(exec executor.Executor) error {
 		exec.ExecShell(fmt.Sprintf("mkdir -p %s", logsPath))
 	}
 
-	if !t.checkStart(exec) {
-		t.start(exec, home, dataPath, logsPath)
+	alreadyRunning := t.checkStart(exec)
+	// start.sh 总是按当前配置重写（幂等），确保脚本内容不会与 obsEndpoint 等配置项脱节；
+	// 仅当进程未运行时才实际拉起，避免对一个正在服务的存储进程做隐式重启。
+	t.writeStartScript(exec, home, dataPath, logsPath)
+	if alreadyRunning {
+		if t.ObsEndpoint != "" {
+			slog.Warn("rustfs 已在运行，obsEndpoint 配置已写入 start.sh 但不会立即生效，"+
+				"需手动重启 rustfs 进程后才会开始上报指标", "path", home)
+		}
+	} else {
+		exec.ExecShell(fmt.Sprintf("bash %s/start.sh", home))
 		exec.ExecShell("sleep 3")
 	}
 
@@ -94,7 +103,7 @@ func (t *rustfsTask) checkStart(exec executor.Executor) bool {
 	return false
 }
 
-func (t *rustfsTask) start(exec executor.Executor, home, data, logs string) bool {
+func (t *rustfsTask) writeStartScript(exec executor.Executor, home, data, logs string) {
 	startCmd := fmt.Sprintf(
 		"%s/rustfs --address %s:%s --console-enable --console-address %s:%s"+
 			" --access-key %s --secret-key %s %s > %s/rustfs.log 2>&1 &",
@@ -104,16 +113,19 @@ func (t *rustfsTask) start(exec executor.Executor, home, data, logs string) bool
 	var lines []string
 	if t.ObsEndpoint != "" {
 		// rustfs-obs crate 读取的环境变量，metrics 走 OTLP/HTTP 上报到本节点 OTel Collector。
+		// shellSingleQuote 防止 endpoint 中意外出现的 shell 元字符（空格/;/$()）被 bash 解释执行。
 		lines = append(lines,
-			fmt.Sprintf("export RUSTFS_OBS_ENDPOINT=%s", t.ObsEndpoint),
+			fmt.Sprintf("export RUSTFS_OBS_ENDPOINT=%s", shellSingleQuote(t.ObsEndpoint)),
 			"export RUSTFS_OBS_SERVICE_NAME=rustfs",
 		)
 	}
 	lines = append(lines, startCmd)
-	startPath := fmt.Sprintf("%s/start.sh", home)
-	exec.WriteLines(lines, startPath)
-	r := exec.ExecShell(fmt.Sprintf("bash %s", startPath))
-	return r.Success
+	exec.WriteLines(lines, fmt.Sprintf("%s/start.sh", home))
+}
+
+// shellSingleQuote 把 s 包成 POSIX shell 安全的单引号字符串，转义 s 内部的单引号。
+func shellSingleQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 // ── 命令实现 ────────────────────────────────────────────────────────────────
