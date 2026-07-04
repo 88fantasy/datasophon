@@ -45,7 +45,7 @@ const JuiceFSDashboardToolbar: FC<JuiceFSDashboardToolbarProps> = ({
         value={volume}
         onChange={onVolumeChange}
         options={volumes.map((v) => ({ label: v, value: v }))}
-        placeholder={t('pages.juiceFSMonitor.toolbar.volume')}
+        placeholder={t('pages.juicefsMonitor.toolbar.volume')}
         style={{ minWidth: 180 }}
       />
     </DashboardToolbar>

@@ -56,6 +56,44 @@ class OtelMetricsQueryServiceTest {
         assertThat(sql).contains("NOT REGEXP :afne_mountpoint");
     }
     
+    @Test
+    void instantAgg_count_containsCountFunction() {
+        String sql = OtelMetricsQueryService.buildInstantAggSql(
+                "count", false, false, null, null, "otel_metrics_gauge");
+        assertThat(sql).containsIgnoringCase("COUNT(value)");
+    }
+    
+    @Test
+    void rangeHistogramFieldRate_countAndSum_useHistogramTableAndSeriesKeyPartition() {
+        String countSql = OtelMetricsQueryService.buildRangeHistogramFieldRateSql(
+                "count", false, false, Map.of("vol_name", "prod-fs"), null, List.of("method"));
+        String sumSql = OtelMetricsQueryService.buildRangeHistogramFieldRateSql(
+                "sum", false, false, Map.of("vol_name", "prod-fs"), null, List.of("method"));
+        
+        for (String sql : List.of(countSql, sumSql)) {
+            assertThat(sql).contains("FROM otel.otel_metrics_histogram");
+            assertThat(sql).contains("CAST(attributes AS STRING) AS series_key");
+            assertThat(sql).contains("PARTITION BY instance, job, method, series_key");
+            assertThat(sql).contains("reset_count >= prev_reset_count");
+            assertThat(sql).contains("SUM(rate) AS value");
+            assertThat(sql).contains("attributes['vol_name']");
+            assertThat(sql).contains("attributes['method']");
+        }
+        assertThat(countSql).contains("count AS value");
+        assertThat(sumSql).contains("sum AS value");
+    }
+    
+    @Test
+    void allowedAttrFilterKeys_includeJuicefsDimensions() {
+        assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS)
+                .contains("vol_name", "mp", "method");
+        String sql = OtelMetricsQueryService.buildInstantAggSql(
+                "sum", false, false, Map.of("vol_name", "prod-fs"), null, "otel_metrics_gauge");
+        assertThat(sql).contains("attributes['vol_name']");
+        assertThat(sql).contains("attributes['mp']");
+        assertThat(sql).contains("attributes['method']");
+    }
+    
     // ─── SQL 生成测试 ────────────────────────────────────────────────────────────
     
     @Nested
@@ -129,6 +167,13 @@ class OtelMetricsQueryServiceTest {
             String sql = OtelMetricsQueryService.buildInstantAggSql(
                     "max", false, false, null, null, "otel_metrics_gauge");
             assertThat(sql).containsIgnoringCase("MAX(value)");
+        }
+        
+        @Test
+        void instantAgg_count_containsCountFunction() {
+            String sql = OtelMetricsQueryService.buildInstantAggSql(
+                    "count", false, false, null, null, "otel_metrics_gauge");
+            assertThat(sql).containsIgnoringCase("COUNT(value)");
         }
         
         // ── summary ──
@@ -249,6 +294,26 @@ class OtelMetricsQueryServiceTest {
                     false, false, Map.of("service", "order-service"), null, List.of());
             assertThat(sql).contains("attributes['service']");
             assertThat(sql).contains(":af_service");
+        }
+        
+        @Test
+        void rangeHistogramFieldRate_countAndSum_useHistogramTableAndSeriesKeyPartition() {
+            String countSql = OtelMetricsQueryService.buildRangeHistogramFieldRateSql(
+                    "count", false, false, Map.of("vol_name", "prod-fs"), null, List.of("method"));
+            String sumSql = OtelMetricsQueryService.buildRangeHistogramFieldRateSql(
+                    "sum", false, false, Map.of("vol_name", "prod-fs"), null, List.of("method"));
+            
+            for (String sql : List.of(countSql, sumSql)) {
+                assertThat(sql).contains("FROM otel.otel_metrics_histogram");
+                assertThat(sql).contains("CAST(attributes AS STRING) AS series_key");
+                assertThat(sql).contains("PARTITION BY instance, job, method, series_key");
+                assertThat(sql).contains("reset_count >= prev_reset_count");
+                assertThat(sql).contains("SUM(rate) AS value");
+                assertThat(sql).contains("attributes['vol_name']");
+                assertThat(sql).contains("attributes['method']");
+            }
+            assertThat(countSql).contains("count AS value");
+            assertThat(sumSql).contains("sum AS value");
         }
         
         // ── gauge range ──
@@ -399,6 +464,17 @@ class OtelMetricsQueryServiceTest {
             // 生成 "CAST(attributes['bucket'] AS STRING) AS bucket"，与本类范围查询已有的
             // 时间分桶列 "FLOOR(...) AS bucket" 别名冲突。见 ALLOWED_ATTR_FILTER_KEYS 类头注释。
             assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS).doesNotContain("bucket");
+        }
+        
+        @Test
+        void allowedAttrFilterKeys_includeJuicefsDimensions() {
+            assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS)
+                    .contains("vol_name", "mp", "method");
+            String sql = OtelMetricsQueryService.buildInstantAggSql(
+                    "sum", false, false, Map.of("vol_name", "prod-fs"), null, "otel_metrics_gauge");
+            assertThat(sql).contains("attributes['vol_name']");
+            assertThat(sql).contains("attributes['mp']");
+            assertThat(sql).contains("attributes['method']");
         }
         
         // ── 安全性测试 ──

@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { PANEL_QUERIES, replaceJuiceFSVars } from './panelQueries';
+import { PANEL_QUERIES } from './panelQueries';
 
-function allPromql(panelId: string): string {
+function allMetrics(panelId: string): string[] {
   const def = PANEL_QUERIES[panelId];
   if (def.type === 'multi-range') {
-    return def.queries.map((query) => query.promql).join('\n');
+    return def.queries.map((query) => query.metric);
   }
-  return def.promql;
+  if (def.type === 'instant') {
+    return [def.metric];
+  }
+  return [];
 }
 
-describe('JuiceFSMonitor panel queries', () => {
+describe('JuiceFSMonitor panel queries (Doris descriptors)', () => {
   it('defines every JuiceFS dashboard panel from J01 through J17', () => {
     const expectedIds = Array.from(
       { length: 17 },
@@ -19,57 +22,103 @@ describe('JuiceFSMonitor panel queries', () => {
     expect(Object.keys(PANEL_QUERIES).sort()).toEqual(expectedIds);
   });
 
-  it('replaces JuiceFS variables and defaults the volume name to .+', () => {
-    expect(
-      replaceJuiceFSVars(
-        'rate(juicefs_uptime{vol_name="$name"}[$__rate_interval])',
-        { name: 'prod-fs' },
-        '2m',
-      ),
-    ).toBe('rate(juicefs_uptime{vol_name="prod-fs"}[2m])');
-
-    expect(
-      replaceJuiceFSVars(
-        'juicefs_uptime{vol_name="$name"}[$__rate_interval]',
-        {},
-        '1m',
-      ),
-    ).toBe('juicefs_uptime{vol_name=".+"}[1m]');
-  });
-
-  it('uses histogram average ratios for latency panels without histogram_quantile', () => {
-    for (const panelId of ['J09', 'J10', 'J11']) {
-      const promql = allPromql(panelId);
-
-      expect(promql).toContain('_sum');
-      expect(promql).toContain('_count');
-      expect(promql).toContain('rate(');
-      expect(promql).toContain('* 1000000 /');
-      expect(promql).not.toContain('histogram_quantile');
+  it('uses only juicefs metrics', () => {
+    for (const panelId of Object.keys(PANEL_QUERIES)) {
+      for (const metric of allMetrics(panelId)) {
+        expect(metric).toMatch(/^juicefs_/);
+      }
     }
   });
 
-  it('keeps J13 as an independent object errors and transaction restarts panel', () => {
+  it('maps stat panels to instant Doris descriptors', () => {
+    expect(PANEL_QUERIES.J01).toMatchObject({
+      type: 'instant',
+      metric: 'juicefs_uptime',
+      agg: 'max',
+    });
+    expect(PANEL_QUERIES.J02).toMatchObject({
+      type: 'instant',
+      metric: 'juicefs_used_space',
+      agg: 'max',
+    });
+    expect(PANEL_QUERIES.J04).toMatchObject({
+      type: 'instant',
+      metric: 'juicefs_uptime',
+      agg: 'count',
+    });
+  });
+
+  it('uses histogram field rates for operation and throughput panels', () => {
+    expect(PANEL_QUERIES.J07).toMatchObject({
+      type: 'multi-range',
+      queries: [
+        {
+          metric: 'juicefs_fuse_ops_durations_histogram_seconds',
+          table: 'histogram',
+          field: 'count',
+        },
+      ],
+    });
+    expect(PANEL_QUERIES.J08).toMatchObject({
+      type: 'multi-range',
+      queries: [
+        { table: 'histogram', field: 'sum' },
+        { table: 'histogram', field: 'sum' },
+      ],
+    });
+  });
+
+  it('uses p50 and p99 histogram quantiles for latency panels', () => {
+    for (const panelId of ['J09', 'J10', 'J11']) {
+      expect(PANEL_QUERIES[panelId]).toMatchObject({
+        type: 'multi-range',
+        queries: [
+          { table: 'histogram', quantile: 0.5, scale: 1000000 },
+          { table: 'histogram', quantile: 0.99, scale: 1000000 },
+        ],
+      });
+    }
+  });
+
+  it('groups object request rates by method', () => {
+    expect(PANEL_QUERIES.J12).toMatchObject({
+      type: 'multi-range',
+      queries: [
+        {
+          metric: 'juicefs_object_request_durations_histogram_seconds',
+          table: 'histogram',
+          field: 'count',
+          groupBy: ['method'],
+        },
+      ],
+    });
+  });
+
+  it('keeps J13 as object errors plus transaction restarts from sum table', () => {
     expect(PANEL_QUERIES.J13).toMatchObject({
       type: 'multi-range',
       queries: [
-        { label: 'Object Request Errors' },
-        { label: 'Transaction Restarts' },
+        {
+          label: 'Object Request Errors',
+          metric: 'juicefs_object_request_errors',
+          table: 'sum',
+        },
+        {
+          label: 'Transaction Restarts',
+          metric: 'juicefs_transaction_restart',
+          table: 'sum',
+        },
       ],
     });
-
-    const promql = allPromql('J13');
-    expect(promql).toContain('juicefs_object_request_errors');
-    expect(promql).toContain('juicefs_transaction_restart');
-    expect(promql).not.toContain(
-      'juicefs_object_request_durations_histogram_seconds_count',
-    );
   });
 
-  it('retains spike filtering on rate and throughput queries where specified', () => {
-    for (const panelId of ['J07', 'J08']) {
-      expect(allPromql(panelId)).toContain('< 5000000000');
-    }
-    expect(allPromql('J17')).toContain('< 1000');
+  it('filters object throughput by method', () => {
+    expect(PANEL_QUERIES.J16).toMatchObject({
+      type: 'multi-range',
+      queries: [
+        { filters: { method: 'PUT' } },
+        { filters: { method: 'GET' } },
+      ],
+    });
   });
 });

@@ -88,12 +88,12 @@ public class OtelMetricsQueryService {
     static final Set<String> ALLOWED_ATTR_FILTER_KEYS =
             Set.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
                     "code", "service", "route", "node", "consumer", "name",
-                    "op", "drive", "server", "status_class");
+                    "op", "drive", "server", "status_class", "vol_name", "mp", "method");
     
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
             List.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
                     "code", "service", "route", "node", "consumer", "name",
-                    "op", "drive", "server", "status_class");
+                    "op", "drive", "server", "status_class", "vol_name", "mp", "method");
     
     private final ClusterServiceRoleInstanceService roleService;
     private final OtelDorisReaderFactory readerFactory;
@@ -181,6 +181,24 @@ public class OtelMetricsQueryService {
                                              List<String> groupByKeys,
                                              long start, long end, long step,
                                              String table, double quantile) {
+        return queryRange(clusterId, metric, rateWindow, scale, instance, job, filters, filtersNe,
+                groupByKeys, start, end, step, table, quantile, null);
+    }
+    
+    /**
+     * Range 查询，返回 Prometheus matrix 格式。
+     *
+     * @param field histogram 表专用："count"/"sum" 表示对 histogram count/sum 列做 counter-rate；
+     *              缺省或 "quantile" 表示按 {@code quantile} 查询分位数。
+     */
+    public PrometheusMatrixResult queryRange(Integer clusterId, String metric,
+                                             String rateWindow, double scale,
+                                             String instance, String job,
+                                             Map<String, String> filters,
+                                             Map<String, String> filtersNe,
+                                             List<String> groupByKeys,
+                                             long start, long end, long step,
+                                             String table, double quantile, String field) {
         JdbcClient client = createReader(clusterId);
         
         if ("summary".equalsIgnoreCase(table)) {
@@ -197,15 +215,21 @@ public class OtelMetricsQueryService {
         
         if ("histogram".equalsIgnoreCase(table)) {
             List<String> validGroupBy = toValidGroupBy(groupByKeys);
-            String sql = buildRangeHistogramSql(needsFilter(instance), needsFilter(job),
-                    filters, filtersNe, validGroupBy);
+            boolean fieldRate = "count".equalsIgnoreCase(field) || "sum".equalsIgnoreCase(field);
+            String sql = fieldRate
+                    ? buildRangeHistogramFieldRateSql(field.toLowerCase(), needsFilter(instance), needsFilter(job),
+                            filters, filtersNe, validGroupBy)
+                    : buildRangeHistogramSql(needsFilter(instance), needsFilter(job),
+                            filters, filtersNe, validGroupBy);
             JdbcClient.StatementSpec spec = client.sql(sql)
                     .param("metric", metric)
                     .param("start", start)
                     .param("end", end)
                     .param("step", step)
-                    .param("rateWindow", parseRateWindow(rateWindow))
-                    .param("quantile", quantile);
+                    .param("rateWindow", parseRateWindow(rateWindow));
+            if (!fieldRate) {
+                spec = spec.param("quantile", quantile);
+            }
             if (needsFilter(instance)) {
                 spec = spec.param("instance", instance);
             }
@@ -255,19 +279,29 @@ public class OtelMetricsQueryService {
         JdbcClient client = createReader(clusterId);
         // UNION 确保同时覆盖 gauge 和 sum 两表里的指标
         String sql = "SELECT DISTINCT " + INST_EXPR + " AS instance,\n"
-                + "  " + JOB_EXPR + " AS job\n"
+                + "  " + JOB_EXPR + " AS job,\n"
+                + "  CAST(attributes['vol_name'] AS STRING) AS vol_name,\n"
+                + "  CAST(attributes['mp'] AS STRING) AS mp,\n"
+                + "  CAST(attributes['method'] AS STRING) AS method\n"
                 + "FROM otel.otel_metrics_gauge\n"
                 + "WHERE metric_name = :metric\n"
                 + "  AND timestamp >= FROM_UNIXTIME(UNIX_TIMESTAMP() - 300)\n"
                 + "UNION\n"
                 + "SELECT DISTINCT " + INST_EXPR + " AS instance,\n"
-                + "  " + JOB_EXPR + " AS job\n"
+                + "  " + JOB_EXPR + " AS job,\n"
+                + "  CAST(attributes['vol_name'] AS STRING) AS vol_name,\n"
+                + "  CAST(attributes['mp'] AS STRING) AS mp,\n"
+                + "  CAST(attributes['method'] AS STRING) AS method\n"
                 + "FROM otel.otel_metrics_sum\n"
                 + "WHERE metric_name = :metric\n"
                 + "  AND timestamp >= FROM_UNIXTIME(UNIX_TIMESTAMP() - 300)";
         List<Map<String, Object>> rows = client.sql(sql).param("metric", metric).query().listOfRows();
         Set<String> instances = new LinkedHashSet<>();
         Set<String> jobs = new LinkedHashSet<>();
+        Map<String, Set<String>> attributes = new LinkedHashMap<>();
+        for (String key : List.of("vol_name", "mp", "method")) {
+            attributes.put(key, new LinkedHashSet<>());
+        }
         for (Map<String, Object> row : rows) {
             Object inst = row.get("instance");
             Object j = row.get("job");
@@ -277,8 +311,18 @@ public class OtelMetricsQueryService {
             if (j != null) {
                 jobs.add(j.toString());
             }
+            for (String key : attributes.keySet()) {
+                Object value = row.get(key);
+                if (value != null) {
+                    attributes.get(key).add(value.toString());
+                }
+            }
         }
-        return new LabelsResult(List.copyOf(instances), List.copyOf(jobs));
+        Map<String, List<String>> attrValues = attributes.entrySet().stream()
+                .filter(e -> !e.getValue().isEmpty())
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> List.copyOf(e.getValue()),
+                        (a, b) -> a, LinkedHashMap::new));
+        return new LabelsResult(List.copyOf(instances), List.copyOf(jobs), attrValues);
     }
     
     /**
@@ -296,7 +340,11 @@ public class OtelMetricsQueryService {
                 .count();
     }
     
-    public record LabelsResult(List<String> instances, List<String> jobs) {
+    public record LabelsResult(List<String> instances, List<String> jobs, Map<String, List<String>> attributes) {
+
+        public LabelsResult(List<String> instances, List<String> jobs) {
+            this(instances, jobs, Map.of());
+        }
     }
     
     // ─── SQL 构建（package-private for testing） ──────────────────────────────────
@@ -324,7 +372,7 @@ public class OtelMetricsQueryService {
     static String buildInstantAggSql(String agg, boolean filterInstance, boolean filterJob,
                                      Map<String, String> filters, Map<String, String> filtersNe,
                                      String otelTable) {
-        String fn = "max".equalsIgnoreCase(agg) ? "MAX" : "SUM";
+        String fn = "max".equalsIgnoreCase(agg) ? "MAX" : ("count".equalsIgnoreCase(agg) ? "COUNT" : "SUM");
         StringBuilder inner = new StringBuilder(
                 "SELECT value\n"
                         + "FROM otel." + otelTable + "\n"
@@ -509,6 +557,66 @@ public class OtelMetricsQueryService {
                 + "WHERE total_count > 0 AND cum_count >= :quantile * total_count\n"
                 + "QUALIFY ROW_NUMBER() OVER(PARTITION BY " + partitionCols + ", bucket ORDER BY pos) = 1\n"
                 + "ORDER BY instance, job" + extraCols + ", bucket";
+    }
+    
+    /**
+     * histogram 表 {@code count}/{@code sum} 列的 counter-rate 查询。
+     *
+     * <p>用于 Prometheus 经典 histogram 的 {@code rate(metric_count[...])} /
+     * {@code rate(metric_sum[...])} 语义。分区仍包含 {@code series_key}，先 per-series
+     * 求 rate，再按调用方 groupBy 粒度 SUM；reset 守卫统一使用 histogram {@code count} 列，
+     * 即使请求的是 {@code sum} 字段也一样。
+     */
+    static String buildRangeHistogramFieldRateSql(String field, boolean filterInstance, boolean filterJob,
+                                                  Map<String, String> filters, Map<String, String> filtersNe,
+                                                  List<String> groupByKeys) {
+        if (!"count".equals(field) && !"sum".equals(field)) {
+            throw new IllegalArgumentException("Unsupported histogram field: " + field);
+        }
+        String extraSelect = buildExtraSelect(groupByKeys);
+        String extraCols = buildExtraCols(groupByKeys);
+        StringBuilder filterStr = new StringBuilder();
+        appendFilters(filterStr, filterInstance, filterJob);
+        appendAttrFilters(filterStr, filters, filtersNe);
+        String partitionCols = "instance, job" + extraCols;
+        String seriesPartitionCols = partitionCols + ", series_key";
+        return "WITH ordered AS (\n"
+                + "  SELECT " + INST_EXPR + " AS instance,\n"
+                + "         " + JOB_EXPR + " AS job"
+                + extraSelect
+                + ",\n         CAST(attributes AS STRING) AS series_key,\n"
+                + "         UNIX_TIMESTAMP(timestamp) AS ts, count AS reset_count, " + field + " AS value\n"
+                + "  FROM otel.otel_metrics_histogram\n"
+                + "  WHERE metric_name = :metric\n"
+                + "    AND timestamp BETWEEN FROM_UNIXTIME(:start - :rateWindow) AND FROM_UNIXTIME(:end)\n"
+                + filterStr
+                + "),\n"
+                + "with_lag AS (\n"
+                + "  SELECT " + partitionCols + ", series_key, ts, reset_count, value,\n"
+                + "    LAG(ts) OVER(PARTITION BY " + seriesPartitionCols + " ORDER BY ts) AS prev_ts,\n"
+                + "    LAG(reset_count) OVER(PARTITION BY " + seriesPartitionCols
+                + " ORDER BY ts) AS prev_reset_count,\n"
+                + "    LAG(value) OVER(PARTITION BY " + seriesPartitionCols + " ORDER BY ts) AS prev_val\n"
+                + "  FROM ordered\n"
+                + "),\n"
+                + "rates AS (\n"
+                + "  SELECT " + partitionCols + ", series_key,\n"
+                + "    FLOOR(ts / :step) * :step AS bucket,\n"
+                + "    CASE WHEN prev_ts IS NOT NULL AND ts > prev_ts AND reset_count >= prev_reset_count\n"
+                + "      THEN (value - prev_val) / (ts - prev_ts)\n"
+                + "      ELSE NULL END AS rate\n"
+                + "  FROM with_lag\n"
+                + "),\n"
+                + "per_series AS (\n"
+                + "  SELECT " + partitionCols + ", bucket, AVG(rate) AS rate\n"
+                + "  FROM rates\n"
+                + "  WHERE rate IS NOT NULL AND bucket >= :start\n"
+                + "  GROUP BY " + seriesPartitionCols + ", bucket\n"
+                + ")\n"
+                + "SELECT " + partitionCols + ", bucket, SUM(rate) AS value\n"
+                + "FROM per_series\n"
+                + "GROUP BY " + partitionCols + ", bucket\n"
+                + "ORDER BY " + partitionCols + ", bucket";
     }
     
     /**

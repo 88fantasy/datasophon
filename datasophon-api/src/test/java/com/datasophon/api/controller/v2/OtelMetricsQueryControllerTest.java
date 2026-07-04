@@ -84,15 +84,15 @@ class OtelMetricsQueryControllerTest {
                         Map.of("instance", "h:8081", "job", "nexus"),
                         List.<Object[]>of(new Object[]{1000L, "10.5"}))));
         // queryRange signature: (clusterId, metric, rateWindow, scale, instance, job,
-        // filters, filtersNe, groupByKeys, start, end, step, table, quantile)
+        // filters, filtersNe, groupByKeys, start, end, step, table, quantile, field)
         when(service.queryRange(eq(1), eq("jvm_memory_heap_used"), isNull(), eq(1.0),
                 anyString(), anyString(), any(), any(), any(), anyLong(), anyLong(), anyLong(),
-                any(), anyDouble()))
+                any(), anyDouble(), eq("sum")))
                 .thenReturn(matrix);
         
         ApiResponse<PrometheusMatrixResult> response =
                 controller.queryRange("jvm_memory_heap_used", null, 1.0, ".+", ".+",
-                        1000L, 2000L, 15L, 1, null, 0.5, null, null, null);
+                        1000L, 2000L, 15L, 1, null, 0.5, "sum", null, null, null);
         
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData().resultType()).isEqualTo("matrix");
@@ -150,12 +150,12 @@ class OtelMetricsQueryControllerTest {
     @Test
     void queryRange_serviceThrows_returnsFailResponse() {
         when(service.queryRange(any(), any(), any(), anyDouble(), any(), any(),
-                any(), any(), any(), anyLong(), anyLong(), anyLong(), any(), anyDouble()))
+                any(), any(), any(), anyLong(), anyLong(), anyLong(), any(), anyDouble(), any()))
                         .thenThrow(new RuntimeException("connection refused"));
         
         ApiResponse<PrometheusMatrixResult> response =
                 controller.queryRange("some_metric", null, 1.0, ".+", ".+",
-                        1000L, 2000L, 15L, 1, null, 0.5, null, null, null);
+                        1000L, 2000L, 15L, 1, null, 0.5, null, null, null, null);
         
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getErrorCode()).isEqualTo(500);

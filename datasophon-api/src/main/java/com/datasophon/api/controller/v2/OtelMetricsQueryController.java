@@ -120,6 +120,7 @@ public class OtelMetricsQueryController extends ApiController {
      * @param filters    可选等值过滤，格式 {@code "group:fe,type:used"}
      * @param filtersNe  可选不等过滤，格式 {@code "device:lo"}
      * @param groupBy    可选额外 GROUP BY 维度，格式 {@code "mode"} 或 {@code "mode,path"}
+     * @param field      histogram 表专用："count"/"sum" 表示字段 rate，缺省或 "quantile" 表示分位数
      */
     @GetMapping("/query_range")
     public ApiResponse<PrometheusMatrixResult> queryRange(
@@ -134,13 +135,14 @@ public class OtelMetricsQueryController extends ApiController {
                                                           @RequestParam(required = false, defaultValue = "1") Integer clusterId,
                                                           @RequestParam(required = false, defaultValue = "gauge") String table,
                                                           @RequestParam(required = false, defaultValue = "0.5") double quantile,
+                                                          @RequestParam(required = false) String field,
                                                           @RequestParam(required = false) String filters,
                                                           @RequestParam(required = false) String filtersNe,
                                                           @RequestParam(required = false) String groupBy) {
         try {
             return ApiResponse.ok(queryService.queryRange(clusterId, metric, rateWindow, scale,
                     instance, job, parseFilters(filters), parseFilters(filtersNe), parseGroupBy(groupBy),
-                    start, end, step, table, quantile));
+                    start, end, step, table, quantile, field));
         } catch (Exception e) {
             log.error("Doris range query failed: metric={} cluster={} reason={}",
                     metric, clusterId, e.getMessage(), e);
