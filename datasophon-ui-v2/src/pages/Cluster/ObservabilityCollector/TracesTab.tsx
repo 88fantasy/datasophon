@@ -12,6 +12,8 @@ import { useObservabilityStyles } from './observabilityStyles';
 interface TracesTabProps {
   clusterId: number;
   onShowLogs: (traceId: string) => void;
+  serviceName?: string;
+  onServiceNameConsumed: () => void;
 }
 
 interface TraceFilters {
@@ -40,7 +42,12 @@ function statusTag(status: string) {
   );
 }
 
-const TracesTab: React.FC<TracesTabProps> = ({ clusterId, onShowLogs }) => {
+const TracesTab: React.FC<TracesTabProps> = ({
+  clusterId,
+  onShowLogs,
+  serviceName,
+  onServiceNameConsumed,
+}) => {
   const { styles } = useObservabilityStyles();
   const actionRef = useRef<ActionType>(null);
   const [form] = Form.useForm<TraceFilters>();
@@ -57,6 +64,16 @@ const TracesTab: React.FC<TracesTabProps> = ({ clusterId, onShowLogs }) => {
       setServices(result.data ?? []);
     });
   }, [clusterId, filters.timeRange]);
+
+  useEffect(() => {
+    if (!serviceName) return;
+    const nextFilters = { ...filters, serviceName };
+    form.setFieldsValue(nextFilters);
+    filtersRef.current = nextFilters;
+    setFilters(nextFilters);
+    actionRef.current?.reload();
+    onServiceNameConsumed();
+  }, [filters, form, onServiceNameConsumed, serviceName]);
 
   const columns = useMemo<ProColumns<TraceRow>[]>(
     () => [

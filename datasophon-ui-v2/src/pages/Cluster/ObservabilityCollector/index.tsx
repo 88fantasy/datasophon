@@ -8,6 +8,7 @@ import ClusterContext from '@/context/ClusterContext';
 import ConfigTab from './ConfigTab';
 import LogsTab from './LogsTab';
 import MonitorTab from './MonitorTab';
+import TopologyTab from './TopologyTab';
 import TracesTab from './TracesTab';
 
 const ObservabilityCollector: React.FC = () => {
@@ -16,6 +17,7 @@ const ObservabilityCollector: React.FC = () => {
   const clusterId = cluster?.clusterId ?? 0;
   const [activeTab, setActiveTab] = useState('config');
   const [linkedTraceId, setLinkedTraceId] = useState<string>();
+  const [linkedServiceName, setLinkedServiceName] = useState<string>();
 
   return (
     <PageContainer
@@ -45,6 +47,22 @@ const ObservabilityCollector: React.FC = () => {
             children: <MonitorTab clusterId={clusterId} />,
           },
           {
+            key: 'topology',
+            label: intl.formatMessage({
+              id: 'pages.observabilityCollector.topology',
+              defaultMessage: 'Topology',
+            }),
+            children: (
+              <TopologyTab
+                clusterId={clusterId}
+                onShowTraces={(serviceName) => {
+                  setLinkedServiceName(serviceName);
+                  setActiveTab('traces');
+                }}
+              />
+            ),
+          },
+          {
             key: 'traces',
             label: intl.formatMessage({
               id: 'pages.observabilityCollector.traces',
@@ -57,6 +75,8 @@ const ObservabilityCollector: React.FC = () => {
                   setLinkedTraceId(traceId);
                   setActiveTab('logs');
                 }}
+                serviceName={linkedServiceName}
+                onServiceNameConsumed={() => setLinkedServiceName(undefined)}
               />
             ),
           },

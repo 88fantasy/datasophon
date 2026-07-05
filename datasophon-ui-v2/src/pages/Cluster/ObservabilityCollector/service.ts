@@ -77,6 +77,26 @@ export interface LogRow {
   resourceAttributes: Record<string, unknown>;
 }
 
+export interface TopologyNode {
+  serviceName: string;
+  spanCount: number;
+  errorCount: number;
+  avgDurationNs: number;
+  p99DurationNs: number;
+}
+
+export interface TopologyEdge {
+  caller: string;
+  callee: string;
+  callCount: number;
+  errorCount: number;
+}
+
+export interface TopologyGraph {
+  nodes: TopologyNode[];
+  edges: TopologyEdge[];
+}
+
 export interface TraceQueryParams {
   clusterId: number;
   start: number;
@@ -171,6 +191,21 @@ export function listTraceServices(
     method: 'GET',
     params: { clusterId, start, end },
   });
+}
+
+export function getTraceTopology(
+  clusterId: number,
+  start: number,
+  end: number,
+) {
+  return request<ApiResult<TopologyGraph>>(
+    '/observability/otelcol/traces/topology',
+    {
+      ...legacyRequestOptions,
+      method: 'GET',
+      params: { clusterId, start, end },
+    },
+  );
 }
 
 export function listLogs(params: LogQueryParams) {

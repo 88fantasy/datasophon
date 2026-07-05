@@ -27,6 +27,7 @@ export default {
   'pages.observabilityCollector.title': 'Collector 控制台',
   'pages.observabilityCollector.config': '配置',
   'pages.observabilityCollector.monitor': '监控',
+  'pages.observabilityCollector.topology': '拓扑',
   'pages.observabilityCollector.traces': 'Traces',
   'pages.observabilityCollector.logs': 'Logs',
   'pages.observabilityCollector.timeRange': '时间范围',
