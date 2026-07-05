@@ -65,3 +65,4 @@ conf/common.local.properties
 conf/api.local.properties
 conf/worker.local.properties
 datasophon-api/src/main/resources/application-local.yml
+/.run
