@@ -144,6 +144,66 @@ describe('toGraphData', () => {
     expect(nodes[0].data.external).toBe(true);
     expect(nodes[0].data.displayName).toBe('mysql\n127.0.0.1:3306');
   });
+
+  it('keeps both endpoints of error edges in error-only mode', () => {
+    const { nodes, edges } = toGraphData(
+      {
+        nodes: [
+          {
+            serviceName: 'datasophon-api',
+            spanCount: 100,
+            errorCount: 0,
+            avgDurationNs: 1_000_000,
+            p99DurationNs: 2_000_000,
+            maxDurationNs: 3_000_000,
+          },
+          {
+            serviceName: 'mysql@127.0.0.1:3306',
+            spanCount: 20,
+            errorCount: 2,
+            avgDurationNs: 1_500_000,
+            p99DurationNs: 4_000_000,
+            maxDurationNs: 5_000_000,
+            external: true,
+            dbSystem: 'mysql',
+          },
+          {
+            serviceName: 'healthy-worker',
+            spanCount: 50,
+            errorCount: 0,
+            avgDurationNs: 1_000_000,
+            p99DurationNs: 2_000_000,
+            maxDurationNs: 3_000_000,
+          },
+        ],
+        edges: [
+          {
+            caller: 'datasophon-api',
+            callee: 'mysql@127.0.0.1:3306',
+            callCount: 20,
+            errorCount: 2,
+          },
+          {
+            caller: 'healthy-worker',
+            callee: 'datasophon-api',
+            callCount: 50,
+            errorCount: 0,
+          },
+        ],
+      },
+      { onlyError: true },
+    );
+
+    expect(nodes.map((node) => node.id)).toEqual([
+      'datasophon-api',
+      'mysql@127.0.0.1:3306',
+    ]);
+    expect(edges).toHaveLength(1);
+    expect(edges[0]).toMatchObject({
+      source: 'datasophon-api',
+      target: 'mysql@127.0.0.1:3306',
+    });
+  });
 });
 
 describe('TopologyTab', () => {

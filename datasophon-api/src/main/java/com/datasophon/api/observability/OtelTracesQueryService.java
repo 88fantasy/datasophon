@@ -255,12 +255,12 @@ public class OtelTracesQueryService {
         // system 标签按 db.system → http（有 http.request.method 时）→ other 三级兜底。
         return "SELECT service_name AS caller,\n"
                 + "       COALESCE(\n"
-                + "           NULLIF(cast(span_attributes['db']['system'] as string), ''),\n"
-                + "           IF(NULLIF(cast(span_attributes['http']['request']['method'] as string), '') IS NOT NULL,\n"
+                + "           NULLIF(cast(span_attributes['db.system'] as string), ''),\n"
+                + "           IF(NULLIF(cast(span_attributes['http.request.method'] as string), '') IS NOT NULL,\n"
                 + "              'http', 'other')\n"
                 + "       ) AS db_system,\n"
-                + "       cast(span_attributes['server']['address'] as string) AS server_addr,\n"
-                + "       cast(span_attributes['server']['port'] as string) AS server_port,\n"
+                + "       cast(span_attributes['server.address'] as string) AS server_addr,\n"
+                + "       cast(span_attributes['server.port'] as string) AS server_port,\n"
                 + "       COUNT(*) AS call_count,\n"
                 + "       SUM(IF(status_code = 'STATUS_CODE_ERROR', 1, 0)) AS error_count,\n"
                 + "       AVG(duration) AS avg_duration_ns,\n"
@@ -269,8 +269,8 @@ public class OtelTracesQueryService {
                 + "FROM otel.otel_traces\n"
                 + "WHERE timestamp BETWEEN FROM_UNIXTIME(:start) AND FROM_UNIXTIME(:end)\n"
                 + "  AND span_kind = 'SPAN_KIND_CLIENT'\n"
-                + "  AND cast(span_attributes['server']['address'] as string) IS NOT NULL\n"
-                + "  AND cast(span_attributes['server']['address'] as string) != ''\n"
+                + "  AND cast(span_attributes['server.address'] as string) IS NOT NULL\n"
+                + "  AND cast(span_attributes['server.address'] as string) != ''\n"
                 + "  AND service_name IS NOT NULL AND service_name != ''\n"
                 + "GROUP BY caller, db_system, server_addr, server_port";
     }
@@ -335,23 +335,59 @@ public class OtelTracesQueryService {
             nodes.put(node.serviceName(), node);
         }
         List<TopologyEdge> edges = new ArrayList<>(graph.edges());
+        Map<String, ExternalAggregate> externalAggregates = new LinkedHashMap<>();
         for (Map<String, Object> row : externalRows) {
             String caller = stringValue(row.get("caller"));
             String dbSystem = stringValue(row.get("db_system"));
             String externalId = dbSystem + "@" + stringValue(row.get("server_addr")) + ":" + stringValue(row.get("server_port"));
             long callCount = longValue(row.get("call_count"));
             long errorCount = longValue(row.get("error_count"));
-            nodes.put(externalId, TopologyNode.external(
-                    externalId,
-                    dbSystem,
-                    callCount,
-                    errorCount,
-                    doubleValue(row.get("avg_duration_ns")),
-                    doubleValue(row.get("p99_duration_ns")),
-                    doubleValue(row.get("max_duration_ns"))));
+            externalAggregates.computeIfAbsent(externalId, id -> new ExternalAggregate(externalId, dbSystem))
+                    .add(callCount, errorCount,
+                            doubleValue(row.get("avg_duration_ns")),
+                            doubleValue(row.get("p99_duration_ns")),
+                            doubleValue(row.get("max_duration_ns")));
             edges.add(new TopologyEdge(caller, externalId, callCount, errorCount));
         }
+        externalAggregates.forEach((externalId, aggregate) -> nodes.put(externalId, aggregate.toNode()));
         return new TopologyGraph(List.copyOf(nodes.values()), edges);
+    }
+
+    private static final class ExternalAggregate {
+
+        private final String externalId;
+
+        private final String dbSystem;
+
+        private long callCount;
+
+        private long errorCount;
+
+        private double weightedAvgDurationNs;
+
+        private double p99DurationNs;
+
+        private double maxDurationNs;
+
+        private ExternalAggregate(String externalId, String dbSystem) {
+            this.externalId = externalId;
+            this.dbSystem = dbSystem;
+        }
+
+        private void add(long nextCallCount, long nextErrorCount, double nextAvgDurationNs,
+                         double nextP99DurationNs, double nextMaxDurationNs) {
+            weightedAvgDurationNs += nextAvgDurationNs * nextCallCount;
+            callCount += nextCallCount;
+            errorCount += nextErrorCount;
+            p99DurationNs = Math.max(p99DurationNs, nextP99DurationNs);
+            maxDurationNs = Math.max(maxDurationNs, nextMaxDurationNs);
+        }
+
+        private TopologyNode toNode() {
+            double avgDurationNs = callCount > 0 ? weightedAvgDurationNs / callCount : 0D;
+            return TopologyNode.external(
+                    externalId, dbSystem, callCount, errorCount, avgDurationNs, p99DurationNs, maxDurationNs);
+        }
     }
 
     static void validateStatus(String status) {

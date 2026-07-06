@@ -106,13 +106,26 @@ export function toGraphData(
     slowTop5Ids,
     highlightId,
   } = options;
+  const errorEdgeNodeIds = onlyError
+    ? new Set(
+        topology.edges
+          .filter((edge) => edge.errorCount > 0)
+          .flatMap((edge) => [edge.caller, edge.callee]),
+      )
+    : undefined;
   const filteredNodes = onlyError
-    ? topology.nodes.filter((node) => node.errorCount > 0)
+    ? topology.nodes.filter(
+        (node) =>
+          node.errorCount > 0 || errorEdgeNodeIds?.has(node.serviceName),
+      )
     : topology.nodes;
   const nodeIds = new Set(filteredNodes.map((node) => node.serviceName));
   const filteredEdges = onlyError
     ? topology.edges.filter(
-        (edge) => nodeIds.has(edge.caller) && nodeIds.has(edge.callee),
+        (edge) =>
+          edge.errorCount > 0 &&
+          nodeIds.has(edge.caller) &&
+          nodeIds.has(edge.callee),
       )
     : topology.edges;
 

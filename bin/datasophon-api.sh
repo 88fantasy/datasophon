@@ -59,8 +59,6 @@ BIN_DIR=`dirname "$SCRIPT"`/..
 BIN_DIR=`cd "$BIN_DIR"; pwd`
 export DDH_HOME=$BIN_DIR
 
-export JAVA_HOME=$JAVA_HOME
-#export JAVA_HOME=/opt/soft/jdk
 export HOSTNAME=`hostname`
 
 export DDH_PID_DIR=$DDH_HOME/pid

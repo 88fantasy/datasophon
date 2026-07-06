@@ -161,14 +161,14 @@ class OtelTracesQueryServiceTest {
 
         assertThat(sql).contains("otel.otel_traces");
         assertThat(sql).contains("span_kind = 'SPAN_KIND_CLIENT'");
-        assertThat(sql).contains("span_attributes['db']['system']");
-        assertThat(sql).contains("span_attributes['http']['request']['method']");
-        assertThat(sql).contains("span_attributes['server']['address']");
-        assertThat(sql).contains("span_attributes['server']['port']");
+        assertThat(sql).contains("span_attributes['db.system']");
+        assertThat(sql).contains("span_attributes['http.request.method']");
+        assertThat(sql).contains("span_attributes['server.address']");
+        assertThat(sql).contains("span_attributes['server.port']");
         assertThat(sql).contains("timestamp BETWEEN FROM_UNIXTIME(:start) AND FROM_UNIXTIME(:end)");
         assertThat(sql).contains("GROUP BY caller, db_system, server_addr, server_port");
         // 不再要求 db.system 非空——只要有 server.address 就纳入，不按类型限制
-        assertThat(sql).doesNotContain("cast(span_attributes['db']['system'] as string) IS NOT NULL");
+        assertThat(sql).doesNotContain("cast(span_attributes['db.system'] as string) IS NOT NULL");
     }
 
     @Test
@@ -200,6 +200,35 @@ class OtelTracesQueryServiceTest {
                 OtelTracesQueryService.mergeExternalDependencies(base, List.of());
 
         assertThat(merged).isSameAs(base);
+    }
+
+    @Test
+    void mergeExternalDependencies_aggregatesSharedExternalNodeAcrossCallers() {
+        OtelTracesQueryService.TopologyGraph base = new OtelTracesQueryService.TopologyGraph(
+                List.of(
+                        new OtelTracesQueryService.TopologyNode(
+                                "datasophon-api", 100L, 0L, 1_000_000.0, 2_000_000.0, 3_000_000.0, false, ""),
+                        new OtelTracesQueryService.TopologyNode(
+                                "datasophon-worker", 80L, 0L, 1_500_000.0, 2_500_000.0, 4_000_000.0, false, "")),
+                List.of());
+        List<Map<String, Object>> externalRows = List.of(
+                Map.of("caller", "datasophon-api", "db_system", "mysql",
+                        "server_addr", "127.0.0.1", "server_port", "3306",
+                        "call_count", 10L, "error_count", 1L,
+                        "avg_duration_ns", 1_000_000.0, "p99_duration_ns", 4_000_000.0, "max_duration_ns", 6_000_000.0),
+                Map.of("caller", "datasophon-worker", "db_system", "mysql",
+                        "server_addr", "127.0.0.1", "server_port", "3306",
+                        "call_count", 30L, "error_count", 2L,
+                        "avg_duration_ns", 3_000_000.0, "p99_duration_ns", 8_000_000.0, "max_duration_ns", 9_000_000.0));
+
+        OtelTracesQueryService.TopologyGraph merged =
+                OtelTracesQueryService.mergeExternalDependencies(base, externalRows);
+
+        assertThat(merged.nodes()).contains(new OtelTracesQueryService.TopologyNode(
+                "mysql@127.0.0.1:3306", 40L, 3L, 2_500_000.0, 8_000_000.0, 9_000_000.0, true, "mysql"));
+        assertThat(merged.edges()).contains(
+                new OtelTracesQueryService.TopologyEdge("datasophon-api", "mysql@127.0.0.1:3306", 10L, 1L),
+                new OtelTracesQueryService.TopologyEdge("datasophon-worker", "mysql@127.0.0.1:3306", 30L, 2L));
     }
 
     @Test
