@@ -125,7 +125,14 @@ export function toGraphData(
     if (errorRate > 0) {
       metrics.push(`err ${(errorRate * 100).toFixed(1)}%`);
     }
-    const icon = serviceIconFor(node.serviceName);
+    // 外部依赖节点(合成 id 形如 "mysql@127.0.0.1:3306")按 dbSystem 取图标，
+    // 展示名拆成 "mysql" + 端点两行，比原始合成 id 更易读。
+    const icon = serviceIconFor(
+      node.external ? (node.dbSystem ?? node.serviceName) : node.serviceName,
+    );
+    const displayName = node.external
+      ? `${node.dbSystem ?? ''}\n${node.serviceName.split('@')[1] ?? node.serviceName}`
+      : node.serviceName;
     return {
       id: node.serviceName,
       data: {
@@ -136,6 +143,8 @@ export function toGraphData(
         iconSrc: icon.src,
         iconWidth: icon.width,
         iconHeight: icon.height,
+        external: node.external ?? false,
+        displayName,
       },
     };
   });
@@ -233,17 +242,25 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
           src: (d: NodeData) => (d.data?.iconSrc as string) ?? '',
           opacity: (d) => (d.data?.dimmed ? 0.35 : 1),
           cursor: 'pointer',
-          labelText: (d) => String(d.id),
+          labelText: (d) => (d.data?.displayName as string) ?? String(d.id),
           labelFontSize: 12,
           badgeFontSize: 9,
           badgePadding: [1, 4],
           badges: (d) => {
             const list: Array<{
               text: string;
-              placement: 'top-right' | 'right-bottom';
+              placement: 'top-right' | 'right-bottom' | 'left-top';
               backgroundFill: string;
               fill: string;
             }> = [];
+            if (d.data?.external) {
+              list.push({
+                text: 'DB',
+                placement: 'left-top',
+                backgroundFill: '#597ef7',
+                fill: '#ffffff',
+              });
+            }
             if (d.data?.highlighted) {
               list.push({
                 text: '★',
@@ -306,7 +323,10 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
             container.style.lineHeight = '1.6';
             const name = document.createElement('div');
             name.style.fontWeight = '600';
-            name.textContent = String(item?.id ?? '');
+            const rawName =
+              (data as { displayName?: string }).displayName ??
+              String(item?.id ?? '');
+            name.textContent = rawName.replace(/\n/g, ' ');
             const metrics = document.createElement('div');
             metrics.textContent = String(
               (data as { metricsText?: string }).metricsText ?? '',
@@ -349,9 +369,11 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
     });
     graph.on('node:click', (event: IElementEvent) => {
       const id = event.target?.id;
-      if (typeof id === 'string') {
-        setSelectedService(id);
-      }
+      if (typeof id !== 'string') return;
+      // 外部依赖节点(mysql@host:port 等合成 id)没有 service_name 概况可查,不弹详情面板。
+      const nodeDatum = graph.getNodeData(id);
+      if (nodeDatum?.data?.external) return;
+      setSelectedService(id);
     });
     graph.render();
     graphRef.current = graph;

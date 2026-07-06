@@ -84,6 +84,8 @@ export interface TopologyNode {
   avgDurationNs: number;
   p99DurationNs: number;
   maxDurationNs: number;
+  external?: boolean;
+  dbSystem?: string;
 }
 
 export interface TopologyEdge {

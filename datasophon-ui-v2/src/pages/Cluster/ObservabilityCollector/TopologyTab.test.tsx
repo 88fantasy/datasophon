@@ -22,9 +22,11 @@ vi.mock('@antv/g6', () => ({
   subStyleProps: () => ({}),
   Graph: class {
     handlers: Record<string, (event: unknown) => void> = {};
+    data: { nodes?: Array<{ id: string; data?: unknown }> };
 
-    constructor(_options: unknown) {
+    constructor(options: { data?: { nodes?: Array<{ id: string; data?: unknown }> } }) {
       graphInstances.push(this);
+      this.data = options.data ?? {};
     }
 
     on(name: string, handler: (event: unknown) => void) {
@@ -33,7 +35,13 @@ vi.mock('@antv/g6', () => ({
 
     render() {}
 
-    setData() {}
+    setData(data: { nodes?: Array<{ id: string; data?: unknown }> }) {
+      this.data = data;
+    }
+
+    getNodeData(id: string) {
+      return this.data.nodes?.find((node) => node.id === id);
+    }
 
     destroy() {}
   },
@@ -113,6 +121,28 @@ describe('toGraphData', () => {
     });
 
     expect(nodes[0].data.errorRate).toBe(0);
+  });
+
+  it('marks external dependency nodes and derives a readable display name', () => {
+    const { nodes } = toGraphData({
+      nodes: [
+        {
+          serviceName: 'mysql@127.0.0.1:3306',
+          spanCount: 4807,
+          errorCount: 0,
+          avgDurationNs: 800_000,
+          p99DurationNs: 2_000_000,
+          maxDurationNs: 5_000_000,
+          external: true,
+          dbSystem: 'mysql',
+        },
+      ],
+      edges: [],
+    });
+
+    expect(nodes[0].id).toBe('mysql@127.0.0.1:3306');
+    expect(nodes[0].data.external).toBe(true);
+    expect(nodes[0].data.displayName).toBe('mysql\n127.0.0.1:3306');
   });
 });
 

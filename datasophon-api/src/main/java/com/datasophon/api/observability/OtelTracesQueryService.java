@@ -117,7 +117,12 @@ public class OtelTracesQueryService {
                 .param("end", endSec)
                 .query()
                 .listOfRows();
-        return toTopologyGraph(nodeRows, edgeRows);
+        List<Map<String, Object>> externalRows = client.sql(buildExternalDependencyEdgesSql())
+                .param("start", startSec)
+                .param("end", endSec)
+                .query()
+                .listOfRows();
+        return mergeExternalDependencies(toTopologyGraph(nodeRows, edgeRows), externalRows);
     }
 
     public ServiceSummary getServiceSummary(Integer clusterId, long startSec, long endSec, String serviceName) {
@@ -242,6 +247,34 @@ public class OtelTracesQueryService {
                 + "ORDER BY service_name";
     }
 
+    static String buildExternalDependencyEdgesSql() {
+        // 合成 caller(真实服务)→ external(system@server.address:server.port)的依赖边。
+        // 这类 span 是客户端插桩产生的 SPAN_KIND_CLIENT(JDBC/HTTP/…),其 service_name 与发起方相同，
+        // 因此 otel_traces_graph_job(t1.service_name != t2.service_name)永远不会把它们聚合成边。
+        // 不按 db.system 是否存在做类型限制——任何带 server.address/port 的 CLIENT span 都视为一个外部依赖，
+        // system 标签按 db.system → http（有 http.request.method 时）→ other 三级兜底。
+        return "SELECT service_name AS caller,\n"
+                + "       COALESCE(\n"
+                + "           NULLIF(cast(span_attributes['db']['system'] as string), ''),\n"
+                + "           IF(NULLIF(cast(span_attributes['http']['request']['method'] as string), '') IS NOT NULL,\n"
+                + "              'http', 'other')\n"
+                + "       ) AS db_system,\n"
+                + "       cast(span_attributes['server']['address'] as string) AS server_addr,\n"
+                + "       cast(span_attributes['server']['port'] as string) AS server_port,\n"
+                + "       COUNT(*) AS call_count,\n"
+                + "       SUM(IF(status_code = 'STATUS_CODE_ERROR', 1, 0)) AS error_count,\n"
+                + "       AVG(duration) AS avg_duration_ns,\n"
+                + "       PERCENTILE_APPROX(duration, 0.99) AS p99_duration_ns,\n"
+                + "       MAX(duration) AS max_duration_ns\n"
+                + "FROM otel.otel_traces\n"
+                + "WHERE timestamp BETWEEN FROM_UNIXTIME(:start) AND FROM_UNIXTIME(:end)\n"
+                + "  AND span_kind = 'SPAN_KIND_CLIENT'\n"
+                + "  AND cast(span_attributes['server']['address'] as string) IS NOT NULL\n"
+                + "  AND cast(span_attributes['server']['address'] as string) != ''\n"
+                + "  AND service_name IS NOT NULL AND service_name != ''\n"
+                + "GROUP BY caller, db_system, server_addr, server_port";
+    }
+
     static String buildServiceSummaryStatsSql() {
         return "SELECT COUNT(*) AS span_count,\n"
                 + "       SUM(IF(status_code = 'STATUS_CODE_ERROR', 1, 0)) AS error_count,\n"
@@ -269,7 +302,7 @@ public class OtelTracesQueryService {
                                          List<Map<String, Object>> edgeRows) {
         Map<String, TopologyNode> nodes = new LinkedHashMap<>();
         for (Map<String, Object> row : nodeRows) {
-            TopologyNode node = new TopologyNode(
+            TopologyNode node = TopologyNode.service(
                     stringValue(row.get("service_name")),
                     longValue(row.get("span_count")),
                     longValue(row.get("error_count")),
@@ -287,8 +320,36 @@ public class OtelTracesQueryService {
                     longValue(row.get("error_count")));
             edges.add(edge);
             // graph 表(10 分钟 JOB 聚合)与 traces 表时间窗可能错位，补零指标节点保证边不悬空
-            nodes.computeIfAbsent(edge.caller(), name -> new TopologyNode(name, 0, 0, 0, 0, 0));
-            nodes.computeIfAbsent(edge.callee(), name -> new TopologyNode(name, 0, 0, 0, 0, 0));
+            nodes.computeIfAbsent(edge.caller(), name -> TopologyNode.service(name, 0, 0, 0, 0, 0));
+            nodes.computeIfAbsent(edge.callee(), name -> TopologyNode.service(name, 0, 0, 0, 0, 0));
+        }
+        return new TopologyGraph(List.copyOf(nodes.values()), edges);
+    }
+
+    static TopologyGraph mergeExternalDependencies(TopologyGraph graph, List<Map<String, Object>> externalRows) {
+        if (externalRows.isEmpty()) {
+            return graph;
+        }
+        Map<String, TopologyNode> nodes = new LinkedHashMap<>();
+        for (TopologyNode node : graph.nodes()) {
+            nodes.put(node.serviceName(), node);
+        }
+        List<TopologyEdge> edges = new ArrayList<>(graph.edges());
+        for (Map<String, Object> row : externalRows) {
+            String caller = stringValue(row.get("caller"));
+            String dbSystem = stringValue(row.get("db_system"));
+            String externalId = dbSystem + "@" + stringValue(row.get("server_addr")) + ":" + stringValue(row.get("server_port"));
+            long callCount = longValue(row.get("call_count"));
+            long errorCount = longValue(row.get("error_count"));
+            nodes.put(externalId, TopologyNode.external(
+                    externalId,
+                    dbSystem,
+                    callCount,
+                    errorCount,
+                    doubleValue(row.get("avg_duration_ns")),
+                    doubleValue(row.get("p99_duration_ns")),
+                    doubleValue(row.get("max_duration_ns"))));
+            edges.add(new TopologyEdge(caller, externalId, callCount, errorCount));
         }
         return new TopologyGraph(List.copyOf(nodes.values()), edges);
     }
@@ -449,7 +510,21 @@ public class OtelTracesQueryService {
                                long errorCount,
                                double avgDurationNs,
                                double p99DurationNs,
-                               double maxDurationNs) {
+                               double maxDurationNs,
+                               boolean external,
+                               String dbSystem) {
+
+    static TopologyNode service(String serviceName, long spanCount, long errorCount,
+                                double avgDurationNs, double p99DurationNs, double maxDurationNs) {
+        return new TopologyNode(serviceName, spanCount, errorCount, avgDurationNs, p99DurationNs, maxDurationNs,
+                false, "");
+    }
+
+    static TopologyNode external(String id, String dbSystem, long spanCount, long errorCount,
+                                 double avgDurationNs, double p99DurationNs, double maxDurationNs) {
+        return new TopologyNode(id, spanCount, errorCount, avgDurationNs, p99DurationNs, maxDurationNs,
+                true, dbSystem);
+    }
     }
 
     public record TopologyEdge(String caller,
