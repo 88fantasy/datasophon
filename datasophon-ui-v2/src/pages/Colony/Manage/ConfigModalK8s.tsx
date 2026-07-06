@@ -8,13 +8,14 @@ import {
   ProFormTextArea,
 } from '@ant-design/pro-components';
 import Editor from '@monaco-editor/react';
-import { Button, message } from 'antd';
+import { App, Button } from 'antd';
 import React, { useCallback, useRef } from 'react';
 import {
   getK8sConfig,
   saveK8sConfig,
   testK8sConnection,
 } from '@/services/cluster';
+import { getApiFailureMessage } from '@/utils/apiResponse';
 
 const T_CONFIG_FILE = 'config_file';
 const T_TOKEN = 'token';
@@ -42,6 +43,7 @@ const ConfigModalK8s: React.FC<Props> = ({
   onSuccess,
 }) => {
   const formRef = useRef<ProFormInstance>(undefined);
+  const { message } = App.useApp();
 
   const handleTest = useCallback(async () => {
     try {
@@ -56,16 +58,21 @@ const ConfigModalK8s: React.FC<Props> = ({
     } catch {
       // form validation error — antd already shows inline messages
     }
-  }, [cluster.id]);
+  }, [cluster.id, message]);
 
   const handleFinish = useCallback(
     async (values: DATASOPHON.K8sConfig) => {
-      await saveK8sConfig({ ...values, clusterId: cluster.id });
+      const res = await saveK8sConfig({ ...values, clusterId: cluster.id });
+      const failureMessage = getApiFailureMessage(res, '配置保存失败');
+      if (failureMessage) {
+        message.error(failureMessage);
+        return false;
+      }
       message.success('配置已保存');
       onSuccess();
       return true;
     },
-    [cluster.id, onSuccess],
+    [cluster.id, message, onSuccess],
   );
 
   return (

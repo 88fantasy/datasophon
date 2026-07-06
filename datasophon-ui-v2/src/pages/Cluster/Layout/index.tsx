@@ -271,18 +271,14 @@ const ClusterLayout: React.FC = () => {
         icon: <HistoryOutlined />,
         label: '命令历史',
       },
-      ...(clusterInfo?.archType !== 'k8s'
-        ? [
-            {
-              key: `/cluster/${numericClusterId}/observability-collector`,
-              icon: <FundProjectionScreenOutlined />,
-              label: intl.formatMessage({
-                id: 'menu.observability-collector',
-                defaultMessage: 'Collector 控制台',
-              }),
-            },
-          ]
-        : []),
+      {
+        key: `/cluster/${numericClusterId}/observability-collector`,
+        icon: <FundProjectionScreenOutlined />,
+        label: intl.formatMessage({
+          id: 'menu.observability-collector',
+          defaultMessage: 'Collector 控制台',
+        }),
+      },
       {
         key: 'system-center',
         icon: <SettingOutlined />,

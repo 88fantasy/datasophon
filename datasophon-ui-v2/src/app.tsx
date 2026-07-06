@@ -3,7 +3,7 @@ import type { Settings as LayoutSettings } from '@ant-design/pro-components';
 import { SettingDrawer } from '@ant-design/pro-components';
 import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
 import { history, Link } from '@umijs/max';
-import { Spin } from 'antd';
+import { App as AntdApp, Spin } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import utc from 'dayjs/plugin/utc';
@@ -210,9 +210,9 @@ export const request: RequestConfig = {
 
 export function rootContainer(container: React.ReactNode) {
   return (
-    <>
+    <AntdApp>
       <OfflineBanner />
       <ErrorBoundary>{container}</ErrorBoundary>
-    </>
+    </AntdApp>
   );
 }
