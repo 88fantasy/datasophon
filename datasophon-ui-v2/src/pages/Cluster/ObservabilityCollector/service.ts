@@ -83,6 +83,7 @@ export interface TopologyNode {
   errorCount: number;
   avgDurationNs: number;
   p99DurationNs: number;
+  maxDurationNs: number;
 }
 
 export interface TopologyEdge {
@@ -95,6 +96,27 @@ export interface TopologyEdge {
 export interface TopologyGraph {
   nodes: TopologyNode[];
   edges: TopologyEdge[];
+}
+
+export interface ServiceSummaryStats {
+  spanCount: number;
+  errorCount: number;
+  avgDurationNs: number;
+  p99DurationNs: number;
+  maxDurationNs: number;
+}
+
+export interface ServiceSummaryPoint {
+  time: string;
+  spanCount: number;
+  errorCount: number;
+  avgDurationNs: number;
+}
+
+export interface ServiceSummary {
+  current: ServiceSummaryStats;
+  previous: ServiceSummaryStats;
+  series: ServiceSummaryPoint[];
 }
 
 export interface TraceQueryParams {
@@ -204,6 +226,22 @@ export function getTraceTopology(
       ...legacyRequestOptions,
       method: 'GET',
       params: { clusterId, start, end },
+    },
+  );
+}
+
+export function getServiceSummary(
+  clusterId: number,
+  start: number,
+  end: number,
+  serviceName: string,
+) {
+  return request<ApiResult<ServiceSummary>>(
+    '/observability/otelcol/traces/service-summary',
+    {
+      ...legacyRequestOptions,
+      method: 'GET',
+      params: { clusterId, start, end, serviceName },
     },
   );
 }

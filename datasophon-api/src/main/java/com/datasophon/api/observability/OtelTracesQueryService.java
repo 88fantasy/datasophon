@@ -120,6 +120,35 @@ public class OtelTracesQueryService {
         return toTopologyGraph(nodeRows, edgeRows);
     }
 
+    public ServiceSummary getServiceSummary(Integer clusterId, long startSec, long endSec, String serviceName) {
+        JdbcClient client = readerFactory.create(clusterId);
+        ServiceSummaryStats current = fetchServiceSummaryStats(client, startSec, endSec, serviceName);
+        // 日环比:同一服务对比 24 小时前的同长度窗口
+        ServiceSummaryStats previous =
+                fetchServiceSummaryStats(client, startSec - 86400, endSec - 86400, serviceName);
+        List<Map<String, Object>> seriesRows = client.sql(buildServiceSummarySeriesSql())
+                .param("start", startSec)
+                .param("end", endSec)
+                .param("serviceName", serviceName)
+                .query()
+                .listOfRows();
+        List<ServiceSummaryPoint> series = seriesRows.stream()
+                .map(OtelTracesQueryService::toServiceSummaryPoint)
+                .toList();
+        return new ServiceSummary(current, previous, series);
+    }
+
+    private static ServiceSummaryStats fetchServiceSummaryStats(JdbcClient client, long startSec, long endSec,
+                                                                String serviceName) {
+        List<Map<String, Object>> rows = client.sql(buildServiceSummaryStatsSql())
+                .param("start", startSec)
+                .param("end", endSec)
+                .param("serviceName", serviceName)
+                .query()
+                .listOfRows();
+        return toServiceSummaryStats(rows.isEmpty() ? Map.of() : rows.get(0));
+    }
+
     static String buildListTracesSql(boolean count, String serviceName, String status,
                                      String spanName, String traceId) {
         StringBuilder sql = new StringBuilder(
@@ -204,12 +233,36 @@ public class OtelTracesQueryService {
                 + "       COUNT(*) AS span_count,\n"
                 + "       SUM(IF(status_code = 'STATUS_CODE_ERROR', 1, 0)) AS error_count,\n"
                 + "       AVG(duration) AS avg_duration_ns,\n"
-                + "       PERCENTILE_APPROX(duration, 0.99) AS p99_duration_ns\n"
+                + "       PERCENTILE_APPROX(duration, 0.99) AS p99_duration_ns,\n"
+                + "       MAX(duration) AS max_duration_ns\n"
                 + "FROM otel.otel_traces\n"
                 + "WHERE timestamp BETWEEN FROM_UNIXTIME(:start) AND FROM_UNIXTIME(:end)\n"
                 + "  AND service_name IS NOT NULL AND service_name != ''\n"
                 + "GROUP BY service_name\n"
                 + "ORDER BY service_name";
+    }
+
+    static String buildServiceSummaryStatsSql() {
+        return "SELECT COUNT(*) AS span_count,\n"
+                + "       SUM(IF(status_code = 'STATUS_CODE_ERROR', 1, 0)) AS error_count,\n"
+                + "       AVG(duration) AS avg_duration_ns,\n"
+                + "       PERCENTILE_APPROX(duration, 0.99) AS p99_duration_ns,\n"
+                + "       MAX(duration) AS max_duration_ns\n"
+                + "FROM otel.otel_traces\n"
+                + "WHERE timestamp BETWEEN FROM_UNIXTIME(:start) AND FROM_UNIXTIME(:end)\n"
+                + "  AND service_name = :serviceName";
+    }
+
+    static String buildServiceSummarySeriesSql() {
+        return "SELECT date_trunc(timestamp, 'MINUTE') AS bucket,\n"
+                + "       COUNT(*) AS span_count,\n"
+                + "       SUM(IF(status_code = 'STATUS_CODE_ERROR', 1, 0)) AS error_count,\n"
+                + "       AVG(duration) AS avg_duration_ns\n"
+                + "FROM otel.otel_traces\n"
+                + "WHERE timestamp BETWEEN FROM_UNIXTIME(:start) AND FROM_UNIXTIME(:end)\n"
+                + "  AND service_name = :serviceName\n"
+                + "GROUP BY bucket\n"
+                + "ORDER BY bucket";
     }
 
     static TopologyGraph toTopologyGraph(List<Map<String, Object>> nodeRows,
@@ -221,7 +274,8 @@ public class OtelTracesQueryService {
                     longValue(row.get("span_count")),
                     longValue(row.get("error_count")),
                     doubleValue(row.get("avg_duration_ns")),
-                    doubleValue(row.get("p99_duration_ns")));
+                    doubleValue(row.get("p99_duration_ns")),
+                    doubleValue(row.get("max_duration_ns")));
             nodes.put(node.serviceName(), node);
         }
         List<TopologyEdge> edges = new ArrayList<>();
@@ -233,8 +287,8 @@ public class OtelTracesQueryService {
                     longValue(row.get("error_count")));
             edges.add(edge);
             // graph 表(10 分钟 JOB 聚合)与 traces 表时间窗可能错位，补零指标节点保证边不悬空
-            nodes.computeIfAbsent(edge.caller(), name -> new TopologyNode(name, 0, 0, 0, 0));
-            nodes.computeIfAbsent(edge.callee(), name -> new TopologyNode(name, 0, 0, 0, 0));
+            nodes.computeIfAbsent(edge.caller(), name -> new TopologyNode(name, 0, 0, 0, 0, 0));
+            nodes.computeIfAbsent(edge.callee(), name -> new TopologyNode(name, 0, 0, 0, 0, 0));
         }
         return new TopologyGraph(List.copyOf(nodes.values()), edges);
     }
@@ -291,6 +345,23 @@ public class OtelTracesQueryService {
                 longValue(row.get("span_count")),
                 longValue(row.get("duration")),
                 stringValue(row.get("status")));
+    }
+
+    private static ServiceSummaryStats toServiceSummaryStats(Map<String, Object> row) {
+        return new ServiceSummaryStats(
+                longValue(row.get("span_count")),
+                longValue(row.get("error_count")),
+                doubleValue(row.get("avg_duration_ns")),
+                doubleValue(row.get("p99_duration_ns")),
+                doubleValue(row.get("max_duration_ns")));
+    }
+
+    private static ServiceSummaryPoint toServiceSummaryPoint(Map<String, Object> row) {
+        return new ServiceSummaryPoint(
+                stringValue(row.get("bucket")),
+                longValue(row.get("span_count")),
+                longValue(row.get("error_count")),
+                doubleValue(row.get("avg_duration_ns")));
     }
 
     private static SpanNode toSpanNode(Map<String, Object> row) {
@@ -377,7 +448,8 @@ public class OtelTracesQueryService {
                                long spanCount,
                                long errorCount,
                                double avgDurationNs,
-                               double p99DurationNs) {
+                               double p99DurationNs,
+                               double maxDurationNs) {
     }
 
     public record TopologyEdge(String caller,
@@ -387,6 +459,24 @@ public class OtelTracesQueryService {
     }
 
     public record TopologyGraph(List<TopologyNode> nodes, List<TopologyEdge> edges) {
+    }
+
+    public record ServiceSummaryStats(long spanCount,
+                                      long errorCount,
+                                      double avgDurationNs,
+                                      double p99DurationNs,
+                                      double maxDurationNs) {
+    }
+
+    public record ServiceSummaryPoint(String time,
+                                      long spanCount,
+                                      long errorCount,
+                                      double avgDurationNs) {
+    }
+
+    public record ServiceSummary(ServiceSummaryStats current,
+                                 ServiceSummaryStats previous,
+                                 List<ServiceSummaryPoint> series) {
     }
 
     public record SpanNode(String spanId,

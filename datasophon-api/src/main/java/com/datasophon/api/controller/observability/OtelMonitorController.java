@@ -90,6 +90,14 @@ public class OtelMonitorController extends ApiController {
         return Result.success(tracesQueryService.getTopology(clusterId, start, end));
     }
 
+    @GetMapping("traces/service-summary")
+    public Result traceServiceSummary(@RequestParam Integer clusterId,
+                                      @RequestParam long start,
+                                      @RequestParam long end,
+                                      @RequestParam String serviceName) {
+        return Result.success(tracesQueryService.getServiceSummary(clusterId, start, end, serviceName));
+    }
+
     @GetMapping("logs")
     public Result logs(@RequestParam Integer clusterId,
                        @RequestParam long start,

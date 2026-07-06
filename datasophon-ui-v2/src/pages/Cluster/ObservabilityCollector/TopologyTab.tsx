@@ -1,12 +1,68 @@
-import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
-import { Graph, type IElementEvent } from '@antv/g6';
-import { Alert, Button, DatePicker, Empty, Form, Space, Spin } from 'antd';
+import {
+  DownloadOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
+import { Circle } from '@antv/g';
+import {
+  type BaseEdgeStyleProps,
+  CubicHorizontal,
+  type ElementDatum,
+  ExtensionCategory,
+  type Fullscreen,
+  Graph,
+  type IElementEvent,
+  type NodeData,
+  register,
+  subStyleProps,
+} from '@antv/g6';
+import {
+  Alert,
+  Button,
+  Checkbox,
+  DatePicker,
+  Empty,
+  Form,
+  Input,
+  message,
+  Space,
+  Spin,
+} from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useEffect, useRef, useState } from 'react';
-
-import { type TopologyGraph, getTraceTopology } from './service';
-import { formatDuration } from './TraceDetailDrawer';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useObservabilityStyles } from './observabilityStyles';
+import ServiceDetailDrawer from './ServiceDetailDrawer';
+import { getTraceTopology, type TopologyGraph } from './service';
+import { serviceIconFor } from './serviceIcon';
+import { formatDuration } from './TraceDetailDrawer';
+
+// 边上流动的小圆点动效,参考 G6 官方示例 animation/persistence#fly-marker:
+// 圆点的 offsetPath 绑定到边的 key shape(路径),动画 offsetDistance 0→1 使其沿边循环移动。
+class FlyMarkerCubic extends CubicHorizontal {
+  private getMarkerStyle(attributes: BaseEdgeStyleProps) {
+    return {
+      r: 3,
+      fill: '#5b8ff9',
+      offsetPath: this.shapeMap.key,
+      ...subStyleProps(attributes, 'marker'),
+    };
+  }
+
+  onCreate() {
+    const marker = this.upsert(
+      'marker',
+      Circle,
+      this.getMarkerStyle(this.attributes),
+      this,
+    );
+    marker?.animate([{ offsetDistance: 0 }, { offsetDistance: 1 }], {
+      duration: 2500,
+      iterations: Infinity,
+    });
+  }
+}
+
+register(ExtensionCategory.EDGE, 'fly-marker-cubic', FlyMarkerCubic);
 
 interface TopologyTabProps {
   clusterId: number;
@@ -15,6 +71,12 @@ interface TopologyTabProps {
 
 interface TopologyFilters {
   timeRange: [Dayjs, Dayjs];
+}
+
+interface ViewFilters {
+  onlyError: boolean;
+  slowTop5: boolean;
+  showAvg: boolean;
 }
 
 const { RangePicker } = DatePicker;
@@ -27,25 +89,57 @@ function toSeconds(value: Dayjs) {
   return Math.floor(value.valueOf() / 1000);
 }
 
-export function toGraphData(topology: TopologyGraph) {
-  const nodes = topology.nodes.map((node) => {
+interface ToGraphDataOptions {
+  showAvg?: boolean;
+  onlyError?: boolean;
+  slowTop5Ids?: Set<string>;
+  highlightId?: string;
+}
+
+export function toGraphData(
+  topology: TopologyGraph,
+  options: ToGraphDataOptions = {},
+) {
+  const {
+    showAvg = true,
+    onlyError = false,
+    slowTop5Ids,
+    highlightId,
+  } = options;
+  const filteredNodes = onlyError
+    ? topology.nodes.filter((node) => node.errorCount > 0)
+    : topology.nodes;
+  const nodeIds = new Set(filteredNodes.map((node) => node.serviceName));
+  const filteredEdges = onlyError
+    ? topology.edges.filter(
+        (edge) => nodeIds.has(edge.caller) && nodeIds.has(edge.callee),
+      )
+    : topology.edges;
+
+  const nodes = filteredNodes.map((node) => {
     const errorRate = node.spanCount > 0 ? node.errorCount / node.spanCount : 0;
-    const metrics = [
-      `p99 ${formatDuration(node.p99DurationNs)}`,
-      `avg ${formatDuration(node.avgDurationNs)}`,
-    ];
+    const metrics = [`p99 ${formatDuration(node.p99DurationNs)}`];
+    if (showAvg) {
+      metrics.push(`avg ${formatDuration(node.avgDurationNs)}`);
+    }
     if (errorRate > 0) {
       metrics.push(`err ${(errorRate * 100).toFixed(1)}%`);
     }
+    const icon = serviceIconFor(node.serviceName);
     return {
       id: node.serviceName,
       data: {
         errorRate,
         metricsText: metrics.join(' · '),
+        dimmed: Boolean(slowTop5Ids) && !slowTop5Ids?.has(node.serviceName),
+        highlighted: node.serviceName === highlightId,
+        iconSrc: icon.src,
+        iconWidth: icon.width,
+        iconHeight: icon.height,
       },
     };
   });
-  const edges = topology.edges.map((edge) => {
+  const edges = filteredEdges.map((edge) => {
     const errorRate = edge.callCount > 0 ? edge.errorCount / edge.callCount : 0;
     return {
       id: `${edge.caller}->${edge.callee}`,
@@ -74,10 +168,25 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
   });
   const [topology, setTopology] = useState<TopologyGraph>();
   const [loading, setLoading] = useState(false);
+  const [viewFilters, setViewFilters] = useState<ViewFilters>({
+    onlyError: false,
+    slowTop5: false,
+    showAvg: true,
+  });
+  const [highlightId, setHighlightId] = useState<string>();
+  const [selectedService, setSelectedService] = useState<string>();
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<Graph>(undefined);
-  const onShowTracesRef = useRef(onShowTraces);
-  onShowTracesRef.current = onShowTraces;
+
+  const slowTop5Ids = useMemo(() => {
+    if (!viewFilters.slowTop5 || !topology) return undefined;
+    return new Set(
+      [...topology.nodes]
+        .sort((a, b) => b.p99DurationNs - a.p99DurationNs)
+        .slice(0, 5)
+        .map((node) => node.serviceName),
+    );
+  }, [topology, viewFilters.slowTop5]);
 
   useEffect(() => {
     const [start, end] = filters.timeRange;
@@ -97,7 +206,12 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
       graphRef.current = undefined;
       return;
     }
-    const data = toGraphData(topology);
+    const data = toGraphData(topology, {
+      showAvg: viewFilters.showAvg,
+      onlyError: viewFilters.onlyError,
+      slowTop5Ids,
+      highlightId,
+    });
     if (graphRef.current) {
       graphRef.current.setData(data);
       graphRef.current.render();
@@ -110,23 +224,48 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
       padding: 24,
       data,
       node: {
-        type: 'rect',
+        type: 'image',
         style: {
-          size: [230, 56],
-          radius: 8,
-          fill: '#ffffff',
-          lineWidth: 1.5,
-          stroke: (d) =>
-            ((d.data?.errorRate as number) ?? 0) > 0 ? '#ff4d4f' : '#5b8ff9',
-          labelText: (d) => `${d.id}\n${d.data?.metricsText ?? ''}`,
-          labelPlacement: 'center',
-          labelFontSize: 12,
-          labelLineHeight: 18,
+          size: (d: NodeData) => [
+            ((d.data?.iconWidth as number) ?? 18) * 2,
+            ((d.data?.iconHeight as number) ?? 18) * 2,
+          ],
+          src: (d: NodeData) => (d.data?.iconSrc as string) ?? '',
+          opacity: (d) => (d.data?.dimmed ? 0.35 : 1),
           cursor: 'pointer',
+          labelText: (d) => String(d.id),
+          labelFontSize: 12,
+          badgeFontSize: 9,
+          badgePadding: [1, 4],
+          badges: (d) => {
+            const list: Array<{
+              text: string;
+              placement: 'top-right' | 'right-bottom';
+              backgroundFill: string;
+              fill: string;
+            }> = [];
+            if (d.data?.highlighted) {
+              list.push({
+                text: '★',
+                placement: 'top-right',
+                backgroundFill: '#faad14',
+                fill: '#ffffff',
+              });
+            }
+            if (((d.data?.errorRate as number) ?? 0) > 0) {
+              list.push({
+                text: '!',
+                placement: 'right-bottom',
+                backgroundFill: '#ff4d4f',
+                fill: '#ffffff',
+              });
+            }
+            return list;
+          },
         },
       },
       edge: {
-        type: 'cubic-horizontal',
+        type: 'fly-marker-cubic',
         style: {
           endArrow: true,
           lineWidth: 1.5,
@@ -151,16 +290,72 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
         'drag-element',
         { type: 'hover-activate', degree: 1 },
       ],
+      plugins: [
+        { type: 'fullscreen' },
+        {
+          type: 'tooltip',
+          trigger: 'hover',
+          getContent: async (_event: IElementEvent, items: ElementDatum[]) => {
+            const item = items[0];
+            const data = item && 'data' in item ? item.data : undefined;
+            if (!data || !('iconSrc' in data)) {
+              return '';
+            }
+            const container = document.createElement('div');
+            container.style.fontSize = '12px';
+            container.style.lineHeight = '1.6';
+            const name = document.createElement('div');
+            name.style.fontWeight = '600';
+            name.textContent = String(item?.id ?? '');
+            const metrics = document.createElement('div');
+            metrics.textContent = String(
+              (data as { metricsText?: string }).metricsText ?? '',
+            );
+            container.append(name, metrics);
+            return container;
+          },
+        },
+        {
+          type: 'toolbar',
+          position: 'top-right',
+          getItems: () => [
+            { id: 'zoom-in', value: 'zoom-in', title: '放大' },
+            { id: 'zoom-out', value: 'zoom-out', title: '缩小' },
+            { id: 'auto-fit', value: 'auto-fit', title: '适应视图' },
+            { id: 'request-fullscreen', value: 'fullscreen', title: '全屏' },
+          ],
+          onClick: (value: string) => {
+            const g = graphRef.current;
+            if (!g) return;
+            switch (value) {
+              case 'zoom-in':
+                g.zoomBy(1.2);
+                break;
+              case 'zoom-out':
+                g.zoomBy(1 / 1.2);
+                break;
+              case 'auto-fit':
+                g.fitView();
+                break;
+              case 'fullscreen':
+                g.getPluginInstance<Fullscreen>('fullscreen').request();
+                break;
+              default:
+                break;
+            }
+          },
+        },
+      ],
     });
     graph.on('node:click', (event: IElementEvent) => {
       const id = event.target?.id;
       if (typeof id === 'string') {
-        onShowTracesRef.current(id);
+        setSelectedService(id);
       }
     });
     graph.render();
     graphRef.current = graph;
-  }, [topology]);
+  }, [topology, viewFilters, slowTop5Ids, highlightId]);
 
   useEffect(() => {
     return () => {
@@ -175,6 +370,39 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
     setFilters({ timeRange: nextRange });
   };
 
+  const handleSearch = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setHighlightId(undefined);
+      return;
+    }
+    const match = topology?.nodes.find((node) =>
+      node.serviceName.toLowerCase().includes(trimmed.toLowerCase()),
+    );
+    if (!match) {
+      message.warning(`未找到服务 "${trimmed}"`);
+      return;
+    }
+    setHighlightId(match.serviceName);
+    graphRef.current?.focusElement(match.serviceName);
+  };
+
+  const handleExport = async () => {
+    const graph = graphRef.current;
+    if (!graph) {
+      message.warning('拓扑图尚未加载');
+      return;
+    }
+    const dataURL = await graph.toDataURL({
+      type: 'image/png',
+      encoderOptions: 1,
+    });
+    const link = document.createElement('a');
+    link.href = dataURL;
+    link.download = `topology-${dayjs().format('YYYYMMDDHHmmss')}.png`;
+    link.click();
+  };
+
   const hasNodes = (topology?.nodes.length ?? 0) > 0;
 
   return (
@@ -186,7 +414,11 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
         onFinish={setFilters}
         className={styles.filterBar}
       >
-        <Form.Item label="Time range" name="timeRange" style={{ marginBottom: 0 }}>
+        <Form.Item
+          label="Time range"
+          name="timeRange"
+          style={{ marginBottom: 0 }}
+        >
           <RangePicker showTime allowClear={false} />
         </Form.Item>
         <Form.Item style={{ marginBottom: 0 }}>
@@ -212,7 +444,12 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
         <Button size="small" onClick={() => setPreset(15, 'minute')}>
           Last 15m
         </Button>
-        <Button size="small" type="primary" ghost onClick={() => setPreset(1, 'hour')}>
+        <Button
+          size="small"
+          type="primary"
+          ghost
+          onClick={() => setPreset(1, 'hour')}
+        >
           Last 1h
         </Button>
         <Button size="small" onClick={() => setPreset(6, 'hour')}>
@@ -220,6 +457,41 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
         </Button>
         <Button size="small" onClick={() => setPreset(24, 'hour')}>
           Last 24h
+        </Button>
+      </div>
+      <div className={styles.quickBar}>
+        <Checkbox
+          checked={viewFilters.onlyError}
+          onChange={(e) =>
+            setViewFilters((prev) => ({ ...prev, onlyError: e.target.checked }))
+          }
+        >
+          仅显示异常
+        </Checkbox>
+        <Checkbox
+          checked={viewFilters.slowTop5}
+          onChange={(e) =>
+            setViewFilters((prev) => ({ ...prev, slowTop5: e.target.checked }))
+          }
+        >
+          响应慢 Top5
+        </Checkbox>
+        <Checkbox
+          checked={viewFilters.showAvg}
+          onChange={(e) =>
+            setViewFilters((prev) => ({ ...prev, showAvg: e.target.checked }))
+          }
+        >
+          显示平均耗时
+        </Checkbox>
+        <Input.Search
+          placeholder="搜索服务名"
+          allowClear
+          style={{ width: 200 }}
+          onSearch={handleSearch}
+        />
+        <Button size="small" icon={<DownloadOutlined />} onClick={handleExport}>
+          导出
         </Button>
       </div>
       <Spin spinning={loading}>
@@ -242,6 +514,17 @@ const TopologyTab: React.FC<TopologyTabProps> = ({
           </>
         )}
       </Spin>
+      <ServiceDetailDrawer
+        clusterId={clusterId}
+        serviceName={selectedService}
+        open={Boolean(selectedService)}
+        timeRange={filters.timeRange}
+        onClose={() => setSelectedService(undefined)}
+        onShowTraces={(serviceName) => {
+          onShowTraces(serviceName);
+          setSelectedService(undefined);
+        }}
+      />
     </div>
   );
 };

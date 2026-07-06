@@ -58,7 +58,8 @@ class OtelMonitorControllerTest {
     void traceTopologyDelegatesToQueryService() {
         OtelTracesQueryService tracesQueryService = mock(OtelTracesQueryService.class);
         OtelTracesQueryService.TopologyGraph graph = new OtelTracesQueryService.TopologyGraph(
-                List.of(new OtelTracesQueryService.TopologyNode("datasophon-api", 10L, 0L, 1_000_000.0, 2_000_000.0)),
+                List.of(new OtelTracesQueryService.TopologyNode(
+                        "datasophon-api", 10L, 0L, 1_000_000.0, 2_000_000.0, 3_000_000.0)),
                 List.of());
         when(tracesQueryService.getTopology(7, 100L, 200L)).thenReturn(graph);
 
@@ -69,5 +70,23 @@ class OtelMonitorControllerTest {
         assertThat(result.getCode()).isEqualTo(200);
         assertThat(result.getData()).isEqualTo(graph);
         verify(tracesQueryService).getTopology(7, 100L, 200L);
+    }
+
+    @Test
+    void traceServiceSummaryDelegatesToQueryService() {
+        OtelTracesQueryService tracesQueryService = mock(OtelTracesQueryService.class);
+        OtelTracesQueryService.ServiceSummary summary = new OtelTracesQueryService.ServiceSummary(
+                new OtelTracesQueryService.ServiceSummaryStats(10L, 1L, 1_000_000.0, 2_000_000.0, 3_000_000.0),
+                new OtelTracesQueryService.ServiceSummaryStats(8L, 0L, 900_000.0, 1_800_000.0, 2_500_000.0),
+                List.of());
+        when(tracesQueryService.getServiceSummary(7, 100L, 200L, "datasophon-api")).thenReturn(summary);
+
+        OtelMonitorController controller = new OtelMonitorController(
+                mock(OtelMonitorService.class), tracesQueryService, mock(OtelLogsQueryService.class));
+        Result result = controller.traceServiceSummary(7, 100L, 200L, "datasophon-api");
+
+        assertThat(result.getCode()).isEqualTo(200);
+        assertThat(result.getData()).isEqualTo(summary);
+        verify(tracesQueryService).getServiceSummary(7, 100L, 200L, "datasophon-api");
     }
 }

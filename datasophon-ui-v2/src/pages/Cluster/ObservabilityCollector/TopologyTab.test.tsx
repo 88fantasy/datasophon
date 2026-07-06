@@ -1,8 +1,13 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
+import { getServiceSummary, getTraceTopology } from './service';
 import TopologyTab, { toGraphData } from './TopologyTab';
-import { getTraceTopology } from './service';
 
 const { graphInstances } = vi.hoisted(() => ({
   graphInstances: [] as Array<{
@@ -11,6 +16,10 @@ const { graphInstances } = vi.hoisted(() => ({
 }));
 
 vi.mock('@antv/g6', () => ({
+  CubicHorizontal: class {},
+  ExtensionCategory: { EDGE: 'edge' },
+  register: () => {},
+  subStyleProps: () => ({}),
   Graph: class {
     handlers: Record<string, (event: unknown) => void> = {};
 
@@ -32,6 +41,7 @@ vi.mock('@antv/g6', () => ({
 
 vi.mock('./service', () => ({
   getTraceTopology: vi.fn(),
+  getServiceSummary: vi.fn(),
   getTraceDetail: vi.fn(),
   listLogs: vi.fn(),
 }));
@@ -46,6 +56,7 @@ describe('toGraphData', () => {
           errorCount: 5,
           avgDurationNs: 1_500_000,
           p99DurationNs: 9_000_000,
+          maxDurationNs: 20_000_000,
         },
       ],
       edges: [],
@@ -95,6 +106,7 @@ describe('toGraphData', () => {
           errorCount: 0,
           avgDurationNs: 0,
           p99DurationNs: 0,
+          maxDurationNs: 0,
         },
       ],
       edges: [],
@@ -108,6 +120,7 @@ describe('TopologyTab', () => {
   beforeEach(() => {
     graphInstances.length = 0;
     vi.mocked(getTraceTopology).mockReset();
+    vi.mocked(getServiceSummary).mockReset();
   });
 
   it('shows the empty hint mentioning the Doris graph job when no data', async () => {
@@ -119,14 +132,12 @@ describe('TopologyTab', () => {
     render(<TopologyTab clusterId={7} onShowTraces={vi.fn()} />);
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/otel_traces_graph_job/),
-      ).toBeTruthy();
+      expect(screen.getByText(/otel_traces_graph_job/)).toBeTruthy();
     });
     expect(graphInstances).toHaveLength(0);
   });
 
-  it('creates a graph and forwards node clicks to onShowTraces', async () => {
+  it('creates a graph and opens the service detail drawer on node click', async () => {
     vi.mocked(getTraceTopology).mockResolvedValue({
       code: 200,
       data: {
@@ -137,9 +148,30 @@ describe('TopologyTab', () => {
             errorCount: 0,
             avgDurationNs: 1_000_000,
             p99DurationNs: 2_000_000,
+            maxDurationNs: 3_000_000,
           },
         ],
         edges: [],
+      },
+    });
+    vi.mocked(getServiceSummary).mockResolvedValue({
+      code: 200,
+      data: {
+        current: {
+          spanCount: 10,
+          errorCount: 0,
+          avgDurationNs: 1_000_000,
+          p99DurationNs: 2_000_000,
+          maxDurationNs: 3_000_000,
+        },
+        previous: {
+          spanCount: 8,
+          errorCount: 0,
+          avgDurationNs: 900_000,
+          p99DurationNs: 1_800_000,
+          maxDurationNs: 2_500_000,
+        },
+        series: [],
       },
     });
     const onShowTraces = vi.fn();
@@ -149,9 +181,16 @@ describe('TopologyTab', () => {
     await waitFor(() => {
       expect(graphInstances).toHaveLength(1);
     });
-    graphInstances[0].handlers['node:click']({
-      target: { id: 'datasophon-api' },
+    act(() => {
+      graphInstances[0].handlers['node:click']({
+        target: { id: 'datasophon-api' },
+      });
     });
+
+    await waitFor(() => {
+      expect(screen.getByText('查看 Traces')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByText('查看 Traces'));
     expect(onShowTraces).toHaveBeenCalledWith('datasophon-api');
   });
 });

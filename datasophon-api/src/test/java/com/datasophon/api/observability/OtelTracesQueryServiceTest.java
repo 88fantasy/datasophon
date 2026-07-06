@@ -99,15 +99,38 @@ class OtelTracesQueryServiceTest {
         assertThat(sql).contains("otel.otel_traces");
         assertThat(sql).contains("PERCENTILE_APPROX(duration, 0.99) AS p99_duration_ns");
         assertThat(sql).contains("AVG(duration) AS avg_duration_ns");
+        assertThat(sql).contains("MAX(duration) AS max_duration_ns");
         assertThat(sql).contains("timestamp BETWEEN FROM_UNIXTIME(:start) AND FROM_UNIXTIME(:end)");
         assertThat(sql).contains("GROUP BY service_name");
+    }
+
+    @Test
+    void serviceSummaryStatsSql_filtersByServiceNameWithoutGroupBy() {
+        String sql = OtelTracesQueryService.buildServiceSummaryStatsSql();
+
+        assertThat(sql).contains("otel.otel_traces");
+        assertThat(sql).contains("service_name = :serviceName");
+        assertThat(sql).contains("MAX(duration) AS max_duration_ns");
+        assertThat(sql).contains("PERCENTILE_APPROX(duration, 0.99) AS p99_duration_ns");
+        assertThat(sql).doesNotContain("GROUP BY");
+    }
+
+    @Test
+    void serviceSummarySeriesSql_bucketsByMinuteForOneService() {
+        String sql = OtelTracesQueryService.buildServiceSummarySeriesSql();
+
+        assertThat(sql).contains("date_trunc(timestamp, 'MINUTE') AS bucket");
+        assertThat(sql).contains("service_name = :serviceName");
+        assertThat(sql).contains("GROUP BY bucket");
+        assertThat(sql).contains("ORDER BY bucket");
     }
 
     @Test
     void toTopologyGraph_mapsRowsAndBackfillsMissingEdgeEndpoints() {
         List<Map<String, Object>> nodeRows = List.of(
                 Map.of("service_name", "datasophon-api", "span_count", 100L, "error_count", 2L,
-                        "avg_duration_ns", 1_500_000.0, "p99_duration_ns", 9_000_000.0));
+                        "avg_duration_ns", 1_500_000.0, "p99_duration_ns", 9_000_000.0,
+                        "max_duration_ns", 20_000_000.0));
         List<Map<String, Object>> edgeRows = List.of(
                 Map.of("caller_service_name", "datasophon-api", "callee_service_name", "datasophon-worker",
                         "call_count", 40L, "error_count", 1L));
@@ -118,8 +141,9 @@ class OtelTracesQueryServiceTest {
         assertThat(graph.edges()).containsExactly(
                 new OtelTracesQueryService.TopologyEdge("datasophon-api", "datasophon-worker", 40L, 1L));
         assertThat(graph.nodes()).containsExactly(
-                new OtelTracesQueryService.TopologyNode("datasophon-api", 100L, 2L, 1_500_000.0, 9_000_000.0),
-                new OtelTracesQueryService.TopologyNode("datasophon-worker", 0L, 0L, 0D, 0D));
+                new OtelTracesQueryService.TopologyNode(
+                        "datasophon-api", 100L, 2L, 1_500_000.0, 9_000_000.0, 20_000_000.0),
+                new OtelTracesQueryService.TopologyNode("datasophon-worker", 0L, 0L, 0D, 0D, 0D));
     }
 
     @Test
