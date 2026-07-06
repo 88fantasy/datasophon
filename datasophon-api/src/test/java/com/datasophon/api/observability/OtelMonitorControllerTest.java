@@ -36,21 +36,57 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class OtelMonitorControllerTest {
-    
+
     @Test
     void returnsCollectedNodeMetricsInStandardResult() {
         OtelMonitorService service = mock(OtelMonitorService.class);
         List<NodeOtelMetrics> metrics = List.of(
                 new NodeOtelMetrics("worker-1", true, null, new OtelSelfMetrics(1, 10, 20, 0, 0, 0)));
         when(service.collectAll(7)).thenReturn(metrics);
-        
+
         OtelMonitorController controller = new OtelMonitorController(
                 service, mock(OtelTracesQueryService.class), mock(OtelLogsQueryService.class));
         Result result = controller.monitor(7);
-        
+
         assertThat(controller).isInstanceOf(ApiController.class);
         assertThat(result.getCode()).isEqualTo(200);
         assertThat(result.getData()).isEqualTo(metrics);
         verify(service).collectAll(7);
+    }
+
+    @Test
+    void traceTopologyDelegatesToQueryService() {
+        OtelTracesQueryService tracesQueryService = mock(OtelTracesQueryService.class);
+        OtelTracesQueryService.TopologyGraph graph = new OtelTracesQueryService.TopologyGraph(
+                List.of(new OtelTracesQueryService.TopologyNode(
+                        "datasophon-api", 10L, 0L, 1_000_000.0, 2_000_000.0, 3_000_000.0, false, "")),
+                List.of());
+        when(tracesQueryService.getTopology(7, 100L, 200L)).thenReturn(graph);
+
+        OtelMonitorController controller = new OtelMonitorController(
+                mock(OtelMonitorService.class), tracesQueryService, mock(OtelLogsQueryService.class));
+        Result result = controller.traceTopology(7, 100L, 200L);
+
+        assertThat(result.getCode()).isEqualTo(200);
+        assertThat(result.getData()).isEqualTo(graph);
+        verify(tracesQueryService).getTopology(7, 100L, 200L);
+    }
+
+    @Test
+    void traceServiceSummaryDelegatesToQueryService() {
+        OtelTracesQueryService tracesQueryService = mock(OtelTracesQueryService.class);
+        OtelTracesQueryService.ServiceSummary summary = new OtelTracesQueryService.ServiceSummary(
+                new OtelTracesQueryService.ServiceSummaryStats(10L, 1L, 1_000_000.0, 2_000_000.0, 3_000_000.0),
+                new OtelTracesQueryService.ServiceSummaryStats(8L, 0L, 900_000.0, 1_800_000.0, 2_500_000.0),
+                List.of());
+        when(tracesQueryService.getServiceSummary(7, 100L, 200L, "datasophon-api")).thenReturn(summary);
+
+        OtelMonitorController controller = new OtelMonitorController(
+                mock(OtelMonitorService.class), tracesQueryService, mock(OtelLogsQueryService.class));
+        Result result = controller.traceServiceSummary(7, 100L, 200L, "datasophon-api");
+
+        assertThat(result.getCode()).isEqualTo(200);
+        assertThat(result.getData()).isEqualTo(summary);
+        verify(tracesQueryService).getServiceSummary(7, 100L, 200L, "datasophon-api");
     }
 }

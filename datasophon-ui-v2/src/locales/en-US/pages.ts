@@ -28,6 +28,7 @@ export default {
   'pages.observabilityCollector.title': 'Collector Console',
   'pages.observabilityCollector.config': 'Configuration',
   'pages.observabilityCollector.monitor': 'Monitoring',
+  'pages.observabilityCollector.topology': 'Topology',
   'pages.observabilityCollector.traces': 'Traces',
   'pages.observabilityCollector.logs': 'Logs',
   'pages.observabilityCollector.timeRange': 'Time range',

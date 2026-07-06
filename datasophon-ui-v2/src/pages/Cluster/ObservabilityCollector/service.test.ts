@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getCollectorConfig,
   getCollectorMonitor,
+  getTraceTopology,
   pushCollectorConfig,
 } from './service';
 
@@ -37,6 +38,24 @@ describe('ObservabilityCollector service', () => {
       params: { clusterId: 7, hostname: 'worker-1' },
       data: { batchSize: '4096' },
     });
+  });
+
+  it('loads trace topology with the time window as query params', async () => {
+    vi.mocked(request).mockResolvedValue({
+      code: 200,
+      data: { nodes: [], edges: [] },
+    });
+
+    await getTraceTopology(7, 100, 200);
+
+    expect(request).toHaveBeenCalledWith(
+      '/observability/otelcol/traces/topology',
+      {
+        baseURL: '/ddh/api',
+        method: 'GET',
+        params: { clusterId: 7, start: 100, end: 200 },
+      },
+    );
   });
 
   it('loads node metrics independently', async () => {

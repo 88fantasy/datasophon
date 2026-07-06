@@ -77,6 +77,50 @@ export interface LogRow {
   resourceAttributes: Record<string, unknown>;
 }
 
+export interface TopologyNode {
+  serviceName: string;
+  spanCount: number;
+  errorCount: number;
+  avgDurationNs: number;
+  p99DurationNs: number;
+  maxDurationNs: number;
+  external?: boolean;
+  dbSystem?: string;
+}
+
+export interface TopologyEdge {
+  caller: string;
+  callee: string;
+  callCount: number;
+  errorCount: number;
+}
+
+export interface TopologyGraph {
+  nodes: TopologyNode[];
+  edges: TopologyEdge[];
+}
+
+export interface ServiceSummaryStats {
+  spanCount: number;
+  errorCount: number;
+  avgDurationNs: number;
+  p99DurationNs: number;
+  maxDurationNs: number;
+}
+
+export interface ServiceSummaryPoint {
+  time: string;
+  spanCount: number;
+  errorCount: number;
+  avgDurationNs: number;
+}
+
+export interface ServiceSummary {
+  current: ServiceSummaryStats;
+  previous: ServiceSummaryStats;
+  series: ServiceSummaryPoint[];
+}
+
 export interface TraceQueryParams {
   clusterId: number;
   start: number;
@@ -171,6 +215,37 @@ export function listTraceServices(
     method: 'GET',
     params: { clusterId, start, end },
   });
+}
+
+export function getTraceTopology(
+  clusterId: number,
+  start: number,
+  end: number,
+) {
+  return request<ApiResult<TopologyGraph>>(
+    '/observability/otelcol/traces/topology',
+    {
+      ...legacyRequestOptions,
+      method: 'GET',
+      params: { clusterId, start, end },
+    },
+  );
+}
+
+export function getServiceSummary(
+  clusterId: number,
+  start: number,
+  end: number,
+  serviceName: string,
+) {
+  return request<ApiResult<ServiceSummary>>(
+    '/observability/otelcol/traces/service-summary',
+    {
+      ...legacyRequestOptions,
+      method: 'GET',
+      params: { clusterId, start, end, serviceName },
+    },
+  );
 }
 
 export function listLogs(params: LogQueryParams) {

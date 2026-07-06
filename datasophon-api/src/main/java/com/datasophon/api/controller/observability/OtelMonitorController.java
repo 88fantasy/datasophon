@@ -37,11 +37,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("observability/otelcol")
 public class OtelMonitorController extends ApiController {
-    
+
     private final OtelMonitorService monitorService;
     private final OtelTracesQueryService tracesQueryService;
     private final OtelLogsQueryService logsQueryService;
-    
+
     public OtelMonitorController(OtelMonitorService monitorService,
                                  OtelTracesQueryService tracesQueryService,
                                  OtelLogsQueryService logsQueryService) {
@@ -49,12 +49,12 @@ public class OtelMonitorController extends ApiController {
         this.tracesQueryService = tracesQueryService;
         this.logsQueryService = logsQueryService;
     }
-    
+
     @GetMapping("monitor")
     public Result monitor(@RequestParam Integer clusterId) {
         return Result.success(monitorService.collectAll(clusterId));
     }
-    
+
     @GetMapping("traces")
     public Result traces(@RequestParam Integer clusterId,
                          @RequestParam long start,
@@ -69,20 +69,35 @@ public class OtelMonitorController extends ApiController {
                 clusterId, start, end, serviceName, status, spanName, traceId, page, pageSize);
         return Result.success(result.total(), result.data());
     }
-    
+
     @GetMapping("traces/detail")
     public Result traceDetail(@RequestParam Integer clusterId,
                               @RequestParam String traceId) {
         return Result.success(tracesQueryService.getTrace(clusterId, traceId));
     }
-    
+
     @GetMapping("traces/services")
     public Result traceServices(@RequestParam Integer clusterId,
                                 @RequestParam long start,
                                 @RequestParam long end) {
         return Result.success(tracesQueryService.listServices(clusterId, start, end));
     }
-    
+
+    @GetMapping("traces/topology")
+    public Result traceTopology(@RequestParam Integer clusterId,
+                                @RequestParam long start,
+                                @RequestParam long end) {
+        return Result.success(tracesQueryService.getTopology(clusterId, start, end));
+    }
+
+    @GetMapping("traces/service-summary")
+    public Result traceServiceSummary(@RequestParam Integer clusterId,
+                                      @RequestParam long start,
+                                      @RequestParam long end,
+                                      @RequestParam String serviceName) {
+        return Result.success(tracesQueryService.getServiceSummary(clusterId, start, end, serviceName));
+    }
+
     @GetMapping("logs")
     public Result logs(@RequestParam Integer clusterId,
                        @RequestParam long start,
