@@ -20,8 +20,10 @@ export interface CollectorSelfMetrics {
   queueCapacity: number;
   sentTotal: number;
   sendFailedTotal: number;
+  receiverFailedTotal: number;
   refusedTotal: number;
   processorDroppedTotal: number;
+  processUptime: number;
 }
 
 export interface CollectorNodeMetrics {

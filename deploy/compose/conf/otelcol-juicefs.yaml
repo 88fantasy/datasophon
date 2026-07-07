@@ -1,4 +1,4 @@
-# OTel Collector 配置：采集 JuiceFS + Doris Prometheus 指标 → Doris，并接收 api/worker OTLP traces + logs
+# OTel Collector 配置：采集 Doris Prometheus 指标 → Doris，并接收 api/worker OTLP traces + logs
 #
 # 用于 deploy/compose/docker-compose.observability.yml 的本地链路验证。
 # 与生产 otelcol.ftl 的区别：
@@ -7,12 +7,11 @@
 #   - replication_num: 1（单 BE 必须；生产多 BE 时默认 3）
 #   - 含 debug exporter（便于排障）
 #
-# JuiceFS 指标端点：client 进程 `--metrics=0.0.0.0:9567` 暴露 /metrics（生产 OtelScrapeConfigBuilder
-# 的默认路径，无需 PATH_OVERRIDES）。job_name 固定为 "JuicefsMount"，与生产角色名一致，使落库后的
-# service_name 列与 docs/monitoring/juicefs-otel-verification.md 的验证 SQL（WHERE service_name='JuicefsMount'）
-# 保持一致，无需切换 SQL。
+# JuiceFS / ZooKeeper 的 Prometheus scrape 采集链路已在生产验证通过（生产 OtelScrapeConfigBuilder
+# 按角色 DDL 通用生成 scrape job，见 docs/monitoring/juicefs-otel-verification.md、
+# docs/monitoring/zookeeper-otel-verification.md），本沙箱不再单独跑 obs-juicefs/obs-zookeeper
+# 容器，故已移除 prometheus/juicefs、prometheus/zookeeper 这两个 receiver。
 # Doris FE 指标端点：:8030/metrics；Doris BE 指标端点：:8040/metrics
-# 端点验证：curl http://localhost:9567/metrics | head
 
 extensions:
   health_check:
@@ -27,46 +26,19 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
-  prometheus/juicefs:
+  # Collector self-metrics：用于 Collector 监控看板趋势数据验证。
+  # 生产模板 otelcol.ftl 已包含 prometheus/self；本地 compose 也需要抓取 :8888，
+  # 否则 Doris 中不会出现 otelcol_* 指标。
+  prometheus/self:
     config:
       scrape_configs:
-        - job_name: JuicefsMount
-          scrape_interval: 15s
-          metrics_path: /metrics
-          scheme: http
-          static_configs:
-            - targets: ["obs-juicefs:9567"]
-              labels:
-                instance: obs-juicefs
-
-  # ZooKeeper 指标端点：PrometheusMetricsProvider 暴露 :7000/metrics。job_name 固定为 "ZkServer"，
-  # 与生产 OtelScrapeConfigBuilder 的角色名一致，验证 docs/monitoring/zookeeper-otel-verification.md。
-  #
-  # metric_relabel_configs 的 keep 白名单仅沙箱验证使用（生产 OtelScrapeConfigBuilder 不做任何过滤，
-  # 抓取整份 /metrics）：ZK 单节点/低负载下有 ~45 个内部 processor 队列类 Summary 指标（如
-  # prep_processor_queue_size、proposal_latency 等，均带 quantile 但从未被观测到）永久输出
-  # `{quantile="0.5"} NaN`，导致 dorisexporter 对 otel_metrics_summary 整批 Stream Load 因
-  # `json: unsupported value: NaN` 失败（已在本沙箱实测确认 summary 表 0 行，即使 gauge/sum 表已有
-  # 数千行）。白名单只保留本次 23 个面板实际用到的指标，绕开这些不相关指标的 NaN 干扰，
-  # 便于验证 Z16/Z19/Z20/Z22/Z23 的 summary 表查询 SQL 本身是否正确。
-  prometheus/zookeeper:
-    config:
-      scrape_configs:
-        - job_name: ZkServer
+        - job_name: OtelCollector
           scrape_interval: 15s
           metrics_path: /metrics
           static_configs:
-            - targets: ["obs-zookeeper:7000"]
+            - targets: ["127.0.0.1:8888"]
               labels:
-                instance: obs-zookeeper
-          metric_relabel_configs:
-            - source_labels: [__name__]
-              # 注:election_time/jvm_pause_time_ms 本沙箱下永久 NaN(单节点无选举、无可测量 GC 停顿),
-              # 暂从白名单剔除以隔离验证 fsynctime/snapshottime/jvm_gc_collection_seconds 三个可产生
-              # 真实非 NaN 值的 summary 指标;两者的查询 SQL 逻辑与其余三个完全一致(同一 buildRangeFieldRateSql),
-              # 无法在本沙箱端到端验证不代表实现有问题。
-              regex: '(quorum_size|leader_uptime|jvm_threads_current|jvm_threads_deadlocked|num_alive_connections|open_file_descriptor_count|outstanding_requests|max_latency|avg_latency|min_latency|global_sessions|local_sessions|znode_count|ephemerals_count|approximate_data_size|watch_count|packets_received|packets_sent|connection_rejected|connection_drop_count|unrecoverable_error_count|digest_mismatches_count|learners|synced_observers|commit_count|snap_count|proposal_count|fsynctime(_count|_sum)?|snapshottime(_count|_sum)?|jvm_memory_pool_bytes_used|jvm_gc_collection_seconds(_count|_sum)?)'
-              action: keep
+                instance: obs-otelcol
 
   # Doris FE + BE Prometheus 指标采集。
   # obs-doris-fe/be 既充当存储 Doris 又充当被监控 Doris（沙箱一机两用）。
@@ -113,26 +85,12 @@ processors:
   # "json: unsupported value: NaN"，导致整批导出失败并触发 retry 风暴，backoff 持续增长直到
   # sending_queue 被占满、连累 gauge/sum 表的新数据也停止写入（详见
   # docs/monitoring/zookeeper-otel-verification.md 的采集侧缺陷记录）。
-  # 仅覆盖"Summary 从未被观测到，count=0 且 quantile 恒为 NaN"这一种成因；
-  # ZK 的 election_time/fsynctime/snapshottime/jvm_pause_time_ms 即使 count>0（历史上观测过），
-  # quantile 计算用滑动时间窗口衰减，窗口内无新观测时仍会衰减回 NaN，此类无法用本处理器覆盖——
-  # 已验证 OTTL 在这个 collector 版本里不支持对 quantile_values（slice of struct）做 set() 清空，
-  # 也不支持索引访问 quantile_values[0]（"the keys indexing quantile_values were not used by the
-  # context"），没找到能只处理这一种情况又不影响其它 Summary 消费方（DorisMonitor/NexusMonitor 的
-  # JVM/Jetty timer 面板）的可靠写法，详见验证文档"采集侧发现的真实缺陷"章节。
+  # 仅覆盖"Summary 从未被观测到，count=0 且 quantile 恒为 NaN"这一种成因，对 DorisMonitor/
+  # NexusMonitor 的 JVM/Jetty timer 面板同样适用，与具体角色无关，保留在此。
   filter/drop_empty_summary:
     metrics:
       datapoint:
         - 'metric.type == METRIC_DATA_TYPE_SUMMARY and count == 0'
-  # ZK 的 election_time/fsynctime/snapshottime/jvm_pause_time_ms 即使 count>0 也会因滑动时间窗衰减
-  # 回 NaN(上面 filter/drop_empty_summary 覆盖不到),且 OTTL 在本 collector 版本不支持读写
-  # quantile_values 字段清空 NaN。用户拍板直接整体丢弃这 4 个指标,不导入 Doris,从根上避免它们
-  # 拖累同一 pipeline 里其它指标的导出(详见 docs/monitoring/zookeeper-otel-verification.md)。
-  # 代价:ZK 看板 Z16/Z19/Z20/Z23 面板将永远无数据。
-  filter/drop_zk_decaying_summary:
-    metrics:
-      metric:
-        - 'name == "election_time" or name == "fsynctime" or name == "snapshottime" or name == "jvm_pause_time_ms"'
   batch:
     timeout: 5s
   # 沙箱身份写死为 sandbox-node；生产 otelcol.ftl 用真实 hostname（见 resource/host_metrics 注释）
@@ -189,8 +147,8 @@ service:
                 port: 8888
   pipelines:
     metrics:
-      receivers: [prometheus/juicefs, prometheus/zookeeper, prometheus/doris, otlp]
-      processors: [memory_limiter, filter/drop_empty_summary, filter/drop_zk_decaying_summary, batch]
+      receivers: [prometheus/self, prometheus/doris, otlp]
+      processors: [memory_limiter, filter/drop_empty_summary, batch]
       exporters: [doris, debug]
     metrics/host:
       receivers: [host_metrics]

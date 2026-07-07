@@ -130,6 +130,15 @@ export function useDorisDashboardData({
     let cancelled = false;
 
     async function fetchAll() {
+      if (clusterId <= 0) {
+        setData({
+          instant: {},
+          series: Object.fromEntries(panelIds.map((id) => [id, []])),
+          loading: false,
+        });
+        return;
+      }
+
       setData((prev) => ({ ...prev, loading: true }));
       try {
         const rangeSeconds = TIME_RANGE_SECONDS[timeRange] ?? 3600;
