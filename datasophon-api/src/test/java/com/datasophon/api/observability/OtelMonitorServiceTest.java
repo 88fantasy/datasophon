@@ -37,46 +37,46 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class OtelMonitorServiceTest {
-    
+
     private final ClusterServiceRoleInstanceService roleInstanceService =
             mock(ClusterServiceRoleInstanceService.class);
     private final OtelSelfMetricsClient metricsClient = mock(OtelSelfMetricsClient.class);
     private final OtelMonitorService service = new OtelMonitorService(roleInstanceService, metricsClient);
-    
+
     @Test
     void collectsOnlyRunningCollectorInstances() {
         ClusterServiceRoleInstanceEntity running = role("worker-1", ServiceRoleState.RUNNING);
         ClusterServiceRoleInstanceEntity stopped = role("worker-2", ServiceRoleState.STOP);
-        OtelSelfMetrics metrics = new OtelSelfMetrics(1, 10, 20, 0, 0, 0);
+        OtelSelfMetrics metrics = new OtelSelfMetrics(1, 10, 20, 0, 0, 0, 60, 0);
         when(roleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "OtelCollector"))
                 .thenReturn(List.of(running, stopped));
         when(metricsClient.fetch("worker-1")).thenReturn(metrics);
-        
+
         List<NodeOtelMetrics> result = service.collectAll(7);
-        
+
         assertThat(result).containsExactly(new NodeOtelMetrics("worker-1", true, null, metrics));
         verify(metricsClient).fetch("worker-1");
     }
-    
+
     @Test
     void marksFailedNodeUnhealthyWithoutAbortingOtherNodes() {
         ClusterServiceRoleInstanceEntity failed = role("worker-1", ServiceRoleState.RUNNING);
         ClusterServiceRoleInstanceEntity healthy = role("worker-2", ServiceRoleState.RUNNING);
-        OtelSelfMetrics metrics = new OtelSelfMetrics(0, 10, 20, 0, 0, 0);
+        OtelSelfMetrics metrics = new OtelSelfMetrics(0, 10, 20, 0, 0, 0, 60, 0);
         when(roleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "OtelCollector"))
                 .thenReturn(List.of(failed, healthy));
         when(metricsClient.fetch("worker-1")).thenThrow(new IllegalStateException("connection refused"));
         when(metricsClient.fetch("worker-2")).thenReturn(metrics);
-        
+
         List<NodeOtelMetrics> result = service.collectAll(7);
-        
+
         assertThat(result.get(0).hostname()).isEqualTo("worker-1");
         assertThat(result.get(0).healthy()).isFalse();
         assertThat(result.get(0).error()).isEqualTo("connection refused");
         assertThat(result.get(0).metrics()).isNull();
         assertThat(result.get(1)).isEqualTo(new NodeOtelMetrics("worker-2", true, null, metrics));
     }
-    
+
     @Test
     void returnsEmptyWhenNoCollectorInstancesExist() {
         when(roleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "OtelCollector"))
@@ -85,7 +85,7 @@ class OtelMonitorServiceTest {
         assertThat(service.collectAll(7)).isEmpty();
         verifyNoInteractions(metricsClient);
     }
-    
+
     private static ClusterServiceRoleInstanceEntity role(String hostname, ServiceRoleState state) {
         ClusterServiceRoleInstanceEntity role = new ClusterServiceRoleInstanceEntity();
         role.setHostname(hostname);
