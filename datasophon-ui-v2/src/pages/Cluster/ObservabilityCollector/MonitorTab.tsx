@@ -1,18 +1,106 @@
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { Badge } from 'antd';
-import { useRef } from 'react';
+import { Badge, Row } from 'antd';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
+import { CHART_COLORS } from '../../monitor/_shared/charts/formatters';
+import DashboardToolbar, {
+  type RefreshInterval,
+  type TimeRange,
+} from '../../monitor/_shared/DashboardToolbar';
+import { MONITOR_ROW_GUTTER } from '../../monitor/_shared/layout';
+import MonitorDashboardLayout from '../../monitor/_shared/MonitorDashboardLayout';
+import MonitorPanelCard from '../../monitor/_shared/MonitorPanelCard';
+import PanelCol from '../../monitor/_shared/PanelCol';
+import StatPanel from '../../monitor/_shared/panels/StatPanel';
+import TimeSeriesPanel from '../../monitor/_shared/panels/TimeSeriesPanel';
+import { useCollectorDashboard } from './hooks/useCollectorDashboard';
 import { type CollectorNodeMetrics, getCollectorMonitor } from './service';
 
 interface MonitorTabProps {
   clusterId: number;
 }
 
+function sumFailedDropped(nodes: CollectorNodeMetrics[]) {
+  return nodes.reduce((sum, node) => {
+    if (!node.metrics) return sum;
+    return (
+      sum +
+      node.metrics.sendFailedTotal +
+      node.metrics.refusedTotal +
+      node.metrics.processorDroppedTotal
+    );
+  }, 0);
+}
+
+function queueUsage(nodes: CollectorNodeMetrics[]) {
+  const totals = nodes.reduce(
+    (acc, node) => {
+      if (!node.metrics) return acc;
+      return {
+        size: acc.size + node.metrics.queueSize,
+        capacity: acc.capacity + node.metrics.queueCapacity,
+      };
+    },
+    { size: 0, capacity: 0 },
+  );
+  return totals.capacity > 0 ? (totals.size / totals.capacity) * 100 : 0;
+}
+
+function maxProcessUptime(nodes: CollectorNodeMetrics[]) {
+  return nodes.reduce(
+    (max, node) => Math.max(max, node.metrics?.processUptime ?? 0),
+    0,
+  );
+}
+
+function formatDuration(seconds: number) {
+  if (seconds <= 0) return '0m';
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+const percentFormatter = (value: number) => `${value.toFixed(1)}%`;
+const rateFormatter = (value: number) => `${value.toFixed(1)}/s`;
+const secondsFormatter = (value: number) => formatDuration(value);
+
 const MonitorTab: React.FC<MonitorTabProps> = ({ clusterId }) => {
   const intl = useIntl();
   const actionRef = useRef<ActionType>(null);
+  const [nodes, setNodes] = useState<CollectorNodeMetrics[]>([]);
+  const [timeRange, setTimeRange] = useState<TimeRange>('1h');
+  const [refreshInterval, setRefreshInterval] =
+    useState<RefreshInterval>('30s');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { series, loading } = useCollectorDashboard({
+    clusterId,
+    timeRange,
+    refreshKey,
+  });
+  const t = useCallback(
+    (id: string, defaultMessage: string) =>
+      intl.formatMessage({ id, defaultMessage }),
+    [intl],
+  );
+  const summary = useMemo(
+    () => ({
+      healthy: nodes.filter((node) => node.healthy).length,
+      unhealthy: nodes.filter((node) => !node.healthy).length,
+      queueUsage: queueUsage(nodes),
+      failedDropped: sumFailedDropped(nodes),
+      uptime: maxProcessUptime(nodes),
+    }),
+    [nodes],
+  );
+  const handleRefresh = useCallback(() => {
+    setRefreshKey((key) => key + 1);
+    actionRef.current?.reload();
+  }, []);
   const columns: ProColumns<CollectorNodeMetrics>[] = [
     {
       title: intl.formatMessage({
@@ -77,21 +165,175 @@ const MonitorTab: React.FC<MonitorTabProps> = ({ clusterId }) => {
             record.metrics.processorDroppedTotal
           : '-',
     },
+    {
+      title: intl.formatMessage({
+        id: 'pages.observabilityCollector.uptime',
+        defaultMessage: 'Uptime',
+      }),
+      search: false,
+      render: (_, record) =>
+        record.metrics ? formatDuration(record.metrics.processUptime ?? 0) : '-',
+    },
   ];
 
   return (
-    <ProTable<CollectorNodeMetrics>
-      actionRef={actionRef}
-      rowKey="hostname"
-      columns={columns}
-      search={false}
-      pagination={false}
-      request={async () => {
-        const result = await getCollectorMonitor(clusterId);
-        const data = result.data ?? [];
-        return { data, success: result.code === 200, total: data.length };
-      }}
-    />
+    <MonitorDashboardLayout
+      key={refreshKey}
+      title={t('pages.observabilityCollector.monitorTitle', 'Collector Health')}
+      toolbar={
+        <DashboardToolbar
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          refreshInterval={refreshInterval}
+          onRefreshIntervalChange={setRefreshInterval}
+          onRefresh={handleRefresh}
+        />
+      }
+      meta={
+        <>
+          range={timeRange}
+          {' · '}
+          Doris OTel metrics
+        </>
+      }
+      loading={loading}
+    >
+      <Row gutter={MONITOR_ROW_GUTTER}>
+        <PanelCol span={6}>
+          <StatPanel
+            title={t('pages.observabilityCollector.healthyNodes', 'Healthy')}
+            value={summary.healthy}
+            color={CHART_COLORS.success}
+          />
+        </PanelCol>
+        <PanelCol span={6}>
+          <StatPanel
+            title={t('pages.observabilityCollector.unhealthyNodes', 'Unhealthy')}
+            value={summary.unhealthy}
+            color={
+              summary.unhealthy > 0 ? CHART_COLORS.error : CHART_COLORS.success
+            }
+          />
+        </PanelCol>
+        <PanelCol span={6}>
+          <StatPanel
+            title={t('pages.observabilityCollector.queueUsage', 'Queue usage')}
+            value={summary.queueUsage}
+            color={
+              summary.queueUsage >= 80
+                ? CHART_COLORS.error
+                : CHART_COLORS.primary
+            }
+            suffix="%"
+            precision={1}
+          />
+        </PanelCol>
+        <PanelCol span={6}>
+          <StatPanel
+            title={t(
+              'pages.observabilityCollector.failedDroppedTotal',
+              'Failed / dropped',
+            )}
+            value={summary.failedDropped}
+            color={
+              summary.failedDropped > 0
+                ? CHART_COLORS.warning
+                : CHART_COLORS.success
+            }
+          />
+        </PanelCol>
+        <PanelCol span={6}>
+          <StatPanel
+            title={t('pages.observabilityCollector.processUptime', 'Uptime')}
+            value={summary.uptime}
+            color={CHART_COLORS.primary}
+            formatter={formatDuration}
+          />
+        </PanelCol>
+      </Row>
+
+      <Row gutter={MONITOR_ROW_GUTTER}>
+        <PanelCol span={12}>
+          <TimeSeriesPanel
+            title={t(
+              'pages.observabilityCollector.panel.queueUsage',
+              'Queue usage',
+            )}
+            data={series.queueUsage}
+            yFormatter={percentFormatter}
+            tooltipFormatter={percentFormatter}
+            thresholdLines={[{ value: 80, label: '80%' }]}
+          />
+        </PanelCol>
+        <PanelCol span={12}>
+          <TimeSeriesPanel
+            title={t(
+              'pages.observabilityCollector.panel.sentRate',
+              'Sent rate',
+            )}
+            data={series.sentRate}
+            yFormatter={rateFormatter}
+            tooltipFormatter={rateFormatter}
+          />
+        </PanelCol>
+        <PanelCol span={12}>
+          <TimeSeriesPanel
+            title={t(
+              'pages.observabilityCollector.panel.failedRate',
+              'Send failed rate',
+            )}
+            data={series.failedRate}
+            yFormatter={rateFormatter}
+            tooltipFormatter={rateFormatter}
+          />
+        </PanelCol>
+        <PanelCol span={12}>
+          <TimeSeriesPanel
+            title={t(
+              'pages.observabilityCollector.panel.refusedDroppedRate',
+              'Refused / dropped rate',
+            )}
+            data={series.refusedDroppedRate}
+            yFormatter={rateFormatter}
+            tooltipFormatter={rateFormatter}
+          />
+        </PanelCol>
+        <PanelCol span={12}>
+          <TimeSeriesPanel
+            title={t(
+              'pages.observabilityCollector.panel.uptime',
+              'Process uptime',
+            )}
+            data={series.uptime}
+            yFormatter={secondsFormatter}
+            tooltipFormatter={secondsFormatter}
+          />
+        </PanelCol>
+      </Row>
+
+      <MonitorPanelCard
+        title={t('pages.observabilityCollector.nodeDetails', 'Node details')}
+      >
+        <ProTable<CollectorNodeMetrics>
+          key={clusterId}
+          actionRef={actionRef}
+          rowKey="hostname"
+          columns={columns}
+          search={false}
+          pagination={false}
+          request={async () => {
+            if (clusterId <= 0) {
+              setNodes([]);
+              return { data: [], success: true, total: 0 };
+            }
+            const result = await getCollectorMonitor(clusterId);
+            const data = result.data ?? [];
+            setNodes(data);
+            return { data, success: result.code === 200, total: data.length };
+          }}
+        />
+      </MonitorPanelCard>
+    </MonitorDashboardLayout>
   );
 };
 

@@ -88,12 +88,14 @@ public class OtelMetricsQueryService {
     static final Set<String> ALLOWED_ATTR_FILTER_KEYS =
             Set.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
                     "code", "service", "route", "node", "consumer", "name",
-                    "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc");
+                    "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
+                    "exporter", "receiver", "processor", "transport");
 
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
             List.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
                     "code", "service", "route", "node", "consumer", "name",
-                    "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc");
+                    "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
+                    "exporter", "receiver", "processor", "transport");
 
     private final ClusterServiceRoleInstanceService roleService;
     private final OtelDorisReaderFactory readerFactory;

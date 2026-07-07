@@ -12,8 +12,13 @@ import {
 
 vi.mock('@umijs/max', () => ({
   useIntl: () => ({
-    formatMessage: ({ defaultMessage }: { defaultMessage: string }) =>
+    formatMessage: ({
+      id,
       defaultMessage,
+    }: {
+      id: string;
+      defaultMessage?: string;
+    }) => defaultMessage ?? id,
   }),
 }));
 
@@ -21,6 +26,7 @@ vi.mock('@ant-design/pro-components', async () => {
   const React = await import('react');
   const field = ({ label }: { label?: ReactNode }) => <div>{label}</div>;
   return {
+    GridContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
     ProForm: ({
       children,
       initialValues,
@@ -54,7 +60,7 @@ vi.mock('@ant-design/pro-components', async () => {
       const [data, setData] = React.useState<unknown[]>([]);
       React.useEffect(() => {
         void request().then((result) => setData(result.data));
-      }, [request]);
+      }, []);
       return <div>{JSON.stringify(data)}</div>;
     },
   };
@@ -64,6 +70,19 @@ vi.mock('./service', () => ({
   getCollectorConfig: vi.fn(),
   getCollectorMonitor: vi.fn(),
   pushCollectorConfig: vi.fn(),
+}));
+
+vi.mock('./hooks/useCollectorDashboard', () => ({
+  useCollectorDashboard: () => ({
+    series: {
+      queueUsage: [],
+      sentRate: [],
+      failedRate: [],
+      refusedDroppedRate: [],
+      uptime: [],
+    },
+    loading: false,
+  }),
 }));
 
 const monitorResult = {
@@ -79,6 +98,7 @@ const monitorResult = {
         sendFailedTotal: 2,
         refusedTotal: 1,
         processorDroppedTotal: 1,
+        processUptime: 3600,
       },
     },
   ],
@@ -86,6 +106,7 @@ const monitorResult = {
 
 describe('ObservabilityCollector', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(getCollectorConfig).mockResolvedValue({
       code: 200,
       data: [
@@ -132,8 +153,23 @@ describe('ObservabilityCollector', () => {
   it('renders node health and metrics through ProTable request', async () => {
     render(<MonitorTab clusterId={7} />);
 
+    expect(await screen.findByText('Collector Health')).toBeInTheDocument();
+    expect(screen.getAllByText('Queue usage').length).toBeGreaterThan(0);
+    expect(screen.getByText('Node details')).toBeInTheDocument();
     expect(await screen.findByText(/worker-1/)).toBeInTheDocument();
     expect(screen.getByText(/"queueSize":10/)).toBeInTheDocument();
     expect(screen.getByText(/"sendFailedTotal":2/)).toBeInTheDocument();
+    expect(screen.getByText(/"processUptime":3600/)).toBeInTheDocument();
+  });
+
+  it('waits for a valid cluster id before loading monitor data', async () => {
+    const { rerender } = render(<MonitorTab clusterId={0} />);
+
+    await waitFor(() => expect(getCollectorMonitor).not.toHaveBeenCalled());
+
+    rerender(<MonitorTab clusterId={7} />);
+
+    await waitFor(() => expect(getCollectorMonitor).toHaveBeenCalledWith(7));
+    expect(getCollectorMonitor).not.toHaveBeenCalledWith(0);
   });
 });

@@ -23,5 +23,5 @@
 package com.datasophon.api.observability;
 
 public record OtelSelfMetrics(long queueSize, long queueCapacity, long sentTotal, long sendFailedTotal,
-                              long refusedTotal, long processorDroppedTotal) {
+                              long refusedTotal, long processorDroppedTotal, long processUptime) {
 }

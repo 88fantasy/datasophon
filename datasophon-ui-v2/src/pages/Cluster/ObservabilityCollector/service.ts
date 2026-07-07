@@ -22,6 +22,7 @@ export interface CollectorSelfMetrics {
   sendFailedTotal: number;
   refusedTotal: number;
   processorDroppedTotal: number;
+  processUptime: number;
 }
 
 export interface CollectorNodeMetrics {

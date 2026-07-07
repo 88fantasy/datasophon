@@ -27,9 +27,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 
 class OtelSelfMetricsClientTest {
-    
+
     private final OtelSelfMetricsClient client = new OtelSelfMetricsClient();
-    
+
     @Test
     void parsesAndAggregatesCollectorMetrics() {
         String text = """
@@ -39,26 +39,30 @@ class OtelSelfMetricsClientTest {
                 otelcol_exporter_queue_capacity{exporter="awss3/metrics"} 10
                 otelcol_exporter_queue_capacity{exporter="awss3/traces"} 20
                 otelcol_exporter_sent_spans_total{exporter="awss3/traces"} 11
-                otelcol_exporter_sent_metric_points_total{exporter="awss3/metrics"} 13
+                otelcol_exporter_sent_metric_points{exporter="awss3/metrics"} 13
                 otelcol_exporter_send_failed_spans_total{exporter="awss3/traces"} 5
+                otelcol_receiver_failed_metric_points{receiver="prometheus/self"} 4
                 otelcol_receiver_refused_log_records_total{receiver="otlp"} 7
                 otelcol_processor_dropped_spans_total{processor="memory_limiter"} 9
+                otelcol_processor_filter_datapoints_filtered{processor="filter/drop_empty_summary"} 6
+                otelcol_process_uptime 3600
                 """;
-        
+
         OtelSelfMetrics metrics = client.parse(text);
-        
+
         assertThat(metrics.queueSize()).isEqualTo(5);
         assertThat(metrics.queueCapacity()).isEqualTo(30);
         assertThat(metrics.sentTotal()).isEqualTo(24);
-        assertThat(metrics.sendFailedTotal()).isEqualTo(5);
+        assertThat(metrics.sendFailedTotal()).isEqualTo(9);
         assertThat(metrics.refusedTotal()).isEqualTo(7);
-        assertThat(metrics.processorDroppedTotal()).isEqualTo(9);
+        assertThat(metrics.processorDroppedTotal()).isEqualTo(15);
+        assertThat(metrics.processUptime()).isEqualTo(3600);
     }
-    
+
     @Test
     void ignoresCommentsMalformedLinesAndMissingMetrics() {
         OtelSelfMetrics metrics = client.parse("# comment\ninvalid\notelcol_exporter_queue_size NaN\n");
-        
-        assertThat(metrics).isEqualTo(new OtelSelfMetrics(0, 0, 0, 0, 0, 0));
+
+        assertThat(metrics).isEqualTo(new OtelSelfMetrics(0, 0, 0, 0, 0, 0, 0));
     }
 }

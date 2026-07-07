@@ -40,40 +40,40 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 class OtelAlertSchedulerTest {
-    
+
     @Test
     void emitsOneFiringAlertUntilQueueWatermarkResolves() {
         AtomicReference<List<NodeOtelMetrics>> metrics = new AtomicReference<>(List.of(
-                healthy("worker-1", new OtelSelfMetrics(90, 100, 100, 0, 0, 0))));
+                healthy("worker-1", new OtelSelfMetrics(90, 100, 100, 0, 0, 0, 0))));
         List<String> alerts = new ArrayList<>();
         OtelAlertScheduler scheduler = scheduler(metrics, alerts);
-        
+
         scheduler.checkCollectors();
         scheduler.checkCollectors();
-        metrics.set(List.of(healthy("worker-1", new OtelSelfMetrics(10, 100, 100, 0, 0, 0))));
+        metrics.set(List.of(healthy("worker-1", new OtelSelfMetrics(10, 100, 100, 0, 0, 0, 0))));
         scheduler.checkCollectors();
-        
+
         assertThat(alerts).hasSize(2);
         assertThat(alerts.get(0)).contains("\"status\":\"firing\"")
                 .contains("OtelCollectorQueueHigh");
         assertThat(alerts.get(1)).contains("\"status\":\"resolved\"")
                 .contains("OtelCollectorQueueHigh");
     }
-    
+
     @Test
     void emitsSendFailureAlertOnlyAboveConfiguredRate() {
         AtomicReference<List<NodeOtelMetrics>> metrics = new AtomicReference<>(List.of(
-                healthy("worker-1", new OtelSelfMetrics(0, 100, 90, 10, 0, 0))));
+                healthy("worker-1", new OtelSelfMetrics(0, 100, 90, 10, 0, 0, 0))));
         List<String> alerts = new ArrayList<>();
         OtelAlertScheduler scheduler = scheduler(metrics, alerts);
-        
+
         scheduler.checkCollectors();
-        
+
         assertThat(alerts).singleElement().asString()
                 .contains("OtelCollectorSendFailureRateHigh")
                 .contains("\"status\":\"firing\"");
     }
-    
+
     @Test
     void emitsOneMetricFiringAlertUntilQuotaResolves() {
         MutableMetricQueryService query = new MutableMetricQueryService();
@@ -82,12 +82,12 @@ class OtelAlertSchedulerTest {
         OtelAlertScheduler scheduler = scheduler(query, alerts, List.of(quota(
                 "Nexus实例只读", "NEXUS", "readonly_enabled", AlertLevel.EXCEPTION,
                 ">", 0, "Nexus repository is read-only", "NexusRepository")));
-        
+
         scheduler.checkMetricRules();
         scheduler.checkMetricRules();
         query.instant = vector(sample(Map.of("instance", "nexus-1:8081", "job", "nexus"), 160, "0.0"));
         scheduler.checkMetricRules();
-        
+
         assertThat(alerts).hasSize(2);
         assertThat(alerts.get(0)).contains("\"status\":\"firing\"")
                 .contains("Nexus实例只读")
@@ -97,7 +97,7 @@ class OtelAlertSchedulerTest {
         assertThat(alerts.get(1)).contains("\"status\":\"resolved\"")
                 .contains("Nexus实例只读");
     }
-    
+
     @Test
     void evaluatesRatioRulesByMatchingLabels() {
         MutableMetricQueryService query = new MutableMetricQueryService();
@@ -111,15 +111,15 @@ class OtelAlertSchedulerTest {
         OtelAlertScheduler scheduler = scheduler(query, alerts, List.of(quota(
                 "DorisBE磁盘使用率", "DORIS", "doris_be_disks_local_used_capacity", AlertLevel.EXCEPTION,
                 ">", 85, "Clean Doris BE disk", "DorisBE")));
-        
+
         scheduler.checkMetricRules();
-        
+
         assertThat(alerts).singleElement().asString()
                 .contains("DorisBE磁盘使用率")
                 .contains("be-1:8040")
                 .contains("90.0");
     }
-    
+
     @Test
     void rateRulesUseLastRangePoint() {
         MutableMetricQueryService query = new MutableMetricQueryService();
@@ -133,15 +133,15 @@ class OtelAlertSchedulerTest {
         OtelAlertScheduler scheduler = scheduler(query, alerts, List.of(quota(
                 "Doris查询错误率", "DORIS", "doris_fe_query_err", AlertLevel.WARN,
                 ">", 5, "Check Doris FE query errors", "DorisFE")));
-        
+
         scheduler.checkMetricRules();
-        
+
         assertThat(alerts).singleElement().asString()
                 .contains("Doris查询错误率")
                 .contains("warning")
                 .contains("6.0");
     }
-    
+
     @Test
     void supportsLessThanAndNotEqualsCompareMethods() {
         MutableMetricQueryService query = new MutableMetricQueryService();
@@ -155,14 +155,14 @@ class OtelAlertSchedulerTest {
                         "<", 20, "Heap too low for test", "NexusRepository"),
                 quota("Nexus线程死锁", "NEXUS", "jvm_thread_states_deadlock_count", AlertLevel.EXCEPTION,
                         "!=", 0, "Thread deadlock", "NexusRepository")));
-        
+
         scheduler.checkMetricRules();
-        
+
         assertThat(alerts).hasSize(2);
         assertThat(alerts.get(0)).contains("Nexus堆内存使用率");
         assertThat(alerts.get(1)).contains("Nexus线程死锁");
     }
-    
+
     @Test
     void metricRuleQueryFailureDoesNotSkipOtherRules() {
         MutableMetricQueryService query = new MutableMetricQueryService();
@@ -175,12 +175,12 @@ class OtelAlertSchedulerTest {
                         ">", 0, "Read only", "NexusRepository"),
                 quota("Nexus线程死锁", "NEXUS", "jvm_thread_states_deadlock_count", AlertLevel.EXCEPTION,
                         ">", 0, "Thread deadlock", "NexusRepository")));
-        
+
         scheduler.checkMetricRules();
-        
+
         assertThat(alerts).singleElement().asString().contains("Nexus线程死锁");
     }
-    
+
     private static OtelAlertScheduler scheduler(AtomicReference<List<NodeOtelMetrics>> metrics,
                                                 List<String> alerts) {
         OtelMonitorService monitor = new OtelMonitorService(null, null) {
@@ -205,7 +205,7 @@ class OtelAlertSchedulerTest {
         });
         return new OtelAlertScheduler(monitor, clusters, history, null, null, 0.8d, 0.05d);
     }
-    
+
     private static OtelAlertScheduler scheduler(MutableMetricQueryService query, List<String> alerts,
                                                 List<ClusterAlertQuota> quotas) {
         OtelMonitorService monitor = new OtelMonitorService(null, null);
@@ -223,7 +223,7 @@ class OtelAlertSchedulerTest {
             }
         };
     }
-    
+
     private static ClusterInfoService clusters() {
         return proxy(ClusterInfoService.class, (method, args) -> {
             if ("runningClusterList".equals(method)) {
@@ -234,7 +234,7 @@ class OtelAlertSchedulerTest {
             return null;
         });
     }
-    
+
     private static ClusterAlertQuota quota(String name, String service, String expr, AlertLevel level,
                                            String compareMethod, long threshold, String advice,
                                            String roleName) {
@@ -250,53 +250,53 @@ class OtelAlertSchedulerTest {
         quota.setQuotaState(QuotaState.RUNNING);
         return quota;
     }
-    
+
     private static PrometheusVectorResult vector(PrometheusVectorResult.VectorSample... samples) {
         return PrometheusVectorResult.of(List.of(samples));
     }
-    
+
     private static PrometheusVectorResult.VectorSample sample(Map<String, String> labels, long ts, String value) {
         return new PrometheusVectorResult.VectorSample(labels, new Object[]{ts, value});
     }
-    
+
     private static PrometheusMatrixResult matrix(PrometheusMatrixResult.MatrixSeries... series) {
         return PrometheusMatrixResult.of(List.of(series));
     }
-    
+
     private static PrometheusMatrixResult.MatrixSeries series(Map<String, String> labels, Object[]... values) {
         return new PrometheusMatrixResult.MatrixSeries(labels, List.of(values));
     }
-    
+
     private static Object[] point(long ts, String value) {
         return new Object[]{ts, value};
     }
-    
+
     private static NodeOtelMetrics healthy(String hostname, OtelSelfMetrics metrics) {
         return new NodeOtelMetrics(hostname, true, null, metrics);
     }
-    
+
     @SuppressWarnings("unchecked")
     private static <T> T proxy(Class<T> type, Invocation invocation) {
         return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type},
                 (proxy, method, args) -> invocation.invoke(method.getName(), args));
     }
-    
+
     @FunctionalInterface
     private interface Invocation {
         Object invoke(String method, Object[] args);
     }
-    
+
     private static class MutableMetricQueryService extends OtelMetricsQueryService {
-        
+
         private PrometheusVectorResult instant = vector();
         private final Map<String, PrometheusVectorResult> instantByMetric = new java.util.HashMap<>();
         private final Map<String, PrometheusMatrixResult> rangeByMetric = new java.util.HashMap<>();
         private final List<String> throwMetrics = new ArrayList<>();
-        
+
         MutableMetricQueryService() {
             super(null, null);
         }
-        
+
         @Override
         public PrometheusVectorResult queryInstant(Integer clusterId, String metric, String agg, double scale,
                                                    String instance, String job, Map<String, String> filters,
@@ -306,7 +306,7 @@ class OtelAlertSchedulerTest {
             }
             return instantByMetric.getOrDefault(metric, instant);
         }
-        
+
         @Override
         public PrometheusMatrixResult queryRange(Integer clusterId, String metric, String rateWindow, double scale,
                                                  String instance, String job, Map<String, String> filters,

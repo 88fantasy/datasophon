@@ -107,6 +107,18 @@ class OtelMetricsQueryServiceTest {
     }
 
     @Test
+    void allowedAttrFilterKeys_includeCollectorPipelineDimensions() {
+        assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS)
+                .contains("exporter", "receiver", "processor", "transport");
+        String sql = OtelMetricsQueryService.buildRangeRateSql(
+                false, false, Map.of("exporter", "awss3/metrics"), null,
+                List.of("receiver", "transport"), "otel_metrics_sum");
+        assertThat(sql).contains("attributes['exporter']");
+        assertThat(sql).contains("attributes['receiver']");
+        assertThat(sql).contains("attributes['transport']");
+    }
+
+    @Test
     void rangeSummaryFieldRate_count_useSummaryTableAndSeriesKeyPartition() {
         String sql = OtelMetricsQueryService.buildRangeFieldRateSql(
                 "count", false, false, Map.of("gc", "G1 Young Generation"), null,

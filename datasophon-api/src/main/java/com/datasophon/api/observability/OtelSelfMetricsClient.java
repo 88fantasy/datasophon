@@ -28,13 +28,13 @@ import cn.hutool.http.HttpUtil;
 
 @Component
 public class OtelSelfMetricsClient {
-    
+
     private static final int FETCH_TIMEOUT_MILLIS = 2000;
-    
+
     public OtelSelfMetrics fetch(String nodeHost) {
         return parse(HttpUtil.get("http://" + nodeHost + ":8888/metrics", FETCH_TIMEOUT_MILLIS));
     }
-    
+
     OtelSelfMetrics parse(String text) {
         double queueSize = 0;
         double queueCapacity = 0;
@@ -42,6 +42,7 @@ public class OtelSelfMetricsClient {
         double sendFailedTotal = 0;
         double refusedTotal = 0;
         double processorDroppedTotal = 0;
+        double processUptime = 0;
         for (String line : text.split("\\R")) {
             String sample = line.trim();
             if (sample.isEmpty() || sample.startsWith("#")) {
@@ -67,15 +68,21 @@ public class OtelSelfMetricsClient {
                 queueCapacity += value;
             } else if (name.startsWith("otelcol_exporter_send_failed_")) {
                 sendFailedTotal += value;
+            } else if (name.startsWith("otelcol_receiver_failed_")) {
+                sendFailedTotal += value;
             } else if (name.startsWith("otelcol_exporter_sent_")) {
                 sentTotal += value;
             } else if (name.startsWith("otelcol_receiver_refused_")) {
                 refusedTotal += value;
             } else if (name.startsWith("otelcol_processor_dropped_")) {
                 processorDroppedTotal += value;
+            } else if ("otelcol_processor_filter_datapoints_filtered".equals(name)) {
+                processorDroppedTotal += value;
+            } else if ("otelcol_process_uptime".equals(name)) {
+                processUptime = Math.max(processUptime, value);
             }
         }
         return new OtelSelfMetrics((long) queueSize, (long) queueCapacity, (long) sentTotal,
-                (long) sendFailedTotal, (long) refusedTotal, (long) processorDroppedTotal);
+                (long) sendFailedTotal, (long) refusedTotal, (long) processorDroppedTotal, (long) processUptime);
     }
 }
