@@ -61,7 +61,7 @@ export default {
   'pages.observabilityCollector.queueUsage': 'Queue usage',
   'pages.observabilityCollector.failedDroppedTotal': 'Failed / dropped',
   'pages.observabilityCollector.processUptime': 'Uptime',
-  'pages.observabilityCollector.panel.queueUsage': 'Queue usage',
+  'pages.observabilityCollector.panel.queueUsage': 'Queue usage trend',
   'pages.observabilityCollector.panel.sentRate': 'Sent rate',
   'pages.observabilityCollector.panel.failedRate': 'Send failed rate',
   'pages.observabilityCollector.panel.refusedDroppedRate':

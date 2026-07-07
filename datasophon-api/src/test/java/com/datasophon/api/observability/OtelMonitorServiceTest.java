@@ -47,7 +47,7 @@ class OtelMonitorServiceTest {
     void collectsOnlyRunningCollectorInstances() {
         ClusterServiceRoleInstanceEntity running = role("worker-1", ServiceRoleState.RUNNING);
         ClusterServiceRoleInstanceEntity stopped = role("worker-2", ServiceRoleState.STOP);
-        OtelSelfMetrics metrics = new OtelSelfMetrics(1, 10, 20, 0, 0, 0, 60);
+        OtelSelfMetrics metrics = new OtelSelfMetrics(1, 10, 20, 0, 0, 0, 60, 0);
         when(roleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "OtelCollector"))
                 .thenReturn(List.of(running, stopped));
         when(metricsClient.fetch("worker-1")).thenReturn(metrics);
@@ -62,7 +62,7 @@ class OtelMonitorServiceTest {
     void marksFailedNodeUnhealthyWithoutAbortingOtherNodes() {
         ClusterServiceRoleInstanceEntity failed = role("worker-1", ServiceRoleState.RUNNING);
         ClusterServiceRoleInstanceEntity healthy = role("worker-2", ServiceRoleState.RUNNING);
-        OtelSelfMetrics metrics = new OtelSelfMetrics(0, 10, 20, 0, 0, 0, 60);
+        OtelSelfMetrics metrics = new OtelSelfMetrics(0, 10, 20, 0, 0, 0, 60, 0);
         when(roleInstanceService.getServiceRoleInstanceListByClusterIdAndRoleName(7, "OtelCollector"))
                 .thenReturn(List.of(failed, healthy));
         when(metricsClient.fetch("worker-1")).thenThrow(new IllegalStateException("connection refused"));

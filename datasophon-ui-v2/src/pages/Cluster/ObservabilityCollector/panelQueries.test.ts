@@ -52,7 +52,7 @@ describe('Collector panel descriptors', () => {
           groupBy: ['receiver', 'transport'],
         }),
         expect.objectContaining({
-          metric: 'otelcol_processor_filter_datapoints.filtered',
+          metric: 'otelcol_processor_filter_datapoints_filtered',
           groupBy: ['processor'],
         }),
       ]),

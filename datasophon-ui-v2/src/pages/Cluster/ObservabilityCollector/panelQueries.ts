@@ -16,6 +16,20 @@ const SIGNALS = [
   { label: 'Traces', suffix: 'spans' },
 ] as const;
 
+function signalRateQueries(
+  metricPrefix: string,
+  groupBy: string[],
+  labelSuffix?: string,
+) {
+  return SIGNALS.map(({ label, suffix }) => ({
+    label: labelSuffix ? `${label} ${labelSuffix}` : label,
+    metric: `${metricPrefix}${suffix}`,
+    rate: '1m' as const,
+    table: 'sum' as const,
+    groupBy,
+  }));
+}
+
 export const COLLECTOR_PANEL_QUERIES: Record<
   CollectorPanelId,
   DorisPanelDescriptor
@@ -35,44 +49,28 @@ export const COLLECTOR_PANEL_QUERIES: Record<
   },
   sentRate: {
     type: 'multi-range',
-    queries: SIGNALS.map(({ label, suffix }) => ({
-      label,
-      metric: `otelcol_exporter_sent_${suffix}`,
-      rate: '1m' as const,
-      table: 'sum' as const,
-      groupBy: ['exporter'],
-    })),
+    queries: signalRateQueries('otelcol_exporter_sent_', ['exporter']),
   },
   failedRate: {
     type: 'multi-range',
-    queries: SIGNALS.map(({ label, suffix }) => ({
-      label: `${label} receiver failed`,
-      metric: `otelcol_receiver_failed_${suffix}`,
-      rate: '1m' as const,
-      table: 'sum' as const,
-      groupBy: ['receiver', 'transport'],
-    })),
+    queries: signalRateQueries(
+      'otelcol_receiver_failed_',
+      ['receiver', 'transport'],
+      'receiver failed',
+    ),
   },
   refusedDroppedRate: {
     type: 'multi-range',
     queries: [
-      ...SIGNALS.map(({ label, suffix }) => ({
-        label: `${label} refused`,
-        metric: `otelcol_receiver_refused_${suffix}`,
-        rate: '1m' as const,
-        table: 'sum' as const,
-        groupBy: ['receiver', 'transport'],
-      })),
-      ...SIGNALS.map(({ label, suffix }) => ({
-        label: `${label} dropped`,
-        metric: `otelcol_processor_dropped_${suffix}`,
-        rate: '1m' as const,
-        table: 'sum' as const,
-        groupBy: ['processor'],
-      })),
+      ...signalRateQueries(
+        'otelcol_receiver_refused_',
+        ['receiver', 'transport'],
+        'refused',
+      ),
+      ...signalRateQueries('otelcol_processor_dropped_', ['processor'], 'dropped'),
       {
         label: 'Filtered datapoints',
-        metric: 'otelcol_processor_filter_datapoints.filtered',
+        metric: 'otelcol_processor_filter_datapoints_filtered',
         rate: '1m' as const,
         table: 'sum' as const,
         groupBy: ['processor'],

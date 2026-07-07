@@ -43,6 +43,7 @@ public class OtelSelfMetricsClient {
         double refusedTotal = 0;
         double processorDroppedTotal = 0;
         double processUptime = 0;
+        double receiverFailedTotal = 0;
         for (String line : text.split("\\R")) {
             String sample = line.trim();
             if (sample.isEmpty() || sample.startsWith("#")) {
@@ -69,7 +70,7 @@ public class OtelSelfMetricsClient {
             } else if (name.startsWith("otelcol_exporter_send_failed_")) {
                 sendFailedTotal += value;
             } else if (name.startsWith("otelcol_receiver_failed_")) {
-                sendFailedTotal += value;
+                receiverFailedTotal += value;
             } else if (name.startsWith("otelcol_exporter_sent_")) {
                 sentTotal += value;
             } else if (name.startsWith("otelcol_receiver_refused_")) {
@@ -83,6 +84,7 @@ public class OtelSelfMetricsClient {
             }
         }
         return new OtelSelfMetrics((long) queueSize, (long) queueCapacity, (long) sentTotal,
-                (long) sendFailedTotal, (long) refusedTotal, (long) processorDroppedTotal, (long) processUptime);
+                (long) sendFailedTotal, (long) refusedTotal, (long) processorDroppedTotal, (long) processUptime,
+                (long) receiverFailedTotal);
     }
 }

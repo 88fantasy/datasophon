@@ -55,3 +55,16 @@ export function formatCompact(value: number): string {
     maximumFractionDigits: 0,
   }).format(value);
 }
+
+export function formatDuration(seconds: number): string {
+  if (seconds <= 0) return '0m';
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+export const percentFormatter = (value: number) => `${value.toFixed(1)}%`;
+export const rateFormatter = (value: number) => `${value.toFixed(1)}/s`;

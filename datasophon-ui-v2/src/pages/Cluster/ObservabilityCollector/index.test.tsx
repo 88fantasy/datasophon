@@ -96,6 +96,7 @@ const monitorResult = {
         queueCapacity: 100,
         sentTotal: 200,
         sendFailedTotal: 2,
+        receiverFailedTotal: 0,
         refusedTotal: 1,
         processorDroppedTotal: 1,
         processUptime: 3600,

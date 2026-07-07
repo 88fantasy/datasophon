@@ -53,7 +53,8 @@ class OtelSelfMetricsClientTest {
         assertThat(metrics.queueSize()).isEqualTo(5);
         assertThat(metrics.queueCapacity()).isEqualTo(30);
         assertThat(metrics.sentTotal()).isEqualTo(24);
-        assertThat(metrics.sendFailedTotal()).isEqualTo(9);
+        assertThat(metrics.sendFailedTotal()).isEqualTo(5);
+        assertThat(metrics.receiverFailedTotal()).isEqualTo(4);
         assertThat(metrics.refusedTotal()).isEqualTo(7);
         assertThat(metrics.processorDroppedTotal()).isEqualTo(15);
         assertThat(metrics.processUptime()).isEqualTo(3600);
@@ -63,6 +64,6 @@ class OtelSelfMetricsClientTest {
     void ignoresCommentsMalformedLinesAndMissingMetrics() {
         OtelSelfMetrics metrics = client.parse("# comment\ninvalid\notelcol_exporter_queue_size NaN\n");
 
-        assertThat(metrics).isEqualTo(new OtelSelfMetrics(0, 0, 0, 0, 0, 0, 0));
+        assertThat(metrics).isEqualTo(new OtelSelfMetrics(0, 0, 0, 0, 0, 0, 0, 0));
     }
 }

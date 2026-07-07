@@ -60,7 +60,7 @@ export default {
   'pages.observabilityCollector.queueUsage': '队列使用率',
   'pages.observabilityCollector.failedDroppedTotal': '失败 / 丢弃',
   'pages.observabilityCollector.processUptime': '运行时长',
-  'pages.observabilityCollector.panel.queueUsage': '队列使用率',
+  'pages.observabilityCollector.panel.queueUsage': '队列使用率趋势',
   'pages.observabilityCollector.panel.sentRate': '发送速率',
   'pages.observabilityCollector.panel.failedRate': '发送失败速率',
   'pages.observabilityCollector.panel.refusedDroppedRate': '拒收 / 丢弃速率',

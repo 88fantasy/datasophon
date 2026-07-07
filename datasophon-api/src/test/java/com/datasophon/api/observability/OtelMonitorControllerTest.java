@@ -41,7 +41,7 @@ class OtelMonitorControllerTest {
     void returnsCollectedNodeMetricsInStandardResult() {
         OtelMonitorService service = mock(OtelMonitorService.class);
         List<NodeOtelMetrics> metrics = List.of(
-                new NodeOtelMetrics("worker-1", true, null, new OtelSelfMetrics(1, 10, 20, 0, 0, 0, 0)));
+                new NodeOtelMetrics("worker-1", true, null, new OtelSelfMetrics(1, 10, 20, 0, 0, 0, 0, 0)));
         when(service.collectAll(7)).thenReturn(metrics);
 
         OtelMonitorController controller = new OtelMonitorController(

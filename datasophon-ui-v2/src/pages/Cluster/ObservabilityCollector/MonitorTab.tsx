@@ -4,7 +4,12 @@ import { useIntl } from '@umijs/max';
 import { Badge, Row } from 'antd';
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { CHART_COLORS } from '../../monitor/_shared/charts/formatters';
+import {
+  CHART_COLORS,
+  formatDuration,
+  percentFormatter,
+  rateFormatter,
+} from '../../monitor/_shared/charts/formatters';
 import DashboardToolbar, {
   type RefreshInterval,
   type TimeRange,
@@ -17,56 +22,12 @@ import StatPanel from '../../monitor/_shared/panels/StatPanel';
 import TimeSeriesPanel from '../../monitor/_shared/panels/TimeSeriesPanel';
 import { useCollectorDashboard } from './hooks/useCollectorDashboard';
 import { type CollectorNodeMetrics, getCollectorMonitor } from './service';
+import { maxProcessUptime, queueUsage, sumFailedDropped } from './summary';
 
 interface MonitorTabProps {
   clusterId: number;
 }
 
-function sumFailedDropped(nodes: CollectorNodeMetrics[]) {
-  return nodes.reduce((sum, node) => {
-    if (!node.metrics) return sum;
-    return (
-      sum +
-      node.metrics.sendFailedTotal +
-      node.metrics.refusedTotal +
-      node.metrics.processorDroppedTotal
-    );
-  }, 0);
-}
-
-function queueUsage(nodes: CollectorNodeMetrics[]) {
-  const totals = nodes.reduce(
-    (acc, node) => {
-      if (!node.metrics) return acc;
-      return {
-        size: acc.size + node.metrics.queueSize,
-        capacity: acc.capacity + node.metrics.queueCapacity,
-      };
-    },
-    { size: 0, capacity: 0 },
-  );
-  return totals.capacity > 0 ? (totals.size / totals.capacity) * 100 : 0;
-}
-
-function maxProcessUptime(nodes: CollectorNodeMetrics[]) {
-  return nodes.reduce(
-    (max, node) => Math.max(max, node.metrics?.processUptime ?? 0),
-    0,
-  );
-}
-
-function formatDuration(seconds: number) {
-  if (seconds <= 0) return '0m';
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  if (days > 0) return `${days}d ${hours}h`;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
-}
-
-const percentFormatter = (value: number) => `${value.toFixed(1)}%`;
-const rateFormatter = (value: number) => `${value.toFixed(1)}/s`;
 const secondsFormatter = (value: number) => formatDuration(value);
 
 const MonitorTab: React.FC<MonitorTabProps> = ({ clusterId }) => {
@@ -161,6 +122,7 @@ const MonitorTab: React.FC<MonitorTabProps> = ({ clusterId }) => {
       render: (_, record) =>
         record.metrics
           ? record.metrics.sendFailedTotal +
+            record.metrics.receiverFailedTotal +
             record.metrics.refusedTotal +
             record.metrics.processorDroppedTotal
           : '-',
@@ -257,7 +219,7 @@ const MonitorTab: React.FC<MonitorTabProps> = ({ clusterId }) => {
           <TimeSeriesPanel
             title={t(
               'pages.observabilityCollector.panel.queueUsage',
-              'Queue usage',
+              'Queue usage trend',
             )}
             data={series.queueUsage}
             yFormatter={percentFormatter}

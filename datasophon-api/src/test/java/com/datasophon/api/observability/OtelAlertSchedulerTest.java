@@ -44,13 +44,13 @@ class OtelAlertSchedulerTest {
     @Test
     void emitsOneFiringAlertUntilQueueWatermarkResolves() {
         AtomicReference<List<NodeOtelMetrics>> metrics = new AtomicReference<>(List.of(
-                healthy("worker-1", new OtelSelfMetrics(90, 100, 100, 0, 0, 0, 0))));
+                healthy("worker-1", new OtelSelfMetrics(90, 100, 100, 0, 0, 0, 0, 0))));
         List<String> alerts = new ArrayList<>();
         OtelAlertScheduler scheduler = scheduler(metrics, alerts);
 
         scheduler.checkCollectors();
         scheduler.checkCollectors();
-        metrics.set(List.of(healthy("worker-1", new OtelSelfMetrics(10, 100, 100, 0, 0, 0, 0))));
+        metrics.set(List.of(healthy("worker-1", new OtelSelfMetrics(10, 100, 100, 0, 0, 0, 0, 0))));
         scheduler.checkCollectors();
 
         assertThat(alerts).hasSize(2);
@@ -63,7 +63,7 @@ class OtelAlertSchedulerTest {
     @Test
     void emitsSendFailureAlertOnlyAboveConfiguredRate() {
         AtomicReference<List<NodeOtelMetrics>> metrics = new AtomicReference<>(List.of(
-                healthy("worker-1", new OtelSelfMetrics(0, 100, 90, 10, 0, 0, 0))));
+                healthy("worker-1", new OtelSelfMetrics(0, 100, 90, 10, 0, 0, 0, 0))));
         List<String> alerts = new ArrayList<>();
         OtelAlertScheduler scheduler = scheduler(metrics, alerts);
 
