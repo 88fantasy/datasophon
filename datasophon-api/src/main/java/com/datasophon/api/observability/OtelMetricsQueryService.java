@@ -375,19 +375,23 @@ public class OtelMetricsQueryService {
                                        Map<String, String> filters, Map<String, String> filtersNe,
                                        String otelTable) {
         StringBuilder sql = new StringBuilder(
-                "SELECT " + INST_EXPR + " AS instance,\n"
-                        + "       " + JOB_EXPR + " AS job,\n"
-                        + "       value, UNIX_TIMESTAMP(timestamp) AS ts\n"
-                        + "FROM otel." + otelTable + "\n"
-                        + "WHERE metric_name = :metric\n"
-                        + "  AND timestamp >= FROM_UNIXTIME(:evalTime - 300)");
+                "SELECT instance, job, value, ts\n"
+                        + "FROM (\n"
+                        + "  SELECT " + INST_EXPR + " AS instance,\n"
+                        + "         " + JOB_EXPR + " AS job,\n"
+                        + "         value, UNIX_TIMESTAMP(timestamp) AS ts,\n"
+                        + "         ROW_NUMBER() OVER(\n"
+                        + "           PARTITION BY " + INST_EXPR + ",\n"
+                        + "                        " + JOB_EXPR + "\n"
+                        + "           ORDER BY timestamp DESC\n"
+                        + "         ) AS rn\n"
+                        + "  FROM otel." + otelTable + "\n"
+                        + "  WHERE metric_name = :metric\n"
+                        + "    AND timestamp >= FROM_UNIXTIME(:evalTime - 300)");
         appendFilters(sql, filterInstance, filterJob);
         appendAttrFilters(sql, filters, filtersNe);
-        sql.append("\nQUALIFY ROW_NUMBER() OVER(\n"
-                + "  PARTITION BY " + INST_EXPR + ",\n"
-                + "               " + JOB_EXPR + "\n"
-                + "  ORDER BY timestamp DESC\n"
-                + ") = 1");
+        sql.append("\n) latest\n"
+                + "WHERE rn = 1");
         return sql.toString();
     }
 
@@ -397,18 +401,22 @@ public class OtelMetricsQueryService {
         String fn = "max".equalsIgnoreCase(agg) ? "MAX" : ("count".equalsIgnoreCase(agg) ? "COUNT" : "SUM");
         StringBuilder inner = new StringBuilder(
                 "SELECT value\n"
-                        + "FROM otel." + otelTable + "\n"
-                        + "WHERE metric_name = :metric\n"
-                        + "  AND timestamp >= FROM_UNIXTIME(:evalTime - 300)");
+                        + "FROM (\n"
+                        + "  SELECT value,\n"
+                        + "         ROW_NUMBER() OVER(\n"
+                        + "           PARTITION BY " + INST_EXPR + ",\n"
+                        + "                        " + JOB_EXPR
+                        + buildExtraGroupBy(INSTANT_SERIES_ATTR_KEYS)
+                        + "\n"
+                        + "           ORDER BY timestamp DESC\n"
+                        + "         ) AS rn\n"
+                        + "  FROM otel." + otelTable + "\n"
+                        + "  WHERE metric_name = :metric\n"
+                        + "    AND timestamp >= FROM_UNIXTIME(:evalTime - 300)");
         appendFilters(inner, filterInstance, filterJob);
         appendAttrFilters(inner, filters, filtersNe);
-        inner.append("\nQUALIFY ROW_NUMBER() OVER(\n"
-                + "  PARTITION BY " + INST_EXPR + ",\n"
-                + "               " + JOB_EXPR
-                + buildExtraGroupBy(INSTANT_SERIES_ATTR_KEYS)
-                + "\n"
-                + "  ORDER BY timestamp DESC\n"
-                + ") = 1");
+        inner.append("\n) latest\n"
+                + "WHERE rn = 1");
         return "SELECT " + fn + "(value) AS value, UNIX_TIMESTAMP(NOW()) AS ts FROM (" + inner + ") t";
     }
 
@@ -416,12 +424,12 @@ public class OtelMetricsQueryService {
         return "SELECT " + INST_EXPR + " AS instance,\n"
                 + "       " + JOB_EXPR + " AS job,\n"
                 + "       FLOOR(UNIX_TIMESTAMP(s.timestamp) / :step) * :step AS bucket,\n"
-                + "       AVG(qv.value) AS value\n"
+                + "       AVG(STRUCT_ELEMENT(qv, 'value')) AS value\n"
                 + "FROM otel.otel_metrics_summary s\n"
                 + "LATERAL VIEW EXPLODE(s.quantile_values) t AS qv\n"
                 + "WHERE s.metric_name = :metric\n"
                 + "  AND s.timestamp BETWEEN FROM_UNIXTIME(:start) AND FROM_UNIXTIME(:end)\n"
-                + "  AND qv.quantile = :quantile\n"
+                + "  AND STRUCT_ELEMENT(qv, 'quantile') = :quantile\n"
                 + "GROUP BY " + INST_EXPR + ",\n"
                 + "         " + JOB_EXPR + ",\n"
                 + "         bucket\n"
@@ -462,16 +470,15 @@ public class OtelMetricsQueryService {
      * 0-indexed），按 (instance,job,extraCols,series_key,bucket,pos) JOIN 对齐两次采样的同一个
      * 桶，{@code exploded} 求逐桶差值并用 {@code element_at(explicit_bounds, pos+1)} 取桶上界
      * （溢出桶为 NULL）。之所以不像 summary 查询那样直接
-     * {@code element_at(prev_bucket_counts, pos+1)}：Doris 对 {@code LAG()} 窗口函数产出的
-     * ARRAY 有两个实测限制——① 非常量下标的 {@code element_at} 在窗口函数结果上会报
-     * "must be constant"（对真实表列则不受限）；② 即便侧写为常量下标，{@code LAG(arrayCol)}
-     * 的返回类型会退化为 VARCHAR，喂给 {@code POSEXPLODE} 报 "only support array type"，需显式
-     * {@code CAST(... AS ARRAY<BIGINT>)} 转回。用 JOIN 对齐桶位置可以绕开①，配合 CAST 修复②。
+     * {@code element_at(prev_bucket_counts, pos+1)}：Doris 对 {@code LAG()} 作用在 ARRAY 列上的
+     * 版本兼容性较差（3.0.8 会尝试把 ARRAY 转成 VARCHAR 而失败）。因此这里只 LAG 标量
+     * {@code ts/count}，再用 {@code prev_ts} 回 join {@code ordered} 取上一行 {@code bucket_counts}，
+     * 最后用两次 POSEXPLODE + JOIN 按桶位置对齐。
      * {@code agg} 汇总多个采样对/series 的 delta（此处丢弃 series_key）；{@code cum1}/
      * {@code cum2} 用窗口函数算累计计数/总数，并 LAG 出上一桶的累计数与上界；最终 SELECT 用
-     * {@code QUALIFY ROW_NUMBER() ... = 1} 定位 {@code cum_count >= quantile * total_count} 的
-     * 第一个桶，在 [lower_bound, upper_bound] 区间线性插值；落入溢出桶（upper_bound IS NULL）
-     * 时退化为返回 lower_bound（近似 Prometheus {@code histogram_quantile} 对 +Inf 桶的处理）。
+     * {@code ROW_NUMBER() ... AS rn} 子查询定位 {@code cum_count >= quantile * total_count} 的第一个桶，
+     * 在 [lower_bound, upper_bound] 区间线性插值；落入溢出桶（upper_bound IS NULL）时退化为返回
+     * lower_bound（近似 Prometheus {@code histogram_quantile} 对 +Inf 桶的处理）。
      *
      * <p>算法已用合成数据 + 真实 APISIX standalone 沙箱抓取的 {@code apisix_http_latency}
      * 数据在真实 Doris 上验证（p90 场景，含溢出桶与普通桶插值两种情形；真实数据验证时发现并
@@ -505,21 +512,25 @@ public class OtelMetricsQueryService {
                 + ", series_key, ts, hist_count, bucket_counts, explicit_bounds,\n"
                 + "    LAG(ts) OVER(PARTITION BY " + seriesPartitionCols + " ORDER BY ts) AS prev_ts,\n"
                 + "    LAG(hist_count) OVER(PARTITION BY " + seriesPartitionCols
-                + " ORDER BY ts) AS prev_hist_count,\n"
-                // Doris 对 LAG() 作用在 ARRAY 列上的返回类型会退化为 VARCHAR，必须显式 CAST 回
-                // ARRAY<BIGINT> 才能再喂给 POSEXPLODE（实测确认，合成数据的子查询字面量不触发此问题）。
-                + "    CAST(LAG(bucket_counts) OVER(PARTITION BY " + seriesPartitionCols
-                + " ORDER BY ts) AS ARRAY<BIGINT>) AS prev_bucket_counts\n"
+                + " ORDER BY ts) AS prev_hist_count\n"
                 + "  FROM ordered\n"
                 + "),\n"
                 + "deltas AS (\n"
                 + "  SELECT instance, job" + extraCols + ", series_key,\n"
                 + "    FLOOR(ts / :step) * :step AS bucket,\n"
-                + "    bucket_counts, prev_bucket_counts, explicit_bounds\n"
+                + "    bucket_counts, explicit_bounds, prev_ts\n"
                 + "  FROM with_lag\n"
                 // reset 守卫：与 buildRangeRateSql 的 value >= prev_val 一致，计数器重置（如进程
                 // 重启）时整对采样丢弃，不逐桶压成 0（避免系统性低估 reset 后的真实新增量）。
                 + "  WHERE prev_ts IS NOT NULL AND ts > prev_ts AND hist_count >= prev_hist_count\n"
+                + "),\n"
+                + "prev_rows AS (\n"
+                + "  SELECT d.instance, d.job" + buildExtraColsQualified(groupByKeys, "d")
+                + ", d.series_key, d.bucket, p.bucket_counts\n"
+                + "  FROM deltas d\n"
+                + "  JOIN ordered p\n"
+                + "    ON d.instance = p.instance AND d.job = p.job\n"
+                + "   AND d.series_key = p.series_key AND d.prev_ts = p.ts\n"
                 + "),\n"
                 + "curr_exploded AS (\n"
                 + "  SELECT instance, job" + extraCols
@@ -529,8 +540,8 @@ public class OtelMetricsQueryService {
                 + "),\n"
                 + "prev_exploded AS (\n"
                 + "  SELECT instance, job" + extraCols + ", series_key, bucket, pos, bc AS prev_count\n"
-                + "  FROM deltas\n"
-                + "  LATERAL VIEW POSEXPLODE(prev_bucket_counts) t AS pos, bc\n"
+                + "  FROM prev_rows\n"
+                + "  LATERAL VIEW POSEXPLODE(bucket_counts) t AS pos, bc\n"
                 + "),\n"
                 // Doris 对 element_at() 作用在 LAG() 窗口函数结果上、且下标非常量时会报
                 // "must be constant"（对真实表列/CTE 透传列则不受限）。用两次 POSEXPLODE + JOIN
@@ -567,17 +578,22 @@ public class OtelMetricsQueryService {
                 + "    LAG(upper_bound) OVER(PARTITION BY " + partitionCols + ", bucket ORDER BY pos) AS lower_bound,\n"
                 + "    LAG(cum_count) OVER(PARTITION BY " + partitionCols + ", bucket ORDER BY pos) AS lower_cum\n"
                 + "  FROM cum1\n"
+                + "),\n"
+                + "quantile_candidates AS (\n"
+                + "  SELECT instance, job" + extraCols + ", bucket,\n"
+                + "    COALESCE(lower_bound, 0) +\n"
+                + "    CASE WHEN upper_bound IS NULL THEN 0\n"
+                + "         WHEN bucket_delta = 0 THEN 0\n"
+                + "         ELSE (:quantile * total_count - COALESCE(lower_cum, 0)) / bucket_delta\n"
+                + "              * (upper_bound - COALESCE(lower_bound, 0))\n"
+                + "    END AS value,\n"
+                + "    ROW_NUMBER() OVER(PARTITION BY " + partitionCols + ", bucket ORDER BY pos) AS rn\n"
+                + "  FROM cum2\n"
+                + "  WHERE total_count > 0 AND cum_count >= :quantile * total_count\n"
                 + ")\n"
-                + "SELECT instance, job" + extraCols + ", bucket,\n"
-                + "  COALESCE(lower_bound, 0) +\n"
-                + "  CASE WHEN upper_bound IS NULL THEN 0\n"
-                + "       WHEN bucket_delta = 0 THEN 0\n"
-                + "       ELSE (:quantile * total_count - COALESCE(lower_cum, 0)) / bucket_delta\n"
-                + "            * (upper_bound - COALESCE(lower_bound, 0))\n"
-                + "  END AS value\n"
-                + "FROM cum2\n"
-                + "WHERE total_count > 0 AND cum_count >= :quantile * total_count\n"
-                + "QUALIFY ROW_NUMBER() OVER(PARTITION BY " + partitionCols + ", bucket ORDER BY pos) = 1\n"
+                + "SELECT instance, job" + extraCols + ", bucket, value\n"
+                + "FROM quantile_candidates\n"
+                + "WHERE rn = 1\n"
                 + "ORDER BY instance, job" + extraCols + ", bucket";
     }
 

@@ -170,10 +170,11 @@ class OtelMetricsQueryServiceTest {
         // ── instant 无聚合 ──
 
         @Test
-        void instantNoAgg_containsQualifyAndNamedParams() {
+        void instantNoAgg_usesWindowSubqueryAndNamedParams() {
             String sql = OtelMetricsQueryService.buildInstantNoAggSql(false, false, null, null, "otel_metrics_gauge");
-            assertThat(sql).containsIgnoringCase("QUALIFY");
             assertThat(sql).containsIgnoringCase("ROW_NUMBER()");
+            assertThat(sql).contains("WHERE rn = 1");
+            assertThat(sql).doesNotContainIgnoringCase("QUALIFY");
             assertThat(sql).contains(":metric");
             assertThat(sql).contains(":evalTime");
             assertThat(sql).doesNotContain(":instance");
@@ -194,11 +195,13 @@ class OtelMetricsQueryServiceTest {
         // ── instant 聚合 ──
 
         @Test
-        void instantAgg_sum_containsSumAndQualify() {
+        void instantAgg_sum_containsSumAndUsesWindowSubquery() {
             String sql = OtelMetricsQueryService.buildInstantAggSql(
                     "sum", false, false, null, null, "otel_metrics_gauge");
             assertThat(sql).containsIgnoringCase("SUM(value)");
-            assertThat(sql).containsIgnoringCase("QUALIFY");
+            assertThat(sql).containsIgnoringCase("ROW_NUMBER()");
+            assertThat(sql).contains("WHERE rn = 1");
+            assertThat(sql).doesNotContainIgnoringCase("QUALIFY");
         }
 
         @Test
@@ -222,6 +225,10 @@ class OtelMetricsQueryServiceTest {
             String sql = OtelMetricsQueryService.buildRangeSummarySql();
             assertThat(sql).containsIgnoringCase("LATERAL VIEW EXPLODE");
             assertThat(sql).contains("quantile_values");
+            assertThat(sql).contains("STRUCT_ELEMENT(qv, 'quantile')");
+            assertThat(sql).contains("STRUCT_ELEMENT(qv, 'value')");
+            assertThat(sql).doesNotContain("qv.quantile");
+            assertThat(sql).doesNotContain("qv.value");
             assertThat(sql).contains(":quantile");
             assertThat(sql).contains(":metric");
             assertThat(sql).contains(":step");
@@ -257,15 +264,15 @@ class OtelMetricsQueryServiceTest {
 
         @Test
         void rangeHistogram_usesAdjacentSampleDeltaLikeRateQuery() {
-            // 与 buildRangeRateSql 相同的相邻采样对差分套路（LAG + prev_ts 守卫）
+            // 与 buildRangeRateSql 相同的相邻采样对差分套路；ARRAY 列不直接 LAG，避免 3.0.8
+            // 尝试把 ARRAY 转成 VARCHAR 而失败，改用 prev_ts 回 join ordered 取上一行 bucket_counts。
             String sql = OtelMetricsQueryService.buildRangeHistogramSql(
                     false, false, null, null, List.of());
             assertThat(sql).containsIgnoringCase("LAG(ts)");
-            assertThat(sql).containsIgnoringCase("LAG(bucket_counts)");
-            // LAG() 作用在 ARRAY 列上返回类型会退化为 VARCHAR,必须 CAST 回 ARRAY<BIGINT>
-            // 才能喂给 POSEXPLODE(真实 Doris 实测确认)
-            assertThat(sql).containsIgnoringCase("CAST(LAG(bucket_counts)");
-            assertThat(sql).containsIgnoringCase("AS ARRAY<BIGINT>");
+            assertThat(sql).doesNotContainIgnoringCase("LAG(bucket_counts)");
+            assertThat(sql).containsIgnoringCase("prev_rows AS");
+            assertThat(sql).contains("JOIN ordered p");
+            assertThat(sql).contains("d.prev_ts = p.ts");
             assertThat(sql).contains("prev_ts IS NOT NULL AND ts > prev_ts");
         }
 
@@ -302,7 +309,9 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("WHEN upper_bound IS NULL THEN 0");
             // 普通桶线性插值：(quantile*total - lower_cum) / bucket_delta * (upper_bound - lower_bound)
             assertThat(sql).contains(":quantile * total_count - COALESCE(lower_cum, 0)) / bucket_delta");
-            assertThat(sql).containsIgnoringCase("QUALIFY ROW_NUMBER()");
+            assertThat(sql).containsIgnoringCase("ROW_NUMBER()");
+            assertThat(sql).contains("WHERE rn = 1");
+            assertThat(sql).doesNotContainIgnoringCase("QUALIFY");
         }
 
         @Test
