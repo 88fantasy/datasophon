@@ -87,6 +87,8 @@ public class OtelMetricsQueryController extends ApiController {
      * @param clusterId 集群 ID
      * @param filters   可选等值过滤，格式 {@code "group:fe,type:used"}
      * @param filtersNe 可选不等过滤，格式 {@code "device:lo"}
+     * @param filtersRegex    可选正则过滤，格式 {@code "status:5.."}
+     * @param filtersNotRegex 可选正则不匹配过滤，格式 {@code "status:5.."}
      * @param table     查询的指标表："gauge"（默认）或 "sum"（counter/_total 类，如
      *                  {@code apisix_http_requests_total}）
      */
@@ -101,11 +103,14 @@ public class OtelMetricsQueryController extends ApiController {
                                                      @RequestParam(required = false, defaultValue = "1") Integer clusterId,
                                                      @RequestParam(required = false) String filters,
                                                      @RequestParam(required = false) String filtersNe,
+                                                     @RequestParam(required = false) String filtersRegex,
+                                                     @RequestParam(required = false) String filtersNotRegex,
                                                      @RequestParam(required = false, defaultValue = "gauge") String table) {
         try {
             long evalTime = time != null ? time : System.currentTimeMillis() / 1000;
             return ApiResponse.ok(queryService.queryInstant(clusterId, metric, agg, scale,
-                    instance, job, parseFilters(filters), parseFilters(filtersNe), evalTime, table));
+                    instance, job, parseFilters(filters), parseFilters(filtersNe),
+                    parseFilters(filtersRegex), parseFilters(filtersNotRegex), evalTime, table));
         } catch (Exception e) {
             log.error("Doris instant query failed: metric={} cluster={} reason={}",
                     metric, clusterId, e.getMessage(), e);
@@ -119,6 +124,8 @@ public class OtelMetricsQueryController extends ApiController {
      * @param rateWindow 可选速率窗口（"1m"/"5m"；缺省 gauge 直接取平均）
      * @param filters    可选等值过滤，格式 {@code "group:fe,type:used"}
      * @param filtersNe  可选不等过滤，格式 {@code "device:lo"}
+     * @param filtersRegex    可选正则过滤，格式 {@code "status:5.."}
+     * @param filtersNotRegex 可选正则不匹配过滤，格式 {@code "status:5.."}
      * @param groupBy    可选额外 GROUP BY 维度，格式 {@code "mode"} 或 {@code "mode,path"}
      * @param field      histogram 表专用："count"/"sum" 表示字段 rate，缺省或 "quantile" 表示分位数
      */
@@ -138,10 +145,13 @@ public class OtelMetricsQueryController extends ApiController {
                                                           @RequestParam(required = false) String field,
                                                           @RequestParam(required = false) String filters,
                                                           @RequestParam(required = false) String filtersNe,
+                                                          @RequestParam(required = false) String filtersRegex,
+                                                          @RequestParam(required = false) String filtersNotRegex,
                                                           @RequestParam(required = false) String groupBy) {
         try {
             return ApiResponse.ok(queryService.queryRange(clusterId, metric, rateWindow, scale,
-                    instance, job, parseFilters(filters), parseFilters(filtersNe), parseGroupBy(groupBy),
+                    instance, job, parseFilters(filters), parseFilters(filtersNe),
+                    parseFilters(filtersRegex), parseFilters(filtersNotRegex), parseGroupBy(groupBy),
                     start, end, step, table, quantile, field));
         } catch (Exception e) {
             log.error("Doris range query failed: metric={} cluster={} reason={}",
@@ -156,9 +166,10 @@ public class OtelMetricsQueryController extends ApiController {
     @GetMapping("/labels")
     public ApiResponse<LabelsResult> labels(
                                             @RequestParam String metric,
-                                            @RequestParam(required = false, defaultValue = "1") Integer clusterId) {
+                                            @RequestParam(required = false, defaultValue = "1") Integer clusterId,
+                                            @RequestParam(required = false, defaultValue = ".+") String job) {
         try {
-            return ApiResponse.ok(queryService.queryLabels(clusterId, metric));
+            return ApiResponse.ok(queryService.queryLabels(clusterId, metric, job));
         } catch (Exception e) {
             log.error("Doris labels query failed: metric={} cluster={} reason={}",
                     metric, clusterId, e.getMessage(), e);

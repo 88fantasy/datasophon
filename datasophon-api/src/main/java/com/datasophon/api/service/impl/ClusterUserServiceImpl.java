@@ -60,43 +60,43 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 @Service("clusterUserService")
 @Transactional
 public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, ClusterUser> implements ClusterUserService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ClusterUserServiceImpl.class);
-    
+
     @Autowired
     private ClusterGroupMapper clusterGroupMapper;
-    
+
     @Autowired
     private ClusterHostService hostService;
-    
+
     @Autowired
     private ClusterUserGroupService userGroupService;
-    
+
     @Override
     public Result create(Integer clusterId, String username, Integer mainGroupId, String groupIds) {
-        
+
         if (hasRepeatUserName(clusterId, username)) {
             return Result.error(Status.DUPLICATE_USER_NAME.getMsg());
         }
         List<ClusterHostDO> hostList = hostService.getHostListByClusterId(clusterId);
-        
+
         ClusterUser clusterUser = new ClusterUser();
         clusterUser.setUsername(username);
         clusterUser.setClusterId(clusterId);
         this.save(clusterUser);
         buildClusterUserGroup(clusterId, clusterUser.getId(), mainGroupId, 1);
-        
+
         String otherGroup = null;
         if (StringUtils.isNotBlank(groupIds)) {
             List<Integer> otherGroupIds =
-                    Arrays.stream(groupIds.split(",")).map(Integer::parseInt).collect(Collectors.toList());
+                    Arrays.stream(groupIds.split(",")).map(Integer::parseInt).toList();
             for (Integer id : otherGroupIds) {
                 buildClusterUserGroup(clusterId, clusterUser.getId(), id, 2);
             }
             List<ClusterGroup> clusterGroups = clusterGroupMapper.selectByIds(otherGroupIds);
             otherGroup = clusterGroups.stream().map(ClusterGroup::getGroupName).collect(Collectors.joining(","));
         }
-        
+
         ClusterGroup mainGroup = clusterGroupMapper.selectById(mainGroupId);
         // sync to all hosts
         WorkerCallAdapter adapter = SpringTool.getApplicationContext().getBean(WorkerCallAdapter.class);
@@ -116,7 +116,7 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         }
         return Result.success();
     }
-    
+
     private void buildClusterUserGroup(Integer clusterId, Integer userId, Integer groupId, Integer userGroupType) {
         ClusterUserGroup clusterUserGroup = new ClusterUserGroup();
         clusterUserGroup.setUserId(userId);
@@ -125,14 +125,14 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         clusterUserGroup.setUserGroupType(userGroupType);
         userGroupService.save(clusterUserGroup);
     }
-    
+
     private boolean hasRepeatUserName(Integer clusterId, String username) {
         List<ClusterUser> list = this.list(new QueryWrapper<ClusterUser>()
                 .eq(Constants.CLUSTER_ID, clusterId)
                 .eq(Constants.USERNAME, username));
         return !list.isEmpty();
     }
-    
+
     @Override
     public Result listPage(Integer clusterId, String username, Integer page, Integer pageSize) {
         int offset = (page - 1) * pageSize;
@@ -155,7 +155,7 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
                 .eq(Constants.CLUSTER_ID, clusterId));
         return Result.success(list).put(Constants.TOTAL, total);
     }
-    
+
     @Override
     public Result deleteClusterUser(Integer id) {
         ClusterUser clusterUser = this.getById(id);
@@ -177,12 +177,12 @@ public class ClusterUserServiceImpl extends ServiceImpl<ClusterUserMapper, Clust
         this.removeById(id);
         return Result.success();
     }
-    
+
     @Override
     public List<ClusterUser> listAllUser(Integer clusterId) {
         return this.lambdaQuery().eq(ClusterUser::getClusterId, clusterId).list();
     }
-    
+
     @Override
     public void createUnixUserOnHost(ClusterUser clusterUser, String hostname) {
         String username = clusterUser.getUsername();

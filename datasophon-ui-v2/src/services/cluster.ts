@@ -48,10 +48,13 @@ export function testK8sConnection(body: DATASOPHON.K8sConfig) {
 }
 
 export function saveK8sConfig(body: DATASOPHON.K8sConfig) {
-  return request<{ data: void }>('/cluster/k8sConfig/saveOrUpdateConfig', {
-    method: 'POST',
-    data: body,
-  });
+  return request<DATASOPHON.ApiResponse<DATASOPHON.K8sConfig>>(
+    '/cluster/k8sConfig/saveOrUpdateConfig',
+    {
+      method: 'POST',
+      data: body,
+    },
+  );
 }
 
 export function listFrames() {

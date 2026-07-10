@@ -39,6 +39,9 @@ class OtelTracesQueryServiceTest {
         assertThat(sql).contains("otel.otel_traces");
         assertThat(sql).contains("timestamp BETWEEN FROM_UNIXTIME(:start) AND FROM_UNIXTIME(:end)");
         assertThat(sql).contains("parent_span_id IS NULL OR parent_span_id = ''");
+        assertThat(sql).contains("ROW_NUMBER() OVER(PARTITION BY trace_id ORDER BY timestamp ASC) AS rn");
+        assertThat(sql).contains("WHERE rn = 1");
+        assertThat(sql).doesNotContain("QUALIFY");
         assertThat(sql).contains("LIMIT :limit OFFSET :offset");
         assertThat(sql).doesNotContain(":serviceName");
         assertThat(sql).doesNotContain(":status");

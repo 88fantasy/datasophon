@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PANEL_QUERIES, replaceDSVars } from './panelQueries';
+import { PANEL_QUERIES } from './panelQueries';
 
 describe('DolphinSchedulerMonitor panel queries', () => {
   it('defines every DolphinScheduler dashboard panel from D-A01 through D-C13', () => {
@@ -39,61 +39,135 @@ describe('DolphinSchedulerMonitor panel queries', () => {
     ]);
   });
 
-  it('keeps worker and master segment queries independent from the toolbar application variable', () => {
-    const workerQueries = Object.entries(PANEL_QUERIES).filter(([id]) =>
-      id.startsWith('D-A'),
-    );
-    const masterQueries = Object.entries(PANEL_QUERIES).filter(([id]) =>
-      id.startsWith('D-B'),
-    );
-
-    for (const [, panel] of [...workerQueries, ...masterQueries]) {
-      const promqlText =
-        panel.type === 'multi-range'
-          ? panel.queries.map((query) => query.promql).join('\n')
-          : panel.promql;
-      expect(promqlText).not.toContain('$application');
+  it('uses Doris descriptors without PromQL strings', () => {
+    const allDescriptors = Object.values(PANEL_QUERIES);
+    for (const panel of allDescriptors) {
+      expect(panel).not.toHaveProperty('promql');
+      if (panel.type === 'multi-range') {
+        for (const query of panel.queries) {
+          expect(query).not.toHaveProperty('promql');
+        }
+      }
     }
+  });
 
+  it('maps worker counters to sum table and expected rate windows', () => {
     expect(PANEL_QUERIES['D-A01']).toMatchObject({
-      type: 'range',
-      promql: 'process_cpu_usage{application="worker-server"}',
+      type: 'multi-range',
+      queries: [{ metric: 'process_cpu_usage' }],
+    });
+    expect(PANEL_QUERIES['D-A02']).toMatchObject({
+      type: 'multi-range',
+      queries: [
+        {
+          metric: 'ds_worker_full_submit_queue_count_total',
+          table: 'sum',
+          rate: '1m',
+          scale: 60,
+        },
+      ],
+    });
+    expect(PANEL_QUERIES['D-A04']).toMatchObject({
+      type: 'multi-range',
+      queries: [{ metric: 'ds_task_running' }],
+    });
+    expect(PANEL_QUERIES['D-A05']).toMatchObject({
+      type: 'multi-range',
+      queries: [
+        { label: 'total', table: 'sum', rate: '5m', scale: 300 },
+        { label: 'success', filters: { status: 'success' } },
+        { label: 'fail', filters: { status: 'fail' } },
+      ],
+    });
+    expect(PANEL_QUERIES['D-A06']).toMatchObject({
+      type: 'multi-range',
+      queries: [
+        { metric: 'ds_worker_resource_download_duration_seconds_max' },
+      ],
     });
   });
 
-  it('replaces only generic Spring Boot segment variables', () => {
-    expect(
-      replaceDSVars(
-        'process_uptime_seconds{application="$application", instance=~"$instance"}',
-        { application: 'api-server', instance: 'api-1:12345' },
-      ),
-    ).toBe(
-      'process_uptime_seconds{application="api-server", instance=~"api-1:12345"}',
-    );
-
-    expect(
-      replaceDSVars(
-        'jvm_threads_live_threads{application="$application", instance=~"$instance"}',
-        {},
-      ),
-    ).toBe(
-      'jvm_threads_live_threads{application="master-server", instance=~".+"}',
-    );
+  it('uses instant ratio descriptors for scheduler success rates', () => {
+    expect(PANEL_QUERIES['D-B02']).toMatchObject({
+      type: 'instant',
+      metric: 'ds_task_instance_count_total',
+      table: 'sum',
+      agg: 'sum',
+      filters: { state: 'success' },
+      denominatorMetric: 'ds_task_instance_count_total',
+      denominatorTable: 'sum',
+      scale: 100,
+    });
+    expect(PANEL_QUERIES['D-B04']).toMatchObject({
+      type: 'instant',
+      metric: 'ds_workflow_instance_count_total',
+      filters: { state: 'success' },
+      denominatorMetric: 'ds_workflow_instance_count_total',
+    });
   });
 
-  it('uses regex instance matchers for every generic Spring Boot segment query', () => {
-    const genericQueries = Object.entries(PANEL_QUERIES).filter(([id]) =>
-      id.startsWith('D-C'),
-    );
-
-    for (const [, panel] of genericQueries) {
-      const promqlText =
-        panel.type === 'multi-range'
-          ? panel.queries.map((query) => query.promql).join('\n')
-          : panel.promql;
-      expect(promqlText).not.toContain('instance="$instance"');
-      expect(promqlText).toContain('instance=~"$instance"');
+  it('uses summary sum/count field ratios for duration averages', () => {
+    const b08 = PANEL_QUERIES['D-B08'];
+    expect(b08.type).toBe('multi-range');
+    if (b08.type === 'multi-range') {
+      expect(b08.queries[0]).toMatchObject({
+        label: 'avg',
+        metric: 'ds_workflow_command_query_duration_seconds',
+        table: 'summary',
+        field: 'sum',
+        denominatorMetric: 'ds_workflow_command_query_duration_seconds',
+        denominatorTable: 'summary',
+        denominatorField: 'count',
+      });
     }
+
+    const b10 = PANEL_QUERIES['D-B10'];
+    expect(b10.type).toBe('multi-range');
+    if (b10.type === 'multi-range') {
+      expect(b10.queries[0]).toMatchObject({
+        label: 'avg',
+        metric: 'ds_workflow_instance_generate_duration_seconds',
+        table: 'summary',
+        field: 'sum',
+        denominatorField: 'count',
+        scale: 1000,
+      });
+    }
+  });
+
+  it('uses regex filters for HTTP status and groupBy for log and GC panels', () => {
+    expect(PANEL_QUERIES['D-C05']).toMatchObject({
+      type: 'multi-range',
+      queries: [
+        {
+          metric: 'http_server_requests_seconds',
+          table: 'summary',
+          field: 'count',
+          filtersRegex: { status: '5..' },
+        },
+      ],
+    });
+
+    const c06 = PANEL_QUERIES['D-C06'];
+    expect(c06.type).toBe('multi-range');
+    if (c06.type === 'multi-range') {
+      expect(c06.queries[0]).toMatchObject({
+        filtersNotRegex: { status: '5..' },
+        denominatorFiltersNotRegex: { status: '5..' },
+      });
+      expect(c06.queries[1]).toMatchObject({
+        filtersNotRegex: { status: '5..' },
+      });
+    }
+
+    expect(PANEL_QUERIES['D-C12']).toMatchObject({
+      type: 'multi-range',
+      queries: [{ groupBy: ['level'] }],
+    });
+    expect(PANEL_QUERIES['D-C13']).toMatchObject({
+      type: 'multi-range',
+      queries: [{ groupBy: ['cause'] }],
+    });
   });
 
   it('keeps the required multi-series operational panels', () => {

@@ -53,6 +53,23 @@ export interface DorisDashboardData {
 
 const EMPTY_MATRIX: PrometheusMatrix = { resultType: 'matrix', result: [] };
 
+/** 取 matrix 最新时间桶的所有 series 之和，保留 PromQL 外层 sum 的语义。 */
+export function matrixToLatestScalar(matrix: PrometheusMatrix): number {
+  const latestTimestamp = Math.max(
+    ...matrix.result.flatMap((series) =>
+      series.values.map(([timestamp]) => timestamp),
+    ),
+  );
+  if (!Number.isFinite(latestTimestamp)) return Number.NaN;
+
+  return matrix.result.reduce((sum, series) => {
+    const value = series.values.find(
+      ([timestamp]) => timestamp === latestTimestamp,
+    )?.[1];
+    return value === undefined ? sum : sum + Number.parseFloat(value);
+  }, 0);
+}
+
 /**
  * 逐点相除两组 matrix 序列，按 metric labels 精确匹配。
  *
@@ -154,6 +171,9 @@ export function useDorisDashboardData({
         const nodeCountIds = panelIds.filter(
           (id) => _descriptors[id]?.type === 'node-count',
         );
+        const rangeStatIds = panelIds.filter(
+          (id) => _descriptors[id]?.type === 'range-stat',
+        );
         const multiRangeIds = panelIds.filter(
           (id) => _descriptors[id]?.type === 'multi-range',
         );
@@ -164,10 +184,10 @@ export function useDorisDashboardData({
             const def = _descriptors[id];
             if (def.type !== 'instant') return [id, 0] as const;
             try {
-              const res = await queryDorisInstant({
+              const numParams = {
                 metric: def.metric,
                 agg: def.agg,
-                scale: def.scale,
+                scale: def.denominatorMetric ? 1 : def.scale,
                 instance,
                 job,
                 time: end,
@@ -175,7 +195,41 @@ export function useDorisDashboardData({
                 table: def.table,
                 filters: def.filters,
                 filtersNe: def.filtersNe,
-              });
+                filtersRegex: def.filtersRegex,
+                filtersNotRegex: def.filtersNotRegex,
+              };
+              if (def.denominatorMetric) {
+                const [numRes, denomRes] = await Promise.all([
+                  queryDorisInstant(numParams),
+                  queryDorisInstant({
+                    metric: def.denominatorMetric,
+                    agg: def.agg,
+                    scale: 1,
+                    instance,
+                    job,
+                    time: end,
+                    clusterId,
+                    table: def.denominatorTable ?? def.table,
+                    filters: def.denominatorFilters,
+                    filtersNe: def.denominatorFiltersNe,
+                    filtersRegex: def.denominatorFiltersRegex,
+                    filtersNotRegex: def.denominatorFiltersNotRegex,
+                  }),
+                ]);
+                const numerator = numRes?.data
+                  ? vectorToScalar(numRes.data)
+                  : NaN;
+                const denominator = denomRes?.data
+                  ? vectorToScalar(denomRes.data)
+                  : NaN;
+                const value =
+                  Number.isFinite(denominator) && denominator !== 0
+                    ? (numerator / denominator) * (def.scale ?? 1)
+                    : NaN;
+                return [id, value] as const;
+              }
+
+              const res = await queryDorisInstant(numParams);
               return [id, res?.data ? vectorToScalar(res.data) : 0] as const;
             } catch {
               return [id, 0] as const;
@@ -190,6 +244,37 @@ export function useDorisDashboardData({
             try {
               const res = await fetchDorisNodeCount(def.roleName, clusterId);
               return [id, res?.data ?? 0] as const;
+            } catch {
+              return [id, 0] as const;
+            }
+          });
+
+        // ── range-stat（取最新桶，复用 range rate 查询）──────────────────────────
+        const rangeStatTasks: Array<() => Promise<readonly [string, number]>> =
+          rangeStatIds.map((id) => async () => {
+            const def = _descriptors[id];
+            if (def.type !== 'range-stat') return [id, 0] as const;
+            try {
+              const res = await queryDorisRange({
+                metric: def.metric,
+                rateWindow: def.rate,
+                scale: def.scale,
+                instance,
+                job,
+                start,
+                end,
+                step,
+                clusterId,
+                table: def.table,
+                filters: def.filters,
+                filtersNe: def.filtersNe,
+                filtersRegex: def.filtersRegex,
+                filtersNotRegex: def.filtersNotRegex,
+              });
+              return [
+                id,
+                matrixToLatestScalar(res?.data ?? EMPTY_MATRIX),
+              ] as const;
             } catch {
               return [id, 0] as const;
             }
@@ -223,6 +308,8 @@ export function useDorisDashboardData({
                       field: q.field,
                       filters: q.filters,
                       filtersNe: q.filtersNe,
+                      filtersRegex: q.filtersRegex,
+                      filtersNotRegex: q.filtersNotRegex,
                       groupBy: q.groupBy,
                     }),
                     queryDorisRange({
@@ -235,10 +322,12 @@ export function useDorisDashboardData({
                       end,
                       step,
                       clusterId,
-                      table: q.table,
-                      field: q.field,
+                      table: q.denominatorTable ?? q.table,
+                      field: q.denominatorField ?? q.field,
                       filters: q.denominatorFilters,
                       filtersNe: q.denominatorFiltersNe,
+                      filtersRegex: q.denominatorFiltersRegex,
+                      filtersNotRegex: q.denominatorFiltersNotRegex,
                       groupBy: q.groupBy,
                     }),
                   ]);
@@ -270,6 +359,8 @@ export function useDorisDashboardData({
                   field: q.field,
                   filters: q.filters,
                   filtersNe: q.filtersNe,
+                  filtersRegex: q.filtersRegex,
+                  filtersNotRegex: q.filtersNotRegex,
                   groupBy: q.groupBy,
                 });
                 return {
@@ -285,17 +376,26 @@ export function useDorisDashboardData({
         });
 
         // 分别运行，各自有独立并发上限
-        const [instantResults, nodeCountResults, multiRangeResults] =
-          await Promise.all([
-            runWithConcurrencyLimit(instantTasks, concurrency),
-            runWithConcurrencyLimit(nodeCountTasks, concurrency),
-            runWithConcurrencyLimit(multiRangeTasks, concurrency),
-          ]);
+        const [
+          instantResults,
+          nodeCountResults,
+          rangeStatResults,
+          multiRangeResults,
+        ] = await Promise.all([
+          runWithConcurrencyLimit(instantTasks, concurrency),
+          runWithConcurrencyLimit(nodeCountTasks, concurrency),
+          runWithConcurrencyLimit(rangeStatTasks, concurrency),
+          runWithConcurrencyLimit(multiRangeTasks, concurrency),
+        ]);
 
         if (cancelled) return;
 
         setData({
-          instant: Object.fromEntries([...instantResults, ...nodeCountResults]),
+          instant: Object.fromEntries([
+            ...instantResults,
+            ...nodeCountResults,
+            ...rangeStatResults,
+          ]),
           series: Object.fromEntries(multiRangeResults),
           loading: false,
         });

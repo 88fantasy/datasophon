@@ -72,39 +72,39 @@ import cn.hutool.crypto.SecureUtil;
 public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, ClusterHostDO>
         implements
             ClusterHostService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ClusterHostServiceImpl.class);
-    
+
     @Autowired
     ClusterHostMapper hostMapper;
-    
+
     @Autowired
     ClusterServiceRoleInstanceMapper roleInstanceMapper;
-    
+
     @Autowired
     ClusterInfoMapper clusterInfoMapper;
-    
+
     @Autowired
     ClusterRackService clusterRackService;
-    
+
     @Autowired
     RackService rackService;
-    
+
     @Autowired
     WorkerCallAdapter workerCallAdapter;
-    
+
     private final String ip = "ip";
-    
+
     @Override
     public ClusterHostDO getClusterHostByHostname(String hostname) {
         return hostMapper.getClusterHostByHostname(hostname);
     }
-    
+
     @Override
     public ClusterHostDO getClusterHostByIp(String ip) {
         return hostMapper.getClusterHostByIp(ip);
     }
-    
+
     @Override
     public Result listByPage(Integer clusterId, String hostname, String ip, String cpuArchitecture, Integer hostState,
                              String orderField, String orderType, Integer page, Integer pageSize) {
@@ -120,7 +120,7 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
                         .orderByAsc("asc".equals(orderType), orderField)
                         .orderByDesc("desc".equals(orderType), orderField)
                         .last("limit " + offset + "," + pageSize));
-        
+
         // 回显rack的名称 而不是ID
         Map<String, String> rackMap = clusterRackService.queryClusterRack(clusterId).stream()
                 .collect(Collectors.toMap(obj -> obj.getId() + "", ClusterRack::getRack));
@@ -142,14 +142,14 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
                 .like(StringUtils.isNotBlank(hostname), Constants.HOSTNAME, hostname));
         return Result.success(hostListPageDTOS).put(Constants.TOTAL, count);
     }
-    
+
     @Override
     public List<ClusterHostDO> getHostListByClusterId(Integer clusterId) {
         return this.list(new QueryWrapper<ClusterHostDO>()
                 .eq(Constants.CLUSTER_ID, clusterId)
                 .eq(Constants.MANAGED, 1));
     }
-    
+
     @Override
     public Result getRoleListByHostname(Integer clusterId, String hostname) {
         List<ClusterServiceRoleInstanceEntity> list =
@@ -159,7 +159,7 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
         }
         return Result.success(list);
     }
-    
+
     /**
      * 批量删除主机。
      * 删除主机，首先停止主机上的服务
@@ -182,7 +182,7 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
                             .eq(Constants.SERVICE_ROLE_STATE, ServiceRoleState.RUNNING)
                             .ne(Constants.ROLE_TYPE, RoleType.CLIENT));
             List<String> roles = list.stream().map(ClusterServiceRoleInstanceEntity::getServiceRoleName)
-                    .collect(Collectors.toList());
+                    .toList();
             if (!list.isEmpty()) {
                 return Result.error(host.getHostname() + Status.HOST_EXIT_ONE_RUNNING_ROLE.getMsg() + roles);
             }
@@ -192,9 +192,9 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
             if (CacheUtils.containsKey(distributeAgentKey + Constants.UNDERLINE + host.getHostname())) {
                 CacheUtils.removeKey(distributeAgentKey + Constants.UNDERLINE + host.getHostname());
             }
-            
+
             this.removeById(hostId);
-            
+
             if (host.getHostState() != HostState.OFFLINE) {
                 // stop the worker on this host
                 ExecuteCmdCommand command = new ExecuteCmdCommand();
@@ -224,7 +224,7 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
         }
         return Result.success();
     }
-    
+
     @Override
     public Result getRack(Integer clusterId) {
         ArrayList<JSONObject> list = new ArrayList<>();
@@ -233,12 +233,12 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
         list.add(rack);
         return Result.success(list);
     }
-    
+
     @Override
     public void removeHostByClusterId(Integer clusterId) {
         this.remove(new QueryWrapper<ClusterHostDO>().eq(Constants.CLUSTER_ID, clusterId));
     }
-    
+
     @Override
     public void updateBatchNodeLabel(List<String> hostIds, String nodeLabel) {
         List<ClusterHostDO> list = this.lambdaQuery().in(ClusterHostDO::getId, hostIds).list();
@@ -247,12 +247,12 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
         }
         this.updateBatchById(list);
     }
-    
+
     @Override
     public List<ClusterHostDO> getHostListByIds(List<String> ids) {
         return this.lambdaQuery().in(ClusterHostDO::getId, ids).or().in(ClusterHostDO::getHostname, ids).list();
     }
-    
+
     @Override
     public Result assignRack(Integer clusterId, String rack, String hostIds) {
         List<String> ids = Arrays.asList(hostIds.split(","));
@@ -266,5 +266,5 @@ public class ClusterHostServiceImpl extends ServiceImpl<ClusterHostMapper, Clust
         rackService.generateRackProp(command);
         return Result.success();
     }
-    
+
 }

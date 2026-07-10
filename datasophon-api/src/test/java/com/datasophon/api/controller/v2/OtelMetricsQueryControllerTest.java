@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.datasophon.api.dto.ApiResponse;
@@ -63,13 +64,15 @@ class OtelMetricsQueryControllerTest {
         VectorSample sample = new VectorSample(
                 Map.of("instance", "h:8081", "job", "nexus"),
                 new Object[]{1234567890L, "42.0"});
-        // queryInstant signature: (clusterId, metric, agg, scale, instance, job, filters, filtersNe, evalTime, table)
+        // queryInstant signature: (clusterId, metric, agg, scale, instance, job,
+        // filters, filtersNe, filtersRegex, filtersNotRegex, evalTime, table)
         when(service.queryInstant(eq(1), eq("jvm_vm_uptime"), isNull(), eq(1.0),
-                anyString(), anyString(), any(), any(), anyLong(), eq("gauge")))
+                anyString(), anyString(), any(), any(), any(), any(), anyLong(), eq("gauge")))
                 .thenReturn(PrometheusVectorResult.of(List.of(sample)));
 
         ApiResponse<PrometheusVectorResult> response =
-                controller.query("jvm_vm_uptime", null, 1.0, ".+", ".+", null, 1, null, null, "gauge");
+                controller.query("jvm_vm_uptime", null, 1.0, ".+", ".+", null, 1,
+                        null, null, null, null, "gauge");
 
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData().resultType()).isEqualTo("vector");
@@ -84,15 +87,17 @@ class OtelMetricsQueryControllerTest {
                         Map.of("instance", "h:8081", "job", "nexus"),
                         List.<Object[]>of(new Object[]{1000L, "10.5"}))));
         // queryRange signature: (clusterId, metric, rateWindow, scale, instance, job,
-        // filters, filtersNe, groupByKeys, start, end, step, table, quantile, field)
+        // filters, filtersNe, filtersRegex, filtersNotRegex, groupByKeys, start, end, step,
+        // table, quantile, field)
         when(service.queryRange(eq(1), eq("jvm_memory_heap_used"), isNull(), eq(1.0),
-                anyString(), anyString(), any(), any(), any(), anyLong(), anyLong(), anyLong(),
+                anyString(), anyString(), any(), any(), any(), any(), any(), anyLong(), anyLong(), anyLong(),
                 any(), anyDouble(), eq("sum")))
                 .thenReturn(matrix);
 
         ApiResponse<PrometheusMatrixResult> response =
                 controller.queryRange("jvm_memory_heap_used", null, 1.0, ".+", ".+",
-                        1000L, 2000L, 15L, 1, null, 0.5, "sum", null, null, null);
+                        1000L, 2000L, 15L, 1, null, 0.5, "sum", null, null,
+                        null, null, null);
 
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData().resultType()).isEqualTo("matrix");
@@ -102,10 +107,10 @@ class OtelMetricsQueryControllerTest {
 
     @Test
     void labels_returnsInstancesAndJobs() {
-        when(service.queryLabels(eq(1), eq("jvm_vm_uptime")))
+        when(service.queryLabels(eq(1), eq("jvm_vm_uptime"), eq(".+")))
                 .thenReturn(new LabelsResult(List.of("h:8081"), List.of("nexus")));
         
-        ApiResponse<LabelsResult> response = controller.labels("jvm_vm_uptime", 1);
+        ApiResponse<LabelsResult> response = controller.labels("jvm_vm_uptime", 1, ".+");
         
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getData().instances()).containsExactly("h:8081");
@@ -135,11 +140,13 @@ class OtelMetricsQueryControllerTest {
 
     @Test
     void query_serviceThrows_returnsFailResponse() {
-        when(service.queryInstant(any(), any(), any(), anyDouble(), any(), any(), any(), any(), anyLong(), any()))
+        when(service.queryInstant(any(), any(), any(), anyDouble(), any(), any(),
+                any(), any(), any(), any(), anyLong(), any()))
                 .thenThrow(new IllegalStateException("No running DorisFE for cluster 1"));
 
         ApiResponse<PrometheusVectorResult> response =
-                controller.query("jvm_vm_uptime", null, 1.0, ".+", ".+", null, 1, null, null, "gauge");
+                controller.query("jvm_vm_uptime", null, 1.0, ".+", ".+", null, 1,
+                        null, null, null, null, "gauge");
         
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getErrorCode()).isEqualTo(500);
@@ -150,12 +157,13 @@ class OtelMetricsQueryControllerTest {
     @Test
     void queryRange_serviceThrows_returnsFailResponse() {
         when(service.queryRange(any(), any(), any(), anyDouble(), any(), any(),
-                any(), any(), any(), anyLong(), anyLong(), anyLong(), any(), anyDouble(), any()))
+                any(), any(), any(), any(), any(), anyLong(), anyLong(), anyLong(), any(), anyDouble(), any()))
                         .thenThrow(new RuntimeException("connection refused"));
         
         ApiResponse<PrometheusMatrixResult> response =
                 controller.queryRange("some_metric", null, 1.0, ".+", ".+",
-                        1000L, 2000L, 15L, 1, null, 0.5, null, null, null, null);
+                        1000L, 2000L, 15L, 1, null, 0.5, null, null, null,
+                        null, null, null);
         
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getErrorCode()).isEqualTo(500);
@@ -163,14 +171,50 @@ class OtelMetricsQueryControllerTest {
 
     @Test
     void query_responseEnvelopeMatchesPrometheusFormat() {
-        when(service.queryInstant(any(), any(), any(), anyDouble(), any(), any(), any(), any(), anyLong(), any()))
+        when(service.queryInstant(any(), any(), any(), anyDouble(), any(), any(),
+                any(), any(), any(), any(), anyLong(), any()))
                 .thenReturn(PrometheusVectorResult.of(Collections.emptyList()));
 
         ApiResponse<PrometheusVectorResult> response =
-                controller.query("m", null, 1.0, ".+", ".+", null, 1, null, null, "gauge");
+                controller.query("m", null, 1.0, ".+", ".+", null, 1,
+                        null, null, null, null, "gauge");
         
         assertThat(response.getData().resultType()).isEqualTo("vector");
         assertThat(response.getData().result()).isNotNull();
+    }
+
+    @Test
+    void query_parsesRegexFiltersAndPassesThemToService() {
+        when(service.queryInstant(any(), any(), any(), anyDouble(), any(), any(),
+                any(), any(), any(), any(), anyLong(), any()))
+                        .thenReturn(PrometheusVectorResult.of(Collections.emptyList()));
+
+        controller.query("http_server_requests_seconds", "sum", 1.0, ".+", "ApiServer",
+                1000L, 1, "status:200", "status:404", "status:5..", "status:2..", "sum");
+
+        verify(service).queryInstant(eq(1), eq("http_server_requests_seconds"), eq("sum"), eq(1.0),
+                eq(".+"), eq("ApiServer"),
+                eq(Map.of("status", "200")), eq(Map.of("status", "404")),
+                eq(Map.of("status", "5..")), eq(Map.of("status", "2..")),
+                eq(1000L), eq("sum"));
+    }
+
+    @Test
+    void queryRange_parsesRegexFiltersAndPassesThemToService() {
+        when(service.queryRange(any(), any(), any(), anyDouble(), any(), any(),
+                any(), any(), any(), any(), any(), anyLong(), anyLong(), anyLong(), any(), anyDouble(), any()))
+                        .thenReturn(PrometheusMatrixResult.of(Collections.emptyList()));
+
+        controller.queryRange("http_server_requests_seconds", "1m", 1.0, ".+", "ApiServer",
+                1000L, 2000L, 15L, 1, "summary", 0.5, "count",
+                "method:GET", "method:POST", "status:5..", "status:2..", "status");
+
+        verify(service).queryRange(eq(1), eq("http_server_requests_seconds"), eq("1m"), eq(1.0),
+                eq(".+"), eq("ApiServer"),
+                eq(Map.of("method", "GET")), eq(Map.of("method", "POST")),
+                eq(Map.of("status", "5..")), eq(Map.of("status", "2..")),
+                eq(List.of("status")), eq(1000L), eq(2000L), eq(15L),
+                eq("summary"), eq(0.5), eq("count"));
     }
 
     // ─── parseFilters / parseGroupBy 测试 ────────────────────────────────────────

@@ -52,7 +52,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,10 +67,10 @@ import cn.hutool.core.date.DateUtil;
  */
 @Service
 public class ClusterDeleteService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ClusterDeleteService.class);
     private static final String DEPRECATED = "Deprecated";
-    
+
     private final ClusterInfoService clusterInfoService;
     private final ClusterServiceRoleInstanceService roleInstanceService;
     private final ClusterServiceRoleGroupConfigService roleGroupConfigService;
@@ -82,7 +81,7 @@ public class ClusterDeleteService {
     private final K8sServiceInstanceValuesService k8sServiceInstanceValuesService;
     private final K8sClusterNamespaceService k8sClusterNamespaceService;
     private final K8sService k8sService;
-    
+
     public ClusterDeleteService(ClusterInfoService clusterInfoService,
                                 ClusterServiceRoleInstanceService roleInstanceService,
                                 ClusterServiceRoleGroupConfigService roleGroupConfigService,
@@ -104,7 +103,7 @@ public class ClusterDeleteService {
         this.k8sClusterNamespaceService = k8sClusterNamespaceService;
         this.k8sService = k8sService;
     }
-    
+
     /**
      * 异步删除集群（替代 ClusterDeleteActor.tell(new ClusterCommand(DELETE, clusterId))）。
      */
@@ -132,9 +131,9 @@ public class ClusterDeleteService {
         }
         clusterInfoService.removeById(clusterId);
     }
-    
+
     // ─── private helpers ─────────────────────────────────────────────────────
-    
+
     private boolean deleteK8sAgent(Integer clusterId) {
         K8sClusterConfig config = k8sClusterConfigService.getByClusterId(clusterId);
         if (config == null) {
@@ -147,14 +146,14 @@ public class ClusterDeleteService {
         new K8sAgentUninstallHandler().execute(config);
         return true;
     }
-    
+
     private void deleteK8sClusterComponents(Integer clusterId) {
         k8sServiceInstanceService.removeByClusterId(clusterId);
         k8sServiceInstanceValuesService.removeByClusterId(clusterId);
         k8sClusterNamespaceService.removeByClusterId(clusterId);
         k8sClusterConfigService.removeByClusterId(clusterId);
     }
-    
+
     private boolean backupServiceConfigFiles(ClusterInfoEntity clusterInfo) {
         List<ClusterServiceRoleInstanceEntity> roleInstanceList =
                 roleInstanceService.getServiceRoleInstanceListByClusterId(clusterInfo.getId());
@@ -168,14 +167,14 @@ public class ClusterDeleteService {
         }
         return true;
     }
-    
+
     private boolean doMoveRoleConfigPath(ClusterInfoEntity clusterInfo,
                                          ClusterServiceRoleInstanceEntity roleInstance) {
         Map<Generators, List<ServiceConfig>> tempConfigMap = new ConcurrentHashMap<>();
         ClusterServiceRoleGroupConfig config =
                 roleGroupConfigService.getConfigByRoleGroupId(roleInstance.getRoleGroupId());
         ServiceConfigUtils.generateConfigFileMap(tempConfigMap, config, clusterInfo.getId());
-        
+
         Map<Generators, List<ServiceConfig>> configFileMap = new ConcurrentHashMap<>();
         tempConfigMap.forEach((generators, configs) -> {
             List<ServiceConfig> serviceConfigs = configs.stream()
@@ -192,7 +191,7 @@ public class ClusterDeleteService {
                             List<String> newPaths = value.toJavaList(String.class).stream()
                                     .map(p -> getPathNewName(p, clusterInfo.getId()))
                                     .filter(Objects::nonNull)
-                                    .collect(Collectors.toList());
+                                    .toList();
                             if (!newPaths.isEmpty()) {
                                 c.setValue(newPaths);
                                 c.setConfigType(Constants.MV_PATH);
@@ -200,12 +199,12 @@ public class ClusterDeleteService {
                         }
                     })
                     .filter(c -> Constants.MV_PATH.equals(c.getConfigType()))
-                    .collect(Collectors.toList());
+                    .toList();
             if (!serviceConfigs.isEmpty()) {
                 configFileMap.put(generators, serviceConfigs);
             }
         });
-        
+
         if (configFileMap.isEmpty()) {
             return true;
         }
@@ -226,14 +225,14 @@ public class ClusterDeleteService {
             return false;
         }
     }
-    
+
     private String getPathNewName(String path, Integer clusterId) {
         if (!path.contains(DEPRECATED)) {
             return String.format("%s_%s_%s_%s", path, DEPRECATED, clusterId, DateUtil.today());
         }
         return null;
     }
-    
+
     private void deletePhysicalClusterComponents(Integer clusterId) {
         List<ClusterServiceInstanceEntity> serviceInstanceList = serviceInstanceService.listAll(clusterId);
         boolean success = true;

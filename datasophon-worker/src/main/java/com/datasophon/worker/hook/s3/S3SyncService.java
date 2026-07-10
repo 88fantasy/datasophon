@@ -3,6 +3,25 @@ package com.datasophon.worker.hook.s3;
 import com.datasophon.common.utils.PathUtils;
 import com.datasophon.common.utils.ZipUtils;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+import com.alibaba.nacos.common.utils.VersionUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
+import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -16,43 +35,21 @@ import software.amazon.awssdk.services.s3.model.PutBucketPolicyRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import lombok.extern.slf4j.Slf4j;
-
-import com.alibaba.nacos.common.utils.VersionUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.RandomUtil;
-import cn.hutool.core.util.StrUtil;
-
 @Slf4j
 public class S3SyncService {
-    
+
     private final ObjectMapper objectMapper;
-    
+
     private final S3Client client;
-    
+
     private final S3SyncParams params;
-    
+
     public S3SyncService(S3SyncParams params, S3Client client) {
         this.params = params;
         this.client = client;
         this.objectMapper = new ObjectMapper();
     }
-    
+
     /**
      * 检查并创建存储桶（如果不存在）
      * @return true 如果桶是新创建的，false 如果桶已经存在
@@ -75,7 +72,7 @@ public class S3SyncService {
             }
         }
     }
-    
+
     /**
      * 方法1: 使用HeadBucket API检查桶是否存在
      */
@@ -85,7 +82,7 @@ public class S3SyncService {
                 .build();
         client.headBucket(headBucketRequest);
     }
-    
+
     /**
      * 创建存储桶
      */
@@ -109,7 +106,7 @@ public class S3SyncService {
             }
         }
     }
-    
+
     /**
      * 设置默认存储桶策略（示例）
      */
@@ -117,25 +114,25 @@ public class S3SyncService {
         String policy = StrUtil.format(
                 "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetBucketLocation\",\"s3:ListBucket\"],\"Resource\":[\"arn:aws:s3:::{bucket}\"]},{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[\"*\"]},\"Action\":[\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::{bucket}/*\"]}]}",
                 Collections.singletonMap("bucket", bucketName));
-        
+
         log.info("set bucket: {} policy, public read, but private write", bucketName);
         PutBucketPolicyRequest putPolicyRequest = PutBucketPolicyRequest.builder()
                 .bucket(bucketName)
                 .policy(policy)
                 .build();
-        
+
         client.putBucketPolicy(putPolicyRequest);
     }
-    
+
     public List<ZipFileInfo> getUnsyncedVersion(String resourcePath, String metaObjectName) {
         List<ZipFileInfo> localVersions = scanLocalZipFiles(resourcePath);
         List<String> syncedVersions = readSyncedVersionsFromS3(metaObjectName);
-        
+
         return localVersions.stream()
                 .filter(zipFile -> !syncedVersions.contains(zipFile.getVersion()))
-                .collect(Collectors.toList());
+                .toList();
     }
-    
+
     /**
      * 扫描本地zip文件
      */
@@ -158,11 +155,11 @@ public class S3SyncService {
         } catch (IOException e) {
             throw new RuntimeException("查找文件失败", e);
         }
-        
+
         zipFiles.sort((a, b) -> VersionUtils.compareVersion(a.getVersion(), b.getVersion()));
         return zipFiles;
     }
-    
+
     private List<String> readSyncedVersionsFromS3(String metaObjectName) {
         try {
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
@@ -178,10 +175,10 @@ public class S3SyncService {
         } catch (IOException e) {
             throw new IllegalStateException(String.format("读取已经同步版本的元数据%s失败", metaObjectName), e);
         }
-        
+
         return new ArrayList<>(0);
     }
-    
+
     public void sync(List<ZipFileInfo> zipFiles, String metaObjectName) {
         for (ZipFileInfo zipFileInfo : zipFiles) {
             processZipFile(zipFileInfo);
@@ -189,7 +186,7 @@ public class S3SyncService {
             updateSyncedVersions(syncedVersions, zipFileInfo.getVersion());
         }
     }
-    
+
     /**
      * 处理zip文件
      */
@@ -198,7 +195,7 @@ public class S3SyncService {
         String dest = Paths.get(PathUtils.getTmpDir(), "ddp_unzip", RandomUtil.randomNumbers(12)).toString();
         try {
             ZipUtils.unzip(zipFile.getFilePath(), dest);
-            
+
             Path root = Paths.get(dest);
             try (Stream<Path> walkStream = Files.walk(root)) {
                 walkStream.filter(Files::isRegularFile)
@@ -211,7 +208,7 @@ public class S3SyncService {
                             }
                         });
             }
-            
+
             log.info("上传S3, 处理版本: {}", zipFile.getVersion());
         } catch (IOException e) {
             log.error("上传S3, 处理版本: {}", zipFile.getVersion(), e);
@@ -220,7 +217,7 @@ public class S3SyncService {
             FileUtil.del(dest);
         }
     }
-    
+
     /**
      * 上传单个文件到S3
      */
@@ -238,14 +235,14 @@ public class S3SyncService {
                 // 文件不存在，继续上传
             }
         }
-        
+
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(params.getBucket())
                 .key(objectName)
                 .build();
         client.putObject(putObjectRequest, RequestBody.fromFile(file));
     }
-    
+
     /**
      * 更新S3中的同步记录
      */
@@ -267,5 +264,5 @@ public class S3SyncService {
             throw new RuntimeException("更新同步记录失败", e);
         }
     }
-    
+
 }

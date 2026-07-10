@@ -119,6 +119,20 @@ class OtelMetricsQueryServiceTest {
     }
 
     @Test
+    void allowedAttrFilterKeys_includeDolphinSchedulerDimensions() {
+        assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS)
+                .contains("area", "result", "status", "level", "cause");
+        String sql = OtelMetricsQueryService.buildRangeRateSql(
+                false, false, Map.of("result", "success"), null,
+                Map.of("status", "5.."), null,
+                List.of("level", "cause"), "otel_metrics_sum");
+        assertThat(sql).contains("attributes['result']");
+        assertThat(sql).contains("attributes['status']");
+        assertThat(sql).contains("attributes['level']");
+        assertThat(sql).contains("attributes['cause']");
+    }
+
+    @Test
     void rangeSummaryFieldRate_count_useSummaryTableAndSeriesKeyPartition() {
         String sql = OtelMetricsQueryService.buildRangeFieldRateSql(
                 "count", false, false, Map.of("gc", "G1 Young Generation"), null,
@@ -138,11 +152,11 @@ class OtelMetricsQueryServiceTest {
     @Nested
     class SqlBuilding {
 
-        // ── instance/job 列修复（D3 核心）──
+        // ── instance/job 列契约 ──
 
         @Test
-        void allBuilders_useResourceAttributesForInstanceAndJob() {
-            // 每个 builder 的 instance/job 必须来自 resource_attributes，不能用 attributes
+        void allBuilders_useFlattenedServiceColumnsForInstanceAndJob() {
+            // Doris OTel schema 将 instance/job 写入扁平 service 列，不能从 attributes 取。
             String noAgg = OtelMetricsQueryService.buildInstantNoAggSql(false, false, null, null, "otel_metrics_gauge");
             String agg = OtelMetricsQueryService.buildInstantAggSql(
                     "sum", false, false, null, null, "otel_metrics_gauge");
@@ -156,8 +170,9 @@ class OtelMetricsQueryServiceTest {
 
             for (String sql : List.of(noAgg, agg, gauge, rate, summary, histogram)) {
                 assertThat(sql)
-                        .as("SQL must reference resource_attributes for instance/job")
-                        .contains("resource_attributes");
+                        .as("SQL must reference flattened service columns for instance/job")
+                        .contains("service_instance_id")
+                        .contains("service_name");
                 assertThat(sql)
                         .as("SQL must NOT use attributes['instance'] (always NULL)")
                         .doesNotContain("attributes['instance']");
@@ -170,10 +185,11 @@ class OtelMetricsQueryServiceTest {
         // ── instant 无聚合 ──
 
         @Test
-        void instantNoAgg_containsQualifyAndNamedParams() {
+        void instantNoAgg_usesWindowSubqueryAndNamedParams() {
             String sql = OtelMetricsQueryService.buildInstantNoAggSql(false, false, null, null, "otel_metrics_gauge");
-            assertThat(sql).containsIgnoringCase("QUALIFY");
             assertThat(sql).containsIgnoringCase("ROW_NUMBER()");
+            assertThat(sql).contains("WHERE rn = 1");
+            assertThat(sql).doesNotContainIgnoringCase("QUALIFY");
             assertThat(sql).contains(":metric");
             assertThat(sql).contains(":evalTime");
             assertThat(sql).doesNotContain(":instance");
@@ -181,24 +197,25 @@ class OtelMetricsQueryServiceTest {
         }
 
         @Test
-        void instantNoAgg_withInstanceJobFilters_appendsResourceAttributesRegexp() {
+        void instantNoAgg_withInstanceJobFilters_appendsServiceColumnRegexp() {
             String sql = OtelMetricsQueryService.buildInstantNoAggSql(true, true, null, null, "otel_metrics_gauge");
             assertThat(sql).contains(":instance");
             assertThat(sql).contains(":job");
             assertThat(sql).containsIgnoringCase("REGEXP");
-            // 过滤列必须是 resource_attributes
-            assertThat(sql).contains("resource_attributes['service']['instance']['id']");
-            assertThat(sql).contains("resource_attributes['service']['name']");
+            assertThat(sql).contains("service_instance_id REGEXP :instance");
+            assertThat(sql).contains("service_name REGEXP :job");
         }
 
         // ── instant 聚合 ──
 
         @Test
-        void instantAgg_sum_containsSumAndQualify() {
+        void instantAgg_sum_containsSumAndUsesWindowSubquery() {
             String sql = OtelMetricsQueryService.buildInstantAggSql(
                     "sum", false, false, null, null, "otel_metrics_gauge");
             assertThat(sql).containsIgnoringCase("SUM(value)");
-            assertThat(sql).containsIgnoringCase("QUALIFY");
+            assertThat(sql).containsIgnoringCase("ROW_NUMBER()");
+            assertThat(sql).contains("WHERE rn = 1");
+            assertThat(sql).doesNotContainIgnoringCase("QUALIFY");
         }
 
         @Test
@@ -222,6 +239,10 @@ class OtelMetricsQueryServiceTest {
             String sql = OtelMetricsQueryService.buildRangeSummarySql();
             assertThat(sql).containsIgnoringCase("LATERAL VIEW EXPLODE");
             assertThat(sql).contains("quantile_values");
+            assertThat(sql).contains("STRUCT_ELEMENT(qv, 'quantile')");
+            assertThat(sql).contains("STRUCT_ELEMENT(qv, 'value')");
+            assertThat(sql).doesNotContain("qv.quantile");
+            assertThat(sql).doesNotContain("qv.value");
             assertThat(sql).contains(":quantile");
             assertThat(sql).contains(":metric");
             assertThat(sql).contains(":step");
@@ -257,15 +278,15 @@ class OtelMetricsQueryServiceTest {
 
         @Test
         void rangeHistogram_usesAdjacentSampleDeltaLikeRateQuery() {
-            // 与 buildRangeRateSql 相同的相邻采样对差分套路（LAG + prev_ts 守卫）
+            // 与 buildRangeRateSql 相同的相邻采样对差分套路；ARRAY 列不直接 LAG，避免 3.0.8
+            // 尝试把 ARRAY 转成 VARCHAR 而失败，改用 prev_ts 回 join ordered 取上一行 bucket_counts。
             String sql = OtelMetricsQueryService.buildRangeHistogramSql(
                     false, false, null, null, List.of());
             assertThat(sql).containsIgnoringCase("LAG(ts)");
-            assertThat(sql).containsIgnoringCase("LAG(bucket_counts)");
-            // LAG() 作用在 ARRAY 列上返回类型会退化为 VARCHAR,必须 CAST 回 ARRAY<BIGINT>
-            // 才能喂给 POSEXPLODE(真实 Doris 实测确认)
-            assertThat(sql).containsIgnoringCase("CAST(LAG(bucket_counts)");
-            assertThat(sql).containsIgnoringCase("AS ARRAY<BIGINT>");
+            assertThat(sql).doesNotContainIgnoringCase("LAG(bucket_counts)");
+            assertThat(sql).containsIgnoringCase("prev_rows AS");
+            assertThat(sql).contains("JOIN ordered p");
+            assertThat(sql).contains("d.prev_ts = p.ts");
             assertThat(sql).contains("prev_ts IS NOT NULL AND ts > prev_ts");
         }
 
@@ -302,7 +323,9 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("WHEN upper_bound IS NULL THEN 0");
             // 普通桶线性插值：(quantile*total - lower_cum) / bucket_delta * (upper_bound - lower_bound)
             assertThat(sql).contains(":quantile * total_count - COALESCE(lower_cum, 0)) / bucket_delta");
-            assertThat(sql).containsIgnoringCase("QUALIFY ROW_NUMBER()");
+            assertThat(sql).containsIgnoringCase("ROW_NUMBER()");
+            assertThat(sql).contains("WHERE rn = 1");
+            assertThat(sql).doesNotContainIgnoringCase("QUALIFY");
         }
 
         @Test
@@ -403,6 +426,31 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("REGEXP :af_fstype");
             assertThat(sql).contains("attributes['mountpoint']");
             assertThat(sql).contains("NOT REGEXP :afne_mountpoint");
+        }
+
+        @Test
+        void explicitRegexFilters_appendRegexpClausesAndBindValuesAsParams() {
+            String sql = OtelMetricsQueryService.buildRangeRateSql(
+                    false, false, null, null,
+                    Map.of("status", "5.."), Map.of("status", "2.."),
+                    List.of(), "otel_metrics_sum");
+            assertThat(sql).contains("REGEXP :afr_status");
+            assertThat(sql).contains("NOT REGEXP :afnr_status");
+            assertThat(sql).doesNotContain("5..");
+            assertThat(sql).doesNotContain("2..");
+        }
+
+        @Test
+        void explicitRegexFilters_ignoreNonWhitelistKey() {
+            String sql = OtelMetricsQueryService.buildRangeGaugeSql(
+                    false, false, null, null,
+                    Map.of("status", "5..", "'; DROP TABLE otel_metrics_gauge; --", ".*"),
+                    Map.of("bad_key", ".*"),
+                    List.of(), "otel_metrics_gauge");
+            assertThat(sql).contains("REGEXP :afr_status");
+            assertThat(sql).doesNotContain("DROP TABLE");
+            assertThat(sql).doesNotContain(":afr_';");
+            assertThat(sql).doesNotContain(":afnr_bad_key");
         }
 
         @Test
@@ -728,6 +776,11 @@ class OtelMetricsQueryServiceTest {
         @Test
         void parseRateWindow_5m_returns300() {
             assertThat(OtelMetricsQueryService.parseRateWindow("5m")).isEqualTo(300L);
+        }
+
+        @Test
+        void parseRateWindow_1h_returns3600() {
+            assertThat(OtelMetricsQueryService.parseRateWindow("1h")).isEqualTo(3600L);
         }
 
         @Test

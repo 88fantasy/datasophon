@@ -26,7 +26,6 @@ import com.datasophon.dao.entity.frame.FrameK8sServiceEntity;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -35,14 +34,14 @@ import lombok.Data;
  */
 @Data
 public class FrameK8sServiceItemResponse {
-    
+
     private Integer id;
     private Integer frameId;
     private String serviceName;
     private String serviceVersion;
     private String serviceDesc;
     private List<String> supportArtifacts;
-    
+
     public static FrameK8sServiceItemResponse from(FrameK8sServiceEntity entity) {
         if (entity == null) {
             return null;
@@ -56,11 +55,11 @@ public class FrameK8sServiceItemResponse {
         r.setSupportArtifacts(entity.getSupportArtifacts());
         return r;
     }
-    
+
     public static List<FrameK8sServiceItemResponse> fromList(List<FrameK8sServiceEntity> entities) {
         if (entities == null) {
             return Collections.emptyList();
         }
-        return entities.stream().map(FrameK8sServiceItemResponse::from).collect(Collectors.toList());
+        return entities.stream().map(FrameK8sServiceItemResponse::from).toList();
     }
 }

@@ -20,17 +20,17 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import lombok.Data;
 import cn.hutool.core.util.StrUtil;
+import lombok.Data;
 
 /**
  * @author zhanghuangbin
  */
 @Data
 public class ProductDeployDAGBuildContext {
-    
+
     private final Map<String, List<FrameServiceEntity>> map;
-    
+
     public ProductDeployDAGBuildContext(List<FrameServiceEntity> list) {
         this.map = list.stream().collect(
                 Collectors.toMap(
@@ -48,21 +48,21 @@ public class ProductDeployDAGBuildContext {
             srvList.sort((s1, s2) -> -VersionUtil.compareVersions(s1.getServiceVersion(), s2.getServiceVersion()));
         });
     }
-    
+
     public FrameServiceEntity getSrvEntity(DeploySrvModel srv) {
         List<FrameServiceEntity> list = map.get(srv.getName());
         return list == null ? null : list.stream().filter(s -> s.getServiceVersion().equals(srv.getVersion())).findFirst().orElse(null);
     }
-    
+
     public FrameServiceEntity getHighestVersionSrv(String srvName) {
         List<FrameServiceEntity> list = map.get(srvName);
         return list == null || list.isEmpty() ? null : list.get(0);
     }
-    
+
     public <T extends ServiceResource<T>, N extends DAGNode> DAG<String, N, Integer> buildDeployDAG(List<T> serviceList,
                                                                                                     Function<T, N> nodeGenerator) {
         DAG<String, N, Integer> dag = new DAG<>();
-        
+
         for (int i = 0; i < serviceList.size(); i++) {
             T srv = serviceList.get(i);
             N node = nodeGenerator.apply(srv);
@@ -70,22 +70,22 @@ public class ProductDeployDAGBuildContext {
             node.setState(0);
             dag.addNode(srv.getName(), node);
         }
-        
+
         addDirectEdge(dag, serviceList);
         return dag.getReverseDag();
     }
-    
+
     /**
      * 直接加入依赖关系，不生成中间节点
      *
      */
     private void addDirectEdge(DAG<String, ?, Integer> dag, List<? extends ServiceResource> serviceList) {
         int edgeIdCounter = 0;
-        
+
         for (int i = 0; i < serviceList.size(); i++) {
             ServiceResource start = serviceList.get(i);
             Set<String> dependencies = getDependencies(start.getName());
-            
+
             for (int j = 0; j < serviceList.size(); j++) {
                 // 不能自依赖
                 if (i == j) {
@@ -105,13 +105,13 @@ public class ProductDeployDAGBuildContext {
             }
         }
     }
-    
+
     public Set<String> getDependencies(String srv) {
         Set<String> visited = new HashSet<>();
         doAddDependencies(visited, srv);
         return visited;
     }
-    
+
     private void doAddDependencies(Set<String> visited, String name) {
         FrameServiceEntity entity = getHighestVersionSrv(name);
         if (entity == null) {
@@ -125,10 +125,10 @@ public class ProductDeployDAGBuildContext {
             }
         }
     }
-    
+
     private List<String> normalDependencies(String dependenciesStr) {
         List<String> dependencies = StrUtil.isEmpty(dependenciesStr) ? Collections.emptyList() : Arrays.asList(dependenciesStr.split(Constants.COMMA));
-        return dependencies.stream().filter(StrUtil::isNotBlank).collect(Collectors.toList());
+        return dependencies.stream().filter(StrUtil::isNotBlank).toList();
     }
-    
+
 }

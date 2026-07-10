@@ -26,7 +26,6 @@ import com.datasophon.dao.entity.ClusterAlertQuota;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -35,7 +34,7 @@ import lombok.Data;
  */
 @Data
 public class AlertQuotaResponse {
-    
+
     private Integer id;
     private String alertQuotaName;
     private String alertExpr;
@@ -54,7 +53,7 @@ public class AlertQuotaResponse {
     /** 序列化为 QuotaState.desc（"启用" / "未启用" / "待更新"） */
     private String quotaState;
     private Integer quotaStateCode;
-    
+
     public static AlertQuotaResponse from(ClusterAlertQuota entity) {
         AlertQuotaResponse r = new AlertQuotaResponse();
         r.setId(entity.getId());
@@ -75,11 +74,11 @@ public class AlertQuotaResponse {
         r.setQuotaStateCode(entity.getQuotaStateCode());
         return r;
     }
-    
+
     public static List<AlertQuotaResponse> fromList(List<ClusterAlertQuota> list) {
         if (list == null) {
             return Collections.emptyList();
         }
-        return list.stream().map(AlertQuotaResponse::from).collect(Collectors.toList());
+        return list.stream().map(AlertQuotaResponse::from).toList();
     }
 }

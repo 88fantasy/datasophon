@@ -27,7 +27,6 @@ import com.datasophon.dao.enums.dag.DagStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -37,7 +36,7 @@ import lombok.Data;
  */
 @Data
 public class DagCommandResponse {
-    
+
     private String id;
     private Integer clusterId;
     private String dagName;
@@ -47,7 +46,7 @@ public class DagCommandResponse {
     private LocalDateTime createdTime;
     private LocalDateTime startedTime;
     private LocalDateTime completedTime;
-    
+
     public static DagCommandResponse from(DagDefinitionEntity entity) {
         DagCommandResponse r = new DagCommandResponse();
         r.setId(entity.getId());
@@ -60,8 +59,8 @@ public class DagCommandResponse {
         r.setCompletedTime(entity.getCompletedTime());
         return r;
     }
-    
+
     public static List<DagCommandResponse> fromList(List<DagDefinitionEntity> entities) {
-        return entities.stream().map(DagCommandResponse::from).collect(Collectors.toList());
+        return entities.stream().map(DagCommandResponse::from).toList();
     }
 }

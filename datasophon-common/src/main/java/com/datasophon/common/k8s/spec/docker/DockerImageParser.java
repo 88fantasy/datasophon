@@ -10,15 +10,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import lombok.extern.slf4j.Slf4j;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.FileUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Docker 镜像解析器
@@ -26,22 +24,22 @@ import cn.hutool.core.io.FileUtil;
  */
 @Slf4j
 public class DockerImageParser {
-    
+
     /**
      * OCI 镜像索引文件名
      */
     public static final String INDEX_FILE = "index.json";
-    
+
     /**
      * 旧版 Docker 镜像清单文件名
      */
     public static final String MANIFEST_JSON = "manifest.json";
-    
+
     /**
      * Docker 镜像 tar 包文件
      */
     private final File tar;
-    
+
     /**
      * 构造 Docker 镜像解析器
      *
@@ -50,7 +48,7 @@ public class DockerImageParser {
     public DockerImageParser(File tar) {
         this.tar = tar;
     }
-    
+
     /**
      * 解析 Docker save 生成的 tar 包，提取所有镜像的标签和平台信息。
      * 支持两种格式：
@@ -68,7 +66,7 @@ public class DockerImageParser {
             unzipDir = TarUtils.decompressToTemp(tar.getAbsolutePath());
             File ociFile = new File(unzipDir, INDEX_FILE);
             File oldFormat = new File(unzipDir, MANIFEST_JSON);
-            
+
             // 优先使用 OCI 通用格式，其次使用旧版 Docker 格式
             if (ociFile.exists()) {
                 return parseOciFormat(unzipDir);
@@ -83,7 +81,7 @@ public class DockerImageParser {
             FileUtil.del(unzipDir);
         }
     }
-    
+
     /**
      * 解析旧版 Docker 镜像格式（manifest.json 格式）
      *
@@ -95,23 +93,23 @@ public class DockerImageParser {
         File oldFormat = new File(unzipDir, MANIFEST_JSON);
         // 读取 manifest.json 内容
         String content = FileUtil.readString(oldFormat, StandardCharsets.UTF_8);
-        
+
         // 解析为 DockerManifestEntry 列表
         List<DockerManifestEntry> entries = JSON.parseArray(content, DockerManifestEntry.class);
-        
+
         for (DockerManifestEntry entry : entries) {
             // 读取配置文件（包含 OS 和架构信息）
             String configFile = entry.getConfig();
             String configContent = FileUtil.readString(Paths.get(unzipDir, configFile).toFile(), StandardCharsets.UTF_8);
             ImageHostPlatform config = JSONObject.parseObject(configContent, ImageHostPlatform.class);
-            
+
             // 为该镜像的每个 RepoTag 生成一个镜像清单条目
             for (String repoTag : entry.getRepoTags()) {
                 String[] parts = splitRepoTag(repoTag);
                 ImageManifest im = new ImageManifest();
                 im.setImage(parts[0]);
                 im.setTag(parts[1]);
-                
+
                 // 设置平台信息（OS 和 CPU 架构）
                 ImageManifest.ImagePlatform platform = new ImageManifest.ImagePlatform();
                 platform.setOs(config.getOs());
@@ -122,7 +120,7 @@ public class DockerImageParser {
         }
         return result;
     }
-    
+
     /**
      * 分割镜像仓库标签（格式：repo/image:tag）
      *
@@ -138,7 +136,7 @@ public class DockerImageParser {
             return new String[]{repoTag, "latest"};
         }
     }
-    
+
     /**
      * 解析 OCI 格式镜像（新版标准格式）
      * 支持：
@@ -152,7 +150,7 @@ public class DockerImageParser {
         // 读取 index.json 索引文件
         String content = FileUtil.readString(new File(unzipDir, INDEX_FILE), StandardCharsets.UTF_8);
         OciIndex index = JSONObject.parseObject(content, OciIndex.class);
-        
+
         List<ImageManifest> result = new ArrayList<>();
         // 遍历所有镜像引用
         for (OciManifestRef ref : index.getManifests()) {
@@ -165,7 +163,7 @@ public class DockerImageParser {
                 // 没有标签的镜像跳过
                 continue;
             }
-            
+
             List<ImageHostPlatform> platforms = new ArrayList<>();
             // 直接在引用中定义了平台信息
             if (ref.getPlatform() != null) {
@@ -193,26 +191,26 @@ public class DockerImageParser {
             if (platforms.isEmpty()) {
                 throw new UnsupportedFormatException(String.format("文件：%s无法解析镜像%s的架构", tar.getName(), tag));
             }
-            
+
             // 分割镜像名和标签
             String[] parts = splitRepoTag(tag);
             ImageManifest im = new ImageManifest();
             im.setImage(parts[0]);
             im.setTag(parts[1]);
-            
+
             // 转换平台信息格式
             List<ImageManifest.ImagePlatform> pms = platforms.stream().map(p -> {
                 ImageManifest.ImagePlatform pm = new ImageManifest.ImagePlatform();
                 pm.setOs(p.getOs());
                 pm.setArch(p.getArchitecture());
                 return pm;
-            }).collect(Collectors.toList());
+            }).toList();
             im.setPlatforms(pms);
             result.add(im);
         }
         return result;
     }
-    
+
     /**
      * 解析单架构镜像的平台信息
      * 通过读取镜像 manifest 中的 config 字段获取 OS 和架构信息
@@ -228,7 +226,7 @@ public class DockerImageParser {
             return null;
         }
         OciManifest manifest = JSONObject.parseObject(content, OciManifest.class);
-        
+
         // 从 config 配置文件中读取平台信息
         if (manifest.getConfig() != null) {
             String configDigestContent = readDigestFileContent(unzipDir, manifest.getConfig().getDigest());
@@ -241,7 +239,7 @@ public class DockerImageParser {
         }
         return null;
     }
-    
+
     /**
      * 解析多架构镜像列表的平台信息
      * 多架构镜像包含多个子镜像引用，每个引用对应一个特定平台的镜像
@@ -256,7 +254,7 @@ public class DockerImageParser {
             return new ArrayList<>(0);
         }
         List<ImageHostPlatform> result = new ArrayList<>();
-        
+
         // 解析镜像索引
         OciIndex manifest = JSONObject.parseObject(content, OciIndex.class);
         for (OciManifestRef ref : manifest.getManifests()) {
@@ -267,7 +265,7 @@ public class DockerImageParser {
         }
         return result;
     }
-    
+
     /**
      * 根据摘要读取 blob 文件内容
      * Docker/OCI 镜像的 blob 文件存储路径为：blobs/sha256/{hash}
@@ -287,7 +285,7 @@ public class DockerImageParser {
         }
         return null;
     }
-    
+
     /**
      * 检查指定的 blob 文件是否存在
      *
@@ -304,5 +302,5 @@ public class DockerImageParser {
         }
         return false;
     }
-    
+
 }

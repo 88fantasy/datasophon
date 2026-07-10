@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { PANEL_QUERIES, replaceKyuubiVars } from './panelQueries';
-
-const CONN_TYPE_PLACEHOLDER = '$' + '{connType}';
-const OP_TYPE_PLACEHOLDER = '$' + '{opType}';
+import {
+  buildKyuubiPanelQueries,
+  KYUUBI_CONN_TYPES,
+  KYUUBI_OP_TYPES,
+  PANEL_QUERIES,
+} from './panelQueries';
 
 describe('KyuubiMonitor panel queries', () => {
   it('defines every Kyuubi dashboard panel from KY01 through KY16', () => {
@@ -14,108 +16,87 @@ describe('KyuubiMonitor panel queries', () => {
     expect(Object.keys(PANEL_QUERIES).sort()).toEqual(expectedIds);
   });
 
-  it('replaces connType and opType placeholders inside metric names', () => {
-    expect(
-      replaceKyuubiVars(
-        `kyuubi_${CONN_TYPE_PLACEHOLDER}_failed{instance=~"$instance"}`,
-        {
-          connType: 'connection_total_BATCH',
-          opType: 'LaunchEngine',
-          instance: 'kyuubi-1:10019',
-          baseFilter: '',
-          trendInterval: '5m',
-        },
-      ),
-    ).toBe('kyuubi_connection_total_BATCH_failed{instance=~"kyuubi-1:10019"}');
-
-    expect(
-      replaceKyuubiVars(
-        `kyuubi_operation_state_${OP_TYPE_PLACEHOLDER}_error_total{instance=~"$instance"}`,
-        {
-          connType: 'connection_total_INTERACTIVE',
-          opType: 'ExecuteStatement',
-          instance: 'kyuubi-2:10019',
-          baseFilter: '',
-          trendInterval: '5m',
-        },
-      ),
-    ).toBe(
-      'kyuubi_operation_state_ExecuteStatement_error_total{instance=~"kyuubi-2:10019"}',
-    );
-  });
-
-  it('cleans an empty baseFilter prefix before instance filters', () => {
-    expect(
-      replaceKyuubiVars(
-        'kyuubi_jvm_uptime{$baseFilter,instance=~"$instance"}',
-        {
-          instance: 'kyuubi-.+',
-          baseFilter: '',
-          connType: 'connection_total_INTERACTIVE',
-          opType: 'ExecuteStatement',
-          trendInterval: '5m',
-        },
-      ),
-    ).toBe('kyuubi_jvm_uptime{instance=~"kyuubi-.+"}');
-  });
-
-  it('replaces trendInterval in increase windows', () => {
-    expect(
-      replaceKyuubiVars(
-        'increase(kyuubi_connection_total_INTERACTIVE{instance=~"$instance"}[$trendInterval])',
-        {
-          instance: '.+',
-          baseFilter: '',
-          connType: 'connection_total_INTERACTIVE',
-          opType: 'ExecuteStatement',
-          trendInterval: '15m',
-        },
-      ),
-    ).toBe(
-      'increase(kyuubi_connection_total_INTERACTIVE{instance=~".+"}[15m])',
-    );
-  });
-
-  it('keeps KY06, KY11, and KY12 as red error panels', () => {
-    expect(PANEL_QUERIES.KY06).toMatchObject({
+  it('uses the real Doris table for Kyuubi gauge and sum metrics', () => {
+    expect(PANEL_QUERIES.KY01).toMatchObject({
       type: 'instant',
-      tone: 'error',
+      metric: 'kyuubi_jvm_uptime',
+      agg: 'count',
     });
-    expect(JSON.stringify(PANEL_QUERIES.KY06)).toContain(
-      `kyuubi_operation_state_${OP_TYPE_PLACEHOLDER}_error_total`,
-    );
+    expect(PANEL_QUERIES.KY06).toMatchObject({
+      type: 'range-stat',
+      table: 'sum',
+      rate: '5m',
+      scale: 300,
+    });
 
-    expect(PANEL_QUERIES.KY11).toMatchObject({
-      type: 'range',
-      tone: 'error',
-    });
-    expect(JSON.stringify(PANEL_QUERIES.KY11)).toContain(
-      `kyuubi_${CONN_TYPE_PLACEHOLDER}_failed`,
-    );
-
-    expect(PANEL_QUERIES.KY12).toMatchObject({
-      type: 'multi-range',
-      tone: 'error',
-    });
-    expect(JSON.stringify(PANEL_QUERIES.KY12)).toContain(
-      `kyuubi_operation_state_${OP_TYPE_PLACEHOLDER}_error_total`,
-    );
+    const ky13 = PANEL_QUERIES.KY13;
+    expect(ky13.type).toBe('multi-range');
+    if (ky13.type === 'multi-range') {
+      expect(ky13.queries[0]).toMatchObject({
+        metric: 'kyuubi_backend_service_fetch_result_rows_rate_total',
+        table: 'sum',
+        rate: '5m',
+        scale: 300,
+      });
+    }
   });
 
-  it('defines KY16 as JVM memory pool multi-range queries', () => {
-    expect(PANEL_QUERIES.KY16).toMatchObject({
-      type: 'multi-range',
-      queries: [
-        { label: 'Eden' },
-        { label: 'Old Gen' },
-        { label: 'Survivor' },
-        { label: 'Metaspace' },
-        { label: 'Code Cache' },
-      ],
+  it('substitutes selected connection and operation types into exact metric names', () => {
+    const panels = buildKyuubiPanelQueries(
+      'thrift_http_connection',
+      'LaunchEngine',
+      '1h',
+    );
+
+    expect(panels.KY06).toMatchObject({
+      metric: 'kyuubi_operation_state_LaunchEngine_error_total',
+      rate: '1h',
+      scale: 3600,
     });
 
-    expect(JSON.stringify(PANEL_QUERIES.KY16)).toContain(
-      'kyuubi_memory_usage_pools_PS_Eden_Space_used',
-    );
+    const ky11 = panels.KY11;
+    const ky12 = panels.KY12;
+    expect(ky11.type).toBe('multi-range');
+    expect(ky12.type).toBe('multi-range');
+    if (ky11.type === 'multi-range' && ky12.type === 'multi-range') {
+      expect(ky11.queries[0].metric).toBe(
+        'kyuubi_thrift_http_connection_failed',
+      );
+      expect(ky12.queries).toEqual([
+        {
+          label: 'Operation Error',
+          metric: 'kyuubi_operation_state_LaunchEngine_error_total',
+          table: 'sum',
+        },
+      ]);
+    }
+  });
+
+  it('uses the observed JVM memory pool metric names', () => {
+    const ky16 = PANEL_QUERIES.KY16;
+    expect(ky16.type).toBe('multi-range');
+    if (ky16.type !== 'multi-range') return;
+
+    expect(ky16.queries.map((query) => query.metric)).toEqual([
+      'kyuubi_memory_usage_pools_Eden_Space_used',
+      'kyuubi_memory_usage_pools_Tenured_Gen_used',
+      'kyuubi_memory_usage_pools_Survivor_Space_used',
+      'kyuubi_memory_usage_pools_Metaspace_used',
+      'kyuubi_memory_usage_pools_Code_Cache_used',
+    ]);
+  });
+
+  it('only offers Kyuubi connection and operation types supported by the official dashboard', () => {
+    expect(KYUUBI_CONN_TYPES).toEqual([
+      'thrift_binary_connection',
+      'rest_connection',
+      'thrift_http_connection',
+      'metadata_request',
+    ]);
+    expect(KYUUBI_OP_TYPES).toEqual([
+      'ExecuteStatement',
+      'BatchJobSubmission',
+      'LaunchEngine',
+    ]);
   });
 });

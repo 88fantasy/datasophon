@@ -58,7 +58,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -75,34 +74,34 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServiceInstanceMapper, ClusterServiceInstanceEntity>
         implements
             ClusterServiceInstanceService {
-    
+
     @Autowired
     private ClusterServiceRoleInstanceMapper roleInstanceMapper;
-    
+
     @Autowired
     private ClusterServiceDashboardService dashboardService;
-    
+
     @Autowired
     private ClusterAlertHistoryMapper alertHistoryMapper;
-    
+
     @Autowired
     private FrameServiceRoleService frameServiceRoleService;
-    
+
     @Autowired
     private ClusterServiceRoleGroupConfigService roleGroupConfigService;
-    
+
     @Autowired
     private ClusterServiceInstanceRoleGroupService roleGroupService;
-    
+
     @Autowired
     private ClusterServiceRoleInstanceWebuisService webuisService;
-    
+
     @Autowired
     private ClusterVariableService variableService;
-    
+
     @Autowired
     private FrameServiceService frameServiceService;
-    
+
     @Override
     public ClusterServiceInstanceEntity getServiceInstanceByClusterIdAndServiceName(Integer clusterId,
                                                                                     String serviceName) {
@@ -110,13 +109,13 @@ public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServic
                 .eq(Constants.CLUSTER_ID, clusterId)
                 .eq(Constants.SERVICE_NAME, serviceName));
     }
-    
+
     @Override
     public List<ClusterServiceInstanceEntity> getServiceInstanceByClusterId(Integer clusterId) {
         return this.list(new QueryWrapper<ClusterServiceInstanceEntity>()
                 .eq(Constants.CLUSTER_ID, clusterId));
     }
-    
+
     @Override
     public List<ClusterServiceInstanceEntity> listAll(Integer clusterId) {
         List<ClusterServiceInstanceEntity> list = lambdaQuery()
@@ -132,7 +131,7 @@ public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServic
             if (frameService != null) {
                 serviceInstance.setCatalog(frameService.getType());
             }
-            
+
             serviceInstance.setServiceStateCode(serviceInstance.getServiceState().getValue());
             boolean needUpdate = false;
             // 查询dashboard
@@ -151,7 +150,7 @@ public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServic
                 serviceInstance.setServiceState(ServiceState.WAIT_INSTALL);
                 needUpdate = true;
             }
-            
+
             // 查询停止状态角色
             List<ClusterServiceRoleInstanceEntity> roleList = roleInstanceMapper.selectList(Wrappers.<ClusterServiceRoleInstanceEntity>lambdaQuery()
                     .eq(ClusterServiceRoleInstanceEntity::getServiceId, serviceInstance.getId())
@@ -185,7 +184,7 @@ public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServic
                     needUpdate = true;
                 }
             }
-            
+
             // 查询是否进行了配置更新
             List<ClusterServiceRoleInstanceEntity> obsoleteRoleList = roleInstanceMapper.getObsoleteService(serviceInstance.getId());
             if (Objects.nonNull(obsoleteRoleList) && obsoleteRoleList.isEmpty() && serviceInstance.getNeedRestart() == NeedRestart.YES) {
@@ -196,10 +195,10 @@ public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServic
                 this.updateById(serviceInstance);
             }
         }
-        
+
         return list;
     }
-    
+
     @Override
     public Result getServiceRoleType(Integer serviceInstanceId) {
         ClusterServiceInstanceEntity serviceInstanceEntity = this.getById(serviceInstanceId);
@@ -207,7 +206,7 @@ public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServic
         List<FrameServiceRoleEntity> list = frameServiceRoleService.getAllServiceRoleList(frameServiceId);
         return Result.success(list);
     }
-    
+
     @Override
     public Result configVersionCompare(Integer serviceInstanceId, Integer roleGroupId) {
         List<ClusterServiceRoleGroupConfig> list =
@@ -221,13 +220,13 @@ public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServic
             String newConfigJson = newConfig.getConfigJson();
             List<SimpleServiceConfig> newSimpleServiceConfigs =
                     JSONArray.parseArray(newConfigJson, SimpleServiceConfig.class);
-            
+
             String oldConfigJson = oldConfig.getConfigJson();
             List<SimpleServiceConfig> oldSimpleServiceConfigs =
                     JSONArray.parseArray(oldConfigJson, SimpleServiceConfig.class);
             map.put("newConfig", newSimpleServiceConfigs);
             map.put("oldConfig", oldSimpleServiceConfigs);
-            
+
         } else if (list.size() == 1) {
             ClusterServiceRoleGroupConfig newConfig = list.get(0);
             String newConfigJson = newConfig.getConfigJson();
@@ -238,7 +237,7 @@ public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServic
         }
         return Result.success(map);
     }
-    
+
     @Override
     public Result delServiceInstance(Integer serviceInstanceId) {
         if (hasRunningRoleInstance(serviceInstanceId)) {
@@ -246,7 +245,7 @@ public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServic
         }
         List<ClusterServiceInstanceRoleGroup> roleGroups =
                 roleGroupService.listRoleGroupByServiceInstanceId(serviceInstanceId);
-        List<Integer> roleGroupIds = roleGroups.stream().map(ClusterServiceInstanceRoleGroup::getId).collect(Collectors.toList());
+        List<Integer> roleGroupIds = roleGroups.stream().map(ClusterServiceInstanceRoleGroup::getId).toList();
         if (!roleGroupIds.isEmpty()) {
             List<ClusterServiceRoleGroupConfig> roleGroupConfigList =
                     roleGroupConfigService.listRoleGroupConfigsByRoleGroupIds(roleGroupIds);
@@ -254,19 +253,19 @@ public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServic
             roleGroupService.removeByIds(roleGroupIds);
             // del role group config
             roleGroupConfigService
-                    .removeByIds(roleGroupConfigList.stream().map(ClusterServiceRoleGroupConfig::getId).collect(Collectors.toList()));
+                    .removeByIds(roleGroupConfigList.stream().map(ClusterServiceRoleGroupConfig::getId).toList());
         }
         List<ClusterServiceRoleInstanceEntity> roleInstanceList =
                 roleInstanceMapper.getServiceRoleInstanceListByServiceId(serviceInstanceId);
         // del service role instance
         if (!roleInstanceList.isEmpty()) {
             List<String> roleInsIds =
-                    roleInstanceList.stream().map(e -> e.getId().toString()).collect(Collectors.toList());
+                    roleInstanceList.stream().map(e -> e.getId().toString()).toList();
             SpringTool.getApplicationContext().getBean(ClusterServiceRoleInstanceService.class).deleteServiceRole(roleInsIds);
         }
         // del web uis
         webuisService.removeByServiceInsId(serviceInstanceId);
-        
+
         // del service instance
         this.removeById(serviceInstanceId);
         // del variable
@@ -275,23 +274,23 @@ public class ClusterServiceInstanceServiceImpl extends ServiceImpl<ClusterServic
             if (CollectionUtils.isNotEmpty(variables)) {
                 Map<String, String> variablesMap = GlobalVariables.getVariables(roleGroup.getClusterId());
                 variables.forEach(var -> variablesMap.remove(var.getVariableName()));
-                variableService.removeByIds(variables.stream().map(ClusterVariable::getId).collect(Collectors.toList()));
+                variableService.removeByIds(variables.stream().map(ClusterVariable::getId).toList());
             }
         });
         return Result.success();
     }
-    
+
     @Override
     public List<ClusterServiceInstanceEntity> listRunningServiceInstance(Integer clusterId) {
         return this.list(new QueryWrapper<ClusterServiceInstanceEntity>()
                 .eq(Constants.CLUSTER_ID, clusterId)
                 .eq(Constants.SERVICE_STATE, ServiceState.RUNNING));
     }
-    
+
     public boolean hasRunningRoleInstance(Integer serviceInstanceId) {
         List<ClusterServiceRoleInstanceEntity> list =
                 roleInstanceMapper.getRunningServiceRoleInstanceListByServiceId(serviceInstanceId);
         return !list.isEmpty();
     }
-    
+
 }

@@ -1,4 +1,4 @@
-import type { PanelDef } from '../_shared/panelTypes';
+import type { DorisPanelDescriptor } from '../_shared/dorisService';
 
 export type DSApplication =
   | 'master-server'
@@ -90,98 +90,156 @@ export function getDSSegmentPanelIds(segment: DSApplication): string[] {
   }
 }
 
-export function replaceDSVars(
-  promql: string,
-  variables: Partial<DSDashboardVariables>,
-): string {
-  return promql
-    .replace(/\$application/g, variables.application || 'master-server')
-    .replace(/\$instance/g, variables.instance || '.+');
-}
-
-export const PANEL_QUERIES: Record<string, PanelDef> = {
+export const PANEL_QUERIES: Record<string, DorisPanelDescriptor> = {
   'D-A01': {
-    type: 'range',
-    promql: 'process_cpu_usage{application="worker-server"}',
+    type: 'multi-range',
+    queries: [{ label: 'process_cpu_usage', metric: 'process_cpu_usage' }],
   },
   'D-A02': {
-    type: 'range',
-    promql: 'increase(ds_worker_full_submit_queue_count_total[1m])',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'full_submit_queue',
+        metric: 'ds_worker_full_submit_queue_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+      },
+    ],
   },
   'D-A03': {
-    type: 'range',
-    promql: 'increase(ds_worker_overload_count_total[1m])',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'overload',
+        metric: 'ds_worker_overload_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+      },
+    ],
   },
   'D-A04': {
-    type: 'range',
-    promql: 'ds_worker_task{}',
+    type: 'multi-range',
+    queries: [{ label: 'worker_task', metric: 'ds_task_running' }],
   },
   'D-A05': {
     type: 'multi-range',
     queries: [
       {
         label: 'total',
-        promql: 'sum(increase(ds_worker_resource_download_count_total[5m]))',
+        metric: 'ds_worker_resource_download_count_total',
+        table: 'sum',
+        rate: '5m',
+        scale: 300,
       },
       {
         label: 'success',
-        promql:
-          'increase(ds_worker_resource_download_count_total{status="success"}[5m])',
+        metric: 'ds_worker_resource_download_count_total',
+        table: 'sum',
+        rate: '5m',
+        scale: 300,
+        filters: { status: 'success' },
       },
       {
         label: 'fail',
-        promql:
-          'increase(ds_worker_resource_download_count_total{status="fail"}[5m])',
+        metric: 'ds_worker_resource_download_count_total',
+        table: 'sum',
+        rate: '5m',
+        scale: 300,
+        filters: { status: 'fail' },
       },
     ],
   },
   'D-A06': {
-    type: 'range',
-    promql: 'increase(ds_worker_resource_download_duration_seconds[5m])',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'duration',
+        metric: 'ds_worker_resource_download_duration_seconds_max',
+      },
+    ],
   },
 
   'D-B01': {
     type: 'instant',
-    promql: 'sum(ds_task_execution_count_total)',
+    metric: 'ds_task_instance_count_total',
+    table: 'sum',
+    agg: 'sum',
   },
   'D-B02': {
     type: 'instant',
-    promql:
-      'sum(ds_task_execution_count_total{result="success"}) / sum(ds_task_execution_count_total) * 100',
+    metric: 'ds_task_instance_count_total',
+    table: 'sum',
+    agg: 'sum',
+    filters: { state: 'success' },
+    denominatorMetric: 'ds_task_instance_count_total',
+    denominatorTable: 'sum',
+    scale: 100,
   },
   'D-B03': {
     type: 'instant',
-    promql: 'sum(ds_master_quartz_job_executed_total)',
+    metric: 'ds_workflow_instance_count_total',
+    table: 'sum',
+    agg: 'sum',
   },
   'D-B04': {
     type: 'instant',
-    promql:
-      'sum(ds_master_quartz_job_executed_total{result="success"}) / sum(ds_master_quartz_job_executed_total) * 100',
+    metric: 'ds_workflow_instance_count_total',
+    table: 'sum',
+    agg: 'sum',
+    filters: { state: 'success' },
+    denominatorMetric: 'ds_workflow_instance_count_total',
+    denominatorTable: 'sum',
+    scale: 100,
   },
   'D-B05': {
-    type: 'range',
-    promql: 'increase(ds_master_overload_count_total[1m])',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'overload',
+        metric: 'ds_master_scheduler_failover_check_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+      },
+    ],
   },
   'D-B06': {
-    type: 'range',
-    promql: 'increase(ds_master_consume_command_count_total[1m])',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'consume_command',
+        metric: 'ds_task_dispatch_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+      },
+    ],
   },
   'D-B07': {
     type: 'multi-range',
     queries: [
       {
         label: 'total',
-        promql: 'sum(increase(ds_master_quartz_job_executed_total[1m]))',
-      },
-      {
-        label: 'success',
-        promql:
-          'sum(increase(ds_master_quartz_job_executed_total{result="success"}[1m]))',
+        metric: 'ds_task_dispatch_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
       },
       {
         label: 'failure',
-        promql:
-          'sum(increase(ds_master_quartz_job_executed_total{result="failure"}[1m]))',
+        metric: 'ds_task_dispatch_failure_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+      },
+      {
+        label: 'error',
+        metric: 'ds_task_dispatch_error_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
       },
     ],
   },
@@ -190,12 +248,17 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
     queries: [
       {
         label: 'avg',
-        promql:
-          'rate(ds_master_quartz_job_execution_time_seconds_sum[1m]) / rate(ds_master_quartz_job_execution_time_seconds_count[1m])',
+        metric: 'ds_workflow_command_query_duration_seconds',
+        table: 'summary',
+        field: 'sum',
+        rate: '1m',
+        denominatorMetric: 'ds_workflow_command_query_duration_seconds',
+        denominatorTable: 'summary',
+        denominatorField: 'count',
       },
       {
         label: 'max',
-        promql: 'ds_master_quartz_job_execution_time_seconds_max',
+        metric: 'ds_workflow_command_query_duration_seconds_max',
       },
     ],
   },
@@ -204,12 +267,18 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
     queries: [
       {
         label: 'total',
-        promql: 'sum(increase(ds_task_execution_count_total[1m]))',
+        metric: 'ds_workflow_instance_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
       },
       {
         label: 'success',
-        promql:
-          'sum(increase(ds_task_execution_count_total{result="success"}[1m]))',
+        metric: 'ds_workflow_instance_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+        filters: { state: 'success' },
       },
     ],
   },
@@ -218,12 +287,19 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
     queries: [
       {
         label: 'avg',
-        promql:
-          'rate(ds_task_execution_duration_seconds_sum[1m]) / rate(ds_task_execution_duration_seconds_count[1m]) * 1000',
+        metric: 'ds_workflow_instance_generate_duration_seconds',
+        table: 'summary',
+        field: 'sum',
+        rate: '1m',
+        denominatorMetric: 'ds_workflow_instance_generate_duration_seconds',
+        denominatorTable: 'summary',
+        denominatorField: 'count',
+        scale: 1000,
       },
       {
         label: 'max',
-        promql: 'ds_task_execution_duration_seconds_max * 1000',
+        metric: 'ds_workflow_instance_generate_duration_seconds_max',
+        scale: 1000,
       },
     ],
   },
@@ -232,23 +308,35 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
     queries: [
       {
         label: 'submit',
-        promql:
-          'sum(increase(ds_workflow_instance_count_total{state="submit"}[1m]))',
+        metric: 'ds_workflow_instance_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+        filters: { state: 'submit' },
       },
       {
         label: 'success',
-        promql:
-          'sum(increase(ds_workflow_instance_count_total{state="success"}[1m]))',
+        metric: 'ds_workflow_instance_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+        filters: { state: 'success' },
       },
       {
         label: 'fail',
-        promql:
-          'sum(increase(ds_workflow_instance_count_total{state="fail"}[1m]))',
+        metric: 'ds_workflow_instance_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+        filters: { state: 'fail' },
       },
       {
         label: 'timeout',
-        promql:
-          'sum(increase(ds_workflow_instance_count_total{state="timeout"}[1m]))',
+        metric: 'ds_workflow_instance_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+        filters: { state: 'timeout' },
       },
     ],
   },
@@ -257,15 +345,24 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
     queries: [
       {
         label: 'dispatch',
-        promql: 'sum(increase(ds_task_dispatch_count_total[1m]))',
+        metric: 'ds_task_dispatch_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
       },
       {
         label: 'failure',
-        promql: 'sum(increase(ds_task_dispatch_failure_count_total[1m]))',
+        metric: 'ds_task_dispatch_failure_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
       },
       {
         label: 'error',
-        promql: 'sum(increase(ds_task_dispatch_error_count_total[1m]))',
+        metric: 'ds_task_dispatch_error_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
       },
     ],
   },
@@ -274,63 +371,106 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
     queries: [
       {
         label: 'submit',
-        promql:
-          'sum(increase(ds_task_instance_count_total{state="submit"}[1m]))',
+        metric: 'ds_task_instance_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+        filters: { state: 'submit' },
       },
       {
         label: 'success',
-        promql:
-          'sum(increase(ds_task_instance_count_total{state="success"}[1m]))',
+        metric: 'ds_task_instance_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+        filters: { state: 'success' },
       },
       {
         label: 'fail',
-        promql: 'sum(increase(ds_task_instance_count_total{state="fail"}[1m]))',
+        metric: 'ds_task_instance_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+        filters: { state: 'fail' },
       },
       {
         label: 'retry',
-        promql:
-          'sum(increase(ds_task_instance_count_total{state="retry"}[1m]))',
+        metric: 'ds_task_instance_count_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+        filters: { state: 'retry' },
       },
     ],
   },
 
   'D-C01': {
     type: 'instant',
-    promql:
-      'process_uptime_seconds{application="$application", instance=~"$instance"}',
+    metric: 'process_uptime_seconds',
+    agg: 'max',
   },
   'D-C02': {
     type: 'instant',
-    promql:
-      'sum(jvm_memory_used_bytes{application="$application", instance=~"$instance", area="heap"}) * 100 / sum(jvm_memory_max_bytes{application="$application", instance=~"$instance", area="heap"})',
+    metric: 'jvm_memory_used_bytes',
+    agg: 'sum',
+    filters: { area: 'heap' },
+    denominatorMetric: 'jvm_memory_max_bytes',
+    denominatorFilters: { area: 'heap' },
+    scale: 100,
   },
   'D-C03': {
     type: 'instant',
-    promql:
-      'sum(jvm_memory_used_bytes{application="$application", instance=~"$instance", area="nonheap"}) * 100 / sum(jvm_memory_max_bytes{application="$application", instance=~"$instance", area="nonheap"})',
+    metric: 'jvm_memory_used_bytes',
+    agg: 'sum',
+    filters: { area: 'nonheap' },
+    denominatorMetric: 'jvm_memory_max_bytes',
+    denominatorFilters: { area: 'nonheap' },
+    scale: 100,
   },
   'D-C04': {
-    type: 'range',
-    promql:
-      'sum(rate(http_server_requests_seconds_count{application="$application", instance=~"$instance"}[1m]))',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'requests',
+        metric: 'http_server_requests_seconds',
+        table: 'summary',
+        field: 'count',
+        rate: '1m',
+      },
+    ],
   },
   'D-C05': {
-    type: 'range',
-    promql:
-      'sum(rate(http_server_requests_seconds_count{application="$application", instance=~"$instance", status=~"5.."}[1m]))',
+    type: 'multi-range',
+    queries: [
+      {
+        label: '5xx',
+        metric: 'http_server_requests_seconds',
+        table: 'summary',
+        field: 'count',
+        rate: '1m',
+        filtersRegex: { status: '5..' },
+      },
+    ],
   },
   'D-C06': {
     type: 'multi-range',
     queries: [
       {
         label: 'avg',
-        promql:
-          'sum(rate(http_server_requests_seconds_sum{application="$application", instance=~"$instance", status!~"5.."}[1m])) / sum(rate(http_server_requests_seconds_count{application="$application", instance=~"$instance", status!~"5.."}[1m]))',
+        metric: 'http_server_requests_seconds',
+        table: 'summary',
+        field: 'sum',
+        rate: '1m',
+        filtersNotRegex: { status: '5..' },
+        denominatorMetric: 'http_server_requests_seconds',
+        denominatorTable: 'summary',
+        denominatorField: 'count',
+        denominatorFiltersNotRegex: { status: '5..' },
       },
       {
         label: 'max',
-        promql:
-          'max(http_server_requests_seconds_max{application="$application", instance=~"$instance", status!~"5.."})',
+        metric: 'http_server_requests_seconds_max',
+        filtersNotRegex: { status: '5..' },
       },
     ],
   },
@@ -339,19 +479,15 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
     queries: [
       {
         label: 'used',
-        promql:
-          'sum(jvm_memory_used_bytes{application="$application", instance=~"$instance", area="heap"})',
+        metric: 'jvm_memory_used_bytes',
+        filters: { area: 'heap' },
       },
       {
         label: 'committed',
-        promql:
-          'sum(jvm_memory_committed_bytes{application="$application", instance=~"$instance", area="heap"})',
+        metric: 'jvm_memory_committed_bytes',
+        filters: { area: 'heap' },
       },
-      {
-        label: 'max',
-        promql:
-          'sum(jvm_memory_max_bytes{application="$application", instance=~"$instance", area="heap"})',
-      },
+      { label: 'max', metric: 'jvm_memory_max_bytes', filters: { area: 'heap' } },
     ],
   },
   'D-C08': {
@@ -359,91 +495,69 @@ export const PANEL_QUERIES: Record<string, PanelDef> = {
     queries: [
       {
         label: 'used',
-        promql:
-          'sum(jvm_memory_used_bytes{application="$application", instance=~"$instance", area="nonheap"})',
+        metric: 'jvm_memory_used_bytes',
+        filters: { area: 'nonheap' },
       },
       {
         label: 'committed',
-        promql:
-          'sum(jvm_memory_committed_bytes{application="$application", instance=~"$instance", area="nonheap"})',
+        metric: 'jvm_memory_committed_bytes',
+        filters: { area: 'nonheap' },
       },
       {
         label: 'max',
-        promql:
-          'sum(jvm_memory_max_bytes{application="$application", instance=~"$instance", area="nonheap"})',
+        metric: 'jvm_memory_max_bytes',
+        filters: { area: 'nonheap' },
       },
     ],
   },
   'D-C09': {
     type: 'multi-range',
     queries: [
-      {
-        label: 'system',
-        promql:
-          'system_cpu_usage{application="$application", instance=~"$instance"}',
-      },
-      {
-        label: 'process',
-        promql:
-          'process_cpu_usage{application="$application", instance=~"$instance"}',
-      },
+      { label: 'system', metric: 'system_cpu_usage' },
+      { label: 'process', metric: 'process_cpu_usage' },
     ],
   },
   'D-C10': {
     type: 'multi-range',
     queries: [
-      {
-        label: 'load_1m',
-        promql:
-          'system_load_average_1m{application="$application", instance=~"$instance"}',
-      },
-      {
-        label: 'cpu_cores',
-        promql:
-          'system_cpu_count{application="$application", instance=~"$instance"}',
-      },
+      { label: 'load_1m', metric: 'system_load_average_1m' },
+      { label: 'cpu_cores', metric: 'system_cpu_count' },
     ],
   },
   'D-C11': {
     type: 'multi-range',
     queries: [
-      {
-        label: 'live',
-        promql:
-          'jvm_threads_live_threads{application="$application", instance=~"$instance"}',
-      },
-      {
-        label: 'daemon',
-        promql:
-          'jvm_threads_daemon_threads{application="$application", instance=~"$instance"}',
-      },
-      {
-        label: 'peak',
-        promql:
-          'jvm_threads_peak_threads{application="$application", instance=~"$instance"}',
-      },
-      {
-        label: 'tomcat_busy',
-        promql:
-          'tomcat_threads_busy_threads{application="$application", instance=~"$instance"}',
-      },
-      {
-        label: 'tomcat_current',
-        promql:
-          'tomcat_threads_current_threads{application="$application", instance=~"$instance"}',
-      },
+      { label: 'live', metric: 'jvm_threads_live_threads' },
+      { label: 'daemon', metric: 'jvm_threads_daemon_threads' },
+      { label: 'peak', metric: 'jvm_threads_peak_threads' },
+      { label: 'tomcat_busy', metric: 'tomcat_threads_busy_threads' },
+      { label: 'tomcat_current', metric: 'tomcat_threads_current_threads' },
     ],
   },
   'D-C12': {
-    type: 'range',
-    promql:
-      'increase(logback_events_total{application="$application", instance=~"$instance"}[1m])',
-    seriesKey: 'level',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'level',
+        metric: 'logback_events_total',
+        table: 'sum',
+        rate: '1m',
+        scale: 60,
+        groupBy: ['level'],
+      },
+    ],
   },
   'D-C13': {
-    type: 'range',
-    promql:
-      'rate(jvm_gc_pause_seconds_count{application="$application", instance=~"$instance"}[1m])',
-    seriesKey: 'cause',
+    type: 'multi-range',
+    queries: [
+      {
+        label: 'cause',
+        metric: 'jvm_gc_pause_seconds',
+        table: 'summary',
+        field: 'count',
+        rate: '1m',
+        groupBy: ['cause'],
+      },
+    ],
   },
 };

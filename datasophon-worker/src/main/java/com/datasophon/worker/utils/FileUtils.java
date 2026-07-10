@@ -31,10 +31,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class FileUtils {
-    
+
     /**
      * 读取文件最后几行 <br>
      * 相当于Linux系统中的tail命令 读取大小限制是2GB
@@ -69,7 +68,7 @@ public class FileUtils {
             return new String(tempbytes, charset);
         }
     }
-    
+
     public static List<String> loadFileSQL(String path) throws Exception {
         File sqlFile = new File(path);
         List<String> sqlList = new ArrayList<>();
@@ -81,11 +80,11 @@ public class FileUtils {
             sqlList = sqlList.stream().filter(line -> !line.trim().isEmpty() && !line.trim().startsWith("--"))
                     // 去除行注释
                     .map(SqlUtils::removeCommentSql)
-                    .collect(Collectors.toList());
+                    .toList();
         } else {
             throw new Exception("path不存在");
         }
         return sqlList;
     }
-    
+
 }

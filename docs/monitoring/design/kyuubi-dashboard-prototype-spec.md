@@ -2,7 +2,7 @@
 
 > **文档用途**：供 Claude design 阅读，根据本 spec 设计 React + AntV G2 看板原型，并最终生成可运行的组件代码。
 > **组件**：Apache Kyuubi 1.11.1
-> **数据源**：原生 Prometheus 端点 `/metrics:10019`（Kyuubi 内置 PrometheusReporter）
+> **数据源**：Kyuubi PrometheusReporter `/metrics:10019` 由 OTel Collector 抓取并写入 Doris
 > **参考来源**：**grafana.com 市场无 Kyuubi 看板**，唯一来源为官方仓库 `apache/kyuubi` 的 `grafana/dashboard-template.json`（已归档至 `docs/monitoring/dashboards-reference/Kyuubi/dashboard-template.json`，31 个面板）
 > **Panel Catalog 路径**：**无**（非 grafana.com 看板，未走 extract-panel-catalog；本 spec 直接从官方模板 JSON 抽取面板）
 > **Phase**：Phase 2 —— 原型设计阶段
@@ -13,18 +13,21 @@
 
 ```
 React(AntV G2)
-  └──HTTP──> datasophon-api /api/v2/prometheus/query_range
-               └──PromQL──> Prometheus :9090
-                              └──scrape──> Kyuubi Server /metrics:10019
+  └──HTTP──> datasophon-api /v2/observability/otel/metrics/{query,query_range,labels}
+               └──SQL──> Doris otel.otel_metrics_*
+                            ▲
+                            └──OTel Collector scrape──> Kyuubi Server /metrics:10019
 ```
 
-**前端不直连 Prometheus**。所有 PromQL 通过后端代理端点转发（详见 `prometheus-dashboard-prototype-spec.md` §1）。
+**前端不直连 Prometheus 或 Doris**。看板通过既有 OTel Metrics Query API 查询 Doris，并保持 Prometheus vector/matrix 响应格式。
+
+> 下文保留的 PromQL 仅用于追溯官方模板的面板语义；实际 Doris 表、指标名称与运行时 JVM pool 映射以 [Kyuubi OTel 验证记录](../kyuubi-otel-verification.md) 和 `KyuubiMonitor/panelQueries.ts` 为准。
 
 ### 1.1 Kyuubi 指标特点 & 模板特殊点
 
 - **统一前缀 `kyuubi_`**：原生指标，命名与官方模板完全一致（`kyuubi_jvm_uptime`、`kyuubi_connection_opened_INTERACTIVE`、`kyuubi_operation_state_*` 等）。
-- **★ 关键特殊点：变量插值进指标名**。官方模板用 `$connType` / `$opType` 直接拼进**指标名**，如 `kyuubi_${connType}_opened`、`kyuubi_operation_state_${opType}_error_total`。这与常规「变量只在 label selector 里」不同——**前端做 PromQL 替换时必须把 `${connType}` 替换进指标名字符串本身**（而非 `{}` 内）。
-  - `$connType` 取值：`connection_total_INTERACTIVE` / `connection_total_BATCH` 等（连接类型）
+- **★ 关键特殊点：变量插值进指标名**。官方模板用 `$connType` / `$opType` 直接拼进指标名；Doris descriptor 同样在构建时替换它们。
+  - `$connType` 取值：`thrift_binary_connection` / `rest_connection` / `thrift_http_connection` / `metadata_request`。
   - `$opType` 取值：`ExecuteStatement` / `LaunchEngine` 等（操作类型）
 - **`$baseFilter`**：官方模板的通用 label 过滤变量（如 `instance=~".+"` 或按集群标识），本 spec 保留为可选前缀过滤。
 - **状态计数指标**：`kyuubi_operation_state_<OP>_<state>_total`（state ∈ running/pending/error/closed/finished），`<state>=error` 即 Error 信号。
@@ -51,17 +54,17 @@ Kyuubi 特有补充：
 
 ## 3. 变量 / 过滤器规范
 
-|     变量     |    PromQL 占位符    |                              取值来源                              |         默认值         |          说明           |
-|------------|------------------|----------------------------------------------------------------|---------------------|-----------------------|
-| 实例         | `$instance`      | `label_values(kyuubi_jvm_uptime, instance)`                    | `.+`                | 多选下拉，Kyuubi Server 节点 |
-| baseFilter | `$baseFilter`    | 自定义（集群/cluster label）                                          | 空或 `instance=~".+"` | 通用过滤前缀，可选             |
-| 连接类型       | `$connType`      | 固定枚举：`connection_total_INTERACTIVE` / `connection_total_BATCH` | INTERACTIVE         | **插值进指标名**            |
-| 操作类型       | `$opType`        | 固定枚举：`ExecuteStatement` / `LaunchEngine` 等                     | ExecuteStatement    | **插值进指标名**            |
-| 趋势窗口       | `$trendInterval` | 由时间范围派生                                                        | `5m`                | 用于 `increase()`       |
-| 时间范围       | —                | 时间选择器                                                          | `Last 1h`           | 5m/15m/1h/6h/24h/7d   |
-| 刷新间隔       | —                | —                                                              | `30s`               | 自动轮询                  |
+|     变量     |                              取值来源                               |       默认值        |                说明                 |
+|------------|-----------------------------------------------------------------|------------------|-----------------------------------|---------------------|
+| 实例         | Doris labels: `kyuubi_jvm_uptime`                               | `.+`             | 多选下拉，Kyuubi Server 节点             |
+| scrape job | Doris `service_name`                                            | 首个排序结果           | 单选，避免同一实例的重复抓取翻倍                  |
+| 连接类型       | 固定枚举：`thrift_binary_connection` 等                               | thrift binary    | 插值进失败指标名                          |
+| 操作类型       | 固定枚举：`ExecuteStatement` / `BatchJobSubmission` / `LaunchEngine` | ExecuteStatement | 插值进状态指标名                          |
+| 趋势窗口       | 由时间范围派生                                                         | `5m`             | Doris rate × 窗口秒数，等价 `increase()` |
+| 时间范围       | —                                                               | 时间选择器            | `Last 1h`                         | 5m/15m/1h/6h/24h/7d |
+| 刷新间隔       | —                                                               | —                | `30s`                             | 自动轮询                |
 
-> 原型可先固定 `$connType=INTERACTIVE`、`$opType=ExecuteStatement`（最常用），将这两个下拉作为高级选项；`$baseFilter` 默认空。
+> scrape job 必须单选；远端 K8s 实测同一 Kyuubi 实例可同时被多个 service job 抓取，混合汇总会重复计数。
 
 ---
 

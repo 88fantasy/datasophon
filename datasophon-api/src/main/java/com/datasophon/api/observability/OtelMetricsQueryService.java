@@ -47,9 +47,8 @@ import org.springframework.stereotype.Component;
  *
  * <h3>关键 schema 约定（D2 实测确认）</h3>
  * <ul>
- *   <li>Prometheus 抓取指标的 {@code instance} / {@code job} 落位于
- *       {@code resource_attributes}，不在 {@code attributes}：
- *       prometheusreceiver 将这两个标签提升为 resource attribute。
+ *   <li>Prometheus 抓取指标的 {@code instance} / {@code job} 分别落位于
+ *       exporter 写入的扁平列 {@code service_instance_id} / {@code service_name}。
  *   <li>Doris 业务维度（{@code group} / {@code type} / {@code mode} /
  *       {@code path} / {@code device}）落在 {@code attributes} MAP。
  *   <li>FE summary 指标（{@code doris_fe_query_latency_ms} 等）写入
@@ -62,19 +61,11 @@ public class OtelMetricsQueryService {
 
     private static final String MATCH_ALL = ".+";
 
-    /**
-     * Prometheus 抓取指标的 instance 字段：
-     * prometheusreceiver 将 job/instance 提升为 resource attribute 而非普通 attribute。
-     * 所有 SQL builder 统一使用此常量，禁止使用 {@code attributes['instance']}（始终 NULL）。
-     */
-    static final String INST_EXPR =
-            "CAST(resource_attributes['service']['instance']['id'] AS STRING)";
+    /** Prometheus 抓取指标的 instance 字段（Doris OTel schema 的扁平列）。 */
+    static final String INST_EXPR = "service_instance_id";
 
-    /**
-     * Prometheus 抓取指标的 job 字段（同上，resource_attributes 落位）。
-     */
-    static final String JOB_EXPR =
-            "CAST(resource_attributes['service']['name'] AS STRING)";
+    /** Prometheus 抓取指标的 job 字段（Doris OTel schema 的扁平列）。 */
+    static final String JOB_EXPR = "service_name";
 
     /**
      * attributes MAP 的属性过滤键白名单。
@@ -89,13 +80,15 @@ public class OtelMetricsQueryService {
             Set.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
                     "code", "service", "route", "node", "consumer", "name",
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
-                    "exporter", "receiver", "processor", "transport");
+                    "exporter", "receiver", "processor", "transport",
+                    "area", "result", "status", "level", "cause");
 
     private static final List<String> INSTANT_SERIES_ATTR_KEYS =
             List.of("group", "type", "mode", "path", "device", "fstype", "mountpoint", "state",
                     "code", "service", "route", "node", "consumer", "name",
                     "op", "drive", "server", "status_class", "vol_name", "mp", "method", "pool", "gc",
-                    "exporter", "receiver", "processor", "transport");
+                    "exporter", "receiver", "processor", "transport",
+                    "area", "result", "status", "level", "cause");
 
     private final ClusterServiceRoleInstanceService roleService;
     private final OtelDorisReaderFactory readerFactory;
@@ -141,12 +134,26 @@ public class OtelMetricsQueryService {
                                                Map<String, String> filters,
                                                Map<String, String> filtersNe,
                                                long evalTime, String table) {
+        return queryInstant(clusterId, metric, agg, scale, instance, job, filters, filtersNe,
+                null, null, evalTime, table);
+    }
+
+    public PrometheusVectorResult queryInstant(Integer clusterId, String metric,
+                                               String agg, double scale,
+                                               String instance, String job,
+                                               Map<String, String> filters,
+                                               Map<String, String> filtersNe,
+                                               Map<String, String> filtersRegex,
+                                               Map<String, String> filtersNotRegex,
+                                               long evalTime, String table) {
         JdbcClient client = createReader(clusterId);
         String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
         boolean hasAgg = agg != null && !agg.isBlank();
         String sql = hasAgg
-                ? buildInstantAggSql(agg, needsFilter(instance), needsFilter(job), filters, filtersNe, otelTable)
-                : buildInstantNoAggSql(needsFilter(instance), needsFilter(job), filters, filtersNe, otelTable);
+                ? buildInstantAggSql(agg, needsFilter(instance), needsFilter(job),
+                        filters, filtersNe, filtersRegex, filtersNotRegex, otelTable)
+                : buildInstantNoAggSql(needsFilter(instance), needsFilter(job),
+                        filters, filtersNe, filtersRegex, filtersNotRegex, otelTable);
 
         JdbcClient.StatementSpec spec = client.sql(sql)
                 .param("metric", metric)
@@ -157,7 +164,7 @@ public class OtelMetricsQueryService {
         if (needsFilter(job)) {
             spec = spec.param("job", job);
         }
-        spec = bindAttrFilterParams(spec, filters, filtersNe);
+        spec = bindAttrFilterParams(spec, filters, filtersNe, filtersRegex, filtersNotRegex);
 
         List<Map<String, Object>> rows = spec.query().listOfRows();
         return buildVector(rows, scale);
@@ -201,6 +208,20 @@ public class OtelMetricsQueryService {
                                              List<String> groupByKeys,
                                              long start, long end, long step,
                                              String table, double quantile, String field) {
+        return queryRange(clusterId, metric, rateWindow, scale, instance, job, filters, filtersNe,
+                null, null, groupByKeys, start, end, step, table, quantile, field);
+    }
+
+    public PrometheusMatrixResult queryRange(Integer clusterId, String metric,
+                                             String rateWindow, double scale,
+                                             String instance, String job,
+                                             Map<String, String> filters,
+                                             Map<String, String> filtersNe,
+                                             Map<String, String> filtersRegex,
+                                             Map<String, String> filtersNotRegex,
+                                             List<String> groupByKeys,
+                                             long start, long end, long step,
+                                             String table, double quantile, String field) {
         JdbcClient client = createReader(clusterId);
 
         List<String> validGroupBy = toValidGroupBy(groupByKeys);
@@ -208,7 +229,7 @@ public class OtelMetricsQueryService {
 
         if ("summary".equalsIgnoreCase(table) && fieldRate) {
             String sql = buildRangeFieldRateSql(field.toLowerCase(), needsFilter(instance), needsFilter(job),
-                    filters, filtersNe, validGroupBy, "otel_metrics_summary");
+                    filters, filtersNe, filtersRegex, filtersNotRegex, validGroupBy, "otel_metrics_summary");
             JdbcClient.StatementSpec spec = client.sql(sql)
                     .param("metric", metric)
                     .param("start", start)
@@ -221,29 +242,37 @@ public class OtelMetricsQueryService {
             if (needsFilter(job)) {
                 spec = spec.param("job", job);
             }
-            spec = bindAttrFilterParams(spec, filters, filtersNe);
+            spec = bindAttrFilterParams(spec, filters, filtersNe, filtersRegex, filtersNotRegex);
             List<Map<String, Object>> rows = spec.query().listOfRows();
             return buildMatrix(rows, scale);
         }
 
         if ("summary".equalsIgnoreCase(table)) {
-            String sql = buildRangeSummarySql();
-            List<Map<String, Object>> rows = client.sql(sql)
+            String sql = buildRangeSummarySql(needsFilter(instance), needsFilter(job),
+                    filters, filtersNe, filtersRegex, filtersNotRegex);
+            JdbcClient.StatementSpec spec = client.sql(sql)
                     .param("metric", metric)
                     .param("start", start)
                     .param("end", end)
                     .param("step", step)
-                    .param("quantile", quantile)
-                    .query().listOfRows();
+                    .param("quantile", quantile);
+            if (needsFilter(instance)) {
+                spec = spec.param("instance", instance);
+            }
+            if (needsFilter(job)) {
+                spec = spec.param("job", job);
+            }
+            spec = bindAttrFilterParams(spec, filters, filtersNe, filtersRegex, filtersNotRegex);
+            List<Map<String, Object>> rows = spec.query().listOfRows();
             return buildMatrix(rows, scale);
         }
 
         if ("histogram".equalsIgnoreCase(table)) {
             String sql = fieldRate
                     ? buildRangeFieldRateSql(field.toLowerCase(), needsFilter(instance), needsFilter(job),
-                            filters, filtersNe, validGroupBy, "otel_metrics_histogram")
+                            filters, filtersNe, filtersRegex, filtersNotRegex, validGroupBy, "otel_metrics_histogram")
                     : buildRangeHistogramSql(needsFilter(instance), needsFilter(job),
-                            filters, filtersNe, validGroupBy);
+                            filters, filtersNe, filtersRegex, filtersNotRegex, validGroupBy);
             JdbcClient.StatementSpec spec = client.sql(sql)
                     .param("metric", metric)
                     .param("start", start)
@@ -259,7 +288,7 @@ public class OtelMetricsQueryService {
             if (needsFilter(job)) {
                 spec = spec.param("job", job);
             }
-            spec = bindAttrFilterParams(spec, filters, filtersNe);
+            spec = bindAttrFilterParams(spec, filters, filtersNe, filtersRegex, filtersNotRegex);
             List<Map<String, Object>> rows = spec.query().listOfRows();
             return buildMatrix(rows, scale);
         }
@@ -268,9 +297,9 @@ public class OtelMetricsQueryService {
         String otelTable = "sum".equalsIgnoreCase(table) ? "otel_metrics_sum" : "otel_metrics_gauge";
         String sql = hasRate
                 ? buildRangeRateSql(needsFilter(instance), needsFilter(job), filters, filtersNe,
-                        validGroupBy, otelTable)
+                        filtersRegex, filtersNotRegex, validGroupBy, otelTable)
                 : buildRangeGaugeSql(needsFilter(instance), needsFilter(job), filters, filtersNe,
-                        validGroupBy, otelTable);
+                        filtersRegex, filtersNotRegex, validGroupBy, otelTable);
 
         JdbcClient.StatementSpec spec = client.sql(sql)
                 .param("metric", metric)
@@ -286,7 +315,7 @@ public class OtelMetricsQueryService {
         if (needsFilter(job)) {
             spec = spec.param("job", job);
         }
-        spec = bindAttrFilterParams(spec, filters, filtersNe);
+        spec = bindAttrFilterParams(spec, filters, filtersNe, filtersRegex, filtersNotRegex);
 
         List<Map<String, Object>> rows = spec.query().listOfRows();
         return buildMatrix(rows, scale);
@@ -294,10 +323,14 @@ public class OtelMetricsQueryService {
 
     /**
      * 查询指标的 instance/job 标签值，用于工具栏下拉派生（替代 Prometheus {@code up} 查询）。
-     * 联合查询 gauge 和 sum 两表（某些指标只在其中一张）；instance/job 从
-     * {@code resource_attributes} 取（prometheusreceiver 实际落位）。
+     * 联合查询 gauge 和 sum 两表（某些指标只在其中一张）；instance/job 分别从
+     * {@code service_instance_id}/{@code service_name} 取。
      */
     public LabelsResult queryLabels(Integer clusterId, String metric) {
+        return queryLabels(clusterId, metric, MATCH_ALL);
+    }
+
+    public LabelsResult queryLabels(Integer clusterId, String metric, String job) {
         JdbcClient client = createReader(clusterId);
         // UNION 确保同时覆盖 gauge 和 sum 两表里的指标
         String sql = "SELECT DISTINCT " + INST_EXPR + " AS instance,\n"
@@ -308,6 +341,7 @@ public class OtelMetricsQueryService {
                 + "FROM otel.otel_metrics_gauge\n"
                 + "WHERE metric_name = :metric\n"
                 + "  AND timestamp >= FROM_UNIXTIME(UNIX_TIMESTAMP() - 300)\n"
+                + (needsFilter(job) ? "  AND " + JOB_EXPR + " REGEXP :job\n" : "")
                 + "UNION\n"
                 + "SELECT DISTINCT " + INST_EXPR + " AS instance,\n"
                 + "  " + JOB_EXPR + " AS job,\n"
@@ -316,8 +350,13 @@ public class OtelMetricsQueryService {
                 + "  CAST(attributes['method'] AS STRING) AS method\n"
                 + "FROM otel.otel_metrics_sum\n"
                 + "WHERE metric_name = :metric\n"
-                + "  AND timestamp >= FROM_UNIXTIME(UNIX_TIMESTAMP() - 300)";
-        List<Map<String, Object>> rows = client.sql(sql).param("metric", metric).query().listOfRows();
+                + "  AND timestamp >= FROM_UNIXTIME(UNIX_TIMESTAMP() - 300)"
+                + (needsFilter(job) ? "\n  AND " + JOB_EXPR + " REGEXP :job" : "");
+        JdbcClient.StatementSpec spec = client.sql(sql).param("metric", metric);
+        if (needsFilter(job)) {
+            spec = spec.param("job", job);
+        }
+        List<Map<String, Object>> rows = spec.query().listOfRows();
         Set<String> instances = new LinkedHashSet<>();
         Set<String> jobs = new LinkedHashSet<>();
         Map<String, Set<String>> attributes = new LinkedHashMap<>();
@@ -374,58 +413,90 @@ public class OtelMetricsQueryService {
     static String buildInstantNoAggSql(boolean filterInstance, boolean filterJob,
                                        Map<String, String> filters, Map<String, String> filtersNe,
                                        String otelTable) {
+        return buildInstantNoAggSql(filterInstance, filterJob, filters, filtersNe, null, null, otelTable);
+    }
+
+    static String buildInstantNoAggSql(boolean filterInstance, boolean filterJob,
+                                       Map<String, String> filters, Map<String, String> filtersNe,
+                                       Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
+                                       String otelTable) {
         StringBuilder sql = new StringBuilder(
-                "SELECT " + INST_EXPR + " AS instance,\n"
-                        + "       " + JOB_EXPR + " AS job,\n"
-                        + "       value, UNIX_TIMESTAMP(timestamp) AS ts\n"
-                        + "FROM otel." + otelTable + "\n"
-                        + "WHERE metric_name = :metric\n"
-                        + "  AND timestamp >= FROM_UNIXTIME(:evalTime - 300)");
+                "SELECT instance, job, value, ts\n"
+                        + "FROM (\n"
+                        + "  SELECT " + INST_EXPR + " AS instance,\n"
+                        + "         " + JOB_EXPR + " AS job,\n"
+                        + "         value, UNIX_TIMESTAMP(timestamp) AS ts,\n"
+                        + "         ROW_NUMBER() OVER(\n"
+                        + "           PARTITION BY " + INST_EXPR + ",\n"
+                        + "                        " + JOB_EXPR + "\n"
+                        + "           ORDER BY timestamp DESC\n"
+                        + "         ) AS rn\n"
+                        + "  FROM otel." + otelTable + "\n"
+                        + "  WHERE metric_name = :metric\n"
+                        + "    AND timestamp >= FROM_UNIXTIME(:evalTime - 300)");
         appendFilters(sql, filterInstance, filterJob);
-        appendAttrFilters(sql, filters, filtersNe);
-        sql.append("\nQUALIFY ROW_NUMBER() OVER(\n"
-                + "  PARTITION BY " + INST_EXPR + ",\n"
-                + "               " + JOB_EXPR + "\n"
-                + "  ORDER BY timestamp DESC\n"
-                + ") = 1");
+        appendAttrFilters(sql, filters, filtersNe, filtersRegex, filtersNotRegex);
+        sql.append("\n) latest\n"
+                + "WHERE rn = 1");
         return sql.toString();
     }
 
     static String buildInstantAggSql(String agg, boolean filterInstance, boolean filterJob,
                                      Map<String, String> filters, Map<String, String> filtersNe,
                                      String otelTable) {
+        return buildInstantAggSql(agg, filterInstance, filterJob, filters, filtersNe, null, null, otelTable);
+    }
+
+    static String buildInstantAggSql(String agg, boolean filterInstance, boolean filterJob,
+                                     Map<String, String> filters, Map<String, String> filtersNe,
+                                     Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
+                                     String otelTable) {
         String fn = "max".equalsIgnoreCase(agg) ? "MAX" : ("count".equalsIgnoreCase(agg) ? "COUNT" : "SUM");
         StringBuilder inner = new StringBuilder(
                 "SELECT value\n"
-                        + "FROM otel." + otelTable + "\n"
-                        + "WHERE metric_name = :metric\n"
-                        + "  AND timestamp >= FROM_UNIXTIME(:evalTime - 300)");
+                        + "FROM (\n"
+                        + "  SELECT value,\n"
+                        + "         ROW_NUMBER() OVER(\n"
+                        + "           PARTITION BY " + INST_EXPR + ",\n"
+                        + "                        " + JOB_EXPR
+                        + buildExtraGroupBy(INSTANT_SERIES_ATTR_KEYS)
+                        + "\n"
+                        + "           ORDER BY timestamp DESC\n"
+                        + "         ) AS rn\n"
+                        + "  FROM otel." + otelTable + "\n"
+                        + "  WHERE metric_name = :metric\n"
+                        + "    AND timestamp >= FROM_UNIXTIME(:evalTime - 300)");
         appendFilters(inner, filterInstance, filterJob);
-        appendAttrFilters(inner, filters, filtersNe);
-        inner.append("\nQUALIFY ROW_NUMBER() OVER(\n"
-                + "  PARTITION BY " + INST_EXPR + ",\n"
-                + "               " + JOB_EXPR
-                + buildExtraGroupBy(INSTANT_SERIES_ATTR_KEYS)
-                + "\n"
-                + "  ORDER BY timestamp DESC\n"
-                + ") = 1");
+        appendAttrFilters(inner, filters, filtersNe, filtersRegex, filtersNotRegex);
+        inner.append("\n) latest\n"
+                + "WHERE rn = 1");
         return "SELECT " + fn + "(value) AS value, UNIX_TIMESTAMP(NOW()) AS ts FROM (" + inner + ") t";
     }
 
     static String buildRangeSummarySql() {
-        return "SELECT " + INST_EXPR + " AS instance,\n"
+        return buildRangeSummarySql(false, false, null, null, null, null);
+    }
+
+    static String buildRangeSummarySql(boolean filterInstance, boolean filterJob,
+                                       Map<String, String> filters, Map<String, String> filtersNe,
+                                       Map<String, String> filtersRegex, Map<String, String> filtersNotRegex) {
+        StringBuilder sql = new StringBuilder("SELECT " + INST_EXPR + " AS instance,\n"
                 + "       " + JOB_EXPR + " AS job,\n"
                 + "       FLOOR(UNIX_TIMESTAMP(s.timestamp) / :step) * :step AS bucket,\n"
-                + "       AVG(qv.value) AS value\n"
+                + "       AVG(STRUCT_ELEMENT(qv, 'value')) AS value\n"
                 + "FROM otel.otel_metrics_summary s\n"
                 + "LATERAL VIEW EXPLODE(s.quantile_values) t AS qv\n"
                 + "WHERE s.metric_name = :metric\n"
                 + "  AND s.timestamp BETWEEN FROM_UNIXTIME(:start) AND FROM_UNIXTIME(:end)\n"
-                + "  AND qv.quantile = :quantile\n"
+                + "  AND STRUCT_ELEMENT(qv, 'quantile') = :quantile");
+        appendFilters(sql, filterInstance, filterJob);
+        appendAttrFilters(sql, filters, filtersNe, filtersRegex, filtersNotRegex);
+        sql.append("\n"
                 + "GROUP BY " + INST_EXPR + ",\n"
                 + "         " + JOB_EXPR + ",\n"
                 + "         bucket\n"
-                + "ORDER BY instance, job, bucket";
+                + "ORDER BY instance, job, bucket");
+        return sql.toString();
     }
 
     /**
@@ -462,16 +533,15 @@ public class OtelMetricsQueryService {
      * 0-indexed），按 (instance,job,extraCols,series_key,bucket,pos) JOIN 对齐两次采样的同一个
      * 桶，{@code exploded} 求逐桶差值并用 {@code element_at(explicit_bounds, pos+1)} 取桶上界
      * （溢出桶为 NULL）。之所以不像 summary 查询那样直接
-     * {@code element_at(prev_bucket_counts, pos+1)}：Doris 对 {@code LAG()} 窗口函数产出的
-     * ARRAY 有两个实测限制——① 非常量下标的 {@code element_at} 在窗口函数结果上会报
-     * "must be constant"（对真实表列则不受限）；② 即便侧写为常量下标，{@code LAG(arrayCol)}
-     * 的返回类型会退化为 VARCHAR，喂给 {@code POSEXPLODE} 报 "only support array type"，需显式
-     * {@code CAST(... AS ARRAY<BIGINT>)} 转回。用 JOIN 对齐桶位置可以绕开①，配合 CAST 修复②。
+     * {@code element_at(prev_bucket_counts, pos+1)}：Doris 对 {@code LAG()} 作用在 ARRAY 列上的
+     * 版本兼容性较差（3.0.8 会尝试把 ARRAY 转成 VARCHAR 而失败）。因此这里只 LAG 标量
+     * {@code ts/count}，再用 {@code prev_ts} 回 join {@code ordered} 取上一行 {@code bucket_counts}，
+     * 最后用两次 POSEXPLODE + JOIN 按桶位置对齐。
      * {@code agg} 汇总多个采样对/series 的 delta（此处丢弃 series_key）；{@code cum1}/
      * {@code cum2} 用窗口函数算累计计数/总数，并 LAG 出上一桶的累计数与上界；最终 SELECT 用
-     * {@code QUALIFY ROW_NUMBER() ... = 1} 定位 {@code cum_count >= quantile * total_count} 的
-     * 第一个桶，在 [lower_bound, upper_bound] 区间线性插值；落入溢出桶（upper_bound IS NULL）
-     * 时退化为返回 lower_bound（近似 Prometheus {@code histogram_quantile} 对 +Inf 桶的处理）。
+     * {@code ROW_NUMBER() ... AS rn} 子查询定位 {@code cum_count >= quantile * total_count} 的第一个桶，
+     * 在 [lower_bound, upper_bound] 区间线性插值；落入溢出桶（upper_bound IS NULL）时退化为返回
+     * lower_bound（近似 Prometheus {@code histogram_quantile} 对 +Inf 桶的处理）。
      *
      * <p>算法已用合成数据 + 真实 APISIX standalone 沙箱抓取的 {@code apisix_http_latency}
      * 数据在真实 Doris 上验证（p90 场景，含溢出桶与普通桶插值两种情形；真实数据验证时发现并
@@ -481,11 +551,18 @@ public class OtelMetricsQueryService {
     static String buildRangeHistogramSql(boolean filterInstance, boolean filterJob,
                                          Map<String, String> filters, Map<String, String> filtersNe,
                                          List<String> groupByKeys) {
+        return buildRangeHistogramSql(filterInstance, filterJob, filters, filtersNe, null, null, groupByKeys);
+    }
+
+    static String buildRangeHistogramSql(boolean filterInstance, boolean filterJob,
+                                         Map<String, String> filters, Map<String, String> filtersNe,
+                                         Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
+                                         List<String> groupByKeys) {
         String extraSelect = buildExtraSelect(groupByKeys);
         String extraCols = buildExtraCols(groupByKeys);
         StringBuilder filterStr = new StringBuilder();
         appendFilters(filterStr, filterInstance, filterJob);
-        appendAttrFilters(filterStr, filters, filtersNe);
+        appendAttrFilters(filterStr, filters, filtersNe, filtersRegex, filtersNotRegex);
         String partitionCols = "instance, job" + extraCols;
         String seriesPartitionCols = partitionCols + ", series_key";
         String joinCols = buildJoinCols(groupByKeys);
@@ -505,21 +582,25 @@ public class OtelMetricsQueryService {
                 + ", series_key, ts, hist_count, bucket_counts, explicit_bounds,\n"
                 + "    LAG(ts) OVER(PARTITION BY " + seriesPartitionCols + " ORDER BY ts) AS prev_ts,\n"
                 + "    LAG(hist_count) OVER(PARTITION BY " + seriesPartitionCols
-                + " ORDER BY ts) AS prev_hist_count,\n"
-                // Doris 对 LAG() 作用在 ARRAY 列上的返回类型会退化为 VARCHAR，必须显式 CAST 回
-                // ARRAY<BIGINT> 才能再喂给 POSEXPLODE（实测确认，合成数据的子查询字面量不触发此问题）。
-                + "    CAST(LAG(bucket_counts) OVER(PARTITION BY " + seriesPartitionCols
-                + " ORDER BY ts) AS ARRAY<BIGINT>) AS prev_bucket_counts\n"
+                + " ORDER BY ts) AS prev_hist_count\n"
                 + "  FROM ordered\n"
                 + "),\n"
                 + "deltas AS (\n"
                 + "  SELECT instance, job" + extraCols + ", series_key,\n"
                 + "    FLOOR(ts / :step) * :step AS bucket,\n"
-                + "    bucket_counts, prev_bucket_counts, explicit_bounds\n"
+                + "    bucket_counts, explicit_bounds, prev_ts\n"
                 + "  FROM with_lag\n"
                 // reset 守卫：与 buildRangeRateSql 的 value >= prev_val 一致，计数器重置（如进程
                 // 重启）时整对采样丢弃，不逐桶压成 0（避免系统性低估 reset 后的真实新增量）。
                 + "  WHERE prev_ts IS NOT NULL AND ts > prev_ts AND hist_count >= prev_hist_count\n"
+                + "),\n"
+                + "prev_rows AS (\n"
+                + "  SELECT d.instance, d.job" + buildExtraColsQualified(groupByKeys, "d")
+                + ", d.series_key, d.bucket, p.bucket_counts\n"
+                + "  FROM deltas d\n"
+                + "  JOIN ordered p\n"
+                + "    ON d.instance = p.instance AND d.job = p.job\n"
+                + "   AND d.series_key = p.series_key AND d.prev_ts = p.ts\n"
                 + "),\n"
                 + "curr_exploded AS (\n"
                 + "  SELECT instance, job" + extraCols
@@ -529,8 +610,8 @@ public class OtelMetricsQueryService {
                 + "),\n"
                 + "prev_exploded AS (\n"
                 + "  SELECT instance, job" + extraCols + ", series_key, bucket, pos, bc AS prev_count\n"
-                + "  FROM deltas\n"
-                + "  LATERAL VIEW POSEXPLODE(prev_bucket_counts) t AS pos, bc\n"
+                + "  FROM prev_rows\n"
+                + "  LATERAL VIEW POSEXPLODE(bucket_counts) t AS pos, bc\n"
                 + "),\n"
                 // Doris 对 element_at() 作用在 LAG() 窗口函数结果上、且下标非常量时会报
                 // "must be constant"（对真实表列/CTE 透传列则不受限）。用两次 POSEXPLODE + JOIN
@@ -567,17 +648,22 @@ public class OtelMetricsQueryService {
                 + "    LAG(upper_bound) OVER(PARTITION BY " + partitionCols + ", bucket ORDER BY pos) AS lower_bound,\n"
                 + "    LAG(cum_count) OVER(PARTITION BY " + partitionCols + ", bucket ORDER BY pos) AS lower_cum\n"
                 + "  FROM cum1\n"
+                + "),\n"
+                + "quantile_candidates AS (\n"
+                + "  SELECT instance, job" + extraCols + ", bucket,\n"
+                + "    COALESCE(lower_bound, 0) +\n"
+                + "    CASE WHEN upper_bound IS NULL THEN 0\n"
+                + "         WHEN bucket_delta = 0 THEN 0\n"
+                + "         ELSE (:quantile * total_count - COALESCE(lower_cum, 0)) / bucket_delta\n"
+                + "              * (upper_bound - COALESCE(lower_bound, 0))\n"
+                + "    END AS value,\n"
+                + "    ROW_NUMBER() OVER(PARTITION BY " + partitionCols + ", bucket ORDER BY pos) AS rn\n"
+                + "  FROM cum2\n"
+                + "  WHERE total_count > 0 AND cum_count >= :quantile * total_count\n"
                 + ")\n"
-                + "SELECT instance, job" + extraCols + ", bucket,\n"
-                + "  COALESCE(lower_bound, 0) +\n"
-                + "  CASE WHEN upper_bound IS NULL THEN 0\n"
-                + "       WHEN bucket_delta = 0 THEN 0\n"
-                + "       ELSE (:quantile * total_count - COALESCE(lower_cum, 0)) / bucket_delta\n"
-                + "            * (upper_bound - COALESCE(lower_bound, 0))\n"
-                + "  END AS value\n"
-                + "FROM cum2\n"
-                + "WHERE total_count > 0 AND cum_count >= :quantile * total_count\n"
-                + "QUALIFY ROW_NUMBER() OVER(PARTITION BY " + partitionCols + ", bucket ORDER BY pos) = 1\n"
+                + "SELECT instance, job" + extraCols + ", bucket, value\n"
+                + "FROM quantile_candidates\n"
+                + "WHERE rn = 1\n"
                 + "ORDER BY instance, job" + extraCols + ", bucket";
     }
 
@@ -592,6 +678,14 @@ public class OtelMetricsQueryService {
     static String buildRangeFieldRateSql(String field, boolean filterInstance, boolean filterJob,
                                          Map<String, String> filters, Map<String, String> filtersNe,
                                          List<String> groupByKeys, String otelTable) {
+        return buildRangeFieldRateSql(field, filterInstance, filterJob, filters, filtersNe,
+                null, null, groupByKeys, otelTable);
+    }
+
+    static String buildRangeFieldRateSql(String field, boolean filterInstance, boolean filterJob,
+                                         Map<String, String> filters, Map<String, String> filtersNe,
+                                         Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
+                                         List<String> groupByKeys, String otelTable) {
         if (!"count".equals(field) && !"sum".equals(field)) {
             throw new IllegalArgumentException("Unsupported field-rate field: " + field);
         }
@@ -599,7 +693,7 @@ public class OtelMetricsQueryService {
         String extraCols = buildExtraCols(groupByKeys);
         StringBuilder filterStr = new StringBuilder();
         appendFilters(filterStr, filterInstance, filterJob);
-        appendAttrFilters(filterStr, filters, filtersNe);
+        appendAttrFilters(filterStr, filters, filtersNe, filtersRegex, filtersNotRegex);
         String partitionCols = "instance, job" + extraCols;
         String seriesPartitionCols = partitionCols + ", series_key";
         return "WITH ordered AS (\n"
@@ -648,6 +742,14 @@ public class OtelMetricsQueryService {
     static String buildRangeGaugeSql(boolean filterInstance, boolean filterJob,
                                      Map<String, String> filters, Map<String, String> filtersNe,
                                      List<String> groupByKeys, String otelTable) {
+        return buildRangeGaugeSql(filterInstance, filterJob, filters, filtersNe,
+                null, null, groupByKeys, otelTable);
+    }
+
+    static String buildRangeGaugeSql(boolean filterInstance, boolean filterJob,
+                                     Map<String, String> filters, Map<String, String> filtersNe,
+                                     Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
+                                     List<String> groupByKeys, String otelTable) {
         String extraSelect = buildExtraSelect(groupByKeys);
         String extraCols = buildExtraCols(groupByKeys);
         StringBuilder sql = new StringBuilder(
@@ -660,7 +762,7 @@ public class OtelMetricsQueryService {
                         + "WHERE metric_name = :metric\n"
                         + "  AND timestamp BETWEEN FROM_UNIXTIME(:start) AND FROM_UNIXTIME(:end)");
         appendFilters(sql, filterInstance, filterJob);
-        appendAttrFilters(sql, filters, filtersNe);
+        appendAttrFilters(sql, filters, filtersNe, filtersRegex, filtersNotRegex);
         sql.append("\nGROUP BY " + INST_EXPR + ",\n"
                 + "         " + JOB_EXPR
                 + (groupByKeys.isEmpty() ? "" : buildExtraGroupBy(groupByKeys))
@@ -687,11 +789,19 @@ public class OtelMetricsQueryService {
     static String buildRangeRateSql(boolean filterInstance, boolean filterJob,
                                     Map<String, String> filters, Map<String, String> filtersNe,
                                     List<String> groupByKeys, String otelTable) {
+        return buildRangeRateSql(filterInstance, filterJob, filters, filtersNe,
+                null, null, groupByKeys, otelTable);
+    }
+
+    static String buildRangeRateSql(boolean filterInstance, boolean filterJob,
+                                    Map<String, String> filters, Map<String, String> filtersNe,
+                                    Map<String, String> filtersRegex, Map<String, String> filtersNotRegex,
+                                    List<String> groupByKeys, String otelTable) {
         String extraSelect = buildExtraSelect(groupByKeys);
         String extraCols = buildExtraCols(groupByKeys);
         StringBuilder filterStr = new StringBuilder();
         appendFilters(filterStr, filterInstance, filterJob);
-        appendAttrFilters(filterStr, filters, filtersNe);
+        appendAttrFilters(filterStr, filters, filtersNe, filtersRegex, filtersNotRegex);
         String partitionCols = "instance, job" + extraCols;
         String seriesPartitionCols = partitionCols + ", series_key";
         return "WITH ordered AS (\n"
@@ -795,6 +905,7 @@ public class OtelMetricsQueryService {
             return 60L;
         }
         return switch (rateWindow) {
+            case "1h" -> 3600L;
             case "5m" -> 300L;
             case "2m" -> 120L;
             case "15m" -> 900L;
@@ -803,8 +914,7 @@ public class OtelMetricsQueryService {
     }
 
     /**
-     * instance/job 过滤：从 resource_attributes 取（prometheusreceiver 实际落位）。
-     * 禁止使用 {@code attributes['instance']} / {@code attributes['job']}，它们始终为 NULL。
+     * instance/job 过滤：使用 Doris OTel schema 的扁平 service 列。
      */
     private static void appendFilters(StringBuilder sql, boolean filterInstance, boolean filterJob) {
         if (filterInstance) {
@@ -822,6 +932,12 @@ public class OtelMetricsQueryService {
      */
     static void appendAttrFilters(StringBuilder sql,
                                   Map<String, String> filters, Map<String, String> filtersNe) {
+        appendAttrFilters(sql, filters, filtersNe, null, null);
+    }
+
+    static void appendAttrFilters(StringBuilder sql,
+                                  Map<String, String> filters, Map<String, String> filtersNe,
+                                  Map<String, String> filtersRegex, Map<String, String> filtersNotRegex) {
         if (filters != null) {
             for (Map.Entry<String, String> entry : filters.entrySet()) {
                 String key = entry.getKey();
@@ -844,12 +960,39 @@ public class OtelMetricsQueryService {
                 }
             }
         }
+        if (filtersRegex != null) {
+            for (Map.Entry<String, String> entry : filtersRegex.entrySet()) {
+                String key = entry.getKey();
+                if (ALLOWED_ATTR_FILTER_KEYS.contains(key)) {
+                    sql.append("\n  AND CAST(attributes['").append(key)
+                            .append("'] AS STRING) REGEXP :afr_").append(key);
+                }
+            }
+        }
+        if (filtersNotRegex != null) {
+            for (Map.Entry<String, String> entry : filtersNotRegex.entrySet()) {
+                String key = entry.getKey();
+                if (ALLOWED_ATTR_FILTER_KEYS.contains(key)) {
+                    sql.append("\n  AND CAST(attributes['").append(key)
+                            .append("'] AS STRING) NOT REGEXP :afnr_").append(key);
+                }
+            }
+        }
     }
 
     /** 绑定属性过滤参数（af_ / afne_ 前缀，仅白名单键）。 */
     private static JdbcClient.StatementSpec bindAttrFilterParams(JdbcClient.StatementSpec spec,
                                                                  Map<String, String> filters,
                                                                  Map<String, String> filtersNe) {
+        return bindAttrFilterParams(spec, filters, filtersNe, null, null);
+    }
+
+    /** 绑定属性过滤参数（af_ / afne_ / afr_ / afnr_ 前缀，仅白名单键）。 */
+    private static JdbcClient.StatementSpec bindAttrFilterParams(JdbcClient.StatementSpec spec,
+                                                                 Map<String, String> filters,
+                                                                 Map<String, String> filtersNe,
+                                                                 Map<String, String> filtersRegex,
+                                                                 Map<String, String> filtersNotRegex) {
         if (filters != null) {
             for (Map.Entry<String, String> e : filters.entrySet()) {
                 if (ALLOWED_ATTR_FILTER_KEYS.contains(e.getKey())) {
@@ -861,6 +1004,20 @@ public class OtelMetricsQueryService {
             for (Map.Entry<String, String> e : filtersNe.entrySet()) {
                 if (ALLOWED_ATTR_FILTER_KEYS.contains(e.getKey())) {
                     spec = spec.param("afne_" + e.getKey(), e.getValue());
+                }
+            }
+        }
+        if (filtersRegex != null) {
+            for (Map.Entry<String, String> e : filtersRegex.entrySet()) {
+                if (ALLOWED_ATTR_FILTER_KEYS.contains(e.getKey())) {
+                    spec = spec.param("afr_" + e.getKey(), e.getValue());
+                }
+            }
+        }
+        if (filtersNotRegex != null) {
+            for (Map.Entry<String, String> e : filtersNotRegex.entrySet()) {
+                if (ALLOWED_ATTR_FILTER_KEYS.contains(e.getKey())) {
+                    spec = spec.param("afnr_" + e.getKey(), e.getValue());
                 }
             }
         }

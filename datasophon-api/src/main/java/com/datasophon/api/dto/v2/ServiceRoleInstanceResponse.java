@@ -27,7 +27,6 @@ import com.datasophon.dao.enums.ServiceRoleState;
 
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -42,7 +41,7 @@ import lombok.Data;
  */
 @Data
 public class ServiceRoleInstanceResponse {
-    
+
     private Integer id;
     private Integer serviceId;
     private String serviceRoleName;
@@ -55,7 +54,7 @@ public class ServiceRoleInstanceResponse {
     private Integer serviceRoleStateCode;
     private Integer clusterId;
     private Date createTime;
-    
+
     /**
      * 从实体构建响应体。实体的 {@code serviceRoleStateCode} 与 {@code roleGroupName}
      * 已由 service 层（{@code listAll}）填充。
@@ -71,22 +70,22 @@ public class ServiceRoleInstanceResponse {
         r.setHostname(entity.getHostname());
         r.setRoleGroupId(entity.getRoleGroupId());
         r.setRoleGroupName(entity.getRoleGroupName());
-        
+
         ServiceRoleState state = entity.getServiceRoleState();
         if (state != null) {
             r.setServiceRoleState(state.name());
             r.setServiceRoleStateCode(state.getValue());
         }
-        
+
         r.setClusterId(entity.getClusterId());
         r.setCreateTime(entity.getCreateTime());
         return r;
     }
-    
+
     public static List<ServiceRoleInstanceResponse> fromList(List<ClusterServiceRoleInstanceEntity> list) {
         if (list == null) {
             return List.of();
         }
-        return list.stream().map(ServiceRoleInstanceResponse::from).collect(Collectors.toList());
+        return list.stream().map(ServiceRoleInstanceResponse::from).toList();
     }
 }

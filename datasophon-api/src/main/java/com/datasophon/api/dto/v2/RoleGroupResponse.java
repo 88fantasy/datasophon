@@ -25,7 +25,6 @@ package com.datasophon.api.dto.v2;
 import com.datasophon.dao.entity.ClusterServiceInstanceRoleGroup;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -36,11 +35,11 @@ import lombok.Data;
  */
 @Data
 public class RoleGroupResponse {
-    
+
     private Integer id;
     private String roleGroupName;
     private Integer serviceInstanceId;
-    
+
     public static RoleGroupResponse from(ClusterServiceInstanceRoleGroup entity) {
         if (entity == null) {
             return null;
@@ -51,11 +50,11 @@ public class RoleGroupResponse {
         r.setServiceInstanceId(entity.getServiceInstanceId());
         return r;
     }
-    
+
     public static List<RoleGroupResponse> fromList(List<ClusterServiceInstanceRoleGroup> list) {
         if (list == null) {
             return List.of();
         }
-        return list.stream().map(RoleGroupResponse::from).collect(Collectors.toList());
+        return list.stream().map(RoleGroupResponse::from).toList();
     }
 }

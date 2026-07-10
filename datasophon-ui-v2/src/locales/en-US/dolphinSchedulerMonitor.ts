@@ -25,19 +25,19 @@ export default {
   'pages.dolphinSchedulerMonitor.panel.D-A05':
     'Worker Resource Download Count / 5m',
   'pages.dolphinSchedulerMonitor.panel.D-A06':
-    'Worker Resource Download Duration / 5m',
-  'pages.dolphinSchedulerMonitor.panel.D-B01': 'Task Total Count',
-  'pages.dolphinSchedulerMonitor.panel.D-B02': 'Task Successful Rate',
-  'pages.dolphinSchedulerMonitor.panel.D-B03': 'Quartz Job Total Count',
-  'pages.dolphinSchedulerMonitor.panel.D-B04': 'Quartz Job Successful Rate',
-  'pages.dolphinSchedulerMonitor.panel.D-B05': 'Master Overload / 1m',
-  'pages.dolphinSchedulerMonitor.panel.D-B06': 'Master Consume Command / 1m',
-  'pages.dolphinSchedulerMonitor.panel.D-B07':
-    'Quartz Job Executed Count / min',
-  'pages.dolphinSchedulerMonitor.panel.D-B08': 'Quartz Job Execution Time',
+    'Worker Resource Download Max Duration',
+  'pages.dolphinSchedulerMonitor.panel.D-B01': 'Task Instance Total Count',
+  'pages.dolphinSchedulerMonitor.panel.D-B02': 'Task Instance Success Rate',
+  'pages.dolphinSchedulerMonitor.panel.D-B03': 'Workflow Instance Total Count',
+  'pages.dolphinSchedulerMonitor.panel.D-B04': 'Workflow Instance Success Rate',
+  'pages.dolphinSchedulerMonitor.panel.D-B05': 'Master Failover Checks / 1m',
+  'pages.dolphinSchedulerMonitor.panel.D-B06': 'Task Dispatch / 1m',
+  'pages.dolphinSchedulerMonitor.panel.D-B07': 'Task Dispatch Outcomes / min',
+  'pages.dolphinSchedulerMonitor.panel.D-B08': 'Workflow Command Query Duration',
   'pages.dolphinSchedulerMonitor.panel.D-B09':
-    'Task Execution Total & Success / 1m',
-  'pages.dolphinSchedulerMonitor.panel.D-B10': 'Task Execution Time',
+    'Workflow Instance Total & Success / 1m',
+  'pages.dolphinSchedulerMonitor.panel.D-B10':
+    'Workflow Instance Generation Duration',
   'pages.dolphinSchedulerMonitor.panel.D-B11': 'Process Instance States / 1m',
   'pages.dolphinSchedulerMonitor.panel.D-B12': 'Task Dispatch Count / 1m',
   'pages.dolphinSchedulerMonitor.panel.D-B13': 'Task Instance States / 1m',

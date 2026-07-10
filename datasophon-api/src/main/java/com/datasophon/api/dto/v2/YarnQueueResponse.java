@@ -27,7 +27,6 @@ import com.datasophon.dao.entity.ClusterYarnQueue;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -36,34 +35,34 @@ import lombok.Data;
  */
 @Data
 public class YarnQueueResponse {
-    
+
     private Integer id;
-    
+
     private String queueName;
-    
+
     private Integer minCore;
-    
+
     private Integer minMem;
-    
+
     private Integer maxCore;
-    
+
     private Integer maxMem;
-    
+
     private Integer appNum;
-    
+
     private String schedulePolicy;
-    
+
     private Integer weight;
-    
+
     /** 1 = 是，2 = 否 */
     private Integer allowPreemption;
-    
+
     private String amShare;
-    
+
     private Integer clusterId;
-    
+
     private Date createTime;
-    
+
     public static YarnQueueResponse from(ClusterYarnQueue entity) {
         YarnQueueResponse r = new YarnQueueResponse();
         r.setId(entity.getId());
@@ -81,11 +80,11 @@ public class YarnQueueResponse {
         r.setCreateTime(entity.getCreateTime());
         return r;
     }
-    
+
     public static List<YarnQueueResponse> fromList(List<ClusterYarnQueue> list) {
         if (list == null) {
             return Collections.emptyList();
         }
-        return list.stream().map(YarnQueueResponse::from).collect(Collectors.toList());
+        return list.stream().map(YarnQueueResponse::from).toList();
     }
 }

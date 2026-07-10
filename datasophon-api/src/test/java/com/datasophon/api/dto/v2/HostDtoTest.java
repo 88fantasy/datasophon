@@ -24,6 +24,7 @@ package com.datasophon.api.dto.v2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.datasophon.common.k8s.vo.k8s.K8sNode;
 import com.datasophon.dao.entity.ClusterHostDO;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 import com.datasophon.dao.enums.ServiceRoleState;
@@ -41,11 +42,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * 纯 Java 单测（无 Spring），验证 v2 host DTO 的字段映射与 Jackson 序列化形状。
  */
 class HostDtoTest {
-    
+
     private final ObjectMapper mapper = new ObjectMapper();
-    
+
     // ─── HostResponse.from() ──────────────────────────────────────────────────
-    
+
     @Test
     void hostResponse_from_doesNotContainSshPasswordOrSshUser() {
         ClusterHostDO entity = new ClusterHostDO();
@@ -56,22 +57,22 @@ class HostDtoTest {
         entity.setSshUser("root");
         entity.setSshPassword("super-secret");
         entity.setHostState(HostState.RUNNING);
-        
+
         HostResponse resp = HostResponse.from(entity);
-        
+
         // 验证响应体本身没有 sshPassword / sshUser 字段
         List<String> fieldNames = Arrays.stream(HostResponse.class.getDeclaredFields())
                 .map(Field::getName)
                 .toList();
         assertThat(fieldNames).doesNotContain("sshPassword", "sshUser", "managed");
-        
+
         // 核心字段正常映射
         assertThat(resp.getId()).isEqualTo(1);
         assertThat(resp.getHostname()).isEqualTo("node1");
         assertThat(resp.getIp()).isEqualTo("192.168.1.1");
         assertThat(resp.getSshPort()).isEqualTo(22);
     }
-    
+
     @Test
     void hostResponse_from_hostStateIsInteger() {
         ClusterHostDO entity = new ClusterHostDO();
@@ -79,13 +80,13 @@ class HostDtoTest {
         entity.setHostname("node2");
         entity.setIp("10.0.0.1");
         entity.setHostState(HostState.RUNNING);
-        
+
         HostResponse resp = HostResponse.from(entity);
-        
+
         // hostState 必须是整数 1，而非枚举或中文描述
         assertThat(resp.getHostState()).isEqualTo(1);
     }
-    
+
     @Test
     void hostResponse_from_hostStateOffline() {
         ClusterHostDO entity = new ClusterHostDO();
@@ -93,12 +94,12 @@ class HostDtoTest {
         entity.setHostname("node3");
         entity.setIp("10.0.0.2");
         entity.setHostState(HostState.OFFLINE);
-        
+
         HostResponse resp = HostResponse.from(entity);
-        
+
         assertThat(resp.getHostState()).isEqualTo(2);
     }
-    
+
     @Test
     void hostResponse_from_hostStateExistsAlarm() {
         ClusterHostDO entity = new ClusterHostDO();
@@ -106,12 +107,12 @@ class HostDtoTest {
         entity.setHostname("node4");
         entity.setIp("10.0.0.3");
         entity.setHostState(HostState.EXISTS_ALARM);
-        
+
         HostResponse resp = HostResponse.from(entity);
-        
+
         assertThat(resp.getHostState()).isEqualTo(3);
     }
-    
+
     @Test
     void hostResponse_from_nullHostState_returnsNullInteger() {
         ClusterHostDO entity = new ClusterHostDO();
@@ -119,12 +120,12 @@ class HostDtoTest {
         entity.setHostname("node5");
         entity.setIp("10.0.0.4");
         entity.setHostState(null);
-        
+
         HostResponse resp = HostResponse.from(entity);
-        
+
         assertThat(resp.getHostState()).isNull();
     }
-    
+
     @Test
     void hostResponse_jackson_hostStateSerializesAsInteger() throws Exception {
         ClusterHostDO entity = new ClusterHostDO();
@@ -132,10 +133,10 @@ class HostDtoTest {
         entity.setHostname("node6");
         entity.setIp("10.0.0.5");
         entity.setHostState(HostState.RUNNING);
-        
+
         HostResponse resp = HostResponse.from(entity);
         String json = mapper.writeValueAsString(resp);
-        
+
         // 必须序列化为整数 1，不能是中文字符串
         assertThat(json).contains("\"hostState\":1");
         assertThat(json).doesNotContain("正在运行");
@@ -143,7 +144,7 @@ class HostDtoTest {
         assertThat(json).doesNotContain("sshPassword");
         assertThat(json).doesNotContain("sshUser");
     }
-    
+
     @Test
     void hostResponse_fromList_mapsAllEntities() {
         ClusterHostDO e1 = new ClusterHostDO();
@@ -151,22 +152,22 @@ class HostDtoTest {
         e1.setHostname("node1");
         e1.setIp("10.0.0.1");
         e1.setHostState(HostState.RUNNING);
-        
+
         ClusterHostDO e2 = new ClusterHostDO();
         e2.setId(2);
         e2.setHostname("node2");
         e2.setIp("10.0.0.2");
         e2.setHostState(HostState.OFFLINE);
-        
+
         List<HostResponse> list = HostResponse.fromList(List.of(e1, e2));
-        
+
         assertThat(list).hasSize(2);
         assertThat(list.get(0).getHostname()).isEqualTo("node1");
         assertThat(list.get(1).getHostState()).isEqualTo(2);
     }
-    
+
     // ─── HostPageResponse.of() ────────────────────────────────────────────────
-    
+
     @Test
     void hostPageResponse_of_setsRecordsAndTotal() {
         ClusterHostDO entity = new ClusterHostDO();
@@ -174,17 +175,60 @@ class HostDtoTest {
         entity.setHostname("node1");
         entity.setIp("10.0.0.1");
         entity.setHostState(HostState.RUNNING);
-        
+
         List<HostResponse> records = HostResponse.fromList(List.of(entity));
         HostPageResponse page = HostPageResponse.of(records, 100L);
-        
+
         assertThat(page.getTotal()).isEqualTo(100L);
         assertThat(page.getRecords()).hasSize(1);
         assertThat(page.getRecords().get(0).getHostname()).isEqualTo("node1");
     }
-    
+
+    @Test
+    void hostResponse_fromK8sNode_mapsNodeFields() {
+        K8sNode node = new K8sNode();
+        K8sNode.Metadata metadata = new K8sNode.Metadata();
+        metadata.setName("k8s-node-1");
+        metadata.setCreationTimestamp("2026-07-06T07:10:00Z");
+        metadata.setLabels(java.util.Map.of("node-role.kubernetes.io/worker", ""));
+        node.setMetadata(metadata);
+
+        K8sNode.NodeStatus status = new K8sNode.NodeStatus();
+        K8sNode.NodeCondition ready = new K8sNode.NodeCondition();
+        ready.setType("Ready");
+        ready.setStatus("True");
+        ready.setLastHeartbeatTime("2026-07-06T07:20:00Z");
+        status.setConditions(List.of(ready));
+        K8sNode.NodeAddress internalIp = new K8sNode.NodeAddress();
+        internalIp.setType("InternalIP");
+        internalIp.setAddress("10.0.0.7");
+        status.setAddresses(List.of(internalIp));
+        status.setCapacity(java.util.Map.of(
+                "cpu", "4",
+                "memory", "8192Mi",
+                "ephemeral-storage", "10485760Ki"));
+        K8sNode.NodeInfo nodeInfo = new K8sNode.NodeInfo();
+        nodeInfo.setArchitecture("amd64");
+        status.setNodeInfo(nodeInfo);
+        node.setStatus(status);
+
+        HostResponse resp = HostResponse.fromK8sNode(7, node);
+
+        assertThat(resp.getClusterId()).isEqualTo(7);
+        assertThat(resp.getHostname()).isEqualTo("k8s-node-1");
+        assertThat(resp.getIp()).isEqualTo("10.0.0.7");
+        assertThat(resp.getHostState()).isEqualTo(1);
+        assertThat(resp.getCoreNum()).isEqualTo(4);
+        assertThat(resp.getTotalMem()).isEqualTo(8);
+        assertThat(resp.getTotalDisk()).isEqualTo(10);
+        assertThat(resp.getCpuArchitecture()).isEqualTo("amd64");
+        assertThat(resp.getNodeLabel()).isEqualTo("worker");
+        assertThat(resp.getCheckTime()).isNotNull();
+        assertThat(resp.getCreateTime()).isNotNull();
+    }
+
     // ─── HostRoleResponse.from() ──────────────────────────────────────────────
-    
+
     @Test
     void hostRoleResponse_from_mapsCorrectly() {
         ClusterServiceRoleInstanceEntity entity = new ClusterServiceRoleInstanceEntity();
@@ -195,9 +239,9 @@ class HostDtoTest {
         entity.setServiceRoleStateCode(ServiceRoleState.RUNNING.getValue());
         entity.setServiceId(5);
         entity.setClusterId(1);
-        
+
         HostRoleResponse resp = HostRoleResponse.from(entity);
-        
+
         assertThat(resp.getId()).isEqualTo(10);
         assertThat(resp.getServiceRoleName()).isEqualTo("NameNode");
         assertThat(resp.getHostname()).isEqualTo("node1");
@@ -205,21 +249,21 @@ class HostDtoTest {
         assertThat(resp.getServiceId()).isEqualTo(5);
         assertThat(resp.getClusterId()).isEqualTo(1);
     }
-    
+
     @Test
     void hostRoleResponse_fromList_mapsAllEntities() {
         ClusterServiceRoleInstanceEntity e1 = new ClusterServiceRoleInstanceEntity();
         e1.setId(1);
         e1.setServiceRoleName("NameNode");
         e1.setServiceRoleStateCode(ServiceRoleState.RUNNING.getValue());
-        
+
         ClusterServiceRoleInstanceEntity e2 = new ClusterServiceRoleInstanceEntity();
         e2.setId(2);
         e2.setServiceRoleName("DataNode");
         e2.setServiceRoleStateCode(ServiceRoleState.STOP.getValue());
-        
+
         List<HostRoleResponse> list = HostRoleResponse.fromList(List.of(e1, e2));
-        
+
         assertThat(list).hasSize(2);
         assertThat(list.get(0).getServiceRoleName()).isEqualTo("NameNode");
         assertThat(list.get(1).getServiceRoleStateCode()).isEqualTo(2);

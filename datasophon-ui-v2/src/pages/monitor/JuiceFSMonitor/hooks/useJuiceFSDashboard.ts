@@ -3,10 +3,7 @@ import { fetchDorisLabels } from '../../_shared/dorisService';
 import { TIME_RANGE_SECONDS } from '../../_shared/panelTypes';
 import type { TimeSeriesPoint } from '../../_shared/types';
 import { useDorisDashboardData } from '../../_shared/useDorisDashboardData';
-import {
-  PANEL_QUERIES,
-  type JuiceFSPanelDescriptor,
-} from '../panelQueries';
+import { PANEL_QUERIES, type JuiceFSPanelDescriptor } from '../panelQueries';
 
 export interface JuiceFSDashboardVariables {
   name: string;
@@ -59,6 +56,15 @@ function withVolumeFilter(
     Object.entries(descriptors).map(([id, descriptor]) => {
       if (descriptor.type === 'node-count') return [id, descriptor];
       if (descriptor.type === 'instant') {
+        return [
+          id,
+          {
+            ...descriptor,
+            filters: { ...descriptor.filters, vol_name: volume },
+          },
+        ];
+      }
+      if (descriptor.type === 'range-stat') {
         return [
           id,
           {

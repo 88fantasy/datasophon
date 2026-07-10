@@ -25,7 +25,6 @@ package com.datasophon.api.dto.v2;
 import com.datasophon.dao.entity.UserInfoEntity;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -35,18 +34,18 @@ import lombok.Data;
  */
 @Data
 public class UserResponse {
-    
+
     private Integer id;
     private String username;
-    
+
     public static UserResponse from(UserInfoEntity entity) {
         UserResponse r = new UserResponse();
         r.setId(entity.getId());
         r.setUsername(entity.getUsername());
         return r;
     }
-    
+
     public static List<UserResponse> fromList(List<UserInfoEntity> entities) {
-        return entities.stream().map(UserResponse::from).collect(Collectors.toList());
+        return entities.stream().map(UserResponse::from).toList();
     }
 }

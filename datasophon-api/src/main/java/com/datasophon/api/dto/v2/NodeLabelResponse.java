@@ -26,7 +26,6 @@ import com.datasophon.dao.entity.ClusterNodeLabelEntity;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -35,11 +34,11 @@ import lombok.Data;
  */
 @Data
 public class NodeLabelResponse {
-    
+
     private Integer id;
     private Integer clusterId;
     private String nodeLabel;
-    
+
     public static NodeLabelResponse from(ClusterNodeLabelEntity entity) {
         NodeLabelResponse resp = new NodeLabelResponse();
         resp.setId(entity.getId());
@@ -47,11 +46,11 @@ public class NodeLabelResponse {
         resp.setNodeLabel(entity.getNodeLabel());
         return resp;
     }
-    
+
     public static List<NodeLabelResponse> fromList(List<ClusterNodeLabelEntity> entities) {
         if (entities == null) {
             return Collections.emptyList();
         }
-        return entities.stream().map(NodeLabelResponse::from).collect(Collectors.toList());
+        return entities.stream().map(NodeLabelResponse::from).toList();
     }
 }

@@ -28,12 +28,15 @@ import com.datasophon.api.service.ClusterServiceRoleInstanceService;
 import com.datasophon.api.service.ClusterVariableService;
 
 import java.lang.reflect.Proxy;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.zaxxer.hikari.HikariDataSource;
+
 class OtelDorisReaderFactoryTest {
-    
+
     @Test
     void reusesPoolForSameConnectionSettings() {
         OtelCredentialService credentialService = new OtelCredentialService(null);
@@ -44,13 +47,32 @@ class OtelDorisReaderFactoryTest {
         ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
         ReflectionTestUtils.setField(factory, "fallbackPort", "9030");
         ReflectionTestUtils.setField(factory, "fallbackPassword", "secret");
-        
+
         factory.create(7);
         factory.create(7);
-        
+
         assertThat(factory.poolSizeForTest()).isEqualTo(1);
     }
-    
+
+    @Test
+    void usesConfiguredFallbackUser() {
+        OtelCredentialService credentialService = new OtelCredentialService(null);
+        OtelDorisReaderFactory factory = new OtelDorisReaderFactory(
+                proxy(ClusterServiceRoleInstanceService.class),
+                proxy(ClusterVariableService.class),
+                credentialService);
+        ReflectionTestUtils.setField(factory, "fallbackHost", "127.0.0.1");
+        ReflectionTestUtils.setField(factory, "fallbackPort", "9030");
+        ReflectionTestUtils.setField(factory, "fallbackUser", "custom_reader");
+        ReflectionTestUtils.setField(factory, "fallbackPassword", "secret");
+
+        factory.create(7);
+
+        Map<?, HikariDataSource> pools = (Map<?, HikariDataSource>) ReflectionTestUtils.getField(factory, "pools");
+        assertThat(pools).hasSize(1);
+        assertThat(pools.values().iterator().next().getUsername()).isEqualTo("custom_reader");
+    }
+
     @SuppressWarnings("unchecked")
     private static <T> T proxy(Class<T> type) {
         return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type},

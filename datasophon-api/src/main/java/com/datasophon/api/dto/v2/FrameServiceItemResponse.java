@@ -26,7 +26,6 @@ import com.datasophon.dao.entity.FrameServiceEntity;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -35,7 +34,7 @@ import lombok.Data;
  */
 @Data
 public class FrameServiceItemResponse {
-    
+
     private Integer id;
     private Integer frameId;
     private String frameCode;
@@ -46,7 +45,7 @@ public class FrameServiceItemResponse {
     private Boolean installed;
     /** 部署清单中是否被勾选（addService 向导上下文，非清单场景为 null）。 */
     private Boolean selected;
-    
+
     public static FrameServiceItemResponse from(FrameServiceEntity entity) {
         if (entity == null) {
             return null;
@@ -63,11 +62,11 @@ public class FrameServiceItemResponse {
         r.setSelected(entity.getSelected());
         return r;
     }
-    
+
     public static List<FrameServiceItemResponse> fromList(List<FrameServiceEntity> entities) {
         if (entities == null) {
             return Collections.emptyList();
         }
-        return entities.stream().map(FrameServiceItemResponse::from).collect(Collectors.toList());
+        return entities.stream().map(FrameServiceItemResponse::from).toList();
     }
 }
