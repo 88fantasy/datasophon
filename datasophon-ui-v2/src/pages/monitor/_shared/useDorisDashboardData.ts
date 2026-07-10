@@ -164,10 +164,10 @@ export function useDorisDashboardData({
             const def = _descriptors[id];
             if (def.type !== 'instant') return [id, 0] as const;
             try {
-              const res = await queryDorisInstant({
+              const numParams = {
                 metric: def.metric,
                 agg: def.agg,
-                scale: def.scale,
+                scale: def.denominatorMetric ? 1 : def.scale,
                 instance,
                 job,
                 time: end,
@@ -175,7 +175,41 @@ export function useDorisDashboardData({
                 table: def.table,
                 filters: def.filters,
                 filtersNe: def.filtersNe,
-              });
+                filtersRegex: def.filtersRegex,
+                filtersNotRegex: def.filtersNotRegex,
+              };
+              if (def.denominatorMetric) {
+                const [numRes, denomRes] = await Promise.all([
+                  queryDorisInstant(numParams),
+                  queryDorisInstant({
+                    metric: def.denominatorMetric,
+                    agg: def.agg,
+                    scale: 1,
+                    instance,
+                    job,
+                    time: end,
+                    clusterId,
+                    table: def.denominatorTable ?? def.table,
+                    filters: def.denominatorFilters,
+                    filtersNe: def.denominatorFiltersNe,
+                    filtersRegex: def.denominatorFiltersRegex,
+                    filtersNotRegex: def.denominatorFiltersNotRegex,
+                  }),
+                ]);
+                const numerator = numRes?.data
+                  ? vectorToScalar(numRes.data)
+                  : NaN;
+                const denominator = denomRes?.data
+                  ? vectorToScalar(denomRes.data)
+                  : NaN;
+                const value =
+                  Number.isFinite(denominator) && denominator !== 0
+                    ? (numerator / denominator) * (def.scale ?? 1)
+                    : NaN;
+                return [id, value] as const;
+              }
+
+              const res = await queryDorisInstant(numParams);
               return [id, res?.data ? vectorToScalar(res.data) : 0] as const;
             } catch {
               return [id, 0] as const;
@@ -223,6 +257,8 @@ export function useDorisDashboardData({
                       field: q.field,
                       filters: q.filters,
                       filtersNe: q.filtersNe,
+                      filtersRegex: q.filtersRegex,
+                      filtersNotRegex: q.filtersNotRegex,
                       groupBy: q.groupBy,
                     }),
                     queryDorisRange({
@@ -235,10 +271,12 @@ export function useDorisDashboardData({
                       end,
                       step,
                       clusterId,
-                      table: q.table,
-                      field: q.field,
+                      table: q.denominatorTable ?? q.table,
+                      field: q.denominatorField ?? q.field,
                       filters: q.denominatorFilters,
                       filtersNe: q.denominatorFiltersNe,
+                      filtersRegex: q.denominatorFiltersRegex,
+                      filtersNotRegex: q.denominatorFiltersNotRegex,
                       groupBy: q.groupBy,
                     }),
                   ]);
@@ -270,6 +308,8 @@ export function useDorisDashboardData({
                   field: q.field,
                   filters: q.filters,
                   filtersNe: q.filtersNe,
+                  filtersRegex: q.filtersRegex,
+                  filtersNotRegex: q.filtersNotRegex,
                   groupBy: q.groupBy,
                 });
                 return {

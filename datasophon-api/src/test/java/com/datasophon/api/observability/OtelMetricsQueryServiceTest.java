@@ -119,6 +119,20 @@ class OtelMetricsQueryServiceTest {
     }
 
     @Test
+    void allowedAttrFilterKeys_includeDolphinSchedulerDimensions() {
+        assertThat(OtelMetricsQueryService.ALLOWED_ATTR_FILTER_KEYS)
+                .contains("area", "result", "status", "level", "cause");
+        String sql = OtelMetricsQueryService.buildRangeRateSql(
+                false, false, Map.of("result", "success"), null,
+                Map.of("status", "5.."), null,
+                List.of("level", "cause"), "otel_metrics_sum");
+        assertThat(sql).contains("attributes['result']");
+        assertThat(sql).contains("attributes['status']");
+        assertThat(sql).contains("attributes['level']");
+        assertThat(sql).contains("attributes['cause']");
+    }
+
+    @Test
     void rangeSummaryFieldRate_count_useSummaryTableAndSeriesKeyPartition() {
         String sql = OtelMetricsQueryService.buildRangeFieldRateSql(
                 "count", false, false, Map.of("gc", "G1 Young Generation"), null,
@@ -138,11 +152,11 @@ class OtelMetricsQueryServiceTest {
     @Nested
     class SqlBuilding {
 
-        // ── instance/job 列修复（D3 核心）──
+        // ── instance/job 列契约 ──
 
         @Test
-        void allBuilders_useResourceAttributesForInstanceAndJob() {
-            // 每个 builder 的 instance/job 必须来自 resource_attributes，不能用 attributes
+        void allBuilders_useFlattenedServiceColumnsForInstanceAndJob() {
+            // Doris OTel schema 将 instance/job 写入扁平 service 列，不能从 attributes 取。
             String noAgg = OtelMetricsQueryService.buildInstantNoAggSql(false, false, null, null, "otel_metrics_gauge");
             String agg = OtelMetricsQueryService.buildInstantAggSql(
                     "sum", false, false, null, null, "otel_metrics_gauge");
@@ -156,8 +170,9 @@ class OtelMetricsQueryServiceTest {
 
             for (String sql : List.of(noAgg, agg, gauge, rate, summary, histogram)) {
                 assertThat(sql)
-                        .as("SQL must reference resource_attributes for instance/job")
-                        .contains("resource_attributes");
+                        .as("SQL must reference flattened service columns for instance/job")
+                        .contains("service_instance_id")
+                        .contains("service_name");
                 assertThat(sql)
                         .as("SQL must NOT use attributes['instance'] (always NULL)")
                         .doesNotContain("attributes['instance']");
@@ -182,14 +197,13 @@ class OtelMetricsQueryServiceTest {
         }
 
         @Test
-        void instantNoAgg_withInstanceJobFilters_appendsResourceAttributesRegexp() {
+        void instantNoAgg_withInstanceJobFilters_appendsServiceColumnRegexp() {
             String sql = OtelMetricsQueryService.buildInstantNoAggSql(true, true, null, null, "otel_metrics_gauge");
             assertThat(sql).contains(":instance");
             assertThat(sql).contains(":job");
             assertThat(sql).containsIgnoringCase("REGEXP");
-            // 过滤列必须是 resource_attributes
-            assertThat(sql).contains("resource_attributes['service']['instance']['id']");
-            assertThat(sql).contains("resource_attributes['service']['name']");
+            assertThat(sql).contains("service_instance_id REGEXP :instance");
+            assertThat(sql).contains("service_name REGEXP :job");
         }
 
         // ── instant 聚合 ──
@@ -412,6 +426,31 @@ class OtelMetricsQueryServiceTest {
             assertThat(sql).contains("REGEXP :af_fstype");
             assertThat(sql).contains("attributes['mountpoint']");
             assertThat(sql).contains("NOT REGEXP :afne_mountpoint");
+        }
+
+        @Test
+        void explicitRegexFilters_appendRegexpClausesAndBindValuesAsParams() {
+            String sql = OtelMetricsQueryService.buildRangeRateSql(
+                    false, false, null, null,
+                    Map.of("status", "5.."), Map.of("status", "2.."),
+                    List.of(), "otel_metrics_sum");
+            assertThat(sql).contains("REGEXP :afr_status");
+            assertThat(sql).contains("NOT REGEXP :afnr_status");
+            assertThat(sql).doesNotContain("5..");
+            assertThat(sql).doesNotContain("2..");
+        }
+
+        @Test
+        void explicitRegexFilters_ignoreNonWhitelistKey() {
+            String sql = OtelMetricsQueryService.buildRangeGaugeSql(
+                    false, false, null, null,
+                    Map.of("status", "5..", "'; DROP TABLE otel_metrics_gauge; --", ".*"),
+                    Map.of("bad_key", ".*"),
+                    List.of(), "otel_metrics_gauge");
+            assertThat(sql).contains("REGEXP :afr_status");
+            assertThat(sql).doesNotContain("DROP TABLE");
+            assertThat(sql).doesNotContain(":afr_';");
+            assertThat(sql).doesNotContain(":afnr_bad_key");
         }
 
         @Test

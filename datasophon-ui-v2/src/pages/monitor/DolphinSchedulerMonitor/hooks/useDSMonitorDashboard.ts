@@ -1,17 +1,34 @@
-import { useMemo } from 'react';
-import type { PrometheusVector } from '../../_shared/charts/promql';
-import {
-  deriveInstancesAndJobs,
-  replaceVars,
-} from '../../_shared/charts/promql';
+import { useEffect, useMemo, useState } from 'react';
+import { fetchDorisLabels } from '../../_shared/dorisService';
 import type { TimeSeriesPoint } from '../../_shared/types';
-import { useDashboardData } from '../../_shared/useDashboardData';
+import { useDorisDashboardData } from '../../_shared/useDorisDashboardData';
 import {
   type DSApplication,
   type DSDashboardVariables,
   getDSSegmentPanelIds,
   PANEL_QUERIES,
 } from '../panelQueries';
+
+export const DS_APPLICATION_SERVICE_KEYWORDS: Record<DSApplication, string> = {
+  'master-server': 'master',
+  'worker-server': 'worker',
+  'api-server': 'api',
+  'alert-server': 'alert',
+};
+
+const NO_MATCHING_SERVICE = '^$';
+
+export function resolveDSServiceName(
+  application: DSApplication,
+  serviceNames: string[],
+): string {
+  const keyword = DS_APPLICATION_SERVICE_KEYWORDS[application];
+  return (
+    serviceNames.find((serviceName) =>
+      serviceName.toLowerCase().includes(keyword),
+    ) ?? NO_MATCHING_SERVICE
+  );
+}
 
 export interface DSDashboardData {
   instant: Record<string, number>;
@@ -41,37 +58,39 @@ export function useDSMonitorDashboard({
     () => getDSSegmentPanelIds(activeSegment),
     [activeSegment],
   );
+  const [roleJob, setRoleJob] = useState(NO_MATCHING_SERVICE);
+  const [instances, setInstances] = useState<string[]>([]);
 
-  const extras = useMemo(
-    () => ({
-      up: {
-        query: `up{application="${variables.application || 'master-server'}"}`,
-        kind: 'instant' as const,
-      },
-    }),
-    [variables.application],
-  );
+  useEffect(() => {
+    setInstances([]);
+    setRoleJob(NO_MATCHING_SERVICE);
+    fetchDorisLabels('process_uptime_seconds', clusterId)
+      .then(async (res) => {
+        const serviceName = resolveDSServiceName(activeSegment, res?.data?.jobs ?? []);
+        setRoleJob(serviceName);
+        if (serviceName === NO_MATCHING_SERVICE) return;
+        const labels = await fetchDorisLabels(
+          'process_uptime_seconds',
+          clusterId,
+          serviceName,
+        );
+        setInstances(labels?.data?.instances ?? []);
+      })
+      .catch(() => {
+        setInstances([]);
+        setRoleJob(NO_MATCHING_SERVICE);
+      });
+  }, [activeSegment, clusterId, refreshKey]);
 
-  const data = useDashboardData({
-    panelQueries: PANEL_QUERIES,
-    replaceVars: (promql, vars) =>
-      replaceVars(promql, vars, {
-        application: 'master-server',
-        instance: '.+',
-      }),
-    variables: variables as unknown as Record<string, string>,
+  const data = useDorisDashboardData({
+    panelDescriptors: PANEL_QUERIES,
     panelIds,
-    extras,
+    instance: variables.instance,
+    job: roleJob,
     timeRange,
     clusterId,
     refreshKey,
   });
-
-  const { instances } = useMemo(() => {
-    const upVector = data.extras.up as PrometheusVector | undefined;
-    if (!upVector) return { instances: [] };
-    return deriveInstancesAndJobs(upVector);
-  }, [data.extras]);
 
   return {
     instant: data.instant,

@@ -39,6 +39,10 @@ export interface DorisInstantParams {
   filters?: Record<string, string>;
   /** 不等属性过滤 */
   filtersNe?: Record<string, string>;
+  /** 正则属性过滤 */
+  filtersRegex?: Record<string, string>;
+  /** 正则不匹配属性过滤 */
+  filtersNotRegex?: Record<string, string>;
 }
 
 /** 传给后端 query_range 接口的 range 参数 */
@@ -65,6 +69,10 @@ export interface DorisRangeParams {
   filters?: Record<string, string>;
   /** 不等属性过滤 */
   filtersNe?: Record<string, string>;
+  /** 正则属性过滤 */
+  filtersRegex?: Record<string, string>;
+  /** 正则不匹配属性过滤 */
+  filtersNotRegex?: Record<string, string>;
   /** 额外 GROUP BY 维度（如 ['path']、['mode']） */
   groupBy?: string[];
 }
@@ -83,6 +91,17 @@ export interface DorisInstantDescriptor {
   filters?: Record<string, string>;
   /** 不等属性过滤 */
   filtersNe?: Record<string, string>;
+  /** 正则属性过滤 */
+  filtersRegex?: Record<string, string>;
+  /** 正则不匹配属性过滤 */
+  filtersNotRegex?: Record<string, string>;
+  /** 可选：分母指标，用于 instant 比值 */
+  denominatorMetric?: string;
+  denominatorTable?: 'gauge' | 'sum';
+  denominatorFilters?: Record<string, string>;
+  denominatorFiltersNe?: Record<string, string>;
+  denominatorFiltersRegex?: Record<string, string>;
+  denominatorFiltersNotRegex?: Record<string, string>;
 }
 
 /** 节点计数面板描述符（查角色注册表，替代 PromQL count(up==1)） */
@@ -111,12 +130,20 @@ export interface DorisRangeQuery {
   filters?: Record<string, string>;
   /** 不等属性过滤 */
   filtersNe?: Record<string, string>;
+  /** 正则属性过滤 */
+  filtersRegex?: Record<string, string>;
+  /** 正则不匹配属性过滤 */
+  filtersNotRegex?: Record<string, string>;
   /** 额外 GROUP BY 维度 */
   groupBy?: string[];
   /** 可选：分母指标（留空时直接返回原始序列） */
   denominatorMetric?: string;
+  denominatorTable?: 'gauge' | 'sum' | 'summary' | 'histogram';
+  denominatorField?: 'quantile' | 'count' | 'sum';
   denominatorFilters?: Record<string, string>;
   denominatorFiltersNe?: Record<string, string>;
+  denominatorFiltersRegex?: Record<string, string>;
+  denominatorFiltersNotRegex?: Record<string, string>;
 }
 
 /** multi-range 面板描述符（每条 series 一个 query） */
@@ -153,7 +180,7 @@ function groupByToString(groupBy?: string[]): string | undefined {
 
 /** 查询指定指标的 instant 快照（对应 Prometheus /api/v1/query） */
 export function queryDorisInstant(params: DorisInstantParams) {
-  const { filters, filtersNe, ...rest } = params;
+  const { filters, filtersNe, filtersRegex, filtersNotRegex, ...rest } = params;
   return request<ApiResponse<PrometheusVector>>(
     '/observability/otel/metrics/query',
     {
@@ -162,6 +189,8 @@ export function queryDorisInstant(params: DorisInstantParams) {
         ...rest,
         filters: filtersToString(filters),
         filtersNe: filtersToString(filtersNe),
+        filtersRegex: filtersToString(filtersRegex),
+        filtersNotRegex: filtersToString(filtersNotRegex),
       },
     },
   );
@@ -169,7 +198,15 @@ export function queryDorisInstant(params: DorisInstantParams) {
 
 /** 查询指定指标的时间序列（对应 Prometheus /api/v1/query_range） */
 export function queryDorisRange(params: DorisRangeParams) {
-  const { filters, filtersNe, groupBy, rateWindow, ...rest } = params;
+  const {
+    filters,
+    filtersNe,
+    filtersRegex,
+    filtersNotRegex,
+    groupBy,
+    rateWindow,
+    ...rest
+  } = params;
   return request<ApiResponse<PrometheusMatrix>>(
     '/observability/otel/metrics/query_range',
     {
@@ -179,6 +216,8 @@ export function queryDorisRange(params: DorisRangeParams) {
         rateWindow,
         filters: filtersToString(filters),
         filtersNe: filtersToString(filtersNe),
+        filtersRegex: filtersToString(filtersRegex),
+        filtersNotRegex: filtersToString(filtersNotRegex),
         groupBy: groupByToString(groupBy),
       },
     },
@@ -186,7 +225,7 @@ export function queryDorisRange(params: DorisRangeParams) {
 }
 
 /** 查询指标可用的 instance/job 标签值，用于工具栏下拉 */
-export function fetchDorisLabels(metric: string, clusterId = 1) {
+export function fetchDorisLabels(metric: string, clusterId = 1, job?: string) {
   return request<
     ApiResponse<{
       instances: string[];
@@ -195,7 +234,7 @@ export function fetchDorisLabels(metric: string, clusterId = 1) {
     }>
   >(
     '/observability/otel/metrics/labels',
-    { method: 'GET', params: { metric, clusterId } },
+    { method: 'GET', params: { metric, clusterId, job } },
   );
 }
 
