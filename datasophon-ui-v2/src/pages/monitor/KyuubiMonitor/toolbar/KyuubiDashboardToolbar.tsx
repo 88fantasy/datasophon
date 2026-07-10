@@ -16,6 +16,9 @@ interface KyuubiDashboardToolbarProps {
   instances: string[];
   selectedInstances: string[];
   onInstancesChange: (value: string[]) => void;
+  jobs: string[];
+  selectedJob: string;
+  onJobChange: (value: string) => void;
   connTypes: string[];
   selectedConnType: string;
   onConnTypeChange: (value: string) => void;
@@ -37,6 +40,9 @@ const KyuubiDashboardToolbar: FC<KyuubiDashboardToolbarProps> = ({
   instances,
   selectedInstances,
   onInstancesChange,
+  jobs,
+  selectedJob,
+  onJobChange,
   connTypes,
   selectedConnType,
   onConnTypeChange,
@@ -60,6 +66,13 @@ const KyuubiDashboardToolbar: FC<KyuubiDashboardToolbarProps> = ({
       options={instances.map((value) => ({ label: value, value }))}
       style={{ minWidth: 220 }}
       maxTagCount="responsive"
+    />
+    <Select
+      placeholder="Scrape Job"
+      value={selectedJob || undefined}
+      onChange={onJobChange}
+      options={jobs.map((value) => ({ label: value, value }))}
+      style={{ minWidth: 180 }}
     />
     <Select
       value={selectedConnType}

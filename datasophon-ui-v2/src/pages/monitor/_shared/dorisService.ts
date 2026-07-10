@@ -24,6 +24,8 @@ import { request } from '@umijs/max';
 import type { PrometheusMatrix, PrometheusVector } from './charts/promql';
 import type { ApiResponse } from './service';
 
+export type DorisRateWindow = '1m' | '2m' | '5m' | '15m' | '1h';
+
 /** 传给后端 query 接口的 instant 参数 */
 export interface DorisInstantParams {
   metric: string;
@@ -48,7 +50,7 @@ export interface DorisInstantParams {
 /** 传给后端 query_range 接口的 range 参数 */
 export interface DorisRangeParams {
   metric: string;
-  rateWindow?: '1m' | '2m' | '5m' | '15m';
+  rateWindow?: DorisRateWindow;
   scale?: number;
   instance?: string;
   job?: string;
@@ -120,7 +122,7 @@ export interface DorisNodeCountDescriptor {
 export interface DorisRangeQuery {
   label: string;
   metric: string;
-  rate?: '1m' | '2m' | '5m' | '15m';
+  rate?: DorisRateWindow;
   scale?: number;
   /** OTel 表选择 */
   table?: 'gauge' | 'sum' | 'summary' | 'histogram';
@@ -152,9 +154,26 @@ export interface DorisMultiRangeDescriptor {
   queries: DorisRangeQuery[];
 }
 
+/**
+ * 使用 range rate 查询的统计面板，展示当前时间范围内最后一个时间桶的聚合值。
+ * 用于 PromQL 的 sum(increase(...[window])) 语义。
+ */
+export interface DorisRangeStatDescriptor {
+  type: 'range-stat';
+  metric: string;
+  rate: DorisRateWindow;
+  scale?: number;
+  table?: 'gauge' | 'sum' | 'summary' | 'histogram';
+  filters?: Record<string, string>;
+  filtersNe?: Record<string, string>;
+  filtersRegex?: Record<string, string>;
+  filtersNotRegex?: Record<string, string>;
+}
+
 export type DorisPanelDescriptor =
   | DorisInstantDescriptor
   | DorisMultiRangeDescriptor
+  | DorisRangeStatDescriptor
   | DorisNodeCountDescriptor;
 
 // ── 参数序列化辅助 ────────────────────────────────────────────────────────────
@@ -232,10 +251,10 @@ export function fetchDorisLabels(metric: string, clusterId = 1, job?: string) {
       jobs: string[];
       attributes?: Record<string, string[]>;
     }>
-  >(
-    '/observability/otel/metrics/labels',
-    { method: 'GET', params: { metric, clusterId, job } },
-  );
+  >('/observability/otel/metrics/labels', {
+    method: 'GET',
+    params: { metric, clusterId, job },
+  });
 }
 
 /** 查询集群内指定角色的 RUNNING 节点数（替代 PromQL count(up==1)） */

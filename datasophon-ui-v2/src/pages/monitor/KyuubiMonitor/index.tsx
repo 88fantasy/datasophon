@@ -1,5 +1,5 @@
 import { Row } from 'antd';
-import { type FC, useCallback, useMemo, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CHART_COLORS,
   colorByThreshold,
@@ -29,8 +29,6 @@ const engineColors = {
 
 const errorColors = {
   'Operation Error': CHART_COLORS.error,
-  'Operation Failed': '#ff7a45',
-  'Engine Open Failed': '#cf1322',
 };
 
 const jvmMemoryColors = {
@@ -77,8 +75,9 @@ const KyuubiDashboard: FC = () => {
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>('30s');
   const [selectedInstances, setSelectedInstances] = useState<string[]>([]);
+  const [selectedJob, setSelectedJob] = useState('');
   const [selectedConnType, setSelectedConnType] = useState(
-    'connection_total_INTERACTIVE',
+    'thrift_binary_connection',
   );
   const [selectedOpType, setSelectedOpType] = useState('ExecuteStatement');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -89,12 +88,11 @@ const KyuubiDashboard: FC = () => {
         selectedInstances.length > 0
           ? selectionsToRegex(selectedInstances)
           : '.+',
-      baseFilter: '',
+      job: selectedJob || '^$',
       connType: selectedConnType,
       opType: selectedOpType,
-      trendInterval: '5m',
     }),
-    [selectedInstances, selectedConnType, selectedOpType],
+    [selectedInstances, selectedJob, selectedConnType, selectedOpType],
   );
 
   const handleRefresh = useCallback(() => {
@@ -105,6 +103,7 @@ const KyuubiDashboard: FC = () => {
     instant,
     series,
     instances,
+    jobs,
     connTypes,
     opTypes,
     trendInterval,
@@ -115,6 +114,11 @@ const KyuubiDashboard: FC = () => {
     clusterId: 1,
     refreshKey,
   });
+
+  useEffect(() => {
+    if (jobs.length === 0 || jobs.includes(selectedJob)) return;
+    setSelectedJob(jobs[0]);
+  }, [jobs, selectedJob]);
 
   const permitLimit = maxSeriesValue(series.KY10, 'Startup Permit Limit');
 
@@ -131,6 +135,9 @@ const KyuubiDashboard: FC = () => {
           instances={instances}
           selectedInstances={selectedInstances}
           onInstancesChange={setSelectedInstances}
+          jobs={jobs}
+          selectedJob={selectedJob}
+          onJobChange={setSelectedJob}
           connTypes={connTypes}
           selectedConnType={selectedConnType}
           onConnTypeChange={setSelectedConnType}
@@ -146,7 +153,9 @@ const KyuubiDashboard: FC = () => {
           {variables.instance}
           {'"'}
           {' · '}
-          conn={selectedConnType.replace('connection_total_', '')}
+          job={selectedJob || 'loading'}
+          {' · '}
+          conn={selectedConnType}
           {' · '}
           op={selectedOpType}
           {' · '}
@@ -154,7 +163,7 @@ const KyuubiDashboard: FC = () => {
           {' · '}
           trend={trendInterval}
           {' · '}
-          JVM pools use PS metric names
+          JVM pools use the runtime metric names
         </>
       }
       loading={loading}

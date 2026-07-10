@@ -779,6 +779,11 @@ class OtelMetricsQueryServiceTest {
         }
 
         @Test
+        void parseRateWindow_1h_returns3600() {
+            assertThat(OtelMetricsQueryService.parseRateWindow("1h")).isEqualTo(3600L);
+        }
+
+        @Test
         void parseRateWindow_2m_returns120() {
             assertThat(OtelMetricsQueryService.parseRateWindow("2m")).isEqualTo(120L);
         }

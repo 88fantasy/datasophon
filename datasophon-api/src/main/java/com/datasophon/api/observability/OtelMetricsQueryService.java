@@ -905,6 +905,7 @@ public class OtelMetricsQueryService {
             return 60L;
         }
         return switch (rateWindow) {
+            case "1h" -> 3600L;
             case "5m" -> 300L;
             case "2m" -> 120L;
             case "15m" -> 900L;

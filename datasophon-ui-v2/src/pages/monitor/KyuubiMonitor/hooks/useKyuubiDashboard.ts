@@ -1,11 +1,12 @@
-import { useMemo } from 'react';
-import type { PrometheusVector } from '../../_shared/charts/promql';
+import { useEffect, useMemo, useState } from 'react';
+import { fetchDorisLabels } from '../../_shared/dorisService';
 import type { TimeSeriesPoint } from '../../_shared/types';
-import { useDashboardData } from '../../_shared/useDashboardData';
+import { useDorisDashboardData } from '../../_shared/useDorisDashboardData';
 import {
+  KYUUBI_CONN_TYPES,
+  KYUUBI_OP_TYPES,
+  buildKyuubiPanelQueries,
   type KyuubiDashboardVariables,
-  PANEL_QUERIES,
-  replaceKyuubiVars,
 } from '../panelQueries';
 
 export interface KyuubiInstantValues {
@@ -21,11 +22,24 @@ export interface KyuubiDashboardData {
   instant: KyuubiInstantValues;
   series: Record<string, TimeSeriesPoint[]>;
   instances: string[];
+  jobs: string[];
   connTypes: string[];
   opTypes: string[];
   trendInterval: string;
   loading: boolean;
   error?: string;
+}
+
+const ALL_PANEL_IDS = Array.from(
+  { length: 16 },
+  (_, index) => `KY${String(index + 1).padStart(2, '0')}`,
+);
+
+function trendIntervalForRange(timeRange: string): '1m' | '5m' | '15m' | '1h' {
+  if (timeRange === '5m' || timeRange === '15m') return '1m';
+  if (timeRange === '6h' || timeRange === '24h') return '15m';
+  if (timeRange === '7d') return '1h';
+  return '5m';
 }
 
 export interface UseKyuubiDashboardParams {
@@ -35,93 +49,58 @@ export interface UseKyuubiDashboardParams {
   refreshKey: number;
 }
 
-export const KYUUBI_CONN_TYPES = [
-  'connection_total_INTERACTIVE',
-  'connection_total_BATCH',
-];
-
-export const KYUUBI_OP_TYPES = [
-  'ExecuteStatement',
-  'LaunchEngine',
-  'GetSchemas',
-  'GetTables',
-  'GetColumns',
-  'GetFunctions',
-  'GetCatalogs',
-  'GetTypeInfo',
-];
-
-const INSTANT_IDS = ['KY01', 'KY02', 'KY03', 'KY04', 'KY05', 'KY06'];
-const SERIES_IDS = Array.from(
-  { length: 10 },
-  (_, i) => `KY${String(i + 7).padStart(2, '0')}`,
-);
-const ALL_PANEL_IDS = [...INSTANT_IDS, ...SERIES_IDS];
-
-function trendIntervalForRange(timeRange: string): string {
-  if (timeRange === '5m' || timeRange === '15m') return '1m';
-  if (timeRange === '6h' || timeRange === '24h') return '15m';
-  if (timeRange === '7d') return '1h';
-  return '5m';
-}
-
-function deriveKyuubiInstances(vector: PrometheusVector): string[] {
-  return [
-    ...new Set(
-      vector.result
-        .map((item) => item.metric.instance)
-        .filter((v): v is string => Boolean(v)),
-    ),
-  ];
-}
-
 export function useKyuubiDashboard({
   variables,
   timeRange,
   clusterId = 1,
   refreshKey,
 }: UseKyuubiDashboardParams): KyuubiDashboardData {
+  const [labels, setLabels] = useState<{ instances: string[]; jobs: string[] }>(
+    {
+      instances: [],
+      jobs: [],
+    },
+  );
+
+  useEffect(() => {
+    fetchDorisLabels('kyuubi_jvm_uptime', clusterId)
+      .then((res) => {
+        if (res?.data) {
+          setLabels({
+            instances: [...res.data.instances].sort(),
+            jobs: [...res.data.jobs].sort(),
+          });
+        }
+      })
+      .catch(() => {
+        // labels 查询失败不影响已选数据源的面板查询。
+      });
+  }, [clusterId, refreshKey]);
+
   const trendInterval = useMemo(
     () => trendIntervalForRange(timeRange),
     [timeRange],
   );
 
-  const effectiveVariables = useMemo(
-    () => ({ ...variables, trendInterval }),
-    [variables, trendInterval],
+  const panelDescriptors = useMemo(
+    () =>
+      buildKyuubiPanelQueries(
+        variables.connType,
+        variables.opType,
+        trendInterval,
+      ),
+    [trendInterval, variables.connType, variables.opType],
   );
 
-  // extras 的 query 必须预先用 replaceKyuubiVars 展开，因为 DashboardData 只存储原始 string
-  const extras = useMemo(
-    () => ({
-      instanceList: {
-        query: replaceKyuubiVars(
-          'kyuubi_jvm_uptime{$baseFilter}',
-          effectiveVariables,
-        ),
-        kind: 'instant' as const,
-      },
-    }),
-    [effectiveVariables],
-  );
-
-  const data = useDashboardData({
-    panelQueries: PANEL_QUERIES,
-    // replaceKyuubiVars 处理 ${connType}/${opType} 等特殊语法，通用 replaceVars 不支持
-    replaceVars: (promql, vars) =>
-      replaceKyuubiVars(promql, vars as Partial<KyuubiDashboardVariables>),
-    variables: effectiveVariables as Record<string, string>,
+  const data = useDorisDashboardData({
+    panelDescriptors,
     panelIds: ALL_PANEL_IDS,
-    extras,
+    instance: variables.instance,
+    job: variables.job,
     timeRange,
     clusterId,
     refreshKey,
   });
-
-  const discoveredInstances = useMemo(() => {
-    const vec = data.extras.instanceList as PrometheusVector | undefined;
-    return vec ? deriveKyuubiInstances(vec) : [];
-  }, [data.extras]);
 
   return {
     instant: {
@@ -133,7 +112,8 @@ export function useKyuubiDashboard({
       operationErrorRate: data.instant.KY06 ?? 0,
     },
     series: data.series,
-    instances: discoveredInstances,
+    instances: labels.instances,
+    jobs: labels.jobs,
     connTypes: KYUUBI_CONN_TYPES,
     opTypes: KYUUBI_OP_TYPES,
     trendInterval,
