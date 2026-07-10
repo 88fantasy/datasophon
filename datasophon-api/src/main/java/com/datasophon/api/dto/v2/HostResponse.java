@@ -121,11 +121,11 @@ public class HostResponse {
     }
 
     public static List<HostResponse> fromList(List<ClusterHostDO> entities) {
-        return entities.stream().map(HostResponse::from).collect(Collectors.toList());
+        return entities.stream().map(HostResponse::from).toList();
     }
 
     public static List<HostResponse> fromPageDtoList(List<QueryHostListPageDTO> dtos) {
-        return dtos.stream().map(HostResponse::fromPageDto).collect(Collectors.toList());
+        return dtos.stream().map(HostResponse::fromPageDto).toList();
     }
 
     public static HostResponse fromK8sNode(Integer clusterId, K8sNode node) {

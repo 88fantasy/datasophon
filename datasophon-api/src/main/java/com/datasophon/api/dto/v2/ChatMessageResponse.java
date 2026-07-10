@@ -27,7 +27,6 @@ import com.datasophon.dao.entity.ChatMessageEntity;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -36,12 +35,12 @@ import lombok.Data;
  */
 @Data
 public class ChatMessageResponse {
-    
+
     private Long id;
     private String role;
     private String content;
     private Date createTime;
-    
+
     public static ChatMessageResponse from(ChatMessageEntity entity) {
         ChatMessageResponse r = new ChatMessageResponse();
         r.setId(entity.getId());
@@ -50,11 +49,11 @@ public class ChatMessageResponse {
         r.setCreateTime(entity.getCreateTime());
         return r;
     }
-    
+
     public static List<ChatMessageResponse> fromList(List<ChatMessageEntity> list) {
         if (list == null) {
             return Collections.emptyList();
         }
-        return list.stream().map(ChatMessageResponse::from).collect(Collectors.toList());
+        return list.stream().map(ChatMessageResponse::from).toList();
     }
 }

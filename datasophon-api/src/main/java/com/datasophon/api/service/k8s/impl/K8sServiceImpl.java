@@ -259,7 +259,7 @@ public class K8sServiceImpl implements K8sService {
             if (podSpec != null && podSpec.getContainers() != null) {
                 List<String> images = podSpec.getContainers().stream()
                         .map(c -> c.getImage() != null ? c.getImage() : "")
-                        .collect(Collectors.toList());
+                        .toList();
                 info.setImages(images);
             }
         }

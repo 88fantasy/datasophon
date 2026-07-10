@@ -39,7 +39,6 @@ import com.datasophon.dao.mapper.ClusterServiceRoleInstanceMapper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,18 +53,18 @@ public class ClusterServiceInstanceRoleGroupServiceImpl
             ServiceImpl<ClusterServiceInstanceRoleGroupMapper, ClusterServiceInstanceRoleGroup>
         implements
             ClusterServiceInstanceRoleGroupService {
-    
+
     @Autowired
     private ClusterServiceInstanceMapper serviceInstanceMapper;
-    
+
     @Autowired
     private ClusterServiceRoleInstanceMapper roleInstanceMapper;
-    
+
     @Autowired
     private ClusterServiceRoleGroupConfigService roleGroupConfigService;
-    
+
     private static final String DEFAULT = "default";
-    
+
     @Override
     public ClusterServiceInstanceRoleGroup getDefaultRoleGroupByServiceInstanceId(
                                                                                   Integer serviceInstanceId) {
@@ -74,7 +73,7 @@ public class ClusterServiceInstanceRoleGroupServiceImpl
                         .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId)
                         .eq(Constants.ROLE_GROUP_TYPE, DEFAULT));
     }
-    
+
     @Override
     public Result saveRoleGroup(
                                 Integer serviceInstanceId, Integer roleGroupId, String roleGroupName) {
@@ -102,7 +101,7 @@ public class ClusterServiceInstanceRoleGroupServiceImpl
         roleGroupConfigService.save(roleGroupConfig);
         return Result.success();
     }
-    
+
     private boolean isRepeatRoleGroupName(Integer serviceInstanceId, String roleGroupName) {
         List<ClusterServiceInstanceRoleGroup> list =
                 this.list(
@@ -114,7 +113,7 @@ public class ClusterServiceInstanceRoleGroupServiceImpl
         }
         return false;
     }
-    
+
     @Override
     public Result bind(String roleInstanceIds, Integer roleGroupId) {
         String[] ids = roleInstanceIds.split(",");
@@ -134,19 +133,19 @@ public class ClusterServiceInstanceRoleGroupServiceImpl
         roleInstanceMapper.updateById(list);
         return Result.success();
     }
-    
+
     private boolean isSameRoleGroup(ClusterServiceRoleInstanceEntity roleInstanceEntity, List<String> ids) {
-        
+
         // query role instance by hostname and servicename
         List<ClusterServiceRoleInstanceEntity> roleList =
                 roleInstanceMapper.listRoleIns(roleInstanceEntity.getHostname(), roleInstanceEntity.getServiceName());
-        List<String> listIds = roleList.stream().map(e -> e.getId().toString()).collect(Collectors.toList());
+        List<String> listIds = roleList.stream().map(e -> e.getId().toString()).toList();
         if (ids.containsAll(listIds)) {
             return true;
         }
         return false;
     }
-    
+
     private boolean isSameConfig(Integer oldRoleGroupId, Integer newRoleGroupId) {
         ClusterServiceRoleGroupConfig oldConfig =
                 roleGroupConfigService.getConfigByRoleGroupId(oldRoleGroupId);
@@ -157,7 +156,7 @@ public class ClusterServiceInstanceRoleGroupServiceImpl
         }
         return false;
     }
-    
+
     @Override
     public ClusterServiceRoleGroupConfig getRoleGroupConfigByServiceId(Integer serviceInstanceId) {
         ClusterServiceInstanceRoleGroup instanceRoleGroup =
@@ -167,7 +166,7 @@ public class ClusterServiceInstanceRoleGroupServiceImpl
                                 .eq(Constants.ROLE_GROUP_TYPE, DEFAULT));
         return roleGroupConfigService.getConfigByRoleGroupId(instanceRoleGroup.getId());
     }
-    
+
     @Override
     public Result rename(Integer roleGroupId, String roleGroupName) {
         ClusterServiceInstanceRoleGroup roleGroup = this.getById(roleGroupId);
@@ -179,7 +178,7 @@ public class ClusterServiceInstanceRoleGroupServiceImpl
         this.updateById(roleGroup);
         return Result.success();
     }
-    
+
     @Override
     public Result deleteRoleGroup(Integer roleGroupId) {
         if (hasRoleInstanceUse(roleGroupId)) {
@@ -192,7 +191,7 @@ public class ClusterServiceInstanceRoleGroupServiceImpl
         roleGroupConfigService.removeAllByRoleGroupId(roleGroupId);
         return Result.success();
     }
-    
+
     private boolean isDefaultRoleGroup(Integer roleGroupId) {
         ClusterServiceInstanceRoleGroup roleGroup = this.getById(roleGroupId);
         String roleGroupType = roleGroup.getRoleGroupType();
@@ -201,23 +200,23 @@ public class ClusterServiceInstanceRoleGroupServiceImpl
         }
         return false;
     }
-    
+
     @Override
     public List<ClusterServiceInstanceRoleGroup> listRoleGroupByServiceInstanceId(
                                                                                   Integer serviceInstanceId) {
-        
+
         return this.list(
                 new QueryWrapper<ClusterServiceInstanceRoleGroup>()
                         .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
     }
-    
+
     @Override
     public void updateToNeedRestart(Integer roleGroupId) {
         ClusterServiceInstanceRoleGroup roleGroup = this.getById(roleGroupId);
         roleGroup.setNeedRestart(NeedRestart.YES);
         this.updateById(roleGroup);
     }
-    
+
     private boolean hasRoleInstanceUse(Integer roleGroupId) {
         List<ClusterServiceRoleInstanceEntity> list =
                 roleInstanceMapper.selectList(new QueryWrapper<ClusterServiceRoleInstanceEntity>()

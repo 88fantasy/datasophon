@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -39,12 +38,12 @@ import lombok.Data;
  */
 @Data
 public class ConfigFileEntry implements Serializable {
-    
+
     private static final long serialVersionUID = 1L;
-    
+
     private Generators generators;
     private List<ServiceConfig> configs;
-    
+
     public static List<ConfigFileEntry> fromMap(Map<Generators, List<ServiceConfig>> map) {
         if (map == null || map.isEmpty()) {
             return Collections.emptyList();
@@ -54,9 +53,9 @@ public class ConfigFileEntry implements Serializable {
             entry.setGenerators(e.getKey());
             entry.setConfigs(e.getValue());
             return entry;
-        }).collect(Collectors.toList());
+        }).toList();
     }
-    
+
     public static Map<Generators, List<ServiceConfig>> toMap(List<ConfigFileEntry> entries) {
         if (entries == null || entries.isEmpty()) {
             return new LinkedHashMap<>();

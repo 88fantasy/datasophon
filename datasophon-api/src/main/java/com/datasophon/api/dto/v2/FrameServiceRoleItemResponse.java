@@ -26,7 +26,6 @@ import com.datasophon.dao.entity.FrameServiceRoleEntity;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -36,7 +35,7 @@ import lombok.Data;
  */
 @Data
 public class FrameServiceRoleItemResponse {
-    
+
     private Integer id;
     private Integer serviceId;
     private String serviceRoleName;
@@ -45,7 +44,7 @@ public class FrameServiceRoleItemResponse {
     private String cardinality;
     /** 部署清单回填的主机列表（非清单场景为 null）。 */
     private List<String> hosts;
-    
+
     public static FrameServiceRoleItemResponse from(FrameServiceRoleEntity entity) {
         if (entity == null) {
             return null;
@@ -61,11 +60,11 @@ public class FrameServiceRoleItemResponse {
         r.setHosts(entity.getHosts());
         return r;
     }
-    
+
     public static List<FrameServiceRoleItemResponse> fromList(List<FrameServiceRoleEntity> entities) {
         if (entities == null) {
             return Collections.emptyList();
         }
-        return entities.stream().map(FrameServiceRoleItemResponse::from).collect(Collectors.toList());
+        return entities.stream().map(FrameServiceRoleItemResponse::from).toList();
     }
 }

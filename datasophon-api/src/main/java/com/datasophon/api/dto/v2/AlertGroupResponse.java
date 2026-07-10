@@ -27,7 +27,6 @@ import com.datasophon.dao.entity.AlertGroupEntity;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -36,14 +35,14 @@ import lombok.Data;
  */
 @Data
 public class AlertGroupResponse {
-    
+
     private Integer id;
     private String alertGroupName;
     private String alertGroupCategory;
     private Integer alertQuotaNum;
     private Integer clusterId;
     private Date createTime;
-    
+
     public static AlertGroupResponse from(AlertGroupEntity entity) {
         AlertGroupResponse r = new AlertGroupResponse();
         r.setId(entity.getId());
@@ -54,11 +53,11 @@ public class AlertGroupResponse {
         r.setCreateTime(entity.getCreateTime());
         return r;
     }
-    
+
     public static List<AlertGroupResponse> fromList(List<AlertGroupEntity> list) {
         if (list == null) {
             return Collections.emptyList();
         }
-        return list.stream().map(AlertGroupResponse::from).collect(Collectors.toList());
+        return list.stream().map(AlertGroupResponse::from).toList();
     }
 }

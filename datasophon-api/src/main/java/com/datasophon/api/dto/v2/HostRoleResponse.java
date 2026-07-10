@@ -25,7 +25,6 @@ package com.datasophon.api.dto.v2;
 import com.datasophon.dao.entity.ClusterServiceRoleInstanceEntity;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -38,7 +37,7 @@ import lombok.Data;
  */
 @Data
 public class HostRoleResponse {
-    
+
     private Integer id;
     private String serviceRoleName;
     private String hostname;
@@ -46,7 +45,7 @@ public class HostRoleResponse {
     private Integer serviceRoleStateCode;
     private Integer serviceId;
     private Integer clusterId;
-    
+
     public static HostRoleResponse from(ClusterServiceRoleInstanceEntity entity) {
         HostRoleResponse r = new HostRoleResponse();
         r.setId(entity.getId());
@@ -57,8 +56,8 @@ public class HostRoleResponse {
         r.setClusterId(entity.getClusterId());
         return r;
     }
-    
+
     public static List<HostRoleResponse> fromList(List<ClusterServiceRoleInstanceEntity> entities) {
-        return entities.stream().map(HostRoleResponse::from).collect(Collectors.toList());
+        return entities.stream().map(HostRoleResponse::from).toList();
     }
 }

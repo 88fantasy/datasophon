@@ -25,19 +25,18 @@ package com.datasophon.api.dto.v2;
 import com.datasophon.dao.entity.FrameInfoEntity;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
 /** 框架版本响应体。 */
 @Data
 public class FrameResponse {
-    
+
     private Integer id;
     private String frameName;
     private String frameCode;
     private String frameVersion;
-    
+
     public static FrameResponse from(FrameInfoEntity entity) {
         FrameResponse r = new FrameResponse();
         r.setId(entity.getId());
@@ -46,8 +45,8 @@ public class FrameResponse {
         r.setFrameVersion(entity.getFrameVersion());
         return r;
     }
-    
+
     public static List<FrameResponse> fromList(List<FrameInfoEntity> entities) {
-        return entities.stream().map(FrameResponse::from).collect(Collectors.toList());
+        return entities.stream().map(FrameResponse::from).toList();
     }
 }

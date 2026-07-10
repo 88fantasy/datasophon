@@ -26,7 +26,6 @@ import com.datasophon.api.vo.frameinfo.FrameInfoVO;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -36,14 +35,14 @@ import lombok.Data;
  */
 @Data
 public class FrameWithServicesResponse {
-    
+
     private Integer id;
     private String frameName;
     private String frameCode;
     private String frameVersion;
     private List<FrameServiceItemResponse> frameServiceList;
     private List<FrameK8sServiceItemResponse> frameK8sServiceList;
-    
+
     public static FrameWithServicesResponse from(FrameInfoVO vo) {
         if (vo == null) {
             return null;
@@ -63,11 +62,11 @@ public class FrameWithServicesResponse {
                         : FrameK8sServiceItemResponse.fromList(vo.getFrameK8sServiceList()));
         return r;
     }
-    
+
     public static List<FrameWithServicesResponse> fromList(List<FrameInfoVO> vos) {
         if (vos == null) {
             return Collections.emptyList();
         }
-        return vos.stream().map(FrameWithServicesResponse::from).collect(Collectors.toList());
+        return vos.stream().map(FrameWithServicesResponse::from).toList();
     }
 }

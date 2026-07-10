@@ -26,7 +26,6 @@ import com.datasophon.dao.entity.FrameServiceEntity;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -35,19 +34,19 @@ import lombok.Data;
  */
 @Data
 public class AlertCategoryResponse {
-    
+
     private String serviceName;
-    
+
     public static AlertCategoryResponse from(FrameServiceEntity entity) {
         AlertCategoryResponse r = new AlertCategoryResponse();
         r.setServiceName(entity.getServiceName());
         return r;
     }
-    
+
     public static List<AlertCategoryResponse> fromList(List<FrameServiceEntity> list) {
         if (list == null) {
             return Collections.emptyList();
         }
-        return list.stream().map(AlertCategoryResponse::from).collect(Collectors.toList());
+        return list.stream().map(AlertCategoryResponse::from).toList();
     }
 }

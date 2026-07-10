@@ -28,7 +28,6 @@ import com.datasophon.dao.enums.ServiceState;
 
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -44,7 +43,7 @@ import lombok.Data;
  */
 @Data
 public class ServiceInstanceResponse {
-    
+
     private Integer id;
     private Integer clusterId;
     private String serviceName;
@@ -62,7 +61,7 @@ public class ServiceInstanceResponse {
     private String catalog;
     private Date createTime;
     private Date updateTime;
-    
+
     /**
      * 从实体构建响应体，转换枚举字段。
      */
@@ -75,16 +74,16 @@ public class ServiceInstanceResponse {
         r.setClusterId(entity.getClusterId());
         r.setServiceName(entity.getServiceName());
         r.setLabel(entity.getLabel());
-        
+
         ServiceState state = entity.getServiceState();
         if (state != null) {
             r.setServiceState(state.name());
             r.setServiceStateCode(state.getValue());
         }
-        
+
         NeedRestart nr = entity.getNeedRestart();
         r.setNeedRestart(nr == NeedRestart.YES);
-        
+
         r.setFrameServiceId(entity.getFrameServiceId());
         r.setSortNum(entity.getSortNum());
         r.setDashboardUrl(entity.getDashboardUrl());
@@ -94,11 +93,11 @@ public class ServiceInstanceResponse {
         r.setUpdateTime(entity.getUpdateTime());
         return r;
     }
-    
+
     public static List<ServiceInstanceResponse> fromList(List<ClusterServiceInstanceEntity> list) {
         if (list == null) {
             return List.of();
         }
-        return list.stream().map(ServiceInstanceResponse::from).collect(Collectors.toList());
+        return list.stream().map(ServiceInstanceResponse::from).toList();
     }
 }

@@ -28,7 +28,6 @@ import com.datasophon.dao.enums.ClusterState;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -39,7 +38,7 @@ import lombok.Data;
  */
 @Data
 public class ClusterResponse {
-    
+
     private Integer id;
     private String clusterName;
     private String clusterCode;
@@ -53,7 +52,7 @@ public class ClusterResponse {
     private ClusterArchType archType;
     /** 只含 id + username，不含 password 等敏感字段。 */
     private List<UserResponse> clusterManagerList;
-    
+
     public static ClusterResponse from(ClusterInfoEntity entity) {
         ClusterResponse r = new ClusterResponse();
         r.setId(entity.getId());
@@ -70,11 +69,11 @@ public class ClusterResponse {
                         ? Collections.emptyList()
                         : entity.getClusterManagerList().stream()
                                 .map(UserResponse::from)
-                                .collect(Collectors.toList()));
+                                .toList());
         return r;
     }
-    
+
     public static List<ClusterResponse> fromList(List<ClusterInfoEntity> entities) {
-        return entities.stream().map(ClusterResponse::from).collect(Collectors.toList());
+        return entities.stream().map(ClusterResponse::from).toList();
     }
 }

@@ -37,7 +37,6 @@ import com.datasophon.dao.model.WebuisVO;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -55,26 +54,26 @@ public class ClusterServiceRoleInstanceWebuisServiceImpl
             ServiceImpl<ClusterServiceRoleInstanceWebuisMapper, ClusterServiceRoleInstanceWebuis>
         implements
             ClusterServiceRoleInstanceWebuisService {
-    
+
     private static final String ACTIVE = "(Active)";
-    
+
     private static final String STANDBY = "(Standby)";
-    
+
     @Autowired
     ClusterServiceInstanceMapper clusterServiceInstanceMapper;
-    
+
     @Override
     public Result getWebUis(Integer serviceInstanceId) {
-        
+
         MPJLambdaWrapper<ClusterServiceRoleInstanceWebuis> wrapper = new MPJLambdaWrapper<ClusterServiceRoleInstanceWebuis>()
                 .selectAll(ClusterServiceRoleInstanceWebuis.class)
                 .select(ClusterHostDO::getIp)
                 .innerJoin(ClusterServiceRoleInstanceEntity.class, ClusterServiceRoleInstanceEntity::getId, ClusterServiceRoleInstanceWebuis::getServiceRoleInstanceId)
                 .innerJoin(ClusterHostDO.class, ClusterHostDO::getHostname, ClusterServiceRoleInstanceEntity::getHostname)
                 .eq(ClusterServiceRoleInstanceWebuis::getServiceInstanceId, serviceInstanceId);
-        
+
         List<WebuisVO> list = getBaseMapper().selectJoinList(WebuisVO.class, wrapper);
-        
+
         // List<ClusterServiceRoleInstanceWebuis> list = this.list(
         // new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
         // .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
@@ -88,47 +87,47 @@ public class ClusterServiceRoleInstanceWebuisServiceImpl
             String url = PlaceholderUtils.replacePlaceholders(ui.getWebUrl(), MapUtil.builder("${host}", ui.getIp()).build(), Constants.REGEX_VARIABLE);
             String newUrl = PlaceholderUtils.replacePlaceholders(url, globalVariables, Constants.REGEX_VARIABLE);
             ui.setWebUrl(newUrl);
-        }).collect(Collectors.toList()));
+        }).toList());
     }
-    
+
     @Override
     public void removeByServiceInsId(Integer serviceInstanceId) {
         this.remove(
                 new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
                         .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
     }
-    
+
     @Override
     public void updateWebUiToActive(Integer roleInstanceId) {
         updateWebUiName(roleInstanceId, ACTIVE);
     }
-    
+
     @Override
     public ClusterServiceRoleInstanceWebuis getRoleInstanceWebUi(Integer roleInstanceId) {
         return this.lambdaQuery()
                 .eq(ClusterServiceRoleInstanceWebuis::getServiceRoleInstanceId, roleInstanceId)
                 .one();
     }
-    
+
     @Override
     public void removeByRoleInsIds(ArrayList<Integer> needRemoveList) {
         this.lambdaUpdate()
                 .in(ClusterServiceRoleInstanceWebuis::getServiceRoleInstanceId, needRemoveList)
                 .remove();
     }
-    
+
     @Override
     public void updateWebUiToStandby(Integer roleInstanceId) {
         updateWebUiName(roleInstanceId, STANDBY);
     }
-    
+
     @Override
     public List<ClusterServiceRoleInstanceWebuis> listWebUisByServiceInstanceId(Integer serviceInstanceId) {
         return this.list(
                 new QueryWrapper<ClusterServiceRoleInstanceWebuis>()
                         .eq(Constants.SERVICE_INSTANCE_ID, serviceInstanceId));
     }
-    
+
     private void updateWebUiName(Integer roleInstanceId, String state) {
         ClusterServiceRoleInstanceWebuis webuis =
                 this.lambdaQuery()

@@ -35,9 +35,6 @@ import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.utils.FreemakerUtils;
 import com.datasophon.worker.utils.TaskConstants;
 
-import freemarker.template.TemplateException;
-import freemarker.template.TemplateNotFoundException;
-
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -51,9 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import lombok.Data;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,34 +59,37 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import freemarker.template.TemplateException;
+import freemarker.template.TemplateNotFoundException;
+import lombok.Data;
 
 @Data
 public class ConfigureServiceHandler {
-    
+
     private static final String RANGER_ADMIN = "RangerAdmin";
-    
+
     public static final String SH = "sh";
-    
+
     private String serviceName;
-    
+
     private String serviceRoleName;
-    
+
     private Logger logger;
-    
+
     public ConfigureServiceHandler(String serviceName, String serviceRoleName) {
         this.serviceName = serviceName;
         this.serviceRoleName = serviceRoleName;
         String loggerName = TaskConstants.createLoggerName(serviceName, serviceRoleName, ConfigureServiceHandler.class);
         logger = LoggerFactory.getLogger(loggerName);
     }
-    
+
     public ExecResult configure(ServiceRoleResource srvRoleResource, GenerateServiceConfigCommand command) {
         ExecResult execResult = new ExecResult();
         try {
             String pkgInstallHome = PkgInstallPathUtils.getInstallHomeName(srvRoleResource);
             Map<String, String> paramMap = getExtraParams(srvRoleResource, command);
             // 软件安装路径的相关变量
-            
+
             Map<Generators, List<ServiceConfig>> cofigFileMap = command.getCofigFileMap();
             logger.info("开始生成服务{} {}的配置文件", srvRoleResource.getServiceName(), srvRoleResource.getServiceRoleName());
             for (Generators generators : cofigFileMap.keySet()) {
@@ -107,7 +104,7 @@ public class ConfigureServiceHandler {
                         iterator.remove();
                         continue;
                     }
-                    
+
                     if (StringUtils.isNotBlank(config.getType())) {
                         replacePlaceholder(config, paramMap);
                     }
@@ -128,7 +125,7 @@ public class ConfigureServiceHandler {
                         logger.info("Convert boolean and integer to string");
                         config.setValue(config.getValue().toString());
                     }
-                    
+
                     if ("dataDir".equals(config.getName())) {
                         String dataDir = (String) config.getValue();
                         if (Objects.nonNull(command.getMyid()) && StringUtils.isNotBlank(dataDir)) {
@@ -147,7 +144,7 @@ public class ConfigureServiceHandler {
                     if ("fe_priority_networks".equals(config.getName()) || "be_priority_networks".equals(config.getName())) {
                         config.setName("priority_networks");
                     }
-                    
+
                     if ("KyuubiServer".equals(serviceRoleName) && "sparkHome".equals(config.getName())) {
                         // add hive-site.xml link in kerberos module
                         final String targetPath = Constants.INSTALL_PATH + File.separator + pkgInstallHome + "/conf/hive-site.xml";
@@ -160,14 +157,14 @@ public class ConfigureServiceHandler {
                         }
                     }
                 }
-                
+
                 if ("node.properties".equals(generators.getFilename())) {
                     ServiceConfig serviceConfig = new ServiceConfig();
                     serviceConfig.setName("node.id");
                     serviceConfig.setValue(IdUtil.simpleUUID());
                     customConfList.add(serviceConfig);
                 }
-                
+
                 configs.addAll(customConfList);
                 if (!configs.isEmpty()) {
                     // extra app, package: META, templates
@@ -206,7 +203,7 @@ public class ConfigureServiceHandler {
         }
         return execResult;
     }
-    
+
     private Map<String, String> getExtraParams(ServiceRoleResource srvRoleResource, GenerateServiceConfigCommand command) throws UnknownHostException {
         String hostName = InetAddress.getLocalHost().getHostName();
         String ip = InetAddress.getLocalHost().getHostAddress();
@@ -218,16 +215,16 @@ public class ConfigureServiceHandler {
         extraParams.put("${myid}", String.valueOf(command.getMyid()));
         extraParams.put(PkgInstallPathUtils.getRoleInstallHomeKey(srvRoleResource), PkgInstallPathUtils.getInstallHome(srvRoleResource));
         extraParams.put(PkgInstallPathUtils.getInstallHomeKey(srvRoleResource), PkgInstallPathUtils.getInstallHome(srvRoleResource));
-        
+
         return extraParams;
     }
-    
+
     private boolean setupRangerAdmin(String decompressPackageName) {
         logger.info("start to execute ranger admin setup.sh");
         ArrayList<String> commands = new ArrayList<>();
         commands.add(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + "setup.sh");
         ExecResult execResult = ShellUtils.exec(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName, commands, 300L);
-        
+
         ArrayList<String> globalCommand = new ArrayList<>();
         globalCommand.add(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName + Constants.SLASH + "set_globals.sh");
         ShellUtils.execWithStatus(Constants.INSTALL_PATH + Constants.SLASH + decompressPackageName, globalCommand, 300L, logger);
@@ -238,7 +235,7 @@ public class ConfigureServiceHandler {
         logger.info("ranger admin setup failed");
         return false;
     }
-    
+
     private void replacePlaceholder(ServiceConfig config, Map<String, String> paramMap) {
         logger.info("handle config value, key: {}", config.getName());
         switch (config.getType()) {
@@ -257,11 +254,11 @@ public class ConfigureServiceHandler {
                 List<String> valueList = value2.toJavaList(String.class);
                 valueList = valueList.stream()
                         .map(val -> PlaceholderUtils.replacePlaceholdersRecursive(val, paramMap, Constants.REGEX_VARIABLE))
-                        .collect(Collectors.toList());
+                        .toList();
                 String joinValue = String.join(config.getSeparator(), valueList);
                 config.setValue(joinValue);
                 break;
-            
+
             case Constants.MULTIPLE_WITH_MAP:
                 // 忽略异常值
                 if (config.getValue() == null || config.getValue() instanceof String) {
@@ -292,7 +289,7 @@ public class ConfigureServiceHandler {
             logger.warn("配置项{}的configType不是‘map’，在模板中，需要通过key值为: itemList[$index].{} 使用", config.getName(), refName);
         }
     }
-    
+
     private void createPath(ServiceConfig config, RunAs runAs) {
         String path = (String) config.getValue();
         if (StringUtils.isNotBlank(config.getSeparator()) && path.contains(config.getSeparator())) {
@@ -303,7 +300,7 @@ public class ConfigureServiceHandler {
             mkdir(path, runAs);
         }
     }
-    
+
     private void movePath(ServiceConfig config, RunAs runAs) {
         String oldPath = (String) config.getDefaultValue();
         String newPath = (String) config.getValue();
@@ -319,10 +316,10 @@ public class ConfigureServiceHandler {
             logger.info("move path {} to {}", oldPath, newPath);
         }
     }
-    
+
     private void addToCustomList(Iterator<ServiceConfig> iterator, ArrayList<ServiceConfig> customConfList, ServiceConfig config) {
         iterator.remove();
-        
+
         // 部分ddl的value值乱写，导致转换失败，这段代码是为了去除value: "", value: null两个值
         if (config.getValue() == null) {
             return;
@@ -332,7 +329,7 @@ public class ConfigureServiceHandler {
                 return;
             }
         }
-        
+
         List<JSONObject> list = (List<JSONObject>) config.getValue();
         for (JSONObject json : list) {
             if (Objects.nonNull(json)) {
@@ -348,7 +345,7 @@ public class ConfigureServiceHandler {
             }
         }
     }
-    
+
     private void conventArray(ServiceConfig config) {
         Object value = config.getValue();
         if (value instanceof String) {
@@ -356,14 +353,14 @@ public class ConfigureServiceHandler {
             config.setValue(((String) value).split(separator));
         }
     }
-    
+
     private void conventNumber(ServiceConfig config) {
         Object value = config.getValue();
         if (value instanceof String) {
             config.setValue(Long.valueOf((String) value));
         }
     }
-    
+
     private void mkdir(String path, RunAs runAs) {
         if (!FileUtil.exist(path)) {
             logger.info("create file path {}", path);

@@ -27,7 +27,6 @@ import com.datasophon.dao.entity.UserInfoEntity;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.Data;
 
@@ -37,14 +36,14 @@ import lombok.Data;
  */
 @Data
 public class UserInfoResponse {
-    
+
     private Integer id;
     private String username;
     private String email;
     private String phone;
     private Date createTime;
     private Integer userType;
-    
+
     public static UserInfoResponse from(UserInfoEntity entity) {
         UserInfoResponse r = new UserInfoResponse();
         r.setId(entity.getId());
@@ -55,11 +54,11 @@ public class UserInfoResponse {
         r.setUserType(entity.getUserType());
         return r;
     }
-    
+
     public static List<UserInfoResponse> fromList(List<UserInfoEntity> entities) {
         if (entities == null) {
             return Collections.emptyList();
         }
-        return entities.stream().map(UserInfoResponse::from).collect(Collectors.toList());
+        return entities.stream().map(UserInfoResponse::from).toList();
     }
 }
