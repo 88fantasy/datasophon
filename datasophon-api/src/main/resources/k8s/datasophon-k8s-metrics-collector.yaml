@@ -1,0 +1,95 @@
+# 直接部署时标记为 local；Datasophon 管理的集群会在应用前替换为实际 clusterId。
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: datasophon-k8s-metrics
+  namespace: otel
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: datasophon-k8s-metrics
+rules:
+  - apiGroups: [""]
+    resources: ["nodes/stats", "nodes/pods"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: datasophon-k8s-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: datasophon-k8s-metrics
+subjects:
+  - kind: ServiceAccount
+    name: datasophon-k8s-metrics
+    namespace: otel
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: datasophon-k8s-metrics
+  namespace: otel
+spec:
+  mode: daemonset
+  serviceAccount: datasophon-k8s-metrics
+  volumes:
+    - name: hostfs
+      hostPath:
+        path: /
+  volumeMounts:
+    - name: hostfs
+      mountPath: /hostfs
+      readOnly: true
+  env:
+    - name: K8S_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+  config:
+    receivers:
+      hostmetrics:
+        collection_interval: 30s
+        root_path: /hostfs
+        scrapers:
+          cpu: {}
+          disk: {}
+          filesystem: {}
+          load: {}
+          memory: {}
+      kubeletstats:
+        collection_interval: 30s
+        auth_type: serviceAccount
+        endpoint: https://${env:K8S_NODE_NAME}:10250
+        insecure_skip_verify: true
+        node: ${env:K8S_NODE_NAME}
+        metric_groups: [node, pod]
+    processors:
+      resource/datasophon:
+        attributes:
+          - key: datasophon.cluster.id
+            value: "local"
+            action: upsert
+          - key: service.name
+            value: node
+            action: upsert
+          - key: service.instance.id
+            value: ${env:K8S_NODE_NAME}
+            action: upsert
+          - key: host.name
+            value: ${env:K8S_NODE_NAME}
+            action: upsert
+      batch: {}
+    exporters:
+      otlp/gateway:
+        endpoint: gateway-collector.otel.svc:4317
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        metrics:
+          receivers: [hostmetrics, kubeletstats]
+          processors: [resource/datasophon, batch]
+          exporters: [otlp/gateway]

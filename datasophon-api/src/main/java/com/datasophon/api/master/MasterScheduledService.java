@@ -79,10 +79,10 @@ public class MasterScheduledService {
     }
     
     /**
-     * 节点检测任务，每 5 分钟巡检一次所有物理集群主机的在线状态。
-     * 等价于原 ActorUtils: scheduleWithFixedDelay(30s, 300s, hostCheckActor)
+     * 节点检测任务，每 1 分钟巡检一次所有集群主机的在线状态和资源指标。
+     * 等价于原 ActorUtils: scheduleWithFixedDelay(30s, 60s, hostCheckActor)
      */
-    @Scheduled(initialDelayString = "30000", fixedDelayString = "300000")
+    @Scheduled(initialDelayString = "30000", fixedDelayString = "60000")
     public void checkHosts() {
         log.debug("Scheduled: start host check");
         try {

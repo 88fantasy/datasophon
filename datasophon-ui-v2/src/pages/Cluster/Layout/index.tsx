@@ -300,7 +300,16 @@ const ClusterLayout: React.FC = () => {
           })),
         };
       });
-      return [baseItem, ...nsItems, ...bottomItems];
+      return [
+        baseItem,
+        {
+          key: `/cluster/${numericClusterId}/k8s-dashboard`,
+          icon: <FundProjectionScreenOutlined />,
+          label: '监控概览',
+        },
+        ...nsItems,
+        ...bottomItems,
+      ];
     }
 
     // 物理集群：按 catalog 分组（原有逻辑不变）

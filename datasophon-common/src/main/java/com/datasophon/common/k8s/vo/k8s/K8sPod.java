@@ -5,6 +5,7 @@ import java.util.Map;
 
 import lombok.Data;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -19,6 +20,7 @@ public class K8sPod {
     private PodStatus status;
     
     @Data
+    @JsonIgnoreProperties("managedFields")
     public static class Metadata {
         private String name;
         private String namespace;
@@ -28,8 +30,7 @@ public class K8sPod {
         private String resourceVersion;
         private String uid;
         private List<OwnerReference> ownerReferences;
-        private String finalizers;
-        private String managedFields;
+        private List<String> finalizers;
     }
     
     @Data

@@ -36,6 +36,13 @@ export async function listK8sResources(
   );
 }
 
+export async function getK8sDashboard(clusterId: number, range = '24h') {
+  return request<DATASOPHON.ApiResponse<DATASOPHON.K8sDashboardResponse>>(
+    `/cluster/${clusterId}/k8s/dashboard`,
+    { method: 'GET', params: { range } },
+  );
+}
+
 /** K8s Helm values 版本列表（仅含 id / version，降序） */
 export async function listK8sConfigVersions(clusterId: number, instanceId: number) {
   return request<DATASOPHON.ApiResponse<DATASOPHON.K8sInstanceValuesSimple[]>>(

@@ -156,6 +156,10 @@ export default [
             component: './Cluster/HostManage',
           },
           {
+            path: '/cluster/:clusterId/k8s-dashboard',
+            component: './Cluster/K8sDashboard',
+          },
+          {
             path: '/cluster/:clusterId/service',
             component: './Cluster/ServiceManage',
           },

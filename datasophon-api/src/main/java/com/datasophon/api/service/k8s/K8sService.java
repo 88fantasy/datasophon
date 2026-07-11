@@ -14,7 +14,9 @@ import com.datasophon.api.vo.k8s.K8sPodInfo;
 import com.datasophon.api.vo.k8s.K8sServiceInfo;
 import com.datasophon.common.function.ThrowableMapper;
 import com.datasophon.common.k8s.client.KubectlClient;
+import com.datasophon.common.k8s.vo.k8s.K8sEvent;
 import com.datasophon.common.k8s.vo.k8s.K8sNode;
+import com.datasophon.common.k8s.vo.k8s.K8sPod;
 import com.datasophon.dao.entity.cluster.K8sClusterConfig;
 
 import java.util.List;
@@ -55,6 +57,14 @@ public interface K8sService {
     List<K8sNamespace> listNamespaces(K8sClusterConfig config);
 
     List<K8sNode> listNodes(K8sClusterConfig config);
+
+    List<K8sPod> listAllPods(K8sClusterConfig config);
+
+    List<K8sEvent> listAllEvents(K8sClusterConfig config);
+
+    List<com.datasophon.api.vo.k8s.K8sWorkloadInfo> listAllWorkloads(K8sClusterConfig config);
+
+    void applyYaml(K8sClusterConfig config, String yaml);
 
     /**
      * 获取指定命名空间可管理的 K8s 资源类型
