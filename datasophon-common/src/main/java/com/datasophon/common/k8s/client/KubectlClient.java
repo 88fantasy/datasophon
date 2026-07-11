@@ -227,6 +227,28 @@ public class KubectlClient implements AutoCloseable {
         String jsonNode = executeToJson(args, 30);
         return parseResourceList(jsonNode, K8sPod.class);
     }
+
+    /** 获取所有命名空间下的 Pod。 */
+    public K8sResourceList<K8sPod> getPodsAllNamespaces() throws KubectlException {
+        String jsonNode = executeToJson(Arrays.asList("get", "pods", "-A"), 30);
+        return parseResourceList(jsonNode, K8sPod.class);
+    }
+
+    /** 获取所有命名空间下的事件。 */
+    public K8sResourceList<K8sEvent> getEventsAllNamespaces() throws KubectlException {
+        String jsonNode = executeToJson(Arrays.asList("get", "events", "-A", "--chunk-size=100"), 30);
+        return parseResourceList(jsonNode, K8sEvent.class);
+    }
+
+    /** 应用由服务端生成的 Kubernetes YAML。 */
+    public void applyYaml(String yaml) throws KubectlException {
+        File file = new File(tempDir, "manifest.yaml");
+        FileUtil.writeString(yaml, file, StandardCharsets.UTF_8);
+        ExecResult result = execute(Arrays.asList("apply", "-f", file.getAbsolutePath()), 60);
+        if (!result.isSuccess()) {
+            throw new KubectlException("应用 K8s 清单失败：" + result.getErrorTraceMessage());
+        }
+    }
     
     /**
      * 获取指定命名空间的 Deployments
@@ -243,6 +265,16 @@ public class KubectlClient implements AutoCloseable {
         }
         String jsonNode = executeToJson(args, 30);
         return parseResourceList(jsonNode, K8sDeployment.class);
+    }
+
+    /** 获取所有命名空间下的 Deployment、StatefulSet、DaemonSet 与 CronJob。 */
+    public com.fasterxml.jackson.databind.JsonNode getWorkloadsAllNamespaces() throws KubectlException {
+        String content = executeToJson(Arrays.asList("get", "deployment,statefulset,daemonset,cronjob", "-A"), 30);
+        try {
+            return mapper.readTree(content);
+        } catch (JsonProcessingException e) {
+            throw new KubectlException("解析工作负载列表失败，" + e.getMessage(), e);
+        }
     }
     
     /**

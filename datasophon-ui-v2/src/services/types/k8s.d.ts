@@ -47,4 +47,56 @@ declare namespace DATASOPHON {
     instanceId: number;
     version: number;
   }
+
+  interface K8sDashboardResponse {
+    observedAt: string;
+    telemetry: { status: 'READY' | 'UNAVAILABLE'; message?: string };
+    overview: {
+      health: 'HEALTHY' | 'WARNING' | 'CRITICAL';
+      readyNodes: number;
+      totalNodes: number;
+      runningPods: number;
+      totalPods: number;
+      critical: number;
+      warning: number;
+    };
+    capacities: Array<{ name: string; percent?: number; used?: number; total?: number; unit: 'core' | 'byte' | 'count' }>;
+    trends: Array<{
+      timestamp: string;
+      cpuPercent?: number;
+      memoryPercent?: number;
+      networkMbps?: number;
+    }>;
+    namespaces: Array<{
+      name: string;
+      podCount: number;
+      cpuCores?: number;
+      memoryBytes?: number;
+    }>;
+    workloads: Array<{
+      name: string;
+      namespace: string;
+      type: string;
+      ready: number;
+      desired: number;
+      status: string;
+    }>;
+    nodes: Array<{
+      name: string;
+      status: string;
+      podCount: number;
+      podCapacity: number;
+      cpuPercent?: number;
+      memoryPercent?: number;
+      diskPercent?: number;
+    }>;
+    events: Array<{
+      type: string;
+      reason: string;
+      namespace: string;
+      object: string;
+      message: string;
+      lastTimestamp: string;
+    }>;
+  }
 }

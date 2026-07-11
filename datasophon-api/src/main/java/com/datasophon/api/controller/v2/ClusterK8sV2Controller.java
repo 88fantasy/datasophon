@@ -28,6 +28,7 @@ import com.datasophon.api.dto.instance.K8sNamespaceIdentityDTO;
 import com.datasophon.api.dto.instance.K8sServiceInstanceQueryDTO;
 import com.datasophon.api.service.cluster.K8sClusterNamespaceService;
 import com.datasophon.api.service.instance.K8sServiceInstanceService;
+import com.datasophon.api.service.k8s.K8sDashboardService;
 import com.datasophon.dao.entity.cluster.K8sClusterNamespace;
 import com.datasophon.dao.vo.instance.K8sServiceInstanceVO;
 
@@ -61,6 +62,20 @@ public class ClusterK8sV2Controller extends ApiController {
     
     @Autowired
     private K8sServiceInstanceService k8sServiceInstanceService;
+
+    @Autowired
+    private K8sDashboardService k8sDashboardService;
+
+    @GetMapping("/dashboard")
+    @Operation(summary = "获取 K8s 集群监控概览")
+    public ApiResponse<com.datasophon.api.dto.v2.K8sDashboardResponse> dashboard(
+            @PathVariable Integer clusterId,
+            @RequestParam(defaultValue = "24h") String range) {
+        if (!List.of("1h", "6h", "24h").contains(range)) {
+            return ApiResponse.fail(400, "range 仅支持 1h、6h 或 24h");
+        }
+        return ApiResponse.ok(k8sDashboardService.getDashboard(clusterId, range));
+    }
     
     /**
      * 获取 K8s 集群下的 namespace 列表（同时触发与 K8s 集群的对账更新）。

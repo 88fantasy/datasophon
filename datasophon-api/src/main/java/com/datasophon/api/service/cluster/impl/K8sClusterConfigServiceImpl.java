@@ -5,6 +5,7 @@ import com.datasophon.api.master.service.DispatcherK8sAgentService;
 import com.datasophon.api.service.ClusterInfoService;
 import com.datasophon.api.service.cluster.K8sClusterConfigService;
 import com.datasophon.api.service.k8s.K8sService;
+import com.datasophon.api.service.k8s.K8sDashboardCollectorService;
 import com.datasophon.api.vo.k8s.K8sConnectionResult;
 import com.datasophon.common.command.DispatcherK8sAgentCommand;
 import com.datasophon.common.k8s.config.ClientOptions;
@@ -43,6 +44,9 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
     
     @Autowired
     private DispatcherK8sAgentService dispatcherK8sAgentService;
+
+    @Autowired
+    private K8sDashboardCollectorService k8sDashboardCollectorService;
     
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -91,6 +95,7 @@ public class K8sClusterConfigServiceImpl extends ServiceImpl<K8sClusterConfigMap
                 DispatcherK8sAgentCommand cmd = new DispatcherK8sAgentCommand();
                 cmd.setClusterId(cluster.getId());
                 dispatcherK8sAgentService.dispatchK8sAgent(cmd);
+                k8sDashboardCollectorService.install(cluster.getId());
             }
         });
         return db;

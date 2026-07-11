@@ -15,6 +15,7 @@ import com.datasophon.api.vo.k8s.K8sIngressInfo;
 import com.datasophon.api.vo.k8s.K8sNamespace;
 import com.datasophon.api.vo.k8s.K8sPodInfo;
 import com.datasophon.api.vo.k8s.K8sServiceInfo;
+import com.datasophon.api.vo.k8s.K8sWorkloadInfo;
 import com.datasophon.common.function.ThrowableMapper;
 import com.datasophon.common.k8s.client.HelmClient;
 import com.datasophon.common.k8s.client.KubectlClient;
@@ -144,6 +145,58 @@ public class K8sServiceImpl implements K8sService {
             K8sResourceList<K8sNode> nodes = client.getNodes();
             return nodes.getItems() != null ? nodes.getItems() : List.of();
         }, "获取 K8s 集群节点列表");
+    }
+
+    @Override
+    public List<K8sPod> listAllPods(K8sClusterConfig config) {
+        return exec(newOptions(config), client -> {
+            K8sResourceList<K8sPod> pods = client.getPodsAllNamespaces();
+            return pods.getItems() != null ? pods.getItems() : List.of();
+        }, "获取 K8s 集群 Pod 列表");
+    }
+
+    @Override
+    public List<K8sEvent> listAllEvents(K8sClusterConfig config) {
+        return exec(newOptions(config), client -> {
+            K8sResourceList<K8sEvent> events = client.getEventsAllNamespaces();
+            return events.getItems() != null ? events.getItems() : List.of();
+        }, "获取 K8s 集群事件列表");
+    }
+
+    @Override
+    public List<K8sWorkloadInfo> listAllWorkloads(K8sClusterConfig config) {
+        return exec(newOptions(config), client -> {
+            com.fasterxml.jackson.databind.JsonNode items = client.getWorkloadsAllNamespaces().path("items");
+            List<K8sWorkloadInfo> workloads = new ArrayList<>();
+            for (com.fasterxml.jackson.databind.JsonNode item : items) {
+                String kind = item.path("kind").asText();
+                com.fasterxml.jackson.databind.JsonNode status = item.path("status");
+                K8sWorkloadInfo workload = new K8sWorkloadInfo();
+                workload.setName(item.path("metadata").path("name").asText());
+                workload.setNamespace(item.path("metadata").path("namespace").asText());
+                workload.setType(kind);
+                if ("DaemonSet".equals(kind)) {
+                    workload.setReady(status.path("numberReady").asInt());
+                    workload.setDesired(status.path("desiredNumberScheduled").asInt());
+                } else if ("CronJob".equals(kind)) {
+                    workload.setReady(status.path("active").size());
+                    workload.setDesired(1);
+                } else {
+                    workload.setReady(status.path("readyReplicas").asInt());
+                    workload.setDesired(status.path("replicas").asInt());
+                }
+                workloads.add(workload);
+            }
+            return workloads;
+        }, "获取 K8s 工作负载列表");
+    }
+
+    @Override
+    public void applyYaml(K8sClusterConfig config, String yaml) {
+        exec(newOptions(config), client -> {
+            client.applyYaml(yaml);
+            return null;
+        }, "应用 K8s 清单");
     }
 
     private List<K8sNamespace> doListNamespaces(KubectlClient client) {
