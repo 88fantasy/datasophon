@@ -61,16 +61,25 @@
   "configWriter": {
     "generators": [
       {
-        "filename": "apisix-config.yaml",
-        "configFormat": "yaml",
-        "outputDirectory": "conf",
+        "filename": "config.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "/usr/local/apisix/conf",
+        "templateName": "apisix-config.ftl",
         "includeParams": [
           "apisixPort",
-          "apisixEtcdNodeList",
-          "apisixAdminKey",
-          "apisixAllowAdmin",
           "apisixPrometheusAddr",
           "apisixPrometheusPort"
+        ]
+      },
+      {
+        "filename": "apisix.yaml",
+        "configFormat": "custom",
+        "outputDirectory": "/usr/local/apisix/conf",
+        "templateName": "apisix-routes.ftl",
+        "includeParams": [
+          "apisixRouteUri",
+          "apisixUpstreamHost",
+          "apisixUpstreamPort"
         ]
       }
     ]
@@ -78,78 +87,64 @@
   "parameters": [
     {
       "name": "apisixPort",
-      "key": "apisix.node_listen",
+      "key": "apisixPort",
       "label": "网关端口",
       "description": "网关入口端口",
       "required": true,
       "type": "input",
-      "configType": "number",
+      "configType": "map",
       "value": 9080,
       "configurableInWizard": true,
       "hidden": false,
       "defaultValue": 9080
     },
     {
-      "name": "apisixEtcdNodeList",
-      "label": "ETCD",
-      "key": "etcd.host",
-      "description": "",
+      "name": "apisixRouteUri",
+      "key": "apisixRouteUri",
+      "label": "验收路由路径",
+      "description": "APISIX Standalone 最小静态路由路径",
       "required": true,
       "type": "input",
-      "configType": "stringArray",
-      "value": "${etcd-advertise-client-urls}",
+      "configType": "map",
+      "value": "/get",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": "${etcd-advertise-client-urls}"
+      "defaultValue": "/get"
     },
     {
-      "name": "apisixAdminKey",
-      "label": "管理密钥",
-      "key": "apisix.admin_key",
-      "description": "",
-      "required": true,
-      "type": "multipleWithMap",
-      "value": [
-        {
-          "name": "admin",
-          "key": "edd1c9f034335f136f87ad84b625c8f1",
-          "role": "admin"
-        }
-      ],
-      "configurableInWizard": true,
-      "hidden": false,
-      "defaultValue": [
-        {
-          "name": "admin",
-          "key": "edd1c9f034335f136f87ad84b625c8f1",
-          "role": "admin"
-        }
-      ]
-    },
-    {
-      "name": "apisixAllowAdmin",
-      "label": "允许访问",
-      "key": "apisix.allow_admin",
-      "description": "",
+      "name": "apisixUpstreamHost",
+      "key": "apisixUpstreamHost",
+      "label": "验收上游主机",
+      "description": "APISIX Standalone 最小静态路由的上游主机或 IP",
       "required": true,
       "type": "input",
-      "configType": "stringArray",
-      "value": [
-        "0.0.0.0/0"
-      ],
+      "configType": "map",
+      "value": "127.0.0.1",
       "configurableInWizard": true,
       "hidden": false,
-      "defaultValue": [
-        "0.0.0.0/0"
-      ]
+      "defaultValue": "127.0.0.1"
+    },
+    {
+      "name": "apisixUpstreamPort",
+      "key": "apisixUpstreamPort",
+      "label": "验收上游端口",
+      "description": "APISIX Standalone 最小静态路由的上游端口",
+      "required": true,
+      "type": "input",
+      "configType": "map",
+      "value": 8080,
+      "configurableInWizard": true,
+      "hidden": false,
+      "defaultValue": 8080
     },
     {
       "name": "apisixPrometheusAddr",
+      "key": "apisixPrometheusAddr",
       "label": "监控访问地址",
-      "key": "plugin_attr.prometheus.export_addr.ip",
       "description": "",
       "required": true,
       "type": "input",
+      "configType": "map",
       "value": "${ip}",
       "configurableInWizard": false,
       "hidden": false,
@@ -157,12 +152,12 @@
     },
     {
       "name": "apisixPrometheusPort",
-      "key": "plugin_attr.prometheus.export_addr.port",
+      "key": "apisixPrometheusPort",
       "label": "监控暴露端口",
       "description": "APISIX prometheus 插件指标暴露端口",
       "required": true,
       "type": "input",
-      "configType": "number",
+      "configType": "map",
       "value": 9091,
       "configurableInWizard": true,
       "hidden": false,
