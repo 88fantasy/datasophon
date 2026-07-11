@@ -64,6 +64,7 @@ public class HostCheckService {
     private static final Map<String, String> FILESYSTEM_FILTERS = Map.of("type", "ext.*|xfs");
     private static final Map<String, String> FILESYSTEM_FILTERS_NE = Map.of("mountpoint", ".*pod.*");
     private static final Map<String, String> DISK_USED_FILTERS = Map.of("type", "ext.*|xfs", "state", "used");
+    private static final Map<String, String> MEMORY_USED_FILTERS = Map.of("state", "used");
     
     private final ClusterInfoService clusterInfoService;
     private final ClusterHostService clusterHostService;
@@ -84,7 +85,7 @@ public class HostCheckService {
     }
     
     /**
-     * 检测所有物理集群主机的在线状态。
+     * 检测所有集群主机的在线状态和资源使用情况。
      *
      * @param hostInfo 若非 null，则只检测指定主机；为 null 时检测全部主机
      */
@@ -92,9 +93,9 @@ public class HostCheckService {
         log.info("start to check host info");
         List<ClusterInfoEntity> clusterList = clusterInfoService.getReadyClusterList();
         for (ClusterInfoEntity cluster : clusterList) {
-            if (ClusterArchType.physical.equals(cluster.getArchType())) {
+            if (ClusterArchType.physical.equals(cluster.getArchType()) || ClusterArchType.k8s.equals(cluster.getArchType())) {
                 try {
-                    checkCluster(cluster, hostInfo);
+                    checkCluster(cluster, hostInfo, ClusterArchType.physical.equals(cluster.getArchType()));
                 } catch (Exception ex) {
                     log.error("检查集群{}状态失败，{}", cluster.getClusterName(), ex.getMessage(), ex);
                 }
@@ -102,7 +103,7 @@ public class HostCheckService {
         }
     }
     
-    private void checkCluster(ClusterInfoEntity cluster, HostInfo hostInfo) {
+    private void checkCluster(ClusterInfoEntity cluster, HostInfo hostInfo, boolean checkWorker) {
         List<ClusterHostDO> list = clusterHostService.getHostListByClusterId(cluster.getId());
         List<ClusterHostDO> updates = new ArrayList<>();
         for (ClusterHostDO host : list) {
@@ -117,8 +118,12 @@ public class HostCheckService {
         List<CompletableFuture<Void>> futures = new ArrayList<>(updates.size());
         for (ClusterHostDO host : updates) {
             Runnable task = () -> {
-                checkHostByPingPong(host);
-                if (!HostState.OFFLINE.equals(host.getHostState())) {
+                if (checkWorker) {
+                    checkHostByPingPong(host);
+                } else {
+                    host.setCheckTime(new Date());
+                }
+                if (!checkWorker || !HostState.OFFLINE.equals(host.getHostState())) {
                     checkHostByOtel(cluster.getId(), host);
                 }
             };
@@ -168,9 +173,10 @@ public class HostCheckService {
             if (totalMem != null) {
                 host.setTotalMem(bytesToGiB(totalMem));
             }
-            Double memAvailable = queryOtelMetric(clusterId, "system.linux.memory.available", null, instance, "sum");
-            if (memAvailable != null && host.getTotalMem() != null) {
-                host.setUsedMem(host.getTotalMem() - bytesToGiB(memAvailable));
+            Double usedMem = queryOtelMetric(clusterId, "system.memory.usage", "sum", instance,
+                    MEMORY_USED_FILTERS, Map.of(), "sum");
+            if (usedMem != null) {
+                host.setUsedMem(bytesToGiB(usedMem));
             }
             Double totalDisk = queryOtelMetric(clusterId, "system.filesystem.usage", "sum", instance,
                     FILESYSTEM_FILTERS, FILESYSTEM_FILTERS_NE, "sum");

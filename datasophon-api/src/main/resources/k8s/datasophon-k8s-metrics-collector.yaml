@@ -35,6 +35,14 @@ metadata:
 spec:
   mode: daemonset
   serviceAccount: datasophon-k8s-metrics
+  volumes:
+    - name: hostfs
+      hostPath:
+        path: /
+  volumeMounts:
+    - name: hostfs
+      mountPath: /hostfs
+      readOnly: true
   env:
     - name: K8S_NODE_NAME
       valueFrom:
@@ -42,6 +50,15 @@ spec:
           fieldPath: spec.nodeName
   config:
     receivers:
+      hostmetrics:
+        collection_interval: 30s
+        root_path: /hostfs
+        scrapers:
+          cpu: {}
+          disk: {}
+          filesystem: {}
+          load: {}
+          memory: {}
       kubeletstats:
         collection_interval: 30s
         auth_type: serviceAccount
@@ -56,7 +73,13 @@ spec:
             value: "local"
             action: upsert
           - key: service.name
-            value: datasophon-k8s-metrics
+            value: node
+            action: upsert
+          - key: service.instance.id
+            value: ${env:K8S_NODE_NAME}
+            action: upsert
+          - key: host.name
+            value: ${env:K8S_NODE_NAME}
             action: upsert
       batch: {}
     exporters:
@@ -67,6 +90,6 @@ spec:
     service:
       pipelines:
         metrics:
-          receivers: [kubeletstats]
+          receivers: [hostmetrics, kubeletstats]
           processors: [resource/datasophon, batch]
           exporters: [otlp/gateway]

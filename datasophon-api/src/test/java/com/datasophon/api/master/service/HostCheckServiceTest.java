@@ -79,6 +79,38 @@ class HostCheckServiceTest {
         assertThat(metricsQueryService.filesystemFilters).allSatisfy(filters -> assertThat(filters).containsEntry("type", "ext.*|xfs"));
         assertThat(metricsQueryService.filesystemFiltersNe).allSatisfy(filtersNe -> assertThat(filtersNe).containsEntry("mountpoint", ".*pod.*"));
     }
+
+    @Test
+    void updatesK8sHostResourcesFromOtelWithoutWorkerPing() {
+        ClusterInfoEntity cluster = new ClusterInfoEntity();
+        cluster.setId(7);
+        cluster.setClusterName("k8s");
+        cluster.setArchType(ClusterArchType.k8s);
+        ClusterHostDO host = new ClusterHostDO();
+        host.setHostname("node-1");
+
+        ClusterInfoService clusterInfoService = proxy(ClusterInfoService.class,
+                (proxy, method, args) -> "getReadyClusterList".equals(method.getName()) ? List.of(cluster) : null);
+        CapturingHostService hostServiceHandler = new CapturingHostService(host);
+        ClusterHostService clusterHostService = proxy(ClusterHostService.class, hostServiceHandler);
+        WorkerCommandClient workerCommandClient = new WorkerCommandClient(null, null) {
+            @Override
+            public ExecResult ping(String hostname) {
+                throw new AssertionError("K8s host check must not call Worker ping");
+            }
+        };
+        HostCheckService service = new HostCheckService(clusterInfoService, clusterHostService,
+                workerCommandClient, new CapturingMetricsQueryService(), Runnable::run);
+
+        service.checkHosts(null);
+
+        ClusterHostDO updated = hostServiceHandler.updatedHosts.get(0);
+        assertThat(updated.getTotalMem()).isEqualTo(16);
+        assertThat(updated.getUsedMem()).isEqualTo(10);
+        assertThat(updated.getTotalDisk()).isEqualTo(200);
+        assertThat(updated.getUsedDisk()).isEqualTo(120);
+        assertThat(updated.getAverageLoad()).isEqualTo("1.25");
+    }
     
     private static PrometheusVectorResult vector(double value) {
         return PrometheusVectorResult.of(List.of(new PrometheusVectorResult.VectorSample(
@@ -136,8 +168,8 @@ class HostCheckServiceTest {
                 return vector(200d * 1024 * 1024 * 1024);
             }
             return switch (metric) {
-                case "system.memory.usage" -> vector(16d * 1024 * 1024 * 1024);
-                case "system.linux.memory.available" -> vector(6d * 1024 * 1024 * 1024);
+                case "system.memory.usage" -> vector((filters != null && "used".equals(filters.get("state")) ?
+                        10d * 1024 * 1024 * 1024 : 16d * 1024 * 1024 * 1024));
                 case "system.cpu.load_average.5m" -> vector(1.25d);
                 default -> PrometheusVectorResult.of(List.of());
             };
