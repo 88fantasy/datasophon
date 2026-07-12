@@ -2,17 +2,17 @@
   "name": "VALKEY",
   "label": "Valkey",
   "description": "开源的高性能键值对存储系统(Redis 的 BSD-3 开源分叉)",
-  "version": "8.1.7",
+  "version": "8.1.8",
   "sortNum": 91,
   "dependencies": [],
   "arch": {
     "x86_64": {
-      "packageName": "valkey-8.1.7-jammy-x86_64.tar.gz",
-      "decompressPackageName": "valkey-8.1.7-jammy-x86_64"
+      "packageName": "valkey-8.1.8-jammy-x86_64.tar.gz",
+      "decompressPackageName": "valkey-8.1.8-jammy-x86_64"
     },
     "aarch64": {
-      "packageName": "valkey-8.1.7-jammy-arm64.tar.gz",
-      "decompressPackageName": "valkey-8.1.7-jammy-arm64"
+      "packageName": "valkey-8.1.8-jammy-arm64.tar.gz",
+      "decompressPackageName": "valkey-8.1.8-jammy-arm64"
     }
   },
   "roles": [

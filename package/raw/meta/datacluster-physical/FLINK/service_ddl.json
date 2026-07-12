@@ -3,7 +3,7 @@
   "type": "MIDDLEWARE",
   "label": "Flink",
   "description": "实时计算引擎",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "sortNum": 14,
   "createDecompressDir": false,
   "dependencies": [
@@ -404,8 +404,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "flink-2.2.1-bin-scala_2.12.tgz",
-      "decompressPackageName": "flink-2.2.1"
+      "packageName": "flink-2.3.0-bin-scala_2.12.tgz",
+      "decompressPackageName": "flink-2.3.0"
     }
   }
 }

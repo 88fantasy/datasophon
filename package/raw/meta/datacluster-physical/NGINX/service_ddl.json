@@ -2,7 +2,7 @@
   "name": "NGINX",
   "label": "Nginx",
   "description": "Nginx网关",
-  "version": "1.30.2",
+  "version": "1.30.3",
   "sortNum": 93,
   "dependencies": [
     "JUICEFS"
@@ -358,8 +358,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "nginx-1.30.2.tar.gz",
-      "decompressPackageName": "nginx-1.30.2"
+      "packageName": "nginx-1.30.3.tar.gz",
+      "decompressPackageName": "nginx-1.30.3"
     }
   }
 }

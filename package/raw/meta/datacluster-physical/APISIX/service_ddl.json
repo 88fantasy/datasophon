@@ -2,7 +2,7 @@
   "name": "APISIX",
   "label": "Apisix",
   "description": "高性能分布式Api网关",
-  "version": "3.16.0",
+  "version": "3.17.0",
   "sortNum": 89,
   "dependencies": [],
   "roles": [
@@ -166,8 +166,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "apache-apisix-3.16.0-src.tgz",
-      "decompressPackageName": "apache-apisix-3.16.0"
+      "packageName": "apache-apisix-3.17.0-src.tgz",
+      "decompressPackageName": "apache-apisix-3.17.0"
     }
   }
 }

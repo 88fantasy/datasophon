@@ -1,5 +1,5 @@
 -- otel 可观测存储：基表定义 (schema v1)
--- 表定义逐字源自 dorisexporter v0.154.0，仅做以下机械替换：
+-- 表定义逐字源自 dorisexporter v0.156.0，仅做以下机械替换：
 --   1. 表名加库前缀 otel.<table>，并补 IF NOT EXISTS 保证幂等
 --   2. 占位符 %s（第1处=表名，第2处=PROPERTIES块）替换为具体值
 -- 默认 PROPERTIES 取自 factory.go 默认值：
@@ -12,7 +12,7 @@ USE otel;
 
 -- ===========================================================================
 -- 1. otel_logs
--- source: dorisexporter v0.154.0 sql/logs_ddl.sql
+-- source: dorisexporter v0.156.0 sql/logs_ddl.sql
 -- ===========================================================================
 CREATE TABLE IF NOT EXISTS otel.otel_logs
 (
@@ -61,7 +61,7 @@ PROPERTIES (
 
 -- ===========================================================================
 -- 2. otel_metrics_gauge
--- source: dorisexporter v0.154.0 sql/metrics_gauge_ddl.sql
+-- source: dorisexporter v0.156.0 sql/metrics_gauge_ddl.sql
 -- ===========================================================================
 CREATE TABLE IF NOT EXISTS otel.otel_metrics_gauge
 (
@@ -110,7 +110,7 @@ PROPERTIES (
 
 -- ===========================================================================
 -- 3. otel_metrics_sum
--- source: dorisexporter v0.154.0 sql/metrics_sum_ddl.sql
+-- source: dorisexporter v0.156.0 sql/metrics_sum_ddl.sql
 -- ===========================================================================
 CREATE TABLE IF NOT EXISTS otel.otel_metrics_sum
 (
@@ -162,7 +162,7 @@ PROPERTIES (
 
 -- ===========================================================================
 -- 4. otel_metrics_histogram
--- source: dorisexporter v0.154.0 sql/metrics_histogram_ddl.sql
+-- source: dorisexporter v0.156.0 sql/metrics_histogram_ddl.sql
 -- ===========================================================================
 CREATE TABLE IF NOT EXISTS otel.otel_metrics_histogram
 (
@@ -219,7 +219,7 @@ PROPERTIES (
 
 -- ===========================================================================
 -- 5. otel_metrics_exponential_histogram
--- source: dorisexporter v0.154.0 sql/metrics_exponential_histogram_ddl.sql
+-- source: dorisexporter v0.156.0 sql/metrics_exponential_histogram_ddl.sql
 -- ===========================================================================
 CREATE TABLE IF NOT EXISTS otel.otel_metrics_exponential_histogram
 (
@@ -285,7 +285,7 @@ PROPERTIES (
 
 -- ===========================================================================
 -- 6. otel_metrics_summary
--- source: dorisexporter v0.154.0 sql/metrics_summary_ddl.sql
+-- source: dorisexporter v0.156.0 sql/metrics_summary_ddl.sql
 -- ===========================================================================
 CREATE TABLE IF NOT EXISTS otel.otel_metrics_summary
 (
@@ -336,7 +336,7 @@ PROPERTIES (
 
 -- ===========================================================================
 -- 7. otel_traces
--- source: dorisexporter v0.154.0 sql/traces_ddl.sql
+-- source: dorisexporter v0.156.0 sql/traces_ddl.sql
 -- ===========================================================================
 CREATE TABLE IF NOT EXISTS otel.otel_traces
 (
@@ -397,7 +397,7 @@ PROPERTIES (
 
 -- ===========================================================================
 -- 8. otel_traces_graph
--- source: dorisexporter v0.154.0 sql/traces_graph_ddl.sql
+-- source: dorisexporter v0.156.0 sql/traces_graph_ddl.sql
 -- 注：此表为 UNIQUE KEY，propertiesStr 使用 size_based compaction_policy
 -- ===========================================================================
 CREATE TABLE IF NOT EXISTS otel.otel_traces_graph

@@ -27,14 +27,14 @@ import java.util.Set;
 
 /** otel Doris schema 的版本与期望对象集合(单一真相,契约测试与应用器共用)。 */
 public final class OtelSchema {
-    
+
     private OtelSchema() {
     }
-    
+
     public static final String VERSION = "v1";
-    
+
     /**
-     * dorisexporter v0.154.0 Stream Load 目标基表;缺一张对应信号写不进。
+     * dorisexporter v0.156.0 Stream Load 目标基表;缺一张对应信号写不进。
      *
      * <p>表名以 V1__otel_tables.sql 中 CREATE TABLE otel.&lt;name&gt; 为准(8 张)。
      */
@@ -48,7 +48,7 @@ public final class OtelSchema {
                     "otel_metrics_summary",
                     "otel_traces",
                     "otel_traces_graph");
-    
+
     /**
      * 按依赖顺序的 DDL 资源(database → tables → views)。
      *

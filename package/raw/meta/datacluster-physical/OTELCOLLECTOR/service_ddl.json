@@ -2,18 +2,18 @@
   "name": "OTELCOLLECTOR",
   "label": "OpenTelemetry Collector",
   "description": "统一可观测采集器(metrics/logs/traces)",
-  "version": "0.154.0",
+  "version": "0.156.0",
   "sortNum": 18,
   "dependencies": [],
   "createDecompressDir": true,
   "arch": {
     "x86_64": {
-      "packageName": "otelcol-contrib_0.154.0_linux_amd64.tar.gz",
-      "decompressPackageName": "otelcol-contrib_0.154.0"
+      "packageName": "otelcol-contrib_0.156.0_linux_amd64.tar.gz",
+      "decompressPackageName": "otelcol-contrib_0.156.0"
     },
     "aarch64": {
-      "packageName": "otelcol-contrib_0.154.0_linux_arm64.tar.gz",
-      "decompressPackageName": "otelcol-contrib_0.154.0"
+      "packageName": "otelcol-contrib_0.156.0_linux_arm64.tar.gz",
+      "decompressPackageName": "otelcol-contrib_0.156.0"
     }
   },
   "roles": [

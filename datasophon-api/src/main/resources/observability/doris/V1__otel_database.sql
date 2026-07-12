@@ -1,6 +1,6 @@
 -- otel 可观测存储:库 + 独立资源组 + 最小权限账号 (schema v1)
 -- source: datasophon observability Phase A2, Task 1
--- vendoring: dorisexporter v0.154.0
+-- vendoring: dorisexporter v0.156.0
 
 -- 1. 建库
 CREATE DATABASE IF NOT EXISTS otel;

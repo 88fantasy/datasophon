@@ -3,7 +3,7 @@
   "type": "MIDDLEWARE",
   "label": "ElasticSearch",
   "description": "高性能搜索引擎",
-  "version": "9.4.2",
+  "version": "9.4.3",
   "sortNum": 12,
   "createDecompressDir": false,
   "dependencies": [],
@@ -459,8 +459,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "elasticsearch-9.4.2-linux-x86_64.tar.gz",
-      "decompressPackageName": "elasticsearch-9.4.2"
+      "packageName": "elasticsearch-9.4.3-linux-x86_64.tar.gz",
+      "decompressPackageName": "elasticsearch-9.4.3"
     }
   }
 }

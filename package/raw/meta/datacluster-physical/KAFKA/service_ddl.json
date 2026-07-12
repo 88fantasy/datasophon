@@ -2,7 +2,7 @@
   "name": "KAFKA",
   "label": "Kafka",
   "description": "高吞吐量的分布式发布订阅消息系统",
-  "version": "4.3.0",
+  "version": "4.3.1",
   "sortNum": 4,
   "dependencies": [
     "ZOOKEEPER"
@@ -506,8 +506,8 @@
   ],
   "arch": {
     "common": {
-      "packageName": "kafka_2.13-4.3.0.tgz",
-      "decompressPackageName": "kafka_2.13-4.3.0"
+      "packageName": "kafka_2.13-4.3.1.tgz",
+      "decompressPackageName": "kafka_2.13-4.3.1"
     }
   }
 }

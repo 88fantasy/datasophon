@@ -9,7 +9,9 @@
 # datasophon-api/worker 通过 OTel Java Agent 上报的 traces/logs（OTLP）以及 collector
 # self-metrics/host-metrics 链路。
 #
-# 版本对应 package/manifest.json：Doris 4.0.5、otelcol-contrib 0.154.0
+# 版本对应 package/manifest.json：Doris 4.0.6、otelcol-contrib 0.156.0
+# 2026-07-12 从 Doris 4.0.5/otelcol 0.154.0 升级；dorisexporter SQL schema 逐字节比对无差异，
+# otelcol.ftl 渲染产物已用 0.156.0 真实二进制 validate 通过，详见 deploy/observability/otelcol/README.md
 #
 # 启动前提（本地 Mac）：
 #   - Docker Desktop 已运行（BE 依赖 vm.max_map_count，Docker Desktop on Mac 的 VM 已满足）
@@ -23,7 +25,7 @@ services:
 
   # ─── Doris FE（Frontend，SQL 查询入口 + 元数据管理） ──────────────────────────
   obs-doris-fe:
-    image: apache/doris:fe-4.0.5
+    image: apache/doris:fe-4.0.6
     container_name: obs-doris-fe
     hostname: obs-doris-fe
     environment:
@@ -48,7 +50,7 @@ services:
 
   # ─── Doris BE（Backend，数据存储与计算） ──────────────────────────────────────
   obs-doris-be:
-    image: apache/doris:be-4.0.5
+    image: apache/doris:be-4.0.6
     container_name: obs-doris-be
     hostname: obs-doris-be
     environment:
@@ -101,7 +103,7 @@ services:
 
   # ─── OTel Collector（api/worker OTLP traces/logs + self/host metrics → dorisexporter → Doris） ──
   obs-otelcol:
-    image: otel/opentelemetry-collector-contrib:0.154.0
+    image: otel/opentelemetry-collector-contrib:0.156.0
     container_name: obs-otelcol
     command: ["--config=/etc/otelcol/otelcol-juicefs.yaml"]
     volumes:

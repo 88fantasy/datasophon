@@ -3,18 +3,18 @@
   "type": "MIDDLEWARE",
   "label": "Doris",
   "description": "简单易用、高性能和统一的分析数据库",
-  "version": "4.0.5",
+  "version": "4.0.6",
   "sortNum": 11,
   "createDecompressDir": false,
   "dependencies": [],
   "arch": {
     "x86_64": {
-      "packageName": "apache-doris-4.0.5-bin-x64.tar.gz",
-      "decompressPackageName": "apache-doris-4.0.5"
+      "packageName": "apache-doris-4.0.6-bin-x64.tar.gz",
+      "decompressPackageName": "apache-doris-4.0.6"
     },
     "aarch64": {
-      "packageName": "apache-doris-4.0.5-bin-arm64.tar.gz",
-      "decompressPackageName": "apache-doris-4.0.5"
+      "packageName": "apache-doris-4.0.6-bin-arm64.tar.gz",
+      "decompressPackageName": "apache-doris-4.0.6"
     }
   },
   "roles": [

@@ -2,7 +2,7 @@
 
 > 供具备 Doris 实例的环境执行。开发机无 Doris,以下为 ⏳ 待真实环境;schema 文件本身的契约/解析/版本已由 `OtelSchemaContractTest` 在开发机验证(✅)。
 
-schema 版本:`v1`(`OtelSchema.VERSION`);DDL 真相之源见同目录 `SCHEMA.md`(pin dorisexporter v0.154.0)。
+schema 版本:`v1`(`OtelSchema.VERSION`);DDL 真相之源见同目录 `SCHEMA.md`(pin dorisexporter v0.156.0,2026-07-12 从 v0.154.0 升级,12 个 SQL 源文件逐字节比对无差异)。
 
 ## 1. 应用 DDL
 
@@ -78,4 +78,4 @@ A3 接真实 Doris 时实现幂等容错并在此实测:
 | 资源组绑定生效(§4) | ⏳ 待真实 Doris |
 | traces_graph_job 幂等(§5,CHECK 2-1) | ⏳ 待真实 Doris(A3 实现+验证) |
 
-> 注:Workload Group 属性名、物化视图 `DROP IF EXISTS` 与 CREATE JOB 幂等写法需按部署 Doris 版本(4.0.5)实测校正(见 §5 与 Task 1 报告 concerns)。
+> 注:Workload Group 属性名、物化视图 `DROP IF EXISTS` 与 CREATE JOB 幂等写法需按部署 Doris 版本(4.0.6)实测校正(见 §5 与 Task 1 报告 concerns)。2026-07-12 从 4.0.5 升至 4.0.6(同一 Stable 分支补丁版):官方 4.0.6 release notes 的 Behavior Changes 未提及 Workload Group / 物化视图 / CREATE JOB 语法改动,但仍属"需实测校正"事项,不能仅凭 release notes 免检。
