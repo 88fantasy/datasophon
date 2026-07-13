@@ -61,8 +61,8 @@
 | 2 | 冻结拓扑、容量与服务角色 | PASSED | 管理面、FE/BE、中间件角色与资源预算 | 拓扑审批单（§5，1 FE + 3 BE） |
 | 3 | 网络、时间、磁盘与离线包预检 | PASSED WITH DEVIATIONS | 数据盘、JDK17、架构与包校验 | manifest（§6 现场记录；阶段 A 服务包/JDK17/CLI 基础设施 bundle 延后） |
 | 4 | CLI 配置生成与五节点审阅 | PASSED | 严格解析、引用、权限、敏感信息检查 | 脱敏配置 hash（§7.2.1） |
-| 5 | CLI plan 生成与人工审批 | BLOCKED | 批准特定 plan hash 后才可 apply | plan hash / clusterHash（§7.2.1，待批准；用户已选择先确认离线包来源） |
-| 6 | CLI apply 基础环境初始化 | BLOCKED | 失败续跑或重新 plan 的决定 | apply 状态 |
+| 5 | CLI plan 生成与人工审批 | PASSED | 批准特定 plan hash 后才可 apply | plan hash / clusterHash（§7.2.4 最终批准，`25ad4ff34cff4283`；`os`/`config`/`soft` 经 §7.2.3 代码核查确认非真实阻塞项） |
+| 6 | CLI apply 基础环境初始化 | BLOCKED | rustfs `.zip` 解压缺口修复决定 | apply 状态（§7.2.4：ping 误诊网络不通已纠正；§7.2.5：卡在 `init-tar`（离线环境无 tar）；§7.2.6：`init-tar` 代码修复（Codex 实现+Claude 审核）已现场验证通过，5 节点全部装上 tar，`apply` 越过该步；衍生新阻塞——`init-rustfs` 用 tar 解压 `.zip` 必然失败，是已知缺口首次真实暴露，待决定修复方式） |
 | 7 | 基础环境、RustFS 与 API 健康 | BLOCKED | 批准从前端创建集群 | 连接与健康检查 |
 | 8 | 前端集群初始化：Worker 与 OTel Collector | BLOCKED | 五个节点检查均通过后才可导入服务 DAG | 初始化记录、注册与心跳证据 |
 | 9 | 前端导入阶段 A 服务 DAG | BLOCKED | 每批角色和参数审批 | DAG 记录 |
@@ -290,6 +290,211 @@ plan 生成 34 个 Step（24 pending + 10 skipped，0 completed），写入 `/da
 **Gate 5 结论：待人工批准，尚未执行 `apply`。** 上述 `clusterHash + plan SHA-256 + 拓扑版本（1 FE + 3 BE，2026-07-12 冻结）` 三项需用户明确批准后才能进入 §7.3；批准 plan 不等于批准 apply。因阶段 A 服务包、Doris FE JDK17 及 CLI 所需的 `nexus`/`mysql`/`rustfs`/`os`/`config`/`soft` 基础设施 bundle 均尚未就位，即便获批 `apply` 也会在对应 Step 因缺少安装包而失败，需在批准前一并确认这些制品的到位计划。
 
 **当前状态（2026-07-12）**：用户已明确选择暂停，自行确认 `nexus`/`mysql`/`rustfs`/`os`/`config`/`soft` 离线 bundle 的获取渠道后再继续；本 Epic 在此停止自动化推进，等待离线包来源确认后再重新进入本节。
+
+### 7.2.2 重新 plan 现场执行记录（2026-07-13，clusterHash 已变更）
+
+`nexus`/`mysql`/`rustfs` 三项离线 bundle 已确认来源并下载（版本从 Gate 5 记录时的 `nexus-3.85.0-03`/`mysql-8.0.28`/`rustfs-1.0.0.tar.gz` 升级为 `nexus-3.94.0-12`/`mysql-8.0.46`/`rustfs-v1.0.0-beta.8.zip`，详见 `package/manifest.json`）；`os`/`config`/`soft` 三项仍未就位——但见 §7.2.3：经代码核查，这三项在当前 `registry.enable=true` 的现场配置下并非真实阻塞项。
+
+同时 `datasophon-cli-go` 完成一处适配：`packagesPath`（CLI 自身装 nexus/mysql/rustfs 等基础设施用的目录）改由 `productPackagesPath`（`-n`）推导为 `<productPackagesPath>/base`，不再依赖 `<datasophonPath>/datasophon-init/packages`；CLI 二进制已在 ddh-01 就地更新（旧版本备份为 `datasophon-cli.bak-20260712`）。
+
+`cluster-sample.yml` 仅更新了 `packages:` 段的 6 行文件名以匹配上述新版本，节点拓扑、密码、`registry`/`mysql`/`ntpServer`/`rustfs` 的 node 归属均未改动（旧版本备份为 `cluster-sample.yml.bak-<时间戳>`）。由于 `packages:` 是 `ClusterConfig` 的一部分，此编辑使 `clusterHash` 必然变化。
+
+```bash
+DDH_HOME=/data/datasophon /data/datasophon/datasophon-cli create cluster plan \
+  -t hadoop \
+  -p /data/datasophon \
+  --installPath /data \
+  -n /data/install_datasophon/package
+```
+
+> `-n` 从 §7.2.1 记录的 `/data/datasophon/datasophon-init/product-packages`（当时为空目录）改为 `/data/install_datasophon/package`（真实落有 `raw/{meta,packages}` 与 `base/` 内容的目录），与新的 `packagesPath` 推导逻辑对齐。
+
+plan 重新生成，仍是 34 个 Step（24 pending + 10 skipped，0 completed），targets 分布与 §7.2.1 记录完全一致（`init-rustfs`/`init-registry`/`init-registry-upload`/`init-nmap`/`init-ntp-server`/`init-mysql`/`init-mysql-app-db` 均只落在 `ddh-01`；同样 10 项 `skipped`；plan 中仍不包含 Doris/Worker/OTel Collector 或任何阶段 A 服务安装 Step）。审阅结论：
+
+- `action=initALL`，`clusterHash=e91966fea9741bd2`（**已变更，取代 §7.2.1 的 `a85f980f11de2abc`，旧值即日起失效**）。
+- plan 文件 SHA-256：`02f7564e26729024a14817e36167955ced06b8dfced19720c33620aa6074561f`。
+- 配置文件 SHA-256：`0466e7cfedd678c1616034e4f8e635de67e716bbdbf6a0060ae49569c044cd9a`。
+- 旧 plan 文件与旧配置文件均已在 ddh-01 就地备份（`.bak-<时间戳>`），未删除。
+
+**Gate 5 结论：仍待人工批准，尚未执行 `apply`。** 上述新 `clusterHash + plan SHA-256` 需重新走一遍人工批准。`os`/`config`/`soft` 三项 CLI 基础设施 bundle 仍未就位，但见 §7.2.3 的代码核查结论——在当前配置下这不会导致 `apply` 失败，不再作为批准前必须解决的前置项。
+
+### 7.2.3 os / config / soft 代码核查修正（2026-07-13）
+
+重新审视 §3、§7.2.1、§7.2.2 中反复提到的"`os`/`config`/`soft` 三项 CLI 基础设施 bundle 未就位"这一结论——全仓库 grep `datasophon-cli-go` 源码后发现，这三个字段与 `nexus`/`mysql`/`rustfs` 的运行期依赖强度并不相同：
+
+- **`os`**（`packages.os`，如 `openEuler-22.03-LTS-SP3.tar.gz`）：代码中没有任何地方直接读取该字段值本身。它概念上对应 `internal/cli/init/offline_server.go` 的 `InitOfflineServer`（`init-offline-server` Step）期望的 `<packagesPath>/os/<arch>/<osType>/` 目录——一份**已展开好的完整 yum/apt 离线仓库**（rpm/deb + repodata），代码里也没有任何逻辑把该 tarball 解压到这个目录，只能靠人工预先摆放。更关键的是 `InitOfflineServer.doRun()` 开头即判断：
+  ```go
+  if t.EnableRegistry {
+      slog.Info("enableRegistry=true，offlineServer 不需要", ...)
+      return nil
+  }
+  ```
+  这条路径**只在不启用 Nexus（`registry.enable=false`）时才会真正执行**，是"不用 Nexus、改走本机 httpd/apache2 当离线源"的备用方案。现场配置固定 `registry.enable: true`，§7.2.2 重新 plan 的结果里 `init-offline-server` 已是 `⊘ skipped`——**该文件对本次部署路径没有任何实际影响**。
+- **`config`（`config.tar.gz`）/ `soft`（`packages.tar.gz`）**：全仓库搜索不到任何代码读取这两个字段，也搜不到任何地方引用 `<packagesPath>/config/` 或 `<packagesPath>/soft/` 目录。这是 Go 版 CLI 里**完全未接线的死字段**——只存在于 YAML schema（`internal/config/global.go:130-131`），没有任何 Step/Handler 消费。仓库内已无旧 Java CLI 可对照原始意图，推断是重写时把 Java 版 config schema 照搬过来但未移植对应安装逻辑（或本应废弃未清理）。
+
+**修正结论**：在 `registry.enable=true` 的现场配置下，`os`/`config`/`soft` 三个文件即使始终缺失，也不会导致任何已知 Step 在 `apply` 时报错——不同于 `nexus`/`mysql`/`rustfs`（缺失会在 `buildRegistry`/`buildMysql`/`buildRustfs` 对应 Step 里因文件不存在直接失败）。Gate 5 的实际前置条件收窄为：**只需人工批准 §7.2.2 记录的新 `clusterHash=e91966fea9741bd2`**，不必再等待 `os`/`config`/`soft` 到位。若后续切换为 `registry.enable=false`（弃用 Nexus 改走离线 httpd 源），需重新评估 `os` 字段的必要性。
+
+### 7.2.4 Gate 5 批准与首次 apply 尝试（2026-07-13）
+
+用户在 ddh-01 的 `cluster-sample.yml` 中手动为五个节点补充了 SSH 密码（`nodes[].password`，原为空字符串，`sshAuthType: AUTO` 场景下用于密码回退认证），导致 `clusterHash` 相应变化。就地重新 `plan` 后确认新状态：
+
+- `action=initALL`，`clusterHash=25ad4ff34cff4283`（取代 §7.2.2 的 `e91966fea9741bd2`）。
+- `initALL.plan.json` 34 Step，0 completed，与前两次记录的 targets 分布一致。
+- 用户明确批准：**Gate 5 PASSED**。
+
+**首次 `apply` 尝试（16:10:32 启动，经 `nohup` 后台执行避免 SSH 断连影响）**：在第一个 Step `init-bin-package`（分发 `datasophon-init` 资源包到 `ddh-02～05`）即失败：
+
+```
+Error: step init-bin-package: SSH 连接失败 192.168.10.132: dial tcp 192.168.10.132:22: i/o timeout
+```
+
+现场排查（非 CLI/配置问题，已逐层定位到网络基础设施层）：
+
+| 检查项 | 结果 |
+| --- | --- |
+| ddh-02 本身是否存活 | **存活**——从会话执行环境直连 `ssh root@192.168.10.132` 成功，`uptime` 137 天 |
+| ddh-01 → ddh-02/03/04/05 | **全部 100% 丢包**（`ping` 逐个测试），不止 ddh-02 一台 |
+| ddh-01 → 网关（192.168.10.1） | **正常**，0% 丢包，延迟 0.2ms |
+| ddh-01 本机 firewalld | `inactive` |
+| ddh-01 本机 iptables | 三条链策略均为 `ACCEPT`，规则为空 |
+| ddh-01 本机 SELinux | `Disabled` |
+
+**结论**：ddh-01 能到网关（南北向）但到同网段其余 4 台节点（东西向）全部不通，本机防火墙/SELinux 均已确认关闭且规则为空，可排除节点内部配置问题。症状符合**云平台安全组/网络 ACL 只放通了到网关方向、未放通同子网实例间互访**这一常见模式（本环境路由表显示 `169.254.169.254 via 192.168.10.3` 等 DHCP 元数据路由，符合 OpenStack/云平台网络特征）。这需要有云平台/网络管理权限的人核实并放通 `192.168.10.0/24` 网段内 ddh-01↔ddh-02/03/04/05 的东西向访问（至少 `22/TCP`，后续还会用到 §6 端口清单中的 MySQL `3306`、Nexus `8081`/`8083`、RustFS `9040`/`9041` 等）。
+
+**apply 进程状态**：已自行退出（未挂起、无残留进程），`initALL.plan.json` 仍是 `0/34 completed` 的干净状态。网络打通后**可直接重跑 `apply`，无需重新 `plan`**（`clusterHash=25ad4ff34cff4283` 仍然有效）。
+
+```bash
+DDH_HOME=/data/datasophon /data/datasophon/datasophon-cli create cluster apply \
+  -t hadoop -p /data/datasophon --installPath /data -n /data/install_datasophon/package
+```
+
+**误诊纠正（同日复查）**：上述"100% 丢包"结论仅来自 `ping`（ICMP）。用户确认现场服务器**禁用了 ICMP**，但 TCP 业务端口是放通的。改用 TCP 三次握手直接探测后，`ddh-01 → ddh-02/03/04/05` 的 `22/TCP` 全部 `OK`：
+
+```bash
+ssh root@192.168.10.131 "for ip in 192.168.10.132 192.168.10.133 192.168.10.134 192.168.10.135; do \
+  timeout 3 bash -c \"echo > /dev/tcp/\$ip/22\" && echo \$ip OK || echo \$ip FAIL; done"
+# 192.168.10.132: OK / .133: OK / .134: OK / .135: OK
+```
+
+即东西向网络实际是通的，§7.2.4 前段"云安全组未放通东西向流量"的结论为误判——正确结论应为"ICMP 被禁用，与 TCP 连通性无关"。**网络侧无需任何人介入，`apply` 可直接重跑**，之前的 Step 失败是首次 `ping` 排障方式选错导致的错误诊断，不代表 apply 本身还会在网络层再次失败（真实原因仍待重跑观察，若 22/TCP 通但 apply 仍失败，需回到 CLI 侧日志排查）。
+
+### 7.2.5 网络误诊纠正后的第二次 apply 尝试（2026-07-13）
+
+后台重跑 apply（`nohup`，PID 206907），验证结果：**网络确实已通**——`init-bash`（shell bash 设置）在 ddh-02/03/04/05 上全部执行成功，证实 §7.2.4 的误诊纠正是对的，东西向 SSH 通道没有问题。
+
+紧接着在 `init-tar`（安装 tar）这一步失败：
+
+```
+Error: step init-tar: tar 命令不存在，请手动安装
+```
+
+**代码侧确认**（`datasophon-cli-go/internal/cli/init/tar.go`）：`InitTar.doRun` 只执行 `which tar` 做存在性检查，**没有任何安装逻辑**——保留着原 Java 版本的注释 `// TODO 默认已安装 tar，废弃，在线安装`，即这一步的设计假设是"节点镜像默认自带 tar，此处只是兜底确认"，从 Java 版本迁移以来就没变过。且它在 `registry.go` 的 `InitALLRegistry` 中排在 `init-offline-server`/`init-offline-nodes`（yum/apt 离线源配置，第 16/17 步）**之前**、无 `Condition`（对所有场景总是执行）。
+
+现场原因：当前是纯离线环境，用户尚未上传离线源文件到 ddh-01，ddh-02～05 的镜像本身未预装 `tar`。**需要注意**：即使离线源上传并配置完成，由于 `init-tar` 排在离线源配置步骤之前且自身不具备安装能力，apply 重跑仍会先卡在这一步——必须在离线源就位后**手动**确认/安装好 ddh-02～05 上的 `tar`，再重跑 apply，不能指望 apply 顺序本身补上这个缺口。这是 Java→Go 迁移带来的既有假设边界首次在精简/定制镜像上暴露，不是本次改动引入的新问题，是否调整 Step 顺序或补充自动安装逻辑留待用户决定。
+
+**apply 进程状态**：已自行退出，`initALL.plan.json` 状态在此次重跑前为 `clusterHash=25ad4ff34cff4283`、23 pending + 10 skipped + 1 failed（`init-tar`），重跑后 `init-bash` 转为 completed、`init-tar` 仍为 failed。等待用户上传离线源并在节点上补齐 `tar` 后，直接重跑 §7.2.4 的 apply 命令即可续跑，无需重新 `plan`。
+
+### 7.2.6 init-tar 代码修复与验证（2026-07-13）
+
+用户把离线源（openEuler-22.03-LTS-SP3 全量 yum 仓库，含 `repodata/` 与
+`tar-1.34-5.oe2203sp3.x86_64.rpm`）手动上传到
+`/data/install_datasophon/package/yum/x86_64/openEuler-22.03-LTS-SP3/`，据此走了一次完整的
+「Claude 出计划 → Codex 实现 → Claude 审核 + 现场验证」流程（实施清单：
+`docs/cli-init-tar-离线安装-实施清单-2026-07-13.md`）：
+
+- `InitTar.doRun`（`datasophon-cli-go/internal/cli/init/tar.go`）由纯检查改为三分支：已存在直接
+  跳过；缺失且未传 `--productPackagesPath` 保持旧报错（向后兼容独立 `init tar` 命令）；缺失且有
+  路径则从 `<ProductPkgsPath>/yum/<arch>/<os>/` glob 找 rpm/deb，`SendFile` 分发到目标节点后
+  `rpm -ivh`/`dpkg -i` 直接安装本地包（不走 yum/apt 源，因为 `init-tar` 排在离线源配置步骤之前）。
+- `buildTar`（`internal/plan/builders_common.go`）目标节点从 `workerHostSlice`（排除本地节点）
+  改为全部节点——因为 `init-registry` 也要在 ddh-01 上 `tar xzf` 解压 Nexus，ddh-01 同样需要 tar。
+- 代码审查：`go build`/`go vet`/`go test -count=1 ./...` 全绿，新增 4 个单测覆盖三分支 + 目标节点
+  含本地节点，且顺带修正了一处过时的旧文档描述（`docs/commands/init/packages/tar.md` 曾写"从
+  `--packagePath` 下载安装"，但原代码从未实现这个能力）。
+- **现场验证**：`make release` 交叉编译新二进制部署到 ddh-01（备份为
+  `datasophon-cli.bak-20260713-tarfix`），重新 `plan` 确认 `clusterHash` 不变、`init-tar` targets
+  从 4 变 5（新增 ddh-01）；后台重跑 `apply`，日志证实 5 个节点全部走通「探测缺失 → 分发 rpm →
+  `rpm -ivh` → 二次校验成功」，耗时 7.3 秒，**两天的死锁彻底解开**，`apply` 顺利越过 `init-tar`
+  进入 `init-rustfs`。
+
+**衍生新阻塞**（与本次修复无关，是全新暴露的问题）：`init-rustfs` 在 ddh-01 上失败，实际执行的
+命令是 `tar xvz -f rustfs-linux-x86_64-musl-v1.0.0-beta.8.zip -C /data`——用 `tar` 解压 `.zip`
+文件，格式不匹配必然失败。这正是 §2.1（交接文档 2026-07-13）记录的**已知缺口**：RustFS 官方无
+GA 1.0.0，只有 beta `.zip`，`rustfs.go` 解压逻辑硬编码 `tar xvz` 不认 `.zip`，当时已确认"另开
+任务改 rustfs.go"。之前两次 apply 都卡在更早的步骤，这个 bug 一直没被真实执行路径触达；今天
+`init-tar` 死锁解开后，它才第一次在真实 apply 中暴露。`apply` 进程已自行退出，plan 状态
+3 completed（`init-bin-package`/`init-bash`/`init-tar`）+ 1 failed（`init-rustfs`）+ 20 pending +
+10 skipped。是否现在修 `rustfs.go`、还是先手动 unzip 让 apply 继续、待用户决定。
+
+### 7.2.7 rustfs 解压/密码转义/Nexus IP/静默失败/EULA/bcprov/yum 索引 —— 连续 8 层修复（2026-07-13～14）
+
+紧接 §7.2.6 的 `init-rustfs` 阻塞，同一会话内以「发现问题 → 手动验证根因 → 确认方案 → 改代码 →
+`go build/vet/test` → `make release` → 部署 → 重跑 apply 验证」的节奏，连续解开 8 层问题，`apply`
+从卡在 `init-rustfs` 一路推进到 `init-library`（第 16 步）真正开始装依赖库。逐层记录：
+
+**① rustfs 用 `tar` 解压 `.zip`**：`internal/plan/builders_cluster.go` `rustfsTask.doRun` 原来
+`tar xvz -f xxx.zip` 解压 zip 包，格式不匹配必然失败。改成 `unzip -o`；同时发现 zip 包内部结构
+（`unzip -l` 核实）跟 tar.gz 发布物不同——**根目录直接是裸 `rustfs` 二进制，没有版本号顶层目录**，
+原代码 `mv %s/rustfs-* %s` 这一行的前提对 zip 不成立，改成先 `mkdir home` 再 `unzip -o zip -d home`
+直接产出 `home/rustfs`，去掉不再需要的 `mv`。
+
+**② rustfs 密码含 `#` 被 shell 当注释截断**：`start()` 生成的 `start.sh` 里
+`--secret-key #t46$q7_QT1L ... > logs/rustfs.log 2>&1 &` 一整行从 `#` 开始被 bash 当注释吃掉，
+密码参数悬空、重定向和后台 `&` 全部丢失，进程同步阻塞且不产生日志。新增 `shellQuote` helper（单
+引号转义），用户名/密码统一转义；同时按用户要求把 `mkdir -p data`/`mkdir -p logs` 从 Go 代码里的
+`ExecShell` 调用移进 `start.sh` 脚本本体，脚本自检测自创建，更幂等。
+
+**③ 所有访问 Nexus 的地方用 hostname，早于 `/etc/hosts`（第 20 步）生效**：`applyRegistry`
+helper（`internal/plan/helpers.go`）新增 `resolveIP` 函数，`RegistryIP` 一律解析成配置里记录的
+真实 IP、查不到才退回 hostname 兜底；13 处调用点补上 `ctx.GlobalNodes` 参数。另有 4 处**没有走
+`applyRegistry`、直接手写 `xxx.Node` 赋值**的遗漏点单独修：`buildRegistry`/`buildRegistryUpload`
+的 `WebHost`、`buildOfflineNodes` 的 `ServerIP`（YumServer 和 Registry 两条分支）、`buildMysql` 的
+`RegistryIP`。`rustfsTask.WebHost` 同样从 `rs.Nodes[0]`（hostname）改成 `node.IP`。
+
+**④ 上传/改密码/EULA 失败被静默吞掉，plan 状态被误标记 `completed`**：`upload.UploadRegistry`
+上传 2735 个文件全部失败（`success=0 fail=2735`）但 `init-registry-upload` 仍记录"步骤完成"；
+`registryTask.doRun` 里 `changePassword`/`systemEula` 的 `bool` 返回值被忽略，失败也照样往下走、
+最终打"nexus 安装成功"返回 `nil`。两处都补上返回值检查，失败即 `return errors.New(...)`，让断点
+续跑机制能正确识别失败并在下次 apply 时真正重试，而不是心照不宣地假装成功。
+
+**⑤ Nexus 密码验证**：`init-registry` 用旧代码（hostname 未解析）跑过一次，`changePassword`
+静默失败，Nexus 真实密码从未变成配置文件里那个值——用 `admin.password` 里的临时密码认证
+`GET /service/rest/v1/status` 返回 200 实测坐实。清空 plan.json 里 `init-registry` 的 `completed`
+状态重跑，这次日志显示 `修改密码成功`，问题解除。
+
+**⑥ EULA disclaimer 硬编码文本 Unicode 引号不匹配**：`nexus.log` 报
+`java.lang.IllegalArgumentException: Invalid EULA disclaimer`——代码里硬编码的 `nexusEula`
+常量用普通 ASCII 单引号，Nexus 3.94.0-12 服务端存储的原文用的是 Unicode 弯引号（`'`/`'`），逐
+字节比较不相等。修复思路不是把常量改成弯引号（换个位置的同一个坑），而是**`systemEula` 先
+`GET /service/rest/v1/system/eula` 拿服务端自己存的原文，再原样回传**，删除硬编码常量，新增
+`nexusHTTPGet` helper，彻底消除未来文本漂移的可能。
+
+**⑦ `bcprov-jdk15on-1.68.jar` 未纳入产品包清单**：JDK8 安装流程里这个 BouncyCastle jar（用于放宽
+TLS1.0/1.1 算法限制）从未出现在 `package/manifest.json`、本地、现场任何地方，下载 404。用户决定
+暂不补充这个包，改代码让下载失败仅警告、跳过 `cp` 和 TLS `sed` 配置（两者绑定在一起，避免
+`java.security` 禁用列表被改动但缺少对应算法实现），继续完成 JDK8 核心安装。JDK21 无此依赖，
+不受影响。
+
+**⑧ yum/apt 上传遍历遇子目录直接 `continue`，`repodata/` 从未上传**：`internal/cli/upload/
+registry.go` `repositoryUploadBatch` 的 `yum`/`apt` 分支只读 `<arch>/<os>/` 一层，`f.IsDir()` 为
+真就 `continue` 跳过——`repodata/` 恰好是这样一个子目录，`repomd.xml`/`primary.xml.gz` 等索引
+文件从未被遍历、从未上传，导致"2735 个文件全部上传成功"但 Nexus 里的 yum 仓库其实没有索引层，
+`yum makecache` 报 `Cannot download repomd.xml: All mirrors were tried`。`raw` 分支本来就用
+`filepath.Walk` 递归遍历不受影响，这也是为何只有 yum 类型缺索引。改成同样用 `filepath.Walk`
+递归遍历 `osDir`，`directory` 字段按相对路径追加 `baseDir + "/" + relDir`，保留 `repodata` 在
+Nexus 里的子路径结构。
+
+**现场验证结果**：`init-rustfs`→`init-registry`→`init-registry-upload`（2735 文件真实上传成功，
+含 3.5GB 的 Doris 安装包，耗时约 7 分钟）→`init-jdk8`（bcprov 降级生效，4 节点全部只警告不阻塞）
+→`init-jdk21`→`init-hadoopuser`→`init-firewall`→`init-selinux`→`init-swap`→`init-offline-nodes`
+（`yum makecache` 真正成功）→`init-library`（开始真实执行 `yum install` 装依赖库）全部走通。
+每次代码改动都遵循：`go build && go vet && go test -count=1 ./...` 全绿 → `make release` →
+scp 部署（md5 核对）→ 现场 apply/手动验证 → 确认后再进下一层。
+
+**遗留**（不阻塞当前 apply，需后续单独跟进）：
+- `docker`/`helm` 类型仓库创建返回 400（`must not be null` 参数校验错误），`repoCreateByList`
+  内部忽略了这个失败继续走，当前环境用不到这两种仓库类型，暂未处理。
+- `bcprov-jdk15on-1.68.jar` 仍未补进 `package/manifest.json`，TLS1.0/1.1 算法放宽长期缺失。
 
 ### 7.3 Apply 与续跑
 
